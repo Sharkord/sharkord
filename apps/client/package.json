@@ -13,6 +13,7 @@
     "magic": "bun --bun run lint:fix && bun --bun run format && bun --bun run check-types"
   },
   "dependencies": {
+    "@floating-ui/dom": "^1.7.4",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-context-menu": "^2.2.16",
@@ -27,9 +28,10 @@
     "@reduxjs/toolkit": "^2.9.0",
     "@sharkord/shared": "workspace:*",
     "@tailwindcss/vite": "^4.1.13",
-    "@tiptap/extension-emoji": "^3.6.4",
-    "@tiptap/react": "^3.6.4",
-    "@tiptap/starter-kit": "^3.6.4",
+    "@tiptap/core": "^3.7.2",
+    "@tiptap/extension-emoji": "^3.7.2",
+    "@tiptap/react": "^3.7.2",
+    "@tiptap/starter-kit": "^3.7.2",
     "@trpc/client": "^11.6.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

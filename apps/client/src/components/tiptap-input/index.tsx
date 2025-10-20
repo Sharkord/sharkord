@@ -16,6 +16,8 @@ type TTiptapInputProps = {
   onCancel?: () => void;
 };
 
+// TODO: deal with types properly here later
+
 const TiptapInput = memo(
   ({ value, onChange, onSubmit, onCancel }: TTiptapInputProps) => {
     const customEmojis = useCustomEmojis();
@@ -27,14 +29,9 @@ const TiptapInput = memo(
             HTMLAttributes: {
               class: 'hard-break'
             }
-          },
-          link: {
-            HTMLAttributes: {
-              class: 'link'
-            },
-            openOnClick: false
           }
-        }),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }) as any,
         Emoji.configure({
           emojis: [...gitHubEmojis, ...customEmojis],
           enableEmoticons: true,

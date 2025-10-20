@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { zipDirectory } from '../src/helpers/zip';
+import { compile } from './compile';
 
 const clientCwd = path.resolve(process.cwd(), '..', 'client');
 const serverCwd = process.cwd();
@@ -41,21 +42,22 @@ await zipDirectory(drizzleMigrationsPath, drizzleZipPath);
 
 console.log('Compiling server with Bun...');
 
-await Bun.build({
-  entrypoints: [
-    './src/index.ts',
-    './build/temp/drizzle.zip',
-    './build/temp/interface.zip'
-  ],
-  compile: {
-    outfile: path.join(outPath, 'sharkord')
-  },
-  define: {
-    SHARKORD_ENV: '"production"',
-    SHARKORD_BUILD_VERSION: '"1.1.1"',
-    SHARKORD_BUILD_DATE: `"${new Date().toISOString()}"`
-  }
-});
+const targets: { out: string; target: Bun.Build.Target }[] = [
+  { out: 'sharkord-linux-x64', target: 'bun-linux-x64' },
+  { out: 'sharkord-linux-arm64', target: 'bun-linux-arm64' },
+  { out: 'sharkord-windows-x64.exe', target: 'bun-windows-x64' },
+  { out: 'sharkord-macos-x64', target: 'bun-darwin-x64' },
+  { out: 'sharkord-macos-arm64', target: 'bun-darwin-arm64' }
+];
+
+for (const target of targets) {
+  console.log(`Building for target: ${target.target}...`);
+
+  await compile({
+    outPath: path.join(outPath, target.out),
+    target: target.target
+  });
+}
 
 await fs.rm(buildTempPath, { recursive: true, force: true });
 

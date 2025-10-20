@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Release Please (Manifest)
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          release-type: node
+          command: manifest
+          token: ${{ secrets.GITHUB_TOKEN }}
+          monorepo-tags: true
+          default-branch: main
+          manifest-file: .rp-manifest.json
+          config-file: rp-config.json
+
+  build-and-publish:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: 1.3.0
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build app
+        run: |
+          cd apps/server
+          bun run build
+
+      - name: Upload release artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
+          name: v${{ needs.release-please.outputs.version }}
+          files: |
+            apps/server/build/out/sharkord-linux-x64
+            apps/server/build/out/sharkord-linux-arm64
+            apps/server/build/out/sharkord-windows-x64.exe
+            apps/server/build/out/sharkord-macos-x64
+            apps/server/build/out/sharkord-macos-arm64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
