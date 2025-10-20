@@ -2,7 +2,7 @@ import { sha256 } from '@sharkord/shared';
 import http from 'http';
 import jwt from 'jsonwebtoken';
 import z from 'zod';
-import { SERVER_PRIVATE_TOKEN } from '../db';
+import { getServerToken } from '../db/queries/others/get-server-token';
 import { getUserByIdentity } from '../db/queries/users/get-user-by-identity';
 import { getJsonBody } from './helpers';
 import { HttpValidationError } from './utils';
@@ -30,7 +30,7 @@ const loginRouteHandler = async (
     throw new HttpValidationError('password', 'Invalid password');
   }
 
-  const token = jwt.sign({ userId: existingUser.id }, SERVER_PRIVATE_TOKEN, {
+  const token = jwt.sign({ userId: existingUser.id }, await getServerToken(), {
     expiresIn: '31536000s' // 1 year
   });
 

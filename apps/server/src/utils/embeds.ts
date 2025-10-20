@@ -4,7 +4,7 @@ import path from 'path';
 import {
   DRIZZLE_PATH,
   INTERFACE_PATH,
-  MIGRATIONS_PATH
+  SRC_MIGRATIONS_PATH
 } from '../helpers/paths';
 import { unzipBlobToDirectory } from '../helpers/zip';
 import { logger } from '../logger';
@@ -29,7 +29,7 @@ const loadEmbeds = async () => {
     logger.debug('Development mode, skipping embedded files extraction');
 
     // copy migrations from src/db/migrations to DRIZZLE_PATH to allow running migrations in development
-    await fs.cp(MIGRATIONS_PATH, DRIZZLE_PATH, { recursive: true });
+    await fs.cp(SRC_MIGRATIONS_PATH, DRIZZLE_PATH, { recursive: true });
 
     return;
   }

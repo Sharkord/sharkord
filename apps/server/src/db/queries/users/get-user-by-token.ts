@@ -1,12 +1,12 @@
 import jwt from 'jsonwebtoken';
-import { SERVER_PRIVATE_TOKEN } from '../..';
 import type { TTokenPayload } from '../../../types';
+import { getServerToken } from '../others/get-server-token';
 import { getUserById } from './get-user-by-id';
 
 const getUserByToken = async (token: string | undefined) => {
   if (!token) return undefined;
 
-  const decoded = jwt.verify(token, SERVER_PRIVATE_TOKEN) as TTokenPayload;
+  const decoded = jwt.verify(token, await getServerToken()) as TTokenPayload;
 
   const user = await getUserById(decoded.userId);
 

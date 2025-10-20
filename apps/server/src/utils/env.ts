@@ -7,8 +7,11 @@ const SERVER_VERSION =
     ? SHARKORD_BUILD_VERSION
     : 'dev';
 
+const BUILD_DATE =
+  typeof SHARKORD_BUILD_DATE !== 'undefined' ? SHARKORD_BUILD_DATE : 'dev';
+
 const env = typeof SHARKORD_ENV !== 'undefined' ? SHARKORD_ENV : 'development';
 const IS_PRODUCTION = env === 'production';
 const IS_DEVELOPMENT = !IS_PRODUCTION;
 
-export { IS_DEVELOPMENT, IS_PRODUCTION, SERVER_VERSION, SHARKORD_BUILD_DATE };
+export { BUILD_DATE, IS_DEVELOPMENT, IS_PRODUCTION, SERVER_VERSION };

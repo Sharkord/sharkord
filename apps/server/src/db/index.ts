@@ -6,7 +6,6 @@ import { getSettings } from './queries/others/get-settings';
 import { seedDatabase } from './seed';
 
 let db: BunSQLiteDatabase;
-let SERVER_PRIVATE_TOKEN: string; // since this is static, we can keep it in memory to avoid querying the DB every time
 
 const loadDb = async () => {
   const sqlite = new Database(DB_PATH, { create: true, strict: true });
@@ -21,8 +20,6 @@ const loadDb = async () => {
   if (!secretToken) {
     throw new Error('Secret token not found in database settings');
   }
-
-  SERVER_PRIVATE_TOKEN = secretToken;
 };
 
-export { db, loadDb, SERVER_PRIVATE_TOKEN };
+export { db, loadDb };
