@@ -1,7 +1,7 @@
 import { Dialog } from '@/components/dialogs/dialogs';
 import { getHostFromServer } from '@/helpers/get-file-url';
 import { connectToTRPC, getTRPCClient } from '@/lib/trpc';
-import { type TServerInfo, type TServerSettings } from '@sharkord/shared';
+import { type TPublicServerSettings, type TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
 import { openDialog } from '../dialogs/actions';
 import { store } from '../store';
@@ -25,8 +25,10 @@ export const setServerId = (id: string) => {
   store.dispatch(serverSliceActions.setServerId(id));
 };
 
-export const setServerSettings = (settings: TServerSettings | undefined) => {
-  store.dispatch(serverSliceActions.setServerSettings(settings));
+export const setPublicServerSettings = (
+  settings: TPublicServerSettings | undefined
+) => {
+  store.dispatch(serverSliceActions.setPublicSettings(settings));
 };
 
 export const setInfo = (info: TServerInfo | undefined) => {

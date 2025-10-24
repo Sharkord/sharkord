@@ -1,4 +1,4 @@
-import { useCan, useServerSettings } from '@/features/server/hooks';
+import { useCan, usePublicServerSettings } from '@/features/server/hooks';
 import { uploadFiles } from '@/helpers/upload-file';
 import { Permission, type TTempFile } from '@sharkord/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -9,7 +9,7 @@ const useUploadFiles = () => {
   const filesRef = useRef<TTempFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadingSize, setUploadingSize] = useState(0);
-  const settings = useServerSettings();
+  const settings = usePublicServerSettings();
   const can = useCan();
 
   // hackers gonna hack

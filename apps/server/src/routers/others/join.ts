@@ -1,7 +1,7 @@
 import {
   ServerEvents,
   UserStatus,
-  type TServerSettings
+  type TPublicServerSettings
 } from '@sharkord/shared';
 import { z } from 'zod';
 import { db } from '../../db';
@@ -60,10 +60,15 @@ const joinServerRoute = t.procedure
 
     logger.info(`%s joined the server`, ctx.user.name);
 
-    const serverSettings: TServerSettings = {
+    const publicSettings: TPublicServerSettings = {
       description: settings.description ?? '',
       name: settings.name,
-      serverId: settings.serverId
+      serverId: settings.serverId,
+      storageUploadEnabled: settings.storageUploadEnabled,
+      storageQuota: settings.storageQuota,
+      storageUploadMaxFileSize: settings.storageUploadMaxFileSize,
+      storageSpaceQuotaByUser: settings.storageSpaceQuotaByUser,
+      storageOverflowAction: settings.storageOverflowAction
     };
 
     ctx.pubsub.publish(ServerEvents.USER_JOIN, {
@@ -83,7 +88,7 @@ const joinServerRoute = t.procedure
       },
       roles,
       emojis,
-      settings: serverSettings
+      publicSettings
     };
   });
 

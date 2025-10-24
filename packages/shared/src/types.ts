@@ -5,11 +5,17 @@ export enum ChannelType {
   VOICE = "VOICE",
 }
 
-export type TServerSettings = {
-  serverId: string;
-  name: string;
-  description: string;
-};
+export type TPublicServerSettings = Pick<
+  TSettings,
+  | "name"
+  | "description"
+  | "serverId"
+  | "storageUploadEnabled"
+  | "storageQuota"
+  | "storageUploadMaxFileSize"
+  | "storageSpaceQuotaByUser"
+  | "storageOverflowAction"
+>;
 
 export type TGenericObject = {
   [key: string]: any;

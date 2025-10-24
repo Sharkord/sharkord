@@ -6,8 +6,8 @@ import type {
   TJoinedMessage,
   TJoinedPublicUser,
   TJoinedRole,
+  TPublicServerSettings,
   TServerInfo,
-  TServerSettings,
   TUser
 } from '@sharkord/shared';
 import type { TMessagesMap } from './types';
@@ -24,7 +24,7 @@ export interface IServerState {
   users: TJoinedPublicUser[];
   ownUser?: TUser;
   roles: TJoinedRole[];
-  settings: TServerSettings | undefined;
+  publicSettings: TPublicServerSettings | undefined;
   info: TServerInfo | undefined;
   loadingInfo: boolean;
 }
@@ -41,7 +41,7 @@ const initialState: IServerState = {
   users: [],
   ownUser: undefined,
   roles: [],
-  settings: undefined,
+  publicSettings: undefined,
   info: undefined,
   loadingInfo: false
 };
@@ -91,7 +91,7 @@ export const serverSlice = createSlice({
         ownUser: TUser;
         roles: TJoinedRole[];
         emojis: TJoinedEmoji[];
-        settings: TServerSettings | undefined;
+        publicSettings: TPublicServerSettings | undefined;
       }>
     ) => {
       state.connected = true;
@@ -101,7 +101,7 @@ export const serverSlice = createSlice({
       state.users = action.payload.users;
       state.ownUser = action.payload.ownUser;
       state.roles = action.payload.roles;
-      state.settings = action.payload.settings;
+      state.publicSettings = action.payload.publicSettings;
     },
     addMessages: (
       state,
@@ -192,11 +192,11 @@ export const serverSlice = createSlice({
 
     // SERVER SETTINGS ------------------------------------------------------------
 
-    setServerSettings: (
+    setPublicSettings: (
       state,
-      action: PayloadAction<TServerSettings | undefined>
+      action: PayloadAction<TPublicServerSettings | undefined>
     ) => {
-      state.settings = action.payload;
+      state.publicSettings = action.payload;
     },
 
     // ROLES ------------------------------------------------------------

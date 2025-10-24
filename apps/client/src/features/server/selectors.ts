@@ -9,13 +9,13 @@ export const connectingSelector = (state: IRootState) =>
   state.server.connecting;
 
 export const serverNameSelector = (state: IRootState) =>
-  state.server.settings?.name;
+  state.server.publicSettings?.name;
 
 export const serverIdSelector = (state: IRootState) =>
-  state.server.settings?.serverId;
+  state.server.publicSettings?.serverId;
 
-export const serverSettingsSelector = (state: IRootState) =>
-  state.server.settings;
+export const publicServerSettingsSelector = (state: IRootState) =>
+  state.server.publicSettings;
 
 export const infoSelector = (state: IRootState) => state.server.info;
 

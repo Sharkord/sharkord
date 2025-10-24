@@ -6,8 +6,8 @@ import {
   connectingSelector,
   infoSelector,
   ownUserRoleSelector,
+  publicServerSettingsSelector,
   serverNameSelector,
-  serverSettingsSelector,
   userRoleSelector
 } from './selectors';
 
@@ -17,7 +17,8 @@ export const useIsConnecting = () => useSelector(connectingSelector);
 
 export const useServerName = () => useSelector(serverNameSelector);
 
-export const useServerSettings = () => useSelector(serverSettingsSelector);
+export const usePublicServerSettings = () =>
+  useSelector(publicServerSettingsSelector);
 
 export const useOwnUserRole = () => useSelector(ownUserRoleSelector);
 
