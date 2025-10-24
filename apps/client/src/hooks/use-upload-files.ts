@@ -28,6 +28,8 @@ const useUploadFiles = () => {
   }, []);
 
   useEffect(() => {
+    if (!settings?.storageUploadEnabled) return;
+
     const canUpload = can(Permission.UPLOAD_FILES);
     const uploadEnabled = true;
 

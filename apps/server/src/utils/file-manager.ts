@@ -140,10 +140,7 @@ class FileManager {
 
     const newServerStorage = serverStorage + tempFile.size;
 
-    if (
-      settings.storageUploadMaxFileSize > 0 &&
-      newServerStorage > settings.storageUploadMaxFileSize
-    ) {
+    if (settings.storageQuota > 0 && newServerStorage > settings.storageQuota) {
       if (
         settings.storageOverflowAction === StorageOverflowAction.PREVENT_UPLOADS
       ) {

@@ -34,7 +34,7 @@ const uploadFileRouteHandler = async (
     res.writeHead(413, { 'Content-Type': 'application/json' });
     res.end(
       JSON.stringify({
-        error: `File size exceeds the maximum allowed size`
+        error: `File ${originalName} exceeds the maximum allowed size`
       })
     );
     return;
