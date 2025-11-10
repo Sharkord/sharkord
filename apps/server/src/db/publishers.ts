@@ -1,39 +1,53 @@
 import { ServerEvents } from '@sharkord/shared';
 import { pubsub } from '../utils/pubsub';
+import { getChannel } from './queries/channels/get-channel';
 import { getEmojiById } from './queries/emojis/get-emoji-by-id';
 import { getMessage } from './queries/messages/get-message';
 import { getSettings } from './queries/others/get-settings';
 import { getRole } from './queries/roles/get-role';
 import { getPublicUserById } from './queries/users/get-public-user-by-id';
 
-const publishMessageUpdate = async (messageId: number | undefined) => {
+const publishMessage = async (
+  messageId: number | undefined,
+  type: 'update' | 'delete'
+) => {
   if (!messageId) return;
 
   const message = await getMessage(messageId);
 
   if (!message) return;
 
+  if (type === 'delete') {
+    pubsub.publish(ServerEvents.MESSAGE_DELETE, {
+      messageId: message.id,
+      channelId: message.channelId
+    });
+
+    return;
+  }
+
   pubsub.publish(ServerEvents.MESSAGE_UPDATE, message);
 };
 
-const publishEmojiUpdate = async (emojiId: number | undefined) => {
+const publishEmoji = async (
+  emojiId: number | undefined,
+  type: 'create' | 'update' | 'delete'
+) => {
   if (!emojiId) return;
+
+  if (type === 'delete') {
+    pubsub.publish(ServerEvents.EMOJI_DELETE, emojiId);
+    return;
+  }
 
   const emoji = await getEmojiById(emojiId);
 
   if (!emoji) return;
 
-  pubsub.publish(ServerEvents.EMOJI_UPDATE, emoji);
-};
+  const targetEvent =
+    type === 'create' ? ServerEvents.EMOJI_CREATE : ServerEvents.EMOJI_UPDATE;
 
-const publishEmojiCreate = async (emojiId: number | undefined) => {
-  if (!emojiId) return;
-
-  const emoji = await getEmojiById(emojiId);
-
-  if (!emoji) return;
-
-  pubsub.publish(ServerEvents.EMOJI_CREATE, emoji);
+  pubsub.publish(targetEvent, emoji);
 };
 
 const publishRole = async (
@@ -78,6 +92,29 @@ const publishUser = async (
   pubsub.publish(targetEvent, user);
 };
 
+const publishChannel = async (
+  channelId: number | undefined,
+  type: 'create' | 'update' | 'delete'
+) => {
+  if (!channelId) return;
+
+  if (type === 'delete') {
+    pubsub.publish(ServerEvents.CHANNEL_DELETE, channelId);
+    return;
+  }
+
+  const channel = await getChannel(channelId);
+
+  if (!channel) return;
+
+  const targetEvent =
+    type === 'create'
+      ? ServerEvents.CHANNEL_CREATE
+      : ServerEvents.CHANNEL_UPDATE;
+
+  pubsub.publish(targetEvent, channel);
+};
+
 const publishSettings = async () => {
   const settings = await getSettings();
 
@@ -85,9 +122,9 @@ const publishSettings = async () => {
 };
 
 export {
-  publishEmojiCreate,
-  publishEmojiUpdate,
-  publishMessageUpdate,
+  publishChannel,
+  publishEmoji,
+  publishMessage,
   publishRole,
   publishSettings,
   publishUser

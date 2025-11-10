@@ -2,7 +2,7 @@ import { Permission } from '@sharkord/shared';
 import { z } from 'zod';
 import { addReaction } from '../../db/mutations/messages/add-reaction';
 import { removeReaction } from '../../db/mutations/messages/remove-reaction';
-import { publishMessageUpdate } from '../../db/publishers';
+import { publishMessage } from '../../db/publishers';
 import { getEmojiFileIdByEmojiName } from '../../db/queries/emojis/get-emoji-file-id-by-emoji-name';
 import { getReaction } from '../../db/queries/messages/get-reaction';
 import { protectedProcedure } from '../../utils/trpc';
@@ -31,7 +31,7 @@ const toggleMessageReactionRoute = protectedProcedure
       await removeReaction(input.messageId, input.emoji, ctx.user.id);
     }
 
-    await publishMessageUpdate(input.messageId);
+    publishMessage(input.messageId, 'update');
   });
 
 export { toggleMessageReactionRoute };

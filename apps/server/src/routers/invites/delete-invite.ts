@@ -1,7 +1,8 @@
-import { Permission } from '@sharkord/shared';
+import { ActivityLogType, Permission } from '@sharkord/shared';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { removeInvite } from '../../db/mutations/invites/remove-invite';
+import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure } from '../../utils/trpc';
 
 const deleteInviteRoute = protectedProcedure
@@ -19,8 +20,13 @@ const deleteInviteRoute = protectedProcedure
       throw new TRPCError({ code: 'NOT_FOUND' });
     }
 
-    // TODO: Publish invite deletion event
-    // ctx.pubsub.publish(ServerEvents.INVITE_DELETE, removedInvite.id);
+    enqueueActivityLog({
+      type: ActivityLogType.DELETED_INVITE,
+      userId: ctx.user.id,
+      details: {
+        code: removedInvite.code
+      }
+    });
   });
 
 export { deleteInviteRoute };

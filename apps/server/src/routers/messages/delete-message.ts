@@ -1,8 +1,9 @@
-import { Permission, ServerEvents } from '@sharkord/shared';
+import { Permission } from '@sharkord/shared';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { removeFile } from '../../db/mutations/files/remove-file';
 import { removeMessage } from '../../db/mutations/messages/remove-message';
+import { publishMessage } from '../../db/publishers';
 import { getFilesByMessageId } from '../../db/queries/files/get-files-by-message-id';
 import { getMessage } from '../../db/queries/messages/get-message';
 import { protectedProcedure } from '../../utils/trpc';
@@ -35,10 +36,7 @@ const deleteMessageRoute = protectedProcedure
 
     await removeMessage(input.messageId);
 
-    ctx.pubsub.publish(ServerEvents.MESSAGE_DELETE, {
-      messageId: targetMessage.id,
-      channelId: targetMessage.channelId
-    });
+    publishMessage(input.messageId, 'delete');
   });
 
 export { deleteMessageRoute };

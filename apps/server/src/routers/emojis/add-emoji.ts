@@ -1,8 +1,10 @@
-import { Permission } from '@sharkord/shared';
+import { ActivityLogType, Permission } from '@sharkord/shared';
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { createEmoji } from '../../db/mutations/emojis/create-emoji';
 import { getUniqueEmojiName } from '../../db/mutations/emojis/get-unique-emoji-name';
-import { publishEmojiCreate } from '../../db/publishers';
+import { publishEmoji } from '../../db/publishers';
+import { enqueueActivityLog } from '../../queues/activity-log';
 import { fileManager } from '../../utils/file-manager';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -29,7 +31,21 @@ const addEmojiRoute = protectedProcedure
         createdAt: Date.now()
       });
 
-      await publishEmojiCreate(emoji?.id);
+      if (!emoji) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Could not create emoji'
+        });
+      }
+
+      publishEmoji(emoji.id, 'create');
+      enqueueActivityLog({
+        type: ActivityLogType.CREATED_EMOJI,
+        userId: ctx.user.id,
+        details: {
+          name: emoji.name
+        }
+      });
     }
   });
 

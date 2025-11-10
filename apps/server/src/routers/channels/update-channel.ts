@@ -1,7 +1,9 @@
-import { ServerEvents } from '@sharkord/shared';
+import { ActivityLogType } from '@sharkord/shared';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { updateChannel } from '../../db/mutations/channels/update-channel';
+import { publishChannel } from '../../db/publishers';
+import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure } from '../../utils/trpc';
 
 const updateChannelRoute = protectedProcedure
@@ -24,7 +26,15 @@ const updateChannelRoute = protectedProcedure
       });
     }
 
-    ctx.pubsub.publish(ServerEvents.CHANNEL_UPDATE, updatedChannel);
+    publishChannel(updatedChannel.id, 'update');
+    enqueueActivityLog({
+      type: ActivityLogType.UPDATED_CHANNEL,
+      userId: ctx.user.id,
+      details: {
+        channelId: updatedChannel.id,
+        values: input
+      }
+    });
   });
 
 export { updateChannelRoute };

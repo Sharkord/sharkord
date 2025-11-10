@@ -16,12 +16,14 @@ type TEnqueueActivityLog<T extends ActivityLogType = ActivityLogType> = {
   type: T;
   details?: TActivityLogDetailsMap[T];
   userId?: number;
+  ip?: string;
 };
 
 const enqueueActivityLog = <T extends ActivityLogType>({
   type,
   details = {} as TActivityLogDetailsMap[T],
-  userId = 1
+  userId = 1,
+  ip
 }: TEnqueueActivityLog<T>) => {
   const date = Date.now();
 
@@ -30,7 +32,7 @@ const enqueueActivityLog = <T extends ActivityLogType>({
       userId,
       type: type,
       details,
-      ip: getUserIp(userId),
+      ip: ip || getUserIp(userId) || null,
       createdAt: date
     });
 

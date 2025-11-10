@@ -1,5 +1,5 @@
 import Queue from 'queue';
-import { publishMessageUpdate } from '../../db/publishers';
+import { publishMessage } from '../../db/publishers';
 import { processMessageMetadata } from './get-message-metadata';
 
 const messageMetadataQueue = new Queue({
@@ -15,7 +15,7 @@ const enqueueProcessMetadata = (content: string, messageId: number) => {
     const updatedMessage = await processMessageMetadata(content, messageId);
 
     if (updatedMessage) {
-      await publishMessageUpdate(messageId);
+      await publishMessage(messageId, 'update');
     }
 
     callback?.();

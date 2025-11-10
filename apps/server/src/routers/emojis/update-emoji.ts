@@ -1,9 +1,10 @@
-import { Permission } from '@sharkord/shared';
+import { ActivityLogType, Permission } from '@sharkord/shared';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { updateEmoji } from '../../db/mutations/emojis/update-emoji';
-import { publishEmojiUpdate } from '../../db/publishers';
+import { publishEmoji } from '../../db/publishers';
 import { emojiExists } from '../../db/queries/emojis/emoji-exists';
+import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure } from '../../utils/trpc';
 
 const updateEmojiRoute = protectedProcedure
@@ -35,7 +36,14 @@ const updateEmojiRoute = protectedProcedure
       });
     }
 
-    await publishEmojiUpdate(updatedEmoji.id);
+    publishEmoji(updatedEmoji.id, 'update');
+    enqueueActivityLog({
+      type: ActivityLogType.UPDATED_EMOJI,
+      userId: ctx.user.id,
+      details: {
+        name: updatedEmoji.name
+      }
+    });
   });
 
 export { updateEmojiRoute };

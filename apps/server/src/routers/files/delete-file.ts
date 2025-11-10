@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { removeFile } from '../../db/mutations/files/remove-file';
-import { publishMessageUpdate } from '../../db/publishers';
+import { publishMessage } from '../../db/publishers';
 import { getMessageByFileId } from '../../db/queries/messages/get-message-by-file-id';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -13,7 +13,7 @@ const deleteFileRoute = protectedProcedure
 
     if (!message) return;
 
-    await publishMessageUpdate(message.id);
+    await publishMessage(message.id, 'update');
   });
 
 export { deleteFileRoute };

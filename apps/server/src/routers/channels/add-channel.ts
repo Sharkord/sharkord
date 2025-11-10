@@ -1,6 +1,8 @@
-import { ChannelType, Permission, ServerEvents } from '@sharkord/shared';
+import { ActivityLogType, ChannelType, Permission } from '@sharkord/shared';
 import { z } from 'zod';
 import { createChannel } from '../../db/mutations/channels/create-channel';
+import { publishChannel } from '../../db/publishers';
+import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure } from '../../utils/trpc';
 
 const addChannelRoute = protectedProcedure
@@ -20,7 +22,16 @@ const addChannelRoute = protectedProcedure
       categoryId: input.categoryId
     });
 
-    ctx.pubsub.publish(ServerEvents.CHANNEL_CREATE, channel);
+    publishChannel(channel.id, 'create');
+    enqueueActivityLog({
+      type: ActivityLogType.CREATED_CHANNEL,
+      userId: ctx.user.id,
+      details: {
+        channelId: channel.id,
+        channelName: channel.name,
+        type: channel.type as ChannelType
+      }
+    });
   });
 
 export { addChannelRoute };

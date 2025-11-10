@@ -9,6 +9,7 @@ import { isInviteValid } from '../db/queries/invites/is-invite-valid';
 import { getServerToken } from '../db/queries/others/get-server-token';
 import { getSettings } from '../db/queries/others/get-settings';
 import { getUserByIdentity } from '../db/queries/users/get-user-by-identity';
+import { getWsInfo } from '../helpers/get-ws-info';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { getJsonBody } from './helpers';
 import { HttpValidationError } from './utils';
@@ -22,7 +23,8 @@ const zBody = z.object({
 const registerUser = async (
   identity: string,
   password: string,
-  inviteCode?: string
+  inviteCode?: string,
+  ip?: string
 ): Promise<TJoinedUser> => {
   const hashedPassword = await sha256(password);
   const createdUser = await createUser(identity, hashedPassword);
@@ -35,11 +37,14 @@ const registerUser = async (
     throw new Error('User registration failed');
   }
 
-  enqueueActivityLog({
-    type: ActivityLogType.USER_CREATED,
-    userId: registeredUser.id,
-    details: { username: registeredUser.name, inviteCode }
-  });
+  if (inviteCode) {
+    enqueueActivityLog({
+      type: ActivityLogType.USED_INVITE,
+      userId: registeredUser.id,
+      details: { code: inviteCode },
+      ip
+    });
+  }
 
   return registeredUser;
 };
@@ -49,8 +54,9 @@ const loginRouteHandler = async (
   res: http.ServerResponse
 ) => {
   const data = zBody.parse(await getJsonBody(req));
-  let existingUser = await getUserByIdentity(data.identity);
   const settings = await getSettings();
+  let existingUser = await getUserByIdentity(data.identity);
+  const connectionInfo = getWsInfo(undefined, req);
 
   if (!existingUser) {
     if (!settings.allowNewUsers) {
@@ -64,7 +70,12 @@ const loginRouteHandler = async (
     }
 
     // user doesn't exist, but registration is open OR invite was valid - create the user automatically
-    existingUser = await registerUser(data.identity, data.password);
+    existingUser = await registerUser(
+      data.identity,
+      data.password,
+      data.invite,
+      connectionInfo?.ip
+    );
   }
 
   if (existingUser.banned) {
