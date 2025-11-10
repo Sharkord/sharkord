@@ -1,5 +1,6 @@
 import mediasoup from 'mediasoup';
 import { config } from '../config.js';
+import { logger } from '../logger.js';
 
 let mediaSoupWorker: mediasoup.types.Worker<mediasoup.types.AppData>;
 
@@ -9,13 +10,13 @@ const loadMediasoup = async () => {
     rtcMinPort: config.mediasoup.worker.rtcMinPort
   });
 
-  mediaSoupWorker.on('died', () => {
-    console.log('Mediasoup worker died');
+  mediaSoupWorker.on('died', (error) => {
+    logger.error('Mediasoup worker died', error);
 
     setTimeout(() => process.exit(0), 2000);
   });
 
-  console.log('Mediasoup worker loaded');
+  logger.debug('Mediasoup worker loaded');
 };
 
 export { loadMediasoup, mediaSoupWorker };

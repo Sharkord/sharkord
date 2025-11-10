@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { updateEmoji } from '../../db/mutations/emojis/update-emoji';
 import { publishEmoji } from '../../db/publishers';
 import { emojiExists } from '../../db/queries/emojis/emoji-exists';
+import { getEmojiById } from '../../db/queries/emojis/get-emoji-by-id';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -16,6 +17,15 @@ const updateEmojiRoute = protectedProcedure
   )
   .mutation(async ({ ctx, input }) => {
     await ctx.needsPermission(Permission.MANAGE_EMOJIS);
+
+    const existingEmoji = await getEmojiById(input.emojiId);
+
+    if (!existingEmoji) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Emoji not found.'
+      });
+    }
 
     const exists = await emojiExists(input.name);
 
@@ -41,7 +51,8 @@ const updateEmojiRoute = protectedProcedure
       type: ActivityLogType.UPDATED_EMOJI,
       userId: ctx.user.id,
       details: {
-        name: updatedEmoji.name
+        fromName: existingEmoji.name,
+        toName: input.name
       }
     });
   });

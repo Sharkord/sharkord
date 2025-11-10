@@ -1,17 +1,19 @@
-import './helpers/ensure-server-dirs';
 import { ActivityLogType } from '@sharkord/shared';
 import chalk from 'chalk';
 import { config, SERVER_PRIVATE_IP } from './config';
 import { loadDb } from './db';
+import './helpers/ensure-server-dirs';
 import { enqueueActivityLog } from './queues/activity-log';
 import { createServers } from './utils/create-servers';
 import { loadEmbeds } from './utils/embeds';
 import { IS_PRODUCTION, SERVER_VERSION } from './utils/env';
+import { loadMediasoup } from './utils/mediasoup';
 import { printDebug } from './utils/print-debug';
 
 await loadEmbeds();
 await loadDb();
 await createServers();
+await loadMediasoup();
 
 const host = IS_PRODUCTION ? SERVER_PRIVATE_IP : 'localhost';
 const url = `http://${host}:${config.server.port}/`;

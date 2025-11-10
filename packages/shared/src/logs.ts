@@ -111,7 +111,8 @@ export type TActivityLogDetailsMap = {
     name: string;
   };
   [ActivityLogType.UPDATED_EMOJI]: {
-    name: string;
+    fromName: string;
+    toName: string;
   };
 };
 

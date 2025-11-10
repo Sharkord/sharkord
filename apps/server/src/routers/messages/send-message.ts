@@ -27,8 +27,7 @@ const sendMessageRoute = protectedProcedure
     const message = await createMessage({
       channelId: input.channelId,
       userId: ctx.userId,
-      content: input.content,
-      createdAt: Date.now()
+      content: input.content
     });
 
     const files: TFile[] = [];
