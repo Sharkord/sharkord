@@ -1,13 +1,6 @@
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
-import { useLog } from '@/hooks/use-log';
 import { getTRPCClient } from '@/lib/trpc';
 import { StreamKind, type RtpCapabilities } from '@sharkord/shared';
 import { Device } from 'mediasoup-client';
-import {
-  type AppData,
-  type Consumer,
-  type Transport
-} from 'mediasoup-client/types';
 import {
   createContext,
   memo,
@@ -16,9 +9,10 @@ import {
   useRef,
   useState
 } from 'react';
-import { toast } from 'sonner';
+import { logVoice } from './helpers';
 import { useLocalStreams } from './hooks/use-local-streams';
 import { useRemoteStreams } from './hooks/use-remote-streams';
+import { useTransports } from './hooks/use-transports';
 import { useVoiceControls } from './hooks/use-voice-controls';
 import { useVoiceEvents } from './hooks/use-voice-events';
 
@@ -62,16 +56,8 @@ type TVoiceProviderProps = {
 };
 
 const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
-  const { log } = useLog();
   const [loading, setLoading] = useState(false);
   const routerRtpCapabilities = useRef<RtpCapabilities | null>(null);
-  const producerTransport = useRef<Transport<AppData> | undefined>(undefined);
-  const consumerTransport = useRef<Transport<AppData> | undefined>(undefined);
-  const consumers = useRef<{
-    [userId: number]: {
-      [kind: string]: Consumer<AppData>;
-    };
-  }>({});
 
   const {
     addRemoteStream,
@@ -90,241 +76,19 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     setLocalVideoStream,
     setLocalScreenShare
   } = useLocalStreams();
-
-  const createProducerTransport = useCallback(
-    async (device: Device) => {
-      log('createProducerTransport() - creating producer transport');
-
-      const trpc = getTRPCClient();
-
-      try {
-        const params = await trpc.voice.createProducerTransport.mutate();
-
-        log('createProducerTransport() - requested producer transport', {
-          params
-        });
-
-        producerTransport.current = device.createSendTransport(params);
-
-        producerTransport.current.on(
-          'connect',
-          async ({ dtlsParameters }, callback, errback) => {
-            log('producerTransport CONNECT', { dtlsParameters });
-
-            try {
-              await trpc.voice.connectProducerTransport.mutate({
-                dtlsParameters
-              });
-
-              callback();
-            } catch (error) {
-              toast.error(
-                getTrpcError(error, 'Failed to connect producer transport')
-              );
-              log('producerTransport CONNECT ERROR', { error });
-              errback(error as Error);
-            }
-          }
-        );
-
-        producerTransport.current.on('connectionstatechange', (state) => {
-          log('producerTransport CONNECTION STATE CHANGE', { state });
-
-          if (['failed', 'disconnected', 'closed'].includes(state)) {
-            producerTransport.current?.close();
-            producerTransport.current = undefined;
-          } else if (state === 'connected') {
-            console.log('producerTransport connected');
-          }
-        });
-
-        producerTransport.current.on('icecandidateerror', (error) => {
-          log('producerTransport ICE CANDIDATE ERROR', { error });
-        });
-
-        producerTransport.current.on(
-          'produce',
-          async ({ rtpParameters, appData }, callback, errback) => {
-            log('producerTransport PRODUCE', { rtpParameters, appData });
-
-            const { kind } = appData as { kind: StreamKind };
-
-            if (!producerTransport.current) return;
-
-            try {
-              const producerId = await trpc.voice.produce.mutate({
-                transportId: producerTransport.current.id,
-                kind,
-                rtpParameters
-              });
-
-              callback({ id: producerId });
-            } catch (error) {
-              errback(error as Error);
-            }
-          }
-        );
-      } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to create producer transport'));
-      }
-    },
-    [log]
-  );
-
-  const createConsumerTransport = useCallback(
-    async (device: Device) => {
-      log('createConsumerTransport() - creating consumer transport');
-
-      const trpc = getTRPCClient();
-
-      try {
-        const params = await trpc.voice.createConsumerTransport.mutate();
-
-        log('createConsumerTransport() - requested consumer transport', {
-          params
-        });
-
-        consumerTransport.current = device.createRecvTransport(params);
-
-        consumerTransport.current.on(
-          'connect',
-          async ({ dtlsParameters }, callback, errback) => {
-            log('consumerTransport CONNECT', { dtlsParameters });
-
-            try {
-              await trpc.voice.connectConsumerTransport.mutate({
-                dtlsParameters
-              });
-
-              callback();
-            } catch (error) {
-              toast.error(
-                getTrpcError(error, 'Failed to connect consumer transport')
-              );
-              log('consumerTransport CONNECT ERROR', { error });
-              errback(error as Error);
-            }
-          }
-        );
-      } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to create consumer transport'));
-        return;
-      }
-    },
-    [log]
-  );
-
-  const consume = useCallback(
-    async (
-      remoteUserId: number,
-      kind: StreamKind,
-      routerRtpCapabilities: RtpCapabilities
-    ) => {
-      if (!consumerTransport.current) return;
-
-      log('consume()', {
-        remoteUserId,
-        kind,
-        routerRtpCapabilities
-      });
-
-      const trpc = getTRPCClient();
-
-      try {
-        const { producerId, consumerId, consumerKind, consumerRtpParameters } =
-          await trpc.voice.consume.mutate({
-            kind,
-            remoteUserId,
-            rtpCapabilities: routerRtpCapabilities
-          });
-
-        if (!consumers.current[remoteUserId]) {
-          consumers.current[remoteUserId] = {};
-        }
-
-        const existingConsumer = consumers.current[remoteUserId][consumerKind];
-
-        if (existingConsumer) {
-          existingConsumer.close();
-          delete consumers.current[remoteUserId][consumerKind];
-        }
-
-        const targetKind =
-          consumerKind === StreamKind.SCREEN ? StreamKind.VIDEO : consumerKind;
-
-        const newConsumer = await consumerTransport.current.consume({
-          id: consumerId,
-          producerId: producerId,
-          kind: targetKind,
-          rtpParameters: consumerRtpParameters
-        });
-
-        const cleanupEvents = [
-          'transportclose',
-          'trackended',
-          '@close',
-          'close'
-        ];
-
-        cleanupEvents.forEach((event) => {
-          // @ts-expect-error - YOLO
-          newConsumer?.on(event, () => {
-            removeRemoteStream(remoteUserId, kind);
-          });
-        });
-
-        consumers.current[remoteUserId][consumerKind] = newConsumer;
-
-        const stream = new MediaStream();
-
-        stream.addTrack(newConsumer.track);
-
-        addRemoteStream(remoteUserId, stream, kind);
-      } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to consume remote producer'));
-      }
-    },
-    [log, addRemoteStream, removeRemoteStream]
-  );
-
-  const consumeExistingProducers = useCallback(
-    async (routerRtpCapabilities: RtpCapabilities) => {
-      log('consumeExistingProducers() - consuming existing producers', {
-        routerRtpCapabilities
-      });
-
-      const trpc = getTRPCClient();
-
-      try {
-        const { remoteAudioIds, remoteScreenIds, remoteVideoIds } =
-          await trpc.voice.getProducers.query();
-
-        log('consumeExistingProducers() - existing producers', {
-          remoteAudioIds,
-          remoteScreenIds,
-          remoteVideoIds
-        });
-
-        remoteAudioIds.forEach((remoteId) => {
-          consume(remoteId, StreamKind.AUDIO, routerRtpCapabilities);
-        });
-
-        remoteVideoIds.forEach((remoteId) => {
-          consume(remoteId, StreamKind.VIDEO, routerRtpCapabilities);
-        });
-
-        remoteScreenIds.forEach((remoteId) => {
-          consume(remoteId, StreamKind.SCREEN, routerRtpCapabilities);
-        });
-      } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to get existing producers'));
-      }
-    },
-    [log, consume]
-  );
+  const {
+    producerTransport,
+    createProducerTransport,
+    createConsumerTransport,
+    consume,
+    consumeExistingProducers
+  } = useTransports({
+    addRemoteStream,
+    removeRemoteStream
+  });
 
   const startMicStream = useCallback(async () => {
-    log('startMicStream() - requesting user media');
+    logVoice('Starting microphone stream');
 
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
@@ -337,36 +101,52 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       video: false
     });
 
-    log('startMicStream() - obtained user media', { stream });
+    logVoice('Microphone stream obtained', { stream });
 
     setLocalAudioStream(stream);
 
     const audioTrack = stream.getAudioTracks()[0];
 
-    log('startMicStream() - obtained audio track', { audioTrack });
-
     if (audioTrack) {
+      logVoice('Obtained audio track', { audioTrack });
+
       localAudioProducer.current = await producerTransport.current?.produce({
         track: audioTrack,
         appData: { kind: StreamKind.AUDIO }
       });
+
+      logVoice('Microphone audio producer created', {
+        producer: localAudioProducer.current
+      });
+    } else {
+      logVoice('No audio track obtained from microphone stream');
     }
-  }, [producerTransport, log, setLocalAudioStream, localAudioProducer]);
+  }, [producerTransport, setLocalAudioStream, localAudioProducer]);
 
   const startWebcamStream = useCallback(async () => {
+    logVoice('Starting webcam stream');
+
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
       video: true
     });
+
+    logVoice('Webcam stream obtained', { stream });
 
     setLocalVideoStream(stream);
 
     const videoTrack = stream.getVideoTracks()[0];
 
     if (videoTrack) {
+      logVoice('Obtained video track', { videoTrack });
+
       localVideoProducer.current = await producerTransport.current?.produce({
         track: videoTrack,
         appData: { kind: StreamKind.VIDEO }
+      });
+
+      logVoice('Webcam video producer created', {
+        producer: localVideoProducer.current
       });
 
       localVideoProducer.current?.on('@close', async () => {
@@ -377,14 +157,20 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
             kind: StreamKind.VIDEO
           });
         } catch (error) {
-          toast.error(getTrpcError(error, 'Failed to close video producer'));
+          logVoice('Error closing video producer', { error });
         }
       });
+    } else {
+      logVoice('No video track obtained from webcam stream');
     }
-  }, [setLocalVideoStream, localVideoProducer]);
+  }, [setLocalVideoStream, localVideoProducer, producerTransport]);
 
   const stopWebcamStream = useCallback(() => {
+    logVoice('Stopping webcam stream');
+
     localVideoStream?.getVideoTracks().forEach((track) => {
+      logVoice('Stopping video track', { track });
+
       track.stop();
       localVideoStream.removeTrack(track);
     });
@@ -396,7 +182,11 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   }, [localVideoStream, setLocalVideoStream, localVideoProducer]);
 
   const stopScreenShareStream = useCallback(() => {
+    logVoice('Stopping screen share stream');
+
     localScreenShareStream?.getTracks().forEach((track) => {
+      logVoice('Stopping screen share track', { track });
+
       track.stop();
       localScreenShareStream.removeTrack(track);
     });
@@ -408,6 +198,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   }, [localScreenShareStream, setLocalScreenShare, localScreenShareProducer]);
 
   const startScreenShareStream = useCallback(async () => {
+    logVoice('Starting screen share stream');
+
     const stream = await navigator.mediaDevices.getDisplayMedia({
       video: {
         frameRate: 60
@@ -415,11 +207,15 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       audio: true
     });
 
+    logVoice('Screen share stream obtained', { stream });
+
     setLocalScreenShare(stream);
 
     const videoTrack = stream.getVideoTracks()[0];
 
     if (videoTrack) {
+      logVoice('Obtained video track', { videoTrack });
+
       localScreenShareProducer.current =
         await producerTransport.current?.produce({
           track: videoTrack,
@@ -427,6 +223,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         });
 
       localScreenShareProducer.current?.on('@close', async () => {
+        logVoice('Screen share producer closed');
+
         const trpc = getTRPCClient();
 
         try {
@@ -434,26 +232,26 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
             kind: StreamKind.SCREEN
           });
         } catch (error) {
-          toast.error(
-            getTrpcError(error, 'Failed to close screen share producer')
-          );
+          logVoice('Error closing screen share producer', { error });
         }
       });
-    }
-
-    if (!videoTrack) {
+    } else {
+      logVoice('No video track obtained from screen share stream');
       throw new Error('No video track obtained for screen share');
     }
 
     return videoTrack;
-  }, [setLocalScreenShare, localScreenShareProducer]);
+  }, [setLocalScreenShare, localScreenShareProducer, producerTransport]);
 
   const init = useCallback(
     async (
       incomingRouterRtpCapabilities: RtpCapabilities,
       channelId: number
     ) => {
-      log('mediaSoup init()', { routerRtpCapabilities, channelId });
+      logVoice('Initializing voice provider', {
+        incomingRouterRtpCapabilities,
+        channelId
+      });
 
       setLoading(true);
       routerRtpCapabilities.current = incomingRouterRtpCapabilities;
@@ -474,8 +272,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       createProducerTransport,
       createConsumerTransport,
       consumeExistingProducers,
-      startMicStream,
-      log
+      startMicStream
     ]
   );
 
