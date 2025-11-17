@@ -177,11 +177,21 @@ const getVersionInfo = async (targets: TTarget[], outPath: string) => {
   return versionInfo;
 };
 
+const rmIfExists = async (filePath: string) => {
+  try {
+    await fs.access(filePath);
+    await fs.rm(filePath);
+  } catch {
+    // ignore
+  }
+};
+
 export {
   compile,
   downloadMediasoupBinary,
   getCurrentVersion,
   getVersionInfo,
-  patchPackageJsons
+  patchPackageJsons,
+  rmIfExists
 };
 export type { TTarget };

@@ -8,6 +8,7 @@ import {
   getCurrentVersion,
   getVersionInfo,
   patchPackageJsons,
+  rmIfExists,
   type TTarget
 } from './helpers';
 
@@ -48,8 +49,8 @@ const releasePath = path.join(outPath, 'release.json');
 const interfaceZipPath = path.join(buildTempPath, 'interface.zip');
 const drizzleZipPath = path.join(buildTempPath, 'drizzle.zip');
 
-await fs.rm(buildTempPath, { recursive: true, force: true });
-await fs.rm(outPath, { recursive: true });
+await rmIfExists(buildTempPath);
+await rmIfExists(outPath);
 await fs.mkdir(buildTempPath, { recursive: true });
 await fs.mkdir(outPath, { recursive: true });
 
