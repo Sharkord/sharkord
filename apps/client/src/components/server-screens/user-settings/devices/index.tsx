@@ -63,9 +63,8 @@ const Devices = memo(() => {
           <Alert variant="default">
             <Info />
             <AlertDescription>
-              Device settings cannot be changed while connected to a voice
-              channel. Please disconnect from the channel to modify your device
-              settings.
+              You are in a voice channel, changes will only take effect after
+              you leave and rejoin the channel.
             </AlertDescription>
           </Alert>
         )}
@@ -73,7 +72,6 @@ const Devices = memo(() => {
           <Select
             onValueChange={(value) => onChange('microphoneId', value)}
             value={values.microphoneId}
-            disabled={!!currentVoiceChannelId}
           >
             <SelectTrigger className="w-[500px]">
               <SelectValue placeholder="Select the input device" />
@@ -99,7 +97,6 @@ const Devices = memo(() => {
                 onCheckedChange={(checked) =>
                   onChange('echoCancellation', checked)
                 }
-                disabled={!!currentVoiceChannelId}
               />
             </Group>
 
@@ -109,7 +106,6 @@ const Devices = memo(() => {
                 onCheckedChange={(checked) =>
                   onChange('noiseSuppression', checked)
                 }
-                disabled={!!currentVoiceChannelId}
               />
             </Group>
 
@@ -119,7 +115,6 @@ const Devices = memo(() => {
                 onCheckedChange={(checked) =>
                   onChange('autoGainControl', checked)
                 }
-                disabled={!!currentVoiceChannelId}
               />
             </Group>
           </div>
@@ -129,7 +124,6 @@ const Devices = memo(() => {
           <Select
             onValueChange={(value) => onChange('webcamId', value)}
             value={values.webcamId}
-            disabled={!!currentVoiceChannelId}
           >
             <SelectTrigger className="w-[500px]">
               <SelectValue placeholder="Select the input device" />
@@ -155,7 +149,6 @@ const Devices = memo(() => {
             onResolutionChange={(value) =>
               onChange('webcamResolution', value as Resolution)
             }
-            disabled={!!currentVoiceChannelId}
           />
         </Group>
 
@@ -167,7 +160,6 @@ const Devices = memo(() => {
             onResolutionChange={(value) =>
               onChange('screenResolution', value as Resolution)
             }
-            disabled={!!currentVoiceChannelId}
           />
         </Group>
         <div className="flex justify-end gap-2 pt-4">
