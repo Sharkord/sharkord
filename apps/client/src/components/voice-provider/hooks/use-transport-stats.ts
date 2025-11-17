@@ -18,6 +18,8 @@ export type TransportStatsData = {
   consumer: TransportStats | null;
   totalBytesReceived: number;
   totalBytesSent: number;
+  currentBitrateSent: number;
+  currentBitrateReceived: number;
   isMonitoring: boolean;
 };
 
@@ -27,6 +29,8 @@ const useTransportStats = () => {
     consumer: null,
     totalBytesReceived: 0,
     totalBytesSent: 0,
+    currentBitrateSent: 0,
+    currentBitrateReceived: 0,
     isMonitoring: false
   });
 
@@ -124,11 +128,26 @@ const useTransportStats = () => {
       const bytesSentDelta =
         (producerStats?.bytesSent || 0) - (previousProducer?.bytesSent || 0);
 
+      const timeDelta =
+        previousProducer?.timestamp || previousConsumer?.timestamp
+          ? (Date.now() -
+              (previousProducer?.timestamp ||
+                previousConsumer?.timestamp ||
+                0)) /
+            1000
+          : 1;
+
+      const currentBitrateSent = timeDelta > 0 ? bytesSentDelta / timeDelta : 0;
+      const currentBitrateReceived =
+        timeDelta > 0 ? bytesReceivedDelta / timeDelta : 0;
+
       setStats((prev) => ({
         producer: producerStats,
         consumer: consumerStats,
         totalBytesReceived: prev.totalBytesReceived + bytesReceivedDelta,
         totalBytesSent: prev.totalBytesSent + bytesSentDelta,
+        currentBitrateSent,
+        currentBitrateReceived,
         isMonitoring: true
       }));
 
@@ -183,6 +202,8 @@ const useTransportStats = () => {
       consumer: null,
       totalBytesReceived: 0,
       totalBytesSent: 0,
+      currentBitrateSent: 0,
+      currentBitrateReceived: 0,
       isMonitoring: false
     });
 

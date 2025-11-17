@@ -10,8 +10,14 @@ type StatsPopoverProps = {
 const StatsPopover = memo(({ children }: StatsPopoverProps) => {
   const { transportStats } = useVoice();
 
-  const { producer, consumer, totalBytesSent, totalBytesReceived } =
-    transportStats;
+  const {
+    producer,
+    consumer,
+    totalBytesSent,
+    totalBytesReceived,
+    currentBitrateSent,
+    currentBitrateReceived
+  } = transportStats;
 
   return (
     <Popover>
@@ -26,7 +32,7 @@ const StatsPopover = memo(({ children }: StatsPopoverProps) => {
               <h4 className="font-medium text-green-400 mb-1">Outgoing</h4>
               {producer ? (
                 <div className="space-y-1 text-muted-foreground">
-                  <div>Sent: {filesize(producer.bytesSent)}</div>
+                  <div>Rate: {filesize(currentBitrateSent)}/s</div>
                   <div>Packets: {producer.packetsSent}</div>
                   <div>RTT: {producer.rtt.toFixed(1)} ms</div>
                 </div>
@@ -39,7 +45,7 @@ const StatsPopover = memo(({ children }: StatsPopoverProps) => {
               <h4 className="font-medium text-blue-400 mb-1">Incoming</h4>
               {consumer ? (
                 <div className="space-y-1 text-muted-foreground">
-                  <div>Received: {filesize(consumer.bytesReceived)}</div>
+                  <div>Rate: {filesize(currentBitrateReceived)}/s</div>
                   <div>Packets: {consumer.packetsReceived}</div>
                   {consumer.packetsLost > 0 && (
                     <div className="text-red-400">
