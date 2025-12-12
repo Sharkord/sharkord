@@ -25,3 +25,10 @@ export const selectedChannelSelector = createSelector(
 
 export const currentVoiceChannelIdSelector = (state: IRootState) =>
   state.server.currentVoiceChannelId;
+
+export const isCurrentVoiceChannelSelectedSelector = createSelector(
+  [selectedChannelIdSelector, currentVoiceChannelIdSelector],
+  (selectedChannelId, currentVoiceChannelId) =>
+    currentVoiceChannelId !== undefined &&
+    selectedChannelId === currentVoiceChannelId
+);

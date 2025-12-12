@@ -3,6 +3,7 @@ import type { TVoiceUser } from '@/features/server/types';
 import { cn } from '@/lib/utils';
 import { HeadphoneOff, MicOff, Monitor, Video } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PinButton } from './pin-button';
@@ -58,9 +59,12 @@ const VoiceUserCard = memo(
         )}
       >
         <CardGradient />
-        {showPinControls && (
-          <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
-        )}
+
+        <CardControls>
+          {showPinControls && (
+            <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
+          )}
+        </CardControls>
 
         {hasVideoStream && (
           <video

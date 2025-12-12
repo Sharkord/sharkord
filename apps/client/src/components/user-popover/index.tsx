@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { ShieldCheck, UserCog } from 'lucide-react';
 import { memo } from 'react';
 import { Protect } from '../protect';
-import { Button } from '../ui/button';
+import { IconButton } from '../ui/icon-button';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { UserAvatar } from '../user-avatar';
 import { UserStatusBadge } from '../user-status';
@@ -97,15 +97,13 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
             </p>
 
             <Protect permission={Permission.MANAGE_USERS}>
-              <div className="">
-                <Button
-                  variant="ghost"
-                  size="iconSm"
-                  onClick={() => setModViewOpen(true, user.id)}
-                >
-                  <UserCog className="h-4 w-4" />
-                </Button>
-              </div>
+              <IconButton
+                icon={UserCog}
+                variant="ghost"
+                size="sm"
+                title="Moderation View"
+                onClick={() => setModViewOpen(true, user.id)}
+              />
             </Protect>
           </div>
         </div>

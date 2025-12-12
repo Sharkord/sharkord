@@ -1,3 +1,5 @@
+import type { StreamKind } from '@sharkord/shared';
+
 export type TDevices = {
   input: {
     deviceId: string | undefined;
@@ -42,4 +44,12 @@ export type TDeviceSettings = {
   shareSystemAudio: boolean;
   screenResolution: Resolution;
   screenFramerate: number;
+};
+
+export type TRemoteStreams = {
+  [userId: number]: {
+    [StreamKind.AUDIO]: MediaStream | undefined;
+    [StreamKind.VIDEO]: MediaStream | undefined;
+    [StreamKind.SCREEN]: MediaStream | undefined;
+  };
 };

@@ -1,14 +1,9 @@
+import type { TRemoteStreams } from '@/types';
 import type { StreamKind } from '@sharkord/shared';
 import { useCallback, useState } from 'react';
 
 const useRemoteStreams = () => {
-  const [remoteStreams, setRemoteStreams] = useState<{
-    [userId: number]: {
-      [StreamKind.AUDIO]: MediaStream | undefined;
-      [StreamKind.VIDEO]: MediaStream | undefined;
-      [StreamKind.SCREEN]: MediaStream | undefined;
-    };
-  }>({});
+  const [remoteStreams, setRemoteStreams] = useState<TRemoteStreams>({});
 
   const addRemoteStream = useCallback(
     (userId: number, stream: MediaStream, kind: StreamKind) => {

@@ -2,8 +2,9 @@ import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { getResWidthHeight } from '@/helpers/get-res-with-height';
 import { getTRPCClient } from '@/lib/trpc';
-import { StreamKind, type RtpCapabilities } from '@sharkord/shared';
+import { StreamKind } from '@sharkord/shared';
 import { Device } from 'mediasoup-client';
+import type { RtpCapabilities } from 'mediasoup-client/types';
 import {
   createContext,
   memo,
@@ -14,6 +15,7 @@ import {
   useState
 } from 'react';
 import { useDevices } from '../devices-provider/hooks/use-devices';
+import { FloatingPinnedCard } from './floating-pinned-card';
 import { logVoice } from './helpers';
 import { useLocalStreams } from './hooks/use-local-streams';
 import { useRemoteStreams } from './hooks/use-remote-streams';
@@ -527,7 +529,14 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
   return (
     <VoiceProviderContext.Provider value={contextValue}>
-      {children}
+      <div className="relative">
+        <FloatingPinnedCard
+          remoteStreams={remoteStreams}
+          localScreenShareStream={localScreenShareStream}
+          localVideoStream={localVideoStream}
+        />
+        {children}
+      </div>
     </VoiceProviderContext.Provider>
   );
 });

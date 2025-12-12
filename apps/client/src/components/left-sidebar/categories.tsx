@@ -8,8 +8,7 @@ import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
-import { Button } from '../ui/button';
-import { Tooltip } from '../ui/tooltip';
+import { IconButton } from '../ui/icon-button';
 import { Channels } from './channels';
 
 type TCategoryProps = {
@@ -34,26 +33,24 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
     <div key={category.id} className="mb-4">
       <div className="mb-1 flex w-full items-center px-2 py-1 text-xs font-semibold text-muted-foreground">
         <div className="flex w-full items-center gap-1">
-          <Button
+          <IconButton
             variant="ghost"
-            size="iconXs"
+            size="sm"
+            icon={ChevronIcon}
             onClick={() => setExpanded((v) => !v)}
-          >
-            <ChevronIcon className="h-3 w-3" />
-          </Button>
+            title={expanded ? 'Collapse category' : 'Expand category'}
+          />
           <span>{category.name}</span>
         </div>
 
         <Protect permission={Permission.MANAGE_CHANNELS}>
-          <Tooltip content="Create channel">
-            <Button
-              variant="ghost"
-              size="iconXs"
-              onClick={onCreateChannelClick}
-            >
-              <Plus className="h-2 w-2" />
-            </Button>
-          </Tooltip>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            icon={Plus}
+            onClick={onCreateChannelClick}
+            title="Create channel"
+          />
         </Protect>
       </div>
 
