@@ -51,8 +51,8 @@ const LeftSidebar = memo(() => {
                 >
                   Server Settings
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
               </Protect>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={disconnect}>
                 Disconnect
               </DropdownMenuItem>

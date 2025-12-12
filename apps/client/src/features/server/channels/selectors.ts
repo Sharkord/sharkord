@@ -11,7 +11,9 @@ export const channelByIdSelector = createSelector(
 export const channelsByCategoryIdSelector = createSelector(
   [channelsSelector, (_, categoryId: number) => categoryId],
   (channels, categoryId) =>
-    channels.filter((channel) => channel.categoryId === categoryId)
+    channels
+      .filter((channel) => channel.categoryId === categoryId)
+      .sort((a, b) => a.position - b.position)
 );
 
 export const selectedChannelIdSelector = (state: IRootState) =>

@@ -7,6 +7,7 @@ import {
   onCategoryUpdateRoute
 } from './events';
 import { getCategoryRoute } from './get-category';
+import { reorderCategoriesRoute } from './reorder-categories';
 import { updateCategoryRoute } from './update-emoji';
 
 export const categoriesRouter = t.router({
@@ -14,6 +15,7 @@ export const categoriesRouter = t.router({
   update: updateCategoryRoute,
   delete: deleteCategoryRoute,
   get: getCategoryRoute,
+  reorder: reorderCategoriesRoute,
   onCreate: onCategoryCreateRoute,
   onDelete: onCategoryDeleteRoute,
   onUpdate: onCategoryUpdateRoute
