@@ -273,7 +273,11 @@ class VoiceRuntime {
   };
 
   public getRouter = (): Router<AppData> => {
-    return this.router!;
+    if (!this.router) {
+      throw new Error('Router not initialized yet');
+    }
+
+    return this.router;
   };
 
   private createRouter = async () => {
