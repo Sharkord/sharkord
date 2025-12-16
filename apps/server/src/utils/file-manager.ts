@@ -12,8 +12,8 @@ import { db } from '../db';
 import { getUniqueFileId, removeFile } from '../db/mutations/files';
 import { getExceedingOldFiles } from '../db/queries/files/get-exeeding-old-files';
 import { getUsedFileQuota } from '../db/queries/files/get-used-file-quota';
-import { getSettings } from '../db/queries/others/get-settings';
 import { getStorageUsageByUserId } from '../db/queries/users/get-storage-usage-by-user-id';
+import { getSettings } from '../db/queriesv2/server';
 import { files } from '../db/schema';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../helpers/paths';
 

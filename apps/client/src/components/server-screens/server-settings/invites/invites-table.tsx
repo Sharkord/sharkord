@@ -12,6 +12,7 @@ const InvitesTable = memo(({ invites, refetch }: TInvitesTableProps) => {
   const searchFilter = useCallback(
     (invite: TJoinedInvite, searchTerm: string) => {
       const query = searchTerm.toLowerCase();
+
       return (
         invite.code.toLowerCase().includes(query) ||
         invite.creator.name.toLowerCase().includes(query)

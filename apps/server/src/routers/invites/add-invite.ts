@@ -1,7 +1,7 @@
 import { ActivityLogType, getRandomString, Permission } from '@sharkord/shared';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
-import { getInviteByCode } from '../../db/queries/invites/get-invite-by-code';
 import { invites } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
@@ -19,7 +19,11 @@ const addInviteRoute = protectedProcedure
     await ctx.needsPermission(Permission.MANAGE_INVITES);
 
     const newCode = input.code || getRandomString(24);
-    const existingInvite = await getInviteByCode(newCode);
+    const existingInvite = await db
+      .select()
+      .from(invites)
+      .where(eq(invites.code, newCode))
+      .get();
 
     invariant(!existingInvite, 'Invite code should be unique');
 

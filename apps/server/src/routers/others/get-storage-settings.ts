@@ -1,5 +1,5 @@
 import { Permission, type TStorageSettings } from '@sharkord/shared';
-import { getSettings } from '../../db/queries/others/get-settings';
+import { getSettings } from '../../db/queriesv2/server';
 import { getDiskMetrics } from '../../utils/metrics';
 import { protectedProcedure } from '../../utils/trpc';
 

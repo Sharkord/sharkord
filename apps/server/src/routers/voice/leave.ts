@@ -1,5 +1,7 @@
 import { ChannelType, Permission, ServerEvents } from '@sharkord/shared';
-import { getChannel } from '../../db/queries/channels/get-channel';
+import { eq } from 'drizzle-orm';
+import { db } from '../../db';
+import { channels } from '../../db/schema';
 import { logger } from '../../logger';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
@@ -13,7 +15,11 @@ const leaveVoiceRoute = protectedProcedure.mutation(async ({ ctx }) => {
     message: 'User is not in a voice channel'
   });
 
-  const channel = await getChannel(ctx.currentVoiceChannelId);
+  const channel = await db
+    .select()
+    .from(channels)
+    .where(eq(channels.id, ctx.currentVoiceChannelId))
+    .get();
 
   invariant(channel, {
     code: 'NOT_FOUND',

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { fallbackUsersToDefaultRole } from '../../db/mutations/users';
 import { publishRole } from '../../db/publishers';
-import { getRole } from '../../db/queries/roles/get-role';
+import { getRole } from '../../db/queriesv2/roles';
 import { roles } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';

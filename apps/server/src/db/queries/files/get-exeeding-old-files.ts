@@ -1,7 +1,7 @@
 import { asc, sum } from 'drizzle-orm';
 import { db } from '../..';
+import { getSettings } from '../../queriesv2/server';
 import { files } from '../../schema';
-import { getSettings } from '../others/get-settings';
 
 const getExceedingOldFiles = async (newFileSize: number) => {
   const { storageUploadMaxFileSize } = await getSettings();

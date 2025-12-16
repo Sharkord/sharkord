@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import type { TTokenPayload } from '../../../types';
-import { getServerToken } from '../others/get-server-token';
+import { getServerToken } from '../../queriesv2/server';
 import { getUserById } from './get-user-by-id';
 
 const getUserByToken = async (token: string | undefined) => {

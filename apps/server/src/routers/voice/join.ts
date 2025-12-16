@@ -1,6 +1,8 @@
 import { ChannelType, Permission, ServerEvents } from '@sharkord/shared';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { getChannel } from '../../db/queries/channels/get-channel';
+import { db } from '../../db';
+import { channels } from '../../db/schema';
 import { logger } from '../../logger';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
@@ -19,7 +21,11 @@ const joinVoiceRoute = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.JOIN_VOICE_CHANNELS);
 
-    const channel = await getChannel(input.channelId);
+    const channel = await db
+      .select()
+      .from(channels)
+      .where(eq(channels.id, input.channelId))
+      .get();
 
     invariant(channel, {
       code: 'NOT_FOUND',

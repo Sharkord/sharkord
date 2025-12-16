@@ -2,7 +2,7 @@ import z from 'zod';
 import { removeFile } from '../../db/mutations/files';
 import { updateSettings } from '../../db/mutations/server';
 import { publishSettings } from '../../db/publishers';
-import { getSettings } from '../../db/queries/others/get-settings';
+import { getSettings } from '../../db/queriesv2/server';
 import { fileManager } from '../../utils/file-manager';
 import { protectedProcedure } from '../../utils/trpc';
 

@@ -1,6 +1,6 @@
 import type { TServerInfo } from '@sharkord/shared';
 import http from 'http';
-import { getSettings } from '../db/queries/others/get-settings';
+import { getSettings } from '../db/queriesv2/server';
 import { SERVER_VERSION } from '../utils/env';
 
 const infoRouteHandler = async (

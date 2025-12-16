@@ -1,10 +1,10 @@
 import { Permission } from '@sharkord/shared';
-import { TRPCError } from '@trpc/server';
 import z from 'zod';
 import { getFilesByUserId } from '../../db/queries/files/get-files-by-user-id';
-import { getLastLogins } from '../../db/queries/logins/get-last-logins';
 import { getMessagesByUserId } from '../../db/queries/messages/get-messages-by-user-id';
 import { getUserById } from '../../db/queries/users/get-user-by-id';
+import { getLastLogins } from '../../db/queriesv2/logins';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const getUserInfoRoute = protectedProcedure
@@ -18,11 +18,7 @@ const getUserInfoRoute = protectedProcedure
 
     const user = await getUserById(input.userId);
 
-    if (!user) {
-      throw new TRPCError({
-        code: 'NOT_FOUND'
-      });
-    }
+    invariant(user, 'User not found');
 
     const [logins, files, messages] = await Promise.all([
       getLastLogins(user.id, 6),

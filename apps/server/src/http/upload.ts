@@ -1,8 +1,8 @@
 import { UploadHeaders } from '@sharkord/shared';
 import fs from 'fs';
 import http from 'http';
-import { getSettings } from '../db/queries/others/get-settings';
 import { getUserByToken } from '../db/queries/users/get-user-by-token';
+import { getSettings } from '../db/queriesv2/server';
 import { logger } from '../logger';
 import { fileManager } from '../utils/file-manager';
 

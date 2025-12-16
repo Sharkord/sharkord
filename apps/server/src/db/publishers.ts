@@ -2,13 +2,12 @@ import { ServerEvents } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { db } from '.';
 import { pubsub } from '../utils/pubsub';
-import { getChannel } from './queries/channels/get-channel';
 import { getEmojiById } from './queries/emojis/get-emoji-by-id';
 import { getMessage } from './queries/messages/get-message';
-import { getSettings } from './queries/others/get-settings';
-import { getRole } from './queries/roles/get-role';
 import { getPublicUserById } from './queries/users/get-public-user-by-id';
-import { categories } from './schema';
+import { getRole } from './queriesv2/roles';
+import { getSettings } from './queriesv2/server';
+import { categories, channels } from './schema';
 
 const publishMessage = async (
   messageId: number | undefined,
@@ -107,7 +106,11 @@ const publishChannel = async (
     return;
   }
 
-  const channel = await getChannel(channelId);
+  const channel = await db
+    .select()
+    .from(channels)
+    .where(eq(channels.id, channelId))
+    .get();
 
   if (!channel) return;
 

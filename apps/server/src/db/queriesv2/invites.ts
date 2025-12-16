@@ -1,8 +1,36 @@
 import type { TJoinedInvite } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/sqlite-core';
-import { db } from '../..';
-import { files, invites, userRoles, users } from '../../schema';
+import { db } from '..';
+import { files, invites, userRoles, users } from '../schema';
+
+const isInviteValid = async (
+  code: string | undefined
+): Promise<string | undefined> => {
+  if (!code) {
+    return 'Invalid invite code';
+  }
+
+  const invite = await db
+    .select()
+    .from(invites)
+    .where(eq(invites.code, code))
+    .get();
+
+  if (!invite) {
+    return 'Invite code not found';
+  }
+
+  if (invite.expiresAt && invite.expiresAt < Date.now()) {
+    return 'Invite code has expired';
+  }
+
+  if (invite.maxUses && invite.uses >= invite.maxUses) {
+    return 'Invite code has reached maximum uses';
+  }
+
+  return undefined;
+};
 
 const getInvites = async (): Promise<TJoinedInvite[]> => {
   const avatarFiles = alias(files, 'avatarFiles');
@@ -57,4 +85,4 @@ const getInvites = async (): Promise<TJoinedInvite[]> => {
   }));
 };
 
-export { getInvites };
+export { getInvites, isInviteValid };

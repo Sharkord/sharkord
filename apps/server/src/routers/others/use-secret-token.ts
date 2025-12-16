@@ -2,7 +2,7 @@ import { OWNER_ROLE_ID, sha256 } from '@sharkord/shared';
 import { z } from 'zod';
 import { db } from '../../db';
 import { publishUser } from '../../db/publishers';
-import { getSettings } from '../../db/queries/others/get-settings';
+import { getSettings } from '../../db/queriesv2/server';
 import { userRoles } from '../../db/schema';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
