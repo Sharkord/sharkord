@@ -28,16 +28,17 @@ import {
   users
 } from '../db/schema';
 
+const TEST_SECRET_TOKEN = 'test-secret-token-for-unit-tests';
+
 const seedDatabase = async (db: BunSQLiteDatabase) => {
   const firstStart = Date.now();
-  const originalToken = randomUUIDv7();
 
   const initialSettings: TISettings = {
     name: 'Test Server',
     description: 'Test server description',
     password: '',
     serverId: randomUUIDv7(),
-    secretToken: await sha256(originalToken),
+    secretToken: await sha256(TEST_SECRET_TOKEN),
     allowNewUsers: true,
     storageUploadEnabled: true,
     storageQuota: STORAGE_QUOTA,
@@ -180,8 +181,8 @@ const seedDatabase = async (db: BunSQLiteDatabase) => {
     defaultRole: insertedDefaultRole!,
     categories: initialCategories,
     channels: initialChannels,
-    originalToken
+    originalToken: TEST_SECRET_TOKEN
   };
 };
 
-export { seedDatabase };
+export { seedDatabase, TEST_SECRET_TOKEN };

@@ -1,2 +1,4 @@
 [test]
-preload = ["./src/__tests__/setup.ts"]
+# Preload the db mock FIRST, then the global test setup
+preload = ["./src/__tests__/mock-db.ts", "./src/__tests__/setup.ts"]
+
