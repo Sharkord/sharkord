@@ -12,7 +12,9 @@
     "lint": "eslint ./src/**/*.ts --ext ts --report-unused-disable-directives",
     "lint:fix": "eslint ./src/**/*.ts --ext ts --report-unused-disable-directives --fix",
     "check-types": "tsc --noEmit",
-    "magic": "bun --bun run lint:fix && bun --bun run format && bun --bun run check-types"
+    "magic": "bun --bun run lint:fix && bun --bun run format && bun --bun run check-types",
+    "test": "bun test",
+    "test:watch": "bun test --watch"
   },
   "devDependencies": {
     "@types/bun": "latest",
