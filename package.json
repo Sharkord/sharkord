@@ -8,5 +8,11 @@
   ],
   "trustedDependencies": [
     "mediasoup"
-  ]
+  ],
+  "scripts": {
+    "format": "bun run --filter '*' format",
+    "check-types": "bun run --filter '*' check-types",
+    "lint": "bun run --filter '*' lint",
+    "magic": "bun run format && bun run check-types && bun run lint"
+  }
 }
