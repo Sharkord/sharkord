@@ -103,13 +103,12 @@ const Override = memo(
       const trpc = getTRPCClient();
 
       try {
-        const payload: { channelId: number; roleId?: number; userId?: number } =
-          { channelId };
+        const payload = { channelId };
 
         if (isRole) {
-          payload.roleId = targetId;
+          Object.assign(payload, { roleId: targetId });
         } else {
-          payload.userId = targetId;
+          Object.assign(payload, { userId: targetId });
         }
 
         const allowedPermissions = localPermissions

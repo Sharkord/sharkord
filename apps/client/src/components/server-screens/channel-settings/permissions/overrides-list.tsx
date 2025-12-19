@@ -190,18 +190,14 @@ const OverridesList = memo(
         const trpc = getTRPCClient();
 
         try {
-          const payload: {
-            channelId: number;
-            roleId?: number;
-            userId?: number;
-          } = {
+          const payload = {
             channelId
           };
 
           if (type === 'role') {
-            payload.roleId = targetId;
+            Object.assign(payload, { roleId: targetId });
           } else {
-            payload.userId = targetId;
+            Object.assign(payload, { userId: targetId });
           }
 
           await trpc.channels.updatePermissions.mutate({

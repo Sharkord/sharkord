@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "d7006bff-3e23-43db-91de-3e3a423a9ba4",
+  "id": "4abbcbb5-d374-4ec5-be53-f15845f10682",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "activity_log": {
@@ -14,8 +14,8 @@
           "notNull": true,
           "autoincrement": true
         },
-        "userId": {
-          "name": "userId",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -42,8 +42,8 @@
           "notNull": false,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -54,7 +54,7 @@
         "activity_log_user_idx": {
           "name": "activity_log_user_idx",
           "columns": [
-            "userId"
+            "user_id"
           ],
           "isUnique": false
         },
@@ -68,23 +68,39 @@
         "activity_log_created_idx": {
           "name": "activity_log_created_idx",
           "columns": [
-            "createdAt"
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "activity_log_user_created_idx": {
+          "name": "activity_log_user_created_idx",
+          "columns": [
+            "user_id",
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "activity_log_type_created_idx": {
+          "name": "activity_log_type_created_idx",
+          "columns": [
+            "type",
+            "created_at"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "activity_log_userId_users_id_fk": {
-          "name": "activity_log_userId_users_id_fk",
+        "activity_log_user_id_users_id_fk": {
+          "name": "activity_log_user_id_users_id_fk",
           "tableFrom": "activity_log",
           "tableTo": "users",
           "columnsFrom": [
-            "userId"
+            "user_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -116,15 +132,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -148,15 +164,15 @@
     "channel_role_permissions": {
       "name": "channel_role_permissions",
       "columns": {
-        "channelId": {
-          "name": "channelId",
+        "channel_id": {
+          "name": "channel_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "roleId": {
-          "name": "roleId",
+        "role_id": {
+          "name": "role_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -176,15 +192,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -195,25 +211,48 @@
         "channel_role_permissions_channel_idx": {
           "name": "channel_role_permissions_channel_idx",
           "columns": [
-            "channelId"
+            "channel_id"
           ],
           "isUnique": false
         },
         "channel_role_permissions_role_idx": {
           "name": "channel_role_permissions_role_idx",
           "columns": [
-            "roleId"
+            "role_id"
+          ],
+          "isUnique": false
+        },
+        "channel_role_permissions_channel_perm_idx": {
+          "name": "channel_role_permissions_channel_perm_idx",
+          "columns": [
+            "channel_id",
+            "permission"
+          ],
+          "isUnique": false
+        },
+        "channel_role_permissions_role_perm_idx": {
+          "name": "channel_role_permissions_role_perm_idx",
+          "columns": [
+            "role_id",
+            "permission"
+          ],
+          "isUnique": false
+        },
+        "channel_role_permissions_allow_idx": {
+          "name": "channel_role_permissions_allow_idx",
+          "columns": [
+            "allow"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "channel_role_permissions_channelId_channels_id_fk": {
-          "name": "channel_role_permissions_channelId_channels_id_fk",
+        "channel_role_permissions_channel_id_channels_id_fk": {
+          "name": "channel_role_permissions_channel_id_channels_id_fk",
           "tableFrom": "channel_role_permissions",
           "tableTo": "channels",
           "columnsFrom": [
-            "channelId"
+            "channel_id"
           ],
           "columnsTo": [
             "id"
@@ -221,12 +260,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "channel_role_permissions_roleId_roles_id_fk": {
-          "name": "channel_role_permissions_roleId_roles_id_fk",
+        "channel_role_permissions_role_id_roles_id_fk": {
+          "name": "channel_role_permissions_role_id_roles_id_fk",
           "tableFrom": "channel_role_permissions",
           "tableTo": "roles",
           "columnsFrom": [
-            "roleId"
+            "role_id"
           ],
           "columnsTo": [
             "id"
@@ -236,13 +275,13 @@
         }
       },
       "compositePrimaryKeys": {
-        "channel_role_permissions_channelId_roleId_permission_pk": {
+        "channel_role_permissions_channel_id_role_id_permission_pk": {
           "columns": [
-            "channelId",
-            "roleId",
+            "channel_id",
+            "role_id",
             "permission"
           ],
-          "name": "channel_role_permissions_channelId_roleId_permission_pk"
+          "name": "channel_role_permissions_channel_id_role_id_permission_pk"
         }
       },
       "uniqueConstraints": {},
@@ -251,15 +290,15 @@
     "channel_user_permissions": {
       "name": "channel_user_permissions",
       "columns": {
-        "channelId": {
-          "name": "channelId",
+        "channel_id": {
+          "name": "channel_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "userId": {
-          "name": "userId",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -279,15 +318,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -298,25 +337,48 @@
         "channel_user_permissions_channel_idx": {
           "name": "channel_user_permissions_channel_idx",
           "columns": [
-            "channelId"
+            "channel_id"
           ],
           "isUnique": false
         },
         "channel_user_permissions_user_idx": {
           "name": "channel_user_permissions_user_idx",
           "columns": [
-            "userId"
+            "user_id"
+          ],
+          "isUnique": false
+        },
+        "channel_user_permissions_channel_perm_idx": {
+          "name": "channel_user_permissions_channel_perm_idx",
+          "columns": [
+            "channel_id",
+            "permission"
+          ],
+          "isUnique": false
+        },
+        "channel_user_permissions_user_perm_idx": {
+          "name": "channel_user_permissions_user_perm_idx",
+          "columns": [
+            "user_id",
+            "permission"
+          ],
+          "isUnique": false
+        },
+        "channel_user_permissions_allow_idx": {
+          "name": "channel_user_permissions_allow_idx",
+          "columns": [
+            "allow"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "channel_user_permissions_channelId_channels_id_fk": {
-          "name": "channel_user_permissions_channelId_channels_id_fk",
+        "channel_user_permissions_channel_id_channels_id_fk": {
+          "name": "channel_user_permissions_channel_id_channels_id_fk",
           "tableFrom": "channel_user_permissions",
           "tableTo": "channels",
           "columnsFrom": [
-            "channelId"
+            "channel_id"
           ],
           "columnsTo": [
             "id"
@@ -324,12 +386,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "channel_user_permissions_userId_users_id_fk": {
-          "name": "channel_user_permissions_userId_users_id_fk",
+        "channel_user_permissions_user_id_users_id_fk": {
+          "name": "channel_user_permissions_user_id_users_id_fk",
           "tableFrom": "channel_user_permissions",
           "tableTo": "users",
           "columnsFrom": [
-            "userId"
+            "user_id"
           ],
           "columnsTo": [
             "id"
@@ -339,13 +401,13 @@
         }
       },
       "compositePrimaryKeys": {
-        "channel_user_permissions_channelId_userId_permission_pk": {
+        "channel_user_permissions_channel_id_user_id_permission_pk": {
           "columns": [
-            "channelId",
-            "userId",
+            "channel_id",
+            "user_id",
             "permission"
           ],
-          "name": "channel_user_permissions_channelId_userId_permission_pk"
+          "name": "channel_user_permissions_channel_id_user_id_permission_pk"
         }
       },
       "uniqueConstraints": {},
@@ -397,22 +459,22 @@
           "notNull": true,
           "autoincrement": false
         },
-        "categoryId": {
-          "name": "categoryId",
+        "category_id": {
+          "name": "category_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -423,7 +485,7 @@
         "channels_category_idx": {
           "name": "channels_category_idx",
           "columns": [
-            "categoryId"
+            "category_id"
           ],
           "isUnique": false
         },
@@ -433,20 +495,27 @@
             "position"
           ],
           "isUnique": false
+        },
+        "channels_type_idx": {
+          "name": "channels_type_idx",
+          "columns": [
+            "type"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {
-        "channels_categoryId_categories_id_fk": {
-          "name": "channels_categoryId_categories_id_fk",
+        "channels_category_id_categories_id_fk": {
+          "name": "channels_category_id_categories_id_fk",
           "tableFrom": "channels",
           "tableTo": "categories",
           "columnsFrom": [
-            "categoryId"
+            "category_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -471,29 +540,29 @@
           "notNull": true,
           "autoincrement": false
         },
-        "fileId": {
-          "name": "fileId",
+        "file_id": {
+          "name": "file_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "userId": {
-          "name": "userId",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -511,14 +580,14 @@
         "emojis_user_idx": {
           "name": "emojis_user_idx",
           "columns": [
-            "userId"
+            "user_id"
           ],
           "isUnique": false
         },
         "emojis_file_idx": {
           "name": "emojis_file_idx",
           "columns": [
-            "fileId"
+            "file_id"
           ],
           "isUnique": false
         },
@@ -531,12 +600,12 @@
         }
       },
       "foreignKeys": {
-        "emojis_fileId_files_id_fk": {
-          "name": "emojis_fileId_files_id_fk",
+        "emojis_file_id_files_id_fk": {
+          "name": "emojis_file_id_files_id_fk",
           "tableFrom": "emojis",
           "tableTo": "files",
           "columnsFrom": [
-            "fileId"
+            "file_id"
           ],
           "columnsTo": [
             "id"
@@ -544,17 +613,17 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "emojis_userId_users_id_fk": {
-          "name": "emojis_userId_users_id_fk",
+        "emojis_user_id_users_id_fk": {
+          "name": "emojis_user_id_users_id_fk",
           "tableFrom": "emojis",
           "tableTo": "users",
           "columnsFrom": [
-            "userId"
+            "user_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -579,8 +648,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "originalName": {
-          "name": "originalName",
+        "original_name": {
+          "name": "original_name",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -593,8 +662,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "userId": {
-          "name": "userId",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -607,8 +676,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "mimeType": {
-          "name": "mimeType",
+        "mime_type": {
+          "name": "mime_type",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -621,15 +690,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -640,7 +709,21 @@
         "files_user_idx": {
           "name": "files_user_idx",
           "columns": [
-            "userId"
+            "user_id"
+          ],
+          "isUnique": false
+        },
+        "files_md5_idx": {
+          "name": "files_md5_idx",
+          "columns": [
+            "md5"
+          ],
+          "isUnique": false
+        },
+        "files_created_idx": {
+          "name": "files_created_idx",
+          "columns": [
+            "created_at"
           ],
           "isUnique": false
         }
@@ -667,15 +750,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "creatorId": {
-          "name": "creatorId",
+        "creator_id": {
+          "name": "creator_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "maxUses": {
-          "name": "maxUses",
+        "max_uses": {
+          "name": "max_uses",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -689,15 +772,15 @@
           "autoincrement": false,
           "default": 0
         },
-        "expiresAt": {
-          "name": "expiresAt",
+        "expires_at": {
+          "name": "expires_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -722,23 +805,37 @@
         "invites_creator_idx": {
           "name": "invites_creator_idx",
           "columns": [
-            "creatorId"
+            "creator_id"
+          ],
+          "isUnique": false
+        },
+        "invites_expires_idx": {
+          "name": "invites_expires_idx",
+          "columns": [
+            "expires_at"
+          ],
+          "isUnique": false
+        },
+        "invites_uses_idx": {
+          "name": "invites_uses_idx",
+          "columns": [
+            "uses"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "invites_creatorId_users_id_fk": {
-          "name": "invites_creatorId_users_id_fk",
+        "invites_creator_id_users_id_fk": {
+          "name": "invites_creator_id_users_id_fk",
           "tableFrom": "invites",
           "tableTo": "users",
           "columnsFrom": [
-            "creatorId"
+            "creator_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -756,15 +853,15 @@
           "notNull": true,
           "autoincrement": true
         },
-        "userId": {
-          "name": "userId",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "userAgent": {
-          "name": "userAgent",
+        "user_agent": {
+          "name": "user_agent",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -847,15 +944,15 @@
           "notNull": false,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -866,7 +963,7 @@
         "logins_user_idx": {
           "name": "logins_user_idx",
           "columns": [
-            "userId"
+            "user_id"
           ],
           "isUnique": false
         },
@@ -876,20 +973,35 @@
             "ip"
           ],
           "isUnique": false
+        },
+        "logins_created_idx": {
+          "name": "logins_created_idx",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "logins_user_created_idx": {
+          "name": "logins_user_created_idx",
+          "columns": [
+            "user_id",
+            "created_at"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {
-        "logins_userId_users_id_fk": {
-          "name": "logins_userId_users_id_fk",
+        "logins_user_id_users_id_fk": {
+          "name": "logins_user_id_users_id_fk",
           "tableFrom": "logins",
           "tableTo": "users",
           "columnsFrom": [
-            "userId"
+            "user_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -900,29 +1012,29 @@
     "message_files": {
       "name": "message_files",
       "columns": {
-        "messageId": {
-          "name": "messageId",
+        "message_id": {
+          "name": "message_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "fileId": {
-          "name": "fileId",
+        "file_id": {
+          "name": "file_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -933,38 +1045,38 @@
         "message_files_msg_idx": {
           "name": "message_files_msg_idx",
           "columns": [
-            "messageId"
+            "message_id"
           ],
           "isUnique": false
         },
         "message_files_file_idx": {
           "name": "message_files_file_idx",
           "columns": [
-            "fileId"
+            "file_id"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "message_files_messageId_messages_id_fk": {
-          "name": "message_files_messageId_messages_id_fk",
+        "message_files_message_id_messages_id_fk": {
+          "name": "message_files_message_id_messages_id_fk",
           "tableFrom": "message_files",
           "tableTo": "messages",
           "columnsFrom": [
-            "messageId"
+            "message_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "message_files_fileId_files_id_fk": {
-          "name": "message_files_fileId_files_id_fk",
+        "message_files_file_id_files_id_fk": {
+          "name": "message_files_file_id_files_id_fk",
           "tableFrom": "message_files",
           "tableTo": "files",
           "columnsFrom": [
-            "fileId"
+            "file_id"
           ],
           "columnsTo": [
             "id"
@@ -974,12 +1086,12 @@
         }
       },
       "compositePrimaryKeys": {
-        "message_files_messageId_fileId_pk": {
+        "message_files_message_id_file_id_pk": {
           "columns": [
-            "messageId",
-            "fileId"
+            "message_id",
+            "file_id"
           ],
-          "name": "message_files_messageId_fileId_pk"
+          "name": "message_files_message_id_file_id_pk"
         }
       },
       "uniqueConstraints": {},
@@ -988,15 +1100,15 @@
     "message_reactions": {
       "name": "message_reactions",
       "columns": {
-        "messageId": {
-          "name": "messageId",
+        "message_id": {
+          "name": "message_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "userId": {
-          "name": "userId",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -1009,15 +1121,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "fileId": {
-          "name": "fileId",
+        "file_id": {
+          "name": "file_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -1028,7 +1140,7 @@
         "reaction_msg_idx": {
           "name": "reaction_msg_idx",
           "columns": [
-            "messageId"
+            "message_id"
           ],
           "isUnique": false
         },
@@ -1042,18 +1154,26 @@
         "reaction_user_idx": {
           "name": "reaction_user_idx",
           "columns": [
-            "userId"
+            "user_id"
+          ],
+          "isUnique": false
+        },
+        "reaction_msg_emoji_idx": {
+          "name": "reaction_msg_emoji_idx",
+          "columns": [
+            "message_id",
+            "emoji"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "message_reactions_messageId_messages_id_fk": {
-          "name": "message_reactions_messageId_messages_id_fk",
+        "message_reactions_message_id_messages_id_fk": {
+          "name": "message_reactions_message_id_messages_id_fk",
           "tableFrom": "message_reactions",
           "tableTo": "messages",
           "columnsFrom": [
-            "messageId"
+            "message_id"
           ],
           "columnsTo": [
             "id"
@@ -1061,12 +1181,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "message_reactions_userId_users_id_fk": {
-          "name": "message_reactions_userId_users_id_fk",
+        "message_reactions_user_id_users_id_fk": {
+          "name": "message_reactions_user_id_users_id_fk",
           "tableFrom": "message_reactions",
           "tableTo": "users",
           "columnsFrom": [
-            "userId"
+            "user_id"
           ],
           "columnsTo": [
             "id"
@@ -1074,28 +1194,28 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "message_reactions_fileId_files_id_fk": {
-          "name": "message_reactions_fileId_files_id_fk",
+        "message_reactions_file_id_files_id_fk": {
+          "name": "message_reactions_file_id_files_id_fk",
           "tableFrom": "message_reactions",
           "tableTo": "files",
           "columnsFrom": [
-            "fileId"
+            "file_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
-        "message_reactions_messageId_userId_emoji_pk": {
+        "message_reactions_message_id_user_id_emoji_pk": {
           "columns": [
-            "messageId",
-            "userId",
+            "message_id",
+            "user_id",
             "emoji"
           ],
-          "name": "message_reactions_messageId_userId_emoji_pk"
+          "name": "message_reactions_message_id_user_id_emoji_pk"
         }
       },
       "uniqueConstraints": {},
@@ -1118,15 +1238,15 @@
           "notNull": false,
           "autoincrement": false
         },
-        "userId": {
-          "name": "userId",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "channelId": {
-          "name": "channelId",
+        "channel_id": {
+          "name": "channel_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -1139,15 +1259,15 @@
           "notNull": false,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -1158,45 +1278,53 @@
         "messages_user_idx": {
           "name": "messages_user_idx",
           "columns": [
-            "userId"
+            "user_id"
           ],
           "isUnique": false
         },
         "messages_channel_idx": {
           "name": "messages_channel_idx",
           "columns": [
-            "channelId"
+            "channel_id"
           ],
           "isUnique": false
         },
         "messages_created_idx": {
           "name": "messages_created_idx",
           "columns": [
-            "createdAt"
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "messages_channel_created_idx": {
+          "name": "messages_channel_created_idx",
+          "columns": [
+            "channel_id",
+            "created_at"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "messages_userId_users_id_fk": {
-          "name": "messages_userId_users_id_fk",
+        "messages_user_id_users_id_fk": {
+          "name": "messages_user_id_users_id_fk",
           "tableFrom": "messages",
           "tableTo": "users",
           "columnsFrom": [
-            "userId"
+            "user_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "messages_channelId_channels_id_fk": {
-          "name": "messages_channelId_channels_id_fk",
+        "messages_channel_id_channels_id_fk": {
+          "name": "messages_channel_id_channels_id_fk",
           "tableFrom": "messages",
           "tableTo": "channels",
           "columnsFrom": [
-            "channelId"
+            "channel_id"
           ],
           "columnsTo": [
             "id"
@@ -1226,15 +1354,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "fileId": {
-          "name": "fileId",
+        "file_id": {
+          "name": "file_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "userId": {
-          "name": "userId",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -1254,15 +1382,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -1287,18 +1415,26 @@
         "notification_sounds_user_idx": {
           "name": "notification_sounds_user_idx",
           "columns": [
-            "userId"
+            "user_id"
+          ],
+          "isUnique": false
+        },
+        "notification_sounds_user_type_idx": {
+          "name": "notification_sounds_user_type_idx",
+          "columns": [
+            "user_id",
+            "type"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "notification_sounds_fileId_files_id_fk": {
-          "name": "notification_sounds_fileId_files_id_fk",
+        "notification_sounds_file_id_files_id_fk": {
+          "name": "notification_sounds_file_id_files_id_fk",
           "tableFrom": "notification_sounds",
           "tableTo": "files",
           "columnsFrom": [
-            "fileId"
+            "file_id"
           ],
           "columnsTo": [
             "id"
@@ -1306,17 +1442,17 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "notification_sounds_userId_users_id_fk": {
-          "name": "notification_sounds_userId_users_id_fk",
+        "notification_sounds_user_id_users_id_fk": {
+          "name": "notification_sounds_user_id_users_id_fk",
           "tableFrom": "notification_sounds",
           "tableTo": "users",
           "columnsFrom": [
-            "userId"
+            "user_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -1327,8 +1463,8 @@
     "role_permissions": {
       "name": "role_permissions",
       "columns": {
-        "roleId": {
-          "name": "roleId",
+        "role_id": {
+          "name": "role_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -1341,15 +1477,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -1360,18 +1496,25 @@
         "role_permissions_role_idx": {
           "name": "role_permissions_role_idx",
           "columns": [
-            "roleId"
+            "role_id"
+          ],
+          "isUnique": false
+        },
+        "role_permissions_permission_idx": {
+          "name": "role_permissions_permission_idx",
+          "columns": [
+            "permission"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "role_permissions_roleId_roles_id_fk": {
-          "name": "role_permissions_roleId_roles_id_fk",
+        "role_permissions_role_id_roles_id_fk": {
+          "name": "role_permissions_role_id_roles_id_fk",
           "tableFrom": "role_permissions",
           "tableTo": "roles",
           "columnsFrom": [
-            "roleId"
+            "role_id"
           ],
           "columnsTo": [
             "id"
@@ -1381,12 +1524,12 @@
         }
       },
       "compositePrimaryKeys": {
-        "role_permissions_roleId_permission_pk": {
+        "role_permissions_role_id_permission_pk": {
           "columns": [
-            "roleId",
+            "role_id",
             "permission"
           ],
-          "name": "role_permissions_roleId_permission_pk"
+          "name": "role_permissions_role_id_permission_pk"
         }
       },
       "uniqueConstraints": {},
@@ -1417,29 +1560,29 @@
           "autoincrement": false,
           "default": "'#ffffff'"
         },
-        "isPersistent": {
-          "name": "isPersistent",
+        "is_persistent": {
+          "name": "is_persistent",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "isDefault": {
-          "name": "isDefault",
+        "is_default": {
+          "name": "is_default",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -1483,57 +1626,57 @@
           "notNull": true,
           "autoincrement": false
         },
-        "secretToken": {
-          "name": "secretToken",
+        "secret_token": {
+          "name": "secret_token",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "logoId": {
-          "name": "logoId",
+        "logo_id": {
+          "name": "logo_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "allowNewUsers": {
-          "name": "allowNewUsers",
+        "allow_new_users": {
+          "name": "allow_new_users",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "storageUploadsEnabled": {
-          "name": "storageUploadsEnabled",
+        "storage_uploads_enabled": {
+          "name": "storage_uploads_enabled",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "storageQuota": {
-          "name": "storageQuota",
+        "storage_quota": {
+          "name": "storage_quota",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "storageUploadMaxFileSize": {
-          "name": "storageUploadMaxFileSize",
+        "storage_upload_max_file_size": {
+          "name": "storage_upload_max_file_size",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "storageSpaceQuotaByUser": {
-          "name": "storageSpaceQuotaByUser",
+        "storage_space_quota_by_user": {
+          "name": "storage_space_quota_by_user",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "storageOverflowAction": {
-          "name": "storageOverflowAction",
+        "storage_overflow_action": {
+          "name": "storage_overflow_action",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -1550,12 +1693,12 @@
         }
       },
       "foreignKeys": {
-        "settings_logoId_files_id_fk": {
-          "name": "settings_logoId_files_id_fk",
+        "settings_logo_id_files_id_fk": {
+          "name": "settings_logo_id_files_id_fk",
           "tableFrom": "settings",
           "tableTo": "files",
           "columnsFrom": [
-            "logoId"
+            "logo_id"
           ],
           "columnsTo": [
             "id"
@@ -1571,22 +1714,22 @@
     "user_roles": {
       "name": "user_roles",
       "columns": {
-        "userId": {
-          "name": "userId",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "roleId": {
-          "name": "roleId",
+        "role_id": {
+          "name": "role_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -1597,25 +1740,25 @@
         "user_roles_user_idx": {
           "name": "user_roles_user_idx",
           "columns": [
-            "userId"
+            "user_id"
           ],
           "isUnique": false
         },
         "user_roles_role_idx": {
           "name": "user_roles_role_idx",
           "columns": [
-            "roleId"
+            "role_id"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "user_roles_userId_users_id_fk": {
-          "name": "user_roles_userId_users_id_fk",
+        "user_roles_user_id_users_id_fk": {
+          "name": "user_roles_user_id_users_id_fk",
           "tableFrom": "user_roles",
           "tableTo": "users",
           "columnsFrom": [
-            "userId"
+            "user_id"
           ],
           "columnsTo": [
             "id"
@@ -1623,12 +1766,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "user_roles_roleId_roles_id_fk": {
-          "name": "user_roles_roleId_roles_id_fk",
+        "user_roles_role_id_roles_id_fk": {
+          "name": "user_roles_role_id_roles_id_fk",
           "tableFrom": "user_roles",
           "tableTo": "roles",
           "columnsFrom": [
-            "roleId"
+            "role_id"
           ],
           "columnsTo": [
             "id"
@@ -1638,12 +1781,12 @@
         }
       },
       "compositePrimaryKeys": {
-        "user_roles_userId_roleId_pk": {
+        "user_roles_user_id_role_id_pk": {
           "columns": [
-            "userId",
-            "roleId"
+            "user_id",
+            "role_id"
           ],
-          "name": "user_roles_userId_roleId_pk"
+          "name": "user_roles_user_id_role_id_pk"
         }
       },
       "uniqueConstraints": {},
@@ -1680,15 +1823,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "avatarId": {
-          "name": "avatarId",
+        "avatar_id": {
+          "name": "avatar_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "bannerId": {
-          "name": "bannerId",
+        "banner_id": {
+          "name": "banner_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -1709,43 +1852,43 @@
           "autoincrement": false,
           "default": false
         },
-        "banReason": {
-          "name": "banReason",
+        "ban_reason": {
+          "name": "ban_reason",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "bannedAt": {
-          "name": "bannedAt",
+        "banned_at": {
+          "name": "banned_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "bannerColor": {
-          "name": "bannerColor",
+        "banner_color": {
+          "name": "banner_color",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "lastLoginAt": {
-          "name": "lastLoginAt",
+        "last_login_at": {
+          "name": "last_login_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -1766,33 +1909,54 @@
             "identity"
           ],
           "isUnique": true
+        },
+        "users_name_idx": {
+          "name": "users_name_idx",
+          "columns": [
+            "name"
+          ],
+          "isUnique": false
+        },
+        "users_banned_idx": {
+          "name": "users_banned_idx",
+          "columns": [
+            "banned"
+          ],
+          "isUnique": false
+        },
+        "users_last_login_idx": {
+          "name": "users_last_login_idx",
+          "columns": [
+            "last_login_at"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {
-        "users_avatarId_files_id_fk": {
-          "name": "users_avatarId_files_id_fk",
+        "users_avatar_id_files_id_fk": {
+          "name": "users_avatar_id_files_id_fk",
           "tableFrom": "users",
           "tableTo": "files",
           "columnsFrom": [
-            "avatarId"
+            "avatar_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "users_bannerId_files_id_fk": {
-          "name": "users_bannerId_files_id_fk",
+        "users_banner_id_files_id_fk": {
+          "name": "users_banner_id_files_id_fk",
           "tableFrom": "users",
           "tableTo": "files",
           "columnsFrom": [
-            "bannerId"
+            "banner_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
