@@ -17,6 +17,7 @@ import { logger } from '../../logger';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { enqueueLogin } from '../../queues/logins';
 import { VoiceRuntime } from '../../runtimes/voice';
+import { invariant } from '../../utils/invariant';
 import { t } from '../../utils/trpc';
 
 const joinServerRoute = t.procedure
@@ -30,17 +31,22 @@ const joinServerRoute = t.procedure
     const settings = await getSettings();
     const hasPassword = !!settings?.password;
 
-    if (input.handshakeHash !== ctx.handshakeHash) {
-      throw new Error('Invalid handshake hash');
-    }
+    invariant(
+      input.handshakeHash &&
+        ctx.handshakeHash &&
+        input.handshakeHash === ctx.handshakeHash,
+      {
+        code: 'FORBIDDEN',
+        message: 'Invalid handshake hash'
+      }
+    );
 
-    if (hasPassword && input.password !== settings?.password) {
-      throw new Error('Invalid password');
-    }
+    invariant(hasPassword ? input.password === settings?.password : true, {
+      code: 'FORBIDDEN',
+      message: 'Invalid password'
+    });
 
-    if (!ctx.user) {
-      throw new Error('User not found');
-    }
+    invariant(ctx.user, 'Unauthorized');
 
     ctx.authenticated = true;
     ctx.setWsUserId(ctx.user.id);
@@ -71,6 +77,8 @@ const joinServerRoute = t.procedure
       (u) => u.id === ctx.user.id
     );
 
+    invariant(foundPublicUser, 'User not present in public users');
+
     logger.info(`%s joined the server`, ctx.user.name);
 
     const publicSettings: TPublicServerSettings = {
@@ -85,7 +93,7 @@ const joinServerRoute = t.procedure
     };
 
     ctx.pubsub.publish(ServerEvents.USER_JOIN, {
-      ...foundPublicUser!,
+      ...foundPublicUser,
       status: UserStatus.ONLINE
     });
 
@@ -105,7 +113,8 @@ const joinServerRoute = t.procedure
     enqueueLogin(ctx.user.id, connectionInfo);
     enqueueActivityLog({
       type: ActivityLogType.USER_JOINED,
-      userId: ctx.user.id
+      userId: ctx.user.id,
+      ip: connectionInfo?.ip
     });
 
     return {

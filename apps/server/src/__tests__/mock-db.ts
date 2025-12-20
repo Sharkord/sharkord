@@ -16,6 +16,9 @@ import { seedDatabase } from './seed';
  * The initial db here ensures that helper functions (like getMockedToken)
  * that are imported at module-level can access a valid database.
  * Then setup.ts replaces it with a fresh db for each test.
+ *
+ * CRITICAL: We use a Proxy to ensure all database access goes through
+ * the getter, so that setTestDb() properly updates the active database.
  */
 
 let tdb: BunSQLiteDatabase;
@@ -32,10 +35,21 @@ const initDb = async () => {
 
 await initDb();
 
-mock.module('../db/index', () => ({
-  get db() {
-    return tdb;
+// create a Proxy that forwards all operations to the current tdb
+const dbProxy = new Proxy({} as BunSQLiteDatabase, {
+  get(_target, prop) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (tdb as any)[prop];
   },
+  set(_target, prop, value) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (tdb as any)[prop] = value;
+    return true;
+  }
+});
+
+mock.module('../db/index', () => ({
+  db: dbProxy,
   loadDb: async () => {} // No-op in tests
 }));
 

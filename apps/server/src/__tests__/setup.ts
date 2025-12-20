@@ -36,9 +36,18 @@ mock.module('../logger', () => ({
 }));
 
 let tdb: BunSQLiteDatabase;
+let sqlite: Database | null = null;
 
 beforeEach(async () => {
-  const sqlite = new Database(':memory:', { create: true, strict: true });
+  if (sqlite) {
+    try {
+      sqlite.close();
+    } catch {
+      // ignore
+    }
+  }
+
+  sqlite = new Database(':memory:', { create: true, strict: true });
 
   tdb = drizzle({ client: sqlite });
 
@@ -51,11 +60,13 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sqliteDb = (tdb as any).session.db;
-
-  if (sqliteDb && typeof sqliteDb.close === 'function') {
-    sqliteDb.close();
+  if (sqlite) {
+    try {
+      sqlite.close();
+      sqlite = null;
+    } catch {
+      // ignore
+    }
   }
 });
 

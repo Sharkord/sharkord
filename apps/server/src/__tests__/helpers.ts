@@ -14,8 +14,7 @@ const getMockedToken = async (userId: number) => {
   return token;
 };
 
-// this will basically simulate a specific user connecting to the server
-const initTest = async (userId: number = 1) => {
+const getCaller = async (userId: number) => {
   const mockedToken = await getMockedToken(userId);
 
   const caller = appRouter.createCaller(
@@ -24,6 +23,12 @@ const initTest = async (userId: number = 1) => {
     })
   );
 
+  return { caller, mockedToken };
+};
+
+// this will basically simulate a specific user connecting to the server
+const initTest = async (userId: number = 1) => {
+  const { caller, mockedToken } = await getCaller(userId);
   const { handshakeHash } = await caller.others.handshake();
 
   const initialData = await caller.others.joinServer({
@@ -33,4 +38,4 @@ const initTest = async (userId: number = 1) => {
   return { caller, mockedToken, initialData };
 };
 
-export { getMockedToken, initTest };
+export { getCaller, getMockedToken, initTest };
