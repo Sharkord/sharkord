@@ -68,6 +68,14 @@ const UpdateRole = memo(
     }, [selectedRole.id, values, refetch, setTrpcErrors]);
 
     const onSetAsDefaultRole = useCallback(async () => {
+      const choice = await requestConfirmation({
+        title: 'Set as Default Role',
+        message: `Are you sure you want to set this role as the default role? New members will be assigned this role upon joining.`,
+        confirmLabel: 'Set as Default'
+      });
+
+      if (!choice) return;
+
       const trpc = getTRPCClient();
 
       try {
