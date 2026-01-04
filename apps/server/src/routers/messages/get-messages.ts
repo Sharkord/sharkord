@@ -21,8 +21,6 @@ import {
 import { pubsub } from '../../utils/pubsub';
 import { protectedProcedure } from '../../utils/trpc';
 
-// TODO: improve this query
-
 const getMessagesRoute = protectedProcedure
   .input(
     z.object({
@@ -58,50 +56,55 @@ const getMessagesRoute = protectedProcedure
 
     if (rows.length > limit) {
       const next = rows.pop();
+
       nextCursor = next ? next.createdAt : null;
+    }
+
+    if (rows.length === 0) {
+      return { messages: [], nextCursor };
     }
 
     const messageIds = rows.map((m) => m.id);
 
-    if (messageIds.length === 0) {
-      return { messages: [], nextCursor };
-    }
+    const [fileRows, reactionRows] = await Promise.all([
+      db
+        .select({
+          messageId: messageFiles.messageId,
+          file: files
+        })
+        .from(messageFiles)
+        .innerJoin(files, eq(messageFiles.fileId, files.id))
+        .where(inArray(messageFiles.messageId, messageIds)),
+      db
+        .select({
+          messageId: messageReactions.messageId,
+          userId: messageReactions.userId,
+          emoji: messageReactions.emoji,
+          createdAt: messageReactions.createdAt,
+          fileId: messageReactions.fileId,
+          file: files
+        })
+        .from(messageReactions)
+        .leftJoin(files, eq(messageReactions.fileId, files.id))
+        .where(inArray(messageReactions.messageId, messageIds))
+    ]);
 
-    const fileRows = await db
-      .select({
-        messageId: messageFiles.messageId,
-        file: files
-      })
-      .from(messageFiles)
-      .innerJoin(files, eq(messageFiles.fileId, files.id))
-      .where(inArray(messageFiles.messageId, messageIds));
+    const filesByMessage = fileRows.reduce<Record<number, TFile[]>>(
+      (acc, row) => {
+        if (!acc[row.messageId]) {
+          acc[row.messageId] = [];
+        }
 
-    const filesByMessage: Record<number, TFile[]> = {};
+        acc[row.messageId]!.push(row.file);
 
-    for (const row of fileRows) {
-      if (!filesByMessage[row.messageId]) {
-        filesByMessage[row.messageId] = [];
-      }
+        return acc;
+      },
+      {}
+    );
 
-      filesByMessage[row.messageId]!.push(row.file);
-    }
-
-    const reactionRows = await db
-      .select({
-        messageId: messageReactions.messageId,
-        userId: messageReactions.userId,
-        emoji: messageReactions.emoji,
-        createdAt: messageReactions.createdAt,
-        fileId: messageReactions.fileId,
-        file: files
-      })
-      .from(messageReactions)
-      .leftJoin(files, eq(messageReactions.fileId, files.id))
-      .where(inArray(messageReactions.messageId, messageIds));
-
-    const reactionsByMessage: Record<number, TJoinedMessageReaction[]> = {};
-
-    for (const r of reactionRows) {
+    const reactionsByMessage = reactionRows.reduce<
+      Record<number, TJoinedMessageReaction[]>
+    >((acc, r) => {
       const reaction: TJoinedMessageReaction = {
         messageId: r.messageId,
         userId: r.userId,
@@ -111,13 +114,16 @@ const getMessagesRoute = protectedProcedure
         file: r.file
       };
 
-      if (!reactionsByMessage[r.messageId]) {
-        reactionsByMessage[r.messageId] = [];
+      if (!acc[r.messageId]) {
+        acc[r.messageId] = [];
       }
 
-      reactionsByMessage[r.messageId]!.push(reaction);
-    }
+      acc[r.messageId]!.push(reaction);
 
+      return acc;
+    }, {});
+
+    // Combine messages with files and reactions
     const messagesWithFiles: TJoinedMessage[] = rows.map((msg) => ({
       ...msg,
       files: filesByMessage[msg.id] ?? [],
@@ -127,47 +133,34 @@ const getMessagesRoute = protectedProcedure
     // always update read state to the absolute latest message in the channel
     // (not just the newest in this batch, in case user is scrolling back through history)
     // this is not ideal, but it's good enough for now
-    const latestMessage: TMessage | undefined = await db
-      .select()
-      .from(messages)
-      .where(eq(messages.channelId, channelId))
-      .orderBy(desc(messages.createdAt))
-      .limit(1)
-      .get();
+    const [, , latestMessage] = await Promise.all([
+      Promise.resolve(fileRows),
+      Promise.resolve(reactionRows),
+      db
+        .select()
+        .from(messages)
+        .where(eq(messages.channelId, channelId))
+        .orderBy(desc(messages.createdAt))
+        .limit(1)
+        .get()
+    ]);
 
     if (latestMessage) {
-      const existingState = await db
-        .select()
-        .from(channelReadStates)
-        .where(
-          and(
-            eq(channelReadStates.channelId, channelId),
-            eq(channelReadStates.userId, ctx.userId)
-          )
-        )
-        .get();
-
-      if (existingState) {
-        await db
-          .update(channelReadStates)
-          .set({
-            lastReadMessageId: latestMessage.id,
-            lastReadAt: Date.now()
-          })
-          .where(
-            and(
-              eq(channelReadStates.channelId, channelId),
-              eq(channelReadStates.userId, ctx.userId)
-            )
-          );
-      } else {
-        await db.insert(channelReadStates).values({
+      await db
+        .insert(channelReadStates)
+        .values({
           channelId,
           userId: ctx.userId,
           lastReadMessageId: latestMessage.id,
           lastReadAt: Date.now()
+        })
+        .onConflictDoUpdate({
+          target: [channelReadStates.channelId, channelReadStates.userId],
+          set: {
+            lastReadMessageId: latestMessage.id,
+            lastReadAt: Date.now()
+          }
         });
-      }
 
       const updatedReadStates = await getChannelsReadStatesForUser(
         ctx.userId,
