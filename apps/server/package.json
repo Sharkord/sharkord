@@ -15,8 +15,6 @@
     "check-types": "tsc --noEmit",
     "magic": "bun --bun run lint:fix && bun --bun run format && bun --bun run check-types",
     "test": "bun test",
-    "test:ci": "bun run ./prepare-tests.ts && bun test",
-    "test:prepare": "bun run ./prepare-tests.ts",
     "test:watch": "bun test --watch"
   },
   "devDependencies": {
@@ -37,13 +35,12 @@
   },
   "dependencies": {
     "@sharkord/shared": "workspace:*",
-    "bun-sfe-autoupdater": "^0.0.4",
     "@trpc/server": "^11.6.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/semver": "^7.7.1",
+    "bun-sfe-autoupdater": "^0.0.4",
     "chalk": "^5.6.2",
     "drizzle-orm": "^0.44.5",
-    "file-type-mime": "^0.4.7",
     "ini": "^5.0.0",
     "jsonwebtoken": "^9.0.2",
     "link-preview-js": "^3.1.0",

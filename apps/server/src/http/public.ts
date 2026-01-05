@@ -17,14 +17,12 @@ const publicRouteHandler = async (
     return;
   }
 
-  const lastSegment = path.basename(req.url);
-  const extension = path.extname(lastSegment);
-  const fileId = Number(lastSegment.replace(extension, ''));
+  const fileName = decodeURIComponent(path.basename(req.url));
 
   const dbFile = await db
     .select()
     .from(files)
-    .where(eq(files.id, fileId))
+    .where(eq(files.name, fileName))
     .get();
 
   if (!dbFile) {

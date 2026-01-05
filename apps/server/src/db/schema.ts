@@ -84,7 +84,7 @@ const files = sqliteTable(
   'files',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    name: text('name').notNull(),
+    name: text('name').notNull().unique(),
     originalName: text('original_name').notNull(),
     md5: text('md5').notNull(),
     userId: integer('user_id').notNull(),
@@ -97,7 +97,8 @@ const files = sqliteTable(
   (t) => ({
     userIdx: index('files_user_idx').on(t.userId),
     md5Idx: index('files_md5_idx').on(t.md5),
-    createdIdx: index('files_created_idx').on(t.createdAt)
+    createdIdx: index('files_created_idx').on(t.createdAt),
+    nameIdx: index('files_name_idx').on(t.name)
   })
 );
 

@@ -23,4 +23,4 @@ jobs:
 
       - name: Run server tests
         working-directory: apps/server
-        run: bun test:ci
+        run: bun test

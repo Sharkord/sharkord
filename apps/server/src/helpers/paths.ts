@@ -1,14 +1,17 @@
 import path from 'path';
 import {
   IS_DEVELOPMENT,
+  IS_TEST,
   SERVER_VERSION,
   SHARKORD_MEDIASOUP_BIN_NAME
 } from '../utils/env';
 import { getAppDataPath } from './fs';
 
-const DATA_PATH = IS_DEVELOPMENT
-  ? path.resolve(process.cwd(), './data')
-  : path.join(getAppDataPath(), 'sharkord');
+const DATA_PATH = IS_TEST
+  ? path.resolve(process.cwd(), './data-test')
+  : IS_DEVELOPMENT
+    ? path.resolve(process.cwd(), './data')
+    : path.join(getAppDataPath(), 'sharkord');
 const DB_PATH = path.join(DATA_PATH, 'db.sqlite');
 const LOGS_PATH = path.join(DATA_PATH, 'logs');
 const PUBLIC_PATH = path.join(DATA_PATH, 'public');
@@ -29,6 +32,7 @@ const SRC_MIGRATIONS_PATH = path.join(process.cwd(), 'src', 'db', 'migrations');
 
 export {
   CONFIG_INI_PATH,
+  DATA_PATH,
   DB_PATH,
   DRIZZLE_PATH,
   INTERFACE_PATH,

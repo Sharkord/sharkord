@@ -1,29 +1,11 @@
 import type { TFile } from '@sharkord/shared';
-import { desc, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '..';
 import { PUBLIC_PATH } from '../../helpers/paths';
 import { logger } from '../../logger';
 import { files, messageFiles } from '../schema';
-
-let fileIdMutex: Promise<void> = Promise.resolve();
-
-const getUniqueFileId = async (): Promise<number> => {
-  return new Promise((resolve) => {
-    fileIdMutex = fileIdMutex.then(async () => {
-      const maxId = await db
-        .select()
-        .from(files)
-        .orderBy(desc(files.id))
-        .limit(1)
-        .get();
-
-      const nextId = maxId ? maxId.id + 1 : 1;
-      resolve(nextId);
-    });
-  });
-};
 
 const removeFile = async (fileId: number): Promise<TFile | undefined> => {
   await db.delete(messageFiles).where(eq(messageFiles.fileId, fileId));
@@ -47,4 +29,4 @@ const removeFile = async (fileId: number): Promise<TFile | undefined> => {
   return removedFile;
 };
 
-export { getUniqueFileId, removeFile };
+export { removeFile };

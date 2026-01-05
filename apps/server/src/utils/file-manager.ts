@@ -5,16 +5,25 @@ import {
 } from '@sharkord/shared';
 import { randomUUIDv7 } from 'bun';
 import { createHash } from 'crypto';
-import { parse } from 'file-type-mime';
+import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '../db';
-import { getUniqueFileId, removeFile } from '../db/mutations/files';
+import { removeFile } from '../db/mutations/files';
 import { getExceedingOldFiles, getUsedFileQuota } from '../db/queries/files';
 import { getSettings } from '../db/queries/server';
 import { getStorageUsageByUserId } from '../db/queries/users';
 import { files } from '../db/schema';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../helpers/paths';
+
+/**
+ * Files workflow:
+ * 1. User uploads file via HTTP -> stored as temporary file in UPLOADS_PATH
+ * 2. addTemporaryFile is called to move file to a managed temporary location in TMP_PATH
+ * 3. Temporary file is tracked and auto-deleted after TTL
+ * 4. When user confirms/save, saveFile is called to move file to PUBLIC_PATH and create DB entry
+ * 5. Storage limits are checked before finalizing save
+ */
 
 const TEMP_FILE_TTL = 1000 * 60 * 1; // 1 minute
 
@@ -32,8 +41,6 @@ class TemporaryFileManager {
   private timeouts: {
     [id: string]: NodeJS.Timeout;
   } = {};
-
-  private getUniqueId = async (): Promise<number> => getUniqueFileId();
 
   public getTemporaryFile = (id: string): TTempFile | undefined => {
     return this.temporaryFiles.find((file) => file.id === id);
@@ -81,30 +88,32 @@ class TemporaryFileManager {
     return tempFile;
   };
 
-  public removeTemporaryFile = async (id: string): Promise<void> => {
+  public removeTemporaryFile = async (
+    id: string,
+    skipDelete = false
+  ): Promise<void> => {
     const tempFile = this.temporaryFiles.find((file) => file.id === id);
 
-    if (tempFile) {
-      clearTimeout(this.timeouts[id]);
+    if (!tempFile) {
+      throw new Error('Temporary file not found');
+    }
 
+    clearTimeout(this.timeouts[id]);
+
+    if (!skipDelete) {
       try {
         await fs.unlink(tempFile.path);
       } catch {
         // ignore
       }
-
-      this.temporaryFiles = this.temporaryFiles.filter(
-        (file) => file.id !== id
-      );
     }
+
+    this.temporaryFiles = this.temporaryFiles.filter((file) => file.id !== id);
   };
 
   public getSafeUploadPath = async (name: string): Promise<string> => {
     const ext = path.extname(name);
-    const safePath = path.join(
-      UPLOADS_PATH,
-      `${await this.getUniqueId()}${ext}`
-    );
+    const safePath = path.join(UPLOADS_PATH, `${randomUUIDv7()}${ext}`);
 
     return safePath;
   };
@@ -120,6 +129,7 @@ class FileManager {
   public removeTemporaryFile = this.tempFileManager.removeTemporaryFile;
 
   public getTemporaryFile = this.tempFileManager.getTemporaryFile;
+  public temporaryFileExists = this.tempFileManager.temporaryFileExists;
 
   private handleStorageLimits = async (tempFile: TTempFile) => {
     const [settings, userStorage, serverStorage] = await Promise.all([
@@ -161,6 +171,32 @@ class FileManager {
     }
   };
 
+  private getUniqueName = async (originalName: string): Promise<string> => {
+    const baseName = path.basename(originalName, path.extname(originalName));
+    const extension = path.extname(originalName);
+
+    let fileName = originalName;
+    let counter = 2;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const existingFile = await db
+        .select()
+        .from(files)
+        .where(eq(files.name, fileName))
+        .get();
+
+      if (!existingFile) {
+        break;
+      }
+
+      fileName = `${baseName}-${counter}${extension}`;
+      counter++;
+    }
+
+    return fileName;
+  };
+
   public async saveFile(tempFileId: string, userId: number): Promise<TFile> {
     const tempFile = this.getTemporaryFile(tempFileId);
 
@@ -174,14 +210,13 @@ class FileManager {
 
     await this.handleStorageLimits(tempFile);
 
-    const nextId = await getUniqueFileId();
-    const fileName = `${nextId}${tempFile.extension}`;
+    const fileName = await this.getUniqueName(tempFile.originalName);
     const destinationPath = path.join(PUBLIC_PATH, fileName);
 
     await fs.rename(tempFile.path, destinationPath);
+    await this.removeTemporaryFile(tempFileId, true);
 
-    const arrayBuffer = await fs.readFile(destinationPath);
-    const mimeResult = parse(new Uint8Array(arrayBuffer).buffer);
+    const bunFile = Bun.file(destinationPath);
 
     return db
       .insert(files)
@@ -192,7 +227,7 @@ class FileManager {
         size: tempFile.size,
         originalName: tempFile.originalName,
         userId,
-        mimeType: mimeResult?.mime || 'application/octet-stream',
+        mimeType: bunFile?.type || 'application/octet-stream',
         createdAt: Date.now()
       })
       .returning()
