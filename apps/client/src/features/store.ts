@@ -13,7 +13,12 @@ export const store = configureStore({
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false
+      serializableCheck: false,
+      devChecks: {
+        identityFunctionCheck: {
+          warnAfter: 0 // warn immediately
+        }
+      }
     })
 });
 

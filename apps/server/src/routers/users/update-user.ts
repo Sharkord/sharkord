@@ -1,7 +1,8 @@
-import { TRPCError } from '@trpc/server';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { updateUser } from '../../db/mutations/users/update-user';
+import { db } from '../../db';
 import { publishUser } from '../../db/publishers';
+import { users } from '../../db/schema';
 import { protectedProcedure } from '../../utils/trpc';
 
 const updateUserRoute = protectedProcedure
@@ -15,17 +16,16 @@ const updateUserRoute = protectedProcedure
     })
   )
   .mutation(async ({ ctx, input }) => {
-    const updatedUser = await updateUser(ctx.user.id, {
-      name: input.name,
-      bannerColor: input.bannerColor,
-      bio: input.bio
-    });
-
-    if (!updatedUser) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR'
-      });
-    }
+    const updatedUser = await db
+      .update(users)
+      .set({
+        name: input.name,
+        bannerColor: input.bannerColor,
+        bio: input.bio ?? null
+      })
+      .where(eq(users.id, ctx.userId))
+      .returning()
+      .get();
 
     await publishUser(updatedUser.id, 'update');
   });

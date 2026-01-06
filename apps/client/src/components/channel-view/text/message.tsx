@@ -1,6 +1,7 @@
+import { useCan } from '@/features/server/hooks';
 import { useIsOwnUser } from '@/features/server/users/hooks';
-import type { TJoinedMessage } from '@sharkord/shared';
-import { memo, useState } from 'react';
+import { Permission, type TJoinedMessage } from '@sharkord/shared';
+import { memo, useMemo, useState } from 'react';
 import { MessageActions } from './message-actions';
 import { MessageEditInline } from './message-edit-inline';
 import { MessageRenderer } from './renderer';
@@ -12,6 +13,12 @@ type TMessageProps = {
 const Message = memo(({ message }: TMessageProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const isFromOwnUser = useIsOwnUser(message.userId);
+  const can = useCan();
+
+  const canManage = useMemo(
+    () => can(Permission.MANAGE_MESSAGES) || isFromOwnUser,
+    [can, isFromOwnUser]
+  );
 
   return (
     <div className="flex-1 ml-1 relative hover:bg-secondary/50 rounded-md px-1 py-0.5 group">
@@ -20,7 +27,7 @@ const Message = memo(({ message }: TMessageProps) => {
           <MessageRenderer message={message} />
           <MessageActions
             onEdit={() => setIsEditing(true)}
-            disabled={!isFromOwnUser}
+            canManage={canManage}
             messageId={message.id}
           />
         </>

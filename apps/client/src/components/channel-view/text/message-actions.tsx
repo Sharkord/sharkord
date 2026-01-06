@@ -1,20 +1,33 @@
 import { EmojiPicker } from '@/components/emoji-picker';
+import { Protect } from '@/components/protect';
 import type { TEmojiItem } from '@/components/tiptap-input/types';
+import { IconButton } from '@/components/ui/icon-button';
+import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
+import { Permission } from '@sharkord/shared';
 import { Pencil, Smile, Trash } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
-import { Button } from '../../ui/button';
 
 type TMessageActionsProps = {
   messageId: number;
   onEdit: () => void;
-  disabled: boolean;
+  canManage: boolean;
 };
 
 const MessageActions = memo(
-  ({ onEdit, disabled, messageId }: TMessageActionsProps) => {
+  ({ onEdit, messageId, canManage }: TMessageActionsProps) => {
     const onDeleteClick = useCallback(async () => {
+      const choice = await requestConfirmation({
+        title: 'Delete Message',
+        message:
+          'Are you sure you want to delete this message? This action is irreversible.',
+        confirmLabel: 'Delete',
+        cancelLabel: 'Cancel'
+      });
+
+      if (!choice) return;
+
       const trpc = getTRPCClient();
 
       try {
@@ -43,21 +56,37 @@ const MessageActions = memo(
       [messageId]
     );
 
-    if (disabled) return null;
-
     return (
       <div className="gap-2 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-1 transition-all h-8">
-        <Button size="iconXs" variant="ghost" onClick={onEdit}>
-          <Pencil className="h-2 w-2" />
-        </Button>
-        <Button size="iconXs" variant="ghost" onClick={onDeleteClick}>
-          <Trash className="h-2 w-2" />
-        </Button>
-        <EmojiPicker onEmojiSelect={onEmojiSelect}>
-          <Button variant="ghost" size="iconXs">
-            <Smile className="h-2 w-2" />
-          </Button>
-        </EmojiPicker>
+        {canManage && (
+          <>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              icon={Pencil}
+              onClick={onEdit}
+              title="Edit Message"
+            />
+
+            <IconButton
+              size="sm"
+              variant="ghost"
+              icon={Trash}
+              onClick={onDeleteClick}
+              title="Delete Message"
+            />
+          </>
+        )}
+        <Protect permission={Permission.REACT_TO_MESSAGES}>
+          <EmojiPicker onEmojiSelect={onEmojiSelect}>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              icon={Smile}
+              title="Add Reaction"
+            />
+          </EmojiPicker>
+        </Protect>
       </div>
     );
   }

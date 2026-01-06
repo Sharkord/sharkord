@@ -1,8 +1,13 @@
 import {
   ChannelType,
   DEFAULT_ROLE_PERMISSIONS,
+  OWNER_ROLE_ID,
   Permission,
   sha256,
+  STORAGE_MAX_FILE_SIZE,
+  STORAGE_MIN_QUOTA_PER_USER,
+  STORAGE_OVERFLOW_ACTION,
+  STORAGE_QUOTA,
   type TICategory,
   type TIChannel,
   type TIMessage,
@@ -13,6 +18,7 @@ import {
 import { randomUUIDv7 } from 'bun';
 import chalk from 'chalk';
 import { logger } from '../logger';
+import { IS_DEVELOPMENT } from '../utils/env';
 import { db } from './index';
 import {
   categories,
@@ -21,6 +27,7 @@ import {
   rolePermissions,
   roles,
   settings,
+  userRoles,
   users
 } from './schema';
 
@@ -32,7 +39,7 @@ const seedDatabase = async () => {
   logger.debug('Seeding initial database values...');
 
   const firstStart = Date.now();
-  const originalToken = randomUUIDv7();
+  const originalToken = IS_DEVELOPMENT ? 'dev' : randomUUIDv7();
 
   const initialSettings: TISettings = {
     name: 'sharkord Server',
@@ -40,7 +47,13 @@ const seedDatabase = async () => {
       'This is the default Sharkord server description. Change me in the server settings!',
     password: '',
     serverId: Bun.randomUUIDv7(),
-    secretToken: await sha256(originalToken)
+    secretToken: await sha256(originalToken),
+    allowNewUsers: true,
+    storageUploadEnabled: true,
+    storageQuota: STORAGE_QUOTA,
+    storageUploadMaxFileSize: STORAGE_MAX_FILE_SIZE,
+    storageSpaceQuotaByUser: STORAGE_MIN_QUOTA_PER_USER,
+    storageOverflowAction: STORAGE_OVERFLOW_ACTION
   };
 
   await db.insert(settings).values(initialSettings);
@@ -48,12 +61,12 @@ const seedDatabase = async () => {
   const initialCategories: TICategory[] = [
     {
       name: 'Text Channels',
-      position: 0,
+      position: 1,
       createdAt: firstStart
     },
     {
       name: 'Voice Channels',
-      position: 1,
+      position: 2,
       createdAt: firstStart
     }
   ];
@@ -65,7 +78,6 @@ const seedDatabase = async () => {
       position: 0,
       categoryId: 1,
       topic: 'General text channel',
-      password: null,
       createdAt: firstStart
     },
     {
@@ -74,7 +86,6 @@ const seedDatabase = async () => {
       position: 1,
       categoryId: 1,
       topic: 'General text channel 2',
-      password: null,
       createdAt: firstStart
     },
     {
@@ -83,7 +94,6 @@ const seedDatabase = async () => {
       position: 0,
       categoryId: 2,
       topic: 'General voice channel',
-      password: null,
       createdAt: firstStart
     },
     {
@@ -92,7 +102,6 @@ const seedDatabase = async () => {
       position: 1,
       categoryId: 2,
       topic: 'General voice channel 2',
-      password: null,
       createdAt: firstStart
     }
   ];
@@ -111,6 +120,13 @@ const seedDatabase = async () => {
       isPersistent: true,
       isDefault: true,
       createdAt: firstStart
+    },
+    {
+      name: 'Guest',
+      color: '#AAAAAA',
+      isPersistent: false,
+      isDefault: false,
+      createdAt: firstStart
     }
   ];
 
@@ -118,7 +134,6 @@ const seedDatabase = async () => {
     {
       identity: await sha256(randomUUIDv7()),
       name: 'Sharkord',
-      roleId: 2, // Member
       avatarId: null,
       password: 'sharkord',
       bannerId: null,
@@ -162,6 +177,12 @@ const seedDatabase = async () => {
     }
   }
 
+  await db.insert(userRoles).values({
+    userId: 1,
+    roleId: OWNER_ROLE_ID,
+    createdAt: firstStart
+  });
+
   const notice = [
     chalk.redBright.bold('🚨🚨 I M P O R T A N T 🚨🚨'),
     chalk.dim('────────────────────────────────────────────────────'),
@@ -174,7 +195,7 @@ const seedDatabase = async () => {
     ),
     chalk.white('Please read the documentation on how to use this token.'),
     chalk.yellowBright('────────────────────────────────────────────────────'),
-    chalk.bold(originalToken),
+    chalk.bold.greenBright(originalToken),
     chalk.yellowBright('────────────────────────────────────────────────────')
   ].join('\n');
 

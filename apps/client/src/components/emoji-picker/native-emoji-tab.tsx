@@ -1,7 +1,8 @@
 import type { TEmojiItem } from '@/components/tiptap-input/types';
 import { Input } from '@/components/ui/input';
 import { gitHubEmojis } from '@tiptap/extension-emoji';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { AutoFocus } from '../ui/auto-focus';
 
 interface NativeEmojiTabProps {
   onEmojiSelect: (emoji: TEmojiItem) => void;
@@ -10,38 +11,47 @@ interface NativeEmojiTabProps {
 const NativeEmojiTab = ({ onEmojiSelect }: NativeEmojiTabProps) => {
   const [search, setSearch] = useState('');
 
-  // Convert GitHub emojis to TEmojiItem format
-  const convertedEmojis: TEmojiItem[] = gitHubEmojis.map((emoji) => ({
-    name: emoji.name,
-    shortcodes: emoji.shortcodes,
-    fallbackImage: emoji.fallbackImage,
-    emoji: emoji.emoji
-  }));
-
-  // Filter emojis based on search
-  const filteredEmojis = convertedEmojis.filter(
-    (emoji) =>
-      emoji.name.toLowerCase().includes(search.toLowerCase()) ||
-      emoji.shortcodes.some((shortcode) =>
-        shortcode.toLowerCase().includes(search.toLowerCase())
-      )
+  const convertedEmojis: TEmojiItem[] = useMemo(
+    () =>
+      gitHubEmojis.map((emoji) => ({
+        name: emoji.name,
+        shortcodes: emoji.shortcodes,
+        fallbackImage: emoji.fallbackImage,
+        emoji: emoji.emoji
+      })),
+    []
   );
 
-  // No grouping - use filtered emojis directly
+  const filteredEmojis = useMemo(
+    () =>
+      convertedEmojis.filter(
+        (emoji) =>
+          emoji.name.toLowerCase().includes(search.toLowerCase()) ||
+          emoji.shortcodes.some((shortcode) =>
+            shortcode.toLowerCase().includes(search.toLowerCase())
+          )
+      ),
+    [convertedEmojis, search]
+  );
 
-  const handleEmojiClick = (emoji: TEmojiItem) => {
-    onEmojiSelect(emoji);
-  };
+  const handleEmojiClick = useCallback(
+    (emoji: TEmojiItem) => {
+      onEmojiSelect(emoji);
+    },
+    [onEmojiSelect]
+  );
 
   return (
     <div className="flex flex-col h-full">
       <div className="p-3 border-b">
-        <Input
-          placeholder="Search native emojis..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="h-9"
-        />
+        <AutoFocus>
+          <Input
+            placeholder="Search native emojis..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-9"
+          />
+        </AutoFocus>
       </div>
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="p-3">

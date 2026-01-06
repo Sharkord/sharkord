@@ -1,8 +1,12 @@
-import { Permission } from '@sharkord/shared';
-import { TRPCError } from '@trpc/server';
+import { ActivityLogType, Permission } from '@sharkord/shared';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { updateEmoji } from '../../db/mutations/emojis/update-emoji';
-import { publishEmojiUpdate } from '../../db/publishers';
+import { db } from '../../db';
+import { publishEmoji } from '../../db/publishers';
+import { emojiExists, getEmojiById } from '../../db/queries/emojis';
+import { emojis } from '../../db/schema';
+import { enqueueActivityLog } from '../../queues/activity-log';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const updateEmojiRoute = protectedProcedure
@@ -15,17 +19,41 @@ const updateEmojiRoute = protectedProcedure
   .mutation(async ({ ctx, input }) => {
     await ctx.needsPermission(Permission.MANAGE_EMOJIS);
 
-    const updatedEmoji = await updateEmoji(input.emojiId, {
-      name: input.name
+    const existingEmoji = await getEmojiById(input.emojiId);
+
+    invariant(existingEmoji, {
+      code: 'NOT_FOUND',
+      message: 'Emoji not found'
     });
 
-    if (!updatedEmoji) {
-      throw new TRPCError({
-        code: 'NOT_FOUND'
-      });
+    const exists = await emojiExists(input.name);
+
+    if (exists) {
+      ctx.throwValidationError(
+        'name',
+        'An emoji with this name already exists.'
+      );
     }
 
-    await publishEmojiUpdate(updatedEmoji.id);
+    const updatedEmoji = await db
+      .update(emojis)
+      .set({
+        name: input.name,
+        updatedAt: Date.now()
+      })
+      .where(eq(emojis.id, existingEmoji.id))
+      .returning()
+      .get();
+
+    publishEmoji(updatedEmoji.id, 'update');
+    enqueueActivityLog({
+      type: ActivityLogType.UPDATED_EMOJI,
+      userId: ctx.user.id,
+      details: {
+        fromName: existingEmoji.name,
+        toName: input.name
+      }
+    });
   });
 
 export { updateEmojiRoute };

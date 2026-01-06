@@ -114,7 +114,12 @@ const UpdateEmoji = memo(
             >
               Close
             </Button>
-            <Button onClick={onUpdateEmoji}>Save Changes</Button>
+            <Button
+              onClick={onUpdateEmoji}
+              disabled={selectedEmoji.name === name}
+            >
+              Save Changes
+            </Button>
           </div>
         </CardContent>
       </Card>

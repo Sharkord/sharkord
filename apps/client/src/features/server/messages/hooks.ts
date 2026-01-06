@@ -12,17 +12,18 @@ export const useMessagesByChannelId = (channelId: number) =>
   );
 
 export const useMessages = (channelId: number) => {
-  const trpcClient = getTRPCClient();
-
   const messages = useMessagesByChannelId(channelId);
   const inited = useRef(false);
-  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  const [loading, setLoading] = useState(messages.length === 0);
   const [cursor, setCursor] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(true);
 
   const fetchMessages = useCallback(
     async (cursorToFetch: number | null) => {
-      setLoading(true);
+      const trpcClient = getTRPCClient();
+
+      setFetching(true);
 
       try {
         const { messages: rawPage, nextCursor } =
@@ -51,17 +52,18 @@ export const useMessages = (channelId: number) => {
 
         return { success: true };
       } finally {
+        setFetching(false);
         setLoading(false);
       }
     },
-    [channelId, trpcClient, messages]
+    [channelId, messages]
   );
 
   const loadMore = useCallback(async () => {
-    if (loading || !hasMore) return;
+    if (fetching || !hasMore) return;
 
     await fetchMessages(cursor);
-  }, [loading, hasMore, cursor, fetchMessages]);
+  }, [fetching, hasMore, cursor, fetchMessages]);
 
   useEffect(() => {
     if (inited.current) return;
@@ -72,8 +74,8 @@ export const useMessages = (channelId: number) => {
   }, [fetchMessages]);
 
   const isEmpty = useMemo(
-    () => !messages.length && !loading,
-    [messages.length, loading]
+    () => !messages.length && !fetching,
+    [messages.length, fetching]
   );
 
   const groupedMessages = useMemo(() => {
@@ -102,7 +104,8 @@ export const useMessages = (channelId: number) => {
   }, [messages]);
 
   return {
-    loading,
+    fetching,
+    loading, // for initial load
     hasMore,
     messages,
     loadMore,

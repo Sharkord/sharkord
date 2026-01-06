@@ -65,6 +65,7 @@ const TextInputDialog = memo(
               onEnter={onSubmit}
               className="mt-2"
               type={type}
+              autoFocus
             />
           </AutoFocus>
           <AlertDialogFooter className="gap-2">

@@ -1,7 +1,9 @@
+import { useModViewOpen } from '@/features/app/hooks';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useServerScreenInfo } from '@/features/server-screens/hooks';
 import { createElement, memo, useCallback, useEffect, type JSX } from 'react';
 import { createPortal } from 'react-dom';
+import { CategorySettings } from './category-settings';
 import { ChannelSettings } from './channel-settings';
 import { ServerScreen } from './screens';
 import { ServerSettings } from './server-settings';
@@ -10,7 +12,8 @@ import { UserSettings } from './user-settings';
 const ScreensMap = {
   [ServerScreen.SERVER_SETTINGS]: ServerSettings,
   [ServerScreen.CHANNEL_SETTINGS]: ChannelSettings,
-  [ServerScreen.USER_SETTINGS]: UserSettings
+  [ServerScreen.USER_SETTINGS]: UserSettings,
+  [ServerScreen.CATEGORY_SETTINGS]: CategorySettings
 };
 
 const portalRoot = document.getElementById('portal')!;
@@ -20,11 +23,19 @@ type TComponentWrapperProps = {
 };
 
 const ComponentWrapper = ({ children }: TComponentWrapperProps) => {
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      closeServerScreens();
-    }
-  }, []);
+  const { isOpen } = useModViewOpen();
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      // when mod view is open, do not close server screens
+      if (isOpen) return;
+
+      if (e.key === 'Escape') {
+        closeServerScreens();
+      }
+    },
+    [isOpen]
+  );
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -49,18 +60,8 @@ const ServerScreensProvider = memo(() => {
       close: closeServerScreens
     };
 
-    // For CHANNEL_SETTINGS, ensure channelId is present
-    if (openServerScreen === ServerScreen.CHANNEL_SETTINGS) {
-      if (typeof props?.channelId === 'number') {
-        component = createElement(ChannelSettings, {
-          ...baseProps,
-          channelId: props.channelId
-        });
-      }
-    } else {
-      // For other screens that don't require additional props
-      component = createElement(ScreensMap[openServerScreen], baseProps);
-    }
+    // @ts-expect-error - é lidar irmoum
+    component = createElement(ScreensMap[openServerScreen], baseProps);
   }
 
   const realIsOpen = isOpen && !!component;

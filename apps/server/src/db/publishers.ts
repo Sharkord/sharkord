@@ -1,39 +1,87 @@
-import { ServerEvents } from '@sharkord/shared';
+import {
+  ChannelPermission,
+  ServerEvents,
+  type TChannelUserPermissionsMap
+} from '@sharkord/shared';
+import { eq } from 'drizzle-orm';
+import { db } from '.';
 import { pubsub } from '../utils/pubsub';
-import { getEmojiById } from './queries/emojis/get-emoji-by-id';
-import { getMessage } from './queries/messages/get-message';
-import { getSettings } from './queries/others/get-settings';
-import { getRole } from './queries/roles/get-role';
-import { getPublicUserById } from './queries/users/get-public-user-by-id';
+import {
+  getAffectedUserIdsForChannel,
+  getAllChannelUserPermissions,
+  getChannelsReadStatesForUser
+} from './queries/channels';
+import { getEmojiById } from './queries/emojis';
+import { getMessage } from './queries/messages';
+import { getRole } from './queries/roles';
+import { getSettings } from './queries/server';
+import { getPublicUserById } from './queries/users';
+import { categories, channels } from './schema';
 
-const publishMessageUpdate = async (messageId: number | undefined) => {
-  if (!messageId) return;
+const publishMessage = async (
+  messageId: number | undefined,
+  channelId: number | undefined,
+  type: 'create' | 'update' | 'delete'
+) => {
+  if (!messageId || !channelId) return;
+
+  if (type === 'delete') {
+    pubsub.publish(ServerEvents.MESSAGE_DELETE, {
+      messageId: messageId,
+      channelId: channelId
+    });
+
+    return;
+  }
 
   const message = await getMessage(messageId);
 
   if (!message) return;
 
-  pubsub.publish(ServerEvents.MESSAGE_UPDATE, message);
+  const targetEvent =
+    type === 'create' ? ServerEvents.NEW_MESSAGE : ServerEvents.MESSAGE_UPDATE;
+
+  const affectedUserIds = await getAffectedUserIdsForChannel(channelId, {
+    permission: ChannelPermission.VIEW_CHANNEL
+  });
+
+  pubsub.publishFor(affectedUserIds, targetEvent, message);
+
+  // only send count updates to users OTHER than the message author
+  const usersToNotify = affectedUserIds.filter((id) => id !== message.userId);
+
+  const promises = usersToNotify.map(async (userId) => {
+    const readState = await getChannelsReadStatesForUser(userId, channelId);
+    const count = readState[channelId] ?? 0;
+
+    pubsub.publishFor(userId, ServerEvents.CHANNEL_READ_STATES_UPDATE, {
+      channelId,
+      count
+    });
+  });
+
+  await Promise.all(promises);
 };
 
-const publishEmojiUpdate = async (emojiId: number | undefined) => {
+const publishEmoji = async (
+  emojiId: number | undefined,
+  type: 'create' | 'update' | 'delete'
+) => {
   if (!emojiId) return;
+
+  if (type === 'delete') {
+    pubsub.publish(ServerEvents.EMOJI_DELETE, emojiId);
+    return;
+  }
 
   const emoji = await getEmojiById(emojiId);
 
   if (!emoji) return;
 
-  pubsub.publish(ServerEvents.EMOJI_UPDATE, emoji);
-};
+  const targetEvent =
+    type === 'create' ? ServerEvents.EMOJI_CREATE : ServerEvents.EMOJI_UPDATE;
 
-const publishEmojiCreate = async (emojiId: number | undefined) => {
-  if (!emojiId) return;
-
-  const emoji = await getEmojiById(emojiId);
-
-  if (!emoji) return;
-
-  pubsub.publish(ServerEvents.EMOJI_CREATE, emoji);
+  pubsub.publish(targetEvent, emoji);
 };
 
 const publishRole = async (
@@ -78,16 +126,95 @@ const publishUser = async (
   pubsub.publish(targetEvent, user);
 };
 
+const publishChannel = async (
+  channelId: number | undefined,
+  type: 'create' | 'update' | 'delete'
+) => {
+  if (!channelId) return;
+
+  if (type === 'delete') {
+    pubsub.publish(ServerEvents.CHANNEL_DELETE, channelId);
+    return;
+  }
+
+  const channel = await db
+    .select()
+    .from(channels)
+    .where(eq(channels.id, channelId))
+    .get();
+
+  if (!channel) return;
+
+  const targetEvent =
+    type === 'create'
+      ? ServerEvents.CHANNEL_CREATE
+      : ServerEvents.CHANNEL_UPDATE;
+
+  pubsub.publish(targetEvent, channel);
+};
+
 const publishSettings = async () => {
   const settings = await getSettings();
 
   pubsub.publish(ServerEvents.SERVER_SETTINGS_UPDATE, settings);
 };
 
+const publishCategory = async (
+  categoryId: number | undefined,
+  type: 'create' | 'update' | 'delete'
+) => {
+  if (!categoryId) return;
+
+  if (type === 'delete') {
+    pubsub.publish(ServerEvents.CATEGORY_DELETE, categoryId);
+    return;
+  }
+
+  const category = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.id, categoryId))
+    .get();
+
+  if (!category) return;
+
+  const targetEvent =
+    type === 'create'
+      ? ServerEvents.CATEGORY_CREATE
+      : ServerEvents.CATEGORY_UPDATE;
+
+  pubsub.publish(targetEvent, category);
+};
+
+const publishChannelPermissions = async (affectedUserIds: number[]) => {
+  const permissionsMap = new Map<number, TChannelUserPermissionsMap>();
+  const promises = affectedUserIds.map(async (userId) => {
+    const updatedPermissions = await getAllChannelUserPermissions(userId);
+
+    permissionsMap.set(userId, updatedPermissions);
+  });
+
+  await Promise.all(promises);
+
+  for (const userId of affectedUserIds) {
+    const updatedPermissions = permissionsMap.get(userId);
+
+    if (!updatedPermissions) continue;
+
+    pubsub.publishFor(
+      userId,
+      ServerEvents.CHANNEL_PERMISSIONS_UPDATE,
+      updatedPermissions
+    );
+  }
+};
+
 export {
-  publishEmojiCreate,
-  publishEmojiUpdate,
-  publishMessageUpdate,
+  publishCategory,
+  publishChannel,
+  publishChannelPermissions,
+  publishEmoji,
+  publishMessage,
   publishRole,
   publishSettings,
   publishUser

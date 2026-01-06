@@ -4,10 +4,12 @@ import { editMessageRoute } from './edit-message';
 import {
   onMessageDeleteRoute,
   onMessageRoute,
+  onMessageTypingRoute,
   onMessageUpdateRoute
 } from './events';
 import { getMessagesRoute } from './get-messages';
 import { sendMessageRoute } from './send-message';
+import { signalTypingRoute } from './signal-typing';
 import { toggleMessageReactionRoute } from './toggle-message-reaction';
 
 export const messagesRouter = t.router({
@@ -16,7 +18,9 @@ export const messagesRouter = t.router({
   delete: deleteMessageRoute,
   get: getMessagesRoute,
   toggleReaction: toggleMessageReactionRoute,
+  signalTyping: signalTypingRoute,
   onNew: onMessageRoute,
   onUpdate: onMessageUpdateRoute,
-  onDelete: onMessageDeleteRoute
+  onDelete: onMessageDeleteRoute,
+  onTyping: onMessageTypingRoute
 });

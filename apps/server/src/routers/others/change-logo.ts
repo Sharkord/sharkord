@@ -1,8 +1,8 @@
 import z from 'zod';
-import { removeFile } from '../../db/mutations/files/remove-file';
-import { updateSettings } from '../../db/mutations/server/update-server-settings';
+import { removeFile } from '../../db/mutations/files';
+import { updateSettings } from '../../db/mutations/server';
 import { publishSettings } from '../../db/publishers';
-import { getSettings } from '../../db/queries/others/get-settings';
+import { getSettings } from '../../db/queries/server';
 import { fileManager } from '../../utils/file-manager';
 import { protectedProcedure } from '../../utils/trpc';
 

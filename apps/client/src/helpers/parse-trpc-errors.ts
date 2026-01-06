@@ -30,4 +30,16 @@ const parseTrpcErrors = (err: unknown): TTrpcErrors => {
   }
 };
 
-export { parseTrpcErrors };
+const getTrpcError = (err: unknown, fallback: string): string => {
+  if (err instanceof TRPCClientError) {
+    return err.message;
+  }
+
+  if (err instanceof Error) {
+    return err.message;
+  }
+
+  return fallback;
+};
+
+export { getTrpcError, parseTrpcErrors };

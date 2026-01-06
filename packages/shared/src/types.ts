@@ -1,32 +1,33 @@
-import { type TFile, type TSettings, type TUser } from ".";
-
-export enum StorageOverflowAction {
-  DELETE_OLD_FILES = "delete", // when new uploads exceed the quota, delete the oldest files
-  PREVENT_UPLOADS = "prevent", // when new uploads exceed the quota, prevent new uploads
-}
-
-export const STORAGE_OVERFLOW_ACTIONS_DICT = {
-  [StorageOverflowAction.DELETE_OLD_FILES]: "Delete old files",
-  [StorageOverflowAction.PREVENT_UPLOADS]: "Prevent new file uploads",
-};
-
-export const STORAGE_OVERFLOW_ACTIONS_DESCRIPTION = {
-  [StorageOverflowAction.DELETE_OLD_FILES]:
-    "When new uploads exceed the quota, the server will automatically delete the oldest files to make room for new uploads.",
-  [StorageOverflowAction.PREVENT_UPLOADS]:
-    "When new uploads exceed the quota, the server will prevent new uploads until the user deletes some files manually.",
-};
+import { ChannelPermission, type TFile, type TSettings, type TUser } from ".";
 
 export enum ChannelType {
   TEXT = "TEXT",
   VOICE = "VOICE",
 }
 
-export type TServerSettings = {
-  serverId: string;
-  name: string;
-  description: string;
+export enum StreamKind {
+  AUDIO = "audio",
+  VIDEO = "video",
+  SCREEN = "screen",
+}
+
+export type TRemoteProducerIds = {
+  remoteVideoIds: number[];
+  remoteAudioIds: number[];
+  remoteScreenIds: number[];
 };
+
+export type TPublicServerSettings = Pick<
+  TSettings,
+  | "name"
+  | "description"
+  | "serverId"
+  | "storageUploadEnabled"
+  | "storageQuota"
+  | "storageUploadMaxFileSize"
+  | "storageSpaceQuotaByUser"
+  | "storageOverflowAction"
+>;
 
 export type TGenericObject = {
   [key: string]: any;
@@ -72,15 +73,6 @@ export type TTempFile = {
   userId: number;
 };
 
-// export type TServerInfo = {
-//   serverId: string;
-//   version: string;
-//   name: string;
-//   description: string | null;
-//   logo: TFile | null;
-//   allowNewUsers: boolean;
-// };
-
 export type TServerInfo = Pick<
   TSettings,
   "serverId" | "name" | "description" | "allowNewUsers"
@@ -88,3 +80,37 @@ export type TServerInfo = Pick<
   logo: TFile | null;
   version: string;
 };
+
+export type TArtifact = {
+  name: string;
+  target: string;
+  size: number;
+  checksum: string;
+};
+
+export type TVersionInfo = {
+  version: string;
+  releaseDate: string;
+  artifacts: TArtifact[];
+};
+
+export type TIpInfo = {
+  ip: string;
+  hostname: string;
+  city: string;
+  region: string;
+  country: string;
+  loc: string;
+  org: string;
+  postal: string;
+  timezone: string;
+};
+
+export type TChannelPermissionsMap = Record<ChannelPermission, boolean>;
+
+export type TChannelUserPermissionsMap = Record<
+  number,
+  { channelId: number; permissions: TChannelPermissionsMap }
+>;
+
+export type TReadStateMap = Record<number, number>;

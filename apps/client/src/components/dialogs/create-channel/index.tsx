@@ -88,7 +88,7 @@ const CreateChannelDialog = memo(
       <Dialog open={isOpen}>
         <DialogContent onInteractOutside={close} close={close}>
           <DialogHeader>
-            <DialogTitle>Create new channel</DialogTitle>
+            <DialogTitle>Create New Channel</DialogTitle>
           </DialogHeader>
 
           <Group label="Channel type">

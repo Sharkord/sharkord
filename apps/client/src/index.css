@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -121,7 +121,7 @@
 
 html,
 body,
-[data-overlay-container="true"] {
+[data-overlay-container='true'] {
   height: 100%;
   overflow: hidden;
 }
@@ -218,6 +218,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
+  z-index: 10;
 }
 
 .line-break {
@@ -254,4 +255,84 @@ body {
 
 .react-tweet-theme {
   margin: 0 !important;
+}
+
+/* speaking indicators */
+
+/* quiet */
+@keyframes speaking-glow-low {
+  0% {
+    box-shadow:
+      0 0 0 1px rgb(134, 239, 172, 0.4),
+      0 0 10px rgb(134, 239, 172, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgb(134, 239, 172, 0.6),
+      0 0 15px rgb(134, 239, 172, 0.3);
+  }
+  100% {
+    box-shadow:
+      0 0 0 1px rgb(134, 239, 172, 0.4),
+      0 0 10px rgb(134, 239, 172, 0.2);
+  }
+}
+
+/* normal */
+@keyframes speaking-glow-medium {
+  0% {
+    box-shadow:
+      0 0 0 2px rgb(34, 197, 94, 0.6),
+      0 0 20px rgb(34, 197, 94, 0.4),
+      0 0 30px rgb(34, 197, 94, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgb(34, 197, 94, 0.8),
+      0 0 30px rgb(34, 197, 94, 0.6),
+      0 0 45px rgb(34, 197, 94, 0.3);
+  }
+  100% {
+    box-shadow:
+      0 0 0 2px rgb(34, 197, 94, 0.6),
+      0 0 20px rgb(34, 197, 94, 0.4),
+      0 0 30px rgb(34, 197, 94, 0.2);
+  }
+}
+
+/* loud */
+@keyframes speaking-glow-high {
+  0% {
+    box-shadow:
+      0 0 0 3px rgb(22, 163, 74, 0.8),
+      0 0 25px rgb(22, 163, 74, 0.6),
+      0 0 50px rgb(22, 163, 74, 0.4),
+      0 0 75px rgb(22, 163, 74, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px rgb(22, 163, 74, 1),
+      0 0 40px rgb(22, 163, 74, 0.8),
+      0 0 70px rgb(22, 163, 74, 0.6),
+      0 0 100px rgb(22, 163, 74, 0.3);
+  }
+  100% {
+    box-shadow:
+      0 0 0 3px rgb(22, 163, 74, 0.8),
+      0 0 25px rgb(22, 163, 74, 0.6),
+      0 0 50px rgb(22, 163, 74, 0.4),
+      0 0 75px rgb(22, 163, 74, 0.2);
+  }
+}
+
+.speaking-effect-low {
+  animation: speaking-glow-low 2.5s ease-in-out infinite;
+}
+
+.speaking-effect-medium {
+  animation: speaking-glow-medium 1.2s ease-in-out infinite;
+}
+
+.speaking-effect-high {
+  animation: speaking-glow-high 0.8s ease-in-out infinite;
 }

@@ -4,11 +4,12 @@ import path from 'path';
 import {
   DRIZZLE_PATH,
   INTERFACE_PATH,
-  MIGRATIONS_PATH
+  MEDIASOUP_PATH,
+  SRC_MIGRATIONS_PATH
 } from '../helpers/paths';
 import { unzipBlobToDirectory } from '../helpers/zip';
 import { logger } from '../logger';
-import { IS_DEVELOPMENT } from '../utils/env';
+import { IS_DEVELOPMENT, IS_TEST } from '../utils/env';
 
 const findEmbedFile = (fileName: string) => {
   const extension = path.extname(fileName);
@@ -24,24 +25,28 @@ const findEmbedFile = (fileName: string) => {
 };
 
 const loadEmbeds = async () => {
-  if (IS_DEVELOPMENT) {
+  logger.debug('Loading embedded files...');
+
+  if (IS_DEVELOPMENT || IS_TEST) {
     // files are only embedded in production
     logger.debug('Development mode, skipping embedded files extraction');
 
     // copy migrations from src/db/migrations to DRIZZLE_PATH to allow running migrations in development
-    await fs.cp(MIGRATIONS_PATH, DRIZZLE_PATH, { recursive: true });
+    await fs.cp(SRC_MIGRATIONS_PATH, DRIZZLE_PATH, { recursive: true });
 
     return;
   }
 
   const interfaceBlob = findEmbedFile('interface.zip');
   const drizzleBlob = findEmbedFile('drizzle.zip');
+  const mediasoupBlob = findEmbedFile('mediasoup-worker');
 
-  if (!interfaceBlob || !drizzleBlob) {
+  if (!interfaceBlob || !drizzleBlob || !mediasoupBlob) {
     throw new Error('Embedded files not found');
   }
 
   try {
+    logger.debug('Extracting interface...');
     await unzipBlobToDirectory(interfaceBlob, INTERFACE_PATH);
   } catch (error) {
     logger.error('Failed to extract interface:', error);
@@ -49,10 +54,25 @@ const loadEmbeds = async () => {
   }
 
   try {
+    logger.debug('Extracting drizzle migrations...');
     await unzipBlobToDirectory(drizzleBlob, DRIZZLE_PATH);
   } catch (error) {
     logger.error('Failed to extract drizzle migrations:', error);
     process.exit(1);
+  }
+
+  try {
+    logger.debug('Extracting mediasoup worker...');
+
+    const mediasoupPath = path.join(MEDIASOUP_PATH, 'mediasoup-worker');
+
+    const arrayBuffer = await mediasoupBlob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    await fs.writeFile(mediasoupPath, buffer);
+    await fs.chmod(mediasoupPath, 0o755);
+  } catch (error) {
+    logger.error('Failed to extract mediasoup worker:', error);
   }
 };
 

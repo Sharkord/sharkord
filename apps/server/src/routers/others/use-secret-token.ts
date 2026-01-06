@@ -1,8 +1,10 @@
 import { OWNER_ROLE_ID, sha256 } from '@sharkord/shared';
-import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { updateUser } from '../../db/mutations/users/update-user';
-import { getSettings } from '../../db/queries/others/get-settings';
+import { db } from '../../db';
+import { publishUser } from '../../db/publishers';
+import { getSettings } from '../../db/queries/server';
+import { userRoles } from '../../db/schema';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const useSecretTokenRoute = protectedProcedure
@@ -15,16 +17,18 @@ const useSecretTokenRoute = protectedProcedure
     const settings = await getSettings();
     const hashedToken = await sha256(input.token);
 
-    if (hashedToken !== settings.secretToken) {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: 'Invalid secret token'
-      });
-    }
-
-    await updateUser(ctx.userId, {
-      roleId: OWNER_ROLE_ID
+    invariant(hashedToken === settings.secretToken, {
+      code: 'FORBIDDEN',
+      message: 'Invalid secret token'
     });
+
+    await db.insert(userRoles).values({
+      userId: ctx.userId,
+      roleId: OWNER_ROLE_ID,
+      createdAt: Date.now()
+    });
+
+    await publishUser(ctx.userId, 'update');
   });
 
 export { useSecretTokenRoute };

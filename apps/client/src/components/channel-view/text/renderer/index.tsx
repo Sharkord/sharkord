@@ -2,16 +2,12 @@ import { useOwnUserId } from '@/features/server/users/hooks';
 import { downloadFile } from '@/helpers/download-file';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';
-import {
-  imageExtensions,
-  type TFile,
-  type TJoinedMessage
-} from '@sharkord/shared';
+import { imageExtensions, type TJoinedMessage } from '@sharkord/shared';
 import parse from 'html-react-parser';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { FileCard } from '../file-card';
-import { MessageReactions } from '../message.reactions';
+import { MessageReactions } from '../message-reactions';
 import { ImageOverride } from '../overrides/image';
 import { serializer } from './serializer';
 import type { TFoundMedia } from './types';
@@ -37,10 +33,6 @@ const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
 
     return { messageHtml, foundMedia };
   }, [message.content]);
-
-  const onDownloadClick = useCallback((file: TFile) => {
-    downloadFile(file);
-  }, []);
 
   const onRemoveFileClick = useCallback(async (fileId: number) => {
     if (!fileId) return;
@@ -96,7 +88,7 @@ const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
               onRemove={
                 isOwnMessage ? () => onRemoveFileClick(file.id) : undefined
               }
-              onDownload={() => onDownloadClick(file)}
+              onDownload={() => downloadFile(file)}
             />
           ))}
         </div>

@@ -76,7 +76,7 @@ export const requestTextInput = async ({
   cancelLabel?: string;
   allowEmpty?: boolean;
   autoClose?: boolean;
-}): Promise<string | undefined> => {
+}): Promise<string | undefined | null> => {
   return new Promise((resolve) => {
     openDialog(Dialog.TEXT_INPUT, {
       title,
@@ -93,8 +93,12 @@ export const requestTextInput = async ({
         resolve(text);
       },
       onCancel: () => {
-        resolve(undefined);
+        resolve(null);
       }
     });
   });
+};
+
+export const resetDialogs = () => {
+  store.dispatch(dialogSliceActions.resetDialogs());
 };

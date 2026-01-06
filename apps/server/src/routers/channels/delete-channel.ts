@@ -1,7 +1,12 @@
-import { Permission, ServerEvents } from '@sharkord/shared';
-import { TRPCError } from '@trpc/server';
+import { ActivityLogType, Permission } from '@sharkord/shared';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { removeChannel } from '../../db/mutations/channels/remove-channel';
+import { db } from '../../db';
+import { publishChannel } from '../../db/publishers';
+import { channels } from '../../db/schema';
+import { enqueueActivityLog } from '../../queues/activity-log';
+import { VoiceRuntime } from '../../runtimes/voice';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const deleteChannelRoute = protectedProcedure
@@ -13,13 +18,32 @@ const deleteChannelRoute = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_CHANNELS);
 
-    const removedChannel = await removeChannel(input.channelId);
+    const removedChannel = await db
+      .delete(channels)
+      .where(eq(channels.id, input.channelId))
+      .returning()
+      .get();
 
-    if (!removedChannel) {
-      throw new TRPCError({ code: 'NOT_FOUND' });
+    invariant(removedChannel, {
+      code: 'NOT_FOUND',
+      message: 'Channel not found'
+    });
+
+    const runtime = VoiceRuntime.findById(removedChannel.id);
+
+    if (runtime) {
+      runtime.destroy();
     }
 
-    ctx.pubsub.publish(ServerEvents.CHANNEL_DELETE, removedChannel.id);
+    publishChannel(removedChannel.id, 'delete');
+    enqueueActivityLog({
+      type: ActivityLogType.DELETED_CHANNEL,
+      userId: ctx.user.id,
+      details: {
+        channelId: removedChannel.id,
+        channelName: removedChannel.name
+      }
+    });
   });
 
 export { deleteChannelRoute };

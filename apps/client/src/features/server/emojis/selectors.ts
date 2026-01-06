@@ -5,16 +5,6 @@ import type { EmojiItem } from '@tiptap/extension-emoji';
 
 export const emojisSelector = (state: IRootState) => state.server.emojis;
 
-// const customEmojis: EmojiItem[] = [
-//   {
-//     name: "test",
-//     shortcodes: ["test"],
-//     tags: ["animal", "nature", "howl"],
-//     group: "Custom",
-//     fallbackImage: "https://i.imgur.com/890KTlM.jpeg",
-//   },
-// ];
-
 export const customEmojisSelector = createSelector(
   [emojisSelector],
   (emojis) => {

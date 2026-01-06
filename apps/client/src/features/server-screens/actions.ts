@@ -15,3 +15,7 @@ export const openServerScreen = (
 export const closeServerScreens = () => {
   store.dispatch(serverScreenSliceActions.closeServerScreens());
 };
+
+export const resetServerScreens = () => {
+  store.dispatch(serverScreenSliceActions.resetServerScreens());
+};

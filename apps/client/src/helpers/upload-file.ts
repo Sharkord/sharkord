@@ -1,6 +1,7 @@
-import { SessionStorageKey } from '@/types';
 import { UploadHeaders, type TTempFile } from '@sharkord/shared';
+import { toast } from 'sonner';
 import { getUrlFromServer } from './get-file-url';
+import { getSessionStorageItem, SessionStorageKey } from './storage';
 
 const uploadFile = async (file: File) => {
   const url = getUrlFromServer();
@@ -13,12 +14,18 @@ const uploadFile = async (file: File) => {
       [UploadHeaders.CONTENT_LENGTH]: file.size.toString(),
       [UploadHeaders.ORIGINAL_NAME]: file.name,
       [UploadHeaders.TOKEN]:
-        sessionStorage.getItem(SessionStorageKey.TOKEN) ?? ''
+        getSessionStorageItem(SessionStorageKey.TOKEN) ?? ''
     },
     body: file
   });
 
-  if (!res.ok) throw new Error('Upload failed');
+  if (!res.ok) {
+    const errorData = await res.json();
+
+    toast.error(errorData.error || res.statusText);
+
+    return undefined;
+  }
 
   const tempFile: TTempFile = await res.json();
 
@@ -30,6 +37,8 @@ const uploadFiles = async (files: File[]) => {
 
   for (const file of files) {
     const uploadedFile = await uploadFile(file);
+
+    if (!uploadedFile) continue;
 
     uploadedFiles.push(uploadedFile);
   }

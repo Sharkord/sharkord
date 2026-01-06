@@ -1,56 +1,90 @@
+import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type {
   TCategory,
   TChannel,
+  TChannelUserPermissionsMap,
   TJoinedEmoji,
   TJoinedMessage,
   TJoinedPublicUser,
   TJoinedRole,
+  TPublicServerSettings,
+  TReadStateMap,
   TServerInfo,
-  TServerSettings,
-  TUser
+  TVoiceMap,
+  TVoiceUserState
 } from '@sharkord/shared';
-import type { TMessagesMap } from './types';
+import type { TDisconnectInfo, TMessagesMap } from './types';
 
 export interface IServerState {
   connected: boolean;
   connecting: boolean;
+  disconnectInfo?: TDisconnectInfo;
   serverId?: string;
   categories: TCategory[];
   channels: TChannel[];
   emojis: TJoinedEmoji[];
+  ownUserId: number | undefined;
   selectedChannelId: number | undefined;
+  currentVoiceChannelId: number | undefined;
   messagesMap: TMessagesMap;
   users: TJoinedPublicUser[];
-  ownUser?: TUser;
   roles: TJoinedRole[];
-  settings: TServerSettings | undefined;
+  publicSettings: TPublicServerSettings | undefined;
   info: TServerInfo | undefined;
   loadingInfo: boolean;
+  typingMap: {
+    [channelId: number]: number[];
+  };
+  voiceMap: TVoiceMap;
+  ownVoiceState: TVoiceUserState;
+  pinnedCard: TPinnedCard | undefined;
+  channelPermissions: TChannelUserPermissionsMap;
+  readStatesMap: {
+    [channelId: number]: number | undefined;
+  };
 }
 
 const initialState: IServerState = {
   connected: false,
   connecting: false,
+  disconnectInfo: undefined,
   serverId: undefined,
+  ownUserId: undefined,
   categories: [],
   channels: [],
   emojis: [],
   selectedChannelId: undefined,
+  currentVoiceChannelId: undefined,
   messagesMap: {},
   users: [],
-  ownUser: undefined,
   roles: [],
-  settings: undefined,
+  publicSettings: undefined,
   info: undefined,
-  loadingInfo: false
+  loadingInfo: false,
+  typingMap: {},
+  voiceMap: {},
+  ownVoiceState: {
+    micMuted: false,
+    soundMuted: false,
+    webcamEnabled: false,
+    sharingScreen: false
+  },
+  pinnedCard: undefined,
+  channelPermissions: {},
+  readStatesMap: {}
 };
 
 export const serverSlice = createSlice({
   name: 'server',
   initialState,
   reducers: {
-    resetState: () => initialState,
+    resetState: (state) => {
+      Object.assign(state, {
+        ...initialState,
+        info: state.info
+      });
+    },
     setConnected: (state, action: PayloadAction<boolean>) => {
       state.connected = action.payload;
       state.connecting = false;
@@ -61,25 +95,17 @@ export const serverSlice = createSlice({
     setServerId: (state, action: PayloadAction<string | undefined>) => {
       state.serverId = action.payload;
     },
-    setCategories: (state, action: PayloadAction<TCategory[]>) => {
-      state.categories = action.payload;
-    },
     setInfo: (state, action: PayloadAction<TServerInfo | undefined>) => {
       state.info = action.payload;
     },
     setLoadingInfo: (state, action: PayloadAction<boolean>) => {
       state.loadingInfo = action.payload;
     },
-    setOwnUser: (state, action: PayloadAction<TUser | undefined>) => {
-      state.ownUser = action.payload;
-    },
-    updateOwnUser: (state, action: PayloadAction<Partial<TUser>>) => {
-      if (!state.ownUser) return;
-
-      state.ownUser = {
-        ...state.ownUser,
-        ...action.payload
-      };
+    setDisconnectInfo: (
+      state,
+      action: PayloadAction<TDisconnectInfo | undefined>
+    ) => {
+      state.disconnectInfo = action.payload;
     },
     setInitialData: (
       state,
@@ -88,10 +114,13 @@ export const serverSlice = createSlice({
         categories: TCategory[];
         channels: TChannel[];
         users: TJoinedPublicUser[];
-        ownUser: TUser;
+        ownUserId: number;
         roles: TJoinedRole[];
         emojis: TJoinedEmoji[];
-        settings: TServerSettings | undefined;
+        publicSettings: TPublicServerSettings | undefined;
+        voiceMap: TVoiceMap;
+        channelPermissions: TChannelUserPermissionsMap;
+        readStates: TReadStateMap;
       }>
     ) => {
       state.connected = true;
@@ -99,9 +128,13 @@ export const serverSlice = createSlice({
       state.channels = action.payload.channels;
       state.emojis = action.payload.emojis;
       state.users = action.payload.users;
-      state.ownUser = action.payload.ownUser;
       state.roles = action.payload.roles;
-      state.settings = action.payload.settings;
+      state.ownUserId = action.payload.ownUserId;
+      state.publicSettings = action.payload.publicSettings;
+      state.voiceMap = action.payload.voiceMap;
+      state.serverId = action.payload.serverId;
+      state.channelPermissions = action.payload.channelPermissions;
+      state.readStatesMap = action.payload.readStates;
     },
     addMessages: (
       state,
@@ -158,6 +191,30 @@ export const serverSlice = createSlice({
         (m) => m.id !== action.payload.messageId
       );
     },
+    clearTypingUsers: (state, action: PayloadAction<number>) => {
+      delete state.typingMap[action.payload];
+    },
+    addTypingUser: (
+      state,
+      action: PayloadAction<{ channelId: number; userId: number }>
+    ) => {
+      const { channelId, userId } = action.payload;
+      const typingUsers = state.typingMap[channelId] || [];
+
+      if (!typingUsers.includes(userId)) {
+        typingUsers.push(userId);
+        state.typingMap[channelId] = typingUsers;
+      }
+    },
+    removeTypingUser: (
+      state,
+      action: PayloadAction<{ channelId: number; userId: number }>
+    ) => {
+      const { channelId, userId } = action.payload;
+      const typingUsers = state.typingMap[channelId] || [];
+
+      state.typingMap[channelId] = typingUsers.filter((id) => id !== userId);
+    },
 
     // USERS ------------------------------------------------------------
 
@@ -192,11 +249,11 @@ export const serverSlice = createSlice({
 
     // SERVER SETTINGS ------------------------------------------------------------
 
-    setServerSettings: (
+    setPublicSettings: (
       state,
-      action: PayloadAction<TServerSettings | undefined>
+      action: PayloadAction<TPublicServerSettings | undefined>
     ) => {
-      state.settings = action.payload;
+      state.publicSettings = action.payload;
     },
 
     // ROLES ------------------------------------------------------------
@@ -270,9 +327,36 @@ export const serverSlice = createSlice({
       action: PayloadAction<number | undefined>
     ) => {
       state.selectedChannelId = action.payload;
+
+      if (action.payload) {
+        // reset unread count on select
+        // for now this is good enough
+        state.readStatesMap[action.payload] = 0;
+      }
+    },
+    setCurrentVoiceChannelId: (
+      state,
+      action: PayloadAction<number | undefined>
+    ) => {
+      state.currentVoiceChannelId = action.payload;
+    },
+    setChannelPermissions: (
+      state,
+      action: PayloadAction<TChannelUserPermissionsMap>
+    ) => {
+      state.channelPermissions = action.payload;
+    },
+    setChannelReadState: (
+      state,
+      action: PayloadAction<{ channelId: number; count: number | undefined }>
+    ) => {
+      const { channelId, count } = action.payload;
+
+      state.readStatesMap[channelId] = count;
     },
 
     // EMOJIS ------------------------------------------------------------
+
     setEmojis: (state, action: PayloadAction<TJoinedEmoji[]>) => {
       state.emojis = action.payload;
     },
@@ -299,6 +383,101 @@ export const serverSlice = createSlice({
       state.emojis = state.emojis.filter(
         (e) => e.id !== action.payload.emojiId
       );
+    },
+
+    // CATEGORIES ------------------------------------------------------------
+
+    setCategories: (state, action: PayloadAction<TCategory[]>) => {
+      state.categories = action.payload;
+    },
+    addCategory: (state, action: PayloadAction<TCategory>) => {
+      const exists = state.categories.find((c) => c.id === action.payload.id);
+
+      if (exists) return;
+
+      state.categories.push(action.payload);
+    },
+    updateCategory: (
+      state,
+      action: PayloadAction<{
+        categoryId: number;
+        category: Partial<TCategory>;
+      }>
+    ) => {
+      const index = state.categories.findIndex(
+        (c) => c.id === action.payload.categoryId
+      );
+
+      if (index === -1) return;
+
+      state.categories[index] = {
+        ...state.categories[index],
+        ...action.payload.category
+      };
+    },
+    removeCategory: (state, action: PayloadAction<{ categoryId: number }>) => {
+      state.categories = state.categories.filter(
+        (c) => c.id !== action.payload.categoryId
+      );
+    },
+
+    // VOICE ------------------------------------------------------------
+
+    addUserToVoiceChannel: (
+      state,
+      action: PayloadAction<{
+        channelId: number;
+        userId: number;
+        state: TVoiceUserState;
+      }>
+    ) => {
+      const { channelId, userId, state: userState } = action.payload;
+
+      if (!state.voiceMap[channelId]) {
+        state.voiceMap[channelId] = { users: {} };
+      }
+
+      state.voiceMap[channelId].users[userId] = userState;
+    },
+    removeUserFromVoiceChannel: (
+      state,
+      action: PayloadAction<{ channelId: number; userId: number }>
+    ) => {
+      const { channelId, userId } = action.payload;
+
+      if (!state.voiceMap[channelId]) return;
+
+      delete state.voiceMap[channelId].users[userId];
+    },
+    updateVoiceUserState: (
+      state,
+      action: PayloadAction<{
+        channelId: number;
+        userId: number;
+        newState: Partial<TVoiceUserState>;
+      }>
+    ) => {
+      const { channelId, userId, newState } = action.payload;
+
+      if (!state.voiceMap[channelId]) return;
+      if (!state.voiceMap[channelId].users[userId]) return;
+
+      state.voiceMap[channelId].users[userId] = {
+        ...state.voiceMap[channelId].users[userId],
+        ...newState
+      };
+    },
+    updateOwnVoiceState: (
+      state,
+      action: PayloadAction<Partial<TVoiceUserState>>
+    ) => {
+      state.ownVoiceState = {
+        ...state.ownVoiceState,
+        ...action.payload
+      };
+    },
+    setPinnedCard: (state, action: PayloadAction<TPinnedCard | undefined>) => {
+      state.pinnedCard = action.payload;
     }
   }
 });

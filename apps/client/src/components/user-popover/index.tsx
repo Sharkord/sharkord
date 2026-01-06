@@ -1,12 +1,17 @@
-import { useUserRole } from '@/features/server/hooks';
+import { setModViewOpen } from '@/features/app/actions';
+import { useUserRoles } from '@/features/server/hooks';
 import { useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
-import { cn } from '@/lib/utils';
-import { UserStatus } from '@sharkord/shared';
+import { Permission, UserStatus } from '@sharkord/shared';
 import { format } from 'date-fns';
+import { ShieldCheck, UserCog } from 'lucide-react';
 import { memo } from 'react';
+import { Protect } from '../protect';
+import { RoleBadge } from '../role-badge';
+import { IconButton } from '../ui/icon-button';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { UserAvatar } from '../user-avatar';
+import { UserStatusBadge } from '../user-status';
 
 type TUserPopoverProps = {
   userId: number;
@@ -15,7 +20,7 @@ type TUserPopoverProps = {
 
 const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
   const user = useUserById(userId);
-  const role = useUserRole(userId)!;
+  const roles = useUserRoles(userId);
 
   if (!user) return <>{children}</>;
 
@@ -24,6 +29,12 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="start" side="right">
         <div className="relative">
+          {user.banned && (
+            <div className="absolute right-2 top-2 bg-red-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+              <ShieldCheck className="h-3 w-3" />
+              Banned
+            </div>
+          )}
           {user.banner ? (
             <div
               className="h-24 w-full rounded-t-md bg-cover bg-center bg-no-repeat"
@@ -55,29 +66,25 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
             </span>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">
-                <div
-                  className={cn(
-                    'h-2 w-2 rounded-full',
-                    user.status === UserStatus.ONLINE && 'bg-green-500',
-                    user.status === UserStatus.IDLE && 'bg-yellow-500',
-                    user.status === UserStatus.OFFLINE && 'bg-gray-500'
-                  )}
+                <UserStatusBadge
+                  status={user.status || UserStatus.OFFLINE}
+                  className="h-3 w-3"
                 />
                 <span className="text-xs text-muted-foreground capitalize">
                   {user.status || UserStatus.OFFLINE}
                 </span>
               </div>
-              <div className="w-1 h-1 rounded-full bg-white" />
-              <span
-                className="text-xs font-medium"
-                style={{
-                  color: role.color
-                }}
-              >
-                {role.name}
-              </span>
             </div>
           </div>
+
+          {roles.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {roles.map((role) => (
+                <RoleBadge key={role.id} role={role} />
+              ))}
+            </div>
+          )}
+
           {user.bio && (
             <div className="mt-3">
               <p className="text-sm text-foreground leading-relaxed">
@@ -85,10 +92,20 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
               </p>
             </div>
           )}
-          <div className="mt-4 pt-3 border-t border-border">
+          <div className="flex justify-between items-center mt-4 pt-3 border-t border-border">
             <p className="text-xs text-muted-foreground">
               Member since {format(new Date(user.createdAt), 'PP')}
             </p>
+
+            <Protect permission={Permission.MANAGE_USERS}>
+              <IconButton
+                icon={UserCog}
+                variant="ghost"
+                size="sm"
+                title="Moderation View"
+                onClick={() => setModViewOpen(true, user.id)}
+              />
+            </Protect>
           </div>
         </div>
       </PopoverContent>

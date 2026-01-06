@@ -1,9 +1,12 @@
 import { Permission } from '@sharkord/shared';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { addReaction } from '../../db/mutations/messages/add-reaction';
-import { removeReaction } from '../../db/mutations/messages/remove-reaction';
-import { publishMessageUpdate } from '../../db/publishers';
-import { getReaction } from '../../db/queries/messages/get-reaction';
+import { db } from '../../db';
+import { publishMessage } from '../../db/publishers';
+import { getEmojiFileIdByEmojiName } from '../../db/queries/emojis';
+import { getReaction } from '../../db/queries/messages';
+import { messageReactions, messages } from '../../db/schema';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const toggleMessageReactionRoute = protectedProcedure
@@ -16,6 +19,17 @@ const toggleMessageReactionRoute = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.REACT_TO_MESSAGES);
 
+    const message = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.id, input.messageId))
+      .get();
+
+    invariant(message, {
+      code: 'NOT_FOUND',
+      message: 'Message not found'
+    });
+
     const reaction = await getReaction(
       input.messageId,
       input.emoji,
@@ -23,12 +37,28 @@ const toggleMessageReactionRoute = protectedProcedure
     );
 
     if (!reaction) {
-      await addReaction(input.messageId, input.emoji, ctx.user.id);
+      const emojiFileId = await getEmojiFileIdByEmojiName(input.emoji);
+
+      await db.insert(messageReactions).values({
+        messageId: input.messageId,
+        emoji: input.emoji,
+        userId: ctx.user.id,
+        fileId: emojiFileId,
+        createdAt: Date.now()
+      });
     } else {
-      await removeReaction(input.messageId, input.emoji, ctx.user.id);
+      await db
+        .delete(messageReactions)
+        .where(
+          and(
+            eq(messageReactions.messageId, input.messageId),
+            eq(messageReactions.emoji, input.emoji),
+            eq(messageReactions.userId, ctx.user.id)
+          )
+        );
     }
 
-    await publishMessageUpdate(input.messageId);
+    publishMessage(input.messageId, message.channelId, 'update');
   });
 
 export { toggleMessageReactionRoute };

@@ -1,6 +1,6 @@
-import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { fileManager } from '../../utils/file-manager.js';
+import { invariant } from '../../utils/invariant.js';
 import { protectedProcedure } from '../../utils/trpc.js';
 
 const deleteTemporaryFileRoute = protectedProcedure
@@ -8,19 +8,17 @@ const deleteTemporaryFileRoute = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     const temporaryFile = fileManager.getTemporaryFile(input.fileId);
 
-    if (!temporaryFile) {
-      throw new TRPCError({
-        code: 'NOT_FOUND'
-      });
-    }
+    invariant(temporaryFile, {
+      code: 'NOT_FOUND',
+      message: 'Temporary file not found'
+    });
 
     const isOwnUserFile = temporaryFile.userId === ctx.user.id;
 
-    if (!isOwnUserFile) {
-      throw new TRPCError({
-        code: 'FORBIDDEN'
-      });
-    }
+    invariant(isOwnUserFile, {
+      code: 'FORBIDDEN',
+      message: 'You do not have permission to delete this temporary file'
+    });
 
     await fileManager.removeTemporaryFile(input.fileId);
   });

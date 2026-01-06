@@ -1,13 +1,17 @@
 import { Dialog } from '@/components/dialogs/dialogs';
+import { logDebug } from '@/helpers/browser-logger';
 import { getHostFromServer } from '@/helpers/get-file-url';
-import { connectToTRPC, getTRPCClient } from '@/lib/trpc';
-import { type TServerInfo, type TServerSettings } from '@sharkord/shared';
+import { cleanup, connectToTRPC, getTRPCClient } from '@/lib/trpc';
+import { type TPublicServerSettings, type TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
 import { openDialog } from '../dialogs/actions';
 import { store } from '../store';
 import { infoSelector } from './selectors';
 import { serverSliceActions } from './slice';
 import { initSubscriptions } from './subscriptions';
+import { type TDisconnectInfo } from './types';
+
+let unsubscribeFromServer: (() => void) | null = null;
 
 export const setConnected = (status: boolean) => {
   store.dispatch(serverSliceActions.setConnected(status));
@@ -15,6 +19,10 @@ export const setConnected = (status: boolean) => {
 
 export const resetServerState = () => {
   store.dispatch(serverSliceActions.resetState());
+};
+
+export const setDisconnectInfo = (info: TDisconnectInfo | undefined) => {
+  store.dispatch(serverSliceActions.setDisconnectInfo(info));
 };
 
 export const setConnecting = (status: boolean) => {
@@ -25,8 +33,10 @@ export const setServerId = (id: string) => {
   store.dispatch(serverSliceActions.setServerId(id));
 };
 
-export const setServerSettings = (settings: TServerSettings | undefined) => {
-  store.dispatch(serverSliceActions.setServerSettings(settings));
+export const setPublicServerSettings = (
+  settings: TPublicServerSettings | undefined
+) => {
+  store.dispatch(serverSliceActions.setPublicSettings(settings));
 };
 
 export const setInfo = (info: TServerInfo | undefined) => {
@@ -61,12 +71,18 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
   const trpc = getTRPCClient();
   const data = await trpc.others.joinServer.query({ handshakeHash, password });
 
-  console.log('Joined server', data);
+  if (window.DEBUG) {
+    logDebug('joinServer', data);
+  }
 
-  // TODO: store unsubscribe function and call it on disconnect
-  initSubscriptions();
+  unsubscribeFromServer = initSubscriptions();
 
   store.dispatch(serverSliceActions.setInitialData(data));
+};
+
+export const disconnectFromServer = () => {
+  cleanup();
+  unsubscribeFromServer?.();
 };
 
 window.useToken = async (token: string) => {

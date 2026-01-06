@@ -1,9 +1,5 @@
 import { store } from '@/features/store';
-import {
-  UserStatus,
-  type TJoinedPublicUser,
-  type TUser
-} from '@sharkord/shared';
+import { UserStatus, type TJoinedPublicUser } from '@sharkord/shared';
 import { serverSliceActions } from '../slice';
 import { userByIdSelector } from './selectors';
 
@@ -13,10 +9,6 @@ export const setUsers = (users: TJoinedPublicUser[]) => {
 
 export const addUser = (user: TJoinedPublicUser) => {
   store.dispatch(serverSliceActions.addUser(user));
-};
-
-export const setOwnUser = (user: TUser) => {
-  store.dispatch(serverSliceActions.setOwnUser(user));
 };
 
 export const updateUser = (
@@ -29,8 +21,6 @@ export const updateUser = (
 export const handleUserJoin = (user: TJoinedPublicUser) => {
   const state = store.getState();
   const foundUser = userByIdSelector(state, user.id);
-
-  console.log('handleUserJoin', { user, foundUser });
 
   if (foundUser) {
     updateUser(user.id, { ...user, status: UserStatus.ONLINE });

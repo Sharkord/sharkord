@@ -1,8 +1,12 @@
-import { Permission, ServerEvents } from '@sharkord/shared';
-import { TRPCError } from '@trpc/server';
+import { ActivityLogType, Permission } from '@sharkord/shared';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { removeEmoji } from '../../db/mutations/emojis/remove-emoji';
-import { removeFile } from '../../db/mutations/files/remove-file';
+import { db } from '../../db';
+import { removeFile } from '../../db/mutations/files';
+import { publishEmoji } from '../../db/publishers';
+import { emojis } from '../../db/schema';
+import { enqueueActivityLog } from '../../queues/activity-log';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const deleteEmojiRoute = protectedProcedure
@@ -14,15 +18,27 @@ const deleteEmojiRoute = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_EMOJIS);
 
-    const removedEmoji = await removeEmoji(input.emojiId);
+    const removedEmoji = await db
+      .delete(emojis)
+      .where(eq(emojis.id, input.emojiId))
+      .returning()
+      .get();
 
-    if (!removedEmoji) {
-      throw new TRPCError({ code: 'NOT_FOUND' });
-    }
+    invariant(removedEmoji, {
+      code: 'NOT_FOUND',
+      message: 'Emoji not found'
+    });
 
     await removeFile(removedEmoji.fileId);
 
-    ctx.pubsub.publish(ServerEvents.EMOJI_DELETE, removedEmoji.id);
+    publishEmoji(removedEmoji.id, 'delete');
+    enqueueActivityLog({
+      type: ActivityLogType.DELETED_EMOJI,
+      userId: ctx.user.id,
+      details: {
+        name: removedEmoji.name
+      }
+    });
   });
 
 export { deleteEmojiRoute };

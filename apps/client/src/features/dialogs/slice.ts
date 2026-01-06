@@ -20,6 +20,7 @@ export const dialogSlice = createSlice({
   name: 'dialog',
   initialState,
   reducers: {
+    resetDialogs: () => initialState,
     openDialog: (
       state,
       action: PayloadAction<{ dialog: Dialog; props?: TGenericObject }>

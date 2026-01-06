@@ -1,19 +1,20 @@
+import chalk from 'chalk';
 import http from 'http';
 import z from 'zod';
 import { config } from '../config';
+import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
 import { healthRouteHandler } from './healthz';
 import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
 import { loginRouteHandler } from './login';
 import { publicRouteHandler } from './public';
-import { registerRouteHandler } from './register';
 import { uploadFileRouteHandler } from './upload';
 import { HttpValidationError } from './utils';
 
 // this http server implementation is temporary and will be moved to bun server later when things are more stable
 
-const createHttpServer = async () => {
+const createHttpServer = async (port: number = config.server.port) => {
   return new Promise<http.Server>((resolve) => {
     const server = http.createServer(
       async (req: http.IncomingMessage, res: http.ServerResponse) => {
@@ -21,11 +22,13 @@ const createHttpServer = async () => {
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', '*');
 
+        const info = getWsInfo(undefined, req);
+
         logger.debug(
-          '%s - %s - (%s)',
+          `${chalk.dim('[HTTP]')} %s - %s - [%s]`,
           req.method,
           req.url,
-          req.socket.remoteAddress
+          info?.ip
         );
 
         if (req.method === 'OPTIONS') {
@@ -45,10 +48,6 @@ const createHttpServer = async () => {
 
           if (req.method === 'POST' && req.url === '/upload') {
             return await uploadFileRouteHandler(req, res);
-          }
-
-          if (req.method === 'POST' && req.url === '/register') {
-            return await registerRouteHandler(req, res);
           }
 
           if (req.method === 'POST' && req.url === '/login') {
@@ -85,6 +84,8 @@ const createHttpServer = async () => {
             return;
           }
 
+          logger.error('HTTP route error:', error);
+
           res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Internal server error' }));
           return;
@@ -96,7 +97,7 @@ const createHttpServer = async () => {
     );
 
     server.on('listening', () => {
-      logger.debug('HTTP server is listening on port %d', config.server.port);
+      logger.debug('HTTP server is listening on port %d', port);
       resolve(server);
     });
 
@@ -105,7 +106,7 @@ const createHttpServer = async () => {
       process.exit(0);
     });
 
-    server.listen(config.server.port);
+    server.listen(port);
   });
 };
 

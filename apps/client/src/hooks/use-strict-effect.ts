@@ -7,9 +7,11 @@ const useStrictEffect = (effect: EffectCallback, deps?: DependencyList) => {
   useEffect(() => {
     if (ran.current) return;
 
-    effect();
+    const cleanup = effect();
 
     ran.current = true;
+
+    return cleanup;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 };

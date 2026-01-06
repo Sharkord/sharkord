@@ -4,11 +4,15 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 export interface TAppState {
   loading: boolean;
   devices: TDevices | undefined;
+  modViewOpen: boolean;
+  modViewUserId?: number;
 }
 
 const initialState: TAppState = {
   loading: true,
-  devices: undefined
+  devices: undefined,
+  modViewOpen: false,
+  modViewUserId: undefined
 };
 
 export const appSlice = createSlice({
@@ -20,6 +24,16 @@ export const appSlice = createSlice({
     },
     setDevices: (state, action: PayloadAction<TDevices>) => {
       state.devices = action.payload;
+    },
+    setModViewOpen: (
+      state,
+      action: PayloadAction<{
+        modViewOpen: boolean;
+        userId?: number;
+      }>
+    ) => {
+      state.modViewOpen = action.payload.modViewOpen;
+      state.modViewUserId = action.payload.userId;
     }
   }
 });

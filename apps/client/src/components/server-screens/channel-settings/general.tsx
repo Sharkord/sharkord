@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/card';
 import { Group } from '@/components/ui/group';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useAdminChannelGeneral } from '@/features/server/admin/hooks';
@@ -46,6 +47,16 @@ const General = memo(({ channelId }: TGeneralProps) => {
             value={channel.topic ?? ''}
             onChange={(e) => onChange('topic', e.target.value || null)}
             placeholder="Enter channel topic"
+          />
+        </Group>
+
+        <Group
+          label="Private"
+          description="Restricts access to this channel to specific roles and members."
+        >
+          <Switch
+            checked={channel.private}
+            onCheckedChange={(value) => onChange('private', value)}
           />
         </Group>
 

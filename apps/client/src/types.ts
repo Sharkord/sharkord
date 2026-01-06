@@ -1,3 +1,5 @@
+import type { StreamKind } from '@sharkord/shared';
+
 export type TDevices = {
   input: {
     deviceId: string | undefined;
@@ -27,27 +29,27 @@ export enum Resolution {
   '720p' = '720p',
   '480p' = '480p',
   '360p' = '360p',
-  '240p' = '240p'
+  '240p' = '240p',
+  '144p' = '144p'
 }
 
-export enum LocalStorageKey {
-  IDENTITY = 'sharkord-identity',
-  REMEMBER_IDENTITY = 'sharkord-remember-identity',
-  USER_PASSWORD = 'sharkord-user-password',
-  SERVER_PASSWORD = 'sharkord-server-password'
-}
+export type TDeviceSettings = {
+  microphoneId: string | undefined;
+  webcamId: string | undefined;
+  webcamResolution: Resolution;
+  webcamFramerate: number;
+  echoCancellation: boolean;
+  noiseSuppression: boolean;
+  autoGainControl: boolean;
+  shareSystemAudio: boolean;
+  screenResolution: Resolution;
+  screenFramerate: number;
+};
 
-export enum SessionStorageKey {
-  TOKEN = 'sharkord-token'
-}
-
-export enum ChannelType {
-  TEXT = 'TEXT',
-  VOICE = 'VOICE'
-}
-
-export enum StreamKind {
-  AUDIO = 'audio',
-  VIDEO = 'video',
-  SCREEN = 'screen'
-}
+export type TRemoteStreams = {
+  [userId: number]: {
+    [StreamKind.AUDIO]: MediaStream | undefined;
+    [StreamKind.VIDEO]: MediaStream | undefined;
+    [StreamKind.SCREEN]: MediaStream | undefined;
+  };
+};

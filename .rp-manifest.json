@@ -1,6 +1,0 @@
-{
-  ".": "0.0.1",
-  "apps/server": "0.0.1",
-  "apps/app": "0.0.1",
-  "packages/shared": "0.0.1"
-}

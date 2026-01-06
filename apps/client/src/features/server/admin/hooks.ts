@@ -1,14 +1,33 @@
+import { requestConfirmation } from '@/features/dialogs/actions';
 import { parseTrpcErrors, type TTrpcErrors } from '@/helpers/parse-trpc-errors';
+import { useForm } from '@/hooks/use-form';
 import { getTRPCClient } from '@/lib/trpc';
 import {
+  Permission,
+  STORAGE_MAX_FILE_SIZE,
+  STORAGE_MAX_QUOTA_PER_USER,
+  STORAGE_OVERFLOW_ACTION,
+  STORAGE_QUOTA,
+  StorageOverflowAction,
+  type TCategory,
   type TChannel,
+  type TChannelRolePermission,
+  type TChannelUserPermission,
+  type TDiskMetrics,
   type TFile,
   type TJoinedEmoji,
+  type TJoinedInvite,
   type TJoinedRole,
-  type TRole
+  type TJoinedUser,
+  type TLogin,
+  type TMessage,
+  type TRole,
+  type TStorageSettings
 } from '@sharkord/shared';
-import { useCallback, useEffect, useState } from 'react';
+import { filesize } from 'filesize';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useCan } from '../hooks';
 
 export const useAdminGeneral = () => {
   const [loading, setLoading] = useState(true);
@@ -44,7 +63,7 @@ export const useAdminGeneral = () => {
       await trpc.others.updateSettings.mutate({
         name: settings.name,
         description: settings.description,
-        password: settings.password || null,
+        password: settings.password || undefined,
         allowNewUsers: settings.allowNewUsers
       });
       toast.success('Settings updated');
@@ -75,6 +94,99 @@ export const useAdminGeneral = () => {
   };
 };
 
+export const useAdminUpdates = () => {
+  const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState<TTrpcErrors>({});
+  const [hasUpdate, setHasUpdate] = useState(false);
+  const [latestVersion, setLatestVersion] = useState<string | null>(null);
+  const [currentVersion, setCurrentVersion] = useState<string | null>(null);
+  const [canUpdate, setCanUpdate] = useState(false);
+
+  const fetchUpdate = useCallback(async () => {
+    setLoading(true);
+
+    const trpc = getTRPCClient();
+
+    try {
+      const { hasUpdate, latestVersion, canUpdate, currentVersion } =
+        await trpc.others.getUpdate.query();
+
+      setHasUpdate(hasUpdate);
+      setLatestVersion(latestVersion);
+      setCurrentVersion(currentVersion);
+      setCanUpdate(canUpdate);
+    } catch (error) {
+      console.error('Error fetching update:', error);
+      setErrors(parseTrpcErrors(error));
+    }
+
+    setLoading(false);
+  }, []);
+
+  const update = useCallback(async () => {
+    const answer = await requestConfirmation({
+      title: 'Are you sure you want to update the server?',
+      message:
+        'This will download and install the latest version of the server. The server will be restarted during the process, which may cause temporary downtime.',
+      confirmLabel: 'Update',
+      cancelLabel: 'Cancel'
+    });
+
+    if (!answer) return;
+
+    const trpc = getTRPCClient();
+
+    try {
+      trpc.others.updateServer.mutate();
+
+      toast.success('Server update initiated');
+    } catch (error) {
+      console.error('Error updating server:', error);
+      setErrors(parseTrpcErrors(error));
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUpdate();
+  }, [fetchUpdate]);
+
+  return {
+    refetch: fetchUpdate,
+    loading,
+    hasUpdate,
+    latestVersion,
+    currentVersion,
+    canUpdate,
+    errors,
+    update
+  };
+};
+
+export const useHasUpdates = () => {
+  const can = useCan();
+  const [hasUpdates, setHasUpdates] = useState(false);
+
+  const fetchHasUpdates = useCallback(async () => {
+    if (!can(Permission.MANAGE_UPDATES)) return;
+
+    const trpc = getTRPCClient();
+
+    try {
+      const { hasUpdate } = await trpc.others.getUpdate.query();
+
+      setHasUpdates(hasUpdate);
+    } catch (error) {
+      console.error('Error fetching update status:', error);
+    }
+  }, [can]);
+
+  useEffect(() => {
+    fetchHasUpdates();
+  }, [fetchHasUpdates]);
+
+  return hasUpdates;
+};
+
 export const useAdminChannelGeneral = (channelId: number) => {
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<TTrpcErrors>({});
@@ -97,7 +209,8 @@ export const useAdminChannelGeneral = (channelId: number) => {
       await trpc.channels.update.mutate({
         channelId,
         name: channel?.name ?? '',
-        topic: channel?.topic ?? null
+        topic: channel?.topic ?? null,
+        private: channel?.private ?? false
       });
 
       toast.success('Channel updated');
@@ -108,7 +221,7 @@ export const useAdminChannelGeneral = (channelId: number) => {
   }, [channel, channelId]);
 
   const onChange = useCallback(
-    (field: keyof TChannel, value: string | null) => {
+    (field: keyof TChannel, value: string | null | boolean) => {
       if (!channel) return;
       setChannel((c) => (c ? { ...c, [field]: value } : c));
       setErrors((e) => ({ ...e, [field]: undefined }));
@@ -123,6 +236,60 @@ export const useAdminChannelGeneral = (channelId: number) => {
   return {
     channel,
     refetch: fetchChannel,
+    loading,
+    errors,
+    onChange,
+    submit
+  };
+};
+
+export const useAdminCategoryGeneral = (categoryId: number) => {
+  const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState<TTrpcErrors>({});
+  const [category, setCategory] = useState<TCategory | undefined>(undefined);
+
+  const fetchCategory = useCallback(async () => {
+    setLoading(true);
+
+    const trpc = getTRPCClient();
+    const category = await trpc.categories.get.query({ categoryId });
+
+    setCategory(category);
+    setLoading(false);
+  }, [categoryId]);
+
+  const submit = useCallback(async () => {
+    const trpc = getTRPCClient();
+
+    try {
+      await trpc.categories.update.mutate({
+        categoryId,
+        name: category?.name ?? ''
+      });
+
+      toast.success('Category updated');
+    } catch (error) {
+      console.error('Error updating category:', error);
+      setErrors(parseTrpcErrors(error));
+    }
+  }, [category, categoryId]);
+
+  const onChange = useCallback(
+    (field: keyof TCategory, value: string | null) => {
+      if (!category) return;
+      setCategory((c) => (c ? { ...c, [field]: value } : c));
+      setErrors((e) => ({ ...e, [field]: undefined }));
+    },
+    [category]
+  );
+
+  useEffect(() => {
+    fetchCategory();
+  }, [fetchCategory]);
+
+  return {
+    category,
+    refetch: fetchCategory,
     loading,
     errors,
     onChange,
@@ -203,5 +370,207 @@ export const useAdminRoles = () => {
     loading,
     errors,
     onChange
+  };
+};
+
+export const useAdminStorage = () => {
+  const [loading, setLoading] = useState(true);
+  const { values, setValues, setTrpcErrors, r, onChange } =
+    useForm<TStorageSettings>({
+      storageOverflowAction: STORAGE_OVERFLOW_ACTION,
+      storageSpaceQuotaByUser: STORAGE_MAX_QUOTA_PER_USER,
+      storageUploadEnabled: true,
+      storageUploadMaxFileSize: STORAGE_MAX_FILE_SIZE,
+      storageQuota: STORAGE_QUOTA
+    });
+  const [diskMetrics, setDiskMetrics] = useState<TDiskMetrics | undefined>(
+    undefined
+  );
+
+  const fetchStorageSettings = useCallback(async () => {
+    setLoading(true);
+
+    const trpc = getTRPCClient();
+    const { storageSettings, diskMetrics } =
+      await trpc.others.getStorageSettings.query();
+
+    setValues(storageSettings);
+    setDiskMetrics(diskMetrics);
+    setLoading(false);
+  }, [setValues]);
+
+  const submit = useCallback(async () => {
+    const trpc = getTRPCClient();
+
+    try {
+      await trpc.others.updateSettings.mutate({
+        storageUploadEnabled: values.storageUploadEnabled,
+        storageUploadMaxFileSize: values.storageUploadMaxFileSize,
+        storageSpaceQuotaByUser: values.storageSpaceQuotaByUser,
+        storageOverflowAction:
+          values.storageOverflowAction as StorageOverflowAction
+      });
+      toast.success('Storage settings updated');
+    } catch (error) {
+      console.error('Error updating storage settings:', error);
+      setTrpcErrors(error);
+    }
+  }, [values, setTrpcErrors]);
+
+  const labels = useMemo(() => {
+    return {
+      storageUploadMaxFileSize: filesize(
+        Number(values.storageUploadMaxFileSize ?? 0),
+        {
+          output: 'object',
+          standard: 'jedec'
+        }
+      ),
+      storageSpaceQuotaByUser: filesize(
+        Number(values.storageSpaceQuotaByUser ?? 0),
+        {
+          output: 'object',
+          standard: 'jedec'
+        }
+      ),
+      storageQuota: filesize(Number(values.storageQuota ?? 0), {
+        output: 'object',
+        standard: 'jedec'
+      })
+    };
+  }, [values]);
+
+  useEffect(() => {
+    fetchStorageSettings();
+  }, [fetchStorageSettings]);
+
+  return {
+    values,
+    labels,
+    refetch: fetchStorageSettings,
+    loading,
+    submit,
+    r,
+    onChange,
+    diskMetrics
+  };
+};
+
+export const useAdminUsers = () => {
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<TJoinedUser[]>([]);
+
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+
+    const trpc = getTRPCClient();
+    const users = await trpc.users.getAll.query();
+
+    setUsers(users);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  return {
+    users,
+    refetch: fetchUsers,
+    loading
+  };
+};
+
+export const useAdminChannelPermissions = (channelId: number) => {
+  const [loading, setLoading] = useState(true);
+  const [rolePermissions, setRolePermissions] = useState<
+    TChannelRolePermission[]
+  >([]);
+  const [userPermissions, setUserPermissions] = useState<
+    TChannelUserPermission[]
+  >([]);
+
+  const fetchPermissions = useCallback(async () => {
+    setLoading(true);
+
+    const trpc = getTRPCClient();
+    const { rolePermissions, userPermissions } =
+      await trpc.channels.getPermissions.mutate({ channelId });
+
+    setRolePermissions(rolePermissions);
+    setUserPermissions(userPermissions);
+    setLoading(false);
+  }, [channelId]);
+
+  useEffect(() => {
+    fetchPermissions();
+  }, [fetchPermissions]);
+
+  return {
+    rolePermissions,
+    userPermissions,
+    refetch: fetchPermissions,
+    loading
+  };
+};
+
+export const useAdminUserInfo = (userId: number) => {
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<TJoinedUser | null>(null);
+  const [logins, setLogins] = useState<TLogin[]>([]);
+  const [files, setFiles] = useState<TFile[]>([]);
+  const [messages, setMessages] = useState<TMessage[]>([]);
+
+  const fetchUser = useCallback(async () => {
+    setLoading(true);
+
+    const trpc = getTRPCClient();
+    const { user, logins, files, messages } = await trpc.users.getInfo.query({
+      userId
+    });
+
+    setUser(user);
+    setLoading(false);
+    setLogins(logins);
+    setFiles(files);
+    setMessages(messages);
+  }, [userId]);
+
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  return {
+    user,
+    logins,
+    files,
+    refetch: fetchUser,
+    loading,
+    messages
+  };
+};
+
+export const useAdminInvites = () => {
+  const [loading, setLoading] = useState(true);
+  const [invites, setInvites] = useState<TJoinedInvite[]>([]);
+
+  const fetchInvites = useCallback(async () => {
+    setLoading(true);
+
+    const trpc = getTRPCClient();
+    const invites = await trpc.invites.getAll.query();
+
+    setInvites(invites);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchInvites();
+  }, [fetchInvites]);
+
+  return {
+    invites,
+    refetch: fetchInvites,
+    loading
   };
 };

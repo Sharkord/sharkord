@@ -1,52 +1,107 @@
-import { OWNER_ROLE_ID, Permission } from '@sharkord/shared';
+import { ChannelPermission, Permission } from '@sharkord/shared';
 import { useCallback } from 'react';
 import { useSelector } from 'react-redux';
+import type { IRootState } from '../store';
+import { useChannelById, useChannelPermissionsById } from './channels/hooks';
+import { channelReadStateByIdSelector } from './channels/selectors';
 import {
   connectedSelector,
   connectingSelector,
+  disconnectInfoSelector,
   infoSelector,
-  ownUserRoleSelector,
+  isOwnUserOwnerSelector,
+  ownUserRolesSelector,
+  ownVoiceUserSelector,
+  publicServerSettingsSelector,
   serverNameSelector,
-  serverSettingsSelector,
-  userRoleSelector
+  typingUsersByChannelIdSelector,
+  userRolesSelector,
+  voiceUsersByChannelIdSelector
 } from './selectors';
 
 export const useIsConnected = () => useSelector(connectedSelector);
 
 export const useIsConnecting = () => useSelector(connectingSelector);
 
+export const useDisconnectInfo = () => useSelector(disconnectInfoSelector);
+
 export const useServerName = () => useSelector(serverNameSelector);
 
-export const useServerSettings = () => useSelector(serverSettingsSelector);
+export const usePublicServerSettings = () =>
+  useSelector(publicServerSettingsSelector);
 
-export const useOwnUserRole = () => useSelector(ownUserRoleSelector);
+export const useOwnUserRoles = () => useSelector(ownUserRolesSelector);
 
 export const useInfo = () => useSelector(infoSelector);
 
-export const useCan = () => {
-  const ownUserRole = useOwnUserRole();
+export const useIsOwnUserOwner = () => useSelector(isOwnUserOwnerSelector);
 
+export const useCan = () => {
+  const ownUserRoles = useOwnUserRoles();
+  const isOwner = useIsOwnUserOwner();
+
+  // TODO: maybe this can can recieve both Permission and ChannelPermission?
   const can = useCallback(
     (permission: Permission | Permission[]) => {
-      if (!ownUserRole) return false;
+      if (isOwner) return true;
 
-      if (ownUserRole.id === OWNER_ROLE_ID) {
-        return true;
+      const permissionsToCheck = Array.isArray(permission)
+        ? permission
+        : [permission];
+
+      for (const role of ownUserRoles) {
+        for (const perm of role.permissions) {
+          if (permissionsToCheck.includes(perm)) {
+            return true;
+          }
+        }
       }
 
-      if (Array.isArray(permission)) {
-        return !!permission.some((perm) =>
-          ownUserRole.permissions?.includes(perm)
-        );
-      }
-
-      return !!ownUserRole.permissions?.includes(permission);
+      return false;
     },
-    [ownUserRole]
+    [ownUserRoles, isOwner]
   );
 
   return can;
 };
 
-export const useUserRole = (userId: number) =>
-  useSelector((state) => userRoleSelector(state, userId));
+export const useChannelCan = (channelId: number | undefined) => {
+  const ownUserRoles = useChannelPermissionsById(channelId || -1);
+  const isOwner = useIsOwnUserOwner();
+  const channel = useChannelById(channelId || -1);
+
+  const can = useCallback(
+    (permission: ChannelPermission) => {
+      if (isOwner || !channel || !channel?.private) return true;
+
+      // if VIEW is false, no other permission matters
+      if (ownUserRoles.permissions[ChannelPermission.VIEW_CHANNEL] === false)
+        return false;
+
+      return ownUserRoles.permissions[permission] === true;
+    },
+    [ownUserRoles, isOwner, channel]
+  );
+
+  return can;
+};
+
+export const useUserRoles = (userId: number) =>
+  useSelector((state: IRootState) => userRolesSelector(state, userId));
+
+export const useTypingUsersByChannelId = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    typingUsersByChannelIdSelector(state, channelId)
+  );
+
+export const useVoiceUsersByChannelId = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    voiceUsersByChannelIdSelector(state, channelId)
+  );
+
+export const useOwnVoiceUser = () => useSelector(ownVoiceUserSelector);
+
+export const useUnreadMessagesCount = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    channelReadStateByIdSelector(state, channelId)
+  );

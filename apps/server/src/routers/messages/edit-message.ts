@@ -1,10 +1,11 @@
 import { Permission } from '@sharkord/shared';
-import { TRPCError } from '@trpc/server';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { updateMessage } from '../../db/mutations/messages/update-message';
-import { publishMessageUpdate } from '../../db/publishers';
-import { getRawMessage } from '../../db/queries/messages/get-raw-message';
-import { enqueueProcessMetadata } from '../../queues/message-metadata-procesor';
+import { db } from '../../db';
+import { publishMessage } from '../../db/publishers';
+import { messages } from '../../db/schema';
+import { enqueueProcessMetadata } from '../../queues/message-metadata';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const editMessageRoute = protectedProcedure
@@ -15,28 +16,39 @@ const editMessageRoute = protectedProcedure
     })
   )
   .mutation(async ({ input, ctx }) => {
-    const message = await getRawMessage(input.messageId);
+    const message = await db
+      .select({
+        userId: messages.userId,
+        channelId: messages.channelId
+      })
+      .from(messages)
+      .where(eq(messages.id, input.messageId))
+      .limit(1)
+      .get();
 
-    if (!message) {
-      throw new TRPCError({ code: 'NOT_FOUND' });
-    }
-
-    if (
-      message.userId !== ctx.user.id &&
-      !(await ctx.hasPermission(Permission.MANAGE_MESSAGES))
-    ) {
-      throw new TRPCError({ code: 'FORBIDDEN' });
-    }
-
-    const updatedMessage = await updateMessage(input.messageId, {
-      content: input.content
+    invariant(message, {
+      code: 'NOT_FOUND',
+      message: 'Message not found'
     });
+    invariant(
+      message.userId === ctx.user.id ||
+        (await ctx.hasPermission(Permission.MANAGE_MESSAGES)),
+      {
+        code: 'FORBIDDEN',
+        message: 'You do not have permission to edit this message'
+      }
+    );
 
-    if (updatedMessage) {
-      await publishMessageUpdate(updatedMessage.id);
+    await db
+      .update(messages)
+      .set({
+        content: input.content,
+        updatedAt: Date.now()
+      })
+      .where(eq(messages.id, input.messageId));
 
-      enqueueProcessMetadata(input.content, updatedMessage.id);
-    }
+    publishMessage(input.messageId, message.channelId, 'update');
+    enqueueProcessMetadata(input.content, input.messageId);
   });
 
 export { editMessageRoute };

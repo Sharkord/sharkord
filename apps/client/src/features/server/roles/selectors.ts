@@ -1,9 +1,9 @@
 import type { IRootState } from '@/features/store';
-import { createSelector } from '@reduxjs/toolkit';
+import { createCachedSelector } from 're-reselect';
 
 export const rolesSelector = (state: IRootState) => state.server.roles;
 
-export const roleByIdSelector = createSelector(
-  [rolesSelector, (_, roleId: number) => roleId],
+export const roleByIdSelector = createCachedSelector(
+  [rolesSelector, (_: IRootState, roleId: number) => roleId],
   (roles, roleId) => roles.find((role) => role.id === roleId)
-);
+)((_, roleId: number) => roleId);

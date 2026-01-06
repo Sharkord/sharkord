@@ -1,3 +1,4 @@
+import { LoadingCard } from '@/components/ui/loading-card';
 import { useAdminEmojis } from '@/features/server/admin/hooks';
 import { uploadFiles } from '@/helpers/upload-file';
 import { useFilePicker } from '@/hooks/use-file-picker';
@@ -9,7 +10,7 @@ import { UpdateEmoji } from './update-emoji';
 import { UploadEmoji } from './upload-emoji';
 
 const Emojis = memo(() => {
-  const { emojis, refetch } = useAdminEmojis();
+  const { emojis, refetch, loading } = useAdminEmojis();
   const openFilePicker = useFilePicker();
 
   const [selectedEmojiId, setSelectedEmojiId] = useState<number | undefined>(
@@ -51,6 +52,10 @@ const Emojis = memo(() => {
     () => emojis.find((e) => e.id === selectedEmojiId),
     [emojis, selectedEmojiId]
   );
+
+  if (loading) {
+    return <LoadingCard className="h-[600px]" />;
+  }
 
   return (
     <div className="flex gap-6">

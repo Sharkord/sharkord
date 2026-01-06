@@ -63,9 +63,34 @@ const useForm = <T extends Record<string, unknown>>(initialValues: T) => {
     [setValues]
   );
 
+  const registerRawNumber = useCallback(
+    (key: keyof T) => {
+      const onChange = (value: number | undefined) => {
+        setErrors((prev) => ({ ...prev, [key]: undefined }));
+        setValues((prev) => ({ ...prev, [key]: value as T[keyof T] }));
+      };
+
+      const value = values[key] as number | undefined;
+
+      return {
+        value,
+        onChange,
+        error: errors[key as string]
+      };
+    },
+    [values, errors, setValues, setErrors]
+  );
+
   const setErrorsDirectly = useCallback(
     (newErrors: TTrpcErrors) => {
       setErrors(newErrors);
+    },
+    [setErrors]
+  );
+
+  const setError = useCallback(
+    <K extends keyof T>(key: K | '_general', errorMessage: string) => {
+      setErrors((prev) => ({ ...prev, [key]: errorMessage }));
     },
     [setErrors]
   );
@@ -78,7 +103,9 @@ const useForm = <T extends Record<string, unknown>>(initialValues: T) => {
     setTrpcErrors,
     r: registerInput,
     rr: registerRaw,
-    onChange
+    rrn: registerRawNumber,
+    onChange,
+    setError
   };
 };
 

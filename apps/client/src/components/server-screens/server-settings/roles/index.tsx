@@ -1,17 +1,22 @@
 import { Card, CardContent } from '@/components/ui/card';
+import { LoadingCard } from '@/components/ui/loading-card';
 import { useAdminRoles } from '@/features/server/admin/hooks';
 import { memo, useMemo, useState } from 'react';
 import { RolesList } from './roles-list';
 import { UpdateRole } from './update-role';
 
 const Roles = memo(() => {
-  const { roles, refetch } = useAdminRoles();
+  const { roles, refetch, loading } = useAdminRoles();
 
   const [selectedRoleId, setSelectedRoleId] = useState<number | undefined>();
 
   const selectedRole = useMemo(() => {
     return roles.find((r) => r.id === selectedRoleId) || null;
   }, [roles, selectedRoleId]);
+
+  if (loading) {
+    return <LoadingCard className="h-[600px]" />;
+  }
 
   return (
     <div className="flex gap-6">

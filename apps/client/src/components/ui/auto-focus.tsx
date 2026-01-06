@@ -31,7 +31,7 @@ export function AutoFocus({ children, skip = false }: TAutoFocusProps) {
         }, 0);
       }
     }
-  }, []);
+  }, [skip]);
 
   return (
     <div style={{ display: 'contents' }} ref={ref}>

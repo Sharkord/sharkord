@@ -19,4 +19,28 @@ const onChannelUpdateRoute = protectedProcedure.subscription(
   }
 );
 
-export { onChannelCreateRoute, onChannelDeleteRoute, onChannelUpdateRoute };
+const onChannelPermissionsUpdateRoute = protectedProcedure.subscription(
+  async ({ ctx }) => {
+    return ctx.pubsub.subscribeFor(
+      ctx.userId,
+      ServerEvents.CHANNEL_PERMISSIONS_UPDATE
+    );
+  }
+);
+
+const onChannelReadStatesUpdateRoute = protectedProcedure.subscription(
+  async ({ ctx }) => {
+    return ctx.pubsub.subscribeFor(
+      ctx.userId,
+      ServerEvents.CHANNEL_READ_STATES_UPDATE
+    );
+  }
+);
+
+export {
+  onChannelCreateRoute,
+  onChannelDeleteRoute,
+  onChannelPermissionsUpdateRoute,
+  onChannelReadStatesUpdateRoute,
+  onChannelUpdateRoute
+};

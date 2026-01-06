@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/card';
 import { Group } from '@/components/ui/group';
 import { Input } from '@/components/ui/input';
+import { LoadingCard } from '@/components/ui/loading-card';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { closeServerScreens } from '@/features/server-screens/actions';
@@ -18,6 +19,10 @@ import { LogoManager } from './logo-manager';
 const General = memo(() => {
   const { settings, logo, loading, onChange, submit, errors, refetch } =
     useAdminGeneral();
+
+  if (loading) {
+    return <LoadingCard className="h-[600px]" />;
+  }
 
   return (
     <Card>
@@ -55,6 +60,8 @@ const General = memo(() => {
           />
         </Group>
 
+        <LogoManager logo={logo} refetch={refetch} />
+
         <Group
           label="Allow New Users"
           description="Allow anyone to register and join your server. If disabled, only users you invite can join."
@@ -64,8 +71,6 @@ const General = memo(() => {
             onCheckedChange={(checked) => onChange('allowNewUsers', checked)}
           />
         </Group>
-
-        <LogoManager logo={logo} refetch={refetch} />
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>

@@ -18,6 +18,7 @@ export const serverScreenSlice = createSlice({
   name: 'serverScreens',
   initialState,
   reducers: {
+    resetServerScreens: () => initialState,
     openServerScreen: (
       state,
       action: {

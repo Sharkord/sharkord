@@ -1,19 +1,31 @@
 import { useIsAppLoading } from '@/features/app/hooks';
-import { useIsConnected } from '@/features/server/hooks';
+import { useDisconnectInfo, useIsConnected } from '@/features/server/hooks';
 import { Connect } from '@/screens/connect';
-import LoadingApp from '@/screens/loading-app';
+import { Disconnected } from '@/screens/disconnected';
+import { LoadingApp } from '@/screens/loading-app';
 import { ServerView } from '@/screens/server-view';
+import { DisconnectCode } from '@sharkord/shared';
 import { memo } from 'react';
 
 const Routing = memo(() => {
   const isConnected = useIsConnected();
   const isAppLoading = useIsAppLoading();
+  const disconnectInfo = useDisconnectInfo();
 
   if (isAppLoading) {
     return <LoadingApp />;
   }
 
   if (!isConnected) {
+    if (
+      disconnectInfo &&
+      (!disconnectInfo.wasClean ||
+        disconnectInfo.code === DisconnectCode.KICKED ||
+        disconnectInfo.code === DisconnectCode.BANNED)
+    ) {
+      return <Disconnected info={disconnectInfo} />;
+    }
+
     return <Connect />;
   }
 

@@ -7,6 +7,7 @@ import { UserStatus } from '@sharkord/shared';
 import { memo } from 'react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { UserPopover } from '../user-popover';
+import { UserStatusBadge } from '../user-status';
 
 type TUserAvatarProps = {
   userId: number;
@@ -37,13 +38,9 @@ const UserAvatar = memo(
           </AvatarFallback>
         </Avatar>
         {showStatusBadge && (
-          <div
-            className={cn(
-              'absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card',
-              user.status === UserStatus.ONLINE && 'bg-green-500',
-              user.status === UserStatus.IDLE && 'bg-yellow-500',
-              user.status === UserStatus.OFFLINE && 'bg-gray-500'
-            )}
+          <UserStatusBadge
+            status={user.status || UserStatus.OFFLINE}
+            className="absolute bottom-0 right-0"
           />
         )}
       </div>

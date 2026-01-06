@@ -1,11 +1,13 @@
 import { getTRPCClient } from '@/lib/trpc';
 import { type TSettings } from '@sharkord/shared';
-import { setServerSettings } from './actions';
+import { setPublicServerSettings } from './actions';
+import { subscribeToCategories } from './categories/subscriptions';
 import { subscribeToChannels } from './channels/subscriptions';
 import { subscribeToEmojis } from './emojis/subscriptions';
 import { subscribeToMessages } from './messages/subscriptions';
 import { subscribeToRoles } from './roles/subscriptions';
 import { subscribeToUsers } from './users/subscriptions';
+import { subscribeToVoice } from './voice/subscriptions';
 
 const subscribeToServer = () => {
   const trpc = getTRPCClient();
@@ -14,10 +16,15 @@ const subscribeToServer = () => {
     undefined,
     {
       onData: (settings: TSettings) =>
-        setServerSettings({
+        setPublicServerSettings({
           name: settings.name,
           description: settings.description ?? '',
-          serverId: settings.serverId ?? ''
+          serverId: settings.serverId ?? '',
+          storageUploadEnabled: settings.storageUploadEnabled,
+          storageQuota: settings.storageQuota,
+          storageUploadMaxFileSize: settings.storageUploadMaxFileSize,
+          storageSpaceQuotaByUser: settings.storageSpaceQuotaByUser,
+          storageOverflowAction: settings.storageOverflowAction
         }),
       onError: (err) =>
         console.error('onSettingsUpdate subscription error:', err)
@@ -30,12 +37,22 @@ const subscribeToServer = () => {
 };
 
 const initSubscriptions = () => {
-  subscribeToChannels();
-  subscribeToServer();
-  subscribeToEmojis();
-  subscribeToRoles();
-  subscribeToUsers();
-  subscribeToMessages();
+  const subscriptors = [
+    subscribeToChannels,
+    subscribeToServer,
+    subscribeToEmojis,
+    subscribeToRoles,
+    subscribeToUsers,
+    subscribeToMessages,
+    subscribeToVoice,
+    subscribeToCategories
+  ];
+
+  const unsubscribes = subscriptors.map((subscriptor) => subscriptor());
+
+  return () => {
+    unsubscribes.forEach((unsubscribe) => unsubscribe());
+  };
 };
 
 export { initSubscriptions };

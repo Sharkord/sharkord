@@ -3,13 +3,13 @@ import http from 'http';
 import path from 'path';
 import { INTERFACE_PATH } from '../helpers/paths';
 import { logger } from '../logger';
-import { IS_DEVELOPMENT } from '../utils/env';
+import { IS_DEVELOPMENT, IS_TEST } from '../utils/env';
 
 const interfaceRouteHandler = (
   req: http.IncomingMessage,
   res: http.ServerResponse
 ) => {
-  if (IS_DEVELOPMENT) {
+  if (IS_DEVELOPMENT && !IS_TEST) {
     res.writeHead(302, { Location: 'http://localhost:5173' });
     res.end();
     return res;
@@ -18,10 +18,13 @@ const interfaceRouteHandler = (
   let subPath = req.url || '/';
 
   const urlPart = subPath.split('?')[0];
+
   subPath = urlPart ? decodeURIComponent(urlPart) : '/';
   subPath = subPath === '/' ? 'index.html' : subPath;
 
-  const requestedPath = path.resolve(INTERFACE_PATH, subPath);
+  const cleanSubPath = subPath.startsWith('/') ? subPath.slice(1) : subPath;
+
+  const requestedPath = path.resolve(INTERFACE_PATH, cleanSubPath);
   const basePath = path.resolve(INTERFACE_PATH);
 
   if (!requestedPath.startsWith(basePath)) {
@@ -31,6 +34,14 @@ const interfaceRouteHandler = (
   }
 
   if (!fs.existsSync(requestedPath)) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+    return res;
+  }
+
+  const stats = fs.statSync(requestedPath);
+
+  if (stats.isDirectory()) {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Not found' }));
     return res;

@@ -60,12 +60,18 @@ type TTooltipProps = {
   children: React.ReactElement;
   content: React.ReactNode;
   sideOffset?: number;
+  asChild?: boolean;
 };
 
-const Tooltip = ({ children, content, sideOffset = 4 }: TTooltipProps) => (
+const Tooltip = ({
+  children,
+  content,
+  sideOffset = 4,
+  asChild = true
+}: TTooltipProps) => (
   <TooltipProvider>
     <TooltipRoot delayDuration={200}>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipTrigger asChild={asChild}>{children}</TooltipTrigger>
       <TooltipContent sideOffset={sideOffset}>{content}</TooltipContent>
     </TooltipRoot>
   </TooltipProvider>

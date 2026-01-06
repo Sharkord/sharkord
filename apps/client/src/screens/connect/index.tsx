@@ -1,3 +1,4 @@
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Group } from '@/components/ui/group';
@@ -6,8 +7,15 @@ import { Switch } from '@/components/ui/switch';
 import { connect } from '@/features/server/actions';
 import { useInfo } from '@/features/server/hooks';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
+import {
+  getLocalStorageItem,
+  LocalStorageKey,
+  removeLocalStorageItem,
+  SessionStorageKey,
+  setLocalStorageItem,
+  setSessionStorageItem
+} from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
-import { LocalStorageKey, SessionStorageKey } from '@/types';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -15,24 +23,32 @@ const Connect = memo(() => {
   const { values, r, setErrors, onChange } = useForm<{
     identity: string;
     password: string;
-    rememberIdentity: boolean;
+    rememberCredentials: boolean;
   }>({
-    identity: localStorage.getItem(LocalStorageKey.IDENTITY) || '',
-    password: localStorage.getItem(LocalStorageKey.USER_PASSWORD) || '',
-    rememberIdentity: !!localStorage.getItem(LocalStorageKey.REMEMBER_IDENTITY)
+    identity: getLocalStorageItem(LocalStorageKey.IDENTITY) || '',
+    password: getLocalStorageItem(LocalStorageKey.USER_PASSWORD) || '',
+    rememberCredentials: !!getLocalStorageItem(
+      LocalStorageKey.REMEMBER_CREDENTIALS
+    )
   });
 
   const [loading, setLoading] = useState(false);
   const info = useInfo();
 
-  const onRememberIdentityChange = useCallback(
+  const inviteCode = useMemo(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const invite = urlParams.get('invite');
+    return invite || undefined;
+  }, []);
+
+  const onRememberCredentialsChange = useCallback(
     (checked: boolean) => {
-      onChange('rememberIdentity', checked);
+      onChange('rememberCredentials', checked);
 
       if (checked) {
-        localStorage.setItem(LocalStorageKey.REMEMBER_IDENTITY, 'true');
+        setLocalStorageItem(LocalStorageKey.REMEMBER_CREDENTIALS, 'true');
       } else {
-        localStorage.removeItem(LocalStorageKey.REMEMBER_IDENTITY);
+        removeLocalStorageItem(LocalStorageKey.REMEMBER_CREDENTIALS);
       }
     },
     [onChange]
@@ -40,6 +56,7 @@ const Connect = memo(() => {
 
   const onConnectClick = useCallback(async () => {
     setLoading(true);
+
     try {
       const url = getUrlFromServer();
       const response = await fetch(`${url}/login`, {
@@ -49,56 +66,43 @@ const Connect = memo(() => {
         },
         body: JSON.stringify({
           identity: values.identity,
-          password: values.password
+          password: values.password,
+          invite: inviteCode
         })
       });
 
       if (!response.ok) {
         const data = await response.json();
+
         setErrors(data.errors || {});
         return;
       }
 
       const data = (await response.json()) as { token: string };
 
-      sessionStorage.setItem(SessionStorageKey.TOKEN, data.token);
+      setSessionStorageItem(SessionStorageKey.TOKEN, data.token);
 
-      await connect();
-    } finally {
-      setLoading(false);
-    }
-  }, [values.identity, values.password, setErrors]);
-
-  const onRegisterClick = useCallback(async () => {
-    setLoading(true);
-
-    try {
-      const url = getUrlFromServer();
-      const response = await fetch(`${url}/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          identity: values.identity,
-          password: values.password
-        })
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        setErrors(data.errors || {});
-        return;
+      if (values.rememberCredentials) {
+        setLocalStorageItem(LocalStorageKey.IDENTITY, values.identity);
+        setLocalStorageItem(LocalStorageKey.USER_PASSWORD, values.password);
       }
 
-      localStorage.setItem(LocalStorageKey.IDENTITY, values.identity);
-      toast.success(
-        'Registration successful! You can now connect to the server.'
-      );
+      await connect();
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      toast.error(`Could not connect: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
-  }, [values.identity, values.password, setErrors]);
+  }, [
+    values.identity,
+    values.password,
+    setErrors,
+    values.rememberCredentials,
+    inviteCode
+  ]);
 
   const logoSrc = useMemo(() => {
     if (info?.logo) {
@@ -124,7 +128,10 @@ const Connect = memo(() => {
           )}
 
           <div className="flex flex-col gap-2">
-            <Group label="Identity">
+            <Group
+              label="Identity"
+              help="A unique identifier for your account on this server. You can use whatever you like, such as an email address or a username. This won't be shared publicly."
+            >
               <Input {...r('identity')} />
             </Group>
             <Group label="Password">
@@ -134,10 +141,10 @@ const Connect = memo(() => {
                 onEnter={onConnectClick}
               />
             </Group>
-            <Group label="Remember Identity">
+            <Group label="Remember Credentials">
               <Switch
-                checked={values.rememberIdentity}
-                onCheckedChange={onRememberIdentityChange}
+                checked={values.rememberCredentials}
+                onCheckedChange={onRememberCredentialsChange}
               />
             </Group>
           </div>
@@ -151,25 +158,51 @@ const Connect = memo(() => {
             >
               Connect
             </Button>
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={onRegisterClick}
-              disabled={
-                loading ||
-                !values.identity ||
-                !values.password ||
-                !info?.allowNewUsers
-              }
-            >
-              Register
-            </Button>
-            <span className="text-xs text-muted-foreground text-center">
-              New user registration is disabled on this server.
-            </span>
+            {!info?.allowNewUsers && (
+              <>
+                {!inviteCode && (
+                  <span className="text-xs text-muted-foreground text-center">
+                    New user registrations are currently disabled. If you do not
+                    have an account yet, you need to be invited by an existing
+                    user to join this server.
+                  </span>
+                )}
+              </>
+            )}
+
+            {inviteCode && (
+              <Alert variant="info">
+                <AlertTitle>You were invited to join this server</AlertTitle>
+                <AlertDescription>
+                  <span className="font-mono text-xs">
+                    Invite code: {inviteCode}
+                  </span>
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex justify-center gap-2 text-xs text-muted-foreground select-none">
+        <span>v{VITE_APP_VERSION}</span>
+        <a
+          href="https://github.com/sharkord/sharkord"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          GitHub
+        </a>
+
+        <a
+          className="text-xs"
+          href="https://sharkord.com"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Sharkord
+        </a>
+      </div>
     </div>
   );
 });

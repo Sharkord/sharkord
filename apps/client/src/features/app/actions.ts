@@ -37,3 +37,20 @@ export const loadApp = async () => {
   setInfo(info);
   setAppLoading(false);
 };
+
+export const setModViewOpen = (isOpen: boolean, userId?: number) =>
+  store.dispatch(
+    appSliceActions.setModViewOpen({
+      modViewOpen: isOpen,
+      userId
+    })
+  );
+
+export const resetApp = () => {
+  store.dispatch(
+    appSliceActions.setModViewOpen({
+      modViewOpen: false,
+      userId: undefined
+    })
+  );
+};

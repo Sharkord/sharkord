@@ -26,7 +26,7 @@ const getFileUrl = (file: TFile | undefined | null) => {
 
   const url = getUrlFromServer();
 
-  return encodeURI(`${url}/public/${file.id}${file.extension}`);
+  return encodeURI(`${url}/public/${file.name}`);
 };
 
 export { getFileUrl, getHostFromServer, getUrlFromServer };
