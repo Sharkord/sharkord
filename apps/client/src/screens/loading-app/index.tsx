@@ -3,7 +3,7 @@ import { loadApp } from '@/features/app/actions';
 import { useStrictEffect } from '@/hooks/use-strict-effect';
 import { memo } from 'react';
 
-export const LoadingApp = memo(() => {
+const LoadingApp = memo(() => {
   useStrictEffect(() => {
     loadApp();
   }, []);
@@ -16,4 +16,4 @@ export const LoadingApp = memo(() => {
   );
 });
 
-export default LoadingApp;
+export { LoadingApp };

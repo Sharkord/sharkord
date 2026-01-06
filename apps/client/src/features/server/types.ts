@@ -31,10 +31,6 @@ export type TMessagesPagination = {
   cursor: number | null;
 };
 
-export type TChannelPaginationMap = {
-  [channelId: number]: TMessagesPagination;
-};
-
 export type TDisconnectInfo = {
   code: number;
   reason: string;
