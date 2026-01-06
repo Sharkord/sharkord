@@ -10,7 +10,11 @@ const { values } = parseArgs({
   allowPositionals: true
 });
 
+if (!values.version) {
+  console.error('Error: version is required.');
+  process.exit(1);
+}
+
 console.log(`Setting version to ${values.version}...`);
 
-// @ts-expect-error - it is what it is
 await patchPackageJsons(values.version);
