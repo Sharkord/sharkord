@@ -8,7 +8,7 @@ const consumeRoute = protectedProcedure
   .input(
     z.object({
       kind: z.enum(StreamKind),
-      remoteUserId: z.number(),
+      remoteId: z.number(),
       rtpCapabilities: z.any()
     })
   )
@@ -27,7 +27,7 @@ const consumeRoute = protectedProcedure
       message: 'Voice runtime not found for this channel'
     });
 
-    const producer = runtime.getProducer(input.kind, input.remoteUserId);
+    const producer = runtime.getProducer(input.kind, input.remoteId);
 
     invariant(producer, {
       code: 'NOT_FOUND',
@@ -58,14 +58,14 @@ const consumeRoute = protectedProcedure
       paused: false
     });
 
-    runtime.addConsumer(ctx.user.id, input.remoteUserId, consumer);
+    runtime.addConsumer(ctx.user.id, input.remoteId, consumer);
 
     consumer.on('producerclose', () => {
       if (!ctx.currentVoiceChannelId) return;
 
       ctx.pubsub.publish(ServerEvents.VOICE_PRODUCER_CLOSED, {
         channelId: ctx.currentVoiceChannelId,
-        remoteUserId: input.remoteUserId,
+        remoteId: input.remoteId,
         kind: input.kind
       });
     });

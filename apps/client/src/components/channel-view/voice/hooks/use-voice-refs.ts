@@ -6,7 +6,8 @@ import { useAudioLevel } from './use-audio-level';
 
 const useVoiceRefs = (userId: number) => {
   const {
-    remoteStreams,
+    remoteUserStreams,
+    externalStreams,
     localAudioStream,
     localVideoStream,
     localScreenShareStream,
@@ -23,38 +24,38 @@ const useVoiceRefs = (userId: number) => {
   const videoStream = useMemo(() => {
     if (isOwnUser) return localVideoStream;
 
-    return remoteStreams[userId]?.[StreamKind.VIDEO];
-  }, [remoteStreams, userId, isOwnUser, localVideoStream]);
+    return remoteUserStreams[userId]?.[StreamKind.VIDEO];
+  }, [remoteUserStreams, userId, isOwnUser, localVideoStream]);
 
   const audioStream = useMemo(() => {
     if (isOwnUser) return undefined;
 
-    return remoteStreams[userId]?.[StreamKind.AUDIO];
-  }, [remoteStreams, userId, isOwnUser]);
+    return remoteUserStreams[userId]?.[StreamKind.AUDIO];
+  }, [remoteUserStreams, userId, isOwnUser]);
 
   const audioStreamForLevel = useMemo(() => {
     if (isOwnUser) return localAudioStream;
 
-    return remoteStreams[userId]?.[StreamKind.AUDIO];
-  }, [remoteStreams, userId, isOwnUser, localAudioStream]);
+    return remoteUserStreams[userId]?.[StreamKind.AUDIO];
+  }, [remoteUserStreams, userId, isOwnUser, localAudioStream]);
 
   const screenShareStream = useMemo(() => {
     if (isOwnUser) return localScreenShareStream;
 
-    return remoteStreams[userId]?.[StreamKind.SCREEN];
-  }, [remoteStreams, userId, isOwnUser, localScreenShareStream]);
+    return remoteUserStreams[userId]?.[StreamKind.SCREEN];
+  }, [remoteUserStreams, userId, isOwnUser, localScreenShareStream]);
 
   const externalAudioStream = useMemo(() => {
     if (isOwnUser) return undefined;
 
-    return remoteStreams[userId]?.[StreamKind.EXTERNAL_AUDIO];
-  }, [remoteStreams, userId, isOwnUser]);
+    return externalStreams[userId];
+  }, [externalStreams, userId, isOwnUser]);
 
   const externalVideoStream = useMemo(() => {
     if (isOwnUser) return undefined;
 
-    return remoteStreams[userId]?.[StreamKind.EXTERNAL_VIDEO];
-  }, [remoteStreams, userId, isOwnUser]);
+    return externalStreams[userId];
+  }, [externalStreams, userId, isOwnUser]);
 
   const { audioLevel, isSpeaking, speakingIntensity } =
     useAudioLevel(audioStreamForLevel);

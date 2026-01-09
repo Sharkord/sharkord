@@ -1,7 +1,9 @@
 import { ActivityLogType, StorageOverflowAction } from '@sharkord/shared';
 import { z } from 'zod';
-import { updateSettings as updateSettingsMutation } from '../../db/mutations/server';
+import { updateSettings } from '../../db/mutations/server';
 import { publishSettings } from '../../db/publishers';
+import { getSettings } from '../../db/queries/server';
+import { pluginManager } from '../../plugins';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -20,7 +22,9 @@ const updateSettingsRoute = protectedProcedure
     })
   )
   .mutation(async ({ input, ctx }) => {
-    await updateSettingsMutation({
+    const { enablePlugins: oldEnablePlugins } = await getSettings();
+
+    await updateSettings({
       name: input.name,
       description: input.description,
       password: input.password,
@@ -32,7 +36,15 @@ const updateSettingsRoute = protectedProcedure
       enablePlugins: input.enablePlugins
     });
 
-    await publishSettings();
+    if (oldEnablePlugins !== input.enablePlugins) {
+      if (input.enablePlugins) {
+        await pluginManager.loadPlugins();
+      } else {
+        await pluginManager.unloadPlugins();
+      }
+    }
+
+    publishSettings();
 
     enqueueActivityLog({
       type: ActivityLogType.EDIT_SERVER_SETTINGS,

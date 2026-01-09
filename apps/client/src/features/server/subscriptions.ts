@@ -1,5 +1,5 @@
 import { getTRPCClient } from '@/lib/trpc';
-import { type TSettings } from '@sharkord/shared';
+import { type TPublicServerSettings } from '@sharkord/shared';
 import { setPublicServerSettings } from './actions';
 import { subscribeToCategories } from './categories/subscriptions';
 import { subscribeToChannels } from './channels/subscriptions';
@@ -15,17 +15,8 @@ const subscribeToServer = () => {
   const onSettingsUpdateSub = trpc.others.onServerSettingsUpdate.subscribe(
     undefined,
     {
-      onData: (settings: TSettings) =>
-        setPublicServerSettings({
-          name: settings.name,
-          description: settings.description ?? '',
-          serverId: settings.serverId ?? '',
-          storageUploadEnabled: settings.storageUploadEnabled,
-          storageQuota: settings.storageQuota,
-          storageUploadMaxFileSize: settings.storageUploadMaxFileSize,
-          storageSpaceQuotaByUser: settings.storageSpaceQuotaByUser,
-          storageOverflowAction: settings.storageOverflowAction
-        }),
+      onData: (settings: TPublicServerSettings) =>
+        setPublicServerSettings(settings),
       onError: (err) =>
         console.error('onSettingsUpdate subscription error:', err)
     }

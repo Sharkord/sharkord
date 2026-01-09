@@ -36,7 +36,7 @@ const closeProducerRoute = protectedProcedure
 
     ctx.pubsub.publish(ServerEvents.VOICE_PRODUCER_CLOSED, {
       channelId: ctx.currentVoiceChannelId,
-      remoteUserId: ctx.user.id,
+      remoteId: ctx.user.id,
       kind: input.kind
     });
   });

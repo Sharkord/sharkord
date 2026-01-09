@@ -17,6 +17,7 @@ import { getSettings } from '../../db/queries/server';
 import { getPublicUsers } from '../../db/queries/users';
 import { categories, channels, users } from '../../db/schema';
 import { logger } from '../../logger';
+import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { enqueueLogin } from '../../queues/logins';
@@ -101,7 +102,8 @@ const joinServerRoute = t.procedure
       storageQuota: settings.storageQuota,
       storageUploadMaxFileSize: settings.storageUploadMaxFileSize,
       storageSpaceQuotaByUser: settings.storageSpaceQuotaByUser,
-      storageOverflowAction: settings.storageOverflowAction
+      storageOverflowAction: settings.storageOverflowAction,
+      enablePlugins: settings.enablePlugins
     };
 
     ctx.pubsub.publish(ServerEvents.USER_JOIN, {
@@ -146,7 +148,8 @@ const joinServerRoute = t.procedure
       emojis,
       publicSettings,
       channelPermissions,
-      readStates
+      readStates,
+      commands: pluginManager.getCommands()
     };
   });
 

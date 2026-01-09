@@ -1,5 +1,5 @@
 import type { AppData, Producer, Router } from "mediasoup/types";
-import type { StreamKind } from "@sharkord/shared";
+import type { CommandDefinition, StreamKind } from "@sharkord/shared";
 
 export type ServerEvent =
   | "user:joined"
@@ -39,22 +39,12 @@ export interface EventPayloads {
   };
 }
 
-export interface CommandContext {
-  userId: string;
-  reply: (msg: string) => void;
-}
-
-export interface CommandDefinition {
-  name: string;
-  description?: string;
-  execute(ctx: CommandContext): void | Promise<void>;
-}
-
 export interface PluginContext {
   path: string;
 
   log(...args: unknown[]): void;
   debug(...args: unknown[]): void;
+  error(...args: unknown[]): void;
 
   events: {
     on<E extends ServerEvent>(
@@ -65,7 +55,7 @@ export interface PluginContext {
 
   actions: {
     voice: {
-      getRouter(channelId: number): Promise<Router<AppData> | null>;
+      getRouter(channelId: number): Router<AppData>;
       addExternalProducer(
         channelId: number,
         type: StreamKind,
@@ -74,15 +64,10 @@ export interface PluginContext {
     };
   };
 
-  // commands: {
-  //   register(command: CommandDefinition): void;
-  // };
-
-  // storage: {
-  //   get<T>(key: string): Promise<T | null>;
-  //   set<T>(key: string, value: T): Promise<void>;
-  // };
+  commands: {
+    register<TArgs = void>(command: CommandDefinition<TArgs>): void;
+  };
 }
 
 export interface UnloadPluginContext
-  extends Pick<PluginContext, "log" | "debug"> {}
+  extends Pick<PluginContext, "log" | "debug" | "error"> {}

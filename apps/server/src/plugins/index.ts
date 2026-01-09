@@ -1,11 +1,20 @@
 import type { PluginContext, UnloadPluginContext } from '@sharkord/plugin-sdk';
-import { zPluginPackageJson, type TPluginInfo } from '@sharkord/shared';
+import {
+  ServerEvents,
+  zPluginPackageJson,
+  type CommandDefinition,
+  type TCommandsMapByPlugin,
+  type TLogEntry,
+  type TPluginInfo
+} from '@sharkord/shared';
 import chalk from 'chalk';
 import fs from 'node:fs/promises';
 import path from 'path';
+import { getSettings } from '../db/queries/server';
 import { PLUGINS_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 import { VoiceRuntime } from '../runtimes/voice';
+import { pubsub } from '../utils/pubsub';
 import { eventBus } from './event-bus';
 
 type PluginModule = {
@@ -13,12 +22,195 @@ type PluginModule = {
   onUnload?: (ctx: UnloadPluginContext) => void | Promise<void>;
 };
 
+type RegisteredCommand = {
+  pluginId: string;
+  name: string;
+  description?: string;
+  args?: CommandDefinition<unknown>['args'];
+  command: CommandDefinition<unknown>;
+};
+
 class PluginManager {
   private loadedPlugins = new Map<string, PluginModule>();
   private loadErrors = new Map<string, string>();
+  private logs = new Map<string, TLogEntry[]>();
+  private logsListeners = new Map<string, (newLog: TLogEntry) => void>();
+  private commands = new Map<string, RegisteredCommand[]>();
+
+  public loadPlugins = async () => {
+    const settings = await getSettings();
+
+    if (!settings.enablePlugins) return;
+
+    const files = await fs.readdir(PLUGINS_PATH);
+
+    logger.debug(`Found ${files.length} plugins`);
+
+    for (const file of files) {
+      try {
+        await pluginManager.load(file);
+      } catch (error) {
+        logger.error(
+          `Failed to load plugin ${file}: ${(error as Error).message}`
+        );
+      }
+    }
+  };
+
+  public unloadPlugins = async () => {
+    for (const pluginId of this.loadedPlugins.keys()) {
+      try {
+        await this.unload(pluginId);
+      } catch (error) {
+        logger.error(
+          `Failed to unload plugin ${pluginId}: ${(error as Error).message}`
+        );
+      }
+    }
+  };
+
+  public onLog = (pluginId: string, listener: (newLog: TLogEntry) => void) => {
+    if (!this.logsListeners.has(pluginId)) {
+      this.logsListeners.set(pluginId, listener);
+    }
+
+    return () => {
+      this.logsListeners.delete(pluginId);
+    };
+  };
+
+  public getLogs = (pluginId: string): TLogEntry[] => {
+    return this.logs.get(pluginId) || [];
+  };
+
+  private logPlugin = (
+    pluginId: string,
+    type: 'info' | 'error' | 'debug',
+    ...message: unknown[]
+  ) => {
+    if (!this.logs.has(pluginId)) {
+      this.logs.set(pluginId, []);
+    }
+
+    const loggerFn = logger[type];
+    const parsedMessage = message
+      .map((m) => (typeof m === 'object' ? JSON.stringify(m) : String(m)))
+      .join(' ');
+
+    loggerFn(`${chalk.magentaBright(`[plugin:${pluginId}]`)} ${parsedMessage}`);
+
+    const pluginLogs = this.logs.get(pluginId)!;
+
+    const newLog: TLogEntry = {
+      type,
+      timestamp: Date.now(),
+      message: parsedMessage,
+      pluginId
+    };
+
+    pluginLogs.push(newLog);
+
+    // keep only the last 1000 logs per plugin
+    if (pluginLogs.length > 1000) {
+      pluginLogs.shift();
+    }
+
+    const listener = this.logsListeners.get(pluginId);
+
+    if (listener) {
+      listener(newLog);
+    }
+
+    pubsub.publish(ServerEvents.PLUGIN_LOG, newLog);
+  };
 
   private getPluginPath = (pluginId: string) =>
     path.join(PLUGINS_PATH, pluginId);
+
+  private unregisterPluginCommands = (pluginId: string) => {
+    const pluginCommands = this.commands.get(pluginId);
+
+    if (!pluginCommands || pluginCommands.length === 0) {
+      return;
+    }
+
+    const commandNames = pluginCommands.map((c) => c.name);
+
+    this.commands.delete(pluginId);
+
+    this.logPlugin(
+      pluginId,
+      'debug',
+      `Unregistered ${commandNames.length} command(s): ${commandNames.join(', ')}`
+    );
+  };
+
+  public executeCommand = async <TArgs = unknown>(
+    pluginId: string,
+    commandName: string,
+    args: TArgs
+  ): Promise<unknown> => {
+    const commands = this.commands.get(pluginId);
+
+    if (!commands) {
+      throw new Error(`Plugin '${pluginId}' has no registered commands.`);
+    }
+
+    const foundCommand = commands.find((c) => c.name === commandName);
+
+    if (!foundCommand) {
+      throw new Error(
+        `Command '${commandName}' not found for plugin '${pluginId}'.`
+      );
+    }
+
+    try {
+      this.logPlugin(
+        pluginId,
+        'debug',
+        `Executing command '${commandName}' with args:`,
+        args
+      );
+
+      return await foundCommand.command.executes(args);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      this.logPlugin(
+        pluginId,
+        'error',
+        `Error executing command '${commandName}': ${errorMessage}`
+      );
+
+      throw error;
+    }
+  };
+
+  public getCommands = (): TCommandsMapByPlugin => {
+    const allCommands: TCommandsMapByPlugin = {};
+
+    for (const [pluginId, commands] of this.commands.entries()) {
+      allCommands[pluginId] = commands.map(({ name, description, args }) => ({
+        pluginId,
+        name,
+        description,
+        args
+      }));
+    }
+
+    return allCommands;
+  };
+
+  public hasCommand = (pluginId: string, commandName: string): boolean => {
+    const commands = this.commands.get(pluginId);
+
+    if (!commands) {
+      return false;
+    }
+
+    return commands.some((c) => c.name === commandName);
+  };
 
   public togglePlugin = async (pluginId: string, enabled: boolean) => {
     const pluginPath = this.getPluginPath(pluginId);
@@ -58,7 +250,11 @@ class PluginManager {
     const pluginModule = this.loadedPlugins.get(pluginId);
 
     if (!pluginModule) {
-      logger.debug(`Plugin ${pluginId} is not loaded; nothing to unload.`);
+      this.logPlugin(
+        pluginId,
+        'debug',
+        `Plugin ${pluginId} is not loaded; nothing to unload.`
+      );
       return;
     }
 
@@ -73,6 +269,7 @@ class PluginManager {
     }
 
     eventBus.unload(pluginId);
+    this.unregisterPluginCommands(pluginId);
     this.loadedPlugins.delete(pluginId);
     this.loadErrors.delete(pluginId);
 
@@ -116,10 +313,20 @@ class PluginManager {
   };
 
   public load = async (pluginId: string) => {
+    const { enablePlugins } = await getSettings();
+
+    if (!enablePlugins) {
+      throw new Error('Plugins are disabled.');
+    }
+
     const info = await this.getPluginInfo(pluginId);
 
     if (!info.enabled) {
-      logger.debug(`Plugin ${pluginId} is disabled; skipping load.`);
+      this.logPlugin(
+        pluginId,
+        'debug',
+        `Plugin ${pluginId} is disabled; skipping load.`
+      );
       return;
     }
 
@@ -136,25 +343,26 @@ class PluginManager {
       await mod.onLoad(ctx);
 
       this.loadedPlugins.set(pluginId, mod as PluginModule);
-      // Clear any previous load errors
       this.loadErrors.delete(pluginId);
 
-      logger.info(
+      this.logPlugin(
+        pluginId,
+        'info',
         `Plugin loaded: ${pluginId}@v${info.version} by ${info.author}`
       );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 
-      // Store the load error
       this.loadErrors.set(pluginId, errorMessage);
 
-      logger.error(`Failed to load plugin ${pluginId}: ${errorMessage}`);
+      this.logPlugin(
+        pluginId,
+        'error',
+        `Failed to load plugin ${pluginId}: ${errorMessage}`
+      );
 
-      // Clean up if partially loaded
       await this.unload(pluginId);
-
-      // Don't rethrow - we want to continue loading other plugins
     }
   };
 
@@ -162,14 +370,13 @@ class PluginManager {
     return {
       path: this.getPluginPath(pluginId),
       log: (...message: unknown[]) => {
-        logger.info(
-          `${chalk.magentaBright(`[plugin:${pluginId}]`)} ${message.map((m) => (typeof m === 'object' ? JSON.stringify(m) : String(m))).join(' ')}`
-        );
+        this.logPlugin(pluginId, 'info', ...message);
       },
       debug: (...message: unknown[]) => {
-        logger.debug(
-          `${chalk.magentaBright(`[plugin:${pluginId}]`)} ${message.map((m) => (typeof m === 'object' ? JSON.stringify(m) : String(m))).join(' ')}`
-        );
+        this.logPlugin(pluginId, 'debug', ...message);
+      },
+      error: (...message: unknown[]) => {
+        this.logPlugin(pluginId, 'error', ...message);
       },
       events: {
         on: (event, handler) => {
@@ -178,7 +385,7 @@ class PluginManager {
       },
       actions: {
         voice: {
-          getRouter: async (channelId: number) => {
+          getRouter: (channelId: number) => {
             const channel = VoiceRuntime.findById(channelId);
 
             if (!channel) {
@@ -198,8 +405,54 @@ class PluginManager {
               );
             }
 
-            return channel.addExternalProducer(type, producer);
+            const externalId = channel.addExternalProducer(type, producer);
+
+            // Publish event to notify connected clients about the new external producer
+            pubsub.publish(ServerEvents.VOICE_NEW_PRODUCER, {
+              channelId,
+              remoteId: externalId,
+              kind: type
+            });
+
+            return externalId;
           }
+        }
+      },
+      commands: {
+        register: <TArgs = void>(command: CommandDefinition<TArgs>) => {
+          if (!this.commands.has(pluginId)) {
+            this.commands.set(pluginId, []);
+          }
+
+          const pluginCommands = this.commands.get(pluginId)!;
+
+          // Check if command already exists
+          const existingIndex = pluginCommands.findIndex(
+            (c) => c.name === command.name
+          );
+
+          if (existingIndex !== -1) {
+            this.logPlugin(
+              pluginId,
+              'error',
+              `Command '${command.name}' is already registered. Overwriting.`
+            );
+            pluginCommands.splice(existingIndex, 1);
+          }
+
+          pluginCommands.push({
+            pluginId,
+            name: command.name,
+            description: command.description,
+            args: command.args,
+            command: command as CommandDefinition<unknown>
+          });
+
+          this.logPlugin(
+            pluginId,
+            'debug',
+            `Registered command: ${command.name}${command.description ? ` - ${command.description}` : ''}`
+          );
         }
       }
     };
@@ -210,7 +463,8 @@ class PluginManager {
 
     return {
       log: baseCtx.log,
-      debug: baseCtx.debug
+      debug: baseCtx.debug,
+      error: baseCtx.error
     };
   };
 }

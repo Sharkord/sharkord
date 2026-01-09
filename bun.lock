@@ -130,7 +130,7 @@
       "devDependencies": {
         "@sharkord/shared": "workspace:*",
         "@types/bun": "latest",
-        "mediasoup": "^3.19.14",
+        "mediasoup": "^3.19.11",
       },
       "peerDependencies": {
         "typescript": "^5",

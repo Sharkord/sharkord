@@ -46,7 +46,10 @@ export type TVoiceProvider = {
   ReturnType<typeof useLocalStreams>,
   'localAudioStream' | 'localVideoStream' | 'localScreenShareStream'
 > &
-  Pick<ReturnType<typeof useRemoteStreams>, 'remoteStreams'> &
+  Pick<
+    ReturnType<typeof useRemoteStreams>,
+    'remoteUserStreams' | 'externalStreams'
+  > &
   ReturnType<typeof useVoiceControls>;
 
 const VoiceProviderContext = createContext<TVoiceProvider>({
@@ -78,7 +81,8 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
   localVideoStream: undefined,
   localScreenShareStream: undefined,
 
-  remoteStreams: {}
+  remoteUserStreams: {},
+  externalStreams: {}
 });
 
 type TVoiceProviderProps = {
@@ -94,12 +98,17 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   const { devices } = useDevices();
 
   const {
-    addRemoteStream,
-    removeRemoteStream,
-    clearRemoteStreamsForUser,
-    clearRemoteStreams,
-    remoteStreams
+    addExternalStream,
+    removeExternalStream,
+    clearExternalStreams,
+    addRemoteUserStream,
+    removeRemoteUserStream,
+    clearRemoteUserStreamsForUser,
+    clearRemoteUserStreams,
+    externalStreams,
+    remoteUserStreams
   } = useRemoteStreams();
+
   const {
     localAudioProducer,
     localVideoProducer,
@@ -111,6 +120,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     setLocalVideoStream,
     setLocalScreenShare
   } = useLocalStreams();
+
   const {
     producerTransport,
     consumerTransport,
@@ -119,8 +129,10 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     consume,
     consumeExistingProducers
   } = useTransports({
-    addRemoteStream,
-    removeRemoteStream
+    addExternalStream,
+    removeExternalStream,
+    addRemoteUserStream,
+    removeRemoteUserStream
   });
 
   const {
@@ -396,6 +408,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         routerRtpCapabilities.current = incomingRouterRtpCapabilities;
 
         const device = new Device();
+
         await device.load({
           routerRtpCapabilities: incomingRouterRtpCapabilities
         });
@@ -411,6 +424,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         playSound(SoundType.OWN_USER_JOINED_VOICE_CHANNEL);
       } catch (error) {
         logVoice('Error initializing voice provider', { error });
+
         setConnectionStatus(ConnectionStatus.FAILED);
         setLoading(false);
 
@@ -445,8 +459,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
   useVoiceEvents({
     consume,
-    removeRemoteStream,
-    clearRemoteStreamsForUser,
+    removeRemoteUserStream,
+    removeExternalStream,
+    clearRemoteUserStreamsForUser,
     rtpCapabilities: routerRtpCapabilities.current!
   });
 
@@ -476,7 +491,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       videoProducerRef?.close();
       screenShareProducerRef?.close();
 
-      clearRemoteStreams();
+      clearRemoteUserStreams();
 
       producerTransportRef?.close();
       consumerTransportRef?.close();
@@ -505,7 +520,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       localVideoStream,
       localScreenShareStream,
 
-      remoteStreams
+      remoteUserStreams,
+      externalStreams
     }),
     [
       loading,
@@ -522,7 +538,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       localAudioStream,
       localVideoStream,
       localScreenShareStream,
-      remoteStreams
+      remoteUserStreams,
+      externalStreams
     ]
   );
 
@@ -530,7 +547,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     <VoiceProviderContext.Provider value={contextValue}>
       <div className="relative">
         <FloatingPinnedCard
-          remoteStreams={remoteStreams}
+          remoteUserStreams={remoteUserStreams}
           localScreenShareStream={localScreenShareStream}
           localVideoStream={localVideoStream}
         />

@@ -31,6 +31,9 @@ export const serverIdSelector = (state: IRootState) =>
 export const publicServerSettingsSelector = (state: IRootState) =>
   state.server.publicSettings;
 
+export const pluginsEnabledSelector = (state: IRootState) =>
+  !!state.server.publicSettings?.enablePlugins;
+
 export const infoSelector = (state: IRootState) => state.server.info;
 
 export const ownUserRolesSelector = createSelector(

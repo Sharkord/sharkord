@@ -14,7 +14,7 @@ import {
 import { getEmojiById } from './queries/emojis';
 import { getMessage } from './queries/messages';
 import { getRole } from './queries/roles';
-import { getSettings } from './queries/server';
+import { getPublicSettings } from './queries/server';
 import { getPublicUserById } from './queries/users';
 import { categories, channels } from './schema';
 
@@ -154,7 +154,7 @@ const publishChannel = async (
 };
 
 const publishSettings = async () => {
-  const settings = await getSettings();
+  const settings = await getPublicSettings();
 
   pubsub.publish(ServerEvents.SERVER_SETTINGS_UPDATE, settings);
 };

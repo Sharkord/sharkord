@@ -1,6 +1,6 @@
 import z from "zod";
 
-const zPluginPackageJson = z.object({
+export const zPluginPackageJson = z.object({
   version: z
     .string()
     .regex(/^\d+\.\d+\.\d+(-[a-zA-Z0-9-.]+)?$/, "Invalid version format"),
@@ -15,9 +15,9 @@ const zPluginPackageJson = z.object({
   }),
 });
 
-type TPluginPackageJson = z.infer<typeof zPluginPackageJson>;
+export type TPluginPackageJson = z.infer<typeof zPluginPackageJson>;
 
-type TPluginInfo = {
+export type TPluginInfo = {
   id: string;
   enabled: boolean;
   loadError?: string;
@@ -31,5 +31,40 @@ type TPluginInfo = {
   entry: string;
 };
 
-export type { TPluginInfo };
-export { zPluginPackageJson };
+export type TLogEntry = {
+  type: "info" | "error" | "debug";
+  timestamp: number;
+  message: string;
+  pluginId: string;
+};
+
+export type TCommandArg = {
+  name: string;
+  description?: string;
+  type: "string" | "number" | "boolean";
+  required?: boolean;
+};
+
+export interface CommandDefinition<TArgs = void> {
+  name: string;
+  description?: string;
+  args?: TCommandArg[];
+  executes(args: TArgs): Promise<unknown>;
+}
+
+export type TPluginCommand = {
+  pluginId: string;
+  name: string;
+  description?: string;
+};
+
+export type TCommandInfo = {
+  pluginId: string;
+  name: string;
+  description?: string;
+  args?: CommandDefinition<unknown>["args"];
+};
+
+export type TCommandsMapByPlugin = {
+  [pluginId: string]: TCommandInfo[];
+};

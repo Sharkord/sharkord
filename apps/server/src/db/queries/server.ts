@@ -1,4 +1,4 @@
-import type { TJoinedSettings } from '@sharkord/shared';
+import type { TJoinedSettings, TPublicServerSettings } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { db } from '..';
 import { files, settings } from '../schema';
@@ -23,6 +23,24 @@ const getSettings = async (): Promise<TJoinedSettings> => {
   };
 };
 
+const getPublicSettings: () => Promise<TPublicServerSettings> = async () => {
+  const settings = await getSettings();
+
+  const publicSettings: TPublicServerSettings = {
+    description: settings.description ?? '',
+    name: settings.name,
+    serverId: settings.serverId,
+    storageUploadEnabled: settings.storageUploadEnabled,
+    storageQuota: settings.storageQuota,
+    storageUploadMaxFileSize: settings.storageUploadMaxFileSize,
+    storageSpaceQuotaByUser: settings.storageSpaceQuotaByUser,
+    storageOverflowAction: settings.storageOverflowAction,
+    enablePlugins: settings.enablePlugins
+  };
+
+  return publicSettings;
+};
+
 const getServerTokenSync = (): string => {
   if (!token) {
     throw new Error('Server token has not been initialized yet');
@@ -45,4 +63,4 @@ const getServerToken = async (): Promise<string> => {
   return token;
 };
 
-export { getServerToken, getServerTokenSync, getSettings };
+export { getPublicSettings, getServerToken, getServerTokenSync, getSettings };

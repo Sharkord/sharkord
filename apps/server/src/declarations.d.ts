@@ -6,3 +6,19 @@ declare module 'ws' {
     token: string;
   }
 }
+
+type TCommandMap = {
+  [pluginId: string]: {
+    [commandName: string]: TCommand;
+  };
+};
+
+type TCommand = (...args: unknown[]) => Promise<unknown> | unknown;
+
+declare global {
+  interface Window {
+    __plugins?: {
+      commands: TCommandMap;
+    };
+  }
+}

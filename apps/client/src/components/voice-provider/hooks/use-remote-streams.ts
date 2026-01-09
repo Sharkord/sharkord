@@ -1,13 +1,56 @@
-import type { TRemoteStreams } from '@/types';
-import type { StreamKind } from '@sharkord/shared';
+import type { TRemoteStreams, TRemoteUserStreamKinds } from '@/types';
 import { useCallback, useState } from 'react';
 
 const useRemoteStreams = () => {
-  const [remoteStreams, setRemoteStreams] = useState<TRemoteStreams>({});
+  const [remoteUserStreams, setRemoteUserStreams] = useState<TRemoteStreams>(
+    {}
+  );
+  const [externalStreams, setExternalStreams] = useState<{
+    [streamId: number]: MediaStream;
+  }>({});
 
-  const addRemoteStream = useCallback(
-    (userId: number, stream: MediaStream, kind: StreamKind) => {
-      setRemoteStreams((prev) => {
+  const addExternalStream = useCallback(
+    (streamId: number, stream: MediaStream) => {
+      setExternalStreams((prev) => {
+        const newState = { ...prev };
+
+        newState[streamId] = stream;
+
+        return newState;
+      });
+    },
+    []
+  );
+
+  const removeExternalStream = useCallback((streamId: number) => {
+    setExternalStreams((prev) => {
+      const streamToRemove = prev[streamId];
+
+      if (streamToRemove) {
+        streamToRemove?.getTracks()?.forEach((track) => track?.stop?.());
+      }
+
+      const newState = { ...prev };
+
+      delete newState[streamId];
+
+      return newState;
+    });
+  }, []);
+
+  const clearExternalStreams = useCallback(() => {
+    setExternalStreams((prev) => {
+      Object.values(prev).forEach((stream) => {
+        stream?.getTracks()?.forEach((track) => track?.stop?.());
+      });
+
+      return {};
+    });
+  }, []);
+
+  const addRemoteUserStream = useCallback(
+    (userId: number, stream: MediaStream, kind: TRemoteUserStreamKinds) => {
+      setRemoteUserStreams((prev) => {
         const newState = { ...prev };
 
         newState[userId] = {
@@ -21,27 +64,30 @@ const useRemoteStreams = () => {
     []
   );
 
-  const removeRemoteStream = useCallback((userId: number, kind: StreamKind) => {
-    setRemoteStreams((prev) => {
-      const streamToRemove = prev[userId]?.[kind];
+  const removeRemoteUserStream = useCallback(
+    (userId: number, kind: TRemoteUserStreamKinds) => {
+      setRemoteUserStreams((prev) => {
+        const streamToRemove = prev[userId]?.[kind];
 
-      if (streamToRemove) {
-        streamToRemove?.getTracks()?.forEach((track) => track?.stop?.());
-      }
+        if (streamToRemove) {
+          streamToRemove?.getTracks()?.forEach((track) => track?.stop?.());
+        }
 
-      const newState = { ...prev };
+        const newState = { ...prev };
 
-      newState[userId] = {
-        ...newState[userId],
-        [kind]: undefined
-      };
+        newState[userId] = {
+          ...newState[userId],
+          [kind]: undefined
+        };
 
-      return newState;
-    });
-  }, []);
+        return newState;
+      });
+    },
+    []
+  );
 
-  const clearRemoteStreamsForUser = useCallback((userId: number) => {
-    setRemoteStreams((prev) => {
+  const clearRemoteUserStreamsForUser = useCallback((userId: number) => {
+    setRemoteUserStreams((prev) => {
       const userStreams = prev[userId];
 
       if (userStreams) {
@@ -60,8 +106,8 @@ const useRemoteStreams = () => {
     });
   }, []);
 
-  const clearRemoteStreams = useCallback(() => {
-    setRemoteStreams((prev) => {
+  const clearRemoteUserStreams = useCallback(() => {
+    setRemoteUserStreams((prev) => {
       Object.values(prev).forEach((streams) => {
         Object.values(streams).forEach((stream) => {
           stream?.getTracks()?.forEach((track) => track?.stop?.());
@@ -73,11 +119,15 @@ const useRemoteStreams = () => {
   }, []);
 
   return {
-    remoteStreams,
-    addRemoteStream,
-    removeRemoteStream,
-    clearRemoteStreamsForUser,
-    clearRemoteStreams
+    remoteUserStreams,
+    externalStreams,
+    addExternalStream,
+    removeExternalStream,
+    clearExternalStreams,
+    addRemoteUserStream,
+    removeRemoteUserStream,
+    clearRemoteUserStreamsForUser,
+    clearRemoteUserStreams
   };
 };
 

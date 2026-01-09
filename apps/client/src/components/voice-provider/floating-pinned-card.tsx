@@ -13,14 +13,14 @@ import { IconButton } from '../ui/icon-button';
 import { useFloatingCard } from './hooks/use-floating-card';
 
 type TFloatingPinnedCardProps = {
-  remoteStreams: TRemoteStreams;
+  remoteUserStreams: TRemoteStreams;
   localVideoStream: MediaStream | undefined;
   localScreenShareStream: MediaStream | undefined;
 };
 
 const FloatingPinnedCard = memo(
   ({
-    remoteStreams,
+    remoteUserStreams,
     localVideoStream,
     localScreenShareStream
   }: TFloatingPinnedCardProps) => {
@@ -40,14 +40,14 @@ const FloatingPinnedCard = memo(
         return localScreenShareStream || localVideoStream || undefined;
       }
 
-      const streamInfo = remoteStreams[pinnedCard.userId];
+      const streamInfo = remoteUserStreams[pinnedCard.userId];
 
       if (!streamInfo) return undefined;
 
       return streamInfo.screen || streamInfo.video || undefined;
     }, [
       pinnedCard,
-      remoteStreams,
+      remoteUserStreams,
       ownUserId,
       localVideoStream,
       localScreenShareStream

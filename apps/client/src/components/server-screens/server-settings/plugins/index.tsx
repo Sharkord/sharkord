@@ -1,5 +1,7 @@
+import { Dialog } from '@/components/dialogs/dialogs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -10,12 +12,14 @@ import {
 import { LoadingCard } from '@/components/ui/loading-card';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { openDialog } from '@/features/dialogs/actions';
 import { useAdminPlugins } from '@/features/server/admin/hooks';
+import { usePluginsEnabled } from '@/features/server/hooks';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import type { TPluginInfo } from '@sharkord/shared';
-import { AlertCircle, Package, User } from 'lucide-react';
+import { AlertCircle, FileText, Package, Terminal, User } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -38,6 +42,20 @@ const PluginItem = memo(({ plugin, onToggle }: TPluginItemProps) => {
     },
     [plugin.id, onToggle]
   );
+
+  const handleViewLogs = useCallback(() => {
+    openDialog(Dialog.PLUGIN_LOGS, {
+      pluginName: plugin.name,
+      pluginId: plugin.id,
+      logs: [] // Will be populated by subscription later
+    });
+  }, [plugin.name, plugin.id]);
+
+  const handleViewCommands = useCallback(() => {
+    openDialog(Dialog.PLUGIN_COMMANDS, {
+      pluginId: plugin.id
+    });
+  }, [plugin.id]);
 
   return (
     <div className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
@@ -76,6 +94,24 @@ const PluginItem = memo(({ plugin, onToggle }: TPluginItemProps) => {
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleViewLogs}
+              className="h-8"
+            >
+              <FileText className="w-4 h-4 mr-1.5" />
+              Logs
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleViewCommands}
+              className="h-8"
+            >
+              <Terminal className="w-4 h-4 mr-1.5" />
+              Commands
+            </Button>
             {plugin.loadError ? (
               <Badge variant="destructive">Error</Badge>
             ) : (
@@ -129,6 +165,7 @@ const PluginItem = memo(({ plugin, onToggle }: TPluginItemProps) => {
 });
 
 const Plugins = memo(() => {
+  const enabled = usePluginsEnabled();
   const { loading, plugins, refetch } = useAdminPlugins();
 
   const handleToggle = useCallback(
@@ -136,7 +173,7 @@ const Plugins = memo(() => {
       const trpc = getTRPCClient();
 
       try {
-        await trpc.others.togglePlugin.mutate({ pluginId, enabled });
+        await trpc.plugins.toggle.mutate({ pluginId, enabled });
         toast.success(
           `Plugin ${enabled ? 'enabled' : 'disabled'} successfully`
         );
@@ -163,25 +200,42 @@ const Plugins = memo(() => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {plugins.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Package className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="font-semibold text-lg mb-1">No plugins installed</h3>
-            <p className="text-sm text-muted-foreground max-w-sm">
-              Install plugins to add new features and extend the functionality
-              of your Sharkord server.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {plugins.map((plugin, index) => (
-              <div key={plugin.id}>
-                <PluginItem plugin={plugin} onToggle={handleToggle} />
-                {index < plugins.length - 1 && <Separator className="mt-3" />}
+        {enabled ? (
+          <>
+            {plugins.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <Package className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold text-lg mb-1">
+                  No plugins installed
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  Install plugins to add new features and extend the
+                  functionality of your Sharkord server.
+                </p>
               </div>
-            ))}
+            ) : (
+              <div className="space-y-3">
+                {plugins.map((plugin, index) => (
+                  <div key={plugin.id}>
+                    <PluginItem plugin={plugin} onToggle={handleToggle} />
+                    {index < plugins.length - 1 && (
+                      <Separator className="mt-3" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
+            <h3 className="font-semibold text-lg mb-1">Plugins are disabled</h3>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Plugins have been disabled for this server. Enable plugins in the
+              server settings to manage and use plugins.
+            </p>
           </div>
         )}
       </CardContent>

@@ -33,6 +33,7 @@ export enum ServerEvents {
   USER_DELETE = "userDelete",
 
   SERVER_SETTINGS_UPDATE = "serverSettingsUpdate",
+  PLUGIN_LOG = "pluginLog",
 
   CATEGORY_CREATE = "categoryCreate",
   CATEGORY_UPDATE = "categoryUpdate",

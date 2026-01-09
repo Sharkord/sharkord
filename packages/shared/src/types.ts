@@ -31,6 +31,7 @@ export type TPublicServerSettings = Pick<
   | "storageUploadMaxFileSize"
   | "storageSpaceQuotaByUser"
   | "storageOverflowAction"
+  | "enablePlugins"
 >;
 
 export type TGenericObject = {

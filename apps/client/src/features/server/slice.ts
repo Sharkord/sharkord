@@ -4,6 +4,8 @@ import type {
   TCategory,
   TChannel,
   TChannelUserPermissionsMap,
+  TCommandInfo,
+  TCommandsMapByPlugin,
   TJoinedEmoji,
   TJoinedMessage,
   TJoinedPublicUser,
@@ -43,6 +45,7 @@ export interface IServerState {
   readStatesMap: {
     [channelId: number]: number | undefined;
   };
+  pluginCommands: TCommandsMapByPlugin;
 }
 
 const initialState: IServerState = {
@@ -72,7 +75,8 @@ const initialState: IServerState = {
   },
   pinnedCard: undefined,
   channelPermissions: {},
-  readStatesMap: {}
+  readStatesMap: {},
+  pluginCommands: {}
 };
 
 export const serverSlice = createSlice({
@@ -478,6 +482,39 @@ export const serverSlice = createSlice({
     },
     setPinnedCard: (state, action: PayloadAction<TPinnedCard | undefined>) => {
       state.pinnedCard = action.payload;
+    },
+
+    // PLUGINS ------------------------------------------------------------
+
+    setPluginCommands: (state, action: PayloadAction<TCommandsMapByPlugin>) => {
+      state.pluginCommands = action.payload;
+    },
+    addPluginCommand: (state, action: PayloadAction<TCommandInfo>) => {
+      const { pluginId } = action.payload;
+
+      if (!state.pluginCommands[pluginId]) {
+        state.pluginCommands[pluginId] = [];
+      }
+
+      const exists = state.pluginCommands[pluginId].find(
+        (c) => c.name === action.payload.name
+      );
+
+      if (exists) return;
+
+      state.pluginCommands[pluginId].push(action.payload);
+    },
+    removePluginCommand: (
+      state,
+      action: PayloadAction<{ commandName: string }>
+    ) => {
+      const { commandName } = action.payload;
+
+      for (const pluginId in state.pluginCommands) {
+        state.pluginCommands[pluginId] = state.pluginCommands[pluginId].filter(
+          (c) => c.name !== commandName
+        );
+      }
     }
   }
 });

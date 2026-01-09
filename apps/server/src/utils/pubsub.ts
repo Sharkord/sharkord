@@ -8,7 +8,8 @@ import type {
   TJoinedMessage,
   TJoinedPublicUser,
   TJoinedRole,
-  TSettings,
+  TLogEntry,
+  TPublicServerSettings,
   TVoiceUserState
 } from '@sharkord/shared';
 import type { Unsubscribable } from '@trpc/server/observable';
@@ -59,14 +60,16 @@ type Events = {
 
   [ServerEvents.VOICE_NEW_PRODUCER]: {
     channelId: number;
-    remoteUserId: number;
+    remoteId: number;
     kind: StreamKind;
   };
   [ServerEvents.VOICE_PRODUCER_CLOSED]: {
     channelId: number;
-    remoteUserId: number;
+    remoteId: number;
     kind: StreamKind;
   };
+
+  [ServerEvents.PLUGIN_LOG]: TLogEntry;
 
   [ServerEvents.EMOJI_CREATE]: TJoinedEmoji;
   [ServerEvents.EMOJI_UPDATE]: TJoinedEmoji;
@@ -76,7 +79,7 @@ type Events = {
   [ServerEvents.ROLE_UPDATE]: TJoinedRole;
   [ServerEvents.ROLE_DELETE]: number;
 
-  [ServerEvents.SERVER_SETTINGS_UPDATE]: TSettings;
+  [ServerEvents.SERVER_SETTINGS_UPDATE]: TPublicServerSettings;
 
   [ServerEvents.CATEGORY_CREATE]: TCategory;
   [ServerEvents.CATEGORY_UPDATE]: TCategory;

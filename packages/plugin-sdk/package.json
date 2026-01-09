@@ -7,7 +7,7 @@
   "types": "src/index.ts",
   "devDependencies": {
     "@types/bun": "latest",
-    "mediasoup": "^3.19.14",
+    "mediasoup": "^3.19.11",
     "@sharkord/shared": "workspace:*"
   },
   "peerDependencies": {

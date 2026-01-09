@@ -1,7 +1,6 @@
 import { IconButton } from '@/components/ui/icon-button';
-import { useUserById } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
-import { Monitor, ZoomIn, ZoomOut } from 'lucide-react';
+import { Video, ZoomIn, ZoomOut } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
@@ -9,7 +8,7 @@ import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PinButton } from './pin-button';
 
-type tScreenShareControlsProps = {
+type TExternalVideoControlsProps = {
   isPinned: boolean;
   isZoomEnabled: boolean;
   handlePinToggle: () => void;
@@ -17,14 +16,14 @@ type tScreenShareControlsProps = {
   showPinControls: boolean;
 };
 
-const ScreenShareControls = memo(
+const ExternalVideoControls = memo(
   ({
     isPinned,
     isZoomEnabled,
     handlePinToggle,
     handleToggleZoom,
     showPinControls
-  }: tScreenShareControlsProps) => {
+  }: TExternalVideoControlsProps) => {
     return (
       <CardControls>
         {showPinControls && isPinned && (
@@ -44,8 +43,8 @@ const ScreenShareControls = memo(
   }
 );
 
-type TScreenShareCardProps = {
-  userId: number;
+type TExternalVideoCardProps = {
+  streamId: number;
   isPinned?: boolean;
   onPin: () => void;
   onUnpin: () => void;
@@ -53,17 +52,17 @@ type TScreenShareCardProps = {
   showPinControls: boolean;
 };
 
-const ScreenShareCard = memo(
+const ExternalVideoCard = memo(
   ({
-    userId,
+    streamId,
     isPinned = false,
     onPin,
     onUnpin,
     className,
     showPinControls = true
-  }: TScreenShareCardProps) => {
-    const user = useUserById(userId);
-    const { screenShareRef, hasScreenShareStream } = useVoiceRefs(userId);
+  }: TExternalVideoCardProps) => {
+    const { externalVideoRef, hasExternalVideoStream } =
+      useVoiceRefs(streamId);
 
     const {
       containerRef,
@@ -89,7 +88,7 @@ const ScreenShareCard = memo(
       }
     }, [isPinned, onPin, onUnpin, resetZoom]);
 
-    if (!user || !hasScreenShareStream) return null;
+    if (!hasExternalVideoStream) return null;
 
     return (
       <div
@@ -111,7 +110,7 @@ const ScreenShareCard = memo(
       >
         <CardGradient />
 
-        <ScreenShareControls
+        <ExternalVideoControls
           isPinned={isPinned}
           isZoomEnabled={isZoomEnabled}
           handlePinToggle={handlePinToggle}
@@ -120,7 +119,7 @@ const ScreenShareCard = memo(
         />
 
         <video
-          ref={screenShareRef}
+          ref={externalVideoRef}
           autoPlay
           muted
           playsInline
@@ -133,9 +132,9 @@ const ScreenShareCard = memo(
 
         <div className="absolute bottom-0 left-0 right-0 p-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="flex items-center gap-2 min-w-0">
-            <Monitor className="h-4 w-4 text-purple-400 flex-shrink-0" />
+            <Video className="h-4 w-4 text-blue-400 flex-shrink-0" />
             <span className="text-white font-medium text-sm truncate">
-              {user.name}'s screen
+              External Video Stream
             </span>
             {isZoomEnabled && zoom > 1 && (
               <span className="text-white/70 text-xs ml-auto flex-shrink-0">
@@ -149,6 +148,6 @@ const ScreenShareCard = memo(
   }
 );
 
-ScreenShareCard.displayName = 'ScreenShareCard';
+ExternalVideoCard.displayName = 'ExternalVideoCard';
 
-export { ScreenShareCard };
+export { ExternalVideoCard };

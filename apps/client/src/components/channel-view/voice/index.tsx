@@ -1,5 +1,7 @@
 import { useVoiceUsersByChannelId } from '@/features/server/hooks';
+import { useVoice } from '@/features/server/voice/hooks';
 import { memo, useMemo } from 'react';
+import { ExternalVideoCard } from './external-video-card';
 import {
   PinnedCardType,
   usePinCardController
@@ -14,15 +16,18 @@ type TChannelProps = {
 
 const VoiceChannel = memo(({ channelId }: TChannelProps) => {
   const voiceUsers = useVoiceUsersByChannelId(channelId);
+  const { externalStreams } = useVoice();
   const { pinnedCard, pinCard, unpinCard, isPinned } = usePinCardController();
 
+  console.log('! externalStreams', externalStreams);
+
   const cards = useMemo(() => {
-    const userCards: React.ReactNode[] = [];
+    const cards: React.ReactNode[] = [];
 
     voiceUsers.forEach((voiceUser) => {
       const userCardId = `user-${voiceUser.id}`;
 
-      userCards.push(
+      cards.push(
         <VoiceUserCard
           key={userCardId}
           userId={voiceUser.id}
@@ -41,7 +46,8 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
 
       if (voiceUser.state.sharingScreen) {
         const screenShareCardId = `screen-share-${voiceUser.id}`;
-        userCards.push(
+
+        cards.push(
           <ScreenShareCard
             key={screenShareCardId}
             userId={voiceUser.id}
@@ -60,8 +66,29 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
       }
     });
 
-    return userCards;
-  }, [voiceUsers, isPinned, pinCard, unpinCard]);
+    Object.keys(externalStreams).forEach((streamIdStr) => {
+      const externalVideoCardId = `external-video-${streamIdStr}`;
+
+      cards.push(
+        <ExternalVideoCard
+          key={externalVideoCardId}
+          streamId={+streamIdStr}
+          isPinned={isPinned(externalVideoCardId)}
+          onPin={() =>
+            pinCard({
+              id: externalVideoCardId,
+              type: PinnedCardType.EXTERNAL_VIDEO,
+              userId: +streamIdStr
+            })
+          }
+          onUnpin={unpinCard}
+          showPinControls
+        />
+      );
+    });
+
+    return cards;
+  }, [voiceUsers, externalStreams, isPinned, pinCard, unpinCard]);
 
   if (voiceUsers.length === 0) {
     return (

@@ -34,6 +34,17 @@ const defaultRouterOptions: RouterOptions<AppData> = {
       }
     },
     {
+      kind: 'video',
+      mimeType: 'video/H264',
+      clockRate: 90000,
+      parameters: {
+        'packetization-mode': 1,
+        'profile-level-id': '42e01f',
+        'level-asymmetry-allowed': 1,
+        'x-google-start-bitrate': 1000
+      }
+    },
+    {
       kind: 'audio',
       mimeType: 'audio/opus',
       clockRate: 48000,
@@ -102,7 +113,7 @@ type TProducerMap = {
 
 type TConsumerMap = {
   [userId: number]: {
-    [remoteUserId: number]: Consumer<AppData>;
+    [remoteId: number]: Consumer<AppData>;
   };
 };
 
@@ -511,17 +522,17 @@ class VoiceRuntime {
 
   public addConsumer = (
     userId: number,
-    remoteUserId: number,
+    remoteId: number,
     consumer: Consumer<AppData>
   ) => {
     if (!this.consumers[userId]) {
       this.consumers[userId] = {};
     }
 
-    this.consumers[userId][remoteUserId] = consumer;
+    this.consumers[userId][remoteId] = consumer;
 
     consumer.observer.on('close', () => {
-      delete this.consumers[userId]?.[remoteUserId];
+      delete this.consumers[userId]?.[remoteId];
     });
   };
 

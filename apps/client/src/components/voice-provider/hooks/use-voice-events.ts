@@ -2,25 +2,31 @@ import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { useOwnUserId } from '@/features/server/users/hooks';
 import { logVoice } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
-import type { StreamKind } from '@sharkord/shared';
+import type { TRemoteUserStreamKinds } from '@/types';
+import { StreamKind } from '@sharkord/shared';
 import type { RtpCapabilities } from 'mediasoup-client/types';
 import { useEffect } from 'react';
 
 type TEvents = {
   consume: (
-    remoteUserId: number,
+    remoteId: number,
     kind: StreamKind,
     routerRtpCapabilities: RtpCapabilities
   ) => Promise<void>;
-  removeRemoteStream: (userId: number, kind: StreamKind) => void;
-  clearRemoteStreamsForUser: (userId: number) => void;
+  removeRemoteUserStream: (
+    userId: number,
+    kind: TRemoteUserStreamKinds
+  ) => void;
+  removeExternalStream: (streamId: number) => void;
+  clearRemoteUserStreamsForUser: (userId: number) => void;
   rtpCapabilities: RtpCapabilities;
 };
 
 const useVoiceEvents = ({
   consume,
-  removeRemoteStream,
-  clearRemoteStreamsForUser,
+  removeRemoteUserStream,
+  removeExternalStream,
+  clearRemoteUserStreamsForUser,
   rtpCapabilities
 }: TEvents) => {
   const currentVoiceChannelId = useCurrentVoiceChannelId();
@@ -38,12 +44,12 @@ const useVoiceEvents = ({
     const onVoiceNewProducerSub = trpc.voice.onNewProducer.subscribe(
       undefined,
       {
-        onData: ({ remoteUserId, kind, channelId }) => {
+        onData: ({ remoteId, kind, channelId }) => {
           if (currentVoiceChannelId !== channelId || isCleaningUp) return;
 
-          if (remoteUserId === ownUserId) {
+          if (remoteId === ownUserId) {
             logVoice('Ignoring own producer event', {
-              remoteUserId,
+              remoteId,
               ownUserId,
               kind,
               channelId
@@ -53,17 +59,17 @@ const useVoiceEvents = ({
           }
 
           logVoice('New producer event received', {
-            remoteUserId,
+            remoteId,
             kind,
             channelId
           });
 
           try {
-            consume(remoteUserId, kind, rtpCapabilities);
+            consume(remoteId, kind, rtpCapabilities);
           } catch (error) {
             logVoice('Error consuming new producer', {
               error,
-              remoteUserId,
+              remoteId,
               kind,
               channelId
             });
@@ -78,21 +84,28 @@ const useVoiceEvents = ({
     const onVoiceProducerClosedSub = trpc.voice.onProducerClosed.subscribe(
       undefined,
       {
-        onData: ({ channelId, remoteUserId, kind }) => {
+        onData: ({ channelId, remoteId, kind }) => {
           if (currentVoiceChannelId !== channelId || isCleaningUp) return;
 
           logVoice('Producer closed event received', {
-            remoteUserId,
+            remoteId,
             kind,
             channelId
           });
 
           try {
-            removeRemoteStream(remoteUserId, kind);
+            if (
+              kind === StreamKind.EXTERNAL_VIDEO ||
+              kind === StreamKind.EXTERNAL_AUDIO
+            ) {
+              removeExternalStream(remoteId);
+            } else {
+              removeRemoteUserStream(remoteId, kind);
+            }
           } catch (error) {
             logVoice('Error removing remote stream for closed producer', {
               error,
-              remoteUserId,
+              remoteId,
               kind,
               channelId
             });
@@ -111,7 +124,7 @@ const useVoiceEvents = ({
         logVoice('User leave event received', { userId, channelId });
 
         try {
-          clearRemoteStreamsForUser(userId);
+          clearRemoteUserStreamsForUser(userId);
         } catch (error) {
           logVoice('Error clearing remote streams for user', { error });
         }
@@ -134,8 +147,9 @@ const useVoiceEvents = ({
     currentVoiceChannelId,
     ownUserId,
     consume,
-    removeRemoteStream,
-    clearRemoteStreamsForUser,
+    removeRemoteUserStream,
+    removeExternalStream,
+    clearRemoteUserStreamsForUser,
     rtpCapabilities
   ]);
 };

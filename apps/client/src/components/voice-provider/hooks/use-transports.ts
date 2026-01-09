@@ -1,6 +1,7 @@
 import { logVoice } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
-import { StreamKind } from '@sharkord/shared';
+import type { TRemoteUserStreamKinds } from '@/types';
+import { getMediasoupKind, StreamKind } from '@sharkord/shared';
 import { TRPCClientError } from '@trpc/client';
 import {
   type AppData,
@@ -12,17 +13,24 @@ import {
 import { useCallback, useRef } from 'react';
 
 type TUseTransportParams = {
-  addRemoteStream: (
+  addRemoteUserStream: (
     userId: number,
     stream: MediaStream,
-    kind: StreamKind
+    kind: TRemoteUserStreamKinds
   ) => void;
-  removeRemoteStream: (userId: number, kind: StreamKind) => void;
+  removeRemoteUserStream: (
+    userId: number,
+    kind: TRemoteUserStreamKinds
+  ) => void;
+  addExternalStream: (streamId: number, stream: MediaStream) => void;
+  removeExternalStream: (streamId: number) => void;
 };
 
 const useTransports = ({
-  addRemoteStream,
-  removeRemoteStream
+  addRemoteUserStream,
+  removeRemoteUserStream,
+  addExternalStream,
+  removeExternalStream
 }: TUseTransportParams) => {
   const producerTransport = useRef<Transport<AppData> | undefined>(undefined);
   const consumerTransport = useRef<Transport<AppData> | undefined>(undefined);
@@ -223,7 +231,7 @@ const useTransports = ({
 
   const consume = useCallback(
     async (
-      remoteUserId: number,
+      remoteId: number,
       kind: StreamKind,
       routerRtpCapabilities: RtpCapabilities
     ) => {
@@ -232,11 +240,11 @@ const useTransports = ({
         return;
       }
 
-      const operationKey = `${remoteUserId}-${kind}`;
+      const operationKey = `${remoteId}-${kind}`;
 
       if (consumeOperationsInProgress.current.has(operationKey)) {
         logVoice('Consume operation already in progress', {
-          remoteUserId,
+          remoteId,
           kind
         });
         return;
@@ -245,14 +253,14 @@ const useTransports = ({
       consumeOperationsInProgress.current.add(operationKey);
 
       try {
-        logVoice('Consuming remote producer', { remoteUserId, kind });
+        logVoice('Consuming remote producer', { remoteId, kind });
 
         const trpc = getTRPCClient();
 
         const { producerId, consumerId, consumerKind, consumerRtpParameters } =
           await trpc.voice.consume.mutate({
             kind,
-            remoteUserId,
+            remoteId,
             rtpCapabilities: routerRtpCapabilities
           });
 
@@ -263,26 +271,23 @@ const useTransports = ({
           consumerRtpParameters
         });
 
-        if (!consumers.current[remoteUserId]) {
-          consumers.current[remoteUserId] = {};
+        if (!consumers.current[remoteId]) {
+          consumers.current[remoteId] = {};
         }
 
-        const existingConsumer = consumers.current[remoteUserId][consumerKind];
+        const existingConsumer = consumers.current[remoteId][consumerKind];
 
         if (existingConsumer && !existingConsumer.closed) {
           logVoice('Closing existing consumer before creating new one');
 
           existingConsumer.close();
-          delete consumers.current[remoteUserId][consumerKind];
+          delete consumers.current[remoteId][consumerKind];
         }
-
-        const targetKind =
-          consumerKind === StreamKind.SCREEN ? StreamKind.VIDEO : consumerKind;
 
         const newConsumer = await consumerTransport.current.consume({
           id: consumerId,
           producerId: producerId,
-          kind: targetKind,
+          kind: getMediasoupKind(consumerKind),
           rtpParameters: consumerRtpParameters
         });
 
@@ -299,32 +304,51 @@ const useTransports = ({
           // @ts-expect-error - YOLO
           newConsumer?.on(event, () => {
             logVoice(`Consumer cleanup event "${event}" triggered`, {
-              remoteUserId,
+              remoteId,
               kind
             });
 
-            removeRemoteStream(remoteUserId, kind);
+            if (
+              kind === StreamKind.EXTERNAL_VIDEO ||
+              kind === StreamKind.EXTERNAL_AUDIO
+            ) {
+              removeExternalStream(remoteId);
+            } else {
+              removeRemoteUserStream(remoteId, kind);
+            }
 
-            if (consumers.current[remoteUserId]?.[consumerKind]) {
-              delete consumers.current[remoteUserId][consumerKind];
+            if (consumers.current[remoteId]?.[consumerKind]) {
+              delete consumers.current[remoteId][consumerKind];
             }
           });
         });
 
-        consumers.current[remoteUserId][consumerKind] = newConsumer;
+        consumers.current[remoteId][consumerKind] = newConsumer;
 
         const stream = new MediaStream();
 
         stream.addTrack(newConsumer.track);
 
-        addRemoteStream(remoteUserId, stream, kind);
+        if (
+          kind === StreamKind.EXTERNAL_VIDEO ||
+          kind === StreamKind.EXTERNAL_AUDIO
+        ) {
+          addExternalStream(remoteId, stream);
+        } else {
+          addRemoteUserStream(remoteId, stream, kind);
+        }
       } catch (error) {
         logVoice('Error consuming remote producer', { error });
       } finally {
         consumeOperationsInProgress.current.delete(operationKey);
       }
     },
-    [addRemoteStream, removeRemoteStream]
+    [
+      addRemoteUserStream,
+      removeRemoteUserStream,
+      addExternalStream,
+      removeExternalStream
+    ]
   );
 
   const consumeExistingProducers = useCallback(
@@ -334,8 +358,13 @@ const useTransports = ({
       const trpc = getTRPCClient();
 
       try {
-        const { remoteAudioIds, remoteScreenIds, remoteVideoIds } =
-          await trpc.voice.getProducers.query();
+        const {
+          remoteAudioIds,
+          remoteScreenIds,
+          remoteVideoIds,
+          remoteExternalAudioIds,
+          remoteExternalVideoIds
+        } = await trpc.voice.getProducers.query();
 
         logVoice('Got existing producers', {
           remoteAudioIds,
@@ -353,6 +382,14 @@ const useTransports = ({
 
         remoteScreenIds.forEach((remoteId) => {
           consume(remoteId, StreamKind.SCREEN, routerRtpCapabilities);
+        });
+
+        remoteExternalAudioIds.forEach((remoteId) => {
+          consume(remoteId, StreamKind.EXTERNAL_AUDIO, routerRtpCapabilities);
+        });
+
+        remoteExternalVideoIds.forEach((remoteId) => {
+          consume(remoteId, StreamKind.EXTERNAL_VIDEO, routerRtpCapabilities);
         });
       } catch (error) {
         logVoice('Error consuming existing producers', { error });

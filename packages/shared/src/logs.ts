@@ -36,6 +36,8 @@ export enum ActivityLogType {
   CREATED_CATEGORY = "CREATED_CATEGORY",
   DELETED_CATEGORY = "DELETED_CATEGORY",
   UPDATED_CATEGORY = "UPDATED_CATEGORY",
+  // -------------------- PLUGINS --------------------
+  EXECUTED_PLUGIN_COMMAND = "EXECUTED_PLUGIN_COMMAND",
 }
 
 export type TActivityLogDetailsMap = {
@@ -155,6 +157,12 @@ export type TActivityLogDetailsMap = {
       name: string;
       position: number;
     }>;
+  };
+  // -------------------- PLUGINS --------------------
+  [ActivityLogType.EXECUTED_PLUGIN_COMMAND]: {
+    pluginId: string;
+    commandName: string;
+    args: Record<string, any>;
   };
 };
 
