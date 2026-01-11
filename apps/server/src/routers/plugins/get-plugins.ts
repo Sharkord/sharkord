@@ -23,8 +23,6 @@ const getPluginsRoute = protectedProcedure.query(async ({ ctx }) => {
     (plugin): plugin is TPluginInfo => !!plugin
   );
 
-  console.log('Retrieved plugins:', plugins);
-
   return {
     plugins
   };
