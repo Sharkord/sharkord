@@ -108,6 +108,7 @@ const PluginItem = memo(({ plugin, onToggle }: TPluginItemProps) => {
               size="sm"
               onClick={handleViewCommands}
               className="h-8"
+              disabled={!plugin.enabled}
             >
               <Terminal className="w-4 h-4 mr-1.5" />
               Commands

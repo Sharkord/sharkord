@@ -216,6 +216,12 @@ class PluginManager {
     commandName: string,
     args: TArgs
   ): Promise<unknown> => {
+    const isEnabled = this.isPluginEnabled(pluginId);
+
+    if (!isEnabled) {
+      throw new Error(`Plugin '${pluginId}' is not enabled.`);
+    }
+
     const commands = this.commands.get(pluginId);
 
     if (!commands) {
@@ -342,7 +348,6 @@ class PluginManager {
       throw new Error('Plugin entry file not found');
     }
 
-    // Get load error if it exists
     const loadError = this.loadErrors.get(pluginId);
 
     return {

@@ -1,14 +1,12 @@
 import type { EventPayloads, ServerEvent } from '@sharkord/plugin-sdk';
+import { logger } from '../logger';
 
 type Handler<E extends ServerEvent> = (
   payload: EventPayloads[E]
 ) => void | Promise<void>;
 
 class EventBus {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private listeners = new Map<ServerEvent, Set<Handler<any>>>();
-  // Track which plugin registered which handlers
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private pluginHandlers = new Map<
     string,
     Map<ServerEvent, Set<Handler<any>>>
@@ -19,7 +17,6 @@ class EventBus {
     event: E,
     handler: Handler<E>
   ) => {
-    // Add to global listeners
     let handlers = this.listeners.get(event);
 
     if (!handlers) {
@@ -29,7 +26,6 @@ class EventBus {
 
     handlers.add(handler);
 
-    // Track for this specific plugin
     let pluginEvents = this.pluginHandlers.get(pluginId);
 
     if (!pluginEvents) {
@@ -54,7 +50,6 @@ class EventBus {
       return;
     }
 
-    // Remove all handlers registered by this plugin
     for (const [event, handlers] of pluginEvents.entries()) {
       const globalHandlers = this.listeners.get(event);
 
@@ -63,14 +58,12 @@ class EventBus {
           globalHandlers.delete(handler);
         }
 
-        // Clean up empty event listener sets
         if (globalHandlers.size === 0) {
           this.listeners.delete(event);
         }
       }
     }
 
-    // Remove plugin tracking
     this.pluginHandlers.delete(pluginId);
   };
 
@@ -102,7 +95,7 @@ class EventBus {
       try {
         await handler(payload);
       } catch (err) {
-        console.error(`[eventBus] ${event} handler failed`, err);
+        logger.error(`[eventBus] ${event} handler failed`, err);
       }
     }
   };
