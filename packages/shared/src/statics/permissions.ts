@@ -18,6 +18,7 @@ export enum Permission {
   MANAGE_INVITES = "MANAGE_INVITES",
   MANAGE_UPDATES = "MANAGE_UPDATES",
   MANAGE_PLUGINS = "MANAGE_PLUGINS",
+  EXECUTE_PLUGIN_COMMANDS = "EXECUTE_PLUGIN_COMMANDS",
 }
 
 export const permissionLabels: Record<Permission, string> = {
@@ -39,6 +40,7 @@ export const permissionLabels: Record<Permission, string> = {
   [Permission.MANAGE_INVITES]: "Manage invites",
   [Permission.MANAGE_UPDATES]: "Manage updates",
   [Permission.MANAGE_PLUGINS]: "Manage plugins",
+  [Permission.EXECUTE_PLUGIN_COMMANDS]: "Execute plugin commands",
 };
 
 export const permissionDescriptions: Record<Permission, string> = {
@@ -70,6 +72,8 @@ export const permissionDescriptions: Record<Permission, string> = {
     "Grants the ability to create, edit, and delete server invites.",
   [Permission.MANAGE_UPDATES]: "Grants the ability to perform updates.",
   [Permission.MANAGE_PLUGINS]: "Grants the ability to manage plugins.",
+  [Permission.EXECUTE_PLUGIN_COMMANDS]:
+    "Grants the ability to execute plugin commands.",
 };
 
 export const DEFAULT_ROLE_PERMISSIONS = [
@@ -94,7 +98,6 @@ export enum ChannelPermission {
   SPEAK = "SPEAK",
   SHARE_SCREEN = "SHARE_SCREEN",
   WEBCAM = "WEBCAM",
-  EXECUTE_PLUGIN_COMMANDS = "EXECUTE_PLUGIN_COMMANDS",
 }
 
 export const channelPermissionLabels: Record<ChannelPermission, string> = {
@@ -104,7 +107,6 @@ export const channelPermissionLabels: Record<ChannelPermission, string> = {
   [ChannelPermission.SPEAK]: "Speak",
   [ChannelPermission.SHARE_SCREEN]: "Share Screen",
   [ChannelPermission.WEBCAM]: "Enable Webcam",
-  [ChannelPermission.EXECUTE_PLUGIN_COMMANDS]: "Execute Plugin Commands",
 };
 
 export const channelPermissionDescriptions: Record<ChannelPermission, string> =
@@ -115,6 +117,4 @@ export const channelPermissionDescriptions: Record<ChannelPermission, string> =
     [ChannelPermission.SPEAK]: "Allows the user to speak in voice channels.",
     [ChannelPermission.SHARE_SCREEN]: "Allows the user to share their screen.",
     [ChannelPermission.WEBCAM]: "Allows the user to enable their webcam.",
-    [ChannelPermission.EXECUTE_PLUGIN_COMMANDS]:
-      "Allows the user to execute plugin commands from the channel.",
   };

@@ -15,7 +15,7 @@ const executeCommandRoute = protectedProcedure
     })
   )
   .mutation(async ({ ctx, input }) => {
-    await ctx.needsPermission(Permission.MANAGE_PLUGINS);
+    await ctx.needsPermission(Permission.EXECUTE_PLUGIN_COMMANDS);
 
     invariant(pluginManager.hasCommand(input.pluginId, input.commandName), {
       code: 'BAD_REQUEST',
