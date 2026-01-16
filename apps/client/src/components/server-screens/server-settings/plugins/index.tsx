@@ -224,7 +224,7 @@ const Plugins = memo(() => {
             variant="outline"
             size="sm"
             onClick={handleRefresh}
-            disabled={isRefreshing || loading}
+            disabled={isRefreshing || loading || !enabled}
             className="shrink-0"
           >
             <RefreshCw

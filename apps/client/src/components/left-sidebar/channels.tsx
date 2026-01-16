@@ -205,13 +205,7 @@ const Channel = memo(({ channelId, isSelected }: TChannelProps) => {
     return null;
   }
 
-  if (!channelCan(ChannelPermission.VIEW_CHANNEL)) {
-    // this is horrible, but fuck it
-    // will only happen when the user loses permission to the selected channel
-    setSelectedChannelId(undefined);
-
-    return null;
-  }
+  if (!channelCan(ChannelPermission.VIEW_CHANNEL)) return null;
 
   return (
     <div

@@ -60,12 +60,16 @@ const TopBar = memo(
           className="h-6 px-2 transition-all duration-200 ease-in-out"
         >
           {isOpen ? (
-            <Tooltip content="Close Members Sidebar" asChild={false}>
-              <PanelRightClose className="w-4 h-4 transition-transform duration-200 ease-in-out" />
+            <Tooltip content="Close Members Sidebar">
+              <div>
+                <PanelRightClose className="w-4 h-4 transition-transform duration-200 ease-in-out" />
+              </div>
             </Tooltip>
           ) : (
-            <Tooltip content="Open Members Sidebar" asChild={false}>
-              <PanelRight className="w-4 h-4 transition-transform duration-200 ease-in-out" />
+            <Tooltip content="Open Members Sidebar">
+              <div>
+                <PanelRight className="w-4 h-4 transition-transform duration-200 ease-in-out" />
+              </div>
             </Tooltip>
           )}
         </Button>

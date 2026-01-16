@@ -1,7 +1,7 @@
 import { store } from '@/features/store';
 import type { TChannel, TChannelUserPermissionsMap } from '@sharkord/shared';
 import { serverSliceActions } from '../slice';
-import { selectedChannelIdSelector } from './selectors';
+import { channelByIdSelector, selectedChannelIdSelector } from './selectors';
 
 export const setChannels = (channels: TChannel[]) => {
   store.dispatch(serverSliceActions.setChannels(channels));
@@ -33,6 +33,24 @@ export const setChannelPermissions = (
   permissions: TChannelUserPermissionsMap
 ) => {
   store.dispatch(serverSliceActions.setChannelPermissions(permissions));
+
+  const state = store.getState();
+  const selectedChannel = selectedChannelIdSelector(state);
+
+  if (!selectedChannel) return;
+
+  const channel = channelByIdSelector(state, selectedChannel || -1);
+
+  if (!channel?.private) return;
+
+  // user is in a channel that is private, so we need to check if their permissions changed
+  const canViewChannel =
+    permissions[selectedChannel]?.permissions['VIEW_CHANNEL'] === true;
+
+  if (!canViewChannel) {
+    // user lost VIEW_CHANNEL permission, deselect the channel
+    setSelectedChannelId(undefined);
+  }
 };
 
 export const setChannelReadState = (

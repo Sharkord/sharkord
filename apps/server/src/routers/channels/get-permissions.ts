@@ -17,15 +17,16 @@ const getPermissionsRoute = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_CHANNEL_PERMISSIONS);
 
-    const rolePermissions = await db
-      .select()
-      .from(channelRolePermissions)
-      .where(eq(channelRolePermissions.channelId, input.channelId));
-
-    const userPermissions = await db
-      .select()
-      .from(channelUserPermissions)
-      .where(eq(channelUserPermissions.channelId, input.channelId));
+    const [rolePermissions, userPermissions] = await Promise.all([
+      db
+        .select()
+        .from(channelRolePermissions)
+        .where(eq(channelRolePermissions.channelId, input.channelId)),
+      db
+        .select()
+        .from(channelUserPermissions)
+        .where(eq(channelUserPermissions.channelId, input.channelId))
+    ]);
 
     return {
       rolePermissions,

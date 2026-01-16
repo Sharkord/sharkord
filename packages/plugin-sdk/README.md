@@ -161,6 +161,7 @@ const onLoad = (ctx: PluginContext) => {
 4. **Log appropriately**: Use `debug` for verbose info, `error` for failures
 5. **Validate inputs**: Check command arguments before using them
 6. **Version carefully**: Follow semver for plugin updates
+7. **Prevent blocking operations**: Do NOT block the event loop with long-running tasks (example: using Bun.spawnSync). Use asynchronous methods instead.
 
 ## API Reference
 

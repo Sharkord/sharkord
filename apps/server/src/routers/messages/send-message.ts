@@ -73,13 +73,6 @@ const sendMessageRoute = protectedProcedure
           });
         }
 
-        console.log('Executing command:', {
-          plainText,
-          args,
-          commandName,
-          argsObject
-        });
-
         const plugin = await pluginManager.getPluginInfo(
           foundCommand?.pluginId || ''
         );
