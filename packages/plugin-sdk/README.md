@@ -65,6 +65,9 @@ Example `package.json`:
 bun add @sharkord/plugin-sdk
 ```
 
+> [!NOTE]
+> The SDK is not published to any package registry. For now, you need to link it locally using `bun link`.
+
 ### 3. Edit Entry File
 
 ```typescript
