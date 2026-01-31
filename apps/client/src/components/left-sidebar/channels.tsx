@@ -14,7 +14,10 @@ import {
   useVoiceUsersByChannelId
 } from '@/features/server/hooks';
 import { joinVoice } from '@/features/server/voice/actions';
-import { useVoice } from '@/features/server/voice/hooks';
+import {
+  useVoice,
+  useVoiceChannelExternalStreamsList
+} from '@/features/server/voice/hooks';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -42,6 +45,7 @@ import { Hash, Volume2 } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { ChannelContextMenu } from '../context-menus/channel';
+import { ExternalStream } from './external-stream';
 import { VoiceUser } from './voice-user';
 
 type TVoiceProps = Omit<TItemWrapperProps, 'children'> & {
@@ -50,22 +54,33 @@ type TVoiceProps = Omit<TItemWrapperProps, 'children'> & {
 
 const Voice = memo(({ channel, ...props }: TVoiceProps) => {
   const users = useVoiceUsersByChannelId(channel.id);
+  const externalStreams = useVoiceChannelExternalStreamsList(channel.id);
+  const unreadCount = useUnreadMessagesCount(channel.id);
 
   return (
     <>
       <ItemWrapper {...props}>
         <Volume2 className="h-4 w-4" />
         <span className="flex-1">{channel.name}</span>
-        {users.length > 0 && (
-          <span className="text-xs text-muted-foreground ml-auto">
-            {users.length}
-          </span>
+        {unreadCount > 0 && (
+          <div className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </div>
         )}
       </ItemWrapper>
-      {channel.type === 'VOICE' && users.length > 0 && (
+      {channel.type === 'VOICE' && (
         <div className="ml-6 space-y-1 mt-1">
           {users.map((user) => (
             <VoiceUser key={user.id} userId={user.id} user={user} />
+          ))}
+          {externalStreams.map((stream) => (
+            <ExternalStream
+              key={stream.streamId}
+              title={stream.title}
+              tracks={stream.tracks}
+              pluginId={stream.pluginId}
+              avatarUrl={stream.avatarUrl}
+            />
           ))}
         </div>
       )}
@@ -192,13 +207,7 @@ const Channel = memo(({ channelId, isSelected }: TChannelProps) => {
     return null;
   }
 
-  if (!channelCan(ChannelPermission.VIEW_CHANNEL)) {
-    // this is horrible, but fuck it
-    // will only happen when the user loses permission to the selected channel
-    setSelectedChannelId(undefined);
-
-    return null;
-  }
+  if (!channelCan(ChannelPermission.VIEW_CHANNEL)) return null;
 
   return (
     <div

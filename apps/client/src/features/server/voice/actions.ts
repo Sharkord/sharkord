@@ -2,7 +2,7 @@ import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-
 import { store } from '@/features/store';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
-import { type TVoiceUserState } from '@sharkord/shared';
+import { type TExternalStream, type TVoiceUserState } from '@sharkord/shared';
 import type { RtpCapabilities } from 'mediasoup-client/types';
 import { toast } from 'sonner';
 import {
@@ -56,6 +56,46 @@ export const removeUserFromVoiceChannel = (
   if (userId !== ownUserId && channelId === currentChannelId) {
     playSound(SoundType.REMOTE_USER_LEFT_VOICE_CHANNEL);
   }
+};
+
+export const addExternalStreamToVoiceChannel = (
+  channelId: number,
+  streamId: number,
+  stream: TExternalStream
+): void => {
+  store.dispatch(
+    serverSliceActions.addExternalStreamToChannel({
+      channelId,
+      streamId,
+      stream
+    })
+  );
+};
+
+export const updateExternalStreamInVoiceChannel = (
+  channelId: number,
+  streamId: number,
+  stream: TExternalStream
+): void => {
+  store.dispatch(
+    serverSliceActions.updateExternalStreamInChannel({
+      channelId,
+      streamId,
+      stream
+    })
+  );
+};
+
+export const removeExternalStreamFromVoiceChannel = (
+  channelId: number,
+  streamId: number
+): void => {
+  store.dispatch(
+    serverSliceActions.removeExternalStreamFromChannel({
+      channelId,
+      streamId
+    })
+  );
 };
 
 export const updateVoiceUserState = (

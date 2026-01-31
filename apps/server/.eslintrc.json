@@ -13,6 +13,7 @@
   "parserOptions": {
     "ecmaVersion": "latest"
   },
+  "ignorePatterns": ["data/**", "data-test/**", "node_modules/**", "build/**"],
   "rules": {
     "allowEmptyCatch": 0,
     "unused-imports/no-unused-imports": "warn",

@@ -67,23 +67,16 @@ const VoiceGrid = memo(
     if (pinnedCardId && pinnedCard) {
       return (
         <div className={cn('flex flex-col h-full', className)}>
-          <div className="flex-1 p-4 min-h-0">{pinnedCard}</div>
+          <div className="flex-1 p-2 min-h-0">{pinnedCard}</div>
 
           {regularCards.length > 0 && (
-            <div className="h-40">
-              <div className="flex items-center justify-center h-full">
-                <div
-                  className={cn(
-                    'grid gap-3 h-full max-w-full',
-                    getGridClass(Math.min(regularCards.length, 6))
-                  )}
-                >
-                  {regularCards.slice(0, 6).map((card, index) => (
-                    <div key={index} className="h-full min-w-0">
-                      {card}
-                    </div>
-                  ))}
-                </div>
+            <div className="flex-shrink-0 border-t border-border bg-card/50">
+              <div className="flex justify-center gap-2 p-2 overflow-x-auto">
+                {regularCards.map((card, index) => (
+                  <div key={index} className="flex-shrink-0 w-40 h-24">
+                    {card}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -91,13 +84,39 @@ const VoiceGrid = memo(
       );
     }
 
+    const getRowCount = (totalCards: number, cols: number) => {
+      return Math.ceil(totalCards / cols);
+    };
+
+    const getGridRowsClass = (rows: number) => {
+      switch (rows) {
+        case 1:
+          return 'grid-rows-1';
+        case 2:
+          return 'grid-rows-2';
+        case 3:
+          return 'grid-rows-3';
+        case 4:
+          return 'grid-rows-4';
+        case 5:
+          return 'grid-rows-5';
+        default:
+          return 'grid-rows-4';
+      }
+    };
+
+    const rows = getRowCount(regularCards.length, gridCols);
+
     return (
       <div
-        className={cn('flex items-center justify-center h-full p-4', className)}
+        className={cn(
+          'grid h-full p-2 gap-2',
+          getGridClass(gridCols),
+          getGridRowsClass(rows),
+          className
+        )}
       >
-        <div className={cn('grid gap-4 w-full h-fit', getGridClass(gridCols))}>
-          {regularCards}
-        </div>
+        {regularCards}
       </div>
     );
   }

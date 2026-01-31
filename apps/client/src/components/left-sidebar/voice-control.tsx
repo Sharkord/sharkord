@@ -16,6 +16,7 @@ import {
   WifiOff
 } from 'lucide-react';
 import { memo, useMemo } from 'react';
+import { ExternalAudioStreams } from '../channel-view/voice/external-audio-streams';
 import { VoiceAudioStreams } from '../channel-view/voice/voice-audio-streams';
 import { Button } from '../ui/button';
 import { StatsPopover } from './stats-popover';
@@ -63,6 +64,7 @@ const VoiceControl = memo(() => {
   return (
     <>
       <VoiceAudioStreams channelId={voiceChannelId} />
+      <ExternalAudioStreams channelId={voiceChannelId} />
       <div className="bg-secondary/30 border-t border-border">
         <StatsPopover>
           <div className="flex items-center px-2 py-1.5 gap-2 bg-secondary/50 cursor-pointer hover:bg-secondary/60 transition-colors">

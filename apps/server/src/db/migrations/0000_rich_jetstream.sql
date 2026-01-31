@@ -89,6 +89,7 @@ CREATE UNIQUE INDEX `channels_file_access_token_unique` ON `channels` (`file_acc
 CREATE INDEX `channels_category_idx` ON `channels` (`category_id`);--> statement-breakpoint
 CREATE INDEX `channels_position_idx` ON `channels` (`position`);--> statement-breakpoint
 CREATE INDEX `channels_type_idx` ON `channels` (`type`);--> statement-breakpoint
+CREATE INDEX `channels_category_position_idx` ON `channels` (`category_id`,`position`);--> statement-breakpoint
 CREATE TABLE `emojis` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
@@ -195,6 +196,7 @@ CREATE TABLE `messages` (
 	`content` text,
 	`user_id` integer NOT NULL,
 	`channel_id` integer NOT NULL,
+	`editable` integer DEFAULT true,
 	`metadata` text,
 	`created_at` integer NOT NULL,
 	`updated_at` integer,
@@ -206,6 +208,12 @@ CREATE INDEX `messages_user_idx` ON `messages` (`user_id`);--> statement-breakpo
 CREATE INDEX `messages_channel_idx` ON `messages` (`channel_id`);--> statement-breakpoint
 CREATE INDEX `messages_created_idx` ON `messages` (`created_at`);--> statement-breakpoint
 CREATE INDEX `messages_channel_created_idx` ON `messages` (`channel_id`,`created_at`);--> statement-breakpoint
+CREATE TABLE `plugin_data` (
+	`plugin_id` text PRIMARY KEY NOT NULL,
+	`enabled` integer DEFAULT false NOT NULL,
+	`settings` text DEFAULT '{}' NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE `role_permissions` (
 	`role_id` integer NOT NULL,
 	`permission` text NOT NULL,
@@ -227,6 +235,8 @@ CREATE TABLE `roles` (
 	`updated_at` integer
 );
 --> statement-breakpoint
+CREATE INDEX `roles_is_default_idx` ON `roles` (`is_default`);--> statement-breakpoint
+CREATE INDEX `roles_is_persistent_idx` ON `roles` (`is_persistent`);--> statement-breakpoint
 CREATE TABLE `settings` (
 	`name` text NOT NULL,
 	`description` text,
@@ -240,10 +250,12 @@ CREATE TABLE `settings` (
 	`storage_upload_max_file_size` integer NOT NULL,
 	`storage_space_quota_by_user` integer NOT NULL,
 	`storage_overflow_action` text NOT NULL,
+	`enable_plugins` integer NOT NULL,
 	FOREIGN KEY (`logo_id`) REFERENCES `files`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
 CREATE INDEX `settings_server_idx` ON `settings` (`server_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX `settings_server_unique_idx` ON `settings` (`server_id`);--> statement-breakpoint
 CREATE TABLE `user_roles` (
 	`user_id` integer NOT NULL,
 	`role_id` integer NOT NULL,

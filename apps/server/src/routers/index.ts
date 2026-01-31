@@ -6,6 +6,7 @@ import { filesRouter } from './files';
 import { invitesRouter } from './invites';
 import { messagesRouter } from './messages';
 import { othersRouter } from './others';
+import { pluginsRouter } from './plugins';
 import { rolesRouter } from './roles';
 import { usersRouter } from './users';
 import { voiceRouter } from './voice';
@@ -20,7 +21,8 @@ const appRouter = t.router({
   roles: rolesRouter,
   invites: invitesRouter,
   voice: voiceRouter,
-  categories: categoriesRouter
+  categories: categoriesRouter,
+  plugins: pluginsRouter
 });
 
 type AppRouter = typeof appRouter;

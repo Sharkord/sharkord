@@ -44,7 +44,8 @@ const seedDatabase = async (db: BunSQLiteDatabase) => {
     storageQuota: STORAGE_QUOTA,
     storageUploadMaxFileSize: STORAGE_MAX_FILE_SIZE,
     storageSpaceQuotaByUser: STORAGE_MIN_QUOTA_PER_USER,
-    storageOverflowAction: STORAGE_OVERFLOW_ACTION
+    storageOverflowAction: STORAGE_OVERFLOW_ACTION,
+    enablePlugins: false
   };
 
   await db.insert(settings).values(initialSettings);

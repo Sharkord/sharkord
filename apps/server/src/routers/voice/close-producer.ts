@@ -34,11 +34,15 @@ const closeProducerRoute = protectedProcedure
 
     runtime.removeProducer(ctx.user.id, input.kind);
 
-    ctx.pubsub.publish(ServerEvents.VOICE_PRODUCER_CLOSED, {
-      channelId: ctx.currentVoiceChannelId,
-      remoteUserId: ctx.user.id,
-      kind: input.kind
-    });
+    ctx.pubsub.publishForChannel(
+      ctx.currentVoiceChannelId,
+      ServerEvents.VOICE_PRODUCER_CLOSED,
+      {
+        channelId: ctx.currentVoiceChannelId,
+        remoteId: ctx.user.id,
+        kind: input.kind
+      }
+    );
   });
 
 export { closeProducerRoute };

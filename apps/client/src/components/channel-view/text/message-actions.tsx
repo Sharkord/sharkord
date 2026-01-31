@@ -13,10 +13,11 @@ type TMessageActionsProps = {
   messageId: number;
   onEdit: () => void;
   canManage: boolean;
+  editable: boolean;
 };
 
 const MessageActions = memo(
-  ({ onEdit, messageId, canManage }: TMessageActionsProps) => {
+  ({ onEdit, messageId, canManage, editable }: TMessageActionsProps) => {
     const onDeleteClick = useCallback(async () => {
       const choice = await requestConfirmation({
         title: 'Delete Message',
@@ -65,6 +66,7 @@ const MessageActions = memo(
               variant="ghost"
               icon={Pencil}
               onClick={onEdit}
+              disabled={!editable}
               title="Edit Message"
             />
 

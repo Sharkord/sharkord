@@ -21,6 +21,7 @@ import {
   type TJoinedUser,
   type TLogin,
   type TMessage,
+  type TPluginInfo,
   type TRole,
   type TStorageSettings
 } from '@sharkord/shared';
@@ -29,6 +30,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useCan } from '../hooks';
 
+// TODO: review this whole file for optimizations and improvements
+
 export const useAdminGeneral = () => {
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<TTrpcErrors>({});
@@ -36,7 +39,8 @@ export const useAdminGeneral = () => {
     name: '',
     description: '',
     password: '',
-    allowNewUsers: false
+    allowNewUsers: false,
+    enablePlugins: false
   });
   const [logo, setLogo] = useState<TFile | null>(null);
 
@@ -50,7 +54,8 @@ export const useAdminGeneral = () => {
       name: settings.name,
       description: settings.description ?? '',
       password: settings.password ?? '',
-      allowNewUsers: settings.allowNewUsers ?? false
+      allowNewUsers: settings.allowNewUsers ?? false,
+      enablePlugins: settings.enablePlugins ?? false
     });
     setLoading(false);
     setLogo(settings.logo);
@@ -64,7 +69,8 @@ export const useAdminGeneral = () => {
         name: settings.name,
         description: settings.description,
         password: settings.password || undefined,
-        allowNewUsers: settings.allowNewUsers
+        allowNewUsers: settings.allowNewUsers,
+        enablePlugins: settings.enablePlugins
       });
       toast.success('Settings updated');
     } catch (error) {
@@ -159,6 +165,42 @@ export const useAdminUpdates = () => {
     canUpdate,
     errors,
     update
+  };
+};
+
+export const useAdminPlugins = () => {
+  const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState<TTrpcErrors>({});
+  const [plugins, setPlugins] = useState<TPluginInfo[]>([]);
+
+  const fetchPlugins = useCallback(async () => {
+    setLoading(true);
+
+    const trpc = getTRPCClient();
+
+    try {
+      const { plugins } = await trpc.plugins.get.query();
+
+      // TODO: check this
+      // @ts-expect-error - ver esta merda wtf
+      setPlugins(plugins);
+    } catch (error) {
+      console.error('Error fetching plugins:', error);
+      setErrors(parseTrpcErrors(error));
+    }
+
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchPlugins();
+  }, [fetchPlugins]);
+
+  return {
+    refetch: fetchPlugins,
+    plugins,
+    loading,
+    errors
   };
 };
 

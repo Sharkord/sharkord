@@ -1,0 +1,9 @@
+{
+  "name": "plugin-no-onload",
+  "version": "1.0.0",
+  "sharkord": {
+    "entry": "index.js",
+    "author": "Test Author",
+    "description": "Plugin without onLoad export"
+  }
+}

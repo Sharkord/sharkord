@@ -72,6 +72,16 @@ const General = memo(() => {
           />
         </Group>
 
+        <Group
+          label="Enable Plugins"
+          description="Enable or disable plugins for your server."
+        >
+          <Switch
+            checked={settings.enablePlugins}
+            onCheckedChange={(checked) => onChange('enablePlugins', checked)}
+          />
+        </Group>
+
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
             Cancel

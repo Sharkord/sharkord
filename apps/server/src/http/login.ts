@@ -54,7 +54,7 @@ const registerUser = async (
     createdAt: Date.now()
   });
 
-  await publishUser(user.id, 'create');
+  publishUser(user.id, 'create');
 
   const registeredUser = await getUserByIdentity(identity);
 

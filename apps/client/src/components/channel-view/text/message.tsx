@@ -21,7 +21,7 @@ const Message = memo(({ message }: TMessageProps) => {
   );
 
   return (
-    <div className="flex-1 ml-1 relative hover:bg-secondary/50 rounded-md px-1 py-0.5 group">
+    <div className="min-w-0 flex-1 ml-1 relative hover:bg-secondary/50 rounded-md px-1 py-0.5 group">
       {!isEditing ? (
         <>
           <MessageRenderer message={message} />
@@ -29,6 +29,7 @@ const Message = memo(({ message }: TMessageProps) => {
             onEdit={() => setIsEditing(true)}
             canManage={canManage}
             messageId={message.id}
+            editable={message.editable ?? false}
           />
         </>
       ) : (

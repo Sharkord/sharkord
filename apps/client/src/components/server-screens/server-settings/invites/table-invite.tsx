@@ -99,7 +99,6 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
       key={invite.id}
       className="grid grid-cols-[180px_60px_80px_100px_140px_80px_80px] gap-4 px-4 py-3 text-sm hover:bg-muted/30 transition-colors"
     >
-      {/* Code */}
       <div className="flex items-center min-w-0">
         <div className="flex items-center gap-2 min-w-0">
           <code className="text-xs font-mono bg-muted px-2 py-1 rounded truncate">
@@ -116,17 +115,14 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
         </div>
       </div>
 
-      {/* Creator */}
       <div className="flex items-center gap-2 min-w-0">
         <UserAvatar userId={1} showUserPopover />
       </div>
 
-      {/* Uses */}
       <div className="flex items-center text-muted-foreground">
         <span className="text-xs">{usesText}</span>
       </div>
 
-      {/* Expires */}
       <div className="flex items-center text-muted-foreground">
         <span
           className={cn('text-xs', {
@@ -140,17 +136,14 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
         </span>
       </div>
 
-      {/* Created */}
       <div className="flex items-center text-muted-foreground">
         <span className="text-xs" title={format(invite.createdAt, 'PPP p')}>
           {formatDistanceToNow(invite.createdAt, { addSuffix: true })}
         </span>
       </div>
 
-      {/* Status */}
       <div className="flex items-center">{statusBadge}</div>
 
-      {/* Actions */}
       <div className="flex items-center justify-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

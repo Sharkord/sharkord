@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "8b301ca5-287d-4425-ada0-3eed32ebff0f",
+  "id": "60b881f6-58b6-452f-bc97-2431cc2e4b06",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "activity_log": {
@@ -629,6 +629,14 @@
           "name": "channels_type_idx",
           "columns": [
             "type"
+          ],
+          "isUnique": false
+        },
+        "channels_category_position_idx": {
+          "name": "channels_category_position_idx",
+          "columns": [
+            "category_id",
+            "position"
           ],
           "isUnique": false
         }
@@ -1395,6 +1403,14 @@
           "notNull": true,
           "autoincrement": false
         },
+        "editable": {
+          "name": "editable",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": true
+        },
         "metadata": {
           "name": "metadata",
           "type": "text",
@@ -1476,6 +1492,39 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "plugin_data": {
+      "name": "plugin_data",
+      "columns": {
+        "plugin_id": {
+          "name": "plugin_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "settings": {
+          "name": "settings",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -1609,7 +1658,22 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "roles_is_default_idx": {
+          "name": "roles_is_default_idx",
+          "columns": [
+            "is_default"
+          ],
+          "isUnique": false
+        },
+        "roles_is_persistent_idx": {
+          "name": "roles_is_persistent_idx",
+          "columns": [
+            "is_persistent"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -1701,6 +1765,13 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "enable_plugins": {
+          "name": "enable_plugins",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -1710,6 +1781,13 @@
             "server_id"
           ],
           "isUnique": false
+        },
+        "settings_server_unique_idx": {
+          "name": "settings_server_unique_idx",
+          "columns": [
+            "server_id"
+          ],
+          "isUnique": true
         }
       },
       "foreignKeys": {

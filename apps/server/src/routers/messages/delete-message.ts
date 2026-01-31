@@ -6,6 +6,7 @@ import { removeFile } from '../../db/mutations/files';
 import { publishMessage } from '../../db/publishers';
 import { getFilesByMessageId } from '../../db/queries/files';
 import { messages } from '../../db/schema';
+import { eventBus } from '../../plugins/event-bus';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -48,6 +49,11 @@ const deleteMessageRoute = protectedProcedure
     await db.delete(messages).where(eq(messages.id, input.messageId));
 
     publishMessage(input.messageId, targetMessage.channelId, 'delete');
+
+    eventBus.emit('message:deleted', {
+      channelId: targetMessage.channelId,
+      messageId: input.messageId
+    });
   });
 
 export { deleteMessageRoute };

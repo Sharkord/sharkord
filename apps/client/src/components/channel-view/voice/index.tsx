@@ -1,5 +1,7 @@
 import { useVoiceUsersByChannelId } from '@/features/server/hooks';
+import { useVoiceChannelExternalStreamsList } from '@/features/server/voice/hooks';
 import { memo, useMemo } from 'react';
+import { ExternalStreamCard } from './external-stream-card';
 import {
   PinnedCardType,
   usePinCardController
@@ -14,15 +16,16 @@ type TChannelProps = {
 
 const VoiceChannel = memo(({ channelId }: TChannelProps) => {
   const voiceUsers = useVoiceUsersByChannelId(channelId);
+  const externalStreams = useVoiceChannelExternalStreamsList(channelId);
   const { pinnedCard, pinCard, unpinCard, isPinned } = usePinCardController();
 
   const cards = useMemo(() => {
-    const userCards: React.ReactNode[] = [];
+    const cards: React.ReactNode[] = [];
 
     voiceUsers.forEach((voiceUser) => {
       const userCardId = `user-${voiceUser.id}`;
 
-      userCards.push(
+      cards.push(
         <VoiceUserCard
           key={userCardId}
           userId={voiceUser.id}
@@ -41,7 +44,8 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
 
       if (voiceUser.state.sharingScreen) {
         const screenShareCardId = `screen-share-${voiceUser.id}`;
-        userCards.push(
+
+        cards.push(
           <ScreenShareCard
             key={screenShareCardId}
             userId={voiceUser.id}
@@ -60,8 +64,30 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
       }
     });
 
-    return userCards;
-  }, [voiceUsers, isPinned, pinCard, unpinCard]);
+    externalStreams.forEach((stream) => {
+      const externalStreamCardId = `external-stream-${stream.streamId}`;
+
+      cards.push(
+        <ExternalStreamCard
+          key={externalStreamCardId}
+          streamId={stream.streamId}
+          stream={stream}
+          isPinned={isPinned(externalStreamCardId)}
+          onPin={() =>
+            pinCard({
+              id: externalStreamCardId,
+              type: PinnedCardType.EXTERNAL_STREAM,
+              userId: stream.streamId
+            })
+          }
+          onUnpin={unpinCard}
+          showPinControls
+        />
+      );
+    });
+
+    return cards;
+  }, [voiceUsers, externalStreams, isPinned, pinCard, unpinCard]);
 
   if (voiceUsers.length === 0) {
     return (
@@ -79,7 +105,7 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
   }
 
   return (
-    <div className="flex-1 relative bg-background">
+    <div className="flex-1 relative bg-background overflow-hidden">
       <VoiceGrid pinnedCardId={pinnedCard?.id} className="h-full">
         {cards}
       </VoiceGrid>

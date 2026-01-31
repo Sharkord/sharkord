@@ -9,18 +9,22 @@ import type { TRemoteStreams } from '@/types';
 import { ArrowDownLeft, SendToBack, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CardControls } from '../channel-view/voice/card-controls';
+import { PinnedCardType } from '../channel-view/voice/hooks/use-pin-card-controller';
 import { IconButton } from '../ui/icon-button';
 import { useFloatingCard } from './hooks/use-floating-card';
+import type { TExternalStreamsMap } from './hooks/use-remote-streams';
 
 type TFloatingPinnedCardProps = {
-  remoteStreams: TRemoteStreams;
+  remoteUserStreams: TRemoteStreams;
+  externalStreams: TExternalStreamsMap;
   localVideoStream: MediaStream | undefined;
   localScreenShareStream: MediaStream | undefined;
 };
 
 const FloatingPinnedCard = memo(
   ({
-    remoteStreams,
+    remoteUserStreams,
+    externalStreams,
     localVideoStream,
     localScreenShareStream
   }: TFloatingPinnedCardProps) => {
@@ -33,24 +37,35 @@ const FloatingPinnedCard = memo(
     const isCurrentVoiceChannelSelected = useIsCurrentVoiceChannelSelected();
     const pinnedUser = useUserById(pinnedCard?.userId || -1);
 
+    const isExternalStream =
+      pinnedCard?.type === PinnedCardType.EXTERNAL_STREAM;
+
     const pinnedCardVideoStream = useMemo(() => {
       if (!pinnedCard) return undefined;
+
+      if (isExternalStream) {
+        const externalStream = externalStreams[pinnedCard.userId];
+
+        return externalStream?.videoStream;
+      }
 
       if (pinnedCard.userId === ownUserId) {
         return localScreenShareStream || localVideoStream || undefined;
       }
 
-      const streamInfo = remoteStreams[pinnedCard.userId];
+      const streamInfo = remoteUserStreams[pinnedCard.userId];
 
       if (!streamInfo) return undefined;
 
       return streamInfo.screen || streamInfo.video || undefined;
     }, [
       pinnedCard,
-      remoteStreams,
+      remoteUserStreams,
+      externalStreams,
       ownUserId,
       localVideoStream,
-      localScreenShareStream
+      localScreenShareStream,
+      isExternalStream
     ]);
 
     const onCloseClick = useCallback(() => {

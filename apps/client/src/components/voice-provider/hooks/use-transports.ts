@@ -1,6 +1,7 @@
 import { logVoice } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
-import { StreamKind } from '@sharkord/shared';
+import type { TRemoteUserStreamKinds } from '@/types';
+import { getMediasoupKind, StreamKind } from '@sharkord/shared';
 import { TRPCClientError } from '@trpc/client';
 import {
   type AppData,
@@ -12,17 +13,31 @@ import {
 import { useCallback, useRef } from 'react';
 
 type TUseTransportParams = {
-  addRemoteStream: (
+  addRemoteUserStream: (
     userId: number,
     stream: MediaStream,
-    kind: StreamKind
+    kind: TRemoteUserStreamKinds
   ) => void;
-  removeRemoteStream: (userId: number, kind: StreamKind) => void;
+  removeRemoteUserStream: (
+    userId: number,
+    kind: TRemoteUserStreamKinds
+  ) => void;
+  addExternalStreamTrack: (
+    streamId: number,
+    stream: MediaStream,
+    kind: StreamKind.EXTERNAL_AUDIO | StreamKind.EXTERNAL_VIDEO
+  ) => void;
+  removeExternalStreamTrack: (
+    streamId: number,
+    kind: StreamKind.EXTERNAL_AUDIO | StreamKind.EXTERNAL_VIDEO
+  ) => void;
 };
 
 const useTransports = ({
-  addRemoteStream,
-  removeRemoteStream
+  addRemoteUserStream,
+  removeRemoteUserStream,
+  addExternalStreamTrack,
+  removeExternalStreamTrack
 }: TUseTransportParams) => {
   const producerTransport = useRef<Transport<AppData> | undefined>(undefined);
   const consumerTransport = useRef<Transport<AppData> | undefined>(undefined);
@@ -66,26 +81,9 @@ const useTransports = ({
       producerTransport.current.on('connectionstatechange', (state) => {
         logVoice('Producer transport connection state changed', { state });
 
-        if (state === 'failed') {
-          logVoice('Producer transport failed, attempting cleanup');
+        if (state === 'failed' || state === 'disconnected') {
+          logVoice(`Producer transport ${state}`);
           producerTransport.current?.close();
-          producerTransport.current = undefined;
-
-          // TODO: Implement reconnection logic here
-          // This should trigger a reconnection attempt after a delay
-        } else if (state === 'disconnected') {
-          logVoice('Producer transport disconnected, monitoring for recovery');
-
-          // Give some time for automatic recovery before declaring it failed
-          setTimeout(() => {
-            if (producerTransport.current?.connectionState === 'disconnected') {
-              logVoice(
-                'Producer transport still disconnected after timeout, cleaning up'
-              );
-              producerTransport.current?.close();
-              producerTransport.current = undefined;
-            }
-          }, 5000); // 5 second timeout
         } else if (state === 'closed') {
           logVoice('Producer transport closed');
           producerTransport.current = undefined;
@@ -170,10 +168,9 @@ const useTransports = ({
       consumerTransport.current.on('connectionstatechange', (state) => {
         logVoice('Consumer transport connection state changed', { state });
 
-        if (state === 'failed') {
-          logVoice('Consumer transport failed, attempting cleanup');
+        if (state === 'failed' || state === 'disconnected') {
+          logVoice(`Consumer transport ${state}, attempting cleanup`);
 
-          // Clean up all consumers using this transport
           Object.values(consumers.current).forEach((userConsumers) => {
             Object.values(userConsumers).forEach((consumer) => {
               consumer.close();
@@ -183,30 +180,6 @@ const useTransports = ({
 
           consumerTransport.current?.close();
           consumerTransport.current = undefined;
-
-          // TODO: Implement reconnection logic here
-        } else if (state === 'disconnected') {
-          logVoice('Consumer transport disconnected, monitoring for recovery');
-
-          // Give some time for automatic recovery
-          setTimeout(() => {
-            if (consumerTransport.current?.connectionState === 'disconnected') {
-              logVoice(
-                'Consumer transport still disconnected after timeout, cleaning up'
-              );
-
-              // Clean up all consumers
-              Object.values(consumers.current).forEach((userConsumers) => {
-                Object.values(userConsumers).forEach((consumer) => {
-                  consumer.close();
-                });
-              });
-              consumers.current = {};
-
-              consumerTransport.current?.close();
-              consumerTransport.current = undefined;
-            }
-          }, 5000); // 5 second timeout
         } else if (state === 'closed') {
           logVoice('Consumer transport closed');
           consumerTransport.current = undefined;
@@ -223,7 +196,7 @@ const useTransports = ({
 
   const consume = useCallback(
     async (
-      remoteUserId: number,
+      remoteId: number,
       kind: StreamKind,
       routerRtpCapabilities: RtpCapabilities
     ) => {
@@ -232,11 +205,11 @@ const useTransports = ({
         return;
       }
 
-      const operationKey = `${remoteUserId}-${kind}`;
+      const operationKey = `${remoteId}-${kind}`;
 
       if (consumeOperationsInProgress.current.has(operationKey)) {
         logVoice('Consume operation already in progress', {
-          remoteUserId,
+          remoteId,
           kind
         });
         return;
@@ -245,14 +218,14 @@ const useTransports = ({
       consumeOperationsInProgress.current.add(operationKey);
 
       try {
-        logVoice('Consuming remote producer', { remoteUserId, kind });
+        logVoice('Consuming remote producer', { remoteId, kind });
 
         const trpc = getTRPCClient();
 
         const { producerId, consumerId, consumerKind, consumerRtpParameters } =
           await trpc.voice.consume.mutate({
             kind,
-            remoteUserId,
+            remoteId,
             rtpCapabilities: routerRtpCapabilities
           });
 
@@ -263,26 +236,23 @@ const useTransports = ({
           consumerRtpParameters
         });
 
-        if (!consumers.current[remoteUserId]) {
-          consumers.current[remoteUserId] = {};
+        if (!consumers.current[remoteId]) {
+          consumers.current[remoteId] = {};
         }
 
-        const existingConsumer = consumers.current[remoteUserId][consumerKind];
+        const existingConsumer = consumers.current[remoteId][consumerKind];
 
         if (existingConsumer && !existingConsumer.closed) {
           logVoice('Closing existing consumer before creating new one');
 
           existingConsumer.close();
-          delete consumers.current[remoteUserId][consumerKind];
+          delete consumers.current[remoteId][consumerKind];
         }
-
-        const targetKind =
-          consumerKind === StreamKind.SCREEN ? StreamKind.VIDEO : consumerKind;
 
         const newConsumer = await consumerTransport.current.consume({
           id: consumerId,
           producerId: producerId,
-          kind: targetKind,
+          kind: getMediasoupKind(consumerKind),
           rtpParameters: consumerRtpParameters
         });
 
@@ -299,48 +269,77 @@ const useTransports = ({
           // @ts-expect-error - YOLO
           newConsumer?.on(event, () => {
             logVoice(`Consumer cleanup event "${event}" triggered`, {
-              remoteUserId,
+              remoteId,
               kind
             });
 
-            removeRemoteStream(remoteUserId, kind);
+            if (
+              kind === StreamKind.EXTERNAL_VIDEO ||
+              kind === StreamKind.EXTERNAL_AUDIO
+            ) {
+              removeExternalStreamTrack(remoteId, kind);
+            } else {
+              removeRemoteUserStream(remoteId, kind);
+            }
 
-            if (consumers.current[remoteUserId]?.[consumerKind]) {
-              delete consumers.current[remoteUserId][consumerKind];
+            if (consumers.current[remoteId]?.[consumerKind]) {
+              delete consumers.current[remoteId][consumerKind];
             }
           });
         });
 
-        consumers.current[remoteUserId][consumerKind] = newConsumer;
+        consumers.current[remoteId][consumerKind] = newConsumer;
 
         const stream = new MediaStream();
 
         stream.addTrack(newConsumer.track);
 
-        addRemoteStream(remoteUserId, stream, kind);
+        if (
+          kind === StreamKind.EXTERNAL_VIDEO ||
+          kind === StreamKind.EXTERNAL_AUDIO
+        ) {
+          addExternalStreamTrack(remoteId, stream, kind);
+        } else {
+          addRemoteUserStream(remoteId, stream, kind);
+        }
       } catch (error) {
         logVoice('Error consuming remote producer', { error });
       } finally {
         consumeOperationsInProgress.current.delete(operationKey);
       }
     },
-    [addRemoteStream, removeRemoteStream]
+    [
+      addRemoteUserStream,
+      removeRemoteUserStream,
+      addExternalStreamTrack,
+      removeExternalStreamTrack
+    ]
   );
 
   const consumeExistingProducers = useCallback(
-    async (routerRtpCapabilities: RtpCapabilities) => {
+    async (
+      routerRtpCapabilities: RtpCapabilities,
+      externalStreamTracks?: {
+        [streamId: number]: { audio?: boolean; video?: boolean };
+      }
+    ) => {
       logVoice('Consuming existing producers', { routerRtpCapabilities });
 
       const trpc = getTRPCClient();
 
       try {
-        const { remoteAudioIds, remoteScreenIds, remoteVideoIds } =
-          await trpc.voice.getProducers.query();
+        const {
+          remoteAudioIds,
+          remoteScreenIds,
+          remoteVideoIds,
+          remoteExternalStreamIds
+        } = await trpc.voice.getProducers.query();
 
         logVoice('Got existing producers', {
           remoteAudioIds,
           remoteScreenIds,
-          remoteVideoIds
+          remoteVideoIds,
+          remoteExternalStreamIds
         });
 
         remoteAudioIds.forEach((remoteId) => {
@@ -354,12 +353,53 @@ const useTransports = ({
         remoteScreenIds.forEach((remoteId) => {
           consume(remoteId, StreamKind.SCREEN, routerRtpCapabilities);
         });
+
+        remoteExternalStreamIds.forEach((streamId: number) => {
+          const tracks = externalStreamTracks?.[streamId];
+
+          if (tracks?.audio !== false) {
+            consume(streamId, StreamKind.EXTERNAL_AUDIO, routerRtpCapabilities);
+          }
+          if (tracks?.video !== false) {
+            consume(streamId, StreamKind.EXTERNAL_VIDEO, routerRtpCapabilities);
+          }
+        });
       } catch (error) {
         logVoice('Error consuming existing producers', { error });
       }
     },
     [consume]
   );
+
+  const cleanupTransports = useCallback(() => {
+    logVoice('Cleaning up transports');
+
+    Object.values(consumers.current).forEach((userConsumers) => {
+      Object.values(userConsumers).forEach((consumer) => {
+        if (!consumer.closed) {
+          consumer.close();
+        }
+      });
+    });
+
+    consumers.current = {};
+
+    consumeOperationsInProgress.current.clear();
+
+    if (producerTransport.current && !producerTransport.current.closed) {
+      producerTransport.current.close();
+    }
+
+    producerTransport.current = undefined;
+
+    if (consumerTransport.current && !consumerTransport.current.closed) {
+      consumerTransport.current.close();
+    }
+
+    consumerTransport.current = undefined;
+
+    logVoice('Transports cleanup complete');
+  }, []);
 
   return {
     producerTransport,
@@ -368,7 +408,8 @@ const useTransports = ({
     createProducerTransport,
     createConsumerTransport,
     consume,
-    consumeExistingProducers
+    consumeExistingProducers,
+    cleanupTransports
   };
 };
 

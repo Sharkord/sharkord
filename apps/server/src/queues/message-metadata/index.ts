@@ -15,7 +15,7 @@ const enqueueProcessMetadata = (content: string, messageId: number) => {
     const updatedMessage = await processMessageMetadata(content, messageId);
 
     if (updatedMessage) {
-      await publishMessage(messageId, undefined, 'update');
+      publishMessage(messageId, undefined, 'update');
     }
 
     callback?.();

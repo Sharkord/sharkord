@@ -28,7 +28,7 @@ const useSecretTokenRoute = protectedProcedure
       createdAt: Date.now()
     });
 
-    await publishUser(ctx.userId, 'update');
+    publishUser(ctx.userId, 'update');
   });
 
 export { useSecretTokenRoute };

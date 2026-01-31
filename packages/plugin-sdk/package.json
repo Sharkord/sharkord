@@ -1,0 +1,16 @@
+{
+  "name": "@sharkord/plugin-sdk",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "mediasoup": "^3.19.11",
+    "@sharkord/shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

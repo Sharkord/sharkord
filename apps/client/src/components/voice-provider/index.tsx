@@ -26,6 +26,17 @@ import {
 import { useTransports } from './hooks/use-transports';
 import { useVoiceControls } from './hooks/use-voice-controls';
 import { useVoiceEvents } from './hooks/use-voice-events';
+import { VolumeControlProvider } from './volume-control-context';
+
+type AudioVideoRefs = {
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  audioRef: React.RefObject<HTMLAudioElement | null>;
+  screenShareRef: React.RefObject<HTMLVideoElement | null>;
+  externalAudioRef: React.RefObject<HTMLAudioElement | null>;
+  externalVideoRef: React.RefObject<HTMLVideoElement | null>;
+};
+
+export type { AudioVideoRefs };
 
 enum ConnectionStatus {
   DISCONNECTED = 'disconnected',
@@ -38,6 +49,8 @@ export type TVoiceProvider = {
   loading: boolean;
   connectionStatus: ConnectionStatus;
   transportStats: TransportStatsData;
+  audioVideoRefsMap: Map<number, AudioVideoRefs>;
+  getOrCreateRefs: (remoteId: number) => AudioVideoRefs;
   init: (
     routerRtpCapabilities: RtpCapabilities,
     channelId: number
@@ -46,7 +59,10 @@ export type TVoiceProvider = {
   ReturnType<typeof useLocalStreams>,
   'localAudioStream' | 'localVideoStream' | 'localScreenShareStream'
 > &
-  Pick<ReturnType<typeof useRemoteStreams>, 'remoteStreams'> &
+  Pick<
+    ReturnType<typeof useRemoteStreams>,
+    'remoteUserStreams' | 'externalStreams'
+  > &
   ReturnType<typeof useVoiceControls>;
 
 const VoiceProviderContext = createContext<TVoiceProvider>({
@@ -63,6 +79,14 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
     averageBitrateReceived: 0,
     averageBitrateSent: 0
   },
+  audioVideoRefsMap: new Map(),
+  getOrCreateRefs: () => ({
+    videoRef: { current: null },
+    audioRef: { current: null },
+    screenShareRef: { current: null },
+    externalAudioRef: { current: null },
+    externalVideoRef: { current: null }
+  }),
   init: () => Promise.resolve(),
   toggleMic: () => Promise.resolve(),
   toggleSound: () => Promise.resolve(),
@@ -78,7 +102,8 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
   localVideoStream: undefined,
   localScreenShareStream: undefined,
 
-  remoteStreams: {}
+  remoteUserStreams: {},
+  externalStreams: {}
 });
 
 type TVoiceProviderProps = {
@@ -91,15 +116,36 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     ConnectionStatus.DISCONNECTED
   );
   const routerRtpCapabilities = useRef<RtpCapabilities | null>(null);
+  const audioVideoRefsMap = useRef<Map<number, AudioVideoRefs>>(new Map());
   const { devices } = useDevices();
 
+  const getOrCreateRefs = useCallback((remoteId: number): AudioVideoRefs => {
+    if (!audioVideoRefsMap.current.has(remoteId)) {
+      audioVideoRefsMap.current.set(remoteId, {
+        videoRef: { current: null },
+        audioRef: { current: null },
+        screenShareRef: { current: null },
+        externalAudioRef: { current: null },
+        externalVideoRef: { current: null }
+      });
+    }
+
+    return audioVideoRefsMap.current.get(remoteId)!;
+  }, []);
+
   const {
-    addRemoteStream,
-    removeRemoteStream,
-    clearRemoteStreamsForUser,
-    clearRemoteStreams,
-    remoteStreams
+    addExternalStreamTrack,
+    removeExternalStreamTrack,
+    removeExternalStream,
+    clearExternalStreams,
+    addRemoteUserStream,
+    removeRemoteUserStream,
+    clearRemoteUserStreamsForUser,
+    clearRemoteUserStreams,
+    externalStreams,
+    remoteUserStreams
   } = useRemoteStreams();
+
   const {
     localAudioProducer,
     localVideoProducer,
@@ -109,18 +155,23 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     localScreenShareProducer,
     setLocalAudioStream,
     setLocalVideoStream,
-    setLocalScreenShare
+    setLocalScreenShare,
+    clearLocalStreams
   } = useLocalStreams();
+
   const {
     producerTransport,
     consumerTransport,
     createProducerTransport,
     createConsumerTransport,
     consume,
-    consumeExistingProducers
+    consumeExistingProducers,
+    cleanupTransports
   } = useTransports({
-    addRemoteStream,
-    removeRemoteStream
+    addExternalStreamTrack,
+    removeExternalStreamTrack,
+    addRemoteUserStream,
+    removeRemoteUserStream
   });
 
   const {
@@ -379,6 +430,26 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     devices.screenFramerate
   ]);
 
+  const cleanup = useCallback(() => {
+    logVoice('Running voice provider cleanup');
+
+    stopMonitoring();
+    resetStats();
+    clearLocalStreams();
+    clearRemoteUserStreams();
+    clearExternalStreams();
+    cleanupTransports();
+
+    setConnectionStatus(ConnectionStatus.DISCONNECTED);
+  }, [
+    stopMonitoring,
+    resetStats,
+    clearLocalStreams,
+    clearRemoteUserStreams,
+    clearExternalStreams,
+    cleanupTransports
+  ]);
+
   const init = useCallback(
     async (
       incomingRouterRtpCapabilities: RtpCapabilities,
@@ -389,6 +460,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         channelId
       });
 
+      cleanup();
+
       try {
         setLoading(true);
         setConnectionStatus(ConnectionStatus.CONNECTING);
@@ -396,6 +469,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         routerRtpCapabilities.current = incomingRouterRtpCapabilities;
 
         const device = new Device();
+
         await device.load({
           routerRtpCapabilities: incomingRouterRtpCapabilities
         });
@@ -411,6 +485,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         playSound(SoundType.OWN_USER_JOINED_VOICE_CHANNEL);
       } catch (error) {
         logVoice('Error initializing voice provider', { error });
+
         setConnectionStatus(ConnectionStatus.FAILED);
         setLoading(false);
 
@@ -418,6 +493,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       }
     },
     [
+      cleanup,
       createProducerTransport,
       createConsumerTransport,
       consumeExistingProducers,
@@ -445,45 +521,17 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
   useVoiceEvents({
     consume,
-    removeRemoteStream,
-    clearRemoteStreamsForUser,
+    removeRemoteUserStream,
+    removeExternalStreamTrack,
+    removeExternalStream,
+    clearRemoteUserStreamsForUser,
     rtpCapabilities: routerRtpCapabilities.current!
   });
 
   useEffect(() => {
-    const producerTransportRef = producerTransport.current;
-    const consumerTransportRef = consumerTransport.current;
-    const audioProducerRef = localAudioProducer.current;
-    const videoProducerRef = localVideoProducer.current;
-    const screenShareProducerRef = localScreenShareProducer.current;
-
     return () => {
       logVoice('Voice provider unmounting, cleaning up resources');
-
-      localAudioStream?.getTracks().forEach((track) => {
-        track.stop();
-      });
-
-      localVideoStream?.getTracks().forEach((track) => {
-        track.stop();
-      });
-
-      localScreenShareStream?.getTracks().forEach((track) => {
-        track.stop();
-      });
-
-      audioProducerRef?.close();
-      videoProducerRef?.close();
-      screenShareProducerRef?.close();
-
-      clearRemoteStreams();
-
-      producerTransportRef?.close();
-      consumerTransportRef?.close();
-
-      stopMonitoring();
-      resetStats();
-      setConnectionStatus(ConnectionStatus.DISCONNECTED);
+      cleanup();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -493,6 +541,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       loading,
       connectionStatus,
       transportStats,
+      audioVideoRefsMap: audioVideoRefsMap.current,
+      getOrCreateRefs,
       init,
 
       toggleMic,
@@ -505,12 +555,14 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       localVideoStream,
       localScreenShareStream,
 
-      remoteStreams
+      remoteUserStreams,
+      externalStreams
     }),
     [
       loading,
       connectionStatus,
       transportStats,
+      getOrCreateRefs,
       init,
 
       toggleMic,
@@ -522,20 +574,24 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       localAudioStream,
       localVideoStream,
       localScreenShareStream,
-      remoteStreams
+      remoteUserStreams,
+      externalStreams
     ]
   );
 
   return (
     <VoiceProviderContext.Provider value={contextValue}>
-      <div className="relative">
-        <FloatingPinnedCard
-          remoteStreams={remoteStreams}
-          localScreenShareStream={localScreenShareStream}
-          localVideoStream={localVideoStream}
-        />
-        {children}
-      </div>
+      <VolumeControlProvider>
+        <div className="relative">
+          <FloatingPinnedCard
+            remoteUserStreams={remoteUserStreams}
+            externalStreams={externalStreams}
+            localScreenShareStream={localScreenShareStream}
+            localVideoStream={localVideoStream}
+          />
+          {children}
+        </div>
+      </VolumeControlProvider>
     </VoiceProviderContext.Provider>
   );
 });

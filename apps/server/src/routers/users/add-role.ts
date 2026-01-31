@@ -39,7 +39,7 @@ const addRoleRoute = protectedProcedure
       createdAt: Date.now()
     });
 
-    await publishUser(input.userId, 'update');
+    publishUser(input.userId, 'update');
   });
 
 export { addRoleRoute };

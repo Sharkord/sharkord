@@ -1,5 +1,6 @@
 import {
   ChannelPermission,
+  getMediasoupKind,
   Permission,
   ServerEvents,
   StreamKind
@@ -56,23 +57,23 @@ const produceRoute = protectedProcedure
       message: 'Producer transport not found'
     });
 
-    // convert screen share to video kind
-    const mediaKind =
-      input.kind === StreamKind.SCREEN ? StreamKind.VIDEO : input.kind;
-
     const producer = await producerTransport.produce({
-      kind: mediaKind,
+      kind: getMediasoupKind(input.kind),
       rtpParameters: input.rtpParameters,
       appData: { kind: input.kind, userId: ctx.user.id }
     });
 
     runtime.addProducer(ctx.user.id, input.kind, producer);
 
-    ctx.pubsub.publish(ServerEvents.VOICE_NEW_PRODUCER, {
-      channelId: ctx.currentVoiceChannelId,
-      remoteUserId: ctx.user.id,
-      kind: input.kind
-    });
+    ctx.pubsub.publishForChannel(
+      ctx.currentVoiceChannelId,
+      ServerEvents.VOICE_NEW_PRODUCER,
+      {
+        channelId: ctx.currentVoiceChannelId,
+        remoteId: ctx.user.id,
+        kind: input.kind
+      }
+    );
 
     return producer.id;
   });

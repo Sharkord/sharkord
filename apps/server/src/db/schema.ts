@@ -11,6 +11,28 @@ import {
   uniqueIndex
 } from 'drizzle-orm/sqlite-core';
 
+const files = sqliteTable(
+  'files',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    name: text('name').notNull().unique(),
+    originalName: text('original_name').notNull(),
+    md5: text('md5').notNull(),
+    userId: integer('user_id').notNull(),
+    size: integer('size').notNull(),
+    mimeType: text('mime_type').notNull(),
+    extension: text('extension').notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at')
+  },
+  (t) => [
+    index('files_user_idx').on(t.userId),
+    index('files_md5_idx').on(t.md5),
+    index('files_created_idx').on(t.createdAt),
+    index('files_name_idx').on(t.name)
+  ]
+);
+
 const settings = sqliteTable(
   'settings',
   {
@@ -29,22 +51,31 @@ const settings = sqliteTable(
     storageQuota: integer('storage_quota').notNull(),
     storageUploadMaxFileSize: integer('storage_upload_max_file_size').notNull(),
     storageSpaceQuotaByUser: integer('storage_space_quota_by_user').notNull(),
-    storageOverflowAction: text('storage_overflow_action').notNull()
+    storageOverflowAction: text('storage_overflow_action').notNull(),
+    enablePlugins: integer('enable_plugins', { mode: 'boolean' }).notNull()
   },
-  (t) => ({
-    serverIdx: index('settings_server_idx').on(t.serverId)
-  })
+  (t) => [
+    index('settings_server_idx').on(t.serverId),
+    uniqueIndex('settings_server_unique_idx').on(t.serverId)
+  ]
 );
 
-const roles = sqliteTable('roles', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  name: text('name').notNull(),
-  color: text('color').notNull().default('#ffffff'),
-  isPersistent: integer('is_persistent', { mode: 'boolean' }).notNull(),
-  isDefault: integer('is_default', { mode: 'boolean' }).notNull(),
-  createdAt: integer('created_at').notNull(),
-  updatedAt: integer('updated_at')
-});
+const roles = sqliteTable(
+  'roles',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    name: text('name').notNull(),
+    color: text('color').notNull().default('#ffffff'),
+    isPersistent: integer('is_persistent', { mode: 'boolean' }).notNull(),
+    isDefault: integer('is_default', { mode: 'boolean' }).notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at')
+  },
+  (t) => [
+    index('roles_is_default_idx').on(t.isDefault),
+    index('roles_is_persistent_idx').on(t.isPersistent)
+  ]
+);
 
 const categories = sqliteTable(
   'categories',
@@ -55,9 +86,7 @@ const categories = sqliteTable(
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },
-  (t) => ({
-    posIdx: index('categories_position_idx').on(t.position)
-  })
+  (t) => [index('categories_position_idx').on(t.position)]
 );
 
 const channels = sqliteTable(
@@ -77,33 +106,12 @@ const channels = sqliteTable(
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },
-  (t) => ({
-    catIdx: index('channels_category_idx').on(t.categoryId),
-    posIdx: index('channels_position_idx').on(t.position),
-    typeIdx: index('channels_type_idx').on(t.type)
-  })
-);
-
-const files = sqliteTable(
-  'files',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    name: text('name').notNull().unique(),
-    originalName: text('original_name').notNull(),
-    md5: text('md5').notNull(),
-    userId: integer('user_id').notNull(),
-    size: integer('size').notNull(),
-    mimeType: text('mime_type').notNull(),
-    extension: text('extension').notNull(),
-    createdAt: integer('created_at').notNull(),
-    updatedAt: integer('updated_at')
-  },
-  (t) => ({
-    userIdx: index('files_user_idx').on(t.userId),
-    md5Idx: index('files_md5_idx').on(t.md5),
-    createdIdx: index('files_created_idx').on(t.createdAt),
-    nameIdx: index('files_name_idx').on(t.name)
-  })
+  (t) => [
+    index('channels_category_idx').on(t.categoryId),
+    index('channels_position_idx').on(t.position),
+    index('channels_type_idx').on(t.type),
+    index('channels_category_position_idx').on(t.categoryId, t.position)
+  ]
 );
 
 const users = sqliteTable(
@@ -130,12 +138,12 @@ const users = sqliteTable(
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },
-  (t) => ({
-    identityIdx: uniqueIndex('users_identity_idx').on(t.identity),
-    nameIdx: index('users_name_idx').on(t.name),
-    bannedIdx: index('users_banned_idx').on(t.banned),
-    lastLoginIdx: index('users_last_login_idx').on(t.lastLoginAt)
-  })
+  (t) => [
+    uniqueIndex('users_identity_idx').on(t.identity),
+    index('users_name_idx').on(t.name),
+    index('users_banned_idx').on(t.banned),
+    index('users_last_login_idx').on(t.lastLoginAt)
+  ]
 );
 
 const userRoles = sqliteTable(
@@ -149,11 +157,11 @@ const userRoles = sqliteTable(
       .references(() => roles.id, { onDelete: 'cascade' }),
     createdAt: integer('created_at').notNull()
   },
-  (t) => ({
-    pk: primaryKey({ columns: [t.userId, t.roleId] }),
-    userIdx: index('user_roles_user_idx').on(t.userId),
-    roleIdx: index('user_roles_role_idx').on(t.roleId)
-  })
+  (t) => [
+    primaryKey({ columns: [t.userId, t.roleId] }),
+    index('user_roles_user_idx').on(t.userId),
+    index('user_roles_role_idx').on(t.roleId)
+  ]
 );
 
 const logins = sqliteTable(
@@ -178,12 +186,12 @@ const logins = sqliteTable(
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },
-  (t) => ({
-    userIdx: index('logins_user_idx').on(t.userId),
-    ipIdx: index('logins_ip_idx').on(t.ip),
-    createdIdx: index('logins_created_idx').on(t.createdAt),
-    userCreatedIdx: index('logins_user_created_idx').on(t.userId, t.createdAt)
-  })
+  (t) => [
+    index('logins_user_idx').on(t.userId),
+    index('logins_ip_idx').on(t.ip),
+    index('logins_created_idx').on(t.createdAt),
+    index('logins_user_created_idx').on(t.userId, t.createdAt)
+  ]
 );
 
 const messages = sqliteTable(
@@ -197,19 +205,17 @@ const messages = sqliteTable(
     channelId: integer('channel_id')
       .notNull()
       .references(() => channels.id, { onDelete: 'cascade' }),
+    editable: integer('editable', { mode: 'boolean' }).default(true),
     metadata: text('metadata', { mode: 'json' }).$type<TMessageMetadata[]>(),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },
-  (t) => ({
-    userIdx: index('messages_user_idx').on(t.userId),
-    channelIdx: index('messages_channel_idx').on(t.channelId),
-    createdIdx: index('messages_created_idx').on(t.createdAt),
-    channelCreatedIdx: index('messages_channel_created_idx').on(
-      t.channelId,
-      t.createdAt
-    )
-  })
+  (t) => [
+    index('messages_user_idx').on(t.userId),
+    index('messages_channel_idx').on(t.channelId),
+    index('messages_created_idx').on(t.createdAt),
+    index('messages_channel_created_idx').on(t.channelId, t.createdAt)
+  ]
 );
 
 const messageFiles = sqliteTable(
@@ -224,11 +230,11 @@ const messageFiles = sqliteTable(
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },
-  (t) => ({
-    pk: primaryKey({ columns: [t.messageId, t.fileId] }),
-    msgIdx: index('message_files_msg_idx').on(t.messageId),
-    fileIdx: index('message_files_file_idx').on(t.fileId)
-  })
+  (t) => [
+    primaryKey({ columns: [t.messageId, t.fileId] }),
+    index('message_files_msg_idx').on(t.messageId),
+    index('message_files_file_idx').on(t.fileId)
+  ]
 );
 
 const rolePermissions = sqliteTable(
@@ -241,11 +247,11 @@ const rolePermissions = sqliteTable(
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },
-  (t) => ({
-    pk: primaryKey({ columns: [t.roleId, t.permission] }),
-    roleIdx: index('role_permissions_role_idx').on(t.roleId),
-    permissionIdx: index('role_permissions_permission_idx').on(t.permission)
-  })
+  (t) => [
+    primaryKey({ columns: [t.roleId, t.permission] }),
+    index('role_permissions_role_idx').on(t.roleId),
+    index('role_permissions_permission_idx').on(t.permission)
+  ]
 );
 
 const emojis = sqliteTable(
@@ -262,11 +268,11 @@ const emojis = sqliteTable(
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },
-  (t) => ({
-    userIdx: index('emojis_user_idx').on(t.userId),
-    fileIdx: index('emojis_file_idx').on(t.fileId),
-    nameIdx: uniqueIndex('emojis_name_idx').on(t.name)
-  })
+  (t) => [
+    index('emojis_user_idx').on(t.userId),
+    index('emojis_file_idx').on(t.fileId),
+    uniqueIndex('emojis_name_idx').on(t.name)
+  ]
 );
 
 const messageReactions = sqliteTable(
@@ -284,13 +290,13 @@ const messageReactions = sqliteTable(
     }),
     createdAt: integer('created_at').notNull()
   },
-  (t) => ({
-    pk: primaryKey({ columns: [t.messageId, t.userId, t.emoji] }),
-    msgIdx: index('reaction_msg_idx').on(t.messageId),
-    emojiIdx: index('reaction_emoji_idx').on(t.emoji),
-    userIdx: index('reaction_user_idx').on(t.userId),
-    msgEmojiIdx: index('reaction_msg_emoji_idx').on(t.messageId, t.emoji)
-  })
+  (t) => [
+    primaryKey({ columns: [t.messageId, t.userId, t.emoji] }),
+    index('reaction_msg_idx').on(t.messageId),
+    index('reaction_emoji_idx').on(t.emoji),
+    index('reaction_user_idx').on(t.userId),
+    index('reaction_msg_emoji_idx').on(t.messageId, t.emoji)
+  ]
 );
 
 const invites = sqliteTable(
@@ -306,12 +312,12 @@ const invites = sqliteTable(
     expiresAt: integer('expires_at'),
     createdAt: integer('created_at').notNull()
   },
-  (t) => ({
-    codeIdx: uniqueIndex('invites_code_idx').on(t.code),
-    creatorIdx: index('invites_creator_idx').on(t.creatorId),
-    expiresIdx: index('invites_expires_idx').on(t.expiresAt),
-    usesIdx: index('invites_uses_idx').on(t.uses)
-  })
+  (t) => [
+    uniqueIndex('invites_code_idx').on(t.code),
+    index('invites_creator_idx').on(t.creatorId),
+    index('invites_expires_idx').on(t.expiresAt),
+    index('invites_uses_idx').on(t.uses)
+  ]
 );
 
 const activityLog = sqliteTable(
@@ -328,19 +334,13 @@ const activityLog = sqliteTable(
     ip: text('ip'),
     createdAt: integer('created_at').notNull()
   },
-  (t) => ({
-    userIdx: index('activity_log_user_idx').on(t.userId),
-    typeIdx: index('activity_log_type_idx').on(t.type),
-    createdIdx: index('activity_log_created_idx').on(t.createdAt),
-    userCreatedIdx: index('activity_log_user_created_idx').on(
-      t.userId,
-      t.createdAt
-    ),
-    typeCreatedIdx: index('activity_log_type_created_idx').on(
-      t.type,
-      t.createdAt
-    )
-  })
+  (t) => [
+    index('activity_log_user_idx').on(t.userId),
+    index('activity_log_type_idx').on(t.type),
+    index('activity_log_created_idx').on(t.createdAt),
+    index('activity_log_user_created_idx').on(t.userId, t.createdAt),
+    index('activity_log_type_created_idx').on(t.type, t.createdAt)
+  ]
 );
 
 const channelRolePermissions = sqliteTable(
@@ -357,20 +357,17 @@ const channelRolePermissions = sqliteTable(
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },
-  (t) => ({
-    pk: primaryKey({ columns: [t.channelId, t.roleId, t.permission] }),
-    channelIdx: index('channel_role_permissions_channel_idx').on(t.channelId),
-    roleIdx: index('channel_role_permissions_role_idx').on(t.roleId),
-    channelPermIdx: index('channel_role_permissions_channel_perm_idx').on(
+  (t) => [
+    primaryKey({ columns: [t.channelId, t.roleId, t.permission] }),
+    index('channel_role_permissions_channel_idx').on(t.channelId),
+    index('channel_role_permissions_role_idx').on(t.roleId),
+    index('channel_role_permissions_channel_perm_idx').on(
       t.channelId,
       t.permission
     ),
-    rolePermIdx: index('channel_role_permissions_role_perm_idx').on(
-      t.roleId,
-      t.permission
-    ),
-    allowIdx: index('channel_role_permissions_allow_idx').on(t.allow)
-  })
+    index('channel_role_permissions_role_perm_idx').on(t.roleId, t.permission),
+    index('channel_role_permissions_allow_idx').on(t.allow)
+  ]
 );
 
 const channelUserPermissions = sqliteTable(
@@ -387,20 +384,17 @@ const channelUserPermissions = sqliteTable(
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },
-  (t) => ({
-    pk: primaryKey({ columns: [t.channelId, t.userId, t.permission] }),
-    channelIdx: index('channel_user_permissions_channel_idx').on(t.channelId),
-    userIdx: index('channel_user_permissions_user_idx').on(t.userId),
-    channelPermIdx: index('channel_user_permissions_channel_perm_idx').on(
+  (t) => [
+    primaryKey({ columns: [t.channelId, t.userId, t.permission] }),
+    index('channel_user_permissions_channel_idx').on(t.channelId),
+    index('channel_user_permissions_user_idx').on(t.userId),
+    index('channel_user_permissions_channel_perm_idx').on(
       t.channelId,
       t.permission
     ),
-    userPermIdx: index('channel_user_permissions_user_perm_idx').on(
-      t.userId,
-      t.permission
-    ),
-    allowIdx: index('channel_user_permissions_allow_idx').on(t.allow)
-  })
+    index('channel_user_permissions_user_perm_idx').on(t.userId, t.permission),
+    index('channel_user_permissions_allow_idx').on(t.allow)
+  ]
 );
 
 const channelReadStates = sqliteTable(
@@ -418,15 +412,22 @@ const channelReadStates = sqliteTable(
     ),
     lastReadAt: integer('last_read_at').notNull()
   },
-  (t) => ({
-    pk: primaryKey({ columns: [t.userId, t.channelId] }),
-    userIdx: index('channel_read_states_user_idx').on(t.userId),
-    channelIdx: index('channel_read_states_channel_idx').on(t.channelId),
-    lastReadIdx: index('channel_read_states_last_read_idx').on(
-      t.lastReadMessageId
-    )
-  })
+  (t) => [
+    primaryKey({ columns: [t.userId, t.channelId] }),
+    index('channel_read_states_user_idx').on(t.userId),
+    index('channel_read_states_channel_idx').on(t.channelId),
+    index('channel_read_states_last_read_idx').on(t.lastReadMessageId)
+  ]
 );
+
+const pluginData = sqliteTable('plugin_data', {
+  pluginId: text('plugin_id').notNull().primaryKey(),
+  enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
+  settings: text('settings', { mode: 'json' })
+    .$type<Record<string, unknown>>()
+    .notNull()
+    .default({})
+});
 
 export {
   activityLog,
@@ -442,6 +443,7 @@ export {
   messageFiles,
   messageReactions,
   messages,
+  pluginData,
   rolePermissions,
   roles,
   settings,

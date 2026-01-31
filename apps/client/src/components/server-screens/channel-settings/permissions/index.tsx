@@ -1,3 +1,4 @@
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Card,
   CardContent,
@@ -11,6 +12,7 @@ import {
   useAdminChannelPermissions
 } from '@/features/server/admin/hooks';
 import { ChannelPermission } from '@sharkord/shared';
+import { MessageCircleWarning } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
 import { Override } from './override';
 import { OverridesList } from './overrides-list';
@@ -59,16 +61,22 @@ const ChannelPermissions = memo(({ channelId }: TChannelPermissionsProps) => {
     <Card>
       <CardHeader>
         <CardTitle>Permissions</CardTitle>
-        <CardDescription>
-          Manage channel-specific permissions for roles and users. These
-          permissions are not inherited from server-level permissions. User
-          permissions take precedence over role permissions.{' '}
+        <CardDescription className="flex flex-col space-y-4">
+          <span>
+            Manage channel-specific permissions for roles and users. These
+            permissions are not inherited from server-level permissions. User
+            permissions take precedence over role permissions.
+          </span>
           {!channel?.private && (
-            <span className="font-bold">
-              Note: this is a public channel; everyone has access by default.
-              These permissions will not restrict access. To restrict access,
-              make the channel private.
-            </span>
+            <Alert variant="destructive">
+              <MessageCircleWarning />
+              <AlertTitle>Public channel</AlertTitle>
+              <AlertDescription>
+                This is a public channel; everyone has access by default. These
+                permissions will not be applied unless the channel is set to
+                private. You can do this in the General Settings tab.
+              </AlertDescription>
+            </Alert>
           )}
         </CardDescription>
       </CardHeader>

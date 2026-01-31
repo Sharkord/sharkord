@@ -34,6 +34,18 @@ const changeAvatarRoute = protectedProcedure
     }
 
     if (input.fileId) {
+      const tempFile = await fileManager.getTemporaryFile(input.fileId);
+
+      invariant(tempFile, {
+        code: 'NOT_FOUND',
+        message: 'Temporary file not found'
+      });
+
+      invariant(tempFile.size <= 3 * 1024 * 1024, {
+        code: 'BAD_REQUEST',
+        message: 'File size exceeds the limit of 3 MB'
+      });
+
       const newFile = await fileManager.saveFile(input.fileId, ctx.userId);
 
       await db
@@ -43,7 +55,7 @@ const changeAvatarRoute = protectedProcedure
         .run();
     }
 
-    await publishUser(ctx.userId, 'update');
+    publishUser(ctx.userId, 'update');
   });
 
 export { changeAvatarRoute };

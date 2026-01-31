@@ -45,13 +45,13 @@ const ContentWrapper = memo(() => {
         <div className="flex flex-col gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <span className="text-lg">
-              <ArrowLeft />
+              <ArrowRight />
             </span>
             <span>Swipe right to open the channel list</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-lg">
-              <ArrowRight />
+              <ArrowLeft />
             </span>
             <span>Swipe left to open the user list</span>
           </div>

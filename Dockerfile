@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM oven/bun:1.3.5
 
 COPY apps/server/build/out/sharkord-linux-x64 /sharkord
 

@@ -5,7 +5,11 @@ export enum LocalStorageKey {
   SERVER_PASSWORD = 'sharkord-server-password',
   VITE_UI_THEME = 'vite-ui-theme',
   DEVICES_SETTINGS = 'sharkord-devices-settings',
-  FLOATING_CARD_POSITION = 'sharkord-floating-card-position'
+  FLOATING_CARD_POSITION = 'sharkord-floating-card-position',
+  RIGHT_SIDEBAR_STATE = 'sharkord-right-sidebar-state',
+  VOICE_CHAT_SIDEBAR_STATE = 'sharkord-voice-chat-sidebar-state',
+  VOICE_CHAT_SIDEBAR_WIDTH = 'sharkord-voice-chat-sidebar-width',
+  VOLUME_SETTINGS = 'sharkord-volume-settings'
 }
 
 export enum SessionStorageKey {
@@ -21,6 +25,7 @@ const getLocalStorageItemAsJSON = <T>(
   defaultValue: T | undefined = undefined
 ): T | undefined => {
   const item = localStorage.getItem(key);
+
   if (item) {
     return JSON.parse(item) as T;
   }

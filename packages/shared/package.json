@@ -14,6 +14,7 @@
   "dependencies": {
     "drizzle-orm": "^0.44.6",
     "js-sha256": "^0.11.1",
-    "mediasoup": "^3.19.9"
+    "mediasoup": "^3.19.9",
+    "zod": "^4.3.5"
   }
 }

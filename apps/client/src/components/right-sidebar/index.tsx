@@ -30,37 +30,48 @@ const User = memo(({ userId, name, banned }: TUserProps) => {
 
 type TRightSidebarProps = {
   className?: string;
+  isOpen?: boolean;
 };
 
-const RightSidebar = memo(({ className }: TRightSidebarProps) => {
-  const users = useUsers();
+const RightSidebar = memo(
+  ({ className, isOpen = true }: TRightSidebarProps) => {
+    const users = useUsers();
 
-  return (
-    <aside
-      className={cn(
-        'flex w-60 flex-col border-l border-border bg-card h-full',
-        className
-      )}
-    >
-      <div className="flex h-12 items-center border-b border-border px-4">
-        <h3 className="text-sm font-semibold text-foreground">
-          Members — {users.length}
-        </h3>
-      </div>
-      <div className="flex-1 overflow-y-auto p-2">
-        <div className="space-y-1">
-          {users.map((user) => (
-            <User
-              key={user.id}
-              userId={user.id}
-              name={user.name}
-              banned={user.banned}
-            />
-          ))}
-        </div>
-      </div>
-    </aside>
-  );
-});
+    return (
+      <aside
+        className={cn(
+          'flex flex-col border-l border-border bg-card h-full transition-all duration-500 ease-in-out',
+          isOpen ? 'w-60' : 'w-0 border-l-0',
+          className
+        )}
+        style={{
+          overflow: isOpen ? 'visible' : 'hidden'
+        }}
+      >
+        {isOpen && (
+          <>
+            <div className="flex h-12 items-center border-b border-border px-4">
+              <h3 className="text-sm font-semibold text-foreground">
+                Members — {users.length}
+              </h3>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+              <div className="space-y-1">
+                {users.map((user) => (
+                  <User
+                    key={user.id}
+                    userId={user.id}
+                    name={user.name}
+                    banned={user.banned}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </aside>
+    );
+  }
+);
 
 export { RightSidebar };

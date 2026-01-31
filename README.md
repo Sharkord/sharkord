@@ -43,7 +43,7 @@ docker run \
   -p 4991:4991/tcp \
   -p 40000-40020:40000-40020/tcp \
   -p 40000-40020:40000-40020/udp \
-  -v "./data":/root/.config/sharkord \
+  -v ./data:/root/.config/sharkord \
   --name sharkord \
   sharkord/sharkord:latest
 ```
@@ -77,6 +77,13 @@ Upon first run, Sharkord will generate a default configuration file located at `
 ## HTTPS Setup
 
 At the moment, Sharkord does not have built-in support for HTTPS. To secure your server with HTTPS, we recommend using a reverse proxy like Nginx or Caddy in front of Sharkord. This setup allows you to manage SSL/TLS certificates and handle secure connections.
+
+## Plugins (experimental)
+
+See the [Plugin SDK](packages/plugin-sdk/README.md) for more information on creating and using plugins with Sharkord.
+
+> [!IMPORTANT]  
+> If you are planning to use plugins, it's recommended to use Docker since they can execute arbitrary code on the host machine, which may pose security risks. Only use plugins you trust.
 
 ## Contributing
 

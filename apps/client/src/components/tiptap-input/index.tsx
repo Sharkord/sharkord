@@ -1,11 +1,17 @@
 import { EmojiPicker } from '@/components/emoji-picker';
 import { Button } from '@/components/ui/button';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
+import type { TCommandInfo } from '@sharkord/shared';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Smile } from 'lucide-react';
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useMemo } from 'react';
+import {
+  COMMANDS_STORAGE_KEY,
+  CommandSuggestion
+} from './plugins/command-suggestion';
+import { SlashCommands } from './plugins/slash-commands-extension';
 import { EmojiSuggestion } from './suggestions';
 import type { TEmojiItem } from './types';
 
@@ -16,6 +22,7 @@ type TTiptapInputProps = {
   onSubmit?: () => void;
   onCancel?: () => void;
   onTyping?: () => void;
+  commands?: TCommandInfo[];
 };
 
 const TiptapInput = memo(
@@ -25,12 +32,13 @@ const TiptapInput = memo(
     onSubmit,
     onCancel,
     onTyping,
-    disabled
+    disabled,
+    commands
   }: TTiptapInputProps) => {
     const customEmojis = useCustomEmojis();
 
-    const editor = useEditor({
-      extensions: [
+    const extensions = useMemo(() => {
+      const exts = [
         StarterKit.configure({
           hardBreak: {
             HTMLAttributes: {
@@ -46,7 +54,23 @@ const TiptapInput = memo(
             class: 'emoji-image'
           }
         })
-      ],
+      ];
+
+      if (commands) {
+        exts.push(
+          SlashCommands.configure({
+            commands,
+            suggestion: CommandSuggestion
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          }) as any
+        );
+      }
+
+      return exts;
+    }, [customEmojis, commands]);
+
+    const editor = useEditor({
+      extensions,
       content: value,
       editable: !disabled,
       onUpdate: ({ editor }) => {
@@ -97,6 +121,25 @@ const TiptapInput = memo(
         editor?.chain().focus().setEmoji(emoji.shortcodes[0]).run();
       }
     };
+
+    // keep emoji storage in sync with custom emojis from the store
+    // this ensures newly added emojis appear in autocomplete without refreshing the app
+    useEffect(() => {
+      if (editor && editor.storage.emoji) {
+        editor.storage.emoji.emojis = [...gitHubEmojis, ...customEmojis];
+      }
+    }, [editor, customEmojis]);
+
+    // keep commands storage in sync with plugin commands from the store
+    useEffect(() => {
+      if (editor && commands) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const storage = editor.storage as any;
+        if (storage[COMMANDS_STORAGE_KEY]) {
+          storage[COMMANDS_STORAGE_KEY].commands = commands;
+        }
+      }
+    }, [editor, commands]);
 
     useEffect(() => {
       if (editor && value !== undefined) {

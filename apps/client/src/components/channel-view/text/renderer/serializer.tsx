@@ -1,5 +1,6 @@
-import { imageExtensions } from '@sharkord/shared';
+import { imageExtensions, parseDomCommand } from '@sharkord/shared';
 import { Element, type DOMNode } from 'html-react-parser';
+import { CommandOverride } from '../overrides/command';
 import { TwitterOverride } from '../overrides/twitter';
 import { YoutubeOverride } from '../overrides/youtube';
 import type { TFoundMedia } from './types';
@@ -42,6 +43,10 @@ const serializer = (
 
       return;
     }
+  } else if (domNode instanceof Element && domNode.name === 'command') {
+    const command = parseDomCommand(domNode);
+
+    return <CommandOverride command={command} />;
   }
 
   return null;

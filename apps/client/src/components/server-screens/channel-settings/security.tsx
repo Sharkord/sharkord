@@ -42,9 +42,8 @@ const Security = memo(({ channelId }: TSecurityProps) => {
           <p className="text-sm text-muted-foreground">
             The file access token is used to secure access to files in this
             channel. Rotating the token will invalidate all existing file links.
-            This means that if any files have been shared externally, those
-            links will no longer work. This is only applicable for private
-            channels.
+            This means that ALL previously shared files will no longer be
+            accessible.
           </p>
           <Button variant="destructive" onClick={onRotateToken}>
             Rotate Token

@@ -13,6 +13,7 @@ import chalk from 'chalk';
 import { config, SERVER_PRIVATE_IP } from './config';
 import { loadCrons } from './crons';
 import { loadDb } from './db';
+import { pluginManager } from './plugins';
 import { enqueueActivityLog } from './queues/activity-log';
 import { initVoiceRuntimes } from './runtimes';
 import { createServers } from './utils/create-servers';
@@ -21,6 +22,7 @@ import { printDebug } from './utils/print-debug';
 import './utils/updater';
 
 await loadDb();
+await pluginManager.loadPlugins();
 await createServers();
 await loadMediasoup();
 await initVoiceRuntimes();

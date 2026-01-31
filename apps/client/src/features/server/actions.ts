@@ -6,6 +6,7 @@ import { type TPublicServerSettings, type TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
 import { openDialog } from '../dialogs/actions';
 import { store } from '../store';
+import { setPluginCommands } from './plugins/actions';
 import { infoSelector } from './selectors';
 import { serverSliceActions } from './slice';
 import { initSubscriptions } from './subscriptions';
@@ -71,13 +72,13 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
   const trpc = getTRPCClient();
   const data = await trpc.others.joinServer.query({ handshakeHash, password });
 
-  if (window.DEBUG) {
-    logDebug('joinServer', data);
-  }
+  logDebug('joinServer', data);
 
   unsubscribeFromServer = initSubscriptions();
 
   store.dispatch(serverSliceActions.setInitialData(data));
+
+  setPluginCommands(data.commands);
 };
 
 export const disconnectFromServer = () => {

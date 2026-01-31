@@ -4,6 +4,10 @@ import type {
   TCategory,
   TChannel,
   TChannelUserPermissionsMap,
+  TCommandInfo,
+  TCommandsMapByPlugin,
+  TExternalStream,
+  TExternalStreamsMap,
   TJoinedEmoji,
   TJoinedMessage,
   TJoinedPublicUser,
@@ -37,12 +41,14 @@ export interface IServerState {
     [channelId: number]: number[];
   };
   voiceMap: TVoiceMap;
+  externalStreamsMap: TExternalStreamsMap;
   ownVoiceState: TVoiceUserState;
   pinnedCard: TPinnedCard | undefined;
   channelPermissions: TChannelUserPermissionsMap;
   readStatesMap: {
     [channelId: number]: number | undefined;
   };
+  pluginCommands: TCommandsMapByPlugin;
 }
 
 const initialState: IServerState = {
@@ -64,6 +70,7 @@ const initialState: IServerState = {
   loadingInfo: false,
   typingMap: {},
   voiceMap: {},
+  externalStreamsMap: {},
   ownVoiceState: {
     micMuted: false,
     soundMuted: false,
@@ -72,7 +79,8 @@ const initialState: IServerState = {
   },
   pinnedCard: undefined,
   channelPermissions: {},
-  readStatesMap: {}
+  readStatesMap: {},
+  pluginCommands: {}
 };
 
 export const serverSlice = createSlice({
@@ -119,6 +127,7 @@ export const serverSlice = createSlice({
         emojis: TJoinedEmoji[];
         publicSettings: TPublicServerSettings | undefined;
         voiceMap: TVoiceMap;
+        externalStreamsMap: TExternalStreamsMap;
         channelPermissions: TChannelUserPermissionsMap;
         readStates: TReadStateMap;
       }>
@@ -132,6 +141,7 @@ export const serverSlice = createSlice({
       state.ownUserId = action.payload.ownUserId;
       state.publicSettings = action.payload.publicSettings;
       state.voiceMap = action.payload.voiceMap;
+      state.externalStreamsMap = action.payload.externalStreamsMap;
       state.serverId = action.payload.serverId;
       state.channelPermissions = action.payload.channelPermissions;
       state.readStatesMap = action.payload.readStates;
@@ -478,6 +488,80 @@ export const serverSlice = createSlice({
     },
     setPinnedCard: (state, action: PayloadAction<TPinnedCard | undefined>) => {
       state.pinnedCard = action.payload;
+    },
+    addExternalStreamToChannel: (
+      state,
+      action: PayloadAction<{
+        channelId: number;
+        streamId: number;
+        stream: TExternalStream;
+      }>
+    ) => {
+      const { channelId, streamId, stream } = action.payload;
+
+      if (!state.externalStreamsMap[channelId]) {
+        state.externalStreamsMap[channelId] = {};
+      }
+
+      state.externalStreamsMap[channelId][streamId] = stream;
+    },
+    updateExternalStreamInChannel: (
+      state,
+      action: PayloadAction<{
+        channelId: number;
+        streamId: number;
+        stream: TExternalStream;
+      }>
+    ) => {
+      const { channelId, streamId, stream } = action.payload;
+
+      if (!state.externalStreamsMap[channelId]) return;
+      if (!state.externalStreamsMap[channelId][streamId]) return;
+
+      state.externalStreamsMap[channelId][streamId] = stream;
+    },
+    removeExternalStreamFromChannel: (
+      state,
+      action: PayloadAction<{ channelId: number; streamId: number }>
+    ) => {
+      const { channelId, streamId } = action.payload;
+
+      if (!state.externalStreamsMap[channelId]) return;
+
+      delete state.externalStreamsMap[channelId][streamId];
+    },
+
+    // PLUGINS ------------------------------------------------------------
+
+    setPluginCommands: (state, action: PayloadAction<TCommandsMapByPlugin>) => {
+      state.pluginCommands = action.payload;
+    },
+    addPluginCommand: (state, action: PayloadAction<TCommandInfo>) => {
+      const { pluginId } = action.payload;
+
+      if (!state.pluginCommands[pluginId]) {
+        state.pluginCommands[pluginId] = [];
+      }
+
+      const exists = state.pluginCommands[pluginId].find(
+        (c) => c.name === action.payload.name
+      );
+
+      if (exists) return;
+
+      state.pluginCommands[pluginId].push(action.payload);
+    },
+    removePluginCommand: (
+      state,
+      action: PayloadAction<{ commandName: string }>
+    ) => {
+      const { commandName } = action.payload;
+
+      for (const pluginId in state.pluginCommands) {
+        state.pluginCommands[pluginId] = state.pluginCommands[pluginId].filter(
+          (c) => c.name !== commandName
+        );
+      }
     }
   }
 });

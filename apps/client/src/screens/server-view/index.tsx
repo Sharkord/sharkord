@@ -2,7 +2,10 @@ import { LeftSidebar } from '@/components/left-sidebar';
 import { ModViewSheet } from '@/components/mod-view-sheet';
 import { Protect } from '@/components/protect';
 import { RightSidebar } from '@/components/right-sidebar';
+import { TopBar } from '@/components/top-bar';
+import { VoiceChatSidebar } from '@/components/voice-chat-sidebar';
 import { VoiceProvider } from '@/components/voice-provider';
+import { getLocalStorageItem, LocalStorageKey } from '@/helpers/storage';
 import { useSwipeGestures } from '@/hooks/use-swipe-gestures';
 import { cn } from '@/lib/utils';
 import { Permission } from '@sharkord/shared';
@@ -13,6 +16,29 @@ import { PreventBrowser } from './prevent-browser';
 const ServerView = memo(() => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileUsersOpen, setIsMobileUsersOpen] = useState(false);
+  const [isDesktopRightSidebarOpen, setIsDesktopRightSidebarOpen] = useState(
+    getLocalStorageItem(LocalStorageKey.RIGHT_SIDEBAR_STATE) === 'true' || false
+  );
+  const [isVoiceChatSidebarOpen, setIsVoiceChatSidebarOpen] = useState(
+    getLocalStorageItem(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE) === 'true' ||
+      false
+  );
+
+  const handleDesktopRightSidebarToggle = useCallback(() => {
+    setIsDesktopRightSidebarOpen((prev) => !prev);
+    localStorage.setItem(
+      LocalStorageKey.RIGHT_SIDEBAR_STATE,
+      !isDesktopRightSidebarOpen ? 'true' : 'false'
+    );
+  }, [isDesktopRightSidebarOpen]);
+
+  const handleVoiceChatSidebarToggle = useCallback(() => {
+    setIsVoiceChatSidebarOpen((prev) => !prev);
+    localStorage.setItem(
+      LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE,
+      !isVoiceChatSidebarOpen ? 'true' : 'false'
+    );
+  }, [isVoiceChatSidebarOpen]);
 
   const handleSwipeRight = useCallback(() => {
     if (isMobileMenuOpen || isMobileUsersOpen) {
@@ -46,6 +72,12 @@ const ServerView = memo(() => {
         className="flex h-screen flex-col bg-background text-foreground dark"
         {...swipeHandlers}
       >
+        <TopBar
+          onToggleRightSidebar={handleDesktopRightSidebarToggle}
+          isOpen={isDesktopRightSidebarOpen}
+          onToggleVoiceChat={handleVoiceChatSidebarToggle}
+          isVoiceChatOpen={isVoiceChatSidebarOpen}
+        />
         <div className="flex flex-1 overflow-hidden relative">
           <PreventBrowser />
 
@@ -74,13 +106,18 @@ const ServerView = memo(() => {
 
           <ContentWrapper />
 
+          <VoiceChatSidebar isOpen={isVoiceChatSidebarOpen} />
+
           <RightSidebar
             className={cn(
-              'lg:relative lg:flex fixed top-0 bottom-0 right-0 h-full z-40 lg:z-0 transition-transform duration-300 ease-in-out',
+              'fixed top-0 bottom-0 right-0 h-full z-40 transition-all duration-500 ease-in-out',
+              'lg:relative lg:z-0',
+              // Mobile behavior (< lg)
               isMobileUsersOpen
-                ? 'translate-x-0'
+                ? 'translate-x-0 lg:translate-x-0'
                 : 'translate-x-full lg:translate-x-0'
             )}
+            isOpen={isDesktopRightSidebarOpen}
           />
 
           <Protect permission={Permission.MANAGE_USERS}>

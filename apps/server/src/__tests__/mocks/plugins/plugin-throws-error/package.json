@@ -1,0 +1,9 @@
+{
+  "name": "plugin-throws-error",
+  "version": "1.0.0",
+  "sharkord": {
+    "entry": "index.js",
+    "author": "Test Author",
+    "description": "Plugin that throws error on load"
+  }
+}

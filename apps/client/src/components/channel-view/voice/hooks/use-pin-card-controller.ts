@@ -4,7 +4,8 @@ import { useCallback } from 'react';
 
 enum PinnedCardType {
   USER = 'user',
-  SCREEN_SHARE = 'screen-share'
+  SCREEN_SHARE = 'screen-share',
+  EXTERNAL_STREAM = 'external-stream'
 }
 
 type TPinnedCard = {

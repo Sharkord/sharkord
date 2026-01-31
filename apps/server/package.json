@@ -36,6 +36,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@sharkord/plugin-sdk": "workspace:*",
     "@sharkord/shared": "workspace:*",
     "@trpc/server": "^11.6.0",
     "bun-sfe-autoupdater": "^0.0.4",
@@ -48,6 +49,7 @@
     "mediasoup": "^3.19.11",
     "queue": "^7.0.0",
     "semver": "^7.7.3",
+    "string-argv": "^0.3.2",
     "systeminformation": "^5.27.11",
     "ua-parser-js": "^2.0.6",
     "winston": "^3.17.0",

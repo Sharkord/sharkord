@@ -1,5 +1,7 @@
 import { UserAvatar } from '@/components/user-avatar';
+import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
 import type { TVoiceUser } from '@/features/server/types';
+import { useOwnUserId } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
 import { HeadphoneOff, MicOff, Monitor, Video } from 'lucide-react';
 import { memo, useCallback } from 'react';
@@ -7,6 +9,7 @@ import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PinButton } from './pin-button';
+import { VolumeButton } from './volume-button';
 
 type TVoiceUserCardProps = {
   userId: number;
@@ -30,6 +33,9 @@ const VoiceUserCard = memo(
   }: TVoiceUserCardProps) => {
     const { videoRef, hasVideoStream, isSpeaking, speakingIntensity } =
       useVoiceRefs(userId);
+    const { getUserVolumeKey } = useVolumeControl();
+    const ownUserId = useOwnUserId();
+    const isOwnUser = userId === ownUserId;
 
     const handlePinToggle = useCallback(() => {
       if (isPinned) {
@@ -44,10 +50,10 @@ const VoiceUserCard = memo(
     return (
       <div
         className={cn(
-          'relative bg-card border rounded-lg overflow-hidden group',
+          'relative bg-card rounded-lg overflow-hidden group',
           'flex items-center justify-center',
-          'min-h-0 aspect-video',
-          'border-border',
+          'w-full h-full',
+          'border border-border',
           isActivelySpeaking
             ? speakingIntensity === 1
               ? 'speaking-effect-low'
@@ -61,6 +67,7 @@ const VoiceUserCard = memo(
         <CardGradient />
 
         <CardControls>
+          {!isOwnUser && <VolumeButton volumeKey={getUserVolumeKey(userId)} />}
           {showPinControls && (
             <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
           )}
@@ -78,34 +85,32 @@ const VoiceUserCard = memo(
         {!hasVideoStream && (
           <UserAvatar
             userId={userId}
-            className="w-16 h-16 md:w-20 md:h-20 lg:w-48 lg:h-48"
+            className="w-12 h-12 md:w-16 md:h-16 lg:w-24 lg:h-24"
             showStatusBadge={false}
           />
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 p-3">
+        <div className="absolute bottom-0 left-0 right-0 p-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-white font-medium text-sm truncate">
-                {voiceUser.name}
-              </span>
-            </div>
+            <span className="text-white font-medium text-xs truncate">
+              {voiceUser.name}
+            </span>
 
             <div className="flex items-center gap-1">
               {voiceUser.state.micMuted && (
-                <MicOff className="h-4 w-4 text-red-500/80" />
+                <MicOff className="size-3.5 text-red-500/80" />
               )}
 
               {voiceUser.state.soundMuted && (
-                <HeadphoneOff className="h-4 w-4 text-red-500/80" />
+                <HeadphoneOff className="size-3.5 text-red-500/80" />
               )}
 
               {voiceUser.state.webcamEnabled && (
-                <Video className="h-4 w-4 text-blue-600/80" />
+                <Video className="size-3.5 text-blue-600/80" />
               )}
 
               {voiceUser.state.sharingScreen && (
-                <Monitor className="h-4 w-4 text-purple-500/80" />
+                <Monitor className="size-3.5 text-purple-500/80" />
               )}
             </div>
           </div>

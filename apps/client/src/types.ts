@@ -46,6 +46,11 @@ export type TDeviceSettings = {
   screenFramerate: number;
 };
 
+export type TRemoteUserStreamKinds =
+  | StreamKind.AUDIO
+  | StreamKind.VIDEO
+  | StreamKind.SCREEN;
+
 export type TRemoteStreams = {
   [userId: number]: {
     [StreamKind.AUDIO]: MediaStream | undefined;

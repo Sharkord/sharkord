@@ -5,6 +5,7 @@ import {
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { db } from '.';
+import { pluginManager } from '../plugins';
 import { pubsub } from '../utils/pubsub';
 import {
   getAffectedUserIdsForChannel,
@@ -14,7 +15,7 @@ import {
 import { getEmojiById } from './queries/emojis';
 import { getMessage } from './queries/messages';
 import { getRole } from './queries/roles';
-import { getSettings } from './queries/server';
+import { getPublicSettings } from './queries/server';
 import { getPublicUserById } from './queries/users';
 import { categories, channels } from './schema';
 
@@ -154,7 +155,7 @@ const publishChannel = async (
 };
 
 const publishSettings = async () => {
-  const settings = await getSettings();
+  const settings = await getPublicSettings();
 
   pubsub.publish(ServerEvents.SERVER_SETTINGS_UPDATE, settings);
 };
@@ -209,12 +210,19 @@ const publishChannelPermissions = async (affectedUserIds: number[]) => {
   }
 };
 
+const publishPluginCommands = async () => {
+  const commands = pluginManager.getCommands();
+
+  pubsub.publish(ServerEvents.PLUGIN_COMMANDS_CHANGE, commands);
+};
+
 export {
   publishCategory,
   publishChannel,
   publishChannelPermissions,
   publishEmoji,
   publishMessage,
+  publishPluginCommands,
   publishRole,
   publishSettings,
   publishUser

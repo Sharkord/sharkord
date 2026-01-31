@@ -27,7 +27,7 @@ const updateUserRoute = protectedProcedure
       .returning()
       .get();
 
-    await publishUser(updatedUser.id, 'update');
+    publishUser(updatedUser.id, 'update');
   });
 
 export { updateUserRoute };

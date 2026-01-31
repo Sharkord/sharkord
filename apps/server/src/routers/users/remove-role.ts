@@ -42,7 +42,7 @@ const removeRoleRoute = protectedProcedure
         )
       );
 
-    await publishUser(input.userId, 'update');
+    publishUser(input.userId, 'update');
   });
 
 export { removeRoleRoute };

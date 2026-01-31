@@ -12,6 +12,7 @@ import {
   isOwnUserOwnerSelector,
   ownUserRolesSelector,
   ownVoiceUserSelector,
+  pluginsEnabledSelector,
   publicServerSettingsSelector,
   serverNameSelector,
   typingUsersByChannelIdSelector,
@@ -35,6 +36,8 @@ export const useOwnUserRoles = () => useSelector(ownUserRolesSelector);
 export const useInfo = () => useSelector(infoSelector);
 
 export const useIsOwnUserOwner = () => useSelector(isOwnUserOwnerSelector);
+
+export const usePluginsEnabled = () => useSelector(pluginsEnabledSelector);
 
 export const useCan = () => {
   const ownUserRoles = useOwnUserRoles();
