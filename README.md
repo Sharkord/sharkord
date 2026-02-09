@@ -20,7 +20,7 @@ Sharkord is a self-hosted communication platform that brings the most important 
 
 ## Wanna Try It Out?
 
-Check out the Live Demo at [demo.sharkord.com](https://demo.sharkord.com). You can login with demo:demo. For securty reasons, the demo user does not have admin privileges, so you won't be able to access admin features.
+Check out the Live Demo at [demo.sharkord.com](https://demo.sharkord.com). The amount of ports opened for the demo is limited, so voice and video features will only work for a couple of users at a time. If you want to test it with a larger group, we recommend running your own instance.
 
 ## Getting Started
 
@@ -84,6 +84,11 @@ See the [Plugin SDK](packages/plugin-sdk/README.md) for more information on crea
 
 > [!IMPORTANT]  
 > If you are planning to use plugins, it's recommended to use Docker since they can execute arbitrary code on the host machine, which may pose security risks. Only use plugins you trust.
+
+Example plugins:
+
+[Sharkord Music Bot](https://github.com/diogomartino/sharkord-music-bot) - A plugin that adds music playback capabilities to Sharkord voice channels using YouTube as a source.
+[Sharkord IPTV](https://github.com/diogomartino/sharkord-iptv) - A plugin that allows users to stream IPTV channels directly within Sharkord voice channels.
 
 ## Contributing
 
