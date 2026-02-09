@@ -9,7 +9,8 @@ export enum LocalStorageKey {
   RIGHT_SIDEBAR_STATE = 'sharkord-right-sidebar-state',
   VOICE_CHAT_SIDEBAR_STATE = 'sharkord-voice-chat-sidebar-state',
   VOICE_CHAT_SIDEBAR_WIDTH = 'sharkord-voice-chat-sidebar-width',
-  VOLUME_SETTINGS = 'sharkord-volume-settings'
+  VOLUME_SETTINGS = 'sharkord-volume-settings',
+  RECENT_EMOJIS = 'sharkord-recent-emojis'
 }
 
 export enum SessionStorageKey {

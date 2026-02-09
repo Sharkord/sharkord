@@ -150,6 +150,21 @@ const Connect = memo(() => {
           </div>
 
           <div className="flex flex-col gap-2">
+            {!window.isSecureContext && (
+              <Alert variant="destructive">
+                <AlertTitle>Insecure Connection</AlertTitle>
+                <AlertDescription>
+                  You are accessing the server over an insecure connection
+                  (HTTP). By default, browsers block access to media devices
+                  such as your camera and microphone on insecure origins. This
+                  means that you won't be able to use video or voice chat
+                  features while connected to the server over HTTP. If you are
+                  the server administrator, you can set up HTTPS by following
+                  the instructions in the documentation.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <Button
               className="w-full"
               variant="outline"
@@ -158,6 +173,7 @@ const Connect = memo(() => {
             >
               Connect
             </Button>
+
             {!info?.allowNewUsers && (
               <>
                 {!inviteCode && (
