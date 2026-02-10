@@ -48,6 +48,14 @@ docker run \
   sharkord/sharkord:latest
 ```
 
+#### Windows
+
+1. Download the latest `sharkord-windows-x64.exe` from the [Releases](https://github.com/sharkord/sharkord/releases/latest) page.
+2. Open Command Prompt and navigate to the directory where you downloaded the executable.
+3. Run the server with the command: `.\sharkord-windows-x64.exe`
+
+Make sure you download Microsoft Visual C++ 2015 - 2022 Redistributable (x64) from [here](https://aka.ms/vs/17/release/vc_redist.x64.exe) and install it before running Sharkord on Windows.
+
 ### Open The Client
 
 Once the server is running, open your web browser and navigate to [http://localhost:4991](http://localhost:4991) to access the Sharkord client interface. If you're running the server on a different machine, replace `localhost` with the server's IP address or domain name.
