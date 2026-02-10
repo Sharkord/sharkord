@@ -79,7 +79,11 @@ const VoiceUserCard = memo(
             autoPlay
             muted
             playsInline
-            className="absolute inset-0 w-full h-full object-cover"
+            className={
+              'absolute inset-0 w-full h-full object-cover' + isOwnUser
+                ? '-scale-x-100'
+                : ''
+            }
           />
         )}
         {!hasVideoStream && (
