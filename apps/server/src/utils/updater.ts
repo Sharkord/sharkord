@@ -23,7 +23,7 @@ class Updater {
     this.setupAutoUpdater();
   }
 
-  public canUpdate = (): boolean => !IS_PRODUCTION && !IS_DOCKER;
+  public canUpdate = (): boolean => IS_PRODUCTION && !IS_DOCKER;
 
   public getLatestVersion = async () => this.bunUpdater.getLatestVersion();
 
