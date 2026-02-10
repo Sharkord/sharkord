@@ -1,6 +1,7 @@
 import { embeddedFiles } from 'bun';
 import fs from 'fs/promises';
 import path from 'path';
+import { getExecutableName } from '../helpers/get-executable-name';
 import {
   DRIZZLE_PATH,
   INTERFACE_PATH,
@@ -47,6 +48,7 @@ const loadEmbeds = async () => {
 
   try {
     logger.debug('Extracting interface...');
+
     await unzipBlobToDirectory(interfaceBlob, INTERFACE_PATH);
   } catch (error) {
     logger.error('Failed to extract interface:', error);
@@ -55,6 +57,7 @@ const loadEmbeds = async () => {
 
   try {
     logger.debug('Extracting drizzle migrations...');
+
     await unzipBlobToDirectory(drizzleBlob, DRIZZLE_PATH);
   } catch (error) {
     logger.error('Failed to extract drizzle migrations:', error);
@@ -64,7 +67,10 @@ const loadEmbeds = async () => {
   try {
     logger.debug('Extracting mediasoup worker...');
 
-    const mediasoupPath = path.join(MEDIASOUP_PATH, 'mediasoup-worker');
+    const mediasoupPath = path.join(
+      MEDIASOUP_PATH,
+      getExecutableName('mediasoup-worker')
+    );
 
     const arrayBuffer = await mediasoupBlob.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);

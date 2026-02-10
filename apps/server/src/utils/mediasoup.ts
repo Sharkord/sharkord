@@ -14,6 +14,10 @@ const loadMediasoup = async () => {
     workerBin: MEDIASOUP_BINARY_PATH
   };
 
+  logger.debug(
+    `Loading mediasoup worker with config ${JSON.stringify(workerConfig, null, 2)}`
+  );
+
   mediaSoupWorker = await mediasoup.createWorker(workerConfig);
 
   mediaSoupWorker.on('died', (error) => {
