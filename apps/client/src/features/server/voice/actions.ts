@@ -163,6 +163,7 @@ export const leaveVoice = async (): Promise<void> => {
   }
 
   setCurrentVoiceChannelId(undefined);
+  updateOwnVoiceState({ webcamEnabled: false, sharingScreen: false });
   setPinnedCard(undefined);
 
   const client = getTRPCClient();
