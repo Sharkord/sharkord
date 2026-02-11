@@ -1,9 +1,12 @@
 import mediasoup from 'mediasoup';
-import { config } from '../config.js';
+import { config, SERVER_PUBLIC_IP } from '../config.js';
 import { MEDIASOUP_BINARY_PATH } from '../helpers/paths.js';
 import { logger } from '../logger.js';
+import { IS_PRODUCTION } from './env.js';
 
 let mediaSoupWorker: mediasoup.types.Worker<mediasoup.types.AppData>;
+let webRtcServer: mediasoup.types.WebRtcServer<mediasoup.types.AppData>;
+let webRtcServerListenInfo: { ip: string; announcedAddress?: string };
 
 const loadMediasoup = async () => {
   const workerConfig: mediasoup.types.WorkerSettings = {
@@ -27,6 +30,37 @@ const loadMediasoup = async () => {
   });
 
   logger.debug('Mediasoup worker loaded');
+
+  const port = +config.mediasoup.webRtcServerPort;
+
+  if (IS_PRODUCTION) {
+    const announcedAddress =
+      config.mediasoup.announcedAddress || SERVER_PUBLIC_IP;
+
+    webRtcServer = await mediaSoupWorker.createWebRtcServer({
+      listenInfos: [
+        { protocol: 'udp', ip: '0.0.0.0', announcedAddress, port },
+        { protocol: 'tcp', ip: '0.0.0.0', announcedAddress, port }
+      ]
+    });
+
+    webRtcServerListenInfo = { ip: '0.0.0.0', announcedAddress };
+
+    logger.debug(
+      `WebRtcServer created on port ${port} with announcedAddress ${announcedAddress}`
+    );
+  } else {
+    webRtcServer = await mediaSoupWorker.createWebRtcServer({
+      listenInfos: [
+        { protocol: 'udp', ip: '127.0.0.1', port },
+        { protocol: 'tcp', ip: '127.0.0.1', port }
+      ]
+    });
+
+    webRtcServerListenInfo = { ip: '127.0.0.1' };
+
+    logger.debug(`WebRtcServer created on 127.0.0.1:${port} (dev mode)`);
+  }
 };
 
-export { loadMediasoup, mediaSoupWorker };
+export { loadMediasoup, mediaSoupWorker, webRtcServer, webRtcServerListenInfo };

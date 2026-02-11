@@ -25,6 +25,8 @@ type TConfig = {
       rtcMinPort: number;
       rtcMaxPort: number;
     };
+    webRtcServerPort: number;
+    announcedAddress: string;
   };
 };
 
@@ -42,7 +44,9 @@ let config: TConfig = {
     worker: {
       rtcMinPort: 40000,
       rtcMaxPort: 40020
-    }
+    },
+    webRtcServerPort: 40000,
+    announcedAddress: ''
   }
 };
 
