@@ -11,47 +11,53 @@ const youtubeRegex =
 
 const serializer = (
   domNode: DOMNode,
-  pushMedia: (media: TFoundMedia) => void
+  pushMedia: (media: TFoundMedia) => void,
+  messageId: number
 ) => {
-  if (domNode instanceof Element && domNode.name === 'a') {
-    const href = domNode.attribs.href;
+  try {
+    if (domNode instanceof Element && domNode.name === 'a') {
+      const href = domNode.attribs.href;
 
-    if (!URL.canParse(href)) {
-      return null;
-    }
-
-    const url = new URL(href);
-
-    const isTweet =
-      url.hostname.match(/(twitter|x).com/) && href.match(twitterRegex);
-    const isYoutube =
-      url.hostname.match(/(youtube.com|youtu.be)/) && href.match(youtubeRegex);
-
-    const isImage = imageExtensions.some((ext) => href.endsWith(ext));
-
-    if (isTweet) {
-      const tweetId = href.match(twitterRegex)?.[0].split('/').pop();
-
-      if (tweetId) {
-        return <TwitterOverride tweetId={tweetId} />;
+      if (!URL.canParse(href)) {
+        return null;
       }
-    } else if (isYoutube) {
-      const videoId = href.match(
-        /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/
-      )?.[7];
 
-      if (videoId) {
-        return <YoutubeOverride videoId={videoId} />;
+      const url = new URL(href);
+
+      const isTweet =
+        url.hostname.match(/(twitter|x).com/) && href.match(twitterRegex);
+      const isYoutube =
+        url.hostname.match(/(youtube.com|youtu.be)/) &&
+        href.match(youtubeRegex);
+
+      const isImage = imageExtensions.some((ext) => href.endsWith(ext));
+
+      if (isTweet) {
+        const tweetId = href.match(twitterRegex)?.[0].split('/').pop();
+
+        if (tweetId) {
+          return <TwitterOverride tweetId={tweetId} />;
+        }
+      } else if (isYoutube) {
+        const videoId = href.match(
+          /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/
+        )?.[7];
+
+        if (videoId) {
+          return <YoutubeOverride videoId={videoId} />;
+        }
+      } else if (isImage) {
+        pushMedia({ type: 'image', url: href });
+
+        return;
       }
-    } else if (isImage) {
-      pushMedia({ type: 'image', url: href });
+    } else if (domNode instanceof Element && domNode.name === 'command') {
+      const command = parseDomCommand(domNode);
 
-      return;
+      return <CommandOverride command={command} />;
     }
-  } else if (domNode instanceof Element && domNode.name === 'command') {
-    const command = parseDomCommand(domNode);
-
-    return <CommandOverride command={command} />;
+  } catch (error) {
+    console.error(`Error parsing DOM node for message ID ${messageId}:`, error);
   }
 
   return null;
