@@ -6,7 +6,7 @@ import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Smile } from 'lucide-react';
-import { memo, useEffect, useMemo } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import {
   COMMANDS_STORAGE_KEY,
   CommandSuggestion
@@ -17,6 +17,7 @@ import type { TEmojiItem } from './types';
 
 type TTiptapInputProps = {
   disabled?: boolean;
+  readOnly?: boolean;
   value?: string;
   onChange?: (html: string) => void;
   onSubmit?: () => void;
@@ -33,8 +34,12 @@ const TiptapInput = memo(
     onCancel,
     onTyping,
     disabled,
+    readOnly,
     commands
   }: TTiptapInputProps) => {
+    const readOnlyRef = useRef(readOnly);
+    readOnlyRef.current = readOnly;
+
     const customEmojis = useCustomEmojis();
 
     const extensions = useMemo(() => {
@@ -84,6 +89,12 @@ const TiptapInput = memo(
       },
       editorProps: {
         handleKeyDown: (_view, event) => {
+          // block all input when readOnly
+          if (readOnlyRef.current) {
+            event.preventDefault();
+            return true;
+          }
+
           const suggestionElement = document.querySelector('.bg-popover');
           const hasSuggestions =
             suggestionElement && document.body.contains(suggestionElement);
@@ -110,12 +121,14 @@ const TiptapInput = memo(
           }
 
           return false;
-        }
+        },
+        handlePaste: () => !!readOnlyRef.current,
+        handleDrop: () => readOnlyRef.current
       }
     });
 
     const handleEmojiSelect = (emoji: TEmojiItem) => {
-      if (disabled) return;
+      if (disabled || readOnly) return;
 
       if (emoji.shortcodes.length > 0) {
         editor?.chain().focus().setEmoji(emoji.shortcodes[0]).run();
