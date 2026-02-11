@@ -15,6 +15,11 @@ const serializer = (
 ) => {
   if (domNode instanceof Element && domNode.name === 'a') {
     const href = domNode.attribs.href;
+
+    if (!URL.canParse(href)) {
+      return null;
+    }
+
     const url = new URL(href);
 
     const isTweet =
