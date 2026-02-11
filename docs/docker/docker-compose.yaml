@@ -7,9 +7,9 @@ services:
       # Main HTTP/WebSocket port
       - "4991:4991"
       
-      # WebRTC media ports (TCP AND UDP) - adjust range if needed
+      # WebRTC media ports (UDP) - adjust range if needed
       # These ports are used for voice/video streaming
-      - "40000-40020:40000-40020"
+      - "40000-40020:40000-40020/udp"
     
     # Can override config file settings
     environment:
