@@ -134,7 +134,15 @@ const compile = async ({ out, target }: TTarget) => {
     entrypoints: entryPoints,
     compile: {
       outfile: out,
-      target
+      target,
+      windows: {
+        copyright: `Copyright (c) ${new Date().getFullYear()} Sharkord`,
+        description: 'Sharkord Server - https://sharkord.com',
+        title: 'Sharkord Server',
+        icon: path.join(serverCwd, 'assets', 'icon.ico'),
+        version: version,
+        publisher: 'Sharkord'
+      }
     },
     define: {
       'process.env.SHARKORD_ENV': '"production"',
