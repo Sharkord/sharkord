@@ -3,29 +3,64 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { UserAvatar } from '@/components/user-avatar';
 import { setModViewOpen } from '@/features/app/actions';
+import { requestTextInput } from '@/features/dialogs/actions';
 import { useUserRoles } from '@/features/server/hooks';
-import { useUserStatus } from '@/features/server/users/hooks';
+import { useOwnUserId, useUserStatus } from '@/features/server/users/hooks';
+import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { UserStatus, type TJoinedUser } from '@sharkord/shared';
 import { format, formatDistanceToNow } from 'date-fns';
-import { MoreVertical, UserCog } from 'lucide-react';
+import { MoreVertical, Trash2, UserCog } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { toast } from 'sonner';
 
 type TTableUserProps = {
   user: TJoinedUser;
+  onUserDeleted?: () => void;
 };
 
-const TableUser = memo(({ user }: TTableUserProps) => {
+const TableUser = memo(({ user, onUserDeleted }: TTableUserProps) => {
   const roles = useUserRoles(user.id);
   const status = useUserStatus(user.id);
+  const ownUserId = useOwnUserId();
 
   const onModerateClick = useCallback(() => {
     setModViewOpen(true, user.id);
   }, [user.id]);
+
+  const onDeleteUser = useCallback(async () => {
+    const reason = await requestTextInput({
+      title: 'Delete User',
+      message:
+        'Are you sure you want to delete this user? This action cannot be undone. Please provide a reason (optional).',
+      confirmLabel: 'Delete',
+      allowEmpty: true
+    });
+
+    if (reason === null) {
+      return;
+    }
+
+    const trpc = getTRPCClient();
+
+    try {
+      await trpc.users.delete.mutate({
+        userId: user.id,
+        reason
+      });
+
+      toast.success('User deleted successfully');
+      onUserDeleted?.();
+    } catch (error) {
+      toast.error(getTrpcError(error, 'Failed to delete user'));
+    }
+  }, [user.id, onUserDeleted]);
 
   return (
     <div
@@ -101,6 +136,18 @@ const TableUser = memo(({ user }: TTableUserProps) => {
               <UserCog className="h-4 w-4" />
               Moderate User
             </DropdownMenuItem>
+            {ownUserId !== user.id && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={onDeleteUser}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete User
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

@@ -11,6 +11,7 @@ export enum ActivityLogType {
   USER_KICKED = "USER_KICKED",
   USER_BANNED = "USER_BANNED",
   USER_UNBANNED = "USER_UNBANNED",
+  USER_DELETED = "USER_DELETED",
   USER_UPDATED_PASSWORD = "USER_UPDATED_PASSWORD",
   // -------------------- ROLES --------------------
   CREATED_ROLE = "CREATED_ROLE",
@@ -59,6 +60,10 @@ export type TActivityLogDetailsMap = {
   };
   [ActivityLogType.USER_UNBANNED]: {
     unbannedBy: number;
+  };
+  [ActivityLogType.USER_DELETED]: {
+    reason: string | undefined;
+    deletedBy: number;
   };
   [ActivityLogType.USER_CREATED]: {
     inviteCode: string | undefined;
