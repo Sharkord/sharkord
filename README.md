@@ -48,6 +48,12 @@ docker run \
   sharkord/sharkord:latest
 ```
 
+##### Docker Compose
+
+There is an example `docker-compose.yaml` in [docs/docker/docker-compose.yaml](docs/docker/docker-compose.yaml).
+
+
+
 #### Windows
 
 1. Download the latest `sharkord-windows-x64.exe` from the [Releases](https://github.com/sharkord/sharkord/releases/latest) page.

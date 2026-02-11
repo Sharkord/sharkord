@@ -1,0 +1,83 @@
+services:
+  sharkord:
+    image: sharkord/sharkord:latest
+    container_name: sharkord
+    restart: unless-stopped
+    ports:
+      # Main HTTP/WebSocket port
+      - "4991:4991"
+      
+      # WebRTC media ports (TCP AND UDP) - adjust range if needed
+      # These ports are used for voice/video streaming
+      - "40000-40020:40000-40020"
+    
+    # Can override config file settings
+    environment:
+
+      # Server configuration
+      SHARKORD_PORT: "4991"
+      SHARKORD_DEBUG: "false"
+      
+      # HTTP configuration
+      SHARKORD_MAX_FILES: "40"
+      SHARKORD_MAX_FILE_SIZE: "100" # MB
+      
+      # Mediasoup/Voice configuration
+      SHARKORD_RTC_MIN_PORT: "40000"
+      SHARKORD_RTC_MAX_PORT: "40020"
+    
+    # Volume mounts for persistent data
+    volumes:
+      # Map to host directory
+      - ./data:/root/.config/sharkord
+
+      # Or use Docker volumes
+      # - sharkord_data:/root/.config/sharkord
+      
+      # Uploads directory (optional, if you want uploads outside data dir)
+      # - sharkord_uploads:/root/.config/sharkord/uploads
+      
+      # Plugins directory (optional, for plugin management)
+      # - sharkord_plugins:/root/.config/sharkord/plugins
+
+# If using Docker volumes:
+# volumes:
+#   sharkord_data:
+#     driver: local
+
+
+# ============================================================================
+# CONFIGURATION FILE
+# ============================================================================
+#
+# The config file is created at: sharkord.ini
+#
+# Edit the config to customize:
+# - Server port
+# - File upload limits
+# - WebRTC port range
+# - Debug logging
+#
+# After editing config, restart the container:
+#    docker-compose restart sharkord
+#
+# ============================================================================
+# ENVIRONMENT VARIABLES
+# ============================================================================
+#
+# Common settings you might want to customize, these override config file values and are useful for Docker deployments:
+#
+# SHARKORD_PORT
+#   HTTP/WebSocket listen port (default: 4991)
+#
+# SHARKORD_DEBUG
+#   Enable verbose logging (default: false)
+#
+# SHARKORD_MAX_FILE_SIZE
+#   Maximum file upload size in MB (default: 100)
+#
+# SHARKORD_RTC_MIN_PORT / SHARKORD_RTC_MAX_PORT
+#   UDP port range for WebRTC media (default: 40000-40020)
+#   Increase range if you need more concurrent voice connections
+#
+
