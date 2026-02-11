@@ -20,17 +20,18 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/ini": "^4.1.1",
-    "@types/ws": "^8.18.1",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/sanitize-html": "^2.16.0",
     "@types/semver": "^7.7.1",
+    "@types/ws": "^8.18.1",
     "@types/yauzl": "^2.10.3",
     "@types/yazl": "^3.3.0",
-    "@types/jsonwebtoken": "^9.0.10",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
     "drizzle-kit": "^0.31.5",
-    "prettier": "^3.5.3",
-    "prettier-plugin-organize-imports": "^4.1.0",
     "eslint": "^8.56.0",
     "eslint-plugin-unused-imports": "^4.1.4",
-    "@typescript-eslint/eslint-plugin": "^8.46.1"
+    "prettier": "^3.5.3",
+    "prettier-plugin-organize-imports": "^4.1.0"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -48,6 +49,7 @@
     "link-preview-js": "^3.1.0",
     "mediasoup": "^3.19.11",
     "queue": "^7.0.0",
+    "sanitize-html": "^2.17.0",
     "semver": "^7.7.3",
     "string-argv": "^0.3.2",
     "systeminformation": "^5.27.11",
