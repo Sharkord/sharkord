@@ -69,6 +69,8 @@ Once the server is running, open your web browser and navigate to [http://localh
 2. Open Dev Tools (`CTRL + Shift + I` or `Right Click > Inspect`)
 3. Open the console
 4. Type useToken('your_token_here')
+> [!NOTE]
+> You have to wrap your token in single quotes ' or double quotes ".
 5. Press enter
 6. Your account will now have the owner role
 
