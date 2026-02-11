@@ -122,6 +122,18 @@ const TiptapInput = memo(
 
           return false;
         },
+        handleClickOn: (_view, _pos, _node, _nodePos, event) => {
+          const target = event.target as HTMLElement;
+
+          // prevents clicking on links inside the edit from opening them in the browser
+          if (target.tagName === 'A') {
+            event.preventDefault();
+
+            return true;
+          }
+
+          return false;
+        },
         handlePaste: () => !!readOnlyRef.current,
         handleDrop: () => readOnlyRef.current
       }
