@@ -9,6 +9,7 @@ import {
 import { ScreenShareCard } from './screen-share-card';
 import { VoiceGrid } from './voice-grid';
 import { VoiceUserCard } from './voice-user-card';
+import { ControlsBar } from './controls-bar'; 
 
 type TChannelProps = {
   channelId: number;
@@ -109,6 +110,7 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
       <VoiceGrid pinnedCardId={pinnedCard?.id} className="h-full">
         {cards}
       </VoiceGrid>
+      <ControlsBar channelId={channelId} />
     </div>
   );
 });
