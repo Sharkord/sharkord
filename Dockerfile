@@ -2,7 +2,6 @@ FROM oven/bun:1.3.5
 
 ARG TARGETARCH
 
-# Install wget and curl, get latest release, download binary
 RUN apt-get update && apt-get install -y wget curl jq && \
     LATEST_VERSION=$(curl -s https://api.github.com/repos/Sharkord/sharkord/releases/latest | jq -r .tag_name) && \
     if [ "$TARGETARCH" = "amd64" ]; then \
