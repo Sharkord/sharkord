@@ -5,6 +5,7 @@ import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { messages } from '../../db/schema';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
+import { checkEmptyMessage } from '../../helpers/check-empty-message';
 import { eventBus } from '../../plugins/event-bus';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
 import { invariant } from '../../utils/invariant';
@@ -48,7 +49,15 @@ const editMessageRoute = protectedProcedure
       }
     );
 
+    if (checkEmptyMessage(input.content)) {
+      throw new Error('Message cannot be empty.');
+    }
+
     const sanitizedContent = sanitizeMessageHtml(input.content);
+
+    if (checkEmptyMessage(input.content)) {
+      throw new Error('Your message only contained unsupported or removed content, so there was nothing to send.');
+    }
 
     await db
       .update(messages)

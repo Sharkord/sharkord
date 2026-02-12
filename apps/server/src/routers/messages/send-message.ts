@@ -14,6 +14,7 @@ import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trp
 import { getPlainTextFromHtml } from '../../helpers/get-plain-text-from-html';
 import { parseCommandArgs } from '../../helpers/parse-command-args';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
+import { checkEmptyMessage } from '../../helpers/check-empty-message';
 import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
@@ -40,7 +41,16 @@ const sendMessageRoute = protectedProcedure
       )
     ]);
 
+    if (checkEmptyMessage(input.content) && input.files.length == 0) {
+      throw new Error('Message cannot be empty.');
+    }
+
     let targetContent = sanitizeMessageHtml(input.content);
+
+    if (checkEmptyMessage(input.content) && input.files.length == 0) {
+      throw new Error('Your message only contained unsupported or removed content, so there was nothing to send.');
+    }
+
     let editable = true;
     let commandExecutor: ((messageId: number) => void) | undefined = undefined;
 
