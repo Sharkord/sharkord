@@ -1,9 +1,10 @@
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
+import { useOwnVoiceState } from '@/features/server/voice/hooks';
 import { logVoice } from '@/helpers/browser-logger';
 import { getResWidthHeight } from '@/helpers/get-res-with-height';
 import { getTRPCClient } from '@/lib/trpc';
-import { StreamKind } from '@sharkord/shared';
+import { StreamKind, type TVoiceUserState } from '@sharkord/shared';
 import { Device } from 'mediasoup-client';
 import type { RtpCapabilities } from 'mediasoup-client/types';
 import {
@@ -50,6 +51,7 @@ export type TVoiceProvider = {
   connectionStatus: ConnectionStatus;
   transportStats: TransportStatsData;
   audioVideoRefsMap: Map<number, AudioVideoRefs>;
+  ownVoiceState: TVoiceUserState;
   getOrCreateRefs: (remoteId: number) => AudioVideoRefs;
   init: (
     routerRtpCapabilities: RtpCapabilities,
@@ -117,6 +119,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   );
   const routerRtpCapabilities = useRef<RtpCapabilities | null>(null);
   const audioVideoRefsMap = useRef<Map<number, AudioVideoRefs>>(new Map());
+  const ownVoiceState = useOwnVoiceState();
   const { devices } = useDevices();
 
   const getOrCreateRefs = useCallback((remoteId: number): AudioVideoRefs => {
@@ -206,6 +209,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       const audioTrack = stream.getAudioTracks()[0];
 
       if (audioTrack) {
+        audioTrack.enabled = !ownVoiceState.micMuted;
+
         logVoice('Obtained audio track', { audioTrack });
 
         localAudioProducer.current = await producerTransport.current?.produce({
@@ -255,7 +260,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     devices.microphoneId,
     devices.autoGainControl,
     devices.echoCancellation,
-    devices.noiseSuppression
+    devices.noiseSuppression,
+    ownVoiceState.micMuted
   ]);
 
   const startWebcamStream = useCallback(async () => {
@@ -504,20 +510,15 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     ]
   );
 
-  const {
-    toggleMic,
-    toggleSound,
-    toggleWebcam,
-    toggleScreenShare,
-    ownVoiceState
-  } = useVoiceControls({
-    startMicStream,
-    localAudioStream,
-    startWebcamStream,
-    stopWebcamStream,
-    startScreenShareStream,
-    stopScreenShareStream
-  });
+  const { toggleMic, toggleSound, toggleWebcam, toggleScreenShare } =
+    useVoiceControls({
+      startMicStream,
+      localAudioStream,
+      startWebcamStream,
+      stopWebcamStream,
+      startScreenShareStream,
+      stopScreenShareStream
+    });
 
   useVoiceEvents({
     consume,
