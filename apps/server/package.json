@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "bun --watch ./src/index.ts",
+    "dev:inspect": "bun --inspect ./src/index.ts",
     "dev:debug": "DEBUG=* bun --watch ./src/index.ts",
     "build": "tsc -b && bun ./build/build.ts",
     "db:gen": "bunx drizzle-kit generate --dialect sqlite --schema ./src/db/schema.ts --out ./src/db/migrations",

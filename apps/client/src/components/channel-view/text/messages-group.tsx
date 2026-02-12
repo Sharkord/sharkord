@@ -20,7 +20,7 @@ const MessagesGroup = memo(({ group }: TMessagesGroupProps) => {
   if (!user) return null;
 
   return (
-    <div className="flex min-w-0 gap-1 pl-2 pt-2 pr-2">
+    <div className="flex min-w-0 max-w-dvw gap-1 pl-2 pt-2 pr-2">
       <UserAvatar userId={user.id} className="h-10 w-10" showUserPopover />
       <div className="flex min-w-0 flex-col w-full">
         <div className="flex gap-2 items-baseline pl-1 select-none">

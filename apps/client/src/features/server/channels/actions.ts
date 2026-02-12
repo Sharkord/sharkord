@@ -1,7 +1,11 @@
 import { store } from '@/features/store';
 import type { TChannel, TChannelUserPermissionsMap } from '@sharkord/shared';
 import { serverSliceActions } from '../slice';
-import { channelByIdSelector, selectedChannelIdSelector } from './selectors';
+import {
+  channelByIdSelector,
+  channelReadStateByIdSelector,
+  selectedChannelIdSelector
+} from './selectors';
 
 export const setChannels = (channels: TChannel[]) => {
   store.dispatch(serverSliceActions.setChannels(channels));
@@ -55,12 +59,24 @@ export const setChannelPermissions = (
 
 export const setChannelReadState = (
   channelId: number,
-  count: number | undefined
+  payload: {
+    count?: number;
+    delta?: number;
+  }
 ) => {
   const state = store.getState();
   const selectedChannel = selectedChannelIdSelector(state);
+  const currentCount = channelReadStateByIdSelector(state, channelId);
 
-  let actualCount = count;
+  let nextCount: number | undefined;
+
+  if (typeof payload.count === 'number') {
+    nextCount = payload.count;
+  } else if (typeof payload.delta === 'number') {
+    nextCount = Math.max(0, currentCount + payload.delta);
+  }
+
+  let actualCount = nextCount;
 
   // if the channel is currently selected, set the read count to 0
   if (selectedChannel === channelId) {
