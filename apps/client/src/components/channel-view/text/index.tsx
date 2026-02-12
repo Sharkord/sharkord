@@ -1,6 +1,10 @@
 import { TiptapInput } from '@/components/tiptap-input';
 import Spinner from '@/components/ui/spinner';
-import { useCan, useChannelCan } from '@/features/server/hooks';
+import {
+  useCan,
+  useChannelCan,
+  useTypingUsersByChannelId
+} from '@/features/server/hooks';
 import { useMessages } from '@/features/server/messages/hooks';
 import { useFlatPluginCommands } from '@/features/server/plugins/hooks';
 import { playSound } from '@/features/server/sounds/actions';
@@ -31,12 +35,14 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
   const [newMessage, setNewMessage] = useState('');
   const allPluginCommands = useFlatPluginCommands();
+  const typingUsers = useTypingUsersByChannelId(channelId);
 
   const { containerRef, onScroll } = useScrollController({
     messages,
     fetching,
     hasMore,
-    loadMore
+    loadMore,
+    hasTypingUsers: typingUsers.length > 0
   });
 
   // keep this ref just as a safeguard
