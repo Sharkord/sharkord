@@ -164,8 +164,7 @@ const useVoiceControls = ({
     toggleMic,
     toggleSound,
     toggleWebcam,
-    toggleScreenShare,
-    ownVoiceState
+    toggleScreenShare
   };
 };
 
