@@ -1,7 +1,7 @@
 import { useCan, usePublicServerSettings } from '@/features/server/hooks';
 import { uploadFiles } from '@/helpers/upload-file';
 import { Permission, type TTempFile } from '@sharkord/shared';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 // TODO: check if it works in all browsers
@@ -209,13 +209,15 @@ const useUploadFiles = (disabled: boolean = false) => {
     };
   }, [addFiles, can, settings, disabled]);
 
-  const fileInputProps = {
-    ref: fileInputRef,
-    type: 'file' as const,
-    multiple: true,
-    onChange: onFileDialogChange,
-    style: { display: 'none' },
-  };
+  const fileInputProps = useMemo(
+    () => ({
+      ref: fileInputRef,
+      type: 'file' as const,
+      multiple: true,
+      onChange: onFileDialogChange,
+      style: { display: 'none' },
+    }), 
+    [onFileDialogChange]);
 
   return { files, removeFile, filesRef, clearFiles, uploading, uploadingSize, openFileDialog, fileInputProps };
 
