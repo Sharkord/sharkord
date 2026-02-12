@@ -8,7 +8,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { UserAvatar } from '@/components/user-avatar';
 import { setModViewOpen } from '@/features/app/actions';
-import { requestTextInput } from '@/features/dialogs/actions';
 import { useUserRoles } from '@/features/server/hooks';
 import { useOwnUserId, useUserStatus } from '@/features/server/users/hooks';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
@@ -35,25 +34,10 @@ const TableUser = memo(({ user, onUserDeleted }: TTableUserProps) => {
   }, [user.id]);
 
   const onDeleteUser = useCallback(async () => {
-    const reason = await requestTextInput({
-      title: 'Delete User',
-      message:
-        'Are you sure you want to delete this user? This action cannot be undone. Please provide a reason (optional).',
-      confirmLabel: 'Delete',
-      allowEmpty: true
-    });
-
-    if (reason === null) {
-      return;
-    }
-
     const trpc = getTRPCClient();
 
     try {
-      await trpc.users.delete.mutate({
-        userId: user.id,
-        reason
-      });
+      await trpc.users.delete.mutate({ userId: user.id });
 
       toast.success('User deleted successfully');
       onUserDeleted?.();

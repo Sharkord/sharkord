@@ -78,6 +78,16 @@ describe('users router', () => {
     ).rejects.toThrow('Insufficient permissions');
   });
 
+  test('should throw when user lacks permissions (delete)', async () => {
+    const { caller } = await initTest(2);
+
+    await expect(
+      caller.users.delete({
+        userId: 1
+      })
+    ).rejects.toThrow('Insufficient permissions');
+  });
+
   test('should get all users', async () => {
     const { caller } = await initTest();
 
@@ -429,6 +439,42 @@ describe('users router', () => {
         userId: 1
       })
     ).rejects.toThrow('You cannot ban yourself');
+  });
+
+  test('should delete a user', async () => {
+    const { caller } = await initTest();
+
+    await caller.users.delete({
+      userId: 2
+    });
+
+    const deletedUser = await tdb
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, 2))
+      .get();
+
+    expect(deletedUser).toBeUndefined();
+  });
+
+  test('should throw when trying to delete yourself', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.delete({
+        userId: 1
+      })
+    ).rejects.toThrow('You cannot delete yourself.');
+  });
+
+  test('should throw when trying to delete a non-existing user', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.delete({
+        userId: 999
+      })
+    ).rejects.toThrow('User not found.');
   });
 
   test('should unban user', async () => {

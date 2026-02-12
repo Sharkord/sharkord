@@ -6,6 +6,7 @@ import { changeBannerRoute } from './change-banner';
 import { deleteUserRoute } from './delete-user';
 import {
   onUserCreateRoute,
+  onUserDeleteRoute,
   onUserJoinRoute,
   onUserLeaveRoute,
   onUserUpdateRoute
@@ -34,5 +35,6 @@ export const usersRouter = t.router({
   onJoin: onUserJoinRoute,
   onLeave: onUserLeaveRoute,
   onUpdate: onUserUpdateRoute,
-  onCreate: onUserCreateRoute
+  onCreate: onUserCreateRoute,
+  onDelete: onUserDeleteRoute
 });
