@@ -86,16 +86,158 @@ Upon first run, Sharkord will generate a default configuration file located at `
 | `debug`       | `false` | Enable debug logging for detailed server logs and diagnostics                               |
 | `maxFiles`    | `40`    | Maximum number of files that can be uploaded in a single request                            |
 | `maxFileSize` | `100`   | Maximum file size in megabytes (MB) allowed per uploaded file                               |
-| `rtcMinPort`  | `40000` | Minimum UDP port for WebRTC media traffic (voice/video)                                     |
-| `rtcMaxPort`  | `40020` | Maximum UDP port for WebRTC media traffic (voice/video)                                     |
+| `rtcMinPort`  | `40000` | DEPRECATED - Remains for backwards compatibility.                                           |
+| `rtcMaxPort`  | `40020` | DEPRECATED - Remains for backwards Compatibility                                            |
 | `autoupdate`  | `false` | When enabled, it will automatically check for and install updates with no user intervention |
-
-> [!IMPORTANT]  
-> `rtcMinPort` and `rtcMaxPort` will define how many concurrent voice/video connections your server can handle. Each active voice/video connection uses one UDP port. Make sure to adjust the range according to your expected load. These ports must be open in your firewall settings, both TCP and UDP. If you're running Sharkord in Docker, remember to map this port range from the host to the container.
+| `announcedAddress`  | `None` | When set, it will announce this address for WebRTC connections. Useful when your reverse proxy is on a different host than sharkord. |
+| `webRtcServerPort`  | `40000` | The port for the webrtc server to listen on. This replaces Min/Max port. |
 
 ## HTTPS Setup
 
 At the moment, Sharkord does not have built-in support for HTTPS. To secure your server with HTTPS, we recommend using a reverse proxy like Nginx or Caddy in front of Sharkord. This setup allows you to manage SSL/TLS certificates and handle secure connections.
+
+Reverse proxies should be set up with 3 forwarding rules. 
+
+1. HTTPS (Port 443 - Bonus points for binding HTTP to port 80 and auto-upgrading to HTTPS) sharkord.example.com forwarding to Sharkord's IP on port 4991.
+2. Raw UDP port 40000 to Sharkord's webRtcServerPort default 40000.
+3. Raw TCP port 40000 to Sharkord's webRtcServerPort default 40000.
+
+Examples with http auto-upgrade - If using these examples, be sure to replace <sharkcord-machine-ip> with the actual IP of your sharkord instance:
+
+```Caddyfile
+# Caddyfile for sharkord.example.com
+# HTTPS reverse proxy with automatic HTTP to HTTPS redirect and TCP/UDP forwarding
+
+# HTTPS reverse proxy for sharkord.example.com
+# Caddy automatically:
+# - Obtains SSL certificates from Let's Encrypt
+# - Redirects HTTP (port 80) to HTTPS (port 443)
+# - Renews certificates automatically
+sharkord.example.com {
+    reverse_proxy <sharkord-machine-ip>:4991
+}
+
+# TCP/UDP forwarding on port 40000
+# Note: This requires the Caddy layer4 plugin
+# Install with: xcaddy build --with github.com/mholt/caddy-l4
+{
+    layer4 {
+        :40000 {
+            route {
+                proxy {
+                    upstream <sharkord-machine-ip>:40000
+                }
+            }
+        }
+    }
+}
+```
+
+```nginx.conf
+# Nginx configuration for sharkord.example.com
+# Place this in /etc/nginx/nginx.conf or include it in your main config
+
+# HTTP/HTTPS Configuration
+http {
+    # Basic settings
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+
+    # Logging
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+
+    # HTTP Server - Redirect all HTTP traffic to HTTPS
+    server {
+        listen 80;
+        listen [::]:80;
+        server_name sharkord.example.com;
+
+        # Redirect all HTTP requests to HTTPS
+        return 301 https://$host$request_uri;
+    }
+
+    # HTTPS Server - Main configuration
+    server {
+        listen 443 ssl http2;
+        listen [::]:443 ssl http2;
+        server_name sharkord.example.com;
+
+        # SSL Certificate paths (Let's Encrypt default paths)
+        # These will be created automatically if using Certbot
+        ssl_certificate /etc/letsencrypt/live/sharkord.example.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/sharkord.example.com/privkey.pem;
+
+        # SSL Configuration - Modern and secure
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
+        ssl_prefer_server_ciphers off;
+        
+        # Enable OCSP stapling
+        ssl_stapling on;
+        ssl_stapling_verify on;
+        ssl_trusted_certificate /etc/letsencrypt/live/sharkord.example.com/chain.pem;
+
+        # Security headers
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+
+        location / {
+            proxy_pass http://<sharkord-machine-ip>:4991;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            
+            # WebSocket support (if needed)
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            
+            # Timeouts
+            proxy_connect_timeout 60s;
+            proxy_send_timeout 60s;
+            proxy_read_timeout 60s;
+        }
+    }
+}
+
+# TCP/UDP Stream Configuration
+# This requires the nginx stream module (usually included by default)
+stream {
+    # Logging for stream
+    log_format basic '$remote_addr [$time_local] '
+                     '$protocol $status $bytes_sent $bytes_received '
+                     '$session_time';
+    
+    access_log /var/log/nginx/stream-access.log basic;
+    error_log /var/log/nginx/stream-error.log;
+
+    # TCP forwarding on port 40000
+    server {
+        listen 40000;
+        listen [::]:40000;
+        proxy_pass <sharkord-machine-ip>:40000;
+        proxy_timeout 10s;
+        proxy_connect_timeout 5s;
+    }
+
+    # UDP forwarding on port 40000
+    server {
+        listen 40000 udp;
+        listen [::]:40000 udp;
+        proxy_pass <sharkord-machine-ip>:40000;
+        proxy_timeout 10s;
+        proxy_responses 1;
+    }
+}
+
+```
 
 ## Plugins (experimental)
 
