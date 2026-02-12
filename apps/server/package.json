@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "bun --watch ./src/index.ts",
+    "dev:inspect": "bun --inspect ./src/index.ts",
     "dev:debug": "DEBUG=* bun --watch ./src/index.ts",
     "build": "tsc -b && bun ./build/build.ts",
     "db:gen": "bunx drizzle-kit generate --dialect sqlite --schema ./src/db/schema.ts --out ./src/db/migrations",
@@ -22,6 +23,7 @@
     "@types/ini": "^4.1.1",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.2.3",
+    "@types/sanitize-html": "^2.16.0",
     "@types/semver": "^7.7.1",
     "@types/ws": "^8.18.1",
     "@types/yauzl": "^2.10.3",
@@ -49,6 +51,7 @@
     "link-preview-js": "^3.1.0",
     "mediasoup": "^3.19.11",
     "queue": "^7.0.0",
+    "sanitize-html": "^2.17.0",
     "semver": "^7.7.3",
     "string-argv": "^0.3.2",
     "systeminformation": "^5.27.11",

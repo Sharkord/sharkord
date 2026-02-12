@@ -5,17 +5,6 @@ import { getPrivateIp, getPublicIp } from './helpers/network';
 import { CONFIG_INI_PATH } from './helpers/paths';
 import { IS_DEVELOPMENT } from './utils/env';
 
-declare module "bun" {
-  interface Env {
-    // SHARKORD_ prefixed environment variables
-    SHARKORD_PORT?: string;
-    SHARKORD_DEBUG?: string;
-    SHARKORD_MAX_FILES?: string;
-    SHARKORD_MAX_FILE_SIZE?: string;
-    SHARKORD_RTC_MIN_PORT?: string;
-    SHARKORD_RTC_MAX_PORT?: string;
-  }
-}
 
 const [SERVER_PUBLIC_IP, SERVER_PRIVATE_IP] = await Promise.all([
   getPublicIp(),
@@ -79,14 +68,6 @@ if (process.env.SHARKORD_PORT) {
 
 if (process.env.SHARKORD_DEBUG) {
   config.server.debug = process.env.SHARKORD_DEBUG === 'true' || process.env.SHARKORD_DEBUG === '1';
-}
-
-if (process.env.SHARKORD_MAX_FILES) {
-  config.http.maxFiles = parseInt(process.env.SHARKORD_MAX_FILES, 10);
-}
-
-if (process.env.SHARKORD_MAX_FILE_SIZE) {
-  config.http.maxFileSize = parseInt(process.env.SHARKORD_MAX_FILE_SIZE, 10);
 }
 
 if (process.env.SHARKORD_RTC_MIN_PORT) {

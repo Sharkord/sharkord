@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { messages } from '../../db/schema';
+import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
 import { eventBus } from '../../plugins/event-bus';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
 import { invariant } from '../../utils/invariant';
@@ -47,22 +48,24 @@ const editMessageRoute = protectedProcedure
       }
     );
 
+    const sanitizedContent = sanitizeMessageHtml(input.content);
+
     await db
       .update(messages)
       .set({
-        content: input.content,
+        content: sanitizedContent,
         updatedAt: Date.now()
       })
       .where(eq(messages.id, input.messageId));
 
     publishMessage(input.messageId, message.channelId, 'update');
-    enqueueProcessMetadata(input.content, input.messageId);
+    enqueueProcessMetadata(sanitizedContent, input.messageId);
 
     eventBus.emit('message:updated', {
       messageId: input.messageId,
       channelId: message.channelId,
       userId: message.userId,
-      content: input.content
+      content: sanitizedContent
     });
   });
 

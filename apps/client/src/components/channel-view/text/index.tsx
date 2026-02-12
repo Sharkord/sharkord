@@ -12,7 +12,7 @@ import { ChannelPermission, Permission, TYPING_MS } from '@sharkord/shared';
 import { filesize } from 'filesize';
 import { throttle } from 'lodash-es';
 import { Send } from 'lucide-react';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '../../ui/button';
 import { FileCard } from './file-card';
@@ -28,16 +28,23 @@ type TChannelProps = {
 const TextChannel = memo(({ channelId }: TChannelProps) => {
   const { messages, hasMore, loadMore, loading, fetching, groupedMessages } =
     useMessages(channelId);
+
   const [newMessage, setNewMessage] = useState('');
   const allPluginCommands = useFlatPluginCommands();
+
   const { containerRef, onScroll } = useScrollController({
     messages,
     fetching,
     hasMore,
     loadMore
   });
+
+  // keep this ref just as a safeguard
+  const sendingRef = useRef(false);
+  const [sending, setSending] = useState(false);
   const can = useCan();
   const channelCan = useChannelCan(channelId);
+
   const canSendMessages = useMemo(() => {
     return (
       can(Permission.SEND_MESSAGES) &&
@@ -69,8 +76,16 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
   );
 
   const onSendMessage = useCallback(async () => {
-    if ((!newMessage.trim() && !files.length) || !canSendMessages) return;
+    if (
+      (!newMessage.trim() && !files.length) ||
+      !canSendMessages ||
+      sendingRef.current
+    ) {
+      return;
+    }
 
+    setSending(true);
+    sendingRef.current = true;
     sendTypingSignal.cancel();
 
     const trpc = getTRPCClient();
@@ -86,6 +101,9 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     } catch (error) {
       toast.error(getTrpcError(error, 'Failed to send message'));
       return;
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
     }
 
     setNewMessage('');
@@ -173,6 +191,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
             onSubmit={onSendMessage}
             onTyping={sendTypingSignal}
             disabled={uploading || !canSendMessages}
+            readOnly={sending}
             commands={pluginCommands}
           />
           <Button
@@ -180,7 +199,9 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
             variant="ghost"
             className="h-8 w-8"
             onClick={onSendMessage}
-            disabled={uploading || !newMessage.trim() || !canSendMessages}
+            disabled={
+              uploading || sending || !newMessage.trim() || !canSendMessages
+            }
           >
             <Send className="h-4 w-4" />
           </Button>

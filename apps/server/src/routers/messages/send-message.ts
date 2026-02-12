@@ -13,6 +13,7 @@ import { messageFiles, messages } from '../../db/schema';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
 import { getPlainTextFromHtml } from '../../helpers/get-plain-text-from-html';
 import { parseCommandArgs } from '../../helpers/parse-command-args';
+import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
 import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
@@ -39,7 +40,7 @@ const sendMessageRoute = protectedProcedure
       )
     ]);
 
-    let targetContent = input.content;
+    let targetContent = sanitizeMessageHtml(input.content);
     let editable = true;
     let commandExecutor: ((messageId: number) => void) | undefined = undefined;
 
