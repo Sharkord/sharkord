@@ -7,6 +7,7 @@ import { DebugInfo } from './components/debug-info/index.tsx';
 import { StoreDebug } from './components/debug/store-debug.tsx';
 import { DevicesProvider } from './components/devices-provider/index.tsx';
 import { DialogsProvider } from './components/dialogs/index.tsx';
+import { LanguageProvider } from './components/language-provider/index.tsx';
 import { Routing } from './components/routing/index.tsx';
 import { ServerScreensProvider } from './components/server-screens/index.tsx';
 import { ThemeProvider } from './components/theme-provider/index.tsx';
@@ -16,20 +17,22 @@ import './index.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider
-      defaultTheme="dark"
-      storageKey={LocalStorageKey.VITE_UI_THEME}
-    >
-      <DebugInfo />
-      <Toaster />
-      <Provider store={store}>
-        <StoreDebug />
-        <DevicesProvider>
-          <DialogsProvider />
-          <ServerScreensProvider />
-          <Routing />
-        </DevicesProvider>
-      </Provider>
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemeProvider
+        defaultTheme="dark"
+        storageKey={LocalStorageKey.VITE_UI_THEME}
+      >
+        <DebugInfo />
+        <Toaster />
+        <Provider store={store}>
+          <StoreDebug />
+          <DevicesProvider>
+            <DialogsProvider />
+            <ServerScreensProvider />
+            <Routing />
+          </DevicesProvider>
+        </Provider>
+      </ThemeProvider>
+    </LanguageProvider>
   </StrictMode>
 );

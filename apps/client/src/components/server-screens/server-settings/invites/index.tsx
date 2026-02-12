@@ -12,9 +12,11 @@ import { openDialog } from '@/features/dialogs/actions';
 import { useAdminInvites } from '@/features/server/admin/hooks';
 import { Plus } from 'lucide-react';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { InvitesTable } from './invites-table';
 
 const Invites = memo(() => {
+  const { t } = useTranslation();
   const { invites, loading, refetch } = useAdminInvites();
 
   if (loading) {
@@ -25,9 +27,9 @@ const Invites = memo(() => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Server Invites</CardTitle>
+          <CardTitle>{t('serverSettings.invites.title')}</CardTitle>
           <CardDescription>
-            Manage invitation links for users to join the server
+            {t('serverSettings.invites.description')}
           </CardDescription>
         </div>
         <Button
@@ -39,7 +41,7 @@ const Invites = memo(() => {
           className="gap-2"
         >
           <Plus className="h-4 w-4" />
-          Create Invite
+          {t('serverSettings.invites.createInvite')}
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">

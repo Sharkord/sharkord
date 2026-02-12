@@ -16,12 +16,14 @@ import {
   WifiOff
 } from 'lucide-react';
 import { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ExternalAudioStreams } from '../channel-view/voice/external-audio-streams';
 import { VoiceAudioStreams } from '../channel-view/voice/voice-audio-streams';
 import { Button } from '../ui/button';
 import { StatsPopover } from './stats-popover';
 
 const VoiceControl = memo(() => {
+  const { t } = useTranslation();
   const voiceChannelId = useCurrentVoiceChannelId();
   const channelCan = useChannelCan(voiceChannelId);
   const { ownVoiceState, toggleWebcam, toggleScreenShare, connectionStatus } =
@@ -78,7 +80,7 @@ const VoiceControl = memo(() => {
         <div className="flex items-center justify-between px-2 py-2">
           <Button variant="outline" size="sm" onClick={leaveVoice}>
             <PhoneOff className="h-3.5 w-3.5 mr-1.5" />
-            Disconnect
+            {t('sidebar.serverMenu.disconnect')}
           </Button>
 
           <div className="flex gap-1">

@@ -12,12 +12,14 @@ import { Input } from '@/components/ui/input';
 import { useForm } from '@/hooks/use-form';
 import { getTRPCClient } from '@/lib/trpc';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TDialogBaseProps } from '../types';
 
 type TCreateCategoryDialogProps = TDialogBaseProps;
 
 const CreateCategoryDialog = memo(
   ({ isOpen, close }: TCreateCategoryDialogProps) => {
+    const { t } = useTranslation();
     const { values, r, setTrpcErrors } = useForm({
       name: 'New Category'
     });
@@ -45,14 +47,14 @@ const CreateCategoryDialog = memo(
       <Dialog open={isOpen}>
         <DialogContent onInteractOutside={close} close={close}>
           <DialogHeader>
-            <DialogTitle>Create New Category</DialogTitle>
+            <DialogTitle>{t('dialogs.createCategory.title')}</DialogTitle>
           </DialogHeader>
 
-          <Group label="Category name">
+          <Group label={t('dialogs.createCategory.categoryNameLabel')}>
             <AutoFocus>
               <Input
                 {...r('name')}
-                placeholder="Category name"
+                placeholder={t('dialogs.createCategory.categoryNamePlaceholder')}
                 onEnter={onSubmit}
               />
             </AutoFocus>
@@ -60,10 +62,10 @@ const CreateCategoryDialog = memo(
 
           <DialogFooter className="gap-2">
             <Button variant="ghost" onClick={close}>
-              Cancel
+              {t('dialogs.createCategory.cancel')}
             </Button>
             <Button onClick={onSubmit} disabled={loading}>
-              Create Category
+              {t('dialogs.createCategory.createCategory')}
             </Button>
           </DialogFooter>
         </DialogContent>

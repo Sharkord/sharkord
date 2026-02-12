@@ -1,6 +1,8 @@
 import { Dialog } from '@/components/dialogs/dialogs';
 import { logDebug } from '@/helpers/browser-logger';
 import { getHostFromServer } from '@/helpers/get-file-url';
+import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { i18n } from '@/i18n';
 import { cleanup, connectToTRPC, getTRPCClient } from '@/lib/trpc';
 import { type TPublicServerSettings, type TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
@@ -92,8 +94,10 @@ window.useToken = async (token: string) => {
   try {
     await trpc.others.useSecretToken.mutate({ token });
 
-    toast.success('You are now an owner of this server');
-  } catch {
-    toast.error('Invalid access token');
+    toast.success(i18n.t('toasts.auth.ownerGranted'));
+  } catch (error) {
+    toast.error(
+      getTrpcError(error, i18n.t('errors.auth.invalidSecretToken'))
+    );
   }
 };

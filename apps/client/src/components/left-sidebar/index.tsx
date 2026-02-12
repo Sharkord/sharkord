@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { Permission } from '@sharkord/shared';
 import { Menu } from 'lucide-react';
 import { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
 import { ServerScreen } from '../server-screens/screens';
@@ -27,6 +28,7 @@ type TLeftSidebarProps = {
 };
 
 const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
+  const { t } = useTranslation();
   const serverName = useServerName();
   const serverSettingsPermissions = useMemo(
     () => [
@@ -58,25 +60,25 @@ const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuLabel>Server</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('sidebar.serverMenu.server')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <Protect permission={Permission.MANAGE_CATEGORIES}>
                 <DropdownMenuItem
                   onClick={() => openDialog(Dialog.CREATE_CATEGORY)}
                 >
-                  Add Category
+                  {t('sidebar.serverMenu.addCategory')}
                 </DropdownMenuItem>
               </Protect>
               <Protect permission={serverSettingsPermissions}>
                 <DropdownMenuItem
                   onClick={() => openServerScreen(ServerScreen.SERVER_SETTINGS)}
                 >
-                  Server Settings
+                  {t('sidebar.serverMenu.serverSettings')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </Protect>
               <DropdownMenuItem onClick={disconnectFromServer}>
-                Disconnect
+                {t('sidebar.serverMenu.disconnect')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

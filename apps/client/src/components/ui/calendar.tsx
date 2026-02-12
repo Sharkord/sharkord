@@ -7,6 +7,7 @@ import * as React from 'react';
 import { DayButton, DayPicker, getDefaultClassNames } from 'react-day-picker';
 
 import { Button, buttonVariants } from '@/components/ui/button';
+import { useLocaleFormat } from '@/hooks/use-locale-format';
 import { cn } from '@/lib/utils';
 
 function Calendar({
@@ -17,11 +18,13 @@ function Calendar({
   buttonVariant = 'ghost',
   formatters,
   components,
+  locale,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>['variant'];
 }) {
   const defaultClassNames = getDefaultClassNames();
+  const { dateFnsLocale, intlLanguage } = useLocaleFormat();
 
   return (
     <DayPicker
@@ -32,10 +35,14 @@ function Calendar({
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className
       )}
+      locale={locale || dateFnsLocale}
       captionLayout={captionLayout}
       formatters={{
-        formatMonthDropdown: (date) =>
-          date.toLocaleString('default', { month: 'short' }),
+        formatMonthDropdown: (date) => {
+          return new Intl.DateTimeFormat(intlLanguage, {
+            month: 'short'
+          }).format(date);
+        },
         ...formatters
       }}
       classNames={{
@@ -191,7 +198,7 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString()}
+      data-day={day.date.toISOString()}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

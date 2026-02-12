@@ -11,6 +11,7 @@ import { useCan } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TCategoryContextMenuProps = {
@@ -20,6 +21,7 @@ type TCategoryContextMenuProps = {
 
 const CategoryContextMenu = memo(
   ({ children, categoryId }: TCategoryContextMenuProps) => {
+    const { t } = useTranslation();
     const can = useCan();
 
     const onDeleteClick = useCallback(async () => {
@@ -37,11 +39,11 @@ const CategoryContextMenu = memo(
 
       try {
         await trpc.categories.delete.mutate({ categoryId });
-        toast.success('Category deleted');
+        toast.success(t('toasts.categories.deleted'));
       } catch {
-        toast.error('Failed to delete category');
+        toast.error(t('toasts.categories.deleteFailed'));
       }
-    }, [categoryId]);
+    }, [categoryId, t]);
 
     const onEditClick = useCallback(() => {
       openServerScreen(ServerScreen.CATEGORY_SETTINGS, { categoryId });

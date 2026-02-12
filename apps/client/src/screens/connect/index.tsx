@@ -17,9 +17,12 @@ import {
 } from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 const Connect = memo(() => {
+  const { t } = useTranslation();
+
   const { values, r, setErrors, onChange } = useForm<{
     identity: string;
     password: string;
@@ -92,7 +95,11 @@ const Connect = memo(() => {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 
-      toast.error(`Could not connect: ${errorMessage}`);
+      toast.error(
+        t('connect.connectError', {
+          errorMessage
+        })
+      );
     } finally {
       setLoading(false);
     }
@@ -101,7 +108,8 @@ const Connect = memo(() => {
     values.password,
     setErrors,
     values.rememberCredentials,
-    inviteCode
+    inviteCode,
+    t
   ]);
 
   const logoSrc = useMemo(() => {
@@ -129,19 +137,19 @@ const Connect = memo(() => {
 
           <div className="flex flex-col gap-2">
             <Group
-              label="Identity"
-              help="A unique identifier for your account on this server. You can use whatever you like, such as an email address or a username. This won't be shared publicly."
+              label={t('connect.identityLabel')}
+              help={t('connect.identityHelp')}
             >
               <Input {...r('identity')} />
             </Group>
-            <Group label="Password">
+            <Group label={t('connect.passwordLabel')}>
               <Input
                 {...r('password')}
                 type="password"
                 onEnter={onConnectClick}
               />
             </Group>
-            <Group label="Remember Credentials">
+            <Group label={t('connect.rememberCredentialsLabel')}>
               <Switch
                 checked={values.rememberCredentials}
                 onCheckedChange={onRememberCredentialsChange}
@@ -152,15 +160,9 @@ const Connect = memo(() => {
           <div className="flex flex-col gap-2">
             {!window.isSecureContext && (
               <Alert variant="destructive">
-                <AlertTitle>Insecure Connection</AlertTitle>
+                <AlertTitle>{t('connect.insecureConnectionTitle')}</AlertTitle>
                 <AlertDescription>
-                  You are accessing the server over an insecure connection
-                  (HTTP). By default, browsers block access to media devices
-                  such as your camera and microphone on insecure origins. This
-                  means that you won't be able to use video or voice chat
-                  features while connected to the server over HTTP. If you are
-                  the server administrator, you can set up HTTPS by following
-                  the instructions in the documentation.
+                  {t('connect.insecureConnectionDescription')}
                 </AlertDescription>
               </Alert>
             )}
@@ -171,16 +173,14 @@ const Connect = memo(() => {
               onClick={onConnectClick}
               disabled={loading || !values.identity || !values.password}
             >
-              Connect
+              {t('connect.connectButton')}
             </Button>
 
             {!info?.allowNewUsers && (
               <>
                 {!inviteCode && (
                   <span className="text-xs text-muted-foreground text-center">
-                    New user registrations are currently disabled. If you do not
-                    have an account yet, you need to be invited by an existing
-                    user to join this server.
+                    {t('connect.newRegistrationsDisabled')}
                   </span>
                 )}
               </>
@@ -188,10 +188,10 @@ const Connect = memo(() => {
 
             {inviteCode && (
               <Alert variant="info">
-                <AlertTitle>You were invited to join this server</AlertTitle>
+                <AlertTitle>{t('connect.invitedTitle')}</AlertTitle>
                 <AlertDescription>
                   <span className="font-mono text-xs">
-                    Invite code: {inviteCode}
+                    {t('connect.inviteCodeLabel', { code: inviteCode })}
                   </span>
                 </AlertDescription>
               </Alert>

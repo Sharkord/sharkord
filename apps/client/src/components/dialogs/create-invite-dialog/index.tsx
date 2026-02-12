@@ -14,6 +14,7 @@ import { useForm } from '@/hooks/use-form';
 import { getTRPCClient } from '@/lib/trpc';
 import { getRandomString } from '@sharkord/shared';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { TDialogBaseProps } from '../types';
 
@@ -23,6 +24,7 @@ type TCreateInviteDialogProps = TDialogBaseProps & {
 
 const CreateInviteDialog = memo(
   ({ refetch, close, isOpen }: TCreateInviteDialogProps) => {
+    const { t } = useTranslation();
     const { r, rrn, values, setTrpcErrors } = useForm({
       maxUses: 0,
       expiresAt: 0,
@@ -34,7 +36,7 @@ const CreateInviteDialog = memo(
 
       try {
         await trpc.invites.add.mutate(values);
-        toast.success('Invite created');
+        toast.success(t('dialogs.createInvite.toasts.created'));
 
         refetch();
         close();
@@ -47,22 +49,26 @@ const CreateInviteDialog = memo(
       <Dialog open={isOpen}>
         <DialogContent onInteractOutside={close} close={close}>
           <DialogHeader>
-            <DialogTitle>Create Server Invite</DialogTitle>
-            <DialogDescription>
-              Create a new invitation link for users to join the server.
-            </DialogDescription>
+            <DialogTitle>{t('dialogs.createInvite.title')}</DialogTitle>
+            <DialogDescription>{t('dialogs.createInvite.description')}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            <Group label="Code">
-              <Input placeholder="Invite code" {...r('code')} />
-            </Group>
-            <Group label="Max uses" description="Use 0 for unlimited uses.">
-              <Input placeholder="Max uses" {...r('maxUses', 'number')} />
+            <Group label={t('dialogs.createInvite.codeLabel')}>
+              <Input placeholder={t('dialogs.createInvite.codePlaceholder')} {...r('code')} />
             </Group>
             <Group
-              label="Expires in"
-              description="Leave empty for no expiration."
+              label={t('dialogs.createInvite.maxUsesLabel')}
+              description={t('dialogs.createInvite.maxUsesDescription')}
+            >
+              <Input
+                placeholder={t('dialogs.createInvite.maxUsesPlaceholder')}
+                {...r('maxUses', 'number')}
+              />
+            </Group>
+            <Group
+              label={t('dialogs.createInvite.expiresInLabel')}
+              description={t('dialogs.createInvite.expiresInDescription')}
             >
               <DatePicker {...rrn('expiresAt')} minDate={Date.now()} />
             </Group>
@@ -70,9 +76,9 @@ const CreateInviteDialog = memo(
 
           <DialogFooter className="gap-2">
             <Button variant="ghost" onClick={close}>
-              Cancel
+              {t('dialogs.createInvite.cancel')}
             </Button>
-            <Button onClick={handleCreate}>Create Invite</Button>
+            <Button onClick={handleCreate}>{t('dialogs.createInvite.createInvite')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

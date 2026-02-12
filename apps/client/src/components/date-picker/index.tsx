@@ -8,6 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger
 } from '@/components/ui/popover';
+import { useLocaleFormat } from '@/hooks/use-locale-format';
 import { CalendarIcon } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -18,18 +19,6 @@ type TDatePickerProps = {
   className?: string;
   minDate?: number; // Unix timestamp
   maxDate?: number; // Unix timestamp
-};
-
-const formatDate = (date: Date | undefined): string => {
-  if (!date) {
-    return '';
-  }
-
-  return date.toLocaleDateString('en-US', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric'
-  });
 };
 
 const isValidDate = (date: Date): boolean => {
@@ -49,6 +38,7 @@ const DatePicker = memo(
     minDate,
     maxDate
   }: TDatePickerProps) => {
+    const { formatDate } = useLocaleFormat();
     const [open, setOpen] = useState(false);
 
     const dateFromValue = useMemo(() => {
@@ -64,17 +54,25 @@ const DatePicker = memo(
     }, [maxDate]);
 
     const [month, setMonth] = useState<Date | undefined>(dateFromValue);
-    const [inputValue, setInputValue] = useState(() =>
-      formatDate(dateFromValue)
-    );
+    const [inputValue, setInputValue] = useState(() => {
+      if (!dateFromValue) {
+        return '';
+      }
+
+      return formatDate(dateFromValue);
+    });
 
     useEffect(() => {
-      setInputValue(formatDate(dateFromValue));
+      if (!dateFromValue) {
+        setInputValue('');
+      } else {
+        setInputValue(formatDate(dateFromValue));
+      }
 
       if (dateFromValue) {
         setMonth(dateFromValue);
       }
-    }, [dateFromValue]);
+    }, [dateFromValue, formatDate]);
 
     const handleInputChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,7 +107,7 @@ const DatePicker = memo(
 
         setOpen(false);
       },
-      [onChange]
+      [onChange, formatDate]
     );
 
     const handleKeyDown = useCallback(

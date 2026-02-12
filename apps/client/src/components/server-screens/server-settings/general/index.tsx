@@ -14,9 +14,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useAdminGeneral } from '@/features/server/admin/hooks';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LogoManager } from './logo-manager';
 
 const General = memo(() => {
+  const { t } = useTranslation();
   const { settings, logo, loading, onChange, submit, errors, refetch } =
     useAdminGeneral();
 
@@ -27,35 +29,35 @@ const General = memo(() => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Server Information</CardTitle>
+        <CardTitle>{t('serverSettings.general.title')}</CardTitle>
         <CardDescription>
-          Manage your server's basic information
+          {t('serverSettings.general.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Group label="Name">
+        <Group label={t('serverSettings.general.nameLabel')}>
           <Input
             value={settings.name}
             onChange={(e) => onChange('name', e.target.value)}
-            placeholder="Enter server name"
+            placeholder={t('serverSettings.general.namePlaceholder')}
             error={errors.name}
           />
         </Group>
 
-        <Group label="Description">
+        <Group label={t('serverSettings.general.descriptionLabel')}>
           <Textarea
             value={settings.description}
             onChange={(e) => onChange('description', e.target.value)}
-            placeholder="Enter server description"
+            placeholder={t('serverSettings.general.descriptionPlaceholder')}
             rows={4}
           />
         </Group>
 
-        <Group label="Password">
+        <Group label={t('serverSettings.general.passwordLabel')}>
           <Input
             value={settings.password}
             onChange={(e) => onChange('password', e.target.value)}
-            placeholder="Leave empty for no password"
+            placeholder={t('serverSettings.general.passwordPlaceholder')}
             error={errors.password}
           />
         </Group>
@@ -63,8 +65,8 @@ const General = memo(() => {
         <LogoManager logo={logo} refetch={refetch} />
 
         <Group
-          label="Allow New Users"
-          description="Allow anyone to register and join your server. If disabled, only users you invite can join."
+          label={t('serverSettings.general.allowNewUsersLabel')}
+          description={t('serverSettings.general.allowNewUsersDescription')}
         >
           <Switch
             checked={settings.allowNewUsers}
@@ -73,8 +75,8 @@ const General = memo(() => {
         </Group>
 
         <Group
-          label="Enable Plugins"
-          description="Enable or disable plugins for your server."
+          label={t('serverSettings.general.enablePluginsLabel')}
+          description={t('serverSettings.general.enablePluginsDescription')}
         >
           <Switch
             checked={settings.enablePlugins}
@@ -84,10 +86,10 @@ const General = memo(() => {
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
-            Cancel
+            {t('serverSettings.actions.cancel')}
           </Button>
           <Button onClick={submit} disabled={loading}>
-            Save Changes
+            {t('serverSettings.actions.saveChanges')}
           </Button>
         </div>
       </CardContent>

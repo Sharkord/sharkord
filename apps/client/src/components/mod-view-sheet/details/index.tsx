@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip } from '@/components/ui/tooltip';
 import { format, formatDistanceToNow } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import {
   Calendar,
   ClipboardList,

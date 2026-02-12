@@ -2,6 +2,7 @@ import { PaginatedList } from '@/components/paginated-list';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Link as LinkIcon } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useModViewContext } from '../context';
 
 type TLinkCardProps = {
@@ -54,6 +55,7 @@ const LinkCard = memo(({ url, onOpen }: TLinkCardProps) => {
 });
 
 const Links = memo(() => {
+  const { t } = useTranslation();
   const { links } = useModViewContext();
 
   const onOpenClick = useCallback((url: string) => {
@@ -76,7 +78,7 @@ const Links = memo(() => {
       items={links}
       renderItem={renderItem}
       searchFilter={searchFilter}
-      searchPlaceholder="Search links..."
+      searchPlaceholder={t('placeholders.searchLinks')}
       emptyMessage="No links found."
       itemsPerPage={8}
     />

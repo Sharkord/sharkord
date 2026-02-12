@@ -7,6 +7,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
 import { Pencil, Smile, Trash } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TMessageActionsProps = {
@@ -18,6 +19,8 @@ type TMessageActionsProps = {
 
 const MessageActions = memo(
   ({ onEdit, messageId, canManage, editable }: TMessageActionsProps) => {
+    const { t } = useTranslation();
+
     const onDeleteClick = useCallback(async () => {
       const choice = await requestConfirmation({
         title: 'Delete Message',
@@ -33,11 +36,11 @@ const MessageActions = memo(
 
       try {
         await trpc.messages.delete.mutate({ messageId });
-        toast.success('Message deleted');
+        toast.success(t('toasts.messages.deleted'));
       } catch {
-        toast.error('Failed to delete message');
+        toast.error(t('toasts.messages.deleteFailed'));
       }
-    }, [messageId]);
+    }, [messageId, t]);
 
     const onEmojiSelect = useCallback(
       async (emoji: TEmojiItem) => {
@@ -49,12 +52,12 @@ const MessageActions = memo(
             emoji: emoji.shortcodes[0]
           });
         } catch (error) {
-          toast.error('Failed to add reaction');
+          toast.error(t('toasts.messages.reactionAddFailed'));
 
           console.error('Error adding reaction:', error);
         }
       },
-      [messageId]
+      [messageId, t]
     );
 
     return (

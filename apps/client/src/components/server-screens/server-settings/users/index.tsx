@@ -8,9 +8,11 @@ import {
 import { LoadingCard } from '@/components/ui/loading-card';
 import { useAdminUsers } from '@/features/server/admin/hooks';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UsersTable } from './users-table';
 
 const Users = memo(() => {
+  const { t } = useTranslation();
   const { users, loading } = useAdminUsers();
 
   if (loading) {
@@ -20,9 +22,9 @@ const Users = memo(() => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Users</CardTitle>
+        <CardTitle>{t('serverSettings.users.title')}</CardTitle>
         <CardDescription>
-          Manage server users and their permissions
+          {t('serverSettings.users.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

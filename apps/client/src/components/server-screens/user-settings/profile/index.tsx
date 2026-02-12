@@ -15,11 +15,13 @@ import { useOwnPublicUser } from '@/features/server/users/hooks';
 import { useForm } from '@/hooks/use-form';
 import { getTRPCClient } from '@/lib/trpc';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { AvatarManager } from './avatar-manager';
 import { BannerManager } from './banner-manager';
 
 const Profile = memo(() => {
+  const { t } = useTranslation();
   const ownPublicUser = useOwnPublicUser();
   const { setTrpcErrors, r, rr, values } = useForm({
     name: ownPublicUser?.name ?? '',
@@ -32,34 +34,40 @@ const Profile = memo(() => {
 
     try {
       await trpc.users.update.mutate(values);
-      toast.success('Profile updated');
+      toast.success(t('userSettings.profile.toasts.updated'));
     } catch (error) {
       setTrpcErrors(error);
     }
-  }, [values, setTrpcErrors]);
+  }, [values, setTrpcErrors, t]);
 
   if (!ownPublicUser) return null;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your Profile</CardTitle>
+        <CardTitle>{t('userSettings.profile.title')}</CardTitle>
         <CardDescription>
-          Update your personal information and settings here.
+          {t('userSettings.profile.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <AvatarManager user={ownPublicUser} />
 
-        <Group label="Username">
-          <Input placeholder="Username" {...r('name')} />
+        <Group label={t('userSettings.profile.usernameLabel')}>
+          <Input
+            placeholder={t('userSettings.profile.usernamePlaceholder')}
+            {...r('name')}
+          />
         </Group>
 
-        <Group label="Bio">
-          <Textarea placeholder="Tell us about yourself..." {...r('bio')} />
+        <Group label={t('userSettings.profile.bioLabel')}>
+          <Textarea
+            placeholder={t('userSettings.profile.bioPlaceholder')}
+            {...r('bio')}
+          />
         </Group>
 
-        <Group label="Banner color">
+        <Group label={t('userSettings.profile.bannerColorLabel')}>
           <Color {...rr('bannerColor')} defaultValue="#FFFFFF" />
         </Group>
 
@@ -67,9 +75,11 @@ const Profile = memo(() => {
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
-            Cancel
+            {t('userSettings.actions.cancel')}
           </Button>
-          <Button onClick={onUpdateUser}>Save Changes</Button>
+          <Button onClick={onUpdateUser}>
+            {t('userSettings.actions.saveChanges')}
+          </Button>
         </div>
       </CardContent>
     </Card>

@@ -7,6 +7,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import type { TJoinedPublicUser } from '@sharkord/shared';
 import { Upload } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TAvatarManagerProps = {
@@ -14,6 +15,7 @@ type TAvatarManagerProps = {
 };
 
 const AvatarManager = memo(({ user }: TAvatarManagerProps) => {
+  const { t } = useTranslation();
   const openFilePicker = useFilePicker();
 
   const removeAvatar = useCallback(async () => {
@@ -22,11 +24,11 @@ const AvatarManager = memo(({ user }: TAvatarManagerProps) => {
     try {
       await trpc.users.changeAvatar.mutate({ fileId: undefined });
 
-      toast.success('Avatar removed successfully!');
+      toast.success(t('userSettings.profile.avatar.toasts.removedSuccess'));
     } catch {
-      toast.error('Could not remove avatar. Please try again.');
+      toast.error(t('userSettings.profile.avatar.toasts.removedError'));
     }
-  }, []);
+  }, [t]);
 
   const onAvatarClick = useCallback(async () => {
     const trpc = getTRPCClient();
@@ -37,20 +39,20 @@ const AvatarManager = memo(({ user }: TAvatarManagerProps) => {
       const temporaryFile = await uploadFile(file);
 
       if (!temporaryFile) {
-        toast.error('Could not upload file. Please try again.');
+        toast.error(t('userSettings.profile.avatar.toasts.uploadError'));
         return;
       }
 
       await trpc.users.changeAvatar.mutate({ fileId: temporaryFile.id });
 
-      toast.success('Avatar updated successfully!');
+      toast.success(t('userSettings.profile.avatar.toasts.updatedSuccess'));
     } catch {
-      toast.error('Could not update avatar. Please try again.');
+      toast.error(t('userSettings.profile.avatar.toasts.updatedError'));
     }
-  }, [openFilePicker]);
+  }, [openFilePicker, t]);
 
   return (
-    <Group label="Avatar">
+    <Group label={t('userSettings.profile.avatar.label')}>
       <div className="space-y-2">
         <div
           className="relative group cursor-pointer w-32 h-32"
@@ -72,7 +74,7 @@ const AvatarManager = memo(({ user }: TAvatarManagerProps) => {
       {user.avatarId && (
         <div>
           <Button size="sm" variant="outline" onClick={removeAvatar}>
-            Remove avatar
+            {t('userSettings.profile.avatar.removeButton')}
           </Button>
         </div>
       )}

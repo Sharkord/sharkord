@@ -10,6 +10,7 @@ import type { TJoinedEmoji } from '@sharkord/shared';
 import { filesize } from 'filesize';
 import { Trash2 } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Emoji } from './emoji';
 
@@ -21,14 +22,15 @@ type TUpdateEmojiProps = {
 
 const UpdateEmoji = memo(
   ({ selectedEmoji, setSelectedEmojiId, refetch }: TUpdateEmojiProps) => {
+    const { t } = useTranslation();
     const [name, setName] = useState(selectedEmoji.name);
     const [errors, setErrors] = useState<TTrpcErrors>({});
 
     const onDeleteEmoji = useCallback(async () => {
       const choice = await requestConfirmation({
-        title: 'Delete Emoji',
-        message: `Are you sure you want to delete this emoji? This action cannot be undone.`,
-        confirmLabel: 'Delete'
+        title: t('serverSettings.emojis.deleteTitle'),
+        message: t('serverSettings.emojis.deleteMessage'),
+        confirmLabel: t('serverSettings.emojis.deleteConfirm')
       });
 
       if (!choice) return;
@@ -37,25 +39,25 @@ const UpdateEmoji = memo(
 
       try {
         await trpc.emojis.delete.mutate({ emojiId: selectedEmoji.id });
-        toast.success('Emoji deleted');
+        toast.success(t('serverSettings.emojis.toasts.deleted'));
         refetch();
         setSelectedEmojiId(undefined);
       } catch {
-        toast.error('Failed to delete emoji');
+        toast.error(t('serverSettings.emojis.toasts.deleteFailed'));
       }
-    }, [selectedEmoji.id, refetch, setSelectedEmojiId]);
+    }, [selectedEmoji.id, refetch, setSelectedEmojiId, t]);
 
     const onUpdateEmoji = useCallback(async () => {
       const trpc = getTRPCClient();
 
       try {
         await trpc.emojis.update.mutate({ emojiId: selectedEmoji.id, name });
-        toast.success('Emoji updated');
+        toast.success(t('serverSettings.emojis.toasts.updated'));
         refetch();
       } catch (error) {
         setErrors(parseTrpcErrors(error));
       }
-    }, [name, selectedEmoji.id, refetch]);
+    }, [name, selectedEmoji.id, refetch, t]);
 
     const onNameChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,7 +71,7 @@ const UpdateEmoji = memo(
       <Card className="flex-1">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Edit Emoji</CardTitle>
+            <CardTitle>{t('serverSettings.emojis.editTitle')}</CardTitle>
             <Button size="icon" variant="ghost" onClick={onDeleteEmoji}>
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -85,24 +87,30 @@ const UpdateEmoji = memo(
             <div>
               <div className="font-medium">:{selectedEmoji.name}:</div>
               <div className="text-sm text-muted-foreground">
-                {filesize(selectedEmoji.file.size)} • Uploaded by{' '}
-                {selectedEmoji.user.name}
+                {filesize(selectedEmoji.file.size)} •{' '}
+                {t('serverSettings.emojis.uploadedBy', {
+                  user: selectedEmoji.user.name
+                })}
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="emoji-name">Name</Label>
+              <Label htmlFor="emoji-name">
+                {t('serverSettings.emojis.nameLabel')}
+              </Label>
               <Input
                 id="emoji-name"
                 value={name}
                 onChange={onNameChange}
-                placeholder="Enter emoji name (no spaces or special characters)"
+                placeholder={t('serverSettings.emojis.namePlaceholder')}
                 error={errors.name}
               />
               <p className="text-xs text-muted-foreground">
-                This will be used as :{selectedEmoji.name}: in messages
+                {t('serverSettings.emojis.usageHint', {
+                  name: selectedEmoji.name
+                })}
               </p>
             </div>
           </div>
@@ -112,13 +120,13 @@ const UpdateEmoji = memo(
               variant="outline"
               onClick={() => setSelectedEmojiId(undefined)}
             >
-              Close
+              {t('serverSettings.actions.close')}
             </Button>
             <Button
               onClick={onUpdateEmoji}
               disabled={selectedEmoji.name === name}
             >
-              Save Changes
+              {t('serverSettings.actions.saveChanges')}
             </Button>
           </div>
         </CardContent>

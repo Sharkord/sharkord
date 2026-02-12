@@ -3,6 +3,7 @@ import { AutoFocus } from '@/components/ui/auto-focus';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TMessage } from '@sharkord/shared';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TMessageEditInlineProps = {
@@ -12,6 +13,7 @@ type TMessageEditInlineProps = {
 
 const MessageEditInline = memo(
   ({ message, onBlur }: TMessageEditInlineProps) => {
+    const { t } = useTranslation();
     const [value, setValue] = useState<string>(message.content ?? '');
 
     const onSubmit = useCallback(
@@ -28,14 +30,14 @@ const MessageEditInline = memo(
             messageId: message.id,
             content: newValue
           });
-          toast.success('Message edited');
+          toast.success(t('toasts.messages.edited'));
         } catch {
-          toast.error('Failed to edit message');
+          toast.error(t('toasts.messages.editFailed'));
         } finally {
           onBlur();
         }
       },
-      [message.id, onBlur]
+      [message.id, onBlur, t]
     );
 
     return (

@@ -12,16 +12,20 @@ import { useUserStatus } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
 import { UserStatus, type TJoinedUser } from '@sharkord/shared';
 import { format, formatDistanceToNow } from 'date-fns';
+import { it } from 'date-fns/locale';
 import { MoreVertical, UserCog } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type TTableUserProps = {
   user: TJoinedUser;
 };
 
 const TableUser = memo(({ user }: TTableUserProps) => {
+  const { i18n, t } = useTranslation();
   const roles = useUserRoles(user.id);
   const status = useUserStatus(user.id);
+  const relativeDateLocale = i18n.language.startsWith('it') ? it : undefined;
 
   const onModerateClick = useCallback(() => {
     setModViewOpen(true, user.id);
@@ -64,13 +68,19 @@ const TableUser = memo(({ user }: TTableUserProps) => {
 
       <div className="flex items-center text-muted-foreground">
         <span className="text-xs" title={format(user.createdAt, 'PPP p')}>
-          {formatDistanceToNow(user.createdAt, { addSuffix: true })}
+          {formatDistanceToNow(user.createdAt, {
+            addSuffix: true,
+            locale: relativeDateLocale
+          })}
         </span>
       </div>
 
       <div className="flex items-center text-muted-foreground">
         <span className="text-xs">
-          {formatDistanceToNow(user.lastLoginAt, { addSuffix: true })}
+          {formatDistanceToNow(user.lastLoginAt, {
+            addSuffix: true,
+            locale: relativeDateLocale
+          })}
         </span>
       </div>
 
@@ -99,7 +109,7 @@ const TableUser = memo(({ user }: TTableUserProps) => {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onModerateClick}>
               <UserCog className="h-4 w-4" />
-              Moderate User
+              {t('serverSettings.users.moderateUser')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

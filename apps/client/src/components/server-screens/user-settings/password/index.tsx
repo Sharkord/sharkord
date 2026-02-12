@@ -12,9 +12,11 @@ import { closeServerScreens } from '@/features/server-screens/actions';
 import { useForm } from '@/hooks/use-form';
 import { getTRPCClient } from '@/lib/trpc';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 const Password = memo(() => {
+  const { t } = useTranslation();
   const { setTrpcErrors, r, values } = useForm({
     currentPassword: '',
     newPassword: '',
@@ -26,38 +28,40 @@ const Password = memo(() => {
 
     try {
       await trpc.users.updatePassword.mutate(values);
-      toast.success('Password updated!');
+      toast.success(t('userSettings.password.toasts.updated'));
     } catch (error) {
       setTrpcErrors(error);
     }
-  }, [values, setTrpcErrors]);
+  }, [values, setTrpcErrors, t]);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Password</CardTitle>
+        <CardTitle>{t('userSettings.password.title')}</CardTitle>
         <CardDescription>
-          In this section, you can update your password.
+          {t('userSettings.password.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Group label="Current Password">
+        <Group label={t('userSettings.password.currentPasswordLabel')}>
           <Input {...r('currentPassword', 'password')} />
         </Group>
 
-        <Group label="New Password">
+        <Group label={t('userSettings.password.newPasswordLabel')}>
           <Input {...r('newPassword', 'password')} />
         </Group>
 
-        <Group label="Confirm New Password">
+        <Group label={t('userSettings.password.confirmNewPasswordLabel')}>
           <Input {...r('confirmNewPassword', 'password')} />
         </Group>
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
-            Cancel
+            {t('userSettings.actions.cancel')}
           </Button>
-          <Button onClick={updatePassword}>Save Changes</Button>
+          <Button onClick={updatePassword}>
+            {t('userSettings.actions.saveChanges')}
+          </Button>
         </div>
       </CardContent>
     </Card>

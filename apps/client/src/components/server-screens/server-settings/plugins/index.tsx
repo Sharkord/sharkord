@@ -29,6 +29,7 @@ import {
   User
 } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TPluginItemProps = {
@@ -37,6 +38,7 @@ type TPluginItemProps = {
 };
 
 const PluginItem = memo(({ plugin, onToggle }: TPluginItemProps) => {
+  const { t } = useTranslation();
   const [isToggling, setIsToggling] = useState(false);
 
   const handleToggle = useCallback(
@@ -114,7 +116,7 @@ const PluginItem = memo(({ plugin, onToggle }: TPluginItemProps) => {
               className="h-8"
             >
               <FileText className="w-4 h-4 mr-1.5" />
-              Logs
+              {t('serverSettings.plugins.logs')}
             </Button>
             <Button
               variant="ghost"
@@ -124,7 +126,7 @@ const PluginItem = memo(({ plugin, onToggle }: TPluginItemProps) => {
               disabled={!plugin.enabled}
             >
               <Terminal className="w-4 h-4 mr-1.5" />
-              Commands
+              {t('serverSettings.plugins.commands')}
             </Button>
             <Button
               variant="ghost"
@@ -134,13 +136,17 @@ const PluginItem = memo(({ plugin, onToggle }: TPluginItemProps) => {
               disabled={!plugin.enabled}
             >
               <Settings className="w-4 h-4 mr-1.5" />
-              Settings
+              {t('serverSettings.plugins.settings')}
             </Button>
             {plugin.loadError ? (
-              <Badge variant="destructive">Error</Badge>
+              <Badge variant="destructive">
+                {t('serverSettings.plugins.error')}
+              </Badge>
             ) : (
               <Badge variant={plugin.enabled ? 'default' : 'outline'}>
-                {plugin.enabled ? 'Enabled' : 'Disabled'}
+                {plugin.enabled
+                  ? t('serverSettings.plugins.enabled')
+                  : t('serverSettings.plugins.disabled')}
               </Badge>
             )}
             <Switch
@@ -189,6 +195,7 @@ const PluginItem = memo(({ plugin, onToggle }: TPluginItemProps) => {
 });
 
 const Plugins = memo(() => {
+  const { t } = useTranslation();
   const enabled = usePluginsEnabled();
   const { loading, plugins, refetch } = useAdminPlugins();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -197,13 +204,15 @@ const Plugins = memo(() => {
     setIsRefreshing(true);
     try {
       await refetch();
-      toast.success('Plugins list refreshed');
+      toast.success(t('serverSettings.plugins.toasts.refreshed'));
     } catch (error) {
-      toast.error(getTrpcError(error, 'Failed to refresh plugins list'));
+      toast.error(
+        getTrpcError(error, t('serverSettings.plugins.toasts.refreshFailed'))
+      );
     } finally {
       setIsRefreshing(false);
     }
-  }, [refetch]);
+  }, [refetch, t]);
 
   const handleToggle = useCallback(
     async (pluginId: string, enabled: boolean) => {
@@ -212,15 +221,21 @@ const Plugins = memo(() => {
       try {
         await trpc.plugins.toggle.mutate({ pluginId, enabled });
         toast.success(
-          `Plugin ${enabled ? 'enabled' : 'disabled'} successfully`
+          t('serverSettings.plugins.toasts.toggled', {
+            status: enabled
+              ? t('serverSettings.plugins.enabled').toLowerCase()
+              : t('serverSettings.plugins.disabled').toLowerCase()
+          })
         );
       } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to toggle plugin'));
+        toast.error(
+          getTrpcError(error, t('serverSettings.plugins.toasts.toggleFailed'))
+        );
       } finally {
         refetch();
       }
     },
-    [refetch]
+    [refetch, t]
   );
 
   if (loading) {
@@ -232,10 +247,9 @@ const Plugins = memo(() => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Plugins</CardTitle>
+            <CardTitle>{t('serverSettings.plugins.title')}</CardTitle>
             <CardDescription>
-              Manage installed plugins and extend your Sharkord server with
-              additional features and functionality.
+              {t('serverSettings.plugins.description')}
             </CardDescription>
           </div>
           <Button
@@ -248,7 +262,7 @@ const Plugins = memo(() => {
             <RefreshCw
               className={cn('w-4 h-4 mr-2', isRefreshing && 'animate-spin')}
             />
-            Refresh
+            {t('serverSettings.plugins.refresh')}
           </Button>
         </div>
       </CardHeader>
@@ -261,11 +275,10 @@ const Plugins = memo(() => {
                   <Package className="w-8 h-8 text-muted-foreground" />
                 </div>
                 <h3 className="font-semibold text-lg mb-1">
-                  No plugins installed
+                  {t('serverSettings.plugins.noPluginsTitle')}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-sm">
-                  Install plugins to add new features and extend the
-                  functionality of your Sharkord server.
+                  {t('serverSettings.plugins.noPluginsDescription')}
                 </p>
               </div>
             ) : (
@@ -284,10 +297,11 @@ const Plugins = memo(() => {
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
-            <h3 className="font-semibold text-lg mb-1">Plugins are disabled</h3>
+            <h3 className="font-semibold text-lg mb-1">
+              {t('serverSettings.plugins.disabledTitle')}
+            </h3>
             <p className="text-sm text-muted-foreground max-w-sm">
-              Plugins have been disabled for this server. Enable plugins in the
-              server settings to manage and use plugins.
+              {t('serverSettings.plugins.disabledDescription')}
             </p>
           </div>
         )}
