@@ -50,10 +50,11 @@ const useVoiceControls = ({
         micMuted: newState
       });
 
-      if (!localAudioStream) {
+      if (!localAudioStream && !newState) {
         await startMicStream();
       }
     } catch (error) {
+      updateOwnVoiceState({ micMuted: !newState });
       toast.error(getTrpcError(error, 'Failed to update microphone state'));
     }
   }, [
@@ -100,16 +101,18 @@ const useVoiceControls = ({
     );
 
     try {
-      await trpc.voice.updateState.mutate({
-        webcamEnabled: newState
-      });
-
       if (newState) {
         await startWebcamStream();
       } else {
         stopWebcamStream();
       }
+
+      await trpc.voice.updateState.mutate({
+        webcamEnabled: newState
+      });
     } catch (error) {
+      updateOwnVoiceState({ webcamEnabled: false });
+      await trpc.voice.updateState.mutate({ webcamEnabled: false }).catch(() => {});
       toast.error(getTrpcError(error, 'Failed to update webcam state'));
     }
   }, [
@@ -132,13 +135,9 @@ const useVoiceControls = ({
     );
 
     try {
-      await trpc.voice.updateState.mutate({
-        sharingScreen: newState
-      });
-
       if (newState) {
         const video = await startScreenShareStream();
-
+        
         // handle native screen share end
         video.onended = async () => {
           stopScreenShareStream();
@@ -146,18 +145,25 @@ const useVoiceControls = ({
 
           await trpc.voice.updateState.mutate({
             sharingScreen: false
-          });
+          }).catch(() => {});
         };
       } else {
         stopScreenShareStream();
       }
+
+      await trpc.voice.updateState.mutate({
+        sharingScreen: newState
+      });
     } catch (error) {
+      updateOwnVoiceState({ sharingScreen: false });
+      await trpc.voice.updateState.mutate({ sharingScreen: false }).catch(() => {});
       toast.error(getTrpcError(error, 'Failed to update screen share state'));
     }
   }, [
     ownVoiceState.sharingScreen,
     startScreenShareStream,
-    stopScreenShareStream
+    stopScreenShareStream,
+    currentVoiceChannelId
   ]);
 
   return {
