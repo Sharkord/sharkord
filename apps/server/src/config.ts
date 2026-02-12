@@ -5,6 +5,7 @@ import { getPrivateIp, getPublicIp } from './helpers/network';
 import { CONFIG_INI_PATH } from './helpers/paths';
 import { IS_DEVELOPMENT } from './utils/env';
 
+
 const [SERVER_PUBLIC_IP, SERVER_PRIVATE_IP] = await Promise.all([
   getPublicIp(),
   getPrivateIp()
@@ -57,10 +58,26 @@ const text = await fs.readFile(CONFIG_INI_PATH, {
   encoding: 'utf-8'
 });
 
-if (process.env.DEBUG) {
-  config.server.debug = true;
+// Parse ini file
+config = parse(text) as TConfig;
+
+// Override with environment variables (SHARKORD_ prefixed to avoid conflicts)
+if (process.env.SHARKORD_PORT) {
+  config.server.port = parseInt(process.env.SHARKORD_PORT, 10);
 }
 
-config = Object.freeze(parse(text) as TConfig);
+if (process.env.SHARKORD_DEBUG) {
+  config.server.debug = process.env.SHARKORD_DEBUG === 'true' || process.env.SHARKORD_DEBUG === '1';
+}
+
+if (process.env.SHARKORD_RTC_MIN_PORT) {
+  config.mediasoup.worker.rtcMinPort = parseInt(process.env.SHARKORD_RTC_MIN_PORT, 10);
+}
+
+if (process.env.SHARKORD_RTC_MAX_PORT) {
+  config.mediasoup.worker.rtcMaxPort = parseInt(process.env.SHARKORD_RTC_MAX_PORT, 10);
+}
+
+config = Object.freeze(config);
 
 export { config, SERVER_PRIVATE_IP, SERVER_PUBLIC_IP };

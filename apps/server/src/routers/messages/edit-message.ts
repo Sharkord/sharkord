@@ -1,4 +1,4 @@
-import { Permission } from '@sharkord/shared';
+import { Permission, isEmptyMessage } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
@@ -48,7 +48,17 @@ const editMessageRoute = protectedProcedure
       }
     );
 
+    invariant(!isEmptyMessage(input.content), {
+      code: 'BAD_REQUEST',
+      message: 'Message cannot be empty.'
+    });
+
     const sanitizedContent = sanitizeMessageHtml(input.content);
+
+    invariant(!isEmptyMessage(input.content), {
+      code: 'BAD_REQUEST',
+      message: 'Your message only contained unsupported or removed content, so there was nothing to send.'
+    });
 
     await db
       .update(messages)

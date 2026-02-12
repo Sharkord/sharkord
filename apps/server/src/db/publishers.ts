@@ -9,8 +9,7 @@ import { pluginManager } from '../plugins';
 import { pubsub } from '../utils/pubsub';
 import {
   getAffectedUserIdsForChannel,
-  getAllChannelUserPermissions,
-  getChannelsReadStatesForUser
+  getAllChannelUserPermissions
 } from './queries/channels';
 import { getEmojiById } from './queries/emojis';
 import { getMessage } from './queries/messages';
@@ -48,20 +47,17 @@ const publishMessage = async (
 
   pubsub.publishFor(affectedUserIds, targetEvent, message);
 
-  // only send count updates to users OTHER than the message author
+  // only send unread updates to users OTHER than the message author
   const usersToNotify = affectedUserIds.filter((id) => id !== message.userId);
 
-  const promises = usersToNotify.map(async (userId) => {
-    const readState = await getChannelsReadStatesForUser(userId, channelId);
-    const count = readState[channelId] ?? 0;
-
-    pubsub.publishFor(userId, ServerEvents.CHANNEL_READ_STATES_UPDATE, {
+  if (usersToNotify.length > 0) {
+    pubsub.publishFor(usersToNotify, ServerEvents.CHANNEL_READ_STATES_DELTA, {
       channelId,
-      count
+      // this was sending the whole unread count before which was causing performance issues, now it just sends a delta of 1 which the client can use to update the unread count
+      // this isn't perfectly accurate in some cases but it should be good enough for most cases and it significantly reduces the amount of work the db has to
+      delta: 1
     });
-  });
-
-  await Promise.all(promises);
+  }
 };
 
 const publishEmoji = async (

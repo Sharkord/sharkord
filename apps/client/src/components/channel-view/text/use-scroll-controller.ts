@@ -7,6 +7,7 @@ type TUseScrollControllerProps = {
   fetching: boolean;
   hasMore: boolean;
   loadMore: () => Promise<unknown>;
+  hasTypingUsers?: boolean;
 };
 
 type TUseScrollControllerReturn = {
@@ -19,10 +20,19 @@ const useScrollController = ({
   messages,
   fetching,
   hasMore,
-  loadMore
+  loadMore,
+  hasTypingUsers = false
 }: TUseScrollControllerProps): TUseScrollControllerReturn => {
   const containerRef = useRef<HTMLDivElement>(null);
   const hasInitialScroll = useRef(false);
+  const shouldStickToBottom = useRef(true);
+
+  const isNearBottom = useCallback((container: HTMLDivElement) => {
+    const distanceFromBottom =
+      container.scrollHeight - (container.scrollTop + container.clientHeight);
+
+    return distanceFromBottom <= 120;
+  }, []);
 
   // scroll to bottom function
   const scrollToBottom = useCallback(() => {
@@ -36,18 +46,24 @@ const useScrollController = ({
   const onScroll = useCallback(() => {
     const container = containerRef.current;
 
-    if (!container || fetching) return;
+    if (!container) return;
+
+    shouldStickToBottom.current = isNearBottom(container);
+
+    if (fetching) return;
 
     if (container.scrollTop <= 50 && hasMore) {
       const prevScrollHeight = container.scrollHeight;
 
       loadMore().then(() => {
         const newScrollHeight = container.scrollHeight;
+
         container.scrollTop =
           newScrollHeight - prevScrollHeight + container.scrollTop;
+        shouldStickToBottom.current = isNearBottom(container);
       });
     }
-  }, [loadMore, hasMore, fetching]);
+  }, [loadMore, hasMore, fetching, isNearBottom]);
 
   // Handle initial scroll after messages load
   useEffect(() => {
@@ -59,6 +75,7 @@ const useScrollController = ({
       const performScroll = () => {
         scrollToBottom();
         hasInitialScroll.current = true;
+        shouldStickToBottom.current = true;
       };
 
       // 1: immediate attempt
@@ -87,17 +104,36 @@ const useScrollController = ({
     if (!container || !hasInitialScroll.current || messages.length === 0)
       return;
 
-    // Check if user is near bottom
-    const scrollPosition = container.scrollTop + container.clientHeight;
-    const threshold = container.scrollHeight * 0.9; // 90% of scroll height
-
-    if (scrollPosition >= threshold) {
+    if (shouldStickToBottom.current) {
       // scroll after a short delay to allow content to render
       setTimeout(() => {
         scrollToBottom();
       }, 10);
     }
-  }, [messages, scrollToBottom]);
+  }, [messages, hasTypingUsers, scrollToBottom]);
+
+  // keep bottom lock on container resize (input/footer height changes)
+  useEffect(() => {
+    const container = containerRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      if (!shouldStickToBottom.current) {
+        return;
+      }
+
+      scrollToBottom();
+    });
+
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [scrollToBottom]);
 
   return {
     containerRef,
