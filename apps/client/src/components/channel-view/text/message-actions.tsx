@@ -7,7 +7,7 @@ import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
 import { Pencil, Smile, Trash } from 'lucide-react';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
 const MAX_QUICK_EMOJIS = 4;
@@ -22,6 +22,10 @@ type TMessageActionsProps = {
 const MessageActions = memo(
   ({ onEdit, messageId, canManage, editable }: TMessageActionsProps) => {
     const { recentEmojis } = useRecentEmojis();
+    const recentEmojisToShow = useMemo(
+      () => recentEmojis.slice(0, MAX_QUICK_EMOJIS),
+      [recentEmojis]
+    );
 
     const onDeleteClick = useCallback(async () => {
       const choice = await requestConfirmation({
@@ -86,7 +90,7 @@ const MessageActions = memo(
         )}
         <Protect permission={Permission.REACT_TO_MESSAGES}>
           <div className="flex items-center space-x-0.5 border-l pl-1 gap-1">
-            {recentEmojis.slice(0, MAX_QUICK_EMOJIS).map((emoji) => (
+            {recentEmojisToShow.map((emoji) => (
               <button
                 key={emoji.name}
                 type="button"
