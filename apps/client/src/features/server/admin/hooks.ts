@@ -1,5 +1,6 @@
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { parseTrpcErrors, type TTrpcErrors } from '@/helpers/parse-trpc-errors';
+import { i18n } from '@/i18n';
 import { useForm } from '@/hooks/use-form';
 import { getTRPCClient } from '@/lib/trpc';
 import {
@@ -72,7 +73,7 @@ export const useAdminGeneral = () => {
         allowNewUsers: settings.allowNewUsers,
         enablePlugins: settings.enablePlugins
       });
-      toast.success('Settings updated');
+      toast.success(i18n.t('toasts.server.settingsUpdated'));
     } catch (error) {
       console.error('Error updating settings:', error);
       setErrors(parseTrpcErrors(error));
@@ -145,7 +146,7 @@ export const useAdminUpdates = () => {
     try {
       trpc.others.updateServer.mutate();
 
-      toast.success('Server update initiated');
+      toast.success(i18n.t('toasts.server.updateInitiated'));
     } catch (error) {
       console.error('Error updating server:', error);
       setErrors(parseTrpcErrors(error));
@@ -255,7 +256,7 @@ export const useAdminChannelGeneral = (channelId: number) => {
         private: channel?.private ?? false
       });
 
-      toast.success('Channel updated');
+      toast.success(i18n.t('toasts.server.channelUpdated'));
     } catch (error) {
       console.error('Error updating channel:', error);
       setErrors(parseTrpcErrors(error));
@@ -309,7 +310,7 @@ export const useAdminCategoryGeneral = (categoryId: number) => {
         name: category?.name ?? ''
       });
 
-      toast.success('Category updated');
+      toast.success(i18n.t('toasts.server.categoryUpdated'));
     } catch (error) {
       console.error('Error updating category:', error);
       setErrors(parseTrpcErrors(error));
@@ -452,7 +453,7 @@ export const useAdminStorage = () => {
         storageOverflowAction:
           values.storageOverflowAction as StorageOverflowAction
       });
-      toast.success('Storage settings updated');
+      toast.success(i18n.t('toasts.server.storageSettingsUpdated'));
     } catch (error) {
       console.error('Error updating storage settings:', error);
       setTrpcErrors(error);

@@ -23,6 +23,7 @@ import { useForm } from '@/hooks/use-form';
 import { cleanup } from '@/lib/trpc';
 import {} from '@/types';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TDialogBaseProps } from '../types';
 
 type TServerPasswordDialogProps = TDialogBaseProps & {
@@ -33,6 +34,7 @@ const savedPassword = getLocalStorageItem(LocalStorageKey.SERVER_PASSWORD);
 
 const ServerPasswordDialog = memo(
   ({ isOpen, close, handshakeHash }: TServerPasswordDialogProps) => {
+    const { t } = useTranslation();
     const { r, values, setTrpcErrors, errors } = useForm({
       password: savedPassword || ''
     });
@@ -67,10 +69,9 @@ const ServerPasswordDialog = memo(
       <AlertDialog open={isOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Enter the password</AlertDialogTitle>
+            <AlertDialogTitle>{t('dialogs.serverPassword.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This server is password protected. Please enter the password to
-              join.
+              {t('dialogs.serverPassword.description')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex flex-col gap-2">
@@ -83,7 +84,7 @@ const ServerPasswordDialog = memo(
               />
             </AutoFocus>
 
-            <Group label="Save password">
+            <Group label={t('dialogs.serverPassword.savePasswordLabel')}>
               <Switch
                 checked={savePassword}
                 onCheckedChange={setSavePassword}
@@ -91,13 +92,15 @@ const ServerPasswordDialog = memo(
             </Group>
           </div>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={onCancel}>
+              {t('dialogs.serverPassword.cancel')}
+            </AlertDialogCancel>
             <AutoFocus>
               <AlertDialogAction
                 onClick={onSubmit}
                 disabled={!values.password || loading}
               >
-                Join
+                {t('dialogs.serverPassword.join')}
               </AlertDialogAction>
             </AutoFocus>
           </AlertDialogFooter>

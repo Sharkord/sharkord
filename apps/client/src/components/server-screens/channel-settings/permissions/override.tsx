@@ -4,10 +4,12 @@ import { UserAvatar } from '@/components/user-avatar';
 import { useRoleById } from '@/features/server/roles/hooks';
 import { useUserById } from '@/features/server/users/hooks';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { i18n } from '@/i18n';
 import { getTRPCClient } from '@/lib/trpc';
 import { ChannelPermission } from '@sharkord/shared';
 import { Trash2 } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ChannelPermissionList } from './channel-permission-list';
 import type { TChannelPermission } from './types';
@@ -65,6 +67,7 @@ const Override = memo(
     setSelectedOverrideId,
     refetch
   }: TOverrideProps) => {
+    const { t } = useTranslation();
     const [localPermissions, setLocalPermissions] =
       useState<TChannelPermission[]>(permissions);
     const [overrideType, targetIdStr] = overrideId.split('-');
@@ -88,16 +91,16 @@ const Override = memo(
           channelId
         });
 
-        toast.success('Permission override deleted');
+        toast.success(i18n.t('toasts.permissions.overrideDeleted'));
         setSelectedOverrideId(undefined);
 
         await refetch();
       } catch (error) {
         toast.error(
-          getTrpcError(error, 'Failed to delete permission override')
+          getTrpcError(error, t('errors.channel.permissionOverrideDeleteFailed'))
         );
       }
-    }, [channelId, isRole, targetId, setSelectedOverrideId, refetch]);
+    }, [channelId, isRole, targetId, setSelectedOverrideId, refetch, t]);
 
     const onUpdateOverride = useCallback(async () => {
       const trpc = getTRPCClient();
@@ -120,14 +123,14 @@ const Override = memo(
           permissions: allowedPermissions
         });
 
-        toast.success('Permission override updated');
+        toast.success(i18n.t('toasts.permissions.overrideUpdated'));
         await refetch();
       } catch (error) {
         toast.error(
-          getTrpcError(error, 'Failed to update permission override')
+          getTrpcError(error, t('errors.channel.permissionOverrideUpdateFailed'))
         );
       }
-    }, [channelId, isRole, targetId, localPermissions, refetch]);
+    }, [channelId, isRole, targetId, localPermissions, refetch, t]);
 
     const onTogglePermission = useCallback((permission: ChannelPermission) => {
       setLocalPermissions((prevPermissions) =>

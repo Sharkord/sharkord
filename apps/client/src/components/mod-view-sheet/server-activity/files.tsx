@@ -6,10 +6,12 @@ import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TFile } from '@sharkord/shared';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useModViewContext } from '../context';
 
 const Files = memo(() => {
+  const { t } = useTranslation();
   const { files, refetch } = useModViewContext();
 
   const onRemoveClick = useCallback(
@@ -27,14 +29,14 @@ const Files = memo(() => {
         const trpc = getTRPCClient();
 
         await trpc.files.delete.mutate({ fileId });
-        toast.success('File deleted successfully');
+        toast.success(t('toasts.files.deletedSuccess'));
       } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to delete file'));
+        toast.error(getTrpcError(error, t('toasts.files.deleteFailed')));
       } finally {
         refetch();
       }
     },
-    [refetch]
+    [refetch, t]
   );
 
   const renderItem = useCallback(
@@ -62,7 +64,7 @@ const Files = memo(() => {
       items={files}
       renderItem={renderItem}
       searchFilter={searchFilter}
-      searchPlaceholder="Search files..."
+      searchPlaceholder={t('placeholders.searchFiles')}
       emptyMessage="No files uploaded."
       itemsPerPage={8}
     />

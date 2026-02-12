@@ -8,8 +8,7 @@ import {
 } from '@/components/ui/card';
 import { Group } from '@/components/ui/group';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';import { useTranslation } from 'react-i18next';import { Textarea } from '@/components/ui/textarea';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useAdminChannelGeneral } from '@/features/server/admin/hooks';
 import { memo } from 'react';
@@ -19,6 +18,7 @@ type TGeneralProps = {
 };
 
 const General = memo(({ channelId }: TGeneralProps) => {
+  const { t } = useTranslation();
   const { channel, loading, onChange, submit, errors } =
     useAdminChannelGeneral(channelId);
 
@@ -33,11 +33,11 @@ const General = memo(({ channelId }: TGeneralProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Group label="Name">
+        <Group label={t('labels.name')}>
           <Input
             value={channel.name}
             onChange={(e) => onChange('name', e.target.value)}
-            placeholder="Enter server name"
+            placeholder={t('placeholders.enterServerName')}
             error={errors.name}
           />
         </Group>
@@ -46,12 +46,12 @@ const General = memo(({ channelId }: TGeneralProps) => {
           <Textarea
             value={channel.topic ?? ''}
             onChange={(e) => onChange('topic', e.target.value || null)}
-            placeholder="Enter channel topic"
+            placeholder={t('placeholders.enterChannelTopic')}
           />
         </Group>
 
         <Group
-          label="Private"
+          label={t('labels.private')}
           description="Restricts access to this channel to specific roles and members."
         >
           <Switch

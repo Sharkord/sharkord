@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import type { TPluginSettingDefinition } from '@sharkord/shared';
 import { Save, Settings } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { TDialogBaseProps } from '../types';
 
@@ -33,15 +34,19 @@ type TSettingsListProps = {
 
 const SettingsList = memo(
   ({ definitions, selectedKey, onSelect, dirtyKeys }: TSettingsListProps) => {
+    const { t } = useTranslation();
+
     return (
       <div className="w-80 border-r flex flex-col">
         <div className="px-4 py-3 border-b bg-muted/30">
-          <h3 className="font-semibold text-sm">Settings</h3>
+          <h3 className="font-semibold text-sm">
+            {t('dialogs.pluginSettings.listTitle')}
+          </h3>
         </div>
         <div className="flex-1 overflow-y-auto">
           {definitions.length === 0 ? (
             <div className="p-4 text-sm text-muted-foreground text-center">
-              No settings available for this plugin
+              {t('dialogs.pluginSettings.listEmpty')}
             </div>
           ) : (
             <div className="p-2">
@@ -67,7 +72,7 @@ const SettingsList = memo(
                             : 'text-primary'
                         )}
                       >
-                        Edited
+                        {t('dialogs.pluginSettings.edited')}
                       </span>
                     )}
                   </div>
@@ -93,6 +98,7 @@ const SettingsList = memo(
 
 const PluginSettingsDialog = memo(
   ({ isOpen, close, pluginId, pluginName }: TPluginSettingsDialogProps) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(true);
     const [definitions, setDefinitions] = useState<TPluginSettingDefinition[]>(
       []
@@ -120,14 +126,16 @@ const PluginSettingsDialog = memo(
           setDraftValues(result.values);
           setSelectedKey(result.definitions[0]?.key ?? null);
         } catch (error) {
-          toast.error(getTrpcError(error, 'Failed to load plugin settings'));
+          toast.error(
+            getTrpcError(error, t('dialogs.pluginSettings.loadFailed'))
+          );
         } finally {
           setLoading(false);
         }
       };
 
       fetchSettings();
-    }, [isOpen, pluginId]);
+    }, [isOpen, pluginId, t]);
 
     const selectedSetting = useMemo(() => {
       return definitions.find((def) => def.key === selectedKey) || null;
@@ -254,19 +262,21 @@ const PluginSettingsDialog = memo(
         setInitialValues((prev) => ({ ...prev, ...updates }));
         setDraftValues((prev) => ({ ...prev, ...updates }));
 
-        toast.success('Settings saved');
+        toast.success(t('dialogs.pluginSettings.saveSuccess'));
       } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to save settings'));
+        toast.error(getTrpcError(error, t('dialogs.pluginSettings.saveFailed')));
       } finally {
         setIsSaving(false);
       }
-    }, [isSaving, dirtyKeys, definitions, draftValues, pluginId]);
+    }, [isSaving, dirtyKeys, definitions, draftValues, pluginId, t]);
 
     return (
       <Dialog open={isOpen} onOpenChange={close}>
         <DialogContent className="flex flex-col min-w-[90vw] h-[85vh] p-0 gap-0">
           <DialogHeader className="px-6 py-4 border-b">
-            <DialogTitle>Settings for {pluginName}</DialogTitle>
+            <DialogTitle>
+              {t('dialogs.pluginSettings.title', { pluginName })}
+            </DialogTitle>
           </DialogHeader>
 
           {loading ? (
@@ -277,7 +287,9 @@ const PluginSettingsDialog = memo(
             <div className="flex flex-1 items-center justify-center text-muted-foreground">
               <div className="text-center">
                 <Settings className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                <p className="text-lg">No configurable settings</p>
+                  <p className="text-lg">
+                    {t('dialogs.pluginSettings.noConfigTitle')}
+                  </p>
               </div>
             </div>
           ) : (
@@ -294,7 +306,9 @@ const PluginSettingsDialog = memo(
                   <div className="flex-1 flex items-center justify-center text-muted-foreground">
                     <div className="text-center">
                       <Settings className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                      <p className="text-lg">Select a setting to edit</p>
+                      <p className="text-lg">
+                        {t('dialogs.pluginSettings.selectSettingTitle')}
+                      </p>
                     </div>
                   </div>
                 ) : (
@@ -311,13 +325,13 @@ const PluginSettingsDialog = memo(
                             </p>
                           )}
                           <div className="text-xs text-muted-foreground mt-2">
-                            Key: {selectedSetting.key}
+                            {t('dialogs.pluginSettings.keyLabel')}: {selectedSetting.key}
                           </div>
                         </div>
 
                         <div className="space-y-2">
                           <Label htmlFor={`setting-${selectedSetting.key}`}>
-                            Value
+                            {t('dialogs.pluginSettings.valueLabel')}
                           </Label>
                           {renderSettingInput(selectedSetting)}
                         </div>
@@ -328,21 +342,31 @@ const PluginSettingsDialog = memo(
                       <div className="flex items-center justify-between gap-4">
                         <div className="text-xs text-muted-foreground">
                           {dirtyKeys.size > 0
-                            ? `${dirtyKeys.size} unsaved change${
-                                dirtyKeys.size === 1 ? '' : 's'
-                              }`
-                            : 'No unsaved changes'}
+                            ? t('dialogs.pluginSettings.unsavedChanges', {
+                                count: dirtyKeys.size,
+                                suffix:
+                                  dirtyKeys.size === 1
+                                    ? t('dialogs.pluginSettings.unsavedSuffixOne')
+                                    : t('dialogs.pluginSettings.unsavedSuffixMany'),
+                                ending:
+                                  dirtyKeys.size === 1
+                                    ? t('dialogs.pluginSettings.unsavedEndingOne')
+                                    : t('dialogs.pluginSettings.unsavedEndingMany')
+                              })
+                            : t('dialogs.pluginSettings.noUnsavedChanges')}
                         </div>
                         <div className="flex gap-3">
                           <Button variant="outline" onClick={close}>
-                            Close
+                            {t('dialogs.pluginSettings.close')}
                           </Button>
                           <Button
                             onClick={handleSave}
                             disabled={dirtyKeys.size === 0 || isSaving}
                           >
                             <Save className="w-4 h-4 mr-2" />
-                            {isSaving ? 'Saving...' : 'Save Changes'}
+                            {isSaving
+                              ? t('dialogs.pluginSettings.saving')
+                              : t('dialogs.pluginSettings.saveChanges')}
                           </Button>
                         </div>
                       </div>

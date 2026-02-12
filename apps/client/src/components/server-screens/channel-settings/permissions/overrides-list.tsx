@@ -5,6 +5,7 @@ import { useRoleById } from '@/features/server/roles/hooks';
 import { useUserById } from '@/features/server/users/hooks';
 import { getInitialsFromName } from '@/helpers/get-initials-from-name';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { i18n } from '@/i18n';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import type {
@@ -12,6 +13,7 @@ import type {
   TChannelUserPermission
 } from '@sharkord/shared';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SearchPopover } from './search-popover';
 import type { TChannelPermissionType } from './types';
@@ -173,6 +175,7 @@ const OverridesList = memo(
     setSelectedOverrideId,
     refetch
   }: TOverridesListProps) => {
+    const { t } = useTranslation();
     const hasRoles = rolePermissions.length > 0;
     const hasUsers = userPermissions.length > 0;
     const isEmpty = !hasRoles && !hasUsers;
@@ -205,16 +208,18 @@ const OverridesList = memo(
             isCreate: true
           });
 
-          toast.success('Permission override added');
+          toast.success(i18n.t('toasts.permissions.overrideAdded'));
 
           setSelectedOverrideId(`${type}-${targetId}`);
 
           await refetch();
         } catch (error) {
-          toast.error(getTrpcError(error, 'Failed to add permission override'));
+          toast.error(
+            getTrpcError(error, t('errors.channel.permissionOverrideAddFailed'))
+          );
         }
       },
-      [channelId, setSelectedOverrideId, refetch]
+      [channelId, setSelectedOverrideId, refetch, t]
     );
 
     return (

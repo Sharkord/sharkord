@@ -3,9 +3,11 @@ import { PaginatedList } from '@/components/paginated-list';
 import type { TMessage } from '@sharkord/shared';
 import { format } from 'date-fns';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useModViewContext } from '../context';
 
 const Messages = memo(() => {
+  const { t } = useTranslation();
   const { messages } = useModViewContext();
 
   const renderItem = useCallback(
@@ -37,7 +39,7 @@ const Messages = memo(() => {
       items={messages}
       renderItem={renderItem}
       searchFilter={searchFilter}
-      searchPlaceholder="Search in message..."
+      searchPlaceholder={t('placeholders.searchInMessage')}
       emptyMessage="No messages found."
       itemsPerPage={8}
     />

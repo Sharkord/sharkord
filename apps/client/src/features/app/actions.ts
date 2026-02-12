@@ -1,5 +1,6 @@
 import { getUrlFromServer } from '@/helpers/get-file-url';
 import type { TServerInfo } from '@sharkord/shared';
+import { i18n } from '@/i18n';
 import { toast } from 'sonner';
 import { setInfo } from '../server/actions';
 import { store } from '../store';
@@ -30,7 +31,7 @@ export const loadApp = async () => {
 
   if (!info) {
     console.error('Failed to load server info during app load');
-    toast.error('Failed to load server info');
+    toast.error(i18n.t('toasts.app.loadServerInfoFailed'));
     return;
   }
 

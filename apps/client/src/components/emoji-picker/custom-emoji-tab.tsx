@@ -2,6 +2,7 @@ import type { TEmojiItem } from '@/components/tiptap-input/types';
 import { Input } from '@/components/ui/input';
 import type { EmojiItem } from '@tiptap/extension-emoji';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { searchEmojis, toTEmojiItem } from './emoji-data';
 import { EmojiGrid } from './emoji-grid';
 import { useRecentEmojis } from './use-recent-emojis';
@@ -13,6 +14,7 @@ interface CustomEmojiTabProps {
 
 const CustomEmojiTab = memo(
   ({ customEmojis, onEmojiSelect }: CustomEmojiTabProps) => {
+    const { t } = useTranslation();
     const [search, setSearch] = useState('');
     const { addRecent } = useRecentEmojis();
 
@@ -45,9 +47,9 @@ const CustomEmojiTab = memo(
       return (
         <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-4 text-center">
           <span className="text-3xl mb-2">:(</span>
-          <p className="text-sm">No custom emojis available</p>
+          <p className="text-sm">{t('serverSettings.emojis.emptyList')}</p>
           <p className="text-xs mt-1">
-            Server admins can upload custom emojis in server settings
+            {t('serverSettings.emojis.emptyListHint')}
           </p>
         </div>
       );
@@ -57,7 +59,7 @@ const CustomEmojiTab = memo(
       <div className="flex flex-col h-full">
         <div className="p-3 border-b">
           <Input
-            placeholder="Search custom emojis..."
+            placeholder={t('placeholders.searchCustomEmojis')}
             value={search}
             onChange={handleSearchChange}
             className="h-9"

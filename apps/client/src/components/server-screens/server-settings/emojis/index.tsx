@@ -4,12 +4,14 @@ import { uploadFiles } from '@/helpers/upload-file';
 import { useFilePicker } from '@/hooks/use-file-picker';
 import { getTRPCClient } from '@/lib/trpc';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { EmojiList } from './emoji-list';
 import { UpdateEmoji } from './update-emoji';
 import { UploadEmoji } from './upload-emoji';
 
 const Emojis = memo(() => {
+  const { t } = useTranslation();
   const { emojis, refetch, loading } = useAdminEmojis();
   const openFilePicker = useFilePicker();
 
@@ -38,15 +40,15 @@ const Emojis = memo(() => {
       );
 
       refetch();
-      toast.success('Emoji created');
+      toast.success(t('serverSettings.emojis.toasts.created'));
     } catch (error) {
       console.error('Error uploading emoji:', error);
 
-      toast.error('Failed to upload emoji');
+      toast.error(t('serverSettings.emojis.toasts.uploadFailed'));
     } finally {
       setIsUploading(false);
     }
-  }, [openFilePicker, refetch]);
+  }, [openFilePicker, refetch, t]);
 
   const selectedEmoji = useMemo(
     () => emojis.find((e) => e.id === selectedEmojiId),

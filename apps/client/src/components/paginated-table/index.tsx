@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type TPaginatedTableProps<T> = {
   items: T[];
@@ -24,6 +25,7 @@ const PaginatedTableComponent = <T,>({
   searchPlaceholder = 'Search...',
   emptyMessage = 'No items found.'
 }: TPaginatedTableProps<T>) => {
+  const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -100,7 +102,9 @@ const PaginatedTableComponent = <T,>({
           {paginatedItems.length === 0 ? (
             <div className="px-4 py-8 text-center text-muted-foreground text-sm">
               {searchTerm.trim()
-                ? `No items found matching "${searchTerm}"`
+                ? t('pagination.noItemsFoundMatching', {
+                    searchTerm
+                  })
                 : emptyMessage}
             </div>
           ) : (
@@ -116,13 +120,18 @@ const PaginatedTableComponent = <T,>({
       <div className="flex justify-between items-center">
         <div className="text-xs text-muted-foreground">
           {filteredItems.length === 0 ? (
-            'No items found'
+            t('pagination.noItemsFound')
           ) : (
-            <>
-              Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
-              {Math.min(currentPage * itemsPerPage, filteredItems.length)} of{' '}
-              {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}
-            </>
+            t(
+              filteredItems.length === 1
+                ? 'pagination.showingRangeSingular'
+                : 'pagination.showingRangePlural',
+              {
+                start: (currentPage - 1) * itemsPerPage + 1,
+                end: Math.min(currentPage * itemsPerPage, filteredItems.length),
+                total: filteredItems.length
+              }
+            )
           )}
         </div>
 

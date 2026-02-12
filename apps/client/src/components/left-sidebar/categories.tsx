@@ -23,6 +23,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Permission } from '@sharkord/shared';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CategoryContextMenu } from '../context-menus/category';
 import { Dialog } from '../dialogs/dialogs';
@@ -35,6 +36,7 @@ type TCategoryProps = {
 };
 
 const Category = memo(({ categoryId }: TCategoryProps) => {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
   const category = useCategoryById(categoryId);
 
@@ -74,7 +76,11 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
             size="sm"
             icon={ChevronIcon}
             onClick={() => setExpanded((v) => !v)}
-            title={expanded ? 'Collapse category' : 'Expand category'}
+            title={
+              expanded
+                ? t('sidebar.categories.collapse')
+                : t('sidebar.categories.expand')
+            }
           />
           <CategoryContextMenu categoryId={category.id}>
             <span
@@ -93,7 +99,7 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
             size="sm"
             icon={Plus}
             onClick={onCreateChannelClick}
-            title="Create channel"
+            title={t('sidebar.categories.createChannel')}
           />
         </Protect>
       </div>
@@ -104,6 +110,7 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
 });
 
 const Categories = memo(() => {
+  const { t } = useTranslation();
   const can = useCan();
   const categories = useCategories();
   const categoryIds = useMemo(
@@ -144,10 +151,10 @@ const Categories = memo(() => {
 
         await trpc.categories.reorder.mutate({ categoryIds: reorderedIds });
       } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to reorder categories'));
+        toast.error(getTrpcError(error, t('toasts.categories.reorderFailed')));
       }
     },
-    [categoryIds]
+    [categoryIds, t]
   );
 
   return (

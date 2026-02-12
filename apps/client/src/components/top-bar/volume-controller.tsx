@@ -16,6 +16,7 @@ import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { useVoiceChannelAudioExternalStreams } from '@/features/server/voice/hooks';
 import { Headphones, Volume2, VolumeX } from 'lucide-react';
 import { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type AudioStreamControlProps = {
   userId?: number;
@@ -88,6 +89,7 @@ const AudioStreamControl = memo(
 );
 
 const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
+  const { t } = useTranslation();
   const voiceUsers = useVoiceUsersByChannelId(channelId);
   const externalAudioStreams = useVoiceChannelAudioExternalStreams(channelId);
   const { getUserVolumeKey, getExternalVolumeKey } = useVolumeControl();
@@ -156,7 +158,7 @@ const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
             ))}
             {audioStreams.length === 0 && (
               <div className="text-sm text-muted-foreground py-4 text-center">
-                No remote audio streams available.
+                {t('labels.noRemoteAudioStreams')}
               </div>
             )}
           </div>

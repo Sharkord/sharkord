@@ -10,6 +10,7 @@ import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
 import { Play } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { TDialogBaseProps } from '../types';
 import { Args } from './args';
@@ -24,6 +25,7 @@ type TPluginCommandsDialogProps = TDialogBaseProps & {
 
 const PluginCommandsDialog = memo(
   ({ isOpen, close, pluginId }: TPluginCommandsDialogProps) => {
+    const { t } = useTranslation();
     const commandsMap = usePluginCommands();
     const [selectedCommand, setSelectedCommand] = useState<string>('');
     const [commandArgs, setCommandArgs] = useState<Record<string, unknown>>({});
@@ -85,9 +87,16 @@ const PluginCommandsDialog = memo(
           data: response
         });
 
-        toast.success(`Command '${selectedCommand}' executed successfully`);
+        toast.success(
+          t('dialogs.pluginCommands.executeSuccess', {
+            commandName: selectedCommand
+          })
+        );
       } catch (error) {
-        const errorMessage = getTrpcError(error, 'Failed to execute command');
+        const errorMessage = getTrpcError(
+          error,
+          t('dialogs.pluginCommands.executeFailed')
+        );
 
         setCommandResponse({
           success: false,
@@ -98,7 +107,7 @@ const PluginCommandsDialog = memo(
       } finally {
         setIsExecuting(false);
       }
-    }, [pluginId, selectedCommand, commandArgs]);
+    }, [pluginId, selectedCommand, commandArgs, t]);
 
     const canExecute = useMemo(() => {
       if (!selectedCommandInfo) return false;
@@ -118,7 +127,9 @@ const PluginCommandsDialog = memo(
       <Dialog open={isOpen} onOpenChange={close}>
         <DialogContent className="flex flex-col min-w-[90vw] h-[85vh] p-0 gap-0">
           <DialogHeader className="px-6 py-4 border-b">
-            <DialogTitle>Available Commands For {pluginId}</DialogTitle>
+            <DialogTitle>
+              {t('dialogs.pluginCommands.title', { pluginId })}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="flex flex-1 overflow-hidden">
@@ -133,7 +144,9 @@ const PluginCommandsDialog = memo(
                 <div className="flex-1 flex items-center justify-center text-muted-foreground">
                   <div className="text-center">
                     <Play className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                    <p className="text-lg">Select a command to execute</p>
+                    <p className="text-lg">
+                      {t('dialogs.pluginCommands.selectCommandTitle')}
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -161,7 +174,7 @@ const PluginCommandsDialog = memo(
                       ) : (
                         <div className="p-4 border rounded-lg bg-muted/30">
                           <p className="text-sm text-muted-foreground">
-                            This command does not require any arguments.
+                            {t('dialogs.pluginCommands.noArgs')}
                           </p>
                         </div>
                       )}
@@ -175,14 +188,16 @@ const PluginCommandsDialog = memo(
                   <div className="border-t p-4 bg-muted/30">
                     <div className="flex justify-start gap-4">
                       <Button variant="outline" onClick={close}>
-                        Close
+                        {t('dialogs.pluginCommands.close')}
                       </Button>
                       <Button
                         onClick={handleExecute}
                         disabled={!canExecute || isExecuting}
                       >
                         <Play className="w-4 h-4 mr-2" />
-                        {isExecuting ? 'Executing...' : 'Execute Command'}
+                        {isExecuting
+                          ? t('dialogs.pluginCommands.executing')
+                          : t('dialogs.pluginCommands.execute')}
                       </Button>
                     </div>
                   </div>

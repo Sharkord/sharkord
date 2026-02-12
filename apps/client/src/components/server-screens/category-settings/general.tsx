@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/card';
 import { Group } from '@/components/ui/group';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from 'react-i18next';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useAdminCategoryGeneral } from '@/features/server/admin/hooks';
 import { memo } from 'react';
@@ -17,6 +18,7 @@ type TGeneralProps = {
 };
 
 const General = memo(({ categoryId }: TGeneralProps) => {
+  const { t } = useTranslation();
   const { category, loading, onChange, submit, errors } =
     useAdminCategoryGeneral(categoryId);
 
@@ -31,11 +33,11 @@ const General = memo(({ categoryId }: TGeneralProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Group label="Name">
+        <Group label={t('labels.name')}>
           <Input
             value={category.name}
             onChange={(e) => onChange('name', e.target.value)}
-            placeholder="Enter category name"
+            placeholder={t('placeholders.enterCategoryName')}
             error={errors.name}
           />
         </Group>

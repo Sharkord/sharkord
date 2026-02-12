@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/select';
 import type { TCommandInfo } from '@sharkord/shared';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type TArgsProps = {
   selectedCommandInfo: TCommandInfo;
@@ -18,6 +19,8 @@ type TArgsProps = {
 
 const Args = memo(
   ({ selectedCommandInfo, commandArgs, handleArgChange }: TArgsProps) => {
+    const { t } = useTranslation();
+
     return (
       <div className="space-y-4">
         {(selectedCommandInfo.args || []).map((arg) => (
@@ -39,11 +42,17 @@ const Args = memo(
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select value..." />
+                  <SelectValue
+                    placeholder={t('dialogs.pluginCommands.argBooleanPlaceholder')}
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="true">True</SelectItem>
-                  <SelectItem value="false">False</SelectItem>
+                  <SelectItem value="true">
+                    {t('dialogs.pluginCommands.argTrue')}
+                  </SelectItem>
+                  <SelectItem value="false">
+                    {t('dialogs.pluginCommands.argFalse')}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             ) : (
@@ -57,7 +66,9 @@ const Args = memo(
                 onChange={(e) =>
                   handleArgChange(arg.name, e.target.value, arg.type)
                 }
-                placeholder={`Enter ${arg.name}...`}
+                placeholder={t('dialogs.pluginCommands.argInputPlaceholder', {
+                  name: arg.name
+                })}
               />
             )}
           </Group>

@@ -6,6 +6,7 @@ import { getFileUrl } from '@/helpers/get-file-url';
 import type { TJoinedEmoji } from '@sharkord/shared';
 import { Plus, Search } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Emoji } from './emoji';
 
 type TEmojiListProps = {
@@ -24,6 +25,7 @@ const EmojiList = memo(
     uploadEmoji,
     isUploading
   }: TEmojiListProps) => {
+    const { t } = useTranslation();
     const [search, setSearch] = useState('');
 
     const filteredEmojis = useMemo(() => {
@@ -40,7 +42,9 @@ const EmojiList = memo(
       <Card className="w-80 flex-shrink-0">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Emojis</CardTitle>
+            <CardTitle className="text-base">
+              {t('serverSettings.emojis.title')}
+            </CardTitle>
             <Button
               size="icon"
               variant="ghost"
@@ -59,7 +63,7 @@ const EmojiList = memo(
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search emojis..."
+              placeholder={t('serverSettings.emojis.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -68,7 +72,9 @@ const EmojiList = memo(
           <div className="max-h-96 overflow-y-auto">
             {filteredEmojis.length === 0 ? (
               <div className="py-8 text-center text-sm text-muted-foreground">
-                {search ? 'No emojis found' : 'No custom emojis yet'}
+                {search
+                  ? t('serverSettings.emojis.emptySearch')
+                  : t('serverSettings.emojis.emptyList')}
               </div>
             ) : (
               <div className="grid grid-cols-6 gap-2">

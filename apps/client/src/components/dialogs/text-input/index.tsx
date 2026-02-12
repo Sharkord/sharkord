@@ -11,6 +11,7 @@ import {
 import { AutoFocus } from '@/components/ui/auto-focus';
 import { Input } from '@/components/ui/input';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TDialogBaseProps } from '../types';
 
 type TTextInputDialogProps = TDialogBaseProps & {
@@ -38,6 +39,7 @@ const TextInputDialog = memo(
     allowEmpty,
     type
   }: TTextInputDialogProps) => {
+    const { t } = useTranslation();
     const [value, setValue] = useState<string | undefined>();
 
     const onSubmit = useCallback(() => {
@@ -70,14 +72,14 @@ const TextInputDialog = memo(
           </AutoFocus>
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel onClick={onCancelClick}>
-              {cancelLabel ?? 'Cancel'}
+              {cancelLabel ?? t('dialogs.textInput.cancel')}
             </AlertDialogCancel>
             <AutoFocus>
               <AlertDialogAction
                 onClick={onSubmit}
                 disabled={!allowEmpty && !value}
               >
-                {confirmLabel ?? 'Confirm'}
+                {confirmLabel ?? t('dialogs.textInput.confirm')}
               </AlertDialogAction>
             </AutoFocus>
           </AlertDialogFooter>

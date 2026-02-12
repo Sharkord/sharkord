@@ -1,23 +1,28 @@
 import { Button } from '@/components/ui/button';
 import { setDisconnectInfo } from '@/features/server/actions';
 import type { TDisconnectInfo } from '@/features/server/types';
+import { useLocaleFormat } from '@/hooks/use-locale-format';
 import { DisconnectCode } from '@sharkord/shared';
 import { AlertCircle, Gavel, RefreshCw, WifiOff } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type TDisconnectedProps = {
   info: TDisconnectInfo;
 };
 
 const Disconnected = memo(({ info }: TDisconnectedProps) => {
+  const { formatDateTime } = useLocaleFormat();
+  const { t } = useTranslation();
+
   const disconnectType = useMemo(() => {
     const code = info.code;
 
     if (code === DisconnectCode.KICKED) {
       return {
         icon: <AlertCircle className="h-8 w-8 text-yellow-500" />,
-        title: 'You have been kicked',
-        message: info.reason || 'No reason provided.',
+        title: t('disconnected.kickedTitle'),
+        message: info.reason || t('disconnected.noReasonProvided'),
         canReconnect: true
       };
     }
@@ -25,19 +30,19 @@ const Disconnected = memo(({ info }: TDisconnectedProps) => {
     if (code === DisconnectCode.BANNED) {
       return {
         icon: <Gavel className="h-8 w-8 text-red-500" />,
-        title: 'You have been banned',
-        message: info.reason || 'No reason provided.',
+        title: t('disconnected.bannedTitle'),
+        message: info.reason || t('disconnected.noReasonProvided'),
         canReconnect: false
       };
     }
 
     return {
       icon: <WifiOff className="h-8 w-8 text-gray-500" />,
-      title: 'Connection lost',
-      message: 'Lost connection to the server unexpectedly.',
+      title: t('disconnected.connectionLostTitle'),
+      message: t('disconnected.connectionLostMessage'),
       canReconnect: true
     };
-  }, [info]);
+  }, [info, t]);
 
   const handleReconnect = useCallback(() => {
     setDisconnectInfo(undefined);
@@ -63,17 +68,21 @@ const Disconnected = memo(({ info }: TDisconnectedProps) => {
             className="inline-flex items-center gap-2"
           >
             <RefreshCw className="h-4 w-4" />
-            Go to Connect Screen
+            {t('disconnected.goToConnectButton')}
           </Button>
         )}
 
         <details className="text-xs text-muted-foreground">
           <summary className="cursor-pointer hover:text-foreground">
-            Details
+            {t('disconnected.details')}
           </summary>
           <div className="mt-2 space-y-1">
-            <div>Code: {info.code}</div>
-            <div>Time: {info.time.toLocaleString()}</div>
+            <div>
+              {t('disconnected.codeLabel')}: {info.code}
+            </div>
+            <div>
+              {t('disconnected.timeLabel')}: {formatDateTime(info.time)}
+            </div>
           </div>
         </details>
       </div>

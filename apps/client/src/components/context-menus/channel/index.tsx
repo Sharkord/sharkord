@@ -11,6 +11,7 @@ import { useCan } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TChannelContextMenuProps = {
@@ -20,6 +21,7 @@ type TChannelContextMenuProps = {
 
 const ChannelContextMenu = memo(
   ({ children, channelId }: TChannelContextMenuProps) => {
+    const { t } = useTranslation();
     const can = useCan();
 
     const onDeleteClick = useCallback(async () => {
@@ -37,11 +39,11 @@ const ChannelContextMenu = memo(
 
       try {
         await trpc.channels.delete.mutate({ channelId });
-        toast.success('Channel deleted');
+        toast.success(t('toasts.channels.deleted'));
       } catch {
-        toast.error('Failed to delete channel');
+        toast.error(t('toasts.channels.deleteFailed'));
       }
-    }, [channelId]);
+    }, [channelId, t]);
 
     const onEditClick = useCallback(() => {
       openServerScreen(ServerScreen.CHANNEL_SETTINGS, { channelId });

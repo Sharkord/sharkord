@@ -25,6 +25,7 @@ import { useForm } from '@/hooks/use-form';
 import { Resolution } from '@/types';
 import { Info } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useAvailableDevices } from './hooks/use-available-devices';
 import ResolutionFpsControl from './resolution-fps-control';
@@ -32,6 +33,7 @@ import ResolutionFpsControl from './resolution-fps-control';
 const DEFAULT_NAME = 'default';
 
 const Devices = memo(() => {
+  const { t } = useTranslation();
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const {
     inputDevices,
@@ -43,8 +45,8 @@ const Devices = memo(() => {
 
   const saveDeviceSettings = useCallback(() => {
     saveDevices(values);
-    toast.success('Device settings saved');
-  }, [saveDevices, values]);
+    toast.success(t('userSettings.devices.toasts.saved'));
+  }, [saveDevices, values, t]);
 
   if (availableDevicesLoading || devicesLoading) {
     return <LoadingCard className="h-[600px]" />;
@@ -53,9 +55,9 @@ const Devices = memo(() => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Devices</CardTitle>
+        <CardTitle>{t('userSettings.devices.title')}</CardTitle>
         <CardDescription>
-          Manage your peripheral devices and their settings.
+          {t('userSettings.devices.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -63,18 +65,19 @@ const Devices = memo(() => {
           <Alert variant="default">
             <Info />
             <AlertDescription>
-              You are in a voice channel, changes will only take effect after
-              you leave and rejoin the channel.
+              {t('userSettings.devices.voiceChannelWarning')}
             </AlertDescription>
           </Alert>
         )}
-        <Group label="Microphone">
+        <Group label={t('userSettings.devices.microphoneLabel')}>
           <Select
             onValueChange={(value) => onChange('microphoneId', value)}
             value={values.microphoneId}
           >
             <SelectTrigger className="w-[500px]">
-              <SelectValue placeholder="Select the input device" />
+              <SelectValue
+                placeholder={t('userSettings.devices.selectInputPlaceholder')}
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -83,7 +86,8 @@ const Devices = memo(() => {
                     key={device?.deviceId}
                     value={device?.deviceId || DEFAULT_NAME}
                   >
-                    {device?.label.trim() || 'Default Microphone'}
+                    {device?.label.trim() ||
+                      t('userSettings.devices.defaultMicrophone')}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -91,7 +95,7 @@ const Devices = memo(() => {
           </Select>
 
           <div className="flex gap-8">
-            <Group label="Echo cancellation">
+            <Group label={t('userSettings.devices.echoCancellationLabel')}>
               <Switch
                 checked={!!values.echoCancellation}
                 onCheckedChange={(checked) =>
@@ -100,7 +104,7 @@ const Devices = memo(() => {
               />
             </Group>
 
-            <Group label="Noise suppression">
+            <Group label={t('userSettings.devices.noiseSuppressionLabel')}>
               <Switch
                 checked={!!values.noiseSuppression}
                 onCheckedChange={(checked) =>
@@ -109,7 +113,7 @@ const Devices = memo(() => {
               />
             </Group>
 
-            <Group label="Automatic gain control">
+            <Group label={t('userSettings.devices.autoGainControlLabel')}>
               <Switch
                 checked={!!values.autoGainControl}
                 onCheckedChange={(checked) =>
@@ -120,13 +124,15 @@ const Devices = memo(() => {
           </div>
         </Group>
 
-        <Group label="Webcam">
+        <Group label={t('userSettings.devices.webcamLabel')}>
           <Select
             onValueChange={(value) => onChange('webcamId', value)}
             value={values.webcamId}
           >
             <SelectTrigger className="w-[500px]">
-              <SelectValue placeholder="Select the input device" />
+              <SelectValue
+                placeholder={t('userSettings.devices.selectInputPlaceholder')}
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -135,7 +141,8 @@ const Devices = memo(() => {
                     key={device?.deviceId}
                     value={device?.deviceId || DEFAULT_NAME}
                   >
-                    {device?.label.trim() || 'Default Webcam'}
+                    {device?.label.trim() ||
+                      t('userSettings.devices.defaultWebcam')}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -152,7 +159,7 @@ const Devices = memo(() => {
           />
         </Group>
 
-        <Group label="Screen Sharing">
+        <Group label={t('userSettings.devices.screenSharingLabel')}>
           <ResolutionFpsControl
             framerate={values.screenFramerate}
             resolution={values.screenResolution}
@@ -164,9 +171,11 @@ const Devices = memo(() => {
         </Group>
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
-            Cancel
+            {t('userSettings.actions.cancel')}
           </Button>
-          <Button onClick={saveDeviceSettings}>Save Changes</Button>
+          <Button onClick={saveDeviceSettings}>
+            {t('userSettings.actions.saveChanges')}
+          </Button>
         </div>
       </CardContent>
     </Card>

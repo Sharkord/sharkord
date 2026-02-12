@@ -30,11 +30,13 @@ import {
   StorageOverflowAction
 } from '@sharkord/shared';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DiskMetrics } from './metrics';
 
 const FILE_SIZE_STEP = 5 * 1024 * 1024; // 5MB
 
 const Storage = memo(() => {
+  const { t } = useTranslation();
   const { values, loading, submit, onChange, labels, diskMetrics } =
     useAdminStorage();
 
@@ -45,20 +47,17 @@ const Storage = memo(() => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Storage</CardTitle>
+        <CardTitle>{t('serverSettings.storage.title')}</CardTitle>
         <CardDescription>
-          Manage your server's storage settings. Control how data is stored,
-          accessed, and managed. Here you can configure storage limits, backup
-          options, and data retention policies to ensure optimal performance and
-          reliability.
+          {t('serverSettings.storage.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <DiskMetrics diskMetrics={diskMetrics!} />
 
         <Group
-          label="Allow uploads"
-          description="Allows users to upload files to the server. Existing files won't be affected."
+          label={t('serverSettings.storage.allowUploadsLabel')}
+          description={t('serverSettings.storage.allowUploadsDescription')}
         >
           <Switch
             checked={!!values.storageUploadEnabled}
@@ -69,9 +68,9 @@ const Storage = memo(() => {
         </Group>
 
         <Group
-          label="Quota"
-          description="The total amount of storage space allocated to the server."
-          help="This is not a hard limit, meaning that files will still be written to disk temporarily even if the quota is exceeded. The overflow action will be applied after the upload is complete. Make sure you have more disk space available than the quota you set here."
+          label={t('serverSettings.storage.quotaLabel')}
+          description={t('serverSettings.storage.quotaDescription')}
+          help={t('serverSettings.storage.quotaHelp')}
         >
           <Slider
             className="w-96"
@@ -90,8 +89,8 @@ const Storage = memo(() => {
         </Group>
 
         <Group
-          label="Max file size"
-          description="The maximum size of a single file that can be uploaded to the server."
+          label={t('serverSettings.storage.maxFileSizeLabel')}
+          description={t('serverSettings.storage.maxFileSizeDescription')}
         >
           <Slider
             className="w-96"
@@ -113,8 +112,8 @@ const Storage = memo(() => {
         </Group>
 
         <Group
-          label="Quota per user"
-          description="The maximum amount of storage space each user can use on the server. You can also configure quotas on a per-role basis in the Roles settings, which will override this global setting for users with that specific role. Use 0 for unlimited"
+          label={t('serverSettings.storage.quotaPerUserLabel')}
+          description={t('serverSettings.storage.quotaPerUserDescription')}
         >
           <Slider
             className="w-96"
@@ -136,8 +135,8 @@ const Storage = memo(() => {
         </Group>
 
         <Group
-          label="Overflow action"
-          description="Action to take when the global storage quota is exceeded."
+          label={t('serverSettings.storage.overflowActionLabel')}
+          description={t('serverSettings.storage.overflowActionDescription')}
         >
           <Select
             onValueChange={(value) =>
@@ -147,7 +146,9 @@ const Storage = memo(() => {
             disabled={!values.storageUploadEnabled}
           >
             <SelectTrigger className="w-[230px]">
-              <SelectValue placeholder="Select the polling interval" />
+              <SelectValue
+                placeholder={t('serverSettings.storage.overflowActionPlaceholder')}
+              />
             </SelectTrigger>
             <SelectContent>
               {Object.entries(StorageOverflowAction).map(([key, value]) => (
@@ -161,10 +162,10 @@ const Storage = memo(() => {
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
-            Cancel
+            {t('serverSettings.actions.cancel')}
           </Button>
           <Button onClick={submit} disabled={loading}>
-            Save Changes
+            {t('serverSettings.actions.saveChanges')}
           </Button>
         </div>
       </CardContent>

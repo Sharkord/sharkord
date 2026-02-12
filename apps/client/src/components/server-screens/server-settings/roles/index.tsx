@@ -2,10 +2,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { LoadingCard } from '@/components/ui/loading-card';
 import { useAdminRoles } from '@/features/server/admin/hooks';
 import { memo, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RolesList } from './roles-list';
 import { UpdateRole } from './update-role';
 
 const Roles = memo(() => {
+  const { t } = useTranslation();
   const { roles, refetch, loading } = useAdminRoles();
 
   const [selectedRoleId, setSelectedRoleId] = useState<number | undefined>();
@@ -37,7 +39,7 @@ const Roles = memo(() => {
       ) : (
         <Card className="flex flex-1 items-center justify-center">
           <CardContent className="py-12 text-center text-muted-foreground">
-            Select a role to edit or create a new one
+            {t('serverSettings.roles.emptySelection')}
           </CardContent>
         </Card>
       )}

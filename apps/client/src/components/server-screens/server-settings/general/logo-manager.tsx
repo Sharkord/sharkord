@@ -5,6 +5,7 @@ import { useFilePicker } from '@/hooks/use-file-picker';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TFile } from '@sharkord/shared';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TLogoManagerProps = {
@@ -13,6 +14,7 @@ type TLogoManagerProps = {
 };
 
 const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
+  const { t } = useTranslation();
   const openFilePicker = useFilePicker();
 
   const removeLogo = useCallback(async () => {
@@ -22,12 +24,12 @@ const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
       await trpc.others.changeLogo.mutate({ fileId: undefined });
       await refetch();
 
-      toast.success('Logo removed successfully!');
+      toast.success(t('serverSettings.general.toasts.logoRemovedSuccess'));
     } catch (error) {
       console.error(error);
-      toast.error('Could not remove logo. Please try again.');
+      toast.error(t('serverSettings.general.toasts.logoRemovedError'));
     }
-  }, [refetch]);
+  }, [refetch, t]);
 
   const onLogoClick = useCallback(async () => {
     const trpc = getTRPCClient();
@@ -38,21 +40,21 @@ const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
       const temporaryFile = await uploadFile(file);
 
       if (!temporaryFile) {
-        toast.error('Could not upload file. Please try again.');
+        toast.error(t('serverSettings.general.toasts.logoUploadError'));
         return;
       }
 
       await trpc.others.changeLogo.mutate({ fileId: temporaryFile.id });
       await refetch();
 
-      toast.success('Logo updated successfully!');
+      toast.success(t('serverSettings.general.toasts.logoUpdatedSuccess'));
     } catch {
-      toast.error('Could not update logo. Please try again.');
+      toast.error(t('serverSettings.general.toasts.logoUpdatedError'));
     }
-  }, [openFilePicker, refetch]);
+  }, [openFilePicker, refetch, t]);
 
   return (
-    <Group label="Logo">
+    <Group label={t('serverSettings.general.logoLabel')}>
       <ImagePicker
         image={logo}
         onImageClick={onLogoClick}

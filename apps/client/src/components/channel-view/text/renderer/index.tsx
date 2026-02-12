@@ -1,6 +1,7 @@
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { useOwnUserId } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
+import { i18n } from '@/i18n';
 import { getTRPCClient } from '@/lib/trpc';
 import { imageExtensions, type TJoinedMessage } from '@sharkord/shared';
 import parse from 'html-react-parser';
@@ -52,9 +53,9 @@ const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
         fileId
       });
 
-      toast.success('File deleted');
+      toast.success(i18n.t('toasts.files.deletedSuccess'));
     } catch {
-      toast.error('Failed to delete file');
+      toast.error(i18n.t('toasts.files.deleteFailed'));
     }
   }, []);
 

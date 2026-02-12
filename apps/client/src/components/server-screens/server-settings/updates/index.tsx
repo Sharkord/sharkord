@@ -13,8 +13,10 @@ import { closeServerScreens } from '@/features/server-screens/actions';
 import { useAdminUpdates } from '@/features/server/admin/hooks';
 import { ArrowUpCircle, CheckCircle, Download, X } from 'lucide-react';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const Updates = memo(() => {
+  const { t } = useTranslation();
   const {
     loading,
     hasUpdate,
@@ -31,34 +33,36 @@ const Updates = memo(() => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Updates</CardTitle>
+        <CardTitle>{t('serverSettings.updates.title')}</CardTitle>
         <CardDescription>
-          Check for and install updates to keep your Sharkord server running
-          with the latest features and security improvements.
+          {t('serverSettings.updates.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Group label="Current Version">
+        <Group label={t('serverSettings.updates.currentVersion')}>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CheckCircle className="h-4 w-4" />
-            <span className="font-mono">{currentVersion || 'Unknown'}</span>
+            <span className="font-mono">
+              {currentVersion || t('serverSettings.updates.unknown')}
+            </span>
           </div>
         </Group>
 
-        <Group label="Latest Version">
+        <Group label={t('serverSettings.updates.latestVersion')}>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <ArrowUpCircle className="h-4 w-4" />
-            <span className="font-mono">{latestVersion || 'Unknown'}</span>
+            <span className="font-mono">
+              {latestVersion || t('serverSettings.updates.unknown')}
+            </span>
           </div>
         </Group>
 
         {!canUpdate ? (
           <Alert variant="destructive">
             <X />
-            <AlertTitle>Updates Not Supported</AlertTitle>
+            <AlertTitle>{t('serverSettings.updates.notSupportedTitle')}</AlertTitle>
             <AlertDescription>
-              Automatic updates are not supported in this environment. Please
-              refer to the documentation for manual update instructions.
+              {t('serverSettings.updates.notSupportedDescription')}
             </AlertDescription>
           </Alert>
         ) : (
@@ -66,11 +70,11 @@ const Updates = memo(() => {
             {hasUpdate && (
               <Alert>
                 <Download />
-                <AlertTitle>Update Available</AlertTitle>
+                <AlertTitle>{t('serverSettings.updates.availableTitle')}</AlertTitle>
                 <AlertDescription>
-                  A new version ({latestVersion}) is available for download.
-                  Updating will restart the server and may cause temporary
-                  downtime.
+                  {t('serverSettings.updates.availableDescription', {
+                    version: latestVersion
+                  })}
                 </AlertDescription>
               </Alert>
             )}
@@ -78,9 +82,9 @@ const Updates = memo(() => {
             {!hasUpdate && !loading && (
               <Alert variant="info">
                 <CheckCircle />
-                <AlertTitle>Up to Date</AlertTitle>
+                <AlertTitle>{t('serverSettings.updates.upToDateTitle')}</AlertTitle>
                 <AlertDescription>
-                  Your server is running the latest version of Sharkord.
+                  {t('serverSettings.updates.upToDateDescription')}
                 </AlertDescription>
               </Alert>
             )}
@@ -89,13 +93,15 @@ const Updates = memo(() => {
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
-            Close
+            {t('serverSettings.actions.close')}
           </Button>
           <Button
             onClick={update}
             disabled={loading || !hasUpdate || !canUpdate}
           >
-            {hasUpdate ? 'Update Server' : 'No Updates Available'}
+            {hasUpdate
+              ? t('serverSettings.updates.updateServer')
+              : t('serverSettings.updates.noUpdates')}
           </Button>
         </div>
       </CardContent>

@@ -13,6 +13,7 @@ import {
 } from '@sharkord/shared';
 import { gitHubEmojis } from '@tiptap/extension-emoji';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TMessageReactionsProps = {
@@ -31,6 +32,7 @@ type TAggregatedReaction = {
 
 const MessageReactions = memo(
   ({ messageId, reactions }: TMessageReactionsProps) => {
+    const { t } = useTranslation();
     const ownUserId = useOwnUserId();
     const can = useCan();
     const usernames = useUsernames();
@@ -47,10 +49,12 @@ const MessageReactions = memo(
             emoji
           });
         } catch (error) {
-          toast.error(getTrpcError(error, 'Failed to toggle reaction'));
+          toast.error(
+            getTrpcError(error, t('toasts.messages.reactionToggleFailed'))
+          );
         }
       },
-      [messageId, ownUserId]
+      [messageId, ownUserId, t]
     );
 
     const renderEmoji = useCallback(

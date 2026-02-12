@@ -25,6 +25,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import { type TJoinedUser } from '@sharkord/shared';
 import { Info } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { TDialogBaseProps } from '../types';
 
@@ -35,6 +36,7 @@ type TAssignRoleDialogProps = TDialogBaseProps & {
 
 const AssignRoleDialog = memo(
   ({ isOpen, close, user, refetch }: TAssignRoleDialogProps) => {
+    const { t } = useTranslation();
     const ownUserId = useOwnUserId();
     const roles = useRoles();
     const [selectedRoleId, setSelectedRoleId] = useState<number>(0);
@@ -53,7 +55,7 @@ const AssignRoleDialog = memo(
 
     const onSubmit = useCallback(async () => {
       if (selectedRoleId === 0) {
-        toast.error('Please select a role');
+        toast.error(t('toasts.roles.assignSelectRole'));
         return;
       }
 
@@ -65,13 +67,13 @@ const AssignRoleDialog = memo(
           roleId: selectedRoleId
         });
 
-        toast.success('Role assigned successfully');
+        toast.success(t('toasts.roles.assignedSuccess'));
         close();
         refetch();
       } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to assign role'));
+        toast.error(getTrpcError(error, t('toasts.roles.assignFailed')));
       }
-    }, [user.id, selectedRoleId, close, refetch]);
+    }, [user.id, selectedRoleId, close, refetch, t]);
 
     return (
       <AlertDialog open={isOpen}>

@@ -43,6 +43,7 @@ import {
 } from '@sharkord/shared';
 import { Hash, Volume2 } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ChannelContextMenu } from '../context-menus/channel';
 import { ExternalStream } from './external-stream';
@@ -162,6 +163,7 @@ type TChannelProps = {
 };
 
 const Channel = memo(({ channelId, isSelected }: TChannelProps) => {
+  const { t } = useTranslation();
   const channel = useChannelById(channelId);
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const channelCan = useChannelCan(channelId);
@@ -189,7 +191,7 @@ const Channel = memo(({ channelId, isSelected }: TChannelProps) => {
       if (!response) {
         // joining voice failed
         setSelectedChannelId(undefined);
-        toast.error('Failed to join voice channel');
+        toast.error(t('toasts.channels.joinVoiceFailed'));
 
         return;
       }
@@ -198,10 +200,10 @@ const Channel = memo(({ channelId, isSelected }: TChannelProps) => {
         await init(response, channelId);
       } catch {
         setSelectedChannelId(undefined);
-        toast.error('Failed to initialize voice connection');
+        toast.error(t('toasts.channels.initVoiceFailed'));
       }
     }
-  }, [channelId, channel?.type, init, currentVoiceChannelId]);
+  }, [channelId, channel?.type, init, currentVoiceChannelId, t]);
 
   if (!channel) {
     return null;
@@ -251,6 +253,7 @@ type TChannelsProps = {
 };
 
 const Channels = memo(({ categoryId }: TChannelsProps) => {
+  const { t } = useTranslation();
   const channels = useChannelsByCategoryId(categoryId);
   const selectedChannelId = useSelectedChannelId();
   const channelIds = useMemo(() => channels.map((ch) => ch.id), [channels]);
@@ -292,10 +295,10 @@ const Channels = memo(({ categoryId }: TChannelsProps) => {
           channelIds: reorderedIds
         });
       } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to reorder channels'));
+        toast.error(getTrpcError(error, t('toasts.channels.reorderFailed')));
       }
     },
-    [categoryId, channelIds]
+    [categoryId, channelIds, t]
   );
 
   return (

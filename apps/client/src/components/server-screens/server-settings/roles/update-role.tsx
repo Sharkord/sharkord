@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Tooltip } from '@/components/ui/tooltip';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { i18n } from '@/i18n';
 import { useForm } from '@/hooks/use-form';
 import { getTRPCClient } from '@/lib/trpc';
 import { OWNER_ROLE_ID, type TJoinedRole } from '@sharkord/shared';
@@ -43,11 +44,11 @@ const UpdateRole = memo(
 
       try {
         await trpc.roles.delete.mutate({ roleId: selectedRole.id });
-        toast.success('Role deleted');
+        toast.success(i18n.t('toasts.roles.deleted'));
         refetch();
         setSelectedRoleId(undefined);
       } catch {
-        toast.error('Failed to delete role');
+        toast.error(i18n.t('toasts.roles.deleteFailed'));
       }
     }, [selectedRole.id, refetch, setSelectedRoleId]);
 
@@ -60,7 +61,7 @@ const UpdateRole = memo(
           ...values
         });
 
-        toast.success('Role updated');
+        toast.success(i18n.t('toasts.roles.updated'));
         refetch();
       } catch (error) {
         setTrpcErrors(error);
@@ -81,7 +82,7 @@ const UpdateRole = memo(
       try {
         await trpc.roles.setDefault.mutate({ roleId: selectedRole.id });
 
-        toast.success('Default role updated');
+        toast.success(i18n.t('toasts.roles.defaultUpdated'));
         refetch();
       } catch (error) {
         toast.error(getTrpcError(error, 'Failed to set default role'));

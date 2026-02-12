@@ -11,9 +11,11 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { useLocaleFormat } from '@/hooks/use-locale-format';
 import { getTRPCClient } from '@/lib/trpc';
 import { AlertCircle, Bug, Info } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TDialogBaseProps } from '../types';
 
 type TLogEntry = {
@@ -27,6 +29,8 @@ type TPluginLogsDialogProps = TDialogBaseProps & {
 };
 
 const LogEntry = memo(({ log }: { log: TLogEntry }) => {
+  const { formatTime } = useLocaleFormat();
+
   const color = useMemo(() => {
     switch (log.type) {
       case 'error':
@@ -59,7 +63,7 @@ const LogEntry = memo(({ log }: { log: TLogEntry }) => {
     <div className="flex items-start gap-2 py-0.5 px-2 rounded hover:bg-muted/50 font-mono text-xs">
       {Icon}
       <span className="text-muted-foreground flex-shrink-0 min-w-[70px]">
-        {new Date(log.timestamp).toLocaleTimeString()}
+        {formatTime(new Date(log.timestamp))}
       </span>
       <span className="flex-1 break-all">{log.message}</span>
     </div>
@@ -113,6 +117,7 @@ const useSubscribeToPluginLogs = (pluginId: string) => {
 
 const PluginLogsDialog = memo(
   ({ isOpen, close, pluginId }: TPluginLogsDialogProps) => {
+    const { t } = useTranslation();
     const logs = useSubscribeToPluginLogs(pluginId);
     const [logLimit, setLogLimit] = useState<'100' | '500' | 'all'>('100');
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -169,42 +174,57 @@ const PluginLogsDialog = memo(
       <Dialog open={isOpen} onOpenChange={close}>
         <DialogContent className="flex flex-col min-w-[64vw] h-[80vh]">
           <DialogHeader>
-            <DialogTitle>{pluginId}</DialogTitle>
+            <DialogTitle>
+              {t('dialogs.pluginLogs.title', { pluginId })}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="flex items-center gap-3 mt-4 text-sm">
             <div className="flex items-center gap-1.5">
               <Info className="w-4 h-4 text-primary" />
               <span className="text-muted-foreground">
-                Info: <span className="font-semibold">{infoCount}</span>
+                {t('dialogs.pluginLogs.stats.info')}:{' '}
+                <span className="font-semibold">{infoCount}</span>
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <AlertCircle className="w-4 h-4 text-destructive" />
               <span className="text-muted-foreground">
-                Errors: <span className="font-semibold">{errorCount}</span>
+                {t('dialogs.pluginLogs.stats.errors')}:{' '}
+                <span className="font-semibold">{errorCount}</span>
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <Bug className="w-4 h-4 text-muted-foreground" />
               <span className="text-muted-foreground">
-                Debug: <span className="font-semibold">{debugCount}</span>
+                {t('dialogs.pluginLogs.stats.debug')}:{' '}
+                <span className="font-semibold">{debugCount}</span>
               </span>
             </div>
             <div className="ml-auto flex items-center gap-3">
               <span className="text-muted-foreground">
-                Total: <span className="font-semibold">{logs.length}</span> logs
+                {t('dialogs.pluginLogs.stats.total')}:{' '}
+                <span className="font-semibold">{logs.length}</span>{' '}
+                {t('dialogs.pluginLogs.stats.logs')}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground text-xs">Show:</span>
+                <span className="text-muted-foreground text-xs">
+                  {t('dialogs.pluginLogs.stats.show')}:
+                </span>
                 <Select value={logLimit} onValueChange={handleLogLimitChange}>
                   <SelectTrigger className="h-7 w-[100px] text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="100">100 logs</SelectItem>
-                    <SelectItem value="500">500 logs</SelectItem>
-                    <SelectItem value="all">All logs</SelectItem>
+                    <SelectItem value="100">
+                      {t('dialogs.pluginLogs.limits.hundred')}
+                    </SelectItem>
+                    <SelectItem value="500">
+                      {t('dialogs.pluginLogs.limits.fiveHundred')}
+                    </SelectItem>
+                    <SelectItem value="all">
+                      {t('dialogs.pluginLogs.limits.all')}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -216,9 +236,9 @@ const PluginLogsDialog = memo(
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <div className="text-center">
                   <Info className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No logs yet</p>
+                  <p>{t('dialogs.pluginLogs.emptyTitle')}</p>
                   <p className="text-sm mt-1">
-                    Logs will appear here when the plugin generates them
+                    {t('dialogs.pluginLogs.emptyDescription')}
                   </p>
                 </div>
               </div>

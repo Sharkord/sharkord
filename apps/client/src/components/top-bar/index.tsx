@@ -6,6 +6,7 @@ import {
 import { cn } from '@/lib/utils';
 import { MessageSquare, PanelRight, PanelRightClose } from 'lucide-react';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tooltip } from '../ui/tooltip';
 import { VolumeController } from './volume-controller';
 
@@ -23,6 +24,7 @@ const TopBar = memo(
     onToggleVoiceChat,
     isVoiceChatOpen
   }: TTopBarProps) => {
+    const { t } = useTranslation();
     const isCurrentVoiceChannelSelected = useIsCurrentVoiceChannelSelected();
     const currentVoiceChannelId = useCurrentVoiceChannelId();
 
@@ -39,7 +41,9 @@ const TopBar = memo(
             >
               <Tooltip
                 content={
-                  isVoiceChatOpen ? 'Close Voice Chat' : 'Open Voice Chat'
+                  isVoiceChatOpen
+                    ? t('topBar.closeVoiceChat')
+                    : t('topBar.openVoiceChat')
                 }
                 asChild={false}
               >
@@ -60,13 +64,13 @@ const TopBar = memo(
           className="h-6 px-2 transition-all duration-200 ease-in-out"
         >
           {isOpen ? (
-            <Tooltip content="Close Members Sidebar">
+            <Tooltip content={t('topBar.closeMembersSidebar')}>
               <div>
                 <PanelRightClose className="w-4 h-4 transition-transform duration-200 ease-in-out" />
               </div>
             </Tooltip>
           ) : (
-            <Tooltip content="Open Members Sidebar">
+            <Tooltip content={t('topBar.openMembersSidebar')}>
               <div>
                 <PanelRight className="w-4 h-4 transition-transform duration-200 ease-in-out" />
               </div>

@@ -2,6 +2,7 @@ import type { TEmojiItem } from '@/components/tiptap-input/types';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ALL_EMOJIS,
   EMOJI_CATEGORIES,
@@ -56,6 +57,7 @@ type TNativeEmojiTabProps = {
 };
 
 const NativeEmojiTab = memo(({ onEmojiSelect }: TNativeEmojiTabProps) => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const { recentEmojis, addRecent } = useRecentEmojis();
 
@@ -105,7 +107,7 @@ const NativeEmojiTab = memo(({ onEmojiSelect }: TNativeEmojiTabProps) => {
     <div className="flex flex-col h-full">
       <div className="p-3 border-b mt-[-8px]">
         <Input
-          placeholder="Search emojis..."
+          placeholder={t('placeholders.searchEmojis')}
           value={search}
           onChange={handleSearchChange}
           className="h-9"

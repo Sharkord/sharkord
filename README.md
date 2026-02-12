@@ -109,6 +109,33 @@ Example plugins:
 - [Sharkord Music Bot](https://github.com/diogomartino/sharkord-music-bot) - A plugin that adds music playback capabilities to Sharkord voice channels using YouTube as a source.
 - [Sharkord IPTV](https://github.com/diogomartino/sharkord-iptv) - A plugin that allows users to stream IPTV channels directly within Sharkord voice channels.
 
+## Internationalization (i18n)
+
+Sharkord client UI supports multiple languages through `i18next` + `react-i18next`.
+
+- Translation resources are split per language:
+  - [apps/client/src/i18n/locales/en.ts](apps/client/src/i18n/locales/en.ts)
+  - [apps/client/src/i18n/locales/it.ts](apps/client/src/i18n/locales/it.ts)
+  - Aggregated in [apps/client/src/i18n/resources.ts](apps/client/src/i18n/resources.ts)
+- New UI strings should use semantic i18n keys (avoid hardcoded strings in components).
+- Error handling should use `getTrpcError` / `parseTrpcErrors` and the `errors` namespace for stable server-code mapping.
+- Language preference is persisted in local storage (`LocalStorageKey.UI_LANGUAGE`).
+
+### Adding a new language
+
+1. Create a new locale file by copying [apps/client/src/i18n/locales/en.ts](apps/client/src/i18n/locales/en.ts) (for example: `es.ts`).
+2. Translate values while preserving the same key structure.
+3. Register the new locale in [apps/client/src/i18n/resources.ts](apps/client/src/i18n/resources.ts).
+4. Add the language code to `APP_LANGUAGES` in [apps/client/src/helpers/language.ts](apps/client/src/helpers/language.ts).
+5. Run checks from repo root:
+
+```bash
+bun run check-types
+bun run lint
+```
+
+See [I18N_ROADMAP.md](I18N_ROADMAP.md) for migration strategy and conventions.
+
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.

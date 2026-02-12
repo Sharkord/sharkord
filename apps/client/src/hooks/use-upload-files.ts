@@ -2,11 +2,13 @@ import { useCan, usePublicServerSettings } from '@/features/server/hooks';
 import { uploadFiles } from '@/helpers/upload-file';
 import { Permission, type TTempFile } from '@sharkord/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 // TODO: check if it works in all browsers
 
 const useUploadFiles = (disabled: boolean = false) => {
+  const { t } = useTranslation();
   const [files, setFiles] = useState<TTempFile[]>([]);
   const filesRef = useRef<TTempFile[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -33,7 +35,7 @@ const useUploadFiles = (disabled: boolean = false) => {
     if (!settings?.storageUploadEnabled || disabled) return;
 
     const canUpload = can(Permission.UPLOAD_FILES);
-    const uploadEnabled = true;
+    const uploadEnabled = Boolean(settings?.storageUploadEnabled);
 
     const handlePaste = async (event: ClipboardEvent) => {
       if (disabled) {
@@ -41,12 +43,12 @@ const useUploadFiles = (disabled: boolean = false) => {
       }
 
       if (!canUpload) {
-        toast.error('You do not have permission to upload files.');
+        toast.error(t('errors.files.noUploadPermission'));
         return;
       }
 
       if (!uploadEnabled) {
-        toast.error('File uploads are disabled on this server.');
+        toast.error(t('errors.files.uploadsDisabled'));
         return;
       }
 
@@ -85,12 +87,12 @@ const useUploadFiles = (disabled: boolean = false) => {
       }
 
       if (!canUpload) {
-        toast.error('You do not have permission to upload files.');
+        toast.error(t('errors.files.noUploadPermission'));
         return;
       }
 
       if (!uploadEnabled) {
-        toast.error('File uploads are disabled on this server.');
+        toast.error(t('errors.files.uploadsDisabled'));
         return;
       }
 
@@ -140,7 +142,7 @@ const useUploadFiles = (disabled: boolean = false) => {
       document.removeEventListener('dragover', handleDragOver);
       document.removeEventListener('drop', handleDrop);
     };
-  }, [addFiles, can, settings, disabled]);
+  }, [addFiles, can, settings, disabled, t]);
 
   return { files, removeFile, filesRef, clearFiles, uploading, uploadingSize };
 };

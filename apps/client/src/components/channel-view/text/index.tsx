@@ -17,6 +17,7 @@ import { filesize } from 'filesize';
 import { throttle } from 'lodash-es';
 import { Send } from 'lucide-react';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '../../ui/button';
 import { FileCard } from './file-card';
@@ -30,6 +31,7 @@ type TChannelProps = {
 };
 
 const TextChannel = memo(({ channelId }: TChannelProps) => {
+  const { t } = useTranslation();
   const { messages, hasMore, loadMore, loading, fetching, groupedMessages } =
     useMessages(channelId);
 
@@ -105,7 +107,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
       playSound(SoundType.MESSAGE_SENT);
     } catch (error) {
-      toast.error(getTrpcError(error, 'Failed to send message'));
+      toast.error(getTrpcError(error, t('toasts.messages.sendFailed')));
       return;
     } finally {
       sendingRef.current = false;
@@ -120,7 +122,8 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     files,
     clearFiles,
     sendTypingSignal,
-    canSendMessages
+    canSendMessages,
+    t
   ]);
 
   const onRemoveFileClick = useCallback(

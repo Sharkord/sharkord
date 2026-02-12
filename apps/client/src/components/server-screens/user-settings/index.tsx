@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TServerScreenBaseProps } from '../screens';
 import { ServerScreenLayout } from '../server-screen-layout';
 import { Devices } from './devices';
@@ -9,14 +10,22 @@ import { Profile } from './profile';
 type TUserSettingsProps = TServerScreenBaseProps;
 
 const UserSettings = memo(({ close }: TUserSettingsProps) => {
+  const { t } = useTranslation();
+
   return (
-    <ServerScreenLayout close={close} title="User Settings">
+    <ServerScreenLayout close={close} title={t('userSettings.title')}>
       <div className="mx-auto max-w-4xl">
         <Tabs defaultValue="profile" className="w-full">
           <TabsList className="mb-6">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="devices">Devices</TabsTrigger>
-            <TabsTrigger value="password">Password</TabsTrigger>
+            <TabsTrigger value="profile">
+              {t('userSettings.tabs.profile')}
+            </TabsTrigger>
+            <TabsTrigger value="devices">
+              {t('userSettings.tabs.devices')}
+            </TabsTrigger>
+            <TabsTrigger value="password">
+              {t('userSettings.tabs.password')}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-6">

@@ -1,6 +1,7 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
 import { store } from '@/features/store';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { i18n } from '@/i18n';
 import { getTRPCClient } from '@/lib/trpc';
 import { type TExternalStream, type TVoiceUserState } from '@sharkord/shared';
 import type { RtpCapabilities } from 'mediasoup-client/types';
@@ -143,7 +144,7 @@ export const joinVoice = async (
 
     return routerRtpCapabilities;
   } catch (error) {
-    toast.error(getTrpcError(error, 'Failed to join voice channel'));
+    toast.error(getTrpcError(error, i18n.t('toasts.channels.joinVoiceFailed')));
   }
 
   return undefined;
@@ -172,7 +173,7 @@ export const leaveVoice = async (): Promise<void> => {
     await client.voice.leave.mutate();
     playSound(SoundType.OWN_USER_LEFT_VOICE_CHANNEL);
   } catch (error) {
-    toast.error(getTrpcError(error, 'Failed to leave voice channel'));
+    toast.error(getTrpcError(error, i18n.t('toasts.channels.leaveVoiceFailed')));
   }
 };
 
