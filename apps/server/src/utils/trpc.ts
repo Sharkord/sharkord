@@ -4,7 +4,7 @@ import {
   type Permission,
   type TUser
 } from '@sharkord/shared';
-import { initTRPC } from '@trpc/server';
+import { initTRPC, TRPCError } from '@trpc/server';
 import chalk from 'chalk';
 import type WebSocket from 'ws';
 import { config } from '../config';
@@ -12,6 +12,10 @@ import { logger } from '../logger';
 import type { TConnectionInfo } from '../types';
 import { invariant } from './invariant';
 import { pubsub } from './pubsub';
+import {
+  createRateLimiter,
+  getClientRateLimitKey
+} from './rate-limiters/rate-limiter';
 
 export type Context = {
   handshakeHash: string;
@@ -72,6 +76,44 @@ const authMiddleware = t.middleware(async ({ ctx, next }) => {
   return next();
 });
 
+type TRateLimitedProcedureOptions = {
+  maxRequests: number;
+  windowMs: number;
+  logLabel: string;
+  maxEntries?: number;
+};
+
+const rateLimitedProcedure = (
+  procedure: typeof t.procedure,
+  options: TRateLimitedProcedureOptions
+) => {
+  const limiter = createRateLimiter({
+    maxRequests: options.maxRequests,
+    windowMs: options.windowMs,
+    maxEntries: options.maxEntries
+  });
+
+  const rateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
+    const key = getClientRateLimitKey(ctx.getConnectionInfo()?.ip);
+    const rateLimit = limiter.consume(key);
+
+    if (!rateLimit.allowed) {
+      logger.debug(
+        `${chalk.dim('[Rate Limiter tRPC]')} ${options.logLabel} rate limited for key "${key}"`
+      );
+
+      throw new TRPCError({
+        code: 'TOO_MANY_REQUESTS',
+        message: 'Too many requests. Please try again shortly.'
+      });
+    }
+
+    return next();
+  });
+
+  return procedure.use(rateLimitMiddleware);
+};
+
 // this should be used for all queries and mutations apart from the join server one
 // it prevents users that only are connected to the wss but did not join the server from accessing protected procedures
 const protectedProcedure = t.procedure
@@ -80,4 +122,4 @@ const protectedProcedure = t.procedure
 
 const publicProcedure = t.procedure.use(timingMiddleware);
 
-export { protectedProcedure, publicProcedure, t };
+export { protectedProcedure, publicProcedure, rateLimitedProcedure, t };
