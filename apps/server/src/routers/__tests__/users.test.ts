@@ -1,9 +1,16 @@
 import { sha256, type TTempFile } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { initTest, uploadFile } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
-import { users } from '../../db/schema';
+import {
+  channels,
+  emojis,
+  files,
+  messageReactions,
+  messages,
+  users
+} from '../../db/schema';
 
 describe('users router', () => {
   test('should throw when user lacks permissions (getAll)', async () => {
@@ -475,6 +482,139 @@ describe('users router', () => {
         userId: 999
       })
     ).rejects.toThrow('User not found.');
+  });
+
+  test('should keep messages as Deleted when deleting user with keepMessages', async () => {
+    const { caller } = await initTest();
+
+    const targetUserId = 2;
+    const now = Date.now();
+
+    const targetChannel = await tdb
+      .select({ id: channels.id })
+      .from(channels)
+      .get();
+
+    expect(targetChannel).toBeDefined();
+
+    await tdb.insert(messages).values({
+      content: `keep-message-${now}`,
+      userId: targetUserId,
+      channelId: targetChannel!.id,
+      editable: true,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    const messageBeforeDelete = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.content, `keep-message-${now}`))
+      .get();
+
+    expect(messageBeforeDelete).toBeDefined();
+    expect(messageBeforeDelete!.userId).toBe(targetUserId);
+
+    const emojiFileName = `emoji-file-${now}.png`;
+    const emojiName = `emoji_${now}`;
+
+    const insertedEmojiFile = await tdb
+      .insert(files)
+      .values({
+        name: emojiFileName,
+        originalName: emojiFileName,
+        md5: `md5-${now}`,
+        userId: targetUserId,
+        size: 123,
+        mimeType: 'image/png',
+        extension: 'png',
+        createdAt: now,
+        updatedAt: now
+      })
+      .returning({ id: files.id })
+      .get();
+
+    expect(insertedEmojiFile).toBeDefined();
+
+    await tdb.insert(emojis).values({
+      name: emojiName,
+      fileId: insertedEmojiFile!.id,
+      userId: targetUserId,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    await tdb.insert(messageReactions).values({
+      messageId: messageBeforeDelete!.id,
+      userId: targetUserId,
+      emoji: '👍',
+      fileId: null,
+      createdAt: now
+    });
+
+    await caller.users.delete({
+      userId: targetUserId,
+      keepMessages: true,
+      keepEmojisReactions: true,
+      keepFiles: true
+    });
+
+    const deletedUser = await tdb
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, targetUserId))
+      .get();
+
+    expect(deletedUser).toBeUndefined();
+
+    const deletedPlaceholderUser = await tdb
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.identity, '__deleted_user__'))
+      .get();
+
+    expect(deletedPlaceholderUser).toBeDefined();
+
+    const messageAfterDelete = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.content, `keep-message-${now}`))
+      .get();
+
+    expect(messageAfterDelete).toBeDefined();
+    expect(messageAfterDelete!.userId).toBe(deletedPlaceholderUser!.id);
+
+    const emojiAfterDelete = await tdb
+      .select({ userId: emojis.userId })
+      .from(emojis)
+      .where(eq(emojis.name, emojiName))
+      .get();
+
+    expect(emojiAfterDelete).toBeDefined();
+    expect(emojiAfterDelete!.userId).toBe(deletedPlaceholderUser!.id);
+
+    const emojiFileAfterDelete = await tdb
+      .select({ userId: files.userId })
+      .from(files)
+      .where(eq(files.id, insertedEmojiFile!.id))
+      .get();
+
+    expect(emojiFileAfterDelete).toBeDefined();
+    expect(emojiFileAfterDelete!.userId).toBe(deletedPlaceholderUser!.id);
+
+    const reactionAfterDelete = await tdb
+      .select({ userId: messageReactions.userId })
+      .from(messageReactions)
+      .where(
+        and(
+          eq(messageReactions.messageId, messageBeforeDelete!.id),
+          eq(messageReactions.emoji, '👍')
+        )
+      )
+      .get();
+
+    expect(reactionAfterDelete).toBeDefined();
+    expect(reactionAfterDelete!.userId).toBe(deletedPlaceholderUser!.id);
   });
 
   test('should unban user', async () => {

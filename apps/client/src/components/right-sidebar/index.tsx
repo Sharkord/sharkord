@@ -1,7 +1,7 @@
 import { UserAvatar } from '@/components/user-avatar';
 import { useUsers } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { UserPopover } from '../user-popover';
 
 type TUserProps = {
@@ -36,6 +36,10 @@ type TRightSidebarProps = {
 const RightSidebar = memo(
   ({ className, isOpen = true }: TRightSidebarProps) => {
     const users = useUsers();
+    const visibleUsers = useMemo(
+      () => users.filter((user) => !(user.name === 'Deleted' && user.banned)),
+      [users]
+    );
 
     return (
       <aside
@@ -52,12 +56,12 @@ const RightSidebar = memo(
           <>
             <div className="flex h-12 items-center border-b border-border px-4">
               <h3 className="text-sm font-semibold text-foreground">
-                Members — {users.length}
+                Members — {visibleUsers.length}
               </h3>
             </div>
             <div className="flex-1 overflow-y-auto p-2">
               <div className="space-y-1">
-                {users.map((user) => (
+                {visibleUsers.map((user) => (
                   <User
                     key={user.id}
                     userId={user.id}
