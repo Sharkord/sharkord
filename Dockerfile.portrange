@@ -1,0 +1,22 @@
+# Use this Dockerfile for debugging individual WebRTC connections - each connection 
+# gets its own port making network traces easier. For production, use the default 
+# Dockerfile with port multiplexing.
+#
+# Build: docker build -f Dockerfile.portrange -t sharkord:portrange .
+# Run: docker run -p 4991:4991 -p 40000-40020:40000-40020/udp sharkord:portrange
+
+FROM oven/bun:1.3.5
+
+COPY apps/server/build/out/sharkord-linux-x64 /sharkord
+
+ENV RUNNING_IN_DOCKER=true
+ENV SHARKORD_RTC_MIN_PORT=40000
+ENV SHARKORD_RTC_MAX_PORT=40020
+
+RUN chmod +x /sharkord
+
+EXPOSE 4991
+EXPOSE 40000-40020/tcp
+EXPOSE 40000-40020/udp
+
+CMD ["/sharkord"]

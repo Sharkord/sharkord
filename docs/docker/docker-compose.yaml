@@ -7,9 +7,10 @@ services:
       # Main HTTP/WebSocket port
       - "4991:4991"
       
-      # WebRTC media ports (UDP) - adjust range if needed
-      # These ports are used for voice/video streaming
-      - "40000-40020:40000-40020/udp"
+      # WebRTC media port (UDP/TCP) - using multiplexed mode
+      # Single port for all voice/video connections
+      - "7882:7882/tcp"
+      - "7882:7882/udp"
     
     # Can override config file settings
     environment:
@@ -18,9 +19,13 @@ services:
       SHARKORD_PORT: "4991"
       SHARKORD_DEBUG: "false"
       
-      # Mediasoup/Voice configuration
-      SHARKORD_RTC_MIN_PORT: "40000"
-      SHARKORD_RTC_MAX_PORT: "40020"
+      # Mediasoup/Voice configuration (multiplexed mode)
+      SHARKORD_RTC_MIN_PORT: "7882"
+      SHARKORD_RTC_MAX_PORT: "7882"
+      
+      # Optional: Custom WebRTC host/IP for NAT, K8s LoadBalancer, etc
+      # Uncomment and set to override auto-detected public IP
+      # SHARKORD_WEBRTC_HOST: "webrtc.yourdomain.com"
     
     # Volume mounts for persistent data
     volumes:

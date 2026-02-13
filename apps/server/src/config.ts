@@ -10,6 +10,17 @@ const [SERVER_PUBLIC_IP, SERVER_PRIVATE_IP] = await Promise.all([
   getPrivateIp()
 ]);
 
+// Helper functions for parsing config values
+const parseIntSafe = (value: any, fallback: number): number => {
+  const parsed = parseInt(value, 10);
+  return isNaN(parsed) ? fallback : parsed;
+};
+
+const parseBoolSafe = (value: any, fallback: boolean = false): boolean => {
+  if (value === undefined || value === null || value === '') return fallback;
+  return value === 'true' || value === true || value === '1';
+};
+
 type TConfig = {
   server: {
     port: number;
@@ -24,6 +35,7 @@ type TConfig = {
     worker: {
       rtcMinPort: number;
       rtcMaxPort: number;
+      webrtcHost?: string;
     };
   };
 };
@@ -40,8 +52,8 @@ let config: TConfig = {
   },
   mediasoup: {
     worker: {
-      rtcMinPort: 40000,
-      rtcMaxPort: 40020
+      rtcMinPort: 7882,
+      rtcMaxPort: 7882
     }
   }
 };
@@ -57,32 +69,25 @@ const text = await fs.readFile(CONFIG_INI_PATH, {
   encoding: 'utf-8'
 });
 
-// Parse ini file
-config = parse(text) as TConfig;
+// Parse ini file (values come back as strings)
+const parsedIni = parse(text) as any;
+
+// Apply INI values if they exist (with type conversion and fallbacks)
+config.server.port = parseIntSafe(parsedIni.server?.port, config.server.port);
+config.server.debug = parseBoolSafe(parsedIni.server?.debug, config.server.debug);
+config.server.autoupdate = parseBoolSafe(parsedIni.server?.autoupdate, config.server.autoupdate);
+config.http.maxFiles = parseIntSafe(parsedIni.http?.maxFiles, config.http.maxFiles);
+config.http.maxFileSize = parseIntSafe(parsedIni.http?.maxFileSize, config.http.maxFileSize);
+config.mediasoup.worker.rtcMinPort = parseIntSafe(parsedIni.mediasoup?.worker?.rtcMinPort, config.mediasoup.worker.rtcMinPort);
+config.mediasoup.worker.rtcMaxPort = parseIntSafe(parsedIni.mediasoup?.worker?.rtcMaxPort, config.mediasoup.worker.rtcMaxPort);
+config.mediasoup.worker.webrtcHost = parsedIni.mediasoup?.worker?.webrtcHost;
 
 // Override with environment variables (SHARKORD_ prefixed to avoid conflicts)
-if (process.env.SHARKORD_PORT) {
-  config.server.port = parseInt(process.env.SHARKORD_PORT, 10);
-}
-
-if (process.env.SHARKORD_DEBUG) {
-  config.server.debug =
-    process.env.SHARKORD_DEBUG === 'true' || process.env.SHARKORD_DEBUG === '1';
-}
-
-if (process.env.SHARKORD_RTC_MIN_PORT) {
-  config.mediasoup.worker.rtcMinPort = parseInt(
-    process.env.SHARKORD_RTC_MIN_PORT,
-    10
-  );
-}
-
-if (process.env.SHARKORD_RTC_MAX_PORT) {
-  config.mediasoup.worker.rtcMaxPort = parseInt(
-    process.env.SHARKORD_RTC_MAX_PORT,
-    10
-  );
-}
+config.server.port = parseIntSafe(process.env.SHARKORD_PORT, config.server.port);
+config.server.debug = parseBoolSafe(process.env.SHARKORD_DEBUG, config.server.debug);
+config.mediasoup.worker.rtcMinPort = parseIntSafe(process.env.SHARKORD_RTC_MIN_PORT, config.mediasoup.worker.rtcMinPort);
+config.mediasoup.worker.rtcMaxPort = parseIntSafe(process.env.SHARKORD_RTC_MAX_PORT, config.mediasoup.worker.rtcMaxPort);
+config.mediasoup.worker.webrtcHost = process.env.SHARKORD_WEBRTC_HOST || config.mediasoup.worker.webrtcHost;
 
 config = Object.freeze(config);
 

@@ -17,11 +17,11 @@ import type {
   WebRtcTransport,
   WebRtcTransportOptions
 } from 'mediasoup/types';
-import { SERVER_PUBLIC_IP } from '../config';
+import { config, SERVER_PUBLIC_IP } from '../config';
 import { logger } from '../logger';
 import { eventBus } from '../plugins/event-bus';
 import { IS_PRODUCTION } from '../utils/env';
-import { mediaSoupWorker } from '../utils/mediasoup';
+import { mediaSoupWorker, webRtcServer } from '../utils/mediasoup';
 import { pubsub } from '../utils/pubsub';
 
 const voiceRuntimes = new Map<number, VoiceRuntime>();
@@ -60,18 +60,23 @@ const getListenInfos = (): NonNullable<
   WebRtcTransportOptions<AppData>['listenInfos']
 > => {
   if (IS_PRODUCTION) {
-    return [
+    // Use custom WebRTC host if specified, otherwise fall back to public IP
+    const announcedAddress = config.mediasoup.worker.webrtcHost || SERVER_PUBLIC_IP;
+
+    const listenInfos: any[] = [
       {
         protocol: 'udp',
         ip: '0.0.0.0',
-        announcedAddress: SERVER_PUBLIC_IP
+        announcedAddress: announcedAddress
       },
       {
         protocol: 'tcp',
         ip: '0.0.0.0',
-        announcedAddress: SERVER_PUBLIC_IP
+        announcedAddress: announcedAddress
       }
     ];
+
+    return listenInfos;
   }
 
   return [
@@ -88,13 +93,22 @@ const getListenInfos = (): NonNullable<
   ];
 };
 
-const defaultRtcTransportOptions: WebRtcTransportOptions<AppData> = {
-  listenInfos: getListenInfos(),
-  enableUdp: true,
-  enableTcp: true,
-  preferUdp: true,
-  preferTcp: false,
-  initialAvailableOutgoingBitrate: 1000000
+const getDefaultRtcTransportOptions = (): WebRtcTransportOptions<AppData> => {
+  // Use webRtcServer if available (multiplexed), otherwise use port range
+  return {
+    ...(webRtcServer 
+      ? { 
+          webRtcServer,
+          enableUdp: true,
+          enableTcp: true,
+          preferUdp: true,
+          preferTcp: false
+        } 
+      : { 
+          listenInfos: getListenInfos() 
+        }),
+    initialAvailableOutgoingBitrate: 1000000
+  };
 };
 
 const defaultUserState: TVoiceUserState = {
@@ -354,7 +368,7 @@ class VoiceRuntime {
     const router = this.getRouter();
 
     const transport = await router.createWebRtcTransport(
-      defaultRtcTransportOptions
+      getDefaultRtcTransportOptions()
     );
 
     const params: TTransportParams = {

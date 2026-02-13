@@ -41,12 +41,17 @@ Sharkord can also be run using Docker. Here's how to run it:
 ```bash
 docker run \
   -p 4991:4991/tcp \
-  -p 40000-40020:40000-40020/tcp \
-  -p 40000-40020:40000-40020/udp \
+  -p 7882:7882/tcp \
+  -p 7882:7882/udp \
   -v ./data:/root/.config/sharkord \
   --name sharkord \
   sharkord/sharkord:latest
 ```
+
+> [!NOTE]
+> Starting with this version, Sharkord uses a single UDP port (7882) for all WebRTC traffic through port multiplexing. This simplifies firewall configuration and makes it easier to deploy in containerized environments.
+>
+> For debugging individual connections, you can use the port range mode by building with `Dockerfile.portrange` and setting `SHARKORD_RTC_MIN_PORT=40000` and `SHARKORD_RTC_MAX_PORT=40020`.
 
 #### Docker Compose
 
@@ -58,8 +63,9 @@ Common settings you might want to customize. These override config file values a
 |----------|---------|-------------|
 | `SHARKORD_PORT` | `4991` | HTTP/WebSocket listen port |
 | `SHARKORD_DEBUG` | `false` | Enable verbose logging |
-| `SHARKORD_RTC_MIN_PORT` | `40000` | Minimum UDP port for WebRTC media |
-| `SHARKORD_RTC_MAX_PORT` | `40020` | Maximum UDP port for WebRTC media |
+| `SHARKORD_RTC_MIN_PORT` | `7882` | Minimum UDP port for WebRTC media |
+| `SHARKORD_RTC_MAX_PORT` | `7882` | Maximum UDP port for WebRTC media |
+| `SHARKORD_WEBRTC_HOST` | - | Custom hostname/IP for WebRTC (e.g., `webrtc.yourdomain.com`). Uses public IP if not set |
 
 #### Windows
 
@@ -97,12 +103,19 @@ Upon first run, Sharkord will generate a default configuration file located at `
 | ------------- | ------- | ------------------------------------------------------------------------------------------- |
 | `port`        | `4991`  | The port number on which the server will listen for HTTP and WebSocket connections          |
 | `debug`       | `false` | Enable debug logging for detailed server logs and diagnostics                               |
-| `rtcMinPort`  | `40000` | Minimum UDP port for WebRTC media traffic (voice/video)                                     |
-| `rtcMaxPort`  | `40020` | Maximum UDP port for WebRTC media traffic (voice/video)                                     |
+| `rtcMinPort`  | `7882`  | Minimum UDP port for WebRTC media traffic (voice/video)                                     |
+| `rtcMaxPort`  | `7882`  | Maximum UDP port for WebRTC media traffic (voice/video)                                     |
+| `webrtcHost`  | -       | Custom hostname/IP to announce for WebRTC (e.g., `webrtc.yourdomain.com`). Uses public IP if not set |
 | `autoupdate`  | `false` | When enabled, it will automatically check for and install updates with no user intervention |
 
 > [!IMPORTANT]  
-> `rtcMinPort` and `rtcMaxPort` will define how many concurrent voice/video connections your server can handle. Each active voice/video connection uses one UDP port. Make sure to adjust the range according to your expected load. These ports must be open in your firewall settings, both TCP and UDP. If you're running Sharkord in Docker, remember to map this port range from the host to the container.
+> **Port Multiplexing Mode (Recommended):** When `rtcMinPort` equals `rtcMaxPort` (e.g., both set to `7882`), Sharkord uses MediaSoup's WebRtcServer for UDP port multiplexing. This allows unlimited concurrent users on a single UDP port, making deployment easier (especially in Docker/Kubernetes).
+>
+> **Port Range Mode (Legacy):** When `rtcMinPort` < `rtcMaxPort`, each WebRTC connection uses a separate UDP port from the range. Each user requires ~2 ports, so a range of 40000-40020 (21 ports) supports ~10 concurrent users. This mode is useful for debugging individual connections but is not recommended for production.
+>
+> **Custom WebRTC Host:** Use `webrtcHost` to specify the hostname or IP address that clients should use to connect for WebRTC (e.g., `webrtc.yourdomain.com` or your public IP). This is useful when running behind NAT, using a custom domain, or in cloud deployments. If not set, the server's public IP will be used automatically.
+>
+> These ports must be open in your firewall settings. If you're running Sharkord in Docker, remember to map this port from the host to the container.
 
 ## HTTPS Setup
 
