@@ -103,7 +103,6 @@ const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
   const externalAudioStreams = useVoiceChannelAudioExternalStreams(channelId);
   const { getUserVolumeKey, getUserScreenVolumeKey, getExternalVolumeKey } = useVolumeControl();
   const ownUserId = useOwnUserId();
-  console.log(externalAudioStreams);
   const audioStreams = useMemo(() => {
     const streams: AudioStream[] = [];
 
