@@ -30,5 +30,6 @@ declare module "bun" {
     SHARKORD_DEBUG?: string;
     SHARKORD_RTC_MIN_PORT?: string;
     SHARKORD_RTC_MAX_PORT?: string;
+    SHARKORD_WEBRTC_HOST?: string;
   }
 }
