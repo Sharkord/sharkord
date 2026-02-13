@@ -110,9 +110,15 @@ const useVoiceControls = ({
       await trpc.voice.updateState.mutate({
         webcamEnabled: newState
       });
-    } catch (error) {
+     } catch (error) {
       updateOwnVoiceState({ webcamEnabled: false });
-      await trpc.voice.updateState.mutate({ webcamEnabled: false }).catch(() => {});
+
+      try {
+        await trpc.voice.updateState.mutate({ webcamEnabled: false });
+      } catch {
+        // ignore
+      }
+
       toast.error(getTrpcError(error, 'Failed to update webcam state'));
     }
   }, [
@@ -143,9 +149,13 @@ const useVoiceControls = ({
           stopScreenShareStream();
           updateOwnVoiceState({ sharingScreen: false });
 
-          await trpc.voice.updateState.mutate({
-            sharingScreen: false
-          }).catch(() => {});
+          try {
+            await trpc.voice.updateState.mutate({
+              sharingScreen: false
+            });
+          } catch {
+            // ignore
+          }
         };
       } else {
         stopScreenShareStream();
@@ -156,7 +166,13 @@ const useVoiceControls = ({
       });
     } catch (error) {
       updateOwnVoiceState({ sharingScreen: false });
-      await trpc.voice.updateState.mutate({ sharingScreen: false }).catch(() => {});
+
+      try {
+        await trpc.voice.updateState.mutate({ sharingScreen: false });
+      } catch {
+        // ignore
+      }
+
       toast.error(getTrpcError(error, 'Failed to update screen share state'));
     }
   }, [
