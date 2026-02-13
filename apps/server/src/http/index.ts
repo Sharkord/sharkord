@@ -58,28 +58,36 @@ const createHttpServer = async (port: number = config.server.port) => {
           }
 
           if (req.method === 'POST' && req.url === '/login') {
-            const key = getClientRateLimitKey(info?.ip);
-            const rateLimit = loginRateLimiter.consume(key);
+            if (info?.ip) {
+              // we can only rate limit if we have the client's IP
 
-            if (!rateLimit.allowed) {
-              logger.debug(
-                `${chalk.dim('[Rate Limiter HTTP]')} /login rate limited for key "${key}"`
+              const key = getClientRateLimitKey(info?.ip);
+              const rateLimit = loginRateLimiter.consume(key);
+
+              if (!rateLimit.allowed) {
+                logger.debug(
+                  `${chalk.dim('[Rate Limiter HTTP]')} /login rate limited for key "${key}"`
+                );
+
+                res.setHeader(
+                  'Retry-After',
+                  getRateLimitRetrySeconds(rateLimit.retryAfterMs)
+                );
+
+                res.writeHead(429, { 'Content-Type': 'application/json' });
+
+                res.end(
+                  JSON.stringify({
+                    error: 'Too many login attempts. Please try again shortly.'
+                  })
+                );
+
+                return;
+              }
+            } else {
+              logger.warn(
+                `${chalk.dim('[Rate Limiter HTTP]')} Missing IP address in request info, skipping rate limiting for /login route.`
               );
-
-              res.setHeader(
-                'Retry-After',
-                getRateLimitRetrySeconds(rateLimit.retryAfterMs)
-              );
-
-              res.writeHead(429, { 'Content-Type': 'application/json' });
-
-              res.end(
-                JSON.stringify({
-                  error: 'Too many login attempts. Please try again shortly.'
-                })
-              );
-
-              return;
             }
 
             return await loginRouteHandler(req, res);
