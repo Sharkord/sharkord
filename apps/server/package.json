@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun --watch ./src/index.ts",
+    "dev": "DEBUG=* bun --watch ./src/index.ts",
     "dev:inspect": "bun --inspect ./src/index.ts",
     "dev:debug": "DEBUG=* bun --watch ./src/index.ts",
     "build": "tsc -b && bun ./build/build.ts",
@@ -19,10 +19,9 @@
     "test:watch": "bun test --watch"
   },
   "devDependencies": {
-    "@types/bun": "latest",
+    "@types/bun": "^1.3.5",
     "@types/ini": "^4.1.1",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^25.2.3",
     "@types/sanitize-html": "^2.16.0",
     "@types/semver": "^7.7.1",
     "@types/ws": "^8.18.1",
@@ -49,7 +48,7 @@
     "ini": "^5.0.0",
     "jsonwebtoken": "^9.0.2",
     "link-preview-js": "^3.1.0",
-    "mediasoup": "^3.19.11",
+    "mediasoup": "^3.19.17",
     "queue": "^7.0.0",
     "sanitize-html": "^2.17.0",
     "semver": "^7.7.3",

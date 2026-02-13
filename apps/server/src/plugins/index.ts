@@ -20,7 +20,7 @@ import {
 } from '@sharkord/shared';
 import chalk from 'chalk';
 import { eq } from 'drizzle-orm';
-import fs from 'node:fs/promises';
+import fs from 'fs/promises';
 import path from 'path';
 import { db } from '../db';
 import { getSettings } from '../db/queries/server';
