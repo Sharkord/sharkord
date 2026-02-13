@@ -8,7 +8,7 @@ import {
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
-import { publishMessage } from '../../db/publishers';
+import { publishMessage, publishExternalMessage } from '../../db/publishers';
 import { getSettings } from '../../db/queries/server';
 import { messageFiles, messages } from '../../db/schema';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
@@ -28,20 +28,22 @@ const sendMessageRoute = protectedProcedure
     z
       .object({
         content: z.string(),
-        channelId: z.number(),
+        channelId: z.number().optional(),
+        externalChannelId: z.number().optional(),
         files: z.array(z.string()).optional()
       })
       .required()
   )
   .mutation(async ({ input, ctx }) => {
-    await Promise.all([
-      ctx.needsPermission(Permission.SEND_MESSAGES),
-      ctx.needsChannelPermission(
-        input.channelId,
-        ChannelPermission.SEND_MESSAGES
-      )
-    ]);
-
+    if( input.channelId ){
+      await Promise.all([
+        ctx.needsPermission(Permission.SEND_MESSAGES),
+        ctx.needsChannelPermission(
+          input.channelId,
+          ChannelPermission.SEND_MESSAGES
+        )
+      ]);
+    }
     invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
       code: 'BAD_REQUEST',
       message: 'Message cannot be empty.'
@@ -59,7 +61,8 @@ const sendMessageRoute = protectedProcedure
 
     const { enablePlugins } = await getSettings();
 
-    if (enablePlugins) {
+    // Also check if message was sent in external group or PM
+    if (enablePlugins && input.channelId) {
       // when plugins are enabled, need to check if the message is a command
       // this might be improved in the future with a more robust parser
       const plainText = getPlainTextFromHtml(input.content);
@@ -156,6 +159,7 @@ const sendMessageRoute = protectedProcedure
       .insert(messages)
       .values({
         channelId: input.channelId,
+        externalChannelId: input.externalChannelId,
         userId: ctx.userId,
         content: targetContent,
         editable,
@@ -178,12 +182,18 @@ const sendMessageRoute = protectedProcedure
       }
     }
 
-    publishMessage(message.id, input.channelId, 'create');
+    if( message.externalChannelId ) {
+      publishExternalMessage(message.id, input.externalChannelId, 'create');
+    }
+    else {
+      publishMessage(message.id, input.channelId, 'create');
+    }
     enqueueProcessMetadata(targetContent, message.id);
 
     eventBus.emit('message:created', {
       messageId: message.id,
       channelId: input.channelId,
+      externalChannelId: input.externalChannelId,
       userId: ctx.userId,
       content: targetContent
     });
@@ -192,3 +202,4 @@ const sendMessageRoute = protectedProcedure
   });
 
 export { sendMessageRoute };
+ 

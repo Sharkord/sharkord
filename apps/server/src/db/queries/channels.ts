@@ -11,12 +11,15 @@ import {
   channelReadStates,
   channelRolePermissions,
   channels,
+  externalChannels,
   channelUserPermissions,
   messages,
   userRoles,
-  users
+  users,
+  userExternalChannels
 } from '../schema';
 import { getUserRoleIds } from './roles';
+import { use } from 'react';
 
 const getPermissions = async (
   userId: number,
@@ -316,6 +319,30 @@ const getUserChannelPermissions = async (
   return permissions;
 };
 
+const getAffectedUserIdsForExternalChannel = async (
+  externalChannelId: number,
+): Promise<number[]> => {
+  const [channel] = await db
+    .select()
+    .from(externalChannels)
+    .where(eq(externalChannels.id, externalChannelId))
+    .limit(1);
+
+  if (!channel) {
+    return [];
+  }
+
+  const usersWithAccess = await db
+    .select({id: userExternalChannels.userId})
+    .from(userExternalChannels)
+    .where(eq(userExternalChannels.externalChannelId, externalChannelId));
+
+  if(usersWithAccess.length === 0) {
+    return [];
+  }
+  return usersWithAccess.map(u => u.id);
+};
+
 const getAffectedUserIdsForChannel = async (
   channelId: number,
   options?: {
@@ -438,5 +465,6 @@ export {
   getChannelsForUser,
   getChannelsReadStatesForUser,
   getRoleChannelPermissions,
-  getUserChannelPermissions
+  getUserChannelPermissions,
+  getAffectedUserIdsForExternalChannel
 };

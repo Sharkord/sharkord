@@ -203,8 +203,9 @@ const messages = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     channelId: integer('channel_id')
-      .notNull()
       .references(() => channels.id, { onDelete: 'cascade' }),
+    externalChannelId: integer('external_channel_id')
+      .references(() => externalChannels.id, { onDelete: 'cascade' }),
     editable: integer('editable', { mode: 'boolean' }).default(true),
     metadata: text('metadata', { mode: 'json' }).$type<TMessageMetadata[]>(),
     createdAt: integer('created_at').notNull(),
@@ -429,6 +430,43 @@ const pluginData = sqliteTable('plugin_data', {
     .default({})
 });
 
+
+const externalChannels = sqliteTable(
+  'external_channels',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    type: text('type').notNull(),
+    name: text('name').notNull(),
+    topic: text('topic'),
+    fileAccessToken: text('file_access_token').notNull().unique(),
+    fileAccessTokenUpdatedAt: integer('file_access_token_updated_at').notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at')
+  },
+  (t) => [
+    index('external_channels_type_idx').on(t.type),
+  ]
+);
+
+
+const userExternalChannels = sqliteTable(
+  'user_external_channels',
+  {
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    externalChannelId: integer('external_channel_id')
+      .notNull()
+      .references(() => externalChannels.id, { onDelete: 'cascade' }),
+    createdAt: integer('created_at').notNull()
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.externalChannelId] }),
+    index('user_external_channels_user_idx').on(t.userId),
+    index('user_external_channels_external_channels_idx').on(t.externalChannelId)
+  ]
+);
+
 export {
   activityLog,
   categories,
@@ -448,5 +486,7 @@ export {
   roles,
   settings,
   userRoles,
-  users
+  users,
+  externalChannels,
+  userExternalChannels
 };

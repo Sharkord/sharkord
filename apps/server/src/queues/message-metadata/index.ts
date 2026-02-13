@@ -1,5 +1,5 @@
 import Queue from 'queue';
-import { publishMessage } from '../../db/publishers';
+import { publishMessage, publishExternalMessage } from '../../db/publishers';
 import { processMessageMetadata } from './get-message-metadata';
 
 const messageMetadataQueue = new Queue({
@@ -15,7 +15,12 @@ const enqueueProcessMetadata = (content: string, messageId: number) => {
     const updatedMessage = await processMessageMetadata(content, messageId);
 
     if (updatedMessage) {
-      publishMessage(messageId, undefined, 'update');
+      if( updatedMessage.externalChannelId ) {
+        publishExternalMessage(messageId, undefined, 'update');
+      }
+      else {
+        publishMessage(messageId, undefined, 'update');
+      }
     }
 
     callback?.();
@@ -23,3 +28,4 @@ const enqueueProcessMetadata = (content: string, messageId: number) => {
 };
 
 export { enqueueProcessMetadata, messageMetadataQueue };
+ 

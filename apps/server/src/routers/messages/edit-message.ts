@@ -2,7 +2,7 @@ import { Permission, isEmptyMessage } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
-import { publishMessage } from '../../db/publishers';
+import { publishMessage, publishExternalMessage } from '../../db/publishers';
 import { messages } from '../../db/schema';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
 import { eventBus } from '../../plugins/event-bus';
@@ -22,6 +22,7 @@ const editMessageRoute = protectedProcedure
       .select({
         userId: messages.userId,
         channelId: messages.channelId,
+        externalChannelId: messages.externalChannelId,
         editable: messages.editable
       })
       .from(messages)
@@ -41,7 +42,7 @@ const editMessageRoute = protectedProcedure
 
     invariant(
       message.userId === ctx.user.id ||
-        (await ctx.hasPermission(Permission.MANAGE_MESSAGES)),
+        ((await ctx.hasPermission(Permission.MANAGE_MESSAGES) && !message.externalChannelId)),
       {
         code: 'FORBIDDEN',
         message: 'You do not have permission to edit this message'
@@ -68,15 +69,23 @@ const editMessageRoute = protectedProcedure
       })
       .where(eq(messages.id, input.messageId));
 
-    publishMessage(input.messageId, message.channelId, 'update');
+      if( message.externalChannelId ) {
+        publishExternalMessage(input.messageId, message.externalChannelId, 'update');
+      }
+      else {
+        publishMessage(input.messageId, message.channelId, 'update');
+      }
+    
     enqueueProcessMetadata(sanitizedContent, input.messageId);
 
     eventBus.emit('message:updated', {
       messageId: input.messageId,
       channelId: message.channelId,
+      externalChannelId: message.externalChannelId,
       userId: message.userId,
       content: sanitizedContent
     });
   });
 
 export { editMessageRoute };
+ 

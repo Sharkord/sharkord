@@ -4,6 +4,11 @@ export enum ServerEvents {
   MESSAGE_DELETE = "messageDelete",
   MESSAGE_TYPING = "messageTyping",
 
+  NEW_EXTERNAL_MESSAGE = "newExternalMessage",
+  EXTERNAL_MESSAGE_UPDATE = "externalMessageUpdate",
+  EXTERNAL_MESSAGE_DELETE = "externalMessageDelete",  
+  EXTERNAL_MESSAGE_TYPING = "externalMessageTyping",
+
   USER_JOIN = "userJoin",
   USER_LEAVE = "userLeave",
 

@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { removeFile } from '../../db/mutations/files';
-import { publishMessage } from '../../db/publishers';
+import { publishMessage, publishExternalMessage } from '../../db/publishers';
 import { getFilesByMessageId } from '../../db/queries/files';
 import { messages } from '../../db/schema';
 import { eventBus } from '../../plugins/event-bus';
@@ -16,7 +16,8 @@ const deleteMessageRoute = protectedProcedure
     const targetMessage = await db
       .select({
         userId: messages.userId,
-        channelId: messages.channelId
+        channelId: messages.channelId,
+        externalChannelId: messages.externalChannelId
       })
       .from(messages)
       .where(eq(messages.id, input.messageId))
@@ -29,7 +30,7 @@ const deleteMessageRoute = protectedProcedure
     });
     invariant(
       targetMessage.userId === ctx.user.id ||
-        (await ctx.hasPermission(Permission.MANAGE_MESSAGES)),
+        ((await ctx.hasPermission(Permission.MANAGE_MESSAGES)) && !targetMessage.externalChannelId),
       {
         code: 'FORBIDDEN',
         message: 'You do not have permission to delete this message'
@@ -48,7 +49,11 @@ const deleteMessageRoute = protectedProcedure
 
     await db.delete(messages).where(eq(messages.id, input.messageId));
 
-    publishMessage(input.messageId, targetMessage.channelId, 'delete');
+    if( targetMessage.externalChannelId ) {
+        publishExternalMessage(input.messageId, targetMessage.externalChannelId, 'delete');
+    } else {
+        publishMessage(input.messageId, targetMessage.channelId, 'delete');
+    }
 
     eventBus.emit('message:deleted', {
       channelId: targetMessage.channelId,
@@ -57,3 +62,4 @@ const deleteMessageRoute = protectedProcedure
   });
 
 export { deleteMessageRoute };
+ 

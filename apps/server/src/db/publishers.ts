@@ -9,6 +9,7 @@ import { pluginManager } from '../plugins';
 import { pubsub } from '../utils/pubsub';
 import {
   getAffectedUserIdsForChannel,
+  getAffectedUserIdsForExternalChannel,
   getAllChannelUserPermissions
 } from './queries/channels';
 import { getEmojiById } from './queries/emojis';
@@ -55,6 +56,44 @@ const publishMessage = async (
       channelId,
       // this was sending the whole unread count before which was causing performance issues, now it just sends a delta of 1 which the client can use to update the unread count
       // this isn't perfectly accurate in some cases but it should be good enough for most cases and it significantly reduces the amount of work the db has to
+      delta: 1
+    });
+  }
+};
+
+const publishExternalMessage = async (
+  messageId: number | undefined,
+  externalChannelId: number | undefined,
+  type: 'create' | 'update' | 'delete'
+) => {
+  if (!messageId || !externalChannelId) return;
+
+  if (type === 'delete') {
+    pubsub.publish(ServerEvents.EXTERNAL_MESSAGE_DELETE, {
+      messageId: messageId,
+      externalChannelId: externalChannelId
+    });
+
+    return;
+  }
+
+  const message = await getMessage(messageId);
+
+  if (!message) return;
+
+  const targetEvent =
+    type === 'create' ? ServerEvents.NEW_EXTERNAL_MESSAGE : ServerEvents.EXTERNAL_MESSAGE_UPDATE;
+
+  const affectedUserIds = await getAffectedUserIdsForExternalChannel( externalChannelId );
+
+  pubsub.publishFor(affectedUserIds, targetEvent, message);
+
+  // only send unread updates to users OTHER than the message author
+  const usersToNotify = affectedUserIds.filter((id) => id !== message.userId);
+
+  if (usersToNotify.length > 0) {
+    pubsub.publishFor(usersToNotify, ServerEvents.CHANNEL_READ_STATES_DELTA, {
+      externalChannelId,
       delta: 1
     });
   }
@@ -218,6 +257,7 @@ export {
   publishChannelPermissions,
   publishEmoji,
   publishMessage,
+  publishExternalMessage,
   publishPluginCommands,
   publishRole,
   publishSettings,

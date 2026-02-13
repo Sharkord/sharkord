@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { removeFile } from '../../db/mutations/files';
-import { publishMessage } from '../../db/publishers';
+import { publishMessage, publishExternalMessage } from '../../db/publishers';
 import { getMessageByFileId } from '../../db/queries/messages';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -13,7 +13,13 @@ const deleteFileRoute = protectedProcedure
 
     if (!message) return;
 
-    publishMessage(message.id, message.channelId, 'update');
+    if( message.externalChannelId ) {
+        publishExternalMessage(message.id, message.externalChannelId, 'update');
+    }
+    else {
+        publishMessage(message.id, message.channelId, 'update');
+    }
   });
 
 export { deleteFileRoute };
+ 
