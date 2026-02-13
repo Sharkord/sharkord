@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "DEBUG=* bun --watch ./src/index.ts",
+    "dev": "bun --watch ./src/index.ts",
     "dev:inspect": "bun --inspect ./src/index.ts",
     "dev:debug": "DEBUG=* bun --watch ./src/index.ts",
     "build": "tsc -b && bun ./build/build.ts",

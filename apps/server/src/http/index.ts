@@ -4,6 +4,11 @@ import z from 'zod';
 import { config } from '../config';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
+import {
+  createRateLimiter,
+  getClientRateLimitKey,
+  getRateLimitRetrySeconds
+} from '../utils/rate-limiters/rate-limiter';
 import { healthRouteHandler } from './healthz';
 import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
@@ -12,8 +17,13 @@ import { publicRouteHandler } from './public';
 import { uploadFileRouteHandler } from './upload';
 import { HttpValidationError } from './utils';
 
-// this http server implementation is temporary and will be moved to bun server later when things are more stable
+// 5 attempts per minute per IP for login route
+const loginRateLimiter = createRateLimiter({
+  maxRequests: config.rateLimiters.joinServer.maxRequests,
+  windowMs: config.rateLimiters.joinServer.windowMs
+});
 
+// this http server implementation is temporary and will be moved to bun server later when things are more stable
 const createHttpServer = async (port: number = config.server.port) => {
   return new Promise<http.Server>((resolve) => {
     const server = http.createServer(
@@ -25,10 +35,7 @@ const createHttpServer = async (port: number = config.server.port) => {
         const info = getWsInfo(undefined, req);
 
         logger.debug(
-          `${chalk.dim('[HTTP]')} %s - %s - [%s]`,
-          req.method,
-          req.url,
-          info?.ip
+          `${chalk.dim('[HTTP]')} ${req.method} ${req.url} - ${info?.ip}`
         );
 
         if (req.method === 'OPTIONS') {
@@ -51,6 +58,38 @@ const createHttpServer = async (port: number = config.server.port) => {
           }
 
           if (req.method === 'POST' && req.url === '/login') {
+            if (info?.ip) {
+              // we can only rate limit if we have the client's IP
+
+              const key = getClientRateLimitKey(info?.ip);
+              const rateLimit = loginRateLimiter.consume(key);
+
+              if (!rateLimit.allowed) {
+                logger.debug(
+                  `${chalk.dim('[Rate Limiter HTTP]')} /login rate limited for key "${key}"`
+                );
+
+                res.setHeader(
+                  'Retry-After',
+                  getRateLimitRetrySeconds(rateLimit.retryAfterMs)
+                );
+
+                res.writeHead(429, { 'Content-Type': 'application/json' });
+
+                res.end(
+                  JSON.stringify({
+                    error: 'Too many login attempts. Please try again shortly.'
+                  })
+                );
+
+                return;
+              }
+            } else {
+              logger.warn(
+                `${chalk.dim('[Rate Limiter HTTP]')} Missing IP address in request info, skipping rate limiting for /login route.`
+              );
+            }
+
             return await loginRouteHandler(req, res);
           }
 

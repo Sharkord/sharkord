@@ -1,4 +1,5 @@
 import { UserAvatar } from '@/components/user-avatar';
+import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
 import type { TVoiceUser } from '@/features/server/types';
 import { useOwnUserId } from '@/features/server/users/hooks';
@@ -34,6 +35,7 @@ const VoiceUserCard = memo(
     const { videoRef, hasVideoStream, isSpeaking, speakingIntensity } =
       useVoiceRefs(userId);
     const { getUserVolumeKey } = useVolumeControl();
+    const { devices } = useDevices();
     const ownUserId = useOwnUserId();
     const isOwnUser = userId === ownUserId;
 
@@ -79,7 +81,10 @@ const VoiceUserCard = memo(
             autoPlay
             muted
             playsInline
-            className="absolute inset-0 w-full h-full object-contain"
+            className={cn(
+              'absolute inset-0 w-full h-full object-contain',
+              isOwnUser && devices.mirrorOwnVideo && '-scale-x-100'
+            )}
           />
         )}
         {!hasVideoStream && (

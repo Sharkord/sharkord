@@ -23,9 +23,13 @@ import { enqueueActivityLog } from '../../queues/activity-log';
 import { enqueueLogin } from '../../queues/logins';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
-import { t } from '../../utils/trpc';
+import { rateLimitedProcedure, t } from '../../utils/trpc';
 
-const joinServerRoute = t.procedure
+const joinServerRoute = rateLimitedProcedure(t.procedure, {
+  maxRequests: 5,
+  windowMs: 60_000,
+  logLabel: 'joinServer'
+})
   .input(
     z.object({
       handshakeHash: z.string(),
@@ -33,6 +37,7 @@ const joinServerRoute = t.procedure
     })
   )
   .query(async ({ input, ctx }) => {
+    const connectionInfo = ctx.getConnectionInfo();
     const settings = await getSettings();
     const hasPassword = !!settings?.password;
 
@@ -110,8 +115,6 @@ const joinServerRoute = t.procedure
       ...foundPublicUser,
       status: UserStatus.ONLINE
     });
-
-    const connectionInfo = ctx.getConnectionInfo();
 
     if (connectionInfo?.ip) {
       ctx.saveUserIp(ctx.user.id, connectionInfo.ip);
