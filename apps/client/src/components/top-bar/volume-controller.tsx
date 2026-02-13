@@ -58,10 +58,10 @@ const AudioStreamControl = memo(
               <Headphones className="h-3 w-3 text-muted-foreground" />
             </div>
           )}
+          <span className="text-sm truncate flex-1">{name}</span>
           {type === AudioStreamType.ScreenShare &&
             <Monitor className="h-3 w-3 text-muted-foreground" />
           }
-          <span className="text-sm truncate flex-1">{name}</span>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">

@@ -58,7 +58,7 @@ const useVoiceRefs = (
   }, [remoteUserStreams, remoteId, isOwnUser, localScreenShareStream]);
 
   const screenShareAudioStream = useMemo(() => {
-    if (isOwnUser) return localScreenShareAudioStream;
+    if (isOwnUser) return undefined;
 
     return remoteUserStreams[remoteId]?.[StreamKind.SCREEN_AUDIO];
   }, [remoteUserStreams, remoteId, isOwnUser, localScreenShareAudioStream]);
