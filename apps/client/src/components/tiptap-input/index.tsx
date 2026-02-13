@@ -4,6 +4,7 @@ import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import type { TCommandInfo } from '@sharkord/shared';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import { EditorContent, useEditor } from '@tiptap/react';
+import {Placeholder} from '@tiptap/extensions'
 import StarterKit from '@tiptap/starter-kit';
 import { Smile } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef } from 'react';
@@ -19,6 +20,7 @@ type TTiptapInputProps = {
   disabled?: boolean;
   readOnly?: boolean;
   value?: string;
+  placeholder?: string;
   onChange?: (html: string) => void;
   onSubmit?: () => void;
   onCancel?: () => void;
@@ -29,6 +31,7 @@ type TTiptapInputProps = {
 const TiptapInput = memo(
   ({
     value,
+    placeholder,
     onChange,
     onSubmit,
     onCancel,
@@ -58,6 +61,9 @@ const TiptapInput = memo(
           HTMLAttributes: {
             class: 'emoji-image'
           }
+        }),
+        Placeholder.configure({
+          placeholder
         })
       ];
 
@@ -72,7 +78,7 @@ const TiptapInput = memo(
       }
 
       return exts;
-    }, [customEmojis, commands]);
+    }, [customEmojis, commands, placeholder]);
 
     const editor = useEditor({
       extensions,
