@@ -17,7 +17,7 @@ import { getMessage } from './queries/messages';
 import { getRole } from './queries/roles';
 import { getPublicSettings } from './queries/server';
 import { getPublicUserById } from './queries/users';
-import { categories, channels } from './schema';
+import { categories, channels, externalChannels } from './schema';
 
 const publishMessage = async (
   messageId: number | undefined,
@@ -189,6 +189,34 @@ const publishChannel = async (
   pubsub.publish(targetEvent, channel);
 };
 
+
+const publishExternalChannel = async (
+  channelId: number | undefined,
+  type: 'create' | 'update' | 'delete'
+) => {
+  if (!channelId) return;
+
+  if (type === 'delete') {
+    pubsub.publish(ServerEvents.EXTERNAL_CHANNEL_DELETE, channelId);
+    return;
+  }
+
+  const externalChannel = await db
+    .select()
+    .from(externalChannels)
+    .where(eq(externalChannels.id, channelId))
+    .get();
+
+  if (!externalChannel) return;
+
+  const targetEvent =
+    type === 'create'
+      ? ServerEvents.EXTERNAL_CHANNEL_CREATE
+      : ServerEvents.EXTERNAL_CHANNEL_UPDATE;
+
+  pubsub.publish(targetEvent, externalChannel);
+};
+
 const publishSettings = async () => {
   const settings = await getPublicSettings();
 
@@ -261,5 +289,6 @@ export {
   publishPluginCommands,
   publishRole,
   publishSettings,
-  publishUser
+  publishUser,
+  publishExternalChannel
 };

@@ -19,6 +19,11 @@ export enum ServerEvents {
   CHANNEL_READ_STATES_UPDATE = "channelReadStatesUpdate",
   CHANNEL_READ_STATES_DELTA = "channelReadStatesDelta",
 
+  
+  EXTERNAL_CHANNEL_CREATE = "externalChannelCreate",
+  EXTERNAL_CHANNEL_UPDATE = "externalChannelUpdate",
+  EXTERNAL_CHANNEL_DELETE = "externalChannelDelete",
+
   USER_JOIN_VOICE = "userJoinVoice",
   USER_LEAVE_VOICE = "userLeaveVoice",
   USER_VOICE_STATE_UPDATE = "userVoiceStateUpdate",
