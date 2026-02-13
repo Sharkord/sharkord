@@ -23,7 +23,8 @@ const zConfig = z.object({
   mediasoup: z.object({
     worker: z.object({
       rtcMinPort: z.coerce.number().int().positive(),
-      rtcMaxPort: z.coerce.number().int().positive()
+      rtcMaxPort: z.coerce.number().int().positive(),
+      webrtcHost: z.string().optional()
     })
   }),
   rateLimiters: z.object({
@@ -110,7 +111,8 @@ config = applyEnvOverrides(config, {
   'server.port': 'SHARKORD_PORT',
   'server.debug': 'SHARKORD_DEBUG',
   'mediasoup.worker.rtcMinPort': 'SHARKORD_RTC_MIN_PORT',
-  'mediasoup.worker.rtcMaxPort': 'SHARKORD_RTC_MAX_PORT'
+  'mediasoup.worker.rtcMaxPort': 'SHARKORD_RTC_MAX_PORT',
+  'mediasoup.worker.webrtcHost': 'SHARKORD_WEBRTC_HOST'
 });
 
 config = Object.freeze(config);
