@@ -137,4 +137,22 @@ describe('others router', () => {
 
     expect(settingsAfterRemoval.logo).toBeNull();
   });
+
+  test('should rate limit excessive join attempts', async () => {
+    const { caller } = await getCaller(1);
+
+    for (let i = 0; i < 5; i++) {
+      await expect(
+        caller.others.joinServer({
+          handshakeHash: ''
+        })
+      ).rejects.toThrow('Invalid handshake hash');
+    }
+
+    await expect(
+      caller.others.joinServer({
+        handshakeHash: ''
+      })
+    ).rejects.toThrow('Too many requests. Please try again shortly.');
+  });
 });

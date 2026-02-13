@@ -1,6 +1,10 @@
 import fs from 'fs/promises';
 import { parse, stringify } from 'ini';
+import z from 'zod';
+import { applyEnvOverrides } from './helpers/apply-env-overrides';
+import { deepMerge } from './helpers/deep-merge';
 import { ensureServerDirs } from './helpers/ensure-server-dirs';
+import { getErrorMessage } from './helpers/get-error-message';
 import { getPrivateIp, getPublicIp } from './helpers/network';
 import { CONFIG_INI_PATH } from './helpers/paths';
 import { IS_DEVELOPMENT } from './utils/env';
@@ -10,84 +14,104 @@ const [SERVER_PUBLIC_IP, SERVER_PRIVATE_IP] = await Promise.all([
   getPrivateIp()
 ]);
 
-// Helper functions for parsing config values
-const parseIntSafe = (value: any, fallback: number): number => {
-  const parsed = parseInt(value, 10);
-  return isNaN(parsed) ? fallback : parsed;
-};
+const zConfig = z.object({
+  server: z.object({
+    port: z.coerce.number().int().positive(),
+    debug: z.coerce.boolean(),
+    autoupdate: z.coerce.boolean()
+  }),
+  mediasoup: z.object({
+    worker: z.object({
+      rtcMinPort: z.coerce.number().int().positive(),
+      rtcMaxPort: z.coerce.number().int().positive()
+    })
+  }),
+  rateLimiters: z.object({
+    sendAndEditMessage: z.object({
+      maxRequests: z.coerce.number().int().positive(),
+      windowMs: z.coerce.number().int().positive()
+    }),
+    joinVoiceChannel: z.object({
+      maxRequests: z.coerce.number().int().positive(),
+      windowMs: z.coerce.number().int().positive()
+    }),
+    joinServer: z.object({
+      maxRequests: z.coerce.number().int().positive(),
+      windowMs: z.coerce.number().int().positive()
+    })
+  })
+});
 
-const parseBoolSafe = (value: any, fallback: boolean = false): boolean => {
-  if (value === undefined || value === null || value === '') return fallback;
-  return value === 'true' || value === true || value === '1';
-};
+type TConfig = z.infer<typeof zConfig>;
 
-type TConfig = {
-  server: {
-    port: number;
-    debug: boolean;
-    autoupdate: boolean;
-  };
-  http: {
-    maxFiles: number;
-    maxFileSize: number;
-  };
-  mediasoup: {
-    worker: {
-      rtcMinPort: number;
-      rtcMaxPort: number;
-      webrtcHost?: string;
-    };
-  };
-};
-
-let config: TConfig = {
+const defaultConfig: TConfig = {
   server: {
     port: 4991,
-    debug: IS_DEVELOPMENT ? true : false,
+    debug: IS_DEVELOPMENT,
     autoupdate: false
-  },
-  http: {
-    maxFiles: 40,
-    maxFileSize: 100 // 100 MB
   },
   mediasoup: {
     worker: {
       rtcMinPort: 7882,
       rtcMaxPort: 7882
     }
+  },
+  rateLimiters: {
+    sendAndEditMessage: {
+      maxRequests: 15,
+      windowMs: 60_000
+    },
+    joinVoiceChannel: {
+      maxRequests: 20,
+      windowMs: 60_000
+    },
+    joinServer: {
+      maxRequests: 5,
+      windowMs: 60_000
+    }
   }
 };
 
-// TODO: get rid of this double write here, but it's fine for now
+let config: TConfig = structuredClone(defaultConfig);
+
 await ensureServerDirs();
 
-if (!(await fs.exists(CONFIG_INI_PATH))) {
+const configExists = await fs.exists(CONFIG_INI_PATH);
+
+if (!configExists) {
+  // config does not exist, create it with the default config
   await fs.writeFile(CONFIG_INI_PATH, stringify(config));
+} else {
+  try {
+    // config exists, we need to make sure it is up to date with the schema
+    // to make this easy, we will read the existing config, merge it with the default config, and write it back to the file
+    // this way we don't have to worry about migrating old config files when we add/remove config options
+    const existingConfigText = await fs.readFile(CONFIG_INI_PATH, {
+      encoding: 'utf-8'
+    });
+
+    const existingConfig = parse(existingConfigText) as Partial<TConfig>;
+    const mergedConfig = deepMerge(config, existingConfig);
+
+    config = zConfig.parse(mergedConfig);
+
+    await fs.writeFile(CONFIG_INI_PATH, stringify(config));
+  } catch (error) {
+    // something went wrong, just log the error and overwrite the config file with the default config
+    console.error(
+      `Error reading or parsing config.ini. Overwriting with default config. Error: ${getErrorMessage(error)}`
+    );
+
+    await fs.writeFile(CONFIG_INI_PATH, stringify(config));
+  }
 }
 
-const text = await fs.readFile(CONFIG_INI_PATH, {
-  encoding: 'utf-8'
+config = applyEnvOverrides(config, {
+  'server.port': 'SHARKORD_PORT',
+  'server.debug': 'SHARKORD_DEBUG',
+  'mediasoup.worker.rtcMinPort': 'SHARKORD_RTC_MIN_PORT',
+  'mediasoup.worker.rtcMaxPort': 'SHARKORD_RTC_MAX_PORT'
 });
-
-// Parse ini file (values come back as strings)
-const parsedIni = parse(text) as any;
-
-// Apply INI values if they exist (with type conversion and fallbacks)
-config.server.port = parseIntSafe(parsedIni.server?.port, config.server.port);
-config.server.debug = parseBoolSafe(parsedIni.server?.debug, config.server.debug);
-config.server.autoupdate = parseBoolSafe(parsedIni.server?.autoupdate, config.server.autoupdate);
-config.http.maxFiles = parseIntSafe(parsedIni.http?.maxFiles, config.http.maxFiles);
-config.http.maxFileSize = parseIntSafe(parsedIni.http?.maxFileSize, config.http.maxFileSize);
-config.mediasoup.worker.rtcMinPort = parseIntSafe(parsedIni.mediasoup?.worker?.rtcMinPort, config.mediasoup.worker.rtcMinPort);
-config.mediasoup.worker.rtcMaxPort = parseIntSafe(parsedIni.mediasoup?.worker?.rtcMaxPort, config.mediasoup.worker.rtcMaxPort);
-config.mediasoup.worker.webrtcHost = parsedIni.mediasoup?.worker?.webrtcHost;
-
-// Override with environment variables (SHARKORD_ prefixed to avoid conflicts)
-config.server.port = parseIntSafe(process.env.SHARKORD_PORT, config.server.port);
-config.server.debug = parseBoolSafe(process.env.SHARKORD_DEBUG, config.server.debug);
-config.mediasoup.worker.rtcMinPort = parseIntSafe(process.env.SHARKORD_RTC_MIN_PORT, config.mediasoup.worker.rtcMinPort);
-config.mediasoup.worker.rtcMaxPort = parseIntSafe(process.env.SHARKORD_RTC_MAX_PORT, config.mediasoup.worker.rtcMaxPort);
-config.mediasoup.worker.webrtcHost = process.env.SHARKORD_WEBRTC_HOST || config.mediasoup.worker.webrtcHost;
 
 config = Object.freeze(config);
 

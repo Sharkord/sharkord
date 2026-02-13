@@ -50,10 +50,11 @@ const useVoiceControls = ({
         micMuted: newState
       });
 
-      if (!localAudioStream) {
+      if (!localAudioStream && !newState) {
         await startMicStream();
       }
     } catch (error) {
+      updateOwnVoiceState({ micMuted: !newState });
       toast.error(getTrpcError(error, 'Failed to update microphone state'));
     }
   }, [
@@ -100,16 +101,24 @@ const useVoiceControls = ({
     );
 
     try {
-      await trpc.voice.updateState.mutate({
-        webcamEnabled: newState
-      });
-
       if (newState) {
         await startWebcamStream();
       } else {
         stopWebcamStream();
       }
-    } catch (error) {
+
+      await trpc.voice.updateState.mutate({
+        webcamEnabled: newState
+      });
+     } catch (error) {
+      updateOwnVoiceState({ webcamEnabled: false });
+
+      try {
+        await trpc.voice.updateState.mutate({ webcamEnabled: false });
+      } catch {
+        // ignore
+      }
+
       toast.error(getTrpcError(error, 'Failed to update webcam state'));
     }
   }, [
@@ -132,32 +141,45 @@ const useVoiceControls = ({
     );
 
     try {
-      await trpc.voice.updateState.mutate({
-        sharingScreen: newState
-      });
-
       if (newState) {
         const video = await startScreenShareStream();
-
+        
         // handle native screen share end
         video.onended = async () => {
           stopScreenShareStream();
           updateOwnVoiceState({ sharingScreen: false });
 
-          await trpc.voice.updateState.mutate({
-            sharingScreen: false
-          });
+          try {
+            await trpc.voice.updateState.mutate({
+              sharingScreen: false
+            });
+          } catch {
+            // ignore
+          }
         };
       } else {
         stopScreenShareStream();
       }
+
+      await trpc.voice.updateState.mutate({
+        sharingScreen: newState
+      });
     } catch (error) {
+      updateOwnVoiceState({ sharingScreen: false });
+
+      try {
+        await trpc.voice.updateState.mutate({ sharingScreen: false });
+      } catch {
+        // ignore
+      }
+
       toast.error(getTrpcError(error, 'Failed to update screen share state'));
     }
   }, [
     ownVoiceState.sharingScreen,
     startScreenShareStream,
-    stopScreenShareStream
+    stopScreenShareStream,
+    currentVoiceChannelId
   ]);
 
   return {
