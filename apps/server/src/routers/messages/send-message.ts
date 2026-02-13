@@ -28,8 +28,8 @@ const sendMessageRoute = protectedProcedure
     z
       .object({
         content: z.string(),
-        channelId: z.number().optional(),
-        externalChannelId: z.number().optional(),
+        channelId: z.number().optional().nullable(),
+        externalChannelId: z.number().optional().nullable(),
         files: z.array(z.string()).optional()
       })
       .required()
@@ -197,7 +197,6 @@ const sendMessageRoute = protectedProcedure
       userId: ctx.userId,
       content: targetContent
     });
-
     return message.id;
   });
 

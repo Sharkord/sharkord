@@ -102,12 +102,15 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     sendingRef.current = true;
     sendTypingSignal.cancel();
 
+    const externalChannelId = null; // for now, only support sending messages to normal channels
+
     const trpc = getTRPCClient();
 
     try {
       await trpc.messages.send.mutate({
         content: newMessage,
         channelId,
+        externalChannelId: externalChannelId,
         files: files.map((f) => f.id)
       });
 
