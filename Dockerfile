@@ -13,7 +13,7 @@ RUN set -eux; \
     else \
       echo "Unsupported arch: $TARGETARCH" >&2; exit 1; \
     fi; \
-    chmod +x /sharkordCOPY apps/server/build/out/sharkord-linux-x64 /sharkord
+    chmod +x /sharkord
 
 ENV RUNNING_IN_DOCKER=true
 
