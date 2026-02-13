@@ -2,7 +2,7 @@ import { Database } from 'bun:sqlite';
 import { afterAll, afterEach, beforeAll, beforeEach, mock } from 'bun:test';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import fs from 'node:fs/promises';
+import fs from 'fs/promises';
 import { DATA_PATH } from '../helpers/paths';
 import { createHttpServer } from '../http';
 import { loadMediasoup } from '../utils/mediasoup';

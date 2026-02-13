@@ -1,10 +1,9 @@
+import fs from 'fs/promises';
 import { parse, stringify } from 'ini';
-import fs from 'node:fs/promises';
 import { ensureServerDirs } from './helpers/ensure-server-dirs';
 import { getPrivateIp, getPublicIp } from './helpers/network';
 import { CONFIG_INI_PATH } from './helpers/paths';
 import { IS_DEVELOPMENT } from './utils/env';
-
 
 const [SERVER_PUBLIC_IP, SERVER_PRIVATE_IP] = await Promise.all([
   getPublicIp(),
@@ -67,15 +66,22 @@ if (process.env.SHARKORD_PORT) {
 }
 
 if (process.env.SHARKORD_DEBUG) {
-  config.server.debug = process.env.SHARKORD_DEBUG === 'true' || process.env.SHARKORD_DEBUG === '1';
+  config.server.debug =
+    process.env.SHARKORD_DEBUG === 'true' || process.env.SHARKORD_DEBUG === '1';
 }
 
 if (process.env.SHARKORD_RTC_MIN_PORT) {
-  config.mediasoup.worker.rtcMinPort = parseInt(process.env.SHARKORD_RTC_MIN_PORT, 10);
+  config.mediasoup.worker.rtcMinPort = parseInt(
+    process.env.SHARKORD_RTC_MIN_PORT,
+    10
+  );
 }
 
 if (process.env.SHARKORD_RTC_MAX_PORT) {
-  config.mediasoup.worker.rtcMaxPort = parseInt(process.env.SHARKORD_RTC_MAX_PORT, 10);
+  config.mediasoup.worker.rtcMaxPort = parseInt(
+    process.env.SHARKORD_RTC_MAX_PORT,
+    10
+  );
 }
 
 config = Object.freeze(config);
