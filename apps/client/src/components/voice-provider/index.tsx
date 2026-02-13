@@ -33,6 +33,7 @@ type AudioVideoRefs = {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   audioRef: React.RefObject<HTMLAudioElement | null>;
   screenShareRef: React.RefObject<HTMLVideoElement | null>;
+  screenShareAudioRef: React.RefObject<HTMLAudioElement | null>;
   externalAudioRef: React.RefObject<HTMLAudioElement | null>;
   externalVideoRef: React.RefObject<HTMLVideoElement | null>;
 };
@@ -59,7 +60,7 @@ export type TVoiceProvider = {
   ) => Promise<void>;
 } & Pick<
   ReturnType<typeof useLocalStreams>,
-  'localAudioStream' | 'localVideoStream' | 'localScreenShareStream'
+  'localAudioStream' | 'localVideoStream' | 'localScreenShareStream' | 'localScreenShareAudioStream'
 > &
   Pick<
     ReturnType<typeof useRemoteStreams>,
@@ -86,6 +87,7 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
     videoRef: { current: null },
     audioRef: { current: null },
     screenShareRef: { current: null },
+    screenShareAudioRef: { current: null},
     externalAudioRef: { current: null },
     externalVideoRef: { current: null }
   }),
@@ -103,6 +105,7 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
   localAudioStream: undefined,
   localVideoStream: undefined,
   localScreenShareStream: undefined,
+  localScreenShareAudioStream: undefined,
 
   remoteUserStreams: {},
   externalStreams: {}
@@ -128,6 +131,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         videoRef: { current: null },
         audioRef: { current: null },
         screenShareRef: { current: null },
+        screenShareAudioRef: { current: null },
         externalAudioRef: { current: null },
         externalVideoRef: { current: null }
       });
@@ -155,7 +159,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     localAudioStream,
     localVideoStream,
     localScreenShareStream,
+    localScreenShareAudioStream,
     localScreenShareProducer,
+    localScreenShareAudioProducer,
     setLocalAudioStream,
     setLocalVideoStream,
     setLocalScreenShare,
@@ -377,13 +383,18 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           ...getResWidthHeight(devices?.screenResolution),
           frameRate: devices?.screenFramerate
         },
-        audio: false
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        }
       });
 
       logVoice('Screen share stream obtained', { stream });
       setLocalScreenShare(stream);
 
       const videoTrack = stream.getVideoTracks()[0];
+      const audioTrack = stream.getAudioTracks()[0];
 
       if (videoTrack) {
         logVoice('Obtained video track', { videoTrack });
@@ -418,6 +429,19 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
           setLocalScreenShare(undefined);
         };
+
+        if (audioTrack) {
+          logVoice('Obtained audio track', { audioTrack });
+          localScreenShareAudioProducer.current = await producerTransport.current?.produce({
+            track: audioTrack,
+            appData: { kind: StreamKind.SCREEN_AUDIO }
+          });
+
+          audioTrack.onended = () => {
+            localScreenShareAudioProducer.current?.close();
+            localScreenShareAudioProducer.current = undefined;
+          };
+        }
 
         return videoTrack;
       } else {
@@ -555,6 +579,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       localAudioStream,
       localVideoStream,
       localScreenShareStream,
+      localScreenShareAudioStream,
 
       remoteUserStreams,
       externalStreams

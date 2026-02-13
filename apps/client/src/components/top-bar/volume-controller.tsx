@@ -14,27 +14,35 @@ import {
 import { useVoiceUsersByChannelId } from '@/features/server/hooks';
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { useVoiceChannelAudioExternalStreams } from '@/features/server/voice/hooks';
-import { Headphones, Volume2, VolumeX } from 'lucide-react';
+import { Headphones, Monitor, Volume2, VolumeX } from 'lucide-react';
 import { memo, useMemo } from 'react';
 
 type AudioStreamControlProps = {
   userId?: number;
   volumeKey: TVolumeKey;
   name: string;
+  type: AudioStreamType;
 };
 
 type VolumeControllerProps = {
   channelId: number;
 };
 
+enum AudioStreamType {
+  Voice = 0,
+  External = 1,
+  ScreenShare = 2
+}
+
 type AudioStream = {
   volumeKey: TVolumeKey;
   userId?: number;
   name: string;
+  type: AudioStreamType;
 };
 
 const AudioStreamControl = memo(
-  ({ userId, volumeKey, name }: AudioStreamControlProps) => {
+  ({ userId, volumeKey, type, name }: AudioStreamControlProps) => {
     const user = useUserById(userId || 0);
     const { getVolume, setVolume, toggleMute } = useVolumeControl();
     const volume = getVolume(volumeKey);
@@ -50,6 +58,9 @@ const AudioStreamControl = memo(
               <Headphones className="h-3 w-3 text-muted-foreground" />
             </div>
           )}
+          {type === AudioStreamType.ScreenShare &&
+            <Monitor className="h-3 w-3 text-muted-foreground" />
+          }
           <span className="text-sm truncate flex-1">{name}</span>
         </div>
 
@@ -90,9 +101,9 @@ const AudioStreamControl = memo(
 const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
   const voiceUsers = useVoiceUsersByChannelId(channelId);
   const externalAudioStreams = useVoiceChannelAudioExternalStreams(channelId);
-  const { getUserVolumeKey, getExternalVolumeKey } = useVolumeControl();
+  const { getUserVolumeKey, getUserScreenVolumeKey, getExternalVolumeKey } = useVolumeControl();
   const ownUserId = useOwnUserId();
-
+  console.log(externalAudioStreams);
   const audioStreams = useMemo(() => {
     const streams: AudioStream[] = [];
 
@@ -102,14 +113,26 @@ const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
       streams.push({
         volumeKey: getUserVolumeKey(voiceUser.id),
         userId: voiceUser.id,
-        name: voiceUser.name
+        name: voiceUser.name,
+        type: AudioStreamType.Voice
       });
+
+      if (voiceUser.state.sharingScreen) {
+        streams.push({
+          volumeKey: getUserScreenVolumeKey(voiceUser.id),
+          userId: voiceUser.id,
+          name: voiceUser.name,
+          type: AudioStreamType.ScreenShare
+        })
+      }
+
     });
 
     externalAudioStreams.forEach((stream) => {
       streams.push({
         volumeKey: getExternalVolumeKey(stream.pluginId, stream.key),
-        name: stream.title || 'External Audio'
+        name: stream.title || 'External Audio',
+        type: AudioStreamType.External
       });
     });
 
@@ -152,6 +175,7 @@ const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
                 userId={stream.userId}
                 volumeKey={stream.volumeKey}
                 name={stream.name}
+                type={stream.type}
               />
             ))}
             {audioStreams.length === 0 && (
