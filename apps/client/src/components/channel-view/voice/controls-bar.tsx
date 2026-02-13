@@ -1,4 +1,3 @@
-import { Separator } from '@/components/ui/separator';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -27,88 +26,78 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
   const { toggleMic, toggleWebcam, toggleScreenShare } = useVoice();
   const ownVoiceState = useOwnVoiceState();
   const channelCan = useChannelCan(channelId);
-
   const isVisible = useControlsBarVisibility();
 
-  const permissions = useMemo(() => {
-    return {
-      canSpeak: channelCan(ChannelPermission.SPEAK),
-      canWebcam: channelCan(ChannelPermission.WEBCAM),
-      canShareScreen: channelCan(ChannelPermission.SHARE_SCREEN)
-    };
-  }, [channelCan]);
+  const permissions = useMemo(() => ({
+    canSpeak: channelCan(ChannelPermission.SPEAK),
+    canWebcam: channelCan(ChannelPermission.WEBCAM),
+    canShareScreen: channelCan(ChannelPermission.SHARE_SCREEN)
+  }), [channelCan]);
 
   return (
     <div
       className={cn(
         'absolute bottom-8 left-0 right-0 flex justify-center items-center pointer-events-none z-50',
-        'transition-all duration-300 ease-in-out',
+        'transition-all duration-300 ease-in-out gap-3',
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
       )}
     >
       <div
         className={cn(
-          'flex items-center gap-1 pointer-events-auto',
-          'p-2 rounded-[24px] border shadow-2xl',
-          'bg-card/90 backdrop-blur-md border-border/50'
+          'flex items-center gap-2 pointer-events-auto',
+          'h-14 px-2 rounded-md border shadow-xl',
+          'bg-card border-border/50 backdrop-blur-md'
         )}
       >
-        <div className="flex items-center gap-1 px-1">
-          <ControlToggleButton
-            enabled={ownVoiceState.micMuted}
-            enabledLabel="Unmute"
-            disabledLabel="Mute"
-            enabledIcon={MicOff}
-            disabledIcon={Mic}
-            enabledClassName="bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400"
-            onClick={toggleMic}
-            disabled={!permissions.canSpeak}
-            />
+        <ControlToggleButton
+          enabled={ownVoiceState.micMuted}
+          enabledLabel="Unmute"
+          disabledLabel="Mute"
+          enabledIcon={MicOff}
+          disabledIcon={Mic}
+          enabledClassName="bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-500"
+          onClick={toggleMic}
+          disabled={!permissions.canSpeak}
+        />
 
-          <ControlToggleButton
-            enabled={ownVoiceState.webcamEnabled}
-            enabledLabel="Stop Video"
-            disabledLabel="Start Video"
-            enabledIcon={Video}
-            disabledIcon={VideoOff}
-            enabledClassName="bg-green-500/15 hover:bg-green-500/25 text-green-400 hover:text-green-300"
-            onClick={toggleWebcam}
-            disabled={!permissions.canWebcam}
-            />
+        <ControlToggleButton
+          enabled={ownVoiceState.webcamEnabled}
+          enabledLabel="Stop Video"
+          disabledLabel="Start Video"
+          enabledIcon={Video}
+          disabledIcon={VideoOff}
+          enabledClassName="bg-green-500/20 text-green-500 hover:bg-green-500/30 hover:text-green-500"
+          onClick={toggleWebcam}
+          disabled={!permissions.canWebcam}
+        />
 
-          <ControlToggleButton
-            enabled={ownVoiceState.sharingScreen}
-            enabledLabel="Stop Sharing"
-            disabledLabel="Share Screen"
-            enabledIcon={ScreenShareOff}
-            disabledIcon={Monitor}
-            enabledClassName="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 hover:text-blue-300"
-            onClick={toggleScreenShare}
-            disabled={!permissions.canShareScreen}
-            />
-        </div>
-
-        <Separator orientation="vertical" className="h-6 mx-2 bg-border/60" />
-
-        <Tooltip content="Disconnect">
-          <Button
-            size="icon"
-            className={cn(
-              'h-11 w-16 rounded-[20px] text-white transition-all active:scale-95',
-              'border-none shadow-none',
-              'bg-[#ec4245] hover:bg-[#da373c]'
-            )}
-            onClick={leaveVoice}
-            aria-label="Disconnect"
-          >
-            <PhoneOff size={24} fill="currentColor" />
-          </Button>
-        </Tooltip>
+        <ControlToggleButton
+          enabled={ownVoiceState.sharingScreen}
+          enabledLabel="Stop Sharing"
+          disabledLabel="Share Screen"
+          enabledIcon={ScreenShareOff}
+          disabledIcon={Monitor}
+          enabledClassName="bg-blue-500/20 text-blue-500 hover:bg-blue-500/30 hover:text-blue-500"
+          onClick={toggleScreenShare}
+          disabled={!permissions.canShareScreen}
+        />
       </div>
+
+      <Tooltip content="Disconnect">
+        <Button
+          size="icon"
+          className={cn(
+            'pointer-events-auto h-14 w-18 rounded-md text-white shadow-xl transition-all active:scale-95',
+            'bg-[#ec4245] hover:bg-[#da373c]'
+          )}
+          onClick={leaveVoice}
+          aria-label="Disconnect"
+        >
+          <PhoneOff size={24} fill="currentColor" />
+        </Button>
+      </Tooltip>
     </div>
   );
 });
-
-ControlsBar.displayName = 'ControlsBar';
 
 export { ControlsBar };

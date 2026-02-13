@@ -5,9 +5,8 @@ const useControlsBarVisibility = () => {
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      const isBottomHalf = e.clientY > window.innerHeight / 2;
-      const isRightZone = e.clientX > window.innerWidth - 300;
-      setIsVisible(isBottomHalf || isRightZone);
+      const isBottomZone = e.clientY > window.innerHeight * 0.8;
+      setIsVisible(isBottomZone);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
