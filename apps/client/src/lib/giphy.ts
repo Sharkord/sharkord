@@ -1,12 +1,3 @@
-/**
- * GIPHY API client for GIF search and trending.
- * Replace YOUR_GIPHY_API_KEY with your key from https://developers.giphy.com/dashboard/
- * Optional: use VITE_GIPHY_API_KEY env var for production.
- */
-const GIPHY_API_KEY =
-  import.meta.env?.VITE_GIPHY_API_KEY ?? 'YOUR_GIPHY_API_KEY';
-const GIPHY_BASE = 'https://api.giphy.com/v1/gifs';
-
 export type GiphyImageRendition = {
   url: string;
   width: string;
@@ -34,23 +25,6 @@ export type GiphySearchResponse = {
   pagination: { offset: number; total_count?: number; count: number };
   meta: { msg: string; status: number };
 };
-
-export async function searchGifs(
-  query: string,
-  limit = 25
-): Promise<GiphySearchResponse> {
-  const params = new URLSearchParams({
-    api_key: GIPHY_API_KEY,
-    q: query.trim(),
-    limit: String(limit),
-    rating: 'g'
-  });
-  const res = await fetch(`${GIPHY_BASE}/search?${params}`);
-  if (!res.ok) {
-    throw new Error(res.status === 429 ? 'Rate limit exceeded' : 'Search failed');
-  }
-  return res.json();
-}
 
 /** Returns the animated GIF URL for embedding (ends in .gif for serializer compatibility). */
 export function getEmbedUrl(gif: GiphyGif): string {
@@ -83,19 +57,4 @@ export function getEmbedUrl(gif: GiphyGif): string {
   }
 
   throw new Error('No valid GIF image URL found');
-}
-
-export async function getTrendingGifs(
-  limit = 25
-): Promise<GiphySearchResponse> {
-  const params = new URLSearchParams({
-    api_key: GIPHY_API_KEY,
-    limit: String(limit),
-    rating: 'g'
-  });
-  const res = await fetch(`${GIPHY_BASE}/trending?${params}`);
-  if (!res.ok) {
-    throw new Error(res.status === 429 ? 'Rate limit exceeded' : 'Failed to load trending');
-  }
-  return res.json();
 }

@@ -1,9 +1,10 @@
 import { EmojiPicker } from '@/components/emoji-picker';
 import { Button } from '@/components/ui/button';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
+import { giphyEnabledSelector } from '@/features/server/selectors';
 import type { TCommandInfo } from '@sharkord/shared';
+import { useSelector } from 'react-redux';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
-import Link from '@tiptap/extension-link';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Smile } from 'lucide-react';
@@ -42,6 +43,7 @@ const TiptapInput = memo(
     readOnlyRef.current = readOnly;
 
     const customEmojis = useCustomEmojis();
+    const giphyEnabled = useSelector(giphyEnabledSelector);
 
     const extensions = useMemo(() => {
       const exts = [
@@ -49,6 +51,13 @@ const TiptapInput = memo(
           hardBreak: {
             HTMLAttributes: {
               class: 'hard-break'
+            }
+          },
+          link: {
+            openOnClick: false,
+            HTMLAttributes: {
+              target: '_blank',
+              rel: 'noopener noreferrer'
             }
           }
         }),
@@ -58,13 +67,6 @@ const TiptapInput = memo(
           suggestion: EmojiSuggestion,
           HTMLAttributes: {
             class: 'emoji-image'
-          }
-        }),
-        Link.configure({
-          openOnClick: false,
-          HTMLAttributes: {
-            target: '_blank',
-            rel: 'noopener noreferrer'
           }
         })
       ];
@@ -221,7 +223,7 @@ const TiptapInput = memo(
 
         <EmojiPicker
           onEmojiSelect={handleEmojiSelect}
-          onGifSelect={handleGifSelect}
+          onGifSelect={giphyEnabled ? handleGifSelect : undefined}
         >
           <Button variant="ghost" size="icon" disabled={disabled}>
             <Smile className="h-5 w-5" />

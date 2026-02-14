@@ -34,6 +34,9 @@ export const publicServerSettingsSelector = (state: IRootState) =>
 export const pluginsEnabledSelector = (state: IRootState) =>
   !!state.server.publicSettings?.enablePlugins;
 
+export const giphyEnabledSelector = (state: IRootState) =>
+  !!state.server.publicSettings?.giphyEnabled;
+
 export const infoSelector = (state: IRootState) => state.server.info;
 
 export const ownUserRolesSelector = createSelector(

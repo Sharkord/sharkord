@@ -1,10 +1,6 @@
-import {
-  getEmbedUrl,
-  getTrendingGifs,
-  searchGifs,
-  type GiphyGif
-} from '@/lib/giphy';
+import { getEmbedUrl, type GiphyGif } from '@/lib/giphy';
 import { Input } from '@/components/ui/input';
+import { getTRPCClient } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { debounce } from 'lodash-es';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -26,10 +22,11 @@ const GifTab = memo(({ onGifSelect }: TGifTabProps) => {
     setLoading(true);
     setError(null);
     try {
+      const trpc = getTRPCClient();
       const res = query.trim()
-        ? await searchGifs(query, LIMIT)
-        : await getTrendingGifs(LIMIT);
-      setGifs(res.data ?? []);
+        ? await trpc.others.giphySearch.query({ query, limit: LIMIT })
+        : await trpc.others.giphyTrending.query({ limit: LIMIT });
+      setGifs((res as { data?: GiphyGif[] })?.data ?? []);
     } catch (e) {
       setError(
         e instanceof Error ? e.message : 'Could not load GIFs'
@@ -76,7 +73,8 @@ const GifTab = memo(({ onGifSelect }: TGifTabProps) => {
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-4 text-center">
         <p className="text-sm">{error}</p>
         <p className="text-xs mt-2">
-          Try again later or check your GIPHY API key.
+          Try again later or ask an admin to configure the Giphy API key in
+          Server Settings.
         </p>
       </div>
     );

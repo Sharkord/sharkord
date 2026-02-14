@@ -2,6 +2,7 @@ import type { TJoinedSettings, TPublicServerSettings } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { db } from '..';
 import { files, settings } from '../schema';
+import { getGiphyApiKey } from '../../utils/giphy-config';
 
 // since this is static, we can keep it in memory to avoid querying the DB every time
 let token: string;
@@ -35,7 +36,8 @@ const getPublicSettings: () => Promise<TPublicServerSettings> = async () => {
     storageUploadMaxFileSize: settings.storageUploadMaxFileSize,
     storageSpaceQuotaByUser: settings.storageSpaceQuotaByUser,
     storageOverflowAction: settings.storageOverflowAction,
-    enablePlugins: settings.enablePlugins
+    enablePlugins: settings.enablePlugins,
+    giphyEnabled: !!getGiphyApiKey()
   };
 
   return publicSettings;

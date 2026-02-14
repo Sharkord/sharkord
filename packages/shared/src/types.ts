@@ -38,7 +38,9 @@ export type TPublicServerSettings = Pick<
   | "storageSpaceQuotaByUser"
   | "storageOverflowAction"
   | "enablePlugins"
->;
+> & {
+  giphyEnabled?: boolean;
+};
 
 export type TGenericObject = {
   [key: string]: any;
