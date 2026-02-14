@@ -13,7 +13,7 @@ const addEmojiRoute = protectedProcedure
     z.array(
       z.object({
         fileId: z.string(),
-        name: z.string().min(1).max(16)
+        name: z.string().min(1).max(32)
       })
     )
   )
