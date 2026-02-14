@@ -48,7 +48,7 @@ const serializer = (
         }
       } else if (isImage) {
         pushMedia({ type: 'image', url: href });
-        return;
+        return <></>;
       }
     } else if (domNode instanceof Element && domNode.name === 'command') {
       const command = parseDomCommand(domNode);
