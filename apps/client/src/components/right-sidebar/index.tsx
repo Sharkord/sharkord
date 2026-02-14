@@ -44,11 +44,11 @@ const RightSidebar = memo(
     );
 
     const usersToShow = useMemo(
-      () => users.slice(0, MAX_USERS_TO_SHOW),
-      [users]
+      () => visibleUsers.slice(0, MAX_USERS_TO_SHOW),
+      [visibleUsers]
     );
 
-    const hasHiddenUsers = users.length > MAX_USERS_TO_SHOW;
+    const hasHiddenUsers = visibleUsers.length > MAX_USERS_TO_SHOW;
 
     return (
       <aside
@@ -70,7 +70,7 @@ const RightSidebar = memo(
             </div>
             <div className="flex-1 overflow-y-auto p-2">
               <div className="space-y-1">
-                {visibleUsers.map((user) => (
+                {usersToShow.map((user) => (
                   <User
                     key={user.id}
                     userId={user.id}
@@ -80,7 +80,7 @@ const RightSidebar = memo(
                 ))}
                 {hasHiddenUsers && (
                   <div className="text-sm text-muted-foreground px-2 py-1.5">
-                    +{users.length - MAX_USERS_TO_SHOW} more...
+                    +{visibleUsers.length - MAX_USERS_TO_SHOW} more...
                   </div>
                 )}
               </div>

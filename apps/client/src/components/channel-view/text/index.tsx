@@ -104,8 +104,6 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
   );
 
   const onSendMessage = useCallback(async () => {
-    const hasContent = hasMessageRenderableContent(newMessage);
-
     if (
       (isEmptyMessage(newMessage) && !files.length) ||
       !canSendMessages ||

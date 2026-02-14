@@ -16,7 +16,7 @@ const MessagesGroup = memo(({ group }: TMessagesGroupProps) => {
   const user = useUserById(firstMessage.userId);
   const date = new Date(firstMessage.createdAt);
   const isOwnUser = useIsOwnUser(firstMessage.userId);
-  const isDeletedUser = user?.name === 'Deleted';
+  const isDeletedUser = user?.name === 'Deleted' && user.banned;
 
   if (!user) return null;
 
