@@ -191,7 +191,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           deviceId: {
-            ideal: devices.microphoneId
+            exact: devices.microphoneId
           },
           autoGainControl: devices.autoGainControl,
           echoCancellation: devices.echoCancellation,
@@ -271,7 +271,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
-          deviceId: { ideal: devices?.webcamId },
+          deviceId: { exact: devices?.webcamId },
           frameRate: devices.webcamFramerate,
           ...getResWidthHeight(devices?.webcamResolution)
         }
