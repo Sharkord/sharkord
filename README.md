@@ -104,8 +104,6 @@ Upon first run, Sharkord will generate a default configuration file located at `
 | `port` | `4991` | The port number on which the server will listen for HTTP and WebSocket connections |
 | `debug` | `false` | Enable debug logging for detailed server logs and diagnostics |
 | `autoupdate` | `false` | When enabled, it will automatically check for and install updates with no user intervention |
-| `maxFiles` | `40` | Maximum number of files that can be uploaded in a single request |
-| `maxFileSize` | `100` | Maximum file size in megabytes (MB) allowed per uploaded file |
 | `webrtcPort` | `40000` | The port for the WebRTC server to listen on (UDP+TCP) |
 | `announcedAddress` | _(empty)_ | When set, announces this address for WebRTC connections. Useful when your reverse proxy is on a different host than Sharkord. |
 
