@@ -43,8 +43,8 @@ Sharkord can also be run using Docker. Here's how to run it:
 ```bash
 docker run \
   -p 4991:4991/tcp \
-  -p 40000-40020:40000-40020/tcp \
-  -p 40000-40020:40000-40020/udp \
+  -p 40000:40000/tcp \
+  -p 40000:40000/udp \
   -v ./data:/root/.config/sharkord \
   --name sharkord \
   sharkord/sharkord:latest
@@ -60,8 +60,8 @@ Common settings you might want to customize. These override config file values a
 |----------|---------|-------------|
 | `SHARKORD_PORT` | `4991` | HTTP/WebSocket listen port |
 | `SHARKORD_DEBUG` | `false` | Enable verbose logging |
-| `SHARKORD_RTC_MIN_PORT` | `40000` | Minimum UDP port for WebRTC media |
-| `SHARKORD_RTC_MAX_PORT` | `40020` | Maximum UDP port for WebRTC media |
+| `SHARKORD_WEBRTC_PORT` | `40000` | WebRTC server port (UDP+TCP) |
+| `SHARKORD_ANNOUNCED_ADDRESS` | _(auto-detected)_ | Public IP announced to WebRTC clients |
 
 #### Windows
 
@@ -95,17 +95,15 @@ Upon first run, Sharkord will generate a default configuration file located at `
 
 ### Options
 
-| Field         | Default | Description                                                                                 |
-| ------------- | ------- | ------------------------------------------------------------------------------------------- |
-| `port`        | `4991`  | The port number on which the server will listen for HTTP and WebSocket connections          |
-| `debug`       | `false` | Enable debug logging for detailed server logs and diagnostics                               |
-| `maxFiles`    | `40`    | Maximum number of files that can be uploaded in a single request                            |
-| `maxFileSize` | `100`   | Maximum file size in megabytes (MB) allowed per uploaded file                               |
-| `rtcMinPort`  | `40000` | DEPRECATED - Remains for backwards compatibility.                                           |
-| `rtcMaxPort`  | `40020` | DEPRECATED - Remains for backwards Compatibility                                            |
-| `autoupdate`  | `false` | When enabled, it will automatically check for and install updates with no user intervention |
-| `announcedAddress`  | `None` | When set, it will announce this address for WebRTC connections. Useful when your reverse proxy is on a different host than sharkord. |
-| `webRtcServerPort`  | `40000` | The port for the webrtc server to listen on. This replaces Min/Max port. |
+| Field | Default | Description |
+| --- | --- | --- |
+| `port` | `4991` | The port number on which the server will listen for HTTP and WebSocket connections |
+| `debug` | `false` | Enable debug logging for detailed server logs and diagnostics |
+| `autoupdate` | `false` | When enabled, it will automatically check for and install updates with no user intervention |
+| `maxFiles` | `40` | Maximum number of files that can be uploaded in a single request |
+| `maxFileSize` | `100` | Maximum file size in megabytes (MB) allowed per uploaded file |
+| `webrtcPort` | `40000` | The port for the WebRTC server to listen on (UDP+TCP) |
+| `announcedAddress` | _(empty)_ | When set, announces this address for WebRTC connections. Useful when your reverse proxy is on a different host than Sharkord. |
 
 ## HTTPS Setup
 

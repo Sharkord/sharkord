@@ -9,9 +9,9 @@ let webRtcServer: mediasoup.types.WebRtcServer<mediasoup.types.AppData>;
 let webRtcServerListenInfo: { ip: string; announcedAddress?: string };
 
 const loadMediasoup = async () => {
+  const port = +config.mediasoup.webrtcPort;
+
   const workerConfig: mediasoup.types.WorkerSettings = {
-    rtcMinPort: +config.mediasoup.worker.rtcMinPort,
-    rtcMaxPort: +config.mediasoup.worker.rtcMaxPort,
     logLevel: 'debug',
     disableLiburing: true,
     workerBin: MEDIASOUP_BINARY_PATH
@@ -30,8 +30,6 @@ const loadMediasoup = async () => {
   });
 
   logger.debug('Mediasoup worker loaded');
-
-  const port = +config.mediasoup.webRtcServerPort;
 
   if (IS_PRODUCTION) {
     const announcedAddress =

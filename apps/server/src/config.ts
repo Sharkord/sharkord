@@ -14,25 +14,6 @@ const [SERVER_PUBLIC_IP, SERVER_PRIVATE_IP] = await Promise.all([
   getPrivateIp()
 ]);
 
-type TConfig = {
-  server: {
-    port: number;
-    debug: boolean;
-    autoupdate: boolean;
-  };
-  http: {
-    maxFiles: number;
-    maxFileSize: number;
-  };
-  mediasoup: {
-    worker: {
-      rtcMinPort: number;
-      rtcMaxPort: number;
-    };
-    webRtcServerPort: number;
-    announcedAddress: string;
-  };
-};
 const zConfig = z.object({
   server: z.object({
     port: z.coerce.number().int().positive(),
@@ -40,10 +21,8 @@ const zConfig = z.object({
     autoupdate: z.coerce.boolean()
   }),
   mediasoup: z.object({
-    worker: z.object({
-      rtcMinPort: z.coerce.number().int().positive(),
-      rtcMaxPort: z.coerce.number().int().positive()
-    })
+    webrtcPort: z.coerce.number().int().positive(),
+    announcedAddress: z.string()
   }),
   rateLimiters: z.object({
     sendAndEditMessage: z.object({
@@ -70,13 +49,8 @@ const defaultConfig: TConfig = {
     autoupdate: false
   },
   mediasoup: {
-    worker: {
-      rtcMinPort: 40000,
-      rtcMaxPort: 40020
-    },
-    webRtcServerPort: 40000,
+    webrtcPort: 40000,
     announcedAddress: ''
-    }
   },
   rateLimiters: {
     sendAndEditMessage: {
@@ -131,8 +105,8 @@ if (!configExists) {
 config = applyEnvOverrides(config, {
   'server.port': 'SHARKORD_PORT',
   'server.debug': 'SHARKORD_DEBUG',
-  'mediasoup.worker.rtcMinPort': 'SHARKORD_RTC_MIN_PORT',
-  'mediasoup.worker.rtcMaxPort': 'SHARKORD_RTC_MAX_PORT'
+  'mediasoup.webrtcPort': 'SHARKORD_WEBRTC_PORT',
+  'mediasoup.announcedAddress': 'SHARKORD_ANNOUNCED_ADDRESS'
 });
 
 config = Object.freeze(config);

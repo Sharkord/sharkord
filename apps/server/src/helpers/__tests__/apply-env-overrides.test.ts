@@ -49,14 +49,14 @@ describe('applyEnvOverrides', () => {
   });
 
   test('overrides a deeply nested value', () => {
-    setEnv('TEST_RTC_MIN', '50000');
+    setEnv('TEST_RTC_PORT', '50000');
 
-    const config = { mediasoup: { worker: { rtcMinPort: 40000 } } };
-    const overridesMap = { 'mediasoup.worker.rtcMinPort': 'TEST_RTC_MIN' };
+    const config = { mediasoup: { webrtcPort: 40000 } };
+    const overridesMap = { 'mediasoup.webrtcPort': 'TEST_RTC_PORT' };
 
     const result = applyEnvOverrides(config, overridesMap);
 
-    expect(result.mediasoup.worker.rtcMinPort).toBe(50000);
+    expect(result.mediasoup.webrtcPort).toBe(50000);
   });
 
   test('uses string value when JSON.parse fails', () => {
@@ -143,20 +143,19 @@ describe('applyEnvOverrides', () => {
   test('works with the full config overrides map', () => {
     setEnv('SHARKORD_PORT_TEST', '5000');
     setEnv('SHARKORD_DEBUG_TEST', 'false');
-    setEnv('SHARKORD_RTC_MIN_TEST', '45000');
-    setEnv('SHARKORD_RTC_MAX_TEST', '45020');
+    setEnv('SHARKORD_WEBRTC_PORT_TEST', '50000');
 
     const config = {
       server: { port: 4991, debug: true, autoupdate: false },
       http: { maxFiles: 40, maxFileSize: 100 },
-      mediasoup: { worker: { rtcMinPort: 40000, rtcMaxPort: 40020 } }
+      mediasoup: { webrtcPort: 40000, announcedAddress: '' }
     };
 
     const overridesMap = {
       'server.port': 'SHARKORD_PORT_TEST',
       'server.debug': 'SHARKORD_DEBUG_TEST',
-      'mediasoup.worker.rtcMinPort': 'SHARKORD_RTC_MIN_TEST',
-      'mediasoup.worker.rtcMaxPort': 'SHARKORD_RTC_MAX_TEST'
+      'mediasoup.webrtcPort': 'SHARKORD_WEBRTC_PORT_TEST',
+      'mediasoup.announcedAddress': 'SHARKORD_ANNOUNCED_ADDRESS_TEST'
     };
 
     const result = applyEnvOverrides(config, overridesMap);
@@ -166,7 +165,7 @@ describe('applyEnvOverrides', () => {
     expect(result.server.autoupdate).toBe(false);
     expect(result.http.maxFiles).toBe(40);
     expect(result.http.maxFileSize).toBe(100);
-    expect(result.mediasoup.worker.rtcMinPort).toBe(45000);
-    expect(result.mediasoup.worker.rtcMaxPort).toBe(45020);
+    expect(result.mediasoup.webrtcPort).toBe(50000);
+    expect(result.mediasoup.announcedAddress).toBe('');
   });
 });
