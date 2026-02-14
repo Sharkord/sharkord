@@ -1,7 +1,7 @@
 import { TiptapInput } from '@/components/tiptap-input';
 import { AutoFocus } from '@/components/ui/auto-focus';
 import { getTRPCClient } from '@/lib/trpc';
-import type { TMessage } from '@sharkord/shared';
+import { type TMessage, isEmptyMessage } from '@sharkord/shared';
 import { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -16,7 +16,8 @@ const MessageEditInline = memo(
 
     const onSubmit = useCallback(
       async (newValue: string | undefined) => {
-        if (!newValue) {
+        if (isEmptyMessage(newValue)) {
+          toast.error('Message cannot be empty');
           onBlur();
           return;
         }

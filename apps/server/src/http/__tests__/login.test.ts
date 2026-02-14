@@ -254,4 +254,24 @@ describe('/login', () => {
 
     expect(role?.isDefault).toBe(true);
   });
+
+  test('should rate limit excessive login attempts', async () => {
+    for (let i = 0; i < 5; i++) {
+      const response = await login('testowner', 'wrongpassword');
+
+      expect(response.status).toBe(400);
+    }
+
+    const limitedResponse = await login('testowner', 'wrongpassword');
+
+    expect(limitedResponse.status).toBe(429);
+    expect(limitedResponse.headers.get('retry-after')).toBeTruthy();
+
+    const data = await limitedResponse.json();
+
+    expect(data).toHaveProperty(
+      'error',
+      'Too many login attempts. Please try again shortly.'
+    );
+  });
 });

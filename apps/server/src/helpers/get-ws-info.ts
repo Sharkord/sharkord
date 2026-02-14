@@ -2,6 +2,8 @@ import type http from 'http';
 import { UAParser } from 'ua-parser-js';
 import type { TConnectionInfo } from '../types';
 
+// TODO: this code is shit and needs to be improved later
+
 const getWsIp = (
   ws: any | undefined,
   req: http.IncomingMessage

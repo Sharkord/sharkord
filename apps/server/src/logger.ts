@@ -4,15 +4,6 @@ import { config } from './config';
 import { ensureDir } from './helpers/fs';
 import { LOGS_PATH } from './helpers/paths';
 
-declare module 'winston' {
-  interface Logger {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    time: (key: string, message?: string, ...meta: any[]) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    timeEnd: (key: string, message?: string, ...meta: any[]) => void;
-  }
-}
-
 const { combine, colorize, printf, errors, splat } = format;
 
 const logFormat = printf(({ level, message, stack }) => {
@@ -41,34 +32,5 @@ const logger = createLogger({
     })
   ]
 });
-
-const startTimes: Record<string, number> = {};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-logger.time = (key: string, message?: string, ...meta: any[]) => {
-  startTimes[key] = performance.now();
-  if (message) {
-    logger.info(message, ...meta);
-  }
-};
-
-logger.timeEnd = (key: string, message?: string, ...meta: unknown[]) => {
-  const endTime = performance.now();
-  const startTime = startTimes[key];
-
-  if (!startTime) return;
-
-  const duration = (endTime - startTime).toFixed(3);
-
-  let newMsg = `[${key}] ${duration} ms`;
-
-  if (message) {
-    newMsg = `${message} (${duration} ms)`;
-  }
-
-  logger.info(newMsg, ...meta);
-
-  delete startTimes[key];
-};
 
 export { logger };

@@ -1,11 +1,13 @@
 import {
   ActivityLogType,
   ChannelPermission,
+  isEmptyMessage,
   Permission,
   toDomCommand
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { config } from '../../config';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { getSettings } from '../../db/queries/server';
@@ -19,9 +21,14 @@ import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
 import { fileManager } from '../../utils/file-manager';
-import { protectedProcedure } from '../../utils/trpc';
+import { invariant } from '../../utils/invariant';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const sendMessageRoute = protectedProcedure
+const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.sendAndEditMessage.maxRequests,
+  windowMs: config.rateLimiters.sendAndEditMessage.windowMs,
+  logLabel: 'sendMessage'
+})
   .input(
     z
       .object({
@@ -40,7 +47,19 @@ const sendMessageRoute = protectedProcedure
       )
     ]);
 
+    invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
+      code: 'BAD_REQUEST',
+      message: 'Message cannot be empty.'
+    });
+
     let targetContent = sanitizeMessageHtml(input.content);
+
+    invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
+      code: 'BAD_REQUEST',
+      message:
+        'Your message only contained unsupported or removed content, so there was nothing to send.'
+    });
+
     let editable = true;
     let commandExecutor: ((messageId: number) => void) | undefined = undefined;
 

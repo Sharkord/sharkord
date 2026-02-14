@@ -51,9 +51,11 @@ const addChannelRoute = protectedProcedure
       return newChannel;
     });
 
-    const runtime = new VoiceRuntime(channel.id);
+    if (channel.type === ChannelType.VOICE) {
+      const runtime = new VoiceRuntime(channel.id);
 
-    await runtime.init();
+      await runtime.init();
+    }
 
     publishChannel(channel.id, 'create');
     enqueueActivityLog({

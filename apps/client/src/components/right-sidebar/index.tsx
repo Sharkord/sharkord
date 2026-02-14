@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { memo, useMemo } from 'react';
 import { UserPopover } from '../user-popover';
 
+const MAX_USERS_TO_SHOW = 100;
+
 type TUserProps = {
   userId: number;
   name: string;
@@ -41,6 +43,13 @@ const RightSidebar = memo(
       [users]
     );
 
+    const usersToShow = useMemo(
+      () => users.slice(0, MAX_USERS_TO_SHOW),
+      [users]
+    );
+
+    const hasHiddenUsers = users.length > MAX_USERS_TO_SHOW;
+
     return (
       <aside
         className={cn(
@@ -69,6 +78,11 @@ const RightSidebar = memo(
                     banned={user.banned}
                   />
                 ))}
+                {hasHiddenUsers && (
+                  <div className="text-sm text-muted-foreground px-2 py-1.5">
+                    +{users.length - MAX_USERS_TO_SHOW} more...
+                  </div>
+                )}
               </div>
             </div>
           </>

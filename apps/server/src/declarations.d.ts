@@ -22,3 +22,13 @@ declare global {
     };
   }
 }
+
+declare module "bun" {
+  interface Env {
+    // SHARKORD_ prefixed environment variables
+    SHARKORD_PORT?: string;
+    SHARKORD_DEBUG?: string;
+    SHARKORD_RTC_MIN_PORT?: string;
+    SHARKORD_RTC_MAX_PORT?: string;
+  }
+}

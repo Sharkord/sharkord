@@ -604,4 +604,48 @@ describe('messages router', () => {
       originalUpdatedAt ?? editedMessage!.createdAt
     );
   });
+
+  test('should rate limit excessive send message attempts', async () => {
+    const { caller } = await initTest(1);
+
+    for (let i = 0; i < 15; i++) {
+      await caller.messages.send({
+        channelId: 1,
+        content: `Message ${i}`,
+        files: []
+      });
+    }
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'One too many',
+        files: []
+      })
+    ).rejects.toThrow('Too many requests. Please try again shortly.');
+  });
+
+  test('should rate limit excessive edit message attempts', async () => {
+    const { caller } = await initTest(1);
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Message to edit',
+      files: []
+    });
+
+    for (let i = 0; i < 15; i++) {
+      await caller.messages.edit({
+        messageId,
+        content: `Edit ${i}`
+      });
+    }
+
+    await expect(
+      caller.messages.edit({
+        messageId,
+        content: 'One too many'
+      })
+    ).rejects.toThrow('Too many requests. Please try again shortly.');
+  });
 });

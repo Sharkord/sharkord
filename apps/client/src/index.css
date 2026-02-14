@@ -251,6 +251,11 @@ body {
   .ProseMirror-separator {
     display: none;
   }
+
+  a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 }
 
 .react-tweet-theme {
