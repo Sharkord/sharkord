@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import type { TCommandInfo } from '@sharkord/shared';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
+import Link from '@tiptap/extension-link';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Smile } from 'lucide-react';
@@ -57,6 +58,13 @@ const TiptapInput = memo(
           suggestion: EmojiSuggestion,
           HTMLAttributes: {
             class: 'emoji-image'
+          }
+        }),
+        Link.configure({
+          openOnClick: false,
+          HTMLAttributes: {
+            target: '_blank',
+            rel: 'noopener noreferrer'
           }
         })
       ];
@@ -147,6 +155,16 @@ const TiptapInput = memo(
       }
     };
 
+    const handleGifSelect = (gifUrl: string) => {
+      if (disabled || readOnly) return;
+
+      editor
+        ?.chain()
+        .focus()
+        .insertContent(`<a href="${gifUrl}">${gifUrl}</a>`)
+        .run();
+    };
+
     // keep emoji storage in sync with custom emojis from the store
     // this ensures newly added emojis appear in autocomplete without refreshing the app
     useEffect(() => {
@@ -192,7 +210,10 @@ const TiptapInput = memo(
           }`}
         />
 
-        <EmojiPicker onEmojiSelect={handleEmojiSelect}>
+        <EmojiPicker
+          onEmojiSelect={handleEmojiSelect}
+          onGifSelect={handleGifSelect}
+        >
           <Button variant="ghost" size="icon" disabled={disabled}>
             <Smile className="h-5 w-5" />
           </Button>
