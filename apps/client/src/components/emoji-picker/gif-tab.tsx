@@ -5,6 +5,7 @@ import {
   type GiphyGif
 } from '@/lib/giphy';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 import { debounce } from 'lodash-es';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -58,8 +59,14 @@ const GifTab = memo(({ onGifSelect }: TGifTabProps) => {
 
   const handleGifClick = useCallback(
     (gif: GiphyGif) => {
-      const url = getEmbedUrl(gif);
-      onGifSelect(url);
+      try {
+        const url = getEmbedUrl(gif);
+        onGifSelect(url);
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : 'This GIF could not be added. Try another.'
+        );
+      }
     },
     [onGifSelect]
   );

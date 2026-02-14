@@ -161,7 +161,16 @@ const TiptapInput = memo(
       editor
         ?.chain()
         .focus()
-        .insertContent(`<a href="${gifUrl}">${gifUrl}</a>`)
+        .insertContent({
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: gifUrl,
+              marks: [{ type: 'link', attrs: { href: gifUrl } }]
+            }
+          ]
+        })
         .run();
     };
 
