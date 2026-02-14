@@ -20,6 +20,10 @@
 
 Sharkord is a self-hosted communication platform that brings the most important Discord-like features to your own infrastructure. Host voice channels, text chat, and file sharing on your terms—no third-party dependencies, complete data ownership, and full control over your group's communication.
 
+## Docs
+
+For detailed documentation, please visit our [Documentation](https://sharkord.com/docs).
+
 ## Wanna Try It Out?
 
 Check out the Live Demo at [demo.sharkord.com](https://demo.sharkord.com). The amount of ports opened for the demo is limited, so voice and video features will only work for a couple of users at a time. If you want to test it with a larger group, we recommend running your own instance.
@@ -56,10 +60,10 @@ There is an example `docker-compose.yaml` in [docs/docker/docker-compose.yaml](d
 
 Common settings you might want to customize. These override config file values and are useful for Docker deployments:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SHARKORD_PORT` | `4991` | HTTP/WebSocket listen port |
-| `SHARKORD_DEBUG` | `false` | Enable verbose logging |
+| Variable                | Default | Description                       |
+| ----------------------- | ------- | --------------------------------- |
+| `SHARKORD_PORT`         | `4991`  | HTTP/WebSocket listen port        |
+| `SHARKORD_DEBUG`        | `false` | Enable verbose logging            |
 | `SHARKORD_RTC_MIN_PORT` | `40000` | Minimum UDP port for WebRTC media |
 | `SHARKORD_RTC_MAX_PORT` | `40020` | Maximum UDP port for WebRTC media |
 
@@ -95,13 +99,13 @@ Upon first run, Sharkord will generate a default configuration file located at `
 
 ### Options
 
-| Field         | Default | Description                                                                                 |
-| ------------- | ------- | ------------------------------------------------------------------------------------------- |
-| `port`        | `4991`  | The port number on which the server will listen for HTTP and WebSocket connections          |
-| `debug`       | `false` | Enable debug logging for detailed server logs and diagnostics                               |
-| `rtcMinPort`  | `40000` | Minimum UDP port for WebRTC media traffic (voice/video)                                     |
-| `rtcMaxPort`  | `40020` | Maximum UDP port for WebRTC media traffic (voice/video)                                     |
-| `autoupdate`  | `false` | When enabled, it will automatically check for and install updates with no user intervention |
+| Field        | Default | Description                                                                                 |
+| ------------ | ------- | ------------------------------------------------------------------------------------------- |
+| `port`       | `4991`  | The port number on which the server will listen for HTTP and WebSocket connections          |
+| `debug`      | `false` | Enable debug logging for detailed server logs and diagnostics                               |
+| `rtcMinPort` | `40000` | Minimum UDP port for WebRTC media traffic (voice/video)                                     |
+| `rtcMaxPort` | `40020` | Maximum UDP port for WebRTC media traffic (voice/video)                                     |
+| `autoupdate` | `false` | When enabled, it will automatically check for and install updates with no user intervention |
 
 > [!IMPORTANT]  
 > `rtcMinPort` and `rtcMaxPort` will define how many concurrent voice/video connections your server can handle. Each active voice/video connection uses one UDP port. Make sure to adjust the range according to your expected load. These ports must be open in your firewall settings, both TCP and UDP. If you're running Sharkord in Docker, remember to map this port range from the host to the container.

@@ -11,7 +11,7 @@ const updateChannelRoute = protectedProcedure
   .input(
     z.object({
       channelId: z.number().min(1),
-      name: z.string().min(2).max(24).optional(),
+      name: z.string().min(2).max(27).optional(),
       topic: z.string().max(128).nullable().optional(),
       private: z.boolean().optional()
     })
