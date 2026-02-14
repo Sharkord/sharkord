@@ -6,6 +6,7 @@ import fs from 'fs/promises';
 import { DATA_PATH } from '../helpers/paths';
 import { createHttpServer } from '../http';
 import { loadMediasoup } from '../utils/mediasoup';
+import { clearRateLimitersForTests } from '../utils/rate-limiters/rate-limiter';
 import { DRIZZLE_PATH, setTestDb } from './mock-db';
 import { seedDatabase } from './seed';
 
@@ -56,6 +57,8 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+  clearRateLimitersForTests();
+
   if (sqlite) {
     try {
       sqlite.close();

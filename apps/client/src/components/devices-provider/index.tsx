@@ -23,6 +23,7 @@ const DEFAULT_DEVICE_SETTINGS: TDeviceSettings = {
   noiseSuppression: false,
   autoGainControl: true,
   shareSystemAudio: true,
+  mirrorOwnVideo: false,
   screenResolution: Resolution['720p'],
   screenFramerate: 30
 };

@@ -1,8 +1,10 @@
 import { UserAvatar } from '@/components/user-avatar';
 import { useUsers } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { UserPopover } from '../user-popover';
+
+const MAX_USERS_TO_SHOW = 100;
 
 type TUserProps = {
   userId: number;
@@ -37,6 +39,13 @@ const RightSidebar = memo(
   ({ className, isOpen = true }: TRightSidebarProps) => {
     const users = useUsers();
 
+    const usersToShow = useMemo(
+      () => users.slice(0, MAX_USERS_TO_SHOW),
+      [users]
+    );
+
+    const hasHiddenUsers = users.length > MAX_USERS_TO_SHOW;
+
     return (
       <aside
         className={cn(
@@ -57,7 +66,7 @@ const RightSidebar = memo(
             </div>
             <div className="flex-1 overflow-y-auto p-2">
               <div className="space-y-1">
-                {users.map((user) => (
+                {usersToShow.map((user) => (
                   <User
                     key={user.id}
                     userId={user.id}
@@ -65,6 +74,11 @@ const RightSidebar = memo(
                     banned={user.banned}
                   />
                 ))}
+                {hasHiddenUsers && (
+                  <div className="text-sm text-muted-foreground px-2 py-1.5">
+                    +{users.length - MAX_USERS_TO_SHOW} more...
+                  </div>
+                )}
               </div>
             </div>
           </>

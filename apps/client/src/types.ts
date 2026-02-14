@@ -42,6 +42,7 @@ export type TDeviceSettings = {
   noiseSuppression: boolean;
   autoGainControl: boolean;
   shareSystemAudio: boolean;
+  mirrorOwnVideo: boolean;
   screenResolution: Resolution;
   screenFramerate: number;
 };
