@@ -13,7 +13,7 @@ const addChannelRoute = protectedProcedure
   .input(
     z.object({
       type: z.enum(ChannelType),
-      name: z.string().min(1).max(16),
+      name: z.string().min(1).max(27),
       categoryId: z.number()
     })
   )
