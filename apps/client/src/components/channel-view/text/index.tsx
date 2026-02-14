@@ -1,6 +1,10 @@
 import { TiptapInput } from '@/components/tiptap-input';
 import Spinner from '@/components/ui/spinner';
-import { useCan, useChannelCan } from '@/features/server/hooks';
+import {
+  useCan,
+  useChannelCan,
+  useTypingUsersByChannelId
+} from '@/features/server/hooks';
 import { useMessages } from '@/features/server/messages/hooks';
 import { useFlatPluginCommands } from '@/features/server/plugins/hooks';
 import { playSound } from '@/features/server/sounds/actions';
@@ -8,10 +12,10 @@ import { SoundType } from '@/features/server/types';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { useUploadFiles } from '@/hooks/use-upload-files';
 import { getTRPCClient } from '@/lib/trpc';
-import { ChannelPermission, Permission, TYPING_MS } from '@sharkord/shared';
+import { ChannelPermission, Permission, TYPING_MS, isEmptyMessage } from '@sharkord/shared';
 import { filesize } from 'filesize';
 import { throttle } from 'lodash-es';
-import { Send } from 'lucide-react';
+import { Paperclip, Send } from 'lucide-react';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '../../ui/button';
@@ -31,12 +35,14 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
   const [newMessage, setNewMessage] = useState('');
   const allPluginCommands = useFlatPluginCommands();
+  const typingUsers = useTypingUsersByChannelId(channelId);
 
   const { containerRef, onScroll } = useScrollController({
     messages,
     fetching,
     hasMore,
-    loadMore
+    loadMore,
+    hasTypingUsers: typingUsers.length > 0
   });
 
   // keep this ref just as a safeguard
@@ -52,13 +58,21 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     );
   }, [can, channelCan]);
 
+    const canUploadFiles = useMemo(() => {
+    return (
+      can(Permission.SEND_MESSAGES) &&
+      can(Permission.UPLOAD_FILES) &&
+      channelCan(ChannelPermission.SEND_MESSAGES)
+    );
+  }, [can, channelCan]);
+  
   const pluginCommands = useMemo(
     () =>
       can(Permission.EXECUTE_PLUGIN_COMMANDS) ? allPluginCommands : undefined,
     [can, allPluginCommands]
   );
 
-  const { files, removeFile, clearFiles, uploading, uploadingSize } =
+  const { files, removeFile, clearFiles, uploading, uploadingSize, openFileDialog, fileInputProps } =
     useUploadFiles(!canSendMessages);
 
   const sendTypingSignal = useMemo(
@@ -77,7 +91,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
   const onSendMessage = useCallback(async () => {
     if (
-      (!newMessage.trim() && !files.length) ||
+      (isEmptyMessage(newMessage) && !files.length) ||
       !canSendMessages ||
       sendingRef.current
     ) {
@@ -194,6 +208,15 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
             readOnly={sending}
             commands={pluginCommands}
           />
+          <input {...fileInputProps} />
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            className="h-8 w-8"
+            disabled={uploading || !canUploadFiles}
+            onClick={openFileDialog}>
+            <Paperclip className="h-4 w-4" />
+          </Button>
           <Button
             size="icon"
             variant="ghost"

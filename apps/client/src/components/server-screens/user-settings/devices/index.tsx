@@ -150,6 +150,12 @@ const Devices = memo(() => {
               onChange('webcamResolution', value as Resolution)
             }
           />
+          <Group label="Mirror own video">
+            <Switch
+              checked={!!values.mirrorOwnVideo}
+              onCheckedChange={(checked) => onChange('mirrorOwnVideo', checked)}
+            />
+          </Group>
         </Group>
 
         <Group label="Screen Sharing">

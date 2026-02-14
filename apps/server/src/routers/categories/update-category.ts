@@ -12,7 +12,7 @@ const updateCategoryRoute = protectedProcedure
   .input(
     z.object({
       categoryId: z.number().min(1),
-      name: z.string().min(1).max(24)
+      name: z.string().min(1).max(32)
     })
   )
   .mutation(async ({ ctx, input }) => {

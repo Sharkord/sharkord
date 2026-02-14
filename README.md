@@ -11,6 +11,8 @@
   [![Mediasoup](https://img.shields.io/badge/Mediasoup-v3.19.11-green.svg)](https://mediasoup.org)
 </div>
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/B0B71U3476)
+
 ## What is Sharkord?
 
 > [!NOTE]
@@ -47,6 +49,19 @@ docker run \
   --name sharkord \
   sharkord/sharkord:latest
 ```
+
+#### Docker Compose
+
+There is an example `docker-compose.yaml` in [docs/docker/docker-compose.yaml](docs/docker/docker-compose.yaml).
+
+Common settings you might want to customize. These override config file values and are useful for Docker deployments:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SHARKORD_PORT` | `4991` | HTTP/WebSocket listen port |
+| `SHARKORD_DEBUG` | `false` | Enable verbose logging |
+| `SHARKORD_RTC_MIN_PORT` | `40000` | Minimum UDP port for WebRTC media |
+| `SHARKORD_RTC_MAX_PORT` | `40020` | Maximum UDP port for WebRTC media |
 
 #### Windows
 

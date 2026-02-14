@@ -6,6 +6,7 @@ import {
   onChannelCreateRoute,
   onChannelDeleteRoute,
   onChannelPermissionsUpdateRoute,
+  onChannelReadStatesDeltaRoute,
   onChannelReadStatesUpdateRoute,
   onChannelUpdateRoute
 } from './events';
@@ -32,5 +33,6 @@ export const channelsRouter = t.router({
   onDelete: onChannelDeleteRoute,
   onUpdate: onChannelUpdateRoute,
   onPermissionsUpdate: onChannelPermissionsUpdateRoute,
-  onReadStateUpdate: onChannelReadStatesUpdateRoute
+  onReadStateUpdate: onChannelReadStatesUpdateRoute,
+  onReadStateDelta: onChannelReadStatesDeltaRoute
 });

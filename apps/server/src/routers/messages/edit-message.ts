@@ -1,6 +1,7 @@
-import { Permission } from '@sharkord/shared';
+import { Permission, isEmptyMessage } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { config } from '../../config';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { messages } from '../../db/schema';
@@ -8,9 +9,13 @@ import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
 import { eventBus } from '../../plugins/event-bus';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const editMessageRoute = protectedProcedure
+const editMessageRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.sendAndEditMessage.maxRequests,
+  windowMs: config.rateLimiters.sendAndEditMessage.windowMs,
+  logLabel: 'editMessage'
+})
   .input(
     z.object({
       messageId: z.number(),
@@ -48,7 +53,18 @@ const editMessageRoute = protectedProcedure
       }
     );
 
+    invariant(!isEmptyMessage(input.content), {
+      code: 'BAD_REQUEST',
+      message: 'Message cannot be empty.'
+    });
+
     const sanitizedContent = sanitizeMessageHtml(input.content);
+
+    invariant(!isEmptyMessage(input.content), {
+      code: 'BAD_REQUEST',
+      message:
+        'Your message only contained unsupported or removed content, so there was nothing to send.'
+    });
 
     await db
       .update(messages)

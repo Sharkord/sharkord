@@ -44,6 +44,10 @@ type Events = {
     channelId: number;
     count: number;
   };
+  [ServerEvents.CHANNEL_READ_STATES_DELTA]: {
+    channelId: number;
+    delta: number;
+  };
 
   [ServerEvents.USER_JOIN_VOICE]: {
     channelId: number;
