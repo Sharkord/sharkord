@@ -1,6 +1,10 @@
 import { TiptapInput } from '@/components/tiptap-input';
 import Spinner from '@/components/ui/spinner';
-import { useCan, useChannelCan } from '@/features/server/hooks';
+import {
+  useCan,
+  useChannelCan,
+  useTypingUsersByChannelId
+} from '@/features/server/hooks';
 import { useMessages } from '@/features/server/messages/hooks';
 import { useFlatPluginCommands } from '@/features/server/plugins/hooks';
 import { playSound } from '@/features/server/sounds/actions';
@@ -8,7 +12,7 @@ import { SoundType } from '@/features/server/types';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { useUploadFiles } from '@/hooks/use-upload-files';
 import { getTRPCClient } from '@/lib/trpc';
-import { ChannelPermission, Permission, TYPING_MS } from '@sharkord/shared';
+import { ChannelPermission, Permission, TYPING_MS, isEmptyMessage } from '@sharkord/shared';
 import { filesize } from 'filesize';
 import { throttle } from 'lodash-es';
 import { Paperclip, Send } from 'lucide-react';
@@ -31,12 +35,14 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
   const [newMessage, setNewMessage] = useState('');
   const allPluginCommands = useFlatPluginCommands();
+  const typingUsers = useTypingUsersByChannelId(channelId);
 
   const { containerRef, onScroll } = useScrollController({
     messages,
     fetching,
     hasMore,
-    loadMore
+    loadMore,
+    hasTypingUsers: typingUsers.length > 0
   });
 
   // keep this ref just as a safeguard
@@ -85,7 +91,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
   const onSendMessage = useCallback(async () => {
     if (
-      (!newMessage.trim() && !files.length) ||
+      (isEmptyMessage(newMessage) && !files.length) ||
       !canSendMessages ||
       sendingRef.current
     ) {

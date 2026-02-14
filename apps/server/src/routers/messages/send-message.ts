@@ -2,7 +2,8 @@ import {
   ActivityLogType,
   ChannelPermission,
   Permission,
-  toDomCommand
+  toDomCommand,
+  isEmptyMessage
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -19,6 +20,7 @@ import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
 import { fileManager } from '../../utils/file-manager';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const sendMessageRoute = protectedProcedure
@@ -40,7 +42,18 @@ const sendMessageRoute = protectedProcedure
       )
     ]);
 
+    invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
+      code: 'BAD_REQUEST',
+      message: 'Message cannot be empty.'
+    });
+
     let targetContent = sanitizeMessageHtml(input.content);
+
+    invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
+      code: 'BAD_REQUEST',
+      message: 'Your message only contained unsupported or removed content, so there was nothing to send.'
+    });
+
     let editable = true;
     let commandExecutor: ((messageId: number) => void) | undefined = undefined;
 

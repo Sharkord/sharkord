@@ -16,17 +16,19 @@ const useVoiceRefs = (
     localAudioStream,
     localVideoStream,
     localScreenShareStream,
+    localScreenShareAudioStream,
     ownVoiceState,
     getOrCreateRefs
   } = useVoice();
   const isOwnUser = useIsOwnUser(remoteId);
-  const { getVolume, getUserVolumeKey, getExternalVolumeKey } =
+  const { getVolume, getUserVolumeKey, getUserScreenVolumeKey, getExternalVolumeKey } =
     useVolumeControl();
 
   const {
     videoRef,
     audioRef,
     screenShareRef,
+    screenShareAudioRef,
     externalAudioRef,
     externalVideoRef
   } = getOrCreateRefs(remoteId);
@@ -55,6 +57,12 @@ const useVoiceRefs = (
     return remoteUserStreams[remoteId]?.[StreamKind.SCREEN];
   }, [remoteUserStreams, remoteId, isOwnUser, localScreenShareStream]);
 
+  const screenShareAudioStream = useMemo(() => {
+    if (isOwnUser) return undefined;
+
+    return remoteUserStreams[remoteId]?.[StreamKind.SCREEN_AUDIO];
+  }, [remoteUserStreams, remoteId, isOwnUser, localScreenShareAudioStream]);
+
   const externalAudioStream = useMemo(() => {
     if (isOwnUser) return undefined;
 
@@ -77,6 +85,9 @@ const useVoiceRefs = (
   const userVolumeKey = getUserVolumeKey(remoteId);
   const userVolume = getVolume(userVolumeKey);
 
+  const userScreenVolumeKey = getUserScreenVolumeKey(remoteId);
+  const userScreenVolume = getVolume(userScreenVolumeKey);
+
   const externalVolumeKey =
     pluginId && streamKey ? getExternalVolumeKey(pluginId, streamKey) : null;
 
@@ -97,6 +108,16 @@ const useVoiceRefs = (
 
     audioRef.current.volume = userVolume / 100;
   }, [audioStream, audioRef, userVolume]);
+
+  useEffect(() => {
+    if (!screenShareAudioStream || !screenShareAudioRef.current) return;
+
+    if (screenShareAudioRef.current.srcObject !== screenShareAudioStream) {
+      screenShareAudioRef.current.srcObject = screenShareAudioStream;
+    }
+
+    screenShareAudioRef.current.volume = userScreenVolume / 100;
+  }, [screenShareAudioStream, screenShareAudioRef, userScreenVolume]);
 
   useEffect(() => {
     if (!screenShareStream || !screenShareRef.current) return;
@@ -134,11 +155,13 @@ const useVoiceRefs = (
     videoRef,
     audioRef,
     screenShareRef,
+    screenShareAudioRef,
     externalAudioRef,
     externalVideoRef,
     hasAudioStream: !!audioStream,
     hasVideoStream: !!videoStream,
     hasScreenShareStream: !!screenShareStream,
+    hasScreenShareAudioStream: !!screenShareAudioStream,
     hasExternalAudioStream: !!externalAudioStream,
     hasExternalVideoStream: !!externalVideoStream,
     audioLevel,

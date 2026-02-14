@@ -18,6 +18,9 @@
     "magic": "bun run format && bun run check-types && bun run lint"
   },
   "devDependencies": {
-    "knip": "^5.80.0"
+    "@tiptap/pm": "^3.19.0",
+    "@tiptap/suggestion": "^3.19.0",
+    "knip": "^5.80.0",
+    "prosemirror-view": "^1.41.6"
   }
 }
