@@ -1,4 +1,4 @@
-import { ActivityLogType, Permission } from '@sharkord/shared';
+import { ActivityLogType, isEmptyMessage, Permission } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
@@ -11,7 +11,7 @@ const updateChannelRoute = protectedProcedure
   .input(
     z.object({
       channelId: z.number().min(1),
-      name: z.string().min(2).max(27).optional(),
+      name: z.string().min(2).max(27).refine((value) => !isEmptyMessage(value)).optional(),
       topic: z.string().max(128).nullable().optional(),
       private: z.boolean().optional()
     })

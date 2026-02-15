@@ -1,4 +1,4 @@
-import { ActivityLogType, ChannelType, Permission } from '@sharkord/shared';
+import { ActivityLogType, ChannelType, isEmptyMessage, Permission } from '@sharkord/shared';
 import { randomUUIDv7 } from 'bun';
 import { desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -13,7 +13,7 @@ const addChannelRoute = protectedProcedure
   .input(
     z.object({
       type: z.enum(ChannelType),
-      name: z.string().min(1).max(27),
+      name: z.string().min(1).max(27).refine((value) => !isEmptyMessage(value)),
       categoryId: z.number()
     })
   )
