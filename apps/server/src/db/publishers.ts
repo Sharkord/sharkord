@@ -85,7 +85,7 @@ const publishRole = async (
   roleId: number | undefined,
   type: 'create' | 'update' | 'delete'
 ) => {
-  if (!roleId) return;
+  if (roleId === undefined || roleId === null) return;
 
   if (type === 'delete') {
     pubsub.publish(ServerEvents.ROLE_DELETE, roleId);

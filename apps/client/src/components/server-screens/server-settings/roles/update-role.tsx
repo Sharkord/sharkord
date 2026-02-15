@@ -14,6 +14,7 @@ import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { PermissionList } from './permissions-list';
 import { Switch } from '@/components/ui/switch';
+import { updateRole as updateRoleAction } from '@/features/server/roles/actions';
 
 type TUpdateRoleProps = {
   selectedRole: TJoinedRole;
@@ -59,6 +60,13 @@ const UpdateRole = memo(
       try {
         await trpc.roles.update.mutate({
           roleId: selectedRole.id,
+          ...values,
+          isGrouping: values.isGrouping ?? false
+        });
+
+        // update local store immediately so components depending on roles
+        // (e.g. right sidebar grouping) recompute without waiting for refetch
+        updateRoleAction(selectedRole.id, {
           ...values,
           isGrouping: values.isGrouping ?? false
         });
@@ -160,7 +168,7 @@ const UpdateRole = memo(
               <div className="flex flex-col">
                 <Label>Group Users</Label>
                 <span className="text-sm text-muted-foreground">
-                Group Users in Members Tab by this Role
+                  Group Users in Members Tab by this Role
                 </span>
               </div>
               <Switch
@@ -177,7 +185,7 @@ const UpdateRole = memo(
             setPermissions={(permissions) =>
               onChange('permissions', permissions)
             }
-          /> 
+          />
 
           <div className="flex justify-end gap-2 pt-4">
             <Button
