@@ -77,7 +77,8 @@ class TemporaryFileManager {
       userId
     };
 
-    await fs.rename(filePath, tempFile.path);
+    await fs.copyFile(filePath, tempFile.path);
+    await fs.unlink(filePath);
 
     this.temporaryFiles.push(tempFile);
 
@@ -213,7 +214,8 @@ class FileManager {
     const fileName = await this.getUniqueName(tempFile.originalName);
     const destinationPath = path.join(PUBLIC_PATH, fileName);
 
-    await fs.rename(tempFile.path, destinationPath);
+    await fs.copyFile(tempFile.path, destinationPath);
+    await fs.unlink(tempFile.path);
     await this.removeTemporaryFile(tempFileId, true);
 
     const bunFile = Bun.file(destinationPath);
