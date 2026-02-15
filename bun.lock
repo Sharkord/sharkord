@@ -5,10 +5,7 @@
     "": {
       "name": "sharkord",
       "devDependencies": {
-        "@tiptap/pm": "^3.19.0",
-        "@tiptap/suggestion": "^3.19.0",
         "knip": "^5.80.0",
-        "prosemirror-view": "^1.41.6",
       },
     },
     "apps/client": {
