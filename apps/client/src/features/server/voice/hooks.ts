@@ -3,6 +3,7 @@ import type { IRootState } from '@/features/store';
 import { useContext } from 'react';
 import { useSelector } from 'react-redux';
 import {
+  hideNonVideoParticipantsSelector,
   ownVoiceStateSelector,
   pinnedCardSelector,
   voiceChannelAudioExternalStreamsSelector,
@@ -52,3 +53,6 @@ export const useVoice = () => {
 export const useOwnVoiceState = () => useSelector(ownVoiceStateSelector);
 
 export const usePinnedCard = () => useSelector(pinnedCardSelector);
+
+export const useHideNonVideoParticipants = () =>
+  useSelector(hideNonVideoParticipantsSelector);
