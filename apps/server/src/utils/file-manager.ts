@@ -5,16 +5,20 @@ import {
 } from '@sharkord/shared';
 import { randomUUIDv7 } from 'bun';
 import { createHash } from 'crypto';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import fs from 'fs/promises';
-import { createWriteStream } from 'fs'
+import zlib from 'zlib';
+import { createReadStream, createWriteStream } from 'fs'
+import { pipeline } from 'stream/promises';
 import path from 'path';
 import { db } from '../db';
+import { getMessageByFileId } from '../db/queries/messages';
+import { verifyFileToken } from '../helpers/files-crypto';
 import { removeFile } from '../db/mutations/files';
-import { getExceedingOldFiles, getUsedFileQuota } from '../db/queries/files';
+import { getExceedingOldFiles, getUsedFileQuota, isFileOrphaned } from '../db/queries/files';
 import { getSettings } from '../db/queries/server';
 import { getStorageUsageByUserId } from '../db/queries/users';
-import { files } from '../db/schema';
+import { channels, files } from '../db/schema';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../helpers/paths';
 
 /**
@@ -73,22 +77,25 @@ class TemporaryFileManager {
   }): Promise<TTempFile> => {
     const fileId = randomUUIDv7();
     const ext = path.extname(originalName);
-    const safeName = `${fileId}${ext}`;
 
-    const uploadFilePath = path.join(UPLOADS_PATH, safeName);
-    const tempFilePath = path.join(TMP_PATH, safeName);
-    const publicFilePath = path.join(PUBLIC_PATH, safeName);
+    const uploadFilePath = path.join(UPLOADS_PATH, fileId);
+    const tempFilePath = path.join(TMP_PATH, fileId);
+    const publicFilePath = path.join(
+      PUBLIC_PATH,
+      this.fileUUIDToPath(fileId)
+    )
 
     const tempFile: TTempFile = {
       id: fileId,
       originalName,
-      safeName,
       size,
       md5: undefined,
       uploadPath: uploadFilePath,
       tempPath: tempFilePath,
       publicPath: publicFilePath,
       extension: ext,
+      originalSize: size,
+      compressed: false,
       userId,
       timeout: undefined,
       fileStream: createWriteStream(uploadFilePath) // TODO: on-the-fly compression, will make md5 meaningless though
@@ -135,6 +142,14 @@ class TemporaryFileManager {
 
     this.temporaryFiles.delete(id);
   };
+
+  public fileUUIDToPath = (fileUUID: string): string => {
+    return path.join(
+      fileUUID.slice(24,26), // UUIDv7 starts with a timestamp, using this to group into random folders
+      fileUUID.slice(26,28),
+      fileUUID
+    );
+  }
 }
 
 class FileManager {
@@ -147,6 +162,25 @@ class FileManager {
 
   public getTemporaryFile = this.tempFileManager.getTemporaryFile;
   public temporaryFileExists = this.tempFileManager.temporaryFileExists;
+
+  private fileUUIDToPath = this.tempFileManager.fileUUIDToPath;
+
+  private attemptCompression = async (tempFile: TTempFile) => {
+    const compressedPath = `${tempFile.tempPath}.gz`;
+    const gzip = zlib.createGzip();
+    const readStream = createReadStream(tempFile.tempPath);
+    const writeStream = createWriteStream(compressedPath);
+
+    await pipeline(readStream, gzip, writeStream)
+
+    const compressedStats = await fs.stat(compressedPath);
+    if (compressedStats.size < tempFile.size) {
+      await fs.unlink(tempFile.tempPath)
+      tempFile.size = compressedStats.size;
+      tempFile.tempPath = compressedPath;
+      tempFile.compressed = true;
+    }
+  }
 
   private handleStorageLimits = async (tempFile: TTempFile) => {
     const [settings, userStorage, serverStorage] = await Promise.all([
@@ -199,27 +233,93 @@ class FileManager {
       throw new Error("You don't have permission to access this file");
     }
 
+    await this.attemptCompression(tempFile);
+
     await this.handleStorageLimits(tempFile);
 
     await moveFile(tempFile.tempPath, tempFile.publicPath);
     await this.removeTemporaryFile(tempFileId, true);
 
-    const bunFile = Bun.file(tempFile.publicPath);
+    const bunFile = Bun.file(`${tempFile.publicPath}${tempFile.extension}`); // TODO: replace with actual bytes check
 
     return db
       .insert(files)
       .values({
-        name: tempFile.safeName,
-        extension: tempFile.extension,
-        md5: tempFile.md5 || '', // md5 will always be defined by now, this stops the undefined typing error
-        size: tempFile.size,
+        uuid: tempFile.id,
         originalName: tempFile.originalName,
+        md5: tempFile.md5 || '', // md5 will always be defined by now, this stops the undefined typing error
         userId,
+        size: tempFile.size,
         mimeType: bunFile?.type || 'application/octet-stream',
+        extension: tempFile.extension,
+        originalSize: tempFile.originalSize,
+        compressed: tempFile.compressed,
         createdAt: Date.now()
       })
       .returning()
       .get();
+  }
+
+  public async getFile(fileUUID: string, fileName: string, fileAccessToken: string | null): Promise<any> {
+    const dbFile = await db
+      .select()
+      .from(files)
+      .where(
+        and(
+          eq(files.uuid, fileUUID),
+          eq(files.originalName, fileName)
+        )
+      )
+      .get();
+    
+    if (!dbFile) {
+      throw new Error('notFound');
+    }
+
+    const isOrphaned = await isFileOrphaned(dbFile.id);
+
+    if (isOrphaned) {
+      throw new Error('notFound');
+    }
+
+    // it's gonna be defined if it's a message file
+    // otherwise is something like an avatar or banner or something else
+    // we can assume this because of the orphaned check above
+    const associatedMessage = await getMessageByFileId(dbFile.id);
+
+    if (associatedMessage) {
+      const channel = await db
+        .select()
+        .from(channels)
+        .where(eq(channels.id, associatedMessage.channelId))
+        .get();
+
+      if (channel && channel.private) {
+        const isValidToken = verifyFileToken(
+          dbFile.id,
+          channel.fileAccessToken,
+          fileAccessToken || ''
+        );
+
+        if (!isValidToken) {
+          throw new Error('Forbidden');
+        }
+      }
+    }
+    
+    const filePath: string = path.join(
+      PUBLIC_PATH,
+      this.fileUUIDToPath(fileUUID)
+    )
+    
+    if (!await fs.exists(filePath)) {
+      throw new Error('notFound');
+    }
+
+    return {
+      dbFile,
+      fileStream: createReadStream(filePath)
+    }
   }
 }
 

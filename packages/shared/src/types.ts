@@ -80,7 +80,7 @@ export type TConnectionParams = {
 export type TTempFile = {
   id: string;
   originalName: string;
-  safeName: string;
+  originalSize: number;
   size: number;
   md5: string | undefined;
   uploadPath: string;
@@ -89,7 +89,8 @@ export type TTempFile = {
   extension: string;
   userId: number;
   timeout: NodeJS.Timeout | undefined;
-  fileStream: WriteStream
+  fileStream: WriteStream;
+  compressed: boolean;
 };
 
 export type TServerInfo = Pick<

@@ -26,7 +26,7 @@ const getFileUrl = (file: TFile | undefined | null) => {
 
   const url = getUrlFromServer();
 
-  let baseUrl = `${url}/public/${file.name}`;
+  let baseUrl = `${url}/public/${file.uuid}/${file.originalName}`;
 
   if (file._accessToken) {
     baseUrl += `?accessToken=${file._accessToken}`;

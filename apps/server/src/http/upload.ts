@@ -78,8 +78,8 @@ const uploadFileRouteHandler = async (
         id: tempFile.id,
         originalName: tempFile.originalName,
         extension: tempFile.extension,
-        size: tempFile.size,
-      })); // reduce info sent to client
+        size: tempFile.originalSize,
+      }));
     } catch (error) {
       logger.error('Error processing uploaded file:', error);
       res.writeHead(500, { 'Content-Type': 'application/json' });
