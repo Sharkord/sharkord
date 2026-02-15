@@ -28,7 +28,7 @@ describe('roles router', () => {
         name: 'Updated Role',
         color: '#ff0000',
         permissions: [Permission.SEND_MESSAGES],
-        isGrouped: true,
+        isGrouping: true,
         orderNr: 2
       })
     ).rejects.toThrow('Insufficient permissions');
@@ -93,7 +93,7 @@ describe('roles router', () => {
       name: 'Updated Role Name',
       color: '#ff5500',
       permissions: [Permission.SEND_MESSAGES, Permission.UPLOAD_FILES],
-      isGrouped: true,
+      isGrouping: true,
       orderNr: 4
     });
 
@@ -116,7 +116,7 @@ describe('roles router', () => {
       name: 'Owner',
       color: '#ff0000',
       permissions: [Permission.SEND_MESSAGES],
-      isGrouped: true,
+      isGrouping: true,
       orderNr: 1
     });
 
@@ -224,7 +224,7 @@ describe('roles router', () => {
       name: 'No Permissions Role',
       color: '#000000',
       permissions: [],
-      isGrouped: true,
+      isGrouping: true,
       orderNr: 6
     });
 
@@ -252,7 +252,7 @@ describe('roles router', () => {
       name: 'Multi Permission Role',
       color: '#00ff00',
       permissions,
-      isGrouped: true,
+      isGrouping: true,
       orderNr: 8
     });
 
