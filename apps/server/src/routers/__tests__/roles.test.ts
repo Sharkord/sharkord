@@ -117,7 +117,7 @@ describe('roles router', () => {
       color: '#ff0000',
       permissions: [Permission.SEND_MESSAGES],
       isGrouping: true,
-      orderNr: 1
+      orderNr: 50
     });
 
     const roles = await caller.roles.getAll();
