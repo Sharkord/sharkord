@@ -1,7 +1,7 @@
 import {
   ActivityLogType,
   ChannelPermission,
-  isEmptyMessage,
+  isValidInput,
   Permission,
   toDomCommand
 } from '@sharkord/shared';
@@ -47,14 +47,14 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       )
     ]);
 
-    invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
+    invariant(!isValidInput(input.content) || input.files.length != 0, {
       code: 'BAD_REQUEST',
       message: 'Message cannot be empty.'
     });
 
     let targetContent = sanitizeMessageHtml(input.content);
 
-    invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
+    invariant(!isValidInput(input.content) || input.files.length != 0, {
       code: 'BAD_REQUEST',
       message:
         'Your message only contained unsupported or removed content, so there was nothing to send.'

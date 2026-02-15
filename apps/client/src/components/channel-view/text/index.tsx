@@ -12,7 +12,7 @@ import { SoundType } from '@/features/server/types';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { useUploadFiles } from '@/hooks/use-upload-files';
 import { getTRPCClient } from '@/lib/trpc';
-import { ChannelPermission, Permission, TYPING_MS, isEmptyMessage } from '@sharkord/shared';
+import { ChannelPermission, Permission, TYPING_MS, isValidInput } from '@sharkord/shared';
 import { filesize } from 'filesize';
 import { throttle } from 'lodash-es';
 import { Paperclip, Send } from 'lucide-react';
@@ -91,7 +91,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
   const onSendMessage = useCallback(async () => {
     if (
-      (isEmptyMessage(newMessage) && !files.length) ||
+      (isValidInput(newMessage) && !files.length) ||
       !canSendMessages ||
       sendingRef.current
     ) {
