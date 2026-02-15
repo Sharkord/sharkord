@@ -1,4 +1,4 @@
-import { Permission, isEmptyMessage } from '@sharkord/shared';
+import { Permission, isValidInput } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
@@ -53,14 +53,14 @@ const editMessageRoute = rateLimitedProcedure(protectedProcedure, {
       }
     );
 
-    invariant(!isEmptyMessage(input.content), {
+    invariant(!isValidInput(input.content), {
       code: 'BAD_REQUEST',
       message: 'Message cannot be empty.'
     });
 
     const sanitizedContent = sanitizeMessageHtml(input.content);
 
-    invariant(!isEmptyMessage(input.content), {
+    invariant(!isValidInput(input.content), {
       code: 'BAD_REQUEST',
       message:
         'Your message only contained unsupported or removed content, so there was nothing to send.'

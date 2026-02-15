@@ -12,7 +12,7 @@ import { openServerScreen } from '@/features/server-screens/actions';
 import { useCategoryById } from '@/features/server/categories/hooks';
 import { useCan } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
-import { Permission, isEmptyMessage } from '@sharkord/shared';
+import { Permission, isValidInput } from '@sharkord/shared';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -59,7 +59,7 @@ const CategoryContextMenu = memo(
       <ContextMenu>
         <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
         <ContextMenuContent>
-          <ContextMenuLabel>{isEmptyMessage(category.name) ? "Category" : category.name}</ContextMenuLabel>
+          <ContextMenuLabel>{isValidInput(category.name) ? "Category" : category.name}</ContextMenuLabel>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={onEditClick}>Edit</ContextMenuItem>
           <ContextMenuItem variant="destructive" onClick={onDeleteClick}>

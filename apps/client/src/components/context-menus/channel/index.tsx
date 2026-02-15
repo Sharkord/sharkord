@@ -12,7 +12,7 @@ import { openServerScreen } from '@/features/server-screens/actions';
 import { useChannelById } from '@/features/server/channels/hooks';
 import { useCan } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
-import { Permission, isEmptyMessage } from '@sharkord/shared';
+import { Permission, isValidInput } from '@sharkord/shared';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -59,7 +59,7 @@ const ChannelContextMenu = memo(
       <ContextMenu>
         <ContextMenuTrigger>{children}</ContextMenuTrigger>
         <ContextMenuContent>
-          <ContextMenuLabel>{isEmptyMessage(channel.name) ? "Channel" : channel.name}</ContextMenuLabel>
+          <ContextMenuLabel>{isValidInput(channel.name) ? "Channel" : channel.name}</ContextMenuLabel>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={onEditClick}>Edit</ContextMenuItem>
           <ContextMenuItem variant="destructive" onClick={onDeleteClick}>

@@ -1,4 +1,4 @@
-import { ActivityLogType, isEmptyMessage, Permission } from '@sharkord/shared';
+import { ActivityLogType, isValidInput, Permission } from '@sharkord/shared';
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
@@ -10,7 +10,7 @@ import { protectedProcedure } from '../../utils/trpc';
 const addCategoryRoute = protectedProcedure
   .input(
     z.object({
-      name: z.string().min(1).max(32).refine((value) => !isEmptyMessage(value))
+      name: z.string().min(1).max(32).refine((value) => !isValidInput(value))
     })
   )
   .mutation(async ({ input, ctx }) => {
