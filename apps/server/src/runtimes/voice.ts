@@ -14,14 +14,15 @@ import type {
   Producer,
   Router,
   RouterOptions,
-  WebRtcTransport,
-  WebRtcTransportOptions
+  WebRtcTransport
 } from 'mediasoup/types';
-import { SERVER_PUBLIC_IP } from '../config';
 import { logger } from '../logger';
 import { eventBus } from '../plugins/event-bus';
-import { IS_PRODUCTION } from '../utils/env';
-import { mediaSoupWorker } from '../utils/mediasoup';
+import {
+  mediaSoupWorker,
+  webRtcServer,
+  webRtcServerListenInfo
+} from '../utils/mediasoup';
 import { pubsub } from '../utils/pubsub';
 
 const voiceRuntimes = new Map<number, VoiceRuntime>();
@@ -54,47 +55,6 @@ const defaultRouterOptions: RouterOptions<AppData> = {
       channels: 2
     }
   ]
-};
-
-const getListenInfos = (): NonNullable<
-  WebRtcTransportOptions<AppData>['listenInfos']
-> => {
-  if (IS_PRODUCTION) {
-    return [
-      {
-        protocol: 'udp',
-        ip: '0.0.0.0',
-        announcedAddress: SERVER_PUBLIC_IP
-      },
-      {
-        protocol: 'tcp',
-        ip: '0.0.0.0',
-        announcedAddress: SERVER_PUBLIC_IP
-      }
-    ];
-  }
-
-  return [
-    {
-      protocol: 'udp',
-      ip: '127.0.0.1',
-      announcedAddress: undefined
-    },
-    {
-      protocol: 'tcp',
-      ip: '127.0.0.1',
-      announcedAddress: undefined
-    }
-  ];
-};
-
-const defaultRtcTransportOptions: WebRtcTransportOptions<AppData> = {
-  listenInfos: getListenInfos(),
-  enableUdp: true,
-  enableTcp: true,
-  preferUdp: true,
-  preferTcp: false,
-  initialAvailableOutgoingBitrate: 1000000
 };
 
 const defaultUserState: TVoiceUserState = {
@@ -353,9 +313,14 @@ class VoiceRuntime {
   public createTransport = async () => {
     const router = this.getRouter();
 
-    const transport = await router.createWebRtcTransport(
-      defaultRtcTransportOptions
-    );
+    const transport = await router.createWebRtcTransport({
+      webRtcServer,
+      enableUdp: true,
+      enableTcp: true,
+      preferUdp: true,
+      preferTcp: false,
+      initialAvailableOutgoingBitrate: 1000000
+    });
 
     const params: TTransportParams = {
       id: transport.id,
@@ -785,16 +750,10 @@ class VoiceRuntime {
   };
 
   public static getListenInfo = () => {
-    const info = getListenInfos();
-
-    const ip = info[0]?.ip;
-    const announcedAddress = info[0]?.announcedAddress;
-
-    if (!ip) {
-      throw new Error('No listen info available');
-    }
-
-    return { ip, announcedAddress };
+    return {
+      ip: webRtcServerListenInfo.ip,
+      announcedAddress: webRtcServerListenInfo.announcedAddress
+    };
   };
 }
 

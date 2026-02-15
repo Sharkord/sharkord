@@ -28,7 +28,7 @@ declare module "bun" {
     // SHARKORD_ prefixed environment variables
     SHARKORD_PORT?: string;
     SHARKORD_DEBUG?: string;
-    SHARKORD_RTC_MIN_PORT?: string;
-    SHARKORD_RTC_MAX_PORT?: string;
+    SHARKORD_WEBRTC_PORT?: string;
+    SHARKORD_ANNOUNCED_ADDRESS?: string;
   }
 }
