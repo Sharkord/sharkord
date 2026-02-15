@@ -1,10 +1,10 @@
+import { RelativeTime } from '@/components/relative-time';
 import { UserAvatar } from '@/components/user-avatar';
 import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
 import type { TJoinedMessage } from '@sharkord/shared';
-import { format, formatDistance, subDays } from 'date-fns';
+import { format } from 'date-fns';
 import { memo } from 'react';
-import { Tooltip } from '../../ui/tooltip';
 import { Message } from './message';
 
 type TMessagesGroupProps = {
@@ -25,13 +25,16 @@ const MessagesGroup = memo(({ group }: TMessagesGroupProps) => {
       <div className="flex min-w-0 flex-col w-full">
         <div className="flex gap-2 items-baseline pl-1 select-none">
           <span className={cn(isOwnUser && 'font-bold')}>{user.name}</span>
-          <Tooltip content={format(date, 'PPpp')}>
-            <span className="text-primary/60 text-xs">
-              {formatDistance(subDays(date, 0), new Date(), {
-                addSuffix: true
-              })}
-            </span>
-          </Tooltip>
+          <RelativeTime date={date}>
+            {(relativeTime) => (
+              <span
+                className="text-primary/60 text-xs"
+                title={format(date, 'PPpp')}
+              >
+                {relativeTime}
+              </span>
+            )}
+          </RelativeTime>
         </div>
         <div className="flex min-w-0 flex-col">
           {group.map((message) => (
