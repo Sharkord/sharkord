@@ -37,3 +37,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 /build/out
 /build/temp
 config.ini
+
+# Backup output (do not track)
+/backups
+backups

@@ -60,6 +60,19 @@ const General = memo(() => {
           />
         </Group>
 
+        <Group
+          label="Giphy API Key"
+          description="API key for GIF search. Get one at https://developers.giphy.com/dashboard/. Leave empty to disable."
+        >
+          <Input
+            type="password"
+            value={settings.giphyApiKey}
+            onChange={(e) => onChange('giphyApiKey', e.target.value)}
+            placeholder="Leave empty to disable GIF search"
+            error={errors.giphyApiKey}
+          />
+        </Group>
+
         <LogoManager logo={logo} refetch={refetch} />
 
         <Group

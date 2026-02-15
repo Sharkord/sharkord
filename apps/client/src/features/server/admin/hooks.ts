@@ -40,25 +40,36 @@ export const useAdminGeneral = () => {
     description: '',
     password: '',
     allowNewUsers: false,
-    enablePlugins: false
+    enablePlugins: false,
+    giphyApiKey: ''
   });
   const [logo, setLogo] = useState<TFile | null>(null);
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);
 
-    const trpc = getTRPCClient();
-    const settings = await trpc.others.getSettings.query();
+    try {
+      const trpc = getTRPCClient();
+      const [settingsRes, giphyConfig] = await Promise.all([
+        trpc.others.getSettings.query(),
+        trpc.others.getGiphyConfig.query()
+      ]);
 
-    setSettings({
-      name: settings.name,
-      description: settings.description ?? '',
-      password: settings.password ?? '',
-      allowNewUsers: settings.allowNewUsers ?? false,
-      enablePlugins: settings.enablePlugins ?? false
-    });
-    setLoading(false);
-    setLogo(settings.logo);
+      setSettings({
+        name: settingsRes.name,
+        description: settingsRes.description ?? '',
+        password: settingsRes.password ?? '',
+        allowNewUsers: settingsRes.allowNewUsers ?? false,
+        enablePlugins: settingsRes.enablePlugins ?? false,
+        giphyApiKey: giphyConfig.apiKey ?? ''
+      });
+      setLogo(settingsRes.logo);
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      setErrors(parseTrpcErrors(error));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const submit = useCallback(async () => {
@@ -72,12 +83,30 @@ export const useAdminGeneral = () => {
         allowNewUsers: settings.allowNewUsers,
         enablePlugins: settings.enablePlugins
       });
-      toast.success('Settings updated');
+      try {
+        await trpc.others.updateGiphyConfig.mutate({
+          apiKey: settings.giphyApiKey
+        });
+        toast.success('Settings updated');
+      } catch (giphyError) {
+        toast.warning(
+          'Server settings were saved, but the Giphy API key could not be updated.'
+        );
+        setErrors((prev) => ({
+          ...prev,
+          ...parseTrpcErrors(giphyError),
+          giphyApiKey:
+            parseTrpcErrors(giphyError).apiKey ??
+            parseTrpcErrors(giphyError)._general ??
+            'Could not update Giphy API key.'
+        }));
+        fetchSettings();
+      }
     } catch (error) {
       console.error('Error updating settings:', error);
       setErrors(parseTrpcErrors(error));
     }
-  }, [settings]);
+  }, [settings, fetchSettings]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onChange = useCallback((field: keyof typeof settings, value: any) => {

@@ -1,7 +1,9 @@
 import { EmojiPicker } from '@/components/emoji-picker';
 import { Button } from '@/components/ui/button';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
+import { giphyEnabledSelector } from '@/features/server/selectors';
 import type { TCommandInfo } from '@sharkord/shared';
+import { useSelector } from 'react-redux';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -41,6 +43,7 @@ const TiptapInput = memo(
     readOnlyRef.current = readOnly;
 
     const customEmojis = useCustomEmojis();
+    const giphyEnabled = useSelector(giphyEnabledSelector);
 
     const extensions = useMemo(() => {
       const exts = [
@@ -48,6 +51,13 @@ const TiptapInput = memo(
           hardBreak: {
             HTMLAttributes: {
               class: 'hard-break'
+            }
+          },
+          link: {
+            openOnClick: false,
+            HTMLAttributes: {
+              target: '_blank',
+              rel: 'noopener noreferrer'
             }
           }
         }),
@@ -147,6 +157,25 @@ const TiptapInput = memo(
       }
     };
 
+    const handleGifSelect = (gifUrl: string) => {
+      if (disabled || readOnly) return;
+
+      editor
+        ?.chain()
+        .focus()
+        .insertContent({
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: gifUrl,
+              marks: [{ type: 'link', attrs: { href: gifUrl } }]
+            }
+          ]
+        })
+        .run();
+    };
+
     // keep emoji storage in sync with custom emojis from the store
     // this ensures newly added emojis appear in autocomplete without refreshing the app
     useEffect(() => {
@@ -192,7 +221,10 @@ const TiptapInput = memo(
           }`}
         />
 
-        <EmojiPicker onEmojiSelect={handleEmojiSelect}>
+        <EmojiPicker
+          onEmojiSelect={handleEmojiSelect}
+          onGifSelect={giphyEnabled ? handleGifSelect : undefined}
+        >
           <Button variant="ghost" size="icon" disabled={disabled}>
             <Smile className="h-5 w-5" />
           </Button>
