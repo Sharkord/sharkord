@@ -76,24 +76,37 @@ export const useAdminGeneral = () => {
     const trpc = getTRPCClient();
 
     try {
-      await Promise.all([
-        trpc.others.updateSettings.mutate({
-          name: settings.name,
-          description: settings.description,
-          password: settings.password || undefined,
-          allowNewUsers: settings.allowNewUsers,
-          enablePlugins: settings.enablePlugins
-        }),
-        trpc.others.updateGiphyConfig.mutate({
+      await trpc.others.updateSettings.mutate({
+        name: settings.name,
+        description: settings.description,
+        password: settings.password || undefined,
+        allowNewUsers: settings.allowNewUsers,
+        enablePlugins: settings.enablePlugins
+      });
+      try {
+        await trpc.others.updateGiphyConfig.mutate({
           apiKey: settings.giphyApiKey
-        })
-      ]);
-      toast.success('Settings updated');
+        });
+        toast.success('Settings updated');
+      } catch (giphyError) {
+        toast.warning(
+          'Server settings were saved, but the Giphy API key could not be updated.'
+        );
+        setErrors((prev) => ({
+          ...prev,
+          ...parseTrpcErrors(giphyError),
+          giphyApiKey:
+            parseTrpcErrors(giphyError).apiKey ??
+            parseTrpcErrors(giphyError)._general ??
+            'Could not update Giphy API key.'
+        }));
+        fetchSettings();
+      }
     } catch (error) {
       console.error('Error updating settings:', error);
       setErrors(parseTrpcErrors(error));
     }
-  }, [settings]);
+  }, [settings, fetchSettings]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onChange = useCallback((field: keyof typeof settings, value: any) => {
