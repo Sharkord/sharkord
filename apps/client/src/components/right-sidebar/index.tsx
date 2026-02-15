@@ -1,4 +1,5 @@
 import { UserAvatar } from '@/components/user-avatar';
+import { useUserRoles } from '@/features/server/hooks';
 import { useUsers } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
 import { memo, useMemo } from 'react';
@@ -12,7 +13,9 @@ type TUserProps = {
   banned: boolean;
 };
 
+
 const User = memo(({ userId, name, banned }: TUserProps) => {
+  const role = useUserRoles(userId).at(0);
   return (
     <UserPopover userId={userId}>
       <div className="flex items-center gap-3 rounded px-2 py-1.5 hover:bg-accent select-none">
@@ -22,8 +25,9 @@ const User = memo(({ userId, name, banned }: TUserProps) => {
             'text-sm text-foreground',
             banned && 'line-through text-muted-foreground'
           )}
-        >
+        ><font color={role.color}>
           {name}
+          </font>
         </span>
       </div>
     </UserPopover>

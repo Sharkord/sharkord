@@ -13,6 +13,7 @@ import { Info, Star, Trash2 } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { PermissionList } from './permissions-list';
+import { Switch } from '@/components/ui/switch';
 
 type TUpdateRoleProps = {
   selectedRole: TJoinedRole;
@@ -25,7 +26,8 @@ const UpdateRole = memo(
     const { setTrpcErrors, r, onChange, values } = useForm({
       name: selectedRole.name,
       color: selectedRole.color,
-      permissions: selectedRole.permissions
+      permissions: selectedRole.permissions,
+      isGrouping: selectedRole.isGrouping ?? false
     });
 
     const isOwnerRole = selectedRole.id === OWNER_ROLE_ID;
@@ -57,7 +59,8 @@ const UpdateRole = memo(
       try {
         await trpc.roles.update.mutate({
           roleId: selectedRole.id,
-          ...values
+          ...values,
+          isGrouping: values.isGrouping ?? false
         });
 
         toast.success('Role updated');
@@ -87,6 +90,10 @@ const UpdateRole = memo(
         toast.error(getTrpcError(error, 'Failed to set default role'));
       }
     }, [selectedRole.id, refetch]);
+
+    const onCheckedChange = useCallback((checked: boolean) => {
+      onChange('isGrouping', checked);
+    }, [onChange]);
 
     return (
       <Card className="flex-1">
@@ -149,6 +156,19 @@ const UpdateRole = memo(
                 <Input className="flex-1" {...r('color')} />
               </div>
             </div>
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <Label>Group Users</Label>
+                <span className="text-sm text-muted-foreground">
+                Group Users in Members Tab by this Role
+                </span>
+              </div>
+              <Switch
+                checked={!!values.isGrouping}
+                onCheckedChange={onCheckedChange}
+                disabled={false}
+              />
+            </div>
           </div>
 
           <PermissionList
@@ -157,7 +177,7 @@ const UpdateRole = memo(
             setPermissions={(permissions) =>
               onChange('permissions', permissions)
             }
-          />
+          /> 
 
           <div className="flex justify-end gap-2 pt-4">
             <Button

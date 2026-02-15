@@ -11,12 +11,14 @@ import { protectedProcedure } from '../../utils/trpc';
 const updateRoleRoute = protectedProcedure
   .input(
     z.object({
-      roleId: z.number().min(1),
+      roleId: z.number().min(0),
       name: z.string().min(1).max(26),
       color: z
         .string()
         .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
-      permissions: z.enum(Permission).array()
+      permissions: z.enum(Permission).array(),
+      orderNr: z.number().min(0).optional(),
+      isGrouping: z.boolean()
     })
   )
   .mutation(async ({ ctx, input }) => {
@@ -26,7 +28,9 @@ const updateRoleRoute = protectedProcedure
       .update(roles)
       .set({
         name: input.name,
-        color: input.color
+        color: input.color,
+        orderNr: input.orderNr,
+        isGrouping: input.isGrouping
       })
       .where(eq(roles.id, input.roleId))
       .returning()
