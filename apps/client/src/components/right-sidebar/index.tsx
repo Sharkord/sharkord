@@ -21,7 +21,11 @@ type TUserGroup = {
 };
 
 const User = memo(({ userId, name, banned }: TUserProps) => {
-  const role = useUserRoles(userId).at(0);
+  const displayedRole = useUserRoles(userId).sort((a, b) => a.orderNr - b.orderNr).find((r) => r.isGrouping === true);
+  let roleColor = '#ffffff';
+  if(displayedRole){
+    roleColor = displayedRole.color;
+  }
   return (
     <UserPopover userId={userId}>
       <div className="flex items-center gap-3 rounded px-2 py-1.5 hover:bg-accent select-none">
@@ -31,7 +35,7 @@ const User = memo(({ userId, name, banned }: TUserProps) => {
             'text-sm text-foreground',
             banned && 'line-through text-muted-foreground'
           )}
-        ><font color={role.color}>
+        ><font color={roleColor}>
             {name}
           </font>
         </span>

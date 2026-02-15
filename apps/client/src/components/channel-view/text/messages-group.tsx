@@ -6,6 +6,7 @@ import type { TJoinedMessage } from '@sharkord/shared';
 import { format } from 'date-fns';
 import { memo } from 'react';
 import { Message } from './message';
+import { useUserRoles } from '@/features/server/hooks';
 
 type TMessagesGroupProps = {
   group: TJoinedMessage[];
@@ -16,6 +17,11 @@ const MessagesGroup = memo(({ group }: TMessagesGroupProps) => {
   const user = useUserById(firstMessage.userId);
   const date = new Date(firstMessage.createdAt);
   const isOwnUser = useIsOwnUser(firstMessage.userId);
+  const displayedRole = useUserRoles(firstMessage.userId).sort((a, b) => a.orderNr - b.orderNr).find((r) => r.isGrouping === true);
+  let roleColor = '#ffffff';
+  if(displayedRole){
+    roleColor = displayedRole.color;
+  }
 
   if (!user) return null;
 
@@ -24,7 +30,7 @@ const MessagesGroup = memo(({ group }: TMessagesGroupProps) => {
       <UserAvatar userId={user.id} className="h-10 w-10" showUserPopover />
       <div className="flex min-w-0 flex-col w-full">
         <div className="flex gap-2 items-baseline pl-1 select-none">
-          <span className={cn(isOwnUser && 'font-bold')}>{user.name}</span>
+          <span className={cn(isOwnUser && 'font-bold')}><font color={roleColor}>{user.name}</font></span>
           <RelativeTime date={date}>
             {(relativeTime) => (
               <span
