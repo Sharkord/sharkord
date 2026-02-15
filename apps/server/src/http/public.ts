@@ -81,10 +81,22 @@ const publicRouteHandler = async (
 
   const fileStream = fs.createReadStream(filePath);
 
+  const inlineAllowlist = [
+    'image/png',
+    'image/jpeg',
+    'image/gif',
+    'image/webp',
+    'image/avif',
+    'video/mp4',
+    'audio/mpeg'
+  ]
+
+  const contentDisposition = inlineAllowlist.includes(dbFile.mimeType) ? 'inline' : 'attachment'
+
   res.writeHead(200, {
     'Content-Type': dbFile.mimeType,
     'Content-Length': dbFile.size,
-    'Content-Disposition': `inline; filename="${dbFile.originalName}"`
+    'Content-Disposition': `${contentDisposition}; filename="${dbFile.originalName}"`
   });
 
   fileStream.pipe(res);

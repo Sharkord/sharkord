@@ -3,10 +3,13 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
   ContextMenuTrigger
 } from '@/components/ui/context-menu';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { openServerScreen } from '@/features/server-screens/actions';
+import { useChannelById } from '@/features/server/channels/hooks';
 import { useCan } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
@@ -21,6 +24,7 @@ type TChannelContextMenuProps = {
 const ChannelContextMenu = memo(
   ({ children, channelId }: TChannelContextMenuProps) => {
     const can = useCan();
+    const channel = useChannelById(channelId);
 
     const onDeleteClick = useCallback(async () => {
       const choice = await requestConfirmation({
@@ -55,6 +59,8 @@ const ChannelContextMenu = memo(
       <ContextMenu>
         <ContextMenuTrigger>{children}</ContextMenuTrigger>
         <ContextMenuContent>
+          <ContextMenuLabel>{channel?.name}</ContextMenuLabel>
+          <ContextMenuSeparator />
           <ContextMenuItem onClick={onEditClick}>Edit</ContextMenuItem>
           <ContextMenuItem variant="destructive" onClick={onDeleteClick}>
             Delete

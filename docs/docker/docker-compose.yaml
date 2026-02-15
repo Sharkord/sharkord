@@ -6,22 +6,21 @@ services:
     ports:
       # Main HTTP/WebSocket port
       - "4991:4991"
-      
-      # WebRTC media ports (UDP) - adjust range if needed
-      # These ports are used for voice/video streaming
-      - "40000-40020:40000-40020/udp"
-    
+
+      # WebRTC media port (multiplexed UDP+TCP)
+      - "40000:40000/udp"
+      - "40000:40000/tcp"
+
     # Can override config file settings
     environment:
 
       # Server configuration
       SHARKORD_PORT: "4991"
       SHARKORD_DEBUG: "false"
-      
-      # Mediasoup/Voice configuration
-      SHARKORD_RTC_MIN_PORT: "40000"
-      SHARKORD_RTC_MAX_PORT: "40020"
-    
+
+      # WebRTC configuration
+      SHARKORD_WEBRTC_PORT: "40000"
+
     # Volume mounts for persistent data
     volumes:
       # Map to host directory
@@ -29,10 +28,10 @@ services:
 
       # Or use Docker volumes
       # - sharkord_data:/root/.config/sharkord
-      
+
       # Uploads directory (optional, if you want uploads outside data dir)
       # - sharkord_uploads:/root/.config/sharkord/uploads
-      
+
       # Plugins directory (optional, for plugin management)
       # - sharkord_plugins:/root/.config/sharkord/plugins
 

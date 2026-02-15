@@ -12,7 +12,7 @@ const updateRoleRoute = protectedProcedure
   .input(
     z.object({
       roleId: z.number().min(1),
-      name: z.string().min(1).max(24),
+      name: z.string().min(1).max(26),
       color: z
         .string()
         .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),

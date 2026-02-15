@@ -69,7 +69,7 @@ const ServerView = memo(() => {
   return (
     <VoiceProvider>
       <div
-        className="flex h-screen flex-col bg-background text-foreground dark"
+        className="flex h-dvh flex-col bg-background text-foreground dark"
         {...swipeHandlers}
       >
         <TopBar
@@ -78,7 +78,7 @@ const ServerView = memo(() => {
           onToggleVoiceChat={handleVoiceChatSidebarToggle}
           isVoiceChatOpen={isVoiceChatSidebarOpen}
         />
-        <div className="flex flex-1 overflow-hidden relative">
+        <div className="relative flex min-h-0 flex-1 overflow-hidden">
           <PreventBrowser />
 
           {isMobileMenuOpen && (
@@ -112,12 +112,11 @@ const ServerView = memo(() => {
             className={cn(
               'fixed top-0 bottom-0 right-0 h-full z-40 transition-all duration-500 ease-in-out',
               'lg:relative lg:z-0',
-              // Mobile behavior (< lg)
               isMobileUsersOpen
                 ? 'translate-x-0 lg:translate-x-0'
                 : 'translate-x-full lg:translate-x-0'
             )}
-            isOpen={isDesktopRightSidebarOpen}
+            isOpen={isMobileUsersOpen || isDesktopRightSidebarOpen}
           />
 
           <Protect permission={Permission.MANAGE_USERS}>

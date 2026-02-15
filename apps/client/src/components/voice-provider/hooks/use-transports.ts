@@ -331,6 +331,7 @@ const useTransports = ({
         const {
           remoteAudioIds,
           remoteScreenIds,
+          remoteScreenAudioIds,
           remoteVideoIds,
           remoteExternalStreamIds
         } = await trpc.voice.getProducers.query();
@@ -352,6 +353,10 @@ const useTransports = ({
 
         remoteScreenIds.forEach((remoteId) => {
           consume(remoteId, StreamKind.SCREEN, routerRtpCapabilities);
+        });
+
+        remoteScreenAudioIds.forEach((remoteId) => {
+          consume(remoteId, StreamKind.SCREEN_AUDIO, routerRtpCapabilities);
         });
 
         remoteExternalStreamIds.forEach((streamId: number) => {

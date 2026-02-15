@@ -20,11 +20,9 @@ const zConfig = z.object({
     debug: z.coerce.boolean(),
     autoupdate: z.coerce.boolean()
   }),
-  mediasoup: z.object({
-    worker: z.object({
-      rtcMinPort: z.coerce.number().int().positive(),
-      rtcMaxPort: z.coerce.number().int().positive()
-    })
+  webRtc: z.object({
+    port: z.coerce.number().int().positive(),
+    announcedAddress: z.string()
   }),
   rateLimiters: z.object({
     sendAndEditMessage: z.object({
@@ -50,11 +48,9 @@ const defaultConfig: TConfig = {
     debug: IS_DEVELOPMENT,
     autoupdate: false
   },
-  mediasoup: {
-    worker: {
-      rtcMinPort: 40000,
-      rtcMaxPort: 40020
-    }
+  webRtc: {
+    port: 40000,
+    announcedAddress: ''
   },
   rateLimiters: {
     sendAndEditMessage: {
@@ -109,8 +105,9 @@ if (!configExists) {
 config = applyEnvOverrides(config, {
   'server.port': 'SHARKORD_PORT',
   'server.debug': 'SHARKORD_DEBUG',
-  'mediasoup.worker.rtcMinPort': 'SHARKORD_RTC_MIN_PORT',
-  'mediasoup.worker.rtcMaxPort': 'SHARKORD_RTC_MAX_PORT'
+  'server.autoupdate': 'SHARKORD_AUTOUPDATE',
+  'webRtc.port': 'SHARKORD_WEBRTC_PORT',
+  'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS'
 });
 
 config = Object.freeze(config);

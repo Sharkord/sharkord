@@ -130,12 +130,12 @@ describe('deepMerge', () => {
     const defaultConfig = {
       server: { port: 4991, debug: false, autoupdate: false },
       http: { maxFiles: 40, maxFileSize: 100 },
-      mediasoup: { worker: { rtcMinPort: 40000, rtcMaxPort: 40020 } }
+      mediasoup: { webrtcPort: 40000, announcedAddress: '' }
     };
 
     const existingConfig: Partial<typeof defaultConfig> = {
       server: { port: 5000, debug: true },
-      mediasoup: { worker: { rtcMinPort: 50000 } }
+      mediasoup: { webrtcPort: 50000 }
     } as Partial<typeof defaultConfig>;
 
     const result = deepMerge(defaultConfig, existingConfig);
@@ -143,7 +143,7 @@ describe('deepMerge', () => {
     expect(result).toEqual({
       server: { port: 5000, debug: true, autoupdate: false },
       http: { maxFiles: 40, maxFileSize: 100 },
-      mediasoup: { worker: { rtcMinPort: 50000, rtcMaxPort: 40020 } }
+      mediasoup: { webrtcPort: 50000, announcedAddress: '' }
     });
   });
 });

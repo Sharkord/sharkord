@@ -3,10 +3,13 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
   ContextMenuTrigger
 } from '@/components/ui/context-menu';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { openServerScreen } from '@/features/server-screens/actions';
+import { useCategoryById } from '@/features/server/categories/hooks';
 import { useCan } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
@@ -21,7 +24,8 @@ type TCategoryContextMenuProps = {
 const CategoryContextMenu = memo(
   ({ children, categoryId }: TCategoryContextMenuProps) => {
     const can = useCan();
-
+    const category = useCategoryById(categoryId);
+    
     const onDeleteClick = useCallback(async () => {
       const choice = await requestConfirmation({
         title: 'Delete Category',
@@ -55,6 +59,8 @@ const CategoryContextMenu = memo(
       <ContextMenu>
         <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
         <ContextMenuContent>
+          <ContextMenuLabel>{category?.name}</ContextMenuLabel>
+          <ContextMenuSeparator />
           <ContextMenuItem onClick={onEditClick}>Edit</ContextMenuItem>
           <ContextMenuItem variant="destructive" onClick={onDeleteClick}>
             Delete

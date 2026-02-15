@@ -175,7 +175,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-border p-2">
+      <div className="flex shrink-0 flex-col gap-2 border-t border-border p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
         {uploading && (
           <div className="flex items-center gap-2">
             <div className="text-xs text-muted-foreground mb-1">

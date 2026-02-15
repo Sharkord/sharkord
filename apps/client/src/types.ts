@@ -50,12 +50,14 @@ export type TDeviceSettings = {
 export type TRemoteUserStreamKinds =
   | StreamKind.AUDIO
   | StreamKind.VIDEO
-  | StreamKind.SCREEN;
+  | StreamKind.SCREEN
+  | StreamKind.SCREEN_AUDIO;
 
 export type TRemoteStreams = {
   [userId: number]: {
     [StreamKind.AUDIO]: MediaStream | undefined;
     [StreamKind.VIDEO]: MediaStream | undefined;
     [StreamKind.SCREEN]: MediaStream | undefined;
+    [StreamKind.SCREEN_AUDIO]: MediaStream | undefined;
   };
 };
