@@ -228,7 +228,7 @@ const Channel = memo(({ channelId, isSelected }: TChannelProps) => {
               dragHandleProps={{ ...attributes, ...listeners }}
             />
           )}
-          {channel.type === 'VOICE' && (
+          {channel.type === 'VOICE' && channel.id !== currentVoiceChannelId && (
             <Voice
               channel={channel}
               isSelected={isSelected}
@@ -239,6 +239,20 @@ const Channel = memo(({ channelId, isSelected }: TChannelProps) => {
                 !can(Permission.JOIN_VOICE_CHANNELS)
               }
             />
+          )}
+          {channel.type === 'VOICE' && channel.id === currentVoiceChannelId && (
+            <div style={{ border: "2px solid green", borderRadius: 8, padding: "5px"}}>
+            <Voice
+              channel={channel}
+              isSelected={isSelected}
+              onClick={onClick}
+              dragHandleProps={{ ...attributes, ...listeners }}
+              disabled={
+                !channelCan(ChannelPermission.JOIN) ||
+                !can(Permission.JOIN_VOICE_CHANNELS)
+              }
+            />
+            </div>
           )}
         </div>
       </ChannelContextMenu>
@@ -255,6 +269,7 @@ const Channels = memo(({ categoryId }: TChannelsProps) => {
   const selectedChannelId = useSelectedChannelId();
   const channelIds = useMemo(() => channels.map((ch) => ch.id), [channels]);
   const can = useCan();
+  const currentVoiceChannelId = 1;
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
