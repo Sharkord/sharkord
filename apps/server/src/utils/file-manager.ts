@@ -7,6 +7,7 @@ import { randomUUIDv7 } from 'bun';
 import { createHash } from 'crypto';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
+import { createWriteStream } from 'fs'
 import path from 'path';
 import { db } from '../db';
 import { removeFile } from '../db/mutations/files';
@@ -51,53 +52,63 @@ const moveFile = async (src: string, dest: string) => {
 };
 
 class TemporaryFileManager {
-  private temporaryFiles: TTempFile[] = [];
-  private timeouts: {
-    [id: string]: NodeJS.Timeout;
-  } = {};
+  private temporaryFiles: Map<string, TTempFile> = new Map();
 
   public getTemporaryFile = (id: string): TTempFile | undefined => {
-    return this.temporaryFiles.find((file) => file.id === id);
+    return this.temporaryFiles.get(id)
   };
 
   public temporaryFileExists = (id: string): boolean => {
-    return !!this.temporaryFiles.find((file) => file.id === id);
+    return this.temporaryFiles.has(id)
   };
 
-  public addTemporaryFile = async ({
-    filePath,
-    size,
+  public initTemporaryFile = async ({
     originalName,
+    size,
     userId
   }: {
-    filePath: string;
-    size: number;
     originalName: string;
-    userId: number;
+    size: number;
+    userId: number
   }): Promise<TTempFile> => {
-    const md5 = await md5File(filePath);
     const fileId = randomUUIDv7();
     const ext = path.extname(originalName);
+    const safeName = `${fileId}${ext}`;
 
-    const tempFilePath = path.join(TMP_PATH, `${fileId}${ext}`);
+    const uploadFilePath = path.join(UPLOADS_PATH, safeName);
+    const tempFilePath = path.join(TMP_PATH, safeName);
+    const publicFilePath = path.join(PUBLIC_PATH, safeName);
 
     const tempFile: TTempFile = {
       id: fileId,
       originalName,
+      safeName,
       size,
-      md5,
-      path: tempFilePath,
+      md5: undefined,
+      uploadPath: uploadFilePath,
+      tempPath: tempFilePath,
+      publicPath: publicFilePath,
       extension: ext,
-      userId
+      userId,
+      timeout: undefined,
+      fileStream: createWriteStream(uploadFilePath) // TODO: on-the-fly compression, will make md5 meaningless though
     };
 
-    await moveFile(filePath, tempFile.path);
+    return tempFile;
+  };
 
-    this.temporaryFiles.push(tempFile);
+  public finishTemporaryFile = async (
+    tempFile: TTempFile
+  ) => {
+    tempFile.md5 = await md5File(tempFile.uploadPath);
 
-    this.timeouts[tempFile.id] = setTimeout(() => {
+    tempFile.timeout = setTimeout(() => {
       this.removeTemporaryFile(tempFile.id);
     }, TEMP_FILE_TTL);
+
+    await moveFile(tempFile.uploadPath, tempFile.tempPath);
+
+    this.temporaryFiles.set(tempFile.id, tempFile);
 
     return tempFile;
   };
@@ -106,39 +117,31 @@ class TemporaryFileManager {
     id: string,
     skipDelete = false
   ): Promise<void> => {
-    const tempFile = this.temporaryFiles.find((file) => file.id === id);
+    const tempFile = this.temporaryFiles.get(id);
 
     if (!tempFile) {
       throw new Error('Temporary file not found');
     }
 
-    clearTimeout(this.timeouts[id]);
+    clearTimeout(tempFile.timeout);
 
     if (!skipDelete) {
       try {
-        await fs.unlink(tempFile.path);
+        await fs.unlink(tempFile.tempPath);
       } catch {
         // ignore
       }
     }
 
-    this.temporaryFiles = this.temporaryFiles.filter((file) => file.id !== id);
-  };
-
-  public getSafeUploadPath = async (name: string): Promise<string> => {
-    const ext = path.extname(name);
-    const safePath = path.join(UPLOADS_PATH, `${randomUUIDv7()}${ext}`);
-
-    return safePath;
+    this.temporaryFiles.delete(id);
   };
 }
 
 class FileManager {
   private tempFileManager = new TemporaryFileManager();
 
-  public getSafeUploadPath = this.tempFileManager.getSafeUploadPath;
-
-  public addTemporaryFile = this.tempFileManager.addTemporaryFile;
+  public initTemporaryFile = this.tempFileManager.initTemporaryFile;
+  public finishTemporaryFile = this.tempFileManager.finishTemporaryFile;
 
   public removeTemporaryFile = this.tempFileManager.removeTemporaryFile;
 
@@ -185,32 +188,6 @@ class FileManager {
     }
   };
 
-  private getUniqueName = async (originalName: string): Promise<string> => {
-    const baseName = path.basename(originalName, path.extname(originalName));
-    const extension = path.extname(originalName);
-
-    let fileName = originalName;
-    let counter = 2;
-
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const existingFile = await db
-        .select()
-        .from(files)
-        .where(eq(files.name, fileName))
-        .get();
-
-      if (!existingFile) {
-        break;
-      }
-
-      fileName = `${baseName}-${counter}${extension}`;
-      counter++;
-    }
-
-    return fileName;
-  };
-
   public async saveFile(tempFileId: string, userId: number): Promise<TFile> {
     const tempFile = this.getTemporaryFile(tempFileId);
 
@@ -224,20 +201,17 @@ class FileManager {
 
     await this.handleStorageLimits(tempFile);
 
-    const fileName = await this.getUniqueName(tempFile.originalName);
-    const destinationPath = path.join(PUBLIC_PATH, fileName);
-
-    await moveFile(tempFile.path, destinationPath);
+    await moveFile(tempFile.tempPath, tempFile.publicPath);
     await this.removeTemporaryFile(tempFileId, true);
 
-    const bunFile = Bun.file(destinationPath);
+    const bunFile = Bun.file(tempFile.publicPath);
 
     return db
       .insert(files)
       .values({
-        name: fileName,
+        name: tempFile.safeName,
         extension: tempFile.extension,
-        md5: tempFile.md5,
+        md5: tempFile.md5 || '', // md5 will always be defined by now, this stops the undefined typing error
         size: tempFile.size,
         originalName: tempFile.originalName,
         userId,

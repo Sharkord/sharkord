@@ -61,22 +61,25 @@ const uploadFileRouteHandler = async (
     return;
   }
 
-  const safePath = await fileManager.getSafeUploadPath(originalName);
-  const fileStream = fs.createWriteStream(safePath);
+  const tempFile = await fileManager.initTemporaryFile({
+    originalName,
+    size: contentLength,
+    userId: user.id
+  });
 
-  req.pipe(fileStream);
+  req.pipe(tempFile.fileStream);
 
-  fileStream.on('finish', async () => {
+  tempFile.fileStream.on('finish', async () => {
     try {
-      const tempFile = await fileManager.addTemporaryFile({
-        originalName,
-        filePath: safePath,
-        size: contentLength,
-        userId: user.id
-      });
+      await fileManager.finishTemporaryFile(tempFile);
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(tempFile));
+      res.end(JSON.stringify({
+        id: tempFile.id,
+        originalName: tempFile.originalName,
+        extension: tempFile.extension,
+        size: tempFile.size,
+      })); // reduce info sent to client
     } catch (error) {
       logger.error('Error processing uploaded file:', error);
       res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -84,7 +87,7 @@ const uploadFileRouteHandler = async (
     }
   });
 
-  fileStream.on('error', (err) => {
+  tempFile.fileStream.on('error', (err) => {
     logger.error('Error uploading file:', err);
 
     res.writeHead(500, { 'Content-Type': 'application/json' });

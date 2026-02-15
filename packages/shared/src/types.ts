@@ -1,4 +1,5 @@
 import { ChannelPermission, type TFile, type TSettings, type TUser } from '.';
+import { WriteStream } from 'fs'
 
 export enum ChannelType {
   TEXT = 'TEXT',
@@ -79,11 +80,16 @@ export type TConnectionParams = {
 export type TTempFile = {
   id: string;
   originalName: string;
+  safeName: string;
   size: number;
-  md5: string;
-  path: string;
+  md5: string | undefined;
+  uploadPath: string;
+  tempPath: string;
+  publicPath: string;
   extension: string;
   userId: number;
+  timeout: NodeJS.Timeout | undefined;
+  fileStream: WriteStream
 };
 
 export type TServerInfo = Pick<
