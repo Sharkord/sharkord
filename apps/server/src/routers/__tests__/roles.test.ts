@@ -27,7 +27,9 @@ describe('roles router', () => {
         roleId: 2,
         name: 'Updated Role',
         color: '#ff0000',
-        permissions: [Permission.SEND_MESSAGES]
+        permissions: [Permission.SEND_MESSAGES],
+        isGrouping: true,
+        orderNr: 2
       })
     ).rejects.toThrow('Insufficient permissions');
   });
@@ -90,7 +92,9 @@ describe('roles router', () => {
       roleId,
       name: 'Updated Role Name',
       color: '#ff5500',
-      permissions: [Permission.SEND_MESSAGES, Permission.UPLOAD_FILES]
+      permissions: [Permission.SEND_MESSAGES, Permission.UPLOAD_FILES],
+      isGrouping: true,
+      orderNr: 99
     });
 
     const roles = await caller.roles.getAll();
@@ -111,7 +115,9 @@ describe('roles router', () => {
       roleId: 1,
       name: 'Owner',
       color: '#ff0000',
-      permissions: [Permission.SEND_MESSAGES]
+      permissions: [Permission.SEND_MESSAGES],
+      isGrouping: true,
+      orderNr: 50
     });
 
     const roles = await caller.roles.getAll();
@@ -217,7 +223,9 @@ describe('roles router', () => {
       roleId,
       name: 'No Permissions Role',
       color: '#000000',
-      permissions: []
+      permissions: [],
+      isGrouping: true,
+      orderNr: 6
     });
 
     const roles = await caller.roles.getAll();
@@ -243,7 +251,9 @@ describe('roles router', () => {
       roleId,
       name: 'Multi Permission Role',
       color: '#00ff00',
-      permissions
+      permissions,
+      isGrouping: true,
+      orderNr: 8
     });
 
     const roles = await caller.roles.getAll();
