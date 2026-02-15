@@ -36,6 +36,20 @@ const md5File = async (path: string): Promise<string> => {
   return hash.digest('hex');
 };
 
+const moveFile = async (src: string, dest: string) => {
+  try {
+    await fs.rename(src, dest);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    if (err.code === 'EXDEV') {
+      await fs.copyFile(src, dest);
+      await fs.unlink(src);
+    } else {
+      throw err;
+    }
+  }
+};
+
 class TemporaryFileManager {
   private temporaryFiles: TTempFile[] = [];
   private timeouts: {
@@ -77,7 +91,7 @@ class TemporaryFileManager {
       userId
     };
 
-    await fs.rename(filePath, tempFile.path);
+    await moveFile(filePath, tempFile.path);
 
     this.temporaryFiles.push(tempFile);
 
@@ -213,7 +227,7 @@ class FileManager {
     const fileName = await this.getUniqueName(tempFile.originalName);
     const destinationPath = path.join(PUBLIC_PATH, fileName);
 
-    await fs.rename(tempFile.path, destinationPath);
+    await moveFile(tempFile.path, destinationPath);
     await this.removeTemporaryFile(tempFileId, true);
 
     const bunFile = Bun.file(destinationPath);
