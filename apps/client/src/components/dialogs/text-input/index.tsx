@@ -15,7 +15,7 @@ import type { TDialogBaseProps } from '../types';
 
 type TTextInputDialogProps = TDialogBaseProps & {
   onCancel?: () => void;
-  onConfirm?: (text: string | undefined) => void;
+  onConfirm?: (text: string) => void;
   title?: string;
   message?: string;
   confirmLabel?: string;
@@ -38,7 +38,7 @@ const TextInputDialog = memo(
     allowEmpty,
     type
   }: TTextInputDialogProps) => {
-    const [value, setValue] = useState<string | undefined>();
+    const [value, setValue] = useState<string>('');
 
     const onSubmit = useCallback(() => {
       onConfirm?.(value);

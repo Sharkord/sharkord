@@ -11,7 +11,7 @@ import { memo } from 'react';
 import { UsersTable } from './users-table';
 
 const Users = memo(() => {
-  const { users, loading } = useAdminUsers();
+  const { users, loading, refetch } = useAdminUsers();
 
   if (loading) {
     return <LoadingCard className="h-[600px]" />;
@@ -26,7 +26,7 @@ const Users = memo(() => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <UsersTable users={users} />
+        <UsersTable users={users} onUserDeleted={refetch} />
       </CardContent>
     </Card>
   );

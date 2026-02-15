@@ -16,6 +16,8 @@ import { invariant } from '../utils/invariant';
 import { getJsonBody } from './helpers';
 import { HttpValidationError } from './utils';
 
+const DELETED_USER_IDENTITY = '__deleted_user__';
+
 const zBody = z.object({
   identity: z.string().min(1, 'Identity is required'),
   password: z.string().min(4, 'Password is required').max(128),
@@ -79,6 +81,11 @@ const loginRouteHandler = async (
   res: http.ServerResponse
 ) => {
   const data = zBody.parse(await getJsonBody(req));
+
+  if (data.identity === DELETED_USER_IDENTITY) {
+    throw new HttpValidationError('identity', 'This identity is reserved');
+  }
+
   const settings = await getSettings();
   let existingUser = await getUserByIdentity(data.identity);
   const connectionInfo = getWsInfo(undefined, req);

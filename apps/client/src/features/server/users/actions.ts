@@ -18,6 +18,10 @@ export const updateUser = (
   store.dispatch(serverSliceActions.updateUser({ userId, user }));
 };
 
+export const removeUser = (userId: number) => {
+  store.dispatch(serverSliceActions.removeUser({ userId }));
+};
+
 export const handleUserJoin = (user: TJoinedPublicUser) => {
   const state = store.getState();
   const foundUser = userByIdSelector(state, user.id);

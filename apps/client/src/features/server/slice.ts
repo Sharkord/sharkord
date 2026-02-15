@@ -256,6 +256,21 @@ export const serverSlice = createSlice({
 
       state.users.push(action.payload);
     },
+    removeUser: (state, action: PayloadAction<{ userId: number }>) => {
+      const { userId } = action.payload;
+
+      state.users = state.users.filter((u) => u.id !== userId);
+
+      for (const channelId in state.typingMap) {
+        state.typingMap[channelId] = state.typingMap[channelId].filter(
+          (id) => id !== userId
+        );
+      }
+
+      for (const channelId in state.voiceMap) {
+        delete state.voiceMap[channelId].users[userId];
+      }
+    },
 
     // SERVER SETTINGS ------------------------------------------------------------
 

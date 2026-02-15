@@ -3,8 +3,10 @@ import { addRoleRoute } from './add-role';
 import { banRoute } from './ban';
 import { changeAvatarRoute } from './change-avatar';
 import { changeBannerRoute } from './change-banner';
+import { deleteUserRoute } from './delete-user';
 import {
   onUserCreateRoute,
+  onUserDeleteRoute,
   onUserJoinRoute,
   onUserLeaveRoute,
   onUserUpdateRoute
@@ -29,8 +31,10 @@ export const usersRouter = t.router({
   kick: kickRoute,
   ban: banRoute,
   unban: unbanRoute,
+  delete: deleteUserRoute,
   onJoin: onUserJoinRoute,
   onLeave: onUserLeaveRoute,
   onUpdate: onUserUpdateRoute,
-  onCreate: onUserCreateRoute
+  onCreate: onUserCreateRoute,
+  onDelete: onUserDeleteRoute
 });
