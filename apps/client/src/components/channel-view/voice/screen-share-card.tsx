@@ -1,5 +1,9 @@
 import { IconButton } from '@/components/ui/icon-button';
-import { useUserById } from '@/features/server/users/hooks';
+import {
+  useVolumeControl,
+  type TVolumeKey
+} from '@/components/voice-provider/volume-control-context';
+import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
 import { Monitor, ZoomIn, ZoomOut } from 'lucide-react';
 import { memo, useCallback } from 'react';
@@ -8,6 +12,7 @@ import { CardGradient } from './card-gradient';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PinButton } from './pin-button';
+import { VolumeButton } from './volume-button';
 
 type tScreenShareControlsProps = {
   isPinned: boolean;
@@ -15,6 +20,8 @@ type tScreenShareControlsProps = {
   handlePinToggle: () => void;
   handleToggleZoom: () => void;
   showPinControls: boolean;
+  showAudioControl: boolean;
+  volumeKey: TVolumeKey;
 };
 
 const ScreenShareControls = memo(
@@ -23,10 +30,13 @@ const ScreenShareControls = memo(
     isZoomEnabled,
     handlePinToggle,
     handleToggleZoom,
-    showPinControls
+    showPinControls,
+    showAudioControl,
+    volumeKey
   }: tScreenShareControlsProps) => {
     return (
       <CardControls>
+        {showAudioControl && <VolumeButton volumeKey={volumeKey} />}
         {showPinControls && isPinned && (
           <IconButton
             variant={isZoomEnabled ? 'default' : 'ghost'}
@@ -63,7 +73,16 @@ const ScreenShareCard = memo(
     showPinControls = true
   }: TScreenShareCardProps) => {
     const user = useUserById(userId);
-    const { screenShareRef, hasScreenShareStream } = useVoiceRefs(userId);
+    const ownUserId = useOwnUserId();
+    const { getUserScreenVolumeKey } = useVolumeControl();
+    const isOwnUser = ownUserId === userId;
+    const volumeKey = getUserScreenVolumeKey(userId);
+    const {
+      screenShareRef,
+      screenShareAudioRef,
+      hasScreenShareStream,
+      hasScreenShareAudioStream
+    } = useVoiceRefs(userId);
 
     const {
       containerRef,
@@ -118,6 +137,8 @@ const ScreenShareCard = memo(
           handlePinToggle={handlePinToggle}
           handleToggleZoom={handleToggleZoom}
           showPinControls={showPinControls}
+          showAudioControl={!isOwnUser && hasScreenShareAudioStream}
+          volumeKey={volumeKey}
         />
 
         <video
@@ -130,6 +151,13 @@ const ScreenShareCard = memo(
             transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`,
             transition: isDragging ? 'none' : 'transform 0.1s ease-out'
           }}
+        />
+
+        <audio
+          ref={screenShareAudioRef}
+          className="hidden"
+          autoPlay
+          playsInline
         />
 
         <div className="absolute bottom-0 left-0 right-0 p-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">

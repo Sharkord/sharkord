@@ -9,8 +9,9 @@ export enum StreamKind {
   AUDIO = "audio",
   VIDEO = "video",
   SCREEN = "screen",
+  SCREEN_AUDIO = "screen_audio",
   EXTERNAL_VIDEO = "external_video",
-  EXTERNAL_AUDIO = "external_audio",
+  EXTERNAL_AUDIO = "external_audio"
 }
 
 export type TExternalStreamTrackKind = "audio" | "video";
@@ -24,6 +25,7 @@ export type TRemoteProducerIds = {
   remoteVideoIds: number[];
   remoteAudioIds: number[];
   remoteScreenIds: number[];
+  remoteScreenAudioIds: number[];
   remoteExternalStreamIds: number[];
 };
 
