@@ -5,3 +5,6 @@
 /DockerCenas
 /experiments
 .direnv/
+
+# Backup output (do not track)
+/backups
