@@ -49,10 +49,12 @@ type Events = {
     channelId: number;
     userId: number;
     state: TVoiceUserState;
+    activeSince: string | null;
   };
   [ServerEvents.USER_LEAVE_VOICE]: {
     channelId: number;
     userId: number;
+    activeSince: string | null;
   };
   [ServerEvents.USER_VOICE_STATE_UPDATE]: {
     channelId: number;

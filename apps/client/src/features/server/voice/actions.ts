@@ -22,7 +22,8 @@ import { ownVoiceStateSelector } from './selectors';
 export const addUserToVoiceChannel = (
   userId: number,
   channelId: number,
-  voiceState: TVoiceUserState
+  voiceState: TVoiceUserState,
+  activeSince: string | null
 ): void => {
   const state = store.getState();
   const ownUserId = ownUserIdSelector(state);
@@ -32,7 +33,8 @@ export const addUserToVoiceChannel = (
     serverSliceActions.addUserToVoiceChannel({
       userId,
       channelId,
-      state: voiceState
+      state: voiceState,
+      activeSince
     })
   );
 
@@ -43,14 +45,19 @@ export const addUserToVoiceChannel = (
 
 export const removeUserFromVoiceChannel = (
   userId: number,
-  channelId: number
+  channelId: number,
+  activeSince: string | null
 ): void => {
   const state = store.getState();
   const ownUserId = ownUserIdSelector(state);
   const currentChannelId = currentVoiceChannelIdSelector(state);
 
   store.dispatch(
-    serverSliceActions.removeUserFromVoiceChannel({ userId, channelId })
+    serverSliceActions.removeUserFromVoiceChannel({
+      userId,
+      channelId,
+      activeSince
+    })
   );
 
   if (userId !== ownUserId && channelId === currentChannelId) {

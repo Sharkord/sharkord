@@ -47,9 +47,12 @@ const leaveVoiceRoute = protectedProcedure.mutation(async ({ ctx }) => {
 
   runtime.removeUser(ctx.user.id);
 
+  const channelState = runtime.getState();
+
   ctx.pubsub.publish(ServerEvents.USER_LEAVE_VOICE, {
     channelId: ctx.currentVoiceChannelId,
-    userId: ctx.user.id
+    userId: ctx.user.id,
+    activeSince: channelState.activeSince
   });
   ctx.currentVoiceChannelId = undefined;
 

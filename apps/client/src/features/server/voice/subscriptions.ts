@@ -12,15 +12,15 @@ const subscribeToVoice = () => {
   const trpc = getTRPCClient();
 
   const onUserJoinVoiceSub = trpc.voice.onJoin.subscribe(undefined, {
-    onData: ({ channelId, userId, state }) => {
-      addUserToVoiceChannel(userId, channelId, state);
+    onData: ({ channelId, userId, state, activeSince }) => {
+      addUserToVoiceChannel(userId, channelId, state, activeSince);
     },
     onError: (err) => console.error('onUserJoinVoice subscription error:', err)
   });
 
   const onUserLeaveVoiceSub = trpc.voice.onLeave.subscribe(undefined, {
-    onData: ({ channelId, userId }) => {
-      removeUserFromVoiceChannel(userId, channelId);
+    onData: ({ channelId, userId, activeSince }) => {
+      removeUserFromVoiceChannel(userId, channelId, activeSince);
     },
     onError: (err) => console.error('onUserLeaveVoice subscription error:', err)
   });
