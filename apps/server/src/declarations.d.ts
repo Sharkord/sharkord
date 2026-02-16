@@ -33,3 +33,11 @@ declare module 'bun' {
     SHARKORD_WEBRTC_ANNOUNCED_ADDRESS?: string;
   }
 }
+
+declare module 'node:fs/promises' {
+  export function exists(path: import('node:fs').PathLike): Promise<boolean>;
+}
+
+declare module 'fs/promises' {
+  export function exists(path: import('node:fs').PathLike): Promise<boolean>;
+}

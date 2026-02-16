@@ -1,26 +1,26 @@
-import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 import {
-  settings,
-  roles,
-  categories,
-  channels,
-  files,
-  users,
-  logins,
-  messages,
-  messageFiles,
-  rolePermissions,
-  emojis,
-  messageReactions,
-  invites,
   activityLog,
-  userRoles,
-  channelRolePermissions,
-  channelUserPermissions,
+  categories,
   channelReadStates,
-} from "../../../apps/server/src/db/schema";
-import type { UserStatus } from "./types";
-import type { Permission } from "./statics";
+  channelRolePermissions,
+  channels,
+  channelUserPermissions,
+  emojis,
+  files,
+  invites,
+  logins,
+  messageFiles,
+  messageReactions,
+  messages,
+  rolePermissions,
+  roles,
+  settings,
+  userRoles,
+  users
+} from '../../../apps/server/src/db/schema';
+import type { Permission } from './statics';
+import type { UserStatus } from './types';
 
 export type TSettings = InferSelectModel<typeof settings>;
 export type TRole = InferSelectModel<typeof roles>;
@@ -72,27 +72,27 @@ export type TIChannelReadState = InferInsertModel<typeof channelReadStates>;
 
 export type TStorageSettings = Pick<
   TSettings,
-  | "storageUploadEnabled"
-  | "storageQuota"
-  | "storageUploadMaxFileSize"
-  | "storageSpaceQuotaByUser"
-  | "storageOverflowAction"
+  | 'storageUploadEnabled'
+  | 'storageQuota'
+  | 'storageUploadMaxFileSize'
+  | 'storageSpaceQuotaByUser'
+  | 'storageOverflowAction'
 >;
 
 // joined types
 
 type TPublicUser = Pick<
   TJoinedUser,
-  | "id"
-  | "name"
-  | "bannerColor"
-  | "bio"
-  | "avatar"
-  | "avatarId"
-  | "banner"
-  | "bannerId"
-  | "banned"
-  | "createdAt"
+  | 'id'
+  | 'name'
+  | 'bannerColor'
+  | 'bio'
+  | 'avatar'
+  | 'avatarId'
+  | 'banner'
+  | 'bannerId'
+  | 'banned'
+  | 'createdAt'
 > & {
   status?: UserStatus;
   _identity?: string;

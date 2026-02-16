@@ -89,9 +89,11 @@ const publicRouteHandler = async (
     'image/avif',
     'video/mp4',
     'audio/mpeg'
-  ]
+  ];
 
-  const contentDisposition = inlineAllowlist.includes(dbFile.mimeType) ? 'inline' : 'attachment'
+  const contentDisposition = inlineAllowlist.includes(dbFile.mimeType)
+    ? 'inline'
+    : 'attachment';
 
   res.writeHead(200, {
     'Content-Type': dbFile.mimeType,

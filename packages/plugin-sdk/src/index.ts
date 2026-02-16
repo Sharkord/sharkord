@@ -1,9 +1,9 @@
-import type { AppData, Producer, Router } from "mediasoup/types";
 import type {
   CommandDefinition,
   TInvokerContext,
-  TPluginSettingDefinition,
-} from "@sharkord/shared";
+  TPluginSettingDefinition
+} from '@sharkord/shared';
+import type { AppData, Producer, Router } from 'mediasoup/types';
 
 export type { TInvokerContext };
 
@@ -42,27 +42,27 @@ export type ServerEvent =
   | "voice:runtime_closed";
 
 export interface EventPayloads {
-  "user:joined": {
+  'user:joined': {
     userId: number;
     username: string;
   };
-  "user:left": {
+  'user:left': {
     userId: number;
     username: string;
   };
-  "message:created": {
+  'message:created': {
     messageId: number;
     channelId: number;
     userId: number;
     content: string;
   };
-  "message:updated": {
+  'message:updated': {
     messageId: number;
     channelId: number;
     userId: number;
     content: string;
   };
-  "message:deleted": {
+  'message:deleted': {
     messageId: number;
     channelId: number;
   };
@@ -76,7 +76,7 @@ export interface EventPayloads {
   "voice:runtime_initialized": {
     channelId: number;
   };
-  "voice:runtime_closed": {
+  'voice:runtime_closed': {
     channelId: number;
   };
 }
@@ -85,23 +85,23 @@ export interface EventPayloads {
 // so consider it as experimental for now
 
 type SettingValueType<T extends TPluginSettingDefinition> =
-  T["type"] extends "string"
+  T['type'] extends 'string'
     ? string
-    : T["type"] extends "number"
+    : T['type'] extends 'number'
       ? number
-      : T["type"] extends "boolean"
+      : T['type'] extends 'boolean'
         ? boolean
         : unknown;
 
 export interface PluginSettings<
-  T extends readonly TPluginSettingDefinition[] = TPluginSettingDefinition[],
+  T extends readonly TPluginSettingDefinition[] = TPluginSettingDefinition[]
 > {
-  get<K extends T[number]["key"]>(
-    key: K,
+  get<K extends T[number]['key']>(
+    key: K
   ): SettingValueType<Extract<T[number], { key: K }>>;
-  set<K extends T[number]["key"]>(
+  set<K extends T[number]['key']>(
     key: K,
-    value: SettingValueType<Extract<T[number], { key: K }>>,
+    value: SettingValueType<Extract<T[number], { key: K }>>
   ): void;
 }
 
@@ -115,7 +115,7 @@ export interface PluginContext {
   events: {
     on<E extends ServerEvent>(
       event: E,
-      handler: (payload: EventPayloads[E]) => void | Promise<void>,
+      handler: (payload: EventPayloads[E]) => void | Promise<void>
     ): void;
   };
 
@@ -136,25 +136,28 @@ export interface PluginContext {
 
   settings: {
     register<T extends readonly TPluginSettingDefinition[]>(
-      definitions: T,
+      definitions: T
     ): Promise<PluginSettings<T>>;
   };
 }
 
-export interface UnloadPluginContext
-  extends Pick<PluginContext, "log" | "debug" | "error"> {}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface UnloadPluginContext extends Pick<
+  PluginContext,
+  'log' | 'debug' | 'error'
+> {}
 
 // re-export mediasoup types for plugin usage
 export type {
   AppData,
-  Producer,
-  Router,
-  Transport,
+  MediaKind,
   PlainTransport,
   PlainTransportOptions,
+  Producer,
   ProducerOptions,
+  Router,
   RtpCodecCapability,
-  RtpParameters,
   RtpEncodingParameters,
-  MediaKind,
-} from "mediasoup/types";
+  RtpParameters,
+  Transport
+} from 'mediasoup/types';

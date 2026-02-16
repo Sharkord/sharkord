@@ -3,7 +3,10 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { memo } from 'react';
 
-type TIconComponent = React.ComponentType<{ size?: number; className?: string }>;
+type TIconComponent = React.ComponentType<{
+  size?: number;
+  className?: string;
+}>;
 
 type TControlToggleButtonProps = {
   enabled: boolean;
@@ -40,7 +43,9 @@ const ControlToggleButton = memo(
           size="icon"
           className={cn(
             'rounded-md h-10 w-10 transition-all duration-200',
-            enabled ? enabledClassName : disabledClassName ?? 'hover:bg-muted/60',
+            enabled
+              ? enabledClassName
+              : (disabledClassName ?? 'hover:bg-muted/60'),
             disabled && 'opacity-60 hover:bg-transparent'
           )}
           onClick={onClick}
