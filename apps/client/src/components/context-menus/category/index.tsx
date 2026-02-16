@@ -17,6 +17,7 @@ import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { openDialog } from '@/features/dialogs/actions';
 import { Dialog } from '../../dialogs/dialogs';
+import { TRPCClientError } from '@trpc/client';
 
 type TCategoryContextMenuProps = {
   children: React.ReactNode;
@@ -27,7 +28,7 @@ const CategoryContextMenu = memo(
   ({ children, categoryId }: TCategoryContextMenuProps) => {
     const can = useCan();
     const category = useCategoryById(categoryId);
-    
+
     const onDeleteClick = useCallback(async () => {
       const choice = await requestConfirmation({
         title: 'Delete Category',
@@ -44,8 +45,12 @@ const CategoryContextMenu = memo(
       try {
         await trpc.categories.delete.mutate({ categoryId });
         toast.success('Category deleted');
-      } catch {
-        toast.error('Failed to delete category');
+      } catch (error) {
+        if (error instanceof TRPCClientError) {
+          toast.error(error.message)
+        } else {
+          toast.error('Failed to delete category');
+        }
       }
     }, [categoryId]);
 

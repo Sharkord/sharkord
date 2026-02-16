@@ -17,6 +17,13 @@ const deleteCategoryRoute = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_CATEGORIES);
 
+    const categoryToRemove = await db
+      .select({categoryId: categories.id})
+      .from(categories)
+      .where(eq(categories.categoryId, input.categoryId));
+
+    invariant(categoryToRemove.length === 0, 'Please delete contained Categories first');
+
     const removedCategory = await db
       .delete(categories)
       .where(eq(categories.id, input.categoryId))
