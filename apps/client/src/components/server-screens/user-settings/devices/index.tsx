@@ -1,6 +1,7 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
+import { useVoice } from '@/features/server/voice/hooks';
 import { useForm } from '@/hooks/use-form';
 import { Resolution, VideoCodec } from '@/types';
 import { DEFAULT_BITRATE } from '@sharkord/shared';
@@ -27,27 +28,169 @@ import {
 } from '@sharkord/ui';
 import { filesize } from 'filesize';
 import { Info } from 'lucide-react';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { useAvailableDevices } from './hooks/use-available-devices';
+import { useMicrophoneTest } from './hooks/use-microphone-test';
 import ResolutionFpsControl from './resolution-fps-control';
 
 const DEFAULT_NAME = 'default';
 
 const Devices = memo(() => {
   const currentVoiceChannelId = useCurrentVoiceChannelId();
+  const { ownVoiceState, toggleMic, toggleSound } = useVoice();
   const {
     inputDevices,
+    playbackDevices,
     videoDevices,
-    loading: availableDevicesLoading
+    loading: availableDevicesLoading,
+    loadDevices
   } = useAvailableDevices();
   const { devices, saveDevices, loading: devicesLoading } = useDevices();
   const { values, onChange } = useForm(devices);
+  const {
+    testAudioRef,
+    permissionState,
+    isTesting,
+    audioLevel,
+    error: microphoneTestError,
+    requestPermission,
+    startTest,
+    stopTest
+  } = useMicrophoneTest({
+    microphoneId: values.microphoneId,
+    playbackId: values.playbackId,
+    autoGainControl: !!values.autoGainControl,
+    echoCancellation: !!values.echoCancellation,
+    noiseSuppression: !!values.noiseSuppression
+  });
 
   const saveDeviceSettings = useCallback(() => {
     saveDevices(values);
     toast.success('Device settings saved');
   }, [saveDevices, values]);
+  const didRunGrantedWarmupRef = useRef(false);
+  const mutedByTestRef = useRef<{
+    restoreMic: boolean;
+    restoreSound: boolean;
+  } | null>(null);
+
+  const restoreVoiceStateAfterTest = useCallback(async () => {
+    if (!currentVoiceChannelId) {
+      mutedByTestRef.current = null;
+      return;
+    }
+
+    const mutedByTest = mutedByTestRef.current;
+    if (!mutedByTest) return;
+
+    mutedByTestRef.current = null;
+
+    if (mutedByTest.restoreMic) {
+      await toggleMic();
+    }
+
+    if (mutedByTest.restoreSound) {
+      await toggleSound();
+    }
+  }, [currentVoiceChannelId, toggleMic, toggleSound]);
+
+  const startMicrophoneTest = useCallback(async () => {
+    if (currentVoiceChannelId) {
+      const restoreMic = !ownVoiceState.micMuted;
+      const restoreSound = !ownVoiceState.soundMuted;
+
+      mutedByTestRef.current = {
+        restoreMic,
+        restoreSound
+      };
+
+      if (restoreMic) {
+        await toggleMic();
+      }
+
+      if (restoreSound) {
+        await toggleSound();
+      }
+    } else {
+      mutedByTestRef.current = null;
+    }
+
+    const didStart = await startTest();
+
+    if (!didStart) {
+      await restoreVoiceStateAfterTest();
+    }
+  }, [
+    currentVoiceChannelId,
+    ownVoiceState.micMuted,
+    ownVoiceState.soundMuted,
+    toggleMic,
+    toggleSound,
+    startTest,
+    restoreVoiceStateAfterTest
+  ]);
+
+  const stopMicrophoneTest = useCallback(async () => {
+    stopTest();
+    await restoreVoiceStateAfterTest();
+  }, [stopTest, restoreVoiceStateAfterTest]);
+
+  const requestMicrophonePermission = useCallback(async () => {
+    await requestPermission();
+    await loadDevices();
+    window.setTimeout(() => {
+      void loadDevices();
+    }, 250);
+  }, [requestPermission, loadDevices]);
+
+  useEffect(() => {
+    if (permissionState !== 'granted') return;
+
+    void loadDevices();
+  }, [permissionState, loadDevices]);
+
+  const needsGrantedWarmup = useMemo(() => {
+    if (permissionState !== 'granted') return false;
+
+    if (!inputDevices.length && !playbackDevices.length && !videoDevices.length) {
+      return true;
+    }
+
+    const hasResolvedInput = inputDevices.some(
+      (device) => !!device?.deviceId || !!device?.label.trim()
+    );
+    const hasResolvedPlayback = playbackDevices.some(
+      (device) => !!device?.deviceId || !!device?.label.trim()
+    );
+
+    return !hasResolvedInput && !hasResolvedPlayback;
+  }, [permissionState, inputDevices, playbackDevices, videoDevices]);
+
+  useEffect(() => {
+    if (!needsGrantedWarmup || didRunGrantedWarmupRef.current) return;
+
+    didRunGrantedWarmupRef.current = true;
+
+    void (async () => {
+      await requestPermission({ silent: true });
+      await loadDevices();
+      window.setTimeout(() => {
+        void loadDevices();
+      }, 250);
+    })();
+  }, [needsGrantedWarmup, requestPermission, loadDevices]);
+
+  useEffect(() => {
+    return () => {
+      void restoreVoiceStateAfterTest();
+    };
+  }, [restoreVoiceStateAfterTest]);
+
+  const hasMicrophones = inputDevices.length > 0;
+  const hasDefaultPlaybackOption = playbackDevices.some(
+    (device) => device?.deviceId === DEFAULT_NAME
+  );
 
   if (availableDevicesLoading || devicesLoading) {
     return <LoadingCard className="h-[600px]" />;
@@ -71,160 +214,241 @@ const Devices = memo(() => {
             </AlertDescription>
           </Alert>
         )}
-        <Group label="Microphone">
-          <Select
-            onValueChange={(value) => onChange('microphoneId', value)}
-            value={values.microphoneId}
-          >
-            <SelectTrigger className="w-[500px]">
-              <SelectValue placeholder="Select the input device" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {inputDevices.map((device) => (
-                  <SelectItem
-                    key={device?.deviceId}
-                    value={device?.deviceId || DEFAULT_NAME}
-                  >
-                    {device?.label.trim() || 'Default Microphone'}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold tracking-wide text-muted-foreground">
+            Audio
+          </h3>
 
-          <div className="flex gap-8">
-            <Group label="Echo cancellation">
-              <Switch
-                checked={!!values.echoCancellation}
-                onCheckedChange={(checked) =>
-                  onChange('echoCancellation', checked)
-                }
-              />
-            </Group>
-
-            <Group label="Noise suppression">
-              <Switch
-                checked={!!values.noiseSuppression}
-                onCheckedChange={(checked) =>
-                  onChange('noiseSuppression', checked)
-                }
-              />
-            </Group>
-
-            <Group label="Automatic gain control">
-              <Switch
-                checked={!!values.autoGainControl}
-                onCheckedChange={(checked) =>
-                  onChange('autoGainControl', checked)
-                }
-              />
-            </Group>
-          </div>
-        </Group>
-
-        <Group label="Webcam">
-          <Select
-            onValueChange={(value) => onChange('webcamId', value)}
-            value={values.webcamId}
-          >
-            <SelectTrigger className="w-[500px]">
-              <SelectValue placeholder="Select the input device" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {videoDevices.map((device) => (
-                  <SelectItem
-                    key={device?.deviceId}
-                    value={device?.deviceId || DEFAULT_NAME}
-                  >
-                    {device?.label.trim() || 'Default Webcam'}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-
-          <ResolutionFpsControl
-            framerate={values.webcamFramerate}
-            resolution={values.webcamResolution}
-            onFramerateChange={(value) => onChange('webcamFramerate', value)}
-            onResolutionChange={(value) =>
-              onChange('webcamResolution', value as Resolution)
-            }
-          />
-          <Group label="Mirror own video">
-            <Switch
-              checked={!!values.mirrorOwnVideo}
-              onCheckedChange={(checked) => onChange('mirrorOwnVideo', checked)}
-            />
-          </Group>
-        </Group>
-
-        <Group label="Screen Sharing">
-          <div className="flex">
-            <ResolutionFpsControl
-              framerate={values.screenFramerate}
-              resolution={values.screenResolution}
-              onFramerateChange={(value) => onChange('screenFramerate', value)}
-              onResolutionChange={(value) =>
-                onChange('screenResolution', value as Resolution)
-              }
-            />
-
-            <div className="ml-2">
+          <div className="grid gap-4 xl:grid-cols-2">
+            <Group label="Microphone">
               <Select
-                value={values.screenCodec ?? VideoCodec.AUTO}
-                onValueChange={(value) =>
-                  onChange('screenCodec', value as VideoCodec)
-                }
+                onValueChange={(value) => onChange('microphoneId', value)}
+                value={values.microphoneId}
               >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Select codec" />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select the input device" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value={VideoCodec.AUTO}>Auto</SelectItem>
-                    <SelectItem value={VideoCodec.VP8}>VP8</SelectItem>
-                    <SelectItem value={VideoCodec.VP9}>VP9</SelectItem>
-                    <SelectItem value={VideoCodec.H264}>H264</SelectItem>
-                    <SelectItem value={VideoCodec.AV1}>AV1</SelectItem>
+                    {inputDevices.map((device) => (
+                      <SelectItem
+                        key={device?.deviceId}
+                        value={device?.deviceId || DEFAULT_NAME}
+                      >
+                        {device?.label.trim() || 'Default Microphone'}
+                      </SelectItem>
+                    ))}
                   </SelectGroup>
                 </SelectContent>
               </Select>
-            </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <Group label="Echo cancellation">
+                  <Switch
+                    checked={!!values.echoCancellation}
+                    onCheckedChange={(checked) =>
+                      onChange('echoCancellation', checked)
+                    }
+                  />
+                </Group>
+
+                <Group label="Noise suppression">
+                  <Switch
+                    checked={!!values.noiseSuppression}
+                    onCheckedChange={(checked) =>
+                      onChange('noiseSuppression', checked)
+                    }
+                  />
+                </Group>
+
+                <Group label="Automatic gain control">
+                  <Switch
+                    checked={!!values.autoGainControl}
+                    onCheckedChange={(checked) =>
+                      onChange('autoGainControl', checked)
+                    }
+                  />
+                </Group>
+              </div>
+            </Group>
+
+            <Group label="Speaker">
+              <Select
+                onValueChange={(value) => onChange('playbackId', value)}
+                value={values.playbackId}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select the output device" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {!hasDefaultPlaybackOption && (
+                      <SelectItem value={DEFAULT_NAME}>
+                        Default Output
+                      </SelectItem>
+                    )}
+                    {playbackDevices.map((device) => (
+                      <SelectItem
+                        key={device?.deviceId}
+                        value={device?.deviceId || DEFAULT_NAME}
+                      >
+                        {device?.label.trim() || 'Default Output'}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Group>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Label>Max Bitrate (Kbps)</Label>
+          <Group label="Microphone Test">
+            <div className="flex items-center gap-2">
+              {permissionState !== 'granted' && (
+                <Button variant="outline" onClick={requestMicrophonePermission}>
+                  Permit Microphone Access
+                </Button>
+              )}
 
-            <Slider
-              min={200}
-              max={30000}
-              step={100}
-              value={[values.screenBitrate ?? DEFAULT_BITRATE]}
-              onValueChange={([value]) => onChange('screenBitrate', value)}
-              rightSlot={
-                <span className="text-sm text-muted-foreground w-20 text-right">
-                  {filesize((values.screenBitrate ?? DEFAULT_BITRATE) * 125, {
-                    bits: true
-                  })}
-                  /s
-                </span>
+              {!isTesting ? (
+                <Button
+                  variant="secondary"
+                  onClick={() => void startMicrophoneTest()}
+                  disabled={permissionState === 'denied' || !hasMicrophones}
+                >
+                  Start Test
+                </Button>
+              ) : (
+                <Button variant="secondary" onClick={() => void stopMicrophoneTest()}>
+                  Stop Test
+                </Button>
+              )}
+            </div>
+
+            <div className="h-4 w-full max-w-[640px] overflow-hidden rounded-md border border-border/80 bg-muted/70">
+              <div
+                className="h-full bg-primary transition-[width] duration-75"
+                style={{ width: `${audioLevel}%` }}
+              />
+            </div>
+
+            {microphoneTestError && (
+              <Alert variant="destructive">
+                <Info />
+                <AlertDescription>{microphoneTestError}</AlertDescription>
+              </Alert>
+            )}
+
+            <audio ref={testAudioRef} className="hidden" />
+          </Group>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold tracking-wide text-muted-foreground">
+            Video
+          </h3>
+
+          <Group label="Webcam">
+            <Select
+              onValueChange={(value) => onChange('webcamId', value)}
+              value={values.webcamId}
+            >
+              <SelectTrigger className="w-[500px]">
+                <SelectValue placeholder="Select the input device" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {videoDevices.map((device) => (
+                    <SelectItem
+                      key={device?.deviceId}
+                      value={device?.deviceId || DEFAULT_NAME}
+                    >
+                      {device?.label.trim() || 'Default Webcam'}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+
+            <ResolutionFpsControl
+              framerate={values.webcamFramerate}
+              resolution={values.webcamResolution}
+              onFramerateChange={(value) => onChange('webcamFramerate', value)}
+              onResolutionChange={(value) =>
+                onChange('webcamResolution', value as Resolution)
               }
             />
-          </div>
+            <Group label="Mirror own video">
+              <Switch
+                checked={!!values.mirrorOwnVideo}
+                onCheckedChange={(checked) => onChange('mirrorOwnVideo', checked)}
+              />
+            </Group>
+          </Group>
 
-          <span className="text-sm text-muted-foreground">
-            These screen sharing settings are best effort and may not be
-            supported on all platforms or browsers, which means that in some
-            cases the actual resolution, framerate or codec used may differ from
-            the selected ones. In the end, is up to the browser to handle the
-            screen sharing stream in the best way possible, based on the current
-            system performance and network conditions.
-          </span>
-        </Group>
+          <Group label="Screen Sharing">
+            <div className="flex">
+              <ResolutionFpsControl
+                framerate={values.screenFramerate}
+                resolution={values.screenResolution}
+                onFramerateChange={(value) => onChange('screenFramerate', value)}
+                onResolutionChange={(value) =>
+                  onChange('screenResolution', value as Resolution)
+                }
+              />
 
+              <div className="ml-2">
+                <Select
+                  value={values.screenCodec ?? VideoCodec.AUTO}
+                  onValueChange={(value) =>
+                    onChange('screenCodec', value as VideoCodec)
+                  }
+                >
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Select codec" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value={VideoCodec.AUTO}>Auto</SelectItem>
+                      <SelectItem value={VideoCodec.VP8}>VP8</SelectItem>
+                      <SelectItem value={VideoCodec.VP9}>VP9</SelectItem>
+                      <SelectItem value={VideoCodec.H264}>H264</SelectItem>
+                      <SelectItem value={VideoCodec.AV1}>AV1</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label>Max Bitrate (Kbps)</Label>
+
+              <Slider
+                min={200}
+                max={30000}
+                step={100}
+                value={[values.screenBitrate ?? DEFAULT_BITRATE]}
+                onValueChange={([value]) => onChange('screenBitrate', value)}
+                rightSlot={
+                  <span className="text-sm text-muted-foreground w-20 text-right">
+                    {filesize((values.screenBitrate ?? DEFAULT_BITRATE) * 125, {
+                      bits: true
+                    })}
+                    /s
+                  </span>
+                }
+              />
+            </div>
+
+            <span className="text-sm text-muted-foreground">
+              These screen sharing settings are best effort and may not be
+              supported on all platforms or browsers, which means that in some
+              cases the actual resolution, framerate or codec used may differ
+              from the selected ones. In the end, is up to the browser to
+              handle the screen sharing stream in the best way possible, based
+              on the current system performance and network conditions.
+            </span>
+          </Group>
+        </div>
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
             Cancel
