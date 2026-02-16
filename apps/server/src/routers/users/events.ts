@@ -17,8 +17,13 @@ const onUserCreateRoute = protectedProcedure.subscription(async ({ ctx }) => {
   return ctx.pubsub.subscribe(ServerEvents.USER_CREATE);
 });
 
+const onUserDeleteRoute = protectedProcedure.subscription(async ({ ctx }) => {
+  return ctx.pubsub.subscribe(ServerEvents.USER_DELETE);
+});
+
 export {
   onUserCreateRoute,
+  onUserDeleteRoute,
   onUserJoinRoute,
   onUserLeaveRoute,
   onUserUpdateRoute
