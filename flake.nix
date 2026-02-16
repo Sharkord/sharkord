@@ -11,19 +11,38 @@
       nixpkgs,
     }:
     let
-      pkgs = import nixpkgs {
-        system = "x86_64-linux";
-      };
+      systems = [
+        "x86_64-linux"
+        "aarch64-darwin"
+      ];
+      forAllSystems =
+        f:
+        nixpkgs.lib.genAttrs systems (
+          system:
+          f (import nixpkgs {
+            inherit system;
+          })
+        );
     in
     {
-      devShells."x86_64-linux".default = pkgs.mkShell {
-        buildInputs = with pkgs; [
-          nodejs
-          docker
-          docker-compose
-          pnpm
-          bun
-        ];
-      };
+      devShells = forAllSystems (
+        pkgs:
+        {
+          default = pkgs.mkShell {
+            buildInputs =
+              with pkgs;
+              [
+                nodejs
+                pnpm
+                bun
+                tmux
+              ]
+              ++ nixpkgs.lib.optionals pkgs.stdenv.isLinux [
+                docker
+                docker-compose
+              ];
+          };
+        }
+      );
     };
 }
