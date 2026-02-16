@@ -1,4 +1,5 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
+import { getVoiceControlsBridge } from '@/components/voice-provider/controls-bridge';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { useVoice } from '@/features/server/voice/hooks';
@@ -33,13 +34,14 @@ import { toast } from 'sonner';
 import { useAvailableDevices } from './hooks/use-available-devices';
 import { useMicrophoneTest } from './hooks/use-microphone-test';
 import { useWebcamTest } from './hooks/use-webcam-test';
+import { useOwnVoiceState } from '@/features/server/voice/hooks';
 import ResolutionFpsControl from './resolution-fps-control';
 
 const DEFAULT_NAME = 'default';
 
 const Devices = memo(() => {
   const currentVoiceChannelId = useCurrentVoiceChannelId();
-  const { ownVoiceState, toggleMic, toggleSound } = useVoice();
+  const ownVoiceState = useOwnVoiceState();
   const {
     inputDevices,
     playbackDevices,
@@ -85,9 +87,12 @@ const Devices = memo(() => {
   }, [saveDevices, values]);
   const didPrimeDevicesOnGrantedRef = useRef(false);
   const mutedByTestRef = useRef<{
-    restoreMic: boolean;
-    restoreSound: boolean;
+    previousMicMuted: boolean;
+    previousSoundMuted: boolean;
   } | null>(null);
+  const restoreVoiceStateAfterTestRef = useRef<() => Promise<void>>(
+    async () => {}
+  );
 
   const restoreVoiceStateAfterTest = useCallback(async () => {
     if (!currentVoiceChannelId) {
@@ -100,32 +105,35 @@ const Devices = memo(() => {
 
     mutedByTestRef.current = null;
 
-    if (mutedByTest.restoreMic) {
-      await toggleMic();
+    const voiceControlsBridge = getVoiceControlsBridge();
+    if (!voiceControlsBridge) {
+      toast.error('Voice controls are unavailable right now.');
+      return;
     }
 
-    if (mutedByTest.restoreSound) {
-      await toggleSound();
-    }
-  }, [currentVoiceChannelId, toggleMic, toggleSound]);
+    await voiceControlsBridge.setMicMuted(mutedByTest.previousMicMuted);
+    await voiceControlsBridge.setSoundMuted(mutedByTest.previousSoundMuted);
+  }, [currentVoiceChannelId]);
+
+  useEffect(() => {
+    restoreVoiceStateAfterTestRef.current = restoreVoiceStateAfterTest;
+  }, [restoreVoiceStateAfterTest]);
 
   const startMicrophoneTest = useCallback(async () => {
     if (currentVoiceChannelId) {
-      const restoreMic = !ownVoiceState.micMuted;
-      const restoreSound = !ownVoiceState.soundMuted;
+      const voiceControlsBridge = getVoiceControlsBridge();
+      if (!voiceControlsBridge) {
+        toast.error('Voice controls are unavailable right now.');
+        return;
+      }
 
       mutedByTestRef.current = {
-        restoreMic,
-        restoreSound
+        previousMicMuted: ownVoiceState.micMuted,
+        previousSoundMuted: ownVoiceState.soundMuted
       };
 
-      if (restoreMic) {
-        await toggleMic();
-      }
-
-      if (restoreSound) {
-        await toggleSound();
-      }
+      await voiceControlsBridge.setMicMuted(true);
+      await voiceControlsBridge.setSoundMuted(true);
     } else {
       mutedByTestRef.current = null;
     }
@@ -140,8 +148,6 @@ const Devices = memo(() => {
     currentVoiceChannelId,
     ownVoiceState.micMuted,
     ownVoiceState.soundMuted,
-    toggleMic,
-    toggleSound,
     startTest,
     restoreVoiceStateAfterTest
   ]);
@@ -180,9 +186,9 @@ const Devices = memo(() => {
 
   useEffect(() => {
     return () => {
-      void restoreVoiceStateAfterTest();
+      void restoreVoiceStateAfterTestRef.current();
     };
-  }, [restoreVoiceStateAfterTest]);
+  }, []);
 
   const hasMicrophones = inputDevices.length > 0;
   const hasDefaultPlaybackOption = playbackDevices.some(
@@ -327,6 +333,13 @@ const Devices = memo(() => {
                   </Button>
                 )}
               </div>
+
+              {currentVoiceChannelId && isTesting && (
+                <p className="text-sm text-muted-foreground">
+                  You are temporarily muted and deafened while the test is
+                  running.
+                </p>
+              )}
 
               <div className="h-4 w-full max-w-[640px] overflow-hidden rounded-md border border-border/80 bg-muted/70">
                 <div
