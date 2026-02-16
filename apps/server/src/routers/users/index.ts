@@ -16,6 +16,7 @@ import { removeRoleRoute } from './remove-role';
 import { unbanRoute } from './unban';
 import { updatePasswordRoute } from './update-password';
 import { updateUserRoute } from './update-user';
+import { lockUsernameRoute } from './lock-username';
 
 export const usersRouter = t.router({
   changeAvatar: changeAvatarRoute,
@@ -32,5 +33,6 @@ export const usersRouter = t.router({
   onJoin: onUserJoinRoute,
   onLeave: onUserLeaveRoute,
   onUpdate: onUserUpdateRoute,
-  onCreate: onUserCreateRoute
+  onCreate: onUserCreateRoute,
+  lockUsername: lockUsernameRoute
 });

@@ -28,7 +28,8 @@ const getPublicUserById = async (
       bannerId: users.bannerId,
       avatar: avatarFiles,
       banner: bannerFiles,
-      createdAt: users.createdAt
+      createdAt: users.createdAt,
+      lockedUsername: users.lockedUsername
     })
     .from(users)
     .leftJoin(avatarFiles, eq(users.avatarId, avatarFiles.id))
@@ -55,6 +56,7 @@ const getPublicUserById = async (
     banner: results.banner,
     createdAt: results.createdAt,
     banned: results.banned,
+    lockedUsername: results.lockedUsername,
     roleIds: roles.map((r) => r.roleId)
   };
 };
@@ -78,6 +80,7 @@ const getPublicUsers = async (
         avatar: avatarFiles,
         banner: bannerFiles,
         createdAt: users.createdAt,
+        lockedUsername: users.lockedUsername,
         _identity: users.identity
       })
       .from(users)
@@ -113,6 +116,7 @@ const getPublicUsers = async (
       avatar: result.avatar,
       banner: result.banner,
       createdAt: result.createdAt,
+      lockedUsername: result.lockedUsername,
       _identity: result._identity,
       roleIds: rolesMap[result.id] || []
     }));
@@ -128,7 +132,8 @@ const getPublicUsers = async (
         bannerId: users.bannerId,
         avatar: avatarFiles,
         banner: bannerFiles,
-        createdAt: users.createdAt
+        createdAt: users.createdAt,
+        lockedUsername: users.lockedUsername
       })
       .from(users)
       .leftJoin(avatarFiles, eq(users.avatarId, avatarFiles.id))
@@ -211,7 +216,8 @@ const getUserById = async (
       banReason: users.banReason,
       bannedAt: users.bannedAt,
       avatar: avatarFiles,
-      banner: bannerFiles
+      banner: bannerFiles,
+      lockedUsername: users.lockedUsername
     })
     .from(users)
     .leftJoin(avatarFiles, eq(users.avatarId, avatarFiles.id))
@@ -258,7 +264,8 @@ const getUserByIdentity = async (
       banReason: users.banReason,
       bannedAt: users.bannedAt,
       avatar: avatarFiles,
-      banner: bannerFiles
+      banner: bannerFiles,
+      lockedUsername: users.lockedUsername
     })
     .from(users)
     .leftJoin(avatarFiles, eq(users.avatarId, avatarFiles.id))
@@ -317,7 +324,8 @@ const getUsers = async (): Promise<TJoinedUser[]> => {
       banReason: users.banReason,
       bannedAt: users.bannedAt,
       avatar: avatarFiles,
-      banner: bannerFiles
+      banner: bannerFiles,
+      lockedUsername: users.lockedUsername
     })
     .from(users)
     .leftJoin(avatarFiles, eq(users.avatarId, avatarFiles.id))
@@ -359,6 +367,7 @@ const getUsers = async (): Promise<TJoinedUser[]> => {
     banned: result.banned,
     banReason: result.banReason,
     bannedAt: result.bannedAt,
+    lockedUsername: result.lockedUsername,
     roleIds: rolesMap[result.id] || []
   }));
 };

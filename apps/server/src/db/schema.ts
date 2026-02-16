@@ -136,7 +136,8 @@ const users = sqliteTable(
       .notNull()
       .$defaultFn(() => Date.now()),
     createdAt: integer('created_at').notNull(),
-    updatedAt: integer('updated_at')
+    updatedAt: integer('updated_at'),
+    lockedUsername :integer('locked_username', { mode: 'boolean' }).notNull().default(false)
   },
   (t) => [
     uniqueIndex('users_identity_idx').on(t.identity),

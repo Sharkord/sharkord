@@ -18,6 +18,7 @@ import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { AvatarManager } from './avatar-manager';
 import { BannerManager } from './banner-manager';
+import { isEmptyMessage } from '@sharkord/shared';
 
 const Profile = memo(() => {
   const ownPublicUser = useOwnPublicUser();
@@ -30,9 +31,19 @@ const Profile = memo(() => {
   const onUpdateUser = useCallback(async () => {
     const trpc = getTRPCClient();
 
+    if(isEmptyMessage(values.name)) {
+      toast.error('Invalid username');
+      return;
+    }
+    let message = 'Profile updated'
+    if(ownPublicUser.lockedUsername && ownPublicUser.name != values.name) {
+      message = 'Your username cannot be changed';
+      values.name = ownPublicUser.name;
+    }
+
     try {
       await trpc.users.update.mutate(values);
-      toast.success('Profile updated');
+      toast.success(message);
     } catch (error) {
       setTrpcErrors(error);
     }
