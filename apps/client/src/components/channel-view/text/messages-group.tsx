@@ -11,7 +11,7 @@ type TMessagesGroupProps = {
   group: TJoinedMessage[];
 };
 
-const MessagesGroup = memo(({ group }: TMessagesGroupProps) => {
+const MessagesGroup = memo(({ group, messageRefs }: TMessagesGroupProps & { messageRefs: any }) => {
   const firstMessage = group[0];
   const user = useUserById(firstMessage.userId);
   const date = new Date(firstMessage.createdAt);
@@ -38,7 +38,14 @@ const MessagesGroup = memo(({ group }: TMessagesGroupProps) => {
         </div>
         <div className="flex min-w-0 flex-col">
           {group.map((message) => (
-            <Message key={message.id} message={message} />
+            <div key={message.id}
+                id={`message-${message.id}`}
+                ref={(el: HTMLDivElement | null) => {
+                  messageRefs.current[message.id] = el;
+                }}
+            >
+              <Message key={message.id} message={message} />
+            </div>
           ))}
         </div>
       </div>

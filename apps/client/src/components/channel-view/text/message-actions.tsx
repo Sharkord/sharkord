@@ -6,7 +6,7 @@ import { IconButton } from '@/components/ui/icon-button';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
-import { Pencil, Smile, Trash } from 'lucide-react';
+import { Pencil, Pin, Smile, Trash } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
@@ -66,6 +66,17 @@ const MessageActions = memo(
       [messageId]
     );
 
+    const onPinClick = useCallback(async () => {
+      const trpc = getTRPCClient();
+
+      try {
+        await trpc.messages.togglePin.mutate({ messageId });
+        toast.success('Message pinned status toggled');
+      } catch (error) {
+        toast.error('Failed to toggle pin status');
+    }}, [messageId]);
+
+
     return (
       <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-1 transition-all h-8 ">
         {canManage && (
@@ -118,6 +129,15 @@ const MessageActions = memo(
               />
             </EmojiPicker>
           </div>
+        </Protect>
+        <Protect permission={Permission.PIN_MESSAGES}>
+        <IconButton
+          size="sm"
+          variant="ghost"
+          icon={Pin}
+          onClick={onPinClick}
+          title="Pin Message"
+        />
         </Protect>
       </div>
     );

@@ -11,6 +11,7 @@ import { getMessagesRoute } from './get-messages';
 import { sendMessageRoute } from './send-message';
 import { signalTypingRoute } from './signal-typing';
 import { toggleMessageReactionRoute } from './toggle-message-reaction';
+import { toggleMessagePinRoute } from './toggle-message-pin';
 
 export const messagesRouter = t.router({
   send: sendMessageRoute,
@@ -18,6 +19,7 @@ export const messagesRouter = t.router({
   delete: deleteMessageRoute,
   get: getMessagesRoute,
   toggleReaction: toggleMessageReactionRoute,
+  togglePin: toggleMessagePinRoute,
   signalTyping: signalTypingRoute,
   onNew: onMessageRoute,
   onUpdate: onMessageUpdateRoute,

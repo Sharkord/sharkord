@@ -208,7 +208,8 @@ const messages = sqliteTable(
     editable: integer('editable', { mode: 'boolean' }).default(true),
     metadata: text('metadata', { mode: 'json' }).$type<TMessageMetadata[]>(),
     createdAt: integer('created_at').notNull(),
-    updatedAt: integer('updated_at')
+    updatedAt: integer('updated_at'),
+    bool_pinned: integer('bool_pinned', { mode: 'boolean' }).default(false),
   },
   (t) => [
     index('messages_user_idx').on(t.userId),

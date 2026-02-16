@@ -37,6 +37,7 @@ export type ServerEvent =
   | "message:created"
   | "message:updated"
   | "message:deleted"
+  | "message:pinned"
   | "voice:runtime_initialized"
   | "voice:runtime_closed";
 
@@ -64,6 +65,13 @@ export interface EventPayloads {
   "message:deleted": {
     messageId: number;
     channelId: number;
+  };
+  "message:pinned": {
+    messageId: number;
+    channelId: number;
+    userId: number;
+    content: string;
+    bool_pinned: boolean;
   };
   "voice:runtime_initialized": {
     channelId: number;

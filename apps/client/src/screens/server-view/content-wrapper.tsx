@@ -8,9 +8,13 @@ import {
 import { useServerName } from '@/features/server/hooks';
 import { ChannelType } from '@sharkord/shared';
 import { AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useRef } from 'react';
 
-const ContentWrapper = memo(() => {
+interface ContentWrapperProps {
+  isPinnedMessagesShown: boolean;
+}
+
+const ContentWrapper = memo(({isPinnedMessagesShown}: ContentWrapperProps) => {
   const selectedChannelId = useSelectedChannelId();
   const selectedChannelType = useSelectedChannelType();
   const serverName = useServerName();
@@ -20,7 +24,7 @@ const ContentWrapper = memo(() => {
   if (selectedChannelId) {
     if (selectedChannelType === ChannelType.TEXT) {
       content = (
-        <TextChannel key={selectedChannelId} channelId={selectedChannelId} />
+        <TextChannel key={selectedChannelId} channelId={selectedChannelId} isPinnedMessagesShown={isPinnedMessagesShown} />
       );
     } else if (selectedChannelType === ChannelType.VOICE) {
       content = (

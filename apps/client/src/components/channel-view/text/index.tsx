@@ -24,18 +24,22 @@ import { MessagesGroup } from './messages-group';
 import { TextSkeleton } from './text-skeleton';
 import { useScrollController } from './use-scroll-controller';
 import { UsersTyping } from './users-typing';
+import { cn } from '@/lib/utils';
+import { PinnedMessagesTopbar } from '@/components/pinned-messages-topbar';
 
 type TChannelProps = {
   channelId: number;
+  isPinnedMessagesShown: boolean;
 };
 
-const TextChannel = memo(({ channelId }: TChannelProps) => {
+const TextChannel = memo(({ channelId, isPinnedMessagesShown }: TChannelProps) => {
   const { messages, hasMore, loadMore, loading, fetching, groupedMessages } =
     useMessages(channelId);
 
   const [newMessage, setNewMessage] = useState('');
   const allPluginCommands = useFlatPluginCommands();
   const typingUsers = useTypingUsersByChannelId(channelId);
+  const messageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
   const { containerRef, onScroll } = useScrollController({
     messages,
@@ -163,6 +167,18 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         </div>
       )}
 
+      <PinnedMessagesTopbar 
+        className={cn(
+          'w-full transition-[height] duration-500 ease-in-out overflow-hidden',
+          isPinnedMessagesShown ?
+            'h-50' :
+            'h-0'
+        )}
+        isOpen={isPinnedMessagesShown}
+        messageRefs={messageRefs}
+        messages={messages}
+      />
+
       <div
         ref={containerRef}
         onScroll={onScroll}
@@ -170,7 +186,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
       >
         <div className="space-y-4">
           {groupedMessages.map((group, index) => (
-            <MessagesGroup key={index} group={group} />
+            <MessagesGroup key={index} group={group} messageRefs={messageRefs} />
           ))}
         </div>
       </div>

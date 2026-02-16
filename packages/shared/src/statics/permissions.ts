@@ -1,6 +1,7 @@
 export enum Permission {
   SEND_MESSAGES = "SEND_MESSAGES",
   REACT_TO_MESSAGES = "REACT_TO_MESSAGES",
+  PIN_MESSAGES = "PIN_MESSAGES",
   UPLOAD_FILES = "UPLOAD_FILES",
   JOIN_VOICE_CHANNELS = "JOIN_VOICE_CHANNELS",
   SHARE_SCREEN = "SHARE_SCREEN",
@@ -24,6 +25,7 @@ export enum Permission {
 export const permissionLabels: Record<Permission, string> = {
   [Permission.SEND_MESSAGES]: "Send messages",
   [Permission.REACT_TO_MESSAGES]: "React to messages",
+  [Permission.PIN_MESSAGES]: "Pin messages",
   [Permission.UPLOAD_FILES]: "Upload files",
   [Permission.JOIN_VOICE_CHANNELS]: "Join voice channels",
   [Permission.SHARE_SCREEN]: "Share screen",
@@ -47,6 +49,7 @@ export const permissionDescriptions: Record<Permission, string> = {
   [Permission.SEND_MESSAGES]:
     "Grants the ability to send messages in channels.",
   [Permission.REACT_TO_MESSAGES]: "Grants the ability to react to messages.",
+  [Permission.PIN_MESSAGES]: "Grants the ability to pin messages.",
   [Permission.UPLOAD_FILES]: "Grants the ability to upload files in channels.",
   [Permission.JOIN_VOICE_CHANNELS]:
     "Grants the ability to join voice channels.",

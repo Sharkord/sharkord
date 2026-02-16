@@ -4,7 +4,7 @@ import {
   useIsCurrentVoiceChannelSelected
 } from '@/features/server/channels/hooks';
 import { cn } from '@/lib/utils';
-import { MessageSquare, PanelRight, PanelRightClose } from 'lucide-react';
+import { MessageSquare, PanelRight, PanelRightClose, Pin, PinOff } from 'lucide-react';
 import { memo } from 'react';
 import { Tooltip } from '../ui/tooltip';
 import { VolumeController } from './volume-controller';
@@ -14,6 +14,8 @@ type TTopBarProps = {
   isOpen: boolean;
   onToggleVoiceChat: () => void;
   isVoiceChatOpen: boolean;
+  onTogglePinnedMessages: () => void;
+  isPinnedMessagesShown: boolean;
 };
 
 const TopBar = memo(
@@ -21,7 +23,9 @@ const TopBar = memo(
     onToggleRightSidebar,
     isOpen,
     onToggleVoiceChat,
-    isVoiceChatOpen
+    isVoiceChatOpen,
+    onTogglePinnedMessages,
+    isPinnedMessagesShown
   }: TTopBarProps) => {
     const isCurrentVoiceChannelSelected = useIsCurrentVoiceChannelSelected();
     const currentVoiceChannelId = useCurrentVoiceChannelId();
@@ -53,6 +57,26 @@ const TopBar = memo(
             </Button>
           </>
         )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onTogglePinnedMessages}
+          className="h-6 px-2 transition-all duration-200 ease-in-out"
+        >
+          {isPinnedMessagesShown ? (
+            <Tooltip content="Hide Pinned Messages>">
+              <div>
+                <PinOff className="w-4 h-4 transition-transform duration-200 ease-in-out" />
+              </div>
+            </Tooltip>
+          ) : (
+            <Tooltip content="Show Pinned Messages">
+              <div>
+                <Pin className="w-4 h-4 transition-transform duration-200 ease-in-out" />
+              </div>
+            </Tooltip>
+          )}
+        </Button>
         <Button
           variant="ghost"
           size="sm"

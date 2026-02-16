@@ -23,6 +23,10 @@ const ServerView = memo(() => {
     getLocalStorageItem(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE) === 'true' ||
       false
   );
+  const [isPinnedMessagesShown, setIsPinnedMessagesShown] = useState(
+    getLocalStorageItem(LocalStorageKey.PINNED_MESSAGES_SIDEBAR_STATE) === 'true' ||
+      false
+  );
 
   const handleDesktopRightSidebarToggle = useCallback(() => {
     setIsDesktopRightSidebarOpen((prev) => !prev);
@@ -66,6 +70,14 @@ const ServerView = memo(() => {
     onSwipeLeft: handleSwipeLeft
   });
 
+  const handlePinnedMessagesToggle = useCallback(() => {
+    setIsPinnedMessagesShown((prev) => !prev);
+    localStorage.setItem(
+      LocalStorageKey.PINNED_MESSAGES_SIDEBAR_STATE,
+      !isPinnedMessagesShown ? 'true' : 'false'
+    );
+  }, [isPinnedMessagesShown]);
+
   return (
     <VoiceProvider>
       <div
@@ -77,6 +89,8 @@ const ServerView = memo(() => {
           isOpen={isDesktopRightSidebarOpen}
           onToggleVoiceChat={handleVoiceChatSidebarToggle}
           isVoiceChatOpen={isVoiceChatSidebarOpen}
+          onTogglePinnedMessages={handlePinnedMessagesToggle}
+          isPinnedMessagesShown={isPinnedMessagesShown}
         />
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
           <PreventBrowser />
@@ -104,7 +118,7 @@ const ServerView = memo(() => {
             )}
           />
 
-          <ContentWrapper />
+          <ContentWrapper isPinnedMessagesShown={isPinnedMessagesShown} />
 
           <VoiceChatSidebar isOpen={isVoiceChatSidebarOpen} />
 
