@@ -29,6 +29,20 @@ type TChannelProps = {
   channelId: number;
 };
 
+const hasMessageRenderableContent = (html: string) => {
+  const textContent = html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\u200B/g, '')
+    .trim();
+
+  if (textContent.length > 0) {
+    return true;
+  }
+
+  return /<img\b/i.test(html);
+};
+
 const TextChannel = memo(({ channelId }: TChannelProps) => {
   const { messages, hasMore, loadMore, loading, fetching, groupedMessages } =
     useMessages(channelId);
@@ -223,7 +237,10 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
             className="h-8 w-8"
             onClick={onSendMessage}
             disabled={
-              uploading || sending || !newMessage.trim() || !canSendMessages
+              uploading ||
+              sending ||
+              (!hasMessageRenderableContent(newMessage) && files.length === 0) ||
+              !canSendMessages
             }
           >
             <Send className="h-4 w-4" />

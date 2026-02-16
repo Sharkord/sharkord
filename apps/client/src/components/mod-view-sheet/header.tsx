@@ -18,11 +18,16 @@ import { RoleBadge } from '../role-badge';
 import { useModViewContext } from './context';
 import { useCan } from '@/features/server/hooks';
 
+const DELETED_USER_IDENTITY = '__deleted_user__';
+
 const Header = memo(() => {
   const ownUserId = useOwnUserId();
   const { user, refetch } = useModViewContext();
   const status = useUserStatus(user.id);
   const userRoles = useUserRoles(user.id);
+  const isDeletedPlaceholder =
+    user.identity === DELETED_USER_IDENTITY ||
+    (user.name === 'Deleted' && user.banned);
 
   const isFromOwnUser = useIsOwnUser(user.id);
   const [name, setName] = useState(user.name);
@@ -120,6 +125,11 @@ const Header = memo(() => {
   }, [user.id, refetch]);
 
   const onBan = useCallback(async () => {
+    if (isDeletedPlaceholder) {
+      toast.error('Cannot ban or unban the deleted user placeholder');
+      return;
+    }
+
     const trpc = getTRPCClient();
 
     const reason = await requestTextInput({
@@ -144,9 +154,14 @@ const Header = memo(() => {
     } finally {
       refetch();
     }
-  }, [user.id, refetch]);
+  }, [user.id, refetch, isDeletedPlaceholder]);
 
   const onUnban = useCallback(async () => {
+    if (isDeletedPlaceholder) {
+      toast.error('Cannot ban or unban the deleted user placeholder');
+      return;
+    }
+
     const trpc = getTRPCClient();
 
     const answer = await requestConfirmation({
@@ -169,7 +184,7 @@ const Header = memo(() => {
     } finally {
       refetch();
     }
-  }, [user.id, refetch]);
+  }, [user.id, refetch, isDeletedPlaceholder]);
 
   const onUnlockUsername = useCallback(async () => {
     const trpc = getTRPCClient();
@@ -256,7 +271,7 @@ const onLockUsername = useCallback(async () => {
           variant="outline"
           size="sm"
           onClick={() => (user.banned ? onUnban() : onBan())}
-          disabled={user.id === ownUserId}
+          disabled={user.id === ownUserId || isDeletedPlaceholder}
         >
           <Gavel className="h-4 w-4" />
           {user.banned ? 'Unban' : 'Ban'}
@@ -286,6 +301,7 @@ const onLockUsername = useCallback(async () => {
           variant="outline"
           size="sm"
           className="h-6 px-2 text-xs"
+          disabled={isDeletedPlaceholder}
           onClick={() => openDialog(Dialog.ASSIGN_ROLE, { user, refetch })}
         >
           <Plus className="h-3 w-3" />

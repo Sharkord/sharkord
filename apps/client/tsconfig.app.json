@@ -30,5 +30,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  /* for some reason, including the server's declarations.d.ts is necessary for the client to recognize the types declared there. */
+  "include": ["src", "../server/src/declarations.d.ts"]
 }
