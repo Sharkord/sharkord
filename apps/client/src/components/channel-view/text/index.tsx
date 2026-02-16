@@ -195,10 +195,11 @@ const TextChannel = memo(({ channelId, isPinnedMessagesShown }: TChannelProps) =
 
       <PinnedMessagesTopbar 
         className={cn(
-          'left-2 right-2 w-auto transition-[height,padding,opacity] duration-500 ease-in-out overflow-hidden',
+          'absolute left-2 right-2 w-auto transition-[height,padding,opacity] duration-500 ease-in-out overflow-hidden',
           'bg-neutral-800 rounded-xl shadow-md border border-neutral-700 mx-2 mt-2',
+          'max-w-4xl mx-auto',
           isPinnedMessagesShown ?
-            'h-50 p-2 opacity-100' :
+            'h-50 p-2 opacity-100 z-50' :
             'h-0 p-0 opacity-0 border-transparent shadow-none'
         )}
         isOpen={isPinnedMessagesShown}
