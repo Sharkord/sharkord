@@ -6,18 +6,26 @@ import type { TJoinedMessage } from '@sharkord/shared';
 import { format } from 'date-fns';
 import { memo } from 'react';
 import { Message } from './message';
+import { Button } from '@/components/ui/button';
 
 type TMessagesGroupProps = {
   group: TJoinedMessage[];
 };
 
-const MessagesGroup = memo(({ group, messageRefs }: TMessagesGroupProps & { messageRefs: any }) => {
+const MessagesGroup = memo(({ group, messageRefs, pinnedMessages = false }: TMessagesGroupProps & { messageRefs: any, pinnedMessages?: boolean }) => {
   const firstMessage = group[0];
   const user = useUserById(firstMessage.userId);
   const date = new Date(firstMessage.createdAt);
   const isOwnUser = useIsOwnUser(firstMessage.userId);
 
   if (!user) return null;
+
+  function scrollToMessage(id: number) {
+    const el = messageRefs.current[id];
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
 
   return (
     <div className="flex min-w-0 max-w-dvw gap-1 pl-2 pt-2 pr-2">
@@ -35,16 +43,25 @@ const MessagesGroup = memo(({ group, messageRefs }: TMessagesGroupProps & { mess
               </span>
             )}
           </RelativeTime>
+          {pinnedMessages ? (
+          <Button
+            className="px-2 py-1 h-6 text-xs"
+            key={group[0].id}
+            onClick={() => scrollToMessage(group[0].id)}
+          >
+            MOVE
+          </Button>
+          ) : (null)}
         </div>
         <div className="flex min-w-0 flex-col">
           {group.map((message) => (
             <div key={message.id}
                 id={`message-${message.id}`}
-                ref={(el: HTMLDivElement | null) => {
+                ref={!pinnedMessages ? (el: HTMLDivElement | null) => {
                   messageRefs.current[message.id] = el;
-                }}
+                } : null}
             >
-              <Message key={message.id} message={message} />
+              <Message key={message.id} message={message} pinnedMessages={pinnedMessages}/>
             </div>
           ))}
         </div>

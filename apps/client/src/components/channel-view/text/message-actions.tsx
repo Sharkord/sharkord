@@ -17,11 +17,11 @@ type TMessageActionsProps = {
   onEdit: () => void;
   canManage: boolean;
   editable: boolean;
-  bool_pinned: boolean;
+  pinned: boolean;
 };
 
 const MessageActions = memo(
-  ({ onEdit, messageId, canManage, editable, bool_pinned }: TMessageActionsProps) => {
+  ({ onEdit, messageId, canManage, editable, pinned }: TMessageActionsProps) => {
     const { recentEmojis } = useRecentEmojis();
     const recentEmojisToShow = useMemo(
       () => recentEmojis.slice(0, MAX_QUICK_EMOJIS),
@@ -135,9 +135,9 @@ const MessageActions = memo(
         <IconButton
           size="sm"
           variant="ghost"
-          icon={bool_pinned ? PinOff : Pin}
+          icon={pinned ? PinOff : Pin}
           onClick={onPinClick}
-          title={bool_pinned ? "Unpin Message" : "Pin Message"}
+          title={pinned ? "Unpin Message" : "Pin Message"}
         />
         </Protect>
       </div>

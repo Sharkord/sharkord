@@ -10,7 +10,7 @@ type TMessageProps = {
   message: TJoinedMessage;
 };
 
-const Message = memo(({ message }: TMessageProps) => {
+const Message = memo(({ message, pinnedMessages = false }: TMessageProps & { pinnedMessages?: boolean }) => {
   const [isEditing, setIsEditing] = useState(false);
   const isFromOwnUser = useIsOwnUser(message.userId);
   const can = useCan();
@@ -25,13 +25,14 @@ const Message = memo(({ message }: TMessageProps) => {
       {!isEditing ? (
         <>
           <MessageRenderer message={message} />
+          {pinnedMessages ? null : (
           <MessageActions
             onEdit={() => setIsEditing(true)}
             canManage={canManage}
             messageId={message.id}
             editable={message.editable ?? false}
-            bool_pinned={message.bool_pinned ?? false}
-          />
+            pinned={message.pinned ?? false}
+          />)}
         </>
       ) : (
         <MessageEditInline

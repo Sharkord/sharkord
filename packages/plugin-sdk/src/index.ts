@@ -71,7 +71,7 @@ export interface EventPayloads {
     channelId: number;
     userId: number;
     content: string;
-    bool_pinned: boolean;
+    pinned: boolean;
   };
   "voice:runtime_initialized": {
     channelId: number;

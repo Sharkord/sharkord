@@ -30,7 +30,7 @@ const toggleMessagePinRoute = protectedProcedure
 
     await db
       .update(messages)
-      .set({ bool_pinned: !message.bool_pinned, updatedAt: Date.now() })
+      .set({ pinned: !message.pinned, updatedAt: Date.now() })
         .where(
           and(
             eq(messages.id, input.messageId),
@@ -44,7 +44,7 @@ const toggleMessagePinRoute = protectedProcedure
       channelId: message.channelId,
       userId: message.userId,
       content: message.content ?? '',
-      bool_pinned: !message.bool_pinned
+      pinned: !message.pinned
     });
   });
 

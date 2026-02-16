@@ -8,7 +8,7 @@ import {
 import { useServerName } from '@/features/server/hooks';
 import { ChannelType } from '@sharkord/shared';
 import { AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
-import { memo, useRef } from 'react';
+import { memo } from 'react';
 
 interface ContentWrapperProps {
   isPinnedMessagesShown: boolean;
