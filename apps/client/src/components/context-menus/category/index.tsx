@@ -25,7 +25,7 @@ const CategoryContextMenu = memo(
   ({ children, categoryId }: TCategoryContextMenuProps) => {
     const can = useCan();
     const category = useCategoryById(categoryId);
-    
+
     const onDeleteClick = useCallback(async () => {
       const choice = await requestConfirmation({
         title: 'Delete Category',

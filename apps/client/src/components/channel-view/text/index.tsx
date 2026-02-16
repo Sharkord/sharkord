@@ -12,7 +12,12 @@ import { SoundType } from '@/features/server/types';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { useUploadFiles } from '@/hooks/use-upload-files';
 import { getTRPCClient } from '@/lib/trpc';
-import { ChannelPermission, Permission, TYPING_MS, isEmptyMessage } from '@sharkord/shared';
+import {
+  ChannelPermission,
+  Permission,
+  TYPING_MS,
+  isEmptyMessage
+} from '@sharkord/shared';
 import { filesize } from 'filesize';
 import { throttle } from 'lodash-es';
 import { Paperclip, Send } from 'lucide-react';
@@ -72,22 +77,29 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     );
   }, [can, channelCan]);
 
-    const canUploadFiles = useMemo(() => {
+  const canUploadFiles = useMemo(() => {
     return (
       can(Permission.SEND_MESSAGES) &&
       can(Permission.UPLOAD_FILES) &&
       channelCan(ChannelPermission.SEND_MESSAGES)
     );
   }, [can, channelCan]);
-  
+
   const pluginCommands = useMemo(
     () =>
       can(Permission.EXECUTE_PLUGIN_COMMANDS) ? allPluginCommands : undefined,
     [can, allPluginCommands]
   );
 
-  const { files, removeFile, clearFiles, uploading, uploadingSize, openFileDialog, fileInputProps } =
-    useUploadFiles(!canSendMessages);
+  const {
+    files,
+    removeFile,
+    clearFiles,
+    uploading,
+    uploadingSize,
+    openFileDialog,
+    fileInputProps
+  } = useUploadFiles(!canSendMessages);
 
   const sendTypingSignal = useMemo(
     () =>
@@ -223,12 +235,13 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
             commands={pluginCommands}
           />
           <input {...fileInputProps} />
-          <Button 
-            size="icon" 
-            variant="ghost" 
+          <Button
+            size="icon"
+            variant="ghost"
             className="h-8 w-8"
             disabled={uploading || !canUploadFiles}
-            onClick={openFileDialog}>
+            onClick={openFileDialog}
+          >
             <Paperclip className="h-4 w-4" />
           </Button>
           <Button

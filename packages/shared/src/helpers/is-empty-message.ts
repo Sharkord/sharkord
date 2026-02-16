@@ -6,13 +6,13 @@ const isEmptyMessage = (content: string | undefined | null): boolean => {
 
   const cleaned = content
     // remove PM separators
-    .replace(/<img[^>]*ProseMirror-separator[^>]*>/gi, "")
-    .replace(/<br[^>]*ProseMirror-trailingBreak[^>]*>/gi, "")
+    .replace(/<img[^>]*ProseMirror-separator[^>]*>/gi, '')
+    .replace(/<br[^>]*ProseMirror-trailingBreak[^>]*>/gi, '')
     // remove all remaining tags
-    .replace(/<[^>]*>/g, "")
+    .replace(/<[^>]*>/g, '')
     // normalize spaces
-    .replace(/&nbsp;/gi, " ")
-    .replace(/\u00A0/g, " ")
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\u00A0/g, ' ')
     .trim();
 
   const hasText = cleaned.length > 0;
