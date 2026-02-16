@@ -30,6 +30,7 @@ const Message = memo(({ message }: TMessageProps) => {
             canManage={canManage}
             messageId={message.id}
             editable={message.editable ?? false}
+            bool_pinned={message.bool_pinned ?? false}
           />
         </>
       ) : (

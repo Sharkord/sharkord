@@ -6,7 +6,7 @@ import { IconButton } from '@/components/ui/icon-button';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
-import { Pencil, Pin, Smile, Trash } from 'lucide-react';
+import { Pencil, Pin, PinOff, Smile, Trash } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
@@ -17,10 +17,11 @@ type TMessageActionsProps = {
   onEdit: () => void;
   canManage: boolean;
   editable: boolean;
+  bool_pinned: boolean;
 };
 
 const MessageActions = memo(
-  ({ onEdit, messageId, canManage, editable }: TMessageActionsProps) => {
+  ({ onEdit, messageId, canManage, editable, bool_pinned }: TMessageActionsProps) => {
     const { recentEmojis } = useRecentEmojis();
     const recentEmojisToShow = useMemo(
       () => recentEmojis.slice(0, MAX_QUICK_EMOJIS),
@@ -134,9 +135,9 @@ const MessageActions = memo(
         <IconButton
           size="sm"
           variant="ghost"
-          icon={Pin}
+          icon={bool_pinned ? PinOff : Pin}
           onClick={onPinClick}
-          title="Pin Message"
+          title={bool_pinned ? "Unpin Message" : "Pin Message"}
         />
         </Protect>
       </div>
