@@ -276,9 +276,14 @@ export const serverSlice = createSlice({
 
       // remove user from messages and reactions
       for (const channelId in state.messagesMap) {
-        state.messagesMap[channelId] = state.messagesMap[channelId].filter(
-          (m) => m.userId !== userId
-        );
+        state.messagesMap[channelId] = state.messagesMap[channelId]
+          .filter((m) => m.userId !== userId)
+          .map((m) => ({
+            ...m,
+            reactions: m.reactions.filter(
+              (reaction) => reaction.userId !== userId
+            )
+          }));
       }
 
       // remove user from emojis
@@ -307,8 +312,16 @@ export const serverSlice = createSlice({
 
       // reassign messages and reactions
       for (const channelId in state.messagesMap) {
-        state.messagesMap[channelId] = state.messagesMap[channelId].map((m) =>
-          m.userId === userId ? { ...m, userId: deletedUserId } : m
+        state.messagesMap[channelId] = state.messagesMap[channelId].map(
+          (m) => ({
+            ...m,
+            userId: m.userId === userId ? deletedUserId : m.userId,
+            reactions: m.reactions.map((reaction) =>
+              reaction.userId === userId
+                ? { ...reaction, userId: deletedUserId }
+                : reaction
+            )
+          })
         );
       }
 
