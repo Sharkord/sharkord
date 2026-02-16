@@ -10,7 +10,8 @@ import { protectedProcedure } from '../../utils/trpc';
 const addCategoryRoute = protectedProcedure
   .input(
     z.object({
-      name: z.string().min(1).max(32)
+      name: z.string().min(1).max(32),
+      categoryId: z.number().optional()
     })
   )
   .mutation(async ({ input, ctx }) => {
@@ -27,7 +28,8 @@ const addCategoryRoute = protectedProcedure
       .values({
         name: input.name,
         position: targetPosition,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        categoryId: input.categoryId
       })
       .returning()
       .get();

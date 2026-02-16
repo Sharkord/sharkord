@@ -2,6 +2,7 @@ import { TypingDots } from '@/components/typing-dots';
 import { setSelectedChannelId } from '@/features/server/channels/actions';
 import {
   useChannelById,
+  useChannels,
   useChannelsByCategoryId,
   useCurrentVoiceChannelId,
   useSelectedChannelId
@@ -251,7 +252,10 @@ type TChannelsProps = {
 };
 
 const Channels = memo(({ categoryId }: TChannelsProps) => {
-  const channels = useChannelsByCategoryId(categoryId);
+  let channels = useChannels().filter((filterChannel) => !filterChannel.categoryId);
+  if( categoryId ){
+    channels = useChannelsByCategoryId(categoryId);
+  }
   const selectedChannelId = useSelectedChannelId();
   const channelIds = useMemo(() => channels.map((ch) => ch.id), [channels]);
   const can = useCan();

@@ -21,6 +21,8 @@ import { Button } from '../ui/button';
 import { Categories } from './categories';
 import { UserControl } from './user-control';
 import { VoiceControl } from './voice-control';
+import { useChannels } from '@/features/server/channels/hooks';
+import { Channels } from './channels';
 
 type TLeftSidebarProps = {
   className?: string;
@@ -67,6 +69,13 @@ const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
                   Add Category
                 </DropdownMenuItem>
               </Protect>
+              <Protect permission={Permission.MANAGE_CHANNELS}>
+                <DropdownMenuItem
+                  onClick={() => openDialog(Dialog.CREATE_CHANNEL)}
+                >
+                  Add Channel
+                </DropdownMenuItem>
+              </Protect>
               <Protect permission={serverSettingsPermissions}>
                 <DropdownMenuItem
                   onClick={() => openServerScreen(ServerScreen.SERVER_SETTINGS)}
@@ -83,6 +92,7 @@ const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
+        {<Channels categoryId={null} />}
         <Categories />
       </div>
       <VoiceControl />

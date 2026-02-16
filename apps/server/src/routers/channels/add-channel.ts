@@ -14,11 +14,15 @@ const addChannelRoute = protectedProcedure
     z.object({
       type: z.enum(ChannelType),
       name: z.string().min(1).max(27),
-      categoryId: z.number()
+      categoryId: z.number().optional()
     })
   )
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_CHANNELS);
+
+    if( !input.categoryId ){
+      input.categoryId = null;
+    }
 
     const channel = await db.transaction(async (tx) => {
       const maxPositionChannel = await tx

@@ -14,10 +14,10 @@ import { getTRPCClient } from '@/lib/trpc';
 import { memo, useCallback, useState } from 'react';
 import type { TDialogBaseProps } from '../types';
 
-type TCreateCategoryDialogProps = TDialogBaseProps;
+type TCreateCategoryDialogProps = TDialogBaseProps & { categoryId?: string };
 
 const CreateCategoryDialog = memo(
-  ({ isOpen, close }: TCreateCategoryDialogProps) => {
+  ({ isOpen, close, categoryId }: TCreateCategoryDialogProps) => {
     const { values, r, setTrpcErrors } = useForm({
       name: 'New Category'
     });
@@ -30,7 +30,8 @@ const CreateCategoryDialog = memo(
 
       try {
         await trpc.categories.add.mutate({
-          name: values.name
+          name: values.name,
+          categoryId: categoryId
         });
 
         close();

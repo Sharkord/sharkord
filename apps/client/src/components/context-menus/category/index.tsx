@@ -15,6 +15,8 @@ import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
+import { openDialog } from '@/features/dialogs/actions';
+import { Dialog } from '../../dialogs/dialogs';
 
 type TCategoryContextMenuProps = {
   children: React.ReactNode;
@@ -51,6 +53,10 @@ const CategoryContextMenu = memo(
       openServerScreen(ServerScreen.CATEGORY_SETTINGS, { categoryId });
     }, [categoryId]);
 
+    const onCreateCategoryClick = useCallback(() => {
+      openDialog(Dialog.CREATE_CATEGORY, { categoryId });
+    }, [categoryId]);
+
     if (!can(Permission.MANAGE_CATEGORIES)) {
       return <>{children}</>;
     }
@@ -62,6 +68,9 @@ const CategoryContextMenu = memo(
           <ContextMenuLabel>{category?.name}</ContextMenuLabel>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={onEditClick}>Edit</ContextMenuItem>
+          <ContextMenuItem onClick={onCreateCategoryClick}>
+            Add Category
+          </ContextMenuItem>
           <ContextMenuItem variant="destructive" onClick={onDeleteClick}>
             Delete
           </ContextMenuItem>

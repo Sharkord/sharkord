@@ -25,6 +25,12 @@ import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CategoryContextMenu } from '../context-menus/category';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '../ui/dropdown-menu';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
 import { IconButton } from '../ui/icon-button';
@@ -37,6 +43,7 @@ type TCategoryProps = {
 const Category = memo(({ categoryId }: TCategoryProps) => {
   const [expanded, setExpanded] = useState(true);
   const category = useCategoryById(categoryId);
+  const categories = useCategories().filter((filterCategory) => filterCategory.categoryId === category.id);
 
   const {
     attributes,
@@ -46,10 +53,6 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
     transition,
     isDragging
   } = useSortable({ id: categoryId });
-
-  const onCreateChannelClick = useCallback(() => {
-    openDialog(Dialog.CREATE_CHANNEL, { categoryId });
-  }, [categoryId]);
 
   if (!category) {
     return null;
@@ -88,24 +91,48 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
         </div>
 
         <Protect permission={Permission.MANAGE_CHANNELS}>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            icon={Plus}
-            onClick={onCreateChannelClick}
-            title="Create channel"
-          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <IconButton
+                variant="ghost"
+                size="sm"
+                icon={Plus}
+                title="Create channel"
+              />
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent>
+              <Protect permission={Permission.MANAGE_CATEGORIES}>
+                <DropdownMenuItem
+                  onClick={() => openDialog(Dialog.CREATE_CATEGORY, { categoryId })}
+                >
+                  Add Category
+                </DropdownMenuItem>
+              </Protect>
+              <Protect permission={Permission.MANAGE_CHANNELS}>
+                <DropdownMenuItem
+                  onClick={() => openDialog(Dialog.CREATE_CHANNEL, { categoryId })}
+                >
+                  Add Channel
+                </DropdownMenuItem>
+              </Protect>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </Protect>
       </div>
-
-      {expanded && <Channels categoryId={category.id} />}
+        {expanded && <Channels categoryId={category.id} />}
+        <div style={{ marginLeft: "10px" }}>
+          {categories.map((shownCategory) => expanded && (
+            <Category key={shownCategory.id} categoryId={shownCategory.id} /> 
+          ))}
+        </div>
     </div>
   );
 });
 
 const Categories = memo(() => {
   const can = useCan();
-  const categories = useCategories();
+  const categories = useCategories().filter((category) => !category.categoryId);
   const categoryIds = useMemo(
     () => categories.map((cat) => cat.id),
     [categories]

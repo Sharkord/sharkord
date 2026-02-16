@@ -83,6 +83,9 @@ const categories = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     name: text('name').notNull(),
     position: integer('position').notNull(),
+    categoryId: integer('category_id').references(() => categories.id, {
+      onDelete: 'cascade'
+    }),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },

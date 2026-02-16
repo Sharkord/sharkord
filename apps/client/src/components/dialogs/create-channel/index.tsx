@@ -48,7 +48,7 @@ const ChannelTypeItem = ({
 );
 
 type TCreateChannelDialogProps = TDialogBaseProps & {
-  categoryId: number;
+  categoryId?: number;
   defaultChannelType?: ChannelType;
 };
 
