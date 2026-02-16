@@ -52,6 +52,7 @@
     "link-preview-js": "^3.1.0",
     "linkify-it": "^5.0.0",
     "mediasoup": "^3.19.17",
+    "openid-client": "^6.8.2",
     "queue": "^7.0.0",
     "sanitize-html": "^2.17.0",
     "semver": "^7.7.3",

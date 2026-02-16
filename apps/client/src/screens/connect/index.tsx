@@ -15,6 +15,7 @@ import {
   setLocalStorageItem,
   setSessionStorageItem
 } from '@/helpers/storage';
+import { useStrictEffect } from '@/hooks/use-strict-effect';
 import { useForm } from '@/hooks/use-form';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -53,6 +54,38 @@ const Connect = memo(() => {
     },
     [onChange]
   );
+
+  const onOidcLoginClick = useCallback(() => {
+    const url = getUrlFromServer();
+    window.location.href = `${url}/auth/login`;
+  }, []);
+
+  const handleOidcCallback = useCallback(async (token: string) => {
+    setLoading(true);
+    try {
+      setSessionStorageItem(SessionStorageKey.TOKEN, token);
+      await connect();
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      toast.error(`Could not connect with OIDC: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useStrictEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (token) {
+      // Remove token from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+
+      handleOidcCallback(token);
+    }
+  }, [handleOidcCallback]);
 
   const onConnectClick = useCallback(async () => {
     setLoading(true);
@@ -178,6 +211,17 @@ const Connect = memo(() => {
             >
               Connect
             </Button>
+
+            {info?.oidcEnabled && (
+              <Button
+                className="w-full"
+                variant="secondary"
+                onClick={onOidcLoginClick}
+                disabled={loading}
+              >
+                Login with OIDC
+              </Button>
+            )}
 
             {!info?.allowNewUsers && (
               <>

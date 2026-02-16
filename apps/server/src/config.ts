@@ -18,7 +18,16 @@ const zConfig = z.object({
   server: z.object({
     port: z.coerce.number().int().positive(),
     debug: z.coerce.boolean(),
-    autoupdate: z.coerce.boolean()
+    autoupdate: z.coerce.boolean(),
+    disableLocalSignup: z.coerce.boolean()
+  }),
+  oidc: z.object({
+    issuer: z.string(),
+    clientId: z.string(),
+    clientSecret: z.string(),
+    redirectUrl: z.string(),
+    rolesMapping: z.string(),
+    requiredGroup: z.string().optional()
   }),
   webRtc: z.object({
     port: z.coerce.number().int().positive(),
@@ -46,7 +55,16 @@ const defaultConfig: TConfig = {
   server: {
     port: 4991,
     debug: IS_DEVELOPMENT,
-    autoupdate: false
+    autoupdate: false,
+    disableLocalSignup: false
+  },
+  oidc: {
+    issuer: '',
+    clientId: '',
+    clientSecret: '',
+    redirectUrl: '',
+    rolesMapping: '{}',
+    requiredGroup: ''
   },
   webRtc: {
     port: 40000,
@@ -106,6 +124,15 @@ config = applyEnvOverrides(config, {
   'server.port': 'SHARKORD_PORT',
   'server.debug': 'SHARKORD_DEBUG',
   'server.autoupdate': 'SHARKORD_AUTOUPDATE',
+  'server.disableLocalSignup': 'SHARKORD_DISABLE_LOCAL_SIGNUP',
+
+  'oidc.issuer': 'OIDC_ISSUER',
+  'oidc.clientId': 'OIDC_CLIENT_ID',
+  'oidc.clientSecret': 'OIDC_CLIENT_SECRET',
+  'oidc.redirectUrl': 'OIDC_REDIRECT_URL',
+  'oidc.rolesMapping': 'OIDC_ROLES_MAPPING',
+  'oidc.requiredGroup': 'OIDC_REQUIRED_GROUP',
+
   'webRtc.port': 'SHARKORD_WEBRTC_PORT',
   'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS'
 });

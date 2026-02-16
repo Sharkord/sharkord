@@ -92,6 +92,7 @@ export type TServerInfo = Pick<
 > & {
   logo: TFile | null;
   version: string;
+  oidcEnabled: boolean;
 };
 
 export type TArtifact = {

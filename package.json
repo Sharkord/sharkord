@@ -19,5 +19,8 @@
   },
   "devDependencies": {
     "knip": "^5.80.0"
+  },
+  "dependencies": {
+    "openid-client": "^6.8.2"
   }
 }
