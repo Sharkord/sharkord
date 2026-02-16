@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { memo, useRef } from 'react';
+import { memo } from 'react';
 import { MessagesGroup } from '../channel-view/text/messages-group';
 
 type TPinnedMessagesTopbarProps = {
