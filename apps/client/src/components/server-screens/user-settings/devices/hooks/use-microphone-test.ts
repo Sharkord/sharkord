@@ -62,11 +62,10 @@ const useMicrophoneTest = ({
   const [error, setError] = useState<string | undefined>(undefined);
   const testAudioRef = useRef<HTMLAudioElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
-  const permissionStreamRef = useRef<MediaStream | null>(null);
-  const permissionStreamTimeoutRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const isTestRequestedRef = useRef(false);
+  const testRequestIdRef = useRef(0);
 
   const getAudioConstraints = useCallback((): MediaTrackConstraints => {
     const hasSpecificDevice =
@@ -86,23 +85,11 @@ const useMicrophoneTest = ({
     stream?.getTracks().forEach((track) => track.stop());
   }, []);
 
-  const clearPermissionStream = useCallback(() => {
-    if (permissionStreamTimeoutRef.current) {
-      window.clearTimeout(permissionStreamTimeoutRef.current);
-      permissionStreamTimeoutRef.current = null;
-    }
-
-    stopStreamTracks(permissionStreamRef.current);
-    permissionStreamRef.current = null;
-  }, [stopStreamTracks]);
-
   const cleanup = useCallback(() => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
-
-    clearPermissionStream();
 
     stopStreamTracks(mediaStreamRef.current);
     mediaStreamRef.current = null;
@@ -118,7 +105,7 @@ const useMicrophoneTest = ({
     }
 
     setAudioLevel(0);
-  }, [clearPermissionStream, stopStreamTracks]);
+  }, [stopStreamTracks]);
 
   const startMeter = useCallback((analyser: AnalyserNode) => {
     const floatDataArray = new Float32Array(analyser.fftSize);
@@ -150,19 +137,41 @@ const useMicrophoneTest = ({
     updateMeter();
   }, []);
 
-  const startTestPipeline = useCallback(async () => {
+  const startTestPipeline = useCallback(async (requestId: number) => {
     cleanup();
-    clearPermissionStream();
     setError(undefined);
 
+    let stream: MediaStream | null = null;
+    let audioContext: AudioContext | null = null;
+    let destination: MediaStreamAudioDestinationNode | null = null;
+    let audioElement: HTMLAudioElement | null = null;
+
+    const isStaleRequest = () =>
+      requestId !== testRequestIdRef.current || !isTestRequestedRef.current;
+
+    const cleanupLocalResources = () => {
+      stopStreamTracks(stream);
+
+      if (audioContext) {
+        void audioContext.close();
+      }
+
+      if (audioElement && destination && audioElement.srcObject === destination.stream) {
+        audioElement.pause();
+        audioElement.srcObject = null;
+      }
+    };
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      stream = await navigator.mediaDevices.getUserMedia({
         audio: getAudioConstraints(),
         video: false
       });
 
-      mediaStreamRef.current = stream;
-      setPermissionState('granted');
+      if (isStaleRequest()) {
+        cleanupLocalResources();
+        return false;
+      }
 
       const AudioContextClass =
         window.AudioContext ||
@@ -174,13 +183,12 @@ const useMicrophoneTest = ({
         throw new Error('AudioContext is not supported in this browser.');
       }
 
-      const audioContext = new AudioContextClass();
-      audioContextRef.current = audioContext;
+      audioContext = new AudioContextClass();
 
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
       const delay = audioContext.createDelay(1);
-      const destination = audioContext.createMediaStreamDestination();
+      destination = audioContext.createMediaStreamDestination();
 
       analyser.fftSize = ANALYZER_FFT_SIZE;
       analyser.minDecibels = ANALYZER_MIN_DECIBELS;
@@ -193,17 +201,37 @@ const useMicrophoneTest = ({
       source.connect(delay);
       delay.connect(destination);
 
-      startMeter(analyser);
-
       if (testAudioRef.current) {
-        testAudioRef.current.srcObject = destination.stream;
-        await applyAudioOutputDevice(testAudioRef.current, playbackId);
-        await testAudioRef.current.play();
+        audioElement = testAudioRef.current;
+        audioElement.srcObject = destination.stream;
+        await applyAudioOutputDevice(audioElement, playbackId);
+
+        if (isStaleRequest()) {
+          cleanupLocalResources();
+          return false;
+        }
+
+        await audioElement.play();
       }
 
+      if (isStaleRequest()) {
+        cleanupLocalResources();
+        return false;
+      }
+
+      mediaStreamRef.current = stream;
+      audioContextRef.current = audioContext;
+      setPermissionState('granted');
+      startMeter(analyser);
       setIsTesting(true);
       return true;
     } catch (error) {
+      if (isStaleRequest()) {
+        cleanupLocalResources();
+        return false;
+      }
+
+      cleanupLocalResources();
       cleanup();
       setIsTesting(false);
       isTestRequestedRef.current = false;
@@ -215,7 +243,13 @@ const useMicrophoneTest = ({
       setError(getMicrophoneErrorMessage(error));
       return false;
     }
-  }, [cleanup, clearPermissionStream, getAudioConstraints, playbackId, startMeter]);
+  }, [
+    cleanup,
+    getAudioConstraints,
+    playbackId,
+    startMeter,
+    stopStreamTracks
+  ]);
 
   const requestPermission = useCallback(
     async ({ silent = false }: TRequestPermissionOptions = {}) => {
@@ -229,15 +263,8 @@ const useMicrophoneTest = ({
           video: false
         });
 
-        clearPermissionStream();
-        permissionStreamRef.current = stream;
+        stopStreamTracks(stream);
         setPermissionState('granted');
-
-        // Keep a short-lived stream so enumerateDevices can resolve full labels
-        // consistently across browsers, then release the mic.
-        permissionStreamTimeoutRef.current = window.setTimeout(() => {
-          clearPermissionStream();
-        }, 1500);
       } catch (error) {
         if (isPermissionDeniedError(error)) {
           setPermissionState('denied');
@@ -248,16 +275,18 @@ const useMicrophoneTest = ({
         }
       }
     },
-    [clearPermissionStream, getAudioConstraints]
+    [getAudioConstraints, stopStreamTracks]
   );
 
   const startTest = useCallback(async () => {
     isTestRequestedRef.current = true;
-    return startTestPipeline();
+    testRequestIdRef.current += 1;
+    return startTestPipeline(testRequestIdRef.current);
   }, [startTestPipeline]);
 
   const stopTest = useCallback(() => {
     isTestRequestedRef.current = false;
+    testRequestIdRef.current += 1;
     setIsTesting(false);
     cleanup();
   }, [cleanup]);
@@ -307,12 +336,14 @@ const useMicrophoneTest = ({
   useEffect(() => {
     if (!isTestRequestedRef.current) return;
 
-    void startTestPipeline();
+    testRequestIdRef.current += 1;
+    void startTestPipeline(testRequestIdRef.current);
   }, [startTestPipeline]);
 
   useEffect(() => {
     return () => {
       isTestRequestedRef.current = false;
+      testRequestIdRef.current += 1;
       cleanup();
     };
   }, [cleanup]);

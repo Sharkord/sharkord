@@ -28,10 +28,11 @@ import {
 } from '@sharkord/ui';
 import { filesize } from 'filesize';
 import { Info } from 'lucide-react';
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { useAvailableDevices } from './hooks/use-available-devices';
 import { useMicrophoneTest } from './hooks/use-microphone-test';
+import { useWebcamTest } from './hooks/use-webcam-test';
 import ResolutionFpsControl from './resolution-fps-control';
 
 const DEFAULT_NAME = 'default';
@@ -64,12 +65,25 @@ const Devices = memo(() => {
     echoCancellation: !!values.echoCancellation,
     noiseSuppression: !!values.noiseSuppression
   });
+  const {
+    testVideoRef,
+    isStarting: isVideoStarting,
+    isTesting: isVideoTesting,
+    isPreviewReady: isVideoPreviewReady,
+    error: webcamTestError,
+    startTest: startVideoTest,
+    stopTest: stopVideoTest
+  } = useWebcamTest({
+    webcamId: values.webcamId,
+    webcamResolution: values.webcamResolution,
+    webcamFramerate: values.webcamFramerate
+  });
 
   const saveDeviceSettings = useCallback(() => {
     saveDevices(values);
     toast.success('Device settings saved');
   }, [saveDevices, values]);
-  const didRunGrantedWarmupRef = useRef(false);
+  const didPrimeDevicesOnGrantedRef = useRef(false);
   const mutedByTestRef = useRef<{
     restoreMic: boolean;
     restoreSound: boolean;
@@ -120,6 +134,7 @@ const Devices = memo(() => {
 
     if (!didStart) {
       await restoreVoiceStateAfterTest();
+      return;
     }
   }, [
     currentVoiceChannelId,
@@ -139,47 +154,29 @@ const Devices = memo(() => {
   const requestMicrophonePermission = useCallback(async () => {
     await requestPermission();
     await loadDevices();
-    window.setTimeout(() => {
-      void loadDevices();
-    }, 250);
   }, [requestPermission, loadDevices]);
 
+  const startWebcamTest = useCallback(async () => {
+    const didStart = await startVideoTest();
+    if (!didStart) return;
+
+    await loadDevices();
+  }, [startVideoTest, loadDevices]);
+
   useEffect(() => {
-    if (permissionState !== 'granted') return;
-
-    void loadDevices();
-  }, [permissionState, loadDevices]);
-
-  const needsGrantedWarmup = useMemo(() => {
-    if (permissionState !== 'granted') return false;
-
-    if (!inputDevices.length && !playbackDevices.length && !videoDevices.length) {
-      return true;
+    if (permissionState !== 'granted') {
+      didPrimeDevicesOnGrantedRef.current = false;
+      return;
     }
 
-    const hasResolvedInput = inputDevices.some(
-      (device) => !!device?.deviceId || !!device?.label.trim()
-    );
-    const hasResolvedPlayback = playbackDevices.some(
-      (device) => !!device?.deviceId || !!device?.label.trim()
-    );
-
-    return !hasResolvedInput && !hasResolvedPlayback;
-  }, [permissionState, inputDevices, playbackDevices, videoDevices]);
-
-  useEffect(() => {
-    if (!needsGrantedWarmup || didRunGrantedWarmupRef.current) return;
-
-    didRunGrantedWarmupRef.current = true;
+    if (didPrimeDevicesOnGrantedRef.current) return;
+    didPrimeDevicesOnGrantedRef.current = true;
 
     void (async () => {
       await requestPermission({ silent: true });
       await loadDevices();
-      window.setTimeout(() => {
-        void loadDevices();
-      }, 250);
     })();
-  }, [needsGrantedWarmup, requestPermission, loadDevices]);
+  }, [permissionState, requestPermission, loadDevices]);
 
   useEffect(() => {
     return () => {
@@ -189,6 +186,9 @@ const Devices = memo(() => {
 
   const hasMicrophones = inputDevices.length > 0;
   const hasDefaultPlaybackOption = playbackDevices.some(
+    (device) => device?.deviceId === DEFAULT_NAME
+  );
+  const hasDefaultVideoOption = videoDevices.some(
     (device) => device?.deviceId === DEFAULT_NAME
   );
 
@@ -204,7 +204,7 @@ const Devices = memo(() => {
           Manage your peripheral devices and their settings.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {currentVoiceChannelId && (
           <Alert variant="default">
             <Info />
@@ -214,12 +214,12 @@ const Devices = memo(() => {
             </AlertDescription>
           </Alert>
         )}
-        <div className="space-y-4">
+        <div className="space-y-6">
           <h3 className="text-sm font-semibold tracking-wide text-muted-foreground">
             Audio
           </h3>
 
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid gap-6 xl:grid-cols-2">
             <Group label="Microphone">
               <Select
                 onValueChange={(value) => onChange('microphoneId', value)}
@@ -242,7 +242,7 @@ const Devices = memo(() => {
                 </SelectContent>
               </Select>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
                 <Group label="Echo cancellation">
                   <Switch
                     checked={!!values.echoCancellation}
@@ -302,87 +302,148 @@ const Devices = memo(() => {
           </div>
 
           <Group label="Microphone Test">
-            <div className="flex items-center gap-2">
-              {permissionState !== 'granted' && (
-                <Button variant="outline" onClick={requestMicrophonePermission}>
-                  Permit Microphone Access
-                </Button>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                {permissionState !== 'granted' && (
+                  <Button variant="outline" onClick={requestMicrophonePermission}>
+                    Permit Microphone Access
+                  </Button>
+                )}
+
+                {!isTesting ? (
+                  <Button
+                    variant="secondary"
+                    onClick={() => void startMicrophoneTest()}
+                    disabled={permissionState === 'denied' || !hasMicrophones}
+                  >
+                    Start Test
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    onClick={() => void stopMicrophoneTest()}
+                  >
+                    Stop Test
+                  </Button>
+                )}
+              </div>
+
+              <div className="h-4 w-full max-w-[640px] overflow-hidden rounded-md border border-border/80 bg-muted/70">
+                <div
+                  className="h-full bg-primary transition-[width] duration-75"
+                  style={{ width: `${audioLevel}%` }}
+                />
+              </div>
+
+              {microphoneTestError && (
+                <Alert variant="destructive">
+                  <Info />
+                  <AlertDescription>{microphoneTestError}</AlertDescription>
+                </Alert>
               )}
 
-              {!isTesting ? (
-                <Button
-                  variant="secondary"
-                  onClick={() => void startMicrophoneTest()}
-                  disabled={permissionState === 'denied' || !hasMicrophones}
-                >
-                  Start Test
-                </Button>
-              ) : (
-                <Button variant="secondary" onClick={() => void stopMicrophoneTest()}>
-                  Stop Test
-                </Button>
-              )}
+              <audio ref={testAudioRef} className="hidden" />
             </div>
-
-            <div className="h-4 w-full max-w-[640px] overflow-hidden rounded-md border border-border/80 bg-muted/70">
-              <div
-                className="h-full bg-primary transition-[width] duration-75"
-                style={{ width: `${audioLevel}%` }}
-              />
-            </div>
-
-            {microphoneTestError && (
-              <Alert variant="destructive">
-                <Info />
-                <AlertDescription>{microphoneTestError}</AlertDescription>
-              </Alert>
-            )}
-
-            <audio ref={testAudioRef} className="hidden" />
           </Group>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           <h3 className="text-sm font-semibold tracking-wide text-muted-foreground">
             Video
           </h3>
 
           <Group label="Webcam">
-            <Select
-              onValueChange={(value) => onChange('webcamId', value)}
-              value={values.webcamId}
-            >
-              <SelectTrigger className="w-[500px]">
-                <SelectValue placeholder="Select the input device" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {videoDevices.map((device) => (
-                    <SelectItem
-                      key={device?.deviceId}
-                      value={device?.deviceId || DEFAULT_NAME}
-                    >
-                      {device?.label.trim() || 'Default Webcam'}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            <div className="space-y-4">
+              <Select
+                onValueChange={(value) => onChange('webcamId', value)}
+                value={values.webcamId}
+              >
+                <SelectTrigger className="w-full max-w-[500px]">
+                  <SelectValue placeholder="Select the input device" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {!hasDefaultVideoOption && (
+                      <SelectItem value={DEFAULT_NAME}>Default Webcam</SelectItem>
+                    )}
+                    {videoDevices.map((device) => (
+                      <SelectItem
+                        key={device?.deviceId}
+                        value={device?.deviceId || DEFAULT_NAME}
+                      >
+                        {device?.label.trim() || 'Default Webcam'}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
 
-            <ResolutionFpsControl
-              framerate={values.webcamFramerate}
-              resolution={values.webcamResolution}
-              onFramerateChange={(value) => onChange('webcamFramerate', value)}
-              onResolutionChange={(value) =>
-                onChange('webcamResolution', value as Resolution)
-              }
-            />
-            <Group label="Mirror own video">
-              <Switch
-                checked={!!values.mirrorOwnVideo}
-                onCheckedChange={(checked) => onChange('mirrorOwnVideo', checked)}
+              <div className="group relative aspect-video w-full max-w-[28rem] overflow-hidden rounded-md border border-border bg-muted/40">
+                <video
+                  ref={testVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className={`h-full w-full object-cover transition-opacity duration-150 ${
+                    values.mirrorOwnVideo ? '-scale-x-100' : ''
+                  } ${isVideoTesting ? 'opacity-100' : 'opacity-0'}`}
+                />
+
+                {!isVideoTesting && !isVideoStarting && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Button
+                      variant="secondary"
+                      onClick={() => void startWebcamTest()}
+                    >
+                      Start Video Preview
+                    </Button>
+                  </div>
+                )}
+
+                {(isVideoStarting || (isVideoTesting && !isVideoPreviewReady)) && (
+                  <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+                    Starting camera...
+                  </div>
+                )}
+
+                {isVideoTesting && (
+                  <div className="pointer-events-none absolute inset-0 flex items-start justify-end p-3 opacity-100 transition-opacity duration-150 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+                    <Button
+                      variant="secondary"
+                      className="pointer-events-auto"
+                      onClick={stopVideoTest}
+                    >
+                      Stop Video Preview
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {webcamTestError && (
+                <Alert variant="destructive">
+                  <Info />
+                  <AlertDescription>{webcamTestError}</AlertDescription>
+                </Alert>
+              )}
+
+              <ResolutionFpsControl
+                framerate={values.webcamFramerate}
+                resolution={values.webcamResolution}
+                onFramerateChange={(value) => onChange('webcamFramerate', value)}
+                onResolutionChange={(value) =>
+                  onChange('webcamResolution', value as Resolution)
+                }
               />
-            </Group>
+
+              <Group label="Mirror own video">
+                <Switch
+                  checked={!!values.mirrorOwnVideo}
+                  onCheckedChange={(checked) =>
+                    onChange('mirrorOwnVideo', checked)
+                  }
+                />
+              </Group>
+            </div>
           </Group>
 
           <Group label="Screen Sharing">
