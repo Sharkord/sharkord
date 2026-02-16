@@ -1,3 +1,4 @@
+import { UserName } from '@/components/user-name';
 import { UserAvatar } from '@/components/user-avatar';
 import { useUsers } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
@@ -17,14 +18,15 @@ const User = memo(({ userId, name, banned }: TUserProps) => {
     <UserPopover userId={userId}>
       <div className="flex items-center gap-3 rounded px-2 py-1.5 hover:bg-accent select-none">
         <UserAvatar userId={userId} className="h-8 w-8" />
-        <span
+        <UserName
+          userId={userId}
+          name={name}
+          banned={banned}
           className={cn(
             'text-sm text-foreground',
             banned && 'line-through text-muted-foreground'
           )}
-        >
-          {name}
-        </span>
+        />
       </div>
     </UserPopover>
   );

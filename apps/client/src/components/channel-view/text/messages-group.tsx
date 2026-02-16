@@ -1,5 +1,6 @@
 import { RelativeTime } from '@/components/relative-time';
 import { UserAvatar } from '@/components/user-avatar';
+import { UserName } from '@/components/user-name';
 import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
 import type { TJoinedMessage } from '@sharkord/shared';
@@ -24,7 +25,12 @@ const MessagesGroup = memo(({ group }: TMessagesGroupProps) => {
       <UserAvatar userId={user.id} className="h-10 w-10" showUserPopover />
       <div className="flex min-w-0 flex-col w-full">
         <div className="flex gap-2 items-baseline pl-1 select-none">
-          <span className={cn(isOwnUser && 'font-bold')}>{user.name}</span>
+          <UserName
+            userId={user.id}
+            name={user.name}
+            banned={user.banned}
+            className={cn(isOwnUser && 'font-bold')}
+          />
           <RelativeTime date={date}>
             {(relativeTime) => (
               <span
