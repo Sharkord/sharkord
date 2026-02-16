@@ -20,6 +20,8 @@ import { getSettings } from '../db/queries/server';
 import { getStorageUsageByUserId } from '../db/queries/users';
 import { channels, files } from '../db/schema';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../helpers/paths';
+import { fileTypeFromFile } from 'file-type';
+import sharp from 'sharp';
 
 /**
  * Files workflow:
@@ -179,7 +181,35 @@ class FileManager {
       tempFile.size = compressedStats.size;
       tempFile.tempPath = compressedPath;
       tempFile.compressed = true;
+    } else {
+      await fs.unlink(compressedPath);
     }
+  }
+
+  private reEncodeMedia = async (tempFile:TTempFile) => {
+    const fileType = await fileTypeFromFile(tempFile.tempPath);
+    if (!fileType) return;
+    const mimeGroup = fileType.mime.split('/')[0];
+    let newTempFile = `${tempFile.tempPath}.tmp`
+
+    if (mimeGroup === 'image') {
+      const sourceImage = sharp(tempFile.tempPath, { animated: true });
+      const metaData = await sourceImage.metadata();
+      console.log(metaData);
+      await sourceImage
+        .webp( {quality: 80} )
+        .resize(Math.min(metaData.width, 1000), Math.min(metaData.height, 1000), {fit: 'inside'})
+        .toFile(newTempFile);
+      await fs.unlink(tempFile.tempPath)
+      tempFile.originalName = path.basename(tempFile.originalName, tempFile.extension) + '.webp'
+      tempFile.extension = '.webp'
+      tempFile.tempPath = newTempFile;
+    } else if (mimeGroup === 'audio') {
+
+    } else if (mimeGroup === 'video') {
+
+    }
+
   }
 
   private handleStorageLimits = async (tempFile: TTempFile) => {
@@ -232,6 +262,8 @@ class FileManager {
     if (tempFile.userId !== userId) {
       throw new Error("You don't have permission to access this file");
     }
+
+    await this.reEncodeMedia(tempFile);
 
     await this.attemptCompression(tempFile);
 
