@@ -1,6 +1,7 @@
 import { useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getInitialsFromName } from '@/helpers/get-initials-from-name';
+import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { cn } from '@/lib/utils';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import { UserStatus } from '@sharkord/shared';
@@ -34,7 +35,7 @@ const UserAvatar = memo(
         <Avatar className={cn('h-8 w-8', className)}>
           <AvatarImage src={getFileUrl(user.avatar)} key={user.avatarId} />
           <AvatarFallback className="bg-muted text-xs">
-            {getInitialsFromName(user.name)}
+            {getInitialsFromName(getRenderedUsername(user))}
           </AvatarFallback>
         </Avatar>
         {showStatusBadge && (

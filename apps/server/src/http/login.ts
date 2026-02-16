@@ -1,4 +1,9 @@
-import { ActivityLogType, sha256, type TJoinedUser } from '@sharkord/shared';
+import {
+  ActivityLogType,
+  DELETED_USER_IDENTITY_AND_NAME,
+  sha256,
+  type TJoinedUser
+} from '@sharkord/shared';
 import { eq, sql } from 'drizzle-orm';
 import http from 'http';
 import jwt from 'jsonwebtoken';
@@ -15,8 +20,6 @@ import { enqueueActivityLog } from '../queues/activity-log';
 import { invariant } from '../utils/invariant';
 import { getJsonBody } from './helpers';
 import { HttpValidationError } from './utils';
-
-const DELETED_USER_IDENTITY = '__deleted_user__';
 
 const zBody = z.object({
   identity: z.string().min(1, 'Identity is required'),
@@ -82,7 +85,7 @@ const loginRouteHandler = async (
 ) => {
   const data = zBody.parse(await getJsonBody(req));
 
-  if (data.identity === DELETED_USER_IDENTITY) {
+  if (data.identity === DELETED_USER_IDENTITY_AND_NAME) {
     throw new HttpValidationError('identity', 'This identity is reserved');
   }
 

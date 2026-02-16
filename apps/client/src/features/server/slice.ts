@@ -256,20 +256,66 @@ export const serverSlice = createSlice({
 
       state.users.push(action.payload);
     },
-    removeUser: (state, action: PayloadAction<{ userId: number }>) => {
+    wipeUser: (state, action: PayloadAction<{ userId: number }>) => {
       const { userId } = action.payload;
 
+      // remove user
       state.users = state.users.filter((u) => u.id !== userId);
 
+      // remove user from typing states
       for (const channelId in state.typingMap) {
         state.typingMap[channelId] = state.typingMap[channelId].filter(
           (id) => id !== userId
         );
       }
 
+      // remove user from voice channels
       for (const channelId in state.voiceMap) {
         delete state.voiceMap[channelId].users[userId];
       }
+
+      // remove user from messages and reactions
+      for (const channelId in state.messagesMap) {
+        state.messagesMap[channelId] = state.messagesMap[channelId].filter(
+          (m) => m.userId !== userId
+        );
+      }
+
+      // remove user from emojis
+      state.emojis = state.emojis.filter((e) => e.userId !== userId);
+    },
+    reassignUser: (
+      state,
+      action: PayloadAction<{ userId: number; deletedUserId: number }>
+    ) => {
+      const { userId, deletedUserId } = action.payload;
+
+      // remove user
+      state.users = state.users.filter((u) => u.id !== userId);
+
+      // remove user from typing states
+      for (const channelId in state.typingMap) {
+        state.typingMap[channelId] = state.typingMap[channelId].filter(
+          (id) => id !== userId
+        );
+      }
+
+      // remove user from voice channels
+      for (const channelId in state.voiceMap) {
+        delete state.voiceMap[channelId].users[userId];
+      }
+
+      // reassign messages and reactions
+      for (const channelId in state.messagesMap) {
+        state.messagesMap[channelId] = state.messagesMap[channelId].map((m) =>
+          m.userId === userId ? { ...m, userId: deletedUserId } : m
+        );
+      }
+
+      // reassign emojis
+      state.emojis = state.emojis.map((e) =>
+        e.userId === userId ? { ...e, userId: deletedUserId } : e
+      );
     },
 
     // SERVER SETTINGS ------------------------------------------------------------

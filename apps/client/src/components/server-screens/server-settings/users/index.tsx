@@ -26,7 +26,7 @@ const Users = memo(() => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <UsersTable users={users} onUserDeleted={refetch} />
+        <UsersTable users={users} refetch={refetch} />
       </CardContent>
     </Card>
   );
