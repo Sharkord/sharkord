@@ -5,217 +5,240 @@ import jwt from 'jsonwebtoken';
 import { db } from '../db';
 import { userRoles, users } from '../db/schema';
 import { eq } from 'drizzle-orm';
-import { sha256 } from '@sharkord/shared';
 import { getDefaultRole, getRoles } from '../db/queries/roles';
 import { getServerToken } from '../db/queries/server';
 import { publishUser } from '../db/publishers';
 import { getUserByIdentity } from '../db/queries/users';
-import { randomUUID } from 'crypto';
+import { randomBytes, createHash, timingSafeEqual } from 'crypto';
+import fs from 'fs/promises';
 
-// Allow self-signed certs (Delete in production if using real SSL)
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+const getBaseUrl = (req: http.IncomingMessage) => {
+  const protocol = (req.headers['x-forwarded-proto'] as string) || 'http';
+  const host = req.headers.host;
+  return `${protocol}://${host}`;
+};
 
-/**
- * Setup OIDC Discovery
- */
-const getOidcConfig = async () => {
-  let issuerUrl = config.oidc.issuer;
+const safeCompare = (a: string, b: string) => {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+};
+
+export const getOidcConfig = async () => {
+  const issuerUrl = new URL(config.oidc.issuer);
   
-  // Clean up URL
-  const suffix = '/.well-known/openid-configuration';
-  if (issuerUrl.endsWith(suffix)) {
-    issuerUrl = issuerUrl.substring(0, issuerUrl.length - suffix.length);
-  }
-  
-  // Authentik Requirement: Issuer URL must end with a slash
-  if (!issuerUrl.endsWith('/')) {
-    issuerUrl += '/';
+  const isLocal = issuerUrl.hostname === 'localhost' || issuerUrl.hostname === '127.0.0.1';
+  if (!isLocal && issuerUrl.protocol !== 'https:') {
+    throw new Error(`Security Error: OIDC Issuer must use HTTPS for non-local host: ${issuerUrl.hostname}`);
   }
 
-  const issuer = new URL(issuerUrl);
+  const discoveryOptions: any = {};
 
-  return client.discovery(
-    issuer,
-    config.oidc.clientId,
-    config.oidc.clientSecret,
-    undefined, 
-    {
-      [client.customFetch]: async (url: string, options: any) => {
+  if (config.oidc.caPath) {
+    try {
+      const ca = await fs.readFile(config.oidc.caPath);
+      
+      discoveryOptions[client.customFetch] = (url: string, options: any) => {
         return fetch(url, {
           ...options,
-          tls: { rejectUnauthorized: false }
+          ca: ca, 
         });
-      }
+      };
+    } catch (err) {
+      console.error(`OIDC Config Error: Failed to read CA file at ${config.oidc.caPath}.`);
     }
+  }
+
+  return await client.discovery(
+    issuerUrl,
+    config.oidc.clientId,
+    config.oidc.clientSecret,
+    undefined,
+    discoveryOptions
   );
 };
 
-const getCurrentUrl = (req: http.IncomingMessage) => {
-  const protocol = req.headers['x-forwarded-proto'] || 'http';
-  const host = req.headers.host;
-  const url = new URL(req.url ?? '', `${protocol}://${host}`);
-  
-  if (config.oidc.redirectUrl.startsWith('https:')) {
-    url.protocol = 'https:';
+export const oidcLogin = async (req: http.IncomingMessage, res: http.ServerResponse) => {
+  if (config.oidc.oidcEnabled === false) {
+    return res.writeHead(404);
   }
-  return url;
-};
-
-// --- HANDLERS ---
-
-const oidcLogin = async (req: http.IncomingMessage, res: http.ServerResponse) => {
+  
   try {
     const as = await getOidcConfig();
-    const redirectTo = client.buildAuthorizationUrl(as, {
-      redirect_uri: config.oidc.redirectUrl,
-      scope: 'openid profile email groups roles',
-    });
+    
+    const code_verifier = client.randomPKCECodeVerifier();
+    const code_challenge = await client.calculatePKCECodeChallenge(code_verifier);
+    const state = client.randomState();
+    const nonce = client.randomNonce();
 
-    res.writeHead(302, { Location: redirectTo.href });
-    res.end();
+    const sessionData = JSON.stringify({ code_verifier, state, nonce });
+    
+    // Set OIDC session cookie
+    res.setHeader('Set-Cookie', `__Host-oidc_session=${encodeURIComponent(sessionData)}; HttpOnly; Secure; SameSite=Lax; Max-Age=300; Path=/`);
+
+    const baseUrl = getBaseUrl(req);
+    const redirectUri = config.oidc.redirectUrl || `${baseUrl}/auth/callback`;
+
+    const parameters: Record<string, string> = {
+      redirect_uri: redirectUri,
+      scope: 'openid profile email groups',
+      code_challenge,
+      code_challenge_method: 'S256',
+      state,
+      nonce,
+    };
+
+    const redirectTo = client.buildAuthorizationUrl(as, parameters);
+    res.writeHead(302, { Location: redirectTo.href }).end();
   } catch (error) {
     console.error('OIDC Login Error:', error);
-    res.writeHead(500);
-    res.end('Internal Server Error');
+    res.writeHead(500).end('Internal Server Error');
   }
 };
 
-const oidcCallback = async (req: http.IncomingMessage, res: http.ServerResponse) => {
+export const oidcCallback = async (req: http.IncomingMessage, res: http.ServerResponse) => {
+  if (config.oidc.oidcEnabled === false) {
+    return res.writeHead(404);
+  }
+
   try {
     const as = await getOidcConfig();
-    const currentUrl = getCurrentUrl(req);
-
-    // 1. Standard Token Exchange
-    const response = await client.authorizationCodeGrant(
-        as,
-        currentUrl,
-        {
-            idTokenExpected: true,
-            expectedState: client.skipStateCheck
-        },
-        {
-            redirect_uri: config.oidc.redirectUrl
-        },
-        {
-          [client.allowInsecureRequests as unknown as string]: true
-        }
-    );
-
-    // 2. Extract Claims
-    // We use 'any' here to allow merging UserInfo later without TS complaining 
-    // that the types don't match the strict 'IDToken' interface.
-    let claims: any = response.claims();
-
-    // 3. Robust Fallback
-    // If ID Token is thin, fetch full profile from UserInfo endpoint
-    if (!claims || (!claims.email && !claims.sub)) {
-        // We pass '' as fallback for sub to satisfy TS string requirement
-        const userInfo = await client.fetchUserInfo(as, response.access_token, claims?.sub || '');
-        claims = { ...claims, ...userInfo };
-    }
-
-    if (!claims || (!claims.sub && !claims.email)) {
-        throw new Error('No identity claims found in ID Token or UserInfo');
-    }
-
-    // --- USER SYNC & LOGIC ---
-
-    // Check Required Group
-    if (config.oidc.requiredGroup) {
-        const userGroups = (claims.groups as string[]) ?? (claims.roles as string[]) ?? [];
-        const hasRequiredGroup = userGroups.some(g => g.toLowerCase() === config.oidc.requiredGroup!.toLowerCase());
-        
-        if (!hasRequiredGroup) {
-            res.writeHead(403);
-            res.end(`Access Denied: Missing required group '${config.oidc.requiredGroup}'`);
-            return;
-        }
-    }
-
-    const identity = claims.email ?? claims.preferred_username ?? claims.sub;
     
-    // Explicitly cast to string to satisfy TS
-    let user = await getUserByIdentity(identity as string);
+    const rawCookies = req.headers.cookie || '';
+    const cookieMap = Object.fromEntries(rawCookies.split('; ').map(v => v.split('=')));
+    const sessionCookie = cookieMap['__Host-oidc_session'];
 
-    // Create User
-    if (!user) {
-        const randomPassword = randomUUID();
-        const hashedPassword = await sha256(randomPassword);
-        const defaultRole = await getDefaultRole();
-
-        if (!defaultRole) throw new Error('Default role not found');
-
-        const newUser = await db
-          .insert(users)
-          .values({
-            name: (claims.name as string) ?? 'OIDC User',
-            identity: identity as string,
-            createdAt: Date.now(),
-            password: hashedPassword,
-          })
-          .returning()
-          .get();
-        
-        await db.insert(userRoles).values({
-            roleId: defaultRole.id,
-            userId: newUser.id,
-            createdAt: Date.now(),
-        });
-
-        publishUser(newUser.id, 'create');
-        
-        // RE-FETCH FULL USER OBJECT
-        // We must do this because 'newUser' is a raw table row, but 'user' needs 
-        // to be the Joined User type (with roles, etc.) for the code below.
-        user = await getUserByIdentity(identity as string);
+    if (!sessionCookie) throw new Error('Missing OIDC session cookie');
+    
+    let sessionData;
+    try {
+        sessionData = JSON.parse(decodeURIComponent(sessionCookie));
+    } catch(e) {
+        throw new Error('Invalid session cookie format');
     }
+    const { code_verifier, state: expectedState, nonce: expectedNonce } = sessionData;
+    
+    const baseUrl = getBaseUrl(req);
+    const safeUrl = (req.url || '').startsWith('/') ? req.url : '/';
+    const url = new URL(safeUrl || '', baseUrl);
 
-    if (!user) {
-        throw new Error('User could not be found or created');
+    const params = Object.fromEntries(url.searchParams);
+    
+    if (!params.state || !safeCompare(params.state, expectedState)) {
+      throw new Error('CSRF token mismatch');
     }
-
-    // Role Mapping
-    const rolesMapping = JSON.parse(config.oidc.rolesMapping || '{}');
-    if (Object.keys(rolesMapping).length > 0) {
-        const oidcRoles = ((claims.groups as string[]) ?? (claims.roles as string[]) ?? []).map((role: string) => role.toLowerCase());
-        const allDbRoles = await getRoles();
-        const userRoleIds = new Set<number>();
-
-        for (const oidcRoleName of oidcRoles) {
-            const sharkordRoleName = rolesMapping[oidcRoleName];
-            if (sharkordRoleName) {
-                const dbRole = allDbRoles.find(r => r.name.toLowerCase() === sharkordRoleName.toLowerCase());
-                if (dbRole) userRoleIds.add(dbRole.id);
-            }
-        }
-
-        if (userRoleIds.size > 0) {
-            await db.delete(userRoles).where(eq(userRoles.userId, user.id));
-            await db.insert(userRoles).values(Array.from(userRoleIds).map(roleId => ({
-                userId: user.id,
-                roleId,
-                createdAt: Date.now()
-            })));
-        }
-    }
-
-    // Issue App Token & Redirect
-    const token = jwt.sign({ userId: user.id }, await getServerToken(), {
-      expiresIn: '86400s' // 1 day
+    
+    const tokenResponse = await client.authorizationCodeGrant(as, url, {
+      pkceCodeVerifier: code_verifier,
+      expectedState,
+      expectedNonce,
     });
 
-    const clientUrl = req.headers.referer || req.headers.origin || `http://${req.headers.host}`;
-    const redirectUrl = new URL(clientUrl);
-    redirectUrl.searchParams.set('token', token);
+    const claims = tokenResponse.claims();
+    if (!claims || !claims.sub || !claims.email) {
+      throw new Error('Invalid claims structure');
+    }
 
-    res.writeHead(302, { Location: redirectUrl.toString() });
-    res.end();
+    if (config.oidc.requiredGroup) {
+      const groups = (claims.groups as string[]) || [];
+      if (!groups.some(g => g.toLowerCase() === config.oidc.requiredGroup?.toLowerCase())) {
+        return res.writeHead(403).end('Forbidden');
+      }
+    }
+
+    const identity = (claims.email || claims.sub) as string;
+    const user = await syncUserWithDatabase(identity, claims);
+
+    const appToken = jwt.sign({ userId: user.id }, await getServerToken(), { expiresIn: '1d' });
+    
+    const target = new URL(baseUrl);
+    
+    // Set success flag so frontend knows to initiate connection
+    target.searchParams.set('oidc_status', 'success');
+
+    const allowedRedirects = config.oidc.allowedOrigins.map((origin: string) => new URL(origin));
+    if (!allowedRedirects.some((u: URL) => u.origin === target.origin)) {
+       throw new Error(`Invalid redirect origin: ${target.origin}`);
+    }
+
+    // Set App Token as HttpOnly Cookie AND Clear OIDC Session in one header
+    const authCookie = `sharkord_token=${appToken}; Path=/; SameSite=Lax; Secure; Max-Age=86400`;
+    const clearSession = '__Host-oidc_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax';
+
+    res.setHeader('Set-Cookie', [authCookie, clearSession]);
+    res.writeHead(302, { Location: target.toString() }).end();
 
   } catch (error) {
     console.error('OIDC Callback Error:', error);
-    res.writeHead(500);
-    res.end('Internal Server Error');
+    res.writeHead(401).end('Authentication Failed');
   }
 };
 
-export { oidcLogin, oidcCallback };
+async function syncUserWithDatabase(identity: string, claims: any) {
+  let user = await getUserByIdentity(identity);
+
+  if (!user) {
+    const defaultRole = await getDefaultRole();
+    if (!defaultRole) throw new Error('Default role missing');
+
+    const randomPassword = createHash('sha256').update(randomBytes(32).toString('hex')).digest('hex');
+    
+    const [insertedUser] = await db.insert(users).values({
+      identity: identity,
+      password: randomPassword,
+      name: (claims.name as string) ?? identity.split('@')[0],
+      createdAt: Date.now(),
+      lastLoginAt: Date.now(),
+      banned: false,
+    }).returning();
+
+    if (!insertedUser) {
+      throw new Error('Failed to create user: Database insert returned no data.');
+    }
+
+    await db.insert(userRoles).values({
+      roleId: defaultRole.id,
+      userId: insertedUser.id,
+      createdAt: Date.now(),
+    });
+
+    publishUser(insertedUser.id, 'create');
+    
+    user = await getUserByIdentity(identity);
+  }
+
+  if (!user) throw new Error('User synchronization failed');
+  
+  await applyRoleMappings(user.id, claims);
+  return user;
+}
+
+async function applyRoleMappings(userId: number, claims: any) {
+  const rolesMapping = config.oidc.rolesMapping;
+  
+  if (Object.keys(rolesMapping).length === 0) return;
+  
+  const oidcGroups = ((claims.groups as string[]) || []).map(g => g.toLowerCase());
+  const allDbRoles = await getRoles();
+  const targetRoleIds: number[] = [];
+
+  for (const [oidcRole, localRole] of Object.entries(rolesMapping)) {
+    if (oidcGroups.includes(oidcRole.toLowerCase())) {
+      const dbRole = allDbRoles.find(
+        (r) => r.name.toLowerCase() === localRole.toLowerCase()
+      );
+      if (dbRole) targetRoleIds.push(dbRole.id);
+    }
+  }
+
+  if (targetRoleIds.length > 0) {
+    await db.delete(userRoles).where(eq(userRoles.userId, userId));
+    await db.insert(userRoles).values(
+      targetRoleIds.map((roleId) => ({
+        userId,
+        roleId,
+        createdAt: Date.now(),
+      }))
+    );
+  }
+}

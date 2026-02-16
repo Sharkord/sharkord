@@ -60,11 +60,27 @@ const Connect = memo(() => {
     window.location.href = `${url}/auth/login`;
   }, []);
 
-  const handleOidcCallback = useCallback(async (token: string) => {
+  const handleOidcSuccess = useCallback(async () => {
     setLoading(true);
     try {
-      setSessionStorageItem(SessionStorageKey.TOKEN, token);
+      const cookies = document.cookie.split('; ').reduce((acc, current) => {
+        const [name, value] = current.split('=');
+        acc[name] = value;
+        return acc;
+      }, {} as Record<string, string>);
+
+      const token = cookies['sharkord_token'];
+
+      if (token) {
+        setSessionStorageItem(SessionStorageKey.TOKEN, token);
+        
+        document.cookie = "sharkord_token=; Max-Age=0; path=/; SameSite=Lax; Secure";
+      } else {
+        throw new Error("No authentication token found in cookies.");
+      }
+
       await connect();
+      toast.success("Logged in with OIDC");
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -76,16 +92,15 @@ const Connect = memo(() => {
 
   useStrictEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
+    const oidcStatus = urlParams.get('oidc_status');
 
-    if (token) {
-      // Remove token from URL
+    if (oidcStatus === 'success') {
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
-
-      handleOidcCallback(token);
+      
+      handleOidcSuccess();
     }
-  }, [handleOidcCallback]);
+  }, [handleOidcSuccess]);
 
   const onConnectClick = useCallback(async () => {
     setLoading(true);
@@ -250,7 +265,7 @@ const Connect = memo(() => {
       </Card>
 
       <div className="flex justify-center gap-2 text-xs text-muted-foreground select-none">
-        <span>v{VITE_APP_VERSION}</span>
+        <span>v{import.meta.env.VITE_APP_VERSION}</span>
         <a
           href="https://github.com/sharkord/sharkord"
           target="_blank"
