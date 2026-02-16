@@ -11,6 +11,7 @@ type TUsersTableProps = {
 const UsersTable = memo(({ users, refetch }: TUsersTableProps) => {
   const searchFilter = useCallback((user: TJoinedUser, searchTerm: string) => {
     const query = searchTerm.toLowerCase();
+
     return (
       user.name.toLowerCase().includes(query) ||
       user.identity?.toLowerCase().includes(query)

@@ -3,6 +3,7 @@ import { parseTrpcErrors, type TTrpcErrors } from '@/helpers/parse-trpc-errors';
 import { useForm } from '@/hooks/use-form';
 import { getTRPCClient } from '@/lib/trpc';
 import {
+  DELETED_USER_IDENTITY_AND_NAME,
   Permission,
   STORAGE_MAX_FILE_SIZE,
   STORAGE_MAX_QUOTA_PER_USER,
@@ -508,7 +509,11 @@ export const useAdminUsers = () => {
     const trpc = getTRPCClient();
     const users = await trpc.users.getAll.query();
 
-    setUsers(users);
+    const filteredUsers = users.filter(
+      (user) => user.name !== DELETED_USER_IDENTITY_AND_NAME
+    );
+
+    setUsers(filteredUsers);
     setLoading(false);
   }, []);
 
