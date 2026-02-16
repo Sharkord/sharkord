@@ -22,6 +22,14 @@ import { channels, files } from '../db/schema';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../helpers/paths';
 import { fileTypeFromFile } from 'file-type';
 import sharp from 'sharp';
+import ffmpeg from 'fluent-ffmpeg'
+import util from 'node:util';
+const ffprobe = util.promisify(ffmpeg.ffprobe);
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+const ffprobePath = require('@ffprobe-installer/ffprobe').path;
+
+ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 /**
  * Files workflow:
@@ -56,6 +64,30 @@ const moveFile = async (src: string, dest: string) => {
     }
   }
 };
+
+function processVideo(inputPath: string, outputPath: string) {
+  return new Promise(async (resolve, reject) => {
+    // Read metadata to determine if scaling is necessary, and scale it to a max width/height of 720p (TODO: allow configuration)
+    const [maxWidth, maxHeight] = [720, 1280];
+    const metaData: ffmpeg.FfprobeData = await ffprobe(inputPath);
+    const videoMetaData: ffmpeg.FfprobeStream = metaData.streams.find((streamMetaData) => streamMetaData.codec_type === 'video')
+    const [inputWidth, inputHeight] = [videoMetaData?.width || maxWidth, videoMetaData?.height || maxHeight]
+    const [scaleWidthFactor, scaleHeightFactor] = [inputWidth / maxWidth, inputHeight / maxHeight]
+    let scaleFilter = 'scale=iw:ih';
+    if (scaleWidthFactor > scaleHeightFactor && scaleWidthFactor > 1) { // Width is biggest deviator from max, and is bigger than maxWidth
+      scaleFilter = `scale=${maxWidth}:-2`;
+    } else if (scaleHeightFactor > scaleWidthFactor && scaleHeightFactor > 1) { // Height is biggest deviator from max, and is bigger than maxHeight
+      scaleFilter = `scale=-2:${maxHeight}`;
+    }
+    ffmpeg(inputPath)
+      .videoCodec('libx265') // TODO: give option for selecting hwencode
+      .videoFilters(scaleFilter)
+      .output(outputPath)
+      .on('end', resolve)
+      .on('error', reject)
+      .run()
+  })
+}
 
 class TemporaryFileManager {
   private temporaryFiles: Map<string, TTempFile> = new Map();
@@ -100,7 +132,7 @@ class TemporaryFileManager {
       compressed: false,
       userId,
       timeout: undefined,
-      fileStream: createWriteStream(uploadFilePath) // TODO: on-the-fly compression, will make md5 meaningless though
+      fileStream: createWriteStream(uploadFilePath)
     };
 
     return tempFile;
@@ -167,7 +199,7 @@ class FileManager {
 
   private fileUUIDToPath = this.tempFileManager.fileUUIDToPath;
 
-  private attemptCompression = async (tempFile: TTempFile) => {
+  private attemptCompression = async (tempFile: TTempFile): Promise<TTempFile> => {
     const compressedPath = `${tempFile.tempPath}.gz`;
     const gzip = zlib.createGzip();
     const readStream = createReadStream(tempFile.tempPath);
@@ -184,32 +216,42 @@ class FileManager {
     } else {
       await fs.unlink(compressedPath);
     }
+    return tempFile;
   }
 
-  private reEncodeMedia = async (tempFile:TTempFile) => {
+  private reEncodeMedia = async (tempFile:TTempFile): Promise<TTempFile> => {
     const fileType = await fileTypeFromFile(tempFile.tempPath);
-    if (!fileType) return;
+    if (!fileType) return tempFile;
     const mimeGroup = fileType.mime.split('/')[0];
-    let newTempFile = `${tempFile.tempPath}.tmp`
 
-    if (mimeGroup === 'image') {
-      const sourceImage = sharp(tempFile.tempPath, { animated: true });
-      const metaData = await sourceImage.metadata();
-      console.log(metaData);
-      await sourceImage
-        .webp( {quality: 80} )
-        .resize(Math.min(metaData.width, 1000), Math.min(metaData.height, 1000), {fit: 'inside'})
-        .toFile(newTempFile);
-      await fs.unlink(tempFile.tempPath)
-      tempFile.originalName = path.basename(tempFile.originalName, tempFile.extension) + '.webp'
-      tempFile.extension = '.webp'
-      tempFile.tempPath = newTempFile;
-    } else if (mimeGroup === 'audio') {
-
-    } else if (mimeGroup === 'video') {
-
+    try {
+      if (mimeGroup === 'image') {
+        const sourceImage = sharp(tempFile.tempPath, { animated: true });
+        const metaData = await sourceImage.metadata();
+        const newTempFile = `${tempFile.tempPath}.webp`;
+        await sourceImage
+          .webp( {quality: 80} )
+          .resize(Math.min(metaData.width, 1000), Math.min(metaData.height, 1000), {fit: 'inside'})
+          .toFile(newTempFile);
+        await fs.unlink(tempFile.tempPath);
+        tempFile.originalName = path.basename(tempFile.originalName, tempFile.extension) + '.webp';
+        tempFile.extension = '.webp';
+        tempFile.tempPath = newTempFile;
+        tempFile.md5 = await md5File(tempFile.tempPath);
+      } else if (mimeGroup === 'video') {
+        const newTempFile = `${tempFile.tempPath}.mp4`;
+        await processVideo(tempFile.tempPath, newTempFile).catch((err) => console.error(err));
+        await fs.unlink(tempFile.tempPath)
+        tempFile.originalName = path.basename(tempFile.originalName, tempFile.extension) + '.mp4';
+        tempFile.extension = '.mp4'
+        tempFile.tempPath = newTempFile;
+        tempFile.md5 = await md5File(tempFile.tempPath)
+      }
+    } catch (err) {
+      // log error?
     }
 
+    return tempFile;
   }
 
   private handleStorageLimits = async (tempFile: TTempFile) => {
