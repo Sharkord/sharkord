@@ -11,11 +11,13 @@ const addRoleRoute = protectedProcedure.mutation(async ({ ctx }) => {
 
   const maxRoleOrderNr = await db
     .select({ orderNr: max(roles.orderNr) })
-    .from(roles);
+    .from(roles)
+    .get();
 
   let newOrderNr = 0;
-  if (maxRoleOrderNr.length > 0 && maxRoleOrderNr[0].orderNr) {
-    newOrderNr = maxRoleOrderNr[0].orderNr + 1;
+  if (maxRoleOrderNr && maxRoleOrderNr.orderNr) {
+    const maxOrderNumber = maxRoleOrderNr.orderNr ?? 0;
+    newOrderNr = maxOrderNumber + 1;
   }
 
   const role = await db

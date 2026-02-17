@@ -140,7 +140,7 @@ const seedDatabase = async (db: BunSQLiteDatabase) => {
     isPersistent: false,
     isDefault: false,
     createdAt: firstStart,
-    isGrouped: true,
+    isGrouping: true,
     orderNr: 2
   };
 
