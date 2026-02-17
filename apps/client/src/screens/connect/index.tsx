@@ -79,7 +79,6 @@ const Connect = memo(() => {
     values.identity,
     values.password,
     setErrors,
-    values.rememberCredentials,
     inviteCode
   ]);
 
