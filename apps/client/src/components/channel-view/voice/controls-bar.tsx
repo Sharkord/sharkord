@@ -1,9 +1,9 @@
-import { Tooltip } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Tooltip } from '@/components/ui/tooltip';
 import { useChannelCan } from '@/features/server/hooks';
 import { leaveVoice } from '@/features/server/voice/actions';
 import { useOwnVoiceState, useVoice } from '@/features/server/voice/hooks';
+import { cn } from '@/lib/utils';
 import { ChannelPermission } from '@sharkord/shared';
 import {
   Mic,
@@ -28,11 +28,14 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
   const channelCan = useChannelCan(channelId);
   const isVisible = useControlsBarVisibility();
 
-  const permissions = useMemo(() => ({
-    canSpeak: channelCan(ChannelPermission.SPEAK),
-    canWebcam: channelCan(ChannelPermission.WEBCAM),
-    canShareScreen: channelCan(ChannelPermission.SHARE_SCREEN)
-  }), [channelCan]);
+  const permissions = useMemo(
+    () => ({
+      canSpeak: channelCan(ChannelPermission.SPEAK),
+      canWebcam: channelCan(ChannelPermission.WEBCAM),
+      canShareScreen: channelCan(ChannelPermission.SHARE_SCREEN)
+    }),
+    [channelCan]
+  );
 
   return (
     <div

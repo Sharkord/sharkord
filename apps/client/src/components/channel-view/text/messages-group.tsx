@@ -22,6 +22,7 @@ const MessagesGroup = memo(({ group }: TMessagesGroupProps) => {
   if(displayedRole){
     roleColor = displayedRole.color;
   }
+  const isDeletedUser = user?.name === 'Deleted' && user.banned;
 
   if (!user) return null;
 
@@ -30,7 +31,16 @@ const MessagesGroup = memo(({ group }: TMessagesGroupProps) => {
       <UserAvatar userId={user.id} className="h-10 w-10" showUserPopover />
       <div className="flex min-w-0 flex-col w-full">
         <div className="flex gap-2 items-baseline pl-1 select-none">
-          <span className={cn(isOwnUser && 'font-bold')}><font color={roleColor}>{user.name}</font></span>
+          <span
+            className={cn(
+              isOwnUser && 'font-bold',
+              isDeletedUser && 'line-through text-muted-foreground'
+            )}
+          >
+            <font color={roleColor}>
+            {user.name}
+            </font>
+          </span>
           <RelativeTime date={date}>
             {(relativeTime) => (
               <span

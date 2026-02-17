@@ -21,8 +21,12 @@ const useVoiceRefs = (
     getOrCreateRefs
   } = useVoice();
   const isOwnUser = useIsOwnUser(remoteId);
-  const { getVolume, getUserVolumeKey, getUserScreenVolumeKey, getExternalVolumeKey } =
-    useVolumeControl();
+  const {
+    getVolume,
+    getUserVolumeKey,
+    getUserScreenVolumeKey,
+    getExternalVolumeKey
+  } = useVolumeControl();
 
   const {
     videoRef,

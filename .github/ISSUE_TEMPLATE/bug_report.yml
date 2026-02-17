@@ -1,0 +1,53 @@
+name: Bug Report
+description: Report a bug in Sharkord. Please provide as much detail as possible to help us identify and fix the issue.
+title: "[Bug]: "
+labels: ["bug"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search existing issues before opening a new one.
+        Issues that do not follow this template may be closed.
+
+  - type: input
+    id: version
+    attributes:
+      label: Sharkord Version
+      placeholder: e.g. v1.2.3
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: e.g. Ubuntu 24.04, Docker 19.03, Windows 10, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Provide clear step-by-step instructions
+      placeholder: |
+        1. Go to...
+        2. Click...
+        3. Observe...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Screenshots
+      description: Paste logs or attach screenshots

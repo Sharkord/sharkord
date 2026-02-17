@@ -73,18 +73,22 @@ type TRightSidebarProps = {
 
 const RightSidebar = memo(
   ({ className, isOpen = true }: TRightSidebarProps) => {
-    const displayUsers = useUsers();
+    const users = useUsers();
+    const visibleUsers = useMemo(
+      () => users.filter((user) => !(user.name === 'Deleted' && user.banned)),
+      [users]
+    );
     const roles = useRoles();
 
     const userGroups: TUserGroup[] = useMemo(() => {
-      if (!roles || roles.length === 0 || !displayUsers) return [];
+      if (!roles || roles.length === 0 || !visibleUsers) return [];
 
       const groups: TUserGroup[] = [];
 
       for (const role of roles) {
         if (!role.isGrouping) continue; // Ignore non Grouping Roles
 
-        const usersInGroup = displayUsers.filter((user) => {
+        const usersInGroup = visibleUsers.filter((user) => {
           if (!user?.roleIds || !Array.isArray(user.roleIds)) return false;
 
           const userRoles = roles
@@ -106,9 +110,7 @@ const RightSidebar = memo(
       }
 
       return groups;
-    }, [displayUsers, roles]);
-
-
+    }, [visibleUsers, roles]);
 
     return (
       <aside

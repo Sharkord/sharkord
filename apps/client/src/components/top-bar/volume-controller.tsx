@@ -59,9 +59,9 @@ const AudioStreamControl = memo(
             </div>
           )}
           <span className="text-sm truncate flex-1">{name}</span>
-          {type === AudioStreamType.ScreenShare &&
+          {type === AudioStreamType.ScreenShare && (
             <Monitor className="h-3 w-3 text-muted-foreground" />
-          }
+          )}
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -101,7 +101,8 @@ const AudioStreamControl = memo(
 const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
   const voiceUsers = useVoiceUsersByChannelId(channelId);
   const externalAudioStreams = useVoiceChannelAudioExternalStreams(channelId);
-  const { getUserVolumeKey, getUserScreenVolumeKey, getExternalVolumeKey } = useVolumeControl();
+  const { getUserVolumeKey, getUserScreenVolumeKey, getExternalVolumeKey } =
+    useVolumeControl();
   const ownUserId = useOwnUserId();
   const audioStreams = useMemo(() => {
     const streams: AudioStream[] = [];
@@ -122,9 +123,8 @@ const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
           userId: voiceUser.id,
           name: voiceUser.name,
           type: AudioStreamType.ScreenShare
-        })
+        });
       }
-
     });
 
     externalAudioStreams.forEach((stream) => {

@@ -3,8 +3,9 @@ import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
-interface SliderProps
-  extends React.ComponentProps<typeof SliderPrimitive.Root> {
+interface SliderProps extends React.ComponentProps<
+  typeof SliderPrimitive.Root
+> {
   rightSlot?: React.ReactNode;
 }
 

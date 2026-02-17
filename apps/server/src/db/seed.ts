@@ -121,14 +121,18 @@ const seedDatabase = async () => {
       color: '#FFFFFF',
       isDefault: false,
       isPersistent: true,
-      createdAt: firstStart
+      createdAt: firstStart,
+      isGrouping: true,
+      orderNr: 0
     },
     {
       name: 'Member',
       color: '#FFFFFF',
       isPersistent: true,
       isDefault: true,
-      createdAt: firstStart
+      createdAt: firstStart,
+      isGrouping: true,
+      orderNr: 1
     }
   ];
 

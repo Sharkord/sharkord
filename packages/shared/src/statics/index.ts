@@ -1,6 +1,6 @@
-export * from "./permissions";
-export * from "./storage";
-export * from "./metrics";
+export * from './metrics';
+export * from './permissions';
+export * from './storage';
 
 export const DEFAULT_MESSAGES_LIMIT = 100;
 
@@ -12,5 +12,5 @@ export enum DisconnectCode {
   UNEXPECTED = 1006,
   KICKED = 40000,
   BANNED = 40001,
-  SERVER_SHUTDOWN = 40002,
+  SERVER_SHUTDOWN = 40002
 }

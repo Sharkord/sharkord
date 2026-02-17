@@ -10,7 +10,7 @@
     },
     "apps/client": {
       "name": "client",
-      "version": "0.0.3",
+      "version": "0.0.4",
       "dependencies": {
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/sortable": "^10.0.0",
@@ -86,7 +86,7 @@
     },
     "apps/server": {
       "name": "@sharkord/server",
-      "version": "0.0.3",
+      "version": "0.0.4",
       "dependencies": {
         "@sharkord/plugin-sdk": "workspace:*",
         "@sharkord/shared": "workspace:*",
@@ -143,12 +143,17 @@
         "mediasoup": "^3.19.11",
       },
       "peerDependencies": {
+        "@typescript-eslint/eslint-plugin": "^8.46.1",
+        "eslint": "^8.56.0",
+        "eslint-plugin-unused-imports": "^4.1.4",
+        "prettier": "^3.5.3",
+        "prettier-plugin-organize-imports": "^4.1.0",
         "typescript": "^5",
       },
     },
     "packages/shared": {
       "name": "@sharkord/shared",
-      "version": "0.0.3",
+      "version": "0.0.4",
       "dependencies": {
         "drizzle-orm": "^0.44.6",
         "js-sha256": "^0.11.1",
@@ -159,6 +164,11 @@
         "@types/bun": "latest",
       },
       "peerDependencies": {
+        "@typescript-eslint/eslint-plugin": "^8.46.1",
+        "eslint": "^8.56.0",
+        "eslint-plugin-unused-imports": "^4.1.4",
+        "prettier": "^3.5.3",
+        "prettier-plugin-organize-imports": "^4.1.0",
         "typescript": "^5",
       },
     },

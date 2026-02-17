@@ -1,1 +1,1 @@
-export type { AppRouter } from "../../../apps/server/src/routers"; // only types
+export type { AppRouter } from '../../../apps/server/src/routers'; // only types

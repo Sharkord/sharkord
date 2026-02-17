@@ -1,5 +1,5 @@
-import type { IceCandidate, IceParameters } from "mediasoup/types";
-import type { TExternalStreamTracks } from "./types";
+import type { IceCandidate, IceParameters } from 'mediasoup/types';
+import type { TExternalStreamTracks } from './types';
 
 export type TVoiceUserState = {
   micMuted: boolean;
