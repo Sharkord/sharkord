@@ -40,7 +40,7 @@ const RolesList = memo(
         }
         const sortedRoles = roles.sort((a, b) => b.orderNr - a.orderNr).reverse();
         const changedRole = roles.find((role) => role.id === selectedRoleId);
-        const nextRole = sortedRoles.find((role) => role.orderNr > changedRole?.orderNr!);
+        const nextRole = sortedRoles.find((role) => role.orderNr > changedRole?.orderNr);
         const oldIndex = changedRole?.orderNr;
 
 
@@ -93,7 +93,7 @@ const RolesList = memo(
         }
         const sortedRoles = roles.sort((a, b) => b.orderNr - a.orderNr);
         const changedRole = roles.find((role) => role.id === selectedRoleId);
-        const lastRole = sortedRoles.find((role) => role.orderNr < changedRole?.orderNr!);
+        const lastRole = sortedRoles.find((role) => role.orderNr < changedRole?.orderNr);
         const oldIndex = changedRole?.orderNr;
 
 
