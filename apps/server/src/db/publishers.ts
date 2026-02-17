@@ -104,14 +104,9 @@ const publishRole = async (
 
 const publishUser = async (
   userId: number | undefined,
-  type: 'create' | 'update' | 'delete'
+  type: 'create' | 'update'
 ) => {
   if (!userId) return;
-
-  if (type === 'delete') {
-    pubsub.publish(ServerEvents.USER_DELETE, userId);
-    return;
-  }
 
   const user = await getPublicUserById(userId);
 

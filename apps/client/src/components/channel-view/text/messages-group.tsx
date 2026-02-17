@@ -1,8 +1,9 @@
 import { RelativeTime } from '@/components/relative-time';
 import { UserAvatar } from '@/components/user-avatar';
 import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
+import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { cn } from '@/lib/utils';
-import type { TJoinedMessage } from '@sharkord/shared';
+import { DELETED_USER_IDENTITY_AND_NAME, type TJoinedMessage } from '@sharkord/shared';
 import { format } from 'date-fns';
 import { memo } from 'react';
 import { Message } from './message';
@@ -22,7 +23,9 @@ const MessagesGroup = memo(({ group }: TMessagesGroupProps) => {
   if(displayedRole){
     roleColor = displayedRole.color;
   }
-  const isDeletedUser = user?.name === 'Deleted' && user.banned;
+
+  const isDeletedUser = user?.name === DELETED_USER_IDENTITY_AND_NAME;
+
 
   if (!user) return null;
 
@@ -38,7 +41,7 @@ const MessagesGroup = memo(({ group }: TMessagesGroupProps) => {
             )}
           >
             <font color={roleColor}>
-            {user.name}
+            {getRenderedUsername(user)}
             </font>
           </span>
           <RelativeTime date={date}>

@@ -3,6 +3,7 @@ import { useUserRoles } from '@/features/server/hooks';
 import { useUsers } from '@/features/server/users/hooks';
 import { useRoles } from '@/features/server/roles/hooks';
 import { cn } from '@/lib/utils';
+import { DELETED_USER_IDENTITY_AND_NAME } from '@sharkord/shared';
 import { memo, useMemo } from 'react';
 import { UserPopover } from '../user-popover';
 
@@ -75,7 +76,10 @@ const RightSidebar = memo(
   ({ className, isOpen = true }: TRightSidebarProps) => {
     const users = useUsers();
     const visibleUsers = useMemo(
-      () => users.filter((user) => !(user.name === 'Deleted' && user.banned)),
+      () =>
+        users
+          .filter((user) => user.name !== DELETED_USER_IDENTITY_AND_NAME) // hide deleted user placeholder from the sidebar
+          .slice(0, MAX_USERS_TO_SHOW),
       [users]
     );
     const roles = useRoles();

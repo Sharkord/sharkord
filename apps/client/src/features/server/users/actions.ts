@@ -18,8 +18,14 @@ export const updateUser = (
   store.dispatch(serverSliceActions.updateUser({ userId, user }));
 };
 
-export const removeUser = (userId: number) => {
-  store.dispatch(serverSliceActions.removeUser({ userId }));
+export const wipeUser = (userId: number) => {
+  store.dispatch(serverSliceActions.wipeUser({ userId }));
+};
+
+export const reassignUser = (userId: number, targetUser: number) => {
+  store.dispatch(
+    serverSliceActions.reassignUser({ userId, deletedUserId: targetUser })
+  );
 };
 
 export const handleUserJoin = (user: TJoinedPublicUser) => {
