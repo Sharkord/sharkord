@@ -33,7 +33,7 @@ const registerUser = async (
   inviteCode?: string,
   ip?: string
 ): Promise<TJoinedUser> => {
-  const hashedPassword = await sha256(password);
+  const hashedPassword = (await Bun.password.hash(password)).toString();
 
   const defaultRole = await getDefaultRole();
 
@@ -126,8 +126,7 @@ const loginRouteHandler = async (
     );
   }
 
-  const hashedPassword = await sha256(data.password);
-  const passwordMatches = existingUser.password === hashedPassword;
+  const passwordMatches = await Bun.password.verify(data.password, existingUser.password);
 
   if (!passwordMatches) {
     throw new HttpValidationError('password', 'Invalid password');
