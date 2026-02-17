@@ -178,8 +178,7 @@ const Channel = memo(({ channelId, isSelected }: TChannelProps) => {
   const channelCan = useChannelCan(channelId);
   const can = useCan();
   const { init } = useVoice();
-  const voiceChannelState = useVoiceChannelState(channelId);
-  const activeSince = voiceChannelState?.activeSince ?? null;
+  const { activeSince } = useVoiceChannelState(channelId);
 
   const {
     attributes,
