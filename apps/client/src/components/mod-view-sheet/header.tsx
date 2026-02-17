@@ -7,7 +7,7 @@ import {
   requestTextInput
 } from '@/features/dialogs/actions';
 import { useUserRoles } from '@/features/server/hooks';
-import { useOwnUserId, useUserStatus, useIsOwnUser } from '@/features/server/users/hooks';
+import { useOwnUserId, useUserStatus, useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
 import { DELETED_USER_IDENTITY_AND_NAME, UserStatus, Permission, isEmptyMessage } from '@sharkord/shared';
@@ -18,6 +18,7 @@ import { Dialog } from '../dialogs/dialogs';
 import { RoleBadge } from '../role-badge';
 import { useModViewContext } from './context';
 import { useCan } from '@/features/server/hooks';
+import { useRoles } from '@/features/server/roles/hooks';
 
 const Header = memo(() => {
   const ownUserId = useOwnUserId();
@@ -35,10 +36,15 @@ const Header = memo(() => {
     setName(user.name);
   }, [user.name]);
 
-  const canManage = useMemo(
+  const canSetUsername = useMemo(
     () => can(Permission.MANAGE_USERS) || (isFromOwnUser && !user.lockedUsername),
     [can, isFromOwnUser, user.lockedUsername]
   );
+
+  const changedUser = useUserById(user.id);
+  const allRoles = useRoles();
+  const roles = changedUser!.roleIds.map(roleId => allRoles.find(role => role.id === roleId));
+  const canLockUsername = roles.some(role => role?.permissions.includes(Permission.MANAGE_USERS)) ? true : false;
 
   const onChangedUsername = useCallback(
     async (userId: number, newName: string) => {
@@ -250,7 +256,7 @@ const Header = memo(() => {
               onChangedUsername(user.id, e.currentTarget.value);
             }
           }}
-          disabled={!canManage}
+          disabled={!canSetUsername}
           className="text-lg font-bold text-foreground bg-transparent border-none p-0 focus:outline-none"
         />
       </div>
@@ -293,6 +299,7 @@ const Header = memo(() => {
           variant="outline"
           size="sm"
           onClick={() => (user.lockedUsername ? onUnlockUsername() : onLockUsername())}
+          disabled={canLockUsername}
         >
           {user.lockedUsername ? (
             <>
