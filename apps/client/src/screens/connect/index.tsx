@@ -3,16 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Group } from '@/components/ui/group';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { connect } from '@/features/server/actions';
 import { useInfo } from '@/features/server/hooks';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
 import {
   getLocalStorageItem,
   LocalStorageKey,
-  removeLocalStorageItem,
   SessionStorageKey,
-  setLocalStorageItem,
   setSessionStorageItem
 } from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
@@ -41,19 +38,6 @@ const Connect = memo(() => {
     return invite || undefined;
   }, []);
 
-  const onRememberCredentialsChange = useCallback(
-    (checked: boolean) => {
-      onChange('rememberCredentials', checked);
-
-      if (checked) {
-        setLocalStorageItem(LocalStorageKey.REMEMBER_CREDENTIALS, 'true');
-      } else {
-        removeLocalStorageItem(LocalStorageKey.REMEMBER_CREDENTIALS);
-      }
-    },
-    [onChange]
-  );
-
   const onConnectClick = useCallback(async () => {
     setLoading(true);
 
@@ -81,11 +65,6 @@ const Connect = memo(() => {
       const data = (await response.json()) as { token: string };
 
       setSessionStorageItem(SessionStorageKey.TOKEN, data.token);
-
-      if (values.rememberCredentials) {
-        setLocalStorageItem(LocalStorageKey.IDENTITY, values.identity);
-        setLocalStorageItem(LocalStorageKey.USER_PASSWORD, values.password);
-      }
 
       await connect();
     } catch (error) {
@@ -144,12 +123,6 @@ const Connect = memo(() => {
                 {...r('password')}
                 type="password"
                 onEnter={onConnectClick}
-              />
-            </Group>
-            <Group label="Remember Credentials">
-              <Switch
-                checked={values.rememberCredentials}
-                onCheckedChange={onRememberCredentialsChange}
               />
             </Group>
           </div>
