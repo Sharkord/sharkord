@@ -8,6 +8,7 @@ import { eq, sql } from 'drizzle-orm';
 import http from 'http';
 import jwt from 'jsonwebtoken';
 import z from 'zod';
+import { config } from '../config';
 import { db } from '../db';
 import { publishUser } from '../db/publishers';
 import { isInviteValid } from '../db/queries/invites';
@@ -94,6 +95,13 @@ const loginRouteHandler = async (
   const connectionInfo = getWsInfo(undefined, req);
 
   if (!existingUser) {
+    if (config.server.disableLocalSignup) {
+      throw new HttpValidationError(
+        'identity',
+        'Registration is only allowed via OIDC'
+      );
+    }
+
     if (!settings.allowNewUsers) {
       const inviteError = await isInviteValid(data.invite);
 

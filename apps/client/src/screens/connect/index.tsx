@@ -15,6 +15,7 @@ import {
   setLocalStorageItem,
   setSessionStorageItem
 } from '@/helpers/storage';
+import { useStrictEffect } from '@/hooks/use-strict-effect';
 import { useForm } from '@/hooks/use-form';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -53,6 +54,53 @@ const Connect = memo(() => {
     },
     [onChange]
   );
+
+  const onOidcLoginClick = useCallback(() => {
+    const url = getUrlFromServer();
+    window.location.href = `${url}/auth/login`;
+  }, []);
+
+  const handleOidcSuccess = useCallback(async () => {
+    setLoading(true);
+    try {
+      const cookies = document.cookie.split('; ').reduce((acc, current) => {
+        const [name, value] = current.split('=');
+        acc[name] = value;
+        return acc;
+      }, {} as Record<string, string>);
+
+      const token = cookies['sharkord_token'];
+
+      if (token) {
+        setSessionStorageItem(SessionStorageKey.TOKEN, token);
+        
+        document.cookie = "sharkord_token=; Max-Age=0; path=/; SameSite=Lax; Secure";
+      } else {
+        throw new Error("No authentication token found in cookies.");
+      }
+
+      await connect();
+      toast.success("Logged in with OIDC");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      toast.error(`Could not connect with OIDC: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useStrictEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const oidcStatus = urlParams.get('oidc_status');
+
+    if (oidcStatus === 'success') {
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+      
+      handleOidcSuccess();
+    }
+  }, [handleOidcSuccess]);
 
   const onConnectClick = useCallback(async () => {
     setLoading(true);
@@ -179,6 +227,17 @@ const Connect = memo(() => {
               Connect
             </Button>
 
+            {info?.oidcEnabled && (
+              <Button
+                className="w-full"
+                variant="secondary"
+                onClick={onOidcLoginClick}
+                disabled={loading}
+              >
+                Login with OIDC
+              </Button>
+            )}
+
             {!info?.allowNewUsers && (
               <>
                 {!inviteCode && (
@@ -206,7 +265,7 @@ const Connect = memo(() => {
       </Card>
 
       <div className="flex justify-center gap-2 text-xs text-muted-foreground select-none">
-        <span>v{VITE_APP_VERSION}</span>
+        <span>v{import.meta.env.VITE_APP_VERSION}</span>
         <a
           href="https://github.com/sharkord/sharkord"
           target="_blank"

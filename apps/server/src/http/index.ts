@@ -13,6 +13,7 @@ import { healthRouteHandler } from './healthz';
 import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
 import { loginRouteHandler } from './login';
+import { oidcCallback, oidcLogin } from './oidc';
 import { publicRouteHandler } from './public';
 import { uploadFileRouteHandler } from './upload';
 import { HttpValidationError } from './utils';
@@ -51,6 +52,14 @@ const createHttpServer = async (port: number = config.server.port) => {
 
           if (req.method === 'GET' && req.url === '/info') {
             return await infoRouteHandler(req, res);
+          }
+
+          if (req.method === 'GET' && req.url === '/auth/login') {
+            return await oidcLogin(req, res);
+          }
+
+          if (req.method === 'GET' && req.url?.startsWith('/auth/callback')) {
+            return await oidcCallback(req, res);
           }
 
           if (req.method === 'POST' && req.url === '/upload') {

@@ -14,11 +14,37 @@ const [SERVER_PUBLIC_IP, SERVER_PRIVATE_IP] = await Promise.all([
   getPrivateIp()
 ]);
 
+/**
+ * Helper: Transforms a JSON string from the INI/Env into a typed Object or Array.
+ * Falling back to the provided default if parsing fails.
+ */
+const jsonTransform = <T>(fallback: T) =>
+  z.preprocess((val) => {
+    if (typeof val !== 'string') return val;
+    try {
+      return JSON.parse(val);
+    } catch {
+      return fallback;
+    }
+  }, z.any()).transform((val) => val as T);
+
 const zConfig = z.object({
   server: z.object({
     port: z.coerce.number().int().positive(),
     debug: z.coerce.boolean(),
-    autoupdate: z.coerce.boolean()
+    autoupdate: z.coerce.boolean(),
+    disableLocalSignup: z.coerce.boolean()
+  }),
+  oidc: z.object({
+    oidcEnabled: z.coerce.boolean(),
+    issuer: z.string(),
+    clientId: z.string(),
+    clientSecret: z.string(),
+    redirectUrl: z.string(),
+    rolesMapping: jsonTransform<Record<string, string>>({}),
+    requiredGroup: z.string().optional(),
+    allowedOrigins: jsonTransform<string[]>([]),
+    caPath: z.string().optional()
   }),
   webRtc: z.object({
     port: z.coerce.number().int().positive(),
@@ -40,13 +66,26 @@ const zConfig = z.object({
   })
 });
 
-type TConfig = z.infer<typeof zConfig>;
+// use z.output to get the types AFTER the JSON transformations
+type TConfig = z.output<typeof zConfig>;
 
 const defaultConfig: TConfig = {
   server: {
     port: 4991,
     debug: IS_DEVELOPMENT,
-    autoupdate: false
+    autoupdate: false,
+    disableLocalSignup: false
+  },
+  oidc: {
+    oidcEnabled: false,
+    issuer: 'https://auth.example.com/.well-known/openid-configuration',
+    clientId: '',
+    clientSecret: '',
+    redirectUrl: 'https://sharkord.example.com/auth/callback',
+    rolesMapping: {"Group1":"Role1"},
+    requiredGroup: 'ExampleOIDCGroup',
+    allowedOrigins: ['https://sharkord.example.com'],
+    caPath: ''
   },
   webRtc: {
     port: 40000,
@@ -68,6 +107,15 @@ const defaultConfig: TConfig = {
   }
 };
 
+const prepareForSave = (data: TConfig) => ({
+  ...data,
+  oidc: {
+    ...data.oidc,
+    rolesMapping: JSON.stringify(data.oidc.rolesMapping),
+    allowedOrigins: JSON.stringify(data.oidc.allowedOrigins)
+  }
+});
+
 let config: TConfig = structuredClone(defaultConfig);
 
 await ensureServerDirs();
@@ -75,30 +123,21 @@ await ensureServerDirs();
 const configExists = await fs.exists(CONFIG_INI_PATH);
 
 if (!configExists) {
-  // config does not exist, create it with the default config
-  await fs.writeFile(CONFIG_INI_PATH, stringify(config));
+  await fs.writeFile(CONFIG_INI_PATH, stringify(prepareForSave(config)));
 } else {
   try {
-    // config exists, we need to make sure it is up to date with the schema
-    // to make this easy, we will read the existing config, merge it with the default config, and write it back to the file
-    // this way we don't have to worry about migrating old config files when we add/remove config options
-    const existingConfigText = await fs.readFile(CONFIG_INI_PATH, {
-      encoding: 'utf-8'
-    });
-
-    const existingConfig = parse(existingConfigText) as Partial<TConfig>;
-    const mergedConfig = deepMerge(config, existingConfig);
-
+    const existingConfigText = await fs.readFile(CONFIG_INI_PATH, { encoding: 'utf-8' });
+    const existingConfig = parse(existingConfigText);
+    
+    const mergedConfig = deepMerge(defaultConfig, existingConfig);
     config = zConfig.parse(mergedConfig);
 
-    await fs.writeFile(CONFIG_INI_PATH, stringify(config));
+    await fs.writeFile(CONFIG_INI_PATH, stringify(prepareForSave(config)));
   } catch (error) {
-    // something went wrong, just log the error and overwrite the config file with the default config
     console.error(
-      `Error reading or parsing config.ini. Overwriting with default config. Error: ${getErrorMessage(error)}`
+      `Error parsing config.ini. Resetting to defaults. Error: ${getErrorMessage(error)}`
     );
-
-    await fs.writeFile(CONFIG_INI_PATH, stringify(config));
+    await fs.writeFile(CONFIG_INI_PATH, stringify(prepareForSave(config)));
   }
 }
 
@@ -106,6 +145,18 @@ config = applyEnvOverrides(config, {
   'server.port': 'SHARKORD_PORT',
   'server.debug': 'SHARKORD_DEBUG',
   'server.autoupdate': 'SHARKORD_AUTOUPDATE',
+  'server.disableLocalSignup': 'SHARKORD_DISABLE_LOCAL_SIGNUP',
+
+  'oidc.oidcEnabled': 'OIDC_ENABLED',
+  'oidc.issuer': 'OIDC_ISSUER',
+  'oidc.clientId': 'OIDC_CLIENT_ID',
+  'oidc.clientSecret': 'OIDC_CLIENT_SECRET',
+  'oidc.redirectUrl': 'OIDC_REDIRECT_URL',
+  'oidc.rolesMapping': 'OIDC_ROLES_MAPPING',
+  'oidc.requiredGroup': 'OIDC_REQUIRED_GROUP',
+  'oidc.allowedOrigins': 'OIDC_ALLOWED_ORIGINS',
+  'oidc.caPath': 'OIDC_CA_PATH',
+
   'webRtc.port': 'SHARKORD_WEBRTC_PORT',
   'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS'
 });
