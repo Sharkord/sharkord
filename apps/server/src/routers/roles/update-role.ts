@@ -18,7 +18,7 @@ const updateRoleRoute = protectedProcedure
         .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
       permissions: z.enum(Permission).array(),
       orderNr: z.number().min(0).optional(),
-      isGrouping: z.boolean()
+      isGrouping: z.boolean().optional()
     })
   )
   .mutation(async ({ ctx, input }) => {
@@ -30,7 +30,7 @@ const updateRoleRoute = protectedProcedure
         name: input.name,
         color: input.color,
         orderNr: input.orderNr,
-        isGrouping: input.isGrouping
+        isGrouping: input.isGrouping ?? false
       })
       .where(eq(roles.id, input.roleId))
       .returning()
