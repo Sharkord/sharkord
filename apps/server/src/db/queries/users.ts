@@ -169,6 +169,7 @@ const getPublicUsers = async (
       avatar: result.avatar,
       banner: result.banner,
       createdAt: result.createdAt,
+      lockedUsername: result.lockedUsername,
       roleIds: rolesMap[result.id] || []
     }));
   }

@@ -36,7 +36,7 @@ const Profile = memo(() => {
       return;
     }
     let message = 'Profile updated'
-    if(ownPublicUser.lockedUsername && ownPublicUser.name != values.name) {
+    if(ownPublicUser && ownPublicUser.lockedUsername && ownPublicUser.name != values.name) {
       message = 'Your username cannot be changed';
       values.name = ownPublicUser.name;
     }
@@ -47,7 +47,7 @@ const Profile = memo(() => {
     } catch (error) {
       setTrpcErrors(error);
     }
-  }, [values, setTrpcErrors]);
+  }, [values, setTrpcErrors, ownPublicUser]);
 
   if (!ownPublicUser) return null;
 

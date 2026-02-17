@@ -17,6 +17,7 @@
   },
   "peerDependencies": {
     "typescript": "^5",
+    "@types/linkify-it": "^5.0.0",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "eslint": "^8.56.0",
     "eslint-plugin-unused-imports": "^4.1.4",
@@ -26,6 +27,7 @@
   "dependencies": {
     "drizzle-orm": "^0.44.6",
     "js-sha256": "^0.11.1",
+    "linkify-it": "^5.0.0",
     "mediasoup": "^3.19.9",
     "zod": "^4.3.5"
   }

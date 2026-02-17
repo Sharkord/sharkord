@@ -1,16 +1,17 @@
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/user-avatar';
+import { setModViewOpen } from '@/features/app/actions';
 import {
   openDialog,
   requestConfirmation,
   requestTextInput
 } from '@/features/dialogs/actions';
 import { useUserRoles } from '@/features/server/hooks';
-import { useOwnUserId, useUserStatus, useUsers, useIsOwnUser } from '@/features/server/users/hooks';
+import { useOwnUserId, useUserStatus, useIsOwnUser } from '@/features/server/users/hooks';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
-import { UserStatus, Permission, isEmptyMessage } from '@sharkord/shared';
-import { Gavel, Plus, UserMinus, LockKeyhole, LockKeyholeOpen } from 'lucide-react';
+import { DELETED_USER_IDENTITY_AND_NAME, UserStatus, Permission, isEmptyMessage } from '@sharkord/shared';
+import { Gavel, Plus, Trash, UserMinus, LockKeyhole, LockKeyholeOpen } from 'lucide-react';
 import { memo, useCallback, useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Dialog } from '../dialogs/dialogs';
@@ -18,16 +19,13 @@ import { RoleBadge } from '../role-badge';
 import { useModViewContext } from './context';
 import { useCan } from '@/features/server/hooks';
 
-const DELETED_USER_IDENTITY = '__deleted_user__';
-
 const Header = memo(() => {
   const ownUserId = useOwnUserId();
   const { user, refetch } = useModViewContext();
   const status = useUserStatus(user.id);
   const userRoles = useUserRoles(user.id);
-  const isDeletedPlaceholder =
-    user.identity === DELETED_USER_IDENTITY ||
-    (user.name === 'Deleted' && user.banned);
+  const isDeletedUser = user.identity === DELETED_USER_IDENTITY_AND_NAME;
+  const isOwnUser = user.id === ownUserId;
 
   const isFromOwnUser = useIsOwnUser(user.id);
   const [name, setName] = useState(user.name);
@@ -39,7 +37,7 @@ const Header = memo(() => {
 
   const canManage = useMemo(
     () => can(Permission.MANAGE_USERS) || (isFromOwnUser && !user.lockedUsername),
-    [can, isFromOwnUser]
+    [can, isFromOwnUser, user.lockedUsername]
   );
 
   const onChangedUsername = useCallback(
@@ -64,7 +62,7 @@ const Header = memo(() => {
         refetch();
       }
     },
-    [refetch, useUsers]
+    [refetch]
   );
 
   const onRemoveRole = useCallback(
@@ -125,7 +123,7 @@ const Header = memo(() => {
   }, [user.id, refetch]);
 
   const onBan = useCallback(async () => {
-    if (isDeletedPlaceholder) {
+    if (isDeletedUser) {
       toast.error('Cannot ban or unban the deleted user placeholder');
       return;
     }
@@ -154,10 +152,10 @@ const Header = memo(() => {
     } finally {
       refetch();
     }
-  }, [user.id, refetch, isDeletedPlaceholder]);
+  }, [user.id, refetch, isDeletedUser]);
 
   const onUnban = useCallback(async () => {
-    if (isDeletedPlaceholder) {
+    if (isDeletedUser) {
       toast.error('Cannot ban or unban the deleted user placeholder');
       return;
     }
@@ -184,7 +182,7 @@ const Header = memo(() => {
     } finally {
       refetch();
     }
-  }, [user.id, refetch, isDeletedPlaceholder]);
+  }, [user.id, refetch, isDeletedUser]);
 
   const onUnlockUsername = useCallback(async () => {
     const trpc = getTRPCClient();
@@ -212,7 +210,7 @@ const Header = memo(() => {
     }
   }, [user.id, refetch]);
 
-const onLockUsername = useCallback(async () => {
+  const onLockUsername = useCallback(async () => {
     const trpc = getTRPCClient();
 
     const answer = await requestConfirmation({
@@ -245,7 +243,7 @@ const onLockUsername = useCallback(async () => {
         <input
           value={name}
           onChange={(e) => setName(e.currentTarget.value)}
-          maxLength='24'
+          maxLength={24}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               (e.currentTarget as HTMLInputElement).blur();
@@ -271,10 +269,25 @@ const onLockUsername = useCallback(async () => {
           variant="outline"
           size="sm"
           onClick={() => (user.banned ? onUnban() : onBan())}
-          disabled={user.id === ownUserId || isDeletedPlaceholder}
+          disabled={isOwnUser || isDeletedUser}
         >
           <Gavel className="h-4 w-4" />
           {user.banned ? 'Unban' : 'Ban'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            openDialog(Dialog.DELETE_USER, {
+              user,
+              refetch,
+              onDelete: () => setModViewOpen(false)
+            })
+          }
+          disabled={isOwnUser || isDeletedUser}
+        >
+          <Trash className="h-4 w-4" />
+          Delete
         </Button>
         <Button
           variant="outline"
@@ -301,7 +314,7 @@ const onLockUsername = useCallback(async () => {
           variant="outline"
           size="sm"
           className="h-6 px-2 text-xs"
-          disabled={isDeletedPlaceholder}
+          disabled={isDeletedUser}
           onClick={() => openDialog(Dialog.ASSIGN_ROLE, { user, refetch })}
         >
           <Plus className="h-3 w-3" />

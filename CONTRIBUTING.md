@@ -6,15 +6,11 @@ Sharkord is maintained by its core maintainers.
 
 Contributions that do not align with the project’s vision, scope, or technical direction may be closed without merge. Maintainer decisions are final. This ensures the project remains focused, coherent, and sustainable long-term.
 
----
-
 ## What Sharkord Is
 
 Sharkord is a self-hosted communication platform that provides core Discord-like features on your own infrastructure.
 
 It follows the philosophy of TeamSpeak: focused, lightweight, and practical — with a clean, modern interface and an emphasis on ease of deployment.
-
----
 
 ## Core Principles
 
@@ -25,8 +21,6 @@ It follows the philosophy of TeamSpeak: focused, lightweight, and practical — 
 - **Small Group Focus**: Designed for families, friends, and small teams.
 - **No Paywalls**: Fully free and open. No premium tiers.
 
----
-
 ## What Sharkord Is Not
 
 - **Not a Discord Clone**: We do not aim to replicate every Discord feature. Sharkord is not intended to be a huge community platform or a knowledge base. We focus on core communication features, not feature parity with Discord.
@@ -34,8 +28,6 @@ It follows the philosophy of TeamSpeak: focused, lightweight, and practical — 
 - **Not Bloated Software**: We reject unnecessary features, over-engineering, and complexity.
 
 Features aimed at enterprise-scale usage or feature parity with Discord are outside the scope of this project.
-
----
 
 # How to Contribute
 
@@ -49,8 +41,6 @@ This allows discussion, validation, and alignment with project goals.
 - Check the [Roadmap](/ROADMAP.md) before proposing new features.
 - If a feature is not aligned with the project vision, it will not be accepted.
 
----
-
 ## Creating an Issue
 
 Your issue must:
@@ -60,8 +50,6 @@ Your issue must:
 - Explain why it fits Sharkord’s scope
 
 Vague or low-effort issues may be closed.
-
----
 
 ## Creating a Pull Request
 
@@ -76,8 +64,6 @@ Once your issue has been discussed and validated, you may submit a PR.
 - All CI checks must pass before review
 
 PRs that do not meet these requirements may be closed without review.
-
----
 
 ## PR Title Format
 
@@ -95,8 +81,6 @@ feat(123): add channel mute support
 
 PRs not following this format may be closed.
 
----
-
 ## Commit Message Format
 
 Commits must follow:
@@ -106,8 +90,6 @@ Commits must follow:
 - `chore: short description`
 
 Keep messages concise and descriptive.
-
----
 
 ## Code Standards
 
@@ -124,13 +106,9 @@ Requirements:
 
 Clarity and maintainability are prioritized over cleverness.
 
----
-
 ## Not Planned
 
 If a feature is marked as **not planned**, please understand that the decision is final. This is done in order to maintain the project’s vision and focus. Adding features that are not aligned with the project’s goals can lead to confusion and a lack of direction.
-
----
 
 ## Testing
 
@@ -141,8 +119,6 @@ All changes must be properly tested before submission.
 - Verify that your change does not introduce regressions
 
 Unstable or untested code will not be merged.
-
----
 
 ## Use of AI
 

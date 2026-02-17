@@ -1,4 +1,4 @@
-import { isEmptyMessage } from '@sharkord/shared';
+import { DELETED_USER_IDENTITY_AND_NAME, isEmptyMessage } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
@@ -10,7 +10,13 @@ import { invariant } from '../../utils/invariant';
 const updateUserRoute = protectedProcedure
   .input(
     z.object({
-      name: z.string().min(1).max(24),
+      name: z
+        .string()
+        .min(1)
+        .max(24)
+        .refine((val) => val !== DELETED_USER_IDENTITY_AND_NAME, {
+          message: 'Protected username'
+        }),
       bannerColor: z
         .string()
         .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color').optional(),
@@ -34,7 +40,7 @@ const updateUserRoute = protectedProcedure
         .where(eq(users.id, userId))
         .get()
       
-      usernameChangeAllowed = !user.lockedUsername;
+      usernameChangeAllowed = !user!.lockedUsername;
     }
 
     const updateData: Partial<typeof users.$inferInsert> = {}
