@@ -17,7 +17,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 const Connect = memo(() => {
-  const { values, r, setErrors, onChange } = useForm<{
+  const { values, r, setErrors } = useForm<{
     identity: string;
     password: string;
     rememberCredentials: boolean;
