@@ -3,7 +3,7 @@ import type {
   PluginSettings,
   TCreateStreamOptions,
   TExternalStreamHandle,
-  TSlots,
+  TPluginComponentsMapBySlotId,
   UnloadPluginContext
 } from '@sharkord/plugin-sdk';
 import {
@@ -16,10 +16,10 @@ import {
   type TCommandsMapByPlugin,
   type TInvokerContext,
   type TLogEntry,
+  type TPluginComponentsMapBySlotIdMapListByPlugin,
   type TPluginInfo,
   type TPluginSettingDefinition,
-  type TPluginSettingsResponse,
-  type TSlotsMapListByPlugin
+  type TPluginSettingsResponse
 } from '@sharkord/shared';
 import chalk from 'chalk';
 import { eq } from 'drizzle-orm';
@@ -47,7 +47,7 @@ class PluginManager {
   private logs = new Map<string, TLogEntry[]>();
   private logsListeners = new Map<string, Set<(newLog: TLogEntry) => void>>();
   private commands = new Map<string, RegisteredCommand[]>();
-  private components = new Map<string, TSlots>();
+  private components = new Map<string, TPluginComponentsMapBySlotId>();
   private pluginStates: PluginStatesMap = {};
   private settingDefinitions = new Map<string, TPluginSettingDefinition[]>();
   private settingValues = new Map<string, Record<string, unknown>>();
@@ -388,8 +388,8 @@ class PluginManager {
     return commands.some((c) => c.name === commandName);
   };
 
-  public getComponents = (): TSlotsMapListByPlugin => {
-    const allSlots: TSlotsMapListByPlugin = {};
+  public getComponents = (): TPluginComponentsMapBySlotIdMapListByPlugin => {
+    const allSlots: TPluginComponentsMapBySlotIdMapListByPlugin = {};
 
     for (const [pluginId, slots] of this.components.entries()) {
       allSlots[pluginId] = Object.keys(slots) as PluginSlot[];

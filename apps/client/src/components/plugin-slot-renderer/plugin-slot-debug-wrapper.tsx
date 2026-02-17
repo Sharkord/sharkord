@@ -34,9 +34,7 @@ const PlugSlotDebugWrapper = memo(
     return (
       <>
         <div ref={markerRef} style={{ display: 'none' }} />
-
         {children}
-
         {rect && (
           <div
             className="pointer-events-none fixed z-9999"

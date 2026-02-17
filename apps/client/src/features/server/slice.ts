@@ -13,10 +13,10 @@ import type {
   TJoinedPublicUser,
   TJoinedRole,
   TPluginComponentsMap,
+  TPluginComponentsMapBySlotId,
   TPublicServerSettings,
   TReadStateMap,
   TServerInfo,
-  TSlots,
   TVoiceMap,
   TVoiceUserState
 } from '@sharkord/shared';
@@ -643,7 +643,10 @@ export const serverSlice = createSlice({
     },
     addPluginComponents: (
       state,
-      action: PayloadAction<{ pluginId: string; slots: TSlots }>
+      action: PayloadAction<{
+        pluginId: string;
+        slots: TPluginComponentsMapBySlotId;
+      }>
     ) => {
       const { pluginId, slots } = action.payload;
 

@@ -131,13 +131,13 @@ export enum PluginSlot {
   CHAT_ACTIONS = 'chat_actions'
 }
 
-export type TSlotsMapListByPlugin = {
+export type TPluginComponentsMapBySlotIdMapListByPlugin = {
   [pluginId: string]: PluginSlot[];
 };
 
 export type TPluginReactComponent = React.ComponentType<TPluginSlotContext>;
 
-export type TSlots = {
+export type TPluginComponentsMapBySlotId = {
   [slot in PluginSlot]?: TPluginReactComponent[];
 };
 
@@ -147,7 +147,7 @@ export type TPluginComponent = {
 };
 
 export type TPluginComponentsMap = {
-  [pluginId: string]: TSlots;
+  [pluginId: string]: TPluginComponentsMapBySlotId;
 };
 
 export type TPluginSlotContext = {

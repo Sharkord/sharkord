@@ -5,8 +5,8 @@ import type {
   TCommandInfo,
   TCommandsMapByPlugin,
   TPluginComponentsMap,
-  TSlots,
-  TSlotsMapListByPlugin
+  TPluginComponentsMapBySlotId,
+  TPluginComponentsMapBySlotIdMapListByPlugin
 } from '@sharkord/shared';
 import { serverSliceActions } from '../slice';
 
@@ -19,7 +19,7 @@ export const addPluginCommand = (command: TCommandInfo) =>
 export const removePluginCommand = (commandName: string) =>
   store.dispatch(serverSliceActions.removePluginCommand({ commandName }));
 
-export const addPluginComponents = (pluginId: string, slots: TSlots) =>
+export const addPluginComponents = (pluginId: string, slots: TPluginComponentsMapBySlotId) =>
   store.dispatch(
     serverSliceActions.addPluginComponents({
       pluginId,
@@ -31,7 +31,7 @@ export const setPluginComponents = (components: TPluginComponentsMap) =>
   store.dispatch(serverSliceActions.setPluginComponents(components));
 
 export const processPluginComponents = async (
-  slotsMap: TSlotsMapListByPlugin
+  slotsMap: TPluginComponentsMapBySlotIdMapListByPlugin
 ) => {
   const componentsMap: TPluginComponentsMap = {};
 

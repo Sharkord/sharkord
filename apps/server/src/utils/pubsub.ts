@@ -11,8 +11,8 @@ import type {
   TJoinedPublicUser,
   TJoinedRole,
   TLogEntry,
+  TPluginComponentsMapBySlotIdMapListByPlugin,
   TPublicServerSettings,
-  TSlotsMapListByPlugin,
   TVoiceUserState
 } from '@sharkord/shared';
 import type { Unsubscribable } from '@trpc/server/observable';
@@ -96,7 +96,7 @@ type Events = {
 
   [ServerEvents.PLUGIN_LOG]: TLogEntry;
   [ServerEvents.PLUGIN_COMMANDS_CHANGE]: TCommandsMapByPlugin;
-  [ServerEvents.PLUGIN_COMPONENTS_CHANGE]: TSlotsMapListByPlugin;
+  [ServerEvents.PLUGIN_COMPONENTS_CHANGE]: TPluginComponentsMapBySlotIdMapListByPlugin;
 
   [ServerEvents.EMOJI_CREATE]: TJoinedEmoji;
   [ServerEvents.EMOJI_UPDATE]: TJoinedEmoji;
