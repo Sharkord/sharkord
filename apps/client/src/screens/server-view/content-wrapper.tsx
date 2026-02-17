@@ -1,12 +1,13 @@
 import { TextChannel } from '@/components/channel-view/text';
 import { VoiceChannel } from '@/components/channel-view/voice';
+import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   useSelectedChannelId,
   useSelectedChannelType
 } from '@/features/server/channels/hooks';
 import { useServerName } from '@/features/server/hooks';
-import { ChannelType } from '@sharkord/shared';
+import { ChannelType, PluginSlot } from '@sharkord/shared';
 import { AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { memo } from 'react';
 
@@ -29,34 +30,39 @@ const ContentWrapper = memo(() => {
     }
   } else {
     content = (
-      <div className="flex flex-col items-center justify-center h-full gap-6 p-8 text-center md:hidden">
-        <div className="flex flex-col gap-2">
-          <h2 className="text-2xl font-semibold text-foreground">
-            Welcome to <span className="bold">{serverName}</span>.
-          </h2>
+      <>
+        <div className="flex-col gap-2 h-full w-full hidden lg:flex overflow-auto">
+          <PluginSlotRenderer slotName={PluginSlot.HOME_SCREEN} />
         </div>
-        <Alert variant="destructive" className="max-w-md">
-          <AlertTriangle />
-          <AlertDescription>
-            Sharkord is not optimized for mobile devices yet. The experience
-            will not be ideal.
-          </AlertDescription>
-        </Alert>
-        <div className="flex flex-col gap-3 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">
-              <ArrowRight />
-            </span>
-            <span>Swipe right to open the channel list</span>
+        <div className="flex flex-col items-center justify-center h-full gap-6 p-8 text-center md:hidden">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-2xl font-semibold text-foreground">
+              Welcome to <span className="bold">{serverName}</span>.
+            </h2>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-lg">
-              <ArrowLeft />
-            </span>
-            <span>Swipe left to open the user list</span>
+          <Alert variant="destructive" className="max-w-md">
+            <AlertTriangle />
+            <AlertDescription>
+              Sharkord is not optimized for mobile devices yet. The experience
+              will not be ideal.
+            </AlertDescription>
+          </Alert>
+          <div className="flex flex-col gap-3 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">
+                <ArrowRight />
+              </span>
+              <span>Swipe right to open the channel list</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">
+                <ArrowLeft />
+              </span>
+              <span>Swipe left to open the user list</span>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 

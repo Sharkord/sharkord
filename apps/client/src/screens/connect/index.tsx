@@ -1,3 +1,4 @@
+import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +17,7 @@ import {
   setSessionStorageItem
 } from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
+import { PluginSlot } from '@sharkord/shared';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -124,6 +126,7 @@ const Connect = memo(() => {
               </span>
             )}
           </CardTitle>
+          <PluginSlotRenderer slotName={PluginSlot.CONNECT_SCREEN} />
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {info?.description && (

@@ -1,3 +1,4 @@
+import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { TiptapInput } from '@/components/tiptap-input';
 import Spinner from '@/components/ui/spinner';
 import {
@@ -15,6 +16,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   ChannelPermission,
   Permission,
+  PluginSlot,
   TYPING_MS,
   isEmptyMessage
 } from '@sharkord/shared';
@@ -220,6 +222,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
             readOnly={sending}
             commands={pluginCommands}
           />
+          <PluginSlotRenderer slotName={PluginSlot.CHAT_ACTIONS} />
           <input {...fileInputProps} />
           <Button
             size="icon"

@@ -135,9 +135,14 @@
     "packages/plugin-sdk": {
       "name": "@sharkord/plugin-sdk",
       "version": "0.0.1",
+      "dependencies": {
+        "react": "^19.1.1",
+      },
       "devDependencies": {
         "@sharkord/shared": "workspace:*",
         "@types/bun": "latest",
+        "@types/react": "^19.1.13",
+        "@types/react-dom": "^19.1.9",
         "mediasoup": "^3.19.11",
       },
       "peerDependencies": {

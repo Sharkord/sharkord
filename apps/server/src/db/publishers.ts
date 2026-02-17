@@ -207,6 +207,12 @@ const publishPluginCommands = async () => {
   pubsub.publish(ServerEvents.PLUGIN_COMMANDS_CHANGE, commands);
 };
 
+const publishPluginComponents = async () => {
+  const components = pluginManager.getComponents();
+
+  pubsub.publish(ServerEvents.PLUGIN_COMPONENTS_CHANGE, components);
+};
+
 export {
   publishCategory,
   publishChannel,
@@ -214,6 +220,7 @@ export {
   publishEmoji,
   publishMessage,
   publishPluginCommands,
+  publishPluginComponents,
   publishRole,
   publishSettings,
   publishUser

@@ -12,6 +12,7 @@ import {
   isOwnUserOwnerSelector,
   ownUserRolesSelector,
   ownVoiceUserSelector,
+  pluginComponentContextSelector,
   pluginsEnabledSelector,
   publicServerSettingsSelector,
   serverNameSelector,
@@ -108,3 +109,6 @@ export const useUnreadMessagesCount = (channelId: number) =>
   useSelector((state: IRootState) =>
     channelReadStateByIdSelector(state, channelId)
   );
+
+export const usePluginComponentContext = () =>
+  useSelector(pluginComponentContextSelector);

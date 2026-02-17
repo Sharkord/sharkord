@@ -116,3 +116,10 @@ export const ownVoiceUserSelector = createSelector(
   (ownUserId, voiceUsers) =>
     voiceUsers?.find((voiceUser) => voiceUser.id === ownUserId)
 );
+
+export const pluginComponentContextSelector = createSelector(
+  [usersSelector],
+  (users) => ({
+    users
+  })
+);

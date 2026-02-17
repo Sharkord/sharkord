@@ -13,6 +13,8 @@ import { healthRouteHandler } from './healthz';
 import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
 import { loginRouteHandler } from './login';
+import { pluginBundleRouteHandler } from './plugin-bundle';
+import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
 import { uploadFileRouteHandler } from './upload';
 import { HttpValidationError } from './utils';
@@ -95,6 +97,17 @@ const createHttpServer = async (port: number = config.server.port) => {
 
           if (req.method === 'GET' && req.url?.startsWith('/public')) {
             return await publicRouteHandler(req, res);
+          }
+
+          if (
+            req.method === 'GET' &&
+            req.url?.startsWith('/plugin-components')
+          ) {
+            return await pluginsComponentsRouteHandler(req, res);
+          }
+
+          if (req.method === 'GET' && req.url?.startsWith('/plugin-bundle')) {
+            return await pluginBundleRouteHandler(req, res);
           }
 
           if (req.method === 'GET' && req.url?.startsWith('/')) {

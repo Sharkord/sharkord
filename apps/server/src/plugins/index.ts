@@ -3,9 +3,11 @@ import type {
   PluginSettings,
   TCreateStreamOptions,
   TExternalStreamHandle,
+  TSlots,
   UnloadPluginContext
 } from '@sharkord/plugin-sdk';
 import {
+  PluginSlot,
   ServerEvents,
   StreamKind,
   zPluginPackageJson,
@@ -16,7 +18,8 @@ import {
   type TLogEntry,
   type TPluginInfo,
   type TPluginSettingDefinition,
-  type TPluginSettingsResponse
+  type TPluginSettingsResponse,
+  type TSlotsMapListByPlugin
 } from '@sharkord/shared';
 import chalk from 'chalk';
 import { eq } from 'drizzle-orm';
@@ -44,6 +47,7 @@ class PluginManager {
   private logs = new Map<string, TLogEntry[]>();
   private logsListeners = new Map<string, Set<(newLog: TLogEntry) => void>>();
   private commands = new Map<string, RegisteredCommand[]>();
+  private components = new Map<string, TSlots>();
   private pluginStates: PluginStatesMap = {};
   private settingDefinitions = new Map<string, TPluginSettingDefinition[]>();
   private settingValues = new Map<string, Record<string, unknown>>();
@@ -384,6 +388,16 @@ class PluginManager {
     return commands.some((c) => c.name === commandName);
   };
 
+  public getComponents = (): TSlotsMapListByPlugin => {
+    const allSlots: TSlotsMapListByPlugin = {};
+
+    for (const [pluginId, slots] of this.components.entries()) {
+      allSlots[pluginId] = Object.keys(slots) as PluginSlot[];
+    }
+
+    return allSlots;
+  };
+
   public togglePlugin = async (pluginId: string, enabled: boolean) => {
     await this.ensurePluginState(pluginId);
     const wasEnabled = this.isPluginEnabled(pluginId);
@@ -429,6 +443,7 @@ class PluginManager {
     this.settingValues.delete(pluginId);
     this.loadedPlugins.delete(pluginId);
     this.loadErrors.delete(pluginId);
+    this.components.delete(pluginId);
 
     logger.info(`Plugin unloaded: ${pluginId}`);
   };
@@ -681,6 +696,15 @@ class PluginManager {
       events: {
         on: (event, handler) => {
           eventBus.register(pluginId, event, handler);
+        }
+      },
+      ui: {
+        registerComponents: (components) => {
+          if (!this.components.has(pluginId)) {
+            this.components.set(pluginId, {});
+          }
+
+          this.components.set(pluginId, components);
         }
       },
       actions: {

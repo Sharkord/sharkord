@@ -1,6 +1,11 @@
 const onLoad = (ctx) => {
   ctx.log('Plugin B loaded');
 
+  ctx.ui.registerComponents({
+    connect_screen: [() => null],
+    home_screen: [() => null]
+  });
+
   ctx.commands.register({
     name: 'test-command',
     description: 'A test command',

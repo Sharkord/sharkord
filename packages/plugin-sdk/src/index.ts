@@ -1,11 +1,14 @@
 import type {
   CommandDefinition,
   TInvokerContext,
-  TPluginSettingDefinition
+  TPluginSettingDefinition,
+  TSlots
 } from '@sharkord/shared';
+import { PluginSlot } from '@sharkord/shared';
 import type { AppData, Producer, Router } from 'mediasoup/types';
 
-export type { TInvokerContext };
+export { PluginSlot };
+export type { TInvokerContext, TSlots };
 
 export type TCreateStreamOptions = {
   channelId: number;
@@ -130,6 +133,10 @@ export interface PluginContext {
     register<T extends readonly TPluginSettingDefinition[]>(
       definitions: T
     ): Promise<PluginSettings<T>>;
+  };
+
+  ui: {
+    registerComponents(components: TSlots): void;
   };
 }
 
