@@ -7,16 +7,18 @@ import {
   requestTextInput
 } from '@/features/dialogs/actions';
 import { useUserRoles } from '@/features/server/hooks';
-import { useOwnUserId, useUserStatus } from '@/features/server/users/hooks';
+import { useOwnUserId, useUserStatus, useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
-import { DELETED_USER_IDENTITY_AND_NAME, UserStatus } from '@sharkord/shared';
-import { Gavel, Plus, Trash, UserMinus } from 'lucide-react';
-import { memo, useCallback } from 'react';
+import { DELETED_USER_IDENTITY_AND_NAME, UserStatus, Permission, isEmptyMessage } from '@sharkord/shared';
+import { Gavel, Plus, Trash, UserMinus, LockKeyhole, LockKeyholeOpen } from 'lucide-react';
+import { memo, useCallback, useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Dialog } from '../dialogs/dialogs';
 import { RoleBadge } from '../role-badge';
 import { useModViewContext } from './context';
+import { useCan } from '@/features/server/hooks';
+import { useRoles } from '@/features/server/roles/hooks';
 
 const Header = memo(() => {
   const ownUserId = useOwnUserId();
@@ -25,6 +27,49 @@ const Header = memo(() => {
   const userRoles = useUserRoles(user.id);
   const isDeletedUser = user.identity === DELETED_USER_IDENTITY_AND_NAME;
   const isOwnUser = user.id === ownUserId;
+
+  const isFromOwnUser = useIsOwnUser(user.id);
+  const [name, setName] = useState(user.name);
+  const can = useCan();
+
+  useEffect(() => {
+    setName(user.name);
+  }, [user.name]);
+
+  const canSetUsername = useMemo(
+    () => can(Permission.MANAGE_USERS) || (isFromOwnUser && !user.lockedUsername),
+    [can, isFromOwnUser, user.lockedUsername]
+  );
+
+  const changedUser = useUserById(user.id);
+  const allRoles = useRoles();
+  const roles = changedUser!.roleIds.map(roleId => allRoles.find(role => role.id === roleId));
+  const canLockUsername = roles.some(role => role?.permissions.includes(Permission.MANAGE_USERS)) ? true : false;
+
+  const onChangedUsername = useCallback(
+    async (userId: number, newName: string) => {
+      const trpc = getTRPCClient();
+
+      if (isEmptyMessage(newName)) {
+        toast.error('Invalid Username');
+        refetch();
+        return;
+      }
+
+      try {
+        await trpc.users.update.mutate({
+          name: newName,
+          userId: userId
+        });
+        toast.success('Username updated');
+      } catch (error) {
+        toast.error(getTrpcError(error, 'Failed to update user'));
+      } finally {
+        refetch();
+      }
+    },
+    [refetch]
+  );
 
   const onRemoveRole = useCallback(
     async (roleId: number, roleName: string) => {
@@ -145,11 +190,75 @@ const Header = memo(() => {
     }
   }, [user.id, refetch, isDeletedUser]);
 
+  const onUnlockUsername = useCallback(async () => {
+    const trpc = getTRPCClient();
+
+    const answer = await requestConfirmation({
+      title: 'Unlock Username',
+      message: 'Are you sure you want to unlock this Users Username?',
+      confirmLabel: 'Unlock'
+    });
+
+    if (!answer) {
+      return;
+    }
+
+    try {
+      await trpc.users.lockUsername.mutate({
+        userId: user.id,
+        isLocked: false
+      });
+      toast.success('Username unlocked successfully');
+    } catch (error) {
+      toast.error(getTrpcError(error, 'Failed to unlock username'));
+    } finally {
+      refetch();
+    }
+  }, [user.id, refetch]);
+
+  const onLockUsername = useCallback(async () => {
+    const trpc = getTRPCClient();
+
+    const answer = await requestConfirmation({
+      title: 'Lock Username',
+      message: 'Are you sure you want to lock this Users Username?',
+      confirmLabel: 'Lock'
+    });
+
+    if (!answer) {
+      return;
+    }
+
+    try {
+      await trpc.users.lockUsername.mutate({
+        userId: user.id,
+        isLocked: true
+      });
+      toast.success('Username locked successfully');
+    } catch (error) {
+      toast.error(getTrpcError(error, 'Failed to lock username'));
+    } finally {
+      refetch();
+    }
+  }, [user.id, refetch]);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <UserAvatar userId={user.id} className="h-12 w-12" />
-        <h2 className="text-lg font-bold text-foreground">{user.name}</h2>
+        <input
+          value={name}
+          onChange={(e) => setName(e.currentTarget.value)}
+          maxLength={24}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              (e.currentTarget as HTMLInputElement).blur();
+              onChangedUsername(user.id, e.currentTarget.value);
+            }
+          }}
+          disabled={!canSetUsername}
+          className="text-lg font-bold text-foreground bg-transparent border-none p-0 focus:outline-none"
+        />
       </div>
 
       <div className="flex flex-wrap gap-1.5">
@@ -185,6 +294,22 @@ const Header = memo(() => {
         >
           <Trash className="h-4 w-4" />
           Delete
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => (user.lockedUsername ? onUnlockUsername() : onLockUsername())}
+          disabled={canLockUsername}
+        >
+          {user.lockedUsername ? (
+            <>
+              <LockKeyhole className="h-4 w-4" />Unlock Username
+            </>
+          ) : (
+            <>
+              <LockKeyholeOpen className="h-4 w-4" />Lock Username
+            </>
+          )}
         </Button>
       </div>
 

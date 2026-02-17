@@ -93,6 +93,7 @@ type TPublicUser = Pick<
   | 'bannerId'
   | 'banned'
   | 'createdAt'
+  | 'lockedUsername'
 > & {
   status?: UserStatus;
   _identity?: string;
