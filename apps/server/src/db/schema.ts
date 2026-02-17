@@ -68,7 +68,7 @@ const roles = sqliteTable(
     color: text('color').notNull().default('#ffffff'),
     isPersistent: integer('is_persistent', { mode: 'boolean' }).notNull(),
     isDefault: integer('is_default', { mode: 'boolean' }).notNull(),
-    isGrouping: integer('is_grouping', { mode: 'boolean' }).default(0),
+    isGrouping: integer('is_grouping', { mode: 'boolean' }).default(false),
     orderNr: integer('order_nr').notNull().unique(),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')

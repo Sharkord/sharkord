@@ -40,9 +40,9 @@ const MessagesGroup = memo(({ group }: TMessagesGroupProps) => {
               isDeletedUser && 'line-through text-muted-foreground'
             )}
           >
-            <font color={roleColor}>
+            <span style={{ color: roleColor }}>
             {getRenderedUsername(user)}
-            </font>
+            </span>
           </span>
           <RelativeTime date={date}>
             {(relativeTime) => (

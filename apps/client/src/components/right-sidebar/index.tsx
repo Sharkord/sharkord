@@ -36,9 +36,9 @@ const User = memo(({ userId, name, banned }: TUserProps) => {
             'text-sm text-foreground',
             banned && 'line-through text-muted-foreground'
           )}
-        ><font color={roleColor}>
+        ><span style={{color: roleColor }}>
             {name}
-          </font>
+          </span>
         </span>
       </div>
     </UserPopover>

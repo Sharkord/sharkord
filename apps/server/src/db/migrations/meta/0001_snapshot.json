@@ -1649,7 +1649,7 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false,
-          "default": 0
+          "default": false
         },
         "order_nr": {
           "name": "order_nr",

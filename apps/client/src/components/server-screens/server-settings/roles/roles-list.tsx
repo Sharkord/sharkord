@@ -40,7 +40,7 @@ const RolesList = memo(
         }
         const sortedRoles = roles.sort((a, b) => b.orderNr - a.orderNr).reverse();
         const changedRole = roles.find((role) => role.id === selectedRoleId);
-        const nextRole = sortedRoles.find((role) => role.orderNr > changedRole?.orderNr);
+        const nextRole = sortedRoles.find((role) => role.orderNr > changedRole!.orderNr);
         const oldIndex = changedRole?.orderNr;
 
 
@@ -54,7 +54,7 @@ const RolesList = memo(
           color: changedRole.color,
           permissions: changedRole.permissions,
           orderNr: 9999,
-          isGrouping: changedRole.isGrouping
+          isGrouping: changedRole.isGrouping ?? false
         });
 
         await trpc.roles.update.mutate({
@@ -63,7 +63,7 @@ const RolesList = memo(
           color: nextRole.color,
           permissions: nextRole.permissions,
           orderNr: oldIndex,
-          isGrouping: nextRole.isGrouping
+          isGrouping: nextRole.isGrouping ?? false
         });
 
         await trpc.roles.update.mutate({
@@ -72,7 +72,7 @@ const RolesList = memo(
           color: changedRole.color,
           permissions: changedRole.permissions,
           orderNr: nextRole.orderNr,
-          isGrouping: changedRole.isGrouping
+          isGrouping: nextRole.isGrouping ?? false
         });
         toast.success('Role Moved Down');
         refetch();
@@ -93,7 +93,7 @@ const RolesList = memo(
         }
         const sortedRoles = roles.sort((a, b) => b.orderNr - a.orderNr);
         const changedRole = roles.find((role) => role.id === selectedRoleId);
-        const lastRole = sortedRoles.find((role) => role.orderNr < changedRole?.orderNr);
+        const lastRole = sortedRoles.find((role) => role.orderNr < changedRole!.orderNr);
         const oldIndex = changedRole?.orderNr;
 
 
@@ -107,7 +107,7 @@ const RolesList = memo(
           color: changedRole.color,
           permissions: changedRole.permissions,
           orderNr: 9999,
-          isGrouping: changedRole.isGrouping
+          isGrouping: changedRole.isGrouping ?? false
         });
 
         await trpc.roles.update.mutate({
@@ -116,7 +116,7 @@ const RolesList = memo(
           color: lastRole.color,
           permissions: lastRole.permissions,
           orderNr: oldIndex,
-          isGrouping: lastRole.isGrouping
+          isGrouping: lastRole.isGrouping ?? false
         });
 
         await trpc.roles.update.mutate({
@@ -125,7 +125,7 @@ const RolesList = memo(
           color: changedRole.color,
           permissions: changedRole.permissions,
           orderNr: lastRole.orderNr!,
-          isGrouping: changedRole.isGrouping
+          isGrouping: changedRole.isGrouping ?? false
         });
 
         toast.success('Role Moved Down');
