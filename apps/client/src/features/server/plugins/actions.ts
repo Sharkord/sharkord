@@ -19,7 +19,10 @@ export const addPluginCommand = (command: TCommandInfo) =>
 export const removePluginCommand = (commandName: string) =>
   store.dispatch(serverSliceActions.removePluginCommand({ commandName }));
 
-export const addPluginComponents = (pluginId: string, slots: TPluginComponentsMapBySlotId) =>
+export const addPluginComponents = (
+  pluginId: string,
+  slots: TPluginComponentsMapBySlotId
+) =>
   store.dispatch(
     serverSliceActions.addPluginComponents({
       pluginId,
@@ -40,6 +43,8 @@ export const processPluginComponents = async (
       componentsMap[pluginId] = {};
 
       const moduleUrl = `${getUrlFromServer()}/plugin-bundle/${pluginId}/index.js`;
+
+      // if you are developing, after making a change in the plugin you NEED to refresh the page to load the new version of the plugin, because of browser caching dynamic imports
       const mod = await import(/* @vite-ignore */ moduleUrl);
 
       logDebug('Loaded plugin module:', { pluginId, mod });

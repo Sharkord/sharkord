@@ -126,7 +126,7 @@ const Connect = memo(() => {
               </span>
             )}
           </CardTitle>
-          <PluginSlotRenderer slotName={PluginSlot.CONNECT_SCREEN} />
+          <PluginSlotRenderer slotId={PluginSlot.CONNECT_SCREEN} />
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {info?.description && (

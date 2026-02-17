@@ -32,7 +32,7 @@ const ContentWrapper = memo(() => {
     content = (
       <>
         <div className="flex-col gap-2 h-full w-full hidden lg:flex overflow-auto">
-          <PluginSlotRenderer slotName={PluginSlot.HOME_SCREEN} />
+          <PluginSlotRenderer slotId={PluginSlot.HOME_SCREEN} />
         </div>
         <div className="flex flex-col items-center justify-center h-full gap-6 p-8 text-center md:hidden">
           <div className="flex flex-col gap-2">

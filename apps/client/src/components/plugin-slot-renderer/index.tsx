@@ -16,13 +16,13 @@ const SlotContextProvider = memo(({ children }: TSlotContextProviderProps) => {
 });
 
 type TPluginSlotRendererProps = {
-  slotName: PluginSlot;
+  slotId: PluginSlot;
   debug?: boolean;
 };
 
 const PluginSlotRenderer = memo(
-  ({ slotName, debug = isDebug() }: TPluginSlotRendererProps) => {
-    const pluginComponentsBySlot = usePluginComponentsBySlot(slotName);
+  ({ slotId, debug = isDebug() }: TPluginSlotRendererProps) => {
+    const pluginComponentsBySlot = usePluginComponentsBySlot(slotId);
 
     const content = Object.entries(pluginComponentsBySlot).map(
       ([pluginId, components]) =>
@@ -41,7 +41,7 @@ const PluginSlotRenderer = memo(
             <PlugSlotDebugWrapper
               key={`${pluginId}-${index}`}
               pluginId={pluginId}
-              slotId={slotName}
+              slotId={slotId}
             >
               {content}
             </PlugSlotDebugWrapper>

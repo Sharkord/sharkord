@@ -222,7 +222,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
             readOnly={sending}
             commands={pluginCommands}
           />
-          <PluginSlotRenderer slotName={PluginSlot.CHAT_ACTIONS} />
+          <PluginSlotRenderer slotId={PluginSlot.CHAT_ACTIONS} />
           <input {...fileInputProps} />
           <Button
             size="icon"

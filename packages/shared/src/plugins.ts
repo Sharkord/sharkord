@@ -128,7 +128,8 @@ export type TPluginSettingsResponse = {
 export enum PluginSlot {
   CONNECT_SCREEN = 'connect_screen',
   HOME_SCREEN = 'home_screen',
-  CHAT_ACTIONS = 'chat_actions'
+  CHAT_ACTIONS = 'chat_actions',
+  TOPBAR_RIGHT = 'topbar_right'
 }
 
 export type TPluginComponentsMapBySlotIdMapListByPlugin = {
@@ -152,4 +153,6 @@ export type TPluginComponentsMap = {
 
 export type TPluginSlotContext = {
   users: TJoinedPublicUser[];
+  selectedChannelId: number | undefined;
+  sendMessage: (channelId: number, content: string) => void;
 };

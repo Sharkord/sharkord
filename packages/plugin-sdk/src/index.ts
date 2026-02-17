@@ -1,8 +1,8 @@
 import type {
   CommandDefinition,
   TInvokerContext,
-  TPluginSettingDefinition,
-  TPluginComponentsMapBySlotId
+  TPluginComponentsMapBySlotId,
+  TPluginSettingDefinition
 } from '@sharkord/shared';
 import { PluginSlot } from '@sharkord/shared';
 import type { AppData, Producer, Router } from 'mediasoup/types';
