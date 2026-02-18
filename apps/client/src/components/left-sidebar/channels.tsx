@@ -19,7 +19,6 @@ import {
   useVoice,
   useVoiceChannelExternalStreamsList
 } from '@/features/server/voice/hooks';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
@@ -40,7 +39,8 @@ import {
   ChannelPermission,
   ChannelType,
   Permission,
-  type TChannel
+  type TChannel,
+  getTrpcError
 } from '@sharkord/shared';
 import { Hash, Volume2 } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';

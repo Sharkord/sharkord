@@ -1,15 +1,15 @@
 import { Dialog } from '@/components/dialogs/dialogs';
-import { Button } from '@/components/ui/button';
+import { openDialog } from '@/features/dialogs/actions';
+import { useAdminInvites } from '@/features/server/admin/hooks';
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { LoadingCard } from '@/components/ui/loading-card';
-import { openDialog } from '@/features/dialogs/actions';
-import { useAdminInvites } from '@/features/server/admin/hooks';
+  CardTitle,
+  LoadingCard
+} from '@sharkord/ui';
 import { Plus } from 'lucide-react';
 import { memo } from 'react';
 import { InvitesTable } from './invites-table';

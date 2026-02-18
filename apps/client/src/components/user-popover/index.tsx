@@ -13,8 +13,8 @@ import { ShieldCheck, Trash, UserCog } from 'lucide-react';
 import { memo } from 'react';
 import { Protect } from '../protect';
 import { RoleBadge } from '../role-badge';
-import { IconButton } from '../ui/icon-button';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { IconButton } from '@sharkord/ui';
+import { Popover, PopoverContent, PopoverTrigger } from '@sharkord/ui';
 import { UserAvatar } from '../user-avatar';
 import { UserStatusBadge } from '../user-status';
 

@@ -1,5 +1,10 @@
-import { ChannelPermission, Permission } from '@sharkord/shared';
-import { useCallback } from 'react';
+import { getTRPCClient } from '@/lib/trpc';
+import {
+  ChannelPermission,
+  Permission,
+  type TPluginSlotContext
+} from '@sharkord/shared';
+import { useCallback, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import type { IRootState } from '../store';
 import { useChannelById, useChannelPermissionsById } from './channels/hooks';
@@ -15,6 +20,7 @@ import {
   isOwnUserOwnerSelector,
   ownUserRolesSelector,
   ownVoiceUserSelector,
+  pluginComponentContextSelector,
   pluginsEnabledSelector,
   publicServerSettingsSelector,
   serverNameSelector,
@@ -116,3 +122,28 @@ export const useHasUnreadMention = (channelId: number) =>
   useSelector((state: IRootState) =>
     hasUnreadMentionSelector(state, channelId)
   );
+
+export const usePluginComponentContext = (): TPluginSlotContext => {
+  const stateCtx = useSelector(pluginComponentContextSelector);
+  const controllerRef = useRef(
+    (() => ({
+      sendMessage: async (channelId: number, content: string) => {
+        const trpc = getTRPCClient();
+
+        await trpc.messages.send.mutate({
+          channelId,
+          content: `<p>${content}</p>`,
+          files: []
+        });
+      }
+    }))()
+  );
+
+  return useMemo<TPluginSlotContext>(
+    () => ({
+      ...stateCtx,
+      ...controllerRef.current
+    }),
+    [stateCtx]
+  );
+};

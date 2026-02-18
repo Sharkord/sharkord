@@ -4,7 +4,6 @@ import {
   useCategoryById
 } from '@/features/server/categories/hooks';
 import { useCan } from '@/features/server/hooks';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   DndContext,
@@ -20,14 +19,14 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Permission } from '@sharkord/shared';
+import { Permission, getTrpcError } from '@sharkord/shared';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CategoryContextMenu } from '../context-menus/category';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
-import { IconButton } from '../ui/icon-button';
+import { IconButton } from '@sharkord/ui';
 import { Channels } from './channels';
 
 type TCategoryProps = {
