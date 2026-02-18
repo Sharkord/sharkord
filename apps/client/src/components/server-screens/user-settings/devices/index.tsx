@@ -197,6 +197,14 @@ const Devices = memo(() => {
   const hasDefaultVideoOption = videoDevices.some(
     (device) => device?.deviceId === DEFAULT_NAME
   );
+  // Meter is linear from -60 dB..0 dB to 0..100%.
+  // -20 dB => 66.67% (yellow starts), -9 dB => 85% (red starts).
+  const meterFillColorClass =
+    audioLevel >= 85
+      ? 'bg-red-500'
+      : audioLevel >= 66.67
+        ? 'bg-yellow-400'
+        : 'bg-emerald-500';
 
   if (availableDevicesLoading || devicesLoading) {
     return <LoadingCard className="h-[600px]" />;
@@ -341,10 +349,17 @@ const Devices = memo(() => {
                 </p>
               )}
 
-              <div className="h-4 w-full max-w-[640px] overflow-hidden rounded-md border border-border/80 bg-muted/70">
+              <div className="relative h-4 w-full max-w-[640px] overflow-hidden rounded-md border border-border/80 bg-muted/70">
                 <div
-                  className="h-full bg-primary transition-[width] duration-75"
+                  className={`h-full ${meterFillColorClass} transition-[width,background-color] duration-75`}
                   style={{ width: `${audioLevel}%` }}
+                />
+                <div
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 opacity-60"
+                  style={{
+                    backgroundImage:
+                      'repeating-linear-gradient(to right, rgba(255, 255, 255, 0.55) 0 1px, transparent 1px calc(100% / 60))'
+                  }}
                 />
               </div>
 

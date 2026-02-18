@@ -20,9 +20,9 @@ const LOOPBACK_DELAY_SECONDS = 0.12;
 const ANALYZER_FFT_SIZE = 512;
 const ANALYZER_SMOOTHING_TIME_CONSTANT = 0.85;
 const ANALYZER_MIN_DECIBELS = -90;
-const ANALYZER_MAX_DECIBELS = -10;
-const METER_ZOOM_MIN_DECIBELS = -70;
-const METER_ZOOM_MAX_DECIBELS = -20;
+const ANALYZER_MAX_DECIBELS = 0;
+const METER_MIN_DECIBELS = -60;
+const METER_MAX_DECIBELS = 0;
 
 const isPermissionDeniedError = (error: unknown) =>
   error instanceof DOMException &&
@@ -124,9 +124,13 @@ const useMicrophoneTest = ({
 
       const rms = Math.sqrt(sum / floatDataArray.length);
       const estimatedDecibels = 20 * Math.log10(rms + 1e-8);
+      const clampedDecibels = Math.max(
+        METER_MIN_DECIBELS,
+        Math.min(METER_MAX_DECIBELS, estimatedDecibels)
+      );
       const level =
-        ((estimatedDecibels - METER_ZOOM_MIN_DECIBELS) /
-          (METER_ZOOM_MAX_DECIBELS - METER_ZOOM_MIN_DECIBELS)) *
+        ((clampedDecibels - METER_MIN_DECIBELS) /
+          (METER_MAX_DECIBELS - METER_MIN_DECIBELS)) *
         100;
       const zoomedLevel = Math.max(0, Math.min(100, level));
 
