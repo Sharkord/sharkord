@@ -31,6 +31,7 @@ import {
 } from '@sharkord/shared';
 import { memo } from 'react';
 import { DiskMetrics } from './metrics';
+import { Input } from '@/components/ui/input';
 
 const FILE_SIZE_STEP = 5 * 1024 * 1024; // 5MB
 
@@ -157,6 +158,95 @@ const Storage = memo(() => {
               ))}
             </SelectContent>
           </Select>
+        </Group>
+
+        <Group
+          label="Compress Images"
+          description="Compress all uploaded image files."
+        >
+          <Switch
+            checked={!!values.storageImageCompressionEnabled}
+            onCheckedChange={(checked) =>
+              onChange('storageImageCompressionEnabled', checked)
+            }
+          />
+        </Group>
+
+        <Group
+          label="Maximum Image Size"
+          description="Set the maximum image dimensions that all images will be shrunk to in pixels."
+        >
+          <Group
+            label="Maximum Width"
+          >
+            <Input
+              type='number'
+              min='0'
+              value={values.storageImageCompressionMaxWidth}
+              onChange={(e) =>
+                onChange('storageImageCompressionMaxWidth', parseInt(e.target.value))
+              }
+            />
+          </Group>
+          
+          <Group
+            label="Maximum Height"
+          >
+            <Input
+              type='number'
+              min='0'
+              value={values.storageImageCompressionMaxHeight}
+              onChange={(e) =>
+                onChange('storageImageCompressionMaxHeight', parseInt(e.target.value))
+              }
+            />
+          </Group>
+
+        </Group>
+
+        <Group
+          label="Compress Videos"
+          description="Compress all uploaded video files."
+        >
+          <Switch
+            checked={!!values.storageVideoCompressionEnabled}
+            onCheckedChange={(checked) =>
+              onChange('storageImageCompressionEnabled', checked)
+            }
+          />
+        </Group>
+
+        <Group
+          label="Maximum Video Size"
+          description="Set the maximum image dimensions that all videos will be shrunk to in pixels."
+        >
+
+          <Group
+            label="Maximum Width"
+          >
+            <Input
+              type='number'
+              min='0'
+              value={values.storageVideoCompressionMaxWidth}
+              onChange={(e) =>
+                onChange('storageVideoCompressionMaxWidth', parseInt(e.target.value))
+              }
+            />
+          </Group>
+
+          <Group
+            label="Maximum Height"
+          >
+            <Input
+              type='number'
+              min='0'
+              value={values.storageVideoCompressionMaxHeight}
+              onChange={(e) =>
+                onChange('storageVideoCompressionMaxHeight', parseInt(e.target.value))
+              }
+            />
+          </Group>
+
         </Group>
 
         <div className="flex justify-end gap-2 pt-4">

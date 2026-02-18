@@ -17,15 +17,16 @@ const files = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     uuid: text('uuid').notNull().unique(),
     originalName: text('original_name').notNull(),
-    md5: text('md5').notNull(),
+    md5: text('md5'),
     userId: integer('user_id').notNull(),
-    size: integer('size').notNull(),
+    size: integer('size'),
     mimeType: text('mime_type').notNull(),
     extension: text('extension').notNull(),
     originalSize: integer('originalSize').notNull(),
     compressed: integer('compressed', {
       mode: 'boolean'
-    }).notNull(),
+    }),
+    status: integer('status').notNull(),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },
@@ -56,6 +57,16 @@ const settings = sqliteTable(
     storageUploadMaxFileSize: integer('storage_upload_max_file_size').notNull(),
     storageSpaceQuotaByUser: integer('storage_space_quota_by_user').notNull(),
     storageOverflowAction: text('storage_overflow_action').notNull(),
+    storageImageCompressionEnabled: integer('storage_image_compression_enabled', {
+      mode: 'boolean'
+    }).notNull(),
+    storageImageCompressionMaxWidth: integer('storage_image_compression_max_width').notNull(),
+    storageImageCompressionMaxHeight: integer('storage_image_compression_max_height').notNull(),
+    storageVideoCompressionEnabled: integer('storage_video_compression_enabled', {
+      mode: 'boolean'
+    }).notNull(),
+    storageVideoCompressionMaxWidth: integer('storage_video_compression_max_width').notNull(),
+    storageVideoCompressionMaxHeight: integer('storage_video_compression_max_height').notNull(),
     enablePlugins: integer('enable_plugins', { mode: 'boolean' }).notNull()
   },
   (t) => [

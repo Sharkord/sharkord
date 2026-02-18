@@ -1,4 +1,5 @@
 import {
+  FileStatus,
   StorageOverflowAction,
   type TFile,
   type TTempFile
@@ -8,7 +9,7 @@ import { createHash } from 'crypto';
 import { eq, and } from 'drizzle-orm';
 import fs from 'fs/promises';
 import zlib from 'zlib';
-import { createReadStream, createWriteStream } from 'fs'
+import { createReadStream, createWriteStream, ReadStream } from 'fs'
 import { pipeline } from 'stream/promises';
 import path from 'path';
 import { db } from '../db';
@@ -68,15 +69,16 @@ const moveFile = async (src: string, dest: string) => {
 function processVideo(inputPath: string, outputPath: string) {
   return new Promise(async (resolve, reject) => {
     // Read metadata to determine if scaling is necessary, and scale it to a max width/height of 720p (TODO: allow configuration)
-    const [maxWidth, maxHeight] = [720, 1280];
-    const metaData: ffmpeg.FfprobeData = await ffprobe(inputPath);
-    const videoMetaData: ffmpeg.FfprobeStream = metaData.streams.find((streamMetaData) => streamMetaData.codec_type === 'video')
+    const settings = await getSettings();
+    const [maxWidth, maxHeight] = [settings.storageVideoCompressionMaxWidth, settings.storageVideoCompressionMaxHeight];
+    const metaData: ffmpeg.FfprobeData = await ffprobe(inputPath) as ffmpeg.FfprobeData;
+    const videoMetaData: ffmpeg.FfprobeStream | undefined = metaData.streams.find((streamMetaData) => streamMetaData.codec_type === 'video') || undefined
     const [inputWidth, inputHeight] = [videoMetaData?.width || maxWidth, videoMetaData?.height || maxHeight]
     const [scaleWidthFactor, scaleHeightFactor] = [inputWidth / maxWidth, inputHeight / maxHeight]
     let scaleFilter = 'scale=iw:ih';
-    if (scaleWidthFactor > scaleHeightFactor && scaleWidthFactor > 1) { // Width is biggest deviator from max, and is bigger than maxWidth
+    if (scaleWidthFactor >= scaleHeightFactor && scaleWidthFactor > 1) { // Width is biggest deviator from max, and is bigger than maxWidth
       scaleFilter = `scale=${maxWidth}:-2`;
-    } else if (scaleHeightFactor > scaleWidthFactor && scaleHeightFactor > 1) { // Height is biggest deviator from max, and is bigger than maxHeight
+    } else if (scaleHeightFactor >= scaleWidthFactor && scaleHeightFactor > 1) { // Height is biggest deviator from max, and is bigger than maxHeight
       scaleFilter = `scale=-2:${maxHeight}`;
     }
     ffmpeg(inputPath)
@@ -220,25 +222,30 @@ class FileManager {
   }
 
   private reEncodeMedia = async (tempFile:TTempFile): Promise<TTempFile> => {
+    const settings = await getSettings();
     const fileType = await fileTypeFromFile(tempFile.tempPath);
     if (!fileType) return tempFile;
     const mimeGroup = fileType.mime.split('/')[0];
 
     try {
-      if (mimeGroup === 'image') {
+      if (mimeGroup === 'image' && settings.storageImageCompressionEnabled) {
         const sourceImage = sharp(tempFile.tempPath, { animated: true });
         const metaData = await sourceImage.metadata();
         const newTempFile = `${tempFile.tempPath}.webp`;
         await sourceImage
           .webp( {quality: 80} )
-          .resize(Math.min(metaData.width, 1000), Math.min(metaData.height, 1000), {fit: 'inside'})
+          .resize(
+            Math.min(metaData.width, settings.storageImageCompressionMaxWidth),
+            Math.min(metaData.height, settings.storageImageCompressionMaxHeight),
+            {fit: 'inside'}
+          )
           .toFile(newTempFile);
         await fs.unlink(tempFile.tempPath);
         tempFile.originalName = path.basename(tempFile.originalName, tempFile.extension) + '.webp';
         tempFile.extension = '.webp';
         tempFile.tempPath = newTempFile;
         tempFile.md5 = await md5File(tempFile.tempPath);
-      } else if (mimeGroup === 'video') {
+      } else if (mimeGroup === 'video' && settings.storageVideoCompressionEnabled) {
         const newTempFile = `${tempFile.tempPath}.mp4`;
         await processVideo(tempFile.tempPath, newTempFile).catch((err) => console.error(err));
         await fs.unlink(tempFile.tempPath)
@@ -294,7 +301,7 @@ class FileManager {
     }
   };
 
-  public async saveFile(tempFileId: string, userId: number): Promise<TFile> {
+  public saveFile(tempFileId: string, userId: number): [TFile, Promise<void>] {
     const tempFile = this.getTemporaryFile(tempFileId);
 
     if (!tempFile) {
@@ -305,36 +312,51 @@ class FileManager {
       throw new Error("You don't have permission to access this file");
     }
 
-    await this.reEncodeMedia(tempFile);
-
-    await this.attemptCompression(tempFile);
-
-    await this.handleStorageLimits(tempFile);
-
-    await moveFile(tempFile.tempPath, tempFile.publicPath);
-    await this.removeTemporaryFile(tempFileId, true);
+    clearTimeout(tempFile.timeout);
 
     const bunFile = Bun.file(`${tempFile.publicPath}${tempFile.extension}`); // TODO: replace with actual bytes check
 
-    return db
-      .insert(files)
+    const fileRecord = db.insert(files)
       .values({
         uuid: tempFile.id,
         originalName: tempFile.originalName,
-        md5: tempFile.md5 || '', // md5 will always be defined by now, this stops the undefined typing error
+        md5: null,
         userId,
-        size: tempFile.size,
+        size: null,
         mimeType: bunFile?.type || 'application/octet-stream',
         extension: tempFile.extension,
         originalSize: tempFile.originalSize,
-        compressed: tempFile.compressed,
+        compressed: null,
+        status: FileStatus.Processing,
         createdAt: Date.now()
-      })
-      .returning()
+      }).returning()
       .get();
+
+    const encodeProcess = this.reEncodeMedia(tempFile).then(() => 
+      this.attemptCompression(tempFile)
+    ).then(() => 
+      this.handleStorageLimits(tempFile)
+    ).then(() => 
+      fs.mkdir(path.dirname(tempFile.publicPath), { recursive: true })
+    ).then(() => 
+      moveFile(tempFile.tempPath, tempFile.publicPath)
+    ).then(() => 
+      this.removeTemporaryFile(tempFileId, true)
+    ).then(() => 
+      db.update(files).set({
+        md5: tempFile.md5,
+        size: tempFile.size,
+        compressed: tempFile.compressed,
+        status: FileStatus.Complete,
+        updatedAt: Date.now()
+      })
+      .where(eq(files.id, fileRecord.id))
+    );
+
+    return [fileRecord, encodeProcess];
   }
 
-  public async getFile(fileUUID: string, fileName: string, fileAccessToken: string | null): Promise<any> {
+  public async getFile(fileUUID: string, fileName: string, fileAccessToken: string | null): Promise<[TFile, ReadStream]> {
     const dbFile = await db
       .select()
       .from(files)
@@ -381,6 +403,10 @@ class FileManager {
       }
     }
     
+    if (dbFile.status !== FileStatus.Complete) {
+      throw new Error('processing');
+    }
+
     const filePath: string = path.join(
       PUBLIC_PATH,
       this.fileUUIDToPath(fileUUID)
@@ -390,10 +416,14 @@ class FileManager {
       throw new Error('notFound');
     }
 
-    return {
+    return [
       dbFile,
-      fileStream: createReadStream(filePath)
-    }
+      createReadStream(filePath)
+    ]
+  }
+
+  public async deleteFile(uuid: string) {
+    return fs.unlink(this.fileUUIDToPath(uuid));
   }
 }
 

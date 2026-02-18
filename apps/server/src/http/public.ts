@@ -1,6 +1,8 @@
 import http from 'http';
 import { logger } from '../logger';
 import { fileManager } from '../utils/file-manager';
+import type { TFile } from '@sharkord/shared';
+import type { ReadStream } from 'fs';
 
 const publicRouteHandler = async (
   req: http.IncomingMessage,
@@ -18,13 +20,11 @@ const publicRouteHandler = async (
   const fileName = urlPath[3] || '';
   const fileAccessToken = url.searchParams.get('accessToken')
 
-  let dbFile;
-  let fileStream;
+  let dbFile: TFile;
+  let fileStream: ReadStream;
   
   try {
-    const fileInfo = await fileManager.getFile(fileUUID, fileName, fileAccessToken);
-    dbFile = fileInfo.dbFile;
-    fileStream = fileInfo.fileStream;
+    [dbFile, fileStream] = await fileManager.getFile(fileUUID, fileName, fileAccessToken);
   } catch (err) {
     const message = err instanceof Error ? err.message : ''
     let code = 400;
@@ -58,7 +58,7 @@ const publicRouteHandler = async (
   const headers: Record<string, string|number|undefined> = {
     'Content-Encoding': 'gzip',
     'Content-Type': dbFile.mimeType,
-    'Content-Length': dbFile.size,
+    'Content-Length': dbFile.size || 0,
     'Content-Disposition': `${contentDisposition}; filename*=UTF-8''${encodeURIComponent(dbFile.originalName)}"`
   }
 

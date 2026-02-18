@@ -5,6 +5,10 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
   Permission,
+  STORAGE_IMAGE_COMPRESSION_MAX_WIDTH,
+  STORAGE_IMAGE_COMPRESSION_MAX_HEIGHT,
+  STORAGE_VIDEO_COMPRESSION_MAX_WIDTH,
+  STORAGE_VIDEO_COMPRESSION_MAX_HEIGHT,
   STORAGE_MAX_FILE_SIZE,
   STORAGE_MAX_QUOTA_PER_USER,
   STORAGE_OVERFLOW_ACTION,
@@ -24,7 +28,7 @@ import {
   type TMessage,
   type TPluginInfo,
   type TRole,
-  type TStorageSettings
+  type TStorageSettings,
 } from '@sharkord/shared';
 import { filesize } from 'filesize';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -424,7 +428,13 @@ export const useAdminStorage = () => {
       storageSpaceQuotaByUser: STORAGE_MAX_QUOTA_PER_USER,
       storageUploadEnabled: true,
       storageUploadMaxFileSize: STORAGE_MAX_FILE_SIZE,
-      storageQuota: STORAGE_QUOTA
+      storageQuota: STORAGE_QUOTA,
+      storageImageCompressionEnabled: true,
+      storageImageCompressionMaxWidth: STORAGE_IMAGE_COMPRESSION_MAX_WIDTH,
+      storageImageCompressionMaxHeight: STORAGE_IMAGE_COMPRESSION_MAX_HEIGHT,
+      storageVideoCompressionEnabled: true,
+      storageVideoCompressionMaxWidth: STORAGE_VIDEO_COMPRESSION_MAX_WIDTH,
+      storageVideoCompressionMaxHeight: STORAGE_VIDEO_COMPRESSION_MAX_HEIGHT
     });
   const [diskMetrics, setDiskMetrics] = useState<TDiskMetrics | undefined>(
     undefined
@@ -450,6 +460,12 @@ export const useAdminStorage = () => {
         storageUploadEnabled: values.storageUploadEnabled,
         storageUploadMaxFileSize: values.storageUploadMaxFileSize,
         storageSpaceQuotaByUser: values.storageSpaceQuotaByUser,
+        storageImageCompressionEnabled: values.storageImageCompressionEnabled,
+        storageImageCompressionMaxWidth: values.storageImageCompressionMaxWidth,
+        storageImageCompressionMaxHeight: values.storageImageCompressionMaxHeight,
+        storageVideoCompressionEnabled: values.storageVideoCompressionEnabled,
+        storageVideoCompressionMaxWidth: values.storageVideoCompressionMaxWidth,
+        storageVideoCompressionMaxHeight: values.storageVideoCompressionMaxHeight,
         storageOverflowAction:
           values.storageOverflowAction as StorageOverflowAction
       });

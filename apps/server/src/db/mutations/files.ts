@@ -6,6 +6,7 @@ import { db } from '..';
 import { PUBLIC_PATH } from '../../helpers/paths';
 import { logger } from '../../logger';
 import { files, messageFiles } from '../schema';
+import { fileManager } from '../../utils/file-manager';
 
 const removeFile = async (fileId: number): Promise<TFile | undefined> => {
   await db.delete(messageFiles).where(eq(messageFiles.fileId, fileId));
@@ -18,9 +19,7 @@ const removeFile = async (fileId: number): Promise<TFile | undefined> => {
 
   if (removedFile) {
     try {
-      const filePath = path.join(PUBLIC_PATH, removedFile.name);
-
-      await fs.unlink(filePath);
+      fileManager.deleteFile(removedFile.uuid);
     } catch (error) {
       logger.error('Error deleting file from disk:', error);
     }

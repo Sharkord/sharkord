@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "b78a1723-df3c-4458-bed0-47f45add3ce8",
+  "id": "309d21e4-d3a3-4f35-b708-e8273a58fa2a",
   "prevId": "60b881f6-58b6-452f-bc97-2431cc2e4b06",
   "tables": {
     "activity_log": {
@@ -796,7 +796,7 @@
           "name": "md5",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "user_id": {
@@ -810,7 +810,7 @@
           "name": "size",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "mime_type": {
@@ -836,6 +836,13 @@
         },
         "compressed": {
           "name": "compressed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -1776,6 +1783,48 @@
         "storage_overflow_action": {
           "name": "storage_overflow_action",
           "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "storage_image_compression_enabled": {
+          "name": "storage_image_compression_enabled",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "storage_image_compression_max_width": {
+          "name": "storage_image_compression_max_width",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "storage_image_compression_max_height": {
+          "name": "storage_image_compression_max_height",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "storage_video_compression_enabled": {
+          "name": "storage_video_compression_enabled",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "storage_video_compression_max_width": {
+          "name": "storage_video_compression_max_width",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "storage_video_compression_max_height": {
+          "name": "storage_video_compression_max_height",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
