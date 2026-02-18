@@ -108,3 +108,10 @@ export const useUnreadMessagesCount = (channelId: number) =>
   useSelector((state: IRootState) =>
     channelReadStateByIdSelector(state, channelId)
   );
+
+export const useIsSomeoneSharingScreen = (channelId: number) =>
+  useSelector((state: IRootState) => {
+    const voiceState = state.server.voiceMap[channelId];
+    return Object.values(voiceState?.users || {}).some((u) => u.sharingScreen);
+  });
+
