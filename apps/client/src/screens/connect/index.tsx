@@ -116,8 +116,13 @@ const Connect = memo(() => {
     <div className="flex flex-col gap-2 justify-center items-center h-full">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="flex justify-center">
+          <CardTitle className="flex flex-col items-center gap-2 text-center">
             <img src={logoSrc} alt="Sharkord" className="w-32 h-32" />
+            {info?.name && (
+              <span className="text-xl font-bold leading-tight">
+                {info.name}
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">

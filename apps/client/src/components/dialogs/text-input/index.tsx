@@ -38,7 +38,7 @@ const TextInputDialog = memo(
     allowEmpty,
     type
   }: TTextInputDialogProps) => {
-    const [value, setValue] = useState<string | undefined>();
+    const [value, setValue] = useState<string | undefined>(undefined);
 
     const onSubmit = useCallback(() => {
       onConfirm?.(value);

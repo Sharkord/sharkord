@@ -25,6 +25,7 @@ type TVolumeControlContext = {
   setVolume: (key: TVolumeKey, volume: number) => void;
   toggleMute: (key: TVolumeKey) => void;
   getUserVolumeKey: (userId: number) => TVolumeKey;
+  getUserScreenVolumeKey: (userId: number) => TVolumeKey;
   getExternalVolumeKey: (pluginId: string, key: string) => TVolumeKey;
 };
 
@@ -103,6 +104,10 @@ const VolumeControlProvider = memo(
       return `user-${userId}`;
     }, []);
 
+    const getUserScreenVolumeKey = useCallback((userId: number): TVolumeKey => {
+      return `userscreen-${userId}`;
+    }, []);
+
     const getExternalVolumeKey = useCallback(
       (pluginId: string, key: string): TVolumeKey => {
         return `external-${pluginId}-${key}`;
@@ -118,6 +123,7 @@ const VolumeControlProvider = memo(
           setVolume,
           toggleMute,
           getUserVolumeKey,
+          getUserScreenVolumeKey,
           getExternalVolumeKey
         }}
       >

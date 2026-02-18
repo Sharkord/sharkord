@@ -34,7 +34,11 @@ type Events = {
   [ServerEvents.USER_LEAVE]: number;
   [ServerEvents.USER_CREATE]: TJoinedPublicUser;
   [ServerEvents.USER_UPDATE]: TJoinedPublicUser;
-  [ServerEvents.USER_DELETE]: number;
+  [ServerEvents.USER_DELETE]: {
+    isWipe: boolean;
+    userId: number;
+    deletedUserId: number; // the special Deleted User placeholder
+  };
 
   [ServerEvents.CHANNEL_CREATE]: TChannel;
   [ServerEvents.CHANNEL_UPDATE]: TChannel;

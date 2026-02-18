@@ -4,6 +4,7 @@ import {
   useVoiceChannelExternalStreamsList
 } from '@/features/server/voice/hooks';
 import { memo, useMemo } from 'react';
+import { ControlsBar } from './controls-bar';
 import { ExternalStreamCard } from './external-stream-card';
 import {
   PinnedCardType,
@@ -12,7 +13,6 @@ import {
 import { ScreenShareCard } from './screen-share-card';
 import { VoiceGrid } from './voice-grid';
 import { VoiceUserCard } from './voice-user-card';
-import { ControlsBar } from './controls-bar'; 
 
 type TChannelProps = {
   channelId: number;

@@ -10,7 +10,7 @@
     },
     "apps/client": {
       "name": "client",
-      "version": "0.0.1",
+      "version": "0.0.4",
       "dependencies": {
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/sortable": "^10.0.0",
@@ -86,7 +86,7 @@
     },
     "apps/server": {
       "name": "@sharkord/server",
-      "version": "0.0.1",
+      "version": "0.0.4",
       "dependencies": {
         "@sharkord/plugin-sdk": "workspace:*",
         "@sharkord/shared": "workspace:*",
@@ -96,6 +96,7 @@
         "cron": "^4.4.0",
         "drizzle-orm": "^0.44.5",
         "ini": "^5.0.0",
+        "ipaddr.js": "^2.3.0",
         "jsonwebtoken": "^9.0.2",
         "link-preview-js": "^3.1.0",
         "mediasoup": "^3.19.17",
@@ -140,15 +141,21 @@
         "mediasoup": "^3.19.11",
       },
       "peerDependencies": {
+        "@typescript-eslint/eslint-plugin": "^8.46.1",
+        "eslint": "^8.56.0",
+        "eslint-plugin-unused-imports": "^4.1.4",
+        "prettier": "^3.5.3",
+        "prettier-plugin-organize-imports": "^4.1.0",
         "typescript": "^5",
       },
     },
     "packages/shared": {
       "name": "@sharkord/shared",
-      "version": "0.0.1",
+      "version": "0.0.4",
       "dependencies": {
         "drizzle-orm": "^0.44.6",
         "js-sha256": "^0.11.1",
+        "linkify-it": "^5.0.0",
         "mediasoup": "^3.19.9",
         "zod": "^4.3.5",
       },
@@ -156,6 +163,12 @@
         "@types/bun": "latest",
       },
       "peerDependencies": {
+        "@types/linkify-it": "^5.0.0",
+        "@typescript-eslint/eslint-plugin": "^8.46.1",
+        "eslint": "^8.56.0",
+        "eslint-plugin-unused-imports": "^4.1.4",
+        "prettier": "^3.5.3",
+        "prettier-plugin-organize-imports": "^4.1.0",
         "typescript": "^5",
       },
     },
@@ -933,6 +946,8 @@
     "ini": ["ini@5.0.0", "", {}, "sha512-+N0ngpO3e7cRUWOJAS7qw0IZIVc6XPrW4MlFBdD066F2L4k1L6ker3hLqSq7iXxU5tgS4WGkIUElWn5vogAEnw=="],
 
     "inline-style-parser": ["inline-style-parser@0.2.7", "", {}, "sha512-Nb2ctOyNR8DqQoR0OwRG95uNWIC0C1lCgf5Naz5H6Ji72KZ8OcFZLz2P5sNgwlyoJ8Yif11oMuYs5pBQa86csA=="],
+
+    "ipaddr.js": ["ipaddr.js@2.3.0", "", {}, "sha512-Zv/pA+ciVFbCSBBjGfaKUya/CcGmUHzTydLMaTwrUUEM2DIEO3iZvueGxmacvmN50fGpGVKeTXpb2LcYQxeVdg=="],
 
     "is-emoji-supported": ["is-emoji-supported@0.0.5", "", {}, "sha512-WOlXUhDDHxYqcSmFZis+xWhhqXiK2SU0iYiqmth5Ip0FHLZQAt9rKL5ahnilE8/86WH8tZ3bmNNNC+bTzamqlw=="],
 

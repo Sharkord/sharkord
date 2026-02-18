@@ -1,19 +1,20 @@
-import { ChannelPermission, type TFile, type TSettings, type TUser } from ".";
+import { ChannelPermission, type TFile, type TSettings, type TUser } from '.';
 
 export enum ChannelType {
-  TEXT = "TEXT",
-  VOICE = "VOICE",
+  TEXT = 'TEXT',
+  VOICE = 'VOICE'
 }
 
 export enum StreamKind {
-  AUDIO = "audio",
-  VIDEO = "video",
-  SCREEN = "screen",
-  EXTERNAL_VIDEO = "external_video",
-  EXTERNAL_AUDIO = "external_audio",
+  AUDIO = 'audio',
+  VIDEO = 'video',
+  SCREEN = 'screen',
+  SCREEN_AUDIO = 'screen_audio',
+  EXTERNAL_VIDEO = 'external_video',
+  EXTERNAL_AUDIO = 'external_audio'
 }
 
-export type TExternalStreamTrackKind = "audio" | "video";
+export type TExternalStreamTrackKind = 'audio' | 'video';
 
 export type TExternalStreamTracks = {
   audio?: boolean;
@@ -24,20 +25,21 @@ export type TRemoteProducerIds = {
   remoteVideoIds: number[];
   remoteAudioIds: number[];
   remoteScreenIds: number[];
+  remoteScreenAudioIds: number[];
   remoteExternalStreamIds: number[];
 };
 
 export type TPublicServerSettings = Pick<
   TSettings,
-  | "name"
-  | "description"
-  | "serverId"
-  | "storageUploadEnabled"
-  | "storageQuota"
-  | "storageUploadMaxFileSize"
-  | "storageSpaceQuotaByUser"
-  | "storageOverflowAction"
-  | "enablePlugins"
+  | 'name'
+  | 'description'
+  | 'serverId'
+  | 'storageUploadEnabled'
+  | 'storageQuota'
+  | 'storageUploadMaxFileSize'
+  | 'storageSpaceQuotaByUser'
+  | 'storageOverflowAction'
+  | 'enablePlugins'
 >;
 
 export type TGenericObject = {
@@ -63,12 +65,12 @@ export type WithOptional<T, K extends keyof T> = Omit<T, K> &
   Partial<Pick<T, K>>;
 
 export enum UserStatus {
-  ONLINE = "online",
-  IDLE = "idle",
-  OFFLINE = "offline",
+  ONLINE = 'online',
+  IDLE = 'idle',
+  OFFLINE = 'offline'
 }
 
-export type TOwnUser = WithOptional<TUser, "identity">;
+export type TOwnUser = WithOptional<TUser, 'identity'>;
 
 export type TConnectionParams = {
   token: string;
@@ -86,7 +88,7 @@ export type TTempFile = {
 
 export type TServerInfo = Pick<
   TSettings,
-  "serverId" | "name" | "description" | "allowNewUsers"
+  'serverId' | 'name' | 'description' | 'allowNewUsers'
 > & {
   logo: TFile | null;
   version: string;

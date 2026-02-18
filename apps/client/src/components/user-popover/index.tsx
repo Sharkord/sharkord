@@ -2,9 +2,14 @@ import { setModViewOpen } from '@/features/app/actions';
 import { useUserRoles } from '@/features/server/hooks';
 import { useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
-import { Permission, UserStatus } from '@sharkord/shared';
+import { getRenderedUsername } from '@/helpers/get-rendered-username';
+import {
+  DELETED_USER_IDENTITY_AND_NAME,
+  Permission,
+  UserStatus
+} from '@sharkord/shared';
 import { format } from 'date-fns';
-import { ShieldCheck, UserCog } from 'lucide-react';
+import { ShieldCheck, Trash, UserCog } from 'lucide-react';
 import { memo } from 'react';
 import { Protect } from '../protect';
 import { RoleBadge } from '../role-badge';
@@ -24,6 +29,8 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
 
   if (!user) return <>{children}</>;
 
+  const isDeleted = user.name === DELETED_USER_IDENTITY_AND_NAME;
+
   return (
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
@@ -33,6 +40,12 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
             <div className="absolute right-2 top-2 bg-red-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
               <ShieldCheck className="h-3 w-3" />
               Banned
+            </div>
+          )}
+          {isDeleted && (
+            <div className="absolute right-2 top-2 bg-gray-600 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+              <Trash className="h-3 w-3" />
+              Deleted
             </div>
           )}
           {user.banner ? (
@@ -62,7 +75,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
         <div className="px-4 pt-12 pb-4">
           <div className="mb-3">
             <span className="text-lg font-semibold text-foreground truncate mb-1">
-              {user.name}
+              {getRenderedUsername(user)}
             </span>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">

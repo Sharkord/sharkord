@@ -143,7 +143,7 @@ describe('/public', () => {
       dbFile!.size.toString()
     );
     expect(response.headers.get('Content-Disposition')).toBe(
-      `inline; filename="${dbFile!.name}"`
+      `attachment; filename="${dbFile!.name}"`
     );
 
     const responseText = await response.text();

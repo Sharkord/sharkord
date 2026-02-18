@@ -110,7 +110,7 @@ const useVoiceControls = ({
       await trpc.voice.updateState.mutate({
         webcamEnabled: newState
       });
-     } catch (error) {
+    } catch (error) {
       updateOwnVoiceState({ webcamEnabled: false });
 
       try {
@@ -143,7 +143,7 @@ const useVoiceControls = ({
     try {
       if (newState) {
         const video = await startScreenShareStream();
-        
+
         // handle native screen share end
         video.onended = async () => {
           stopScreenShareStream();

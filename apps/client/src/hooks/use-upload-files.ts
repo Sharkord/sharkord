@@ -31,7 +31,6 @@ const useUploadFiles = (disabled: boolean = false) => {
     setFiles([]);
   }, []);
 
-  
   const openFileDialog = useCallback(() => {
     if (disabled) return;
 
@@ -92,9 +91,8 @@ const useUploadFiles = (disabled: boolean = false) => {
       setUploading(false);
       setUploadingSize((size) => size - total);
     },
-    [addFiles, can, settings, disabled],
+    [addFiles, can, settings, disabled]
   );
-
 
   useEffect(() => {
     if (!settings?.storageUploadEnabled || disabled) return;
@@ -215,12 +213,21 @@ const useUploadFiles = (disabled: boolean = false) => {
       type: 'file' as const,
       multiple: true,
       onChange: onFileDialogChange,
-      style: { display: 'none' },
-    }), 
-    [onFileDialogChange]);
+      style: { display: 'none' }
+    }),
+    [onFileDialogChange]
+  );
 
-  return { files, removeFile, filesRef, clearFiles, uploading, uploadingSize, openFileDialog, fileInputProps };
-
+  return {
+    files,
+    removeFile,
+    filesRef,
+    clearFiles,
+    uploading,
+    uploadingSize,
+    openFileDialog,
+    fileInputProps
+  };
 };
 
 export { useUploadFiles };

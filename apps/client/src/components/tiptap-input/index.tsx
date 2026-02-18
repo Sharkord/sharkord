@@ -184,10 +184,10 @@ const TiptapInput = memo(
     }, [editor, disabled]);
 
     return (
-      <div className="flex flex-1 items-center gap-2">
+      <div className="flex flex-1 items-center gap-2 min-w-0">
         <EditorContent
           editor={editor}
-          className={`border p-2 rounded w-full min-h-[40px] tiptap ${
+          className={`border p-2 rounded w-full min-h-[40px] max-h-[5rem] tiptap overflow-auto ${
             disabled ? 'opacity-50 cursor-not-allowed bg-muted' : ''
           }`}
         />
