@@ -1,3 +1,4 @@
+import { AnnouncementTopbar } from '@/components/announcement-topbar';
 import { LeftSidebar } from '@/components/left-sidebar';
 import { ModViewSheet } from '@/components/mod-view-sheet';
 import { Protect } from '@/components/protect';
@@ -117,8 +118,10 @@ const ServerView = memo(() => {
                 : '-translate-x-full md:translate-x-0'
             )}
           />
-
-          <ContentWrapper isPinnedMessagesShown={isPinnedMessagesShown} />
+          <div className="relative min-h-0 overflow-y-auto flex flex-col flex-1">
+            <AnnouncementTopbar />
+            <ContentWrapper isPinnedMessagesShown={isPinnedMessagesShown} />
+          </div>
 
           <VoiceChatSidebar isOpen={isVoiceChatSidebarOpen} />
 
