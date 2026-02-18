@@ -19,6 +19,7 @@
 
 import { Readable } from 'node:stream';
 import { EventEmitter } from 'node:events';
+import { logger } from '../logger.js';
 
 const isBun = typeof globalThis.Bun !== 'undefined';
 const isWindows = process.platform === 'win32';
@@ -66,20 +67,31 @@ function createBunPipeSocket(
 
   emitter.write = (
     chunk: Buffer | Uint8Array,
-    _encoding?: string
+    _encoding?: string,
+    callback?: (error?: Error | null) => void
   ): boolean => {
-    if (destroyed) return false;
+    if (destroyed) {
+      callback?.(new Error('Socket is destroyed'));
+      return false;
+    }
     if (!bunSocket) {
       // In practice this never happens — Bun.connect resolves before the
       // first IPC write (which waits for the async WORKER_RUNNING event).
-      console.warn(
+      logger.warn(
         '[bun-mediasoup-fix] write() called before Bun socket ready'
       );
+      callback?.(new Error('Socket not ready'));
       return false;
     }
-    const n = bunSocket.write(chunk);
-    bunSocket.flush();
-    return n > 0;
+    try {
+      const n = bunSocket.write(chunk);
+      bunSocket.flush();
+      callback?.(null);
+      return n > 0;
+    } catch (err: unknown) {
+      callback?.(err as Error);
+      return false;
+    }
   };
 
   emitter.destroy = () => {
@@ -272,14 +284,29 @@ export function patchSpawnForMediasoup(): void {
       return originalSpawn!.call(cp, command, args, options);
     }
 
-    console.log(
+    logger.info(
       '[bun-mediasoup-fix] Intercepting mediasoup-worker spawn — using Bun.spawn()'
     );
 
-    const bunChild = Bun.spawn([command, ...(args || [])], {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const bunSpawnOptions: any = {
       stdio: ['ignore', 'pipe', 'pipe', 'pipe', 'pipe'],
       env: options?.env || process.env,
-    });
+    };
+    // Forward additional spawn options that Bun supports, when provided.
+    if (options?.cwd) {
+      bunSpawnOptions.cwd = options.cwd;
+    }
+    if (typeof options?.detached === 'boolean') {
+      bunSpawnOptions.detached = options.detached;
+    }
+    if (typeof options?.uid === 'number') {
+      bunSpawnOptions.uid = options.uid;
+    }
+    if (typeof options?.gid === 'number') {
+      bunSpawnOptions.gid = options.gid;
+    }
+    const bunChild = Bun.spawn([command, ...(args || [])], bunSpawnOptions);
 
     return wrapBunSubprocess(bunChild);
   };
