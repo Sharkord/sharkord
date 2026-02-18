@@ -45,7 +45,7 @@ const updatePasswordRoute = protectedProcedure
       );
     }
 
-    const hashedNewPassword = (await Bun.password.hash(input.confirmNewPassword)).toString();
+    const hashedNewPassword = await Bun.password.hash(input.confirmNewPassword);
 
     await db
       .update(users)

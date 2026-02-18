@@ -20,6 +20,7 @@ import { enqueueActivityLog } from '../queues/activity-log';
 import { invariant } from '../utils/invariant';
 import { getJsonBody } from './helpers';
 import { HttpValidationError } from './utils';
+import { safeCompare } from '../utils/safe-compare';
 
 const zBody = z.object({
   identity: z.string().min(1, 'Identity is required'),
@@ -126,7 +127,33 @@ const loginRouteHandler = async (
     );
   }
 
-  const passwordMatches = await Bun.password.verify(data.password, existingUser.password);
+  //Logic to handle legacy SHA256 passwords and migrate them to argon2
+  const isPasswordArgon = existingUser.password.startsWith('$argon2');
+  let passwordMatches = false
+
+  if (isPasswordArgon) {
+    passwordMatches = await Bun.password.verify(data.password, existingUser.password);
+  }
+  else {
+
+    console.log("[auth]: SHA256 password hash detected, attempting to upgrade to argon2")
+    const hashInputPassword = await sha256(data.password);
+
+    passwordMatches = safeCompare(hashInputPassword, existingUser.password);
+
+    if (passwordMatches) {
+      const argon2Password = await Bun.password.hash(data.password)
+
+      await db
+        .update(users)
+        .set({
+          password: argon2Password
+        })
+        .where(eq(users.id, existingUser.id))
+        .run();
+
+    }
+  }
 
   if (!passwordMatches) {
     throw new HttpValidationError('password', 'Invalid password');
