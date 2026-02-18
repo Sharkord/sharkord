@@ -9,6 +9,7 @@ import {
 import {
   useCan,
   useChannelCan,
+  useIsSomeoneSharingScreen,
   useTypingUsersByChannelId,
   useUnreadMessagesCount,
   useVoiceUsersByChannelId
@@ -47,6 +48,7 @@ import { toast } from 'sonner';
 import { ChannelContextMenu } from '../context-menus/channel';
 import { ExternalStream } from './external-stream';
 import { VoiceUser } from './voice-user';
+import { Waveform } from './waveform';
 
 type TVoiceProps = Omit<TItemWrapperProps, 'children'> & {
   channel: TChannel;
@@ -56,18 +58,35 @@ const Voice = memo(({ channel, ...props }: TVoiceProps) => {
   const users = useVoiceUsersByChannelId(channel.id);
   const externalStreams = useVoiceChannelExternalStreamsList(channel.id);
   const unreadCount = useUnreadMessagesCount(channel.id);
+  const currentVoiceChannelId = useCurrentVoiceChannelId();
+  const someoneIsSharingScreen = useIsSomeoneSharingScreen(channel.id);
+
+  const isVoiceActive = users.length > 0 || externalStreams.length > 0;
+  const isOwnChannel = currentVoiceChannelId === channel.id;
 
   return (
-    <>
-      <ItemWrapper {...props}>
+  <>
+    <ItemWrapper
+      {...props}
+      className={cn(props.className,{
+        'text-blue-500': someoneIsSharingScreen,
+        'text-green-500': isOwnChannel && !someoneIsSharingScreen
+      })}
+    >
+      {isVoiceActive ? (
+        <Waveform isScreenSharing={someoneIsSharingScreen} />
+      ) : (
         <Volume2 className="h-4 w-4" />
-        <span className="flex-1">{channel.name}</span>
-        {unreadCount > 0 && (
-          <div className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </div>
-        )}
-      </ItemWrapper>
+      )}
+
+      <span className="flex-1 truncate">{channel.name}</span>
+
+      {!isVoiceActive && unreadCount > 0 && (
+        <div className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </div>
+      )}
+    </ItemWrapper>
       {channel.type === 'VOICE' && (
         <div className="ml-6 space-y-1 mt-1">
           {users.map((user) => (
