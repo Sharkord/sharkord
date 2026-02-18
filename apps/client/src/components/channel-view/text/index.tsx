@@ -199,7 +199,7 @@ const TextChannel = memo(({ channelId, isPinnedMessagesShown }: TChannelProps) =
           'bg-neutral-800 rounded-xl shadow-md border border-neutral-700 mx-2 mt-2',
           'max-w-4xl mx-auto',
           isPinnedMessagesShown ?
-            'h-50 p-2 opacity-100 z-50' :
+            'max-h-60 h-auto p-2 opacity-100 z-10' :
             'h-0 p-0 opacity-0 border-transparent shadow-none'
         )}
         isOpen={isPinnedMessagesShown}
