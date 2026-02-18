@@ -13,6 +13,7 @@ export enum ServerEvents {
   CHANNEL_PERMISSIONS_UPDATE = 'channelPermissionsUpdate',
   CHANNEL_READ_STATES_UPDATE = 'channelReadStatesUpdate',
   CHANNEL_READ_STATES_DELTA = 'channelReadStatesDelta',
+  CHANNEL_MENTION = 'channelMention',
 
   USER_JOIN_VOICE = 'userJoinVoice',
   USER_LEAVE_VOICE = 'userLeaveVoice',

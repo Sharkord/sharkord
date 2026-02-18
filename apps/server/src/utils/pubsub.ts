@@ -52,6 +52,9 @@ type Events = {
     channelId: number;
     delta: number;
   };
+  [ServerEvents.CHANNEL_MENTION]: {
+    channelId: number;
+  };
 
   [ServerEvents.USER_JOIN_VOICE]: {
     channelId: number;

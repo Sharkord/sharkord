@@ -1,7 +1,8 @@
 import { EmojiPicker } from '@/components/emoji-picker';
 import { Button } from '@/components/ui/button';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
-import type { TCommandInfo } from '@sharkord/shared';
+import type { TCommandInfo, TJoinedPublicUser } from '@sharkord/shared';
+import type { Extension } from '@tiptap/core';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -11,6 +12,10 @@ import {
   COMMANDS_STORAGE_KEY,
   CommandSuggestion
 } from './plugins/command-suggestion';
+import { Mention } from './plugins/mention-extension';
+import { MentionNode } from './plugins/mention-node';
+import { MENTION_STORAGE_KEY } from './plugins/mention-suggestion';
+import { MentionSuggestion } from './plugins/mention-suggestion';
 import { SlashCommands } from './plugins/slash-commands-extension';
 import { EmojiSuggestion } from './suggestions';
 import type { TEmojiItem } from './types';
@@ -24,6 +29,7 @@ type TTiptapInputProps = {
   onCancel?: () => void;
   onTyping?: () => void;
   commands?: TCommandInfo[];
+  users?: TJoinedPublicUser[];
 };
 
 const TiptapInput = memo(
@@ -35,14 +41,15 @@ const TiptapInput = memo(
     onTyping,
     disabled,
     readOnly,
-    commands
+    commands,
+    users
   }: TTiptapInputProps) => {
     const readOnlyRef = useRef(readOnly);
     readOnlyRef.current = readOnly;
 
     const customEmojis = useCustomEmojis();
 
-    const extensions = useMemo(() => {
+    const extensions = useMemo((): Extension[] => {
       const exts = [
         StarterKit.configure({
           hardBreak: {
@@ -59,20 +66,29 @@ const TiptapInput = memo(
             class: 'emoji-image'
           }
         })
-      ];
+      ] as Extension[];
 
       if (commands) {
         exts.push(
           SlashCommands.configure({
             commands,
             suggestion: CommandSuggestion
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          }) as any
+          }) as Extension
+        );
+      }
+
+      if (users && users.length > 0) {
+        exts.push(MentionNode as Extension);
+        exts.push(
+          Mention.configure({
+            users,
+            suggestion: MentionSuggestion
+          }) as Extension
         );
       }
 
       return exts;
-    }, [customEmojis, commands]);
+    }, [customEmojis, commands, users]);
 
     const editor = useEditor({
       extensions,
@@ -158,13 +174,18 @@ const TiptapInput = memo(
     // keep commands storage in sync with plugin commands from the store
     useEffect(() => {
       if (editor && commands) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const storage = editor.storage as any;
-        if (storage[COMMANDS_STORAGE_KEY]) {
-          storage[COMMANDS_STORAGE_KEY].commands = commands;
-        }
+        const slot = (editor.storage as unknown as Record<string, { commands?: TCommandInfo[] }>)[COMMANDS_STORAGE_KEY];
+        if (slot) slot.commands = commands;
       }
     }, [editor, commands]);
+
+    // keep mention storage in sync with users from the store
+    useEffect(() => {
+      if (editor && users) {
+        const slot = (editor.storage as unknown as Record<string, { users?: TJoinedPublicUser[] }>)[MENTION_STORAGE_KEY];
+        if (slot) slot.users = users;
+      }
+    }, [editor, users]);
 
     useEffect(() => {
       if (editor && value !== undefined) {

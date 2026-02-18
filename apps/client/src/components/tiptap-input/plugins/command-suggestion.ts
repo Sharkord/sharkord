@@ -18,8 +18,7 @@ export const CommandSuggestion = {
   startOfLine: true,
   items: ({ editor, query }: { editor: Editor; query: string }) => {
     const commands: TCommandInfo[] =
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (editor.storage as any)[COMMANDS_STORAGE_KEY]?.commands || [];
+      (editor.storage as unknown as Record<string, { commands?: TCommandInfo[] }>)[COMMANDS_STORAGE_KEY]?.commands ?? [];
 
     if (!query) {
       return commands.slice(0, 10);
@@ -100,8 +99,7 @@ export const CommandSuggestion = {
               component = null;
             }
           },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          editor: props.editor as any
+          editor: props.editor
         });
 
         document.body.appendChild(component.element);

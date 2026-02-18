@@ -48,6 +48,8 @@ export interface IServerState {
   readStatesMap: {
     [channelId: number]: number | undefined;
   };
+  /** Channel IDs where the current user has an unread @mention */
+  channelsWithUnreadMention: number[];
   pluginCommands: TCommandsMapByPlugin;
 }
 
@@ -80,6 +82,7 @@ const initialState: IServerState = {
   pinnedCard: undefined,
   channelPermissions: {},
   readStatesMap: {},
+  channelsWithUnreadMention: [],
   pluginCommands: {}
 };
 
@@ -414,8 +417,11 @@ export const serverSlice = createSlice({
 
       if (action.payload) {
         // reset unread count on select
-        // for now this is good enough
         state.readStatesMap[action.payload] = 0;
+        // clear mention indicator when viewing the channel
+        state.channelsWithUnreadMention = state.channelsWithUnreadMention.filter(
+          (id) => id !== action.payload
+        );
       }
     },
     setCurrentVoiceChannelId: (
@@ -437,6 +443,12 @@ export const serverSlice = createSlice({
       const { channelId, count } = action.payload;
 
       state.readStatesMap[channelId] = count;
+    },
+    addChannelUnreadMention: (state, action: PayloadAction<number>) => {
+      const channelId = action.payload;
+      if (!state.channelsWithUnreadMention.includes(channelId)) {
+        state.channelsWithUnreadMention.push(channelId);
+      }
     },
 
     // EMOJIS ------------------------------------------------------------
