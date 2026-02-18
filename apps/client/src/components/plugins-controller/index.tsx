@@ -33,6 +33,9 @@ const PluginsController = memo(() => {
   }, []);
 
   useEffect(() => {
+    // we need to fetch plugins here before joining the server
+    // because there might be slots that need to be rendered in the login screen
+    // once you are connected the the data flow is through trpc and not through this controller
     fetchPlugins();
   }, [fetchPlugins]);
 
