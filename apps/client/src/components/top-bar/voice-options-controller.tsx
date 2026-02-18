@@ -33,19 +33,21 @@ const VoiceOptionsController = memo(() => {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64">
         <div className="space-y-3">
-          <h4 className="font-medium text-sm mb-3">Voice Options</h4>
+          <h4 className="font-medium text-sm cursor-default mb-3">Voice Options</h4>
 
           <div className="flex items-center justify-between space-x-3">
-            <label
-              htmlFor="hide-non-video"
+            <span
+              onClick={() => handleToggleHideNonVideo(!hideNonVideoParticipants)}
               className="text-sm text-foreground cursor-pointer select-none flex-1"
             >
               Hide non-video participants
-            </label>
+            </span>
             <Switch
               id="hide-non-video"
               checked={hideNonVideoParticipants}
               onCheckedChange={handleToggleHideNonVideo}
+              data-1p-ignore
+              data-lpignore="true"
             />
           </div>
         </div>
