@@ -4,7 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import { useRoleById } from '@/features/server/roles/hooks';
 import { useUserById } from '@/features/server/users/hooks';
 import { getInitialsFromName } from '@/helpers/get-initials-from-name';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { getTrpcError } from '@sharkord/shared';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import type {

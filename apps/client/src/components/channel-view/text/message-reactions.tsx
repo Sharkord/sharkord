@@ -3,10 +3,10 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { useCan } from '@/features/server/hooks';
 import { useOwnUserId, useUsernames } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
+  getTrpcError,
   Permission,
   type TFile,
   type TJoinedMessageReaction

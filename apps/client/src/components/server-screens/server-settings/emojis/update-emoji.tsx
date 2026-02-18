@@ -4,9 +4,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getFileUrl } from '@/helpers/get-file-url';
-import { parseTrpcErrors, type TTrpcErrors } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
-import type { TJoinedEmoji } from '@sharkord/shared';
+import {
+  parseTrpcErrors,
+  type TJoinedEmoji,
+  type TTrpcErrors
+} from '@sharkord/shared';
 import { filesize } from 'filesize';
 import { Trash2 } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';

@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import Spinner from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { getTrpcError } from '@sharkord/shared';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import type { TPluginSettingDefinition } from '@sharkord/shared';

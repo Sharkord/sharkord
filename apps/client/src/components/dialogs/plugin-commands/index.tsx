@@ -6,7 +6,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog';
 import { usePluginCommands } from '@/features/server/plugins/hooks';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { getTrpcError } from '@sharkord/shared';
 import { getTRPCClient } from '@/lib/trpc';
 import { Play } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';

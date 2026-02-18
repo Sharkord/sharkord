@@ -1,6 +1,6 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
 import { store } from '@/features/store';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { getTrpcError } from '@sharkord/shared';
 import { getTRPCClient } from '@/lib/trpc';
 import { type TExternalStream, type TVoiceUserState } from '@sharkord/shared';
 import type { RtpCapabilities } from 'mediasoup-client/types';

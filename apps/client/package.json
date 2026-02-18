@@ -13,6 +13,8 @@
     "magic": "bun --bun run lint:fix && bun --bun run format && bun --bun run check-types"
   },
   "dependencies": {
+    "@sharkord/shared": "workspace:*",
+    "@sharkord/ui": "workspace:*",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -32,7 +34,6 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@reduxjs/toolkit": "^2.9.0",
-    "@sharkord/shared": "workspace:*",
     "@tailwindcss/vite": "^4.1.13",
     "@tiptap/core": "^3.7.2",
     "@tiptap/extension-emoji": "^3.7.2",

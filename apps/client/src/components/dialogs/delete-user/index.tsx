@@ -12,7 +12,7 @@ import { AutoFocus } from '@/components/ui/auto-focus';
 import { Group } from '@/components/ui/group';
 import { Switch } from '@/components/ui/switch';
 import { requestConfirmation } from '@/features/dialogs/actions';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { getTrpcError } from '@sharkord/shared';
 import { getTRPCClient } from '@/lib/trpc';
 import { type TJoinedUser } from '@sharkord/shared';
 import { AlertCircleIcon } from 'lucide-react';

@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import { useRoles } from '@/features/server/roles/hooks';
 import { useOwnUserId } from '@/features/server/users/hooks';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { getTrpcError } from '@sharkord/shared';
 import { getTRPCClient } from '@/lib/trpc';
 import { type TJoinedUser } from '@sharkord/shared';
 import { Info } from 'lucide-react';

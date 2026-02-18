@@ -4,7 +4,7 @@ import {
   useCategoryById
 } from '@/features/server/categories/hooks';
 import { useCan } from '@/features/server/hooks';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { getTrpcError } from '@sharkord/shared';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   DndContext,

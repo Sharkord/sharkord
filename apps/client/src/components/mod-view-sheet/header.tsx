@@ -8,7 +8,7 @@ import {
 } from '@/features/dialogs/actions';
 import { useUserRoles } from '@/features/server/hooks';
 import { useOwnUserId, useUserStatus } from '@/features/server/users/hooks';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { getTrpcError } from '@sharkord/shared';
 import { getTRPCClient } from '@/lib/trpc';
 import { DELETED_USER_IDENTITY_AND_NAME, UserStatus } from '@sharkord/shared';
 import { Gavel, Plus, Trash, UserMinus } from 'lucide-react';

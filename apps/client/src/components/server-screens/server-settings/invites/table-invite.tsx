@@ -9,7 +9,7 @@ import {
 import { UserAvatar } from '@/components/user-avatar';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getUrlFromServer } from '@/helpers/get-file-url';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { getTrpcError } from '@sharkord/shared';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import type { TInvite } from '@sharkord/shared';

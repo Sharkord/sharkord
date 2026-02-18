@@ -2,7 +2,7 @@ import { FileCard } from '@/components/channel-view/text/file-card';
 import { PaginatedList } from '@/components/paginated-list';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getFileUrl } from '@/helpers/get-file-url';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { getTrpcError } from '@sharkord/shared';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TFile } from '@sharkord/shared';
 import { memo, useCallback } from 'react';

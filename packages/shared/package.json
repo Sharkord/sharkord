@@ -22,7 +22,8 @@
     "eslint": "^8.56.0",
     "eslint-plugin-unused-imports": "^4.1.4",
     "prettier": "^3.5.3",
-    "prettier-plugin-organize-imports": "^4.1.0"
+    "prettier-plugin-organize-imports": "^4.1.0",
+    "@trpc/client": "^11.6.0"
   },
   "dependencies": {
     "drizzle-orm": "^0.44.6",

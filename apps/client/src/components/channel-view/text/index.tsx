@@ -10,7 +10,6 @@ import { useMessages } from '@/features/server/messages/hooks';
 import { useFlatPluginCommands } from '@/features/server/plugins/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { useUploadFiles } from '@/hooks/use-upload-files';
 import { getTRPCClient } from '@/lib/trpc';
 import {
@@ -18,6 +17,7 @@ import {
   Permission,
   PluginSlot,
   TYPING_MS,
+  getTrpcError,
   isEmptyMessage
 } from '@sharkord/shared';
 import { filesize } from 'filesize';
