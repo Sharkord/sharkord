@@ -2,7 +2,6 @@ import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { getVoiceControlsBridge } from '@/components/voice-provider/controls-bridge';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
-import { useVoice } from '@/features/server/voice/hooks';
 import { useForm } from '@/hooks/use-form';
 import { Resolution, VideoCodec } from '@/types';
 import { DEFAULT_BITRATE } from '@sharkord/shared';
