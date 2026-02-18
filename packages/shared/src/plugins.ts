@@ -1,4 +1,5 @@
 import z from 'zod';
+import type { TJoinedPublicUser } from './tables';
 
 export const zPluginPackageJson = z.object({
   version: z
@@ -122,4 +123,37 @@ export type TPluginSettingDefinition = {
 export type TPluginSettingsResponse = {
   definitions: TPluginSettingDefinition[];
   values: Record<string, unknown>;
+};
+
+export enum PluginSlot {
+  CONNECT_SCREEN = 'connect_screen',
+  HOME_SCREEN = 'home_screen',
+  CHAT_ACTIONS = 'chat_actions',
+  TOPBAR_RIGHT = 'topbar_right'
+}
+
+export type TPluginComponentsMapBySlotIdMapListByPlugin = {
+  [pluginId: string]: PluginSlot[];
+};
+
+export type TPluginReactComponent = React.ComponentType<TPluginSlotContext>;
+
+export type TPluginComponentsMapBySlotId = {
+  [slot in PluginSlot]?: TPluginReactComponent[];
+};
+
+export type TPluginComponent = {
+  pluginId: string;
+  mod: TPluginReactComponent;
+};
+
+export type TPluginComponentsMap = {
+  [pluginId: string]: TPluginComponentsMapBySlotId;
+};
+
+export type TPluginSlotContext = {
+  users: TJoinedPublicUser[];
+  selectedChannelId: number | undefined;
+  currentVoiceChannelId: number | undefined;
+  sendMessage: (channelId: number, content: string) => void;
 };

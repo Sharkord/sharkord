@@ -1,5 +1,5 @@
+import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { TiptapInput } from '@/components/tiptap-input';
-import Spinner from '@/components/ui/spinner';
 import {
   useCan,
   useChannelCan,
@@ -9,21 +9,23 @@ import { useMessages } from '@/features/server/messages/hooks';
 import { useFlatPluginCommands } from '@/features/server/plugins/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { useUploadFiles } from '@/hooks/use-upload-files';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   ChannelPermission,
   Permission,
+  PluginSlot,
   TYPING_MS,
+  getTrpcError,
   isEmptyMessage
 } from '@sharkord/shared';
+import { Spinner } from '@sharkord/ui';
 import { filesize } from 'filesize';
 import { throttle } from 'lodash-es';
 import { Paperclip, Send } from 'lucide-react';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '../../ui/button';
+import { Button } from '@sharkord/ui';
 import { FileCard } from './file-card';
 import { MessagesGroup } from './messages-group';
 import { TextSkeleton } from './text-skeleton';
@@ -220,6 +222,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
             readOnly={sending}
             commands={pluginCommands}
           />
+          <PluginSlotRenderer slotId={PluginSlot.CHAT_ACTIONS} />
           <input {...fileInputProps} />
           <Button
             size="icon"

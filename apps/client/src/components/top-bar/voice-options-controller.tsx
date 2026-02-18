@@ -1,11 +1,11 @@
-import { Button } from '@/components/ui/button';
 import {
+  Button,
   Popover,
   PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
-import { Switch } from '@/components/ui/switch';
-import { Tooltip } from '@/components/ui/tooltip';
+  PopoverTrigger,
+  Switch,
+  Tooltip
+} from '@sharkord/ui';
 import { useHideNonVideoParticipants } from '@/features/server/voice/hooks';
 import { setHideNonVideoParticipants } from '@/features/server/voice/actions';
 import { Settings } from 'lucide-react';

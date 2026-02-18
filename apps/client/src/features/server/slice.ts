@@ -13,6 +13,8 @@ import type {
   TJoinedMessage,
   TJoinedPublicUser,
   TJoinedRole,
+  TPluginComponentsMap,
+  TPluginComponentsMapBySlotId,
   TPublicServerSettings,
   TReadStateMap,
   TServerInfo,
@@ -51,6 +53,7 @@ export interface IServerState {
   };
   pluginCommands: TCommandsMapByPlugin;
   hideNonVideoParticipants: boolean;
+  pluginComponents: TPluginComponentsMap;
 }
 
 const initialState: IServerState = {
@@ -84,7 +87,8 @@ const initialState: IServerState = {
   readStatesMap: {},
   pluginCommands: {},
   hideNonVideoParticipants:
-    getLocalStorageItem(LocalStorageKey.HIDE_NON_VIDEO_PARTICIPANTS) === 'true'
+    getLocalStorageItem(LocalStorageKey.HIDE_NON_VIDEO_PARTICIPANTS) === 'true',
+  pluginComponents: {}
 };
 
 export const serverSlice = createSlice({
@@ -643,6 +647,30 @@ export const serverSlice = createSlice({
           (c) => c.name !== commandName
         );
       }
+    },
+    addPluginComponents: (
+      state,
+      action: PayloadAction<{
+        pluginId: string;
+        slots: TPluginComponentsMapBySlotId;
+      }>
+    ) => {
+      const { pluginId, slots } = action.payload;
+
+      if (!state.pluginComponents[pluginId]) {
+        state.pluginComponents[pluginId] = {};
+      }
+
+      state.pluginComponents[pluginId] = {
+        ...state.pluginComponents[pluginId],
+        ...slots
+      };
+    },
+    setPluginComponents: (
+      state,
+      action: PayloadAction<TPluginComponentsMap>
+    ) => {
+      state.pluginComponents = action.payload;
     }
   }
 });

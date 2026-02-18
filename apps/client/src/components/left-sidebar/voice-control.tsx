@@ -18,7 +18,7 @@ import {
 import { memo, useMemo } from 'react';
 import { ExternalAudioStreams } from '../channel-view/voice/external-audio-streams';
 import { VoiceAudioStreams } from '../channel-view/voice/voice-audio-streams';
-import { Button } from '../ui/button';
+import { Button } from '@sharkord/ui';
 import { StatsPopover } from './stats-popover';
 
 const VoiceControl = memo(() => {
