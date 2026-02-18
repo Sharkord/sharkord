@@ -4,7 +4,6 @@ import {
   useCategoryById
 } from '@/features/server/categories/hooks';
 import { useCan } from '@/features/server/hooks';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   DndContext,
@@ -20,14 +19,14 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Permission } from '@sharkord/shared';
+import { Permission, getTrpcError } from '@sharkord/shared';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CategoryContextMenu } from '../context-menus/category';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
-import { IconButton } from '../ui/icon-button';
+import { IconButton } from '@sharkord/ui';
 import { Channels } from './channels';
 
 type TCategoryProps = {
@@ -68,7 +67,7 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
       className="mb-4"
     >
       <div className="mb-1 flex w-full items-center px-2 py-1 text-xs font-semibold text-muted-foreground">
-        <div className="flex w-full items-center gap-1">
+        <div className="flex w-full items-stretch gap-1">
           <IconButton
             variant="ghost"
             size="sm"
@@ -80,7 +79,7 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
             <span
               {...attributes}
               {...listeners}
-              className="cursor-grab active:cursor-grabbing"
+              className="cursor-grab active:cursor-grabbing flex-1"
             >
               {category.name}
             </span>

@@ -1,10 +1,10 @@
-import { IconButton } from '@/components/ui/icon-button';
 import {
   useVolumeControl,
   type TVolumeKey
 } from '@/components/voice-provider/volume-control-context';
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
+import { IconButton } from '@sharkord/ui';
 import { Monitor, ZoomIn, ZoomOut } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { CardControls } from './card-controls';

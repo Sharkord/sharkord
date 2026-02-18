@@ -1,12 +1,12 @@
+import { useAdminUsers } from '@/features/server/admin/hooks';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { LoadingCard } from '@/components/ui/loading-card';
-import { useAdminUsers } from '@/features/server/admin/hooks';
+  CardTitle,
+  LoadingCard
+} from '@sharkord/ui';
 import { memo } from 'react';
 import { UsersTable } from './users-table';
 
@@ -26,7 +26,7 @@ const Users = memo(() => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <UsersTable users={users} onUserDeleted={refetch} />
+        <UsersTable users={users} refetch={refetch} />
       </CardContent>
     </Card>
   );

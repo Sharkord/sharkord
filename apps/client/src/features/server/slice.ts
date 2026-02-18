@@ -12,6 +12,8 @@ import type {
   TJoinedMessage,
   TJoinedPublicUser,
   TJoinedRole,
+  TPluginComponentsMap,
+  TPluginComponentsMapBySlotId,
   TPublicServerSettings,
   TReadStateMap,
   TServerInfo,
@@ -49,6 +51,7 @@ export interface IServerState {
     [channelId: number]: number | undefined;
   };
   pluginCommands: TCommandsMapByPlugin;
+  pluginComponents: TPluginComponentsMap;
 }
 
 const initialState: IServerState = {
@@ -80,7 +83,8 @@ const initialState: IServerState = {
   pinnedCard: undefined,
   channelPermissions: {},
   readStatesMap: {},
-  pluginCommands: {}
+  pluginCommands: {},
+  pluginComponents: {}
 };
 
 export const serverSlice = createSlice({
@@ -256,20 +260,79 @@ export const serverSlice = createSlice({
 
       state.users.push(action.payload);
     },
-    removeUser: (state, action: PayloadAction<{ userId: number }>) => {
+    wipeUser: (state, action: PayloadAction<{ userId: number }>) => {
       const { userId } = action.payload;
 
+      // remove user
       state.users = state.users.filter((u) => u.id !== userId);
 
+      // remove user from typing states
       for (const channelId in state.typingMap) {
         state.typingMap[channelId] = state.typingMap[channelId].filter(
           (id) => id !== userId
         );
       }
 
+      // remove user from voice channels
       for (const channelId in state.voiceMap) {
         delete state.voiceMap[channelId].users[userId];
       }
+
+      // remove user from messages and reactions
+      for (const channelId in state.messagesMap) {
+        state.messagesMap[channelId] = state.messagesMap[channelId]
+          .filter((m) => m.userId !== userId)
+          .map((m) => ({
+            ...m,
+            reactions: m.reactions.filter(
+              (reaction) => reaction.userId !== userId
+            )
+          }));
+      }
+
+      // remove user from emojis
+      state.emojis = state.emojis.filter((e) => e.userId !== userId);
+    },
+    reassignUser: (
+      state,
+      action: PayloadAction<{ userId: number; deletedUserId: number }>
+    ) => {
+      const { userId, deletedUserId } = action.payload;
+
+      // remove user
+      state.users = state.users.filter((u) => u.id !== userId);
+
+      // remove user from typing states
+      for (const channelId in state.typingMap) {
+        state.typingMap[channelId] = state.typingMap[channelId].filter(
+          (id) => id !== userId
+        );
+      }
+
+      // remove user from voice channels
+      for (const channelId in state.voiceMap) {
+        delete state.voiceMap[channelId].users[userId];
+      }
+
+      // reassign messages and reactions
+      for (const channelId in state.messagesMap) {
+        state.messagesMap[channelId] = state.messagesMap[channelId].map(
+          (m) => ({
+            ...m,
+            userId: m.userId === userId ? deletedUserId : m.userId,
+            reactions: m.reactions.map((reaction) =>
+              reaction.userId === userId
+                ? { ...reaction, userId: deletedUserId }
+                : reaction
+            )
+          })
+        );
+      }
+
+      // reassign emojis
+      state.emojis = state.emojis.map((e) =>
+        e.userId === userId ? { ...e, userId: deletedUserId } : e
+      );
     },
 
     // SERVER SETTINGS ------------------------------------------------------------
@@ -577,6 +640,30 @@ export const serverSlice = createSlice({
           (c) => c.name !== commandName
         );
       }
+    },
+    addPluginComponents: (
+      state,
+      action: PayloadAction<{
+        pluginId: string;
+        slots: TPluginComponentsMapBySlotId;
+      }>
+    ) => {
+      const { pluginId, slots } = action.payload;
+
+      if (!state.pluginComponents[pluginId]) {
+        state.pluginComponents[pluginId] = {};
+      }
+
+      state.pluginComponents[pluginId] = {
+        ...state.pluginComponents[pluginId],
+        ...slots
+      };
+    },
+    setPluginComponents: (
+      state,
+      action: PayloadAction<TPluginComponentsMap>
+    ) => {
+      state.pluginComponents = action.payload;
     }
   }
 });

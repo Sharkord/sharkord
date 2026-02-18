@@ -1,8 +1,14 @@
-import { ActivityLogType, sha256, type TJoinedUser } from '@sharkord/shared';
+import {
+  ActivityLogType,
+  DELETED_USER_IDENTITY_AND_NAME,
+  sha256,
+  type TJoinedUser
+} from '@sharkord/shared';
 import { eq, sql } from 'drizzle-orm';
 import http from 'http';
 import jwt from 'jsonwebtoken';
 import z from 'zod';
+import { config } from '../config';
 import { db } from '../db';
 import { publishUser } from '../db/publishers';
 import { isInviteValid } from '../db/queries/invites';
@@ -11,17 +17,26 @@ import { getServerToken, getSettings } from '../db/queries/server';
 import { getUserByIdentity } from '../db/queries/users';
 import { invites, userRoles, users } from '../db/schema';
 import { getWsInfo } from '../helpers/get-ws-info';
+import { logger } from '../logger';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { invariant } from '../utils/invariant';
+import {
+  createRateLimiter,
+  getClientRateLimitKey,
+  getRateLimitRetrySeconds
+} from '../utils/rate-limiters/rate-limiter';
 import { getJsonBody } from './helpers';
 import { HttpValidationError } from './utils';
-
-const DELETED_USER_IDENTITY = '__deleted_user__';
 
 const zBody = z.object({
   identity: z.string().min(1, 'Identity is required'),
   password: z.string().min(4, 'Password is required').max(128),
   invite: z.string().optional()
+});
+
+const loginRateLimiter = createRateLimiter({
+  maxRequests: config.rateLimiters.joinServer.maxRequests,
+  windowMs: config.rateLimiters.joinServer.windowMs
 });
 
 const registerUser = async (
@@ -82,13 +97,39 @@ const loginRouteHandler = async (
 ) => {
   const data = zBody.parse(await getJsonBody(req));
 
-  if (data.identity === DELETED_USER_IDENTITY) {
+  if (data.identity === DELETED_USER_IDENTITY_AND_NAME) {
     throw new HttpValidationError('identity', 'This identity is reserved');
   }
 
   const settings = await getSettings();
   let existingUser = await getUserByIdentity(data.identity);
   const connectionInfo = getWsInfo(undefined, req);
+
+  if (connectionInfo?.ip) {
+    const key = getClientRateLimitKey(connectionInfo.ip);
+    const rateLimit = loginRateLimiter.consume(key);
+
+    if (!rateLimit.allowed) {
+      logger.debug(`[Rate Limiter HTTP] /login rate limited for key "${key}"`);
+
+      res.setHeader(
+        'Retry-After',
+        getRateLimitRetrySeconds(rateLimit.retryAfterMs)
+      );
+      res.writeHead(429, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          error: 'Too many login attempts. Please try again shortly.'
+        })
+      );
+
+      return;
+    }
+  } else {
+    logger.warn(
+      '[Rate Limiter HTTP] Missing IP address in request info, skipping rate limiting for /login route.'
+    );
+  }
 
   if (!existingUser) {
     if (!settings.allowNewUsers) {

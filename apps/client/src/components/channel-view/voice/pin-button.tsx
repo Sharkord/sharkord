@@ -1,4 +1,4 @@
-import { IconButton } from '@/components/ui/icon-button';
+import { IconButton } from '@sharkord/ui';
 import { Pin, PinOff } from 'lucide-react';
 import { memo } from 'react';
 

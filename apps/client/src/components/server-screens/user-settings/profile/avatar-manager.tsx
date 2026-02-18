@@ -1,10 +1,9 @@
-import { Button } from '@/components/ui/button';
-import { Group } from '@/components/ui/group';
 import { UserAvatar } from '@/components/user-avatar';
 import { uploadFile } from '@/helpers/upload-file';
 import { useFilePicker } from '@/hooks/use-file-picker';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TJoinedPublicUser } from '@sharkord/shared';
+import { Button, Group } from '@sharkord/ui';
 import { Upload } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';

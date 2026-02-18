@@ -12,9 +12,14 @@
     "check-types": "tsc --noEmit",
     "magic": "bun --bun run lint:fix && bun --bun run format && bun --bun run check-types"
   },
+  "dependencies": {
+    "react": "^19.1.1"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "mediasoup": "^3.19.11",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
     "@sharkord/shared": "workspace:*"
   },
   "peerDependencies": {

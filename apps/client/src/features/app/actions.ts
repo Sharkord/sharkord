@@ -8,6 +8,9 @@ import { appSliceActions } from './slice';
 export const setAppLoading = (loading: boolean) =>
   store.dispatch(appSliceActions.setAppLoading(loading));
 
+export const setPluginsLoading = (loading: boolean) =>
+  store.dispatch(appSliceActions.setLoadingPlugins(loading));
+
 export const fetchServerInfo = async (): Promise<TServerInfo | undefined> => {
   try {
     const url = getUrlFromServer();

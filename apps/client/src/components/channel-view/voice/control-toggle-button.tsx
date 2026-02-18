@@ -1,6 +1,5 @@
-import { Button } from '@/components/ui/button';
-import { Tooltip } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { Button, Tooltip } from '@sharkord/ui';
 import { memo } from 'react';
 
 type TIconComponent = React.ComponentType<{

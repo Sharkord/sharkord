@@ -1,6 +1,12 @@
 import { getTRPCClient } from '@/lib/trpc';
 import { UserStatus, type TJoinedPublicUser } from '@sharkord/shared';
-import { addUser, handleUserJoin, removeUser, updateUser } from './actions';
+import {
+  addUser,
+  handleUserJoin,
+  reassignUser,
+  updateUser,
+  wipeUser
+} from './actions';
 
 const subscribeToUsers = () => {
   const trpc = getTRPCClient();
@@ -34,8 +40,14 @@ const subscribeToUsers = () => {
   });
 
   const onUserDeleteSub = trpc.users.onDelete.subscribe(undefined, {
-    onData: (userId: number) => {
-      removeUser(userId);
+    onData: ({ isWipe, userId, deletedUserId }) => {
+      console.log('User deleted:', { isWipe, userId, deletedUserId });
+
+      if (isWipe) {
+        wipeUser(userId);
+      } else {
+        reassignUser(userId, deletedUserId);
+      }
     },
     onError: (err) => console.error('onUserDelete subscription error:', err)
   });

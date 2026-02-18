@@ -104,14 +104,9 @@ const publishRole = async (
 
 const publishUser = async (
   userId: number | undefined,
-  type: 'create' | 'update' | 'delete'
+  type: 'create' | 'update'
 ) => {
   if (!userId) return;
-
-  if (type === 'delete') {
-    pubsub.publish(ServerEvents.USER_DELETE, userId);
-    return;
-  }
 
   const user = await getPublicUserById(userId);
 
@@ -212,6 +207,12 @@ const publishPluginCommands = async () => {
   pubsub.publish(ServerEvents.PLUGIN_COMMANDS_CHANGE, commands);
 };
 
+const publishPluginComponents = async () => {
+  const components = pluginManager.getComponents();
+
+  pubsub.publish(ServerEvents.PLUGIN_COMPONENTS_CHANGE, components);
+};
+
 export {
   publishCategory,
   publishChannel,
@@ -219,6 +220,7 @@ export {
   publishEmoji,
   publishMessage,
   publishPluginCommands,
+  publishPluginComponents,
   publishRole,
   publishSettings,
   publishUser

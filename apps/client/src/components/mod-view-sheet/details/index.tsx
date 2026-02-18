@@ -1,5 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tooltip } from '@/components/ui/tooltip';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Tooltip
+} from '@sharkord/ui';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
   Calendar,

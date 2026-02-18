@@ -5,12 +5,13 @@ import { TableUser } from './table-user';
 
 type TUsersTableProps = {
   users: TJoinedUser[];
-  onUserDeleted?: () => void;
+  refetch?: () => void;
 };
 
-const UsersTable = memo(({ users, onUserDeleted }: TUsersTableProps) => {
+const UsersTable = memo(({ users, refetch }: TUsersTableProps) => {
   const searchFilter = useCallback((user: TJoinedUser, searchTerm: string) => {
     const query = searchTerm.toLowerCase();
+
     return (
       user.name.toLowerCase().includes(query) ||
       user.identity?.toLowerCase().includes(query)
@@ -20,7 +21,7 @@ const UsersTable = memo(({ users, onUserDeleted }: TUsersTableProps) => {
   return (
     <PaginatedTable
       items={users}
-      renderRow={(user) => <TableUser user={user} onUserDeleted={onUserDeleted} />}
+      renderRow={(user) => <TableUser user={user} refetch={refetch} />}
       searchFilter={searchFilter}
       headerColumns={
         <>
