@@ -26,7 +26,7 @@ import { toast } from 'sonner';
 import { CategoryContextMenu } from '../context-menus/category';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
-import { IconButton } from '../ui/icon-button';
+import { IconButton } from '@sharkord/ui';
 import { Channels } from './channels';
 
 type TCategoryProps = {

@@ -1,8 +1,8 @@
 import type { TRole } from '@sharkord/shared';
 import { X } from 'lucide-react';
 import { memo } from 'react';
-import { Badge } from '../ui/badge';
-import { IconButton } from '../ui/icon-button';
+import { Badge } from '@sharkord/ui';
+import { IconButton } from '@sharkord/ui';
 
 type TRoleBadgeProps = {
   role: TRole;

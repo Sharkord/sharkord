@@ -8,7 +8,7 @@ import { Button } from '@sharkord/ui';
 import { MessageSquare, PanelRight, PanelRightClose } from 'lucide-react';
 import { memo } from 'react';
 import { PluginSlotRenderer } from '../plugin-slot-renderer';
-import { Tooltip } from '../ui/tooltip';
+import { Tooltip } from '@sharkord/ui';
 import { VolumeController } from './volume-controller';
 
 type TTopBarProps = {

@@ -17,7 +17,7 @@ import { memo, useMemo } from 'react';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
 import { ServerScreen } from '../server-screens/screens';
-import { Button } from '../ui/button';
+import { Button } from '@sharkord/ui';
 import { Categories } from './categories';
 import { UserControl } from './user-control';
 import { VoiceControl } from './voice-control';

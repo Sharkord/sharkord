@@ -1,7 +1,7 @@
 import { useVoice } from '@/features/server/voice/hooks';
 import { filesize } from 'filesize';
 import { memo } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@sharkord/ui';
 
 type StatsPopoverProps = {
   children: React.ReactNode;
