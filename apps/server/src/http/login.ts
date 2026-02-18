@@ -20,7 +20,8 @@ import { enqueueActivityLog } from '../queues/activity-log';
 import { invariant } from '../utils/invariant';
 import { getJsonBody } from './helpers';
 import { HttpValidationError } from './utils';
-import { safeCompare } from '../utils/safe-compare';
+import { safeCompare } from '../helpers/safe-compare';
+import { logger } from '../logger';
 
 const zBody = z.object({
   identity: z.string().min(1, 'Identity is required'),
@@ -136,7 +137,7 @@ const loginRouteHandler = async (
   }
   else {
 
-    console.log("[auth]: SHA256 password hash detected, attempting to upgrade to argon2")
+    logger.debug("[auth]: SHA256 password hash detected, attempting to upgrade to argon2")
     const hashInputPassword = await sha256(data.password);
 
     passwordMatches = safeCompare(hashInputPassword, existingUser.password);
@@ -149,9 +150,7 @@ const loginRouteHandler = async (
         .set({
           password: argon2Password
         })
-        .where(eq(users.id, existingUser.id))
-        .run();
-
+        .where(eq(users.id, existingUser.id));
     }
   }
 
