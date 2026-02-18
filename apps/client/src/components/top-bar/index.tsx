@@ -1,12 +1,14 @@
-import { Button } from '@/components/ui/button';
 import {
   useCurrentVoiceChannelId,
   useIsCurrentVoiceChannelSelected
 } from '@/features/server/channels/hooks';
 import { cn } from '@/lib/utils';
+import { PluginSlot } from '@sharkord/shared';
+import { Button } from '@sharkord/ui';
 import { MessageSquare, PanelRight, PanelRightClose } from 'lucide-react';
 import { memo } from 'react';
-import { Tooltip } from '../ui/tooltip';
+import { PluginSlotRenderer } from '../plugin-slot-renderer';
+import { Tooltip } from '@sharkord/ui';
 import { VolumeController } from './volume-controller';
 
 type TTopBarProps = {
@@ -28,6 +30,7 @@ const TopBar = memo(
 
     return (
       <div className="hidden lg:flex h-8 w-full bg-card border-b border-border items-center justify-end px-4 transition-all duration-300 ease-in-out gap-2">
+        <PluginSlotRenderer slotId={PluginSlot.TOPBAR_RIGHT} />
         {isCurrentVoiceChannelSelected && currentVoiceChannelId && (
           <>
             <VolumeController channelId={currentVoiceChannelId} />

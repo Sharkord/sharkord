@@ -11,4 +11,10 @@ const onCommandsChangeRoute = protectedProcedure.subscription(
   }
 );
 
-export { onCommandsChangeRoute, onPluginLogRoute };
+const onComponentsChangeRoute = protectedProcedure.subscription(
+  async ({ ctx }) => {
+    return ctx.pubsub.subscribe(ServerEvents.PLUGIN_COMPONENTS_CHANGE);
+  }
+);
+
+export { onCommandsChangeRoute, onComponentsChangeRoute, onPluginLogRoute };

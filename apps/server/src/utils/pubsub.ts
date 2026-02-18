@@ -11,6 +11,7 @@ import type {
   TJoinedPublicUser,
   TJoinedRole,
   TLogEntry,
+  TPluginComponentsMapBySlotIdMapListByPlugin,
   TPublicServerSettings,
   TVoiceUserState
 } from '@sharkord/shared';
@@ -34,7 +35,11 @@ type Events = {
   [ServerEvents.USER_LEAVE]: number;
   [ServerEvents.USER_CREATE]: TJoinedPublicUser;
   [ServerEvents.USER_UPDATE]: TJoinedPublicUser;
-  [ServerEvents.USER_DELETE]: number;
+  [ServerEvents.USER_DELETE]: {
+    isWipe: boolean;
+    userId: number;
+    deletedUserId: number; // the special Deleted User placeholder
+  };
 
   [ServerEvents.CHANNEL_CREATE]: TChannel;
   [ServerEvents.CHANNEL_UPDATE]: TChannel;
@@ -91,6 +96,7 @@ type Events = {
 
   [ServerEvents.PLUGIN_LOG]: TLogEntry;
   [ServerEvents.PLUGIN_COMMANDS_CHANGE]: TCommandsMapByPlugin;
+  [ServerEvents.PLUGIN_COMPONENTS_CHANGE]: TPluginComponentsMapBySlotIdMapListByPlugin;
 
   [ServerEvents.EMOJI_CREATE]: TJoinedEmoji;
   [ServerEvents.EMOJI_UPDATE]: TJoinedEmoji;

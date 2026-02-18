@@ -1,28 +1,27 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { closeServerScreens } from '@/features/server-screens/actions';
+import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
+import { useForm } from '@/hooks/use-form';
+import { Resolution } from '@/types';
 import {
+  Alert,
+  AlertDescription,
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { Group } from '@/components/ui/group';
-import { LoadingCard } from '@/components/ui/loading-card';
-import {
+  CardTitle,
+  Group,
+  LoadingCard,
   Select,
   SelectContent,
   SelectGroup,
   SelectItem,
   SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { closeServerScreens } from '@/features/server-screens/actions';
-import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
-import { useForm } from '@/hooks/use-form';
-import { Resolution } from '@/types';
+  SelectValue,
+  Switch
+} from '@sharkord/ui';
 import { Info } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';

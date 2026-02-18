@@ -100,6 +100,7 @@ class VoiceRuntime {
   private videoProducers: TProducerMap = {};
   private audioProducers: TProducerMap = {};
   private screenProducers: TProducerMap = {};
+  private screenAudioProducers: TProducerMap = {};
   private consumers: TConsumerMap = {};
 
   private externalCounter = 0;
@@ -188,6 +189,10 @@ class VoiceRuntime {
     });
 
     Object.values(this.screenProducers).forEach((producer) => {
+      producer.close();
+    });
+
+    Object.values(this.screenAudioProducers).forEach((producer) => {
       producer.close();
     });
 
@@ -412,6 +417,8 @@ class VoiceRuntime {
         return this.audioProducers[id];
       case StreamKind.SCREEN:
         return this.screenProducers[id];
+      case StreamKind.SCREEN_AUDIO:
+        return this.screenAudioProducers[id];
       case StreamKind.EXTERNAL_VIDEO:
         return this.externalStreamsInternal[id]?.producers.videoProducer;
       case StreamKind.EXTERNAL_AUDIO:
@@ -432,6 +439,8 @@ class VoiceRuntime {
       this.audioProducers[userId] = producer;
     } else if (type === StreamKind.SCREEN) {
       this.screenProducers[userId] = producer;
+    } else if (type === StreamKind.SCREEN_AUDIO) {
+      this.screenAudioProducers[userId] = producer;
     }
 
     producer.observer.on('close', () => {
@@ -441,6 +450,8 @@ class VoiceRuntime {
         delete this.audioProducers[userId];
       } else if (type === StreamKind.SCREEN) {
         delete this.screenProducers[userId];
+      } else if (type === StreamKind.SCREEN_AUDIO) {
+        delete this.screenAudioProducers[userId];
       }
     });
   };
@@ -458,6 +469,9 @@ class VoiceRuntime {
       case StreamKind.SCREEN:
         producer = this.screenProducers[userId];
         break;
+      case StreamKind.SCREEN_AUDIO:
+        producer = this.screenAudioProducers[userId];
+        break;
       default:
         return;
     }
@@ -472,6 +486,8 @@ class VoiceRuntime {
       delete this.audioProducers[userId];
     } else if (type === StreamKind.SCREEN) {
       delete this.screenProducers[userId];
+    } else if (type === StreamKind.SCREEN_AUDIO) {
+      delete this.screenAudioProducers[userId];
     }
   }
 
@@ -731,6 +747,9 @@ class VoiceRuntime {
       remoteScreenIds: Object.keys(this.screenProducers)
         .filter((id) => +id !== userId)
         .map((id) => +id),
+      remoteScreenAudioIds: Object.keys(this.screenAudioProducers).map(
+        (id) => +id
+      ),
       remoteExternalStreamIds: Object.keys(this.externalStreamsInternal).map(
         (id) => +id
       )

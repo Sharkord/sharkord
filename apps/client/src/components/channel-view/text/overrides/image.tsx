@@ -1,5 +1,5 @@
 import { FullScreenImage } from '@/components/fullscreen-image/content';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@sharkord/ui';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { OverrideLayout } from './layout';
 import { LinkOverride } from './link';

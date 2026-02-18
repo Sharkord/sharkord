@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { Button } from '@sharkord/ui';
 import { ArrowLeft } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { ModViewScreen, useModViewContext } from './context';

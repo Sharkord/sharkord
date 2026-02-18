@@ -2,14 +2,16 @@ import type { TDevices } from '@/types';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 export interface TAppState {
-  loading: boolean;
+  appLoading: boolean;
+  loadingPlugins: boolean;
   devices: TDevices | undefined;
   modViewOpen: boolean;
   modViewUserId?: number;
 }
 
 const initialState: TAppState = {
-  loading: true,
+  appLoading: true,
+  loadingPlugins: true,
   devices: undefined,
   modViewOpen: false,
   modViewUserId: undefined
@@ -20,10 +22,13 @@ export const appSlice = createSlice({
   initialState,
   reducers: {
     setAppLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
+      state.appLoading = action.payload;
     },
     setDevices: (state, action: PayloadAction<TDevices>) => {
       state.devices = action.payload;
+    },
+    setLoadingPlugins: (state, action: PayloadAction<boolean>) => {
+      state.loadingPlugins = action.payload;
     },
     setModViewOpen: (
       state,

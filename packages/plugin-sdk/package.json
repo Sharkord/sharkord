@@ -5,12 +5,29 @@
   "private": true,
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "scripts": {
+    "format": "prettier --write \"**/*.ts*\" --config ./.prettierrc.json",
+    "lint": "eslint ./src/**/*.ts --ext ts --report-unused-disable-directives",
+    "lint:fix": "eslint ./src/**/*.ts --ext ts --report-unused-disable-directives --fix",
+    "check-types": "tsc --noEmit",
+    "magic": "bun --bun run lint:fix && bun --bun run format && bun --bun run check-types"
+  },
+  "dependencies": {
+    "react": "^19.1.1"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "mediasoup": "^3.19.11",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
     "@sharkord/shared": "workspace:*"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "eslint": "^8.56.0",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "prettier": "^3.5.3",
+    "prettier-plugin-organize-imports": "^4.1.0"
   }
 }

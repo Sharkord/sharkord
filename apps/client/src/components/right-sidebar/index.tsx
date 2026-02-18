@@ -1,6 +1,7 @@
 import { UserAvatar } from '@/components/user-avatar';
 import { useUsers } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
+import { DELETED_USER_IDENTITY_AND_NAME } from '@sharkord/shared';
 import { memo, useMemo } from 'react';
 import { UserPopover } from '../user-popover';
 
@@ -38,9 +39,11 @@ type TRightSidebarProps = {
 const RightSidebar = memo(
   ({ className, isOpen = true }: TRightSidebarProps) => {
     const users = useUsers();
-
     const usersToShow = useMemo(
-      () => users.slice(0, MAX_USERS_TO_SHOW),
+      () =>
+        users
+          .filter((user) => user.name !== DELETED_USER_IDENTITY_AND_NAME) // hide deleted user placeholder from the sidebar
+          .slice(0, MAX_USERS_TO_SHOW),
       [users]
     );
 
@@ -61,7 +64,7 @@ const RightSidebar = memo(
           <>
             <div className="flex h-12 items-center border-b border-border px-4">
               <h3 className="text-sm font-semibold text-foreground">
-                Members — {users.length}
+                Members — {usersToShow.length}
               </h3>
             </div>
             <div className="flex-1 overflow-y-auto p-2">

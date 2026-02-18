@@ -1,5 +1,9 @@
 import { getTRPCClient } from '@/lib/trpc';
-import { setPluginCommands } from './actions';
+import {
+  processPluginComponents,
+  setPluginCommands,
+  setPluginComponents
+} from './actions';
 
 const subscribeToPlugins = () => {
   const trpc = getTRPCClient();
@@ -13,8 +17,22 @@ const subscribeToPlugins = () => {
     }
   );
 
+  const onComponentsChangeSub = trpc.plugins.onComponentsChange.subscribe(
+    undefined,
+    {
+      onData: async (data) => {
+        const components = await processPluginComponents(data);
+
+        setPluginComponents(components);
+      },
+      onError: (err) =>
+        console.error('onComponentsChange subscription error:', err)
+    }
+  );
+
   return () => {
     onCommandsChangeSub.unsubscribe();
+    onComponentsChangeSub.unsubscribe();
   };
 };
 

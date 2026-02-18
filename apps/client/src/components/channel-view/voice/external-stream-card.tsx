@@ -1,8 +1,7 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { IconButton } from '@/components/ui/icon-button';
 import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
 import { cn } from '@/lib/utils';
 import type { TExternalStream } from '@sharkord/shared';
+import { Avatar, AvatarFallback, AvatarImage, IconButton } from '@sharkord/ui';
 import { Headphones, Router, Video, ZoomIn, ZoomOut } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { CardControls } from './card-controls';

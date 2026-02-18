@@ -2,10 +2,10 @@ import { EmojiPicker } from '@/components/emoji-picker';
 import { useRecentEmojis } from '@/components/emoji-picker/use-recent-emojis';
 import { Protect } from '@/components/protect';
 import type { TEmojiItem } from '@/components/tiptap-input/types';
-import { IconButton } from '@/components/ui/icon-button';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
+import { IconButton } from '@sharkord/ui';
 import { Pencil, Smile, Trash } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -111,11 +111,7 @@ const MessageActions = memo(
             ))}
 
             <EmojiPicker onEmojiSelect={onEmojiSelect}>
-              <IconButton
-                variant="ghost"
-                icon={Smile}
-                title="Add Reaction"
-              />
+              <IconButton variant="ghost" icon={Smile} title="Add Reaction" />
             </EmojiPicker>
           </div>
         </Protect>

@@ -1,5 +1,4 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button, Input } from '@sharkord/ui';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 
