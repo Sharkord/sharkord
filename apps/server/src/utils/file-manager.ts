@@ -26,8 +26,10 @@ import sharp from 'sharp';
 import ffmpeg from 'fluent-ffmpeg'
 import util from 'node:util';
 const ffprobe = util.promisify(ffmpeg.ffprobe);
-const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
-const ffprobePath = require('@ffprobe-installer/ffprobe').path;
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
+import ffprobeInstaller from '@ffprobe-installer/ffprobe' 
+const ffmpegPath = ffmpegInstaller.path;
+const ffprobePath = ffprobeInstaller.path;
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
@@ -66,10 +68,9 @@ const moveFile = async (src: string, dest: string) => {
   }
 };
 
-function processVideo(inputPath: string, outputPath: string) {
-  return new Promise(async (resolve, reject) => {
+async function processVideo(inputPath: string, outputPath: string) {
+  return getSettings().then(async (settings) => {
     // Read metadata to determine if scaling is necessary, and scale it to a max width/height of 720p (TODO: allow configuration)
-    const settings = await getSettings();
     const [maxWidth, maxHeight] = [settings.storageVideoCompressionMaxWidth, settings.storageVideoCompressionMaxHeight];
     const metaData: ffmpeg.FfprobeData = await ffprobe(inputPath) as ffmpeg.FfprobeData;
     const videoMetaData: ffmpeg.FfprobeStream | undefined = metaData.streams.find((streamMetaData) => streamMetaData.codec_type === 'video') || undefined
@@ -81,14 +82,16 @@ function processVideo(inputPath: string, outputPath: string) {
     } else if (scaleHeightFactor >= scaleWidthFactor && scaleHeightFactor > 1) { // Height is biggest deviator from max, and is bigger than maxHeight
       scaleFilter = `scale=-2:${maxHeight}`;
     }
-    ffmpeg(inputPath)
-      .videoCodec('libx265') // TODO: give option for selecting hwencode
-      .videoFilters(scaleFilter)
-      .output(outputPath)
-      .on('end', resolve)
-      .on('error', reject)
-      .run()
-  })
+    return new Promise((resolve, reject) => {
+      ffmpeg(inputPath)
+        .videoCodec('libx265') // TODO: give option for selecting hwencode
+        .videoFilters(scaleFilter)
+        .output(outputPath)
+        .on('end', resolve)
+        .on('error', reject)
+        .run()
+    });
+  });
 }
 
 class TemporaryFileManager {
@@ -255,7 +258,7 @@ class FileManager {
         tempFile.md5 = await md5File(tempFile.tempPath)
       }
     } catch (err) {
-      // log error?
+      throw new Error("Media encoding failed");
     }
 
     return tempFile;

@@ -1,9 +1,6 @@
 import type { TFile } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
-import fs from 'fs/promises';
-import path from 'path';
 import { db } from '..';
-import { PUBLIC_PATH } from '../../helpers/paths';
 import { logger } from '../../logger';
 import { files, messageFiles } from '../schema';
 import { fileManager } from '../../utils/file-manager';

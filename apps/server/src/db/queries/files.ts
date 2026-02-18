@@ -30,7 +30,7 @@ const getExceedingOldFiles = async (newFileSize: number) => {
   const oldFiles = await db
     .select({
       id: files.id,
-      name: files.name,
+      name: files.uuid,
       size: files.size,
       userId: files.userId,
       createdAt: files.createdAt
@@ -43,7 +43,7 @@ const getExceedingOldFiles = async (newFileSize: number) => {
 
   for (const file of oldFiles) {
     filesToDelete.push(file);
-    freedSpace += file.size;
+    freedSpace += file.size || 0; // if file size is still null, it means the file never finished being processed, so never got moved into public folder.
 
     if (freedSpace >= wouldExceedBy) {
       break;

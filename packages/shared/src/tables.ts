@@ -80,6 +80,9 @@ export type TStorageSettings = Pick<
   | 'storageImageCompressionEnabled'
   | 'storageImageCompressionMaxWidth'
   | 'storageImageCompressionMaxHeight'
+  | 'storageVideoCompressionEnabled'
+  | 'storageVideoCompressionMaxWidth'
+  | 'storageVideoCompressionMaxHeight'
 >;
 
 // joined types

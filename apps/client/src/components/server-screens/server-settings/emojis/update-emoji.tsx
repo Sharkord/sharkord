@@ -85,7 +85,7 @@ const UpdateEmoji = memo(
             <div>
               <div className="font-medium">:{selectedEmoji.name}:</div>
               <div className="text-sm text-muted-foreground">
-                {filesize(selectedEmoji.file.size)} • Uploaded by{' '}
+                {filesize(selectedEmoji.file.size || 0)} • Uploaded by{' '}
                 {selectedEmoji.user.name}
               </div>
             </div>

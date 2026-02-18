@@ -18,11 +18,11 @@ const uploadFileRouteHandler = async (
   res: http.ServerResponse
 ) => {
   const parsedHeaders = zHeaders.parse(req.headers);
-  let [token, originalName, contentLength] = [
+  const [token, contentLength] = [
     parsedHeaders[UploadHeaders.TOKEN],
-    parsedHeaders[UploadHeaders.ORIGINAL_NAME],
     parsedHeaders[UploadHeaders.CONTENT_LENGTH]
   ];
+  let originalName = parsedHeaders[UploadHeaders.ORIGINAL_NAME]
 
   originalName = decodeURIComponent(originalName);
 
