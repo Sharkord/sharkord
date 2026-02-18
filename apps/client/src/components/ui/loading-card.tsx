@@ -1,6 +1,5 @@
-import { Card, CardContent } from '@/components/ui/card';
-import Spinner from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
+import { Card, CardContent, Spinner } from '@sharkord/ui';
 import { memo } from 'react';
 
 type TLoadingCardProps = {

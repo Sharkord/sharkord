@@ -1,13 +1,16 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserAvatar } from '@/components/user-avatar';
 import { useAdminRoles, useAdminUsers } from '@/features/server/admin/hooks';
+import {
+  Button,
+  Input,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from '@sharkord/ui';
 import { Plus, Search } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
 import type { TChannelPermissionType } from './types';

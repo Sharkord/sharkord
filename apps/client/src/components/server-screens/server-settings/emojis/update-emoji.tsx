@@ -1,7 +1,3 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';
@@ -10,6 +6,15 @@ import {
   type TJoinedEmoji,
   type TTrpcErrors
 } from '@sharkord/shared';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label
+} from '@sharkord/ui';
 import { filesize } from 'filesize';
 import { Trash2 } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';

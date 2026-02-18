@@ -1,7 +1,7 @@
 import { EmojiPicker } from '@/components/emoji-picker';
-import { Button } from '@/components/ui/button';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import type { TCommandInfo } from '@sharkord/shared';
+import { Button } from '@sharkord/ui';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';

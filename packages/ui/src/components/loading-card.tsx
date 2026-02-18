@@ -1,7 +1,7 @@
-import { Card, CardContent } from './card';
-import Spinner from './spinner';
-import { cn } from '../lib/utils';
 import { memo } from 'react';
+import { cn } from '../lib/utils';
+import { Card, CardContent } from './card';
+import { Spinner } from './spinner';
 
 type TLoadingCardProps = {
   className?: string;

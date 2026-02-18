@@ -1,5 +1,5 @@
-import { cn } from '../lib/utils';
 import { HexColorPicker } from 'react-colorful';
+import { cn } from '../lib/utils';
 import { Button, buttonVariants } from './button';
 import { Input } from './input';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
@@ -47,6 +47,4 @@ const Color = ({
   );
 };
 
-Color.displayName = 'Color';
-
-export default Color;
+export { Color };

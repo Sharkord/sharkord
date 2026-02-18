@@ -1,5 +1,3 @@
-import { Button } from '@/components/ui/button';
-import { Tooltip } from '@/components/ui/tooltip';
 import { useCan } from '@/features/server/hooks';
 import { useOwnUserId, useUsernames } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
@@ -11,6 +9,7 @@ import {
   type TFile,
   type TJoinedMessageReaction
 } from '@sharkord/shared';
+import { Button, Tooltip } from '@sharkord/ui';
 import { gitHubEmojis } from '@tiptap/extension-emoji';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';

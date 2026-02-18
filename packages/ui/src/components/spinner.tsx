@@ -1,7 +1,7 @@
-import { cn } from '../lib/utils';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { memo } from 'react';
+import { cn } from '../lib/utils';
 
 const spinnerVariants = cva('animate-spin', {
   variants: {
@@ -42,4 +42,4 @@ const Spinner = memo(({ size = 'md', className, ...props }: TSpinnerProps) => {
   );
 });
 
-export default Spinner;
+export { Spinner };

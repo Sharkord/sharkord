@@ -1,28 +1,26 @@
 import { PermissionsList } from '@/components/permissions-list';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useRoles } from '@/features/server/roles/hooks';
+import { useOwnUserId } from '@/features/server/users/hooks';
+import { getTRPCClient } from '@/lib/trpc';
+import { getTrpcError, type TJoinedUser } from '@sharkord/shared';
 import {
+  Alert,
+  AlertDescription,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle
-} from '@/components/ui/alert-dialog';
-import { AutoFocus } from '@/components/ui/auto-focus';
-import { Group } from '@/components/ui/group';
-import {
+  AlertDialogTitle,
+  AutoFocus,
+  Group,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select';
-import { useRoles } from '@/features/server/roles/hooks';
-import { useOwnUserId } from '@/features/server/users/hooks';
-import { getTrpcError } from '@sharkord/shared';
-import { getTRPCClient } from '@/lib/trpc';
-import { type TJoinedUser } from '@sharkord/shared';
+} from '@sharkord/ui';
 import { Info } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';

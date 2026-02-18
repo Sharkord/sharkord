@@ -1,20 +1,20 @@
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { requestConfirmation } from '@/features/dialogs/actions';
+import { getTRPCClient } from '@/lib/trpc';
+import { getTrpcError, type TJoinedUser } from '@sharkord/shared';
 import {
+  Alert,
+  AlertDescription,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle
-} from '@/components/ui/alert-dialog';
-import { AutoFocus } from '@/components/ui/auto-focus';
-import { Group } from '@/components/ui/group';
-import { Switch } from '@/components/ui/switch';
-import { requestConfirmation } from '@/features/dialogs/actions';
-import { getTrpcError } from '@sharkord/shared';
-import { getTRPCClient } from '@/lib/trpc';
-import { type TJoinedUser } from '@sharkord/shared';
+  AlertDialogTitle,
+  AutoFocus,
+  Group,
+  Switch
+} from '@sharkord/ui';
 import { AlertCircleIcon } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';

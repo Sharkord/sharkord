@@ -1,18 +1,18 @@
-import { Button } from '@/components/ui/button';
+import { closeServerScreens } from '@/features/server-screens/actions';
+import { useAdminGeneral } from '@/features/server/admin/hooks';
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { Group } from '@/components/ui/group';
-import { Input } from '@/components/ui/input';
-import { LoadingCard } from '@/components/ui/loading-card';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { closeServerScreens } from '@/features/server-screens/actions';
-import { useAdminGeneral } from '@/features/server/admin/hooks';
+  CardTitle,
+  Group,
+  Input,
+  LoadingCard,
+  Switch,
+  Textarea
+} from '@sharkord/ui';
 import { memo } from 'react';
 import { LogoManager } from './logo-manager';
 

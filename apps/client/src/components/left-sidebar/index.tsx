@@ -1,3 +1,9 @@
+import { openDialog } from '@/features/dialogs/actions';
+import { openServerScreen } from '@/features/server-screens/actions';
+import { disconnectFromServer } from '@/features/server/actions';
+import { useServerName } from '@/features/server/hooks';
+import { cn } from '@/lib/utils';
+import { Permission } from '@sharkord/shared';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -5,13 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { openDialog } from '@/features/dialogs/actions';
-import { openServerScreen } from '@/features/server-screens/actions';
-import { disconnectFromServer } from '@/features/server/actions';
-import { useServerName } from '@/features/server/hooks';
-import { cn } from '@/lib/utils';
-import { Permission } from '@sharkord/shared';
+} from '@sharkord/ui';
 import { Menu } from 'lucide-react';
 import { memo, useMemo } from 'react';
 import { Dialog } from '../dialogs/dialogs';

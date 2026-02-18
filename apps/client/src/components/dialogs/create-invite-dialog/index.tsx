@@ -1,18 +1,18 @@
 import { DatePicker } from '@/components/date-picker';
-import { Button } from '@/components/ui/button';
+import { useForm } from '@/hooks/use-form';
+import { getTRPCClient } from '@/lib/trpc';
+import { getRandomString } from '@sharkord/shared';
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog';
-import { Group } from '@/components/ui/group';
-import { Input } from '@/components/ui/input';
-import { useForm } from '@/hooks/use-form';
-import { getTRPCClient } from '@/lib/trpc';
-import { getRandomString } from '@sharkord/shared';
+  DialogTitle,
+  Group,
+  Input
+} from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 import type { TDialogBaseProps } from '../types';

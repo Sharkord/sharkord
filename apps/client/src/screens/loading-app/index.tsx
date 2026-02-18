@@ -1,6 +1,6 @@
-import Spinner from '@/components/ui/spinner';
 import { loadApp } from '@/features/app/actions';
 import { useStrictEffect } from '@/hooks/use-strict-effect';
+import { Spinner } from '@sharkord/ui';
 import { memo } from 'react';
 
 type TLoadingApp = {

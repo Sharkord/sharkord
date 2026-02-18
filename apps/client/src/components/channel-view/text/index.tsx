@@ -1,6 +1,5 @@
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { TiptapInput } from '@/components/tiptap-input';
-import Spinner from '@/components/ui/spinner';
 import {
   useCan,
   useChannelCan,
@@ -20,6 +19,7 @@ import {
   getTrpcError,
   isEmptyMessage
 } from '@sharkord/shared';
+import { Spinner } from '@sharkord/ui';
 import { filesize } from 'filesize';
 import { throttle } from 'lodash-es';
 import { Paperclip, Send } from 'lucide-react';

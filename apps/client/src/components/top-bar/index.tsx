@@ -1,10 +1,10 @@
-import { Button } from '@/components/ui/button';
 import {
   useCurrentVoiceChannelId,
   useIsCurrentVoiceChannelSelected
 } from '@/features/server/channels/hooks';
 import { cn } from '@/lib/utils';
 import { PluginSlot } from '@sharkord/shared';
+import { Button } from '@sharkord/ui';
 import { MessageSquare, PanelRight, PanelRightClose } from 'lucide-react';
 import { memo } from 'react';
 import { PluginSlotRenderer } from '../plugin-slot-renderer';

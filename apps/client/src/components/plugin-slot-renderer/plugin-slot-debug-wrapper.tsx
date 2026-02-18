@@ -6,6 +6,13 @@ type TPlugSlotDebugWrapperProps = {
   slotId: string;
 };
 
+const rectsEqual = (a: DOMRect | null, b: DOMRect) =>
+  a !== null &&
+  a.top === b.top &&
+  a.left === b.left &&
+  a.width === b.width &&
+  a.height === b.height;
+
 const PlugSlotDebugWrapper = memo(
   ({ children, pluginId, slotId }: TPlugSlotDebugWrapperProps) => {
     const markerRef = useRef<HTMLDivElement>(null);
@@ -16,19 +23,32 @@ const PlugSlotDebugWrapper = memo(
 
       if (!marker) return;
 
-      const target = marker.nextElementSibling as HTMLElement | null;
+      let rafId: number;
+      let prevRect: DOMRect | null = null;
 
-      if (!target) return;
+      const update = () => {
+        const target = marker.nextElementSibling as HTMLElement | null;
 
-      const update = () => setRect(target.getBoundingClientRect());
+        if (!target) {
+          prevRect = null;
+          setRect(null);
+          rafId = requestAnimationFrame(update);
+          return;
+        }
 
-      update();
+        const newRect = target.getBoundingClientRect();
 
-      const observer = new ResizeObserver(update);
+        if (!rectsEqual(prevRect, newRect)) {
+          prevRect = newRect;
+          setRect(newRect);
+        }
 
-      observer.observe(target);
+        rafId = requestAnimationFrame(update);
+      };
 
-      return () => observer.disconnect();
+      rafId = requestAnimationFrame(update);
+
+      return () => cancelAnimationFrame(rafId);
     }, []);
 
     return (
@@ -37,7 +57,7 @@ const PlugSlotDebugWrapper = memo(
         {children}
         {rect && (
           <div
-            className="pointer-events-none fixed z-9999"
+            className="pointer-events-none fixed z-1"
             style={{
               top: rect.top,
               left: rect.left,

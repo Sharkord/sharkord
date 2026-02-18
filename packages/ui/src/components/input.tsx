@@ -1,6 +1,6 @@
-import { cn } from '../lib/utils';
 import type { TTrpcErrors } from '@sharkord/shared';
 import * as React from 'react';
+import { cn } from '../lib/utils';
 
 type InputProps = React.ComponentProps<'input'> & {
   error?: string;
