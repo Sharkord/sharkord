@@ -4,12 +4,12 @@ import z from 'zod';
 import { config } from '../config';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
-import {
-  createRateLimiter,
-  getClientRateLimitKey,
-  getRateLimitRetrySeconds
-} from '../utils/rate-limiters/rate-limiter';
 import { healthRouteHandler } from './healthz';
+import {
+  getRequestPathname,
+  hasPrefixPathSegment,
+  type HttpRouteHandler
+} from './helpers';
 import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
 import { loginRouteHandler } from './login';
@@ -19,13 +19,44 @@ import { publicRouteHandler } from './public';
 import { uploadFileRouteHandler } from './upload';
 import { HttpValidationError } from './utils';
 
-// 5 attempts per minute per IP for login route
-const loginRateLimiter = createRateLimiter({
-  maxRequests: config.rateLimiters.joinServer.maxRequests,
-  windowMs: config.rateLimiters.joinServer.windowMs
-});
+type RouteContext = {
+  info: ReturnType<typeof getWsInfo>;
+};
+
+type SupportedMethod = 'GET' | 'POST';
+
+const routeHandlers: Partial<
+  Record<
+    SupportedMethod,
+    {
+      exact: Record<string, HttpRouteHandler<RouteContext>>;
+      prefix: Record<string, HttpRouteHandler<RouteContext>>;
+    }
+  >
+> = {
+  GET: {
+    exact: {
+      '/healthz': (req, res) => healthRouteHandler(req, res),
+      '/info': (req, res) => infoRouteHandler(req, res)
+    },
+    prefix: {
+      '/public': (req, res) => publicRouteHandler(req, res),
+      '/plugin-components': (req, res) =>
+        pluginsComponentsRouteHandler(req, res),
+      '/plugin-bundle': (req, res) => pluginBundleRouteHandler(req, res)
+    }
+  },
+  POST: {
+    exact: {
+      '/upload': (req, res) => uploadFileRouteHandler(req, res),
+      '/login': (req, res) => loginRouteHandler(req, res)
+    },
+    prefix: {}
+  }
+};
 
 // this http server implementation is temporary and will be moved to bun server later when things are more stable
+
 const createHttpServer = async (port: number = config.server.port) => {
   return new Promise<http.Server>((resolve) => {
     const server = http.createServer(
@@ -46,71 +77,39 @@ const createHttpServer = async (port: number = config.server.port) => {
           return;
         }
 
+        const pathname = getRequestPathname(req);
+
+        if (!pathname) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Bad request' }));
+          return;
+        }
+
         try {
-          if (req.method === 'GET' && req.url === '/healthz') {
-            return await healthRouteHandler(req, res);
-          }
+          const method = req.method as SupportedMethod | undefined;
 
-          if (req.method === 'GET' && req.url === '/info') {
-            return await infoRouteHandler(req, res);
-          }
+          if (method) {
+            const methodHandlers = routeHandlers[method];
 
-          if (req.method === 'POST' && req.url === '/upload') {
-            return await uploadFileRouteHandler(req, res);
-          }
+            if (methodHandlers) {
+              const exactHandler = methodHandlers.exact[pathname];
 
-          if (req.method === 'POST' && req.url === '/login') {
-            if (info?.ip) {
-              // we can only rate limit if we have the client's IP
-
-              const key = getClientRateLimitKey(info?.ip);
-              const rateLimit = loginRateLimiter.consume(key);
-
-              if (!rateLimit.allowed) {
-                logger.debug(
-                  `${chalk.dim('[Rate Limiter HTTP]')} /login rate limited for key "${key}"`
-                );
-
-                res.setHeader(
-                  'Retry-After',
-                  getRateLimitRetrySeconds(rateLimit.retryAfterMs)
-                );
-
-                res.writeHead(429, { 'Content-Type': 'application/json' });
-
-                res.end(
-                  JSON.stringify({
-                    error: 'Too many login attempts. Please try again shortly.'
-                  })
-                );
-
-                return;
+              if (exactHandler) {
+                return await exactHandler(req, res, { info });
               }
-            } else {
-              logger.warn(
-                `${chalk.dim('[Rate Limiter HTTP]')} Missing IP address in request info, skipping rate limiting for /login route.`
-              );
+
+              for (const [prefix, prefixHandler] of Object.entries(
+                methodHandlers.prefix
+              )) {
+                if (hasPrefixPathSegment(pathname, prefix)) {
+                  return await prefixHandler(req, res, { info });
+                }
+              }
             }
-
-            return await loginRouteHandler(req, res);
           }
 
-          if (req.method === 'GET' && req.url?.startsWith('/public')) {
-            return await publicRouteHandler(req, res);
-          }
-
-          if (
-            req.method === 'GET' &&
-            req.url?.startsWith('/plugin-components')
-          ) {
-            return await pluginsComponentsRouteHandler(req, res);
-          }
-
-          if (req.method === 'GET' && req.url?.startsWith('/plugin-bundle')) {
-            return await pluginBundleRouteHandler(req, res);
-          }
-
-          if (req.method === 'GET' && req.url?.startsWith('/')) {
+          // fallback to interface route handler for GET requests
+          if (method === 'GET') {
             return await interfaceRouteHandler(req, res);
           }
         } catch (error) {
