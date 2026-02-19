@@ -1,5 +1,8 @@
 import { useVoiceUsersByChannelId } from '@/features/server/hooks';
-import { useVoiceChannelExternalStreamsList } from '@/features/server/voice/hooks';
+import {
+  useHideNonVideoParticipants,
+  useVoiceChannelExternalStreamsList
+} from '@/features/server/voice/hooks';
 import { memo, useMemo } from 'react';
 import { ControlsBar } from './controls-bar';
 import { ExternalStreamCard } from './external-stream-card';
@@ -19,30 +22,45 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
   const voiceUsers = useVoiceUsersByChannelId(channelId);
   const externalStreams = useVoiceChannelExternalStreamsList(channelId);
   const { pinnedCard, pinCard, unpinCard, isPinned } = usePinCardController();
+  const hideNonVideoParticipants = useHideNonVideoParticipants();
 
   const cards = useMemo(() => {
     const cards: React.ReactNode[] = [];
 
+    // Check if there are any video streams at all
+    const hasAnyVideoStreams =
+      voiceUsers.some(
+        (user) => user.state.webcamEnabled || user.state.sharingScreen
+      ) || externalStreams.some((stream) => stream.tracks.video);
+
+    // Only apply the filter if there are some video streams
+    const shouldFilterNonVideo = hideNonVideoParticipants && hasAnyVideoStreams;
+
     voiceUsers.forEach((voiceUser) => {
       const userCardId = `user-${voiceUser.id}`;
+      const hasVideo = voiceUser.state.webcamEnabled;
 
-      cards.push(
-        <VoiceUserCard
-          key={userCardId}
-          userId={voiceUser.id}
-          isPinned={isPinned(userCardId)}
-          onPin={() =>
-            pinCard({
-              id: userCardId,
-              type: PinnedCardType.USER,
-              userId: voiceUser.id
-            })
-          }
-          onUnpin={unpinCard}
-          voiceUser={voiceUser}
-        />
-      );
+      // Only show user card if not filtering, or if they have video
+      if (!shouldFilterNonVideo || hasVideo) {
+        cards.push(
+          <VoiceUserCard
+            key={userCardId}
+            userId={voiceUser.id}
+            isPinned={isPinned(userCardId)}
+            onPin={() =>
+              pinCard({
+                id: userCardId,
+                type: PinnedCardType.USER,
+                userId: voiceUser.id
+              })
+            }
+            onUnpin={unpinCard}
+            voiceUser={voiceUser}
+          />
+        );
+      }
 
+      // Screen shares always have video, so always show them
       if (voiceUser.state.sharingScreen) {
         const screenShareCardId = `screen-share-${voiceUser.id}`;
 
@@ -67,28 +85,39 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
 
     externalStreams.forEach((stream) => {
       const externalStreamCardId = `external-stream-${stream.streamId}`;
+      const hasVideo = stream.tracks.video;
 
-      cards.push(
-        <ExternalStreamCard
-          key={externalStreamCardId}
-          streamId={stream.streamId}
-          stream={stream}
-          isPinned={isPinned(externalStreamCardId)}
-          onPin={() =>
-            pinCard({
-              id: externalStreamCardId,
-              type: PinnedCardType.EXTERNAL_STREAM,
-              userId: stream.streamId
-            })
-          }
-          onUnpin={unpinCard}
-          showPinControls
-        />
-      );
+      // Only show external stream card if not filtering, or if it has video
+      if (!shouldFilterNonVideo || hasVideo) {
+        cards.push(
+          <ExternalStreamCard
+            key={externalStreamCardId}
+            streamId={stream.streamId}
+            stream={stream}
+            isPinned={isPinned(externalStreamCardId)}
+            onPin={() =>
+              pinCard({
+                id: externalStreamCardId,
+                type: PinnedCardType.EXTERNAL_STREAM,
+                userId: stream.streamId
+              })
+            }
+            onUnpin={unpinCard}
+            showPinControls
+          />
+        );
+      }
     });
 
     return cards;
-  }, [voiceUsers, externalStreams, isPinned, pinCard, unpinCard]);
+  }, [
+    voiceUsers,
+    externalStreams,
+    isPinned,
+    pinCard,
+    unpinCard,
+    hideNonVideoParticipants
+  ]);
 
   if (voiceUsers.length === 0) {
     return (

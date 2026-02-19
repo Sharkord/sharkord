@@ -12,7 +12,9 @@ export enum LocalStorageKey {
   VOLUME_SETTINGS = 'sharkord-volume-settings',
   RECENT_EMOJIS = 'sharkord-recent-emojis',
   DEBUG = 'sharkord-debug',
-  DRAFT_MESSAGES = 'sharkord-draft-messages'
+  DRAFT_MESSAGES = 'sharkord-draft-messages',
+  HIDE_NON_VIDEO_PARTICIPANTS = 'sharkord-hide-non-video-participants',
+  DEBUG = 'sharkord-debug'
 }
 
 export enum SessionStorageKey {

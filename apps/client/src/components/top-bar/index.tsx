@@ -9,6 +9,7 @@ import { MessageSquare, PanelRight, PanelRightClose } from 'lucide-react';
 import { memo } from 'react';
 import { PluginSlotRenderer } from '../plugin-slot-renderer';
 import { Tooltip } from '@sharkord/ui';
+import { VoiceOptionsController } from './voice-options-controller';
 import { VolumeController } from './volume-controller';
 
 type TTopBarProps = {
@@ -33,6 +34,7 @@ const TopBar = memo(
         <PluginSlotRenderer slotId={PluginSlot.TOPBAR_RIGHT} />
         {isCurrentVoiceChannelSelected && currentVoiceChannelId && (
           <>
+            <VoiceOptionsController />
             <VolumeController channelId={currentVoiceChannelId} />
             <Button
               variant="ghost"
