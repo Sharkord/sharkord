@@ -21,6 +21,7 @@ import { getSettings } from '../db/queries/server';
 import { getStorageUsageByUserId } from '../db/queries/users';
 import { channels, files } from '../db/schema';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../helpers/paths';
+import { config } from '../config';
 
 /**
  * Files workflow:
@@ -167,6 +168,7 @@ class FileManager {
   private fileUUIDToPath = this.tempFileManager.fileUUIDToPath;
 
   private attemptCompression = async (tempFile: TTempFile): Promise<TTempFile> => {
+    if (!config.storage.gzipCompression) return tempFile;
     const compressedPath = `${tempFile.tempPath}.gz`;
     const gzip = zlib.createGzip();
     const readStream = createReadStream(tempFile.tempPath);
@@ -346,7 +348,7 @@ class FileManager {
   }
 
   public async deleteFile(uuid: string) {
-    return fs.unlink(this.fileUUIDToPath(uuid));
+    return fs.unlink(path.join(PUBLIC_PATH, this.fileUUIDToPath(uuid)));
   }
 }
 

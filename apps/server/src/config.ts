@@ -37,6 +37,9 @@ const zConfig = z.object({
       maxRequests: z.coerce.number().int().positive(),
       windowMs: z.coerce.number().int().positive()
     })
+  }),
+  storage: z.object({
+    gzipCompression: z.boolean()
   })
 });
 
@@ -65,6 +68,9 @@ const defaultConfig: TConfig = {
       maxRequests: 5,
       windowMs: 60_000
     }
+  },
+  storage: {
+    gzipCompression: true
   }
 };
 
