@@ -18,7 +18,8 @@ export enum Permission {
   MANAGE_INVITES = 'MANAGE_INVITES',
   MANAGE_UPDATES = 'MANAGE_UPDATES',
   MANAGE_PLUGINS = 'MANAGE_PLUGINS',
-  EXECUTE_PLUGIN_COMMANDS = 'EXECUTE_PLUGIN_COMMANDS'
+  EXECUTE_PLUGIN_COMMANDS = 'EXECUTE_PLUGIN_COMMANDS',
+  VIEW_IDENTITY_IP_LOCATION = 'VIEW_IDENTITY_IP_LOCATION'
 }
 
 export const permissionLabels: Record<Permission, string> = {
@@ -40,7 +41,8 @@ export const permissionLabels: Record<Permission, string> = {
   [Permission.MANAGE_INVITES]: 'Manage invites',
   [Permission.MANAGE_UPDATES]: 'Manage updates',
   [Permission.MANAGE_PLUGINS]: 'Manage plugins',
-  [Permission.EXECUTE_PLUGIN_COMMANDS]: 'Execute plugin commands'
+  [Permission.EXECUTE_PLUGIN_COMMANDS]: 'Execute plugin commands',
+  [Permission.VIEW_IDENTITY_IP_LOCATION]: 'View user identity, IP address, and location'
 };
 
 export const permissionDescriptions: Record<Permission, string> = {
@@ -73,7 +75,9 @@ export const permissionDescriptions: Record<Permission, string> = {
   [Permission.MANAGE_UPDATES]: 'Grants the ability to perform updates.',
   [Permission.MANAGE_PLUGINS]: 'Grants the ability to manage plugins.',
   [Permission.EXECUTE_PLUGIN_COMMANDS]:
-    'Grants the ability to execute plugin commands.'
+    'Grants the ability to execute plugin commands.',
+  [Permission.VIEW_IDENTITY_IP_LOCATION]:
+    'Grants the ability to view user identity, IP address, and location.'
 };
 
 export const DEFAULT_ROLE_PERMISSIONS = [

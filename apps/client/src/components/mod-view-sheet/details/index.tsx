@@ -10,27 +10,38 @@ import {
   Calendar,
   ClipboardList,
   Clock,
+  Eye,
+  EyeClosed,
   Gavel,
   Globe,
   IdCard,
   Network
 } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useModViewContext } from '../context';
+import { Protect } from '@/components/protect';
+import { Permission } from '@sharkord/shared/src/statics/permissions';
 
 type TRowProps = {
   icon: React.ReactNode;
   label: string;
   value: string | number;
   details?: string;
+  hidden?: boolean;
 };
 
-const Row = memo(({ icon, label, value, details }: TRowProps) => {
+const Row = memo(({ icon, label, value, details, hidden = false }: TRowProps) => {
   let valContent = (
     <span className="text-sm text-muted-foreground truncate max-w-[160px]">
       {value}
     </span>
   );
+  
+  const [visible, setVisible] = useState(!hidden);
+  
+  function handleEyeClick() {
+    setVisible(!visible)
+  }
 
   if (details) {
     valContent = <Tooltip content={details}>{valContent}</Tooltip>;
@@ -42,7 +53,25 @@ const Row = memo(({ icon, label, value, details }: TRowProps) => {
         {icon}
         <span className="text-sm truncate">{label}</span>
       </div>
-      {valContent}
+      {visible ? valContent : "***"}
+      {visible && hidden &&
+        <span
+          role="button"
+          onClick={handleEyeClick}
+          className="text-muted-foreground inline-flex h-6 w-6 items-center justify-center rounded bg-transparent hover:bg-accent hover:text-foreground cursor-pointer transition-colors focus:outline-none"
+        >
+          <Eye className="h-4 w-4" />
+        </span>
+      }
+      {!visible && hidden &&
+        <span
+          role="button"
+          onClick={handleEyeClick}
+          className="text-muted-foreground inline-flex h-6 w-6 items-center justify-center rounded bg-transparent hover:bg-accent hover:text-foreground cursor-pointer transition-colors focus:outline-none"
+        >
+          <EyeClosed className="h-4 w-4" />
+        </span>
+      }
     </div>
   );
 });
@@ -67,23 +96,28 @@ const Details = memo(() => {
             value={user.id}
           />
 
-          <Row
-            icon={<IdCard className="h-4 w-4 text-muted-foreground" />}
-            label="Identity"
-            value={user.identity}
-          />
+          <Protect permission={Permission.VIEW_IDENTITY_IP_LOCATION}>
+            <Row
+              icon={<IdCard className="h-4 w-4 text-muted-foreground" />}
+              label="Identity"
+              value={user.identity}
+              hidden={true}
+            />
 
-          <Row
-            icon={<Network className="h-4 w-4 text-muted-foreground" />}
-            label="IP Address"
-            value={lastLogin?.ip || 'Unknown'}
-          />
+            <Row
+              icon={<Network className="h-4 w-4 text-muted-foreground" />}
+              label="IP Address"
+              value={lastLogin?.ip || 'Unknown'}
+              hidden={true}
+            />
 
-          <Row
-            icon={<Globe className="h-4 w-4 text-muted-foreground" />}
-            label="Location"
-            value={`${lastLogin?.country || 'N/A'} - ${lastLogin?.city || 'N/A'}`}
-          />
+            <Row
+              icon={<Globe className="h-4 w-4 text-muted-foreground" />}
+              label="Location"
+              value={`${lastLogin?.country || 'N/A'} - ${lastLogin?.city || 'N/A'}`}
+              hidden={true}
+            />
+          </Protect>
 
           <Row
             icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
