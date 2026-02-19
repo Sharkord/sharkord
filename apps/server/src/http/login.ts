@@ -4,6 +4,7 @@ import {
   sha256,
   type TJoinedUser
 } from '@sharkord/shared';
+import chalk from 'chalk';
 import { eq, sql } from 'drizzle-orm';
 import http from 'http';
 import jwt from 'jsonwebtoken';
@@ -17,6 +18,7 @@ import { getServerToken, getSettings } from '../db/queries/server';
 import { getUserByIdentity } from '../db/queries/users';
 import { invites, userRoles, users } from '../db/schema';
 import { getWsInfo } from '../helpers/get-ws-info';
+import { safeCompare } from '../helpers/safe-compare';
 import { logger } from '../logger';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { invariant } from '../utils/invariant';
@@ -27,8 +29,6 @@ import {
 } from '../utils/rate-limiters/rate-limiter';
 import { getJsonBody } from './helpers';
 import { HttpValidationError } from './utils';
-import { safeCompare } from '../helpers/safe-compare';
-import { logger } from '../logger';
 
 const zBody = z.object({
   identity: z.string().min(1, 'Identity is required'),
@@ -168,20 +168,25 @@ const loginRouteHandler = async (
 
   //Logic to handle legacy SHA256 passwords and migrate them to argon2
   const isPasswordArgon = existingUser.password.startsWith('$argon2');
-  let passwordMatches = false
+
+  let passwordMatches = false;
 
   if (isPasswordArgon) {
-    passwordMatches = await Bun.password.verify(data.password, existingUser.password);
-  }
-  else {
+    passwordMatches = await Bun.password.verify(
+      data.password,
+      existingUser.password
+    );
+  } else {
+    logger.info(
+      `${chalk.dim('[Auth]')} User "${existingUser.identity}" is using legacy SHA256 password hash, upgrading to argon2...`
+    );
 
-    logger.debug("[auth]: SHA256 password hash detected, attempting to upgrade to argon2")
     const hashInputPassword = await sha256(data.password);
 
     passwordMatches = safeCompare(hashInputPassword, existingUser.password);
 
     if (passwordMatches) {
-      const argon2Password = await Bun.password.hash(data.password)
+      const argon2Password = await Bun.password.hash(data.password);
 
       await db
         .update(users)
@@ -193,6 +198,10 @@ const loginRouteHandler = async (
   }
 
   if (!passwordMatches) {
+    logger.info(
+      `${chalk.dim('[Auth]')} User "${existingUser.identity}" provided an invalid password (${connectionInfo?.ip || 'unknown IP'})`
+    );
+
     throw new HttpValidationError('password', 'Invalid password');
   }
 
