@@ -1,10 +1,11 @@
+import { ownUserIdSelector } from '@/features/server/users/selectors';
+import { store } from '@/features/store';
 import {
   getLocalStorageItemAsJSON,
   LocalStorageKey,
   setLocalStorageItemAsJSON
 } from '@/helpers/storage';
 import { isEmptyMessage } from '@sharkord/shared';
-import { useOwnUserId } from '@/features/server/users/hooks';
 
 // defines the key for a draft message, channel/chat id
 type TDraftMessageKey = string;
@@ -33,7 +34,7 @@ const saveDraftsToStorage = (drafts: TDraftMessages) => {
 
 const getDraftMessage = (draftKey: TDraftMessageKey): string => {
   return loadDraftsFromStorage()[draftKey] ?? '';
-}
+};
 
 const setDraftMessage = (draftKey: TDraftMessageKey, message: string) => {
   const drafts = loadDraftsFromStorage();
@@ -49,16 +50,23 @@ const setDraftMessage = (draftKey: TDraftMessageKey, message: string) => {
 
 const clearDraftMessage = (draftKey: TDraftMessageKey) => {
   const drafts = loadDraftsFromStorage();
+
   delete drafts[draftKey];
+
   saveDraftsToStorage(drafts);
 };
 
-const getChannelDraftKey = (channelId: number): TDraftMessageKey => `ch-${channelId}-${useOwnUserId()}` as TDraftMessageKey;
+const getChannelDraftKey = (channelId: number): TDraftMessageKey => {
+  const state = store.getState();
+  const ownUserId = ownUserIdSelector(state);
+
+  return `ch-${channelId}-${ownUserId}`;
+};
 
 export {
-  getChannelDraftKey,
   clearDraftMessage,
-  setDraftMessage,
+  getChannelDraftKey,
   getDraftMessage,
-  loadDraftsFromStorage
+  loadDraftsFromStorage,
+  setDraftMessage
 };

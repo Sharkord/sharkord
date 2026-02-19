@@ -12,9 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AutoFocus,
-  Group,
-  Input,
-  Switch
+  Input
 } from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
 import type { TDialogBaseProps } from '../types';
@@ -67,7 +65,6 @@ const ServerPasswordDialog = memo(
                 error={errors._general}
               />
             </AutoFocus>
-
           </div>
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>

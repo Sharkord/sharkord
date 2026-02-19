@@ -1,3 +1,4 @@
+import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { connect } from '@/features/server/actions';
 import { useInfo } from '@/features/server/hooks';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
@@ -9,7 +10,6 @@ import {
 } from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
 import { PluginSlot } from '@sharkord/shared';
-import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import {
   Alert,
   AlertDescription,
@@ -20,8 +20,7 @@ import {
   CardHeader,
   CardTitle,
   Group,
-  Input,
-  Switch
+  Input
 } from '@sharkord/ui';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -85,12 +84,7 @@ const Connect = memo(() => {
     } finally {
       setLoading(false);
     }
-  }, [
-    values.identity,
-    values.password,
-    setErrors,
-    inviteCode
-  ]);
+  }, [values.identity, values.password, setErrors, inviteCode]);
 
   const logoSrc = useMemo(() => {
     if (info?.logo) {
