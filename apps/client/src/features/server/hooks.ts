@@ -8,7 +8,10 @@ import { useCallback, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import type { IRootState } from '../store';
 import { useChannelById, useChannelPermissionsById } from './channels/hooks';
-import { channelReadStateByIdSelector } from './channels/selectors';
+import {
+  channelReadStateByIdSelector,
+  hasUnreadMentionSelector
+} from './channels/selectors';
 import {
   connectedSelector,
   connectingSelector,
@@ -113,6 +116,11 @@ export const useOwnVoiceUser = () => useSelector(ownVoiceUserSelector);
 export const useUnreadMessagesCount = (channelId: number) =>
   useSelector((state: IRootState) =>
     channelReadStateByIdSelector(state, channelId)
+  );
+
+export const useHasUnreadMention = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    hasUnreadMentionSelector(state, channelId)
   );
 
 export const usePluginComponentContext = (): TPluginSlotContext => {

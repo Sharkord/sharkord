@@ -7,12 +7,14 @@ import {
 } from '@/features/server/hooks';
 import { useMessages } from '@/features/server/messages/hooks';
 import { useFlatPluginCommands } from '@/features/server/plugins/hooks';
+import { useUsers } from '@/features/server/users/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { useUploadFiles } from '@/hooks/use-upload-files';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   ChannelPermission,
+  DELETED_USER_IDENTITY_AND_NAME,
   Permission,
   PluginSlot,
   TYPING_MS,
@@ -41,6 +43,14 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     useMessages(channelId);
 
   const [newMessage, setNewMessage] = useState('');
+  const allUsers = useUsers();
+  const mentionUsers = useMemo(
+    () =>
+      allUsers.filter(
+        (u) => u.name !== DELETED_USER_IDENTITY_AND_NAME
+      ),
+    [allUsers]
+  );
   const allPluginCommands = useFlatPluginCommands();
   const typingUsers = useTypingUsersByChannelId(channelId);
 
@@ -221,6 +231,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
             disabled={uploading || !canSendMessages}
             readOnly={sending}
             commands={pluginCommands}
+            users={mentionUsers}
           />
           <PluginSlotRenderer slotId={PluginSlot.CHAT_ACTIONS} />
           <input {...fileInputProps} />

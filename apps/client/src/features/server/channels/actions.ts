@@ -7,6 +7,10 @@ import {
   selectedChannelIdSelector
 } from './selectors';
 
+export const addChannelUnreadMention = (channelId: number) => {
+  store.dispatch(serverSliceActions.addChannelUnreadMention(channelId));
+};
+
 export const setChannels = (channels: TChannel[]) => {
   store.dispatch(serverSliceActions.setChannels(channels));
 };

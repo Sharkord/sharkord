@@ -1,6 +1,7 @@
 import { getTRPCClient } from '@/lib/trpc';
 import {
   addChannel,
+  addChannelUnreadMention,
   removeChannel,
   setChannelPermissions,
   setChannelReadState,
@@ -48,6 +49,12 @@ const subscribeToChannels = () => {
     }
   );
 
+  const onChannelMentionSub = trpc.channels.onMention.subscribe(undefined, {
+    onData: (data) => addChannelUnreadMention(data.channelId),
+    onError: (err) =>
+      console.error('onChannelMention subscription error:', err)
+  });
+
   return () => {
     onChannelCreateSub.unsubscribe();
     onChannelDeleteSub.unsubscribe();
@@ -55,6 +62,7 @@ const subscribeToChannels = () => {
     onChannelPermissionsUpdateSub.unsubscribe();
     onChannelReadStatesUpdateSub.unsubscribe();
     onChannelReadStatesDeltaSub.unsubscribe();
+    onChannelMentionSub.unsubscribe();
   };
 };
 

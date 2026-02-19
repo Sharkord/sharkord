@@ -9,6 +9,7 @@ import {
 import {
   useCan,
   useChannelCan,
+  useHasUnreadMention,
   useTypingUsersByChannelId,
   useUnreadMessagesCount,
   useVoiceUsersByChannelId
@@ -56,12 +57,19 @@ const Voice = memo(({ channel, ...props }: TVoiceProps) => {
   const users = useVoiceUsersByChannelId(channel.id);
   const externalStreams = useVoiceChannelExternalStreamsList(channel.id);
   const unreadCount = useUnreadMessagesCount(channel.id);
+  const hasUnreadMention = useHasUnreadMention(channel.id);
 
   return (
     <>
       <ItemWrapper {...props}>
         <Volume2 className="h-4 w-4" />
         <span className="flex-1">{channel.name}</span>
+        {hasUnreadMention && (
+          <span
+            className="ml-1 h-2 w-2 shrink-0 rounded-full bg-red-500"
+            title="You were mentioned"
+          />
+        )}
         {unreadCount > 0 && (
           <div className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -95,12 +103,19 @@ type TTextProps = Omit<TItemWrapperProps, 'children'> & {
 const Text = memo(({ channel, ...props }: TTextProps) => {
   const typingUsers = useTypingUsersByChannelId(channel.id);
   const unreadCount = useUnreadMessagesCount(channel.id);
+  const hasUnreadMention = useHasUnreadMention(channel.id);
   const hasTypingUsers = typingUsers.length > 0;
 
   return (
     <ItemWrapper {...props}>
       <Hash className="h-4 w-4" />
       <span className="flex-1">{channel.name}</span>
+      {hasUnreadMention && (
+        <span
+          className="ml-1 h-2 w-2 shrink-0 rounded-full bg-red-500"
+          title="You were mentioned"
+        />
+      )}
       {hasTypingUsers && (
         <div className="flex items-center gap-0.5 ml-auto">
           <TypingDots className="space-x-0.5" />
