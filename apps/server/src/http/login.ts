@@ -199,7 +199,7 @@ const loginRouteHandler = async (
 
   if (!passwordMatches) {
     logger.info(
-      `${chalk.dim('[Auth]')} User "${existingUser.identity}" provided an invalid password (${connectionInfo?.ip || 'unknown IP'})`
+      `${chalk.dim('[Auth]')} Failed login attempt for user "${existingUser.identity}" due to invalid password. (IP: ${connectionInfo?.ip || 'unknown'})`
     );
 
     throw new HttpValidationError('password', 'Invalid password');

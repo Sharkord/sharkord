@@ -4,13 +4,30 @@ import { config } from './config';
 import { ensureDir } from './helpers/fs';
 import { LOGS_PATH } from './helpers/paths';
 
-const { combine, colorize, printf, errors, splat } = format;
+const { combine, colorize, printf, errors, splat, timestamp, uncolorize } =
+  format;
 
-const logFormat = printf(({ level, message, stack }) => {
-  return `${level}: ${stack || message}`;
-});
+const fileFormat = combine(
+  uncolorize(), // strips any ANSI codes coming from chalk etc.
+  splat(),
+  errors({ stack: true }),
+  timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  printf(({ level, message, timestamp, stack }) => {
+    return `${timestamp} ${level.toUpperCase()}: ${stack || message}`;
+  })
+);
 
-const appLog = path.join(LOGS_PATH, 'app.log');
+const consoleFormat = combine(
+  colorize(),
+  splat(),
+  errors({ stack: true }),
+  timestamp({ format: 'HH:mm:ss' }),
+  printf(({ level, message, timestamp, stack }) => {
+    return `${timestamp} ${level}: ${stack || message}`;
+  })
+);
+
+const combinedLog = path.join(LOGS_PATH, 'combined.log');
 const errorLog = path.join(LOGS_PATH, 'error.log');
 
 await ensureDir(LOGS_PATH);
@@ -19,15 +36,18 @@ const level = config.server.debug ? 'debug' : 'info';
 
 const logger = createLogger({
   level,
-  format: combine(colorize(), splat(), errors({ stack: true }), logFormat),
   transports: [
-    new transports.Console(),
+    new transports.Console({
+      format: consoleFormat
+    }),
     new transports.File({
-      filename: appLog,
+      filename: combinedLog,
+      format: fileFormat,
       level
     }),
     new transports.File({
       filename: errorLog,
+      format: fileFormat,
       level: 'error'
     })
   ]
