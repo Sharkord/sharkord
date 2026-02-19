@@ -6,6 +6,7 @@ import { login, uploadFile } from '../../__tests__/helpers';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
 import { settings } from '../../db/schema';
 import { TMP_PATH } from '../../helpers/paths';
+import { fileManager } from '../../utils/file-manager';
 
 const getMockFile = (content: string): File => {
   const blob = new Blob([content], { type: 'text/plain' });
@@ -25,7 +26,7 @@ describe('/upload', () => {
     token = data.token;
   });
 
-  afterAll(async () => {
+  afterAll(async () => { // TODO: fix? or remove?
     const files = await fs.readdir(TMP_PATH);
 
     for (const file of files) {
@@ -40,17 +41,18 @@ describe('/upload', () => {
     expect(response.status).toBe(200);
 
     const data = (await response.json()) as TTempFile;
+    const tempFile = fileManager.getTemporaryFile(data.id);
 
-    const expectedPath = path.join(TMP_PATH, `${data.id}${data.extension}`);
+    const expectedPath = path.join(TMP_PATH, `${data.id}`);
 
     expect(data).toBeDefined();
     expect(data.id).toBeDefined();
     expect(data.originalName).toBe(file.name);
     expect(data.size).toBe(file.size);
-    expect(data.md5).toBeDefined();
     expect(data.extension).toBe('.txt');
-    expect(data.userId).toBe(1);
-    expect(data.path).toBe(expectedPath);
+    expect(tempFile!.md5).toBeDefined();
+    expect(tempFile!.userId).toBe(1);
+    expect(tempFile!.tempPath).toBe(expectedPath);
 
     expect(await fs.exists(expectedPath)).toBe(true);
     expect(await fs.readFile(expectedPath, 'utf-8')).toBe(
@@ -133,9 +135,10 @@ describe('/upload', () => {
     expect(response.status).toBe(200);
 
     const data = (await response.json()) as TTempFile;
+    const tempFile = fileManager.getTemporaryFile(data.id);
 
     expect(data.originalName).toBe('test file (1) [copy].txt');
-    expect(await fs.exists(data.path)).toBe(true);
+    expect(await fs.exists(tempFile!.tempPath)).toBe(true);
   });
 
   test('should handle empty files', async () => {
@@ -147,9 +150,10 @@ describe('/upload', () => {
     expect(response.status).toBe(200);
 
     const data = (await response.json()) as TTempFile;
+    const tempFile = fileManager.getTemporaryFile(data.id);
 
     expect(data.size).toBe(0);
-    expect(await fs.exists(data.path)).toBe(true);
+    expect(await fs.exists(tempFile!.tempPath)).toBe(true);
   });
 
   test('should handle different file types', async () => {
@@ -165,10 +169,11 @@ describe('/upload', () => {
     expect(response.status).toBe(200);
 
     const data = (await response.json()) as TTempFile;
+    const tempFile = fileManager.getTemporaryFile(data.id);
 
     expect(data.extension).toBe('.json');
     expect(data.originalName).toBe('data.json');
-    expect(await fs.exists(data.path)).toBe(true);
+    expect(await fs.exists(tempFile!.tempPath)).toBe(true);
   });
 
   test('should handle files with no extension', async () => {
@@ -180,9 +185,10 @@ describe('/upload', () => {
     expect(response.status).toBe(200);
 
     const data = (await response.json()) as TTempFile;
+    const tempFile = fileManager.getTemporaryFile(data.id);
 
     expect(data.originalName).toBe('Makefile');
-    expect(await fs.exists(data.path)).toBe(true);
+    expect(await fs.exists(tempFile!.tempPath)).toBe(true);
   });
 
   test('should handle files with multiple dots in name', async () => {
@@ -211,9 +217,10 @@ describe('/upload', () => {
     expect(response.status).toBe(200);
 
     const data = (await response.json()) as TTempFile;
+    const tempFile = fileManager.getTemporaryFile(data.id);
 
     expect(data.originalName).toBe(longName);
-    expect(await fs.exists(data.path)).toBe(true);
+    expect(await fs.exists(tempFile!.tempPath)).toBe(true);
   });
 
   test('should upload multiple files sequentially', async () => {
@@ -223,14 +230,16 @@ describe('/upload', () => {
     const response1 = await uploadFile(file1, token);
     expect(response1.status).toBe(200);
     const data1 = (await response1.json()) as TTempFile;
+    const tempFile1 = fileManager.getTemporaryFile(data1.id);
 
     const response2 = await uploadFile(file2, token);
     expect(response2.status).toBe(200);
     const data2 = (await response2.json()) as TTempFile;
+    const tempFile2 = fileManager.getTemporaryFile(data2.id);
 
     expect(data1.id).not.toBe(data2.id);
-    expect(await fs.exists(data1.path)).toBe(true);
-    expect(await fs.exists(data2.path)).toBe(true);
+    expect(await fs.exists(tempFile1!.tempPath)).toBe(true);
+    expect(await fs.exists(tempFile2!.tempPath)).toBe(true);
   });
 
   test('should generate unique MD5 hashes for different files', async () => {
@@ -239,11 +248,13 @@ describe('/upload', () => {
 
     const response1 = await uploadFile(file1, token);
     const data1 = (await response1.json()) as TTempFile;
+    const tempFile1 = fileManager.getTemporaryFile(data1.id);
 
     const response2 = await uploadFile(file2, token);
     const data2 = (await response2.json()) as TTempFile;
+    const tempFile2 = fileManager.getTemporaryFile(data2.id);
 
-    expect(data1.md5).not.toBe(data2.md5);
+    expect(tempFile1!.md5).not.toBe(tempFile2!.md5);
   });
 
   test('should set correct userId for uploaded file', async () => {
@@ -253,8 +264,9 @@ describe('/upload', () => {
     expect(response.status).toBe(200);
 
     const data = (await response.json()) as TTempFile;
+    const tempFile = fileManager.getTemporaryFile(data.id);
 
-    expect(data.userId).toBe(1); // testowner has ID 1
+    expect(tempFile!.userId).toBe(1); // testowner has ID 1
   });
 
   test('should handle binary files correctly', async () => {
@@ -270,9 +282,10 @@ describe('/upload', () => {
     expect(response.status).toBe(200);
 
     const data = (await response.json()) as TTempFile;
+    const tempFile = fileManager.getTemporaryFile(data.id);
 
     expect(data.extension).toBe('.png');
     expect(data.size).toBe(8);
-    expect(await fs.exists(data.path)).toBe(true);
+    expect(await fs.exists(tempFile!.tempPath)).toBe(true);
   });
 });

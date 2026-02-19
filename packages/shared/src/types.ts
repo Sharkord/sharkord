@@ -91,6 +91,7 @@ export type TTempFile = {
   timeout: NodeJS.Timeout | undefined;
   fileStream: WriteStream;
   compressed: boolean;
+  processing?: Promise<TFile> | undefined;
 };
 
 export type TServerInfo = Pick<

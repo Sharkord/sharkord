@@ -59,7 +59,7 @@ const publicRouteHandler = async (
     'Content-Encoding': 'gzip',
     'Content-Type': dbFile.mimeType,
     'Content-Length': dbFile.size || 0,
-    'Content-Disposition': `${contentDisposition}; filename*=UTF-8''${encodeURIComponent(dbFile.originalName)}"`
+    'Content-Disposition': `${contentDisposition}; filename*=UTF-8''${encodeURIComponent(dbFile.originalName)}`
   }
 
   if (!dbFile.compressed) { // remove gzip header if not compressed

@@ -1,5 +1,4 @@
 import { UploadHeaders } from '@sharkord/shared';
-import fs from 'fs';
 import http from 'http';
 import z from 'zod';
 import { getSettings } from '../db/queries/server';

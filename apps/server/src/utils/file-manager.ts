@@ -165,7 +165,7 @@ class FileManager {
   public getTemporaryFile = this.tempFileManager.getTemporaryFile;
   public temporaryFileExists = this.tempFileManager.temporaryFileExists;
 
-  private fileUUIDToPath = this.tempFileManager.fileUUIDToPath;
+  public fileUUIDToPath = this.tempFileManager.fileUUIDToPath;
 
   private attemptCompression = async (tempFile: TTempFile): Promise<TTempFile> => {
     if (!config.storage.gzipCompression) return tempFile;
@@ -228,7 +228,7 @@ class FileManager {
     }
   };
 
-  public saveFile(tempFileId: string, userId: number): [TFile, Promise<void>] {
+  public saveFile(tempFileId: string, userId: number): [TFile, Promise<TFile>] {
     const tempFile = this.getTemporaryFile(tempFileId);
 
     if (!tempFile) {
@@ -242,7 +242,7 @@ class FileManager {
     clearTimeout(tempFile.timeout);
 
     const bunFile = Bun.file(`${tempFile.publicPath}${tempFile.extension}`); // TODO: replace with actual bytes check
-
+    
     const fileRecord = db.insert(files)
       .values({
         uuid: tempFile.id,
@@ -259,7 +259,7 @@ class FileManager {
       }).returning()
       .get();
 
-    const encodeProcess = this.attemptCompression(tempFile).then(() => 
+    tempFile.processing = this.attemptCompression(tempFile).then(() => 
       this.handleStorageLimits(tempFile)
     ).then(() => 
       fs.mkdir(path.dirname(tempFile.publicPath), { recursive: true })
@@ -276,9 +276,11 @@ class FileManager {
         updatedAt: Date.now()
       })
       .where(eq(files.id, fileRecord.id))
+      .returning()
+      .get()
     );
 
-    return [fileRecord, encodeProcess];
+    return [fileRecord, tempFile.processing];
   }
 
   public async getFile(fileUUID: string, fileName: string, fileAccessToken: string | null): Promise<[TFile, ReadStream]> {
@@ -323,7 +325,7 @@ class FileManager {
         );
 
         if (!isValidToken) {
-          throw new Error('Forbidden');
+          throw new Error('forbidden');
         }
       }
     }

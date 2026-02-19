@@ -15,6 +15,13 @@
       "when": 1771530010367,
       "tag": "0001_strange_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771660847670,
+      "tag": "0002_melodic_dreaming_celestial",
+      "breakpoints": true
     }
   ]
 }

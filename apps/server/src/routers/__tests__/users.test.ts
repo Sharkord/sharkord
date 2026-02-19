@@ -1,5 +1,7 @@
 import {
   DELETED_USER_IDENTITY_AND_NAME,
+  FileStatus,
+  sha256,
   type TTempFile
 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
@@ -14,6 +16,7 @@ import {
   messages,
   users
 } from '../../db/schema';
+import { randomUUIDv7 } from 'bun';
 
 describe('users router', () => {
   test('should throw when user lacks permissions (getAll)', async () => {
@@ -526,13 +529,16 @@ describe('users router', () => {
     const insertedEmojiFile = await tdb
       .insert(files)
       .values({
-        name: emojiFileName,
+        uuid: randomUUIDv7(),
         originalName: emojiFileName,
         md5: `md5-${now}`,
         userId: targetUserId,
         size: 123,
         mimeType: 'image/png',
         extension: 'png',
+        originalSize: 123,
+        compressed: false,
+        status: FileStatus.Complete,
         createdAt: now,
         updatedAt: now
       })
@@ -636,13 +642,16 @@ describe('users router', () => {
     const insertedMessageFile = await tdb
       .insert(files)
       .values({
-        name: `wipe-message-file-${now}.png`,
+        uuid: randomUUIDv7(),
         originalName: `wipe-message-file-${now}.png`,
         md5: `wipe-md5-message-${now}`,
         userId: targetUserId,
         size: 100,
         mimeType: 'image/png',
         extension: 'png',
+        originalSize: 100,
+        compressed: false,
+        status: FileStatus.Complete,
         createdAt: now,
         updatedAt: now
       })
@@ -652,13 +661,16 @@ describe('users router', () => {
     const insertedEmojiFile = await tdb
       .insert(files)
       .values({
-        name: `wipe-emoji-file-${now}.png`,
+        uuid: randomUUIDv7(),
         originalName: `wipe-emoji-file-${now}.png`,
         md5: `wipe-md5-emoji-${now}`,
         userId: targetUserId,
         size: 120,
         mimeType: 'image/png',
         extension: 'png',
+        originalSize: 120,
+        compressed: false,
+        status: FileStatus.Complete,
         createdAt: now,
         updatedAt: now
       })

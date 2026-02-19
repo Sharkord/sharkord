@@ -1,4 +1,4 @@
-import Spinner from '@/components/ui/spinner';
+import { Spinner } from '@sharkord/ui';
 import { cn } from '@/lib/utils';
 import { FileCategory, FileStatus, getFileCategory } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';

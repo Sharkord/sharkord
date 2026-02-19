@@ -209,7 +209,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
           fileId: newFile.id,
           createdAt: Date.now()
         });
-        fileProcessing.then(() => {
+        fileProcessing!.then(() => {
           publishMessage(message.id, input.channelId, 'update');
         });
       }
