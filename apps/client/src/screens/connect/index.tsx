@@ -9,6 +9,7 @@ import {
 } from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
 import { PluginSlot } from '@sharkord/shared';
+import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import {
   Alert,
   AlertDescription,
