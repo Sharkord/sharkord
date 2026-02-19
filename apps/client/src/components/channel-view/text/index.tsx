@@ -137,7 +137,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
       setSending(false);
     }
 
-    setNewMessage('');
+    setNewMessageHandler('');
     clearFiles();
   }, [
     newMessage,
@@ -163,11 +163,11 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     [removeFile]
   );
 
-  useEffect(() => {
-    if (!newMessage) return;
+  const setNewMessageHandler = useCallback((value: string) => {
+    setNewMessage(value);
 
-    setDraftMessage(draftChannelKey, newMessage);
-  }, [newMessage]);
+    setDraftMessage(draftChannelKey, value);
+  }, []);
 
   if (!channelCan(ChannelPermission.VIEW_CHANNEL) || loading) {
     return <TextSkeleton />;
@@ -224,7 +224,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         <div className="flex items-center gap-2 rounded-lg">
           <TiptapInput
             value={newMessage}
-            onChange={setNewMessage}
+            onChange={setNewMessageHandler}
             onSubmit={onSendMessage}
             onTyping={sendTypingSignal}
             disabled={uploading || !canSendMessages}
