@@ -167,7 +167,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     setNewMessage(value);
 
     setDraftMessage(draftChannelKey, value);
-  }, []);
+  }, [setNewMessage, setDraftMessage]);
 
   if (!channelCan(ChannelPermission.VIEW_CHANNEL) || loading) {
     return <TextSkeleton />;
