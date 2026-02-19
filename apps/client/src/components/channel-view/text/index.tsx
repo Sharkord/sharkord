@@ -23,7 +23,7 @@ import { Spinner } from '@sharkord/ui';
 import { filesize } from 'filesize';
 import { throttle } from 'lodash-es';
 import { Paperclip, Send } from 'lucide-react';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@sharkord/ui';
 import { FileCard } from './file-card';
@@ -31,6 +31,7 @@ import { MessagesGroup } from './messages-group';
 import { TextSkeleton } from './text-skeleton';
 import { useScrollController } from './use-scroll-controller';
 import { UsersTyping } from './users-typing';
+import { getChannelDraftKey, getDraftMessage, setDraftMessage } from './use-draft-messages';
 
 type TChannelProps = {
   channelId: number;
@@ -40,7 +41,9 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
   const { messages, hasMore, loadMore, loading, fetching, groupedMessages } =
     useMessages(channelId);
 
-  const [newMessage, setNewMessage] = useState('');
+  const draftChannelKey = getChannelDraftKey(channelId);
+
+  const [newMessage, setNewMessage] = useState(getDraftMessage(draftChannelKey));
   const allPluginCommands = useFlatPluginCommands();
   const typingUsers = useTypingUsersByChannelId(channelId);
 
@@ -159,6 +162,12 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     },
     [removeFile]
   );
+
+  useEffect(() => {
+    if (!newMessage) return;
+
+    setDraftMessage(draftChannelKey, newMessage);
+  }, [newMessage]);
 
   if (!channelCan(ChannelPermission.VIEW_CHANNEL) || loading) {
     return <TextSkeleton />;
