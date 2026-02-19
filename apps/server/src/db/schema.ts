@@ -57,16 +57,6 @@ const settings = sqliteTable(
     storageUploadMaxFileSize: integer('storage_upload_max_file_size').notNull(),
     storageSpaceQuotaByUser: integer('storage_space_quota_by_user').notNull(),
     storageOverflowAction: text('storage_overflow_action').notNull(),
-    storageImageCompressionEnabled: integer('storage_image_compression_enabled', {
-      mode: 'boolean'
-    }).notNull(),
-    storageImageCompressionMaxWidth: integer('storage_image_compression_max_width').notNull(),
-    storageImageCompressionMaxHeight: integer('storage_image_compression_max_height').notNull(),
-    storageVideoCompressionEnabled: integer('storage_video_compression_enabled', {
-      mode: 'boolean'
-    }).notNull(),
-    storageVideoCompressionMaxWidth: integer('storage_video_compression_max_width').notNull(),
-    storageVideoCompressionMaxHeight: integer('storage_video_compression_max_height').notNull(),
     enablePlugins: integer('enable_plugins', { mode: 'boolean' }).notNull()
   },
   (t) => [

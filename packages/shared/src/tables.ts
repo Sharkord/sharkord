@@ -77,12 +77,6 @@ export type TStorageSettings = Pick<
   | 'storageUploadMaxFileSize'
   | 'storageSpaceQuotaByUser'
   | 'storageOverflowAction'
-  | 'storageImageCompressionEnabled'
-  | 'storageImageCompressionMaxWidth'
-  | 'storageImageCompressionMaxHeight'
-  | 'storageVideoCompressionEnabled'
-  | 'storageVideoCompressionMaxWidth'
-  | 'storageVideoCompressionMaxHeight'
 >;
 
 // joined types

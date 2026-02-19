@@ -4,14 +4,10 @@ import {
   OWNER_ROLE_ID,
   Permission,
   sha256,
-  STORAGE_IMAGE_COMPRESSION_MAX_HEIGHT,
-  STORAGE_IMAGE_COMPRESSION_MAX_WIDTH,
   STORAGE_MAX_FILE_SIZE,
   STORAGE_MIN_QUOTA_PER_USER,
   STORAGE_OVERFLOW_ACTION,
   STORAGE_QUOTA,
-  STORAGE_VIDEO_COMPRESSION_MAX_HEIGHT,
-  STORAGE_VIDEO_COMPRESSION_MAX_WIDTH,
   type TICategory,
   type TIChannel,
   type TIMessage,
@@ -58,12 +54,6 @@ const seedDatabase = async () => {
     storageUploadMaxFileSize: STORAGE_MAX_FILE_SIZE,
     storageSpaceQuotaByUser: STORAGE_MIN_QUOTA_PER_USER,
     storageOverflowAction: STORAGE_OVERFLOW_ACTION,
-    storageImageCompressionEnabled: true,
-    storageImageCompressionMaxWidth: STORAGE_IMAGE_COMPRESSION_MAX_WIDTH,
-    storageImageCompressionMaxHeight: STORAGE_IMAGE_COMPRESSION_MAX_HEIGHT,
-    storageVideoCompressionEnabled: true,
-    storageVideoCompressionMaxWidth: STORAGE_VIDEO_COMPRESSION_MAX_WIDTH,
-    storageVideoCompressionMaxHeight: STORAGE_VIDEO_COMPRESSION_MAX_HEIGHT,
     enablePlugins: false
   };
 

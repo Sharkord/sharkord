@@ -17,12 +17,6 @@ const getStorageSettingsRoute = protectedProcedure.query(async ({ ctx }) => {
     storageSpaceQuotaByUser: settings.storageSpaceQuotaByUser,
     storageOverflowAction: settings.storageOverflowAction,
     storageQuota: settings.storageQuota,
-    storageImageCompressionEnabled: settings.storageImageCompressionEnabled,
-    storageImageCompressionMaxWidth: settings.storageImageCompressionMaxWidth,
-    storageImageCompressionMaxHeight: settings.storageImageCompressionMaxHeight,
-    storageVideoCompressionEnabled: settings.storageVideoCompressionEnabled,
-    storageVideoCompressionMaxWidth: settings.storageVideoCompressionMaxWidth,
-    storageVideoCompressionMaxHeight: settings.storageVideoCompressionMaxHeight,
   };
 
   return { storageSettings, diskMetrics };

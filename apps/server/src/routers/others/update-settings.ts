@@ -18,12 +18,6 @@ const updateSettingsRoute = protectedProcedure
       storageUploadMaxFileSize: z.number().min(0).optional(),
       storageSpaceQuotaByUser: z.number().min(0).optional(),
       storageOverflowAction: z.enum(StorageOverflowAction).optional(),
-      storageImageCompressionEnabled: z.boolean().optional(),
-      storageImageCompressionMaxWidth: z.number().min(0).optional(),
-      storageImageCompressionMaxHeight: z.number().min(0).optional(),
-      storageVideoCompressionEnabled: z.boolean().optional(),
-      storageVideoCompressionMaxWidth: z.number().min(0).optional(),
-      storageVideoCompressionMaxHeight: z.number().min(0).optional(),
       enablePlugins: z.boolean().optional()
     })
   )
@@ -39,12 +33,6 @@ const updateSettingsRoute = protectedProcedure
       storageUploadMaxFileSize: input.storageUploadMaxFileSize,
       storageSpaceQuotaByUser: input.storageSpaceQuotaByUser,
       storageOverflowAction: input.storageOverflowAction,
-      storageImageCompressionEnabled: input.storageImageCompressionEnabled,
-      storageImageCompressionMaxWidth: input.storageImageCompressionMaxWidth,
-      storageImageCompressionMaxHeight: input.storageImageCompressionMaxHeight,
-      storageVideoCompressionEnabled: input.storageVideoCompressionEnabled,
-      storageVideoCompressionMaxWidth: input.storageVideoCompressionMaxWidth,
-      storageVideoCompressionMaxHeight: input.storageVideoCompressionMaxHeight,
       enablePlugins: input.enablePlugins
     });
 

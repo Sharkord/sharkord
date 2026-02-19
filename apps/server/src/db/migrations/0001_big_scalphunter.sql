@@ -23,10 +23,4 @@ CREATE UNIQUE INDEX `files_uuid_unique` ON `files` (`uuid`);--> statement-breakp
 CREATE INDEX `files_user_idx` ON `files` (`user_id`);--> statement-breakpoint
 CREATE INDEX `files_md5_idx` ON `files` (`md5`);--> statement-breakpoint
 CREATE INDEX `files_created_idx` ON `files` (`created_at`);--> statement-breakpoint
-CREATE INDEX `files_name_idx` ON `files` (`uuid`);--> statement-breakpoint
-ALTER TABLE `settings` ADD `storage_image_compression_enabled` integer NOT NULL;--> statement-breakpoint
-ALTER TABLE `settings` ADD `storage_image_compression_max_width` integer NOT NULL;--> statement-breakpoint
-ALTER TABLE `settings` ADD `storage_image_compression_max_height` integer NOT NULL;--> statement-breakpoint
-ALTER TABLE `settings` ADD `storage_video_compression_enabled` integer NOT NULL;--> statement-breakpoint
-ALTER TABLE `settings` ADD `storage_video_compression_max_width` integer NOT NULL;--> statement-breakpoint
-ALTER TABLE `settings` ADD `storage_video_compression_max_height` integer NOT NULL;
+CREATE INDEX `files_name_idx` ON `files` (`uuid`);

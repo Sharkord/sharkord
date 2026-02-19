@@ -21,18 +21,6 @@ import { getSettings } from '../db/queries/server';
 import { getStorageUsageByUserId } from '../db/queries/users';
 import { channels, files } from '../db/schema';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../helpers/paths';
-import { fileTypeFromFile } from 'file-type';
-import sharp from 'sharp';
-import ffmpeg from 'fluent-ffmpeg'
-import util from 'node:util';
-const ffprobe = util.promisify(ffmpeg.ffprobe);
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
-import ffprobeInstaller from '@ffprobe-installer/ffprobe' 
-const ffmpegPath = ffmpegInstaller.path;
-const ffprobePath = ffprobeInstaller.path;
-
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
 
 /**
  * Files workflow:
@@ -67,32 +55,6 @@ const moveFile = async (src: string, dest: string) => {
     }
   }
 };
-
-async function processVideo(inputPath: string, outputPath: string) {
-  return getSettings().then(async (settings) => {
-    // Read metadata to determine if scaling is necessary, and scale it to a max width/height of 720p (TODO: allow configuration)
-    const [maxWidth, maxHeight] = [settings.storageVideoCompressionMaxWidth, settings.storageVideoCompressionMaxHeight];
-    const metaData: ffmpeg.FfprobeData = await ffprobe(inputPath) as ffmpeg.FfprobeData;
-    const videoMetaData: ffmpeg.FfprobeStream | undefined = metaData.streams.find((streamMetaData) => streamMetaData.codec_type === 'video') || undefined
-    const [inputWidth, inputHeight] = [videoMetaData?.width || maxWidth, videoMetaData?.height || maxHeight]
-    const [scaleWidthFactor, scaleHeightFactor] = [inputWidth / maxWidth, inputHeight / maxHeight]
-    let scaleFilter = 'scale=iw:ih';
-    if (scaleWidthFactor >= scaleHeightFactor && scaleWidthFactor > 1) { // Width is biggest deviator from max, and is bigger than maxWidth
-      scaleFilter = `scale=${maxWidth}:-2`;
-    } else if (scaleHeightFactor >= scaleWidthFactor && scaleHeightFactor > 1) { // Height is biggest deviator from max, and is bigger than maxHeight
-      scaleFilter = `scale=-2:${maxHeight}`;
-    }
-    return new Promise((resolve, reject) => {
-      ffmpeg(inputPath)
-        .videoCodec('libx265') // TODO: give option for selecting hwencode
-        .videoFilters(scaleFilter)
-        .output(outputPath)
-        .on('end', resolve)
-        .on('error', reject)
-        .run()
-    });
-  });
-}
 
 class TemporaryFileManager {
   private temporaryFiles: Map<string, TTempFile> = new Map();
@@ -224,46 +186,6 @@ class FileManager {
     return tempFile;
   }
 
-  private reEncodeMedia = async (tempFile:TTempFile): Promise<TTempFile> => {
-    const settings = await getSettings();
-    const fileType = await fileTypeFromFile(tempFile.tempPath);
-    if (!fileType) return tempFile;
-    const mimeGroup = fileType.mime.split('/')[0];
-
-    try {
-      if (mimeGroup === 'image' && settings.storageImageCompressionEnabled) {
-        const sourceImage = sharp(tempFile.tempPath, { animated: true });
-        const metaData = await sourceImage.metadata();
-        const newTempFile = `${tempFile.tempPath}.webp`;
-        await sourceImage
-          .webp( {quality: 80} )
-          .resize(
-            Math.min(metaData.width, settings.storageImageCompressionMaxWidth),
-            Math.min(metaData.height, settings.storageImageCompressionMaxHeight),
-            {fit: 'inside'}
-          )
-          .toFile(newTempFile);
-        await fs.unlink(tempFile.tempPath);
-        tempFile.originalName = path.basename(tempFile.originalName, tempFile.extension) + '.webp';
-        tempFile.extension = '.webp';
-        tempFile.tempPath = newTempFile;
-        tempFile.md5 = await md5File(tempFile.tempPath);
-      } else if (mimeGroup === 'video' && settings.storageVideoCompressionEnabled) {
-        const newTempFile = `${tempFile.tempPath}.mp4`;
-        await processVideo(tempFile.tempPath, newTempFile).catch((err) => console.error(err));
-        await fs.unlink(tempFile.tempPath)
-        tempFile.originalName = path.basename(tempFile.originalName, tempFile.extension) + '.mp4';
-        tempFile.extension = '.mp4'
-        tempFile.tempPath = newTempFile;
-        tempFile.md5 = await md5File(tempFile.tempPath)
-      }
-    } catch (err) {
-      throw new Error("Media encoding failed");
-    }
-
-    return tempFile;
-  }
-
   private handleStorageLimits = async (tempFile: TTempFile) => {
     const [settings, userStorage, serverStorage] = await Promise.all([
       getSettings(),
@@ -335,9 +257,7 @@ class FileManager {
       }).returning()
       .get();
 
-    const encodeProcess = this.reEncodeMedia(tempFile).then(() => 
-      this.attemptCompression(tempFile)
-    ).then(() => 
+    const encodeProcess = this.attemptCompression(tempFile).then(() => 
       this.handleStorageLimits(tempFile)
     ).then(() => 
       fs.mkdir(path.dirname(tempFile.publicPath), { recursive: true })
