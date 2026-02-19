@@ -42,7 +42,7 @@ export const permissionLabels: Record<Permission, string> = {
   [Permission.MANAGE_UPDATES]: 'Manage updates',
   [Permission.MANAGE_PLUGINS]: 'Manage plugins',
   [Permission.EXECUTE_PLUGIN_COMMANDS]: 'Execute plugin commands',
-  [Permission.VIEW_IDENTITY_IP_LOCATION]: 'View user identity, IP address, and location'
+  [Permission.VIEW_IDENTITY_IP_LOCATION]: 'View user identity, IP address and location'
 };
 
 export const permissionDescriptions: Record<Permission, string> = {
