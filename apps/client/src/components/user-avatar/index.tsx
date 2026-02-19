@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import { UserStatus } from '@sharkord/shared';
 import { memo } from 'react';
-import { Avatar, AvatarFallback } from '../ui/avatar';
+import { Avatar, AvatarFallback } from '@sharkord/ui';
 import { UserPopover } from '../user-popover';
 import { UserStatusBadge } from '../user-status';
 

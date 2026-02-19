@@ -10,7 +10,7 @@ import { ArrowDownLeft, SendToBack, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CardControls } from '../channel-view/voice/card-controls';
 import { PinnedCardType } from '../channel-view/voice/hooks/use-pin-card-controller';
-import { IconButton } from '../ui/icon-button';
+import { IconButton } from '@sharkord/ui';
 import { useFloatingCard } from './hooks/use-floating-card';
 import type { TExternalStreamsMap } from './hooks/use-remote-streams';
 

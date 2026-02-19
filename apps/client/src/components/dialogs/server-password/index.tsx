@@ -1,3 +1,7 @@
+import { joinServer } from '@/features/server/actions';
+import { useForm } from '@/hooks/use-form';
+import { cleanup } from '@/lib/trpc';
+import {} from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -6,14 +10,12 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle
-} from '@/components/ui/alert-dialog';
-import { AutoFocus } from '@/components/ui/auto-focus';
-import { Input } from '@/components/ui/input';
-import { joinServer } from '@/features/server/actions';
-import { useForm } from '@/hooks/use-form';
-import { cleanup } from '@/lib/trpc';
-import {} from '@/types';
+  AlertDialogTitle,
+  AutoFocus,
+  Group,
+  Input,
+  Switch
+} from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
 import type { TDialogBaseProps } from '../types';
 

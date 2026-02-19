@@ -1,8 +1,3 @@
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Group } from '@/components/ui/group';
-import { Input } from '@/components/ui/input';
 import { connect } from '@/features/server/actions';
 import { useInfo } from '@/features/server/hooks';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
@@ -13,6 +8,20 @@ import {
   setSessionStorageItem
 } from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
+import { PluginSlot } from '@sharkord/shared';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Group,
+  Input,
+  Switch
+} from '@sharkord/ui';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -102,6 +111,7 @@ const Connect = memo(() => {
               </span>
             )}
           </CardTitle>
+          <PluginSlotRenderer slotId={PluginSlot.CONNECT_SCREEN} />
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {info?.description && (

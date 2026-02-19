@@ -1,11 +1,14 @@
 import type { TEmojiItem } from '@/components/tiptap-input/types';
+import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useCustomEmojis } from '@/features/server/emojis/hooks';
+  PopoverTrigger,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
 import { CustomEmojiTab } from './custom-emoji-tab';
 import { NativeEmojiTab } from './native-emoji-tab';

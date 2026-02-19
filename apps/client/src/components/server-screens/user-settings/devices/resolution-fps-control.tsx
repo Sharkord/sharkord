@@ -1,12 +1,12 @@
-import { Label } from '@/components/ui/label';
 import {
+  Label,
   Select,
   SelectContent,
   SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select';
+} from '@sharkord/ui';
 import { memo } from 'react';
 
 type TResolutionFpsControlProps = {

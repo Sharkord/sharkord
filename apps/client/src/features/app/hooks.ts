@@ -3,11 +3,14 @@ import { useSelector } from 'react-redux';
 import {
   appLoadingSelector,
   devicesSelector,
+  loadingPluginsSelector,
   modViewOpenSelector,
   modViewUserIdSelector
 } from './selectors';
 
 export const useIsAppLoading = () => useSelector(appLoadingSelector);
+
+export const useIsPluginsLoading = () => useSelector(loadingPluginsSelector);
 
 export const useDevices = () => useSelector(devicesSelector);
 

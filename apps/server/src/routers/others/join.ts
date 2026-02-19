@@ -154,6 +154,7 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       channelPermissions,
       readStates,
       commands: pluginManager.getCommands(),
+      components: pluginManager.getComponents(),
       externalStreamsMap
     };
   });
