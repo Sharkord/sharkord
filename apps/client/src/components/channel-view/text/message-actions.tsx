@@ -6,7 +6,7 @@ import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
-import { Pencil, Smile, Trash } from 'lucide-react';
+import { Pencil, Pin, PinOff, Smile, Trash } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
@@ -17,10 +17,11 @@ type TMessageActionsProps = {
   onEdit: () => void;
   canManage: boolean;
   editable: boolean;
+  pinned: boolean;
 };
 
 const MessageActions = memo(
-  ({ onEdit, messageId, canManage, editable }: TMessageActionsProps) => {
+  ({ onEdit, messageId, canManage, editable, pinned }: TMessageActionsProps) => {
     const { recentEmojis } = useRecentEmojis();
     const recentEmojisToShow = useMemo(
       () => recentEmojis.slice(0, MAX_QUICK_EMOJIS),
@@ -65,6 +66,17 @@ const MessageActions = memo(
       },
       [messageId]
     );
+
+    const onPinClick = useCallback(async () => {
+      const trpc = getTRPCClient();
+
+      try {
+        await trpc.messages.togglePin.mutate({ messageId });
+        toast.success('Message pinned status toggled');
+      } catch (error) {
+        toast.error('Failed to toggle pin status');
+    }}, [messageId]);
+
 
     return (
       <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-1 transition-all h-8 ">
@@ -114,6 +126,15 @@ const MessageActions = memo(
               <IconButton variant="ghost" icon={Smile} title="Add Reaction" />
             </EmojiPicker>
           </div>
+        </Protect>
+        <Protect permission={Permission.PIN_MESSAGES}>
+        <IconButton
+          size="sm"
+          variant="ghost"
+          icon={pinned ? PinOff : Pin}
+          onClick={onPinClick}
+          title={pinned ? "Unpin Message" : "Pin Message"}
+        />
         </Protect>
       </div>
     );
