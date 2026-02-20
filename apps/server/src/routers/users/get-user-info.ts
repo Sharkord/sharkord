@@ -6,6 +6,7 @@ import { getMessagesByUserId } from '../../db/queries/messages';
 import { getUserById } from '../../db/queries/users';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
+import { clearFields } from '../../helpers/clear-fields';
 
 const getUserInfoRoute = protectedProcedure
   .input(
@@ -23,15 +24,13 @@ const getUserInfoRoute = protectedProcedure
       message: 'User not found'
     });
 
-    user.password = '';
-
     const [logins, files, messages] = await Promise.all([
       getLastLogins(user.id, 6),
       getFilesByUserId(user.id),
       getMessagesByUserId(user.id)
     ]);
 
-    return { user, logins, files, messages };
+    return { user: clearFields(user, ['password']), logins, files, messages };
   });
 
 export { getUserInfoRoute };
