@@ -1,9 +1,9 @@
+import { ResizableSidebar } from '@/components/resizable-sidebar';
 import { openDialog } from '@/features/dialogs/actions';
 import { openServerScreen } from '@/features/server-screens/actions';
 import { disconnectFromServer } from '@/features/server/actions';
 import { useServerName } from '@/features/server/hooks';
 import { LocalStorageKey } from '@/helpers/storage';
-import { useResizableSidebar } from '@/hooks/use-resizable-sidebar';
 import { cn } from '@/lib/utils';
 import { Permission } from '@sharkord/shared';
 import {
@@ -34,14 +34,6 @@ type TLeftSidebarProps = {
 
 const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
   const serverName = useServerName();
-  const { width, isResizing, sidebarRef, handleMouseDown } =
-    useResizableSidebar({
-      storageKey: LocalStorageKey.LEFT_SIDEBAR_WIDTH,
-      minWidth: MIN_WIDTH,
-      maxWidth: MAX_WIDTH,
-      defaultWidth: DEFAULT_WIDTH,
-      edge: 'right'
-    });
   const serverSettingsPermissions = useMemo(
     () => [
       Permission.MANAGE_SETTINGS,
@@ -56,14 +48,13 @@ const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
   );
 
   return (
-    <aside
-      ref={sidebarRef}
-      className={cn(
-        'flex flex-col border-r border-border bg-card h-full relative',
-        !isResizing && 'transition-all duration-500 ease-in-out',
-        className
-      )}
-      style={{ width: `${width}px` }}
+    <ResizableSidebar
+      storageKey={LocalStorageKey.LEFT_SIDEBAR_WIDTH}
+      minWidth={MIN_WIDTH}
+      maxWidth={MAX_WIDTH}
+      defaultWidth={DEFAULT_WIDTH}
+      edge="right"
+      className={cn('h-full', className)}
     >
       <div className="flex w-full justify-between h-12 items-center border-b border-border px-4">
         <h2 className="font-semibold text-foreground truncate">{serverName}</h2>
@@ -104,14 +95,7 @@ const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
       </div>
       <VoiceControl />
       <UserControl />
-      <div
-        className={cn(
-          'absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors z-50',
-          isResizing && 'bg-primary'
-        )}
-        onMouseDown={handleMouseDown}
-      />
-    </aside>
+    </ResizableSidebar>
   );
 });
 

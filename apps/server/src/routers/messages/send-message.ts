@@ -9,7 +9,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
-import { publishMessage } from '../../db/publishers';
+import { publishMessage, publishReplyCount } from '../../db/publishers';
 import { getSettings } from '../../db/queries/server';
 import { messageFiles, messages } from '../../db/schema';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
@@ -215,9 +215,8 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     publishMessage(message.id, input.channelId, 'create');
 
-    // TODO: overkill
     if (input.parentMessageId) {
-      publishMessage(input.parentMessageId, input.channelId, 'update');
+      publishReplyCount(input.parentMessageId, input.channelId);
     }
 
     enqueueProcessMetadata(targetContent, message.id);

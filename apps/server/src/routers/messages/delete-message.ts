@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { removeFile } from '../../db/mutations/files';
-import { publishMessage } from '../../db/publishers';
+import { publishMessage, publishReplyCount } from '../../db/publishers';
 import { getFilesByMessageId } from '../../db/queries/files';
 import { messages } from '../../db/schema';
 import { eventBus } from '../../plugins/event-bus';
@@ -51,13 +51,8 @@ const deleteMessageRoute = protectedProcedure
 
     publishMessage(input.messageId, targetMessage.channelId, 'delete');
 
-    // TODO: overkill
     if (targetMessage.parentMessageId) {
-      publishMessage(
-        targetMessage.parentMessageId,
-        targetMessage.channelId,
-        'update'
-      );
+      publishReplyCount(targetMessage.parentMessageId, targetMessage.channelId);
     }
 
     eventBus.emit('message:deleted', {

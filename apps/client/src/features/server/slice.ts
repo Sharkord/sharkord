@@ -207,6 +207,24 @@ export const serverSlice = createSlice({
 
       messages[messageIndex] = action.payload.message;
     },
+    updateReplyCount: (
+      state,
+      action: PayloadAction<{
+        channelId: number;
+        messageId: number;
+        replyCount: number;
+      }>
+    ) => {
+      const messages = state.messagesMap[action.payload.channelId];
+
+      if (!messages) return;
+
+      const message = messages.find((m) => m.id === action.payload.messageId);
+
+      if (!message) return;
+
+      message.replyCount = action.payload.replyCount;
+    },
     deleteMessage: (
       state,
       action: PayloadAction<{ channelId: number; messageId: number }>

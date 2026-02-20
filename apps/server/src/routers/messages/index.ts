@@ -5,8 +5,10 @@ import {
   onMessageDeleteRoute,
   onMessageRoute,
   onMessageTypingRoute,
-  onMessageUpdateRoute
+  onMessageUpdateRoute,
+  onThreadReplyCountUpdateRoute
 } from './events';
+import { getMessageRoute } from './get-message';
 import { getMessagesRoute } from './get-messages';
 import { getThreadMessagesRoute } from './get-thread-messages';
 import { sendMessageRoute } from './send-message';
@@ -18,11 +20,13 @@ export const messagesRouter = t.router({
   edit: editMessageRoute,
   delete: deleteMessageRoute,
   get: getMessagesRoute,
+  getOne: getMessageRoute,
   getThread: getThreadMessagesRoute,
   toggleReaction: toggleMessageReactionRoute,
   signalTyping: signalTypingRoute,
   onNew: onMessageRoute,
   onUpdate: onMessageUpdateRoute,
   onDelete: onMessageDeleteRoute,
-  onTyping: onMessageTypingRoute
+  onTyping: onMessageTypingRoute,
+  onThreadReplyCountUpdate: onThreadReplyCountUpdateRoute
 });

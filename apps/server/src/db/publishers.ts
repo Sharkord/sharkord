@@ -3,7 +3,7 @@ import {
   ServerEvents,
   type TChannelUserPermissionsMap
 } from '@sharkord/shared';
-import { eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import { db } from '.';
 import { pluginManager } from '../plugins';
 import { pubsub } from '../utils/pubsub';
@@ -16,7 +16,7 @@ import { getMessage } from './queries/messages';
 import { getRole } from './queries/roles';
 import { getPublicSettings } from './queries/server';
 import { getPublicUserById } from './queries/users';
-import { categories, channels } from './schema';
+import { categories, channels, messages } from './schema';
 
 const publishMessage = async (
   messageId: number | undefined,
@@ -216,6 +216,23 @@ const publishPluginComponents = async () => {
   pubsub.publish(ServerEvents.PLUGIN_COMPONENTS_CHANGE, components);
 };
 
+const publishReplyCount = async (
+  parentMessageId: number,
+  channelId: number
+) => {
+  const replyCountRow = await db
+    .select({ count: count() })
+    .from(messages)
+    .where(eq(messages.parentMessageId, parentMessageId))
+    .get();
+
+  pubsub.publish(ServerEvents.THREAD_REPLY_COUNT_UPDATE, {
+    messageId: parentMessageId,
+    channelId,
+    replyCount: replyCountRow?.count ?? 0
+  });
+};
+
 export {
   publishCategory,
   publishChannel,
@@ -224,6 +241,7 @@ export {
   publishMessage,
   publishPluginCommands,
   publishPluginComponents,
+  publishReplyCount,
   publishRole,
   publishSettings,
   publishUser

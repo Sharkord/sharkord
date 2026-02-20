@@ -31,6 +31,11 @@ type Events = {
     userId: number;
     parentMessageId?: number;
   };
+  [ServerEvents.THREAD_REPLY_COUNT_UPDATE]: {
+    messageId: number;
+    channelId: number;
+    replyCount: number;
+  };
 
   [ServerEvents.USER_JOIN]: TJoinedPublicUser;
   [ServerEvents.USER_LEAVE]: number;

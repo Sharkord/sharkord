@@ -209,3 +209,13 @@ export const removeThreadTypingUser = (
     serverSliceActions.removeThreadTypingUser({ parentMessageId, userId })
   );
 };
+
+export const updateReplyCount = (
+  channelId: number,
+  messageId: number,
+  replyCount: number
+) => {
+  store.dispatch(
+    serverSliceActions.updateReplyCount({ channelId, messageId, replyCount })
+  );
+};

@@ -4,7 +4,8 @@ import {
   addMessages,
   addTypingUser,
   deleteMessage,
-  updateMessage
+  updateMessage,
+  updateReplyCount
 } from './actions';
 
 const subscribeToMessages = () => {
@@ -42,11 +43,29 @@ const subscribeToMessages = () => {
     onError: (err) => console.error('onMessageTyping subscription error:', err)
   });
 
+  const onThreadReplyCountUpdateSub =
+    trpc.messages.onThreadReplyCountUpdate.subscribe(undefined, {
+      onData: ({
+        messageId,
+        channelId,
+        replyCount
+      }: {
+        messageId: number;
+        channelId: number;
+        replyCount: number;
+      }) => {
+        updateReplyCount(channelId, messageId, replyCount);
+      },
+      onError: (err) =>
+        console.error('onThreadReplyCountUpdate subscription error:', err)
+    });
+
   return () => {
     onMessageSub.unsubscribe();
     onMessageUpdateSub.unsubscribe();
     onMessageDeleteSub.unsubscribe();
     onMessageTypingSub.unsubscribe();
+    onThreadReplyCountUpdateSub.unsubscribe();
   };
 };
 

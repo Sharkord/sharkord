@@ -27,9 +27,9 @@ export const threadTypingMapSelector = (state: IRootState) =>
 
 export const parentMessageByIdSelector = createCachedSelector(
   [
-    messagesByChannelIdSelector,
-    (_: IRootState, messageId: number) => messageId,
-    (_: IRootState, __: number, channelId: number) => channelId
+    (state: IRootState, _messageId: number, channelId: number) =>
+      messagesByChannelIdSelector(state, channelId),
+    (_: IRootState, messageId: number) => messageId
   ],
   (messages, messageId) => messages.find((m) => m.id === messageId)
 )((_, messageId: number) => messageId);

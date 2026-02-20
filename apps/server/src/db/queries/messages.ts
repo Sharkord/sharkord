@@ -5,7 +5,7 @@ import type {
   TMessage,
   TMessageReaction
 } from '@sharkord/shared';
-import { and, count, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '..';
 import { generateFileToken } from '../../helpers/files-crypto';
 import {
@@ -138,4 +138,94 @@ const getReaction = async (
     )
     .get();
 
-export { getMessage, getMessageByFileId, getMessagesByUserId, getReaction };
+const joinMessagesWithRelations = async (
+  rows: TMessage[],
+  channel: {
+    private: boolean;
+    fileAccessToken: string;
+  }
+): Promise<TJoinedMessage[]> => {
+  if (rows.length === 0) return [];
+
+  const messageIds = rows.map((m) => m.id);
+
+  const [fileRows, reactionRows] = await Promise.all([
+    db
+      .select({
+        messageId: messageFiles.messageId,
+        file: files
+      })
+      .from(messageFiles)
+      .innerJoin(files, eq(messageFiles.fileId, files.id))
+      .where(inArray(messageFiles.messageId, messageIds)),
+    db
+      .select({
+        messageId: messageReactions.messageId,
+        userId: messageReactions.userId,
+        emoji: messageReactions.emoji,
+        createdAt: messageReactions.createdAt,
+        fileId: messageReactions.fileId,
+        file: files
+      })
+      .from(messageReactions)
+      .leftJoin(files, eq(messageReactions.fileId, files.id))
+      .where(inArray(messageReactions.messageId, messageIds))
+  ]);
+
+  const filesByMessage = fileRows.reduce<Record<number, TFile[]>>(
+    (acc, row) => {
+      if (!acc[row.messageId]) {
+        acc[row.messageId] = [];
+      }
+
+      const rowCopy: TFile = { ...row.file };
+
+      if (channel.private) {
+        rowCopy._accessToken = generateFileToken(
+          row.file.id,
+          channel.fileAccessToken
+        );
+      }
+
+      acc[row.messageId]!.push(rowCopy);
+
+      return acc;
+    },
+    {}
+  );
+
+  const reactionsByMessage = reactionRows.reduce<
+    Record<number, TJoinedMessageReaction[]>
+  >((acc, r) => {
+    const reaction: TJoinedMessageReaction = {
+      messageId: r.messageId,
+      userId: r.userId,
+      emoji: r.emoji,
+      createdAt: r.createdAt,
+      fileId: r.fileId,
+      file: r.file
+    };
+
+    if (!acc[r.messageId]) {
+      acc[r.messageId] = [];
+    }
+
+    acc[r.messageId]!.push(reaction);
+
+    return acc;
+  }, {});
+
+  return rows.map((msg) => ({
+    ...msg,
+    files: filesByMessage[msg.id] ?? [],
+    reactions: reactionsByMessage[msg.id] ?? []
+  }));
+};
+
+export {
+  getMessage,
+  getMessageByFileId,
+  getMessagesByUserId,
+  getReaction,
+  joinMessagesWithRelations
+};
