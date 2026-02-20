@@ -16,7 +16,8 @@ const deleteMessageRoute = protectedProcedure
     const targetMessage = await db
       .select({
         userId: messages.userId,
-        channelId: messages.channelId
+        channelId: messages.channelId,
+        parentMessageId: messages.parentMessageId
       })
       .from(messages)
       .where(eq(messages.id, input.messageId))
@@ -49,6 +50,15 @@ const deleteMessageRoute = protectedProcedure
     await db.delete(messages).where(eq(messages.id, input.messageId));
 
     publishMessage(input.messageId, targetMessage.channelId, 'delete');
+
+    // TODO: overkill
+    if (targetMessage.parentMessageId) {
+      publishMessage(
+        targetMessage.parentMessageId,
+        targetMessage.channelId,
+        'update'
+      );
+    }
 
     eventBus.emit('message:deleted', {
       channelId: targetMessage.channelId,

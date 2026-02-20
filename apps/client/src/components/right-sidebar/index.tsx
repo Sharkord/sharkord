@@ -1,11 +1,16 @@
 import { UserAvatar } from '@/components/user-avatar';
 import { useUsers } from '@/features/server/users/hooks';
+import { LocalStorageKey } from '@/helpers/storage';
+import { useResizableSidebar } from '@/hooks/use-resizable-sidebar';
 import { cn } from '@/lib/utils';
 import { DELETED_USER_IDENTITY_AND_NAME } from '@sharkord/shared';
 import { memo, useMemo } from 'react';
 import { UserPopover } from '../user-popover';
 
 const MAX_USERS_TO_SHOW = 100;
+const MIN_WIDTH = 180;
+const MAX_WIDTH = 360;
+const DEFAULT_WIDTH = 240; // w-60 = 240px
 
 type TUserProps = {
   userId: number;
@@ -39,10 +44,20 @@ type TRightSidebarProps = {
 const RightSidebar = memo(
   ({ className, isOpen = true }: TRightSidebarProps) => {
     const users = useUsers();
+
+    const { width, isResizing, sidebarRef, handleMouseDown } =
+      useResizableSidebar({
+        storageKey: LocalStorageKey.RIGHT_SIDEBAR_WIDTH,
+        minWidth: MIN_WIDTH,
+        maxWidth: MAX_WIDTH,
+        defaultWidth: DEFAULT_WIDTH,
+        edge: 'left'
+      });
+
     const usersToShow = useMemo(
       () =>
         users
-          .filter((user) => user.name !== DELETED_USER_IDENTITY_AND_NAME) // hide deleted user placeholder from the sidebar
+          .filter((user) => user.name !== DELETED_USER_IDENTITY_AND_NAME)
           .slice(0, MAX_USERS_TO_SHOW),
       [users]
     );
@@ -51,17 +66,27 @@ const RightSidebar = memo(
 
     return (
       <aside
+        ref={sidebarRef}
         className={cn(
-          'flex flex-col border-l border-border bg-card h-full transition-all duration-500 ease-in-out',
-          isOpen ? 'w-60' : 'w-0 border-l-0',
+          'flex flex-col border-l border-border bg-card h-full relative',
+          isOpen ? '' : 'w-0 border-l-0',
+          !isResizing && 'transition-all duration-500 ease-in-out',
           className
         )}
         style={{
+          width: isOpen ? `${width}px` : '0px',
           overflow: isOpen ? 'visible' : 'hidden'
         }}
       >
         {isOpen && (
           <>
+            <div
+              className={cn(
+                'absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors z-50',
+                isResizing && 'bg-primary'
+              )}
+              onMouseDown={handleMouseDown}
+            />
             <div className="flex h-12 items-center border-b border-border px-4">
               <h3 className="text-sm font-semibold text-foreground">
                 Members — {usersToShow.length}

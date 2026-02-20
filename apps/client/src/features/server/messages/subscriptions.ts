@@ -28,8 +28,16 @@ const subscribeToMessages = () => {
   });
 
   const onMessageTypingSub = trpc.messages.onTyping.subscribe(undefined, {
-    onData: ({ userId, channelId }) => {
-      addTypingUser(channelId, userId);
+    onData: ({
+      userId,
+      channelId,
+      parentMessageId
+    }: {
+      userId: number;
+      channelId: number;
+      parentMessageId?: number;
+    }) => {
+      addTypingUser(channelId, userId, parentMessageId);
     },
     onError: (err) => console.error('onMessageTyping subscription error:', err)
   });

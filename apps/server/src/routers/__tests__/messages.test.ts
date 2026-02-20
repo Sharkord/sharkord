@@ -648,4 +648,376 @@ describe('messages router', () => {
       })
     ).rejects.toThrow('Too many requests. Please try again shortly.');
   });
+
+  test('should send a thread reply to a root message', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Parent message',
+      files: []
+    });
+
+    await caller.messages.send({
+      channelId: 1,
+      content: 'Thread reply',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    const thread = await caller.messages.getThread({
+      parentMessageId: parentId,
+      cursor: null,
+      limit: 50
+    });
+
+    expect(thread.messages.length).toBe(1);
+    expect(thread.messages[0]!.content).toBe('Thread reply');
+    expect(thread.messages[0]!.parentMessageId).toBe(parentId);
+  });
+
+  test('should not include thread replies in channel messages', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 2,
+      content: 'Root message',
+      files: []
+    });
+
+    await caller.messages.send({
+      channelId: 2,
+      content: 'Reply 1',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await caller.messages.send({
+      channelId: 2,
+      content: 'Reply 2',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    const channelMessages = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      limit: 50
+    });
+
+    // only the root message should appear, not the replies
+    expect(channelMessages.messages.length).toBe(1);
+    expect(channelMessages.messages[0]!.content).toBe('Root message');
+  });
+
+  test('should include reply count on root messages', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 2,
+      content: 'Root with replies',
+      files: []
+    });
+
+    await caller.messages.send({
+      channelId: 2,
+      content: 'Reply 1',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await caller.messages.send({
+      channelId: 2,
+      content: 'Reply 2',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await caller.messages.send({
+      channelId: 2,
+      content: 'Reply 3',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    const channelMessages = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      limit: 50
+    });
+
+    const rootMessage = channelMessages.messages.find((m) => m.id === parentId);
+
+    expect(rootMessage).toBeDefined();
+    expect(rootMessage!.replyCount).toBe(3);
+  });
+
+  test('should return empty thread for message with no replies', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'No replies here',
+      files: []
+    });
+
+    const thread = await caller.messages.getThread({
+      parentMessageId: parentId,
+      cursor: null,
+      limit: 50
+    });
+
+    expect(thread.messages.length).toBe(0);
+    expect(thread.nextCursor).toBeNull();
+  });
+
+  test('should throw when sending a reply to a non-existing parent', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'Orphan reply',
+        files: [],
+        parentMessageId: 999999
+      })
+    ).rejects.toThrow('Parent message not found');
+  });
+
+  test('should throw when sending a reply to a message in a different channel', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Message in channel 1',
+      files: []
+    });
+
+    await expect(
+      caller.messages.send({
+        channelId: 2,
+        content: 'Reply targeting wrong channel',
+        files: [],
+        parentMessageId: parentId
+      })
+    ).rejects.toThrow('Parent message must be in the same channel');
+  });
+
+  test('should throw when replying to a thread reply (nested threads)', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Root message',
+      files: []
+    });
+
+    const replyId = await caller.messages.send({
+      channelId: 1,
+      content: 'First-level reply',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'Nested reply attempt',
+        files: [],
+        parentMessageId: replyId
+      })
+    ).rejects.toThrow(
+      'Cannot reply to a thread reply. Threads are only one level deep.'
+    );
+  });
+
+  test('should throw when getting thread for non-existing parent', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.messages.getThread({
+        parentMessageId: 999999,
+        cursor: null,
+        limit: 50
+      })
+    ).rejects.toThrow('Parent message not found');
+  });
+
+  test('should throw when getting thread for a reply message', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Root message',
+      files: []
+    });
+
+    const replyId = await caller.messages.send({
+      channelId: 1,
+      content: 'Reply message',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await expect(
+      caller.messages.getThread({
+        parentMessageId: replyId,
+        cursor: null,
+        limit: 50
+      })
+    ).rejects.toThrow('Cannot get thread for a reply message');
+  });
+
+  test('should paginate thread messages', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Root for pagination',
+      files: []
+    });
+
+    for (let i = 0; i < 10; i++) {
+      await caller.messages.send({
+        channelId: 1,
+        content: `Thread reply ${i + 1}`,
+        files: [],
+        parentMessageId: parentId
+      });
+    }
+
+    const firstPage = await caller.messages.getThread({
+      parentMessageId: parentId,
+      cursor: null,
+      limit: 5
+    });
+
+    expect(firstPage.messages.length).toBe(5);
+    expect(firstPage.nextCursor).not.toBeNull();
+
+    const secondPage = await caller.messages.getThread({
+      parentMessageId: parentId,
+      cursor: firstPage.nextCursor,
+      limit: 5
+    });
+
+    expect(secondPage.messages.length).toBeGreaterThan(0);
+
+    // no overlap between pages
+    const firstPageIds = firstPage.messages.map((m) => m.id);
+    const secondPageIds = secondPage.messages.map((m) => m.id);
+    const intersection = firstPageIds.filter((id) =>
+      secondPageIds.includes(id)
+    );
+
+    expect(intersection.length).toBe(0);
+  });
+
+  test('should return thread messages in ascending order (oldest first)', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Root message',
+      files: []
+    });
+
+    for (let i = 0; i < 3; i++) {
+      await caller.messages.send({
+        channelId: 1,
+        content: `Reply ${i + 1}`,
+        files: [],
+        parentMessageId: parentId
+      });
+    }
+
+    const thread = await caller.messages.getThread({
+      parentMessageId: parentId,
+      cursor: null,
+      limit: 50
+    });
+
+    expect(thread.messages.length).toBe(3);
+
+    for (let i = 1; i < thread.messages.length; i++) {
+      expect(thread.messages[i]!.createdAt).toBeGreaterThanOrEqual(
+        thread.messages[i - 1]!.createdAt
+      );
+    }
+  });
+
+  test('should delete a thread reply', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Root message',
+      files: []
+    });
+
+    const replyId = await caller.messages.send({
+      channelId: 1,
+      content: 'Reply to delete',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await caller.messages.delete({ messageId: replyId });
+
+    const thread = await caller.messages.getThread({
+      parentMessageId: parentId,
+      cursor: null,
+      limit: 50
+    });
+
+    expect(thread.messages.find((m) => m.id === replyId)).toBeUndefined();
+  });
+
+  test('should update reply count after deleting a thread reply', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 2,
+      content: 'Root message',
+      files: []
+    });
+
+    const replyId = await caller.messages.send({
+      channelId: 2,
+      content: 'Reply 1',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await caller.messages.send({
+      channelId: 2,
+      content: 'Reply 2',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    // should start with 2 replies
+    let channelMessages = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      limit: 50
+    });
+
+    expect(
+      channelMessages.messages.find((m) => m.id === parentId)!.replyCount
+    ).toBe(2);
+
+    // delete one reply
+    await caller.messages.delete({ messageId: replyId });
+
+    channelMessages = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      limit: 50
+    });
+
+    expect(
+      channelMessages.messages.find((m) => m.id === parentId)!.replyCount
+    ).toBe(1);
+  });
 });

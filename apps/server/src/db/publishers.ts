@@ -47,6 +47,9 @@ const publishMessage = async (
 
   pubsub.publishFor(affectedUserIds, targetEvent, message);
 
+  // thread replies should not increment the channel's unread count
+  if (message.parentMessageId) return;
+
   // only send unread updates to users OTHER than the message author
   const usersToNotify = affectedUserIds.filter((id) => id !== message.userId);
 

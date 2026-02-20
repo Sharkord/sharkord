@@ -5,7 +5,8 @@ import {
   devicesSelector,
   loadingPluginsSelector,
   modViewOpenSelector,
-  modViewUserIdSelector
+  modViewUserIdSelector,
+  threadSidebarDataSelector
 } from './selectors';
 
 export const useIsAppLoading = () => useSelector(appLoadingSelector);
@@ -20,3 +21,5 @@ export const useModViewOpen = () => {
 
   return useMemo(() => ({ isOpen, userId }), [isOpen, userId]);
 };
+
+export const useThreadSidebar = () => useSelector(threadSidebarDataSelector);

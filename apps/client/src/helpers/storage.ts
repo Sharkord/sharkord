@@ -13,7 +13,10 @@ export enum LocalStorageKey {
   RECENT_EMOJIS = 'sharkord-recent-emojis',
   DEBUG = 'sharkord-debug',
   DRAFT_MESSAGES = 'sharkord-draft-messages',
-  HIDE_NON_VIDEO_PARTICIPANTS = 'sharkord-hide-non-video-participants'
+  HIDE_NON_VIDEO_PARTICIPANTS = 'sharkord-hide-non-video-participants',
+  THREAD_SIDEBAR_WIDTH = 'sharkord-thread-sidebar-width',
+  LEFT_SIDEBAR_WIDTH = 'sharkord-left-sidebar-width',
+  RIGHT_SIDEBAR_WIDTH = 'sharkord-right-sidebar-width'
 }
 
 export enum SessionStorageKey {

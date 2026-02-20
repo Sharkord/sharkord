@@ -29,6 +29,7 @@ type Events = {
   [ServerEvents.MESSAGE_TYPING]: {
     channelId: number;
     userId: number;
+    parentMessageId?: number;
   };
 
   [ServerEvents.USER_JOIN]: TJoinedPublicUser;

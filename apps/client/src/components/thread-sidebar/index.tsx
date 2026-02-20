@@ -1,43 +1,50 @@
-import { TextChannel } from '@/components/channel-view/text';
-import {
-  useCurrentVoiceChannelId,
-  useIsCurrentVoiceChannelSelected
-} from '@/features/server/channels/hooks';
+import { useThreadSidebar } from '@/features/app/hooks';
 import { LocalStorageKey } from '@/helpers/storage';
 import { useResizableSidebar } from '@/hooks/use-resizable-sidebar';
 import { cn } from '@/lib/utils';
 import { memo } from 'react';
-
-type TVoiceChatSidebarProps = {
-  isOpen: boolean;
-};
+import { ThreadContent } from './tread-content';
 
 const MIN_WIDTH = 360;
 const MAX_WIDTH = 600;
 const DEFAULT_WIDTH = 384;
 
-const VoiceChatSidebar = memo(({ isOpen }: TVoiceChatSidebarProps) => {
-  const currentVoiceChannelId = useCurrentVoiceChannelId();
-  const isCurrentVoiceChannelSelected = useIsCurrentVoiceChannelSelected();
+const ThreadContentWrapper = memo(() => {
+  const { parentMessageId, channelId } = useThreadSidebar();
+
+  if (!parentMessageId || !channelId) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <span className="text-muted-foreground">No thread selected</span>
+      </div>
+    );
+  }
+
+  return (
+    <ThreadContent parentMessageId={parentMessageId} channelId={channelId} />
+  );
+});
+
+type TThreadSidebarProps = {
+  isOpen: boolean;
+};
+
+const ThreadSidebar = memo(({ isOpen }: TThreadSidebarProps) => {
   const { width, isResizing, sidebarRef, handleMouseDown } =
     useResizableSidebar({
-      storageKey: LocalStorageKey.VOICE_CHAT_SIDEBAR_WIDTH,
+      storageKey: LocalStorageKey.THREAD_SIDEBAR_WIDTH,
       minWidth: MIN_WIDTH,
       maxWidth: MAX_WIDTH,
       defaultWidth: DEFAULT_WIDTH,
       edge: 'left'
     });
 
-  if (!currentVoiceChannelId || !isCurrentVoiceChannelSelected) {
-    return null;
-  }
-
   return (
     <div
       ref={sidebarRef}
       className={cn(
         'hidden lg:flex flex-col bg-card border-l border-border transition-all ease-in-out relative overflow-hidden',
-        isOpen ? 'border-l-1' : 'w-0 border-l-0',
+        isOpen ? 'border-l' : 'w-0 border-l-0',
         !isResizing && 'duration-500'
       )}
       style={{
@@ -53,15 +60,11 @@ const VoiceChatSidebar = memo(({ isOpen }: TVoiceChatSidebarProps) => {
             )}
             onMouseDown={handleMouseDown}
           />
-          <div className="flex flex-col h-full w-full">
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <TextChannel channelId={currentVoiceChannelId} />
-            </div>
-          </div>
+          <ThreadContentWrapper />
         </>
       )}
     </div>
   );
 });
 
-export { VoiceChatSidebar };
+export { ThreadSidebar };

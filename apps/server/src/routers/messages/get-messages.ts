@@ -7,7 +7,8 @@ import {
   type TJoinedMessageReaction,
   type TMessage
 } from '@sharkord/shared';
-import { and, desc, eq, inArray, lt } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull, lt } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/sqlite-core';
 import { z } from 'zod';
 import { db } from '../../db';
 import { getChannelsReadStatesForUser } from '../../db/queries/channels';
@@ -55,6 +56,7 @@ const getMessagesRoute = protectedProcedure
       message: 'Channel not found'
     });
 
+    // only root messages (not thread replies)
     const rows: TMessage[] = await db
       .select()
       .from(messages)
@@ -62,9 +64,13 @@ const getMessagesRoute = protectedProcedure
         cursor
           ? and(
               eq(messages.channelId, channelId),
+              isNull(messages.parentMessageId),
               lt(messages.createdAt, cursor)
             )
-          : eq(messages.channelId, channelId)
+          : and(
+              eq(messages.channelId, channelId),
+              isNull(messages.parentMessageId)
+            )
       )
       .orderBy(desc(messages.createdAt))
       .limit(limit + 1);
@@ -83,7 +89,9 @@ const getMessagesRoute = protectedProcedure
 
     const messageIds = rows.map((m) => m.id);
 
-    const [fileRows, reactionRows] = await Promise.all([
+    const replies = alias(messages, 'replies');
+
+    const [fileRows, reactionRows, replyCountRows] = await Promise.all([
       db
         .select({
           messageId: messageFiles.messageId,
@@ -103,7 +111,15 @@ const getMessagesRoute = protectedProcedure
         })
         .from(messageReactions)
         .leftJoin(files, eq(messageReactions.fileId, files.id))
-        .where(inArray(messageReactions.messageId, messageIds))
+        .where(inArray(messageReactions.messageId, messageIds)),
+      db
+        .select({
+          parentMessageId: replies.parentMessageId,
+          count: count()
+        })
+        .from(replies)
+        .where(inArray(replies.parentMessageId, messageIds))
+        .groupBy(replies.parentMessageId)
     ]);
 
     const filesByMessage = fileRows.reduce<Record<number, TFile[]>>(
@@ -156,11 +172,22 @@ const getMessagesRoute = protectedProcedure
       return acc;
     }, {});
 
-    // Combine messages with files and reactions
+    const replyCountByMessage = replyCountRows.reduce<Record<number, number>>(
+      (acc, r) => {
+        if (r.parentMessageId !== null) {
+          acc[r.parentMessageId] = r.count;
+        }
+        return acc;
+      },
+      {}
+    );
+
+    // Combine messages with files, reactions, and reply counts
     const messagesWithFiles: TJoinedMessage[] = rows.map((msg) => ({
       ...msg,
       files: filesByMessage[msg.id] ?? [],
-      reactions: reactionsByMessage[msg.id] ?? []
+      reactions: reactionsByMessage[msg.id] ?? [],
+      replyCount: replyCountByMessage[msg.id] ?? 0
     }));
 
     // always update read state to the absolute latest message in the channel
@@ -172,7 +199,12 @@ const getMessagesRoute = protectedProcedure
       db
         .select()
         .from(messages)
-        .where(eq(messages.channelId, channelId))
+        .where(
+          and(
+            eq(messages.channelId, channelId),
+            isNull(messages.parentMessageId)
+          )
+        )
         .orderBy(desc(messages.createdAt))
         .limit(1)
         .get()
