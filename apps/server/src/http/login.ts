@@ -4,6 +4,7 @@ import {
   sha256,
   type TJoinedUser
 } from '@sharkord/shared';
+import chalk from 'chalk';
 import { eq, sql } from 'drizzle-orm';
 import http from 'http';
 import jwt from 'jsonwebtoken';
@@ -17,6 +18,7 @@ import { getServerToken, getSettings } from '../db/queries/server';
 import { getUserByIdentity } from '../db/queries/users';
 import { invites, userRoles, users } from '../db/schema';
 import { getWsInfo } from '../helpers/get-ws-info';
+import { safeCompare } from '../helpers/safe-compare';
 import { logger } from '../logger';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { invariant } from '../utils/invariant';
@@ -45,7 +47,7 @@ const registerUser = async (
   inviteCode?: string,
   ip?: string
 ): Promise<TJoinedUser> => {
-  const hashedPassword = await sha256(password);
+  const hashedPassword = (await Bun.password.hash(password)).toString();
 
   const defaultRole = await getDefaultRole();
 
@@ -164,10 +166,42 @@ const loginRouteHandler = async (
     );
   }
 
-  const hashedPassword = await sha256(data.password);
-  const passwordMatches = existingUser.password === hashedPassword;
+  //Logic to handle legacy SHA256 passwords and migrate them to argon2
+  const isPasswordArgon = existingUser.password.startsWith('$argon2');
+
+  let passwordMatches = false;
+
+  if (isPasswordArgon) {
+    passwordMatches = await Bun.password.verify(
+      data.password,
+      existingUser.password
+    );
+  } else {
+    logger.info(
+      `${chalk.dim('[Auth]')} User "${existingUser.identity}" is using legacy SHA256 password hash, upgrading to argon2...`
+    );
+
+    const hashInputPassword = await sha256(data.password);
+
+    passwordMatches = safeCompare(hashInputPassword, existingUser.password);
+
+    if (passwordMatches) {
+      const argon2Password = await Bun.password.hash(data.password);
+
+      await db
+        .update(users)
+        .set({
+          password: argon2Password
+        })
+        .where(eq(users.id, existingUser.id));
+    }
+  }
 
   if (!passwordMatches) {
+    logger.info(
+      `${chalk.dim('[Auth]')} Failed login attempt for user "${existingUser.identity}" due to invalid password. (IP: ${connectionInfo?.ip || 'unknown'})`
+    );
+
     throw new HttpValidationError('password', 'Invalid password');
   }
 

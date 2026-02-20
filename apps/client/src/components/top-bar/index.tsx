@@ -9,6 +9,7 @@ import { MessageSquare, PanelRight, PanelRightClose, Pin, PinOff } from 'lucide-
 import { memo, useContext } from 'react';
 import { PluginSlotRenderer } from '../plugin-slot-renderer';
 import { Tooltip } from '@sharkord/ui';
+import { VoiceOptionsController } from './voice-options-controller';
 import { VolumeController } from './volume-controller';
 import { PinnedMessageContext } from '@/components/pinned-message-provider';
 
@@ -35,6 +36,7 @@ const TopBar = memo(
         <PluginSlotRenderer slotId={PluginSlot.TOPBAR_RIGHT} />
         {isCurrentVoiceChannelSelected && currentVoiceChannelId && (
           <>
+            <VoiceOptionsController />
             <VolumeController channelId={currentVoiceChannelId} />
             <Button
               variant="ghost"

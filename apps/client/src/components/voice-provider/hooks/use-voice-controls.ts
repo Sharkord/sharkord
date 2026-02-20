@@ -178,8 +178,7 @@ const useVoiceControls = ({
   }, [
     ownVoiceState.sharingScreen,
     startScreenShareStream,
-    stopScreenShareStream,
-    currentVoiceChannelId
+    stopScreenShareStream
   ]);
 
   return {

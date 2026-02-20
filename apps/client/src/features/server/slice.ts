@@ -1,4 +1,5 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
+import { getLocalStorageItem, LocalStorageKey } from '@/helpers/storage';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type {
   TCategory,
@@ -51,6 +52,7 @@ export interface IServerState {
     [channelId: number]: number | undefined;
   };
   pluginCommands: TCommandsMapByPlugin;
+  hideNonVideoParticipants: boolean;
   pluginComponents: TPluginComponentsMap;
 }
 
@@ -84,6 +86,8 @@ const initialState: IServerState = {
   channelPermissions: {},
   readStatesMap: {},
   pluginCommands: {},
+  hideNonVideoParticipants:
+    getLocalStorageItem(LocalStorageKey.HIDE_NON_VIDEO_PARTICIPANTS) === 'true',
   pluginComponents: {}
 };
 
@@ -566,6 +570,9 @@ export const serverSlice = createSlice({
     },
     setPinnedCard: (state, action: PayloadAction<TPinnedCard | undefined>) => {
       state.pinnedCard = action.payload;
+    },
+    setHideNonVideoParticipants: (state, action: PayloadAction<boolean>) => {
+      state.hideNonVideoParticipants = action.payload;
     },
     addExternalStreamToChannel: (
       state,

@@ -5,9 +5,7 @@ import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
 import {
   getLocalStorageItem,
   LocalStorageKey,
-  removeLocalStorageItem,
   SessionStorageKey,
-  setLocalStorageItem,
   setSessionStorageItem
 } from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
@@ -22,14 +20,13 @@ import {
   CardHeader,
   CardTitle,
   Group,
-  Input,
-  Switch
+  Input
 } from '@sharkord/ui';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 const Connect = memo(() => {
-  const { values, r, setErrors, onChange } = useForm<{
+  const { values, r, setErrors } = useForm<{
     identity: string;
     password: string;
     rememberCredentials: boolean;
@@ -49,19 +46,6 @@ const Connect = memo(() => {
     const invite = urlParams.get('invite');
     return invite || undefined;
   }, []);
-
-  const onRememberCredentialsChange = useCallback(
-    (checked: boolean) => {
-      onChange('rememberCredentials', checked);
-
-      if (checked) {
-        setLocalStorageItem(LocalStorageKey.REMEMBER_CREDENTIALS, 'true');
-      } else {
-        removeLocalStorageItem(LocalStorageKey.REMEMBER_CREDENTIALS);
-      }
-    },
-    [onChange]
-  );
 
   const onConnectClick = useCallback(async () => {
     setLoading(true);
@@ -91,11 +75,6 @@ const Connect = memo(() => {
 
       setSessionStorageItem(SessionStorageKey.TOKEN, data.token);
 
-      if (values.rememberCredentials) {
-        setLocalStorageItem(LocalStorageKey.IDENTITY, values.identity);
-        setLocalStorageItem(LocalStorageKey.USER_PASSWORD, values.password);
-      }
-
       await connect();
     } catch (error) {
       const errorMessage =
@@ -105,13 +84,7 @@ const Connect = memo(() => {
     } finally {
       setLoading(false);
     }
-  }, [
-    values.identity,
-    values.password,
-    setErrors,
-    values.rememberCredentials,
-    inviteCode
-  ]);
+  }, [values.identity, values.password, setErrors, inviteCode]);
 
   const logoSrc = useMemo(() => {
     if (info?.logo) {
@@ -154,12 +127,6 @@ const Connect = memo(() => {
                 {...r('password')}
                 type="password"
                 onEnter={onConnectClick}
-              />
-            </Group>
-            <Group label="Remember Credentials">
-              <Switch
-                checked={values.rememberCredentials}
-                onCheckedChange={onRememberCredentialsChange}
               />
             </Group>
           </div>

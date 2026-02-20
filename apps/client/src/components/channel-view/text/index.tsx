@@ -19,16 +19,20 @@ import {
   getTrpcError,
   isEmptyMessage
 } from '@sharkord/shared';
-import { Spinner } from '@sharkord/ui';
+import { Button, Spinner } from '@sharkord/ui';
 import { filesize } from 'filesize';
 import { throttle } from 'lodash-es';
 import { Paperclip, Send } from 'lucide-react';
 import { memo, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@sharkord/ui';
 import { FileCard } from './file-card';
 import { MessagesGroup } from './messages-group';
 import { TextSkeleton } from './text-skeleton';
+import {
+  getChannelDraftKey,
+  getDraftMessage,
+  setDraftMessage
+} from './use-draft-messages';
 import { useScrollController } from './use-scroll-controller';
 import { UsersTyping } from './users-typing';
 import { cn } from '@/lib/utils';
@@ -43,7 +47,11 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
   const { messages, hasMore, loadMore, loading, fetching, groupedMessages } =
     useMessages(channelId);
 
-  const [newMessage, setNewMessage] = useState('');
+  const draftChannelKey = getChannelDraftKey(channelId);
+
+  const [newMessage, setNewMessage] = useState(
+    getDraftMessage(draftChannelKey)
+  );
   const allPluginCommands = useFlatPluginCommands();
   const typingUsers = useTypingUsersByChannelId(channelId);
   const messageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
@@ -108,6 +116,14 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     [channelId]
   );
 
+  const setNewMessageHandler = useCallback(
+    (value: string) => {
+      setNewMessage(value);
+      setDraftMessage(draftChannelKey, value);
+    },
+    [setNewMessage, draftChannelKey]
+  );
+
   const onSendMessage = useCallback(async () => {
     if (
       (isEmptyMessage(newMessage) && !files.length) ||
@@ -139,7 +155,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
       setSending(false);
     }
 
-    setNewMessage('');
+    setNewMessageHandler('');
     clearFiles();
   }, [
     newMessage,
@@ -147,7 +163,8 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     files,
     clearFiles,
     sendTypingSignal,
-    canSendMessages
+    canSendMessages,
+    setNewMessageHandler
   ]);
 
   const onRemoveFileClick = useCallback(
@@ -234,7 +251,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         <div className="flex items-center gap-2 rounded-lg">
           <TiptapInput
             value={newMessage}
-            onChange={setNewMessage}
+            onChange={setNewMessageHandler}
             onSubmit={onSendMessage}
             onTyping={sendTypingSignal}
             disabled={uploading || !canSendMessages}
