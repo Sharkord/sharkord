@@ -2,12 +2,6 @@ import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { connect } from '@/features/server/actions';
 import { useInfo } from '@/features/server/hooks';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
-import {
-  getLocalStorageItem,
-  LocalStorageKey,
-  SessionStorageKey,
-  setSessionStorageItem
-} from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
 import { PluginSlot } from '@sharkord/shared';
 import {
@@ -22,7 +16,7 @@ import {
   Group,
   Input
 } from '@sharkord/ui';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 const Connect = memo(() => {
@@ -31,11 +25,9 @@ const Connect = memo(() => {
     password: string;
     rememberCredentials: boolean;
   }>({
-    identity: getLocalStorageItem(LocalStorageKey.IDENTITY) || '',
-    password: getLocalStorageItem(LocalStorageKey.USER_PASSWORD) || '',
-    rememberCredentials: !!getLocalStorageItem(
-      LocalStorageKey.REMEMBER_CREDENTIALS
-    )
+    identity: '',
+    password: '',
+    rememberCredentials: false
   });
 
   const [loading, setLoading] = useState(false);
@@ -54,6 +46,7 @@ const Connect = memo(() => {
       const url = getUrlFromServer();
       const response = await fetch(`${url}/login`, {
         method: 'POST',
+        credentials: "include",
         headers: {
           'Content-Type': 'application/json'
         },
@@ -70,10 +63,6 @@ const Connect = memo(() => {
         setErrors(data.errors || {});
         return;
       }
-
-      const data = (await response.json()) as { token: string };
-
-      setSessionStorageItem(SessionStorageKey.TOKEN, data.token);
 
       await connect();
     } catch (error) {
@@ -93,6 +82,41 @@ const Connect = memo(() => {
 
     return '/logo.webp';
   }, [info]);
+
+// Helper to restore session if cookie exists
+useEffect(() => {
+
+  const restoreSession = async () => {
+
+    setLoading(true);
+
+    try {
+
+      const url = getUrlFromServer();
+
+      const response = await fetch(`${url}/session`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.ok) {
+        connect()
+      }
+    } catch (error) {
+        // Throw an error?
+    } finally {
+      
+        setLoading(false);
+
+    }
+
+  };
+
+  restoreSession();
+
+}, []);
 
   return (
     <div className="flex flex-col gap-2 justify-center items-center h-full">

@@ -17,6 +17,7 @@ import { pluginBundleRouteHandler } from './plugin-bundle';
 import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
 import { uploadFileRouteHandler } from './upload';
+import { sessionRouteHandler } from './session'
 import { HttpValidationError } from './utils';
 
 type RouteContext = {
@@ -49,7 +50,8 @@ const routeHandlers: Partial<
   POST: {
     exact: {
       '/upload': (req, res) => uploadFileRouteHandler(req, res),
-      '/login': (req, res) => loginRouteHandler(req, res)
+      '/login': (req, res) => loginRouteHandler(req, res),
+      '/session': (req, res) => sessionRouteHandler(req, res)
     },
     prefix: {}
   }

@@ -209,8 +209,16 @@ const loginRouteHandler = async (
     expiresIn: '86400s' // 1 day
   });
 
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ success: true, token }));
+  const cookie = 
+    `session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 7}`;
+
+  res.writeHead(200, { 
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Origin': '*',
+    'Set-Cookie': cookie
+  });
+  res.end(JSON.stringify({ success: true }));
 
   return res;
 };
