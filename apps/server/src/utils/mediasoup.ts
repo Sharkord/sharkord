@@ -1,12 +1,13 @@
 import mediasoup from 'mediasoup';
 import { config, SERVER_PUBLIC_IP } from '../config.js';
+import { getErrorMessage } from '../helpers/get-error-message.js';
 import { MEDIASOUP_BINARY_PATH } from '../helpers/paths.js';
 import { logger } from '../logger.js';
-import { IS_PRODUCTION } from './env.js';
 import {
   patchSpawnForMediasoup,
-  restoreSpawn,
+  restoreSpawn
 } from './bun-mediasoup-workaround.js';
+import { IS_PRODUCTION } from './env.js';
 
 let mediaSoupWorker: mediasoup.types.Worker<mediasoup.types.AppData>;
 let webRtcServer: mediasoup.types.WebRtcServer<mediasoup.types.AppData>;
@@ -28,9 +29,11 @@ const loadMediasoup = async () => {
   // On Bun/Windows, extra stdio pipes (fd 3/4) are broken (oven-sh/bun#11044).
   // This patches child_process.spawn to use Bun.spawn() for the mediasoup
   // worker, which correctly supports extra stdio pipe handles.
-  patchSpawnForMediasoup();
   try {
+    patchSpawnForMediasoup();
     mediaSoupWorker = await mediasoup.createWorker(workerConfig);
+  } catch (error) {
+    logger.error(`Failed to load mediasoup worker: ${getErrorMessage(error)}`);
   } finally {
     restoreSpawn();
   }

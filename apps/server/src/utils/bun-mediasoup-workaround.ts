@@ -17,13 +17,14 @@
  * `Bun.connect({fd})`.
  */
 
-import { Readable } from 'node:stream';
 import { EventEmitter } from 'node:events';
+import { Readable } from 'node:stream';
 import { logger } from '../logger.js';
 
 const isBun = typeof globalThis.Bun !== 'undefined';
 const isWindows = process.platform === 'win32';
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 let originalSpawn: Function | null = null;
 let patched = false;
 
@@ -77,9 +78,7 @@ function createBunPipeSocket(
     if (!bunSocket) {
       // In practice this never happens — Bun.connect resolves before the
       // first IPC write (which waits for the async WORKER_RUNNING event).
-      logger.warn(
-        '[bun-mediasoup-fix] write() called before Bun socket ready'
-      );
+      logger.warn('[bun-mediasoup-fix] write() called before Bun socket ready');
       callback?.(new Error('Socket not ready'));
       return false;
     }
@@ -132,8 +131,8 @@ function createBunPipeSocket(
           emitter.emit('error', err);
         }
       },
-      drain() {},
-    },
+      drain() {}
+    }
   }).catch((err: Error) => {
     if (!destroyed) {
       emitter.emit('error', err);
@@ -158,6 +157,7 @@ function pumpBunStreamToReadable(
   const reader = bunStream.getReader();
   (async () => {
     try {
+      // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
@@ -220,7 +220,7 @@ function wrapBunSubprocess(bunChild: any): EventEmitter {
     stdoutReadable, // stdout
     stderrReadable, // stderr
     producerSocket, // fd 3 — write TO worker
-    consumerSocket, // fd 4 — read FROM worker
+    consumerSocket // fd 4 — read FROM worker
   ];
 
   // kill()
@@ -284,14 +284,14 @@ export function patchSpawnForMediasoup(): void {
       return originalSpawn!.call(cp, command, args, options);
     }
 
-    logger.info(
-      '[bun-mediasoup-fix] Intercepting mediasoup-worker spawn — using Bun.spawn()'
+    logger.debug(
+      '[bun-mediasoup-workaround] Intercepting spawn of mediasoup-worker with Bun.spawn()'
     );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const bunSpawnOptions: any = {
       stdio: ['ignore', 'pipe', 'pipe', 'pipe', 'pipe'],
-      env: options?.env || process.env,
+      env: options?.env || process.env
     };
     // Forward additional spawn options that Bun supports, when provided.
     if (options?.cwd) {
