@@ -40,14 +40,14 @@ export type TExternalStreamHandle = {
 };
 
 export type ServerEvent =
-  | "user:joined"
-  | "user:left"
-  | "message:created"
-  | "message:updated"
-  | "message:deleted"
-  | "message:pinned"
-  | "voice:runtime_initialized"
-  | "voice:runtime_closed";
+  | 'user:joined'
+  | 'user:left'
+  | 'message:created'
+  | 'message:updated'
+  | 'message:deleted'
+  | 'message:pinned'
+  | 'voice:runtime_initialized'
+  | 'voice:runtime_closed';
 
 export interface EventPayloads {
   'user:joined': {
@@ -74,14 +74,14 @@ export interface EventPayloads {
     messageId: number;
     channelId: number;
   };
-  "message:pinned": {
+  'message:pinned': {
     messageId: number;
     channelId: number;
     userId: number;
     content: string;
     pinned: boolean;
   };
-  "voice:runtime_initialized": {
+  'voice:runtime_initialized': {
     channelId: number;
   };
   'voice:runtime_closed': {

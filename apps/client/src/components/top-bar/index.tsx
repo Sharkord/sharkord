@@ -6,18 +6,17 @@ import { cn } from '@/lib/utils';
 import { PluginSlot } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import { MessageSquare, PanelRight, PanelRightClose, Pin, PinOff } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useContext } from 'react';
 import { PluginSlotRenderer } from '../plugin-slot-renderer';
 import { Tooltip } from '@sharkord/ui';
 import { VolumeController } from './volume-controller';
+import { PinnedMessageContext } from '@/components/pinned-message-provider';
 
 type TTopBarProps = {
   onToggleRightSidebar: () => void;
   isOpen: boolean;
   onToggleVoiceChat: () => void;
   isVoiceChatOpen: boolean;
-  onTogglePinnedMessages: () => void;
-  isPinnedMessagesShown: boolean;
 };
 
 const TopBar = memo(
@@ -26,11 +25,10 @@ const TopBar = memo(
     isOpen,
     onToggleVoiceChat,
     isVoiceChatOpen,
-    onTogglePinnedMessages,
-    isPinnedMessagesShown
   }: TTopBarProps) => {
     const isCurrentVoiceChannelSelected = useIsCurrentVoiceChannelSelected();
     const currentVoiceChannelId = useCurrentVoiceChannelId();
+    const pinnedMessage = useContext(PinnedMessageContext);
 
     return (
       <div className="hidden lg:flex h-8 w-full bg-card border-b border-border items-center justify-end px-4 transition-all duration-300 ease-in-out gap-2">
@@ -63,11 +61,11 @@ const TopBar = memo(
         <Button
           variant="ghost"
           size="sm"
-          onClick={onTogglePinnedMessages}
+          onClick={() => pinnedMessage?.setVisible(!pinnedMessage.visible)}
           className="h-6 px-2 transition-all duration-200 ease-in-out"
         >
-          {isPinnedMessagesShown ? (
-            <Tooltip content="Hide Pinned Messages>">
+          {pinnedMessage?.visible ? (
+            <Tooltip content="Hide Pinned Messages">
               <div>
                 <PinOff className="w-4 h-4 transition-transform duration-200 ease-in-out" />
               </div>

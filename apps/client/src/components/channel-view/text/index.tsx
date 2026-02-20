@@ -23,7 +23,7 @@ import { Spinner } from '@sharkord/ui';
 import { filesize } from 'filesize';
 import { throttle } from 'lodash-es';
 import { Paperclip, Send } from 'lucide-react';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@sharkord/ui';
 import { FileCard } from './file-card';
@@ -33,27 +33,13 @@ import { useScrollController } from './use-scroll-controller';
 import { UsersTyping } from './users-typing';
 import { cn } from '@/lib/utils';
 import { PinnedMessagesTopbar } from '@/components/pinned-messages-topbar';
+import { PinnedMessageContext } from '@/components/pinned-message-provider';
 
 type TChannelProps = {
   channelId: number;
-  isPinnedMessagesShown: boolean;
 };
 
-const hasMessageRenderableContent = (html: string) => {
-  const textContent = html
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\u200B/g, '')
-    .trim();
-
-  if (textContent.length > 0) {
-    return true;
-  }
-
-  return /<img\b/i.test(html);
-};
-
-const TextChannel = memo(({ channelId, isPinnedMessagesShown }: TChannelProps) => {
+const TextChannel = memo(({ channelId }: TChannelProps) => {
   const { messages, hasMore, loadMore, loading, fetching, groupedMessages } =
     useMessages(channelId);
 
@@ -61,6 +47,7 @@ const TextChannel = memo(({ channelId, isPinnedMessagesShown }: TChannelProps) =
   const allPluginCommands = useFlatPluginCommands();
   const typingUsers = useTypingUsersByChannelId(channelId);
   const messageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const pinnedMessage = useContext(PinnedMessageContext);
 
   const { containerRef, onScroll } = useScrollController({
     messages,
@@ -200,11 +187,11 @@ const TextChannel = memo(({ channelId, isPinnedMessagesShown }: TChannelProps) =
           'absolute left-2 right-2 w-auto transition-[height,padding,opacity] duration-500 ease-in-out overflow-hidden',
           'bg-neutral-800 rounded-xl shadow-md border border-neutral-700 mx-2 mt-2',
           'max-w-4xl mx-auto',
-          isPinnedMessagesShown ?
+          pinnedMessage?.visible ?
             'max-h-60 h-auto p-2 opacity-100 z-10' :
             'h-0 p-0 opacity-0 border-transparent shadow-none'
         )}
-        isOpen={isPinnedMessagesShown}
+        isOpen={pinnedMessage?.visible || false}
         messageRefs={messageRefs}
         messages={messages}
       />

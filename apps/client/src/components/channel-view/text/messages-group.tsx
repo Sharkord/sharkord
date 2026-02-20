@@ -10,7 +10,7 @@ import {
 import { format } from 'date-fns';
 import { memo } from 'react';
 import { Message } from './message';
-import { Button } from '@/components/ui/button';
+import { Button } from '@sharkord/ui';
 
 type TMessagesGroupProps = {
   group: TJoinedMessage[];
