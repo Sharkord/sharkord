@@ -22,6 +22,7 @@ import {
   publicServerSettingsSelector,
   serverNameSelector,
   typingUsersByChannelIdSelector,
+  typingUsersByThreadIdSelector,
   userRolesSelector,
   voiceUsersByChannelIdSelector
 } from './selectors';
@@ -101,6 +102,11 @@ export const useUserRoles = (userId: number) =>
 export const useTypingUsersByChannelId = (channelId: number) =>
   useSelector((state: IRootState) =>
     typingUsersByChannelIdSelector(state, channelId)
+  );
+
+export const useTypingUsersByThreadId = (parentMessageId: number) =>
+  useSelector((state: IRootState) =>
+    typingUsersByThreadIdSelector(state, parentMessageId)
   );
 
 export const useVoiceUsersByChannelId = (channelId: number) =>

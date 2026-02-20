@@ -7,6 +7,9 @@ export interface TAppState {
   devices: TDevices | undefined;
   modViewOpen: boolean;
   modViewUserId?: number;
+  threadSidebarOpen: boolean;
+  threadParentMessageId?: number;
+  threadChannelId?: number;
 }
 
 const initialState: TAppState = {
@@ -14,7 +17,10 @@ const initialState: TAppState = {
   loadingPlugins: true,
   devices: undefined,
   modViewOpen: false,
-  modViewUserId: undefined
+  modViewUserId: undefined,
+  threadSidebarOpen: false,
+  threadParentMessageId: undefined,
+  threadChannelId: undefined
 };
 
 export const appSlice = createSlice({
@@ -39,6 +45,18 @@ export const appSlice = createSlice({
     ) => {
       state.modViewOpen = action.payload.modViewOpen;
       state.modViewUserId = action.payload.userId;
+    },
+    setThreadSidebarOpen: (
+      state,
+      action: PayloadAction<{
+        open: boolean;
+        parentMessageId?: number;
+        channelId?: number;
+      }>
+    ) => {
+      state.threadSidebarOpen = action.payload.open;
+      state.threadParentMessageId = action.payload.parentMessageId;
+      state.threadChannelId = action.payload.channelId;
     }
   }
 });
