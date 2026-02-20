@@ -23,6 +23,8 @@ const getUserInfoRoute = protectedProcedure
       message: 'User not found'
     });
 
+    user.password = '';
+
     const [logins, files, messages] = await Promise.all([
       getLastLogins(user.id, 6),
       getFilesByUserId(user.id),
