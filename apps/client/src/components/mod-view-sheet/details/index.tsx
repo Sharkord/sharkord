@@ -3,6 +3,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  IconButton,
   Tooltip
 } from '@sharkord/ui';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -37,11 +38,7 @@ const Row = memo(({ icon, label, value, details, hidden = false }: TRowProps) =>
     </span>
   );
   
-  const [visible, setVisible] = useState(!hidden);
-  
-  function handleEyeClick() {
-    setVisible(!visible)
-  }
+  let [visible, setVisible] = useState(!hidden);
 
   if (details) {
     valContent = <Tooltip content={details}>{valContent}</Tooltip>;
@@ -54,24 +51,14 @@ const Row = memo(({ icon, label, value, details, hidden = false }: TRowProps) =>
         <span className="text-sm truncate">{label}</span>
       </div>
       {visible ? valContent : "***"}
-      {visible && hidden &&
-        <span
+      {hidden && (
+        <IconButton
           role="button"
-          onClick={handleEyeClick}
+          onClick={() => setVisible(!visible)}
           className="text-muted-foreground inline-flex h-6 w-6 items-center justify-center rounded bg-transparent hover:bg-accent hover:text-foreground cursor-pointer transition-colors focus:outline-none"
-        >
-          <Eye className="h-4 w-4" />
-        </span>
-      }
-      {!visible && hidden &&
-        <span
-          role="button"
-          onClick={handleEyeClick}
-          className="text-muted-foreground inline-flex h-6 w-6 items-center justify-center rounded bg-transparent hover:bg-accent hover:text-foreground cursor-pointer transition-colors focus:outline-none"
-        >
-          <EyeClosed className="h-4 w-4" />
-        </span>
-      }
+          icon={visible ? EyeClosed : Eye}
+        />
+      )}
     </div>
   );
 });
@@ -96,7 +83,7 @@ const Details = memo(() => {
             value={user.id}
           />
 
-          <Protect permission={Permission.VIEW_IDENTITY_IP_LOCATION}>
+          <Protect permission={Permission.VIEW_USER_SENSITIVE_DATA}>
             <Row
               icon={<IdCard className="h-4 w-4 text-muted-foreground" />}
               label="Identity"
