@@ -1,6 +1,5 @@
 import {
   DELETED_USER_IDENTITY_AND_NAME,
-  sha256,
   type TTempFile
 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
@@ -196,10 +195,12 @@ describe('users router', () => {
     // should not be plain text
     expect(row!.password).not.toBe(newPassword);
 
-    const hashedPassword = await sha256(newPassword);
+    // should be hashed with argon2
+    expect(row!.password).toStartWith('$argon2');
 
-    // should be hashed
-    expect(row!.password).toBe(hashedPassword);
+    // should verify against the new password
+    const isValid = await Bun.password.verify(newPassword, row!.password);
+    expect(isValid).toBe(true);
   });
 
   test('should throw when current password is incorrect', async () => {
