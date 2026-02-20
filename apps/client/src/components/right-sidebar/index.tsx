@@ -21,11 +21,11 @@ type TUserProps = {
 const User = memo(({ userId, name, banned }: TUserProps) => {
   return (
     <UserPopover userId={userId}>
-      <div className="flex items-center gap-3 rounded px-2 py-1.5 hover:bg-accent select-none">
-        <UserAvatar userId={userId} className="h-8 w-8" />
+      <div className="flex items-center gap-3 rounded px-2 py-1.5 hover:bg-accent select-none min-w-0">
+        <UserAvatar userId={userId} className="h-8 w-8 shrink-0" />
         <span
           className={cn(
-            'text-sm text-foreground',
+            'text-sm text-foreground truncate',
             banned && 'line-through text-muted-foreground'
           )}
         >
@@ -67,7 +67,7 @@ const RightSidebar = memo(
       >
         <div className="flex h-12 items-center border-b border-border px-4">
           <h3 className="text-sm font-semibold text-foreground">
-            Members — {usersToShow.length}
+            Members — {users.length}
           </h3>
         </div>
         <div className="flex-1 overflow-y-auto p-2">

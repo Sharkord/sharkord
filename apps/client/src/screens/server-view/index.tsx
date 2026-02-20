@@ -115,7 +115,7 @@ const ServerView = memo(() => {
 
           <RightSidebar
             className={cn(
-              'fixed top-0 bottom-0 right-0 h-full z-40 transition-all duration-500 ease-in-out',
+              'fixed top-0 bottom-0 right-0 h-full z-40',
               'lg:relative lg:z-0',
               isMobileUsersOpen
                 ? 'translate-x-0 lg:translate-x-0'
