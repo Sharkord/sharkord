@@ -38,7 +38,7 @@ const Row = memo(({ icon, label, value, details, hidden = false }: TRowProps) =>
     </span>
   );
   
-  let [visible, setVisible] = useState(!hidden);
+  const [visible, setVisible] = useState(!hidden);
 
   if (details) {
     valContent = <Tooltip content={details}>{valContent}</Tooltip>;
