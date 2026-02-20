@@ -6,6 +6,7 @@ import { getMessagesByUserId } from '../../db/queries/messages';
 import { getUserById } from '../../db/queries/users';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
+import { clearFields } from '../../helpers/clear-fields';
 
 const getUserInfoRoute = protectedProcedure
   .input(
@@ -29,7 +30,7 @@ const getUserInfoRoute = protectedProcedure
       getMessagesByUserId(user.id)
     ]);
 
-    return { user, logins, files, messages };
+    return { user: clearFields(user, ['password']), logins, files, messages };
   });
 
 export { getUserInfoRoute };
