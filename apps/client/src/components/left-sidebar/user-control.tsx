@@ -8,7 +8,7 @@ import { ChannelPermission } from '@sharkord/shared';
 import { HeadphoneOff, Headphones, Mic, MicOff, Settings } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { ServerScreen } from '../server-screens/screens';
-import { Button } from '../ui/button';
+import { Button } from '@sharkord/ui';
 import { UserAvatar } from '../user-avatar';
 import { UserPopover } from '../user-popover';
 

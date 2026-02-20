@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { removeFile } from '../../db/mutations/files';
-import { publishMessage } from '../../db/publishers';
+import { publishMessage, publishReplyCount } from '../../db/publishers';
 import { getFilesByMessageId } from '../../db/queries/files';
 import { messages } from '../../db/schema';
 import { eventBus } from '../../plugins/event-bus';
@@ -16,7 +16,8 @@ const deleteMessageRoute = protectedProcedure
     const targetMessage = await db
       .select({
         userId: messages.userId,
-        channelId: messages.channelId
+        channelId: messages.channelId,
+        parentMessageId: messages.parentMessageId
       })
       .from(messages)
       .where(eq(messages.id, input.messageId))
@@ -49,6 +50,10 @@ const deleteMessageRoute = protectedProcedure
     await db.delete(messages).where(eq(messages.id, input.messageId));
 
     publishMessage(input.messageId, targetMessage.channelId, 'delete');
+
+    if (targetMessage.parentMessageId) {
+      publishReplyCount(targetMessage.parentMessageId, targetMessage.channelId);
+    }
 
     eventBus.emit('message:deleted', {
       channelId: targetMessage.channelId,

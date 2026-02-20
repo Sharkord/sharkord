@@ -1,22 +1,3 @@
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { Group } from '@/components/ui/group';
-import { LoadingCard } from '@/components/ui/loading-card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useAdminStorage } from '@/features/server/admin/hooks';
 import {
@@ -29,6 +10,23 @@ import {
   STORAGE_OVERFLOW_ACTIONS_DICT,
   StorageOverflowAction
 } from '@sharkord/shared';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Group,
+  LoadingCard,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Slider,
+  Switch
+} from '@sharkord/ui';
 import { memo } from 'react';
 import { DiskMetrics } from './metrics';
 

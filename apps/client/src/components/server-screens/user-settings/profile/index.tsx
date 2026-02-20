@@ -1,19 +1,19 @@
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import Color from '@/components/ui/color';
-import { Group } from '@/components/ui/group';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useOwnPublicUser } from '@/features/server/users/hooks';
 import { useForm } from '@/hooks/use-form';
 import { getTRPCClient } from '@/lib/trpc';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Color,
+  Group,
+  Input,
+  Textarea
+} from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { AvatarManager } from './avatar-manager';

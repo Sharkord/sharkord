@@ -1,4 +1,5 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
+import { getLocalStorageItem, LocalStorageKey } from '@/helpers/storage';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type {
   TCategory,
@@ -12,13 +13,19 @@ import type {
   TJoinedMessage,
   TJoinedPublicUser,
   TJoinedRole,
+  TPluginComponentsMap,
+  TPluginComponentsMapBySlotId,
   TPublicServerSettings,
   TReadStateMap,
   TServerInfo,
   TVoiceMap,
   TVoiceUserState
 } from '@sharkord/shared';
-import type { TDisconnectInfo, TMessagesMap } from './types';
+import type {
+  TDisconnectInfo,
+  TMessagesMap,
+  TThreadMessagesMap
+} from './types';
 
 export interface IServerState {
   connected: boolean;
@@ -32,6 +39,7 @@ export interface IServerState {
   selectedChannelId: number | undefined;
   currentVoiceChannelId: number | undefined;
   messagesMap: TMessagesMap;
+  threadMessagesMap: TThreadMessagesMap;
   users: TJoinedPublicUser[];
   roles: TJoinedRole[];
   publicSettings: TPublicServerSettings | undefined;
@@ -39,6 +47,9 @@ export interface IServerState {
   loadingInfo: boolean;
   typingMap: {
     [channelId: number]: number[];
+  };
+  threadTypingMap: {
+    [parentMessageId: number]: number[];
   };
   voiceMap: TVoiceMap;
   externalStreamsMap: TExternalStreamsMap;
@@ -49,6 +60,8 @@ export interface IServerState {
     [channelId: number]: number | undefined;
   };
   pluginCommands: TCommandsMapByPlugin;
+  hideNonVideoParticipants: boolean;
+  pluginComponents: TPluginComponentsMap;
 }
 
 const initialState: IServerState = {
@@ -63,12 +76,14 @@ const initialState: IServerState = {
   selectedChannelId: undefined,
   currentVoiceChannelId: undefined,
   messagesMap: {},
+  threadMessagesMap: {},
   users: [],
   roles: [],
   publicSettings: undefined,
   info: undefined,
   loadingInfo: false,
   typingMap: {},
+  threadTypingMap: {},
   voiceMap: {},
   externalStreamsMap: {},
   ownVoiceState: {
@@ -80,7 +95,10 @@ const initialState: IServerState = {
   pinnedCard: undefined,
   channelPermissions: {},
   readStatesMap: {},
-  pluginCommands: {}
+  pluginCommands: {},
+  hideNonVideoParticipants:
+    getLocalStorageItem(LocalStorageKey.HIDE_NON_VIDEO_PARTICIPANTS) === 'true',
+  pluginComponents: {}
 };
 
 export const serverSlice = createSlice({
@@ -189,6 +207,24 @@ export const serverSlice = createSlice({
 
       messages[messageIndex] = action.payload.message;
     },
+    updateReplyCount: (
+      state,
+      action: PayloadAction<{
+        channelId: number;
+        messageId: number;
+        replyCount: number;
+      }>
+    ) => {
+      const messages = state.messagesMap[action.payload.channelId];
+
+      if (!messages) return;
+
+      const message = messages.find((m) => m.id === action.payload.messageId);
+
+      if (!message) return;
+
+      message.replyCount = action.payload.replyCount;
+    },
     deleteMessage: (
       state,
       action: PayloadAction<{ channelId: number; messageId: number }>
@@ -201,6 +237,72 @@ export const serverSlice = createSlice({
         (m) => m.id !== action.payload.messageId
       );
     },
+
+    // THREAD MESSAGES ------------------------------------------------------------
+
+    addThreadMessages: (
+      state,
+      action: PayloadAction<{
+        parentMessageId: number;
+        messages: TJoinedMessage[];
+        opts?: { prepend?: boolean };
+      }>
+    ) => {
+      const { parentMessageId, messages, opts } = action.payload;
+      const existing = state.threadMessagesMap[parentMessageId] ?? [];
+
+      const existingIds = new Set(existing.map((m) => m.id));
+      const filtered = messages.filter((m) => !existingIds.has(m.id));
+
+      let merged: TJoinedMessage[];
+      if (opts?.prepend) {
+        merged = [...filtered, ...existing];
+      } else {
+        merged = [...existing, ...filtered];
+      }
+
+      state.threadMessagesMap[parentMessageId] = merged.sort(
+        (a, b) => a.createdAt - b.createdAt
+      );
+    },
+    updateThreadMessage: (
+      state,
+      action: PayloadAction<{
+        parentMessageId: number;
+        message: TJoinedMessage;
+      }>
+    ) => {
+      const messages = state.threadMessagesMap[action.payload.parentMessageId];
+
+      if (!messages) return;
+
+      const messageIndex = messages.findIndex(
+        (message) => message.id === action.payload.message.id
+      );
+
+      if (messageIndex === -1) return;
+
+      messages[messageIndex] = action.payload.message;
+    },
+    deleteThreadMessage: (
+      state,
+      action: PayloadAction<{
+        parentMessageId: number;
+        messageId: number;
+      }>
+    ) => {
+      const messages = state.threadMessagesMap[action.payload.parentMessageId];
+
+      if (!messages) return;
+
+      state.threadMessagesMap[action.payload.parentMessageId] = messages.filter(
+        (m) => m.id !== action.payload.messageId
+      );
+    },
+    clearThreadMessages: (state, action: PayloadAction<number>) => {
+      delete state.threadMessagesMap[action.payload];
+    },
+
     clearTypingUsers: (state, action: PayloadAction<number>) => {
       delete state.typingMap[action.payload];
     },
@@ -224,6 +326,29 @@ export const serverSlice = createSlice({
       const typingUsers = state.typingMap[channelId] || [];
 
       state.typingMap[channelId] = typingUsers.filter((id) => id !== userId);
+    },
+    addThreadTypingUser: (
+      state,
+      action: PayloadAction<{ parentMessageId: number; userId: number }>
+    ) => {
+      const { parentMessageId, userId } = action.payload;
+      const typingUsers = state.threadTypingMap[parentMessageId] || [];
+
+      if (!typingUsers.includes(userId)) {
+        typingUsers.push(userId);
+        state.threadTypingMap[parentMessageId] = typingUsers;
+      }
+    },
+    removeThreadTypingUser: (
+      state,
+      action: PayloadAction<{ parentMessageId: number; userId: number }>
+    ) => {
+      const { parentMessageId, userId } = action.payload;
+      const typingUsers = state.threadTypingMap[parentMessageId] || [];
+
+      state.threadTypingMap[parentMessageId] = typingUsers.filter(
+        (id) => id !== userId
+      );
     },
 
     // USERS ------------------------------------------------------------
@@ -255,6 +380,107 @@ export const serverSlice = createSlice({
       if (exists) return;
 
       state.users.push(action.payload);
+    },
+    wipeUser: (state, action: PayloadAction<{ userId: number }>) => {
+      const { userId } = action.payload;
+
+      // remove user
+      state.users = state.users.filter((u) => u.id !== userId);
+
+      // remove user from typing states
+      for (const channelId in state.typingMap) {
+        state.typingMap[channelId] = state.typingMap[channelId].filter(
+          (id) => id !== userId
+        );
+      }
+
+      // remove user from voice channels
+      for (const channelId in state.voiceMap) {
+        delete state.voiceMap[channelId].users[userId];
+      }
+
+      // remove user from messages and reactions
+      for (const channelId in state.messagesMap) {
+        state.messagesMap[channelId] = state.messagesMap[channelId]
+          .filter((m) => m.userId !== userId)
+          .map((m) => ({
+            ...m,
+            reactions: m.reactions.filter(
+              (reaction) => reaction.userId !== userId
+            )
+          }));
+      }
+
+      // remove user from thread messages and reactions
+      for (const parentId in state.threadMessagesMap) {
+        state.threadMessagesMap[parentId] = state.threadMessagesMap[parentId]
+          .filter((m) => m.userId !== userId)
+          .map((m) => ({
+            ...m,
+            reactions: m.reactions.filter(
+              (reaction) => reaction.userId !== userId
+            )
+          }));
+      }
+
+      // remove user from emojis
+      state.emojis = state.emojis.filter((e) => e.userId !== userId);
+    },
+    reassignUser: (
+      state,
+      action: PayloadAction<{ userId: number; deletedUserId: number }>
+    ) => {
+      const { userId, deletedUserId } = action.payload;
+
+      // remove user
+      state.users = state.users.filter((u) => u.id !== userId);
+
+      // remove user from typing states
+      for (const channelId in state.typingMap) {
+        state.typingMap[channelId] = state.typingMap[channelId].filter(
+          (id) => id !== userId
+        );
+      }
+
+      // remove user from voice channels
+      for (const channelId in state.voiceMap) {
+        delete state.voiceMap[channelId].users[userId];
+      }
+
+      // reassign messages and reactions
+      for (const channelId in state.messagesMap) {
+        state.messagesMap[channelId] = state.messagesMap[channelId].map(
+          (m) => ({
+            ...m,
+            userId: m.userId === userId ? deletedUserId : m.userId,
+            reactions: m.reactions.map((reaction) =>
+              reaction.userId === userId
+                ? { ...reaction, userId: deletedUserId }
+                : reaction
+            )
+          })
+        );
+      }
+
+      // reassign thread messages and reactions
+      for (const parentId in state.threadMessagesMap) {
+        state.threadMessagesMap[parentId] = state.threadMessagesMap[
+          parentId
+        ].map((m) => ({
+          ...m,
+          userId: m.userId === userId ? deletedUserId : m.userId,
+          reactions: m.reactions.map((reaction) =>
+            reaction.userId === userId
+              ? { ...reaction, userId: deletedUserId }
+              : reaction
+          )
+        }));
+      }
+
+      // reassign emojis
+      state.emojis = state.emojis.map((e) =>
+        e.userId === userId ? { ...e, userId: deletedUserId } : e
+      );
     },
 
     // SERVER SETTINGS ------------------------------------------------------------
@@ -489,6 +715,9 @@ export const serverSlice = createSlice({
     setPinnedCard: (state, action: PayloadAction<TPinnedCard | undefined>) => {
       state.pinnedCard = action.payload;
     },
+    setHideNonVideoParticipants: (state, action: PayloadAction<boolean>) => {
+      state.hideNonVideoParticipants = action.payload;
+    },
     addExternalStreamToChannel: (
       state,
       action: PayloadAction<{
@@ -562,6 +791,30 @@ export const serverSlice = createSlice({
           (c) => c.name !== commandName
         );
       }
+    },
+    addPluginComponents: (
+      state,
+      action: PayloadAction<{
+        pluginId: string;
+        slots: TPluginComponentsMapBySlotId;
+      }>
+    ) => {
+      const { pluginId, slots } = action.payload;
+
+      if (!state.pluginComponents[pluginId]) {
+        state.pluginComponents[pluginId] = {};
+      }
+
+      state.pluginComponents[pluginId] = {
+        ...state.pluginComponents[pluginId],
+        ...slots
+      };
+    },
+    setPluginComponents: (
+      state,
+      action: PayloadAction<TPluginComponentsMap>
+    ) => {
+      state.pluginComponents = action.payload;
     }
   }
 });

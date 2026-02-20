@@ -1,13 +1,13 @@
-import { Button } from '@/components/ui/button';
+import { usePluginCommands } from '@/features/server/plugins/hooks';
+import { getTRPCClient } from '@/lib/trpc';
+import { getTrpcError } from '@sharkord/shared';
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle
-} from '@/components/ui/dialog';
-import { usePluginCommands } from '@/features/server/plugins/hooks';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
-import { getTRPCClient } from '@/lib/trpc';
+} from '@sharkord/ui';
 import { Play } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';

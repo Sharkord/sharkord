@@ -1,16 +1,15 @@
-import { Button } from '@/components/ui/button';
-import { Tooltip } from '@/components/ui/tooltip';
 import { useCan } from '@/features/server/hooks';
 import { useOwnUserId, useUsernames } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
+  getTrpcError,
   Permission,
   type TFile,
   type TJoinedMessageReaction
 } from '@sharkord/shared';
+import { Button, Tooltip } from '@sharkord/ui';
 import { gitHubEmojis } from '@tiptap/extension-emoji';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -55,7 +54,9 @@ const MessageReactions = memo(
 
     const renderEmoji = useCallback(
       (emojiName: string, file: TFile | null): React.ReactNode => {
-        const gitHubEmoji = gitHubEmojis.find((e) => e.name === emojiName);
+        const gitHubEmoji = gitHubEmojis.find(
+          (e) => e.name === emojiName || e.shortcodes.includes(emojiName)
+        );
 
         if (gitHubEmoji?.emoji) {
           return <span className="text-sm">{gitHubEmoji.emoji}</span>;

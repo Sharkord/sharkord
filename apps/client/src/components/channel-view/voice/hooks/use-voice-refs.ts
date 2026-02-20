@@ -16,13 +16,16 @@ const useVoiceRefs = (
     localAudioStream,
     localVideoStream,
     localScreenShareStream,
-    localScreenShareAudioStream,
     ownVoiceState,
     getOrCreateRefs
   } = useVoice();
   const isOwnUser = useIsOwnUser(remoteId);
-  const { getVolume, getUserVolumeKey, getUserScreenVolumeKey, getExternalVolumeKey } =
-    useVolumeControl();
+  const {
+    getVolume,
+    getUserVolumeKey,
+    getUserScreenVolumeKey,
+    getExternalVolumeKey
+  } = useVolumeControl();
 
   const {
     videoRef,
@@ -61,7 +64,7 @@ const useVoiceRefs = (
     if (isOwnUser) return undefined;
 
     return remoteUserStreams[remoteId]?.[StreamKind.SCREEN_AUDIO];
-  }, [remoteUserStreams, remoteId, isOwnUser, localScreenShareAudioStream]);
+  }, [remoteUserStreams, remoteId, isOwnUser]);
 
   const externalAudioStream = useMemo(() => {
     if (isOwnUser) return undefined;

@@ -8,6 +8,9 @@ import { appSliceActions } from './slice';
 export const setAppLoading = (loading: boolean) =>
   store.dispatch(appSliceActions.setAppLoading(loading));
 
+export const setPluginsLoading = (loading: boolean) =>
+  store.dispatch(appSliceActions.setLoadingPlugins(loading));
+
 export const fetchServerInfo = async (): Promise<TServerInfo | undefined> => {
   try {
     const url = getUrlFromServer();
@@ -46,11 +49,36 @@ export const setModViewOpen = (isOpen: boolean, userId?: number) =>
     })
   );
 
+export const openThreadSidebar = (parentMessageId: number, channelId: number) =>
+  store.dispatch(
+    appSliceActions.setThreadSidebarOpen({
+      open: true,
+      parentMessageId,
+      channelId
+    })
+  );
+
+export const closeThreadSidebar = () =>
+  store.dispatch(
+    appSliceActions.setThreadSidebarOpen({
+      open: false,
+      parentMessageId: undefined,
+      channelId: undefined
+    })
+  );
+
 export const resetApp = () => {
   store.dispatch(
     appSliceActions.setModViewOpen({
       modViewOpen: false,
       userId: undefined
+    })
+  );
+  store.dispatch(
+    appSliceActions.setThreadSidebarOpen({
+      open: false,
+      parentMessageId: undefined,
+      channelId: undefined
     })
   );
 };

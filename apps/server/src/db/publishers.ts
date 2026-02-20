@@ -3,7 +3,7 @@ import {
   ServerEvents,
   type TChannelUserPermissionsMap
 } from '@sharkord/shared';
-import { eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import { db } from '.';
 import { pluginManager } from '../plugins';
 import { pubsub } from '../utils/pubsub';
@@ -16,7 +16,7 @@ import { getMessage } from './queries/messages';
 import { getRole } from './queries/roles';
 import { getPublicSettings } from './queries/server';
 import { getPublicUserById } from './queries/users';
-import { categories, channels } from './schema';
+import { categories, channels, messages } from './schema';
 
 const publishMessage = async (
   messageId: number | undefined,
@@ -46,6 +46,9 @@ const publishMessage = async (
   });
 
   pubsub.publishFor(affectedUserIds, targetEvent, message);
+
+  // thread replies should not increment the channel's unread count
+  if (message.parentMessageId) return;
 
   // only send unread updates to users OTHER than the message author
   const usersToNotify = affectedUserIds.filter((id) => id !== message.userId);
@@ -104,14 +107,9 @@ const publishRole = async (
 
 const publishUser = async (
   userId: number | undefined,
-  type: 'create' | 'update' | 'delete'
+  type: 'create' | 'update'
 ) => {
   if (!userId) return;
-
-  if (type === 'delete') {
-    pubsub.publish(ServerEvents.USER_DELETE, userId);
-    return;
-  }
 
   const user = await getPublicUserById(userId);
 
@@ -212,6 +210,29 @@ const publishPluginCommands = async () => {
   pubsub.publish(ServerEvents.PLUGIN_COMMANDS_CHANGE, commands);
 };
 
+const publishPluginComponents = async () => {
+  const components = pluginManager.getComponents();
+
+  pubsub.publish(ServerEvents.PLUGIN_COMPONENTS_CHANGE, components);
+};
+
+const publishReplyCount = async (
+  parentMessageId: number,
+  channelId: number
+) => {
+  const replyCountRow = await db
+    .select({ count: count() })
+    .from(messages)
+    .where(eq(messages.parentMessageId, parentMessageId))
+    .get();
+
+  pubsub.publish(ServerEvents.THREAD_REPLY_COUNT_UPDATE, {
+    messageId: parentMessageId,
+    channelId,
+    replyCount: replyCountRow?.count ?? 0
+  });
+};
+
 export {
   publishCategory,
   publishChannel,
@@ -219,6 +240,8 @@ export {
   publishEmoji,
   publishMessage,
   publishPluginCommands,
+  publishPluginComponents,
+  publishReplyCount,
   publishRole,
   publishSettings,
   publishUser

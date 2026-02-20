@@ -2,9 +2,11 @@ import { LeftSidebar } from '@/components/left-sidebar';
 import { ModViewSheet } from '@/components/mod-view-sheet';
 import { Protect } from '@/components/protect';
 import { RightSidebar } from '@/components/right-sidebar';
+import { ThreadSidebar } from '@/components/thread-sidebar';
 import { TopBar } from '@/components/top-bar';
 import { VoiceChatSidebar } from '@/components/voice-chat-sidebar';
 import { VoiceProvider } from '@/components/voice-provider';
+import { useThreadSidebar } from '@/features/app/hooks';
 import { getLocalStorageItem, LocalStorageKey } from '@/helpers/storage';
 import { useSwipeGestures } from '@/hooks/use-swipe-gestures';
 import { cn } from '@/lib/utils';
@@ -23,6 +25,7 @@ const ServerView = memo(() => {
     getLocalStorageItem(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE) === 'true' ||
       false
   );
+  const { isOpen: isThreadSidebarOpen } = useThreadSidebar();
 
   const handleDesktopRightSidebarToggle = useCallback(() => {
     setIsDesktopRightSidebarOpen((prev) => !prev);
@@ -108,9 +111,11 @@ const ServerView = memo(() => {
 
           <VoiceChatSidebar isOpen={isVoiceChatSidebarOpen} />
 
+          <ThreadSidebar isOpen={isThreadSidebarOpen} />
+
           <RightSidebar
             className={cn(
-              'fixed top-0 bottom-0 right-0 h-full z-40 transition-all duration-500 ease-in-out',
+              'fixed top-0 bottom-0 right-0 h-full z-40',
               'lg:relative lg:z-0',
               isMobileUsersOpen
                 ? 'translate-x-0 lg:translate-x-0'

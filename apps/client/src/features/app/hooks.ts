@@ -3,11 +3,15 @@ import { useSelector } from 'react-redux';
 import {
   appLoadingSelector,
   devicesSelector,
+  loadingPluginsSelector,
   modViewOpenSelector,
-  modViewUserIdSelector
+  modViewUserIdSelector,
+  threadSidebarDataSelector
 } from './selectors';
 
 export const useIsAppLoading = () => useSelector(appLoadingSelector);
+
+export const useIsPluginsLoading = () => useSelector(loadingPluginsSelector);
 
 export const useDevices = () => useSelector(devicesSelector);
 
@@ -17,3 +21,5 @@ export const useModViewOpen = () => {
 
   return useMemo(() => ({ isOpen, userId }), [isOpen, userId]);
 };
+
+export const useThreadSidebar = () => useSelector(threadSidebarDataSelector);

@@ -39,7 +39,7 @@ const md5File = async (path: string): Promise<string> => {
 const moveFile = async (src: string, dest: string) => {
   try {
     await fs.rename(src, dest);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     if (err.code === 'EXDEV') {
       await fs.copyFile(src, dest);
