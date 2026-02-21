@@ -561,6 +561,111 @@ describe('channels router', () => {
     expect(readStates[2]).toBe(0);
   });
 
+  test('should not count thread replies as unread in channel', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    // user 1 sends a root message
+    const parentId = await caller1.messages.send({
+      channelId: 2,
+      content: 'Root message',
+      files: []
+    });
+
+    // user 2 marks as read so baseline is 0
+    await caller2.channels.markAsRead({ channelId: 2 });
+
+    const afterMarkRead = await getChannelsReadStatesForUser(2, 2);
+
+    expect(afterMarkRead[2]).toBe(0);
+
+    // user 1 sends thread replies
+    await caller1.messages.send({
+      channelId: 2,
+      content: 'Thread reply 1',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await caller1.messages.send({
+      channelId: 2,
+      content: 'Thread reply 2',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    const afterReplies = await getChannelsReadStatesForUser(2, 2);
+
+    // thread replies should NOT increment the unread count
+    expect(afterReplies[2]).toBe(0);
+  });
+
+  test('should only count root messages as unread when mixed with thread replies', async () => {
+    const { caller: caller1 } = await initTest(1);
+
+    // user 1 sends a root message
+    const parentId = await caller1.messages.send({
+      channelId: 2,
+      content: 'Root 1',
+      files: []
+    });
+
+    // user 1 sends thread replies
+    await caller1.messages.send({
+      channelId: 2,
+      content: 'Reply to root 1',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    // user 1 sends another root message
+    await caller1.messages.send({
+      channelId: 2,
+      content: 'Root 2',
+      files: []
+    });
+
+    const readStates = await getChannelsReadStatesForUser(2, 2);
+
+    // should be 2 (two root messages), NOT 3 (which would include the thread reply)
+    expect(readStates[2]).toBe(2);
+  });
+
+  test('should mark as read correctly when thread replies exist', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    const parentId = await caller1.messages.send({
+      channelId: 2,
+      content: 'Root message',
+      files: []
+    });
+
+    await caller1.messages.send({
+      channelId: 2,
+      content: 'Thread reply',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await caller1.messages.send({
+      channelId: 2,
+      content: 'Another root',
+      files: []
+    });
+
+    const beforeMark = await getChannelsReadStatesForUser(2, 2);
+
+    // 2 root messages unread
+    expect(beforeMark[2]).toBe(2);
+
+    await caller2.channels.markAsRead({ channelId: 2 });
+
+    const afterMark = await getChannelsReadStatesForUser(2, 2);
+
+    expect(afterMark[2]).toBe(0);
+  });
+
   test('should validate channel name length (too short)', async () => {
     const { caller } = await initTest();
 

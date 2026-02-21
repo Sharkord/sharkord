@@ -6,7 +6,10 @@ import {
   currentVoiceChannelIdSelector,
   selectedChannelIdSelector
 } from './channels/selectors';
-import { typingMapSelector } from './messages/selectors';
+import {
+  threadTypingMapSelector,
+  typingMapSelector
+} from './messages/selectors';
 import { rolesSelector } from './roles/selectors';
 import type { TVoiceUser } from './types';
 import {
@@ -77,10 +80,27 @@ export const typingUsersByChannelIdSelector = createCachedSelector(
 
     return userIds
       .filter((id) => id !== ownUserId)
-      .map((id) => users.find((u) => u.id === id)!)
+      .map((id) => users.find((u) => u.id === id))
       .filter((u) => !!u);
   }
 )((_, channelId: number) => channelId);
+
+export const typingUsersByThreadIdSelector = createCachedSelector(
+  [
+    threadTypingMapSelector,
+    (_: IRootState, parentMessageId: number) => parentMessageId,
+    ownUserIdSelector,
+    usersSelector
+  ],
+  (threadTypingMap, parentMessageId, ownUserId, users) => {
+    const userIds = threadTypingMap[parentMessageId] || [];
+
+    return userIds
+      .filter((id) => id !== ownUserId)
+      .map((id) => users.find((u) => u.id === id)!)
+      .filter((u) => !!u);
+  }
+)((_, parentMessageId: number) => `thread-${parentMessageId}`);
 
 export const voiceUsersByChannelIdSelector = createSelector(
   [usersSelector, voiceChannelStateSelector],

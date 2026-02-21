@@ -33,7 +33,7 @@ const ResolutionFpsControl = memo(
             onValueChange={onResolutionChange}
             disabled={disabled}
           >
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-40">
               <SelectValue placeholder="Select the input device" />
             </SelectTrigger>
             <SelectContent>

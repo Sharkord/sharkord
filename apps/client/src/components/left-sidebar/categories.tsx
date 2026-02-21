@@ -20,21 +20,22 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Permission, getTrpcError } from '@sharkord/shared';
+import { IconButton } from '@sharkord/ui';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { CategoryContextMenu } from '../context-menus/category';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
-import { IconButton } from '@sharkord/ui';
 import { Channels } from './channels';
+import { useCategoryExpanded } from './hooks';
 
 type TCategoryProps = {
   categoryId: number;
 };
 
 const Category = memo(({ categoryId }: TCategoryProps) => {
-  const [expanded, setExpanded] = useState(true);
+  const { expanded, toggleExpanded } = useCategoryExpanded(categoryId);
   const category = useCategoryById(categoryId);
 
   const {
@@ -72,7 +73,7 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
             variant="ghost"
             size="sm"
             icon={ChevronIcon}
-            onClick={() => setExpanded((v) => !v)}
+            onClick={toggleExpanded}
             title={expanded ? 'Collapse category' : 'Expand category'}
           />
           <CategoryContextMenu categoryId={category.id}>

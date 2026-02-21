@@ -3,10 +3,18 @@ import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import type { TCommandInfo } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
+import Link from '@tiptap/extension-link';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { ChevronDown, ChevronUp, Smile } from 'lucide-react';
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  memo,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import {
   COMMANDS_STORAGE_KEY,
   CommandSuggestion
@@ -55,6 +63,18 @@ const TiptapInput = memo(
             HTMLAttributes: {
               class: 'hard-break'
             }
+          }
+        }),
+        Link.configure({
+          autolink: true,
+          defaultProtocol: 'https',
+          openOnClick: false,
+          HTMLAttributes: {
+            target: '_blank',
+            rel: 'noopener noreferrer'
+          },
+          shouldAutoLink: (url) => {
+            return /^https?:\/\//i.test(url);
           }
         }),
         Emoji.configure({
@@ -213,8 +233,9 @@ const TiptapInput = memo(
         >
           <EditorContent
             editor={editor}
-            className={`border p-2 rounded w-full min-h-[40px] tiptap overflow-auto relative ${isExpanded ? 'max-h-80' : 'max-h-20'
-              } ${disabled ? 'opacity-50 cursor-not-allowed bg-muted' : ''}`}
+            className={`border p-2 rounded w-full min-h-10 tiptap overflow-auto relative ${
+              isExpanded ? 'max-h-80' : 'max-h-20'
+            } ${disabled ? 'opacity-50 cursor-not-allowed bg-muted' : ''}`}
           />
           {showExpandButton && (isHovering || isFocused) && (
             <Button

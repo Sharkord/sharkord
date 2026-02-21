@@ -54,7 +54,9 @@ const MessageReactions = memo(
 
     const renderEmoji = useCallback(
       (emojiName: string, file: TFile | null): React.ReactNode => {
-        const gitHubEmoji = gitHubEmojis.find((e) => e.name === emojiName);
+        const gitHubEmoji = gitHubEmojis.find(
+          (e) => e.name === emojiName || e.shortcodes.includes(emojiName)
+        );
 
         if (gitHubEmoji?.emoji) {
           return <span className="text-sm">{gitHubEmoji.emoji}</span>;
