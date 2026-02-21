@@ -439,11 +439,9 @@ export const serverSlice = createSlice({
         channelId: number;
         userId: number;
         state: TVoiceUserState;
-        activeSince: string | null;
       }>
     ) => {
-      const { channelId, userId, state: userState, activeSince } =
-        action.payload;
+      const { channelId, userId, state: userState } = action.payload;
 
       if (!state.voiceMap[channelId]) {
         state.voiceMap[channelId] = {
@@ -453,22 +451,35 @@ export const serverSlice = createSlice({
       }
 
       state.voiceMap[channelId].users[userId] = userState;
-
-      state.voiceMap[channelId].activeSince = activeSince;
     },
     removeUserFromVoiceChannel: (
       state,
       action: PayloadAction<{
         channelId: number;
         userId: number;
-        activeSince: string | null;
       }>
     ) => {
-      const { channelId, userId, activeSince } = action.payload;
+      const { channelId, userId } = action.payload;
 
       if (!state.voiceMap[channelId]) return;
 
       delete state.voiceMap[channelId].users[userId];
+    },
+    updateVoiceChannelState: (
+      state,
+      action: PayloadAction<{
+        channelId: number;
+        activeSince: string | null;
+      }>
+    ) => {
+      const { channelId, activeSince } = action.payload;
+
+      if (!state.voiceMap[channelId]) {
+        state.voiceMap[channelId] = {
+          users: {},
+          activeSince: null
+        };
+      }
 
       state.voiceMap[channelId].activeSince = activeSince;
     },

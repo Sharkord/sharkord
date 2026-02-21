@@ -16,10 +16,8 @@ import {
 import { joinVoice } from '@/features/server/voice/actions';
 import {
   useVoice,
-  useVoiceChannelExternalStreamsList,
-  useVoiceChannelState
+  useVoiceChannelExternalStreamsList
 } from '@/features/server/voice/hooks';
-import { useElapsedTime } from '@/hooks/use-elapsed-time';
 import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -47,6 +45,7 @@ import { Hash, Volume2 } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { ChannelContextMenu } from '../context-menus/channel';
+import { CallTime } from './call-time';
 import { ExternalStream } from './external-stream';
 import { VoiceUser } from './voice-user';
 
@@ -54,23 +53,18 @@ type TVoiceProps = Omit<TItemWrapperProps, 'children'> & {
   channel: TChannel;
 };
 
-const Voice = memo(({ channel, activeSince, ...props }: TVoiceProps) => {
+const Voice = memo(({ channel, ...props }: TVoiceProps) => {
   const users = useVoiceUsersByChannelId(channel.id);
   const externalStreams = useVoiceChannelExternalStreamsList(channel.id);
   const unreadCount = useUnreadMessagesCount(channel.id);
-  const elapsedTime = useElapsedTime(activeSince ?? null);
 
   return (
     <>
       <ItemWrapper {...props}>
         <Volume2 className="h-4 w-4" />
         <span className="flex items-center flex-1">
-          <span>{channel.name}</span> 
-          {activeSince && (
-            <span className="ml-auto text-xs font-medium text-green-500">
-              {elapsedTime}
-            </span>
-          )}
+          <span>{channel.name}</span>
+          <CallTime channelId={channel.id} />
         </span>
         {unreadCount > 0 && (
           <div className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
@@ -129,7 +123,6 @@ type TItemWrapperProps = {
   children: React.ReactNode;
   className?: string;
   isSelected: boolean;
-  activeSince?: string | null;
   onClick: () => void;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   style?: React.CSSProperties;
@@ -178,7 +171,6 @@ const Channel = memo(({ channelId, isSelected }: TChannelProps) => {
   const channelCan = useChannelCan(channelId);
   const can = useCan();
   const { init } = useVoice();
-  const { activeSince } = useVoiceChannelState(channelId);
 
   const {
     attributes,
@@ -244,7 +236,6 @@ const Channel = memo(({ channelId, isSelected }: TChannelProps) => {
             <Voice
               channel={channel}
               isSelected={isSelected}
-              activeSince={activeSince}
               onClick={onClick}
               dragHandleProps={{ ...attributes, ...listeners }}
               disabled={

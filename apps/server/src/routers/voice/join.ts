@@ -70,7 +70,10 @@ const joinVoiceRoute = protectedProcedure
     ctx.pubsub.publish(ServerEvents.USER_JOIN_VOICE, {
       channelId: input.channelId,
       userId: ctx.user.id,
-      state,
+      state
+    });
+    ctx.pubsub.publish(ServerEvents.VOICE_CHANNEL_STATE_UPDATE, {
+      channelId: input.channelId,
       activeSince: channelState.activeSince
     });
 

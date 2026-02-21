@@ -22,8 +22,7 @@ import { ownVoiceStateSelector } from './selectors';
 export const addUserToVoiceChannel = (
   userId: number,
   channelId: number,
-  voiceState: TVoiceUserState,
-  activeSince: string | null
+  voiceState: TVoiceUserState
 ): void => {
   const state = store.getState();
   const ownUserId = ownUserIdSelector(state);
@@ -33,8 +32,7 @@ export const addUserToVoiceChannel = (
     serverSliceActions.addUserToVoiceChannel({
       userId,
       channelId,
-      state: voiceState,
-      activeSince
+      state: voiceState
     })
   );
 
@@ -45,8 +43,7 @@ export const addUserToVoiceChannel = (
 
 export const removeUserFromVoiceChannel = (
   userId: number,
-  channelId: number,
-  activeSince: string | null
+  channelId: number
 ): void => {
   const state = store.getState();
   const ownUserId = ownUserIdSelector(state);
@@ -55,14 +52,22 @@ export const removeUserFromVoiceChannel = (
   store.dispatch(
     serverSliceActions.removeUserFromVoiceChannel({
       userId,
-      channelId,
-      activeSince
+      channelId
     })
   );
 
   if (userId !== ownUserId && channelId === currentChannelId) {
     playSound(SoundType.REMOTE_USER_LEFT_VOICE_CHANNEL);
   }
+};
+
+export const updateVoiceChannelState = (
+  channelId: number,
+  activeSince: string | null
+): void => {
+  store.dispatch(
+    serverSliceActions.updateVoiceChannelState({ channelId, activeSince })
+  );
 };
 
 export const addExternalStreamToVoiceChannel = (

@@ -4,6 +4,7 @@ import {
   addUserToVoiceChannel,
   removeExternalStreamFromVoiceChannel,
   removeUserFromVoiceChannel,
+  updateVoiceChannelState,
   updateExternalStreamInVoiceChannel,
   updateVoiceUserState
 } from './actions';
@@ -12,15 +13,15 @@ const subscribeToVoice = () => {
   const trpc = getTRPCClient();
 
   const onUserJoinVoiceSub = trpc.voice.onJoin.subscribe(undefined, {
-    onData: ({ channelId, userId, state, activeSince }) => {
-      addUserToVoiceChannel(userId, channelId, state, activeSince);
+    onData: ({ channelId, userId, state }) => {
+      addUserToVoiceChannel(userId, channelId, state);
     },
     onError: (err) => console.error('onUserJoinVoice subscription error:', err)
   });
 
   const onUserLeaveVoiceSub = trpc.voice.onLeave.subscribe(undefined, {
-    onData: ({ channelId, userId, activeSince }) => {
-      removeUserFromVoiceChannel(userId, channelId, activeSince);
+    onData: ({ channelId, userId }) => {
+      removeUserFromVoiceChannel(userId, channelId);
     },
     onError: (err) => console.error('onUserLeaveVoice subscription error:', err)
   });
@@ -32,6 +33,17 @@ const subscribeToVoice = () => {
     onError: (err) =>
       console.error('onUserUpdateVoice subscription error:', err)
   });
+
+  const onVoiceChannelStateSub = trpc.voice.onChannelState.subscribe(
+    undefined,
+    {
+      onData: ({ channelId, activeSince }) => {
+        updateVoiceChannelState(channelId, activeSince);
+      },
+      onError: (err) =>
+        console.error('onVoiceChannelStateSub subscription error:', err)
+    }
+  );
 
   const onVoiceAddExternalStreamSub = trpc.voice.onAddExternalStream.subscribe(
     undefined,
@@ -66,6 +78,7 @@ const subscribeToVoice = () => {
     onUserJoinVoiceSub.unsubscribe();
     onUserLeaveVoiceSub.unsubscribe();
     onUserUpdateVoiceSub.unsubscribe();
+    onVoiceChannelStateSub.unsubscribe();
     onVoiceAddExternalStreamSub.unsubscribe();
     onVoiceUpdateExternalStreamSub.unsubscribe();
     onVoiceRemoveExternalStreamSub.unsubscribe();
