@@ -1,0 +1,29 @@
+{
+  "name": "@sharkord/e2e",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test:e2e": "bunx playwright test",
+    "test:ui": "bunx playwright test --ui",
+    "test:headed": "bunx playwright test --headed",
+    "format": "prettier --write \"**/*.*.ts*\" --config ./.prettierrc.json",
+    "lint": "eslint ./tests/**/*.ts --ext ts --report-unused-disable-directives",
+    "lint:fix": "eslint ./tests/**/*.ts --ext ts --report-unused-disable-directives --fix",
+    "check-types": "tsc --noEmit",
+    "magic": "bun --bun run lint:fix && bun --bun run format && bun --bun run check-types"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@sharkord/shared": "workspace:*",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "eslint": "^8.56.0",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "prettier": "^3.5.3",
+    "prettier-plugin-organize-imports": "^4.1.0"
+  }
+}

@@ -17,3 +17,5 @@ export enum DisconnectCode {
 }
 
 export const DELETED_USER_IDENTITY_AND_NAME = '__deleted_user__'; // this will be used as identity AND name, but in the interface we render as "Deleted"
+
+export const DEFAULT_BITRATE = 6000; // kbps,
