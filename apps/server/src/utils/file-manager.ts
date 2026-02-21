@@ -1,20 +1,27 @@
 import {
+  FileStatus,
   StorageOverflowAction,
   type TFile,
   type TTempFile
 } from '@sharkord/shared';
 import { randomUUIDv7 } from 'bun';
 import { createHash } from 'crypto';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import fs from 'fs/promises';
+import zlib from 'zlib';
+import { createReadStream, createWriteStream, ReadStream } from 'fs'
+import { pipeline } from 'stream/promises';
 import path from 'path';
 import { db } from '../db';
+import { getMessageByFileId } from '../db/queries/messages';
+import { verifyFileToken } from '../helpers/files-crypto';
 import { removeFile } from '../db/mutations/files';
-import { getExceedingOldFiles, getUsedFileQuota } from '../db/queries/files';
+import { getExceedingOldFiles, getUsedFileQuota, isFileOrphaned } from '../db/queries/files';
 import { getSettings } from '../db/queries/server';
 import { getStorageUsageByUserId } from '../db/queries/users';
-import { files } from '../db/schema';
+import { channels, files } from '../db/schema';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../helpers/paths';
+import { config } from '../config';
 
 /**
  * Files workflow:
@@ -51,53 +58,66 @@ const moveFile = async (src: string, dest: string) => {
 };
 
 class TemporaryFileManager {
-  private temporaryFiles: TTempFile[] = [];
-  private timeouts: {
-    [id: string]: NodeJS.Timeout;
-  } = {};
+  private temporaryFiles: Map<string, TTempFile> = new Map();
 
   public getTemporaryFile = (id: string): TTempFile | undefined => {
-    return this.temporaryFiles.find((file) => file.id === id);
+    return this.temporaryFiles.get(id)
   };
 
   public temporaryFileExists = (id: string): boolean => {
-    return !!this.temporaryFiles.find((file) => file.id === id);
+    return this.temporaryFiles.has(id)
   };
 
-  public addTemporaryFile = async ({
-    filePath,
-    size,
+  public initTemporaryFile = async ({
     originalName,
+    size,
     userId
   }: {
-    filePath: string;
-    size: number;
     originalName: string;
-    userId: number;
+    size: number;
+    userId: number
   }): Promise<TTempFile> => {
-    const md5 = await md5File(filePath);
     const fileId = randomUUIDv7();
     const ext = path.extname(originalName);
 
-    const tempFilePath = path.join(TMP_PATH, `${fileId}${ext}`);
+    const uploadFilePath = path.join(UPLOADS_PATH, fileId);
+    const tempFilePath = path.join(TMP_PATH, fileId);
+    const publicFilePath = path.join(
+      PUBLIC_PATH,
+      this.fileUUIDToPath(fileId)
+    )
 
     const tempFile: TTempFile = {
       id: fileId,
       originalName,
       size,
-      md5,
-      path: tempFilePath,
+      md5: undefined,
+      uploadPath: uploadFilePath,
+      tempPath: tempFilePath,
+      publicPath: publicFilePath,
       extension: ext,
-      userId
+      originalSize: size,
+      compressed: false,
+      userId,
+      timeout: undefined,
+      fileStream: createWriteStream(uploadFilePath)
     };
 
-    await moveFile(filePath, tempFile.path);
+    return tempFile;
+  };
 
-    this.temporaryFiles.push(tempFile);
+  public finishTemporaryFile = async (
+    tempFile: TTempFile
+  ) => {
+    tempFile.md5 = await md5File(tempFile.uploadPath);
 
-    this.timeouts[tempFile.id] = setTimeout(() => {
+    tempFile.timeout = setTimeout(() => {
       this.removeTemporaryFile(tempFile.id);
     }, TEMP_FILE_TTL);
+
+    await moveFile(tempFile.uploadPath, tempFile.tempPath);
+
+    this.temporaryFiles.set(tempFile.id, tempFile);
 
     return tempFile;
   };
@@ -106,44 +126,67 @@ class TemporaryFileManager {
     id: string,
     skipDelete = false
   ): Promise<void> => {
-    const tempFile = this.temporaryFiles.find((file) => file.id === id);
+    const tempFile = this.temporaryFiles.get(id);
 
     if (!tempFile) {
       throw new Error('Temporary file not found');
     }
 
-    clearTimeout(this.timeouts[id]);
+    clearTimeout(tempFile.timeout);
 
     if (!skipDelete) {
       try {
-        await fs.unlink(tempFile.path);
+        await fs.unlink(tempFile.tempPath);
       } catch {
         // ignore
       }
     }
 
-    this.temporaryFiles = this.temporaryFiles.filter((file) => file.id !== id);
+    this.temporaryFiles.delete(id);
   };
 
-  public getSafeUploadPath = async (name: string): Promise<string> => {
-    const ext = path.extname(name);
-    const safePath = path.join(UPLOADS_PATH, `${randomUUIDv7()}${ext}`);
-
-    return safePath;
-  };
+  public fileUUIDToPath = (fileUUID: string): string => {
+    return path.join(
+      fileUUID.slice(24,26), // UUIDv7 starts with a timestamp, using this to group into random folders
+      fileUUID.slice(26,28),
+      fileUUID
+    );
+  }
 }
 
 class FileManager {
   private tempFileManager = new TemporaryFileManager();
 
-  public getSafeUploadPath = this.tempFileManager.getSafeUploadPath;
-
-  public addTemporaryFile = this.tempFileManager.addTemporaryFile;
+  public initTemporaryFile = this.tempFileManager.initTemporaryFile;
+  public finishTemporaryFile = this.tempFileManager.finishTemporaryFile;
 
   public removeTemporaryFile = this.tempFileManager.removeTemporaryFile;
 
   public getTemporaryFile = this.tempFileManager.getTemporaryFile;
   public temporaryFileExists = this.tempFileManager.temporaryFileExists;
+
+  public fileUUIDToPath = this.tempFileManager.fileUUIDToPath;
+
+  private attemptCompression = async (tempFile: TTempFile): Promise<TTempFile> => {
+    if (!config.storage.gzipCompression) return tempFile;
+    const compressedPath = `${tempFile.tempPath}.gz`;
+    const gzip = zlib.createGzip();
+    const readStream = createReadStream(tempFile.tempPath);
+    const writeStream = createWriteStream(compressedPath);
+
+    await pipeline(readStream, gzip, writeStream)
+
+    const compressedStats = await fs.stat(compressedPath);
+    if (compressedStats.size < tempFile.size) {
+      await fs.unlink(tempFile.tempPath)
+      tempFile.size = compressedStats.size;
+      tempFile.tempPath = compressedPath;
+      tempFile.compressed = true;
+    } else {
+      await fs.unlink(compressedPath);
+    }
+    return tempFile;
+  }
 
   private handleStorageLimits = async (tempFile: TTempFile) => {
     const [settings, userStorage, serverStorage] = await Promise.all([
@@ -185,33 +228,7 @@ class FileManager {
     }
   };
 
-  private getUniqueName = async (originalName: string): Promise<string> => {
-    const baseName = path.basename(originalName, path.extname(originalName));
-    const extension = path.extname(originalName);
-
-    let fileName = originalName;
-    let counter = 2;
-
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const existingFile = await db
-        .select()
-        .from(files)
-        .where(eq(files.name, fileName))
-        .get();
-
-      if (!existingFile) {
-        break;
-      }
-
-      fileName = `${baseName}-${counter}${extension}`;
-      counter++;
-    }
-
-    return fileName;
-  };
-
-  public async saveFile(tempFileId: string, userId: number): Promise<TFile> {
+  public saveFile(tempFileId: string, userId: number): [TFile, Promise<TFile>] {
     const tempFile = this.getTemporaryFile(tempFileId);
 
     if (!tempFile) {
@@ -222,30 +239,118 @@ class FileManager {
       throw new Error("You don't have permission to access this file");
     }
 
-    await this.handleStorageLimits(tempFile);
+    clearTimeout(tempFile.timeout);
 
-    const fileName = await this.getUniqueName(tempFile.originalName);
-    const destinationPath = path.join(PUBLIC_PATH, fileName);
-
-    await moveFile(tempFile.path, destinationPath);
-    await this.removeTemporaryFile(tempFileId, true);
-
-    const bunFile = Bun.file(destinationPath);
-
-    return db
-      .insert(files)
+    const bunFile = Bun.file(`${tempFile.publicPath}${tempFile.extension}`); // TODO: replace with actual bytes check
+    
+    const fileRecord = db.insert(files)
       .values({
-        name: fileName,
+        uuid: tempFile.id,
+        originalName: tempFile.originalName,
+        md5: null,
+        userId,
+        size: null,
+        mimeType: bunFile?.type || 'application/octet-stream',
         extension: tempFile.extension,
+        originalSize: tempFile.originalSize,
+        compressed: null,
+        status: FileStatus.Processing,
+        createdAt: Date.now()
+      }).returning()
+      .get();
+
+    tempFile.processing = this.attemptCompression(tempFile).then(() => 
+      this.handleStorageLimits(tempFile)
+    ).then(() => 
+      fs.mkdir(path.dirname(tempFile.publicPath), { recursive: true })
+    ).then(() => 
+      moveFile(tempFile.tempPath, tempFile.publicPath)
+    ).then(() => 
+      this.removeTemporaryFile(tempFileId, true)
+    ).then(() => 
+      db.update(files).set({
         md5: tempFile.md5,
         size: tempFile.size,
-        originalName: tempFile.originalName,
-        userId,
-        mimeType: bunFile?.type || 'application/octet-stream',
-        createdAt: Date.now()
+        compressed: tempFile.compressed,
+        status: FileStatus.Complete,
+        updatedAt: Date.now()
       })
+      .where(eq(files.id, fileRecord.id))
       .returning()
+      .get()
+    );
+
+    return [fileRecord, tempFile.processing];
+  }
+
+  public async getFile(fileUUID: string, fileName: string, fileAccessToken: string | null): Promise<[TFile, ReadStream]> {
+    const dbFile = await db
+      .select()
+      .from(files)
+      .where(
+        and(
+          eq(files.uuid, fileUUID),
+          eq(files.originalName, fileName)
+        )
+      )
       .get();
+    
+    if (!dbFile) {
+      throw new Error('notFound');
+    }
+
+    const isOrphaned = await isFileOrphaned(dbFile.id);
+
+    if (isOrphaned) {
+      throw new Error('notFound');
+    }
+
+    // it's gonna be defined if it's a message file
+    // otherwise is something like an avatar or banner or something else
+    // we can assume this because of the orphaned check above
+    const associatedMessage = await getMessageByFileId(dbFile.id);
+
+    if (associatedMessage) {
+      const channel = await db
+        .select()
+        .from(channels)
+        .where(eq(channels.id, associatedMessage.channelId))
+        .get();
+
+      if (channel && channel.private) {
+        const isValidToken = verifyFileToken(
+          dbFile.id,
+          channel.fileAccessToken,
+          fileAccessToken || ''
+        );
+
+        if (!isValidToken) {
+          throw new Error('forbidden');
+        }
+      }
+    }
+    
+    if (dbFile.status !== FileStatus.Complete) {
+      throw new Error('processing');
+    }
+
+    const filePath: string = path.join(
+      PUBLIC_PATH,
+      this.fileUUIDToPath(fileUUID)
+    )
+    
+    if (!await fs.exists(filePath)) {
+      throw new Error('notFound');
+    }
+
+    return [
+      dbFile,
+      createReadStream(filePath)
+    ]
+  }
+
+  public async deleteFile(uuid: string) {
+    return fs.unlink(path.join(PUBLIC_PATH, this.fileUUIDToPath(uuid)));
   }
 }
 

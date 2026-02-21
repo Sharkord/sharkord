@@ -20,6 +20,8 @@ import {
   users
 } from '../db/schema';
 import { tdb } from './setup';
+import { randomUUIDv7 } from 'bun';
+import { FileStatus } from '@sharkord/shared';
 
 describe('database cascades', async () => {
   test('initial data is seeded correctly', async () => {
@@ -333,13 +335,16 @@ describe('database cascades', async () => {
     const [file] = await tdb
       .insert(files)
       .values({
-        name: 'test.txt',
+        uuid: randomUUIDv7(),
         originalName: 'test.txt',
         md5: 'test123',
         userId: usersBefore[0]!.id,
         size: 100,
         mimeType: 'text/plain',
         extension: 'txt',
+        originalSize: 100,
+        compressed: false,
+        status: FileStatus.Complete,
         createdAt: Date.now()
       })
       .returning();
@@ -393,13 +398,16 @@ describe('database cascades', async () => {
     const [file] = await tdb
       .insert(files)
       .values({
-        name: 'test2.txt',
+        uuid: randomUUIDv7(),
         originalName: 'test2.txt',
         md5: 'test456',
         userId: usersBefore[0]!.id,
         size: 100,
         mimeType: 'text/plain',
         extension: 'txt',
+        originalSize: 100,
+        compressed: false,
+        status: FileStatus.Complete,
         createdAt: Date.now()
       })
       .returning();
@@ -454,13 +462,16 @@ describe('database cascades', async () => {
     const [file] = await tdb
       .insert(files)
       .values({
-        name: 'emoji.png',
+        uuid: randomUUIDv7(),
         originalName: 'emoji.png',
         md5: 'emoji123',
         userId,
         size: 100,
         mimeType: 'image/png',
         extension: 'png',
+        originalSize: 100,
+        compressed: false,
+        status: FileStatus.Complete,
         createdAt: Date.now()
       })
       .returning();

@@ -27,11 +27,10 @@ describe('files router', () => {
     const file = await fileManager.getTemporaryFile(tempFile.id);
 
     expect(file).toBeDefined();
-    expect(file?.path).toBe(tempFile.path);
     expect(file?.originalName).toBe(tempFile.originalName);
     expect(file?.size).toBe(tempFile.size);
 
-    const stat = await fs.stat(tempFile.path);
+    const stat = await fs.stat(file!.tempPath);
 
     expect(stat.size).toBe(tempFile.size);
   });
@@ -39,13 +38,15 @@ describe('files router', () => {
   test('should delete a temporary file', async () => {
     const { caller } = await initTest();
 
-    expect(await fs.exists(tempFile.path)).toBe(true);
+    const file = fileManager.getTemporaryFile(tempFile.id);
+
+    expect(await fs.exists(file!.tempPath)).toBe(true);
 
     await caller.files.deleteTemporary({
       fileId: tempFile.id
     });
 
-    expect(await fs.exists(tempFile.path)).toBe(false);
+    expect(await fs.exists(file!.tempPath)).toBe(false);
   });
 
   test('should throw when deleting a non-existent temporary file', async () => {
@@ -69,6 +70,8 @@ describe('files router', () => {
       'You do not have permission to delete this temporary file'
     );
 
-    expect(await fs.exists(tempFile.path)).toBe(true);
+    const file = fileManager.getTemporaryFile(tempFile.id);
+
+    expect(await fs.exists(file!.tempPath)).toBe(true);
   });
 });

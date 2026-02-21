@@ -2,7 +2,7 @@ import { requestConfirmation } from '@/features/dialogs/actions';
 import { useOwnUserId } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';
-import { imageExtensions, type TJoinedMessage } from '@sharkord/shared';
+import { FileStatus, imageExtensions, type TJoinedMessage } from '@sharkord/shared';
 import parse from 'html-react-parser';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -60,6 +60,7 @@ const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
 
   const allMedia = useMemo(() => {
     const mediaFromFiles: TFoundMedia[] = message.files
+      .filter((file) => file.status !== FileStatus.Processing)
       .filter((file) => imageExtensions.includes(file.extension))
       .map((file) => ({
         type: 'image',
@@ -93,6 +94,7 @@ const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
               name={file.originalName}
               extension={file.extension}
               size={file.size}
+              status={file.status}
               onRemove={
                 isOwnMessage ? () => onRemoveFileClick(file.id) : undefined
               }

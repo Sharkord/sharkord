@@ -1,4 +1,4 @@
-import { StorageOverflowAction } from '@sharkord/shared';
+import { StorageOverflowAction, type TTempFile } from '@sharkord/shared';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
@@ -8,6 +8,18 @@ import { tdb } from '../../__tests__/setup';
 import { files, settings } from '../../db/schema';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../../helpers/paths';
 import { fileManager } from '../file-manager';
+import { config } from '../../config';
+import { createReadStream } from 'fs';
+import { pipeline } from 'stream/promises';
+
+async function moveFileIntoTempFile(filePath: string, tempFile: TTempFile) {
+  // This writes the filePath into the tempFile's filestream, in the same way an incoming file would
+  await pipeline(
+      createReadStream(filePath),
+      tempFile.fileStream,
+    )
+  await fs.unlink(filePath);
+}
 
 describe('file manager', () => {
   const tempFilesToCleanup: string[] = [];
@@ -40,14 +52,17 @@ describe('file manager', () => {
   test('should add temporary file and return metadata', async () => {
     const stats = await fs.stat(testFilePath);
 
-    const tempFile = await fileManager.addTemporaryFile({
-      filePath: testFilePath,
+    const tempFile = await fileManager.initTemporaryFile({
       size: stats.size,
       originalName: testFileName,
       userId: 1
     });
 
-    tempFilesToCleanup.push(tempFile.path);
+    await moveFileIntoTempFile(testFilePath, tempFile);
+
+    await fileManager.finishTemporaryFile(tempFile);
+
+    tempFilesToCleanup.push(tempFile.tempPath);
 
     expect(tempFile).toBeDefined();
     expect(tempFile.id).toBeDefined();
@@ -56,23 +71,26 @@ describe('file manager', () => {
     expect(tempFile.size).toBe(stats.size);
     expect(tempFile.md5).toBeDefined();
     expect(tempFile.userId).toBe(1);
-    expect(tempFile.path).toContain(TMP_PATH);
-    expect(tempFile.path).toContain(tempFile.id);
+    expect(tempFile.tempPath).toContain(TMP_PATH);
+    expect(tempFile.tempPath).toContain(tempFile.id);
 
-    expect(await fs.exists(tempFile.path)).toBe(true);
+    expect(await fs.exists(tempFile.tempPath)).toBe(true);
   });
 
   test('should retrieve temporary file by id', async () => {
     const stats = await fs.stat(testFilePath);
 
-    const tempFile = await fileManager.addTemporaryFile({
-      filePath: testFilePath,
+    const tempFile = await fileManager.initTemporaryFile({
       size: stats.size,
       originalName: testFileName,
       userId: 1
     });
 
-    tempFilesToCleanup.push(tempFile.path);
+    await moveFileIntoTempFile(testFilePath, tempFile);
+
+    await fileManager.finishTemporaryFile(tempFile);
+
+    tempFilesToCleanup.push(tempFile.tempPath);
 
     const retrieved = fileManager.getTemporaryFile(tempFile.id);
 
@@ -90,14 +108,17 @@ describe('file manager', () => {
   test('should remove temporary file from manager and filesystem', async () => {
     const stats = await fs.stat(testFilePath);
 
-    const tempFile = await fileManager.addTemporaryFile({
-      filePath: testFilePath,
+    const tempFile = await fileManager.initTemporaryFile({
       size: stats.size,
       originalName: testFileName,
       userId: 1
     });
 
-    expect(await fs.exists(tempFile.path)).toBe(true);
+    await moveFileIntoTempFile(testFilePath, tempFile);
+
+    await fileManager.finishTemporaryFile(tempFile);
+
+    expect(await fs.exists(tempFile.tempPath)).toBe(true);
 
     expect(fileManager.getTemporaryFile(tempFile.id)).toBeDefined();
 
@@ -105,7 +126,7 @@ describe('file manager', () => {
 
     expect(fileManager.getTemporaryFile(tempFile.id)).toBeUndefined();
 
-    expect(await fs.exists(tempFile.path)).toBe(false);
+    expect(await fs.exists(tempFile.tempPath)).toBe(false);
   });
 
   test('should throw error for non-existent temporary file', async () => {
@@ -114,7 +135,7 @@ describe('file manager', () => {
     ).rejects.toThrow('Temporary file not found');
   });
 
-  test('should generate unique temporary file IDs', async () => {
+  test('should generate unique file IDs', async () => {
     const file1Name = `unique1-${Date.now()}.txt`;
     const file2Name = `unique2-${Date.now()}.txt`;
 
@@ -127,21 +148,24 @@ describe('file manager', () => {
     const stats1 = await fs.stat(testFile1);
     const stats2 = await fs.stat(testFile2);
 
-    const tempFile1 = await fileManager.addTemporaryFile({
-      filePath: testFile1,
+    const tempFile1 = await fileManager.initTemporaryFile({
       size: stats1.size,
       originalName: file1Name,
       userId: 1
     });
-
-    const tempFile2 = await fileManager.addTemporaryFile({
-      filePath: testFile2,
+    const tempFile2 = await fileManager.initTemporaryFile({
       size: stats2.size,
       originalName: file2Name,
       userId: 1
     });
 
-    tempFilesToCleanup.push(tempFile1.path, tempFile2.path);
+    await moveFileIntoTempFile(testFile1, tempFile1);
+    await moveFileIntoTempFile(testFile2, tempFile2);
+
+    await fileManager.finishTemporaryFile(tempFile1);
+    await fileManager.finishTemporaryFile(tempFile2);
+
+    tempFilesToCleanup.push(testFilePath, tempFile1.tempPath, tempFile2.tempPath);
 
     expect(tempFile1.id).not.toBe(tempFile2.id);
   });
@@ -149,14 +173,17 @@ describe('file manager', () => {
   test('should calculate correct MD5 hash', async () => {
     const stats = await fs.stat(testFilePath);
 
-    const tempFile = await fileManager.addTemporaryFile({
-      filePath: testFilePath,
+    const tempFile = await fileManager.initTemporaryFile({
       size: stats.size,
       originalName: testFileName,
       userId: 1
     });
 
-    tempFilesToCleanup.push(tempFile.path);
+    await moveFileIntoTempFile(testFilePath, tempFile);
+
+    await fileManager.finishTemporaryFile(tempFile);
+
+    tempFilesToCleanup.push(tempFile.tempPath);
 
     expect(tempFile.md5).toBeDefined();
     expect(tempFile.md5).toHaveLength(32);
@@ -165,69 +192,115 @@ describe('file manager', () => {
   test('should save temporary file to public directory', async () => {
     const stats = await fs.stat(testFilePath);
 
-    const tempFile = await fileManager.addTemporaryFile({
-      filePath: testFilePath,
+    const tempFile = await fileManager.initTemporaryFile({
       size: stats.size,
       originalName: testFileName,
       userId: 1
     });
 
-    const savedFile = await fileManager.saveFile(tempFile.id, 1);
+    await moveFileIntoTempFile(testFilePath, tempFile);
 
-    tempFilesToCleanup.push(path.join(PUBLIC_PATH, savedFile.name));
+    await fileManager.finishTemporaryFile(tempFile);
+
+    const [savedFile, fileProcessing] = fileManager.saveFile(tempFile.id, 1);
+
+    const processedFile = await fileProcessing;
+
+    tempFilesToCleanup.push(tempFile.publicPath);
 
     expect(savedFile).toBeDefined();
     expect(savedFile.id).toBeGreaterThan(0);
-    expect(savedFile.name).toBe(testFileName);
+    expect(savedFile.uuid).toBe(tempFile.id);
     expect(savedFile.originalName).toBe(testFileName);
     expect(savedFile.extension).toBe('.txt');
-    expect(savedFile.size).toBe(stats.size);
     expect(savedFile.userId).toBe(1);
     expect(savedFile.mimeType).toContain('text/plain');
     expect(savedFile.createdAt).toBeGreaterThan(0);
+    expect(processedFile).toBeDefined();
+    expect(processedFile.compressed).toBeBoolean();
+    expect(processedFile.size).toBeInteger();
+    expect(processedFile.md5).toBeString();
+    if (processedFile.compressed) {
+      expect(processedFile.size).toBeLessThan(stats.size);
+    } else {
+      expect(processedFile.size).toBe(stats.size);
+    }
 
-    const publicPath = path.join(PUBLIC_PATH, savedFile.name);
-
-    expect(await fs.exists(publicPath)).toBe(true);
-    expect(await fs.exists(tempFile.path)).toBe(false);
+    expect(await fs.exists(tempFile.publicPath)).toBe(true);
+    expect(await fs.exists(tempFile.tempPath)).toBe(false);
 
     expect(fileManager.getTemporaryFile(tempFile.id)).toBeUndefined();
   });
 
   test('should save file with correct content', async () => {
+    config.storage.gzipCompression = false; // ensure no compression
     const content = 'specific test content';
+    const fileName = `test-content-${Date.now()}.txt`;
+    const filePath = path.join(UPLOADS_PATH, fileName);
+    await fs.writeFile(filePath, content);
+    const stats = await fs.stat(filePath);
+
+    const tempFile = await fileManager.initTemporaryFile({
+      size: stats.size,
+      originalName: fileName,
+      userId: 1
+    });
+
+    await moveFileIntoTempFile(filePath, tempFile);
+
+    await fileManager.finishTemporaryFile(tempFile);
+
+    const [_, fileProcessing] = fileManager.saveFile(tempFile.id, 1);
+    await fileProcessing;
+    tempFilesToCleanup.push(testFilePath, tempFile.publicPath);
+
+    const savedContent = await fs.readFile(tempFile.publicPath, 'utf-8');
+    expect(savedContent).toBe(content);
+    config.storage.gzipCompression = true; // re-enable compression
+  });
+
+  test('should compress large file', async () => {
+    const content = 'a'.repeat(100);
     const filePath = path.join(UPLOADS_PATH, `test-content-${Date.now()}.txt`);
     await fs.writeFile(filePath, content);
     const stats = await fs.stat(filePath);
 
-    const tempFile = await fileManager.addTemporaryFile({
-      filePath,
+    const tempFile = await fileManager.initTemporaryFile({
       size: stats.size,
       originalName: testFileName,
       userId: 1
     });
 
-    const savedFile = await fileManager.saveFile(tempFile.id, 1);
-    tempFilesToCleanup.push(path.join(PUBLIC_PATH, savedFile.name));
+    await moveFileIntoTempFile(filePath, tempFile);
 
-    const publicPath = path.join(PUBLIC_PATH, savedFile.name);
-    const savedContent = await fs.readFile(publicPath, 'utf-8');
-    expect(savedContent).toBe(content);
+    await fileManager.finishTemporaryFile(tempFile);
+
+    const [savedFile, fileProcessing] = fileManager.saveFile(tempFile.id, 1);
+    const processedFile = await fileProcessing;
+    tempFilesToCleanup.push(testFilePath, tempFile.publicPath);
+    const postProcessingStats = await fs.stat(tempFile.publicPath);
+
+    expect(processedFile.compressed).toBe(true);
+    expect(stats.size).toBeGreaterThan(postProcessingStats.size);
   });
 
   test('should insert file record in database', async () => {
     const stats = await fs.stat(testFilePath);
 
-    const tempFile = await fileManager.addTemporaryFile({
-      filePath: testFilePath,
+    const tempFile = await fileManager.initTemporaryFile({
       size: stats.size,
       originalName: testFileName,
       userId: 1
     });
 
-    const savedFile = await fileManager.saveFile(tempFile.id, 1);
+    await moveFileIntoTempFile(testFilePath, tempFile);
 
-    tempFilesToCleanup.push(path.join(PUBLIC_PATH, savedFile.name));
+    await fileManager.finishTemporaryFile(tempFile);
+
+    const [savedFile, fileProcessing] = fileManager.saveFile(tempFile.id, 1);
+    await fileProcessing;
+
+    tempFilesToCleanup.push(tempFile.publicPath);
 
     const dbFile = await tdb
       .select()
@@ -236,7 +309,7 @@ describe('file manager', () => {
       .get();
 
     expect(dbFile).toBeDefined();
-    expect(dbFile?.name).toBe(savedFile.name);
+    expect(dbFile?.uuid).toBe(savedFile.uuid);
     expect(dbFile?.originalName).toBe(testFileName);
     expect(dbFile?.userId).toBe(1);
     expect(dbFile?.size).toBe(stats.size);
@@ -244,25 +317,31 @@ describe('file manager', () => {
   });
 
   test('should throw error when saving non-existent temporary file', async () => {
-    await expect(fileManager.saveFile('non-existent-id', 1)).rejects.toThrow(
+    expect(() => fileManager.saveFile('non-existent-id', 1)).toThrow(
       'File not found'
     );
   });
 
-  test('should throw error when user does not own temporary file', async () => {
+  test('should throw not found error when user does not own temporary file', async () => {
     const stats = await fs.stat(testFilePath);
 
-    const tempFile = await fileManager.addTemporaryFile({
-      filePath: testFilePath,
+    const tempFile = await fileManager.initTemporaryFile({
       size: stats.size,
       originalName: testFileName,
       userId: 1
     });
 
-    tempFilesToCleanup.push(tempFile.path);
+    await moveFileIntoTempFile(testFilePath, tempFile);
 
-    await expect(fileManager.saveFile(tempFile.id, 999)).rejects.toThrow(
-      "You don't have permission to access this file"
+    await fileManager.finishTemporaryFile(tempFile);
+
+    const [_, fileProcessing] = fileManager.saveFile(tempFile.id, 1);
+    await fileProcessing;
+
+    tempFilesToCleanup.push(tempFile.tempPath);
+
+    expect(() => fileManager.saveFile(tempFile.id, 999)).toThrow(
+      "File not found"
     );
   });
 
@@ -278,27 +357,35 @@ describe('file manager', () => {
     const stats1 = await fs.stat(testFile1);
     const stats2 = await fs.stat(testFile2);
 
-    const tempFile1 = await fileManager.addTemporaryFile({
-      filePath: testFile1,
+    const tempFile1 = await fileManager.initTemporaryFile({
       size: stats1.size,
       originalName: file1Name,
       userId: 1
     });
 
-    const savedFile1 = await fileManager.saveFile(tempFile1.id, 1);
+    await moveFileIntoTempFile(testFile1, tempFile1);
 
-    const tempFile2 = await fileManager.addTemporaryFile({
-      filePath: testFile2,
+    await fileManager.finishTemporaryFile(tempFile1);
+
+    const [savedFile1, fileProcessing1] = fileManager.saveFile(tempFile1.id, 1);
+    await fileProcessing1;
+
+    const tempFile2 = await fileManager.initTemporaryFile({
       size: stats2.size,
       originalName: file2Name,
       userId: 1
     });
 
-    const savedFile2 = await fileManager.saveFile(tempFile2.id, 1);
+    await moveFileIntoTempFile(testFile2, tempFile2);
+
+    await fileManager.finishTemporaryFile(tempFile2);
+
+    const [savedFile2, fileProcessing2] = fileManager.saveFile(tempFile2.id, 1);
+    await fileProcessing2;
 
     tempFilesToCleanup.push(
-      path.join(PUBLIC_PATH, savedFile1.name),
-      path.join(PUBLIC_PATH, savedFile2.name)
+      path.join(tempFile1.publicPath),
+      path.join(tempFile2.publicPath)
     );
 
     expect(savedFile2.id).toBeGreaterThan(savedFile1.id);
@@ -308,20 +395,26 @@ describe('file manager', () => {
     await tdb.update(settings).set({ storageSpaceQuotaByUser: 10 }).execute();
 
     const content = 'content that exceeds limit';
-    const filePath = path.join(UPLOADS_PATH, `large-${Date.now()}.txt`);
+    const fileName = `large-${Date.now()}.txt`;
+    const filePath = path.join(UPLOADS_PATH, fileName);
     await fs.writeFile(filePath, content);
     const stats = await fs.stat(filePath);
 
-    const tempFile = await fileManager.addTemporaryFile({
-      filePath,
+    const tempFile = await fileManager.initTemporaryFile({
       size: stats.size,
-      originalName: 'large.txt',
+      originalName: fileName,
       userId: 1
     });
 
-    tempFilesToCleanup.push(tempFile.path);
+    await moveFileIntoTempFile(filePath, tempFile);
 
-    await expect(fileManager.saveFile(tempFile.id, 1)).rejects.toThrow(
+    await fileManager.finishTemporaryFile(tempFile);
+
+    tempFilesToCleanup.push(testFilePath, tempFile.tempPath);
+
+    const [_, fileProcessing] = fileManager.saveFile(tempFile.id, 1);
+
+    expect(fileProcessing).rejects.toThrow(
       'User storage limit exceeded'
     );
 
@@ -338,20 +431,26 @@ describe('file manager', () => {
       .execute();
 
     const content = 'content that exceeds limit';
-    const filePath = path.join(UPLOADS_PATH, `large-${Date.now()}.txt`);
+    const fileName = `large-${Date.now()}.txt`;
+    const filePath = path.join(UPLOADS_PATH, fileName);
     await fs.writeFile(filePath, content);
     const stats = await fs.stat(filePath);
 
-    const tempFile = await fileManager.addTemporaryFile({
-      filePath,
+    const tempFile = await fileManager.initTemporaryFile({
       size: stats.size,
-      originalName: 'large.txt',
+      originalName: fileName,
       userId: 1
     });
 
-    tempFilesToCleanup.push(tempFile.path);
+    await moveFileIntoTempFile(filePath, tempFile);
 
-    await expect(fileManager.saveFile(tempFile.id, 1)).rejects.toThrow(
+    await fileManager.finishTemporaryFile(tempFile);
+
+    tempFilesToCleanup.push(testFilePath, tempFile.tempPath);
+
+    const [_, fileProcessing] = fileManager.saveFile(tempFile.id, 1)
+
+    expect(fileProcessing).rejects.toThrow(
       'Server storage limit exceeded.'
     );
 
@@ -373,18 +472,22 @@ describe('file manager', () => {
 
     const oldStats = await fs.stat(oldFilePath);
 
-    const oldTempFile = await fileManager.addTemporaryFile({
-      filePath: oldFilePath,
+    const oldTempFile = await fileManager.initTemporaryFile({
       size: oldStats.size,
       originalName: oldFileName,
       userId: 1
     });
 
-    const oldSavedFile = await fileManager.saveFile(oldTempFile.id, 1);
+    await moveFileIntoTempFile(oldFilePath, oldTempFile);
+
+    await fileManager.finishTemporaryFile(oldTempFile);
+
+    const [oldSavedFile, oldFileProcessing] = fileManager.saveFile(oldTempFile.id, 1);
+    const oldFileProcessed = await oldFileProcessing;
 
     await Bun.sleep(100); // ensure different timestamps
 
-    const totalLimit = oldSavedFile.size + 5;
+    const totalLimit = (oldFileProcessed.size!) + 5;
 
     await tdb.update(settings).set({
       storageQuota: totalLimit,
@@ -398,16 +501,20 @@ describe('file manager', () => {
 
     const newStats = await fs.stat(newFilePath);
 
-    const newTempFile = await fileManager.addTemporaryFile({
-      filePath: newFilePath,
+    const newTempFile = await fileManager.initTemporaryFile({
       size: newStats.size,
       originalName: newFileName,
       userId: 1
     });
 
-    const newSavedFile = await fileManager.saveFile(newTempFile.id, 1);
+    await moveFileIntoTempFile(newFilePath, newTempFile);
 
-    tempFilesToCleanup.push(path.join(PUBLIC_PATH, newSavedFile.name));
+    await fileManager.finishTemporaryFile(newTempFile);
+
+    const [newSavedFile, newFileProcessing] = fileManager.saveFile(newTempFile.id, 1);
+    await newFileProcessing;
+
+    tempFilesToCleanup.push(testFilePath, newTempFile.publicPath);
 
     const oldDbFile = await tdb
       .select()
@@ -437,56 +544,47 @@ describe('file manager', () => {
 
     const stats = await fs.stat(testFilePath);
 
-    const tempFile = await fileManager.addTemporaryFile({
-      filePath: testFilePath,
+    const tempFile = await fileManager.initTemporaryFile({
       size: stats.size,
       originalName: testFileName,
       userId: 1
     });
 
-    const savedFile = await fileManager.saveFile(tempFile.id, 1);
-    tempFilesToCleanup.push(path.join(PUBLIC_PATH, savedFile.name));
+    await moveFileIntoTempFile(testFilePath, tempFile);
+
+    await fileManager.finishTemporaryFile(tempFile);
+
+    const [savedFile, fileProcessing] = fileManager.saveFile(tempFile.id, 1);
+    await fileProcessing;
+
+    tempFilesToCleanup.push(tempFile.publicPath);
 
     expect(savedFile).toBeDefined();
     expect(savedFile.id).toBeGreaterThan(0);
   });
 
-  test('should generate safe upload path with correct extension', async () => {
-    const path1 = await fileManager.getSafeUploadPath(testFileName);
-    const path2 = await fileManager.getSafeUploadPath('another.jpg');
 
-    expect(path1).toContain('.txt');
-    expect(path2).toContain('.jpg');
-    expect(path1).not.toBe(path2);
-  });
-
-  test('should generate unique paths for multiple calls', async () => {
-    const path1 = await fileManager.getSafeUploadPath('file.txt');
-    const path2 = await fileManager.getSafeUploadPath('file.txt');
-    const path3 = await fileManager.getSafeUploadPath('file.txt');
-
-    expect(path1).not.toBe(path2);
-    expect(path2).not.toBe(path3);
-    expect(path1).not.toBe(path3);
-  });
-
-  test('should append counter when same original name already exists', async () => {
+  test('should have different uuid but same original name for duplicate file names', async () => {
     const fileAPath = path.join(UPLOADS_PATH, `dup-${Date.now()}.txt`);
 
     await fs.writeFile(fileAPath, 'first');
 
     const statsA = await fs.stat(fileAPath);
 
-    const tempA = await fileManager.addTemporaryFile({
-      filePath: fileAPath,
+    const tempA = await fileManager.initTemporaryFile({
       size: statsA.size,
       originalName: 'my-file.txt',
       userId: 1
     });
 
-    const savedA = await fileManager.saveFile(tempA.id, 1);
+    await moveFileIntoTempFile(fileAPath, tempA);
 
-    tempFilesToCleanup.push(path.join(PUBLIC_PATH, savedA.name));
+    await fileManager.finishTemporaryFile(tempA);
+
+    const [savedA, fileProcessingA] = fileManager.saveFile(tempA.id, 1);
+    await fileProcessingA;
+
+
 
     const fileBPath = path.join(UPLOADS_PATH, `dup2-${Date.now()}.txt`);
 
@@ -494,19 +592,24 @@ describe('file manager', () => {
 
     const statsB = await fs.stat(fileBPath);
 
-    const tempB = await fileManager.addTemporaryFile({
-      filePath: fileBPath,
+    const tempB = await fileManager.initTemporaryFile({
       size: statsB.size,
       originalName: 'my-file.txt',
       userId: 1
     });
 
-    const savedB = await fileManager.saveFile(tempB.id, 1);
+    await moveFileIntoTempFile(fileBPath, tempB);
 
-    tempFilesToCleanup.push(path.join(PUBLIC_PATH, savedB.name));
+    await fileManager.finishTemporaryFile(tempB);
 
-    expect(savedA.name).toBe('my-file.txt');
-    expect(savedB.name).toBe('my-file-2.txt');
+    const [savedB, fileProcessingB] = fileManager.saveFile(tempB.id, 1);
+    await fileProcessingB;
+
+    tempFilesToCleanup.push(testFilePath, tempA.publicPath, tempB.publicPath);
+
+    expect(savedA.originalName).toBe('my-file.txt');
+    expect(savedB.originalName).toBe('my-file.txt');
+    expect(savedA.uuid).not.toBe(savedB.uuid);
 
     const dbA = await tdb
       .select()
@@ -521,9 +624,10 @@ describe('file manager', () => {
       .get();
 
     expect(dbA).toBeDefined();
-    expect(dbA?.name).toBe('my-file.txt');
+    expect(dbA?.originalName).toBe('my-file.txt');
     expect(dbB).toBeDefined();
-    expect(dbB?.name).toBe('my-file-2.txt');
+    expect(dbB?.originalName).toBe('my-file.txt');
+    expect(dbA?.uuid).not.toBe(dbB?.uuid);
   });
 
   test('temporaryFileExists returns correct boolean', async () => {
@@ -533,14 +637,17 @@ describe('file manager', () => {
 
     const stats = await fs.stat(tmpPath);
 
-    const temp = await fileManager.addTemporaryFile({
-      filePath: tmpPath,
+    const temp = await fileManager.initTemporaryFile({
       size: stats.size,
-      originalName: 'exists.txt',
+      originalName: 'my-file.txt',
       userId: 1
     });
 
-    tempFilesToCleanup.push(temp.path);
+    await moveFileIntoTempFile(tmpPath, temp);
+
+    await fileManager.finishTemporaryFile(temp);
+
+    tempFilesToCleanup.push(temp.tempPath);
 
     expect(fileManager.temporaryFileExists(temp.id)).toBe(true);
 
@@ -549,10 +656,4 @@ describe('file manager', () => {
     expect(fileManager.temporaryFileExists(temp.id)).toBe(false);
   });
 
-  test('getSafeUploadPath handles names with no extension', async () => {
-    const p = await fileManager.getSafeUploadPath('Makefile');
-
-    expect(p.startsWith(UPLOADS_PATH)).toBe(true);
-    expect(path.extname(p)).toBe('');
-  });
 });

@@ -45,7 +45,8 @@ const changeBannerRoute = protectedProcedure
         message: 'File size exceeds the limit of 3 MB'
       });
 
-      const newFile = await fileManager.saveFile(input.fileId, ctx.userId);
+      const [newFile, fileProcessing] = fileManager.saveFile(input.fileId, ctx.userId);
+      await fileProcessing;
 
       await db
         .update(users)

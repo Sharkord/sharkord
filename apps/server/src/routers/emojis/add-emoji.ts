@@ -21,7 +21,8 @@ const addEmojiRoute = protectedProcedure
     await ctx.needsPermission(Permission.MANAGE_EMOJIS);
 
     for (const data of input) {
-      const newFile = await fileManager.saveFile(data.fileId, ctx.userId);
+      const [newFile, fileProcessing] = fileManager.saveFile(data.fileId, ctx.userId);
+      await fileProcessing;
       const uniqueEmojiName = await getUniqueEmojiName(data.name);
 
       const emoji = db

@@ -21,8 +21,8 @@ const changeLogoRoute = protectedProcedure
     }
 
     if (input.fileId) {
-      const newFile = await fileManager.saveFile(input.fileId, ctx.userId);
-
+      const [newFile, fileProcessing] = fileManager.saveFile(input.fileId, ctx.userId);
+      await fileProcessing;
       await updateSettings({ logoId: newFile.id });
     }
 

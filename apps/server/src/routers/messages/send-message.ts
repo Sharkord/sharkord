@@ -203,12 +203,14 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     if (input.files.length > 0) {
       for (const tempFileId of input.files) {
-        const newFile = await fileManager.saveFile(tempFileId, ctx.userId);
-
+        const [newFile, fileProcessing] = fileManager.saveFile(tempFileId, ctx.userId)
         await db.insert(messageFiles).values({
           messageId: message.id,
           fileId: newFile.id,
           createdAt: Date.now()
+        });
+        fileProcessing!.then(() => {
+          publishMessage(message.id, input.channelId, 'update');
         });
       }
     }

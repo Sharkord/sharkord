@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@types/bun": "^1.3.5",
+    "@types/fluent-ffmpeg": "^2.1.28",
     "@types/ini": "^4.1.1",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/sanitize-html": "^2.16.0",
@@ -53,6 +54,7 @@
     "queue": "^7.0.0",
     "sanitize-html": "^2.17.0",
     "semver": "^7.7.3",
+    "sharp": "^0.34.5",
     "string-argv": "^0.3.2",
     "systeminformation": "^5.27.11",
     "ua-parser-js": "^2.0.6",

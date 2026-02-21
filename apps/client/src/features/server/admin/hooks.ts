@@ -425,7 +425,7 @@ export const useAdminStorage = () => {
       storageSpaceQuotaByUser: STORAGE_MAX_QUOTA_PER_USER,
       storageUploadEnabled: true,
       storageUploadMaxFileSize: STORAGE_MAX_FILE_SIZE,
-      storageQuota: STORAGE_QUOTA
+      storageQuota: STORAGE_QUOTA,
     });
   const [diskMetrics, setDiskMetrics] = useState<TDiskMetrics | undefined>(
     undefined

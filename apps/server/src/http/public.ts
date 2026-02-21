@@ -1,14 +1,8 @@
-import { eq } from 'drizzle-orm';
-import fs from 'fs';
 import http from 'http';
-import path from 'path';
-import { db } from '../db';
-import { isFileOrphaned } from '../db/queries/files';
-import { getMessageByFileId } from '../db/queries/messages';
-import { channels, files } from '../db/schema';
-import { verifyFileToken } from '../helpers/files-crypto';
-import { PUBLIC_PATH } from '../helpers/paths';
 import { logger } from '../logger';
+import { fileManager } from '../utils/file-manager';
+import type { TFile } from '@sharkord/shared';
+import type { ReadStream } from 'fs';
 
 const publicRouteHandler = async (
   req: http.IncomingMessage,
@@ -21,65 +15,31 @@ const publicRouteHandler = async (
   }
 
   const url = new URL(req.url!, `http://${req.headers.host}`);
-  const fileName = decodeURIComponent(path.basename(url.pathname));
+  const urlPath = decodeURIComponent(url.pathname).split('/')
+  const fileUUID = urlPath[2] || '';
+  const fileName = urlPath[3] || '';
+  const fileAccessToken = url.searchParams.get('accessToken')
 
-  const dbFile = await db
-    .select()
-    .from(files)
-    .where(eq(files.name, fileName))
-    .get();
-
-  if (!dbFile) {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'File not found' }));
-    return;
-  }
-
-  const isOrphaned = await isFileOrphaned(dbFile.id);
-
-  if (isOrphaned) {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'File not found' }));
-    return;
-  }
-
-  // it's gonna be defined if it's a message file
-  // otherwise is something like an avatar or banner or something else
-  // we can assume this because of the orphaned check above
-  const associatedMessage = await getMessageByFileId(dbFile.id);
-
-  if (associatedMessage) {
-    const channel = await db
-      .select()
-      .from(channels)
-      .where(eq(channels.id, associatedMessage.channelId))
-      .get();
-
-    if (channel && channel.private) {
-      const accessToken = url.searchParams.get('accessToken');
-      const isValidToken = verifyFileToken(
-        dbFile.id,
-        channel.fileAccessToken,
-        accessToken || ''
-      );
-
-      if (!isValidToken) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Forbidden' }));
-        return;
-      }
+  let dbFile: TFile;
+  let fileStream: ReadStream;
+  
+  try {
+    [dbFile, fileStream] = await fileManager.getFile(fileUUID, fileName, fileAccessToken);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : ''
+    let code = 400;
+    let reason = 'Bad request'
+    if (message === 'notFound') {
+      code = 404;
+      reason = 'File not found'
+    } else if (message === 'forbidden') {
+      code = 403;
+      reason = 'Forbidden'
     }
-  }
-
-  const filePath = path.join(PUBLIC_PATH, dbFile.name);
-
-  if (!fs.existsSync(filePath)) {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'File not found on disk' }));
+    res.writeHead(code, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: reason }));
     return;
   }
-
-  const fileStream = fs.createReadStream(filePath);
 
   const inlineAllowlist = [
     'image/png',
@@ -95,11 +55,18 @@ const publicRouteHandler = async (
     ? 'inline'
     : 'attachment';
 
-  res.writeHead(200, {
+  const headers: Record<string, string|number|undefined> = {
+    'Content-Encoding': 'gzip',
     'Content-Type': dbFile.mimeType,
-    'Content-Length': dbFile.size,
-    'Content-Disposition': `${contentDisposition}; filename="${dbFile.originalName}"`
-  });
+    'Content-Length': dbFile.size || 0,
+    'Content-Disposition': `${contentDisposition}; filename*=UTF-8''${encodeURIComponent(dbFile.originalName)}`
+  }
+
+  if (!dbFile.compressed) { // remove gzip header if not compressed
+    delete headers['Content-Encoding']
+  }
+
+  res.writeHead(200, headers);
 
   fileStream.pipe(res);
 

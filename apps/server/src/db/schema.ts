@@ -15,13 +15,18 @@ const files = sqliteTable(
   'files',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    name: text('name').notNull().unique(),
+    uuid: text('uuid').notNull().unique(),
     originalName: text('original_name').notNull(),
-    md5: text('md5').notNull(),
+    md5: text('md5'),
     userId: integer('user_id').notNull(),
-    size: integer('size').notNull(),
+    size: integer('size'),
     mimeType: text('mime_type').notNull(),
     extension: text('extension').notNull(),
+    originalSize: integer('originalSize').notNull(),
+    compressed: integer('compressed', {
+      mode: 'boolean'
+    }),
+    status: integer('status').notNull(),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },
@@ -29,7 +34,7 @@ const files = sqliteTable(
     index('files_user_idx').on(t.userId),
     index('files_md5_idx').on(t.md5),
     index('files_created_idx').on(t.createdAt),
-    index('files_name_idx').on(t.name)
+    index('files_name_idx').on(t.uuid)
   ]
 );
 
