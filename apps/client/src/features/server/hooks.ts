@@ -2,6 +2,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   ChannelPermission,
   Permission,
+  linkifyHtml,
   type TPluginSlotContext
 } from '@sharkord/shared';
 import { useCallback, useMemo, useRef } from 'react';
@@ -130,7 +131,7 @@ export const usePluginComponentContext = (): TPluginSlotContext => {
 
         await trpc.messages.send.mutate({
           channelId,
-          content: `<p>${content}</p>`,
+          content: linkifyHtml(`<p>${content}</p>`),
           files: []
         });
       }

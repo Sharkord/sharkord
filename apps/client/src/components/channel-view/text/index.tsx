@@ -17,7 +17,8 @@ import {
   PluginSlot,
   TYPING_MS,
   getTrpcError,
-  isEmptyMessage
+  isEmptyMessage,
+  linkifyHtml
 } from '@sharkord/shared';
 import { Button, Spinner } from '@sharkord/ui';
 import { filesize } from 'filesize';
@@ -136,7 +137,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
     try {
       await trpc.messages.send.mutate({
-        content: newMessage,
+        content: linkifyHtml(newMessage),
         channelId,
         files: files.map((f) => f.id)
       });
