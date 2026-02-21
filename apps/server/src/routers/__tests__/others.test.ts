@@ -39,6 +39,8 @@ describe('others router', () => {
     expect(result).toHaveProperty('roles');
     expect(result).toHaveProperty('emojis');
     expect(result).toHaveProperty('channelPermissions');
+    expect(result).toHaveProperty('commands');
+    expect(result).toHaveProperty('components');
 
     expect(result.ownUserId).toBe(joiningUserId);
 
@@ -136,5 +138,23 @@ describe('others router', () => {
     const settingsAfterRemoval = await caller.others.getSettings();
 
     expect(settingsAfterRemoval.logo).toBeNull();
+  });
+
+  test('should rate limit excessive join attempts', async () => {
+    const { caller } = await getCaller(1);
+
+    for (let i = 0; i < 5; i++) {
+      await expect(
+        caller.others.joinServer({
+          handshakeHash: ''
+        })
+      ).rejects.toThrow('Invalid handshake hash');
+    }
+
+    await expect(
+      caller.others.joinServer({
+        handshakeHash: ''
+      })
+    ).rejects.toThrow('Too many requests. Please try again shortly.');
   });
 });

@@ -1,5 +1,5 @@
 import type { TEmojiItem } from '@/components/tiptap-input/types';
-import { Input } from '@/components/ui/input';
+import { Input } from '@sharkord/ui';
 import type { EmojiItem } from '@tiptap/extension-emoji';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { searchEmojis, toTEmojiItem } from './emoji-data';

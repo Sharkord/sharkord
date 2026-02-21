@@ -2,17 +2,25 @@ import type { TDevices } from '@/types';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 export interface TAppState {
-  loading: boolean;
+  appLoading: boolean;
+  loadingPlugins: boolean;
   devices: TDevices | undefined;
   modViewOpen: boolean;
   modViewUserId?: number;
+  threadSidebarOpen: boolean;
+  threadParentMessageId?: number;
+  threadChannelId?: number;
 }
 
 const initialState: TAppState = {
-  loading: true,
+  appLoading: true,
+  loadingPlugins: true,
   devices: undefined,
   modViewOpen: false,
-  modViewUserId: undefined
+  modViewUserId: undefined,
+  threadSidebarOpen: false,
+  threadParentMessageId: undefined,
+  threadChannelId: undefined
 };
 
 export const appSlice = createSlice({
@@ -20,10 +28,13 @@ export const appSlice = createSlice({
   initialState,
   reducers: {
     setAppLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
+      state.appLoading = action.payload;
     },
     setDevices: (state, action: PayloadAction<TDevices>) => {
       state.devices = action.payload;
+    },
+    setLoadingPlugins: (state, action: PayloadAction<boolean>) => {
+      state.loadingPlugins = action.payload;
     },
     setModViewOpen: (
       state,
@@ -34,6 +45,18 @@ export const appSlice = createSlice({
     ) => {
       state.modViewOpen = action.payload.modViewOpen;
       state.modViewUserId = action.payload.userId;
+    },
+    setThreadSidebarOpen: (
+      state,
+      action: PayloadAction<{
+        open: boolean;
+        parentMessageId?: number;
+        channelId?: number;
+      }>
+    ) => {
+      state.threadSidebarOpen = action.payload.open;
+      state.threadParentMessageId = action.payload.parentMessageId;
+      state.threadChannelId = action.payload.channelId;
     }
   }
 });

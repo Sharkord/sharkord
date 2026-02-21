@@ -1,3 +1,5 @@
+import { isDebug } from './is-debug';
+
 const logVoice = (...args: unknown[]) => {
   console.log(
     '%c[VOICE-PROVIDER]',
@@ -6,10 +8,8 @@ const logVoice = (...args: unknown[]) => {
   );
 };
 
-const OVERRIDE_DEBUG = true;
-
 const logDebug = (...args: unknown[]) => {
-  if (window.DEBUG || OVERRIDE_DEBUG) {
+  if (isDebug()) {
     console.log('%c[DEBUG]', 'color: lightblue; font-weight: bold;', ...args);
   }
 };

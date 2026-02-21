@@ -1,6 +1,15 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+@source "../../../packages/ui/src";
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -250,6 +259,11 @@ body {
 
   .ProseMirror-separator {
     display: none;
+  }
+
+  a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 }
 

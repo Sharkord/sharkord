@@ -5,12 +5,55 @@ import { config } from '../config';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
 import { healthRouteHandler } from './healthz';
+import {
+  getRequestPathname,
+  hasPrefixPathSegment,
+  type HttpRouteHandler
+} from './helpers';
 import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
 import { loginRouteHandler } from './login';
+import { pluginBundleRouteHandler } from './plugin-bundle';
+import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
 import { uploadFileRouteHandler } from './upload';
 import { HttpValidationError } from './utils';
+
+type RouteContext = {
+  info: ReturnType<typeof getWsInfo>;
+};
+
+type SupportedMethod = 'GET' | 'POST';
+
+const routeHandlers: Partial<
+  Record<
+    SupportedMethod,
+    {
+      exact: Record<string, HttpRouteHandler<RouteContext>>;
+      prefix: Record<string, HttpRouteHandler<RouteContext>>;
+    }
+  >
+> = {
+  GET: {
+    exact: {
+      '/healthz': (req, res) => healthRouteHandler(req, res),
+      '/info': (req, res) => infoRouteHandler(req, res)
+    },
+    prefix: {
+      '/public': (req, res) => publicRouteHandler(req, res),
+      '/plugin-components': (req, res) =>
+        pluginsComponentsRouteHandler(req, res),
+      '/plugin-bundle': (req, res) => pluginBundleRouteHandler(req, res)
+    }
+  },
+  POST: {
+    exact: {
+      '/upload': (req, res) => uploadFileRouteHandler(req, res),
+      '/login': (req, res) => loginRouteHandler(req, res)
+    },
+    prefix: {}
+  }
+};
 
 // this http server implementation is temporary and will be moved to bun server later when things are more stable
 
@@ -25,10 +68,7 @@ const createHttpServer = async (port: number = config.server.port) => {
         const info = getWsInfo(undefined, req);
 
         logger.debug(
-          `${chalk.dim('[HTTP]')} %s - %s - [%s]`,
-          req.method,
-          req.url,
-          info?.ip
+          `${chalk.dim('[HTTP]')} ${req.method} ${req.url} - ${info?.ip}`
         );
 
         if (req.method === 'OPTIONS') {
@@ -37,28 +77,39 @@ const createHttpServer = async (port: number = config.server.port) => {
           return;
         }
 
+        const pathname = getRequestPathname(req);
+
+        if (!pathname) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Bad request' }));
+          return;
+        }
+
         try {
-          if (req.method === 'GET' && req.url === '/healthz') {
-            return await healthRouteHandler(req, res);
+          const method = req.method as SupportedMethod | undefined;
+
+          if (method) {
+            const methodHandlers = routeHandlers[method];
+
+            if (methodHandlers) {
+              const exactHandler = methodHandlers.exact[pathname];
+
+              if (exactHandler) {
+                return await exactHandler(req, res, { info });
+              }
+
+              for (const [prefix, prefixHandler] of Object.entries(
+                methodHandlers.prefix
+              )) {
+                if (hasPrefixPathSegment(pathname, prefix)) {
+                  return await prefixHandler(req, res, { info });
+                }
+              }
+            }
           }
 
-          if (req.method === 'GET' && req.url === '/info') {
-            return await infoRouteHandler(req, res);
-          }
-
-          if (req.method === 'POST' && req.url === '/upload') {
-            return await uploadFileRouteHandler(req, res);
-          }
-
-          if (req.method === 'POST' && req.url === '/login') {
-            return await loginRouteHandler(req, res);
-          }
-
-          if (req.method === 'GET' && req.url?.startsWith('/public')) {
-            return await publicRouteHandler(req, res);
-          }
-
-          if (req.method === 'GET' && req.url?.startsWith('/')) {
+          // fallback to interface route handler for GET requests
+          if (method === 'GET') {
             return await interfaceRouteHandler(req, res);
           }
         } catch (error) {

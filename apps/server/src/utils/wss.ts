@@ -151,7 +151,7 @@ const createContext = async ({
   };
 
   const getConnectionInfo = () => {
-    if (!wss) return undefined;
+    if (!wss) return getWsInfo(undefined, req);
 
     const ws = Array.from(wss.clients).find((client) => client.token === token);
 

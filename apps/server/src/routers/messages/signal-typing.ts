@@ -4,16 +4,16 @@ import { protectedProcedure } from '../../utils/trpc';
 
 const signalTypingRoute = protectedProcedure
   .input(
-    z
-      .object({
-        channelId: z.number()
-      })
-      .required()
+    z.object({
+      channelId: z.number(),
+      parentMessageId: z.number().optional()
+    })
   )
   .mutation(async ({ input, ctx }) => {
     ctx.pubsub.publish(ServerEvents.MESSAGE_TYPING, {
       channelId: input.channelId,
-      userId: ctx.userId
+      userId: ctx.userId,
+      parentMessageId: input.parentMessageId
     });
   });
 

@@ -6,14 +6,19 @@ import {
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { config } from '../../config';
 import { db } from '../../db';
 import { channels } from '../../db/schema';
 import { logger } from '../../logger';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const joinVoiceRoute = protectedProcedure
+const joinVoiceRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.joinVoiceChannel.maxRequests,
+  windowMs: config.rateLimiters.joinVoiceChannel.windowMs,
+  logLabel: 'joinVoice'
+})
   .input(
     z.object({
       channelId: z.number(),

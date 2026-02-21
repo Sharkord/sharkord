@@ -1,6 +1,6 @@
 import type { TEmojiItem } from '@/components/tiptap-input/types';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { Input } from '@sharkord/ui';
 import { memo, useCallback, useMemo, useState } from 'react';
 import {
   ALL_EMOJIS,

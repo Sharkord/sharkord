@@ -1,12 +1,20 @@
 import { EmojiPicker } from '@/components/emoji-picker';
-import { Button } from '@/components/ui/button';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import type { TCommandInfo } from '@sharkord/shared';
+import { Button } from '@sharkord/ui';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
+import Link from '@tiptap/extension-link';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Smile } from 'lucide-react';
-import { memo, useEffect, useMemo } from 'react';
+import { ChevronDown, ChevronUp, Smile } from 'lucide-react';
+import {
+  memo,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import {
   COMMANDS_STORAGE_KEY,
   CommandSuggestion
@@ -17,6 +25,7 @@ import type { TEmojiItem } from './types';
 
 type TTiptapInputProps = {
   disabled?: boolean;
+  readOnly?: boolean;
   value?: string;
   onChange?: (html: string) => void;
   onSubmit?: () => void;
@@ -33,8 +42,18 @@ const TiptapInput = memo(
     onCancel,
     onTyping,
     disabled,
+    readOnly,
     commands
   }: TTiptapInputProps) => {
+    const readOnlyRef = useRef(readOnly);
+    readOnlyRef.current = readOnly;
+
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [hasOverflow, setHasOverflow] = useState(false);
+    const [isHovering, setIsHovering] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
+    const editorWrapperRef = useRef<HTMLDivElement>(null);
+
     const customEmojis = useCustomEmojis();
 
     const extensions = useMemo(() => {
@@ -44,6 +63,18 @@ const TiptapInput = memo(
             HTMLAttributes: {
               class: 'hard-break'
             }
+          }
+        }),
+        Link.configure({
+          autolink: true,
+          defaultProtocol: 'https',
+          openOnClick: false,
+          HTMLAttributes: {
+            target: '_blank',
+            rel: 'noopener noreferrer'
+          },
+          shouldAutoLink: (url) => {
+            return /^https?:\/\//i.test(url);
           }
         }),
         Emoji.configure({
@@ -84,6 +115,12 @@ const TiptapInput = memo(
       },
       editorProps: {
         handleKeyDown: (_view, event) => {
+          // block all input when readOnly
+          if (readOnlyRef.current) {
+            event.preventDefault();
+            return true;
+          }
+
           const suggestionElement = document.querySelector('.bg-popover');
           const hasSuggestions =
             suggestionElement && document.body.contains(suggestionElement);
@@ -110,12 +147,26 @@ const TiptapInput = memo(
           }
 
           return false;
-        }
+        },
+        handleClickOn: (_view, _pos, _node, _nodePos, event) => {
+          const target = event.target as HTMLElement;
+
+          // prevents clicking on links inside the edit from opening them in the browser
+          if (target.tagName === 'A') {
+            event.preventDefault();
+
+            return true;
+          }
+
+          return false;
+        },
+        handlePaste: () => !!readOnlyRef.current,
+        handleDrop: () => readOnlyRef.current
       }
     });
 
     const handleEmojiSelect = (emoji: TEmojiItem) => {
-      if (disabled) return;
+      if (disabled || readOnly) return;
 
       if (emoji.shortcodes.length > 0) {
         editor?.chain().focus().setEmoji(emoji.shortcodes[0]).run();
@@ -158,14 +209,51 @@ const TiptapInput = memo(
       }
     }, [editor, disabled]);
 
+    // Measure if content overflows (more than ~3 lines) when collapsed
+    useLayoutEffect(() => {
+      if (isExpanded) return;
+      const wrapper = editorWrapperRef.current;
+      const el = wrapper?.firstElementChild as HTMLElement | null;
+      if (el) {
+        setHasOverflow(el.scrollHeight > el.clientHeight);
+      }
+    }, [value, isExpanded]);
+
+    const showExpandButton = hasOverflow || isExpanded;
+
     return (
-      <div className="flex flex-1 items-center gap-2">
-        <EditorContent
-          editor={editor}
-          className={`border p-2 rounded w-full min-h-[40px] tiptap ${
-            disabled ? 'opacity-50 cursor-not-allowed bg-muted' : ''
-          }`}
-        />
+      <div className="flex flex-1 items-center gap-2 min-w-0">
+        <div
+          ref={editorWrapperRef}
+          className="relative flex min-w-0 flex-1"
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+        >
+          <EditorContent
+            editor={editor}
+            className={`border p-2 rounded w-full min-h-10 tiptap overflow-auto relative ${
+              isExpanded ? 'max-h-80' : 'max-h-20'
+            } ${disabled ? 'opacity-50 cursor-not-allowed bg-muted' : ''}`}
+          />
+          {showExpandButton && (isHovering || isFocused) && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute -top-[4px] left-1/2 -translate-y-1/2 -translate-x-1/2 h-5 w-8 shrink-0 rounded border bg-background hover:bg-muted"
+              onClick={() => setIsExpanded((e) => !e)}
+              aria-label={isExpanded ? 'Collapse' : 'Expand'}
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronUp className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+        </div>
 
         <EmojiPicker onEmojiSelect={handleEmojiSelect}>
           <Button variant="ghost" size="icon" disabled={disabled}>

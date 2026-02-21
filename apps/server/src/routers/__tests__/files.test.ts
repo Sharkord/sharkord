@@ -1,6 +1,6 @@
 import type { TTempFile } from '@sharkord/shared';
 import { beforeEach, describe, expect, test } from 'bun:test';
-import fs from 'node:fs/promises';
+import fs from 'fs/promises';
 import { initTest, login, uploadFile } from '../../__tests__/helpers';
 import { fileManager } from '../../utils/file-manager';
 

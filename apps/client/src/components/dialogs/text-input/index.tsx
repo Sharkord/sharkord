@@ -6,10 +6,10 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle
-} from '@/components/ui/alert-dialog';
-import { AutoFocus } from '@/components/ui/auto-focus';
-import { Input } from '@/components/ui/input';
+  AlertDialogTitle,
+  AutoFocus,
+  Input
+} from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
 import type { TDialogBaseProps } from '../types';
 
@@ -38,7 +38,7 @@ const TextInputDialog = memo(
     allowEmpty,
     type
   }: TTextInputDialogProps) => {
-    const [value, setValue] = useState<string | undefined>();
+    const [value, setValue] = useState<string | undefined>(undefined);
 
     const onSubmit = useCallback(() => {
       onConfirm?.(value);

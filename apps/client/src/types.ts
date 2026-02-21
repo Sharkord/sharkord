@@ -33,6 +33,14 @@ export enum Resolution {
   '144p' = '144p'
 }
 
+export enum VideoCodec {
+  AUTO = 'auto',
+  VP8 = 'video/VP8',
+  VP9 = 'video/VP9',
+  H264 = 'video/H264',
+  AV1 = 'video/AV1'
+}
+
 export type TDeviceSettings = {
   microphoneId: string | undefined;
   webcamId: string | undefined;
@@ -42,19 +50,24 @@ export type TDeviceSettings = {
   noiseSuppression: boolean;
   autoGainControl: boolean;
   shareSystemAudio: boolean;
+  mirrorOwnVideo: boolean;
   screenResolution: Resolution;
   screenFramerate: number;
+  screenCodec: VideoCodec;
+  screenBitrate: number;
 };
 
 export type TRemoteUserStreamKinds =
   | StreamKind.AUDIO
   | StreamKind.VIDEO
-  | StreamKind.SCREEN;
+  | StreamKind.SCREEN
+  | StreamKind.SCREEN_AUDIO;
 
 export type TRemoteStreams = {
   [userId: number]: {
     [StreamKind.AUDIO]: MediaStream | undefined;
     [StreamKind.VIDEO]: MediaStream | undefined;
     [StreamKind.SCREEN]: MediaStream | undefined;
+    [StreamKind.SCREEN_AUDIO]: MediaStream | undefined;
   };
 };

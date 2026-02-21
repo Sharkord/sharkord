@@ -1,12 +1,12 @@
-import { Label } from '@/components/ui/label';
 import {
+  Label,
   Select,
   SelectContent,
   SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select';
+} from '@sharkord/ui';
 import { memo } from 'react';
 
 type TResolutionFpsControlProps = {
@@ -33,7 +33,7 @@ const ResolutionFpsControl = memo(
             onValueChange={onResolutionChange}
             disabled={disabled}
           >
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-40">
               <SelectValue placeholder="Select the input device" />
             </SelectTrigger>
             <SelectContent>

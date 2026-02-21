@@ -3,21 +3,20 @@ import {
   ServerEvents,
   type TChannelUserPermissionsMap
 } from '@sharkord/shared';
-import { eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import { db } from '.';
 import { pluginManager } from '../plugins';
 import { pubsub } from '../utils/pubsub';
 import {
   getAffectedUserIdsForChannel,
-  getAllChannelUserPermissions,
-  getChannelsReadStatesForUser
+  getAllChannelUserPermissions
 } from './queries/channels';
 import { getEmojiById } from './queries/emojis';
 import { getMessage } from './queries/messages';
 import { getRole } from './queries/roles';
 import { getPublicSettings } from './queries/server';
 import { getPublicUserById } from './queries/users';
-import { categories, channels } from './schema';
+import { categories, channels, messages } from './schema';
 
 const publishMessage = async (
   messageId: number | undefined,
@@ -48,20 +47,20 @@ const publishMessage = async (
 
   pubsub.publishFor(affectedUserIds, targetEvent, message);
 
-  // only send count updates to users OTHER than the message author
+  // thread replies should not increment the channel's unread count
+  if (message.parentMessageId) return;
+
+  // only send unread updates to users OTHER than the message author
   const usersToNotify = affectedUserIds.filter((id) => id !== message.userId);
 
-  const promises = usersToNotify.map(async (userId) => {
-    const readState = await getChannelsReadStatesForUser(userId, channelId);
-    const count = readState[channelId] ?? 0;
-
-    pubsub.publishFor(userId, ServerEvents.CHANNEL_READ_STATES_UPDATE, {
+  if (usersToNotify.length > 0) {
+    pubsub.publishFor(usersToNotify, ServerEvents.CHANNEL_READ_STATES_DELTA, {
       channelId,
-      count
+      // this was sending the whole unread count before which was causing performance issues, now it just sends a delta of 1 which the client can use to update the unread count
+      // this isn't perfectly accurate in some cases but it should be good enough for most cases and it significantly reduces the amount of work the db has to
+      delta: 1
     });
-  });
-
-  await Promise.all(promises);
+  }
 };
 
 const publishEmoji = async (
@@ -108,14 +107,9 @@ const publishRole = async (
 
 const publishUser = async (
   userId: number | undefined,
-  type: 'create' | 'update' | 'delete'
+  type: 'create' | 'update'
 ) => {
   if (!userId) return;
-
-  if (type === 'delete') {
-    pubsub.publish(ServerEvents.USER_DELETE, userId);
-    return;
-  }
 
   const user = await getPublicUserById(userId);
 
@@ -216,6 +210,29 @@ const publishPluginCommands = async () => {
   pubsub.publish(ServerEvents.PLUGIN_COMMANDS_CHANGE, commands);
 };
 
+const publishPluginComponents = async () => {
+  const components = pluginManager.getComponents();
+
+  pubsub.publish(ServerEvents.PLUGIN_COMPONENTS_CHANGE, components);
+};
+
+const publishReplyCount = async (
+  parentMessageId: number,
+  channelId: number
+) => {
+  const replyCountRow = await db
+    .select({ count: count() })
+    .from(messages)
+    .where(eq(messages.parentMessageId, parentMessageId))
+    .get();
+
+  pubsub.publish(ServerEvents.THREAD_REPLY_COUNT_UPDATE, {
+    messageId: parentMessageId,
+    channelId,
+    replyCount: replyCountRow?.count ?? 0
+  });
+};
+
 export {
   publishCategory,
   publishChannel,
@@ -223,6 +240,8 @@ export {
   publishEmoji,
   publishMessage,
   publishPluginCommands,
+  publishPluginComponents,
+  publishReplyCount,
   publishRole,
   publishSettings,
   publishUser

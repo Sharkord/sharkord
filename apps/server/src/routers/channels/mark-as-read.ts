@@ -1,5 +1,5 @@
 import { ChannelPermission, type TMessage } from '@sharkord/shared';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { channelReadStates, messages } from '../../db/schema';
@@ -19,11 +19,16 @@ const markAsReadRoute = protectedProcedure
 
     const { channelId } = input;
 
-    // get the newest message in the channel
+    // get the newest root message in the channel (excluding thread replies)
     const newestMessage: TMessage | undefined = await db
       .select()
       .from(messages)
-      .where(eq(messages.channelId, channelId))
+      .where(
+        and(
+          eq(messages.channelId, channelId),
+          isNull(messages.parentMessageId)
+        )
+      )
       .orderBy(desc(messages.createdAt))
       .limit(1)
       .get();

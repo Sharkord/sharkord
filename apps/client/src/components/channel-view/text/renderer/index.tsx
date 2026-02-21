@@ -28,11 +28,11 @@ const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
 
     const messageHtml = parse(message.content ?? '', {
       replace: (domNode) =>
-        serializer(domNode, (found) => foundMedia.push(found))
+        serializer(domNode, (found) => foundMedia.push(found), message.id)
     });
 
     return { messageHtml, foundMedia };
-  }, [message.content]);
+  }, [message.content, message.id]);
 
   const onRemoveFileClick = useCallback(async (fileId: number) => {
     if (!fileId) return;

@@ -1,9 +1,19 @@
-import { sha256, type TTempFile } from '@sharkord/shared';
+import {
+  DELETED_USER_IDENTITY_AND_NAME,
+  type TTempFile
+} from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { initTest, uploadFile } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
-import { users } from '../../db/schema';
+import {
+  channels,
+  emojis,
+  files,
+  messageReactions,
+  messages,
+  users
+} from '../../db/schema';
 
 describe('users router', () => {
   test('should throw when user lacks permissions (getAll)', async () => {
@@ -74,6 +84,16 @@ describe('users router', () => {
       caller.users.removeRole({
         userId: 1,
         roleId: 2
+      })
+    ).rejects.toThrow('Insufficient permissions');
+  });
+
+  test('should throw when user lacks permissions (delete)', async () => {
+    const { caller } = await initTest(2);
+
+    await expect(
+      caller.users.delete({
+        userId: 1
       })
     ).rejects.toThrow('Insufficient permissions');
   });
@@ -175,10 +195,12 @@ describe('users router', () => {
     // should not be plain text
     expect(row!.password).not.toBe(newPassword);
 
-    const hashedPassword = await sha256(newPassword);
+    // should be hashed with argon2
+    expect(row!.password).toStartWith('$argon2');
 
-    // should be hashed
-    expect(row!.password).toBe(hashedPassword);
+    // should verify against the new password
+    const isValid = await Bun.password.verify(newPassword, row!.password);
+    expect(isValid).toBe(true);
   });
 
   test('should throw when current password is incorrect', async () => {
@@ -429,6 +451,331 @@ describe('users router', () => {
         userId: 1
       })
     ).rejects.toThrow('You cannot ban yourself');
+  });
+
+  test('should delete a user', async () => {
+    const { caller } = await initTest();
+
+    await caller.users.delete({
+      userId: 2
+    });
+
+    const deletedUser = await tdb
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, 2))
+      .get();
+
+    expect(deletedUser).toBeUndefined();
+  });
+
+  test('should throw when trying to delete yourself', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.delete({
+        userId: 1
+      })
+    ).rejects.toThrow('You cannot delete yourself.');
+  });
+
+  test('should throw when trying to delete a non-existing user', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.delete({
+        userId: 999
+      })
+    ).rejects.toThrow('User not found.');
+  });
+
+  test('should reassign user data to Deleted user when deleting without wipe', async () => {
+    const { caller } = await initTest();
+
+    const targetUserId = 2;
+    const now = Date.now();
+
+    const targetChannel = await tdb
+      .select({ id: channels.id })
+      .from(channels)
+      .get();
+
+    expect(targetChannel).toBeDefined();
+
+    await tdb.insert(messages).values({
+      content: `keep-message-${now}`,
+      userId: targetUserId,
+      channelId: targetChannel!.id,
+      editable: true,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    const messageBeforeDelete = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.content, `keep-message-${now}`))
+      .get();
+
+    expect(messageBeforeDelete).toBeDefined();
+    expect(messageBeforeDelete!.userId).toBe(targetUserId);
+
+    const emojiFileName = `emoji-file-${now}.png`;
+    const emojiName = `emoji_${now}`;
+
+    const insertedEmojiFile = await tdb
+      .insert(files)
+      .values({
+        name: emojiFileName,
+        originalName: emojiFileName,
+        md5: `md5-${now}`,
+        userId: targetUserId,
+        size: 123,
+        mimeType: 'image/png',
+        extension: 'png',
+        createdAt: now,
+        updatedAt: now
+      })
+      .returning({ id: files.id })
+      .get();
+
+    expect(insertedEmojiFile).toBeDefined();
+
+    await tdb.insert(emojis).values({
+      name: emojiName,
+      fileId: insertedEmojiFile!.id,
+      userId: targetUserId,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    await tdb.insert(messageReactions).values({
+      messageId: messageBeforeDelete!.id,
+      userId: targetUserId,
+      emoji: '👍',
+      fileId: null,
+      createdAt: now
+    });
+
+    await caller.users.delete({
+      userId: targetUserId,
+      wipe: false
+    });
+
+    const deletedUser = await tdb
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, targetUserId))
+      .get();
+
+    expect(deletedUser).toBeUndefined();
+
+    const deletedPlaceholderUser = await tdb
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.identity, DELETED_USER_IDENTITY_AND_NAME))
+      .get();
+
+    expect(deletedPlaceholderUser).toBeDefined();
+
+    const messageAfterDelete = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.content, `keep-message-${now}`))
+      .get();
+
+    expect(messageAfterDelete).toBeDefined();
+    expect(messageAfterDelete!.userId).toBe(deletedPlaceholderUser!.id);
+
+    const emojiAfterDelete = await tdb
+      .select({ userId: emojis.userId })
+      .from(emojis)
+      .where(eq(emojis.name, emojiName))
+      .get();
+
+    expect(emojiAfterDelete).toBeDefined();
+    expect(emojiAfterDelete!.userId).toBe(deletedPlaceholderUser!.id);
+
+    const emojiFileAfterDelete = await tdb
+      .select({ userId: files.userId })
+      .from(files)
+      .where(eq(files.id, insertedEmojiFile!.id))
+      .get();
+
+    expect(emojiFileAfterDelete).toBeDefined();
+    expect(emojiFileAfterDelete!.userId).toBe(deletedPlaceholderUser!.id);
+
+    const reactionAfterDelete = await tdb
+      .select({ userId: messageReactions.userId })
+      .from(messageReactions)
+      .where(
+        and(
+          eq(messageReactions.messageId, messageBeforeDelete!.id),
+          eq(messageReactions.emoji, '👍')
+        )
+      )
+      .get();
+
+    expect(reactionAfterDelete).toBeDefined();
+    expect(reactionAfterDelete!.userId).toBe(deletedPlaceholderUser!.id);
+  });
+
+  test('should wipe all linked data when deleting user with wipe', async () => {
+    const { caller } = await initTest();
+
+    const targetUserId = 2;
+    const now = Date.now();
+
+    const targetChannel = await tdb
+      .select({ id: channels.id })
+      .from(channels)
+      .get();
+
+    expect(targetChannel).toBeDefined();
+
+    const insertedMessageFile = await tdb
+      .insert(files)
+      .values({
+        name: `wipe-message-file-${now}.png`,
+        originalName: `wipe-message-file-${now}.png`,
+        md5: `wipe-md5-message-${now}`,
+        userId: targetUserId,
+        size: 100,
+        mimeType: 'image/png',
+        extension: 'png',
+        createdAt: now,
+        updatedAt: now
+      })
+      .returning({ id: files.id })
+      .get();
+
+    const insertedEmojiFile = await tdb
+      .insert(files)
+      .values({
+        name: `wipe-emoji-file-${now}.png`,
+        originalName: `wipe-emoji-file-${now}.png`,
+        md5: `wipe-md5-emoji-${now}`,
+        userId: targetUserId,
+        size: 120,
+        mimeType: 'image/png',
+        extension: 'png',
+        createdAt: now,
+        updatedAt: now
+      })
+      .returning({ id: files.id })
+      .get();
+
+    expect(insertedMessageFile).toBeDefined();
+    expect(insertedEmojiFile).toBeDefined();
+
+    await tdb.insert(emojis).values({
+      name: `wipe_emoji_${now}`,
+      fileId: insertedEmojiFile!.id,
+      userId: targetUserId,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    await tdb.insert(messages).values({
+      content: `wipe-message-${now}`,
+      userId: targetUserId,
+      channelId: targetChannel!.id,
+      editable: true,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    const targetMessage = await tdb
+      .select({ id: messages.id })
+      .from(messages)
+      .where(eq(messages.content, `wipe-message-${now}`))
+      .get();
+
+    expect(targetMessage).toBeDefined();
+
+    await tdb.insert(messageReactions).values({
+      messageId: targetMessage!.id,
+      userId: targetUserId,
+      emoji: '🧪',
+      fileId: null,
+      createdAt: now
+    });
+
+    const existingMessageByOtherUser = await tdb
+      .select({ id: messages.id })
+      .from(messages)
+      .where(eq(messages.userId, 1))
+      .get();
+
+    expect(existingMessageByOtherUser).toBeDefined();
+
+    await tdb.insert(messageReactions).values({
+      messageId: existingMessageByOtherUser!.id,
+      userId: targetUserId,
+      emoji: `wipe-reaction-${now}`,
+      fileId: null,
+      createdAt: now
+    });
+
+    await caller.users.delete({
+      userId: targetUserId,
+      wipe: true
+    });
+
+    const deletedUser = await tdb
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, targetUserId))
+      .get();
+
+    expect(deletedUser).toBeUndefined();
+
+    const wipedMessage = await tdb
+      .select({ id: messages.id })
+      .from(messages)
+      .where(eq(messages.id, targetMessage!.id))
+      .get();
+
+    expect(wipedMessage).toBeUndefined();
+
+    const wipedEmoji = await tdb
+      .select({ id: emojis.id })
+      .from(emojis)
+      .where(eq(emojis.name, `wipe_emoji_${now}`))
+      .get();
+
+    expect(wipedEmoji).toBeUndefined();
+
+    const wipedReactionFromOtherMessage = await tdb
+      .select({ userId: messageReactions.userId })
+      .from(messageReactions)
+      .where(
+        and(
+          eq(messageReactions.messageId, existingMessageByOtherUser!.id),
+          eq(messageReactions.emoji, `wipe-reaction-${now}`)
+        )
+      )
+      .get();
+
+    expect(wipedReactionFromOtherMessage).toBeUndefined();
+
+    const wipedMessageFile = await tdb
+      .select({ id: files.id, userId: files.userId })
+      .from(files)
+      .where(eq(files.id, insertedMessageFile!.id))
+      .get();
+
+    expect(wipedMessageFile).toBeDefined();
+    expect(wipedMessageFile!.userId).toBe(targetUserId);
+
+    const wipedEmojiFile = await tdb
+      .select({ id: files.id, userId: files.userId })
+      .from(files)
+      .where(eq(files.id, insertedEmojiFile!.id))
+      .get();
+
+    expect(wipedEmojiFile).toBeDefined();
+    expect(wipedEmojiFile!.userId).toBe(targetUserId);
   });
 
   test('should unban user', async () => {

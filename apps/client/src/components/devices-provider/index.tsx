@@ -3,7 +3,8 @@ import {
   LocalStorageKey,
   setLocalStorageItemAsJSON
 } from '@/helpers/storage';
-import { Resolution, type TDeviceSettings } from '@/types';
+import { Resolution, VideoCodec, type TDeviceSettings } from '@/types';
+import { DEFAULT_BITRATE } from '@sharkord/shared';
 import {
   createContext,
   memo,
@@ -22,9 +23,12 @@ const DEFAULT_DEVICE_SETTINGS: TDeviceSettings = {
   echoCancellation: false,
   noiseSuppression: false,
   autoGainControl: true,
-  shareSystemAudio: false,
+  shareSystemAudio: true,
+  mirrorOwnVideo: false,
   screenResolution: Resolution['720p'],
-  screenFramerate: 30
+  screenFramerate: 30,
+  screenCodec: VideoCodec.AUTO,
+  screenBitrate: DEFAULT_BITRATE
 };
 
 export type TDevicesProvider = {

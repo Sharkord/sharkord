@@ -15,14 +15,15 @@ import type {
   Producer,
   Router,
   RouterOptions,
-  WebRtcTransport,
-  WebRtcTransportOptions
+  WebRtcTransport
 } from 'mediasoup/types';
-import { SERVER_PUBLIC_IP } from '../config';
 import { logger } from '../logger';
 import { eventBus } from '../plugins/event-bus';
-import { IS_PRODUCTION } from '../utils/env';
-import { mediaSoupWorker } from '../utils/mediasoup';
+import {
+  mediaSoupWorker,
+  webRtcServer,
+  webRtcServerListenInfo
+} from '../utils/mediasoup';
 import { pubsub } from '../utils/pubsub';
 
 const voiceRuntimes = new Map<number, VoiceRuntime>();
@@ -31,10 +32,19 @@ const defaultRouterOptions: RouterOptions<AppData> = {
   mediaCodecs: [
     {
       kind: 'video',
+      mimeType: 'video/VP9',
+      clockRate: 90000,
+      parameters: {
+        'profile-id': 0,
+        'x-google-start-bitrate': 2000
+      }
+    },
+    {
+      kind: 'video',
       mimeType: 'video/VP8',
       clockRate: 90000,
       parameters: {
-        'x-google-start-bitrate': 1000
+        'x-google-start-bitrate': 2000
       }
     },
     {
@@ -45,57 +55,43 @@ const defaultRouterOptions: RouterOptions<AppData> = {
         'packetization-mode': 1,
         'profile-level-id': '42e01f',
         'level-asymmetry-allowed': 1,
-        'x-google-start-bitrate': 1000
+        'x-google-start-bitrate': 2000
+      }
+    },
+    {
+      kind: 'video',
+      mimeType: 'video/H264',
+      clockRate: 90000,
+      parameters: {
+        'packetization-mode': 1,
+        'profile-level-id': '640032',
+        'level-asymmetry-allowed': 1,
+        'x-google-start-bitrate': 2000
+      }
+    },
+    {
+      kind: 'video',
+      mimeType: 'video/AV1',
+      clockRate: 90000,
+      parameters: {
+        'x-google-start-bitrate': 2000
       }
     },
     {
       kind: 'audio',
       mimeType: 'audio/opus',
       clockRate: 48000,
-      channels: 2
+      channels: 2,
+      parameters: {
+        useinbandfec: 1,
+        usedtx: 1,
+        stereo: 1,
+        'sprop-stereo': 1,
+        maxplaybackrate: 48000,
+        maxaveragebitrate: 128000
+      }
     }
   ]
-};
-
-const getListenInfos = (): NonNullable<
-  WebRtcTransportOptions<AppData>['listenInfos']
-> => {
-  if (IS_PRODUCTION) {
-    return [
-      {
-        protocol: 'udp',
-        ip: '0.0.0.0',
-        announcedAddress: SERVER_PUBLIC_IP
-      },
-      {
-        protocol: 'tcp',
-        ip: '0.0.0.0',
-        announcedAddress: SERVER_PUBLIC_IP
-      }
-    ];
-  }
-
-  return [
-    {
-      protocol: 'udp',
-      ip: '127.0.0.1',
-      announcedAddress: undefined
-    },
-    {
-      protocol: 'tcp',
-      ip: '127.0.0.1',
-      announcedAddress: undefined
-    }
-  ];
-};
-
-const defaultRtcTransportOptions: WebRtcTransportOptions<AppData> = {
-  listenInfos: getListenInfos(),
-  enableUdp: true,
-  enableTcp: true,
-  preferUdp: true,
-  preferTcp: false,
-  initialAvailableOutgoingBitrate: 1000000
 };
 
 const defaultUserState: TVoiceUserState = {
@@ -145,6 +141,7 @@ class VoiceRuntime {
   private videoProducers: TProducerMap = {};
   private audioProducers: TProducerMap = {};
   private screenProducers: TProducerMap = {};
+  private screenAudioProducers: TProducerMap = {};
   private consumers: TConsumerMap = {};
 
   private externalCounter = 0;
@@ -229,6 +226,10 @@ class VoiceRuntime {
     });
 
     Object.values(this.screenProducers).forEach((producer) => {
+      producer.close();
+    });
+
+    Object.values(this.screenAudioProducers).forEach((producer) => {
       producer.close();
     });
 
@@ -360,9 +361,14 @@ class VoiceRuntime {
   public createTransport = async () => {
     const router = this.getRouter();
 
-    const transport = await router.createWebRtcTransport(
-      defaultRtcTransportOptions
-    );
+    const transport = await router.createWebRtcTransport({
+      webRtcServer,
+      enableUdp: true,
+      enableTcp: true,
+      preferUdp: true,
+      preferTcp: false,
+      initialAvailableOutgoingBitrate: 10000000
+    });
 
     const params: TTransportParams = {
       id: transport.id,
@@ -454,6 +460,8 @@ class VoiceRuntime {
         return this.audioProducers[id];
       case StreamKind.SCREEN:
         return this.screenProducers[id];
+      case StreamKind.SCREEN_AUDIO:
+        return this.screenAudioProducers[id];
       case StreamKind.EXTERNAL_VIDEO:
         return this.externalStreamsInternal[id]?.producers.videoProducer;
       case StreamKind.EXTERNAL_AUDIO:
@@ -474,6 +482,8 @@ class VoiceRuntime {
       this.audioProducers[userId] = producer;
     } else if (type === StreamKind.SCREEN) {
       this.screenProducers[userId] = producer;
+    } else if (type === StreamKind.SCREEN_AUDIO) {
+      this.screenAudioProducers[userId] = producer;
     }
 
     producer.observer.on('close', () => {
@@ -483,6 +493,8 @@ class VoiceRuntime {
         delete this.audioProducers[userId];
       } else if (type === StreamKind.SCREEN) {
         delete this.screenProducers[userId];
+      } else if (type === StreamKind.SCREEN_AUDIO) {
+        delete this.screenAudioProducers[userId];
       }
     });
   };
@@ -500,6 +512,9 @@ class VoiceRuntime {
       case StreamKind.SCREEN:
         producer = this.screenProducers[userId];
         break;
+      case StreamKind.SCREEN_AUDIO:
+        producer = this.screenAudioProducers[userId];
+        break;
       default:
         return;
     }
@@ -514,6 +529,8 @@ class VoiceRuntime {
       delete this.audioProducers[userId];
     } else if (type === StreamKind.SCREEN) {
       delete this.screenProducers[userId];
+    } else if (type === StreamKind.SCREEN_AUDIO) {
+      delete this.screenAudioProducers[userId];
     }
   }
 
@@ -773,6 +790,9 @@ class VoiceRuntime {
       remoteScreenIds: Object.keys(this.screenProducers)
         .filter((id) => +id !== userId)
         .map((id) => +id),
+      remoteScreenAudioIds: Object.keys(this.screenAudioProducers).map(
+        (id) => +id
+      ),
       remoteExternalStreamIds: Object.keys(this.externalStreamsInternal).map(
         (id) => +id
       )
@@ -792,16 +812,10 @@ class VoiceRuntime {
   };
 
   public static getListenInfo = () => {
-    const info = getListenInfos();
-
-    const ip = info[0]?.ip;
-    const announcedAddress = info[0]?.announcedAddress;
-
-    if (!ip) {
-      throw new Error('No listen info available');
-    }
-
-    return { ip, announcedAddress };
+    return {
+      ip: webRtcServerListenInfo.ip,
+      announcedAddress: webRtcServerListenInfo.announcedAddress
+    };
   };
 }
 

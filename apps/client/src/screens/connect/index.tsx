@@ -1,26 +1,32 @@
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Group } from '@/components/ui/group';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
+import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { connect } from '@/features/server/actions';
 import { useInfo } from '@/features/server/hooks';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
 import {
   getLocalStorageItem,
   LocalStorageKey,
-  removeLocalStorageItem,
   SessionStorageKey,
-  setLocalStorageItem,
   setSessionStorageItem
 } from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
+import { PluginSlot } from '@sharkord/shared';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Group,
+  Input
+} from '@sharkord/ui';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 const Connect = memo(() => {
-  const { values, r, setErrors, onChange } = useForm<{
+  const { values, r, setErrors } = useForm<{
     identity: string;
     password: string;
     rememberCredentials: boolean;
@@ -40,19 +46,6 @@ const Connect = memo(() => {
     const invite = urlParams.get('invite');
     return invite || undefined;
   }, []);
-
-  const onRememberCredentialsChange = useCallback(
-    (checked: boolean) => {
-      onChange('rememberCredentials', checked);
-
-      if (checked) {
-        setLocalStorageItem(LocalStorageKey.REMEMBER_CREDENTIALS, 'true');
-      } else {
-        removeLocalStorageItem(LocalStorageKey.REMEMBER_CREDENTIALS);
-      }
-    },
-    [onChange]
-  );
 
   const onConnectClick = useCallback(async () => {
     setLoading(true);
@@ -82,11 +75,6 @@ const Connect = memo(() => {
 
       setSessionStorageItem(SessionStorageKey.TOKEN, data.token);
 
-      if (values.rememberCredentials) {
-        setLocalStorageItem(LocalStorageKey.IDENTITY, values.identity);
-        setLocalStorageItem(LocalStorageKey.USER_PASSWORD, values.password);
-      }
-
       await connect();
     } catch (error) {
       const errorMessage =
@@ -96,13 +84,7 @@ const Connect = memo(() => {
     } finally {
       setLoading(false);
     }
-  }, [
-    values.identity,
-    values.password,
-    setErrors,
-    values.rememberCredentials,
-    inviteCode
-  ]);
+  }, [values.identity, values.password, setErrors, inviteCode]);
 
   const logoSrc = useMemo(() => {
     if (info?.logo) {
@@ -116,9 +98,15 @@ const Connect = memo(() => {
     <div className="flex flex-col gap-2 justify-center items-center h-full">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="flex justify-center">
+          <CardTitle className="flex flex-col items-center gap-2 text-center">
             <img src={logoSrc} alt="Sharkord" className="w-32 h-32" />
+            {info?.name && (
+              <span className="text-xl font-bold leading-tight">
+                {info.name}
+              </span>
+            )}
           </CardTitle>
+          <PluginSlotRenderer slotId={PluginSlot.CONNECT_SCREEN} />
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {info?.description && (
@@ -139,12 +127,6 @@ const Connect = memo(() => {
                 {...r('password')}
                 type="password"
                 onEnter={onConnectClick}
-              />
-            </Group>
-            <Group label="Remember Credentials">
-              <Switch
-                checked={values.rememberCredentials}
-                onCheckedChange={onRememberCredentialsChange}
               />
             </Group>
           </div>

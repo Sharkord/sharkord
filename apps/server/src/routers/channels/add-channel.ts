@@ -13,7 +13,7 @@ const addChannelRoute = protectedProcedure
   .input(
     z.object({
       type: z.enum(ChannelType),
-      name: z.string().min(1).max(16),
+      name: z.string().min(1).max(27),
       categoryId: z.number()
     })
   )
@@ -51,9 +51,11 @@ const addChannelRoute = protectedProcedure
       return newChannel;
     });
 
-    const runtime = new VoiceRuntime(channel.id);
+    if (channel.type === ChannelType.VOICE) {
+      const runtime = new VoiceRuntime(channel.id);
 
-    await runtime.init();
+      await runtime.init();
+    }
 
     publishChannel(channel.id, 'create');
     enqueueActivityLog({
