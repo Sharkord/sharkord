@@ -4,9 +4,17 @@ import { useOwnVoiceState } from '@/features/server/voice/hooks';
 import { logVoice } from '@/helpers/browser-logger';
 import { getResWidthHeight } from '@/helpers/get-res-with-height';
 import { getTRPCClient } from '@/lib/trpc';
-import { StreamKind, type TVoiceUserState } from '@sharkord/shared';
+import { VideoCodec } from '@/types';
+import {
+  DEFAULT_BITRATE,
+  StreamKind,
+  type TVoiceUserState
+} from '@sharkord/shared';
 import { Device } from 'mediasoup-client';
-import type { RtpCapabilities } from 'mediasoup-client/types';
+import type {
+  RtpCapabilities,
+  RtpCodecCapability
+} from 'mediasoup-client/types';
 import {
   createContext,
   memo,
@@ -54,6 +62,7 @@ export type TVoiceProvider = {
   audioVideoRefsMap: Map<number, AudioVideoRefs>;
   ownVoiceState: TVoiceUserState;
   getOrCreateRefs: (remoteId: number) => AudioVideoRefs;
+  getConsumerCodec: (remoteId: number, kind: StreamKind) => string | undefined;
   init: (
     routerRtpCapabilities: RtpCapabilities,
     channelId: number
@@ -77,6 +86,7 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
   transportStats: {
     producer: null,
     consumer: null,
+    screenShare: null,
     totalBytesReceived: 0,
     totalBytesSent: 0,
     isMonitoring: false,
@@ -94,6 +104,7 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
     externalAudioRef: { current: null },
     externalVideoRef: { current: null }
   }),
+  getConsumerCodec: () => undefined,
   init: () => Promise.resolve(),
   toggleMic: () => Promise.resolve(),
   toggleSound: () => Promise.resolve(),
@@ -178,7 +189,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     createConsumerTransport,
     consume,
     consumeExistingProducers,
-    cleanupTransports
+    cleanupTransports,
+    getConsumerCodec
   } = useTransports({
     addExternalStreamTrack,
     removeExternalStreamTrack,
@@ -190,7 +202,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     stats: transportStats,
     startMonitoring,
     stopMonitoring,
-    resetStats
+    resetStats,
+    setScreenShareProducer
   } = useTransportStats();
 
   const startMicStream = useCallback(async () => {
@@ -224,6 +237,13 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
         localAudioProducer.current = await producerTransport.current?.produce({
           track: audioTrack,
+          codecOptions: {
+            opusStereo: true,
+            opusFec: true,
+            opusDtx: true,
+            opusMaxPlaybackRate: 48000,
+            opusMaxAverageBitrate: 128000
+          },
           appData: { kind: StreamKind.AUDIO }
         });
 
@@ -374,8 +394,14 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     localScreenShareProducer.current?.close();
     localScreenShareProducer.current = undefined;
 
+    setScreenShareProducer(null);
     setLocalScreenShare(undefined);
-  }, [localScreenShareStream, setLocalScreenShare, localScreenShareProducer]);
+  }, [
+    localScreenShareStream,
+    setLocalScreenShare,
+    localScreenShareProducer,
+    setScreenShareProducer
+  ]);
 
   const startScreenShareStream = useCallback(async () => {
     try {
@@ -402,11 +428,40 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       if (videoTrack) {
         logVoice('Obtained video track', { videoTrack });
 
+        let preferredCodec: RtpCodecCapability | undefined;
+
+        if (
+          devices.screenCodec &&
+          devices.screenCodec !== VideoCodec.AUTO &&
+          routerRtpCapabilities.current?.codecs
+        ) {
+          preferredCodec = routerRtpCapabilities.current.codecs.find(
+            (c) =>
+              c.mimeType.toLowerCase() === devices.screenCodec.toLowerCase()
+          );
+
+          if (preferredCodec) {
+            logVoice('Using preferred screen share codec', {
+              codec: preferredCodec.mimeType
+            });
+          }
+        }
+
+        const maxBitrateKbps = devices.screenBitrate ?? DEFAULT_BITRATE;
+
         localScreenShareProducer.current =
           await producerTransport.current?.produce({
             track: videoTrack,
+            codec: preferredCodec,
+            codecOptions: {
+              videoGoogleStartBitrate: Math.min(2000, maxBitrateKbps),
+              videoGoogleMaxBitrate: maxBitrateKbps,
+              videoGoogleMinBitrate: Math.min(200, maxBitrateKbps)
+            },
             appData: { kind: StreamKind.SCREEN }
           });
+
+        setScreenShareProducer(localScreenShareProducer.current);
 
         localScreenShareProducer.current?.on('@close', async () => {
           logVoice('Screen share producer closed');
@@ -430,6 +485,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           });
           localScreenShareProducer.current?.close();
 
+          setScreenShareProducer(null);
           setLocalScreenShare(undefined);
         };
 
@@ -439,6 +495,13 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           localScreenShareAudioProducer.current =
             await producerTransport.current?.produce({
               track: audioTrack,
+              codecOptions: {
+                opusStereo: true,
+                opusFec: true,
+                opusDtx: false,
+                opusMaxPlaybackRate: 48000,
+                opusMaxAverageBitrate: 128000
+              },
               appData: { kind: StreamKind.SCREEN_AUDIO }
             });
 
@@ -462,8 +525,11 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     localScreenShareAudioProducer,
     producerTransport,
     localScreenShareStream,
+    setScreenShareProducer,
     devices.screenResolution,
-    devices.screenFramerate
+    devices.screenFramerate,
+    devices.screenCodec,
+    devices.screenBitrate
   ]);
 
   const cleanup = useCallback(() => {
@@ -574,6 +640,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       transportStats,
       audioVideoRefsMap: audioVideoRefsMap.current,
       getOrCreateRefs,
+      getConsumerCodec,
       init,
 
       toggleMic,
@@ -595,6 +662,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       connectionStatus,
       transportStats,
       getOrCreateRefs,
+      getConsumerCodec,
       init,
 
       toggleMic,

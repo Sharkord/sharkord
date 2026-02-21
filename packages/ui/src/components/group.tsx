@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import { HelpCircle } from 'lucide-react';
 import { memo } from 'react';
 import { Label } from './label';
@@ -9,10 +10,18 @@ type TGroupProps = {
   description?: string;
   help?: React.ReactNode;
   required?: boolean;
+  className?: string;
 };
 
 const Group = memo(
-  ({ label, children, description, help, required }: TGroupProps) => {
+  ({
+    label,
+    children,
+    description,
+    help,
+    required,
+    className
+  }: TGroupProps) => {
     let helpComponent = null;
 
     if (help) {
@@ -24,7 +33,7 @@ const Group = memo(
     }
 
     return (
-      <div className="flex flex-col gap-2">
+      <div className={cn('flex flex-col gap-2', className)}>
         <div className="flex flex-col">
           <div className="flex">
             <Label>
