@@ -5,4 +5,5 @@ export { getRandomString } from './get-random-string';
 export { isEmptyMessage } from './is-empty-message';
 export { linkifyHtml } from './linkify-html';
 export { sha256 } from './sha256';
+export { stripZalgo } from './strip-zalgo';
 export * from './trpc-errors';
