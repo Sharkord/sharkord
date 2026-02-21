@@ -1,5 +1,5 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
-import { getLocalStorageItem, LocalStorageKey } from '@/helpers/storage';
+import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type {
   TCategory,
@@ -96,8 +96,9 @@ const initialState: IServerState = {
   channelPermissions: {},
   readStatesMap: {},
   pluginCommands: {},
-  hideNonVideoParticipants:
-    getLocalStorageItem(LocalStorageKey.HIDE_NON_VIDEO_PARTICIPANTS) === 'true',
+  hideNonVideoParticipants: getLocalStorageItemBool(
+    LocalStorageKey.HIDE_NON_VIDEO_PARTICIPANTS
+  ),
   pluginComponents: {}
 };
 
