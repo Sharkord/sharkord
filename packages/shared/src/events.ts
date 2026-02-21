@@ -3,6 +3,7 @@ export enum ServerEvents {
   MESSAGE_UPDATE = "messageUpdate",
   MESSAGE_DELETE = "messageDelete",
   MESSAGE_TYPING = "messageTyping",
+  THREAD_REPLY_COUNT_UPDATE = "threadReplyCountUpdate",
 
   USER_JOIN = "userJoin",
   USER_LEAVE = "userLeave",
@@ -12,6 +13,7 @@ export enum ServerEvents {
   CHANNEL_DELETE = "channelDelete",
   CHANNEL_PERMISSIONS_UPDATE = "channelPermissionsUpdate",
   CHANNEL_READ_STATES_UPDATE = "channelReadStatesUpdate",
+  CHANNEL_READ_STATES_DELTA = "channelReadStatesDelta",
 
   USER_JOIN_VOICE = "userJoinVoice",
   USER_LEAVE_VOICE = "userLeaveVoice",
@@ -40,6 +42,7 @@ export enum ServerEvents {
 
   PLUGIN_LOG = "pluginLog",
   PLUGIN_COMMANDS_CHANGE = "pluginCommandsChange",
+  PLUGIN_COMPONENTS_CHANGE = "pluginComponentsChange",
 
   CATEGORY_CREATE = "categoryCreate",
   CATEGORY_UPDATE = "categoryUpdate",
