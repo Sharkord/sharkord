@@ -30,6 +30,8 @@ import {
 
 const TEST_SECRET_TOKEN = 'test-secret-token-for-unit-tests';
 
+const hashedPassword = await Bun.password.hash('password123');
+
 const seedDatabase = async (db: BunSQLiteDatabase) => {
   const firstStart = Date.now();
 
@@ -143,7 +145,7 @@ const seedDatabase = async (db: BunSQLiteDatabase) => {
   const ownerUser: TIUser = {
     name: 'Test Owner',
     identity: 'testowner',
-    password: await sha256('password123'),
+    password: hashedPassword,
     avatarId: null,
     bannerId: null,
     bio: null,
@@ -162,7 +164,7 @@ const seedDatabase = async (db: BunSQLiteDatabase) => {
   const regularUser: TIUser = {
     name: 'Test User',
     identity: 'testuser',
-    password: await sha256('password123'),
+    password: hashedPassword,
     avatarId: null,
     bannerId: null,
     bio: null,

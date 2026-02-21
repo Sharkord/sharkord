@@ -3,7 +3,10 @@ import { UserAvatar } from '@/components/user-avatar';
 import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { cn } from '@/lib/utils';
-import { DELETED_USER_IDENTITY_AND_NAME, type TJoinedMessage } from '@sharkord/shared';
+import {
+  DELETED_USER_IDENTITY_AND_NAME,
+  type TJoinedMessage
+} from '@sharkord/shared';
 import { format } from 'date-fns';
 import { memo } from 'react';
 import { Message } from './message';

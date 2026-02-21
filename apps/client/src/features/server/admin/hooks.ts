@@ -1,9 +1,9 @@
 import { requestConfirmation } from '@/features/dialogs/actions';
-import { parseTrpcErrors, type TTrpcErrors } from '@/helpers/parse-trpc-errors';
 import { useForm } from '@/hooks/use-form';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
+  parseTrpcErrors,
   Permission,
   STORAGE_MAX_FILE_SIZE,
   STORAGE_MAX_QUOTA_PER_USER,
@@ -25,6 +25,7 @@ import {
   type TPluginInfo,
   type TRole,
   type TStorageSettings,
+  type TTrpcErrors
 } from '@sharkord/shared';
 import { filesize } from 'filesize';
 import { useCallback, useEffect, useMemo, useState } from 'react';

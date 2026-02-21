@@ -1,5 +1,11 @@
-import { ChannelPermission, Permission } from '@sharkord/shared';
-import { useCallback } from 'react';
+import { getTRPCClient } from '@/lib/trpc';
+import {
+  ChannelPermission,
+  Permission,
+  linkifyHtml,
+  type TPluginSlotContext
+} from '@sharkord/shared';
+import { useCallback, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import type { IRootState } from '../store';
 import { useChannelById, useChannelPermissionsById } from './channels/hooks';
@@ -12,10 +18,12 @@ import {
   isOwnUserOwnerSelector,
   ownUserRolesSelector,
   ownVoiceUserSelector,
+  pluginComponentContextSelector,
   pluginsEnabledSelector,
   publicServerSettingsSelector,
   serverNameSelector,
   typingUsersByChannelIdSelector,
+  typingUsersByThreadIdSelector,
   userRolesSelector,
   voiceUsersByChannelIdSelector
 } from './selectors';
@@ -97,6 +105,11 @@ export const useTypingUsersByChannelId = (channelId: number) =>
     typingUsersByChannelIdSelector(state, channelId)
   );
 
+export const useTypingUsersByThreadId = (parentMessageId: number) =>
+  useSelector((state: IRootState) =>
+    typingUsersByThreadIdSelector(state, parentMessageId)
+  );
+
 export const useVoiceUsersByChannelId = (channelId: number) =>
   useSelector((state: IRootState) =>
     voiceUsersByChannelIdSelector(state, channelId)
@@ -108,3 +121,28 @@ export const useUnreadMessagesCount = (channelId: number) =>
   useSelector((state: IRootState) =>
     channelReadStateByIdSelector(state, channelId)
   );
+
+export const usePluginComponentContext = (): TPluginSlotContext => {
+  const stateCtx = useSelector(pluginComponentContextSelector);
+  const controllerRef = useRef(
+    (() => ({
+      sendMessage: async (channelId: number, content: string) => {
+        const trpc = getTRPCClient();
+
+        await trpc.messages.send.mutate({
+          channelId,
+          content: linkifyHtml(`<p>${content}</p>`),
+          files: []
+        });
+      }
+    }))()
+  );
+
+  return useMemo<TPluginSlotContext>(
+    () => ({
+      ...stateCtx,
+      ...controllerRef.current
+    }),
+    [stateCtx]
+  );
+};

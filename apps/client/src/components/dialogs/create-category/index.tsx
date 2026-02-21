@@ -1,16 +1,16 @@
-import { AutoFocus } from '@/components/ui/auto-focus';
-import { Button } from '@/components/ui/button';
+import { useForm } from '@/hooks/use-form';
+import { getTRPCClient } from '@/lib/trpc';
 import {
+  AutoFocus,
+  Button,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog';
-import { Group } from '@/components/ui/group';
-import { Input } from '@/components/ui/input';
-import { useForm } from '@/hooks/use-form';
-import { getTRPCClient } from '@/lib/trpc';
+  DialogTitle,
+  Group,
+  Input
+} from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
 import type { TDialogBaseProps } from '../types';
 

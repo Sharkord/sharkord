@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "7946d899-3133-4096-baec-427e28656377",
+  "id": "970a64a5-0ab3-4de1-8634-35ed73a2350f",
   "prevId": "60b881f6-58b6-452f-bc97-2431cc2e4b06",
   "tables": {
     "activity_log": {
@@ -778,8 +778,8 @@
           "notNull": true,
           "autoincrement": true
         },
-        "uuid": {
-          "name": "uuid",
+        "name": {
+          "name": "name",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -796,7 +796,7 @@
           "name": "md5",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "user_id": {
@@ -810,7 +810,7 @@
           "name": "size",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "mime_type": {
@@ -823,27 +823,6 @@
         "extension": {
           "name": "extension",
           "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "originalSize": {
-          "name": "originalSize",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "compressed": {
-          "name": "compressed",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -864,10 +843,10 @@
         }
       },
       "indexes": {
-        "files_uuid_unique": {
-          "name": "files_uuid_unique",
+        "files_name_unique": {
+          "name": "files_name_unique",
           "columns": [
-            "uuid"
+            "name"
           ],
           "isUnique": true
         },
@@ -895,7 +874,7 @@
         "files_name_idx": {
           "name": "files_name_idx",
           "columns": [
-            "uuid"
+            "name"
           ],
           "isUnique": false
         }
@@ -1424,6 +1403,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "parent_message_id": {
+          "name": "parent_message_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "editable": {
           "name": "editable",
           "type": "integer",
@@ -1481,6 +1467,13 @@
           "columns": [
             "channel_id",
             "created_at"
+          ],
+          "isUnique": false
+        },
+        "messages_parent_idx": {
+          "name": "messages_parent_idx",
+          "columns": [
+            "parent_message_id"
           ],
           "isUnique": false
         }
@@ -2089,9 +2082,7 @@
   "_meta": {
     "schemas": {},
     "tables": {},
-    "columns": {
-      "\"files\".\"name\"": "\"files\".\"uuid\""
-    }
+    "columns": {}
   },
   "internal": {
     "indexes": {}

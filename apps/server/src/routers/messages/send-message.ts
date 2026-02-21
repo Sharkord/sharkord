@@ -9,7 +9,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
-import { publishMessage } from '../../db/publishers';
+import { publishMessage, publishReplyCount } from '../../db/publishers';
 import { getSettings } from '../../db/queries/server';
 import { messageFiles, messages } from '../../db/schema';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
@@ -30,13 +30,12 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
   logLabel: 'sendMessage'
 })
   .input(
-    z
-      .object({
-        content: z.string(),
-        channelId: z.number(),
-        files: z.array(z.string()).optional()
-      })
-      .required()
+    z.object({
+      content: z.string(),
+      channelId: z.number(),
+      files: z.array(z.string()).default([]),
+      parentMessageId: z.number().optional()
+    })
   )
   .mutation(async ({ input, ctx }) => {
     await Promise.all([
@@ -46,6 +45,35 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
         ChannelPermission.SEND_MESSAGES
       )
     ]);
+
+    if (input.parentMessageId) {
+      const parentMessage = await db
+        .select({
+          id: messages.id,
+          channelId: messages.channelId,
+          parentMessageId: messages.parentMessageId
+        })
+        .from(messages)
+        .where(eq(messages.id, input.parentMessageId))
+        .limit(1)
+        .get();
+
+      invariant(parentMessage, {
+        code: 'NOT_FOUND',
+        message: 'Parent message not found.'
+      });
+
+      invariant(parentMessage.channelId === input.channelId, {
+        code: 'BAD_REQUEST',
+        message: 'Parent message must be in the same channel.'
+      });
+
+      invariant(!parentMessage.parentMessageId, {
+        code: 'BAD_REQUEST',
+        message:
+          'Cannot reply to a thread reply. Threads are only one level deep.'
+      });
+    }
 
     invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
       code: 'BAD_REQUEST',
@@ -165,6 +193,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
         userId: ctx.userId,
         content: targetContent,
         editable,
+        parentMessageId: input.parentMessageId ?? null,
         createdAt: Date.now()
       })
       .returning()
@@ -187,6 +216,11 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
     }
 
     publishMessage(message.id, input.channelId, 'create');
+
+    if (input.parentMessageId) {
+      publishReplyCount(input.parentMessageId, input.channelId);
+    }
+
     enqueueProcessMetadata(targetContent, message.id);
 
     eventBus.emit('message:created', {

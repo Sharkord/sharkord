@@ -11,6 +11,7 @@ import type {
   TJoinedPublicUser,
   TJoinedRole,
   TLogEntry,
+  TPluginComponentsMapBySlotIdMapListByPlugin,
   TPublicServerSettings,
   TVoiceUserState
 } from '@sharkord/shared';
@@ -28,6 +29,12 @@ type Events = {
   [ServerEvents.MESSAGE_TYPING]: {
     channelId: number;
     userId: number;
+    parentMessageId?: number;
+  };
+  [ServerEvents.THREAD_REPLY_COUNT_UPDATE]: {
+    messageId: number;
+    channelId: number;
+    replyCount: number;
   };
 
   [ServerEvents.USER_JOIN]: TJoinedPublicUser;
@@ -95,6 +102,7 @@ type Events = {
 
   [ServerEvents.PLUGIN_LOG]: TLogEntry;
   [ServerEvents.PLUGIN_COMMANDS_CHANGE]: TCommandsMapByPlugin;
+  [ServerEvents.PLUGIN_COMPONENTS_CHANGE]: TPluginComponentsMapBySlotIdMapListByPlugin;
 
   [ServerEvents.EMOJI_CREATE]: TJoinedEmoji;
   [ServerEvents.EMOJI_UPDATE]: TJoinedEmoji;

@@ -1,8 +1,12 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
 import { store } from '@/features/store';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { LocalStorageKey, setLocalStorageItem } from '@/helpers/storage';
 import { getTRPCClient } from '@/lib/trpc';
-import { type TExternalStream, type TVoiceUserState } from '@sharkord/shared';
+import {
+  getTrpcError,
+  type TExternalStream,
+  type TVoiceUserState
+} from '@sharkord/shared';
 import type { RtpCapabilities } from 'mediasoup-client/types';
 import { toast } from 'sonner';
 import {
@@ -178,4 +182,17 @@ export const leaveVoice = async (): Promise<void> => {
 
 export const setPinnedCard = (pinnedCard: TPinnedCard | undefined): void => {
   store.dispatch(serverSliceActions.setPinnedCard(pinnedCard));
+};
+
+export const setHideNonVideoParticipants = (value: boolean): void => {
+  store.dispatch(serverSliceActions.setHideNonVideoParticipants(value));
+
+  try {
+    setLocalStorageItem(
+      LocalStorageKey.HIDE_NON_VIDEO_PARTICIPANTS,
+      String(value)
+    );
+  } catch (error) {
+    console.error('Failed to save voice options:', error);
+  }
 };

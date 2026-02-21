@@ -274,4 +274,15 @@ describe('/login', () => {
       'Too many login attempts. Please try again shortly.'
     );
   });
+
+  test('should trim identity', async () => {
+    const response = await login('  testowner  ', 'password123');
+
+    expect(response.status).toBe(200);
+
+    const data = await response.json();
+
+    expect(data).toHaveProperty('success', true);
+    expect(data).toHaveProperty('token');
+  });
 });

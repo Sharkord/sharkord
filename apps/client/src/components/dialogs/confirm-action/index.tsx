@@ -6,9 +6,9 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle
-} from '@/components/ui/alert-dialog';
-import { AutoFocus } from '@/components/ui/auto-focus';
+  AlertDialogTitle,
+  AutoFocus
+} from '@sharkord/ui';
 import { memo } from 'react';
 import type { TDialogBaseProps } from '../types';
 

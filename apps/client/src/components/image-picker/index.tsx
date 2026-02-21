@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import type { TFile } from '@sharkord/shared';
 import { Upload } from 'lucide-react';
 import { memo } from 'react';
-import { Button, buttonVariants } from '../ui/button';
+import { Button, buttonVariants } from '@sharkord/ui';
 
 type TImagePickerProps = {
   onImageClick: () => Promise<void>;

@@ -4,7 +4,6 @@ import {
   useCategoryById
 } from '@/features/server/categories/hooks';
 import { useCan } from '@/features/server/hooks';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   DndContext,
@@ -20,22 +19,23 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Permission } from '@sharkord/shared';
+import { Permission, getTrpcError } from '@sharkord/shared';
+import { IconButton } from '@sharkord/ui';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { CategoryContextMenu } from '../context-menus/category';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
-import { IconButton } from '../ui/icon-button';
 import { Channels } from './channels';
+import { useCategoryExpanded } from './hooks';
 
 type TCategoryProps = {
   categoryId: number;
 };
 
 const Category = memo(({ categoryId }: TCategoryProps) => {
-  const [expanded, setExpanded] = useState(true);
+  const { expanded, toggleExpanded } = useCategoryExpanded(categoryId);
   const category = useCategoryById(categoryId);
 
   const {
@@ -73,7 +73,7 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
             variant="ghost"
             size="sm"
             icon={ChevronIcon}
-            onClick={() => setExpanded((v) => !v)}
+            onClick={toggleExpanded}
             title={expanded ? 'Collapse category' : 'Expand category'}
           />
           <CategoryContextMenu categoryId={category.id}>

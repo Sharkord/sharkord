@@ -1,5 +1,5 @@
+import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { TiptapInput } from '@/components/tiptap-input';
-import Spinner from '@/components/ui/spinner';
 import {
   useCan,
   useChannelCan,
@@ -9,24 +9,31 @@ import { useMessages } from '@/features/server/messages/hooks';
 import { useFlatPluginCommands } from '@/features/server/plugins/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { useUploadFiles } from '@/hooks/use-upload-files';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   ChannelPermission,
   Permission,
+  PluginSlot,
   TYPING_MS,
-  isEmptyMessage
+  getTrpcError,
+  isEmptyMessage,
+  linkifyHtml
 } from '@sharkord/shared';
+import { Button, Spinner } from '@sharkord/ui';
 import { filesize } from 'filesize';
 import { throttle } from 'lodash-es';
 import { Paperclip, Send } from 'lucide-react';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '../../ui/button';
 import { FileCard } from './file-card';
 import { MessagesGroup } from './messages-group';
 import { TextSkeleton } from './text-skeleton';
+import {
+  getChannelDraftKey,
+  getDraftMessage,
+  setDraftMessage
+} from './use-draft-messages';
 import { useScrollController } from './use-scroll-controller';
 import { UsersTyping } from './users-typing';
 
@@ -38,7 +45,11 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
   const { messages, hasMore, loadMore, loading, fetching, groupedMessages } =
     useMessages(channelId);
 
-  const [newMessage, setNewMessage] = useState('');
+  const draftChannelKey = getChannelDraftKey(channelId);
+
+  const [newMessage, setNewMessage] = useState(
+    getDraftMessage(draftChannelKey)
+  );
   const allPluginCommands = useFlatPluginCommands();
   const typingUsers = useTypingUsersByChannelId(channelId);
 
@@ -101,6 +112,14 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     [channelId]
   );
 
+  const setNewMessageHandler = useCallback(
+    (value: string) => {
+      setNewMessage(value);
+      setDraftMessage(draftChannelKey, value);
+    },
+    [setNewMessage, draftChannelKey]
+  );
+
   const onSendMessage = useCallback(async () => {
     if (
       (isEmptyMessage(newMessage) && !files.length) ||
@@ -118,7 +137,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
     try {
       await trpc.messages.send.mutate({
-        content: newMessage,
+        content: linkifyHtml(newMessage),
         channelId,
         files: files.map((f) => f.id)
       });
@@ -132,7 +151,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
       setSending(false);
     }
 
-    setNewMessage('');
+    setNewMessageHandler('');
     clearFiles();
   }, [
     newMessage,
@@ -140,7 +159,8 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     files,
     clearFiles,
     sendTypingSignal,
-    canSendMessages
+    canSendMessages,
+    setNewMessageHandler
   ]);
 
   const onRemoveFileClick = useCallback(
@@ -213,13 +233,14 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         <div className="flex items-center gap-2 rounded-lg">
           <TiptapInput
             value={newMessage}
-            onChange={setNewMessage}
+            onChange={setNewMessageHandler}
             onSubmit={onSendMessage}
             onTyping={sendTypingSignal}
             disabled={uploading || !canSendMessages}
             readOnly={sending}
             commands={pluginCommands}
           />
+          <PluginSlotRenderer slotId={PluginSlot.CHAT_ACTIONS} />
           <input {...fileInputProps} />
           <Button
             size="icon"
