@@ -3,22 +3,21 @@ import ipaddr from 'ipaddr.js';
 import { UAParser } from 'ua-parser-js';
 import type { TConnectionInfo } from '../types';
 
-const PRIVATE_IP_RANGES = new Set([
-  'unspecified',
-  'broadcast',
-  'multicast',
-  'linkLocal',
-  'loopback',
-  'private',
-  'uniqueLocal',
-  'carrierGradeNat',
-  'reserved',
-  'ipv4Mapped',
-  'rfc6145',
-  'rfc6052',
-  '6to4',
-  'teredo'
-]);
+// have no fucking idea what's going on in this file
+// 100% trusting AI on this one
+
+const MAX_IP_CANDIDATES = 20;
+const MAX_HEADER_LENGTH = 2048;
+const DIRECT_HEADERS = [
+  'cf-connecting-ip',
+  'true-client-ip',
+  'cf-real-ip',
+  'x-real-ip',
+  'x-client-ip',
+  'x-cluster-client-ip',
+  'fly-client-ip',
+  'fastly-client-ip'
+];
 
 const getHeaderValue = (
   headers: http.IncomingHttpHeaders,
@@ -28,220 +27,176 @@ const getHeaderValue = (
 
   if (!value) return undefined;
 
+  let result: string;
+
   if (Array.isArray(value)) {
-    return value
-      .map((entry) => entry.trim())
+    result = value
+      .map((v) => v.trim())
       .filter(Boolean)
       .join(',');
+  } else {
+    result = value.trim();
   }
 
-  return value.trim();
-};
-
-const splitCommaSeparated = (value: string): string[] => {
-  const result: string[] = [];
-
-  let current = '';
-  let inQuotes = false;
-
-  for (const char of value) {
-    if (char === '"') {
-      inQuotes = !inQuotes;
-      current += char;
-
-      continue;
-    }
-
-    if (char === ',' && !inQuotes) {
-      const token = current.trim();
-
-      if (token) result.push(token);
-
-      current = '';
-
-      continue;
-    }
-
-    current += char;
-  }
-
-  const token = current.trim();
-
-  if (token) result.push(token);
+  if (!result || result.length > MAX_HEADER_LENGTH) return undefined;
 
   return result;
 };
 
-const normalizeIpToken = (value: string): string | undefined => {
-  let candidate = value.trim();
+const splitCommaSeparated = (value: string): string[] =>
+  value
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean)
+    .slice(0, MAX_IP_CANDIDATES);
 
-  if (!candidate) return undefined;
-
-  if (candidate.toLowerCase().startsWith('for=')) {
-    candidate = candidate.slice(4).trim();
+const toCanonical = (
+  parsed: ipaddr.IPv4 | ipaddr.IPv6
+): ipaddr.IPv4 | ipaddr.IPv6 => {
+  if (parsed.kind() === 'ipv6') {
+    const v6 = parsed as ipaddr.IPv6;
+    if (v6.isIPv4MappedAddress()) return v6.toIPv4Address();
   }
+  return parsed;
+};
 
-  if (
-    (candidate.startsWith('"') && candidate.endsWith('"')) ||
-    (candidate.startsWith("'") && candidate.endsWith("'"))
-  ) {
-    candidate = candidate.slice(1, -1).trim();
-  }
+const normalizeIp = (value: string): string | undefined => {
+  try {
+    let candidate = value.trim();
 
-  if (!candidate || candidate === 'unknown' || candidate === '_') {
-    return undefined;
-  }
+    if (!candidate) return undefined;
 
-  if (candidate.startsWith('[')) {
-    const closingBracket = candidate.indexOf(']');
-
-    if (closingBracket !== -1) {
-      candidate = candidate.slice(1, closingBracket).trim();
+    if (candidate.toLowerCase().startsWith('for=')) {
+      candidate = candidate.slice(4).trim();
     }
-  }
 
-  const ipv4WithPortMatch = candidate.match(/^((?:\d{1,3}\.){3}\d{1,3}):\d+$/);
+    candidate = candidate.replace(/^["']|["']$/g, '');
 
-  if (ipv4WithPortMatch) {
-    candidate = ipv4WithPortMatch[1] ?? candidate;
-  }
+    if (candidate.startsWith('[') && candidate.includes(']')) {
+      candidate = candidate.slice(1, candidate.indexOf(']'));
+    }
 
-  const mappedIPv4Match = candidate.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
+    const colonCount = candidate.split(':').length - 1;
 
-  if (mappedIPv4Match) {
-    candidate = mappedIPv4Match[1] ?? candidate;
-  }
+    if (colonCount === 1 && candidate.includes('.')) {
+      const host = candidate.slice(0, candidate.indexOf(':'));
+      if (ipaddr.isValid(host)) {
+        candidate = host;
+      }
+    }
 
-  if (candidate === '::1') {
-    candidate = '127.0.0.1';
-  }
+    if (!ipaddr.isValid(candidate)) return undefined;
 
-  if (!ipaddr.isValid(candidate)) {
+    return toCanonical(ipaddr.parse(candidate)).toString();
+  } catch {
     return undefined;
   }
-
-  return ipaddr.parse(candidate).toString();
 };
 
 const isPublicIp = (ip: string): boolean => {
   try {
-    const parsed = ipaddr.parse(ip);
-
-    return !PRIVATE_IP_RANGES.has(parsed.range());
+    return toCanonical(ipaddr.parse(ip)).range() === 'unicast';
   } catch {
     return false;
   }
 };
 
-const extractForwardedForCandidates = (headerValue: string): string[] => {
-  const entries = splitCommaSeparated(headerValue);
-  const candidates: string[] = [];
-
-  for (const entry of entries) {
-    for (const parameter of entry.split(';')) {
-      const trimmed = parameter.trim();
-
-      if (!trimmed.toLowerCase().startsWith('for=')) continue;
-
-      candidates.push(trimmed.slice(4));
-    }
-  }
-
-  return candidates;
-};
-
-const pickBestIpCandidate = (candidates: string[]): string | undefined => {
+const pickBestIp = (candidates: string[]): string | undefined => {
   const normalized = candidates
-    .map((candidate) => normalizeIpToken(candidate))
-    .filter((candidate): candidate is string => Boolean(candidate));
+    .slice(0, MAX_IP_CANDIDATES)
+    .map(normalizeIp)
+    .filter((ip): ip is string => Boolean(ip));
 
   if (!normalized.length) return undefined;
 
-  return normalized.find((candidate) => isPublicIp(candidate)) ?? normalized[0];
+  return normalized.find(isPublicIp) ?? normalized[0];
 };
+
+const extractForwardedCandidates = (value: string): string[] =>
+  value
+    .split(',')
+    .flatMap((entry) =>
+      entry
+        .split(';')
+        .map((p) => p.trim())
+        .filter((p) => p.toLowerCase().startsWith('for='))
+        .map((p) => p.slice(4))
+    )
+    .slice(0, MAX_IP_CANDIDATES);
 
 const getWsIp = (
   ws: any | undefined,
-  req: http.IncomingMessage
+  req: http.IncomingMessage | undefined
 ): string | undefined => {
-  const headers = req?.headers || {};
+  const headers = req?.headers ?? {};
 
-  const directHeaderCandidates = [
-    getHeaderValue(headers, 'cf-connecting-ip'),
-    getHeaderValue(headers, 'true-client-ip'),
-    getHeaderValue(headers, 'cf-real-ip'),
-    getHeaderValue(headers, 'x-real-ip'),
-    getHeaderValue(headers, 'x-client-ip'),
-    getHeaderValue(headers, 'x-cluster-client-ip'),
-    getHeaderValue(headers, 'fly-client-ip'),
-    getHeaderValue(headers, 'fastly-client-ip')
-  ].filter((value): value is string => Boolean(value));
+  // 1. high-trust CDN / proxy headers (single-value, most trustworthy)
+  for (const header of DIRECT_HEADERS) {
+    const value = getHeaderValue(headers, header);
+    if (!value) continue;
 
-  for (const value of directHeaderCandidates) {
-    const ip = pickBestIpCandidate(splitCommaSeparated(value));
-
+    const ip = pickBestIp(splitCommaSeparated(value));
     if (ip) return ip;
   }
 
+  // 2. standard multi-hop proxy header
   const xForwardedFor = getHeaderValue(headers, 'x-forwarded-for');
-
   if (xForwardedFor) {
-    const ip = pickBestIpCandidate(splitCommaSeparated(xForwardedFor));
-
+    const ip = pickBestIp(splitCommaSeparated(xForwardedFor));
     if (ip) return ip;
   }
 
-  const forwardedFor = getHeaderValue(headers, 'forwarded-for');
-
-  if (forwardedFor) {
-    const ip = pickBestIpCandidate(splitCommaSeparated(forwardedFor));
-
-    if (ip) return ip;
-  }
-
+  // 3. RFC 7239 Forwarded header
   const forwarded = getHeaderValue(headers, 'forwarded');
-
   if (forwarded) {
-    const ip = pickBestIpCandidate(extractForwardedForCandidates(forwarded));
-
+    const ip = pickBestIp(extractForwardedCandidates(forwarded));
     if (ip) return ip;
   }
 
-  return pickBestIpCandidate(
-    [
-      ws?._socket?.remoteAddress,
-      ws?.socket?.remoteAddress,
-      req?.socket?.remoteAddress,
-      req?.connection?.remoteAddress
-    ].filter((value): value is string => Boolean(value))
-  );
+  // 4. fallback to raw socket remote address
+  const socketCandidates = [
+    ws?._socket?.remoteAddress,
+    ws?.socket?.remoteAddress,
+    req?.socket?.remoteAddress
+  ].filter((v): v is string => typeof v === 'string' && v.length > 0);
+
+  return pickBestIp(socketCandidates);
 };
 
 const getWsInfo = (
   ws: any | undefined,
-  req: http.IncomingMessage
+  req: http.IncomingMessage | undefined
 ): TConnectionInfo | undefined => {
+  if (!ws && !req) return undefined;
+
   const ip = getWsIp(ws, req);
-  const userAgent = req?.headers?.['user-agent'];
+  const userAgent = req?.headers?.['user-agent'] || undefined;
 
   if (!ip && !userAgent) return undefined;
 
-  const parser = new UAParser(userAgent || '');
-  const result = parser.getResult();
+  let os: string | undefined;
+  let device: string | undefined;
 
-  return {
-    ip,
-    os: result.os.name
-      ? [result.os.name, result.os.version].filter(Boolean).join(' ')
-      : undefined,
-    device: result.device.type
-      ? [result.device.vendor, result.device.model]
-          .filter(Boolean)
-          .join(' ')
-          .trim()
-      : 'Desktop',
-    userAgent: userAgent || undefined
-  };
+  if (userAgent) {
+    try {
+      const result = new UAParser(userAgent).getResult();
+
+      os = result.os.name
+        ? [result.os.name, result.os.version].filter(Boolean).join(' ')
+        : undefined;
+
+      device = result.device.type
+        ? [result.device.vendor, result.device.model]
+            .filter(Boolean)
+            .join(' ')
+            .trim() || undefined
+        : 'Desktop';
+    } catch {
+      // agent parsing failed, ignore and proceed with undefined values
+    }
+  }
+
+  return { ip, os, device, userAgent };
 };
 
 export { getWsInfo };
