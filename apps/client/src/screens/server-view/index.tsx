@@ -7,7 +7,7 @@ import { TopBar } from '@/components/top-bar';
 import { VoiceChatSidebar } from '@/components/voice-chat-sidebar';
 import { VoiceProvider } from '@/components/voice-provider';
 import { useThreadSidebar } from '@/features/app/hooks';
-import { getLocalStorageItem, LocalStorageKey } from '@/helpers/storage';
+import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
 import { useSwipeGestures } from '@/hooks/use-swipe-gestures';
 import { cn } from '@/lib/utils';
 import { Permission } from '@sharkord/shared';
@@ -19,11 +19,10 @@ const ServerView = memo(() => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileUsersOpen, setIsMobileUsersOpen] = useState(false);
   const [isDesktopRightSidebarOpen, setIsDesktopRightSidebarOpen] = useState(
-    getLocalStorageItem(LocalStorageKey.RIGHT_SIDEBAR_STATE) === 'true' || false
+    getLocalStorageItemBool(LocalStorageKey.RIGHT_SIDEBAR_STATE, true)
   );
   const [isVoiceChatSidebarOpen, setIsVoiceChatSidebarOpen] = useState(
-    getLocalStorageItem(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE) === 'true' ||
-      false
+    getLocalStorageItemBool(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE, false)
   );
   const { isOpen: isThreadSidebarOpen } = useThreadSidebar();
 

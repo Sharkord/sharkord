@@ -1,6 +1,7 @@
 import { UploadHeaders } from '@sharkord/shared';
 import fs from 'fs';
 import http from 'http';
+import path from 'path';
 import z from 'zod';
 import { getSettings } from '../db/queries/server';
 import { getUserByToken } from '../db/queries/users';
@@ -13,16 +14,52 @@ const zHeaders = z.object({
   [UploadHeaders.CONTENT_LENGTH]: z.string().transform((val) => Number(val))
 });
 
+/**
+ * Sanitizes a user-provided filename to prevent path traversal attacks.
+ * Strips directory components (both Unix and Windows style), rejects null bytes,
+ * and ensures the result is a safe basename.
+ */
+const sanitizeFileName = (name: string): string | null => {
+  // Reject null bytes which can truncate paths on some systems
+  if (name.includes('\0')) {
+    return null;
+  }
+
+  // Normalize Windows-style backslashes to forward slashes before extracting basename,
+  // since path.basename on Linux does not treat backslashes as separators
+  const normalized = name.replace(/\\/g, '/');
+
+  // Strip any directory components (e.g. "../../etc/passwd" -> "passwd")
+  const baseName = path.basename(normalized);
+
+  // Reject empty names (e.g. after stripping path components from "/")
+  if (!baseName || baseName === '.' || baseName === '..') {
+    return null;
+  }
+
+  return baseName;
+};
+
 const uploadFileRouteHandler = async (
   req: http.IncomingMessage,
   res: http.ServerResponse
 ) => {
   const parsedHeaders = zHeaders.parse(req.headers);
-  const [token, originalName, contentLength] = [
+
+  const [token, rawOriginalName, contentLength] = [
     parsedHeaders[UploadHeaders.TOKEN],
     parsedHeaders[UploadHeaders.ORIGINAL_NAME],
     parsedHeaders[UploadHeaders.CONTENT_LENGTH]
   ];
+
+  const originalName = sanitizeFileName(rawOriginalName);
+
+  if (!originalName) {
+    req.resume();
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid file name' }));
+    return;
+  }
 
   const user = await getUserByToken(token);
 
@@ -92,4 +129,4 @@ const uploadFileRouteHandler = async (
   });
 };
 
-export { uploadFileRouteHandler };
+export { sanitizeFileName, uploadFileRouteHandler };

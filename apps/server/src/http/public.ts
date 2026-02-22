@@ -95,10 +95,19 @@ const publicRouteHandler = async (
     ? 'inline'
     : 'attachment';
 
+  const safeFileName = dbFile.originalName
+    .replace(/[\r\n]/g, '') // strip CR/LF to prevent header injection
+    .replace(/"/g, '\\"'); // escape double quotes for header safety
+
+  const encodedFileName = encodeURIComponent(dbFile.originalName).replace(
+    /'/g,
+    '%27'
+  );
+
   res.writeHead(200, {
     'Content-Type': dbFile.mimeType,
     'Content-Length': dbFile.size,
-    'Content-Disposition': `${contentDisposition}; filename="${dbFile.originalName}"`
+    'Content-Disposition': `${contentDisposition}; filename="${safeFileName}"; filename*=UTF-8''${encodedFileName}`
   });
 
   fileStream.pipe(res);

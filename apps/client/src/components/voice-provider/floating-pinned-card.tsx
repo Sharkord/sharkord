@@ -6,11 +6,11 @@ import {
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { usePinnedCard } from '@/features/server/voice/hooks';
 import type { TRemoteStreams } from '@/types';
+import { IconButton } from '@sharkord/ui';
 import { ArrowDownLeft, SendToBack, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CardControls } from '../channel-view/voice/card-controls';
 import { PinnedCardType } from '../channel-view/voice/hooks/use-pin-card-controller';
-import { IconButton } from '@sharkord/ui';
 import { useFloatingCard } from './hooks/use-floating-card';
 import type { TExternalStreamsMap } from './hooks/use-remote-streams';
 

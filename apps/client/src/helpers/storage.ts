@@ -9,6 +9,7 @@ export enum LocalStorageKey {
   RIGHT_SIDEBAR_STATE = 'sharkord-right-sidebar-state',
   VOICE_CHAT_SIDEBAR_STATE = 'sharkord-voice-chat-sidebar-state',
   VOICE_CHAT_SIDEBAR_WIDTH = 'sharkord-voice-chat-sidebar-width',
+  VOICE_CHAT_SHOW_USER_BANNERS = 'sharkord-voice-chat-show-user-banners',
   VOLUME_SETTINGS = 'sharkord-volume-settings',
   RECENT_EMOJIS = 'sharkord-recent-emojis',
   DEBUG = 'sharkord-debug',
@@ -16,7 +17,8 @@ export enum LocalStorageKey {
   HIDE_NON_VIDEO_PARTICIPANTS = 'sharkord-hide-non-video-participants',
   THREAD_SIDEBAR_WIDTH = 'sharkord-thread-sidebar-width',
   LEFT_SIDEBAR_WIDTH = 'sharkord-left-sidebar-width',
-  RIGHT_SIDEBAR_WIDTH = 'sharkord-right-sidebar-width'
+  RIGHT_SIDEBAR_WIDTH = 'sharkord-right-sidebar-width',
+  CATEGORIES_EXPANDED = 'sharkord-categories-expanded'
 }
 
 export enum SessionStorageKey {
@@ -25,6 +27,26 @@ export enum SessionStorageKey {
 
 const getLocalStorageItem = (key: LocalStorageKey): string | null => {
   return localStorage.getItem(key);
+};
+
+const getLocalStorageItemBool = (
+  key: LocalStorageKey,
+  defaultValue: boolean = false
+): boolean => {
+  const item = localStorage.getItem(key);
+
+  if (item === null) {
+    return defaultValue ?? false;
+  }
+
+  return item === 'true';
+};
+
+const setLocalStorageItemBool = (
+  key: LocalStorageKey,
+  value: boolean
+): void => {
+  localStorage.setItem(key, value.toString());
 };
 
 const getLocalStorageItemAsJSON = <T>(
@@ -67,10 +89,12 @@ const removeSessionStorageItem = (key: SessionStorageKey): void => {
 export {
   getLocalStorageItem,
   getLocalStorageItemAsJSON,
+  getLocalStorageItemBool,
   getSessionStorageItem,
   removeLocalStorageItem,
   removeSessionStorageItem,
   setLocalStorageItem,
   setLocalStorageItemAsJSON,
+  setLocalStorageItemBool,
   setSessionStorageItem
 };

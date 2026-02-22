@@ -4,6 +4,7 @@ import { leaveVoice } from '@/features/server/voice/actions';
 import { useVoice } from '@/features/server/voice/hooks';
 import { cn } from '@/lib/utils';
 import { ChannelPermission } from '@sharkord/shared';
+import { Button } from '@sharkord/ui';
 import {
   AlertTriangle,
   Loader2,
@@ -18,7 +19,6 @@ import {
 import { memo, useMemo } from 'react';
 import { ExternalAudioStreams } from '../channel-view/voice/external-audio-streams';
 import { VoiceAudioStreams } from '../channel-view/voice/voice-audio-streams';
-import { Button } from '@sharkord/ui';
 import { StatsPopover } from './stats-popover';
 
 const VoiceControl = memo(() => {

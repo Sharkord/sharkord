@@ -46,6 +46,7 @@ const useTransports = ({
       [kind: string]: Consumer<AppData>;
     };
   }>({});
+  const consumerCodecs = useRef<Map<string, string>>(new Map());
   const consumeOperationsInProgress = useRef<Set<string>>(new Set());
 
   const createProducerTransport = useCallback(async (device: Device) => {
@@ -285,10 +286,21 @@ const useTransports = ({
             if (consumers.current[remoteId]?.[consumerKind]) {
               delete consumers.current[remoteId][consumerKind];
             }
+
+            consumerCodecs.current.delete(`${remoteId}-${kind}`);
           });
         });
 
         consumers.current[remoteId][consumerKind] = newConsumer;
+
+        const codecKey = `${remoteId}-${kind}`;
+
+        const negotiatedCodec =
+          newConsumer.rtpParameters?.codecs?.[0]?.mimeType;
+
+        if (negotiatedCodec) {
+          consumerCodecs.current.set(codecKey, negotiatedCodec);
+        }
 
         const stream = new MediaStream();
 
@@ -376,6 +388,13 @@ const useTransports = ({
     [consume]
   );
 
+  const getConsumerCodec = useCallback(
+    (remoteId: number, kind: StreamKind): string | undefined => {
+      return consumerCodecs.current.get(`${remoteId}-${kind}`);
+    },
+    []
+  );
+
   const cleanupTransports = useCallback(() => {
     logVoice('Cleaning up transports');
 
@@ -388,6 +407,7 @@ const useTransports = ({
     });
 
     consumers.current = {};
+    consumerCodecs.current.clear();
 
     consumeOperationsInProgress.current.clear();
 
@@ -414,7 +434,8 @@ const useTransports = ({
     createConsumerTransport,
     consume,
     consumeExistingProducers,
-    cleanupTransports
+    cleanupTransports,
+    getConsumerCodec
   };
 };
 

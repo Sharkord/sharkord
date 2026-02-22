@@ -15,6 +15,13 @@
       "when": 1771530010367,
       "tag": "0001_strange_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771718400000,
+      "tag": "0002_add_view_user_sensitive_data_to_owner",
+      "breakpoints": true
     }
   ]
 }

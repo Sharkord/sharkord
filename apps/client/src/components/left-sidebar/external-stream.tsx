@@ -1,7 +1,7 @@
 import type { TExternalStreamTracks } from '@sharkord/shared';
+import { Tooltip } from '@sharkord/ui';
 import { Headphones, Router, Video } from 'lucide-react';
 import { memo } from 'react';
-import { Tooltip } from '@sharkord/ui';
 
 type TExternalStreamProps = {
   title: string;

@@ -3,13 +3,16 @@ import {
   type TVolumeKey
 } from '@/components/voice-provider/volume-control-context';
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
+import { useVoice } from '@/features/server/voice/hooks';
 import { cn } from '@/lib/utils';
+import { StreamKind } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
 import { Monitor, ZoomIn, ZoomOut } from 'lucide-react';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
+import { useVideoStats } from './hooks/use-video-stats';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PinButton } from './pin-button';
 import { VolumeButton } from './volume-button';
@@ -83,6 +86,29 @@ const ScreenShareCard = memo(
       hasScreenShareStream,
       hasScreenShareAudioStream
     } = useVoiceRefs(userId);
+    const { transportStats, getConsumerCodec } = useVoice();
+    const videoStats = useVideoStats(screenShareRef, hasScreenShareStream);
+
+    const codec = useMemo(() => {
+      let mimeType: string | undefined;
+
+      if (isOwnUser) {
+        mimeType = transportStats.screenShare?.codec;
+      } else {
+        mimeType = getConsumerCodec(userId, StreamKind.SCREEN);
+      }
+
+      if (!mimeType) return null;
+
+      const parts = mimeType.split('/');
+
+      return parts.length > 1 ? parts[1] : mimeType;
+    }, [
+      isOwnUser,
+      transportStats.screenShare?.codec,
+      getConsumerCodec,
+      userId
+    ]);
 
     const {
       containerRef,
@@ -162,12 +188,24 @@ const ScreenShareCard = memo(
 
         <div className="absolute bottom-0 left-0 right-0 p-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="flex items-center gap-2 min-w-0">
-            <Monitor className="size-3.5 text-purple-400 flex-shrink-0" />
+            <Monitor className="size-3.5 text-purple-400 shrink-0" />
             <span className="text-white font-medium text-xs truncate">
               {user.name}'s screen
             </span>
+            {(videoStats || codec) && (
+              <span className="text-white/50 text-xs shrink-0">
+                {codec}
+                {codec && videoStats && ' '}
+                {videoStats && (
+                  <>
+                    {videoStats.width}x{videoStats.height}
+                    {videoStats.frameRate > 0 && ` ${videoStats.frameRate}fps`}
+                  </>
+                )}
+              </span>
+            )}
             {isZoomEnabled && zoom > 1 && (
-              <span className="text-white/70 text-xs ml-auto flex-shrink-0">
+              <span className="text-white/70 text-xs ml-auto shrink-0">
                 {Math.round(zoom * 100)}%
               </span>
             )}

@@ -1,5 +1,6 @@
 import {
   DELETED_USER_IDENTITY_AND_NAME,
+  Permission,
   type TTempFile
 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
@@ -10,8 +11,12 @@ import {
   channels,
   emojis,
   files,
+  logins,
   messageReactions,
   messages,
+  rolePermissions,
+  roles,
+  userRoles,
   users
 } from '../../db/schema';
 
@@ -124,6 +129,65 @@ describe('users router', () => {
     expect(info).toBeDefined();
     expect(info.user).toBeDefined();
     expect(info.user.id).toBe(2);
+  });
+
+  test('should hide sensitive data when user has MANAGE_USERS but not VIEW_USER_SENSITIVE_DATA', async () => {
+    // create a custom role with MANAGE_USERS but without VIEW_USER_SENSITIVE_DATA
+    const [customRole] = await tdb
+      .insert(roles)
+      .values({
+        name: 'Moderator',
+        color: '#00ff00',
+        isPersistent: false,
+        isDefault: false,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    await tdb.insert(rolePermissions).values({
+      roleId: customRole!.id,
+      permission: Permission.MANAGE_USERS,
+      createdAt: Date.now()
+    });
+
+    // assign custom role to user 2
+    await tdb.insert(userRoles).values({
+      userId: 2,
+      roleId: customRole!.id,
+      createdAt: Date.now()
+    });
+
+    // insert a login record for user 1 so we can verify ip and location are hidden
+    await tdb.insert(logins).values({
+      userId: 1,
+      ip: '192.168.1.1',
+      city: 'Gondomar',
+      region: 'Porto',
+      country: 'PT',
+      loc: '41.1833,-8.6333',
+      org: 'MEO',
+      postal: '10001',
+      timezone: 'Europe/Lisbon',
+      createdAt: Date.now()
+    });
+
+    const { caller } = await initTest(2);
+
+    const info = await caller.users.getInfo({
+      userId: 1
+    });
+
+    expect(info).toBeDefined();
+    expect(info.user).toBeDefined();
+    expect(info.user.id).toBe(1);
+
+    expect(info.user.identity).toBeEmpty();
+    expect(info.logins.length).toBeGreaterThan(0);
+
+    info.logins.forEach((login) => {
+      expect(login.ip).toBeNull();
+      expect(login.loc).toBeNull();
+    });
   });
 
   test('should throw when getting info for non-existing user', async () => {

@@ -22,7 +22,8 @@ const zConfig = z.object({
   }),
   webRtc: z.object({
     port: z.coerce.number().int().positive(),
-    announcedAddress: z.string()
+    announcedAddress: z.string(),
+    maxBitrate: z.coerce.number().int().positive()
   }),
   rateLimiters: z.object({
     sendAndEditMessage: z.object({
@@ -50,7 +51,8 @@ const defaultConfig: TConfig = {
   },
   webRtc: {
     port: 40000,
-    announcedAddress: ''
+    announcedAddress: '',
+    maxBitrate: 30_000_000 // 30 Mbps
   },
   rateLimiters: {
     sendAndEditMessage: {

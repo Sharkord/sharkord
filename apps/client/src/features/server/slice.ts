@@ -1,5 +1,5 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
-import { getLocalStorageItem, LocalStorageKey } from '@/helpers/storage';
+import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type {
   TCategory,
@@ -61,6 +61,7 @@ export interface IServerState {
   };
   pluginCommands: TCommandsMapByPlugin;
   hideNonVideoParticipants: boolean;
+  showUserBannersInVoice: boolean;
   pluginComponents: TPluginComponentsMap;
 }
 
@@ -96,8 +97,14 @@ const initialState: IServerState = {
   channelPermissions: {},
   readStatesMap: {},
   pluginCommands: {},
-  hideNonVideoParticipants:
-    getLocalStorageItem(LocalStorageKey.HIDE_NON_VIDEO_PARTICIPANTS) === 'true',
+  hideNonVideoParticipants: getLocalStorageItemBool(
+    LocalStorageKey.HIDE_NON_VIDEO_PARTICIPANTS,
+    false
+  ),
+  showUserBannersInVoice: getLocalStorageItemBool(
+    LocalStorageKey.VOICE_CHAT_SHOW_USER_BANNERS,
+    true
+  ),
   pluginComponents: {}
 };
 
@@ -717,6 +724,9 @@ export const serverSlice = createSlice({
     },
     setHideNonVideoParticipants: (state, action: PayloadAction<boolean>) => {
       state.hideNonVideoParticipants = action.payload;
+    },
+    setShowUserBannersInVoice: (state, action: PayloadAction<boolean>) => {
+      state.showUserBannersInVoice = action.payload;
     },
     addExternalStreamToChannel: (
       state,

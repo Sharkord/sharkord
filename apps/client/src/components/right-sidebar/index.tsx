@@ -45,13 +45,16 @@ const RightSidebar = memo(
   ({ className, isOpen = true }: TRightSidebarProps) => {
     const users = useUsers();
 
-    const usersToShow = useMemo(
-      () =>
-        users
-          .filter((user) => user.name !== DELETED_USER_IDENTITY_AND_NAME)
-          .slice(0, MAX_USERS_TO_SHOW),
-      [users]
-    );
+    const { usersToShow, usersCount } = useMemo(() => {
+      const filtered = users.filter(
+        (user) => user.name !== DELETED_USER_IDENTITY_AND_NAME
+      );
+
+      return {
+        usersToShow: filtered.slice(0, MAX_USERS_TO_SHOW),
+        usersCount: filtered.length
+      };
+    }, [users]);
 
     const hasHiddenUsers = users.length > MAX_USERS_TO_SHOW;
 
@@ -67,7 +70,7 @@ const RightSidebar = memo(
       >
         <div className="flex h-12 items-center border-b border-border px-4">
           <h3 className="text-sm font-semibold text-foreground">
-            Members — {users.length}
+            Members — {usersCount}
           </h3>
         </div>
         <div className="flex-1 overflow-y-auto p-2">

@@ -58,7 +58,9 @@ const pluginBundleRouteHandler = async (
   if (!pluginId || filePathParts.length === 0) {
     res.writeHead(400, { 'Content-Type': 'application/json' });
     res.end(
-      JSON.stringify({ error: 'Plugin ID and file path are required in the URL' })
+      JSON.stringify({
+        error: 'Plugin ID and file path are required in the URL'
+      })
     );
     return;
   }

@@ -1,6 +1,6 @@
+import { Button } from '@sharkord/ui';
 import { ChevronLeft } from 'lucide-react';
 import { memo } from 'react';
-import { Button } from '@sharkord/ui';
 
 type TServerScreenLayoutProps = {
   close: () => void;
