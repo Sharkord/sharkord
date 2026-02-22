@@ -131,3 +131,7 @@ However:
 - Low-effort or blindly generated submissions may be rejected.
 
 Quality and correctness always come first.
+
+## CI
+
+Make sure all checks are passing when you submit your PR. This includes linting, formatting, and tests.
