@@ -42,7 +42,7 @@ const VoiceOptionsController = memo(() => {
           </Tooltip>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-64">
+      <PopoverContent align="end" className="w-80">
         <div className="space-y-3">
           <h4 className="font-medium text-sm cursor-default mb-3">
             Voice Options

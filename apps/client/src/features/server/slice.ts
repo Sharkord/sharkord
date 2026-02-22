@@ -98,10 +98,12 @@ const initialState: IServerState = {
   readStatesMap: {},
   pluginCommands: {},
   hideNonVideoParticipants: getLocalStorageItemBool(
-    LocalStorageKey.HIDE_NON_VIDEO_PARTICIPANTS
+    LocalStorageKey.HIDE_NON_VIDEO_PARTICIPANTS,
+    false
   ),
   showUserBannersInVoice: getLocalStorageItemBool(
-    LocalStorageKey.VOICE_CHAT_SHOW_USER_BANNERS
+    LocalStorageKey.VOICE_CHAT_SHOW_USER_BANNERS,
+    true
   ),
   pluginComponents: {}
 };

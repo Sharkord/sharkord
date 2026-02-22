@@ -69,16 +69,16 @@ const VoiceUserCard = memo(
           className
         )}
       >
-        {voiceUser.banner && showUserBanners && (
+        {voiceUser.banner && showUserBanners ? (
           <div
             className="h-full w-full rounded-t-md bg-cover bg-center blur-sm brightness-50 bg-no-repeat absolute inset-0"
             style={{
               backgroundImage: `url(${getFileUrl(voiceUser.banner)})`
             }}
           />
+        ) : (
+          <CardGradient />
         )}
-
-        {(!voiceUser.banner || !showUserBanners) && <CardGradient />}
 
         <CardControls>
           {!isOwnUser && <VolumeButton volumeKey={getUserVolumeKey(userId)} />}

@@ -29,8 +29,15 @@ const getLocalStorageItem = (key: LocalStorageKey): string | null => {
   return localStorage.getItem(key);
 };
 
-const getLocalStorageItemBool = (key: LocalStorageKey): boolean => {
+const getLocalStorageItemBool = (
+  key: LocalStorageKey,
+  defaultValue: boolean = false
+): boolean => {
   const item = localStorage.getItem(key);
+
+  if (item === null) {
+    return defaultValue ?? false;
+  }
 
   return item === 'true';
 };

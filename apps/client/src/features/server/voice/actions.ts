@@ -1,6 +1,10 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
 import { store } from '@/features/store';
-import { LocalStorageKey, setLocalStorageItem } from '@/helpers/storage';
+import {
+  LocalStorageKey,
+  setLocalStorageItem,
+  setLocalStorageItemBool
+} from '@/helpers/storage';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   getTrpcError,
@@ -201,9 +205,9 @@ export const setShowUserBannersInVoice = (value: boolean): void => {
   store.dispatch(serverSliceActions.setShowUserBannersInVoice(value));
 
   try {
-    setLocalStorageItem(
+    setLocalStorageItemBool(
       LocalStorageKey.VOICE_CHAT_SHOW_USER_BANNERS,
-      String(value)
+      value
     );
   } catch (error) {
     console.error('Failed to save voice options:', error);
