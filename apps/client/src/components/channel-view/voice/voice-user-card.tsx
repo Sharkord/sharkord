@@ -12,6 +12,7 @@ import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PinButton } from './pin-button';
 import { VolumeButton } from './volume-button';
 import { getFileUrl } from '@/helpers/get-file-url';
+import { useShowUserBannersInVoice } from '@/features/server/voice/hooks';
 
 type TVoiceUserCardProps = {
   userId: number;
@@ -39,6 +40,7 @@ const VoiceUserCard = memo(
     const { devices } = useDevices();
     const ownUserId = useOwnUserId();
     const isOwnUser = userId === ownUserId;
+    const showUserBanners = useShowUserBannersInVoice();    
 
     const handlePinToggle = useCallback(() => {
       if (isPinned) {
@@ -67,7 +69,7 @@ const VoiceUserCard = memo(
           className
         )}
       >
-        {voiceUser.banner && (
+        {(voiceUser.banner && showUserBanners) && (
             <div
               className="h-full w-full rounded-t-md bg-cover bg-center blur-sm brightness-50 bg-no-repeat absolute inset-0"
               style={{
@@ -76,7 +78,7 @@ const VoiceUserCard = memo(
             />
         )}
        
-       {!voiceUser.banner && (
+       {(!voiceUser.banner || !showUserBanners) && (
         <CardGradient />
        )}
         

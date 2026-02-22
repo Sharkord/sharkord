@@ -1,5 +1,5 @@
-import { setHideNonVideoParticipants } from '@/features/server/voice/actions';
-import { useHideNonVideoParticipants } from '@/features/server/voice/hooks';
+import { setHideNonVideoParticipants, setShowUserBannersInVoice } from '@/features/server/voice/actions';
+import { useHideNonVideoParticipants, useShowUserBannersInVoice } from '@/features/server/voice/hooks';
 import {
   Button,
   Popover,
@@ -13,9 +13,14 @@ import { memo, useCallback } from 'react';
 
 const VoiceOptionsController = memo(() => {
   const hideNonVideoParticipants = useHideNonVideoParticipants();
+  const showUserBanners = useShowUserBannersInVoice();
 
   const handleToggleHideNonVideo = useCallback((checked: boolean) => {
     setHideNonVideoParticipants(checked);
+  }, []);
+
+  const handleToggleShowUserBanners = useCallback((checked: boolean) => {
+    setShowUserBannersInVoice(checked);
   }, []);
 
   return (
@@ -50,6 +55,24 @@ const VoiceOptionsController = memo(() => {
               id="hide-non-video"
               checked={hideNonVideoParticipants}
               onCheckedChange={handleToggleHideNonVideo}
+              data-1p-ignore
+              data-lpignore="true"
+            />
+          </div>
+
+          <div className="flex items-center justify-between space-x-3">
+            <span
+              onClick={() =>
+                handleToggleShowUserBanners(!showUserBanners)
+              }
+              className="text-sm text-foreground cursor-pointer select-none flex-1"
+            >
+              Display user banners
+            </span>
+            <Switch
+              id="show-user-banners"
+              checked={showUserBanners}
+              onCheckedChange={handleToggleShowUserBanners}
               data-1p-ignore
               data-lpignore="true"
             />
