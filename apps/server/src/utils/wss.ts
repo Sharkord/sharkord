@@ -27,6 +27,7 @@ import { getUserRoles } from '../routers/users/get-user-roles';
 import { VoiceRuntime } from '../runtimes/voice';
 import { invariant } from './invariant';
 import { pubsub } from './pubsub';
+import { parseCookie } from '../helpers/parse-cookie';
 import type { Context } from './trpc';
 
 let wss: WebSocketServer | undefined;
@@ -41,7 +42,14 @@ const createContext = async ({
   info,
   req
 }: CreateWSSContextFnOptions): Promise<Context> => {
-  const { token } = info.connectionParams as TConnectionParams;
+
+  let token: string | undefined = undefined
+
+  const cookieHeader =
+  (req.headers['cookie'] as string | undefined) ??
+  (req.headers['Cookie'] as string | undefined);
+
+  token = parseCookie(cookieHeader, 'session')
 
   const decodedUser = await getUserByToken(token);
 
