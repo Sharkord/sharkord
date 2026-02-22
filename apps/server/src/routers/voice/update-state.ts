@@ -11,7 +11,7 @@ const updateVoiceStateRoute = protectedProcedure
       soundMuted: z.boolean().optional(),
       webcamEnabled: z.boolean().optional(),
       sharingScreen: z.boolean().optional()
-    })
+    }).strict()
   )
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.JOIN_VOICE_CHANNELS);

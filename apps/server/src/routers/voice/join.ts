@@ -25,8 +25,8 @@ const joinVoiceRoute = rateLimitedProcedure(protectedProcedure, {
       state: z.object({
         micMuted: z.boolean().default(false),
         soundMuted: z.boolean().default(false)
-      })
-    })
+      }).strict()
+    }).strict()
   )
   .mutation(async ({ input, ctx }) => {
     await Promise.all([
@@ -69,12 +69,17 @@ const joinVoiceRoute = rateLimitedProcedure(protectedProcedure, {
     runtime.addUser(ctx.user.id, input.state);
 
     const state = runtime.getUserState(ctx.user.id);
+    const channelState = runtime.getState();
 
     ctx.currentVoiceChannelId = channel.id;
     ctx.pubsub.publish(ServerEvents.USER_JOIN_VOICE, {
       channelId: input.channelId,
       userId: ctx.user.id,
       state
+    });
+    ctx.pubsub.publish(ServerEvents.VOICE_CHANNEL_STATE_UPDATE, {
+      channelId: input.channelId,
+      activeSince: channelState.activeSince
     });
 
     logger.info('%s joined voice channel %s', ctx.user.name, channel.name);

@@ -3,6 +3,7 @@ import {
   StreamKind,
   type TChannelState,
   type TExternalStreamsMap,
+  type TPublicVoiceChannelState,
   type TRemoteProducerIds,
   type TTransportParams,
   type TVoiceMap,
@@ -129,7 +130,11 @@ type TExternalStreamInternal = {
 
 class VoiceRuntime {
   public readonly id: number;
-  private state: TChannelState = { users: [], externalStreams: {} };
+  private state: TChannelState = {
+    users: [],
+    externalStreams: {},
+    activeSince: null
+  };
   private router?: Router<AppData>;
   private consumerTransports: TTransportMap = {};
   private producerTransports: TTransportMap = {};
@@ -169,17 +174,17 @@ class VoiceRuntime {
     const map: TVoiceMap = {};
 
     voiceRuntimes.forEach((runtime, channelId) => {
-      map[channelId] = {
-        users: {}
-      };
+      const state = runtime.getState();
+      const users: TPublicVoiceChannelState['users'] = {};
 
-      runtime.getState().users.forEach((user) => {
-        if (!map[channelId]) {
-          map[channelId] = { users: {} };
-        }
-
-        map[channelId].users[user.userId] = user.state;
+      state.users.forEach((user) => {
+        users[user.userId] = user.state;
       });
+
+      map[channelId] = {
+        users,
+        activeSince: state.activeSince
+      };
     });
 
     return map;
@@ -189,10 +194,6 @@ class VoiceRuntime {
     const map: TExternalStreamsMap = {};
 
     voiceRuntimes.forEach((runtime, channelId) => {
-      if (map[channelId]) {
-        map[channelId] = [];
-      }
-
       map[channelId] = runtime.getState().externalStreams;
     });
 
@@ -284,6 +285,10 @@ class VoiceRuntime {
   ) => {
     if (this.getUser(userId)) return;
 
+    if (this.state.users.length === 0) {
+      this.state.activeSince = new Date().toISOString();
+    }
+
     this.state.users.push({
       userId,
       state: {
@@ -295,7 +300,9 @@ class VoiceRuntime {
 
   public removeUser = (userId: number) => {
     this.state.users = this.state.users.filter((u) => u.userId !== userId);
-
+    if (this.state.users.length === 0) {
+      this.state.activeSince = null;
+    }
     this.cleanupUserResources(userId);
   };
 

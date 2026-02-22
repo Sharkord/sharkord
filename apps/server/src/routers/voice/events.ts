@@ -27,6 +27,12 @@ const onUserUpdateVoiceStateRoute = protectedProcedure.subscription(
   }
 );
 
+const onVoiceChannelStateUpdateRoute = protectedProcedure.subscription(
+  async ({ ctx }) => {
+    return ctx.pubsub.subscribe(ServerEvents.VOICE_CHANNEL_STATE_UPDATE);
+  }
+);
+
 // these events are broadcast to ALL users (for external stream UI in the sidebar)
 const onVoiceAddExternalStreamRoute = protectedProcedure.subscription(
   async ({ ctx }) => {
@@ -78,6 +84,7 @@ export {
   onUserJoinVoiceRoute,
   onUserLeaveVoiceRoute,
   onUserUpdateVoiceStateRoute,
+  onVoiceChannelStateUpdateRoute,
   onVoiceAddExternalStreamRoute,
   onVoiceNewProducerRoute,
   onVoiceProducerClosedRoute,

@@ -247,10 +247,15 @@ const createWsServer = async (server: http.Server) => {
 
         if (voiceRuntime) {
           voiceRuntime.removeUser(user.id);
+          const channelState = voiceRuntime.getState();
 
           pubsub.publish(ServerEvents.USER_LEAVE_VOICE, {
             channelId: voiceRuntime.id,
             userId: user.id
+          });
+          pubsub.publish(ServerEvents.VOICE_CHANNEL_STATE_UPDATE, {
+            channelId: voiceRuntime.id,
+            activeSince: channelState.activeSince
           });
         }
 
