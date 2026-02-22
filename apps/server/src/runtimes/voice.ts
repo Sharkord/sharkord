@@ -16,6 +16,7 @@ import type {
   RouterOptions,
   WebRtcTransport
 } from 'mediasoup/types';
+import { config } from '../config';
 import { logger } from '../logger';
 import { eventBus } from '../plugins/event-bus';
 import {
@@ -354,14 +355,19 @@ class VoiceRuntime {
   public createTransport = async () => {
     const router = this.getRouter();
 
+    const maxBitrate = config.webRtc.maxBitrate;
+
     const transport = await router.createWebRtcTransport({
       webRtcServer,
       enableUdp: true,
       enableTcp: true,
       preferUdp: true,
       preferTcp: false,
-      initialAvailableOutgoingBitrate: 10000000
+      initialAvailableOutgoingBitrate: Math.min(10000000, maxBitrate)
     });
+
+    await transport.setMaxIncomingBitrate(maxBitrate);
+    await transport.setMaxOutgoingBitrate(maxBitrate);
 
     const params: TTransportParams = {
       id: transport.id,
