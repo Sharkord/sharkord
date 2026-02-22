@@ -8,6 +8,7 @@
     "test:ui": "bunx playwright test --ui",
     "test:headed": "bunx playwright test --headed",
     "format": "prettier --write \"**/*.*.ts*\" --config ./.prettierrc.json",
+    "format:check": "prettier --check \"**/*.*.ts*\" --config ./.prettierrc.json",
     "lint": "eslint ./tests/**/*.ts --ext ts --report-unused-disable-directives",
     "lint:fix": "eslint ./tests/**/*.ts --ext ts --report-unused-disable-directives --fix",
     "check-types": "tsc --noEmit",

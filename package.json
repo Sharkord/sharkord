@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "format": "bun run --filter '*' format",
+    "format:check": "bun run --filter '*' format:check",
     "check-types": "bun run --filter '*' check-types",
     "lint": "bun run --filter '*' lint",
     "knip": "knip",

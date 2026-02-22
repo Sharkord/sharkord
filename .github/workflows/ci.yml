@@ -24,7 +24,7 @@ jobs:
         run: bun install
 
       - name: Format check
-        run: bun format --check
+        run: bun format:check
 
       - name: Lint
         run: bun lint
