@@ -195,9 +195,7 @@ const ThreadCompose = memo(
             variant="ghost"
             className="h-8 w-8"
             onClick={onSendMessage}
-            disabled={
-              uploading || sending || files.length === 0 || !canSendMessages
-            }
+            disabled={uploading || sending || !canSendMessages}
           >
             <Send className="h-4 w-4" />
           </Button>
