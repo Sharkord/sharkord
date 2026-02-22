@@ -5,13 +5,12 @@ import {
 import { cn } from '@/lib/utils';
 import { PluginSlot } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
-import { MessageSquare, PanelRight, PanelRightClose, Pin, PinOff } from 'lucide-react';
-import { memo, useContext } from 'react';
+import { MessageSquare, PanelRight, PanelRightClose } from 'lucide-react';
+import { memo } from 'react';
 import { PluginSlotRenderer } from '../plugin-slot-renderer';
 import { Tooltip } from '@sharkord/ui';
 import { VoiceOptionsController } from './voice-options-controller';
 import { VolumeController } from './volume-controller';
-import { PinnedMessageContext } from '@/components/pinned-message-provider';
 
 type TTopBarProps = {
   onToggleRightSidebar: () => void;
@@ -29,8 +28,6 @@ const TopBar = memo(
   }: TTopBarProps) => {
     const isCurrentVoiceChannelSelected = useIsCurrentVoiceChannelSelected();
     const currentVoiceChannelId = useCurrentVoiceChannelId();
-    const pinnedMessage = useContext(PinnedMessageContext);
-
     return (
       <div className="hidden lg:flex h-8 w-full bg-card border-b border-border items-center justify-end px-4 transition-all duration-300 ease-in-out gap-2">
         <PluginSlotRenderer slotId={PluginSlot.TOPBAR_RIGHT} />
@@ -60,26 +57,6 @@ const TopBar = memo(
             </Button>
           </>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => pinnedMessage?.setVisible(!pinnedMessage.visible)}
-          className="h-6 px-2 transition-all duration-200 ease-in-out"
-        >
-          {pinnedMessage?.visible ? (
-            <Tooltip content="Hide Pinned Messages">
-              <div>
-                <PinOff className="w-4 h-4 transition-transform duration-200 ease-in-out" />
-              </div>
-            </Tooltip>
-          ) : (
-            <Tooltip content="Show Pinned Messages">
-              <div>
-                <Pin className="w-4 h-4 transition-transform duration-200 ease-in-out" />
-              </div>
-            </Tooltip>
-          )}
-        </Button>
         <Button
           variant="ghost"
           size="sm"

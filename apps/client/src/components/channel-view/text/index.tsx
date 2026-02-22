@@ -55,7 +55,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
   const allPluginCommands = useFlatPluginCommands();
   const typingUsers = useTypingUsersByChannelId(channelId);
   const messageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
-  const pinnedMessage = useContext(PinnedMessageContext);
+  const pinnedMessageContext = useContext(PinnedMessageContext);
 
   const { containerRef, onScroll } = useScrollController({
     messages,
@@ -204,11 +204,11 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
           'absolute left-2 right-2 w-auto transition-[height,padding,opacity] duration-500 ease-in-out overflow-hidden',
           'bg-neutral-800 rounded-xl shadow-md border border-neutral-700 mx-2 mt-2',
           'max-w-4xl mx-auto',
-          pinnedMessage?.visible ?
-            'max-h-60 h-auto p-2 opacity-100 z-10' :
+          pinnedMessageContext.visible ?
+            'max-h-[85vh] h-auto p-2 opacity-100 z-10' :
             'h-0 p-0 opacity-0 border-transparent shadow-none'
         )}
-        isOpen={pinnedMessage?.visible || false}
+        isOpen={pinnedMessageContext.visible || false}
         messageRefs={messageRefs}
         messages={messages}
       />

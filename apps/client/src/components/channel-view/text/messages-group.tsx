@@ -8,9 +8,10 @@ import {
   type TJoinedMessage
 } from '@sharkord/shared';
 import { format } from 'date-fns';
-import { memo } from 'react';
+import { memo, useContext } from 'react';
 import { Message } from './message';
 import { Button } from '@sharkord/ui';
+import { PinnedMessageContext } from '@/components/pinned-message-provider';
 
 type TMessagesGroupProps = {
   group: TJoinedMessage[];
@@ -22,13 +23,30 @@ const MessagesGroup = memo(({ group, messageRefs, pinnedMessages = false }: TMes
   const date = new Date(firstMessage.createdAt);
   const isOwnUser = useIsOwnUser(firstMessage.userId);
   const isDeletedUser = user?.name === DELETED_USER_IDENTITY_AND_NAME;
+  const pinnedMessageContext = useContext(PinnedMessageContext);
 
   if (!user) return null;
 
   function scrollToMessage(id: number) {
     const el = messageRefs.current[id];
     if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Scroll to the message element
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // Asetetaan transition
+      el.style.transition = 'background-color 1s ease';
+    
+      // Aloitetaan korostus seuraavalla tickillä
+      requestAnimationFrame(() => {
+        el.style.setProperty('--color-secondary', 'var(--secondary)');
+        el.style.backgroundColor = 'var(--color-secondary)';
+        
+
+        // Poistetaan korostus 2 sekunnin kuluttua
+        setTimeout(() => {
+          el.style.backgroundColor = ''; // palautuu alkuperäiseen
+        }, 2000);
+      });
     }
   }
 
@@ -57,9 +75,13 @@ const MessagesGroup = memo(({ group, messageRefs, pinnedMessages = false }: TMes
           </RelativeTime>
           {pinnedMessages ? (
           <Button
+            variant="outline"
             className="px-2 py-1 h-6 text-xs"
             key={group[0].id}
-            onClick={() => scrollToMessage(group[0].id)}
+            onClick={() => {
+              scrollToMessage(group[0].id);
+              pinnedMessageContext.setVisible(false);
+            }}
           >
             MOVE
           </Button>

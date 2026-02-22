@@ -5,7 +5,10 @@ import { createContext, useState, type ReactNode } from 'react';
     setVisible: (v: boolean) => void;
   };
 
-  export const PinnedMessageContext = createContext<PinnedMessageContextType | undefined>(undefined);
+  export const PinnedMessageContext = createContext<PinnedMessageContextType>({
+    visible: false,
+    setVisible: () => {}
+  });
 
   export const PinnedMessageProvider = ({ children }: { children: ReactNode }) => {
     const [visible, setVisible] = useState(false);
