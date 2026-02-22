@@ -55,6 +55,19 @@ const RightSidebar = memo(
 
     const hasHiddenUsers = users.length > MAX_USERS_TO_SHOW;
 
+    const usersCount = useMemo(
+      () =>
+        users.reduce((count, user) => {
+          // exclude the special "Deleted User" from the count if it exists
+          if (user.name !== DELETED_USER_IDENTITY_AND_NAME) {
+            return count + 1;
+          }
+
+          return count;
+        }, 0),
+      [users]
+    );
+
     return (
       <ResizableSidebar
         storageKey={LocalStorageKey.RIGHT_SIDEBAR_WIDTH}
@@ -67,7 +80,7 @@ const RightSidebar = memo(
       >
         <div className="flex h-12 items-center border-b border-border px-4">
           <h3 className="text-sm font-semibold text-foreground">
-            Members — {users.length}
+            Members — {usersCount}
           </h3>
         </div>
         <div className="flex-1 overflow-y-auto p-2">
