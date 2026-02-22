@@ -109,7 +109,8 @@ config = applyEnvOverrides(config, {
   'server.debug': 'SHARKORD_DEBUG',
   'server.autoupdate': 'SHARKORD_AUTOUPDATE',
   'webRtc.port': 'SHARKORD_WEBRTC_PORT',
-  'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS'
+  'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS',
+  'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE'
 });
 
 config = Object.freeze(config);
