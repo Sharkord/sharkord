@@ -30,6 +30,7 @@ import type {
 export interface IServerState {
   connected: boolean;
   connecting: boolean;
+  registering: boolean;
   disconnectInfo?: TDisconnectInfo;
   serverId?: string;
   categories: TCategory[];
@@ -67,6 +68,7 @@ export interface IServerState {
 const initialState: IServerState = {
   connected: false,
   connecting: false,
+  registering: false,
   disconnectInfo: undefined,
   serverId: undefined,
   ownUserId: undefined,
@@ -118,6 +120,9 @@ export const serverSlice = createSlice({
     },
     setConnecting: (state, action: PayloadAction<boolean>) => {
       state.connecting = action.payload;
+    },
+    setRegistering: (state, action: PayloadAction<boolean>) => {
+      state.registering = action.payload;
     },
     setServerId: (state, action: PayloadAction<string | undefined>) => {
       state.serverId = action.payload;

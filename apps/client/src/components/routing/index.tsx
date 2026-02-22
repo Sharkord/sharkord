@@ -2,9 +2,11 @@ import { useIsAppLoading, useIsPluginsLoading } from '@/features/app/hooks';
 import {
   useDisconnectInfo,
   useIsConnected,
+  useIsRegistering,
   useServerName
 } from '@/features/server/hooks';
 import { Connect } from '@/screens/connect';
+import { Register } from '@/screens/register';
 import { Disconnected } from '@/screens/disconnected';
 import { LoadingApp } from '@/screens/loading-app';
 import { ServerView } from '@/screens/server-view';
@@ -13,6 +15,7 @@ import { memo, useEffect } from 'react';
 
 const Routing = memo(() => {
   const isConnected = useIsConnected();
+  const isRegistering = useIsRegistering();
   const isAppLoading = useIsAppLoading();
   const isPluginsLoading = useIsPluginsLoading();
   const disconnectInfo = useDisconnectInfo();
@@ -44,6 +47,8 @@ const Routing = memo(() => {
     ) {
       return <Disconnected info={disconnectInfo} />;
     }
+
+    if (isRegistering) return <Register />
 
     return <Connect />;
   }
