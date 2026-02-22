@@ -24,10 +24,7 @@ const markAsReadRoute = protectedProcedure
       .select()
       .from(messages)
       .where(
-        and(
-          eq(messages.channelId, channelId),
-          isNull(messages.parentMessageId)
-        )
+        and(eq(messages.channelId, channelId), isNull(messages.parentMessageId))
       )
       .orderBy(desc(messages.createdAt))
       .limit(1)

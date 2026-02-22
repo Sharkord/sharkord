@@ -1,3 +1,5 @@
+import { setHideNonVideoParticipants } from '@/features/server/voice/actions';
+import { useHideNonVideoParticipants } from '@/features/server/voice/hooks';
 import {
   Button,
   Popover,
@@ -6,8 +8,6 @@ import {
   Switch,
   Tooltip
 } from '@sharkord/ui';
-import { useHideNonVideoParticipants } from '@/features/server/voice/hooks';
-import { setHideNonVideoParticipants } from '@/features/server/voice/actions';
 import { Settings } from 'lucide-react';
 import { memo, useCallback } from 'react';
 
@@ -33,11 +33,15 @@ const VoiceOptionsController = memo(() => {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64">
         <div className="space-y-3">
-          <h4 className="font-medium text-sm cursor-default mb-3">Voice Options</h4>
+          <h4 className="font-medium text-sm cursor-default mb-3">
+            Voice Options
+          </h4>
 
           <div className="flex items-center justify-between space-x-3">
             <span
-              onClick={() => handleToggleHideNonVideo(!hideNonVideoParticipants)}
+              onClick={() =>
+                handleToggleHideNonVideo(!hideNonVideoParticipants)
+              }
               className="text-sm text-foreground cursor-pointer select-none flex-1"
             >
               Hide non-video participants

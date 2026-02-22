@@ -29,7 +29,10 @@ const updatePasswordRoute = protectedProcedure
       message: 'User not found'
     });
 
-    const currentPasswordValid = await Bun.password.verify(input.currentPassword, user.password)
+    const currentPasswordValid = await Bun.password.verify(
+      input.currentPassword,
+      user.password
+    );
 
     if (!currentPasswordValid) {
       ctx.throwValidationError(

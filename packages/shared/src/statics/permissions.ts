@@ -42,7 +42,7 @@ export const permissionLabels: Record<Permission, string> = {
   [Permission.MANAGE_UPDATES]: 'Manage updates',
   [Permission.MANAGE_PLUGINS]: 'Manage plugins',
   [Permission.EXECUTE_PLUGIN_COMMANDS]: 'Execute plugin commands',
-  [Permission.VIEW_USER_SENSITIVE_DATA]: 'View user sensitive data (identity, IP address and location)'
+  [Permission.VIEW_USER_SENSITIVE_DATA]: 'View user sensitive data'
 };
 
 export const permissionDescriptions: Record<Permission, string> = {
@@ -77,7 +77,7 @@ export const permissionDescriptions: Record<Permission, string> = {
   [Permission.EXECUTE_PLUGIN_COMMANDS]:
     'Grants the ability to execute plugin commands.',
   [Permission.VIEW_USER_SENSITIVE_DATA]:
-    'Grants the ability to view user sensitive data (identity, IP address and location).'
+    'Grants the ability to view user sensitive data like identity, IP address, and location.'
 };
 
 export const DEFAULT_ROLE_PERMISSIONS = [

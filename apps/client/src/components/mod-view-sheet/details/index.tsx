@@ -1,3 +1,5 @@
+import { Protect } from '@/components/protect';
+import { Permission } from '@sharkord/shared/src/statics/permissions';
 import {
   Card,
   CardContent,
@@ -20,8 +22,6 @@ import {
 } from 'lucide-react';
 import { memo, useState } from 'react';
 import { useModViewContext } from '../context';
-import { Protect } from '@/components/protect';
-import { Permission } from '@sharkord/shared/src/statics/permissions';
 
 type TRowProps = {
   icon: React.ReactNode;
@@ -31,37 +31,39 @@ type TRowProps = {
   hidden?: boolean;
 };
 
-const Row = memo(({ icon, label, value, details, hidden = false }: TRowProps) => {
-  let valContent = (
-    <span className="text-sm text-muted-foreground truncate max-w-[160px]">
-      {value}
-    </span>
-  );
-  
-  const [visible, setVisible] = useState(!hidden);
+const Row = memo(
+  ({ icon, label, value, details, hidden = false }: TRowProps) => {
+    const [visible, setVisible] = useState(!hidden);
 
-  if (details) {
-    valContent = <Tooltip content={details}>{valContent}</Tooltip>;
-  }
+    let valContent = (
+      <span className="text-sm text-muted-foreground truncate max-w-[160px]">
+        {visible ? value : '***'}
+      </span>
+    );
 
-  return (
-    <div className="flex items-center justify-between py-1.5 px-1 gap-4">
-      <div className="flex items-center gap-3 min-w-0 flex-1">
-        {icon}
-        <span className="text-sm truncate">{label}</span>
+    if (details) {
+      valContent = <Tooltip content={details}>{valContent}</Tooltip>;
+    }
+
+    return (
+      <div className="flex items-center justify-between py-1.5 px-1 gap-4">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          {icon}
+          <span className="text-sm truncate">{label}</span>
+        </div>
+        {valContent}
+        {hidden && (
+          <IconButton
+            role="button"
+            onClick={() => setVisible(!visible)}
+            className="text-muted-foreground inline-flex h-6 w-6 items-center justify-center rounded bg-transparent hover:bg-accent hover:text-foreground cursor-pointer transition-colors focus:outline-none"
+            icon={visible ? EyeClosed : Eye}
+          />
+        )}
       </div>
-      {visible ? valContent : "***"}
-      {hidden && (
-        <IconButton
-          role="button"
-          onClick={() => setVisible(!visible)}
-          className="text-muted-foreground inline-flex h-6 w-6 items-center justify-center rounded bg-transparent hover:bg-accent hover:text-foreground cursor-pointer transition-colors focus:outline-none"
-          icon={visible ? EyeClosed : Eye}
-        />
-      )}
-    </div>
-  );
-});
+    );
+  }
+);
 
 const Details = memo(() => {
   const { user, logins } = useModViewContext();
@@ -88,21 +90,21 @@ const Details = memo(() => {
               icon={<IdCard className="h-4 w-4 text-muted-foreground" />}
               label="Identity"
               value={user.identity}
-              hidden={true}
+              hidden
             />
 
             <Row
               icon={<Network className="h-4 w-4 text-muted-foreground" />}
               label="IP Address"
               value={lastLogin?.ip || 'Unknown'}
-              hidden={true}
+              hidden
             />
 
             <Row
               icon={<Globe className="h-4 w-4 text-muted-foreground" />}
               label="Location"
               value={`${lastLogin?.country || 'N/A'} - ${lastLogin?.city || 'N/A'}`}
-              hidden={true}
+              hidden
             />
           </Protect>
 
