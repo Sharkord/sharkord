@@ -60,7 +60,7 @@ const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
 
   const allMedia = useMemo(() => {
     const mediaFromFiles: TFoundMedia[] = message.files
-      .filter((file) => imageExtensions.includes(file.extension))
+      .filter((file) => imageExtensions.includes(file.extension.toLowerCase()))
       .map((file) => ({
         type: 'image',
         url: getFileUrl(file)

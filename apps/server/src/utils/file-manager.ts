@@ -236,7 +236,7 @@ class FileManager {
       .insert(files)
       .values({
         name: fileName,
-        extension: tempFile.extension,
+        extension: tempFile.extension.toLowerCase(),
         md5: tempFile.md5,
         size: tempFile.size,
         originalName: tempFile.originalName,
