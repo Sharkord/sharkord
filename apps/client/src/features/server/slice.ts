@@ -61,7 +61,7 @@ export interface IServerState {
   };
   pluginCommands: TCommandsMapByPlugin;
   hideNonVideoParticipants: boolean;
-  showUserBannersInVoice : boolean;
+  showUserBannersInVoice: boolean;
   pluginComponents: TPluginComponentsMap;
 }
 
