@@ -25,6 +25,10 @@ import {
   useState
 } from 'react';
 import { useDevices } from '../devices-provider/hooks/use-devices';
+import {
+  clearVoiceControlsBridge,
+  setVoiceControlsBridge
+} from './controls-bridge';
 import { FloatingPinnedCard } from './floating-pinned-card';
 import { useLocalStreams } from './hooks/use-local-streams';
 import { useRemoteStreams } from './hooks/use-remote-streams';
@@ -615,6 +619,33 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       startScreenShareStream,
       stopScreenShareStream
     });
+
+  const setMicMutedForBridge = useCallback(
+    async (muted: boolean) => {
+      if (ownVoiceState.micMuted === muted) return;
+      await toggleMic();
+    },
+    [ownVoiceState.micMuted, toggleMic]
+  );
+
+  const setSoundMutedForBridge = useCallback(
+    async (muted: boolean) => {
+      if (ownVoiceState.soundMuted === muted) return;
+      await toggleSound();
+    },
+    [ownVoiceState.soundMuted, toggleSound]
+  );
+
+  useEffect(() => {
+    setVoiceControlsBridge({
+      setMicMuted: setMicMutedForBridge,
+      setSoundMuted: setSoundMutedForBridge
+    });
+
+    return () => {
+      clearVoiceControlsBridge();
+    };
+  }, [setMicMutedForBridge, setSoundMutedForBridge]);
 
   useVoiceEvents({
     consume,
