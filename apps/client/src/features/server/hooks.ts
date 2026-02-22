@@ -21,6 +21,7 @@ import {
   pluginComponentContextSelector,
   pluginsEnabledSelector,
   publicServerSettingsSelector,
+  registeringSelector,
   serverNameSelector,
   typingUsersByChannelIdSelector,
   typingUsersByThreadIdSelector,
@@ -31,6 +32,8 @@ import {
 export const useIsConnected = () => useSelector(connectedSelector);
 
 export const useIsConnecting = () => useSelector(connectingSelector);
+
+export const useIsRegistering = () => useSelector(registeringSelector);
 
 export const useDisconnectInfo = () => useSelector(disconnectInfoSelector);
 

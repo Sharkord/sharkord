@@ -18,6 +18,7 @@ import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
 import { uploadFileRouteHandler } from './upload';
 import { HttpValidationError } from './utils';
+import { registerRouteHandler } from './register';
 
 type RouteContext = {
   info: ReturnType<typeof getWsInfo>;
@@ -49,7 +50,8 @@ const routeHandlers: Partial<
   POST: {
     exact: {
       '/upload': (req, res) => uploadFileRouteHandler(req, res),
-      '/login': (req, res) => loginRouteHandler(req, res)
+      '/login': (req, res) => loginRouteHandler(req, res),
+      '/register': (req, res) => registerRouteHandler(req, res)
     },
     prefix: {}
   }

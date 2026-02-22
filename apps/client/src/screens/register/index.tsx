@@ -1,10 +1,8 @@
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
-import { connect, openRegistration } from '@/features/server/actions';
+import { connect, closeRegistration } from '@/features/server/actions';
 import { useInfo } from '@/features/server/hooks';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
 import {
-  getLocalStorageItem,
-  LocalStorageKey,
   SessionStorageKey,
   setSessionStorageItem
 } from '@/helpers/storage';
@@ -25,35 +23,45 @@ import {
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-const Connect = memo(() => {
-  const { values, r, setErrors } = useForm<{
+const Register = memo(() => {
+  const { values, r, setValue, errors, setError, setErrors } = useForm<{
     identity: string;
     password: string;
-    rememberCredentials: boolean;
+    passwordConfirmation: string;
+    displayName: string;
   }>({
-    identity: getLocalStorageItem(LocalStorageKey.IDENTITY) || '',
-    password: getLocalStorageItem(LocalStorageKey.USER_PASSWORD) || '',
-    rememberCredentials: !!getLocalStorageItem(
-      LocalStorageKey.REMEMBER_CREDENTIALS
-    )
+    identity: '',
+    password: '',
+    passwordConfirmation: '',
+    displayName: ''
   });
 
   const [loading, setLoading] = useState(false);
   const info = useInfo();
 
-  const onConnectClick = useCallback(async () => {
+  const inviteCode = useMemo(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const invite = urlParams.get('invite');
+    return invite || undefined;
+  }, []);
+
+  const onRegisterClick = useCallback(async () => {
     setLoading(true);
+
+    if (values.password !== values.passwordConfirmation) throw new Error(`Passwords do not match`);
 
     try {
       const url = getUrlFromServer();
-      const response = await fetch(`${url}/login`, {
+      const response = await fetch(`${url}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           identity: values.identity,
-          password: values.password
+          password: values.password,
+          displayName: values.displayName,
+          invite: inviteCode
         })
       });
 
@@ -73,16 +81,41 @@ const Connect = memo(() => {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 
-      toast.error(`Could not connect: ${errorMessage}`);
+      toast.error(`Could not register: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
-  }, [values.identity, values.password, setErrors]);
+  }, [values.identity, values.password, values.passwordConfirmation, values.displayName, setErrors, inviteCode]);
 
-  const onRegisterClick = () => {
-    openRegistration();
+  const onLoginClick = () => {
+    closeRegistration();
   }
 
+  const onPasswordChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        setValue('password', e.target.value);
+        if (values.passwordConfirmation && values.passwordConfirmation !== e.target.value){
+          setError('passwordConfirmation', "Passwords do not match");
+        } else {
+          setError('passwordConfirmation', undefined);
+        }
+      },
+      [values, setValue, setError]
+    );
+
+
+  const onPasswordConfirmChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        setValue('passwordConfirmation', e.target.value);
+        if (values.password !== e.target.value){
+          setError('passwordConfirmation', "Passwords do not match");
+        } else {
+          setError('passwordConfirmation', undefined);
+        }
+      },
+      [values, setValue, setError]
+    );
+  
   const logoSrc = useMemo(() => {
     if (info?.logo) {
       return getFileUrl(info.logo);
@@ -119,11 +152,28 @@ const Connect = memo(() => {
             >
               <Input {...r('identity')} />
             </Group>
+            <Group
+              label="Display Name"
+              help="Your public username."
+            >
+              <Input {...r('displayName')} />
+            </Group>
+
             <Group label="Password">
               <Input
                 {...r('password')}
                 type="password"
-                onEnter={onConnectClick}
+                onChange={onPasswordChange}
+              />
+            </Group>
+
+            <Group label="Confirm Password">
+              <Input
+                {...r('passwordConfirmation')}
+                type="password"
+                onChange={onPasswordConfirmChange}
+                onEnter={onRegisterClick}
+
               />
             </Group>
           </div>
@@ -147,20 +197,42 @@ const Connect = memo(() => {
             <Button
               className="w-full"
               variant="outline"
-              onClick={onConnectClick}
-              disabled={loading || !values.identity || !values.password}
+              onClick={onRegisterClick}
+              disabled={loading || !values.identity || !values.displayName || !values.password || !values.passwordConfirmation || !!errors.passwordConfirmation}
             >
-              Connect
+              Register
             </Button>
 
             <Button
               className="w-full"
               variant="outline"
-              onClick={onRegisterClick}
+              onClick={onLoginClick}
             >
-              Register
+              Login
             </Button>
 
+            {!info?.allowNewUsers && (
+              <>
+                {!inviteCode && (
+                  <span className="text-xs text-muted-foreground text-center">
+                    New user registrations are currently disabled. If you do not
+                    have an account yet, you need to be invited by an existing
+                    user to join this server.
+                  </span>
+                )}
+              </>
+            )}
+
+            {inviteCode && (
+              <Alert variant="info">
+                <AlertTitle>You were invited to join this server</AlertTitle>
+                <AlertDescription>
+                  <span className="font-mono text-xs">
+                    Invite code: {inviteCode}
+                  </span>
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -188,4 +260,4 @@ const Connect = memo(() => {
   );
 });
 
-export { Connect };
+export { Register };

@@ -28,6 +28,9 @@ export const disconnectInfoSelector = (state: IRootState) =>
 export const connectingSelector = (state: IRootState) =>
   state.server.connecting;
 
+export const registeringSelector = (state: IRootState) => 
+  state.server.registering;
+
 export const serverNameSelector = (state: IRootState) =>
   state.server.publicSettings?.name;
 
