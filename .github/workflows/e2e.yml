@@ -21,6 +21,10 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Install Playwright browsers
+        working-directory: packages/e2e
+        run: bunx playwright install --with-deps
+
       - name: Run E2E tests
         working-directory: packages/e2e
         run: bun test:e2e
