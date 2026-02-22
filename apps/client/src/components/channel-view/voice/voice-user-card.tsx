@@ -11,6 +11,7 @@ import { CardGradient } from './card-gradient';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PinButton } from './pin-button';
 import { VolumeButton } from './volume-button';
+import { getFileUrl } from '@/helpers/get-file-url';
 
 type TVoiceUserCardProps = {
   userId: number;
@@ -66,8 +67,19 @@ const VoiceUserCard = memo(
           className
         )}
       >
+        {voiceUser.banner && (
+            <div
+              className="h-full w-full rounded-t-md bg-cover bg-center blur-sm brightness-50 bg-no-repeat absolute inset-0"
+              style={{
+                backgroundImage: `url(${getFileUrl(voiceUser.banner)})`
+              }}
+            />
+        )}
+       
+       {!voiceUser.banner && (
         <CardGradient />
-
+       )}
+        
         <CardControls>
           {!isOwnUser && <VolumeButton volumeKey={getUserVolumeKey(userId)} />}
           {showPinControls && (
