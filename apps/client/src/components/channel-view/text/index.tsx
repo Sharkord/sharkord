@@ -256,9 +256,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
             variant="ghost"
             className="h-8 w-8"
             onClick={onSendMessage}
-            disabled={
-              uploading || sending || !canSendMessages
-            }
+            disabled={uploading || sending || !canSendMessages}
           >
             <Send className="h-4 w-4" />
           </Button>
