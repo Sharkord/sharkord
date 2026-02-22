@@ -52,6 +52,20 @@ const login = async (identity: string, password: string, invite?: string) =>
     })
   });
 
+const register = async (identity: string, password: string, displayName: string, invite?: string) =>
+  fetch(`${testsBaseUrl}/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      identity,
+      password,
+      displayName,
+      invite
+    })
+  });
+
 const uploadFile = async (file: File, token: string) =>
   fetch(`${testsBaseUrl}/upload`, {
     method: 'POST',
@@ -65,4 +79,4 @@ const uploadFile = async (file: File, token: string) =>
     body: file
   });
 
-export { getCaller, getMockedToken, initTest, login, uploadFile };
+export { getCaller, getMockedToken, initTest, login, register, uploadFile };
