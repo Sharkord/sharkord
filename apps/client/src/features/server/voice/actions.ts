@@ -196,3 +196,16 @@ export const setHideNonVideoParticipants = (value: boolean): void => {
     console.error('Failed to save voice options:', error);
   }
 };
+
+export const setShowUserBannersInVoice = (value: boolean): void => {
+  store.dispatch(serverSliceActions.setShowUserBannersInVoice(value));
+
+  try {
+    setLocalStorageItem(
+      LocalStorageKey.VOICE_CHAT_SHOW_USER_BANNERS,
+      String(value)
+    );
+  } catch (error) {
+    console.error('Failed to save voice options:', error);
+  }
+};

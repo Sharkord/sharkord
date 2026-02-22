@@ -3,6 +3,8 @@ import { UserAvatar } from '@/components/user-avatar';
 import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
 import type { TVoiceUser } from '@/features/server/types';
 import { useOwnUserId } from '@/features/server/users/hooks';
+import { useShowUserBannersInVoice } from '@/features/server/voice/hooks';
+import { getFileUrl } from '@/helpers/get-file-url';
 import { cn } from '@/lib/utils';
 import { HeadphoneOff, MicOff, Monitor, Video } from 'lucide-react';
 import { memo, useCallback } from 'react';
@@ -38,6 +40,7 @@ const VoiceUserCard = memo(
     const { devices } = useDevices();
     const ownUserId = useOwnUserId();
     const isOwnUser = userId === ownUserId;
+    const showUserBanners = useShowUserBannersInVoice();
 
     const handlePinToggle = useCallback(() => {
       if (isPinned) {
@@ -66,7 +69,16 @@ const VoiceUserCard = memo(
           className
         )}
       >
-        <CardGradient />
+        {voiceUser.banner && showUserBanners && (
+          <div
+            className="h-full w-full rounded-t-md bg-cover bg-center blur-sm brightness-50 bg-no-repeat absolute inset-0"
+            style={{
+              backgroundImage: `url(${getFileUrl(voiceUser.banner)})`
+            }}
+          />
+        )}
+
+        {(!voiceUser.banner || !showUserBanners) && <CardGradient />}
 
         <CardControls>
           {!isOwnUser && <VolumeButton volumeKey={getUserVolumeKey(userId)} />}
