@@ -45,28 +45,18 @@ const RightSidebar = memo(
   ({ className, isOpen = true }: TRightSidebarProps) => {
     const users = useUsers();
 
-    const usersToShow = useMemo(
-      () =>
-        users
-          .filter((user) => user.name !== DELETED_USER_IDENTITY_AND_NAME)
-          .slice(0, MAX_USERS_TO_SHOW),
-      [users]
-    );
+    const { usersToShow, usersCount } = useMemo(() => {
+      const filtered = users.filter(
+        (user) => user.name !== DELETED_USER_IDENTITY_AND_NAME
+      );
+
+      return {
+        usersToShow: filtered.slice(0, MAX_USERS_TO_SHOW),
+        usersCount: filtered.length
+      };
+    }, [users]);
 
     const hasHiddenUsers = users.length > MAX_USERS_TO_SHOW;
-
-    const usersCount = useMemo(
-      () =>
-        users.reduce((count, user) => {
-          // exclude the special "Deleted User" from the count if it exists
-          if (user.name !== DELETED_USER_IDENTITY_AND_NAME) {
-            return count + 1;
-          }
-
-          return count;
-        }, 0),
-      [users]
-    );
 
     return (
       <ResizableSidebar
