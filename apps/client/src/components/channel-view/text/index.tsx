@@ -257,7 +257,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
             className="h-8 w-8"
             onClick={onSendMessage}
             disabled={
-              uploading || sending || files.length === 0 || !canSendMessages
+              uploading || sending || !canSendMessages
             }
           >
             <Send className="h-4 w-4" />
