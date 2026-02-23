@@ -22,7 +22,10 @@ const MessagesGroup = memo(
     group,
     messageRefs,
     type
-  }: TMessagesGroupProps & { messageRefs: React.RefObject<Record<number, HTMLDivElement | null>>; type: string }) => {
+  }: TMessagesGroupProps & {
+    messageRefs: React.RefObject<Record<number, HTMLDivElement | null>>;
+    type: string;
+  }) => {
     const firstMessage = group[0];
     const user = useUserById(firstMessage.userId);
     const date = new Date(firstMessage.createdAt);

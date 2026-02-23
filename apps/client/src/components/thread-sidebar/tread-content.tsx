@@ -21,7 +21,7 @@ const ThreadContent = memo(
 
     const typingUsers = useTypingUsersByThreadId(parentMessageId);
     const messageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
-    
+
     const { containerRef, onScroll } = useScrollController({
       messages,
       fetching,

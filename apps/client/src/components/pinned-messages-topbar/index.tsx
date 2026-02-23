@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
+import type { TJoinedMessage } from '@sharkord/shared/src/tables';
 import { memo } from 'react';
 import { MessagesGroup } from '../channel-view/text/messages-group';
-import type { TJoinedMessage } from '@sharkord/shared/src/tables';
 
 type TPinnedMessagesTopbarProps = {
   className?: string;
