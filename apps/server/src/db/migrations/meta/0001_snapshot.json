@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "c792fd27-52d5-45d2-a0b6-8119065d0944",
+  "id": "970a64a5-0ab3-4de1-8634-35ed73a2350f",
   "prevId": "60b881f6-58b6-452f-bc97-2431cc2e4b06",
   "tables": {
     "activity_log": {
@@ -1403,6 +1403,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "parent_message_id": {
+          "name": "parent_message_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "editable": {
           "name": "editable",
           "type": "integer",
@@ -1431,14 +1438,6 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
-        },
-        "pinned": {
-          "name": "pinned",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": false
         }
       },
       "indexes": {
@@ -1468,6 +1467,13 @@
           "columns": [
             "channel_id",
             "created_at"
+          ],
+          "isUnique": false
+        },
+        "messages_parent_idx": {
+          "name": "messages_parent_idx",
+          "columns": [
+            "parent_message_id"
           ],
           "isUnique": false
         }

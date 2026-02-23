@@ -405,6 +405,7 @@ const getChannelsReadStatesForUser = async (
       unreadCount: sql<number>`
         COUNT(CASE
           WHEN ${messages.userId} != ${userId}
+            AND ${messages.parentMessageId} IS NULL
             AND (${channelReadStates.lastReadMessageId} IS NULL
               OR ${messages.id} > ${channelReadStates.lastReadMessageId})
           THEN 1

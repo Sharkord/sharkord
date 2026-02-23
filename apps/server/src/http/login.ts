@@ -31,7 +31,7 @@ import { getJsonBody } from './helpers';
 import { HttpValidationError } from './utils';
 
 const zBody = z.object({
-  identity: z.string().min(1, 'Identity is required'),
+  identity: z.string().trim().min(1, 'Identity is required'),
   password: z.string().min(4, 'Password is required').max(128),
   invite: z.string().optional()
 });
@@ -166,7 +166,7 @@ const loginRouteHandler = async (
     );
   }
 
-  //Logic to handle legacy SHA256 passwords and migrate them to argon2
+  // temporary logic to migrate old SHA256 password hashes to argon2 on login
   const isPasswordArgon = existingUser.password.startsWith('$argon2');
 
   let passwordMatches = false;

@@ -1,7 +1,14 @@
+import { stripZalgo } from '@sharkord/shared';
 import sanitize from 'sanitize-html';
 
 const sanitizeMessageHtml = (html: string): string => {
-  return sanitize(html, {
+  let input = html;
+
+  // first strip zalgo to prevent it from being used to bypass sanitization
+  input = stripZalgo(input);
+
+  // then sanitize the HTML content
+  input = sanitize(input, {
     // this might need some tweaking in the future
     allowedTags: [
       // basic text structure
@@ -31,6 +38,8 @@ const sanitizeMessageHtml = (html: string): string => {
     // disallow any script or event handler attributes globally
     disallowedTagsMode: 'discard'
   });
+
+  return input;
 };
 
 export { sanitizeMessageHtml };

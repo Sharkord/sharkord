@@ -4,11 +4,10 @@ import {
 } from '@/features/server/channels/hooks';
 import { cn } from '@/lib/utils';
 import { PluginSlot } from '@sharkord/shared';
-import { Button } from '@sharkord/ui';
+import { Button, Tooltip } from '@sharkord/ui';
 import { MessageSquare, PanelRight, PanelRightClose } from 'lucide-react';
 import { memo } from 'react';
 import { PluginSlotRenderer } from '../plugin-slot-renderer';
-import { Tooltip } from '@sharkord/ui';
 import { VoiceOptionsController } from './voice-options-controller';
 import { VolumeController } from './volume-controller';
 

@@ -5,6 +5,7 @@ on:
     branches: [main, development]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   ci:
@@ -24,7 +25,7 @@ jobs:
         run: bun install
 
       - name: Format check
-        run: bun format --check
+        run: bun format:check
 
       - name: Lint
         run: bun lint

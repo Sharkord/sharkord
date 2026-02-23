@@ -2,11 +2,12 @@ import { EmojiPicker } from '@/components/emoji-picker';
 import { useRecentEmojis } from '@/components/emoji-picker/use-recent-emojis';
 import { Protect } from '@/components/protect';
 import type { TEmojiItem } from '@/components/tiptap-input/types';
+import { openThreadSidebar } from '@/features/app/actions';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
-import { Pencil, Pin, PinOff, Smile, Trash } from 'lucide-react';
+import { MessageSquareText, Pin, PinOff, Pencil, Smile, Trash } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
@@ -14,14 +15,24 @@ const MAX_QUICK_EMOJIS = 4;
 
 type TMessageActionsProps = {
   messageId: number;
+  channelId: number;
   onEdit: () => void;
   canManage: boolean;
   editable: boolean;
+  isThreadReply?: boolean;
   pinned: boolean;
 };
 
 const MessageActions = memo(
-  ({ onEdit, messageId, canManage, editable, pinned }: TMessageActionsProps) => {
+  ({
+    onEdit,
+    messageId,
+    channelId,
+    canManage,
+    editable,
+    isThreadReply,
+    pinned
+  }: TMessageActionsProps) => {
     const { recentEmojis } = useRecentEmojis();
     const recentEmojisToShow = useMemo(
       () => recentEmojis.slice(0, MAX_QUICK_EMOJIS),
@@ -67,6 +78,10 @@ const MessageActions = memo(
       [messageId]
     );
 
+    const onReplyClick = useCallback(() => {
+      openThreadSidebar(messageId, channelId);
+    }, [messageId, channelId]);
+
     const onPinClick = useCallback(async () => {
       const trpc = getTRPCClient();
 
@@ -77,9 +92,17 @@ const MessageActions = memo(
         toast.error('Failed to toggle pin status');
     }}, [messageId]);
 
-
     return (
       <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-1 transition-all h-8 ">
+        {!isThreadReply && (
+          <IconButton
+            size="sm"
+            variant="ghost"
+            icon={MessageSquareText}
+            onClick={onReplyClick}
+            title="Reply in Thread"
+          />
+        )}
         {canManage && (
           <>
             <IconButton

@@ -2,6 +2,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   ChannelPermission,
   Permission,
+  linkifyHtml,
   type TPluginSlotContext
 } from '@sharkord/shared';
 import { useCallback, useMemo, useRef } from 'react';
@@ -22,6 +23,7 @@ import {
   publicServerSettingsSelector,
   serverNameSelector,
   typingUsersByChannelIdSelector,
+  typingUsersByThreadIdSelector,
   userRolesSelector,
   voiceUsersByChannelIdSelector
 } from './selectors';
@@ -103,6 +105,11 @@ export const useTypingUsersByChannelId = (channelId: number) =>
     typingUsersByChannelIdSelector(state, channelId)
   );
 
+export const useTypingUsersByThreadId = (parentMessageId: number) =>
+  useSelector((state: IRootState) =>
+    typingUsersByThreadIdSelector(state, parentMessageId)
+  );
+
 export const useVoiceUsersByChannelId = (channelId: number) =>
   useSelector((state: IRootState) =>
     voiceUsersByChannelIdSelector(state, channelId)
@@ -124,7 +131,7 @@ export const usePluginComponentContext = (): TPluginSlotContext => {
 
         await trpc.messages.send.mutate({
           channelId,
-          content: `<p>${content}</p>`,
+          content: linkifyHtml(`<p>${content}</p>`),
           files: []
         });
       }

@@ -1,6 +1,6 @@
 {
   "name": "@sharkord/server",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
@@ -10,7 +10,9 @@
     "dev:debug": "DEBUG=* bun --watch ./src/index.ts",
     "build": "tsc -b && bun ./build/build.ts",
     "db:gen": "bunx drizzle-kit generate --dialect sqlite --schema ./src/db/schema.ts --out ./src/db/migrations",
+    "db:check": "bunx drizzle-kit check --dialect sqlite --out ./src/db/migrations",
     "format": "prettier --write \"**/*.ts*\" --config ./.prettierrc.json",
+    "format:check": "prettier --check \"**/*.ts*\" --config ./.prettierrc.json",
     "lint": "eslint ./src/**/*.ts --ext ts --report-unused-disable-directives",
     "lint:fix": "eslint ./src/**/*.ts --ext ts --report-unused-disable-directives --fix",
     "check-types": "tsc --noEmit",

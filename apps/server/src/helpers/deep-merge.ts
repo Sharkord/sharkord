@@ -1,3 +1,6 @@
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
 const deepMerge = <T extends Record<string, unknown>>(
   target: T,
   source: Partial<T>
@@ -8,12 +11,7 @@ const deepMerge = <T extends Record<string, unknown>>(
     const sourceValue = source[key];
     const targetValue = target[key];
 
-    if (
-      sourceValue instanceof Object &&
-      !Array.isArray(sourceValue) &&
-      targetValue instanceof Object &&
-      !Array.isArray(targetValue)
-    ) {
+    if (isPlainObject(sourceValue) && isPlainObject(targetValue)) {
       result[key] = deepMerge(
         targetValue as Record<string, unknown>,
         sourceValue as Record<string, unknown>

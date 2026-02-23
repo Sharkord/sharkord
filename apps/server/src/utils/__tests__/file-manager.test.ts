@@ -555,4 +555,121 @@ describe('file manager', () => {
     expect(p.startsWith(UPLOADS_PATH)).toBe(true);
     expect(path.extname(p)).toBe('');
   });
+
+  test('should normalize uppercase extension to lowercase', async () => {
+    const fileName = `photo-${Date.now()}.JPG`;
+    const filePath = path.join(UPLOADS_PATH, fileName);
+
+    await fs.writeFile(filePath, 'fake image content');
+
+    const stats = await fs.stat(filePath);
+
+    const tempFile = await fileManager.addTemporaryFile({
+      filePath,
+      size: stats.size,
+      originalName: fileName,
+      userId: 1
+    });
+
+    tempFilesToCleanup.push(tempFile.path);
+
+    expect(tempFile.extension).toBe('.jpg');
+    expect(tempFile.path).toContain('.jpg');
+    expect(tempFile.path).not.toContain('.JPG');
+  });
+
+  test('should normalize mixed-case extension to lowercase', async () => {
+    const fileName = `document-${Date.now()}.Pdf`;
+    const filePath = path.join(UPLOADS_PATH, fileName);
+
+    await fs.writeFile(filePath, 'fake pdf content');
+
+    const stats = await fs.stat(filePath);
+
+    const tempFile = await fileManager.addTemporaryFile({
+      filePath,
+      size: stats.size,
+      originalName: fileName,
+      userId: 1
+    });
+
+    tempFilesToCleanup.push(tempFile.path);
+
+    expect(tempFile.extension).toBe('.pdf');
+  });
+
+  test('should save file with lowercase extension in database', async () => {
+    const fileName = `image-${Date.now()}.PNG`;
+    const filePath = path.join(UPLOADS_PATH, fileName);
+
+    await fs.writeFile(filePath, 'fake png content');
+
+    const stats = await fs.stat(filePath);
+
+    const tempFile = await fileManager.addTemporaryFile({
+      filePath,
+      size: stats.size,
+      originalName: fileName,
+      userId: 1
+    });
+
+    const savedFile = await fileManager.saveFile(tempFile.id, 1);
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, savedFile.name));
+
+    expect(savedFile.extension).toBe('.png');
+    expect(savedFile.name).toEndWith('.png');
+
+    const dbFile = await tdb
+      .select()
+      .from(files)
+      .where(eq(files.id, savedFile.id))
+      .get();
+
+    expect(dbFile).toBeDefined();
+    expect(dbFile?.extension).toBe('.png');
+  });
+
+  test('should generate safe upload path with lowercase extension', async () => {
+    const p = await fileManager.getSafeUploadPath('Photo.JPEG');
+
+    expect(p).toContain('.jpeg');
+    expect(p).not.toContain('.JPEG');
+  });
+
+  test('should handle duplicate names with uppercase extensions', async () => {
+    const file1Path = path.join(UPLOADS_PATH, `dup-uc-${Date.now()}.txt`);
+    const file2Path = path.join(UPLOADS_PATH, `dup-uc2-${Date.now()}.txt`);
+
+    await fs.writeFile(file1Path, 'first');
+    await fs.writeFile(file2Path, 'second');
+
+    const stats1 = await fs.stat(file1Path);
+    const stats2 = await fs.stat(file2Path);
+
+    const temp1 = await fileManager.addTemporaryFile({
+      filePath: file1Path,
+      size: stats1.size,
+      originalName: 'report.TXT',
+      userId: 1
+    });
+
+    const saved1 = await fileManager.saveFile(temp1.id, 1);
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, saved1.name));
+
+    const temp2 = await fileManager.addTemporaryFile({
+      filePath: file2Path,
+      size: stats2.size,
+      originalName: 'report.TXT',
+      userId: 1
+    });
+
+    const saved2 = await fileManager.saveFile(temp2.id, 1);
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, saved2.name));
+
+    expect(saved1.name).toBe('report.txt');
+    expect(saved2.name).toBe('report-2.txt');
+  });
 });

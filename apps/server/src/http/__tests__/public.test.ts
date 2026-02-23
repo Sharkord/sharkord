@@ -142,8 +142,11 @@ describe('/public', () => {
     expect(response.headers.get('Content-Length')).toBe(
       dbFile!.size.toString()
     );
-    expect(response.headers.get('Content-Disposition')).toBe(
-      `attachment; filename="${dbFile!.name}"`
+    const disposition = response.headers.get('Content-Disposition');
+
+    expect(disposition).toInclude(`filename="${dbFile!.name}"`);
+    expect(disposition).toInclude(
+      `filename*=UTF-8''${encodeURIComponent(dbFile!.name)}`
     );
 
     const responseText = await response.text();
@@ -588,5 +591,47 @@ describe('/public', () => {
     const responseText = await response.text();
 
     expect(responseText).toBe(file!.content);
+  });
+
+  test('should sanitize Content-Disposition header against injection', async () => {
+    const file = filesToCreate[0];
+
+    expect(file).toBeDefined();
+    expect(file!.messageId).toBeDefined();
+
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    expect(dbFile).toBeDefined();
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+    );
+
+    expect(response.status).toBe(200);
+
+    const disposition = response.headers.get('Content-Disposition');
+
+    expect(disposition).toBeDefined();
+    expect(disposition).not.toContain('\r');
+    expect(disposition).not.toContain('\n');
+    expect(disposition).toInclude("filename*=UTF-8''");
+  });
+
+  test('should not allow path traversal to read arbitrary files', async () => {
+    const response = await fetch(`${testsBaseUrl}/public/../../../etc/passwd`);
+
+    expect(response.status).toBe(404);
+  });
+
+  test('should not allow encoded path traversal', async () => {
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent('../../../etc/passwd')}`
+    );
+
+    expect(response.status).toBe(404);
+
+    const data = (await response.json()) as { error: string };
+
+    expect(data).toHaveProperty('error', 'File not found');
   });
 });

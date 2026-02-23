@@ -3,10 +3,12 @@ import { LeftSidebar } from '@/components/left-sidebar';
 import { ModViewSheet } from '@/components/mod-view-sheet';
 import { Protect } from '@/components/protect';
 import { RightSidebar } from '@/components/right-sidebar';
+import { ThreadSidebar } from '@/components/thread-sidebar';
 import { TopBar } from '@/components/top-bar';
 import { VoiceChatSidebar } from '@/components/voice-chat-sidebar';
 import { VoiceProvider } from '@/components/voice-provider';
-import { getLocalStorageItem, LocalStorageKey } from '@/helpers/storage';
+import { useThreadSidebar } from '@/features/app/hooks';
+import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
 import { useSwipeGestures } from '@/hooks/use-swipe-gestures';
 import { cn } from '@/lib/utils';
 import { Permission } from '@sharkord/shared';
@@ -19,12 +21,12 @@ const ServerView = memo(() => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileUsersOpen, setIsMobileUsersOpen] = useState(false);
   const [isDesktopRightSidebarOpen, setIsDesktopRightSidebarOpen] = useState(
-    getLocalStorageItem(LocalStorageKey.RIGHT_SIDEBAR_STATE) === 'true' || false
+    getLocalStorageItemBool(LocalStorageKey.RIGHT_SIDEBAR_STATE, true)
   );
   const [isVoiceChatSidebarOpen, setIsVoiceChatSidebarOpen] = useState(
-    getLocalStorageItem(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE) === 'true' ||
-      false
+    getLocalStorageItemBool(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE, false)
   );
+  const { isOpen: isThreadSidebarOpen } = useThreadSidebar();
 
   const handleDesktopRightSidebarToggle = useCallback(() => {
     setIsDesktopRightSidebarOpen((prev) => !prev);
@@ -84,13 +86,6 @@ const ServerView = memo(() => {
           <div className="relative flex min-h-0 flex-1 overflow-hidden">
             <PreventBrowser />
 
-            {isMobileMenuOpen && (
-              <div
-                className="md:hidden fixed inset-0 bg-black/50 z-30"
-                onClick={() => setIsMobileMenuOpen(false)}
-              />
-            )}
-
             {isMobileUsersOpen && (
               <div
                 className="lg:hidden fixed inset-0 bg-black/50 z-30"
@@ -112,6 +107,8 @@ const ServerView = memo(() => {
             </div>
 
             <VoiceChatSidebar isOpen={isVoiceChatSidebarOpen} />
+
+            <ThreadSidebar isOpen={isThreadSidebarOpen} />
 
             <RightSidebar
               className={cn(

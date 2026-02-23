@@ -21,9 +21,8 @@ const consoleFormat = combine(
   colorize(),
   splat(),
   errors({ stack: true }),
-  timestamp({ format: 'HH:mm:ss' }),
-  printf(({ level, message, timestamp, stack }) => {
-    return `${timestamp} ${level}: ${stack || message}`;
+  printf(({ level, message, stack }) => {
+    return `${level}: ${stack || message}`;
   })
 );
 
