@@ -2,7 +2,7 @@ import { useTypingUsersByThreadId } from '@/features/server/hooks';
 import { useThreadMessages } from '@/features/server/messages/hooks';
 import { Spinner } from '@sharkord/ui';
 import { MessageSquareText } from 'lucide-react';
-import { memo, useRef } from 'react';
+import { memo } from 'react';
 import { MessagesGroup } from '../channel-view/text/messages-group';
 import { useScrollController } from '../channel-view/text/use-scroll-controller';
 import { ParentMessagePreview } from './parent-message-preview';
@@ -20,7 +20,6 @@ const ThreadContent = memo(
       useThreadMessages(parentMessageId);
 
     const typingUsers = useTypingUsersByThreadId(parentMessageId);
-    const messageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
     const { containerRef, onScroll } = useScrollController({
       messages,
@@ -65,7 +64,7 @@ const ThreadContent = memo(
                       <MessagesGroup
                         key={index}
                         group={group}
-                        messageRefs={messageRefs}
+                        messageRefs={null}
                         type="thread"
                       />
                     ))}

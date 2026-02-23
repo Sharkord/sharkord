@@ -23,7 +23,7 @@ const MessagesGroup = memo(
     messageRefs,
     type
   }: TMessagesGroupProps & {
-    messageRefs: React.RefObject<Record<number, HTMLDivElement | null>>;
+    messageRefs: React.RefObject<Record<number, HTMLDivElement | null>> | null;
     type: string;
   }) => {
     const firstMessage = group[0];
@@ -36,7 +36,7 @@ const MessagesGroup = memo(
     if (!user) return null;
 
     function scrollToMessage(id: number) {
-      const el = messageRefs.current[id];
+      const el = messageRefs?.current[id];
       if (el) {
         // Scroll to the message element
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -100,7 +100,7 @@ const MessagesGroup = memo(
                 key={message.id}
                 id={`message-${message.id}`}
                 ref={
-                  type === 'channel'
+                  type === 'channel' && messageRefs
                     ? (el: HTMLDivElement | null) => {
                         messageRefs.current[message.id] = el;
                       }
