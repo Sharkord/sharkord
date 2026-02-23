@@ -2,7 +2,10 @@ import {
   MessageCompose,
   type TMessageComposeHandle
 } from '@/components/message-compose';
-import { useChannelCan, useTypingUsersByChannelId } from '@/features/server/hooks';
+import {
+  useChannelCan,
+  useTypingUsersByChannelId
+} from '@/features/server/hooks';
 import { useMessages } from '@/features/server/messages/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
