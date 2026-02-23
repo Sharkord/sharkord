@@ -4,10 +4,13 @@ import { resetServerScreens } from '@/features/server-screens/actions';
 import { resetServerState, setDisconnectInfo } from '@/features/server/actions';
 import {
   getSessionStorageItem,
+  LocalStorageKey,
+  removeLocalStorageItem,
   removeSessionStorageItem,
-  SessionStorageKey
+  SessionStorageKey,
+  setLocalStorageItemBool
 } from '@/helpers/storage';
-import type { AppRouter, TConnectionParams } from '@sharkord/shared';
+import { type AppRouter, type TConnectionParams } from '@sharkord/shared';
 import { createTRPCProxyClient, createWSClient, wsLink } from '@trpc/client';
 
 let wsClient: ReturnType<typeof createWSClient> | null = null;
@@ -22,6 +25,7 @@ const initializeTRPC = (host: string) => {
     // @ts-expect-error - the onclose type is not correct in trpc
     onClose: (cause: CloseEvent) => {
       cleanup();
+
       setDisconnectInfo({
         code: cause.code,
         reason: cause.reason,
@@ -69,6 +73,11 @@ const cleanup = () => {
 
   trpc = null;
   currentHost = null;
+
+  // cleanup can be called due to various reasons (manual disconnect, connection error, auto-login failure, etc).
+  // so we remove any persisted auto-login token to prevent auto-login loops
+  removeLocalStorageItem(LocalStorageKey.AUTO_LOGIN_TOKEN);
+  setLocalStorageItemBool(LocalStorageKey.AUTO_LOGIN, false);
 
   resetServerScreens();
   resetServerState();
