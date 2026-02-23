@@ -2,6 +2,7 @@ import { ResizableSidebar } from '@/components/resizable-sidebar';
 import { openDialog } from '@/features/dialogs/actions';
 import { openServerScreen } from '@/features/server-screens/actions';
 import { disconnectFromServer } from '@/features/server/actions';
+import { setSelectedChannelId } from '@/features/server/channels/actions';
 import { useServerName } from '@/features/server/hooks';
 import { LocalStorageKey } from '@/helpers/storage';
 import { cn } from '@/lib/utils';
@@ -57,7 +58,12 @@ const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
       className={cn('h-full', className)}
     >
       <div className="flex w-full justify-between h-12 items-center border-b border-border px-4">
-        <h2 className="font-semibold text-foreground truncate">{serverName}</h2>
+        <h2
+          className="font-semibold text-foreground truncate cursor-pointer"
+          onClick={() => setSelectedChannelId(undefined)}
+        >
+          {serverName}
+        </h2>
         <div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
