@@ -1,4 +1,4 @@
-import { PinnedMessageContext } from '@/components/pinned-message-provider';
+import { PinnedMessageContext } from '@/components/pinned-message-provider/pinned-message-context';
 import { useSelectedChannel } from '@/features/server/channels/hooks';
 import { cn } from '@/lib/utils';
 import { IconButton } from '@sharkord/ui';

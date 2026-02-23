@@ -1,4 +1,4 @@
-import { PinnedMessageContext } from '@/components/pinned-message-provider';
+import { PinnedMessageContext } from '@/components/pinned-message-provider/pinned-message-context';
 import { RelativeTime } from '@/components/relative-time';
 import { UserAvatar } from '@/components/user-avatar';
 import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
@@ -22,7 +22,7 @@ const MessagesGroup = memo(
     group,
     messageRefs,
     type
-  }: TMessagesGroupProps & { messageRefs: any; type: string }) => {
+  }: TMessagesGroupProps & { messageRefs: React.RefObject<Record<number, HTMLDivElement | null>>; type: string }) => {
     const firstMessage = group[0];
     const user = useUserById(firstMessage.userId);
     const date = new Date(firstMessage.createdAt);

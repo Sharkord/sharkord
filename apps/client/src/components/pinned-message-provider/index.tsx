@@ -1,14 +1,5 @@
-import { createContext, useState, type ReactNode } from 'react';
-
-type PinnedMessageContextType = {
-  visible: boolean;
-  setVisible: (v: boolean) => void;
-};
-
-export const PinnedMessageContext = createContext<PinnedMessageContextType>({
-  visible: false,
-  setVisible: () => {}
-});
+import { useState, type ReactNode } from 'react';
+import { PinnedMessageContext } from './pinned-message-context';
 
 export const PinnedMessageProvider = ({
   children

@@ -2,7 +2,7 @@ import {
   MessageCompose,
   type TMessageComposeHandle
 } from '@/components/message-compose';
-import { PinnedMessageContext } from '@/components/pinned-message-provider';
+import { PinnedMessageContext } from '@/components/pinned-message-provider/pinned-message-context';
 import { PinnedMessagesTopbar } from '@/components/pinned-messages-topbar';
 import {
   useChannelCan,

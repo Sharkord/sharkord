@@ -97,6 +97,8 @@ const MessageActions = memo(
         toast.success('Message pinned status toggled');
       } catch (error) {
         toast.error('Failed to toggle pin status');
+
+        console.error('Error toggling pin status:', error);
       }
     }, [messageId]);
 

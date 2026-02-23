@@ -1,12 +1,13 @@
 import { cn } from '@/lib/utils';
 import { memo } from 'react';
 import { MessagesGroup } from '../channel-view/text/messages-group';
+import type { TJoinedMessage } from '@sharkord/shared/src/tables';
 
 type TPinnedMessagesTopbarProps = {
   className?: string;
   isOpen?: boolean;
-  messageRefs: any;
-  messages: any[];
+  messageRefs: React.RefObject<Record<number, HTMLDivElement | null>>;
+  messages: TJoinedMessage[];
 };
 
 const PinnedMessagesTopbar = memo(
