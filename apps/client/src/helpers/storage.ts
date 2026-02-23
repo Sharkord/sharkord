@@ -19,7 +19,9 @@ export enum LocalStorageKey {
   THREAD_SIDEBAR_WIDTH = 'sharkord-thread-sidebar-width',
   LEFT_SIDEBAR_WIDTH = 'sharkord-left-sidebar-width',
   RIGHT_SIDEBAR_WIDTH = 'sharkord-right-sidebar-width',
-  CATEGORIES_EXPANDED = 'sharkord-categories-expanded'
+  CATEGORIES_EXPANDED = 'sharkord-categories-expanded',
+  AUTO_LOGIN = 'sharkord-auto-login',
+  AUTO_LOGIN_TOKEN = 'sharkord-auto-login-token'
 }
 
 export enum SessionStorageKey {

@@ -113,7 +113,7 @@ const useVoiceRefs = (
     }
 
     audioRef.current.volume = userVolume / 100;
-    void applyAudioOutputDevice(audioRef.current, devices.playbackId);
+    applyAudioOutputDevice(audioRef.current, devices.playbackId);
   }, [audioStream, audioRef, userVolume, devices.playbackId]);
 
   useEffect(() => {

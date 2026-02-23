@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { TestId } from '@sharkord/shared';
 
 test.describe('Connect Screen', () => {
   test('should display the connect screen with all essential elements', async ({
@@ -12,12 +13,13 @@ test.describe('Connect Screen', () => {
     await expect(page.getByText('Identity')).toBeVisible();
     await expect(page.getByText('Password')).toBeVisible();
 
-    const inputs = page.locator('input');
-    await expect(inputs).toHaveCount(2);
+    const identityInput = page.getByTestId(TestId.CONNECT_IDENTITY_INPUT);
+    const passwordInput = page.getByTestId(TestId.CONNECT_PASSWORD_INPUT);
+    await expect(identityInput).toBeVisible();
+    await expect(passwordInput).toBeVisible();
+    await expect(passwordInput).toHaveAttribute('type', 'password');
 
-    await expect(inputs.nth(1)).toHaveAttribute('type', 'password');
-
-    const connectButton = page.getByRole('button', { name: 'Connect' });
+    const connectButton = page.getByTestId(TestId.CONNECT_BUTTON);
     await expect(connectButton).toBeVisible();
     await expect(connectButton).toBeDisabled();
   });
@@ -27,11 +29,12 @@ test.describe('Connect Screen', () => {
   }) => {
     await page.goto('/');
 
-    const inputs = page.locator('input');
-    const connectButton = page.getByRole('button', { name: 'Connect' });
+    const identityInput = page.getByTestId(TestId.CONNECT_IDENTITY_INPUT);
+    const passwordInput = page.getByTestId(TestId.CONNECT_PASSWORD_INPUT);
+    const connectButton = page.getByTestId(TestId.CONNECT_BUTTON);
 
-    await inputs.nth(0).fill('testuser');
-    await inputs.nth(1).fill('testpassword');
+    await identityInput.fill('testuser');
+    await passwordInput.fill('testpassword');
 
     await expect(connectButton).toBeEnabled();
   });
