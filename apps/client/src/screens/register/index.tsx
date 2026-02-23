@@ -1,11 +1,8 @@
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
-import { connect, closeRegistration } from '@/features/server/actions';
+import { closeRegistration, connect } from '@/features/server/actions';
 import { useInfo } from '@/features/server/hooks';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
-import {
-  SessionStorageKey,
-  setSessionStorageItem
-} from '@/helpers/storage';
+import { SessionStorageKey, setSessionStorageItem } from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
 import { PluginSlot } from '@sharkord/shared';
 import {
@@ -48,7 +45,8 @@ const Register = memo(() => {
   const onRegisterClick = useCallback(async () => {
     setLoading(true);
 
-    if (values.password !== values.passwordConfirmation) throw new Error(`Passwords do not match`);
+    if (values.password !== values.passwordConfirmation)
+      throw new Error(`Passwords do not match`);
 
     try {
       const url = getUrlFromServer();
@@ -85,37 +83,46 @@ const Register = memo(() => {
     } finally {
       setLoading(false);
     }
-  }, [values.identity, values.password, values.passwordConfirmation, values.displayName, setErrors, inviteCode]);
+  }, [
+    values.identity,
+    values.password,
+    values.passwordConfirmation,
+    values.displayName,
+    setErrors,
+    inviteCode
+  ]);
 
   const onLoginClick = () => {
     closeRegistration();
-  }
+  };
 
   const onPasswordChange = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        setValue('password', e.target.value);
-        if (values.passwordConfirmation && values.passwordConfirmation !== e.target.value){
-          setError('passwordConfirmation', "Passwords do not match");
-        } else {
-          setError('passwordConfirmation', undefined);
-        }
-      },
-      [values, setValue, setError]
-    );
-
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setValue('password', e.target.value);
+      if (
+        values.passwordConfirmation &&
+        values.passwordConfirmation !== e.target.value
+      ) {
+        setError('passwordConfirmation', 'Passwords do not match');
+      } else {
+        setError('passwordConfirmation', undefined);
+      }
+    },
+    [values, setValue, setError]
+  );
 
   const onPasswordConfirmChange = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        setValue('passwordConfirmation', e.target.value);
-        if (values.password !== e.target.value){
-          setError('passwordConfirmation', "Passwords do not match");
-        } else {
-          setError('passwordConfirmation', undefined);
-        }
-      },
-      [values, setValue, setError]
-    );
-  
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setValue('passwordConfirmation', e.target.value);
+      if (values.password !== e.target.value) {
+        setError('passwordConfirmation', 'Passwords do not match');
+      } else {
+        setError('passwordConfirmation', undefined);
+      }
+    },
+    [values, setValue, setError]
+  );
+
   const logoSrc = useMemo(() => {
     if (info?.logo) {
       return getFileUrl(info.logo);
@@ -152,10 +159,7 @@ const Register = memo(() => {
             >
               <Input {...r('identity')} />
             </Group>
-            <Group
-              label="Display Name"
-              help="Your public username."
-            >
+            <Group label="Display Name" help="Your public username.">
               <Input {...r('displayName')} />
             </Group>
 
@@ -173,7 +177,6 @@ const Register = memo(() => {
                 type="password"
                 onChange={onPasswordConfirmChange}
                 onEnter={onRegisterClick}
-
               />
             </Group>
           </div>
@@ -198,16 +201,19 @@ const Register = memo(() => {
               className="w-full"
               variant="outline"
               onClick={onRegisterClick}
-              disabled={loading || !values.identity || !values.displayName || !values.password || !values.passwordConfirmation || !!errors.passwordConfirmation}
+              disabled={
+                loading ||
+                !values.identity ||
+                !values.displayName ||
+                !values.password ||
+                !values.passwordConfirmation ||
+                !!errors.passwordConfirmation
+              }
             >
               Register
             </Button>
 
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={onLoginClick}
-            >
+            <Button className="w-full" variant="outline" onClick={onLoginClick}>
               Login
             </Button>
 

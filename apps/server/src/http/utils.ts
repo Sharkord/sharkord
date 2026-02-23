@@ -1,8 +1,10 @@
-import type { FixedWindowRateLimiter } from "../utils/rate-limiters";
 import http from 'http';
-import { getClientRateLimitKey, getRateLimitRetrySeconds } from "../utils/rate-limiters/rate-limiter";
-import { logger } from "../logger";
-
+import { logger } from '../logger';
+import type { FixedWindowRateLimiter } from '../utils/rate-limiters';
+import {
+  getClientRateLimitKey,
+  getRateLimitRetrySeconds
+} from '../utils/rate-limiters/rate-limiter';
 
 class HttpValidationError extends Error {
   field: string;
@@ -15,7 +17,12 @@ class HttpValidationError extends Error {
   }
 }
 
-function applyRateLimit(rateLimiter: FixedWindowRateLimiter, res: http.ServerResponse, path: string, ip?: string) {
+function applyRateLimit(
+  rateLimiter: FixedWindowRateLimiter,
+  res: http.ServerResponse,
+  path: string,
+  ip?: string
+) {
   if (ip) {
     const key = getClientRateLimitKey(ip);
     const rateLimit = rateLimiter.consume(key);
@@ -44,4 +51,4 @@ function applyRateLimit(rateLimiter: FixedWindowRateLimiter, res: http.ServerRes
   return false;
 }
 
-export { HttpValidationError, applyRateLimit };
+export { applyRateLimit, HttpValidationError };

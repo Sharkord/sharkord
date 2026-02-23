@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import { login } from '../../__tests__/helpers';
 import { TEST_SECRET_TOKEN } from '../../__tests__/seed';
 import { tdb } from '../../__tests__/setup';
-import { invites, roles, settings, userRoles, users } from '../../db/schema';
+import { users } from '../../db/schema';
 
 describe('/login', () => {
   test('should successfully login with valid credentials', async () => {

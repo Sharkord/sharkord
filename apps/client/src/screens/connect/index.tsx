@@ -81,7 +81,7 @@ const Connect = memo(() => {
 
   const onRegisterClick = () => {
     openRegistration();
-  }
+  };
 
   const logoSrc = useMemo(() => {
     if (info?.logo) {
@@ -160,7 +160,6 @@ const Connect = memo(() => {
             >
               Register
             </Button>
-
           </div>
         </CardContent>
       </Card>

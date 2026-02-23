@@ -74,11 +74,11 @@ export const connect = async () => {
 
 export const openRegistration = async () => {
   store.dispatch(serverSliceActions.setRegistering(true));
-}
+};
 
 export const closeRegistration = async () => {
   store.dispatch(serverSliceActions.setRegistering(false));
-}
+};
 
 export const joinServer = async (handshakeHash: string, password?: string) => {
   const trpc = getTRPCClient();

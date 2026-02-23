@@ -18,9 +18,7 @@ import { invites, userRoles, users } from '../db/schema';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { invariant } from '../utils/invariant';
-import {
-  createRateLimiter
-} from '../utils/rate-limiters/rate-limiter';
+import { createRateLimiter } from '../utils/rate-limiters/rate-limiter';
 import { getJsonBody } from './helpers';
 import { applyRateLimit, HttpValidationError } from './utils';
 
@@ -99,7 +97,12 @@ const registerRouteHandler = async (
 
   const connectionInfo = getWsInfo(undefined, req);
 
-  const rateLimited = applyRateLimit(registerRateLimiter, res, '/register', connectionInfo?.ip);
+  const rateLimited = applyRateLimit(
+    registerRateLimiter,
+    res,
+    '/register',
+    connectionInfo?.ip
+  );
   if (rateLimited) return;
 
   if (data.identity === DELETED_USER_IDENTITY_AND_NAME) {
@@ -107,7 +110,8 @@ const registerRouteHandler = async (
   }
 
   const existingUser = await getUserByIdentity(data.identity);
-  if (existingUser) throw new HttpValidationError('identity', 'User already exists');
+  if (existingUser)
+    throw new HttpValidationError('identity', 'User already exists');
 
   if (!settings.allowNewUsers) {
     const inviteError = await isInviteValid(data.invite);
@@ -129,7 +133,7 @@ const registerRouteHandler = async (
     data.displayName,
     data.invite,
     connectionInfo?.ip
-  )
+  );
 
   const token = jwt.sign({ userId: newUser.id }, await getServerToken(), {
     expiresIn: '86400s' // 1 day

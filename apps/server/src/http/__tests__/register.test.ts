@@ -33,7 +33,11 @@ describe('/register', () => {
   test('should fail when allowNewUsers is false and no invite provided', async () => {
     await tdb.update(settings).set({ allowNewUsers: false });
 
-    const response = await register('anothernewuser', 'password123', 'New User');
+    const response = await register(
+      'anothernewuser',
+      'password123',
+      'New User'
+    );
 
     expect(response.status).toBe(400);
 
@@ -55,7 +59,12 @@ describe('/register', () => {
       createdAt: Date.now()
     });
 
-    const response = await register('inviteuser', 'password123', 'New User', 'TESTINVITE123');
+    const response = await register(
+      'inviteuser',
+      'password123',
+      'New User',
+      'TESTINVITE123'
+    );
 
     expect(response.status).toBe(200);
 
@@ -85,7 +94,12 @@ describe('/register', () => {
       createdAt: Date.now() - 86400000
     });
 
-    const response = await register('expiredinviteuser', 'password123', 'New User', 'EXPIREDINVITE');
+    const response = await register(
+      'expiredinviteuser',
+      'password123',
+      'New User',
+      'EXPIREDINVITE'
+    );
 
     expect(response.status).toBe(400);
 
@@ -108,7 +122,12 @@ describe('/register', () => {
       createdAt: Date.now()
     });
 
-    const response = await register('maxedinviteuser', 'password123', 'New User', 'EXPIREDMAXEDINVITEINVITE');
+    const response = await register(
+      'maxedinviteuser',
+      'password123',
+      'New User',
+      'EXPIREDMAXEDINVITEINVITE'
+    );
 
     expect(response.status).toBe(400);
 
@@ -121,7 +140,12 @@ describe('/register', () => {
   test('should fail with non-existent invite', async () => {
     await tdb.update(settings).set({ allowNewUsers: false });
 
-    const response = await register('fakeinviteuser', 'password123', 'New User', 'FAKEINVITECODE');
+    const response = await register(
+      'fakeinviteuser',
+      'password123',
+      'New User',
+      'FAKEINVITECODE'
+    );
 
     expect(response.status).toBe(400);
 
@@ -216,7 +240,11 @@ describe('/register', () => {
       expect(response.status).toBe(400);
     }
 
-    const limitedResponse = await register(`ratelimituser`, 'password123', 'New User');
+    const limitedResponse = await register(
+      `ratelimituser`,
+      'password123',
+      'New User'
+    );
 
     expect(limitedResponse.status).toBe(429);
     expect(limitedResponse.headers.get('retry-after')).toBeTruthy();

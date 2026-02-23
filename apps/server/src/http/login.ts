@@ -1,7 +1,4 @@
-import {
-  DELETED_USER_IDENTITY_AND_NAME,
-  sha256,
-} from '@sharkord/shared';
+import { DELETED_USER_IDENTITY_AND_NAME, sha256 } from '@sharkord/shared';
 import chalk from 'chalk';
 import { eq } from 'drizzle-orm';
 import http from 'http';
@@ -15,9 +12,7 @@ import { users } from '../db/schema';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { safeCompare } from '../helpers/safe-compare';
 import { logger } from '../logger';
-import {
-  createRateLimiter
-} from '../utils/rate-limiters/rate-limiter';
+import { createRateLimiter } from '../utils/rate-limiters/rate-limiter';
 import { getJsonBody } from './helpers';
 import { applyRateLimit, HttpValidationError } from './utils';
 
@@ -46,10 +41,16 @@ const loginRouteHandler = async (
   let existingUser = await getUserByIdentity(data.identity);
   const connectionInfo = getWsInfo(undefined, req);
 
-  const rateLimited = applyRateLimit(loginRateLimiter, res, '/login', connectionInfo?.ip);
+  const rateLimited = applyRateLimit(
+    loginRateLimiter,
+    res,
+    '/login',
+    connectionInfo?.ip
+  );
   if (rateLimited) return;
 
-  if (!existingUser) throw new HttpValidationError('password', 'Invalid password'); // Ensure output is same as wrong password to prevent user enumeration, timing based may be possible as no argon2 comparison is done
+  if (!existingUser)
+    throw new HttpValidationError('password', 'Invalid password'); // Ensure output is same as wrong password to prevent user enumeration, timing based may be possible as no argon2 comparison is done
 
   if (existingUser.banned) {
     throw new HttpValidationError(

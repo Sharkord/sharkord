@@ -16,9 +16,9 @@ import { loginRouteHandler } from './login';
 import { pluginBundleRouteHandler } from './plugin-bundle';
 import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
+import { registerRouteHandler } from './register';
 import { uploadFileRouteHandler } from './upload';
 import { HttpValidationError } from './utils';
-import { registerRouteHandler } from './register';
 
 type RouteContext = {
   info: ReturnType<typeof getWsInfo>;

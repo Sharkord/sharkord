@@ -52,7 +52,12 @@ const login = async (identity: string, password: string, invite?: string) =>
     })
   });
 
-const register = async (identity: string, password: string, displayName: string, invite?: string) =>
+const register = async (
+  identity: string,
+  password: string,
+  displayName: string,
+  invite?: string
+) =>
   fetch(`${testsBaseUrl}/register`, {
     method: 'POST',
     headers: {

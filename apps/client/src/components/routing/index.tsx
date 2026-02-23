@@ -6,9 +6,9 @@ import {
   useServerName
 } from '@/features/server/hooks';
 import { Connect } from '@/screens/connect';
-import { Register } from '@/screens/register';
 import { Disconnected } from '@/screens/disconnected';
 import { LoadingApp } from '@/screens/loading-app';
+import { Register } from '@/screens/register';
 import { ServerView } from '@/screens/server-view';
 import { DisconnectCode } from '@sharkord/shared';
 import { memo, useEffect } from 'react';
@@ -48,7 +48,7 @@ const Routing = memo(() => {
       return <Disconnected info={disconnectInfo} />;
     }
 
-    if (isRegistering) return <Register />
+    if (isRegistering) return <Register />;
 
     return <Connect />;
   }
