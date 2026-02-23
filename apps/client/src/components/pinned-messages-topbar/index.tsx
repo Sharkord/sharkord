@@ -40,7 +40,7 @@ const PinnedMessagesTopbar = memo(
               ) : (
                 pinnedMessages.map((message) => (
                   <div key={message.id} className="border-b border-border">
-                    <MessagesGroup group={[message]} messageRefs={messageRefs} pinnedMessages={true}/>
+                    <MessagesGroup group={[message]} messageRefs={messageRefs} type="pinned"/>
                   </div>
                 ))
               )}

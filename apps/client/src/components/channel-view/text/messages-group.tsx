@@ -17,7 +17,7 @@ type TMessagesGroupProps = {
   group: TJoinedMessage[];
 };
 
-const MessagesGroup = memo(({ group, messageRefs, pinnedMessages = false }: TMessagesGroupProps & { messageRefs: any, pinnedMessages?: boolean }) => {
+const MessagesGroup = memo(({ group, messageRefs, type }: TMessagesGroupProps & { messageRefs: any, type: string }) => {
   const firstMessage = group[0];
   const user = useUserById(firstMessage.userId);
   const date = new Date(firstMessage.createdAt);
@@ -33,18 +33,16 @@ const MessagesGroup = memo(({ group, messageRefs, pinnedMessages = false }: TMes
       // Scroll to the message element
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-      // Asetetaan transition
+      // Apply highlight
       el.style.transition = 'background-color 1s ease';
     
-      // Aloitetaan korostus seuraavalla tickillä
       requestAnimationFrame(() => {
         el.style.setProperty('--color-secondary', 'var(--secondary)');
         el.style.backgroundColor = 'var(--color-secondary)';
         
-
-        // Poistetaan korostus 2 sekunnin kuluttua
+        // Remove highlight after 2 seconds
         setTimeout(() => {
-          el.style.backgroundColor = ''; // palautuu alkuperäiseen
+          el.style.backgroundColor = '';
         }, 2000);
       });
     }
@@ -73,7 +71,7 @@ const MessagesGroup = memo(({ group, messageRefs, pinnedMessages = false }: TMes
               </span>
             )}
           </RelativeTime>
-          {pinnedMessages ? (
+          {type === "pinned" ? (
           <Button
             variant="outline"
             className="px-2 py-1 h-6 text-xs"
@@ -91,11 +89,11 @@ const MessagesGroup = memo(({ group, messageRefs, pinnedMessages = false }: TMes
           {group.map((message) => (
             <div key={message.id}
                 id={`message-${message.id}`}
-                ref={!pinnedMessages ? (el: HTMLDivElement | null) => {
+                ref={type === "channel" ? (el: HTMLDivElement | null) => {
                   messageRefs.current[message.id] = el;
                 } : null}
             >
-              <Message key={message.id} message={message} pinnedMessages={pinnedMessages}/>
+              <Message key={message.id} message={message} type={type}/>
             </div>
           ))}
         </div>

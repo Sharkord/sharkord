@@ -147,7 +147,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
       >
         <div className="space-y-4">
           {groupedMessages.map((group, index) => (
-            <MessagesGroup key={index} group={group} messageRefs={messageRefs} />
+            <MessagesGroup key={index} group={group} messageRefs={messageRefs} type="channel" />
           ))}
         </div>
       </div>
