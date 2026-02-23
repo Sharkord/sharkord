@@ -7,6 +7,7 @@
   "types": "src/index.ts",
   "scripts": {
     "format": "prettier --write \"**/*.ts*\" --config ./.prettierrc.json",
+    "format:check": "prettier --check \"**/*.ts*\" --config ./.prettierrc.json",
     "lint": "eslint ./src/**/*.ts --ext ts --report-unused-disable-directives",
     "lint:fix": "eslint ./src/**/*.ts --ext ts --report-unused-disable-directives --fix",
     "check-types": "tsc --noEmit",

@@ -22,7 +22,8 @@ const zConfig = z.object({
   }),
   webRtc: z.object({
     port: z.coerce.number().int().positive(),
-    announcedAddress: z.string()
+    announcedAddress: z.string(),
+    maxBitrate: z.coerce.number().int().positive()
   }),
   rateLimiters: z.object({
     sendAndEditMessage: z.object({
@@ -50,7 +51,8 @@ const defaultConfig: TConfig = {
   },
   webRtc: {
     port: 40000,
-    announcedAddress: ''
+    announcedAddress: '',
+    maxBitrate: 30_000_000 // 30 Mbps
   },
   rateLimiters: {
     sendAndEditMessage: {
@@ -107,7 +109,8 @@ config = applyEnvOverrides(config, {
   'server.debug': 'SHARKORD_DEBUG',
   'server.autoupdate': 'SHARKORD_AUTOUPDATE',
   'webRtc.port': 'SHARKORD_WEBRTC_PORT',
-  'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS'
+  'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS',
+  'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE'
 });
 
 config = Object.freeze(config);

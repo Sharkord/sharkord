@@ -6,6 +6,7 @@ import {
   hideNonVideoParticipantsSelector,
   ownVoiceStateSelector,
   pinnedCardSelector,
+  showUserBannersInVoiceSelector,
   voiceChannelAudioExternalStreamsSelector,
   voiceChannelExternalStreamsListSelector,
   voiceChannelExternalStreamsSelector,
@@ -56,3 +57,6 @@ export const usePinnedCard = () => useSelector(pinnedCardSelector);
 
 export const useHideNonVideoParticipants = () =>
   useSelector(hideNonVideoParticipantsSelector);
+
+export const useShowUserBannersInVoice = () =>
+  useSelector(showUserBannersInVoiceSelector);

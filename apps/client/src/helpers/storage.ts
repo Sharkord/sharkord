@@ -9,6 +9,7 @@ export enum LocalStorageKey {
   RIGHT_SIDEBAR_STATE = 'sharkord-right-sidebar-state',
   VOICE_CHAT_SIDEBAR_STATE = 'sharkord-voice-chat-sidebar-state',
   VOICE_CHAT_SIDEBAR_WIDTH = 'sharkord-voice-chat-sidebar-width',
+  VOICE_CHAT_SHOW_USER_BANNERS = 'sharkord-voice-chat-show-user-banners',
   VOLUME_SETTINGS = 'sharkord-volume-settings',
   RECENT_EMOJIS = 'sharkord-recent-emojis',
   DEBUG = 'sharkord-debug',
@@ -28,8 +29,15 @@ const getLocalStorageItem = (key: LocalStorageKey): string | null => {
   return localStorage.getItem(key);
 };
 
-const getLocalStorageItemBool = (key: LocalStorageKey): boolean => {
+const getLocalStorageItemBool = (
+  key: LocalStorageKey,
+  defaultValue: boolean = false
+): boolean => {
   const item = localStorage.getItem(key);
+
+  if (item === null) {
+    return defaultValue ?? false;
+  }
 
   return item === 'true';
 };

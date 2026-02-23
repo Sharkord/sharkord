@@ -473,42 +473,25 @@ const Devices = memo(() => {
             </div>
           </Group>
 
-          <Group label="Screen Sharing">
-            <div className="flex">
-              <ResolutionFpsControl
-                framerate={values.screenFramerate}
-                resolution={values.screenResolution}
-                onFramerateChange={(value) => onChange('screenFramerate', value)}
-                onResolutionChange={(value) =>
-                  onChange('screenResolution', value as Resolution)
-                }
-              />
+          <div className="flex flex-col gap-2">
+            <Label>Max Bitrate</Label>
 
-              <div className="ml-2">
-                <Select
-                  value={values.screenCodec ?? VideoCodec.AUTO}
-                  onValueChange={(value) =>
-                    onChange('screenCodec', value as VideoCodec)
-                  }
-                >
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Select codec" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value={VideoCodec.AUTO}>Auto</SelectItem>
-                      <SelectItem value={VideoCodec.VP8}>VP8</SelectItem>
-                      <SelectItem value={VideoCodec.VP9}>VP9</SelectItem>
-                      <SelectItem value={VideoCodec.H264}>H264</SelectItem>
-                      <SelectItem value={VideoCodec.AV1}>AV1</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label>Max Bitrate (Kbps)</Label>
+            <Slider
+              min={200}
+              max={30000}
+              step={100}
+              value={[values.screenBitrate ?? DEFAULT_BITRATE]}
+              onValueChange={([value]) => onChange('screenBitrate', value)}
+              rightSlot={
+                <span className="text-sm text-muted-foreground w-20 text-right">
+                  {filesize((values.screenBitrate ?? DEFAULT_BITRATE) * 125, {
+                    bits: true
+                  })}
+                  /s
+                </span>
+              }
+            />
+          </div>
 
               <Slider
                 min={200}

@@ -19,10 +19,10 @@ const ServerView = memo(() => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileUsersOpen, setIsMobileUsersOpen] = useState(false);
   const [isDesktopRightSidebarOpen, setIsDesktopRightSidebarOpen] = useState(
-    getLocalStorageItemBool(LocalStorageKey.RIGHT_SIDEBAR_STATE)
+    getLocalStorageItemBool(LocalStorageKey.RIGHT_SIDEBAR_STATE, true)
   );
   const [isVoiceChatSidebarOpen, setIsVoiceChatSidebarOpen] = useState(
-    getLocalStorageItemBool(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE)
+    getLocalStorageItemBool(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE, false)
   );
   const { isOpen: isThreadSidebarOpen } = useThreadSidebar();
 

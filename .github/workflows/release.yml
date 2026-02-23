@@ -19,7 +19,14 @@ permissions:
   pull-requests: write
 
 jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  e2e:
+    uses: ./.github/workflows/e2e.yml
+
   build-and-publish:
+    needs: [ci, e2e]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

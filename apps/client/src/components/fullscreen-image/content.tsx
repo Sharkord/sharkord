@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils';
+import { Button } from '@sharkord/ui';
 import { X } from 'lucide-react';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Button } from '@sharkord/ui';
 
 const portalRoot = document.getElementById('imagePortal')!;
 
