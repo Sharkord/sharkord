@@ -1,4 +1,5 @@
 import { getUrlFromServer } from '@/helpers/get-file-url';
+import { LocalStorageKey, setLocalStorageItemBool } from '@/helpers/storage';
 import type { TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
 import { setInfo } from '../server/actions';
@@ -81,4 +82,10 @@ export const resetApp = () => {
       channelId: undefined
     })
   );
+};
+
+export const setAutoJoinLastChannel = (autoJoin: boolean) => {
+  store.dispatch(appSliceActions.setAutoJoinLastChannel(autoJoin));
+
+  setLocalStorageItemBool(LocalStorageKey.AUTO_JOIN_LAST_CHANNEL, autoJoin);
 };
