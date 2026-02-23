@@ -1,5 +1,5 @@
 import { applyAudioOutputDevice } from '@/helpers/audio-output';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type TPermissionState = 'unknown' | 'granted' | 'denied';
 
@@ -23,6 +23,7 @@ const ANALYZER_MIN_DECIBELS = -90;
 const ANALYZER_MAX_DECIBELS = 0;
 const METER_MIN_DECIBELS = -60;
 const METER_MAX_DECIBELS = 0;
+const METER_UPDATE_INTERVAL_MS = 20; // target 20 fps, no need for more
 
 const isPermissionDeniedError = (error: unknown) =>
   error instanceof DOMException &&
@@ -63,7 +64,7 @@ const useMicrophoneTest = ({
   const testAudioRef = useRef<HTMLAudioElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
+  const meterIntervalRef = useRef<number | null>(null);
   const isTestRequestedRef = useRef(false);
   const testRequestIdRef = useRef(0);
 
@@ -86,9 +87,10 @@ const useMicrophoneTest = ({
   }, []);
 
   const cleanup = useCallback(() => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
+    if (meterIntervalRef.current) {
+      window.clearInterval(meterIntervalRef.current);
+
+      meterIntervalRef.current = null;
     }
 
     stopStreamTracks(mediaStreamRef.current);
@@ -100,7 +102,7 @@ const useMicrophoneTest = ({
     }
 
     if (audioContextRef.current) {
-      void audioContextRef.current.close();
+      audioContextRef.current.close();
       audioContextRef.current = null;
     }
 
@@ -109,151 +111,166 @@ const useMicrophoneTest = ({
 
   const startMeter = useCallback((analyser: AnalyserNode) => {
     const floatDataArray = new Float32Array(analyser.fftSize);
+    let lastRoundedLevel = -1;
 
     const updateMeter = () => {
       let sum = 0;
 
-      // Float samples avoid 8-bit quantization floor that can keep the meter
-      // visibly active even when the mic hardware is muted.
       analyser.getFloatTimeDomainData(floatDataArray);
 
       for (let index = 0; index < floatDataArray.length; index++) {
         const sample = floatDataArray[index]!;
+
         sum += sample * sample;
       }
 
       const rms = Math.sqrt(sum / floatDataArray.length);
       const estimatedDecibels = 20 * Math.log10(rms + 1e-8);
+
       const clampedDecibels = Math.max(
         METER_MIN_DECIBELS,
         Math.min(METER_MAX_DECIBELS, estimatedDecibels)
       );
+
       const level =
         ((clampedDecibels - METER_MIN_DECIBELS) /
           (METER_MAX_DECIBELS - METER_MIN_DECIBELS)) *
         100;
+
       const zoomedLevel = Math.max(0, Math.min(100, level));
 
-      setAudioLevel(zoomedLevel);
-      animationFrameRef.current = requestAnimationFrame(updateMeter);
+      const rounded = Math.round(zoomedLevel);
+
+      if (rounded !== lastRoundedLevel) {
+        lastRoundedLevel = rounded;
+        setAudioLevel(zoomedLevel);
+      }
     };
+
+    const intervalId = window.setInterval(
+      updateMeter,
+      METER_UPDATE_INTERVAL_MS
+    );
+
+    meterIntervalRef.current = intervalId;
 
     updateMeter();
   }, []);
 
-  const startTestPipeline = useCallback(async (requestId: number) => {
-    cleanup();
-    setError(undefined);
+  const startTestPipeline = useCallback(
+    async (requestId: number) => {
+      cleanup();
+      setError(undefined);
 
-    let stream: MediaStream | null = null;
-    let audioContext: AudioContext | null = null;
-    let destination: MediaStreamAudioDestinationNode | null = null;
-    let audioElement: HTMLAudioElement | null = null;
+      let stream: MediaStream | null = null;
+      let audioContext: AudioContext | null = null;
+      let destination: MediaStreamAudioDestinationNode | null = null;
+      let audioElement: HTMLAudioElement | null = null;
 
-    const isStaleRequest = () =>
-      requestId !== testRequestIdRef.current || !isTestRequestedRef.current;
+      const isStaleRequest = () =>
+        requestId !== testRequestIdRef.current || !isTestRequestedRef.current;
 
-    const cleanupLocalResources = () => {
-      stopStreamTracks(stream);
+      const cleanupLocalResources = () => {
+        stopStreamTracks(stream);
 
-      if (audioContext) {
-        void audioContext.close();
-      }
+        if (audioContext) {
+          audioContext.close();
+        }
 
-      if (audioElement && destination && audioElement.srcObject === destination.stream) {
-        audioElement.pause();
-        audioElement.srcObject = null;
-      }
-    };
+        if (
+          audioElement &&
+          destination &&
+          audioElement.srcObject === destination.stream
+        ) {
+          audioElement.pause();
+          audioElement.srcObject = null;
+        }
+      };
 
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: getAudioConstraints(),
-        video: false
-      });
-
-      if (isStaleRequest()) {
-        cleanupLocalResources();
-        return false;
-      }
-
-      const AudioContextClass =
-        window.AudioContext ||
-        (window as typeof window & {
-          webkitAudioContext?: typeof AudioContext;
-        }).webkitAudioContext;
-
-      if (!AudioContextClass) {
-        throw new Error('AudioContext is not supported in this browser.');
-      }
-
-      audioContext = new AudioContextClass();
-
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      const delay = audioContext.createDelay(1);
-      destination = audioContext.createMediaStreamDestination();
-
-      analyser.fftSize = ANALYZER_FFT_SIZE;
-      analyser.minDecibels = ANALYZER_MIN_DECIBELS;
-      analyser.maxDecibels = ANALYZER_MAX_DECIBELS;
-      analyser.smoothingTimeConstant = ANALYZER_SMOOTHING_TIME_CONSTANT;
-
-      delay.delayTime.value = LOOPBACK_DELAY_SECONDS;
-
-      source.connect(analyser);
-      source.connect(delay);
-      delay.connect(destination);
-
-      if (testAudioRef.current) {
-        audioElement = testAudioRef.current;
-        audioElement.srcObject = destination.stream;
-        await applyAudioOutputDevice(audioElement, playbackId);
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: getAudioConstraints(),
+          video: false
+        });
 
         if (isStaleRequest()) {
           cleanupLocalResources();
+
           return false;
         }
 
-        await audioElement.play();
-      }
+        audioContext = new window.AudioContext();
 
-      if (isStaleRequest()) {
+        const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        const delay = audioContext.createDelay(1);
+
+        destination = audioContext.createMediaStreamDestination();
+
+        analyser.fftSize = ANALYZER_FFT_SIZE;
+        analyser.minDecibels = ANALYZER_MIN_DECIBELS;
+        analyser.maxDecibels = ANALYZER_MAX_DECIBELS;
+        analyser.smoothingTimeConstant = ANALYZER_SMOOTHING_TIME_CONSTANT;
+
+        delay.delayTime.value = LOOPBACK_DELAY_SECONDS;
+
+        source.connect(analyser);
+        source.connect(delay);
+        delay.connect(destination);
+
+        if (testAudioRef.current) {
+          audioElement = testAudioRef.current;
+          audioElement.srcObject = destination.stream;
+
+          await applyAudioOutputDevice(audioElement, playbackId);
+
+          if (isStaleRequest()) {
+            cleanupLocalResources();
+
+            return false;
+          }
+
+          await audioElement.play();
+        }
+
+        if (isStaleRequest()) {
+          cleanupLocalResources();
+
+          return false;
+        }
+
+        mediaStreamRef.current = stream;
+        audioContextRef.current = audioContext;
+
+        setPermissionState('granted');
+        startMeter(analyser);
+        setIsTesting(true);
+
+        return true;
+      } catch (error) {
+        if (isStaleRequest()) {
+          cleanupLocalResources();
+
+          return false;
+        }
+
         cleanupLocalResources();
+        cleanup();
+        setIsTesting(false);
+
+        isTestRequestedRef.current = false;
+
+        if (isPermissionDeniedError(error)) {
+          setPermissionState('denied');
+        }
+
+        setError(getMicrophoneErrorMessage(error));
+
         return false;
       }
-
-      mediaStreamRef.current = stream;
-      audioContextRef.current = audioContext;
-      setPermissionState('granted');
-      startMeter(analyser);
-      setIsTesting(true);
-      return true;
-    } catch (error) {
-      if (isStaleRequest()) {
-        cleanupLocalResources();
-        return false;
-      }
-
-      cleanupLocalResources();
-      cleanup();
-      setIsTesting(false);
-      isTestRequestedRef.current = false;
-
-      if (isPermissionDeniedError(error)) {
-        setPermissionState('denied');
-      }
-
-      setError(getMicrophoneErrorMessage(error));
-      return false;
-    }
-  }, [
-    cleanup,
-    getAudioConstraints,
-    playbackId,
-    startMeter,
-    stopStreamTracks
-  ]);
+    },
+    [cleanup, getAudioConstraints, playbackId, startMeter, stopStreamTracks]
+  );
 
   const requestPermission = useCallback(
     async ({ silent = false }: TRequestPermissionOptions = {}) => {
@@ -285,12 +302,14 @@ const useMicrophoneTest = ({
   const startTest = useCallback(async () => {
     isTestRequestedRef.current = true;
     testRequestIdRef.current += 1;
+
     return startTestPipeline(testRequestIdRef.current);
   }, [startTestPipeline]);
 
   const stopTest = useCallback(() => {
     isTestRequestedRef.current = false;
     testRequestIdRef.current += 1;
+
     setIsTesting(false);
     cleanup();
   }, [cleanup]);
@@ -317,7 +336,7 @@ const useMicrophoneTest = ({
       setPermissionState('unknown');
     };
 
-    void navigator.permissions
+    navigator.permissions
       .query({ name: 'microphone' as PermissionName })
       .then((status) => {
         permissionStatus = status;
@@ -341,7 +360,7 @@ const useMicrophoneTest = ({
     if (!isTestRequestedRef.current) return;
 
     testRequestIdRef.current += 1;
-    void startTestPipeline(testRequestIdRef.current);
+    startTestPipeline(testRequestIdRef.current);
   }, [startTestPipeline]);
 
   useEffect(() => {
@@ -352,16 +371,27 @@ const useMicrophoneTest = ({
     };
   }, [cleanup]);
 
-  return {
-    testAudioRef,
-    permissionState,
-    isTesting,
-    audioLevel,
-    error,
-    requestPermission,
-    startTest,
-    stopTest
-  };
+  return useMemo(
+    () => ({
+      testAudioRef,
+      permissionState,
+      isTesting,
+      audioLevel,
+      error,
+      requestPermission,
+      startTest,
+      stopTest
+    }),
+    [
+      permissionState,
+      isTesting,
+      audioLevel,
+      error,
+      requestPermission,
+      startTest,
+      stopTest
+    ]
+  );
 };
 
 export { useMicrophoneTest };

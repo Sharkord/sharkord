@@ -1,6 +1,6 @@
 import { getResWidthHeight } from '@/helpers/get-res-with-height';
 import { Resolution } from '@/types';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type TUseWebcamTestParams = {
   webcamId: string | undefined;
@@ -55,6 +55,7 @@ const useWebcamTest = ({
 
   const cleanup = useCallback(() => {
     stopVideoTracks(videoStreamRef.current);
+
     videoStreamRef.current = undefined;
 
     if (testVideoRef.current) {
@@ -83,17 +84,23 @@ const useWebcamTest = ({
       if (!stream || !testVideoRef.current) return false;
 
       const videoElement = testVideoRef.current;
+
       videoElement.srcObject = stream;
 
       if (videoElement.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
         await new Promise<void>((resolve) => {
           let isDone = false;
+
           const onReady = () => {
             if (isDone) return;
+
             isDone = true;
+
             videoElement.removeEventListener('loadedmetadata', onReady);
             videoElement.removeEventListener('canplay', onReady);
+
             window.clearTimeout(timeoutId);
+
             resolve();
           };
 
@@ -133,10 +140,12 @@ const useWebcamTest = ({
 
       if (requestId !== startRequestIdRef.current) {
         stopVideoTracks(stream);
+
         return false;
       }
 
       videoStreamRef.current = stream;
+
       setVideoStream(stream);
       setIsPreviewReady(false);
       setIsTesting(true);
@@ -157,6 +166,7 @@ const useWebcamTest = ({
 
   const stopTest = useCallback(() => {
     startRequestIdRef.current += 1;
+
     cleanup();
   }, [cleanup]);
 
@@ -171,6 +181,7 @@ const useWebcamTest = ({
       attemptCount += 1;
 
       const attached = await attachStreamToPreview(videoStream);
+
       if (isCancelled) return;
 
       if (attached) return;
@@ -180,16 +191,18 @@ const useWebcamTest = ({
         setError(
           'Failed to start webcam preview. Please retry or choose another webcam.'
         );
+
         return;
       }
 
       window.setTimeout(() => {
         if (isCancelled) return;
-        void tryAttach();
+
+        tryAttach();
       }, 120);
     };
 
-    void tryAttach();
+    tryAttach();
 
     return () => {
       isCancelled = true;
@@ -199,12 +212,12 @@ const useWebcamTest = ({
   useEffect(() => {
     const settingsSignature = `${webcamId ?? DEFAULT_DEVICE_NAME}|${webcamResolution}|${webcamFramerate}`;
     const previousSignature = settingsSignatureRef.current;
+
     settingsSignatureRef.current = settingsSignature;
 
-    if (previousSignature === settingsSignature) return;
-    if (!isTesting) return;
+    if (previousSignature === settingsSignature || !isTesting) return;
 
-    void startTest();
+    startTest();
   }, [webcamId, webcamResolution, webcamFramerate, isTesting, startTest]);
 
   useEffect(() => {
@@ -214,15 +227,18 @@ const useWebcamTest = ({
     };
   }, [cleanup]);
 
-  return {
-    testVideoRef,
-    isStarting,
-    isTesting,
-    isPreviewReady,
-    error,
-    startTest,
-    stopTest
-  };
+  return useMemo(
+    () => ({
+      testVideoRef,
+      isStarting,
+      isTesting,
+      isPreviewReady,
+      error,
+      startTest,
+      stopTest
+    }),
+    [isStarting, isTesting, isPreviewReady, error, startTest, stopTest]
+  );
 };
 
 export { useWebcamTest };

@@ -29,6 +29,14 @@ const useAvailableDevices = () => {
         normalized.push(device);
       }
 
+      // default device always on top, then sorted alphabetically
+      normalized.sort((a, b) => {
+        if (a.deviceId === 'default') return -1;
+        if (b.deviceId === 'default') return 1;
+
+        return a.label.localeCompare(b.label);
+      });
+
       return normalized;
     },
     []
@@ -78,7 +86,10 @@ const useAvailableDevices = () => {
     navigator.mediaDevices.addEventListener('devicechange', onDeviceChange);
 
     return () => {
-      navigator.mediaDevices.removeEventListener('devicechange', onDeviceChange);
+      navigator.mediaDevices.removeEventListener(
+        'devicechange',
+        onDeviceChange
+      );
     };
   }, [loadDevices]);
 
