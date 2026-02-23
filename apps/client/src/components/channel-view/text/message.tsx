@@ -66,6 +66,7 @@ const Message = memo(({ message, type }: TMessageProps & { type: string }) => {
                 editable={message.editable ?? false}
                 isThreadReply={isThreadReply}
                 pinned={message.pinned ?? false}
+                type={type}
               />
             </>
           )}

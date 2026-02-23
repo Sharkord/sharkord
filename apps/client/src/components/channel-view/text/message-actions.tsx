@@ -28,6 +28,7 @@ type TMessageActionsProps = {
   editable: boolean;
   isThreadReply?: boolean;
   pinned: boolean;
+  type: string;
 };
 
 const MessageActions = memo(
@@ -38,7 +39,8 @@ const MessageActions = memo(
     canManage,
     editable,
     isThreadReply,
-    pinned
+    pinned,
+    type
   }: TMessageActionsProps) => {
     const { recentEmojis } = useRecentEmojis();
     const recentEmojisToShow = useMemo(
@@ -161,13 +163,15 @@ const MessageActions = memo(
           </div>
         </Protect>
         <Protect permission={Permission.PIN_MESSAGES}>
-          <IconButton
-            size="sm"
-            variant="ghost"
-            icon={pinned ? PinOff : Pin}
-            onClick={onPinClick}
-            title={pinned ? 'Unpin Message' : 'Pin Message'}
-          />
+          {type === 'channel' ? (
+            <IconButton
+              size="sm"
+              variant="ghost"
+              icon={pinned ? PinOff : Pin}
+              onClick={onPinClick}
+              title={pinned ? 'Unpin Message' : 'Pin Message'}
+            />
+          ) : null}
         </Protect>
       </div>
     );

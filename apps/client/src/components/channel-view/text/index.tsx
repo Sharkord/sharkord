@@ -3,7 +3,7 @@ import {
   type TMessageComposeHandle
 } from '@/components/message-compose';
 import { PinnedMessageContext } from '@/components/pinned-message-provider/pinned-message-context';
-import { PinnedMessagesTopbar } from '@/components/pinned-messages-topbar';
+import { PinnedMessagesBox } from '@/components/pinned-messages-box';
 import {
   useChannelCan,
   useTypingUsersByChannelId
@@ -12,7 +12,6 @@ import { useMessages } from '@/features/server/messages/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { getTRPCClient } from '@/lib/trpc';
-import { cn } from '@/lib/utils';
 import {
   ChannelPermission,
   TYPING_MS,
@@ -131,15 +130,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         </div>
       )}
 
-      <PinnedMessagesTopbar
-        className={cn(
-          'absolute left-2 right-2 w-auto transition-[height,padding,opacity] duration-500 ease-in-out overflow-hidden',
-          'bg-neutral-800 rounded-xl shadow-md border border-neutral-700 mx-2 mt-2',
-          'max-w-4xl mx-auto',
-          pinnedMessageContext.visible
-            ? 'max-h-[85vh] h-auto p-2 opacity-100 z-10'
-            : 'h-0 p-0 opacity-0 border-transparent shadow-none'
-        )}
+      <PinnedMessagesBox
         isOpen={pinnedMessageContext.visible || false}
         messageRefs={messageRefs}
         messages={messages}
