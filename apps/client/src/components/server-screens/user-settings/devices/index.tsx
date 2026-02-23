@@ -196,7 +196,7 @@ const Devices = memo(() => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label>Max Bitrate (Kbps)</Label>
+            <Label>Max Bitrate</Label>
 
             <Slider
               min={200}
