@@ -1,8 +1,7 @@
 import { cn } from '@/lib/utils';
 import type { TJoinedMessage } from '@sharkord/shared/src/tables';
-import { memo } from 'react';
+import { memo, useContext, useEffect } from 'react';
 import { MessagesGroup } from '../channel-view/text/messages-group';
-import { useContext, useEffect } from 'react';
 import { PinnedMessageContext } from '../pinned-message-provider/pinned-message-context';
 
 type TPinnedMessagesTopbarProps = {
@@ -33,7 +32,7 @@ const PinnedMessagesTopbar = memo(
       return () => {
         document.removeEventListener('keydown', onKeyDown);
       };
-    }, []);
+    }, [pinnedMessageContext]);
 
     return (
       <aside
