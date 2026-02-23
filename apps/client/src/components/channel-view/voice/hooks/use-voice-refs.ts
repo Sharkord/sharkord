@@ -113,7 +113,7 @@ const useVoiceRefs = (
     }
 
     audioRef.current.volume = userVolume / 100;
-    void applyAudioOutputDevice(audioRef.current, devices.playbackId);
+    applyAudioOutputDevice(audioRef.current, devices.playbackId);
   }, [audioStream, audioRef, userVolume, devices.playbackId]);
 
   useEffect(() => {
@@ -124,7 +124,8 @@ const useVoiceRefs = (
     }
 
     screenShareAudioRef.current.volume = userScreenVolume / 100;
-    void applyAudioOutputDevice(screenShareAudioRef.current, devices.playbackId);
+
+    applyAudioOutputDevice(screenShareAudioRef.current, devices.playbackId);
   }, [
     screenShareAudioStream,
     screenShareAudioRef,
@@ -148,8 +149,14 @@ const useVoiceRefs = (
     }
 
     externalAudioRef.current.volume = externalVolume / 100;
-    void applyAudioOutputDevice(externalAudioRef.current, devices.playbackId);
-  }, [externalAudioStream, externalAudioRef, externalVolume, devices.playbackId]);
+
+    applyAudioOutputDevice(externalAudioRef.current, devices.playbackId);
+  }, [
+    externalAudioStream,
+    externalAudioRef,
+    externalVolume,
+    devices.playbackId
+  ]);
 
   useEffect(() => {
     if (!externalVideoStream || !externalVideoRef.current) return;

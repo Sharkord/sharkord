@@ -78,7 +78,10 @@ const useAvailableDevices = () => {
     navigator.mediaDevices.addEventListener('devicechange', onDeviceChange);
 
     return () => {
-      navigator.mediaDevices.removeEventListener('devicechange', onDeviceChange);
+      navigator.mediaDevices.removeEventListener(
+        'devicechange',
+        onDeviceChange
+      );
     };
   }, [loadDevices]);
 

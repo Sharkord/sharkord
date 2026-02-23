@@ -144,7 +144,10 @@ const Connect = memo(() => {
               label="Identity"
               help="A unique identifier for your account on this server. You can use whatever you like, such as an email address or a username. This won't be shared publicly."
             >
-              <Input {...r('identity')} data-testid={TestId.CONNECT_IDENTITY_INPUT} />
+              <Input
+                {...r('identity')}
+                data-testid={TestId.CONNECT_IDENTITY_INPUT}
+              />
             </Group>
             <Group label="Password">
               <Input
