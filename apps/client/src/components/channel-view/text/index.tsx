@@ -2,6 +2,8 @@ import {
   MessageCompose,
   type TMessageComposeHandle
 } from '@/components/message-compose';
+import { PinnedMessageContext } from '@/components/pinned-message-provider';
+import { PinnedMessagesTopbar } from '@/components/pinned-messages-topbar';
 import {
   useChannelCan,
   useTypingUsersByChannelId
@@ -10,6 +12,7 @@ import { useMessages } from '@/features/server/messages/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { getTRPCClient } from '@/lib/trpc';
+import { cn } from '@/lib/utils';
 import {
   ChannelPermission,
   TYPING_MS,
@@ -18,8 +21,14 @@ import {
 } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
 import { throttle } from 'lodash-es';
-import { Paperclip, Send } from 'lucide-react';
-import { memo, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import {
+  memo,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import { toast } from 'sonner';
 import { MessagesGroup } from './messages-group';
 import { TextSkeleton } from './text-skeleton';
@@ -29,10 +38,6 @@ import {
   setDraftMessage
 } from './use-draft-messages';
 import { useScrollController } from './use-scroll-controller';
-import { UsersTyping } from './users-typing';
-import { cn } from '@/lib/utils';
-import { PinnedMessagesTopbar } from '@/components/pinned-messages-topbar';
-import { PinnedMessageContext } from '@/components/pinned-message-provider';
 
 type TChannelProps = {
   channelId: number;
@@ -126,14 +131,14 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         </div>
       )}
 
-      <PinnedMessagesTopbar 
+      <PinnedMessagesTopbar
         className={cn(
           'absolute left-2 right-2 w-auto transition-[height,padding,opacity] duration-500 ease-in-out overflow-hidden',
           'bg-neutral-800 rounded-xl shadow-md border border-neutral-700 mx-2 mt-2',
           'max-w-4xl mx-auto',
-          pinnedMessageContext.visible ?
-            'max-h-[85vh] h-auto p-2 opacity-100 z-10' :
-            'h-0 p-0 opacity-0 border-transparent shadow-none'
+          pinnedMessageContext.visible
+            ? 'max-h-[85vh] h-auto p-2 opacity-100 z-10'
+            : 'h-0 p-0 opacity-0 border-transparent shadow-none'
         )}
         isOpen={pinnedMessageContext.visible || false}
         messageRefs={messageRefs}
@@ -147,7 +152,12 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
       >
         <div className="space-y-4">
           {groupedMessages.map((group, index) => (
-            <MessagesGroup key={index} group={group} messageRefs={messageRefs} type="channel" />
+            <MessagesGroup
+              key={index}
+              group={group}
+              messageRefs={messageRefs}
+              type="channel"
+            />
           ))}
         </div>
       </div>

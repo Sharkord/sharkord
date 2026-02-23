@@ -4,9 +4,9 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { messages } from '../../db/schema';
+import { eventBus } from '../../plugins/event-bus';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
-import { eventBus } from '../../plugins/event-bus';
 
 const toggleMessagePinRoute = protectedProcedure
   .input(
@@ -31,11 +31,7 @@ const toggleMessagePinRoute = protectedProcedure
     await db
       .update(messages)
       .set({ pinned: !message.pinned, updatedAt: Date.now() })
-        .where(
-          and(
-            eq(messages.id, input.messageId),
-          )
-        );
+      .where(and(eq(messages.id, input.messageId)));
 
     publishMessage(input.messageId, message.channelId, 'update');
 

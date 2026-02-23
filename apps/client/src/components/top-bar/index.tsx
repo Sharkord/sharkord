@@ -23,7 +23,7 @@ const TopBar = memo(
     onToggleRightSidebar,
     isOpen,
     onToggleVoiceChat,
-    isVoiceChatOpen,
+    isVoiceChatOpen
   }: TTopBarProps) => {
     const isCurrentVoiceChannelSelected = useIsCurrentVoiceChannelSelected();
     const currentVoiceChannelId = useCurrentVoiceChannelId();

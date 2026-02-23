@@ -10,10 +10,14 @@ type TPinnedMessagesTopbarProps = {
 };
 
 const PinnedMessagesTopbar = memo(
-  ({ className, isOpen = true, messageRefs, messages }: TPinnedMessagesTopbarProps) => {
-
+  ({
+    className,
+    isOpen = true,
+    messageRefs,
+    messages
+  }: TPinnedMessagesTopbarProps) => {
     const pinnedMessages = messages.filter((msg) => msg.pinned);
-    
+
     return (
       <aside
         className={cn(
@@ -32,7 +36,7 @@ const PinnedMessagesTopbar = memo(
                 Pinned Messages
               </h3>
             </div>
-            <div className='overflow-auto'>
+            <div className="overflow-auto">
               {pinnedMessages.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
                   No pinned messages
@@ -40,7 +44,11 @@ const PinnedMessagesTopbar = memo(
               ) : (
                 pinnedMessages.map((message) => (
                   <div key={message.id} className="border-b border-border">
-                    <MessagesGroup group={[message]} messageRefs={messageRefs} type="pinned"/>
+                    <MessagesGroup
+                      group={[message]}
+                      messageRefs={messageRefs}
+                      type="pinned"
+                    />
                   </div>
                 ))
               )}

@@ -13,8 +13,8 @@ import { getMessagesRoute } from './get-messages';
 import { getThreadMessagesRoute } from './get-thread-messages';
 import { sendMessageRoute } from './send-message';
 import { signalTypingRoute } from './signal-typing';
-import { toggleMessageReactionRoute } from './toggle-message-reaction';
 import { toggleMessagePinRoute } from './toggle-message-pin';
+import { toggleMessageReactionRoute } from './toggle-message-reaction';
 
 export const messagesRouter = t.router({
   send: sendMessageRoute,

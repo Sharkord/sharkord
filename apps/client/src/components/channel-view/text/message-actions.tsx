@@ -7,7 +7,14 @@ import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
-import { MessageSquareText, Pin, PinOff, Pencil, Smile, Trash } from 'lucide-react';
+import {
+  MessageSquareText,
+  Pencil,
+  Pin,
+  PinOff,
+  Smile,
+  Trash
+} from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
@@ -90,7 +97,8 @@ const MessageActions = memo(
         toast.success('Message pinned status toggled');
       } catch (error) {
         toast.error('Failed to toggle pin status');
-    }}, [messageId]);
+      }
+    }, [messageId]);
 
     return (
       <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-1 transition-all h-8 ">
@@ -151,13 +159,13 @@ const MessageActions = memo(
           </div>
         </Protect>
         <Protect permission={Permission.PIN_MESSAGES}>
-        <IconButton
-          size="sm"
-          variant="ghost"
-          icon={pinned ? PinOff : Pin}
-          onClick={onPinClick}
-          title={pinned ? "Unpin Message" : "Pin Message"}
-        />
+          <IconButton
+            size="sm"
+            variant="ghost"
+            icon={pinned ? PinOff : Pin}
+            onClick={onPinClick}
+            title={pinned ? 'Unpin Message' : 'Pin Message'}
+          />
         </Protect>
       </div>
     );

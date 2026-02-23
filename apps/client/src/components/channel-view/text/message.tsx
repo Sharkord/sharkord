@@ -44,31 +44,31 @@ const Message = memo(({ message, type }: TMessageProps & { type: string }) => {
       {!isEditing ? (
         <>
           <MessageRenderer message={message} />
-          {type === "pinned" ? null : (
-          <>
-            {!isThreadReply && replyCount > 0 && (
-              <button
-                type="button"
-                onClick={onThreadClick}
-                className="flex items-center gap-1 text-xs text-primary/70 hover:text-primary hover:underline mt-1 transition-colors"
-              >
-                <MessageSquareText className="h-3 w-3" />
-                <span>
-                  {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
-                </span>
-              </button>
-            )}
-            <MessageActions
-              onEdit={() => setIsEditing(true)}
-              canManage={canManage}
-              messageId={message.id}
-              channelId={message.channelId}
-              editable={message.editable ?? false}
-              isThreadReply={isThreadReply}
-              pinned={message.pinned ?? false}
-            />
-          </>
-        )}
+          {type === 'pinned' ? null : (
+            <>
+              {!isThreadReply && replyCount > 0 && (
+                <button
+                  type="button"
+                  onClick={onThreadClick}
+                  className="flex items-center gap-1 text-xs text-primary/70 hover:text-primary hover:underline mt-1 transition-colors"
+                >
+                  <MessageSquareText className="h-3 w-3" />
+                  <span>
+                    {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
+                  </span>
+                </button>
+              )}
+              <MessageActions
+                onEdit={() => setIsEditing(true)}
+                canManage={canManage}
+                messageId={message.id}
+                channelId={message.channelId}
+                editable={message.editable ?? false}
+                isThreadReply={isThreadReply}
+                pinned={message.pinned ?? false}
+              />
+            </>
+          )}
         </>
       ) : (
         <MessageEditInline
