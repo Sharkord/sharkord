@@ -17,7 +17,8 @@
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@sharkord/shared": "workspace:*",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/react": "^19"
   },
   "peerDependencies": {
     "typescript": "^5",

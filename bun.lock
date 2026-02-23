@@ -124,6 +124,7 @@
         "@playwright/test": "^1.58.2",
         "@sharkord/shared": "workspace:*",
         "@types/bun": "latest",
+        "@types/react": "^19",
       },
       "peerDependencies": {
         "@typescript-eslint/eslint-plugin": "^8.46.1",
@@ -172,6 +173,7 @@
       "peerDependencies": {
         "@trpc/client": "^11.6.0",
         "@types/linkify-it": "^5.0.0",
+        "@types/react": "^19",
         "@typescript-eslint/eslint-plugin": "^8.46.1",
         "eslint": "^8.56.0",
         "eslint-plugin-unused-imports": "^4.1.4",
