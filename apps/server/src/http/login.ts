@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 import z from 'zod';
 import { config } from '../config';
 import { db } from '../db';
-import { getServerToken, getSettings } from '../db/queries/server';
+import { getServerToken } from '../db/queries/server';
 import { getUserByIdentity } from '../db/queries/users';
 import { users } from '../db/schema';
 import { getWsInfo } from '../helpers/get-ws-info';
@@ -37,8 +37,7 @@ const loginRouteHandler = async (
     throw new HttpValidationError('identity', 'This identity is reserved');
   }
 
-  const settings = await getSettings();
-  let existingUser = await getUserByIdentity(data.identity);
+  const existingUser = await getUserByIdentity(data.identity);
   const connectionInfo = getWsInfo(undefined, req);
 
   const rateLimited = applyRateLimit(
