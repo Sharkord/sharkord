@@ -5,6 +5,7 @@ ENV RUNNING_IN_DOCKER=true
 
 COPY apps/server/build/out/sharkord-linux-x64 /tmp/sharkord-linux-x64
 COPY apps/server/build/out/sharkord-linux-arm64 /tmp/sharkord-linux-arm64
+COPY init.sh /init.sh
 
 RUN set -eux; \
     case "$TARGETARCH" in \
@@ -15,4 +16,4 @@ RUN set -eux; \
     chmod +x /sharkord; \
     rm -rf /tmp/sharkord-linux-*
 
-CMD ["/sharkord"]
+CMD ["/init.sh"]

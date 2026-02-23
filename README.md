@@ -49,10 +49,13 @@ docker run \
   -p 4991:4991/tcp \
   -p 40000:40000/tcp \
   -p 40000:40000/udp \
-  -v ./data:/root/.config/sharkord \
+  -v ./data:/home/bun/.config/sharkord \
+  -e SHARKORD_DEPENDENCIES="" \
   --name sharkord \
   sharkord/sharkord:latest
 ```
+
+Any additional dependencies required by any installed plugins should be specified in the `SHARKORD_DEPENDENCIES` environment variable. If none are needed this may be omitted.
 
 > [!NOTE]
 > Upon first launch, Sharkord will create a secure token and print it to the console. This token allows ANYONE to gain owner access to your server, so make sure to store it securely and do not lose it!
