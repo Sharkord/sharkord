@@ -5,7 +5,7 @@
 
 @layer base {
   button:not(:disabled),
-  [role="button"]:not(:disabled) {
+  [role='button']:not(:disabled) {
     cursor: pointer;
   }
 }
@@ -264,6 +264,16 @@ body {
   a {
     text-decoration: underline;
     text-underline-offset: 2px;
+  }
+}
+
+.msg-content.emoji-only {
+  font-size: 2.5rem;
+  line-height: 1.2;
+
+  img:not(.ProseMirror-separator) {
+    height: 1.2em;
+    width: 1.2em;
   }
 }
 
