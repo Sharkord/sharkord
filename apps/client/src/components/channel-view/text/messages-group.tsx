@@ -47,6 +47,7 @@ const MessagesGroup = memo(
         requestAnimationFrame(() => {
           el.style.setProperty('--color-secondary', 'var(--secondary)');
           el.style.backgroundColor = 'var(--color-secondary)';
+          el.className = 'rounded-md';
 
           // Remove highlight after 2 seconds
           setTimeout(() => {
