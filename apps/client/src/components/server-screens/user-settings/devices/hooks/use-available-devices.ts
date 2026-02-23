@@ -12,33 +12,88 @@ const useAvailableDevices = () => {
   >([]);
   const [loading, setLoading] = useState(true);
 
+  const normalizeDevices = useCallback(
+    (devices: MediaDeviceInfo[], kind: MediaDeviceKind) => {
+      const seen = new Set<string>();
+      const normalized: MediaDeviceInfo[] = [];
+
+      for (const device of devices) {
+        const dedupeKey =
+          device.deviceId || `${kind}-fallback-${device.groupId || 'default'}`;
+
+        if (seen.has(dedupeKey)) {
+          continue;
+        }
+
+        seen.add(dedupeKey);
+        normalized.push(device);
+      }
+
+      // default device always on top, then sorted alphabetically
+      normalized.sort((a, b) => {
+        if (a.deviceId === 'default') return -1;
+        if (b.deviceId === 'default') return 1;
+
+        return a.label.localeCompare(b.label);
+      });
+
+      return normalized;
+    },
+    []
+  );
+
   const loadDevices = useCallback(async () => {
-    const devices = await navigator.mediaDevices.enumerateDevices();
+    if (!navigator.mediaDevices?.enumerateDevices) {
+      setLoading(false);
+      return;
+    }
 
-    const inputDevices = devices.filter(
-      (device) => device.kind === 'audioinput'
-    );
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
 
-    const playbackDevices = devices.filter(
-      (device) => device.kind === 'audiooutput'
-    );
+      const inputDevices = normalizeDevices(
+        devices.filter((device) => device.kind === 'audioinput'),
+        'audioinput'
+      );
 
-    const videoDevices = devices.filter(
-      (device) => device.kind === 'videoinput'
-    );
+      const playbackDevices = normalizeDevices(
+        devices.filter((device) => device.kind === 'audiooutput'),
+        'audiooutput'
+      );
 
-    setInputDevices(inputDevices);
-    setPlaybackDevices(playbackDevices);
-    setVideoDevices(videoDevices);
+      const videoDevices = normalizeDevices(
+        devices.filter((device) => device.kind === 'videoinput'),
+        'videoinput'
+      );
 
-    setLoading(false);
-  }, []);
+      setInputDevices(inputDevices);
+      setPlaybackDevices(playbackDevices);
+      setVideoDevices(videoDevices);
+    } finally {
+      setLoading(false);
+    }
+  }, [normalizeDevices]);
 
   useEffect(() => {
-    loadDevices();
+    void loadDevices();
+
+    if (!navigator.mediaDevices?.addEventListener) return;
+
+    const onDeviceChange = () => {
+      void loadDevices();
+    };
+
+    navigator.mediaDevices.addEventListener('devicechange', onDeviceChange);
+
+    return () => {
+      navigator.mediaDevices.removeEventListener(
+        'devicechange',
+        onDeviceChange
+      );
+    };
   }, [loadDevices]);
 
-  return { inputDevices, playbackDevices, videoDevices, loading };
+  return { inputDevices, playbackDevices, videoDevices, loading, loadDevices };
 };
 
 export { useAvailableDevices };
