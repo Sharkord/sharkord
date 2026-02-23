@@ -2,6 +2,8 @@ import { cn } from '@/lib/utils';
 import type { TJoinedMessage } from '@sharkord/shared/src/tables';
 import { memo } from 'react';
 import { MessagesGroup } from '../channel-view/text/messages-group';
+import { useContext, useEffect } from 'react';
+import { PinnedMessageContext } from '../pinned-message-provider/pinned-message-context';
 
 type TPinnedMessagesTopbarProps = {
   className?: string;
@@ -18,6 +20,20 @@ const PinnedMessagesTopbar = memo(
     messages
   }: TPinnedMessagesTopbarProps) => {
     const pinnedMessages = messages.filter((msg) => msg.pinned);
+    const pinnedMessageContext = useContext(PinnedMessageContext);
+
+    useEffect(() => {
+      const onKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          pinnedMessageContext.setVisible(false);
+        }
+      };
+
+      document.addEventListener('keydown', onKeyDown);
+      return () => {
+        document.removeEventListener('keydown', onKeyDown);
+      };
+    }, []);
 
     return (
       <aside
