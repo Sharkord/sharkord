@@ -3,11 +3,9 @@ import type {
   PluginSettings,
   TCreateStreamOptions,
   TExternalStreamHandle,
-  TPluginComponentsMapBySlotId,
   UnloadPluginContext
 } from '@sharkord/plugin-sdk';
 import {
-  PluginSlot,
   ServerEvents,
   StreamKind,
   zPluginPackageJson,
@@ -16,7 +14,6 @@ import {
   type TCommandsMapByPlugin,
   type TInvokerContext,
   type TLogEntry,
-  type TPluginComponentsMapBySlotIdMapListByPlugin,
   type TPluginInfo,
   type TPluginSettingDefinition,
   type TPluginSettingsResponse
@@ -47,7 +44,7 @@ class PluginManager {
   private logs = new Map<string, TLogEntry[]>();
   private logsListeners = new Map<string, Set<(newLog: TLogEntry) => void>>();
   private commands = new Map<string, RegisteredCommand[]>();
-  private components = new Map<string, TPluginComponentsMapBySlotId>();
+  private uiState = new Map<string, boolean>();
   private pluginStates: PluginStatesMap = {};
   private settingDefinitions = new Map<string, TPluginSettingDefinition[]>();
   private settingValues = new Map<string, Record<string, unknown>>();
@@ -388,14 +385,10 @@ class PluginManager {
     return commands.some((c) => c.name === commandName);
   };
 
-  public getComponents = (): TPluginComponentsMapBySlotIdMapListByPlugin => {
-    const allSlots: TPluginComponentsMapBySlotIdMapListByPlugin = {};
+  public getPluginIdsWithComponents = (): string[] => {
+    const pluginIds = Array.from(this.loadedPlugins.keys());
 
-    for (const [pluginId, slots] of this.components.entries()) {
-      allSlots[pluginId] = Object.keys(slots) as PluginSlot[];
-    }
-
-    return allSlots;
+    return pluginIds.filter((pluginId) => this.uiState.get(pluginId));
   };
 
   public togglePlugin = async (pluginId: string, enabled: boolean) => {
@@ -439,11 +432,11 @@ class PluginManager {
 
     eventBus.unload(pluginId);
     this.unregisterPluginCommands(pluginId);
+    this.uiState.delete(pluginId);
     this.settingDefinitions.delete(pluginId);
     this.settingValues.delete(pluginId);
     this.loadedPlugins.delete(pluginId);
     this.loadErrors.delete(pluginId);
-    this.components.delete(pluginId);
 
     logger.info(`Plugin unloaded: ${pluginId}`);
   };
@@ -461,10 +454,22 @@ class PluginManager {
       JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'))
     );
 
-    const entryFilePath = path.join(pluginPath, packageJson.sharkord.entry);
+    const serverEntryPath = path.join(
+      pluginPath,
+      packageJson.sharkord.entry.server
+    );
 
-    if (!(await fs.exists(entryFilePath))) {
+    const clientEntryPath = path.join(
+      pluginPath,
+      packageJson.sharkord.entry.client
+    );
+
+    if (!(await fs.exists(serverEntryPath))) {
       throw new Error('Plugin entry file not found');
+    }
+
+    if (!(await fs.exists(clientEntryPath))) {
+      throw new Error('Plugin client entry file not found');
     }
 
     const loadError = this.loadErrors.get(pluginId);
@@ -479,7 +484,10 @@ class PluginManager {
       logo: packageJson.sharkord.logo,
       author: packageJson.sharkord.author,
       homepage: packageJson.sharkord.homepage,
-      entry: entryFilePath,
+      entry: {
+        server: serverEntryPath,
+        client: clientEntryPath
+      },
       loadError
     };
   };
@@ -504,7 +512,7 @@ class PluginManager {
 
     try {
       const ctx = this.createContext(pluginId);
-      const mod = await import(info.entry);
+      const mod = await import(info.entry.server);
 
       if (typeof mod.onLoad !== 'function') {
         throw new Error(
@@ -699,12 +707,11 @@ class PluginManager {
         }
       },
       ui: {
-        registerComponents: (components) => {
-          if (!this.components.has(pluginId)) {
-            this.components.set(pluginId, {});
-          }
-
-          this.components.set(pluginId, components);
+        enable: () => {
+          this.uiState.set(pluginId, true);
+        },
+        disable: () => {
+          this.uiState.set(pluginId, false);
         }
       },
       actions: {

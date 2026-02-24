@@ -2,7 +2,10 @@
   "name": "plugin-missing-entry",
   "version": "1.0.0",
   "sharkord": {
-    "entry": "nonexistent.js",
+    "entry": {
+      "server": "nonexistent.js",
+      "client": "nonexistent.js"
+    },
     "author": "Test Author",
     "description": "Plugin with missing entry file"
   }
