@@ -9,6 +9,7 @@ import { useInfo } from '@/features/server/hooks';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
 import {
   getLocalStorageItem,
+  getSessionStorageItem,
   LocalStorageKey,
   removeLocalStorageItem,
   SessionStorageKey,
@@ -102,6 +103,13 @@ const Connect = memo(() => {
     }
   }, [handleOidcSuccess]);
 
+  useStrictEffect(() => {
+    const token = getSessionStorageItem(SessionStorageKey.TOKEN);
+    if (info && info.oidcEnabled && !info.allowNewUsers && !token) {
+      onOidcLoginClick();
+    }
+  }, [info, onOidcLoginClick]);
+
   const onConnectClick = useCallback(async () => {
     setLoading(true);
 
@@ -180,27 +188,29 @@ const Connect = memo(() => {
             </span>
           )}
 
-          <div className="flex flex-col gap-2">
-            <Group
-              label="Identity"
-              help="A unique identifier for your account on this server. You can use whatever you like, such as an email address or a username. This won't be shared publicly."
-            >
-              <Input {...r('identity')} />
-            </Group>
-            <Group label="Password">
-              <Input
-                {...r('password')}
-                type="password"
-                onEnter={onConnectClick}
-              />
-            </Group>
-            <Group label="Remember Credentials">
-              <Switch
-                checked={values.rememberCredentials}
-                onCheckedChange={onRememberCredentialsChange}
-              />
-            </Group>
-          </div>
+          {!(info?.oidcEnabled && !info?.allowNewUsers) && (
+            <div className="flex flex-col gap-2">
+              <Group
+                label="Identity"
+                help="A unique identifier for your account on this server. You can use whatever you like, such as an email address or a username. This won't be shared publicly."
+              >
+                <Input {...r('identity')} />
+              </Group>
+              <Group label="Password">
+                <Input
+                  {...r('password')}
+                  type="password"
+                  onEnter={onConnectClick}
+                />
+              </Group>
+              <Group label="Remember Credentials">
+                <Switch
+                  checked={values.rememberCredentials}
+                  onCheckedChange={onRememberCredentialsChange}
+                />
+              </Group>
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             {!window.isSecureContext && (
@@ -218,14 +228,16 @@ const Connect = memo(() => {
               </Alert>
             )}
 
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={onConnectClick}
-              disabled={loading || !values.identity || !values.password}
-            >
-              Connect
-            </Button>
+            {!(info?.oidcEnabled && !info?.allowNewUsers) && (
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={onConnectClick}
+                disabled={loading || !values.identity || !values.password}
+              >
+                Connect
+              </Button>
+            )}
 
             {info?.oidcEnabled && (
               <Button
@@ -238,16 +250,12 @@ const Connect = memo(() => {
               </Button>
             )}
 
-            {!info?.allowNewUsers && (
-              <>
-                {!inviteCode && (
-                  <span className="text-xs text-muted-foreground text-center">
-                    New user registrations are currently disabled. If you do not
-                    have an account yet, you need to be invited by an existing
-                    user to join this server.
-                  </span>
-                )}
-              </>
+            {!info?.allowNewUsers && !inviteCode && (
+              <span className="text-xs text-muted-foreground text-center">
+                New user registrations are currently disabled. If you do not
+                have an account yet, you need to be invited by an existing user
+                to join this server.
+              </span>
             )}
 
             {inviteCode && (

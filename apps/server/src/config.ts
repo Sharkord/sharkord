@@ -14,10 +14,6 @@ const [SERVER_PUBLIC_IP, SERVER_PRIVATE_IP] = await Promise.all([
   getPrivateIp()
 ]);
 
-/**
- * Helper: Transforms a JSON string from the INI/Env into a typed Object or Array.
- * Falling back to the provided default if parsing fails.
- */
 const jsonTransform = <T>(fallback: T) =>
   z.preprocess((val) => {
     if (typeof val !== 'string') return val;
@@ -27,6 +23,12 @@ const jsonTransform = <T>(fallback: T) =>
       return fallback;
     }
   }, z.any()).transform((val) => val as T);
+
+const commaSeparatedTransform = (fallback: string[]) =>
+  z.preprocess((val) => {
+    if (typeof val !== 'string') return val;
+    return val.split(',').map((s) => s.trim()).filter(Boolean);
+  }, z.string().array());
 
 const zConfig = z.object({
   server: z.object({
@@ -40,11 +42,10 @@ const zConfig = z.object({
     issuer: z.string(),
     clientId: z.string(),
     clientSecret: z.string(),
-    redirectUrl: z.string(),
     rolesMapping: jsonTransform<Record<string, string>>({}),
     requiredGroup: z.string().optional(),
-    allowedOrigins: jsonTransform<string[]>([]),
-    caPath: z.string().optional()
+    allowedOrigins: commaSeparatedTransform([]),
+    caCertPath: z.string().optional()
   }),
   webRtc: z.object({
     port: z.coerce.number().int().positive(),
@@ -66,10 +67,9 @@ const zConfig = z.object({
   })
 });
 
-// use z.output to get the types AFTER the JSON transformations
 type TConfig = z.output<typeof zConfig>;
 
-const defaultConfig: TConfig = {
+const defaultConfig : TConfig = {
   server: {
     port: 4991,
     debug: IS_DEVELOPMENT,
@@ -81,11 +81,10 @@ const defaultConfig: TConfig = {
     issuer: 'https://auth.example.com/.well-known/openid-configuration',
     clientId: '',
     clientSecret: '',
-    redirectUrl: 'https://sharkord.example.com/auth/callback',
     rolesMapping: {"Group1":"Role1"},
     requiredGroup: 'ExampleOIDCGroup',
-    allowedOrigins: ['https://sharkord.example.com'],
-    caPath: ''
+    allowedOrigins: ['https://sharkord.example.com', 'https://sharkord2.example.com'],
+    caCertPath: ''
   },
   webRtc: {
     port: 40000,
@@ -107,16 +106,21 @@ const defaultConfig: TConfig = {
   }
 };
 
-const prepareForSave = (data: TConfig) => ({
-  ...data,
-  oidc: {
-    ...data.oidc,
-    rolesMapping: JSON.stringify(data.oidc.rolesMapping),
-    allowedOrigins: JSON.stringify(data.oidc.allowedOrigins)
-  }
-});
+const prepareForSave = (data: TConfig) => {
+  const { oidc, ...rest } = data;
+  const { allowedOrigins, rolesMapping, ...oidcRest } = oidc;
 
-let config: TConfig = structuredClone(defaultConfig);
+  return {
+    ...rest,
+    oidc: {
+      ...oidcRest,
+      rolesMapping: JSON.stringify(rolesMapping),
+      allowedOrigins: allowedOrigins.join(','),
+    }
+  };
+};
+
+let config: TConfig = zConfig.parse(defaultConfig);
 
 await ensureServerDirs();
 
@@ -151,11 +155,10 @@ config = applyEnvOverrides(config, {
   'oidc.issuer': 'OIDC_ISSUER',
   'oidc.clientId': 'OIDC_CLIENT_ID',
   'oidc.clientSecret': 'OIDC_CLIENT_SECRET',
-  'oidc.redirectUrl': 'OIDC_REDIRECT_URL',
   'oidc.rolesMapping': 'OIDC_ROLES_MAPPING',
   'oidc.requiredGroup': 'OIDC_REQUIRED_GROUP',
   'oidc.allowedOrigins': 'OIDC_ALLOWED_ORIGINS',
-  'oidc.caPath': 'OIDC_CA_PATH',
+  'oidc.caCertPath': 'OIDC_CA_CERT_PATH',
 
   'webRtc.port': 'SHARKORD_WEBRTC_PORT',
   'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS'

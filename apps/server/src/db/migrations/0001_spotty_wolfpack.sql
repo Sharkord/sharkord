@@ -1,0 +1,1 @@
+ALTER TABLE `user_roles` ADD `added_by` text DEFAULT 'manual' NOT NULL;

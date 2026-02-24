@@ -155,7 +155,10 @@ const userRoles = sqliteTable(
     roleId: integer('role_id')
       .notNull()
       .references(() => roles.id, { onDelete: 'cascade' }),
-    createdAt: integer('created_at').notNull()
+    createdAt: integer('created_at').notNull(),
+    addedBy: text('added_by', { enum: ['manual', 'oidc', 'bot'] })
+      .notNull()
+      .default('manual')
   },
   (t) => [
     primaryKey({ columns: [t.userId, t.roleId] }),

@@ -4,7 +4,7 @@ import http from 'http';
 import jwt from 'jsonwebtoken';
 import { db } from '../db';
 import { userRoles, users } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { getDefaultRole, getRoles } from '../db/queries/roles';
 import { getServerToken } from '../db/queries/server';
 import { publishUser } from '../db/publishers';
@@ -34,9 +34,9 @@ export const getOidcConfig = async () => {
 
   const discoveryOptions: any = {};
 
-  if (config.oidc.caPath) {
+  if (config.oidc.caCertPath) {
     try {
-      const ca = await fs.readFile(config.oidc.caPath);
+      const ca = await fs.readFile(config.oidc.caCertPath);
       
       discoveryOptions[client.customFetch] = (url: string, options: any) => {
         return fetch(url, {
@@ -45,7 +45,7 @@ export const getOidcConfig = async () => {
         });
       };
     } catch (err) {
-      console.error(`OIDC Config Error: Failed to read CA file at ${config.oidc.caPath}.`);
+      console.error(`OIDC Config Error: Failed to read CA file at ${config.oidc.caCertPath}.`);
     }
   }
 
@@ -65,19 +65,29 @@ export const oidcLogin = async (req: http.IncomingMessage, res: http.ServerRespo
   
   try {
     const as = await getOidcConfig();
+
+    const referer = req.headers.referer;
+    if (!referer) {
+      return res.writeHead(400, 'Referer header is missing').end();
+    }
+
+    const refererOrigin = new URL(referer).origin;
+    if (!config.oidc.allowedOrigins.includes(refererOrigin)) {
+      return res.writeHead(400, 'Invalid origin').end();
+    }
     
     const code_verifier = client.randomPKCECodeVerifier();
     const code_challenge = await client.calculatePKCECodeChallenge(code_verifier);
     const state = client.randomState();
     const nonce = client.randomNonce();
 
-    const sessionData = JSON.stringify({ code_verifier, state, nonce });
+    const sessionData = JSON.stringify({ code_verifier, state, nonce, redirectOrigin: refererOrigin });
     
     // Set OIDC session cookie
     res.setHeader('Set-Cookie', `__Host-oidc_session=${encodeURIComponent(sessionData)}; HttpOnly; Secure; SameSite=Lax; Max-Age=300; Path=/`);
 
     const baseUrl = getBaseUrl(req);
-    const redirectUri = config.oidc.redirectUrl || `${baseUrl}/auth/callback`;
+    const redirectUri = `${baseUrl}/auth/callback`;
 
     const parameters: Record<string, string> = {
       redirect_uri: redirectUri,
@@ -116,7 +126,11 @@ export const oidcCallback = async (req: http.IncomingMessage, res: http.ServerRe
     } catch(e) {
         throw new Error('Invalid session cookie format');
     }
-    const { code_verifier, state: expectedState, nonce: expectedNonce } = sessionData;
+    const { code_verifier, state: expectedState, nonce: expectedNonce, redirectOrigin } = sessionData;
+
+    if (!redirectOrigin || !config.oidc.allowedOrigins.includes(redirectOrigin)) {
+      throw new Error('Invalid redirect origin in session');
+    }
     
     const baseUrl = getBaseUrl(req);
     const safeUrl = (req.url || '').startsWith('/') ? req.url : '/';
@@ -151,15 +165,10 @@ export const oidcCallback = async (req: http.IncomingMessage, res: http.ServerRe
 
     const appToken = jwt.sign({ userId: user.id }, await getServerToken(), { expiresIn: '1d' });
     
-    const target = new URL(baseUrl);
+    const target = new URL(redirectOrigin);
     
     // Set success flag so frontend knows to initiate connection
     target.searchParams.set('oidc_status', 'success');
-
-    const allowedRedirects = config.oidc.allowedOrigins.map((origin: string) => new URL(origin));
-    if (!allowedRedirects.some((u: URL) => u.origin === target.origin)) {
-       throw new Error(`Invalid redirect origin: ${target.origin}`);
-    }
 
     // Set App Token as HttpOnly Cookie AND Clear OIDC Session in one header
     const authCookie = `sharkord_token=${appToken}; Path=/; SameSite=Lax; Secure; Max-Age=86400`;
@@ -215,29 +224,42 @@ async function syncUserWithDatabase(identity: string, claims: any) {
 
 async function applyRoleMappings(userId: number, claims: any) {
   const rolesMapping = config.oidc.rolesMapping;
-  
   if (Object.keys(rolesMapping).length === 0) return;
-  
-  const oidcGroups = ((claims.groups as string[]) || []).map(g => g.toLowerCase());
+
+  const oidcGroups = ((claims.groups as string[]) || []).map((g: string) => g.toLowerCase());
   const allDbRoles = await getRoles();
   const targetRoleIds: number[] = [];
 
   for (const [oidcRole, localRole] of Object.entries(rolesMapping)) {
     if (oidcGroups.includes(oidcRole.toLowerCase())) {
       const dbRole = allDbRoles.find(
-        (r) => r.name.toLowerCase() === localRole.toLowerCase()
+        (r: { id: number; name: string; }) => r.name.toLowerCase() === localRole.toLowerCase()
       );
       if (dbRole) targetRoleIds.push(dbRole.id);
     }
   }
+  const userCurrentRoles = await db.query.userRoles.findMany({ where: eq(userRoles.userId, userId) });
+  const oidcManagedRoleIds = userCurrentRoles
+    .filter((r) => r.addedBy === 'oidc')
+    .map((r) => r.roleId);
 
-  if (targetRoleIds.length > 0) {
-    await db.delete(userRoles).where(eq(userRoles.userId, userId));
+  const rolesToRemove = oidcManagedRoleIds.filter((id) => !targetRoleIds.includes(id));
+  if (rolesToRemove.length > 0) {
+    await db.delete(userRoles).where(and(
+      eq(userRoles.userId, userId),
+      inArray(userRoles.roleId, rolesToRemove),
+      eq(userRoles.addedBy, 'oidc')
+    ));
+  }
+
+  const rolesToAdd = targetRoleIds.filter((id) => !userCurrentRoles.some((r) => r.roleId === id));
+  if (rolesToAdd.length > 0) {
     await db.insert(userRoles).values(
-      targetRoleIds.map((roleId) => ({
+      rolesToAdd.map(roleId => ({
         userId,
         roleId,
         createdAt: Date.now(),
+        addedBy: 'oidc' as const
       }))
     );
   }

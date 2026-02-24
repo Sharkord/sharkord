@@ -16,8 +16,8 @@ const infoRouteHandler = async (
     name: settings.name,
     description: settings.description,
     logo: settings.logo,
-    allowNewUsers: settings.allowNewUsers,
-    oidcEnabled: !!config.oidc.issuer && !!config.oidc.clientId
+    allowNewUsers: config.server.disableLocalSignup ? false : settings.allowNewUsers,
+    oidcEnabled: config.oidc.oidcEnabled
   };
 
   res.writeHead(200, { 'Content-Type': 'application/json' });
