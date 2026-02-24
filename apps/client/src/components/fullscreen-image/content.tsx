@@ -11,108 +11,112 @@ type TFullScreenImageProps = React.ImgHTMLAttributes<HTMLImageElement>;
 const FullScreenImage = memo((props: TFullScreenImageProps) => {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [scale, setScale] = useState(0.8);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
 
-  const lastPosition = useRef({ x: 0, y: 0 });
-  const animationFrameId = useRef<number | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const scaleRef = useRef(0.8);
+  const posRef = useRef({ x: 0, y: 0 });
+  const lastMouseRef = useRef({ x: 0, y: 0 });
+  const draggingRef = useRef(false);
+
+  const applyTransform = useCallback(() => {
+    const el = imgRef.current;
+
+    if (!el) return;
+
+    el.style.transform = `scale(${scaleRef.current}) translate(${posRef.current.x}px, ${posRef.current.y}px)`;
+  }, []);
 
   const onOpenClick = useCallback(() => {
+    scaleRef.current = 0.8;
+    posRef.current = { x: 0, y: 0 };
+
     setOpen(true);
+
     setTimeout(() => setVisible(true), 10);
   }, []);
 
   const onCloseClick = useCallback(() => {
     setVisible(false);
-    setTimeout(() => setOpen(false), 300);
-    setScale(1);
-    setPosition({ x: 0, y: 0 });
-  }, []);
 
-  const handleScroll = useCallback((e: WheelEvent) => {
-    e.preventDefault();
-    setScale((prevScale) => {
-      const newScale = prevScale - e.deltaY * 0.001;
-      return Math.min(Math.max(newScale, 0.5), 3);
-    });
+    scaleRef.current = 1;
+    posRef.current = { x: 0, y: 0 };
+
+    setTimeout(() => setOpen(false), 300);
   }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    setIsDragging(true);
-    lastPosition.current = { x: e.clientX, y: e.clientY };
-  }, []);
+    draggingRef.current = true;
+    lastMouseRef.current = { x: e.clientX, y: e.clientY };
 
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
-      if (!isDragging) return;
+    const el = imgRef.current;
 
-      const deltaX = e.clientX - lastPosition.current.x;
-      const deltaY = e.clientY - lastPosition.current.y;
-
-      lastPosition.current = { x: e.clientX, y: e.clientY };
-
-      setPosition((prevPosition) => ({
-        x: prevPosition.x + deltaX,
-        y: prevPosition.y + deltaY
-      }));
-    },
-    [isDragging]
-  );
-
-  const onClickOutside = useCallback(() => {
-    if (!isDragging) onCloseClick();
-  }, [isDragging, onCloseClick]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-    if (animationFrameId.current !== null) {
-      cancelAnimationFrame(animationFrameId.current);
+    if (el) {
+      el.style.cursor = 'grabbing';
     }
   }, []);
 
   useEffect(() => {
+    if (!open) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onCloseClick();
       }
     };
 
-    if (open) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.addEventListener('wheel', handleScroll, { passive: false });
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+
+      const prev = scaleRef.current;
+
+      scaleRef.current = Math.min(Math.max(prev - e.deltaY * 0.001, 0.5), 3);
+
+      applyTransform();
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!draggingRef.current) return;
+      const dx = e.clientX - lastMouseRef.current.x;
+      const dy = e.clientY - lastMouseRef.current.y;
+
+      lastMouseRef.current = { x: e.clientX, y: e.clientY };
+
+      posRef.current = {
+        x: posRef.current.x + dx,
+        y: posRef.current.y + dy
+      };
+
+      applyTransform();
+    };
+
+    const handleMouseUp = () => {
+      draggingRef.current = false;
+
+      const el = imgRef.current;
+
+      if (el) {
+        el.style.cursor = 'grab';
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('wheel', handleWheel, { passive: false });
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('wheel', handleScroll);
+      document.removeEventListener('wheel', handleWheel);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [onCloseClick, open, handleScroll, handleMouseMove, handleMouseUp]);
+  }, [open, onCloseClick, applyTransform]);
 
-  useEffect(() => {
-    if (isDragging) {
-      const animate = () => {
-        setPosition((prevPosition) => ({
-          x: prevPosition.x,
-          y: prevPosition.y
-        }));
-
-        animationFrameId.current = requestAnimationFrame(animate);
-      };
-
-      animationFrameId.current = requestAnimationFrame(animate);
+  const onClickOutside = useCallback(() => {
+    if (!draggingRef.current) {
+      onCloseClick();
     }
-
-    return () => {
-      if (animationFrameId.current !== null) {
-        cancelAnimationFrame(animationFrameId.current);
-      }
-    };
-  }, [isDragging]);
+  }, [onCloseClick]);
 
   const portalContainer = createPortal(
     <>
@@ -126,11 +130,12 @@ const FullScreenImage = memo((props: TFullScreenImageProps) => {
       >
         <img
           {...props}
+          ref={imgRef}
           style={{
-            transform: `scale(${scale}) translate(${position.x}px, ${position.y}px)`,
-            cursor: isDragging ? 'grabbing' : 'grab'
+            transform: `scale(${scaleRef.current}) translate(${posRef.current.x}px, ${posRef.current.y}px)`,
+            cursor: 'grab'
           }}
-          className="p-4 max-w-full max-h-full object-contain transition-transform duration-100"
+          className="p-4 max-w-full max-h-full object-contain"
           onMouseDown={handleMouseDown}
           draggable={false}
           onClick={(e) => e.stopPropagation()}
