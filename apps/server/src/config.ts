@@ -39,6 +39,7 @@ const zConfig = z.object({
   }),
   oidc: z.object({
     oidcEnabled: z.coerce.boolean(),
+    enforceOidcRoles: z.coerce.boolean(),
     issuer: z.string(),
     clientId: z.string(),
     clientSecret: z.string(),
@@ -78,6 +79,7 @@ const defaultConfig : TConfig = {
   },
   oidc: {
     oidcEnabled: false,
+    enforceOidcRoles: true,
     issuer: 'https://auth.example.com/.well-known/openid-configuration',
     clientId: '',
     clientSecret: '',
@@ -152,6 +154,7 @@ config = applyEnvOverrides(config, {
   'server.disableLocalSignup': 'SHARKORD_DISABLE_LOCAL_SIGNUP',
 
   'oidc.oidcEnabled': 'OIDC_ENABLED',
+  'oidc.enforceOidcRoles': 'OIDC_ENFORCE_ROLES',
   'oidc.issuer': 'OIDC_ISSUER',
   'oidc.clientId': 'OIDC_CLIENT_ID',
   'oidc.clientSecret': 'OIDC_CLIENT_SECRET',

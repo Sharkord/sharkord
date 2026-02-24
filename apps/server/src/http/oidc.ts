@@ -239,17 +239,35 @@ async function applyRoleMappings(userId: number, claims: any) {
     }
   }
   const userCurrentRoles = await db.query.userRoles.findMany({ where: eq(userRoles.userId, userId) });
-  const oidcManagedRoleIds = userCurrentRoles
-    .filter((r) => r.addedBy === 'oidc')
-    .map((r) => r.roleId);
 
-  const rolesToRemove = oidcManagedRoleIds.filter((id) => !targetRoleIds.includes(id));
-  if (rolesToRemove.length > 0) {
-    await db.delete(userRoles).where(and(
-      eq(userRoles.userId, userId),
-      inArray(userRoles.roleId, rolesToRemove),
-      eq(userRoles.addedBy, 'oidc')
-    ));
+  if (config.oidc.enforceOidcRoles) {
+    const mappedRoleNames = Object.values(rolesMapping).map(name => name.toLowerCase());
+    const mappedDbRoles = allDbRoles.filter(
+      (r: { id: number; name: string; }) => mappedRoleNames.includes(r.name.toLowerCase())
+    );
+    const mappedDbRoleIds = mappedDbRoles.map(r => r.id);
+    const userCurrentRoleIds = userCurrentRoles.map(r => r.roleId);
+
+    const rolesToRemove = userCurrentRoleIds.filter(id => mappedDbRoleIds.includes(id) && !targetRoleIds.includes(id));
+    if (rolesToRemove.length > 0) {
+      await db.delete(userRoles).where(and(
+        eq(userRoles.userId, userId),
+        inArray(userRoles.roleId, rolesToRemove)
+      ));
+    }
+  } else {
+    const oidcManagedRoleIds = userCurrentRoles
+      .filter((r) => r.addedBy === 'oidc')
+      .map((r) => r.roleId);
+
+    const rolesToRemove = oidcManagedRoleIds.filter((id) => !targetRoleIds.includes(id));
+    if (rolesToRemove.length > 0) {
+      await db.delete(userRoles).where(and(
+        eq(userRoles.userId, userId),
+        inArray(userRoles.roleId, rolesToRemove),
+        eq(userRoles.addedBy, 'oidc')
+      ));
+    }
   }
 
   const rolesToAdd = targetRoleIds.filter((id) => !userCurrentRoles.some((r) => r.roleId === id));
