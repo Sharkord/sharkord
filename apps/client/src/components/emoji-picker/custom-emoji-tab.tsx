@@ -1,8 +1,7 @@
-import type { TEmojiItem } from '@/components/tiptap-input/types';
-import { Input } from '@sharkord/ui';
+import type { TEmojiItem } from '@/components/tiptap-input/helpers';
 import type { EmojiItem } from '@tiptap/extension-emoji';
-import { memo, useCallback, useMemo, useState } from 'react';
-import { searchEmojis, toTEmojiItem } from './emoji-data';
+import { memo, useCallback, useMemo } from 'react';
+import { toTEmojiItem } from './emoji-data';
 import { EmojiGrid } from './emoji-grid';
 import { useRecentEmojis } from './use-recent-emojis';
 
@@ -13,24 +12,11 @@ interface CustomEmojiTabProps {
 
 const CustomEmojiTab = memo(
   ({ customEmojis, onEmojiSelect }: CustomEmojiTabProps) => {
-    const [search, setSearch] = useState('');
     const { addRecent } = useRecentEmojis();
 
     const convertedEmojis = useMemo(
       () => customEmojis.map(toTEmojiItem),
       [customEmojis]
-    );
-
-    const displayEmojis = useMemo(
-      () => searchEmojis(convertedEmojis, search),
-      [convertedEmojis, search]
-    );
-
-    const handleSearchChange = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearch(e.target.value);
-      },
-      []
     );
 
     const handleEmojiSelect = useCallback(
@@ -55,26 +41,15 @@ const CustomEmojiTab = memo(
 
     return (
       <div className="flex flex-col h-full">
-        <div className="p-3 border-b">
-          <Input
-            placeholder="Search custom emojis..."
-            value={search}
-            onChange={handleSearchChange}
-            className="h-9"
-          />
-        </div>
-
         <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-          {search.trim()
-            ? `Search results (${displayEmojis.length})`
-            : `Server emojis (${convertedEmojis.length})`}
+          Server emojis ({convertedEmojis.length})
         </div>
 
         <div className="flex-1 min-h-0">
           <EmojiGrid
-            emojis={displayEmojis}
+            emojis={convertedEmojis}
             onSelect={handleEmojiSelect}
-            height={280}
+            height={300}
           />
         </div>
       </div>

@@ -2,7 +2,10 @@
   "name": "plugin-with-events",
   "version": "1.0.0",
   "sharkord": {
-    "entry": "index.js",
+    "entry": {
+      "server": "index.js",
+      "client": "index.js"
+    },
     "author": "Test Author",
     "description": "Plugin that listens to multiple events"
   }

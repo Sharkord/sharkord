@@ -40,7 +40,7 @@ describe('others router', () => {
     expect(result).toHaveProperty('emojis');
     expect(result).toHaveProperty('channelPermissions');
     expect(result).toHaveProperty('commands');
-    expect(result).toHaveProperty('components');
+    expect(result).toHaveProperty('pluginIdsWithComponents');
 
     expect(result.ownUserId).toBe(joiningUserId);
 

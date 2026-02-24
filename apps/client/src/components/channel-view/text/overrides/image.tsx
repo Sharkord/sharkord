@@ -42,14 +42,14 @@ const ImageOverride = memo(({ src, alt }: TImageOverrideProps) => {
   return (
     <OverrideLayout>
       {loading ? (
-        <Skeleton className="w-[300px] h-[300px]" />
+        <Skeleton className="w-75 h-75" />
       ) : (
         <FullScreenImage
           src={src}
           alt={alt}
           onLoad={onLoad}
           onError={onError}
-          className="max-w-full max-h-[300px] object-contain object-left w-fit"
+          className="max-w-full max-h-75 object-contain object-left w-fit"
           style={{ opacity: 0 }}
           crossOrigin="anonymous"
         />

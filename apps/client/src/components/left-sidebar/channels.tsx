@@ -1,9 +1,8 @@
 import { TypingDots } from '@/components/typing-dots';
-import { setSelectedChannelId } from '@/features/server/channels/actions';
 import {
   useChannelById,
+  useChannelIds,
   useChannelsByCategoryId,
-  useCurrentVoiceChannelId,
   useSelectedChannelId
 } from '@/features/server/channels/hooks';
 import {
@@ -13,11 +12,7 @@ import {
   useUnreadMessagesCount,
   useVoiceUsersByChannelId
 } from '@/features/server/hooks';
-import { joinVoice } from '@/features/server/voice/actions';
-import {
-  useVoice,
-  useVoiceChannelExternalStreamsList
-} from '@/features/server/voice/hooks';
+import { useVoiceChannelExternalStreamsList } from '@/features/server/voice/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
@@ -36,16 +31,16 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   ChannelPermission,
-  ChannelType,
   Permission,
   type TChannel,
   getTrpcError
 } from '@sharkord/shared';
 import { Hash, Volume2 } from 'lucide-react';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { ChannelContextMenu } from '../context-menus/channel';
 import { ExternalStream } from './external-stream';
+import { useSelectChannel } from './hooks';
 import { VoiceUser } from './voice-user';
 
 type TVoiceProps = Omit<TItemWrapperProps, 'children'> & {
@@ -159,14 +154,13 @@ const ItemWrapper = memo(
 type TChannelProps = {
   channelId: number;
   isSelected: boolean;
+  onClick: () => void;
 };
 
-const Channel = memo(({ channelId, isSelected }: TChannelProps) => {
+const Channel = memo(({ channelId, isSelected, onClick }: TChannelProps) => {
   const channel = useChannelById(channelId);
-  const currentVoiceChannelId = useCurrentVoiceChannelId();
   const channelCan = useChannelCan(channelId);
   const can = useCan();
-  const { init } = useVoice();
 
   const {
     attributes,
@@ -176,32 +170,6 @@ const Channel = memo(({ channelId, isSelected }: TChannelProps) => {
     transition,
     isDragging
   } = useSortable({ id: channelId });
-
-  const onClick = useCallback(async () => {
-    setSelectedChannelId(channelId);
-
-    if (
-      channel?.type === ChannelType.VOICE &&
-      currentVoiceChannelId !== channelId
-    ) {
-      const response = await joinVoice(channelId);
-
-      if (!response) {
-        // joining voice failed
-        setSelectedChannelId(undefined);
-        toast.error('Failed to join voice channel');
-
-        return;
-      }
-
-      try {
-        await init(response, channelId);
-      } catch {
-        setSelectedChannelId(undefined);
-        toast.error('Failed to initialize voice connection');
-      }
-    }
-  }, [channelId, channel?.type, init, currentVoiceChannelId]);
 
   if (!channel) {
     return null;
@@ -253,7 +221,7 @@ type TChannelsProps = {
 const Channels = memo(({ categoryId }: TChannelsProps) => {
   const channels = useChannelsByCategoryId(categoryId);
   const selectedChannelId = useSelectedChannelId();
-  const channelIds = useMemo(() => channels.map((ch) => ch.id), [channels]);
+  const channelIds = useChannelIds();
   const can = useCan();
 
   const sensors = useSensors(
@@ -263,6 +231,8 @@ const Channels = memo(({ categoryId }: TChannelsProps) => {
       }
     })
   );
+
+  const onChannelClick = useSelectChannel();
 
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
@@ -315,6 +285,7 @@ const Channels = memo(({ categoryId }: TChannelsProps) => {
               key={channel.id}
               channelId={channel.id}
               isSelected={selectedChannelId === channel.id}
+              onClick={() => onChannelClick(channel.id)}
             />
           ))}
         </SortableContext>

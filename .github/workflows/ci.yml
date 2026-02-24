@@ -34,8 +34,7 @@ jobs:
         run: bun check-types
 
       - name: Run tests
-        working-directory: apps/server
-        run: bun test
+        run: bun run test
 
       - name: Build
         working-directory: apps/server

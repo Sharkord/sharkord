@@ -1,4 +1,4 @@
-import type { TEmojiItem } from '@/components/tiptap-input/types';
+import type { TEmojiItem } from '@/components/tiptap-input/helpers';
 import type { EmojiItem } from '@tiptap/extension-emoji';
 import { gitHubEmojis } from '@tiptap/extension-emoji';
 

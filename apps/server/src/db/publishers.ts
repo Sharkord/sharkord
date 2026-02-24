@@ -211,9 +211,9 @@ const publishPluginCommands = async () => {
 };
 
 const publishPluginComponents = async () => {
-  const components = pluginManager.getComponents();
+  const pluginIds = pluginManager.getPluginIdsWithComponents();
 
-  pubsub.publish(ServerEvents.PLUGIN_COMPONENTS_CHANGE, components);
+  pubsub.publish(ServerEvents.PLUGIN_COMPONENTS_CHANGE, pluginIds);
 };
 
 const publishReplyCount = async (

@@ -21,5 +21,10 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "include": ["tests", "playwright.config.ts"]
+  /* TODO: this doesn't look right but fuck it for now, it's working*/
+  "include": [
+    "tests",
+    "playwright.config.ts",
+    "../../apps/server/src/declarations.d.ts"
+  ]
 }

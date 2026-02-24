@@ -84,7 +84,9 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
 
   setPluginCommands(data.commands);
 
-  const components = await processPluginComponents(data.components);
+  const components = await processPluginComponents(
+    data.pluginIdsWithComponents
+  );
 
   setPluginComponents(components);
 };

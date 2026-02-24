@@ -1,6 +1,8 @@
+import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
 import { useIsOwnUser } from '@/features/server/users/hooks';
 import { useVoice } from '@/features/server/voice/hooks';
+import { applyAudioOutputDevice } from '@/helpers/audio-output';
 import { StreamKind } from '@sharkord/shared';
 import { useEffect, useMemo } from 'react';
 import { useAudioLevel } from './use-audio-level';
@@ -26,6 +28,7 @@ const useVoiceRefs = (
     getUserScreenVolumeKey,
     getExternalVolumeKey
   } = useVolumeControl();
+  const { devices } = useDevices();
 
   const {
     videoRef,
@@ -110,7 +113,8 @@ const useVoiceRefs = (
     }
 
     audioRef.current.volume = userVolume / 100;
-  }, [audioStream, audioRef, userVolume]);
+    applyAudioOutputDevice(audioRef.current, devices.playbackId);
+  }, [audioStream, audioRef, userVolume, devices.playbackId]);
 
   useEffect(() => {
     if (!screenShareAudioStream || !screenShareAudioRef.current) return;
@@ -120,7 +124,14 @@ const useVoiceRefs = (
     }
 
     screenShareAudioRef.current.volume = userScreenVolume / 100;
-  }, [screenShareAudioStream, screenShareAudioRef, userScreenVolume]);
+
+    applyAudioOutputDevice(screenShareAudioRef.current, devices.playbackId);
+  }, [
+    screenShareAudioStream,
+    screenShareAudioRef,
+    userScreenVolume,
+    devices.playbackId
+  ]);
 
   useEffect(() => {
     if (!screenShareStream || !screenShareRef.current) return;
@@ -138,7 +149,14 @@ const useVoiceRefs = (
     }
 
     externalAudioRef.current.volume = externalVolume / 100;
-  }, [externalAudioStream, externalAudioRef, externalVolume]);
+
+    applyAudioOutputDevice(externalAudioRef.current, devices.playbackId);
+  }, [
+    externalAudioStream,
+    externalAudioRef,
+    externalVolume,
+    devices.playbackId
+  ]);
 
   useEffect(() => {
     if (!externalVideoStream || !externalVideoRef.current) return;

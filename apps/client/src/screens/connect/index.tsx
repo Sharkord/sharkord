@@ -4,12 +4,16 @@ import { useInfo } from '@/features/server/hooks';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
 import {
   getLocalStorageItem,
+  getLocalStorageItemBool,
   LocalStorageKey,
+  removeLocalStorageItem,
   SessionStorageKey,
+  setLocalStorageItem,
+  setLocalStorageItemBool,
   setSessionStorageItem
 } from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
-import { PluginSlot } from '@sharkord/shared';
+import { PluginSlot, TestId } from '@sharkord/shared';
 import {
   Alert,
   AlertDescription,
@@ -20,22 +24,26 @@ import {
   CardHeader,
   CardTitle,
   Group,
-  Input
+  Input,
+  Label,
+  Switch
 } from '@sharkord/ui';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 const Connect = memo(() => {
-  const { values, r, setErrors } = useForm<{
+  const { values, r, setErrors, onChange } = useForm<{
     identity: string;
     password: string;
     rememberCredentials: boolean;
+    autoLogin: boolean;
   }>({
     identity: getLocalStorageItem(LocalStorageKey.IDENTITY) || '',
     password: getLocalStorageItem(LocalStorageKey.USER_PASSWORD) || '',
     rememberCredentials: !!getLocalStorageItem(
       LocalStorageKey.REMEMBER_CREDENTIALS
-    )
+    ),
+    autoLogin: getLocalStorageItemBool(LocalStorageKey.AUTO_LOGIN)
   });
 
   const [loading, setLoading] = useState(false);
@@ -60,7 +68,8 @@ const Connect = memo(() => {
         body: JSON.stringify({
           identity: values.identity,
           password: values.password,
-          invite: inviteCode
+          invite: inviteCode,
+          autoLogin: values.autoLogin || undefined
         })
       });
 
@@ -75,6 +84,15 @@ const Connect = memo(() => {
 
       setSessionStorageItem(SessionStorageKey.TOKEN, data.token);
 
+      // persist auto-login preference and token
+      setLocalStorageItemBool(LocalStorageKey.AUTO_LOGIN, values.autoLogin);
+
+      if (values.autoLogin) {
+        setLocalStorageItem(LocalStorageKey.AUTO_LOGIN_TOKEN, data.token);
+      } else {
+        removeLocalStorageItem(LocalStorageKey.AUTO_LOGIN_TOKEN);
+      }
+
       await connect();
     } catch (error) {
       const errorMessage =
@@ -84,7 +102,13 @@ const Connect = memo(() => {
     } finally {
       setLoading(false);
     }
-  }, [values.identity, values.password, setErrors, inviteCode]);
+  }, [
+    values.identity,
+    values.password,
+    values.autoLogin,
+    setErrors,
+    inviteCode
+  ]);
 
   const logoSrc = useMemo(() => {
     if (info?.logo) {
@@ -120,15 +144,32 @@ const Connect = memo(() => {
               label="Identity"
               help="A unique identifier for your account on this server. You can use whatever you like, such as an email address or a username. This won't be shared publicly."
             >
-              <Input {...r('identity')} />
+              <Input
+                {...r('identity')}
+                data-testid={TestId.CONNECT_IDENTITY_INPUT}
+              />
             </Group>
             <Group label="Password">
               <Input
                 {...r('password')}
                 type="password"
                 onEnter={onConnectClick}
+                data-testid={TestId.CONNECT_PASSWORD_INPUT}
               />
             </Group>
+          </div>
+
+          <div
+            className="flex items-center gap-2 w-fit cursor-pointer"
+            data-testid={TestId.CONNECT_AUTO_LOGIN_SWITCH}
+            onClick={() => {
+              onChange('autoLogin', !values.autoLogin);
+            }}
+          >
+            <Switch checked={values.autoLogin} />
+            <Label className="text-sm cursor-pointer">
+              Login automatically
+            </Label>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -152,6 +193,7 @@ const Connect = memo(() => {
               variant="outline"
               onClick={onConnectClick}
               disabled={loading || !values.identity || !values.password}
+              data-testid={TestId.CONNECT_BUTTON}
             >
               Connect
             </Button>

@@ -206,7 +206,7 @@ const loginRouteHandler = async (
   }
 
   const token = jwt.sign({ userId: existingUser.id }, await getServerToken(), {
-    expiresIn: '86400s' // 1 day
+    expiresIn: '604800s' // 7 days
   });
 
   res.writeHead(200, { 'Content-Type': 'application/json' });

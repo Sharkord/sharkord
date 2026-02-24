@@ -1,12 +1,12 @@
 import { store } from '@/features/store';
 import { logDebug } from '@/helpers/browser-logger';
 import { getUrlFromServer } from '@/helpers/get-file-url';
-import type {
-  TCommandInfo,
-  TCommandsMapByPlugin,
-  TPluginComponentsMap,
-  TPluginComponentsMapBySlotId,
-  TPluginComponentsMapBySlotIdMapListByPlugin
+import {
+  PluginSlot,
+  type TCommandInfo,
+  type TCommandsMapByPlugin,
+  type TPluginComponentsMap,
+  type TPluginComponentsMapBySlotId
 } from '@sharkord/shared';
 import { serverSliceActions } from '../slice';
 
@@ -33,23 +33,21 @@ export const addPluginComponents = (
 export const setPluginComponents = (components: TPluginComponentsMap) =>
   store.dispatch(serverSliceActions.setPluginComponents(components));
 
-export const processPluginComponents = async (
-  slotsMap: TPluginComponentsMapBySlotIdMapListByPlugin
-) => {
+export const processPluginComponents = async (pluginIds: string[]) => {
   const componentsMap: TPluginComponentsMap = {};
 
-  for (const [pluginId, slots] of Object.entries(slotsMap)) {
+  for (const pluginId of pluginIds) {
     try {
       componentsMap[pluginId] = {};
 
-      const moduleUrl = `${getUrlFromServer()}/plugin-bundle/${pluginId}/index.js`;
+      const moduleUrl = `${getUrlFromServer()}/plugin-bundle/${pluginId}/client.js`;
 
       // if you are developing, after making a change in the plugin you NEED to refresh the page to load the new version of the plugin, because of browser caching dynamic imports
       const mod = await import(/* @vite-ignore */ moduleUrl);
 
       logDebug('Loaded plugin module:', { pluginId, mod });
 
-      for (const slotId of slots) {
+      for (const slotId of Object.values(PluginSlot)) {
         const components = mod?.components?.[slotId];
 
         if (components) {

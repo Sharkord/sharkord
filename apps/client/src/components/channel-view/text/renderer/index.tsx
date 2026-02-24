@@ -2,7 +2,12 @@ import { requestConfirmation } from '@/features/dialogs/actions';
 import { useOwnUserId } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';
-import { imageExtensions, type TJoinedMessage } from '@sharkord/shared';
+import { cn } from '@/lib/utils';
+import {
+  imageExtensions,
+  isEmojiOnlyMessage,
+  type TJoinedMessage
+} from '@sharkord/shared';
 import parse from 'html-react-parser';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -21,6 +26,11 @@ const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
   const isOwnMessage = useMemo(
     () => message.userId === ownUserId,
     [message.userId, ownUserId]
+  );
+
+  const emojiOnly = useMemo(
+    () => isEmojiOnlyMessage(message.content),
+    [message.content]
   );
 
   const { foundMedia, messageHtml } = useMemo(() => {
@@ -71,7 +81,12 @@ const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="prose max-w-full break-words msg-content">
+      <div
+        className={cn(
+          'prose max-w-full wrap-break-word msg-content',
+          emojiOnly && 'emoji-only'
+        )}
+      >
         {messageHtml}
       </div>
 

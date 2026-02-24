@@ -1,5 +1,6 @@
 import type { IRootState } from '@/features/store';
 import { createSelector } from '@reduxjs/toolkit';
+import type { TChannel } from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
 
 const DEFAULT_OBJECT = {};
@@ -59,3 +60,20 @@ export const channelPermissionsByIdSelector = (
   state: IRootState,
   channelId: number
 ) => state.server.channelPermissions[channelId] || DEFAULT_OBJECT;
+
+export const channelsMapSelector = createSelector(
+  channelsSelector,
+  (channels) => {
+    const map: Record<number, TChannel> = {};
+
+    channels.forEach((channel) => {
+      map[channel.id] = channel;
+    });
+
+    return map;
+  }
+);
+
+export const channelIdsSelector = createSelector(channelsSelector, (channels) =>
+  channels.map((channel) => channel.id)
+);
