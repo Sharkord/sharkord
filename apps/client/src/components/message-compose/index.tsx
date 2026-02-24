@@ -132,7 +132,7 @@ const MessageCompose = memo(
     return (
       <div
         ref={containerRef}
-        className="flex shrink-0 flex-col gap-2 border-t border-border p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]"
+        className="flex shrink-0 flex-col gap-2 p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]"
       >
         {uploading && (
           <div className="flex items-center gap-2">

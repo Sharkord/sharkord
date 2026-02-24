@@ -233,7 +233,7 @@ const TiptapInput = memo(
         >
           <EditorContent
             editor={editor}
-            className={`border p-2 rounded w-full min-h-10 tiptap overflow-auto relative ${
+            className={`border p-2 rounded w-full min-h-10 tiptap overflow-auto relative transition-colors focus-within:border-ring [&_.ProseMirror:focus]:outline-none ${
               isExpanded ? 'max-h-80' : 'max-h-20'
             } ${disabled ? 'opacity-50 cursor-not-allowed bg-muted' : ''}`}
           />
@@ -242,7 +242,7 @@ const TiptapInput = memo(
               type="button"
               variant="ghost"
               size="icon"
-              className="absolute -top-[4px] left-1/2 -translate-y-1/2 -translate-x-1/2 h-5 w-8 shrink-0 rounded border bg-background hover:bg-muted"
+              className="absolute -top-1 left-1/2 -translate-y-1/2 -translate-x-1/2 h-5 w-8 shrink-0 rounded border bg-background hover:bg-muted"
               onClick={() => setIsExpanded((e) => !e)}
               aria-label={isExpanded ? 'Collapse' : 'Expand'}
             >
