@@ -15,13 +15,13 @@ import {
   useRef,
   useState
 } from 'react';
+import type { TEmojiItem } from './helpers';
 import {
   COMMANDS_STORAGE_KEY,
   CommandSuggestion
 } from './plugins/command-suggestion';
 import { SlashCommands } from './plugins/slash-commands-extension';
 import { EmojiSuggestion } from './plugins/suggestions';
-import type { TEmojiItem } from './types';
 
 type TTiptapInputProps = {
   disabled?: boolean;

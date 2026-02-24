@@ -1,3 +1,4 @@
+import { isTextPresentation } from '@/components/tiptap-input/helpers';
 import { useOwnUserId, useUsernames } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';
@@ -60,7 +61,12 @@ const Emoji = memo(
       [emoji]
     );
 
-    if (gitHubEmoji?.emoji) {
+    const imgSrc = useMemo(
+      () => gitHubEmoji?.fallbackImage ?? getFileUrl(file),
+      [gitHubEmoji, file]
+    );
+
+    if (gitHubEmoji?.emoji && !isTextPresentation(gitHubEmoji.emoji)) {
       return (
         <span className={cn('text-sm', nativeEmojiClassName)}>
           {gitHubEmoji.emoji}
@@ -70,7 +76,7 @@ const Emoji = memo(
 
     return (
       <img
-        src={getFileUrl(file)}
+        src={imgSrc}
         alt={`:${emoji}:`}
         className={cn('w-5 h-5 object-contain', className)}
         onError={onError}

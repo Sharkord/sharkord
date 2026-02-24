@@ -5,7 +5,7 @@ import {
   useImperativeHandle,
   useState
 } from 'react';
-import type { TEmojiItem } from '../types';
+import { shouldUseFallbackImage, type TEmojiItem } from '../helpers';
 
 interface EmojiListProps {
   items: TEmojiItem[];
@@ -85,7 +85,7 @@ const EmojiList = forwardRef<EmojiListRef, EmojiListProps>(
             type="button"
             onClick={() => onSelect(item)}
           >
-            {item.emoji ? (
+            {item.emoji && !shouldUseFallbackImage(item) ? (
               <span className="text-base shrink-0">{item.emoji}</span>
             ) : item.fallbackImage ? (
               <img
