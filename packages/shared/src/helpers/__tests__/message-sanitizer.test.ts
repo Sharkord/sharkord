@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import { isEmptyMessage } from '../is-empty-message';
+import { isEmojiOnlyMessage, isEmptyMessage } from '../message-sanitizer';
 
-describe('is-empty-message', () => {
+describe('isEmptyMessage', () => {
   test('should return true for empty string', () => {
     expect(isEmptyMessage('')).toBe(true);
   });
@@ -122,5 +122,107 @@ describe('is-empty-message', () => {
     expect(
       isEmptyMessage('<p><strong>Bold</strong> and <em>italic</em></p>')
     ).toBe(false);
+  });
+});
+
+describe('isEmojiOnlyMessage', () => {
+  test('should return false for null/undefined/empty', () => {
+    expect(isEmojiOnlyMessage(null)).toBe(false);
+    expect(isEmojiOnlyMessage(undefined)).toBe(false);
+    expect(isEmojiOnlyMessage('')).toBe(false);
+  });
+
+  test('should return false for plain text', () => {
+    expect(isEmojiOnlyMessage('Hello')).toBe(false);
+    expect(isEmojiOnlyMessage('<p>Hello world</p>')).toBe(false);
+  });
+
+  test('should return true for a single native emoji', () => {
+    expect(
+      isEmojiOnlyMessage(
+        '<p><span data-type="emoji" data-name="smile" class="emoji-image">😄</span></p>'
+      )
+    ).toBe(true);
+  });
+
+  test('should return true for multiple native emojis', () => {
+    expect(
+      isEmojiOnlyMessage(
+        '<p><span data-type="emoji" data-name="smile" class="emoji-image">😄</span><span data-type="emoji" data-name="heart" class="emoji-image">❤️</span></p>'
+      )
+    ).toBe(true);
+  });
+
+  test('should return true for a single custom emoji image', () => {
+    expect(
+      isEmojiOnlyMessage(
+        '<p><img src="https://cdn.example.com/emoji.png" alt="custom" class="emoji-image"></p>'
+      )
+    ).toBe(true);
+  });
+
+  test('should return true for mixed native and custom emojis', () => {
+    expect(
+      isEmojiOnlyMessage(
+        '<p><span data-type="emoji" data-name="smile" class="emoji-image">😄</span><img src="https://cdn.example.com/emoji.png" alt="custom" class="emoji-image"></p>'
+      )
+    ).toBe(true);
+  });
+
+  test('should return false for emoji mixed with text', () => {
+    expect(
+      isEmojiOnlyMessage(
+        '<p>Hello <span data-type="emoji" data-name="smile" class="emoji-image">😄</span></p>'
+      )
+    ).toBe(false);
+  });
+
+  test('should return false for emoji followed by text', () => {
+    expect(
+      isEmojiOnlyMessage(
+        '<p><span data-type="emoji" data-name="smile" class="emoji-image">😄</span> world</p>'
+      )
+    ).toBe(false);
+  });
+
+  test('should return true for emojis across multiple paragraphs', () => {
+    expect(
+      isEmojiOnlyMessage(
+        '<p><span data-type="emoji" data-name="smile" class="emoji-image">😄</span></p><p><span data-type="emoji" data-name="heart" class="emoji-image">❤️</span></p>'
+      )
+    ).toBe(true);
+  });
+
+  test('should return false for non-emoji images', () => {
+    expect(
+      isEmojiOnlyMessage('<p><img src="https://example.com/photo.jpg"></p>')
+    ).toBe(false);
+  });
+
+  test('should return false for non-emoji spans', () => {
+    expect(
+      isEmojiOnlyMessage('<p><span class="highlight">text</span></p>')
+    ).toBe(false);
+  });
+
+  test('should return true for emojis with surrounding whitespace', () => {
+    expect(
+      isEmojiOnlyMessage(
+        '<p> <span data-type="emoji" data-name="smile" class="emoji-image">😄</span> </p>'
+      )
+    ).toBe(true);
+  });
+
+  test('should return false for empty tags without emojis', () => {
+    expect(isEmojiOnlyMessage('<p></p>')).toBe(false);
+    expect(isEmojiOnlyMessage('<p><br></p>')).toBe(false);
+  });
+
+  test('should return true for self-closing custom emoji img', () => {
+    expect(
+      isEmojiOnlyMessage(
+        '<p><img src="https://cdn.example.com/emoji.png" alt="custom" class="emoji-image" /></p>'
+      )
+    ).toBe(true);
   });
 });
