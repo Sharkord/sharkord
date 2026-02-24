@@ -1,4 +1,4 @@
-import { PluginSlot, type TInvokerContext } from '@sharkord/shared';
+import { type TInvokerContext } from '@sharkord/shared';
 import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
@@ -245,24 +245,24 @@ describe('plugin-manager', () => {
   });
 
   describe('components', () => {
-    test('should return registered components for loaded plugin', async () => {
+    test('should return plugin id when ui is enabled', async () => {
       await pluginManager.load('plugin-b');
 
-      const slots = pluginManager.getComponents();
+      const pluginIds = pluginManager.getPluginIdsWithComponents();
 
-      expect(slots['plugin-b']).toBeDefined();
-      expect(slots['plugin-b']).toContain(PluginSlot.CONNECT_SCREEN);
-      expect(slots['plugin-b']).toContain(PluginSlot.HOME_SCREEN);
+      expect(pluginIds).toContain('plugin-b');
     });
 
-    test('should remove registered components on unload', async () => {
+    test('should remove plugin id from components on unload', async () => {
       await pluginManager.load('plugin-b');
 
-      expect(pluginManager.getComponents()['plugin-b']).toBeDefined();
+      expect(pluginManager.getPluginIdsWithComponents()).toContain('plugin-b');
 
       await pluginManager.unload('plugin-b');
 
-      expect(pluginManager.getComponents()['plugin-b']).toBeUndefined();
+      expect(pluginManager.getPluginIdsWithComponents()).not.toContain(
+        'plugin-b'
+      );
     });
   });
 

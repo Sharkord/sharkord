@@ -7,7 +7,10 @@ export const zPluginPackageJson = z.object({
     .regex(/^\d+\.\d+\.\d+(-[a-zA-Z0-9-.]+)?$/, 'Invalid version format'),
   name: z.string().min(1, 'Package name is required'),
   sharkord: z.object({
-    entry: z.string().endsWith('.js', 'Plugin entry file must be a .js file'),
+    entry: z.object({
+      server: z.string().min(1, 'Server entry point is required'),
+      client: z.string().min(1, 'Client entry point is required')
+    }),
     author: z.string().min(1, 'Plugin author is required'),
     homepage: z.url().optional(),
     description: z.string().min(1, 'Plugin description is required'),
@@ -28,7 +31,7 @@ export type TPluginInfo = {
   name: TPluginPackageJson['name'];
   homepage: TPluginPackageJson['sharkord']['homepage'];
   path: string;
-  entry: string;
+  entry: TPluginPackageJson['sharkord']['entry'];
 };
 
 export type TLogEntry = {

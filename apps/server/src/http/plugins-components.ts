@@ -2,8 +2,6 @@ import http from 'http';
 import { getSettings } from '../db/queries/server';
 import { pluginManager } from '../plugins';
 
-// curl -v http://localhost:4991/plugin-ui
-
 const pluginsComponentsRouteHandler = async (
   req: http.IncomingMessage,
   res: http.ServerResponse
@@ -17,10 +15,10 @@ const pluginsComponentsRouteHandler = async (
     return;
   }
 
-  const components = pluginManager.getComponents();
+  const pluginIds = pluginManager.getPluginIdsWithComponents();
 
   res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify(components));
+  res.end(JSON.stringify(pluginIds));
 
   return res;
 };
