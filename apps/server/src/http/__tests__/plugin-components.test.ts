@@ -14,18 +14,16 @@ describe('/plugin-components', () => {
 
   beforeEach(resetPluginMocks);
 
-  test('should return registered plugin components when plugins are enabled', async () => {
+  test('should return plugin ids with enabled ui when plugins are enabled', async () => {
     await pluginManager.load('plugin-b');
 
     const response = await fetch(`${testsBaseUrl}/plugin-components`);
 
     expect(response.status).toBe(200);
 
-    const data = (await response.json()) as Record<string, string[]>;
+    const data = (await response.json()) as string[];
 
-    expect(data).toHaveProperty('plugin-b');
-    expect(data['plugin-b']).toContain('connect_screen');
-    expect(data['plugin-b']).toContain('home_screen');
+    expect(data).toContain('plugin-b');
   });
 
   test('should return 403 when plugins are disabled', async () => {

@@ -3,7 +3,10 @@
   "version": "0.0.1",
   "module": "src/index.ts",
   "sharkord": {
-    "entry": "index.js",
+    "entry": {
+      "server": "index.js",
+      "client": "index.js"
+    },
     "author": "My Name",
     "homepage": "https://mocked.com",
     "description": "This is a mocked plugin for testing purposes.",
