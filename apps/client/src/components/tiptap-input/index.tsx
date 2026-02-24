@@ -20,7 +20,7 @@ import {
   CommandSuggestion
 } from './plugins/command-suggestion';
 import { SlashCommands } from './plugins/slash-commands-extension';
-import { EmojiSuggestion } from './suggestions';
+import { EmojiSuggestion } from './plugins/suggestions';
 import type { TEmojiItem } from './types';
 
 type TTiptapInputProps = {

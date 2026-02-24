@@ -5,7 +5,7 @@ import {
   useImperativeHandle,
   useState
 } from 'react';
-import type { TEmojiItem } from './types';
+import type { TEmojiItem } from '../types';
 
 interface EmojiListProps {
   items: TEmojiItem[];
@@ -28,6 +28,7 @@ const EmojiList = forwardRef<EmojiListRef, EmojiListProps>(
     const selectItem = useCallback(
       (index: number) => {
         const item = items[index];
+
         if (item) {
           onSelect(item);
         }
