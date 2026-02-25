@@ -73,7 +73,7 @@ const VoiceUserCard = memo(
           <div
             className="h-full w-full rounded-t-md bg-cover bg-center blur-sm brightness-50 bg-no-repeat absolute inset-0"
             style={{
-              backgroundImage: `url(${getFileUrl(voiceUser.banner)})`
+              backgroundImage: `url("${getFileUrl(voiceUser.banner)}")`
             }}
           />
         ) : (
