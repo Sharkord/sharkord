@@ -78,14 +78,14 @@ jobs:
             ```bash
             docker pull ${{ secrets.DOCKER_USERNAME }}/sharkord:v${{ steps.get_version.outputs.version }}
             ```
-      - name: Commit and push version bump
+      - name: Commit version bump
         if: ${{ inputs.bump != 'none' }}
         run: |
           git add .
           git commit -m "chore: bump version to ${{ steps.get_version.outputs.version }}"
-          git push
 
       - name: Create Git tag
-        run: |
-          git tag -a "v${{ steps.get_version.outputs.version }}" -m "Release v${{ steps.get_version.outputs.version }}"
-          git push origin "v${{ steps.get_version.outputs.version }}"
+        run: git tag -a "v${{ steps.get_version.outputs.version }}" -m "Release v${{ steps.get_version.outputs.version }}"
+
+      - name: Push commit and tag
+        run: git push --follow-tags
