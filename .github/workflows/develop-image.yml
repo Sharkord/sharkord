@@ -1,10 +1,10 @@
-name: Publish Develop Image
+name: Publish Development Image
 
 on:
   workflow_dispatch:
 
 concurrency:
-  group: docker-develop
+  group: docker-dev
   cancel-in-progress: true
 
 jobs:
@@ -24,9 +24,9 @@ jobs:
         with:
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
-          tags: ${{ secrets.DOCKER_USERNAME }}/sharkord:develop
+          tags: ${{ secrets.DOCKER_USERNAME }}/sharkord:dev
           labels: |
             org.opencontainers.image.title=Sharkord
-            org.opencontainers.image.description=Sharkord Server (develop)
+            org.opencontainers.image.description=Sharkord Server (dev)
             org.opencontainers.image.source=https://github.com/Sharkord/sharkord
             org.opencontainers.image.revision=${{ github.sha }}
