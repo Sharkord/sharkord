@@ -19,7 +19,11 @@ const updateSettingsRoute = protectedProcedure
       password: z.string().min(1).max(32).optional().nullable().default(null),
       allowNewUsers: z.boolean().optional(),
       storageUploadEnabled: z.boolean().optional(),
+      storageQuota: z.number().min(0).optional(),
       storageUploadMaxFileSize: z.number().min(0).optional(),
+      storageMaxAvatarSize: z.number().min(0).optional(),
+      storageMaxBannerSize: z.number().min(0).optional(),
+      storageMaxFilesPerMessage: z.number().int().min(0).optional(),
       storageSpaceQuotaByUser: z.number().min(0).optional(),
       storageOverflowAction: z.enum(StorageOverflowAction).optional(),
       enablePlugins: z.boolean().optional()
@@ -36,7 +40,11 @@ const updateSettingsRoute = protectedProcedure
       password: input.password,
       allowNewUsers: input.allowNewUsers,
       storageUploadEnabled: input.storageUploadEnabled,
+      storageQuota: input.storageQuota,
       storageUploadMaxFileSize: input.storageUploadMaxFileSize,
+      storageMaxAvatarSize: input.storageMaxAvatarSize,
+      storageMaxBannerSize: input.storageMaxBannerSize,
+      storageMaxFilesPerMessage: input.storageMaxFilesPerMessage,
       storageSpaceQuotaByUser: input.storageSpaceQuotaByUser,
       storageOverflowAction: input.storageOverflowAction,
       enablePlugins: input.enablePlugins

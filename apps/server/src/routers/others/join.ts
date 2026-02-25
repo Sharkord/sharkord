@@ -106,6 +106,9 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       storageUploadEnabled: settings.storageUploadEnabled,
       storageQuota: settings.storageQuota,
       storageUploadMaxFileSize: settings.storageUploadMaxFileSize,
+      storageMaxAvatarSize: settings.storageMaxAvatarSize,
+      storageMaxBannerSize: settings.storageMaxBannerSize,
+      storageMaxFilesPerMessage: settings.storageMaxFilesPerMessage,
       storageSpaceQuotaByUser: settings.storageSpaceQuotaByUser,
       storageOverflowAction: settings.storageOverflowAction,
       enablePlugins: settings.enablePlugins

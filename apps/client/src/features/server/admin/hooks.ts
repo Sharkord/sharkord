@@ -5,6 +5,9 @@ import {
   DELETED_USER_IDENTITY_AND_NAME,
   parseTrpcErrors,
   Permission,
+  STORAGE_DEFAULT_MAX_AVATAR_SIZE,
+  STORAGE_DEFAULT_MAX_BANNER_SIZE,
+  STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
   STORAGE_MAX_FILE_SIZE,
   STORAGE_MAX_QUOTA_PER_USER,
   STORAGE_OVERFLOW_ACTION,
@@ -425,6 +428,9 @@ export const useAdminStorage = () => {
       storageSpaceQuotaByUser: STORAGE_MAX_QUOTA_PER_USER,
       storageUploadEnabled: true,
       storageUploadMaxFileSize: STORAGE_MAX_FILE_SIZE,
+      storageMaxAvatarSize: STORAGE_DEFAULT_MAX_AVATAR_SIZE,
+      storageMaxBannerSize: STORAGE_DEFAULT_MAX_BANNER_SIZE,
+      storageMaxFilesPerMessage: STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
       storageQuota: STORAGE_QUOTA
     });
   const [diskMetrics, setDiskMetrics] = useState<TDiskMetrics | undefined>(
@@ -449,7 +455,11 @@ export const useAdminStorage = () => {
     try {
       await trpc.others.updateSettings.mutate({
         storageUploadEnabled: values.storageUploadEnabled,
+        storageQuota: values.storageQuota,
         storageUploadMaxFileSize: values.storageUploadMaxFileSize,
+        storageMaxAvatarSize: values.storageMaxAvatarSize,
+        storageMaxBannerSize: values.storageMaxBannerSize,
+        storageMaxFilesPerMessage: values.storageMaxFilesPerMessage,
         storageSpaceQuotaByUser: values.storageSpaceQuotaByUser,
         storageOverflowAction:
           values.storageOverflowAction as StorageOverflowAction
@@ -478,6 +488,14 @@ export const useAdminStorage = () => {
         }
       ),
       storageQuota: filesize(Number(values.storageQuota ?? 0), {
+        output: 'object',
+        standard: 'jedec'
+      }),
+      storageMaxAvatarSize: filesize(Number(values.storageMaxAvatarSize ?? 0), {
+        output: 'object',
+        standard: 'jedec'
+      }),
+      storageMaxBannerSize: filesize(Number(values.storageMaxBannerSize ?? 0), {
         output: 'object',
         standard: 'jedec'
       })
