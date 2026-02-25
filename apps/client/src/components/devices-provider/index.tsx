@@ -1,9 +1,9 @@
+import { MICROPHONE_GATE_DEFAULT_THRESHOLD_DB } from '@/helpers/audio-gate';
 import {
   getLocalStorageItemAsJSON,
   LocalStorageKey,
   setLocalStorageItemAsJSON
 } from '@/helpers/storage';
-import { MICROPHONE_GATE_DEFAULT_THRESHOLD_DB } from '@/helpers/audio-gate';
 import { Resolution, VideoCodec, type TDeviceSettings } from '@/types';
 import { DEFAULT_BITRATE } from '@sharkord/shared';
 import {

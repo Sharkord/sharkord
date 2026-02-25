@@ -3,9 +3,7 @@ import { getVoiceControlsBridge } from '@/components/voice-provider/controls-bri
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
-import {
-  MICROPHONE_GATE_DEFAULT_THRESHOLD_DB,
-} from '@/helpers/audio-gate';
+import { MICROPHONE_GATE_DEFAULT_THRESHOLD_DB } from '@/helpers/audio-gate';
 import {
   getNoiseGateWorkletAvailabilitySnapshot,
   subscribeNoiseGateWorkletAvailability
@@ -37,12 +35,18 @@ import {
 } from '@sharkord/ui';
 import { filesize } from 'filesize';
 import { Info } from 'lucide-react';
-import { memo, useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useSyncExternalStore
+} from 'react';
 import { toast } from 'sonner';
 import { useAvailableDevices } from './hooks/use-available-devices';
-import { MicrophoneTestLevelBar } from './microphone-test-level-bar';
 import { useMicrophoneTest } from './hooks/use-microphone-test';
 import { useWebcamTest } from './hooks/use-webcam-test';
+import { MicrophoneTestLevelBar } from './microphone-test-level-bar';
 import ResolutionFpsControl from './resolution-fps-control';
 
 const DEFAULT_NAME = 'default';
@@ -374,7 +378,9 @@ const Devices = memo(() => {
               noiseGateEnabled={values.noiseGateEnabled ?? true}
               noiseGateControlsDisabled={!isNoiseGateAvailable}
               noiseGateThresholdDb={values.noiseGateThresholdDb}
-              onThresholdChange={(value) => onChange('noiseGateThresholdDb', value)}
+              onThresholdChange={(value) =>
+                onChange('noiseGateThresholdDb', value)
+              }
               getAudioLevelSnapshot={getAudioLevelSnapshot}
             />
 

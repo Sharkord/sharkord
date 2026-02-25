@@ -75,9 +75,8 @@ const MicrophoneTestLevelBar = memo(
     const clampedThresholdDb = clampMicrophoneDecibels(
       noiseGateThresholdDb ?? MICROPHONE_GATE_DEFAULT_THRESHOLD_DB
     );
-    const noiseGateThresholdPercent = microphoneDecibelsToPercent(
-      clampedThresholdDb
-    );
+    const noiseGateThresholdPercent =
+      microphoneDecibelsToPercent(clampedThresholdDb);
 
     return (
       <div className="space-y-2">

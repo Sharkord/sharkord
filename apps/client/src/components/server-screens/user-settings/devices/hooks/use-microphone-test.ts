@@ -1,4 +1,3 @@
-import { applyAudioOutputDevice } from '@/helpers/audio-output';
 import {
   MICROPHONE_GATE_CLOSE_HOLD_MS,
   MICROPHONE_GATE_DEFAULT_THRESHOLD_DB,
@@ -6,6 +5,7 @@ import {
   clampMicrophoneDecibels,
   microphoneDecibelsToPercent
 } from '@/helpers/audio-gate';
+import { applyAudioOutputDevice } from '@/helpers/audio-output';
 import {
   createNoiseGateWorkletNode,
   getNoiseGateWorkletAvailabilitySnapshot,
@@ -248,13 +248,19 @@ const useMicrophoneTest = ({
 
         if (shouldUseNoiseGateWorklet) {
           try {
-            noiseGateWorkletNode = await createNoiseGateWorkletNode(audioContext, {
-              enabled: noiseGateEnabledRef.current,
-              thresholdDb: noiseGateThresholdDbRef.current,
-              holdMs: MICROPHONE_GATE_CLOSE_HOLD_MS
-            });
+            noiseGateWorkletNode = await createNoiseGateWorkletNode(
+              audioContext,
+              {
+                enabled: noiseGateEnabledRef.current,
+                thresholdDb: noiseGateThresholdDbRef.current,
+                holdMs: MICROPHONE_GATE_CLOSE_HOLD_MS
+              }
+            );
           } catch (error) {
-            console.warn('Noise gate AudioWorklet unavailable for mic test:', error);
+            console.warn(
+              'Noise gate AudioWorklet unavailable for mic test:',
+              error
+            );
             markNoiseGateWorkletUnavailable(
               'Failed to initialize the noise gate audio processor.'
             );

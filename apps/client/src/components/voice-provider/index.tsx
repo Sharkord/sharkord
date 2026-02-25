@@ -251,7 +251,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       microphoneNoiseGateAudioContextRef.current = null;
     }
 
-    rawMicrophoneStreamRef.current?.getTracks().forEach((track) => track.stop());
+    rawMicrophoneStreamRef.current
+      ?.getTracks()
+      .forEach((track) => track.stop());
     rawMicrophoneStreamRef.current = null;
 
     transmitMicrophoneTrackRef.current?.stop();
@@ -317,13 +319,17 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           try {
             audioContext = new window.AudioContext();
             const source = audioContext.createMediaStreamSource(rawStream);
-            const noiseGateNode = await createNoiseGateWorkletNode(audioContext, {
-              enabled: true,
-              thresholdDb: clampMicrophoneDecibels(
-                devices.noiseGateThresholdDb ?? MICROPHONE_GATE_DEFAULT_THRESHOLD_DB
-              ),
-              holdMs: MICROPHONE_GATE_CLOSE_HOLD_MS
-            });
+            const noiseGateNode = await createNoiseGateWorkletNode(
+              audioContext,
+              {
+                enabled: true,
+                thresholdDb: clampMicrophoneDecibels(
+                  devices.noiseGateThresholdDb ??
+                    MICROPHONE_GATE_DEFAULT_THRESHOLD_DB
+                ),
+                holdMs: MICROPHONE_GATE_CLOSE_HOLD_MS
+              }
+            );
             const destination = audioContext.createMediaStreamDestination();
 
             source.connect(noiseGateNode);
@@ -341,16 +347,21 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
               noiseGateNode.disconnect();
               audioContext.close();
               audioContext = null;
-              logVoice('Noise gate worklet produced no audio track, using ungated mic stream');
+              logVoice(
+                'Noise gate worklet produced no audio track, using ungated mic stream'
+              );
             }
           } catch (error) {
             if (audioContext) {
               audioContext.close();
             }
 
-            logVoice('Failed to initialize live noise gate worklet, using ungated mic stream', {
-              error
-            });
+            logVoice(
+              'Failed to initialize live noise gate worklet, using ungated mic stream',
+              {
+                error
+              }
+            );
             markNoiseGateWorkletUnavailable(
               'Failed to initialize the noise gate audio processor.'
             );

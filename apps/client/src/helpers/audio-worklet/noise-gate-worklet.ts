@@ -1,8 +1,8 @@
+import noiseGateProcessorUrl from '@/audio-worklets/noise-gate-processor.js?url';
 import {
   MICROPHONE_GATE_CLOSE_HOLD_MS,
   MICROPHONE_NOISE_GATE_WORKLET_NAME
 } from '@/helpers/audio-gate';
-import noiseGateProcessorUrl from '@/audio-worklets/noise-gate-processor.js?url';
 
 type TNoiseGateWorkletConfig = {
   enabled?: boolean;
@@ -44,17 +44,18 @@ const subscribeNoiseGateWorkletAvailability = (listener: () => void) => {
 
 const getNoiseGateWorkletAvailabilitySnapshot =
   (): TNoiseGateWorkletAvailability => {
-    const nextSnapshot: TNoiseGateWorkletAvailability = !isNoiseGateWorkletSupported()
-      ? {
-          available: false,
-          reason: 'This browser does not support AudioWorklet.'
-        }
-      : runtimeUnavailableReason
+    const nextSnapshot: TNoiseGateWorkletAvailability =
+      !isNoiseGateWorkletSupported()
         ? {
             available: false,
-            reason: runtimeUnavailableReason
+            reason: 'This browser does not support AudioWorklet.'
           }
-        : { available: true };
+        : runtimeUnavailableReason
+          ? {
+              available: false,
+              reason: runtimeUnavailableReason
+            }
+          : { available: true };
 
     if (
       availabilitySnapshotCache &&
@@ -109,7 +110,10 @@ const createNoiseGateWorkletNode = async (
 ) => {
   await ensureNoiseGateWorkletLoaded(audioContext);
 
-  const node = new AudioWorkletNode(audioContext, MICROPHONE_NOISE_GATE_WORKLET_NAME);
+  const node = new AudioWorkletNode(
+    audioContext,
+    MICROPHONE_NOISE_GATE_WORKLET_NAME
+  );
 
   postNoiseGateWorkletConfig(node, {
     holdMs: MICROPHONE_GATE_CLOSE_HOLD_MS,
