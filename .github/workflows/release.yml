@@ -29,6 +29,9 @@ jobs:
     needs: [ci, e2e]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Build project artifacts
         uses: ./.github/actions/build-sharkord
         with:
