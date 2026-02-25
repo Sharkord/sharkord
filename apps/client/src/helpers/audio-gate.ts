@@ -1,0 +1,28 @@
+const MICROPHONE_LEVEL_METER_MIN_DB = -70;
+const MICROPHONE_LEVEL_METER_MAX_DB = 0;
+const MICROPHONE_GATE_DEFAULT_THRESHOLD_DB = -48;
+const MICROPHONE_GATE_CLOSE_HOLD_MS = 100;
+const MICROPHONE_TEST_LEVEL_SAMPLE_INTERVAL_MS = 20;
+const MICROPHONE_NOISE_GATE_WORKLET_NAME = 'sharkord-noise-gate';
+
+const clampMicrophoneDecibels = (decibels: number) =>
+  Math.max(
+    MICROPHONE_LEVEL_METER_MIN_DB,
+    Math.min(MICROPHONE_LEVEL_METER_MAX_DB, decibels)
+  );
+
+const microphoneDecibelsToPercent = (decibels: number) =>
+  ((clampMicrophoneDecibels(decibels) - MICROPHONE_LEVEL_METER_MIN_DB) /
+    (MICROPHONE_LEVEL_METER_MAX_DB - MICROPHONE_LEVEL_METER_MIN_DB)) *
+  100;
+
+export {
+  MICROPHONE_LEVEL_METER_MIN_DB,
+  MICROPHONE_LEVEL_METER_MAX_DB,
+  MICROPHONE_GATE_DEFAULT_THRESHOLD_DB,
+  MICROPHONE_GATE_CLOSE_HOLD_MS,
+  MICROPHONE_TEST_LEVEL_SAMPLE_INTERVAL_MS,
+  MICROPHONE_NOISE_GATE_WORKLET_NAME,
+  clampMicrophoneDecibels,
+  microphoneDecibelsToPercent
+};

@@ -3,6 +3,7 @@ import {
   LocalStorageKey,
   setLocalStorageItemAsJSON
 } from '@/helpers/storage';
+import { MICROPHONE_GATE_DEFAULT_THRESHOLD_DB } from '@/helpers/audio-gate';
 import { Resolution, VideoCodec, type TDeviceSettings } from '@/types';
 import { DEFAULT_BITRATE } from '@sharkord/shared';
 import {
@@ -24,6 +25,8 @@ const DEFAULT_DEVICE_SETTINGS: TDeviceSettings = {
   echoCancellation: false,
   noiseSuppression: false,
   autoGainControl: true,
+  noiseGateEnabled: true,
+  noiseGateThresholdDb: MICROPHONE_GATE_DEFAULT_THRESHOLD_DB,
   shareSystemAudio: true,
   mirrorOwnVideo: false,
   screenResolution: Resolution['720p'],
