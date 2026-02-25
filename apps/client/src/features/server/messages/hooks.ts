@@ -43,7 +43,7 @@ const useGroupedMessages = (messages: TJoinedMessage[]) =>
 
 type TFetchPage = (
   cursor: number | null
-) => Promise<{ nextCursor: number | null; pageSize: number }>;
+) => Promise<{ nextCursor: number | null }>;
 
 const usePaginatedMessages = (
   messages: TJoinedMessage[],
@@ -62,10 +62,10 @@ const usePaginatedMessages = (
       setFetching(true);
 
       try {
-        const { nextCursor, pageSize } = await fetchPage(cursorToFetch);
+        const { nextCursor } = await fetchPage(cursorToFetch);
 
         setCursor(nextCursor);
-        setHasMore(nextCursor !== null && pageSize === DEFAULT_MESSAGES_LIMIT);
+        setHasMore(nextCursor !== null);
       } finally {
         setFetching(false);
         setLoading(false);
@@ -132,7 +132,7 @@ export const useMessages = (channelId: number) => {
         addMessages(channelId, filtered, { prepend: true });
       }
 
-      return { nextCursor, pageSize: filtered.length };
+      return { nextCursor };
     },
     [channelId, messages]
   );
@@ -171,7 +171,7 @@ export const useThreadMessages = (parentMessageId: number) => {
 
       addThreadMessages(parentMessageId, page);
 
-      return { nextCursor, pageSize: page.length };
+      return { nextCursor };
     },
     [parentMessageId]
   );
