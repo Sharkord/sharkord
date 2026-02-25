@@ -1,4 +1,8 @@
-import { ActivityLogType, StorageOverflowAction } from '@sharkord/shared';
+import {
+  ActivityLogType,
+  Permission,
+  StorageOverflowAction
+} from '@sharkord/shared';
 import { z } from 'zod';
 import { updateSettings } from '../../db/mutations/server';
 import { publishSettings } from '../../db/publishers';
@@ -22,6 +26,8 @@ const updateSettingsRoute = protectedProcedure
     })
   )
   .mutation(async ({ input, ctx }) => {
+    await ctx.needsPermission(Permission.MANAGE_SETTINGS);
+
     const { enablePlugins: oldEnablePlugins } = await getSettings();
 
     await updateSettings({

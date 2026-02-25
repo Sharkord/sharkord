@@ -1,5 +1,9 @@
+import { Permission } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
+import { and, eq } from 'drizzle-orm';
 import { initTest } from '../../__tests__/helpers';
+import { tdb } from '../../__tests__/setup';
+import { rolePermissions } from '../../db/schema';
 
 describe('messages router', () => {
   test('should throw when user lacks permissions (edit - not own message)', async () => {
@@ -482,6 +486,25 @@ describe('messages router', () => {
     await caller.messages.signalTyping({
       channelId: 1
     });
+  });
+
+  test('should throw when user lacks permissions (signalTyping)', async () => {
+    const { caller } = await initTest(2);
+
+    await tdb
+      .delete(rolePermissions)
+      .where(
+        and(
+          eq(rolePermissions.roleId, 2),
+          eq(rolePermissions.permission, Permission.SEND_MESSAGES)
+        )
+      );
+
+    await expect(
+      caller.messages.signalTyping({
+        channelId: 1
+      })
+    ).rejects.toThrow('Insufficient permissions');
   });
 
   test('should paginate messages with cursor', async () => {
