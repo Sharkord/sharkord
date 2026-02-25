@@ -340,7 +340,7 @@ const Devices = memo(() => {
               </p>
             )}
 
-            <div className="relative h-6 w-full max-w-120 overflow-hidden rounded-full bg-muted">
+            <div className="relative h-6 w-full overflow-hidden rounded-full bg-muted">
               <div
                 className={`h-full ${meterFillColorClass} transition-[width,background-color] duration-75`}
                 style={{ width: `${audioLevel}%` }}
