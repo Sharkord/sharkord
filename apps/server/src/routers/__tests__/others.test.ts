@@ -86,6 +86,16 @@ describe('others router', () => {
     );
   });
 
+  test('should throw when user lacks permissions (update settings)', async () => {
+    const { caller } = await initTest(2);
+
+    await expect(
+      caller.others.updateSettings({
+        name: 'Attempted Update'
+      })
+    ).rejects.toThrow('Insufficient permissions');
+  });
+
   test('should throw when using invalid secret token', async () => {
     const { caller } = await initTest(2);
 
