@@ -6,6 +6,7 @@ import {
   microphoneDecibelsToPercent
 } from '@/helpers/audio-gate';
 import { applyAudioOutputDevice } from '@/helpers/audio-output';
+import { createAudioMeterWorkletNode } from '@/helpers/audio-worklet/audio-meter-worklet';
 import {
   createNoiseGateWorkletNode,
   getNoiseGateWorkletAvailabilitySnapshot,
@@ -32,8 +33,9 @@ type TRequestPermissionOptions = {
 
 const DEFAULT_DEVICE_NAME = 'default';
 const LOOPBACK_DELAY_SECONDS = 0.12;
+const WORKLET_METER_UPDATE_INTERVAL_MS = 16;
 const ANALYZER_FFT_SIZE = 512;
-const ANALYZER_SMOOTHING_TIME_CONSTANT = 0.85;
+const ANALYZER_SMOOTHING_TIME_CONSTANT = 0;
 const ANALYZER_MIN_DECIBELS = -90;
 const ANALYZER_MAX_DECIBELS = 0;
 const isPermissionDeniedError = (error: unknown) =>
@@ -77,6 +79,7 @@ const useMicrophoneTest = ({
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const meterIntervalRef = useRef<number | null>(null);
+  const meterWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
   const noiseGateWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
   const isTestRequestedRef = useRef(false);
   const testRequestIdRef = useRef(0);
@@ -89,6 +92,17 @@ const useMicrophoneTest = ({
   );
 
   const getAudioLevelSnapshot = useCallback(() => audioLevelRef.current, []);
+
+  const setAudioLevelFromDecibels = useCallback((estimatedDecibels: number) => {
+    const clampedDecibels = clampMicrophoneDecibels(estimatedDecibels);
+    const zoomedLevel = Math.max(
+      0,
+      Math.min(100, microphoneDecibelsToPercent(clampedDecibels))
+    );
+
+    // Keep raw meter data in the ref; UI decides how to smooth/render it.
+    audioLevelRef.current = zoomedLevel;
+  }, []);
 
   const getAudioConstraints = useCallback((): MediaTrackConstraints => {
     const hasSpecificDevice =
@@ -124,8 +138,15 @@ const useMicrophoneTest = ({
     }
 
     if (noiseGateWorkletNodeRef.current) {
+      noiseGateWorkletNodeRef.current.port.onmessage = null;
       noiseGateWorkletNodeRef.current.disconnect();
       noiseGateWorkletNodeRef.current = null;
+    }
+
+    if (meterWorkletNodeRef.current) {
+      meterWorkletNodeRef.current.port.onmessage = null;
+      meterWorkletNodeRef.current.disconnect();
+      meterWorkletNodeRef.current = null;
     }
 
     if (audioContextRef.current) {
@@ -136,46 +157,37 @@ const useMicrophoneTest = ({
     audioLevelRef.current = 0;
   }, [stopStreamTracks]);
 
-  const startMeter = useCallback((analyser: AnalyserNode) => {
-    const floatDataArray = new Float32Array(analyser.fftSize);
-    let lastRoundedLevel = -1;
+  const startAnalyserMeter = useCallback(
+    (analyser: AnalyserNode) => {
+      const floatDataArray = new Float32Array(analyser.fftSize);
 
-    const updateMeter = () => {
-      let sum = 0;
+      const updateMeter = () => {
+        let sum = 0;
 
-      analyser.getFloatTimeDomainData(floatDataArray);
+        analyser.getFloatTimeDomainData(floatDataArray);
 
-      for (let index = 0; index < floatDataArray.length; index++) {
-        const sample = floatDataArray[index]!;
+        for (let index = 0; index < floatDataArray.length; index++) {
+          const sample = floatDataArray[index]!;
 
-        sum += sample * sample;
-      }
+          sum += sample * sample;
+        }
 
-      const rms = Math.sqrt(sum / floatDataArray.length);
-      const estimatedDecibels = 20 * Math.log10(rms + 1e-8);
-      const clampedDecibels = clampMicrophoneDecibels(estimatedDecibels);
-      const zoomedLevel = Math.max(
-        0,
-        Math.min(100, microphoneDecibelsToPercent(clampedDecibels))
+        const rms = Math.sqrt(sum / floatDataArray.length);
+        const estimatedDecibels = 20 * Math.log10(rms + 1e-8);
+        setAudioLevelFromDecibels(estimatedDecibels);
+      };
+
+      const intervalId = window.setInterval(
+        updateMeter,
+        MICROPHONE_TEST_LEVEL_SAMPLE_INTERVAL_MS
       );
 
-      const rounded = Math.round(zoomedLevel);
+      meterIntervalRef.current = intervalId;
 
-      if (rounded !== lastRoundedLevel) {
-        lastRoundedLevel = rounded;
-        audioLevelRef.current = zoomedLevel;
-      }
-    };
-
-    const intervalId = window.setInterval(
-      updateMeter,
-      MICROPHONE_TEST_LEVEL_SAMPLE_INTERVAL_MS
-    );
-
-    meterIntervalRef.current = intervalId;
-
-    updateMeter();
-  }, []);
+      updateMeter();
+    },
+    [setAudioLevelFromDecibels]
+  );
 
   const startTestPipeline = useCallback(
     async (requestId: number) => {
@@ -186,6 +198,8 @@ const useMicrophoneTest = ({
       let audioContext: AudioContext | null = null;
       let destination: MediaStreamAudioDestinationNode | null = null;
       let audioElement: HTMLAudioElement | null = null;
+      let localMeterWorkletNode: AudioWorkletNode | null = null;
+      let localNoiseGateWorkletNode: AudioWorkletNode | null = null;
 
       const isStaleRequest = () =>
         requestId !== testRequestIdRef.current || !isTestRequestedRef.current;
@@ -202,9 +216,24 @@ const useMicrophoneTest = ({
           audioElement.srcObject = null;
         }
 
-        if (noiseGateWorkletNodeRef.current) {
+        if (localNoiseGateWorkletNode) {
+          localNoiseGateWorkletNode.port.onmessage = null;
+          localNoiseGateWorkletNode.disconnect();
+          localNoiseGateWorkletNode = null;
+        } else if (noiseGateWorkletNodeRef.current) {
+          noiseGateWorkletNodeRef.current.port.onmessage = null;
           noiseGateWorkletNodeRef.current.disconnect();
           noiseGateWorkletNodeRef.current = null;
+        }
+
+        if (localMeterWorkletNode) {
+          localMeterWorkletNode.port.onmessage = null;
+          localMeterWorkletNode.disconnect();
+          localMeterWorkletNode = null;
+        } else if (meterWorkletNodeRef.current) {
+          meterWorkletNodeRef.current.port.onmessage = null;
+          meterWorkletNodeRef.current.disconnect();
+          meterWorkletNodeRef.current = null;
         }
 
         if (audioContext) {
@@ -227,23 +256,45 @@ const useMicrophoneTest = ({
         audioContext = new window.AudioContext();
 
         const source = audioContext.createMediaStreamSource(stream);
-        const analyser = audioContext.createAnalyser();
         const delay = audioContext.createDelay(1);
+        let meterWorkletNode: AudioWorkletNode | null = null;
         let noiseGateWorkletNode: AudioWorkletNode | null = null;
+        let analyser: AnalyserNode | null = null;
 
         destination = audioContext.createMediaStreamDestination();
 
-        analyser.fftSize = ANALYZER_FFT_SIZE;
-        analyser.minDecibels = ANALYZER_MIN_DECIBELS;
-        analyser.maxDecibels = ANALYZER_MAX_DECIBELS;
-        analyser.smoothingTimeConstant = ANALYZER_SMOOTHING_TIME_CONSTANT;
-
         delay.delayTime.value = LOOPBACK_DELAY_SECONDS;
 
-        source.connect(analyser);
+        try {
+          meterWorkletNode = await createAudioMeterWorkletNode(audioContext, {
+            enabled: true,
+            updateIntervalMs: WORKLET_METER_UPDATE_INTERVAL_MS
+          });
+          localMeterWorkletNode = meterWorkletNode;
+          meterWorkletNode.port.onmessage = (event) => {
+            const data = event.data;
+
+            if (!data || typeof data !== 'object' || data.type !== 'meter') {
+              return;
+            }
+
+            if (
+              typeof data.decibels !== 'number' ||
+              !Number.isFinite(data.decibels)
+            ) {
+              return;
+            }
+
+            setAudioLevelFromDecibels(data.decibels);
+          };
+        } catch (error) {
+          console.warn(
+            'Audio meter AudioWorklet unavailable for mic test, using analyser fallback:',
+            error
+          );
+        }
 
         const shouldUseNoiseGateWorklet =
-          noiseGateEnabledRef.current &&
           getNoiseGateWorkletAvailabilitySnapshot().available;
 
         if (shouldUseNoiseGateWorklet) {
@@ -256,6 +307,7 @@ const useMicrophoneTest = ({
                 holdMs: MICROPHONE_GATE_CLOSE_HOLD_MS
               }
             );
+            localNoiseGateWorkletNode = noiseGateWorkletNode;
           } catch (error) {
             console.warn(
               'Noise gate AudioWorklet unavailable for mic test:',
@@ -267,13 +319,27 @@ const useMicrophoneTest = ({
           }
         }
 
-        if (noiseGateWorkletNode) {
-          source.connect(noiseGateWorkletNode);
-          noiseGateWorkletNode.connect(delay);
+        let currentAudioNode: AudioNode = source;
+
+        if (meterWorkletNode) {
+          currentAudioNode.connect(meterWorkletNode);
+          currentAudioNode = meterWorkletNode;
         } else {
-          source.connect(delay);
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = ANALYZER_FFT_SIZE;
+          analyser.minDecibels = ANALYZER_MIN_DECIBELS;
+          analyser.maxDecibels = ANALYZER_MAX_DECIBELS;
+          analyser.smoothingTimeConstant = ANALYZER_SMOOTHING_TIME_CONSTANT;
+
+          source.connect(analyser);
         }
 
+        if (noiseGateWorkletNode) {
+          currentAudioNode.connect(noiseGateWorkletNode);
+          currentAudioNode = noiseGateWorkletNode;
+        }
+
+        currentAudioNode.connect(delay);
         delay.connect(destination);
 
         if (testAudioRef.current) {
@@ -299,10 +365,13 @@ const useMicrophoneTest = ({
 
         mediaStreamRef.current = stream;
         audioContextRef.current = audioContext;
+        meterWorkletNodeRef.current = meterWorkletNode;
         noiseGateWorkletNodeRef.current = noiseGateWorkletNode;
 
         setPermissionState('granted');
-        startMeter(analyser);
+        if (analyser) {
+          startAnalyserMeter(analyser);
+        }
         setIsTesting(true);
 
         return true;
@@ -328,7 +397,14 @@ const useMicrophoneTest = ({
         return false;
       }
     },
-    [cleanup, getAudioConstraints, playbackId, startMeter, stopStreamTracks]
+    [
+      cleanup,
+      getAudioConstraints,
+      playbackId,
+      setAudioLevelFromDecibels,
+      startAnalyserMeter,
+      stopStreamTracks
+    ]
   );
 
   const requestPermission = useCallback(

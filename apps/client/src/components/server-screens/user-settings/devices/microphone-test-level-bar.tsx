@@ -17,6 +17,9 @@ type TMicrophoneTestLevelBarProps = {
   getAudioLevelSnapshot: () => number;
 };
 
+const PEAK_HOLD_MS = 2500;
+const PEAK_DECAY_PER_MS = 0.22;
+
 const MicrophoneTestLevelBar = memo(
   ({
     isTesting,
@@ -27,16 +30,28 @@ const MicrophoneTestLevelBar = memo(
     getAudioLevelSnapshot
   }: TMicrophoneTestLevelBarProps) => {
     const [audioLevel, setAudioLevel] = useState(() => getAudioLevelSnapshot());
+    const [peakLevel, setPeakLevel] = useState(0);
     const animationFrameRef = useRef<number | null>(null);
     const lastRoundedLevelRef = useRef(Math.round(getAudioLevelSnapshot()));
+    const lastRoundedPeakLevelRef = useRef(0);
+    const smoothedLevelRef = useRef(getAudioLevelSnapshot());
+    const peakLevelRef = useRef(0);
+    const peakHoldUntilRef = useRef(0);
+    const lastFrameTimeRef = useRef<number | null>(null);
 
     useEffect(() => {
       const syncFromSnapshot = () => {
         const nextLevel = getAudioLevelSnapshot();
         const rounded = Math.round(nextLevel);
 
+        smoothedLevelRef.current = nextLevel;
+        peakLevelRef.current = nextLevel;
+        lastRoundedPeakLevelRef.current = Math.round(nextLevel);
+        peakHoldUntilRef.current = 0;
+        lastFrameTimeRef.current = null;
         lastRoundedLevelRef.current = rounded;
         setAudioLevel(nextLevel);
+        setPeakLevel(nextLevel);
       };
 
       if (!isTesting) {
@@ -44,19 +59,53 @@ const MicrophoneTestLevelBar = memo(
         return;
       }
 
-      const update = () => {
-        const nextLevel = getAudioLevelSnapshot();
-        const rounded = Math.round(nextLevel);
+      const update = (frameTime: number) => {
+        const targetLevel = getAudioLevelSnapshot();
+        const currentLevel = smoothedLevelRef.current;
+        const smoothingFactor = targetLevel > currentLevel ? 0.5 : 0.22;
+        const nextLevel =
+          currentLevel + (targetLevel - currentLevel) * smoothingFactor;
+        const snappedLevel =
+          Math.abs(targetLevel - nextLevel) < 0.1 ? targetLevel : nextLevel;
+        const rounded = Math.round(snappedLevel);
 
         if (rounded !== lastRoundedLevelRef.current) {
           lastRoundedLevelRef.current = rounded;
-          setAudioLevel(nextLevel);
+          setAudioLevel(snappedLevel);
+        }
+
+        smoothedLevelRef.current = snappedLevel;
+
+        const previousFrameTime = lastFrameTimeRef.current ?? frameTime;
+        const deltaMs = Math.max(0, frameTime - previousFrameTime);
+        lastFrameTimeRef.current = frameTime;
+
+        let nextPeakLevel = peakLevelRef.current;
+
+        // Peak marker tracks the raw meter value; the filled bar is the smoothed display.
+        if (targetLevel >= nextPeakLevel) {
+          nextPeakLevel = targetLevel;
+          peakHoldUntilRef.current = frameTime + PEAK_HOLD_MS;
+        } else if (frameTime > peakHoldUntilRef.current) {
+          nextPeakLevel = Math.max(
+            snappedLevel,
+            nextPeakLevel - deltaMs * PEAK_DECAY_PER_MS
+          );
+        }
+
+        peakLevelRef.current = nextPeakLevel;
+
+        const roundedPeak = Math.round(nextPeakLevel);
+
+        if (roundedPeak !== lastRoundedPeakLevelRef.current) {
+          lastRoundedPeakLevelRef.current = roundedPeak;
+          setPeakLevel(nextPeakLevel);
         }
 
         animationFrameRef.current = requestAnimationFrame(update);
       };
 
-      update();
+      animationFrameRef.current = requestAnimationFrame(update);
 
       return () => {
         if (animationFrameRef.current) {
@@ -95,8 +144,13 @@ const MicrophoneTestLevelBar = memo(
             )}
 
             <div
-              className={`absolute inset-y-0 left-0 ${meterFillColorClass} transition-[width,background-color] duration-75`}
+              className={`absolute inset-y-0 left-0 ${meterFillColorClass} transition-[background-color] duration-75`}
               style={{ width: `${audioLevel}%` }}
+            />
+
+            <div
+              className="absolute inset-y-0 w-[2px] -translate-x-1/2 rounded-full bg-white/90 shadow-[0_0_0_1px_rgba(0,0,0,0.25)]"
+              style={{ left: `${peakLevel}%` }}
             />
           </div>
 
