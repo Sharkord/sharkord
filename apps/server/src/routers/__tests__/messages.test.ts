@@ -1,9 +1,9 @@
 import { Permission } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
-import { initTest } from '../../__tests__/helpers';
+import { initTest, uploadFile } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
-import { rolePermissions } from '../../db/schema';
+import { rolePermissions, settings } from '../../db/schema';
 
 describe('messages router', () => {
   test('should throw when user lacks permissions (edit - not own message)', async () => {
@@ -583,6 +583,89 @@ describe('messages router', () => {
 
     expect(sentMessage!.content).toBe('Message without files');
     expect(sentMessage!.files).toBeDefined();
+    expect(sentMessage!.files.length).toBe(0);
+  });
+
+  test('should trim attached files to configured max files per message', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    await tdb
+      .update(settings)
+      .set({
+        storageMaxFilesPerMessage: 2
+      })
+      .execute();
+
+    const file1 = new File(['file one'], 'one.txt', { type: 'text/plain' });
+    const file2 = new File(['file two'], 'two.txt', { type: 'text/plain' });
+    const file3 = new File(['file three'], 'three.txt', { type: 'text/plain' });
+
+    const response1 = await uploadFile(file1, mockedToken);
+    const response2 = await uploadFile(file2, mockedToken);
+    const response3 = await uploadFile(file3, mockedToken);
+
+    const temp1 = (await response1.json()) as { id: string };
+    const temp2 = (await response2.json()) as { id: string };
+    const temp3 = (await response3.json()) as { id: string };
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Message with limited attachments',
+      files: [temp1.id, temp2.id, temp3.id]
+    });
+
+    const messages = await caller.messages.get({
+      channelId: 1,
+      cursor: null,
+      limit: 50
+    });
+
+    const sentMessage = messages.messages.find((m) => m.id === messageId);
+
+    expect(sentMessage).toBeDefined();
+    expect(sentMessage!.files.length).toBe(2);
+
+    const names = sentMessage!.files.map((f) => f.originalName);
+
+    expect(names).toContain('one.txt');
+    expect(names).toContain('two.txt');
+    expect(names).not.toContain('three.txt');
+  });
+
+  test('should discard all attached files when max files per message is 0', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    await tdb
+      .update(settings)
+      .set({
+        storageMaxFilesPerMessage: 0
+      })
+      .execute();
+
+    const file1 = new File(['file one'], 'one.txt', { type: 'text/plain' });
+    const file2 = new File(['file two'], 'two.txt', { type: 'text/plain' });
+
+    const response1 = await uploadFile(file1, mockedToken);
+    const response2 = await uploadFile(file2, mockedToken);
+
+    const temp1 = (await response1.json()) as { id: string };
+    const temp2 = (await response2.json()) as { id: string };
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Message with files while limit is zero',
+      files: [temp1.id, temp2.id]
+    });
+
+    const messages = await caller.messages.get({
+      channelId: 1,
+      cursor: null,
+      limit: 50
+    });
+
+    const sentMessage = messages.messages.find((m) => m.id === messageId);
+
+    expect(sentMessage).toBeDefined();
     expect(sentMessage!.files.length).toBe(0);
   });
 

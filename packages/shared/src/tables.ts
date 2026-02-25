@@ -75,6 +75,9 @@ export type TStorageSettings = Pick<
   | 'storageUploadEnabled'
   | 'storageQuota'
   | 'storageUploadMaxFileSize'
+  | 'storageMaxAvatarSize'
+  | 'storageMaxBannerSize'
+  | 'storageMaxFilesPerMessage'
   | 'storageSpaceQuotaByUser'
   | 'storageOverflowAction'
 >;

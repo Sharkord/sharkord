@@ -71,7 +71,11 @@ describe('others router', () => {
       name: 'Updated Test Server',
       description: 'An updated description',
       allowNewUsers: false,
-      storageUploadEnabled: false
+      storageUploadEnabled: false,
+      storageQuota: 10 * 1024 * 1024 * 1024,
+      storageMaxAvatarSize: 2 * 1024 * 1024,
+      storageMaxBannerSize: 4 * 1024 * 1024,
+      storageMaxFilesPerMessage: 6
     };
 
     await caller.others.updateSettings(newSettings);
@@ -83,6 +87,16 @@ describe('others router', () => {
     expect(settings.allowNewUsers).toBe(newSettings.allowNewUsers);
     expect(settings.storageUploadEnabled).toBe(
       newSettings.storageUploadEnabled
+    );
+    expect(settings.storageQuota).toBe(newSettings.storageQuota);
+    expect(settings.storageMaxAvatarSize).toBe(
+      newSettings.storageMaxAvatarSize
+    );
+    expect(settings.storageMaxBannerSize).toBe(
+      newSettings.storageMaxBannerSize
+    );
+    expect(settings.storageMaxFilesPerMessage).toBe(
+      newSettings.storageMaxFilesPerMessage
     );
   });
 
