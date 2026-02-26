@@ -4,6 +4,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 export interface TAppState {
   appLoading: boolean;
+  isAutoConnecting: boolean;
   loadingPlugins: boolean;
   devices: TDevices | undefined;
   modViewOpen: boolean;
@@ -16,6 +17,7 @@ export interface TAppState {
 
 const initialState: TAppState = {
   appLoading: true,
+  isAutoConnecting: false,
   loadingPlugins: true,
   devices: undefined,
   modViewOpen: false,
@@ -66,6 +68,9 @@ export const appSlice = createSlice({
     },
     setAutoJoinLastChannel: (state, action: PayloadAction<boolean>) => {
       state.autoJoinLastChannel = action.payload;
+    },
+    setIsAutoConnecting: (state, action: PayloadAction<boolean>) => {
+      state.isAutoConnecting = action.payload;
     }
   }
 });
