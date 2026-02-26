@@ -124,10 +124,7 @@ const useVoiceRefs = (
     }
 
     screenShareAudioRef.current.volume = userScreenVolume / 100;
-    void applyAudioOutputDevice(
-      screenShareAudioRef.current,
-      devices.playbackId
-    );
+    applyAudioOutputDevice(screenShareAudioRef.current, devices.playbackId);
   }, [
     screenShareAudioStream,
     screenShareAudioRef,
@@ -151,7 +148,7 @@ const useVoiceRefs = (
     }
 
     externalAudioRef.current.volume = externalVolume / 100;
-    void applyAudioOutputDevice(externalAudioRef.current, devices.playbackId);
+    applyAudioOutputDevice(externalAudioRef.current, devices.playbackId);
   }, [
     externalAudioStream,
     externalAudioRef,

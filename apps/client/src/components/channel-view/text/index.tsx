@@ -2,7 +2,6 @@ import {
   MessageCompose,
   type TMessageComposeHandle
 } from '@/components/message-compose';
-import { PinnedMessageContext } from '@/components/pinned-message-provider/pinned-message-context';
 import { PinnedMessagesBox } from '@/components/pinned-messages-box';
 import {
   useChannelCan,
@@ -20,14 +19,7 @@ import {
 } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
 import { throttle } from 'lodash-es';
-import {
-  memo,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState
-} from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { MessagesGroup } from './messages-group';
 import { TextSkeleton } from './text-skeleton';
@@ -53,7 +45,6 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
   );
   const typingUsers = useTypingUsersByChannelId(channelId);
   const messageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
-  const pinnedMessageContext = useContext(PinnedMessageContext);
   const composeRef = useRef<TMessageComposeHandle>(null);
 
   const { containerRef, onScroll } = useScrollController({
@@ -130,11 +121,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         </div>
       )}
 
-      <PinnedMessagesBox
-        isOpen={pinnedMessageContext.visible || false}
-        messageRefs={messageRefs}
-        messages={messages}
-      />
+      <PinnedMessagesBox messageRefs={messageRefs} messages={messages} />
 
       <div
         ref={containerRef}

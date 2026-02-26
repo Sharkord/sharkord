@@ -1,6 +1,6 @@
-import { PinnedMessageContext } from '@/components/pinned-message-provider/pinned-message-context';
 import { RelativeTime } from '@/components/relative-time';
 import { UserAvatar } from '@/components/user-avatar';
+import { closePinnedMessagesBox } from '@/features/app/actions';
 import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { cn } from '@/lib/utils';
@@ -10,7 +10,7 @@ import {
 } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import { format } from 'date-fns';
-import { memo, useContext } from 'react';
+import { memo } from 'react';
 import { Message } from './message';
 
 type TMessagesGroupProps = {
@@ -31,31 +31,24 @@ const MessagesGroup = memo(
     const date = new Date(firstMessage.createdAt);
     const isOwnUser = useIsOwnUser(firstMessage.userId);
     const isDeletedUser = user?.name === DELETED_USER_IDENTITY_AND_NAME;
-    const pinnedMessageContext = useContext(PinnedMessageContext);
 
     if (!user) return null;
 
-    function scrollToMessage(id: number) {
+    const scrollToMessage = (id: number) => {
       const el = messageRefs?.current[id];
       if (el) {
         // Scroll to the message element
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
         // Apply highlight
-        el.style.transition = 'background-color 1s ease';
+        el.classList.add('bg-secondary');
 
-        requestAnimationFrame(() => {
-          el.style.setProperty('--color-secondary', 'var(--secondary)');
-          el.style.backgroundColor = 'var(--color-secondary)';
-          el.className = 'rounded-md';
-
-          // Remove highlight after 2 seconds
-          setTimeout(() => {
-            el.style.backgroundColor = '';
-          }, 2000);
-        });
+        // Remove highlight after 2 seconds
+        setTimeout(() => {
+          el.classList.remove('bg-secondary');
+        }, 2000);
       }
-    }
+    };
 
     return (
       <div className="flex min-w-0 max-w-dvw gap-1 pl-2 pt-2 pr-2">
@@ -87,7 +80,7 @@ const MessagesGroup = memo(
                 key={group[0].id}
                 onClick={() => {
                   scrollToMessage(group[0].id);
-                  pinnedMessageContext.setVisible(false);
+                  closePinnedMessagesBox();
                 }}
               >
                 MOVE
@@ -106,6 +99,7 @@ const MessagesGroup = memo(
                       }
                     : null
                 }
+                className="rounded-md transition-colors duration-1000"
               >
                 <Message key={message.id} message={message} type={type} />
               </div>

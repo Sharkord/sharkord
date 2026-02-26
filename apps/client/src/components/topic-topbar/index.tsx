@@ -1,4 +1,8 @@
-import { PinnedMessageContext } from '@/components/pinned-message-provider/pinned-message-context';
+import {
+  closePinnedMessagesBox,
+  openPinnedMessagesBox
+} from '@/features/app/actions';
+import { usePinnedMessagesBox } from '@/features/app/hooks';
 import {
   useSelectedChannel,
   useSelectedChannelType
@@ -7,13 +11,20 @@ import { cn } from '@/lib/utils';
 import { ChannelType } from '@sharkord/shared';
 import { Button, Tooltip } from '@sharkord/ui';
 import { Pin, PinOff } from 'lucide-react';
-import { memo, useContext } from 'react';
+import { memo } from 'react';
+import { useDispatch } from 'react-redux';
 
 const TopicTopbar = memo(() => {
   const selectedChannel = useSelectedChannel();
   const topic = selectedChannel?.topic || null;
-  const pinnedMessage = useContext(PinnedMessageContext);
   const selectedChannelType = useSelectedChannelType();
+
+  const dispatch = useDispatch();
+  const isOpen = usePinnedMessagesBox();
+
+  const togglePinnedMessagesBox = () => {
+    dispatch(isOpen ? closePinnedMessagesBox() : openPinnedMessagesBox());
+  };
 
   return (
     <aside
@@ -29,15 +40,11 @@ const TopicTopbar = memo(() => {
         <div className="flex-1 p-2">{topic}</div>
         {selectedChannelType === ChannelType.TEXT && (
           <Tooltip
-            content={
-              pinnedMessage.visible
-                ? 'Hide Pinned Messages'
-                : 'Show Pinned Messages'
-            }
+            content={isOpen ? 'Hide Pinned Messages' : 'Show Pinned Messages'}
           >
             <Button
               variant="ghost"
-              onClick={() => pinnedMessage.setVisible(!pinnedMessage.visible)}
+              onClick={togglePinnedMessagesBox}
               className="
               self-start
               transition-colors duration-200
@@ -46,7 +53,7 @@ const TopicTopbar = memo(() => {
               text-muted-foreground
             "
             >
-              {pinnedMessage.visible ? <PinOff /> : <Pin />}
+              {isOpen ? <PinOff /> : <Pin />}
             </Button>
           </Tooltip>
         )}

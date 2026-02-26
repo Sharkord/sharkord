@@ -10,6 +10,7 @@ export interface TAppState {
   threadSidebarOpen: boolean;
   threadParentMessageId?: number;
   threadChannelId?: number;
+  pinnedMessagesBoxOpen: boolean;
 }
 
 const initialState: TAppState = {
@@ -20,7 +21,8 @@ const initialState: TAppState = {
   modViewUserId: undefined,
   threadSidebarOpen: false,
   threadParentMessageId: undefined,
-  threadChannelId: undefined
+  threadChannelId: undefined,
+  pinnedMessagesBoxOpen: false
 };
 
 export const appSlice = createSlice({
@@ -57,6 +59,14 @@ export const appSlice = createSlice({
       state.threadSidebarOpen = action.payload.open;
       state.threadParentMessageId = action.payload.parentMessageId;
       state.threadChannelId = action.payload.channelId;
+    },
+    setPinnedMessagesBoxOpen: (
+      state,
+      action: PayloadAction<{
+        open: boolean;
+      }>
+    ) => {
+      state.pinnedMessagesBoxOpen = action.payload.open;
     }
   }
 });

@@ -6,6 +6,7 @@ import {
   loadingPluginsSelector,
   modViewOpenSelector,
   modViewUserIdSelector,
+  pinnedMessagesBoxSelector,
   threadSidebarDataSelector
 } from './selectors';
 
@@ -23,3 +24,6 @@ export const useModViewOpen = () => {
 };
 
 export const useThreadSidebar = () => useSelector(threadSidebarDataSelector);
+
+export const usePinnedMessagesBox = () =>
+  useSelector(pinnedMessagesBoxSelector);

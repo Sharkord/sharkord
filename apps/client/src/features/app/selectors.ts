@@ -22,6 +22,9 @@ export const threadParentMessageIdSelector = (state: IRootState) =>
 export const threadChannelIdSelector = (state: IRootState) =>
   state.app.threadChannelId;
 
+export const pinnedMessagesBoxSelector = (state: IRootState) =>
+  state.app.pinnedMessagesBoxOpen;
+
 export const threadSidebarDataSelector = createSelector(
   [
     threadSidebarOpenSelector,

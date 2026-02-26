@@ -31,7 +31,7 @@ const toggleMessagePinRoute = protectedProcedure
     await db
       .update(messages)
       .set({ pinned: !message.pinned, updatedAt: Date.now() })
-      .where(and(eq(messages.id, input.messageId)));
+      .where(eq(messages.id, input.messageId));
 
     publishMessage(input.messageId, message.channelId, 'update');
 
