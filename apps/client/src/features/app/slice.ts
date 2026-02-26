@@ -68,7 +68,7 @@ export const appSlice = createSlice({
     },
     setAutoJoinLastChannel: (state, action: PayloadAction<boolean>) => {
       state.autoJoinLastChannel = action.payload;
-    },   
+    },
     setPinnedMessagesBoxOpen: (
       state,
       action: PayloadAction<{
