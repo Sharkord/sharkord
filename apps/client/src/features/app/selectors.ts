@@ -25,6 +25,9 @@ export const threadChannelIdSelector = (state: IRootState) =>
 export const pinnedMessagesBoxSelector = (state: IRootState) =>
   state.app.pinnedMessagesBoxOpen;
 
+export const autoJoinLastChannelSelector = (state: IRootState) =>
+  state.app.autoJoinLastChannel;
+
 export const threadSidebarDataSelector = createSelector(
   [
     threadSidebarOpenSelector,

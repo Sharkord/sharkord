@@ -40,7 +40,7 @@ describe('others router', () => {
     expect(result).toHaveProperty('emojis');
     expect(result).toHaveProperty('channelPermissions');
     expect(result).toHaveProperty('commands');
-    expect(result).toHaveProperty('components');
+    expect(result).toHaveProperty('pluginIdsWithComponents');
 
     expect(result.ownUserId).toBe(joiningUserId);
 
@@ -71,7 +71,11 @@ describe('others router', () => {
       name: 'Updated Test Server',
       description: 'An updated description',
       allowNewUsers: false,
-      storageUploadEnabled: false
+      storageUploadEnabled: false,
+      storageQuota: 10 * 1024 * 1024 * 1024,
+      storageMaxAvatarSize: 2 * 1024 * 1024,
+      storageMaxBannerSize: 4 * 1024 * 1024,
+      storageMaxFilesPerMessage: 6
     };
 
     await caller.others.updateSettings(newSettings);
@@ -84,6 +88,26 @@ describe('others router', () => {
     expect(settings.storageUploadEnabled).toBe(
       newSettings.storageUploadEnabled
     );
+    expect(settings.storageQuota).toBe(newSettings.storageQuota);
+    expect(settings.storageMaxAvatarSize).toBe(
+      newSettings.storageMaxAvatarSize
+    );
+    expect(settings.storageMaxBannerSize).toBe(
+      newSettings.storageMaxBannerSize
+    );
+    expect(settings.storageMaxFilesPerMessage).toBe(
+      newSettings.storageMaxFilesPerMessage
+    );
+  });
+
+  test('should throw when user lacks permissions (update settings)', async () => {
+    const { caller } = await initTest(2);
+
+    await expect(
+      caller.others.updateSettings({
+        name: 'Attempted Update'
+      })
+    ).rejects.toThrow('Insufficient permissions');
   });
 
   test('should throw when using invalid secret token', async () => {

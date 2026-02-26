@@ -1,8 +1,8 @@
 import { computePosition } from '@floating-ui/dom';
 import type { Editor } from '@tiptap/core';
 import { ReactRenderer } from '@tiptap/react';
+import type { TEmojiItem } from '../helpers';
 import { EmojiList, type EmojiListRef } from './emoji-list';
-import type { TEmojiItem } from './types';
 
 interface EmojiStorage {
   emojis: TEmojiItem[];
@@ -39,7 +39,7 @@ export const EmojiSuggestion = {
   render: () => {
     let component: ReactRenderer | null = null;
 
-    function reposition(clientRect: DOMRect) {
+    const reposition = (clientRect: DOMRect) => {
       if (!component?.element) return;
 
       const virtualElement = { getBoundingClientRect: () => clientRect };
@@ -55,7 +55,7 @@ export const EmojiSuggestion = {
           });
         }
       });
-    }
+    };
 
     return {
       onStart: (props: SuggestionProps) => {
@@ -86,7 +86,9 @@ export const EmojiSuggestion = {
         });
 
         document.body.appendChild(component.element);
+
         const rect = props.clientRect?.();
+
         if (rect) {
           reposition(rect);
         }
@@ -114,7 +116,9 @@ export const EmojiSuggestion = {
             component = null;
           }
         });
+
         const rect = props.clientRect?.();
+
         if (rect) {
           reposition(rect);
         }
@@ -122,9 +126,11 @@ export const EmojiSuggestion = {
 
       onKeyDown(props: { event: KeyboardEvent }) {
         const emojiListRef = component?.ref as EmojiListRef | undefined;
+
         if (emojiListRef?.onKeyDown) {
           return emojiListRef.onKeyDown(props.event);
         }
+
         return false;
       },
 

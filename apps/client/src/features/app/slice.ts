@@ -1,3 +1,4 @@
+import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
 import type { TDevices } from '@/types';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
@@ -6,10 +7,11 @@ export interface TAppState {
   loadingPlugins: boolean;
   devices: TDevices | undefined;
   modViewOpen: boolean;
-  modViewUserId?: number;
+  modViewUserId: number | undefined;
   threadSidebarOpen: boolean;
-  threadParentMessageId?: number;
-  threadChannelId?: number;
+  threadParentMessageId: number | undefined;
+  threadChannelId: number | undefined;
+  autoJoinLastChannel: boolean;
   pinnedMessagesBoxOpen: boolean;
 }
 
@@ -22,6 +24,10 @@ const initialState: TAppState = {
   threadSidebarOpen: false,
   threadParentMessageId: undefined,
   threadChannelId: undefined,
+  autoJoinLastChannel: getLocalStorageItemBool(
+    LocalStorageKey.AUTO_JOIN_LAST_CHANNEL,
+    false
+  ),
   pinnedMessagesBoxOpen: false
 };
 
@@ -60,6 +66,9 @@ export const appSlice = createSlice({
       state.threadParentMessageId = action.payload.parentMessageId;
       state.threadChannelId = action.payload.channelId;
     },
+    setAutoJoinLastChannel: (state, action: PayloadAction<boolean>) => {
+      state.autoJoinLastChannel = action.payload;
+    },   
     setPinnedMessagesBoxOpen: (
       state,
       action: PayloadAction<{

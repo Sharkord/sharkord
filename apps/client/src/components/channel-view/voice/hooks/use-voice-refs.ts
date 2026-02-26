@@ -113,8 +113,16 @@ const useVoiceRefs = (
     }
 
     audioRef.current.volume = userVolume / 100;
+    audioRef.current.muted = ownVoiceState.soundMuted;
+
     applyAudioOutputDevice(audioRef.current, devices.playbackId);
-  }, [audioStream, audioRef, userVolume, devices.playbackId]);
+  }, [
+    audioStream,
+    audioRef,
+    userVolume,
+    devices.playbackId,
+    ownVoiceState.soundMuted
+  ]);
 
   useEffect(() => {
     if (!screenShareAudioStream || !screenShareAudioRef.current) return;
@@ -124,12 +132,15 @@ const useVoiceRefs = (
     }
 
     screenShareAudioRef.current.volume = userScreenVolume / 100;
+    screenShareAudioRef.current.muted = ownVoiceState.soundMuted;
+
     applyAudioOutputDevice(screenShareAudioRef.current, devices.playbackId);
   }, [
     screenShareAudioStream,
     screenShareAudioRef,
     userScreenVolume,
-    devices.playbackId
+    devices.playbackId,
+    ownVoiceState.soundMuted
   ]);
 
   useEffect(() => {
@@ -148,12 +159,15 @@ const useVoiceRefs = (
     }
 
     externalAudioRef.current.volume = externalVolume / 100;
+    externalAudioRef.current.muted = ownVoiceState.soundMuted;
+
     applyAudioOutputDevice(externalAudioRef.current, devices.playbackId);
   }, [
     externalAudioStream,
     externalAudioRef,
     externalVolume,
-    devices.playbackId
+    devices.playbackId,
+    ownVoiceState.soundMuted
   ]);
 
   useEffect(() => {
@@ -165,10 +179,26 @@ const useVoiceRefs = (
   }, [externalVideoStream, externalVideoRef]);
 
   useEffect(() => {
-    if (!audioRef.current) return;
+    if (audioRef.current) {
+      audioRef.current.muted = ownVoiceState.soundMuted;
+    }
 
-    audioRef.current.muted = ownVoiceState.soundMuted;
-  }, [ownVoiceState.soundMuted, audioRef]);
+    if (screenShareAudioRef.current) {
+      screenShareAudioRef.current.muted = ownVoiceState.soundMuted;
+    }
+
+    if (externalAudioRef.current) {
+      externalAudioRef.current.muted = ownVoiceState.soundMuted;
+    }
+  }, [
+    ownVoiceState.soundMuted,
+    audioRef,
+    screenShareAudioRef,
+    externalAudioRef,
+    audioStream,
+    screenShareAudioStream,
+    externalAudioStream
+  ]);
 
   return {
     videoRef,

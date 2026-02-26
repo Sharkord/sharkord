@@ -1,6 +1,10 @@
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { TiptapInput } from '@/components/tiptap-input';
-import { useCan, useChannelCan } from '@/features/server/hooks';
+import {
+  useCan,
+  useChannelCan,
+  usePublicServerSettings
+} from '@/features/server/hooks';
 import { useFlatPluginCommands } from '@/features/server/plugins/hooks';
 import { useUploadFiles } from '@/hooks/use-upload-files';
 import { getTRPCClient } from '@/lib/trpc';
@@ -57,6 +61,7 @@ const MessageCompose = memo(
     const [sending, setSending] = useState(false);
     const can = useCan();
     const channelCan = useChannelCan(channelId);
+    const publicSettings = usePublicServerSettings();
     const allPluginCommands = useFlatPluginCommands();
 
     const canSendMessages = useMemo(() => {
@@ -104,7 +109,11 @@ const MessageCompose = memo(
       setSending(true);
       sendingRef.current = true;
 
-      const success = await onSend(message, files);
+      const maxFilesPerMessage =
+        publicSettings?.storageMaxFilesPerMessage ?? Number.MAX_SAFE_INTEGER;
+      const filesToSend = files.slice(0, Math.max(0, maxFilesPerMessage));
+
+      const success = await onSend(message, filesToSend);
 
       sendingRef.current = false;
       setSending(false);
@@ -112,7 +121,7 @@ const MessageCompose = memo(
       if (success) {
         clearFiles();
       }
-    }, [message, files, canSendMessages, onSend, clearFiles]);
+    }, [message, files, canSendMessages, onSend, clearFiles, publicSettings]);
 
     const onRemoveFileClick = useCallback(
       async (fileId: string) => {
@@ -132,7 +141,7 @@ const MessageCompose = memo(
     return (
       <div
         ref={containerRef}
-        className="flex shrink-0 flex-col gap-2 border-t border-border p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]"
+        className="flex shrink-0 flex-col gap-2 p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]"
       >
         {uploading && (
           <div className="flex items-center gap-2">

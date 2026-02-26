@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import {
   appLoadingSelector,
+  autoJoinLastChannelSelector,
   devicesSelector,
   loadingPluginsSelector,
   modViewOpenSelector,
@@ -27,3 +28,6 @@ export const useThreadSidebar = () => useSelector(threadSidebarDataSelector);
 
 export const usePinnedMessagesBox = () =>
   useSelector(pinnedMessagesBoxSelector);
+
+export const useAutoJoinLastChannel = () =>
+  useSelector(autoJoinLastChannelSelector);

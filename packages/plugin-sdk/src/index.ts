@@ -149,7 +149,8 @@ export interface PluginContext {
   };
 
   ui: {
-    registerComponents(components: TPluginComponentsMapBySlotId): void;
+    enable(): void;
+    disable(): void;
   };
 }
 

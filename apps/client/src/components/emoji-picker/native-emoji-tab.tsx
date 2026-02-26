@@ -1,13 +1,10 @@
-import type { TEmojiItem } from '@/components/tiptap-input/types';
+import type { TEmojiItem } from '@/components/tiptap-input/helpers';
 import { cn } from '@/lib/utils';
-import { Input } from '@sharkord/ui';
 import { memo, useCallback, useMemo, useState } from 'react';
 import {
-  ALL_EMOJIS,
   EMOJI_CATEGORIES,
   type EmojiCategoryId,
-  getEmojisByCategory,
-  searchEmojis
+  getEmojisByCategory
 } from './emoji-data';
 import { EmojiGrid } from './emoji-grid';
 import { useRecentEmojis } from './use-recent-emojis';
@@ -56,37 +53,24 @@ type TNativeEmojiTabProps = {
 };
 
 const NativeEmojiTab = memo(({ onEmojiSelect }: TNativeEmojiTabProps) => {
-  const [search, setSearch] = useState('');
   const { recentEmojis, addRecent } = useRecentEmojis();
 
   const [activeCategory, setActiveCategory] = useState<EmojiCategoryId>(() =>
     recentEmojis.length > 0 ? 'recent' : 'people & body'
   );
 
-  const isSearching = search.trim().length > 0;
   const hasRecentEmojis = recentEmojis.length > 0;
 
   const displayEmojis = useMemo(() => {
-    if (isSearching) {
-      return searchEmojis(ALL_EMOJIS, search);
-    }
     if (activeCategory === 'recent') {
       return recentEmojis;
     }
     return getEmojisByCategory(activeCategory);
-  }, [isSearching, search, activeCategory, recentEmojis]);
+  }, [activeCategory, recentEmojis]);
 
   const handleCategorySelect = useCallback((category: EmojiCategoryId) => {
     setActiveCategory(category);
-    setSearch('');
   }, []);
-
-  const handleSearchChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setSearch(e.target.value);
-    },
-    []
-  );
 
   const handleEmojiSelect = useCallback(
     (emoji: TEmojiItem) => {
@@ -103,41 +87,21 @@ const NativeEmojiTab = memo(({ onEmojiSelect }: TNativeEmojiTabProps) => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b mt-[-8px]">
-        <Input
-          placeholder="Search emojis..."
-          value={search}
-          onChange={handleSearchChange}
-          className="h-9"
-          autoFocus
-        />
+      <CategoryBar
+        activeCategory={effectiveCategory}
+        onCategorySelect={handleCategorySelect}
+        hasRecentEmojis={hasRecentEmojis}
+      />
+
+      <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
+        {EMOJI_CATEGORIES.find((c) => c.id === effectiveCategory)?.label}
       </div>
-
-      {!isSearching && (
-        <CategoryBar
-          activeCategory={effectiveCategory}
-          onCategorySelect={handleCategorySelect}
-          hasRecentEmojis={hasRecentEmojis}
-        />
-      )}
-
-      {!isSearching && (
-        <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-          {EMOJI_CATEGORIES.find((c) => c.id === effectiveCategory)?.label}
-        </div>
-      )}
-
-      {isSearching && (
-        <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-          Search results ({displayEmojis.length})
-        </div>
-      )}
 
       <div className="flex-1 min-h-0">
         <EmojiGrid
           emojis={displayEmojis}
           onSelect={handleEmojiSelect}
-          height={isSearching ? 260 : 220}
+          height={260}
         />
       </div>
     </div>

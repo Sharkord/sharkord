@@ -106,6 +106,9 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       storageUploadEnabled: settings.storageUploadEnabled,
       storageQuota: settings.storageQuota,
       storageUploadMaxFileSize: settings.storageUploadMaxFileSize,
+      storageMaxAvatarSize: settings.storageMaxAvatarSize,
+      storageMaxBannerSize: settings.storageMaxBannerSize,
+      storageMaxFilesPerMessage: settings.storageMaxFilesPerMessage,
       storageSpaceQuotaByUser: settings.storageSpaceQuotaByUser,
       storageOverflowAction: settings.storageOverflowAction,
       enablePlugins: settings.enablePlugins
@@ -154,7 +157,7 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       channelPermissions,
       readStates,
       commands: pluginManager.getCommands(),
-      components: pluginManager.getComponents(),
+      pluginIdsWithComponents: pluginManager.getPluginIdsWithComponents(),
       externalStreamsMap
     };
   });

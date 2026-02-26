@@ -26,8 +26,8 @@
     {
       "idx": 3,
       "version": "6",
-      "when": 1771811192409,
-      "tag": "0003_wonderful_khan",
+      "when": 1772053200000,
+      "tag": "0003_add_avatar_and_banner_limits",
       "breakpoints": true
     }
   ]

@@ -50,6 +50,11 @@ const settings = sqliteTable(
     }).notNull(),
     storageQuota: integer('storage_quota').notNull(),
     storageUploadMaxFileSize: integer('storage_upload_max_file_size').notNull(),
+    storageMaxAvatarSize: integer('storage_max_avatar_size').notNull(),
+    storageMaxBannerSize: integer('storage_max_banner_size').notNull(),
+    storageMaxFilesPerMessage: integer(
+      'storage_max_files_per_message'
+    ).notNull(),
     storageSpaceQuotaByUser: integer('storage_space_quota_by_user').notNull(),
     storageOverflowAction: text('storage_overflow_action').notNull(),
     enablePlugins: integer('enable_plugins', { mode: 'boolean' }).notNull()
