@@ -8,8 +8,9 @@ import {
   DELETED_USER_IDENTITY_AND_NAME,
   type TJoinedMessage
 } from '@sharkord/shared';
-import { Button } from '@sharkord/ui';
+import { IconButton } from '@sharkord/ui';
 import { format } from 'date-fns';
+import { Redo } from 'lucide-react';
 import { memo } from 'react';
 import { Message } from './message';
 
@@ -74,17 +75,16 @@ const MessagesGroup = memo(
               )}
             </RelativeTime>
             {type === 'pinned' ? (
-              <Button
-                variant="outline"
-                className="px-2 py-1 h-6 text-xs"
+              <IconButton
+                className="px-2 py-1 h-6 text-xs text-muted-foreground"
                 key={group[0].id}
                 onClick={() => {
                   scrollToMessage(group[0].id);
                   closePinnedMessagesBox();
                 }}
-              >
-                MOVE
-              </Button>
+                icon={Redo}
+                title="Jump to message"
+              />
             ) : null}
           </div>
           <div className="flex min-w-0 flex-col">
