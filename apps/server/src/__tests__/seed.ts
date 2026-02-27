@@ -39,7 +39,7 @@ const hashedPassword = await Bun.password.hash('password123');
 
 /**
  * Current mocked data in the database after seeding (not complete, just a summary):
- * 
+ *
  * Users:
  * - Test Owner (owner) (1)
  * - Test User (member) (2)
