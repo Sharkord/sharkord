@@ -38,6 +38,11 @@ const initializeTRPC = (host: string) => {
       return {
         token: getSessionStorageItem(SessionStorageKey.TOKEN) || ''
       };
+    },
+    keepAlive: {
+      enabled: true,
+      intervalMs: 30_000,
+      pongTimeoutMs: 5_000
     }
   });
 
