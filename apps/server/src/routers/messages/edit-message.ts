@@ -70,7 +70,9 @@ const editMessageRoute = rateLimitedProcedure(protectedProcedure, {
       .update(messages)
       .set({
         content: sanitizedContent,
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
+        editedAt: Date.now(),
+        editedBy: ctx.user.id
       })
       .where(eq(messages.id, input.messageId));
 
