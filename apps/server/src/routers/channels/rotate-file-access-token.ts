@@ -28,6 +28,11 @@ const rotateFileAccessTokenRoute = protectedProcedure
       message: 'Channel not found'
     });
 
+    invariant(!channel.isDm, {
+      code: 'FORBIDDEN',
+      message: 'Cannot rotate file access token for DM channels'
+    });
+
     const newToken = randomUUIDv7();
 
     await db

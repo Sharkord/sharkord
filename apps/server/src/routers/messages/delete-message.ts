@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { removeFile } from '../../db/mutations/files';
 import { publishMessage, publishReplyCount } from '../../db/publishers';
+import { assertDmParticipant } from '../../db/queries/dms';
 import { getFilesByMessageId } from '../../db/queries/files';
 import { messages } from '../../db/schema';
 import { eventBus } from '../../plugins/event-bus';
@@ -28,6 +29,9 @@ const deleteMessageRoute = protectedProcedure
       code: 'NOT_FOUND',
       message: 'Message not found'
     });
+
+    await assertDmParticipant(targetMessage.channelId, ctx.userId);
+
     invariant(
       targetMessage.userId === ctx.user.id ||
         (await ctx.hasPermission(Permission.MANAGE_MESSAGES)),

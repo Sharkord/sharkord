@@ -6,12 +6,19 @@ import { ThreadSidebar } from '@/components/thread-sidebar';
 import { TopBar } from '@/components/top-bar';
 import { VoiceChatSidebar } from '@/components/voice-chat-sidebar';
 import { VoiceProvider } from '@/components/voice-provider';
-import { useThreadSidebar } from '@/features/app/hooks';
+import { setDmsOpen } from '@/features/app/actions';
+import {
+  useDmsOpen,
+  useSelectedDmChannelId,
+  useThreadSidebar
+} from '@/features/app/hooks';
+import { setSelectedChannelId } from '@/features/server/channels/actions';
+import { usePublicServerSettings } from '@/features/server/hooks';
 import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
 import { useSwipeGestures } from '@/hooks/use-swipe-gestures';
 import { cn } from '@/lib/utils';
 import { Permission } from '@sharkord/shared';
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { ContentWrapper } from './content-wrapper';
 import { PreventBrowser } from './prevent-browser';
 
@@ -24,6 +31,10 @@ const ServerView = memo(() => {
   const [isVoiceChatSidebarOpen, setIsVoiceChatSidebarOpen] = useState(
     getLocalStorageItemBool(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE, false)
   );
+  const dmsOpen = useDmsOpen();
+  const selectedDmChannelId = useSelectedDmChannelId();
+  const publicSettings = usePublicServerSettings();
+  const previousServerChannelIdRef = useRef<number | undefined>(undefined);
   const { isOpen: isThreadSidebarOpen } = useThreadSidebar();
 
   const handleDesktopRightSidebarToggle = useCallback(() => {
@@ -68,6 +79,16 @@ const ServerView = memo(() => {
     onSwipeLeft: handleSwipeLeft
   });
 
+  useEffect(() => {
+    if (publicSettings?.directMessagesEnabled === false && dmsOpen) {
+      setDmsOpen(false);
+
+      if (previousServerChannelIdRef.current) {
+        setSelectedChannelId(previousServerChannelIdRef.current);
+      }
+    }
+  }, [publicSettings?.directMessagesEnabled, dmsOpen]);
+
   return (
     <VoiceProvider>
       <div
@@ -106,7 +127,10 @@ const ServerView = memo(() => {
             )}
           />
 
-          <ContentWrapper />
+          <ContentWrapper
+            isDmMode={dmsOpen}
+            selectedDmChannelId={selectedDmChannelId}
+          />
 
           <VoiceChatSidebar isOpen={isVoiceChatSidebarOpen} />
 

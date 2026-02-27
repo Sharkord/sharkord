@@ -17,6 +17,7 @@ import http from 'http';
 import { WebSocketServer } from 'ws';
 import { db } from '../db';
 import { getAllChannelUserPermissions } from '../db/queries/channels';
+import { isUserDmParticipant } from '../db/queries/dms';
 import { getUserById, getUserByToken } from '../db/queries/users';
 import { channels } from '../db/schema';
 import { getWsInfo } from '../helpers/get-ws-info';
@@ -87,7 +88,8 @@ const createContext = async ({
   ) => {
     const channel = await db
       .select({
-        private: channels.private
+        private: channels.private,
+        isDm: channels.isDm
       })
       .from(channels)
       .where(eq(channels.id, channelId))
@@ -95,6 +97,15 @@ const createContext = async ({
       .get();
 
     if (!channel) return false;
+
+    if (channel.isDm) {
+      const isParticipant = await isUserDmParticipant(
+        channelId,
+        decodedUser.id
+      );
+
+      if (isParticipant) return true;
+    }
 
     if (!channel.private) return true;
 

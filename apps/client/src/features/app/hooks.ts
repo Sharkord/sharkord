@@ -4,10 +4,12 @@ import {
   appLoadingSelector,
   autoJoinLastChannelSelector,
   devicesSelector,
+  dmsOpenSelector,
   isAutoConnectingSelector,
   loadingPluginsSelector,
   modViewOpenSelector,
   modViewUserIdSelector,
+  selectedDmChannelIdSelector,
   threadSidebarDataSelector
 } from './selectors';
 
@@ -30,3 +32,8 @@ export const useThreadSidebar = () => useSelector(threadSidebarDataSelector);
 
 export const useAutoJoinLastChannel = () =>
   useSelector(autoJoinLastChannelSelector);
+
+export const useDmsOpen = () => useSelector(dmsOpenSelector);
+
+export const useSelectedDmChannelId = () =>
+  useSelector(selectedDmChannelIdSelector);

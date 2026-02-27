@@ -16,6 +16,7 @@ import {
   userRoles,
   users
 } from '../schema';
+import { getDirectMessageChannelIdsForUser } from './dms';
 import { getUserRoleIds } from './roles';
 
 const getPermissions = async (
@@ -132,16 +133,18 @@ const getChannelsForUser = async (userId: number): Promise<TChannel[]> => {
     return await db.select().from(channels);
   }
 
-  const allChannels = await db.select().from(channels);
-
-  const { userPermissionMap, rolePermissionMap } = await getPermissions(
-    userId,
-    roleIds,
-    ChannelPermission.VIEW_CHANNEL
-  );
+  const [allChannels, { userPermissionMap, rolePermissionMap }, dmChannelIds] =
+    await Promise.all([
+      db.select().from(channels),
+      getPermissions(userId, roleIds, ChannelPermission.VIEW_CHANNEL),
+      getDirectMessageChannelIdsForUser(userId)
+    ]);
 
   const accessibleChannels = allChannels.filter((channel) => {
-    if (!channel.private) {
+    const isPublicChannel = !channel.private;
+    const isDmChannelParticipant = dmChannelIds.includes(channel.id);
+
+    if (isPublicChannel || isDmChannelParticipant) {
       return true;
     }
 
@@ -399,6 +402,29 @@ const getChannelsReadStatesForUser = async (
   userId: number,
   channelId?: number
 ): Promise<TReadStateMap> => {
+  // get DM channel IDs the user participates in so we can exclude
+  // DM channels between other users from the read state results
+  const dmChannelIds = await getDirectMessageChannelIdsForUser(userId);
+
+  const conditions = [];
+
+  if (channelId) {
+    conditions.push(eq(messages.channelId, channelId));
+  }
+
+  // exclude DM channels the user does not participate in:
+  // include the message if the channel is NOT a DM, or if it IS a DM the user is part of
+  if (dmChannelIds.length > 0) {
+    conditions.push(
+      sql`(${channels.isDm} = 0 OR ${messages.channelId} IN (${sql.join(
+        dmChannelIds.map((id) => sql`${id}`),
+        sql`, `
+      )}))`
+    );
+  } else {
+    conditions.push(eq(channels.isDm, false));
+  }
+
   const results = await db
     .select({
       channelId: messages.channelId,
@@ -413,6 +439,7 @@ const getChannelsReadStatesForUser = async (
       `.as('unread_count')
     })
     .from(messages)
+    .innerJoin(channels, eq(channels.id, messages.channelId))
     .leftJoin(
       channelReadStates,
       and(
@@ -420,7 +447,7 @@ const getChannelsReadStatesForUser = async (
         eq(channelReadStates.userId, userId)
       )
     )
-    .where(channelId ? eq(messages.channelId, channelId) : undefined)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .groupBy(messages.channelId);
 
   const readStateMap: TReadStateMap = {};

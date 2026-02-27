@@ -19,9 +19,9 @@ describe('tests setup', () => {
     ]);
 
     expect(settingsResults.length).toBe(1);
-    expect(usersResults.length).toBe(2);
-    expect(channelsResults.length).toBe(2);
+    expect(usersResults.length).toBe(4);
+    expect(channelsResults.length).toBe(3);
     expect(rolesResults.length).toBe(3);
-    expect(messagesResults.length).toBe(1);
+    expect(messagesResults.length).toBe(2);
   });
 });

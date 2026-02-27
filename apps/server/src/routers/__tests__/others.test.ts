@@ -71,7 +71,9 @@ describe('others router', () => {
       name: 'Updated Test Server',
       description: 'An updated description',
       allowNewUsers: false,
+      directMessagesEnabled: false,
       storageUploadEnabled: false,
+      storageFileSharingInDirectMessages: false,
       storageQuota: 10 * 1024 * 1024 * 1024,
       storageMaxAvatarSize: 2 * 1024 * 1024,
       storageMaxBannerSize: 4 * 1024 * 1024,
@@ -85,8 +87,14 @@ describe('others router', () => {
     expect(settings.name).toBe(newSettings.name);
     expect(settings.description).toBe(newSettings.description);
     expect(settings.allowNewUsers).toBe(newSettings.allowNewUsers);
+    expect(settings.directMessagesEnabled).toBe(
+      newSettings.directMessagesEnabled
+    );
     expect(settings.storageUploadEnabled).toBe(
       newSettings.storageUploadEnabled
+    );
+    expect(settings.storageFileSharingInDirectMessages).toBe(
+      newSettings.storageFileSharingInDirectMessages
     );
     expect(settings.storageQuota).toBe(newSettings.storageQuota);
     expect(settings.storageMaxAvatarSize).toBe(

@@ -1,3 +1,7 @@
+import {
+  useChannelById,
+  useSelectedChannelId
+} from '@/features/server/channels/hooks';
 import { useCan, usePublicServerSettings } from '@/features/server/hooks';
 import { uploadFiles } from '@/helpers/upload-file';
 import { Permission, type TTempFile } from '@sharkord/shared';
@@ -21,7 +25,14 @@ const useUploadFiles = (
   const [uploading, setUploading] = useState(false);
   const [uploadingSize, setUploadingSize] = useState(0);
   const settings = usePublicServerSettings();
+  const selectedChannelId = useSelectedChannelId();
+  const selectedChannel = useChannelById(selectedChannelId ?? -1);
   const can = useCan();
+
+  const isDmChannel = !!selectedChannel?.isDm;
+
+  const canShareFilesInDirectMessages =
+    !isDmChannel || !!settings?.storageFileSharingInDirectMessages;
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -76,6 +87,13 @@ const useUploadFiles = (
       return;
     }
 
+    if (!canShareFilesInDirectMessages) {
+      toast.warning(
+        'File sharing in direct messages is disabled on this server.'
+      );
+      return;
+    }
+
     if (!canUpload) {
       toast.error('You do not have permission to upload files.');
       return;
@@ -85,7 +103,7 @@ const useUploadFiles = (
       fileInputRef.current.value = '';
       fileInputRef.current.click();
     }
-  }, [can, settings, disabled]);
+  }, [can, settings, disabled, canShareFilesInDirectMessages]);
 
   const onFileDialogChange = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,6 +113,13 @@ const useUploadFiles = (
 
       if (!settings?.storageUploadEnabled) {
         toast.warning('File uploads are disabled on this server.');
+        return;
+      }
+
+      if (!canShareFilesInDirectMessages) {
+        toast.warning(
+          'File sharing in direct messages is disabled on this server.'
+        );
         return;
       }
 
@@ -123,7 +148,14 @@ const useUploadFiles = (
       setUploading(false);
       setUploadingSize((size) => size - total);
     },
-    [addFiles, can, settings, disabled, takeAllowedFiles]
+    [
+      addFiles,
+      can,
+      settings,
+      disabled,
+      takeAllowedFiles,
+      canShareFilesInDirectMessages
+    ]
   );
 
   useEffect(() => {
@@ -132,7 +164,7 @@ const useUploadFiles = (
     if (!container || !settings?.storageUploadEnabled || disabled) return;
 
     const canUpload = can(Permission.UPLOAD_FILES);
-    const uploadEnabled = true;
+    const uploadEnabled = canShareFilesInDirectMessages;
 
     const processFiles = async (incomingFiles: File[]) => {
       const filesToUpload = takeAllowedFiles(incomingFiles);
@@ -224,7 +256,15 @@ const useUploadFiles = (
       container.removeEventListener('dragover', handleDragOver);
       container.removeEventListener('drop', handleDrop);
     };
-  }, [addFiles, can, settings, disabled, containerRef, takeAllowedFiles]);
+  }, [
+    addFiles,
+    can,
+    settings,
+    disabled,
+    containerRef,
+    takeAllowedFiles,
+    canShareFilesInDirectMessages
+  ]);
 
   const fileInputProps = useMemo(
     () => ({

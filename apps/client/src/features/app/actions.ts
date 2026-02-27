@@ -92,3 +92,9 @@ export const setAutoJoinLastChannel = (autoJoin: boolean) => {
 
   setLocalStorageItemBool(LocalStorageKey.AUTO_JOIN_LAST_CHANNEL, autoJoin);
 };
+
+export const setDmsOpen = (open: boolean) =>
+  store.dispatch(appSliceActions.setDmsOpen(open));
+
+export const setSelectedDmChannelId = (channelId: number | undefined) =>
+  store.dispatch(appSliceActions.setSelectedDmChannelId(channelId));
