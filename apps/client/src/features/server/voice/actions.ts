@@ -120,7 +120,10 @@ export const updateVoiceUserState = (
 
     if (newState.sharingScreen === true && !currentUserState?.sharingScreen) {
       playSound(SoundType.REMOTE_USER_STARTED_SCREENSHARE);
-    } else if (newState.sharingScreen === false && currentUserState?.sharingScreen) {
+    } else if (
+      newState.sharingScreen === false &&
+      currentUserState?.sharingScreen
+    ) {
       playSound(SoundType.REMOTE_USER_STOPPED_SCREENSHARE);
     }
   }
