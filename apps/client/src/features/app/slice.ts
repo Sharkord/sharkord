@@ -1,7 +1,6 @@
 import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
 import type { TDevices } from '@/types';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { messageReactions } from '../../../../server/src/db/schema';
 
 export interface TAppState {
   appLoading: boolean;
