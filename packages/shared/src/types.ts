@@ -43,7 +43,9 @@ export type TPublicServerSettings = Pick<
   | 'storageSpaceQuotaByUser'
   | 'storageOverflowAction'
   | 'enablePlugins'
->;
+> & {
+  webRtcMaxBitrate: number;
+};
 
 export type TGenericObject = {
   [key: string]: any;

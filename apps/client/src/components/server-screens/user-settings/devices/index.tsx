@@ -2,6 +2,7 @@ import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { getVoiceControlsBridge } from '@/components/voice-provider/controls-bridge';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
+import { usePublicServerSettings } from '@/features/server/hooks';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
 import { useForm } from '@/hooks/use-form';
 import { Resolution, VideoCodec } from '@/types';
@@ -30,7 +31,7 @@ import {
 } from '@sharkord/ui';
 import { filesize } from 'filesize';
 import { Info } from 'lucide-react';
-import { memo, useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { useAvailableDevices } from './hooks/use-available-devices';
 import { useMicrophoneTest } from './hooks/use-microphone-test';
@@ -41,6 +42,7 @@ const DEFAULT_NAME = 'default';
 
 const Devices = memo(() => {
   const currentVoiceChannelId = useCurrentVoiceChannelId();
+  const settings = usePublicServerSettings();
   const ownVoiceState = useOwnVoiceState();
   const {
     inputDevices,
@@ -205,6 +207,11 @@ const Devices = memo(() => {
       : audioLevel >= 33
         ? 'bg-green-500'
         : 'bg-green-300';
+
+  const maxBitrate = useMemo(
+    () => (settings?.webRtcMaxBitrate ? settings.webRtcMaxBitrate / 1000 : 0),
+    [settings?.webRtcMaxBitrate]
+  );
 
   if (availableDevicesLoading || devicesLoading) {
     return <LoadingCard className="h-[600px]" />;
@@ -500,7 +507,7 @@ const Devices = memo(() => {
                   <Slider
                     className="max-w-96"
                     min={200}
-                    max={30000}
+                    max={maxBitrate}
                     step={100}
                     value={[values.screenBitrate ?? DEFAULT_BITRATE]}
                     onValueChange={([value]) =>

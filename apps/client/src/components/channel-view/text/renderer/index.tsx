@@ -1,6 +1,8 @@
+import { RelativeTime } from '@/components/relative-time';
 import { requestConfirmation } from '@/features/dialogs/actions';
-import { useOwnUserId } from '@/features/server/users/hooks';
+import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
+import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
@@ -8,6 +10,7 @@ import {
   isEmojiOnlyMessage,
   type TJoinedMessage
 } from '@sharkord/shared';
+import { Tooltip } from '@sharkord/ui';
 import parse from 'html-react-parser';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -23,6 +26,7 @@ type TMessageRendererProps = {
 
 const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
   const ownUserId = useOwnUserId();
+  const editedByUser = useUserById(message.editedBy ?? -1);
   const isOwnMessage = useMemo(
     () => message.userId === ownUserId,
     [message.userId, ownUserId]
@@ -88,6 +92,28 @@ const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
         )}
       >
         {messageHtml}
+        {message.editedAt && (
+          <Tooltip
+            content={
+              <div className="flex flex-col gap-1">
+                <RelativeTime date={new Date(message.editedAt)}>
+                  {(relativeTime) => (
+                    <span className="text-secondary text-xs">
+                      {editedByUser
+                        ? getRenderedUsername(editedByUser)
+                        : 'Unknown User'}{' '}
+                      {relativeTime}
+                    </span>
+                  )}
+                </RelativeTime>
+              </div>
+            }
+          >
+            <span className="msg-edit ml-1 text-xs text-muted-foreground">
+              (edited)
+            </span>
+          </Tooltip>
+        )}
       </div>
 
       {allMedia.map((media, index) => {
