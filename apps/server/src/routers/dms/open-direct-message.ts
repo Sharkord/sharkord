@@ -85,6 +85,9 @@ const openDirectMessageRoute = protectedProcedure
     const participants = [userOneId, userTwoId];
 
     ctx.pubsub.publishFor(participants, ServerEvents.CHANNEL_CREATE, channel);
+    ctx.pubsub.publishFor(participants, ServerEvents.DM_CONVERSATION_OPEN, {
+      channelId: channel.id
+    });
 
     await publishChannelPermissions(participants);
 

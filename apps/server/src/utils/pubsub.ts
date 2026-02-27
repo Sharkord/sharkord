@@ -116,6 +116,8 @@ type Events = {
   [ServerEvents.CATEGORY_CREATE]: TCategory;
   [ServerEvents.CATEGORY_UPDATE]: TCategory;
   [ServerEvents.CATEGORY_DELETE]: number;
+
+  [ServerEvents.DM_CONVERSATION_OPEN]: { channelId: number };
 };
 
 class PubSub {

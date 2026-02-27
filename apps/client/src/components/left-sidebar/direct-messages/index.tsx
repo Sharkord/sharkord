@@ -80,6 +80,17 @@ const DirectMessages = memo(() => {
     fetchConversations();
   }, [channels.length, fetchConversations]);
 
+  // subscribe to new conversations being opened, when a new conversation is opened we refetch the list of conversations
+  useEffect(() => {
+    const trpc = getTRPCClient();
+
+    const sub = trpc.dms.onConversationOpen.subscribe(undefined, {
+      onData: () => fetchConversations()
+    });
+
+    return () => sub.unsubscribe();
+  }, [fetchConversations]);
+
   const usersToStartDm = useMemo(() => {
     const directMessageUserIds = new Set(conversations.map((dm) => dm.userId));
 
@@ -109,8 +120,8 @@ const DirectMessages = memo(() => {
   );
 
   return (
-    <div className="flex-1 overflow-y-auto p-2 space-y-2">
-      <div className="flex items-center justify-between px-1">
+    <div className="flex-1 overflow-y-auto p-2">
+      <div className="mb-1 flex items-center justify-between px-2 py-1">
         <span className="text-xs font-semibold text-muted-foreground">
           Direct Messages
         </span>
