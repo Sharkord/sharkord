@@ -83,8 +83,6 @@ const Connect = memo(() => {
       const data = (await response.json()) as { token: string };
 
       setSessionStorageItem(SessionStorageKey.TOKEN, data.token);
-
-      // persist auto-login preference and token
       setLocalStorageItemBool(LocalStorageKey.AUTO_LOGIN, values.autoLogin);
 
       if (values.autoLogin) {
