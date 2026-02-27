@@ -13,6 +13,7 @@ export interface TAppState {
   threadParentMessageId: number | undefined;
   threadChannelId: number | undefined;
   autoJoinLastChannel: boolean;
+  pinnedMessagesBoxOpen: boolean;
 }
 
 const initialState: TAppState = {
@@ -28,7 +29,8 @@ const initialState: TAppState = {
   autoJoinLastChannel: getLocalStorageItemBool(
     LocalStorageKey.AUTO_JOIN_LAST_CHANNEL,
     false
-  )
+  ),
+  pinnedMessagesBoxOpen: false
 };
 
 export const appSlice = createSlice({
@@ -71,6 +73,14 @@ export const appSlice = createSlice({
     },
     setIsAutoConnecting: (state, action: PayloadAction<boolean>) => {
       state.isAutoConnecting = action.payload;
+    },
+    setPinnedMessagesBoxOpen: (
+      state,
+      action: PayloadAction<{
+        open: boolean;
+      }>
+    ) => {
+      state.pinnedMessagesBoxOpen = action.payload.open;
     }
   }
 });

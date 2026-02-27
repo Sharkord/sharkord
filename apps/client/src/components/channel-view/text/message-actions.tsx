@@ -10,7 +10,14 @@ import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
-import { MessageSquareText, Pencil, Smile, Trash } from 'lucide-react';
+import {
+  MessageSquareText,
+  Pencil,
+  Pin,
+  PinOff,
+  Smile,
+  Trash
+} from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
@@ -23,6 +30,8 @@ type TMessageActionsProps = {
   canManage: boolean;
   editable: boolean;
   isThreadReply?: boolean;
+  pinned: boolean;
+  type: string;
 };
 
 const MessageActions = memo(
@@ -32,7 +41,9 @@ const MessageActions = memo(
     channelId,
     canManage,
     editable,
-    isThreadReply
+    isThreadReply,
+    pinned,
+    type
   }: TMessageActionsProps) => {
     const { recentEmojis } = useRecentEmojis();
     const recentEmojisToShow = useMemo(
@@ -82,6 +93,19 @@ const MessageActions = memo(
     const onReplyClick = useCallback(() => {
       openThreadSidebar(messageId, channelId);
     }, [messageId, channelId]);
+
+    const onPinClick = useCallback(async () => {
+      const trpc = getTRPCClient();
+
+      try {
+        await trpc.messages.togglePin.mutate({ messageId });
+        toast.success('Message pinned status toggled');
+      } catch (error) {
+        toast.error('Failed to toggle pin status');
+
+        console.error('Error toggling pin status:', error);
+      }
+    }, [messageId]);
 
     return (
       <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-1 transition-all h-8 bg-background">
@@ -140,6 +164,17 @@ const MessageActions = memo(
               <IconButton variant="ghost" icon={Smile} title="Add Reaction" />
             </EmojiPicker>
           </div>
+        </Protect>
+        <Protect permission={Permission.PIN_MESSAGES}>
+          {type === 'channel' ? (
+            <IconButton
+              size="sm"
+              variant="ghost"
+              icon={pinned ? PinOff : Pin}
+              onClick={onPinClick}
+              title={pinned ? 'Unpin Message' : 'Pin Message'}
+            />
+          ) : null}
         </Protect>
       </div>
     );

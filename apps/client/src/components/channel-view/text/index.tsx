@@ -2,6 +2,7 @@ import {
   MessageCompose,
   type TMessageComposeHandle
 } from '@/components/message-compose';
+import { PinnedMessagesBox } from '@/components/pinned-messages-box';
 import {
   useChannelCan,
   useTypingUsersByChannelId
@@ -43,6 +44,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     getDraftMessage(draftChannelKey)
   );
   const typingUsers = useTypingUsersByChannelId(channelId);
+  const messageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const composeRef = useRef<TMessageComposeHandle>(null);
 
   const { containerRef, onScroll } = useScrollController({
@@ -119,6 +121,8 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         </div>
       )}
 
+      <PinnedMessagesBox messageRefs={messageRefs} messages={messages} />
+
       <div
         ref={containerRef}
         onScroll={onScroll}
@@ -126,7 +130,12 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
       >
         <div className="space-y-4">
           {groupedMessages.map((group, index) => (
-            <MessagesGroup key={index} group={group} />
+            <MessagesGroup
+              key={index}
+              group={group}
+              messageRefs={messageRefs}
+              type="channel"
+            />
           ))}
         </div>
       </div>

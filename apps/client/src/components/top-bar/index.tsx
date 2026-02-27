@@ -27,7 +27,6 @@ const TopBar = memo(
   }: TTopBarProps) => {
     const isCurrentVoiceChannelSelected = useIsCurrentVoiceChannelSelected();
     const currentVoiceChannelId = useCurrentVoiceChannelId();
-
     return (
       <div className="hidden lg:flex h-8 w-full bg-card border-b border-border items-center justify-end px-4 transition-all duration-300 ease-in-out gap-2">
         <PluginSlotRenderer slotId={PluginSlot.TOPBAR_RIGHT} />

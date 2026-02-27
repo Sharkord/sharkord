@@ -215,6 +215,7 @@ const messages = sqliteTable(
     metadata: text('metadata', { mode: 'json' }).$type<TMessageMetadata[]>(),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at'),
+    pinned: integer('pinned', { mode: 'boolean' }).default(false),
     editedAt: integer('edited_at'),
     editedBy: integer('edited_by').references(() => users.id, {
       onDelete: 'cascade'
