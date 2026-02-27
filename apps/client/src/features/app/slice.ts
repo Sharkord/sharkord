@@ -1,9 +1,11 @@
 import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
 import type { TDevices } from '@/types';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { messageReactions } from '../../../../server/src/db/schema';
 
 export interface TAppState {
   appLoading: boolean;
+  isAutoConnecting: boolean;
   loadingPlugins: boolean;
   devices: TDevices | undefined;
   modViewOpen: boolean;
@@ -17,6 +19,7 @@ export interface TAppState {
 
 const initialState: TAppState = {
   appLoading: true,
+  isAutoConnecting: false,
   loadingPlugins: true,
   devices: undefined,
   modViewOpen: false,
@@ -68,6 +71,9 @@ export const appSlice = createSlice({
     },
     setAutoJoinLastChannel: (state, action: PayloadAction<boolean>) => {
       state.autoJoinLastChannel = action.payload;
+    },
+    setIsAutoConnecting: (state, action: PayloadAction<boolean>) => {
+      state.isAutoConnecting = action.payload;
     },
     setPinnedMessagesBoxOpen: (
       state,
