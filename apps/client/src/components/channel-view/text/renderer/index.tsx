@@ -101,8 +101,7 @@ const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
                     <span className="text-secondary text-xs">
                       {editedByUser
                         ? getRenderedUsername(editedByUser)
-                        : 'Unknown User'}
-                      {' '}
+                        : 'Unknown User'}{' '}
                       {relativeTime}
                     </span>
                   )}
