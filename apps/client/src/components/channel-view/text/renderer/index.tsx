@@ -1,6 +1,8 @@
+import { RelativeTime } from '@/components/relative-time';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
+import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
@@ -8,6 +10,7 @@ import {
   isEmojiOnlyMessage,
   type TJoinedMessage
 } from '@sharkord/shared';
+import { Tooltip } from '@sharkord/ui';
 import parse from 'html-react-parser';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -16,9 +19,6 @@ import { MessageReactions } from '../message-reactions';
 import { ImageOverride } from '../overrides/image';
 import { serializer } from './serializer';
 import type { TFoundMedia } from './types';
-import { Tooltip } from '@sharkord/ui';
-import { getRenderedUsername } from '@/helpers/get-rendered-username';
-import { RelativeTime } from '@/components/relative-time';
 
 type TMessageRendererProps = {
   message: TJoinedMessage;
@@ -98,10 +98,11 @@ const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
               <div className="flex flex-col gap-1">
                 <RelativeTime date={new Date(message.editedAt)}>
                   {(relativeTime) => (
-                    <span
-                      className="text-secondary text-xs"
-                    >
-                      {relativeTime} - edited by {editedByUser ? getRenderedUsername(editedByUser) : 'Unknown User'}
+                    <span className="text-secondary text-xs">
+                      {relativeTime} - edited by{' '}
+                      {editedByUser
+                        ? getRenderedUsername(editedByUser)
+                        : 'Unknown User'}
                     </span>
                   )}
                 </RelativeTime>
