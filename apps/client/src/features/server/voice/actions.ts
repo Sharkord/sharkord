@@ -111,6 +111,20 @@ export const updateVoiceUserState = (
   channelId: number,
   newState: Partial<TVoiceUserState>
 ): void => {
+  const state = store.getState();
+  const ownUserId = ownUserIdSelector(state);
+  const currentChannelId = currentVoiceChannelIdSelector(state);
+
+  if (userId !== ownUserId && channelId === currentChannelId) {
+    const currentUserState = state.server.voiceMap[channelId]?.users[userId];
+
+    if (newState.sharingScreen === true && !currentUserState?.sharingScreen) {
+      playSound(SoundType.REMOTE_USER_STARTED_SCREENSHARE);
+    } else if (newState.sharingScreen === false && currentUserState?.sharingScreen) {
+      playSound(SoundType.REMOTE_USER_STOPPED_SCREENSHARE);
+    }
+  }
+
   store.dispatch(
     serverSliceActions.updateVoiceUserState({ userId, channelId, newState })
   );
