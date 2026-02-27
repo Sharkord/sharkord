@@ -3,7 +3,7 @@ import { requestConfirmation } from '@/features/dialogs/actions';
 import { getUrlFromServer } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
-import type { TInvite } from '@sharkord/shared';
+import type { TJoinedInvite } from '@sharkord/shared';
 import { getTrpcError } from '@sharkord/shared';
 import {
   Badge,
@@ -19,7 +19,7 @@ import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
 type TTableInviteProps = {
-  invite: TInvite;
+  invite: TJoinedInvite;
   refetch: () => void;
 };
 
@@ -94,10 +94,25 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
     );
   }, [isExpired, isMaxUsesReached]);
 
+  const roleBadge = useMemo(() => {
+    if (invite.role) {
+      return (
+        <Badge
+          variant="outline"
+          className="text-xs"
+          style={{ borderColor: invite.role.color, color: invite.role.color }}
+        >
+          {invite.role.name}
+        </Badge>
+      );
+    }
+    return <span className="text-xs text-muted-foreground">Default</span>;
+  }, [invite.role]);
+
   return (
     <div
       key={invite.id}
-      className="grid grid-cols-[180px_60px_80px_100px_140px_80px_80px] gap-4 px-4 py-3 text-sm hover:bg-muted/30 transition-colors"
+      className="grid grid-cols-[1fr_80px_50px_70px_90px_110px_70px_60px] gap-4 px-4 py-3 text-sm hover:bg-muted/30 transition-colors"
     >
       <div className="flex items-center min-w-0">
         <div className="flex items-center gap-2 min-w-0">
@@ -114,6 +129,8 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
           </Button>
         </div>
       </div>
+
+      <div className="flex items-center">{roleBadge}</div>
 
       <div className="flex items-center gap-2 min-w-0">
         <UserAvatar userId={1} showUserPopover />

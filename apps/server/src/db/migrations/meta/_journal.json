@@ -29,6 +29,13 @@
       "when": 1772053200000,
       "tag": "0003_add_avatar_and_banner_limits",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1772195206638,
+      "tag": "0004_messy_nicolaos",
+      "breakpoints": true
     }
   ]
 }

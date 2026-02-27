@@ -1,0 +1,1 @@
+ALTER TABLE `invites` ADD `role_id` integer REFERENCES roles(id);

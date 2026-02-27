@@ -163,4 +163,61 @@ describe('invites router', () => {
 
     expect(finalInvites.length).toBe(initialCount + 3);
   });
+
+  test('should create invite with a valid roleId', async () => {
+    const { caller } = await initTest();
+
+    // roleId 1 is the Owner role created during seed
+    const invite = await caller.invites.add({
+      code: 'role-invite-1',
+      roleId: 1
+    });
+
+    expect(invite).toBeDefined();
+    expect(invite.roleId).toBe(1);
+  });
+
+  test('should throw error when creating invite with invalid roleId', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.invites.add({
+        code: 'bad-role-invite',
+        roleId: 999999
+      })
+    ).rejects.toThrow('Role not found');
+  });
+
+  test('should return role info in getAll for invite with roleId', async () => {
+    const { caller } = await initTest();
+
+    await caller.invites.add({
+      code: 'role-invite-2',
+      roleId: 1
+    });
+
+    const invites = await caller.invites.getAll();
+    const inviteWithRole = invites.find((i) => i.code === 'role-invite-2');
+
+    expect(inviteWithRole).toBeDefined();
+    expect(inviteWithRole!.role).toBeDefined();
+    expect(inviteWithRole!.role).not.toBeNull();
+    expect(inviteWithRole!.role!.id).toBe(1);
+    expect(inviteWithRole!.role!.name).toBeDefined();
+    expect(inviteWithRole!.role!.color).toBeDefined();
+  });
+
+  test('should return null role for invite without roleId', async () => {
+    const { caller } = await initTest();
+
+    await caller.invites.add({
+      code: 'no-role-invite'
+    });
+
+    const invites = await caller.invites.getAll();
+    const inviteWithoutRole = invites.find((i) => i.code === 'no-role-invite');
+
+    expect(inviteWithoutRole).toBeDefined();
+    expect(inviteWithoutRole!.role).toBeNull();
+  });
 });

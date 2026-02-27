@@ -314,6 +314,9 @@ const invites = sqliteTable(
     creatorId: integer('creator_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    roleId: integer('role_id').references(() => roles.id, {
+      onDelete: 'set null'
+    }),
     maxUses: integer('max_uses'),
     uses: integer('uses').notNull().default(0),
     expiresAt: integer('expires_at'),
