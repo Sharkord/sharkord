@@ -99,10 +99,11 @@ const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
                 <RelativeTime date={new Date(message.editedAt)}>
                   {(relativeTime) => (
                     <span className="text-secondary text-xs">
-                      {relativeTime} - edited by{' '}
                       {editedByUser
                         ? getRenderedUsername(editedByUser)
                         : 'Unknown User'}
+                      {' '}
+                      {relativeTime}
                     </span>
                   )}
                 </RelativeTime>
