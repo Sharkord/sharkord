@@ -1,5 +1,5 @@
 import { requestConfirmation } from '@/features/dialogs/actions';
-import { useOwnUserId } from '@/features/server/users/hooks';
+import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,9 @@ import { MessageReactions } from '../message-reactions';
 import { ImageOverride } from '../overrides/image';
 import { serializer } from './serializer';
 import type { TFoundMedia } from './types';
+import { Tooltip } from '@sharkord/ui';
+import { getRenderedUsername } from '@/helpers/get-rendered-username';
+import { RelativeTime } from '@/components/relative-time';
 
 type TMessageRendererProps = {
   message: TJoinedMessage;
@@ -23,6 +26,7 @@ type TMessageRendererProps = {
 
 const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
   const ownUserId = useOwnUserId();
+  const editedByUser = useUserById(message.editedBy ?? -1);
   const isOwnMessage = useMemo(
     () => message.userId === ownUserId,
     [message.userId, ownUserId]
@@ -88,6 +92,27 @@ const MessageRenderer = memo(({ message }: TMessageRendererProps) => {
         )}
       >
         {messageHtml}
+        {message.editedAt && (
+          <Tooltip
+            content={
+              <div className="flex flex-col gap-1">
+                <RelativeTime date={new Date(message.editedAt)}>
+                  {(relativeTime) => (
+                    <span
+                      className="text-secondary text-xs"
+                    >
+                      {relativeTime} - edited by {editedByUser ? getRenderedUsername(editedByUser) : 'Unknown User'}
+                    </span>
+                  )}
+                </RelativeTime>
+              </div>
+            }
+          >
+            <span className="msg-edit ml-1 text-xs text-muted-foreground">
+              (edited)
+            </span>
+          </Tooltip>
+        )}
       </div>
 
       {allMedia.map((media, index) => {

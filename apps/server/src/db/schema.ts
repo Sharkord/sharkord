@@ -214,7 +214,11 @@ const messages = sqliteTable(
     editable: integer('editable', { mode: 'boolean' }).default(true),
     metadata: text('metadata', { mode: 'json' }).$type<TMessageMetadata[]>(),
     createdAt: integer('created_at').notNull(),
-    updatedAt: integer('updated_at')
+    updatedAt: integer('updated_at'),
+    editedAt: integer('edited_at'),
+    editedBy: integer('edited_by').references(() => users.id, {
+      onDelete: 'cascade'
+    })
   },
   (t) => [
     index('messages_user_idx').on(t.userId),
