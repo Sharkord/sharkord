@@ -40,6 +40,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useSyncExternalStore
 } from 'react';
