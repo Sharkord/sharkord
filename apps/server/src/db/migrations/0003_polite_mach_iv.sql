@@ -1,3 +1,4 @@
+ALTER TABLE `invites` ADD `role_id` integer REFERENCES roles(id);--> statement-breakpoint
 ALTER TABLE `messages` ADD `pinned` integer DEFAULT false;--> statement-breakpoint
 ALTER TABLE `messages` ADD `pinned_at` integer;--> statement-breakpoint
 ALTER TABLE `messages` ADD `pinned_by` integer REFERENCES users(id);--> statement-breakpoint

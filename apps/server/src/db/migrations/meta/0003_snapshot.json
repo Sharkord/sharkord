@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "a9636f8d-2bac-400d-a098-8aba8df09ecb",
+  "id": "8ad5c196-e033-4b60-b120-4ae0c162c819",
   "prevId": "970a64a5-0ab3-4de1-8634-35ed73a2350f",
   "tables": {
     "activity_log": {
@@ -908,6 +908,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "role_id": {
+          "name": "role_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "max_uses": {
           "name": "max_uses",
           "type": "integer",
@@ -987,6 +994,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "invites_role_id_roles_id_fk": {
+          "name": "invites_role_id_roles_id_fk",
+          "tableFrom": "invites",
+          "tableTo": "roles",
+          "columnsFrom": [
+            "role_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

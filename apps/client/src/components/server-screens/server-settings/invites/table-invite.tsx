@@ -1,3 +1,4 @@
+import { RoleBadge } from '@/components/role-badge';
 import { UserAvatar } from '@/components/user-avatar';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getUrlFromServer } from '@/helpers/get-file-url';
@@ -94,21 +95,6 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
     );
   }, [isExpired, isMaxUsesReached]);
 
-  const roleBadge = useMemo(() => {
-    if (invite.role) {
-      return (
-        <Badge
-          variant="outline"
-          className="text-xs"
-          style={{ borderColor: invite.role.color, color: invite.role.color }}
-        >
-          {invite.role.name}
-        </Badge>
-      );
-    }
-    return <span className="text-xs text-muted-foreground">Default</span>;
-  }, [invite.role]);
-
   return (
     <div
       key={invite.id}
@@ -122,7 +108,7 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 flex-shrink-0"
+            className="h-6 w-6 shrink-0"
             onClick={handleCopyCode}
           >
             <Copy className="h-3 w-3" />
@@ -130,7 +116,13 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
         </div>
       </div>
 
-      <div className="flex items-center">{roleBadge}</div>
+      <div className="flex items-center">
+        {invite.role ? (
+          <RoleBadge role={invite.role} />
+        ) : (
+          <span className="text-xs text-muted-foreground">Default</span>
+        )}
+      </div>
 
       <div className="flex items-center gap-2 min-w-0">
         <UserAvatar userId={1} showUserPopover />

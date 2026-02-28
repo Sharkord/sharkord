@@ -49,6 +49,7 @@ const CreateInviteDialog = memo(
         }
 
         await trpc.invites.add.mutate(payload);
+
         toast.success('Invite created');
 
         refetch();
@@ -93,10 +94,10 @@ const CreateInviteDialog = memo(
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">None (Default only)</SelectItem>
+                  <SelectItem value="0">Default</SelectItem>
                   {roles.map((role) => (
                     <SelectItem key={role.id} value={role.id.toString()}>
-                      <span style={{ color: role.color }}>{role.name}</span>
+                      {role.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -146,13 +146,13 @@ const loginRouteHandler = async (
   if (!existingUser) {
     let inviteRoleId: number | null = null;
 
-    if (!settings.allowNewUsers) {
-      const result = await isInviteValid(data.invite);
+    const result = await isInviteValid(data.invite);
 
-      if (result.error) {
-        throw new HttpValidationError('identity', result.error);
-      }
+    if (!settings.allowNewUsers && result.error) {
+      throw new HttpValidationError('identity', result.error);
+    }
 
+    if (result.invite) {
       inviteRoleId = result.invite?.roleId ?? null;
 
       await db
