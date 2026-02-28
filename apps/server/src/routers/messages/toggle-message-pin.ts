@@ -1,9 +1,10 @@
-import { Permission } from '@sharkord/shared';
+import { ActivityLogType, Permission } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { messages } from '../../db/schema';
+import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -45,6 +46,16 @@ const toggleMessagePinRoute = protectedProcedure
       .where(eq(messages.id, input.messageId));
 
     publishMessage(input.messageId, message.channelId, 'update');
+    enqueueActivityLog({
+      type: ActivityLogType.TOGGLED_MESSAGE_PIN,
+      userId: ctx.user.id,
+      details: {
+        messageId: input.messageId,
+        channelId: message.channelId,
+        pinned: !message.pinned,
+        pinnedBy: ctx.user.id
+      }
+    });
   });
 
 export { toggleMessagePinRoute };
