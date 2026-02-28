@@ -1,14 +1,14 @@
-import type { TJoinedInvite } from '@sharkord/shared';
+import type { TInvite, TJoinedInvite } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/sqlite-core';
 import { db } from '..';
-import { files, invites, userRoles, users } from '../schema';
+import { files, invites, roles, userRoles, users } from '../schema';
 
 const isInviteValid = async (
   code: string | undefined
-): Promise<string | undefined> => {
+): Promise<{ error?: string; invite?: TInvite }> => {
   if (!code) {
-    return 'Invalid invite code';
+    return { error: 'Invalid invite code' };
   }
 
   const invite = await db
@@ -18,18 +18,18 @@ const isInviteValid = async (
     .get();
 
   if (!invite) {
-    return 'Invite code not found';
+    return { error: 'Invite code not found' };
   }
 
   if (invite.expiresAt && invite.expiresAt < Date.now()) {
-    return 'Invite code has expired';
+    return { error: 'Invite code has expired' };
   }
 
   if (invite.maxUses && invite.uses >= invite.maxUses) {
-    return 'Invite code has reached maximum uses';
+    return { error: 'Invite code has reached maximum uses' };
   }
 
-  return undefined;
+  return { invite };
 };
 
 const getInvites = async (): Promise<TJoinedInvite[]> => {
@@ -50,12 +50,18 @@ const getInvites = async (): Promise<TJoinedInvite[]> => {
         bannerId: users.bannerId
       },
       avatar: avatarFiles,
-      banner: bannerFiles
+      banner: bannerFiles,
+      role: {
+        id: roles.id,
+        name: roles.name,
+        color: roles.color
+      }
     })
     .from(invites)
     .innerJoin(users, eq(invites.creatorId, users.id))
     .leftJoin(avatarFiles, eq(users.avatarId, avatarFiles.id))
-    .leftJoin(bannerFiles, eq(users.bannerId, bannerFiles.id));
+    .leftJoin(bannerFiles, eq(users.bannerId, bannerFiles.id))
+    .leftJoin(roles, eq(invites.roleId, roles.id));
 
   const rolesByUser = await db
     .select({
@@ -81,7 +87,8 @@ const getInvites = async (): Promise<TJoinedInvite[]> => {
       avatar: row.avatar,
       banner: row.banner,
       roleIds: rolesMap[row.creator.id] || []
-    }
+    },
+    role: row.role?.id ? row.role : null
   }));
 };
 
