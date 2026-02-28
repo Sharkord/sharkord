@@ -2,6 +2,7 @@ import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { getVoiceControlsBridge } from '@/components/voice-provider/controls-bridge';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
+import { usePublicServerSettings } from '@/features/server/hooks';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
 import { MICROPHONE_GATE_DEFAULT_THRESHOLD_DB } from '@/helpers/audio-gate';
 import {
@@ -53,6 +54,7 @@ const DEFAULT_NAME = 'default';
 
 const Devices = memo(() => {
   const currentVoiceChannelId = useCurrentVoiceChannelId();
+  const settings = usePublicServerSettings();
   const ownVoiceState = useOwnVoiceState();
   const {
     inputDevices,
@@ -217,6 +219,11 @@ const Devices = memo(() => {
   );
   const hasDefaultVideoOption = videoDevices.some(
     (device) => device?.deviceId === DEFAULT_NAME
+  );
+
+  const maxBitrate = useMemo(
+    () => (settings?.webRtcMaxBitrate ? settings.webRtcMaxBitrate / 1000 : 0),
+    [settings?.webRtcMaxBitrate]
   );
 
   if (availableDevicesLoading || devicesLoading) {
@@ -537,7 +544,7 @@ const Devices = memo(() => {
                   <Slider
                     className="max-w-96"
                     min={200}
-                    max={30000}
+                    max={maxBitrate}
                     step={100}
                     value={[values.screenBitrate ?? DEFAULT_BITRATE]}
                     onValueChange={([value]) =>

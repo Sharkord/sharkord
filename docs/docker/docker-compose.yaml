@@ -11,31 +11,9 @@ services:
       - "40000:40000/udp"
       - "40000:40000/tcp"
 
-    # Can override config file settings
     environment:
-
-      # Server configuration
+      # (see all available env vars on the documentation)
       SHARKORD_PORT: "4991"
-      SHARKORD_DEBUG: "false"
 
-      # WebRTC configuration
-      SHARKORD_WEBRTC_PORT: "40000"
-
-    # Volume mounts for persistent data
     volumes:
-      # Map to host directory
-      - ./data:/root/.config/sharkord
-
-      # Or use Docker volumes
-      # - sharkord_data:/root/.config/sharkord
-
-      # Uploads directory (optional, if you want uploads outside data dir)
-      # - sharkord_uploads:/root/.config/sharkord/uploads
-
-      # Plugins directory (optional, for plugin management)
-      # - sharkord_plugins:/root/.config/sharkord/plugins
-
-# If using Docker volumes:
-# volumes:
-#   sharkord_data:
-#     driver: local
+      - ./data:/home/bun/.config/sharkord

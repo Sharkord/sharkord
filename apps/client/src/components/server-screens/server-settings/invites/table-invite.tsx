@@ -1,9 +1,10 @@
+import { RoleBadge } from '@/components/role-badge';
 import { UserAvatar } from '@/components/user-avatar';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getUrlFromServer } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
-import type { TInvite } from '@sharkord/shared';
+import type { TJoinedInvite } from '@sharkord/shared';
 import { getTrpcError } from '@sharkord/shared';
 import {
   Badge,
@@ -19,7 +20,7 @@ import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
 type TTableInviteProps = {
-  invite: TInvite;
+  invite: TJoinedInvite;
   refetch: () => void;
 };
 
@@ -97,7 +98,7 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
   return (
     <div
       key={invite.id}
-      className="grid grid-cols-[180px_60px_80px_100px_140px_80px_80px] gap-4 px-4 py-3 text-sm hover:bg-muted/30 transition-colors"
+      className="grid grid-cols-[1fr_80px_50px_70px_90px_110px_70px_60px] gap-4 px-4 py-3 text-sm hover:bg-muted/30 transition-colors"
     >
       <div className="flex items-center min-w-0">
         <div className="flex items-center gap-2 min-w-0">
@@ -107,12 +108,20 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 flex-shrink-0"
+            className="h-6 w-6 shrink-0"
             onClick={handleCopyCode}
           >
             <Copy className="h-3 w-3" />
           </Button>
         </div>
+      </div>
+
+      <div className="flex items-center">
+        {invite.role ? (
+          <RoleBadge role={invite.role} />
+        ) : (
+          <span className="text-xs text-muted-foreground">Default</span>
+        )}
       </div>
 
       <div className="flex items-center gap-2 min-w-0">

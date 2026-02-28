@@ -83,8 +83,6 @@ const Connect = memo(() => {
       const data = (await response.json()) as { token: string };
 
       setSessionStorageItem(SessionStorageKey.TOKEN, data.token);
-
-      // persist auto-login preference and token
       setLocalStorageItemBool(LocalStorageKey.AUTO_LOGIN, values.autoLogin);
 
       if (values.autoLogin) {
@@ -139,13 +137,20 @@ const Connect = memo(() => {
             </span>
           )}
 
-          <div className="flex flex-col gap-2">
+          <form
+            className="flex flex-col gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              onConnectClick();
+            }}
+          >
             <Group
               label="Identity"
               help="A unique identifier for your account on this server. You can use whatever you like, such as an email address or a username. This won't be shared publicly."
             >
               <Input
                 {...r('identity')}
+                autoComplete="username"
                 data-testid={TestId.CONNECT_IDENTITY_INPUT}
               />
             </Group>
@@ -153,11 +158,12 @@ const Connect = memo(() => {
               <Input
                 {...r('password')}
                 type="password"
+                autoComplete="current-password"
                 onEnter={onConnectClick}
                 data-testid={TestId.CONNECT_PASSWORD_INPUT}
               />
             </Group>
-          </div>
+          </form>
 
           <div
             className="flex items-center gap-2 w-fit cursor-pointer"

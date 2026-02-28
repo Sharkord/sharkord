@@ -75,14 +75,21 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       });
     }
 
-    invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
+    const { storageMaxFilesPerMessage, enablePlugins } = await getSettings();
+
+    const limitedFiles = input.files.slice(
+      0,
+      Math.max(0, storageMaxFilesPerMessage)
+    );
+
+    invariant(!isEmptyMessage(input.content) || limitedFiles.length != 0, {
       code: 'BAD_REQUEST',
       message: 'Message cannot be empty.'
     });
 
     let targetContent = sanitizeMessageHtml(input.content);
 
-    invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
+    invariant(!isEmptyMessage(input.content) || limitedFiles.length != 0, {
       code: 'BAD_REQUEST',
       message:
         'Your message only contained unsupported or removed content, so there was nothing to send.'
@@ -90,8 +97,6 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     let editable = true;
     let commandExecutor: ((messageId: number) => void) | undefined = undefined;
-
-    const { enablePlugins } = await getSettings();
 
     if (enablePlugins) {
       // when plugins are enabled, need to check if the message is a command
@@ -201,8 +206,8 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     commandExecutor?.(message.id);
 
-    if (input.files.length > 0) {
-      for (const tempFileId of input.files) {
+    if (limitedFiles.length > 0) {
+      for (const tempFileId of limitedFiles) {
         const newFile = await fileManager.saveFile(tempFileId, ctx.userId);
 
         await db.insert(messageFiles).values({

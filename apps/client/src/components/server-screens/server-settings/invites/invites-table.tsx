@@ -31,6 +31,7 @@ const InvitesTable = memo(({ invites, refetch }: TInvitesTableProps) => {
       headerColumns={
         <>
           <div>Code</div>
+          <div>Role</div>
           <div>Creator</div>
           <div>Uses</div>
           <div>Expires</div>
@@ -39,7 +40,7 @@ const InvitesTable = memo(({ invites, refetch }: TInvitesTableProps) => {
           <div>Actions</div>
         </>
       }
-      gridCols="grid-cols-[180px_60px_80px_100px_140px_80px_80px]"
+      gridCols="grid-cols-[1fr_80px_50px_70px_90px_110px_70px_60px]"
       itemsPerPage={8}
       searchPlaceholder="Search invites by code or creator..."
       emptyMessage="No invites found"

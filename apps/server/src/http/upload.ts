@@ -1,44 +1,18 @@
 import { UploadHeaders } from '@sharkord/shared';
 import fs from 'fs';
 import http from 'http';
-import path from 'path';
 import z from 'zod';
 import { getSettings } from '../db/queries/server';
 import { getUserByToken } from '../db/queries/users';
 import { logger } from '../logger';
 import { fileManager } from '../utils/file-manager';
+import { sanitizeFileName } from './helpers';
 
 const zHeaders = z.object({
   [UploadHeaders.TOKEN]: z.string(),
   [UploadHeaders.ORIGINAL_NAME]: z.string(),
   [UploadHeaders.CONTENT_LENGTH]: z.string().transform((val) => Number(val))
 });
-
-/**
- * Sanitizes a user-provided filename to prevent path traversal attacks.
- * Strips directory components (both Unix and Windows style), rejects null bytes,
- * and ensures the result is a safe basename.
- */
-const sanitizeFileName = (name: string): string | null => {
-  // Reject null bytes which can truncate paths on some systems
-  if (name.includes('\0')) {
-    return null;
-  }
-
-  // Normalize Windows-style backslashes to forward slashes before extracting basename,
-  // since path.basename on Linux does not treat backslashes as separators
-  const normalized = name.replace(/\\/g, '/');
-
-  // Strip any directory components (e.g. "../../etc/passwd" -> "passwd")
-  const baseName = path.basename(normalized);
-
-  // Reject empty names (e.g. after stripping path components from "/")
-  if (!baseName || baseName === '.' || baseName === '..') {
-    return null;
-  }
-
-  return baseName;
-};
 
 const uploadFileRouteHandler = async (
   req: http.IncomingMessage,

@@ -6,7 +6,7 @@ import { login, uploadFile } from '../../__tests__/helpers';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
 import { settings } from '../../db/schema';
 import { TMP_PATH } from '../../helpers/paths';
-import { sanitizeFileName } from '../upload';
+import { sanitizeFileName } from '../helpers';
 
 const getMockFile = (content: string): File => {
   const blob = new Blob([content], { type: 'text/plain' });

@@ -1,4 +1,5 @@
 import http from 'http';
+import path from 'path';
 
 type HttpRouteHandler<TContext = undefined> = (
   req: http.IncomingMessage,
@@ -42,5 +43,29 @@ const getRequestPathname = (req: http.IncomingMessage): string | null => {
   }
 };
 
-export { getJsonBody, getRequestPathname, hasPrefixPathSegment };
+const sanitizeFileName = (name: string): string | null => {
+  // reject null bytes which can truncate paths on some
+  if (name.includes('\0')) {
+    return null;
+  }
+
+  const normalized = name.replace(/\\/g, '/');
+
+  // strip any directory components (e.g. "../../etc/passwd" -> "passwd")
+  const baseName = path.basename(normalized);
+
+  // reject empty names (e.g. after stripping path components from "/")
+  if (!baseName || baseName === '.' || baseName === '..') {
+    return null;
+  }
+
+  return baseName;
+};
+
+export {
+  getJsonBody,
+  getRequestPathname,
+  hasPrefixPathSegment,
+  sanitizeFileName
+};
 export type { HttpRouteHandler };

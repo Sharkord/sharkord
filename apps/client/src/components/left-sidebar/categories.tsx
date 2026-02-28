@@ -139,9 +139,9 @@ const Categories = memo(() => {
 
       reorderedIds.splice(newIndex, 0, movedId);
 
-      try {
-        const trpc = getTRPCClient();
+      const trpc = getTRPCClient();
 
+      try {
         await trpc.categories.reorder.mutate({ categoryIds: reorderedIds });
       } catch (error) {
         toast.error(getTrpcError(error, 'Failed to reorder categories'));
