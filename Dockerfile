@@ -4,7 +4,7 @@ ARG TARGETARCH
 ENV RUNNING_IN_DOCKER=true
 
 RUN groupadd -r sharkord && \
-    useradd -r -g sharkord -m -d /home/sharkord sharkord
+    useradd -g sharkord -m -d /home/sharkord sharkord
 
 COPY apps/server/build/out/sharkord-linux-x64 /tmp/sharkord-linux-x64
 COPY apps/server/build/out/sharkord-linux-arm64 /tmp/sharkord-linux-arm64
