@@ -22,6 +22,13 @@
       "when": 1771718400000,
       "tag": "0002_add_view_user_sensitive_data_to_owner",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1772243907890,
+      "tag": "0003_polite_mach_iv",
+      "breakpoints": true
     }
   ]
 }

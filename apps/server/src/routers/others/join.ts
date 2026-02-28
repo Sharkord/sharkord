@@ -1,9 +1,4 @@
-import {
-  ActivityLogType,
-  ServerEvents,
-  UserStatus,
-  type TPublicServerSettings
-} from '@sharkord/shared';
+import { ActivityLogType, ServerEvents, UserStatus } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
@@ -13,7 +8,7 @@ import {
 } from '../../db/queries/channels';
 import { getEmojis } from '../../db/queries/emojis';
 import { getRoles } from '../../db/queries/roles';
-import { getSettings } from '../../db/queries/server';
+import { getPublicSettings, getSettings } from '../../db/queries/server';
 import { getPublicUsers } from '../../db/queries/users';
 import { categories, channels, users } from '../../db/schema';
 import { logger } from '../../logger';
@@ -71,7 +66,8 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       roles,
       emojis,
       channelPermissions,
-      readStates
+      readStates,
+      publicSettings
     ] = await Promise.all([
       db.select().from(categories),
       db.select().from(channels),
@@ -79,7 +75,8 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       getRoles(),
       getEmojis(),
       getAllChannelUserPermissions(ctx.user.id),
-      getChannelsReadStatesForUser(ctx.user.id)
+      getChannelsReadStatesForUser(ctx.user.id),
+      getPublicSettings()
     ]);
 
     const processedPublicUsers = publicUsers.map((u) => ({
@@ -98,18 +95,6 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
     });
 
     logger.info(`%s joined the server`, ctx.user.name);
-
-    const publicSettings: TPublicServerSettings = {
-      description: settings.description ?? '',
-      name: settings.name,
-      serverId: settings.serverId,
-      storageUploadEnabled: settings.storageUploadEnabled,
-      storageQuota: settings.storageQuota,
-      storageUploadMaxFileSize: settings.storageUploadMaxFileSize,
-      storageSpaceQuotaByUser: settings.storageSpaceQuotaByUser,
-      storageOverflowAction: settings.storageOverflowAction,
-      enablePlugins: settings.enablePlugins
-    };
 
     ctx.pubsub.publish(ServerEvents.USER_JOIN, {
       ...foundPublicUser,

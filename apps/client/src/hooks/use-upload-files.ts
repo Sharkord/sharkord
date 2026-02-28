@@ -32,6 +32,32 @@ const useUploadFiles = (
     setFiles((prevFiles) => [...prevFiles, ...files]);
   }, []);
 
+  const takeAllowedFiles = useCallback(
+    (filesToUpload: File[]) => {
+      const maxFilesPerMessage =
+        settings?.storageMaxFilesPerMessage ?? Number.MAX_SAFE_INTEGER;
+      const remainingSlots = maxFilesPerMessage - filesRef.current.length;
+
+      if (remainingSlots <= 0) {
+        toast.warning(
+          `Maximum attachments reached (${maxFilesPerMessage} per message).`
+        );
+        return [];
+      }
+
+      if (filesToUpload.length > remainingSlots) {
+        const discardedCount = filesToUpload.length - remainingSlots;
+
+        toast.warning(
+          `${discardedCount} file${discardedCount > 1 ? 's were' : ' was'} ignored due to the per-message attachment limit.`
+        );
+      }
+
+      return filesToUpload.slice(0, remainingSlots);
+    },
+    [settings?.storageMaxFilesPerMessage]
+  );
+
   const removeFile = useCallback((id: string) => {
     setFiles((prevFiles) => prevFiles.filter((file) => file.id !== id));
   }, []);
@@ -81,7 +107,9 @@ const useUploadFiles = (
 
       if (!list || list.length === 0) return;
 
-      const filesToUpload: File[] = Array.from(list);
+      const filesToUpload = takeAllowedFiles(Array.from(list));
+
+      if (!filesToUpload.length) return;
 
       setUploading(true);
 
@@ -95,7 +123,7 @@ const useUploadFiles = (
       setUploading(false);
       setUploadingSize((size) => size - total);
     },
-    [addFiles, can, settings, disabled]
+    [addFiles, can, settings, disabled, takeAllowedFiles]
   );
 
   useEffect(() => {
@@ -106,7 +134,9 @@ const useUploadFiles = (
     const canUpload = can(Permission.UPLOAD_FILES);
     const uploadEnabled = true;
 
-    const processFiles = async (filesToUpload: File[]) => {
+    const processFiles = async (incomingFiles: File[]) => {
+      const filesToUpload = takeAllowedFiles(incomingFiles);
+
       if (!filesToUpload.length) return;
 
       setUploading(true);
@@ -194,7 +224,7 @@ const useUploadFiles = (
       container.removeEventListener('dragover', handleDragOver);
       container.removeEventListener('drop', handleDrop);
     };
-  }, [addFiles, can, settings, disabled, containerRef]);
+  }, [addFiles, can, settings, disabled, containerRef, takeAllowedFiles]);
 
   const fileInputProps = useMemo(
     () => ({

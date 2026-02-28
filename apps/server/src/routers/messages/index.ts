@@ -10,9 +10,11 @@ import {
 } from './events';
 import { getMessageRoute } from './get-message';
 import { getMessagesRoute } from './get-messages';
+import { getPinnedRoute } from './get-pinned';
 import { getThreadMessagesRoute } from './get-thread-messages';
 import { sendMessageRoute } from './send-message';
 import { signalTypingRoute } from './signal-typing';
+import { toggleMessagePinRoute } from './toggle-message-pin';
 import { toggleMessageReactionRoute } from './toggle-message-reaction';
 
 export const messagesRouter = t.router({
@@ -20,9 +22,11 @@ export const messagesRouter = t.router({
   edit: editMessageRoute,
   delete: deleteMessageRoute,
   get: getMessagesRoute,
+  getPinned: getPinnedRoute,
   getOne: getMessageRoute,
   getThread: getThreadMessagesRoute,
   toggleReaction: toggleMessageReactionRoute,
+  togglePin: toggleMessagePinRoute,
   signalTyping: signalTypingRoute,
   onNew: onMessageRoute,
   onUpdate: onMessageUpdateRoute,

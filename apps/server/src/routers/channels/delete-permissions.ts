@@ -27,7 +27,7 @@ const deletePermissionsRoute = protectedProcedure
       })
   )
   .mutation(async ({ input, ctx }) => {
-    await ctx.needsPermission(Permission.MANAGE_CHANNELS);
+    await ctx.needsPermission(Permission.MANAGE_CHANNEL_PERMISSIONS);
 
     const affectedUserIds = await getAffectedUserIdsForChannel(input.channelId);
 

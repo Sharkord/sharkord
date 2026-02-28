@@ -16,6 +16,7 @@ import {
   messages,
   rolePermissions,
   roles,
+  settings,
   userRoles,
   users
 } from '../../db/schema';
@@ -343,6 +344,34 @@ describe('users router', () => {
     expect(userInfo!.user.avatarId).toBeNull();
   });
 
+  test('should enforce configured avatar size limit', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    await tdb
+      .update(settings)
+      .set({
+        storageMaxAvatarSize: 10
+      })
+      .execute();
+
+    const file = new File(
+      ['avatar content bigger than ten bytes'],
+      'avatar.png',
+      {
+        type: 'image/png'
+      }
+    );
+
+    const uploadResponse = await uploadFile(file, mockedToken);
+    const uploadData = (await uploadResponse.json()) as TTempFile;
+
+    await expect(
+      caller.users.changeAvatar({
+        fileId: uploadData.id
+      })
+    ).rejects.toThrow('Avatar file exceeds the configured maximum size');
+  });
+
   test('should change banner', async () => {
     const { caller, mockedToken } = await initTest();
 
@@ -383,6 +412,34 @@ describe('users router', () => {
 
     expect(userInfo).toBeDefined();
     expect(userInfo!.user.bannerId).toBeNull();
+  });
+
+  test('should enforce configured banner size limit', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    await tdb
+      .update(settings)
+      .set({
+        storageMaxBannerSize: 10
+      })
+      .execute();
+
+    const file = new File(
+      ['banner content bigger than ten bytes'],
+      'banner.png',
+      {
+        type: 'image/png'
+      }
+    );
+
+    const uploadResponse = await uploadFile(file, mockedToken);
+    const uploadData = (await uploadResponse.json()) as TTempFile;
+
+    await expect(
+      caller.users.changeBanner({
+        fileId: uploadData.id
+      })
+    ).rejects.toThrow('Banner file exceeds the configured maximum size');
   });
 
   test('should replace existing avatar', async () => {

@@ -9,6 +9,9 @@ import { appSliceActions } from './slice';
 export const setAppLoading = (loading: boolean) =>
   store.dispatch(appSliceActions.setAppLoading(loading));
 
+export const setIsAutoConnecting = (isAutoConnecting: boolean) =>
+  store.dispatch(appSliceActions.setIsAutoConnecting(isAutoConnecting));
+
 export const setPluginsLoading = (loading: boolean) =>
   store.dispatch(appSliceActions.setLoadingPlugins(loading));
 

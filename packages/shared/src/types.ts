@@ -37,10 +37,15 @@ export type TPublicServerSettings = Pick<
   | 'storageUploadEnabled'
   | 'storageQuota'
   | 'storageUploadMaxFileSize'
+  | 'storageMaxAvatarSize'
+  | 'storageMaxBannerSize'
+  | 'storageMaxFilesPerMessage'
   | 'storageSpaceQuotaByUser'
   | 'storageOverflowAction'
   | 'enablePlugins'
->;
+> & {
+  webRtcMaxBitrate: number;
+};
 
 export type TGenericObject = {
   [key: string]: any;

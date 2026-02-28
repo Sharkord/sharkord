@@ -16,6 +16,7 @@ import { createTRPCProxyClient, createWSClient, wsLink } from '@trpc/client';
 let wsClient: ReturnType<typeof createWSClient> | null = null;
 let trpc: ReturnType<typeof createTRPCProxyClient<AppRouter>> | null = null;
 let currentHost: string | null = null;
+let isCleaningUp = false;
 
 const initializeTRPC = (host: string) => {
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -37,6 +38,11 @@ const initializeTRPC = (host: string) => {
       return {
         token: getSessionStorageItem(SessionStorageKey.TOKEN) || ''
       };
+    },
+    keepAlive: {
+      enabled: true,
+      intervalMs: 30_000,
+      pongTimeoutMs: 5_000
     }
   });
 
@@ -66,6 +72,12 @@ const getTRPCClient = () => {
 };
 
 const cleanup = () => {
+  if (isCleaningUp) {
+    return;
+  }
+
+  isCleaningUp = true;
+
   if (wsClient) {
     wsClient.close();
     wsClient = null;
@@ -85,6 +97,11 @@ const cleanup = () => {
   resetApp();
 
   removeSessionStorageItem(SessionStorageKey.TOKEN);
+
+  // this should help Firefox users who report that auto login is not consistent
+  setTimeout(() => {
+    isCleaningUp = false;
+  }, 100);
 };
 
 export { cleanup, connectToTRPC, getTRPCClient, type AppRouter };

@@ -45,6 +45,7 @@ const registerUser = async (
   identity: string,
   password: string,
   inviteCode?: string,
+  inviteRoleId?: number | null,
   ip?: string
 ): Promise<TJoinedUser> => {
   const hashedPassword = (await Bun.password.hash(password)).toString();
@@ -72,6 +73,15 @@ const registerUser = async (
     userId: user.id,
     createdAt: Date.now()
   });
+
+  // If the invite has a specific role and it's different from the default, assign it too
+  if (inviteRoleId && inviteRoleId !== defaultRole.id) {
+    await db.insert(userRoles).values({
+      roleId: inviteRoleId,
+      userId: user.id,
+      createdAt: Date.now()
+    });
+  }
 
   publishUser(user.id, 'create');
 
@@ -134,12 +144,16 @@ const loginRouteHandler = async (
   }
 
   if (!existingUser) {
-    if (!settings.allowNewUsers) {
-      const inviteError = await isInviteValid(data.invite);
+    let inviteRoleId: number | null = null;
 
-      if (inviteError) {
-        throw new HttpValidationError('identity', inviteError);
-      }
+    const result = await isInviteValid(data.invite);
+
+    if (!settings.allowNewUsers && result.error) {
+      throw new HttpValidationError('identity', result.error);
+    }
+
+    if (result.invite) {
+      inviteRoleId = result.invite?.roleId ?? null;
 
       await db
         .update(invites)
@@ -155,6 +169,7 @@ const loginRouteHandler = async (
       data.identity,
       data.password,
       data.invite,
+      inviteRoleId,
       connectionInfo?.ip
     );
   }

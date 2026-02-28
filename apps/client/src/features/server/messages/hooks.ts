@@ -43,7 +43,90 @@ const useGroupedMessages = (messages: TJoinedMessage[]) =>
 
 type TFetchPage = (
   cursor: number | null
-) => Promise<{ nextCursor: number | null; pageSize: number }>;
+) => Promise<{ nextCursor: number | null }>;
+
+// fetch a page of channel messages from the server
+const fetchChannelMessagesPage = async (input: {
+  channelId: number;
+  cursor: number | null;
+  limit: number;
+  targetMessageId?: number;
+}) => {
+  const trpcClient = getTRPCClient();
+
+  return trpcClient.messages.get.query(input);
+};
+
+// reverse (newest-first -> oldest-first) and store messages
+const storeChannelMessages = (
+  channelId: number,
+  rawPage: TJoinedMessage[],
+  opts?: { prepend?: boolean }
+) => {
+  const page = [...rawPage].reverse();
+
+  addMessages(channelId, page, opts);
+};
+
+const getMessagesContainer = () =>
+  document.querySelector('[data-messages-container]');
+
+const findMessageElement = (messageId: number) =>
+  getMessagesContainer()?.querySelector(`[data-message-id="${messageId}"]`) ??
+  null;
+
+const nextFrame = () =>
+  new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+const highlightMessageElement = async (element: Element) => {
+  // yield twice: once for layout, once for paint — ensures the browser
+  // has fully laid out all newly inserted messages before we scroll
+  await nextFrame();
+  await nextFrame();
+
+  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  element.classList.add('bg-secondary');
+
+  setTimeout(() => {
+    element.classList.remove('bg-secondary');
+  }, 2000);
+};
+
+const waitForMessageElement = (
+  messageId: number,
+  timeoutMs = 3000
+): Promise<Element | null> =>
+  new Promise((resolve) => {
+    const existing = findMessageElement(messageId);
+
+    if (existing) {
+      resolve(existing);
+      return;
+    }
+
+    const container = getMessagesContainer();
+
+    if (!container) {
+      resolve(null);
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      const element = findMessageElement(messageId);
+
+      if (element) {
+        observer.disconnect();
+        resolve(element);
+      }
+    });
+
+    observer.observe(container, { childList: true, subtree: true });
+
+    setTimeout(() => {
+      observer.disconnect();
+      resolve(null);
+    }, timeoutMs);
+  });
 
 const usePaginatedMessages = (
   messages: TJoinedMessage[],
@@ -62,10 +145,10 @@ const usePaginatedMessages = (
       setFetching(true);
 
       try {
-        const { nextCursor, pageSize } = await fetchPage(cursorToFetch);
+        const { nextCursor } = await fetchPage(cursorToFetch);
 
         setCursor(nextCursor);
-        setHasMore(nextCursor !== null && pageSize === DEFAULT_MESSAGES_LIMIT);
+        setHasMore(nextCursor !== null);
       } finally {
         setFetching(false);
         setLoading(false);
@@ -113,28 +196,19 @@ export const useMessages = (channelId: number) => {
 
   const fetchPage = useCallback(
     async (cursorToFetch: number | null) => {
-      const trpcClient = getTRPCClient();
+      const { messages: rawPage, nextCursor } = await fetchChannelMessagesPage({
+        channelId,
+        cursor: cursorToFetch,
+        limit: DEFAULT_MESSAGES_LIMIT
+      });
 
-      const { messages: rawPage, nextCursor } =
-        await trpcClient.messages.get.query({
-          channelId,
-          cursor: cursorToFetch,
-          limit: DEFAULT_MESSAGES_LIMIT
-        });
+      storeChannelMessages(channelId, rawPage, {
+        prepend: cursorToFetch !== null
+      });
 
-      const page = [...rawPage].reverse();
-      const existingIds = new Set(messages.map((m) => m.id));
-      const filtered = page.filter((m) => !existingIds.has(m.id));
-
-      if (cursorToFetch === null) {
-        addMessages(channelId, filtered);
-      } else {
-        addMessages(channelId, filtered, { prepend: true });
-      }
-
-      return { nextCursor, pageSize: filtered.length };
+      return { nextCursor };
     },
-    [channelId, messages]
+    [channelId]
   );
 
   const paginated = usePaginatedMessages(messages, fetchPage);
@@ -145,9 +219,39 @@ export const useMessages = (channelId: number) => {
     paginated.fetchMessages(null);
 
     inited.current = true;
-  }, [paginated.fetchMessages, paginated]);
+  }, [paginated]);
 
-  return paginated;
+  const scrollToMessage = useCallback(
+    async (messageId: number) => {
+      // check if the message is already rendered in the messages container
+      const existing = findMessageElement(messageId);
+
+      if (existing) {
+        highlightMessageElement(existing);
+        return;
+      }
+
+      // message not loaded yet — fetch all messages down to the target
+      const { messages: rawPage } = await fetchChannelMessagesPage({
+        channelId,
+        cursor: null,
+        limit: DEFAULT_MESSAGES_LIMIT,
+        targetMessageId: messageId
+      });
+
+      storeChannelMessages(channelId, rawPage, { prepend: true });
+
+      // wait for React to render the new messages into the DOM
+      const element = await waitForMessageElement(messageId);
+
+      if (element) {
+        highlightMessageElement(element);
+      }
+    },
+    [channelId]
+  );
+
+  return { ...paginated, scrollToMessage };
 };
 
 export const useThreadMessagesByParentId = (parentMessageId: number) =>
@@ -171,7 +275,7 @@ export const useThreadMessages = (parentMessageId: number) => {
 
       addThreadMessages(parentMessageId, page);
 
-      return { nextCursor, pageSize: page.length };
+      return { nextCursor };
     },
     [parentMessageId]
   );

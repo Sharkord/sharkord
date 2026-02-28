@@ -1,5 +1,9 @@
+import { ChannelPermission, Permission } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
-import { initTest } from '../../__tests__/helpers';
+import { and, eq } from 'drizzle-orm';
+import { initTest, uploadFile } from '../../__tests__/helpers';
+import { tdb } from '../../__tests__/setup';
+import { rolePermissions, settings } from '../../db/schema';
 
 describe('messages router', () => {
   test('should throw when user lacks permissions (edit - not own message)', async () => {
@@ -134,6 +138,64 @@ describe('messages router', () => {
     expect(result.messages).toBeDefined();
     expect(Array.isArray(result.messages)).toBe(true);
     expect(result.messages.length).toBe(3);
+  });
+
+  test('should get pinned messages from channel', async () => {
+    const { caller } = await initTest();
+
+    const firstMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Pinned message 1',
+      files: []
+    });
+
+    const secondMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Not pinned message',
+      files: []
+    });
+
+    const thirdMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Pinned message 2',
+      files: []
+    });
+
+    await caller.messages.togglePin({ messageId: firstMessageId });
+    await caller.messages.togglePin({ messageId: thirdMessageId });
+
+    const pinnedMessages = await caller.messages.getPinned({ channelId: 1 });
+
+    expect(Array.isArray(pinnedMessages)).toBe(true);
+    expect(pinnedMessages.length).toBe(2);
+    expect(pinnedMessages.every((message) => message.pinned)).toBe(true);
+    expect(
+      pinnedMessages.find((message) => message.id === secondMessageId)
+    ).toBe(undefined);
+  });
+
+  test('should throw when user lacks channel permissions (getPinned)', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    await caller1.channels.update({
+      channelId: 1,
+      name: 'General',
+      topic: 'General text channel',
+      private: true
+    });
+
+    await caller1.channels.updatePermissions({
+      channelId: 1,
+      roleId: 2,
+      permissions: [ChannelPermission.SEND_MESSAGES]
+    });
+
+    await expect(
+      caller2.messages.getPinned({
+        channelId: 1
+      })
+    ).rejects.toThrow('Insufficient channel permissions');
   });
 
   test('should edit own message', async () => {
@@ -484,6 +546,25 @@ describe('messages router', () => {
     });
   });
 
+  test('should throw when user lacks permissions (signalTyping)', async () => {
+    const { caller } = await initTest(2);
+
+    await tdb
+      .delete(rolePermissions)
+      .where(
+        and(
+          eq(rolePermissions.roleId, 2),
+          eq(rolePermissions.permission, Permission.SEND_MESSAGES)
+        )
+      );
+
+    await expect(
+      caller.messages.signalTyping({
+        channelId: 1
+      })
+    ).rejects.toThrow('Insufficient permissions');
+  });
+
   test('should paginate messages with cursor', async () => {
     const { caller } = await initTest();
 
@@ -527,6 +608,92 @@ describe('messages router', () => {
     expect(intersection.length).toBe(0);
   });
 
+  test('should fetch all messages until targetMessageId plus 20 older', async () => {
+    globalThis.disableRateLimiting = true;
+
+    const { caller } = await initTest();
+
+    const sentMessageIds: number[] = [];
+
+    for (let i = 0; i < 10; i++) {
+      const messageId = await caller.messages.send({
+        channelId: 2,
+        content: `Message ${i + 1}`,
+        files: []
+      });
+
+      sentMessageIds.push(messageId);
+    }
+
+    // target the newest message — should return all 10 + up to 20 older (0 exist)
+    const newestId = sentMessageIds[9]!;
+
+    const result = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      targetMessageId: newestId,
+      limit: 1
+    });
+
+    // only the target itself + 0 newer + 9 older (capped by available)
+    expect(result.messages.length).toBe(10);
+    expect(result.nextCursor).toBeNull();
+    expect(result.messages.some((message) => message.id === newestId)).toBe(
+      true
+    );
+
+    // target the 3rd message (index 2) — 7 newer + target + 2 older = 10
+    const middleId = sentMessageIds[2]!;
+
+    const result2 = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      targetMessageId: middleId,
+      limit: 1
+    });
+
+    expect(result2.messages.length).toBe(10);
+    expect(result2.messages.some((message) => message.id === middleId)).toBe(
+      true
+    );
+
+    // target the oldest — 9 newer + target + 0 older = 10
+    const oldestId = sentMessageIds[0]!;
+
+    const result3 = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      targetMessageId: oldestId,
+      limit: 1
+    });
+
+    expect(result3.messages.length).toBe(10);
+    expect(result3.messages.some((message) => message.id === oldestId)).toBe(
+      true
+    );
+
+    globalThis.disableRateLimiting = false;
+  });
+
+  test('should throw when targetMessageId is not in channel', async () => {
+    const { caller } = await initTest();
+
+    const messageInChannelOne = await caller.messages.send({
+      channelId: 1,
+      content: 'Message in channel 1',
+      files: []
+    });
+
+    await expect(
+      caller.messages.get({
+        channelId: 2,
+        cursor: null,
+        targetMessageId: messageInChannelOne,
+        limit: 50
+      })
+    ).rejects.toThrow('Target message not found');
+  });
+
   test('should return empty messages for empty channel', async () => {
     const { caller } = await initTest();
 
@@ -560,6 +727,89 @@ describe('messages router', () => {
 
     expect(sentMessage!.content).toBe('Message without files');
     expect(sentMessage!.files).toBeDefined();
+    expect(sentMessage!.files.length).toBe(0);
+  });
+
+  test('should trim attached files to configured max files per message', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    await tdb
+      .update(settings)
+      .set({
+        storageMaxFilesPerMessage: 2
+      })
+      .execute();
+
+    const file1 = new File(['file one'], 'one.txt', { type: 'text/plain' });
+    const file2 = new File(['file two'], 'two.txt', { type: 'text/plain' });
+    const file3 = new File(['file three'], 'three.txt', { type: 'text/plain' });
+
+    const response1 = await uploadFile(file1, mockedToken);
+    const response2 = await uploadFile(file2, mockedToken);
+    const response3 = await uploadFile(file3, mockedToken);
+
+    const temp1 = (await response1.json()) as { id: string };
+    const temp2 = (await response2.json()) as { id: string };
+    const temp3 = (await response3.json()) as { id: string };
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Message with limited attachments',
+      files: [temp1.id, temp2.id, temp3.id]
+    });
+
+    const messages = await caller.messages.get({
+      channelId: 1,
+      cursor: null,
+      limit: 50
+    });
+
+    const sentMessage = messages.messages.find((m) => m.id === messageId);
+
+    expect(sentMessage).toBeDefined();
+    expect(sentMessage!.files.length).toBe(2);
+
+    const names = sentMessage!.files.map((f) => f.originalName);
+
+    expect(names).toContain('one.txt');
+    expect(names).toContain('two.txt');
+    expect(names).not.toContain('three.txt');
+  });
+
+  test('should discard all attached files when max files per message is 0', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    await tdb
+      .update(settings)
+      .set({
+        storageMaxFilesPerMessage: 0
+      })
+      .execute();
+
+    const file1 = new File(['file one'], 'one.txt', { type: 'text/plain' });
+    const file2 = new File(['file two'], 'two.txt', { type: 'text/plain' });
+
+    const response1 = await uploadFile(file1, mockedToken);
+    const response2 = await uploadFile(file2, mockedToken);
+
+    const temp1 = (await response1.json()) as { id: string };
+    const temp2 = (await response2.json()) as { id: string };
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Message with files while limit is zero',
+      files: [temp1.id, temp2.id]
+    });
+
+    const messages = await caller.messages.get({
+      channelId: 1,
+      cursor: null,
+      limit: 50
+    });
+
+    const sentMessage = messages.messages.find((m) => m.id === messageId);
+
+    expect(sentMessage).toBeDefined();
     expect(sentMessage!.files.length).toBe(0);
   });
 

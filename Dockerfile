@@ -1,4 +1,4 @@
-FROM oven/bun:1.3.5
+FROM oven/bun:1.3.10
 
 ARG TARGETARCH
 ENV RUNNING_IN_DOCKER=true
@@ -13,6 +13,10 @@ RUN set -eux; \
       *) echo "Unsupported arch: $TARGETARCH" >&2; exit 1 ;; \
     esac; \
     chmod +x /sharkord; \
+    chown bun:bun /sharkord; \
     rm -rf /tmp/sharkord-linux-*
+
+USER bun
+WORKDIR /home/bun
 
 CMD ["/sharkord"]

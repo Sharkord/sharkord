@@ -76,6 +76,7 @@ const getThreadMessagesRoute = protectedProcedure
 
     if (rows.length > limit) {
       const next = rows.pop();
+
       nextCursor = next ? next.createdAt : null;
     }
 

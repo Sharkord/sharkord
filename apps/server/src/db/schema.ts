@@ -50,6 +50,11 @@ const settings = sqliteTable(
     }).notNull(),
     storageQuota: integer('storage_quota').notNull(),
     storageUploadMaxFileSize: integer('storage_upload_max_file_size').notNull(),
+    storageMaxAvatarSize: integer('storage_max_avatar_size').notNull(),
+    storageMaxBannerSize: integer('storage_max_banner_size').notNull(),
+    storageMaxFilesPerMessage: integer(
+      'storage_max_files_per_message'
+    ).notNull(),
     storageSpaceQuotaByUser: integer('storage_space_quota_by_user').notNull(),
     storageOverflowAction: text('storage_overflow_action').notNull(),
     enablePlugins: integer('enable_plugins', { mode: 'boolean' }).notNull()
@@ -209,7 +214,16 @@ const messages = sqliteTable(
     editable: integer('editable', { mode: 'boolean' }).default(true),
     metadata: text('metadata', { mode: 'json' }).$type<TMessageMetadata[]>(),
     createdAt: integer('created_at').notNull(),
-    updatedAt: integer('updated_at')
+    updatedAt: integer('updated_at'),
+    pinned: integer('pinned', { mode: 'boolean' }).default(false),
+    pinnedAt: integer('pinned_at'),
+    pinnedBy: integer('pinned_by').references(() => users.id, {
+      onDelete: 'set null'
+    }),
+    editedAt: integer('edited_at'),
+    editedBy: integer('edited_by').references(() => users.id, {
+      onDelete: 'cascade'
+    })
   },
   (t) => [
     index('messages_user_idx').on(t.userId),
@@ -309,6 +323,9 @@ const invites = sqliteTable(
     creatorId: integer('creator_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    roleId: integer('role_id').references(() => roles.id, {
+      onDelete: 'set null'
+    }),
     maxUses: integer('max_uses'),
     uses: integer('uses').notNull().default(0),
     expiresAt: integer('expires_at'),
