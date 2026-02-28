@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "475fbe94-d707-47f2-83d0-a72c84f00dca",
+  "id": "a9636f8d-2bac-400d-a098-8aba8df09ecb",
   "prevId": "970a64a5-0ab3-4de1-8634-35ed73a2350f",
   "tables": {
     "activity_log": {
@@ -1446,6 +1446,34 @@
           "notNull": false,
           "autoincrement": false,
           "default": false
+        },
+        "pinned_at": {
+          "name": "pinned_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "pinned_by": {
+          "name": "pinned_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "edited_at": {
+          "name": "edited_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "edited_by": {
+          "name": "edited_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -1506,6 +1534,32 @@
           "tableTo": "channels",
           "columnsFrom": [
             "channel_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "messages_pinned_by_users_id_fk": {
+          "name": "messages_pinned_by_users_id_fk",
+          "tableFrom": "messages",
+          "tableTo": "users",
+          "columnsFrom": [
+            "pinned_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "messages_edited_by_users_id_fk": {
+          "name": "messages_edited_by_users_id_fk",
+          "tableFrom": "messages",
+          "tableTo": "users",
+          "columnsFrom": [
+            "edited_by"
           ],
           "columnsTo": [
             "id"
@@ -1769,6 +1823,27 @@
         },
         "storage_upload_max_file_size": {
           "name": "storage_upload_max_file_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "storage_max_avatar_size": {
+          "name": "storage_max_avatar_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "storage_max_banner_size": {
+          "name": "storage_max_banner_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "storage_max_files_per_message": {
+          "name": "storage_max_files_per_message",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,

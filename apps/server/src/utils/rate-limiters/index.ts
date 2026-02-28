@@ -35,7 +35,7 @@ class FixedWindowRateLimiter {
   }
 
   public consume = (key: string): TRateLimitResult => {
-    if (IS_DEVELOPMENT && !IS_TEST) {
+    if ((IS_DEVELOPMENT && !IS_TEST) || globalThis.disableRateLimiting) {
       // disable rate limiting in development but not in tests
       return {
         allowed: true,

@@ -61,12 +61,7 @@ const ThreadContent = memo(
                 ) : (
                   <div className="space-y-4">
                     {groupedMessages.map((group, index) => (
-                      <MessagesGroup
-                        key={index}
-                        group={group}
-                        messageRefs={null}
-                        type="thread"
-                      />
+                      <MessagesGroup key={index} group={group} />
                     ))}
                   </div>
                 )}

@@ -4,7 +4,6 @@ import { Protect } from '@/components/protect';
 import { RightSidebar } from '@/components/right-sidebar';
 import { ThreadSidebar } from '@/components/thread-sidebar';
 import { TopBar } from '@/components/top-bar';
-import { TopicTopbar } from '@/components/topic-topbar';
 import { VoiceChatSidebar } from '@/components/voice-chat-sidebar';
 import { VoiceProvider } from '@/components/voice-provider';
 import { useThreadSidebar } from '@/features/app/hooks';
@@ -84,6 +83,13 @@ const ServerView = memo(() => {
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
           <PreventBrowser />
 
+          {isMobileMenuOpen && (
+            <div
+              className="md:hidden fixed inset-0 bg-black/50 z-30"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+
           {isMobileUsersOpen && (
             <div
               className="lg:hidden fixed inset-0 bg-black/50 z-30"
@@ -99,10 +105,8 @@ const ServerView = memo(() => {
                 : '-translate-x-full md:translate-x-0'
             )}
           />
-          <div className="relative min-h-0 overflow-y-auto flex flex-col flex-1">
-            <TopicTopbar />
-            <ContentWrapper />
-          </div>
+
+          <ContentWrapper />
 
           <VoiceChatSidebar isOpen={isVoiceChatSidebarOpen} />
 
@@ -110,7 +114,7 @@ const ServerView = memo(() => {
 
           <RightSidebar
             className={cn(
-              'fixed top-0 bottom-0 right-0 h-full z-40 transition-all duration-500 ease-in-out',
+              'fixed top-0 bottom-0 right-0 h-full z-40',
               'lg:relative lg:z-0',
               isMobileUsersOpen
                 ? 'translate-x-0 lg:translate-x-0'

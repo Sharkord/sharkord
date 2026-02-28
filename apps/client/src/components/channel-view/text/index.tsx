@@ -2,7 +2,6 @@ import {
   MessageCompose,
   type TMessageComposeHandle
 } from '@/components/message-compose';
-import { PinnedMessagesBox } from '@/components/pinned-messages-box';
 import {
   useChannelCan,
   useTypingUsersByChannelId
@@ -23,6 +22,7 @@ import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { MessagesGroup } from './messages-group';
 import { TextSkeleton } from './text-skeleton';
+import { TextTopbar } from './text-top-bar';
 import {
   getChannelDraftKey,
   getDraftMessage,
@@ -35,8 +35,15 @@ type TChannelProps = {
 };
 
 const TextChannel = memo(({ channelId }: TChannelProps) => {
-  const { messages, hasMore, loadMore, loading, fetching, groupedMessages } =
-    useMessages(channelId);
+  const {
+    messages,
+    hasMore,
+    loadMore,
+    loading,
+    fetching,
+    groupedMessages,
+    scrollToMessage
+  } = useMessages(channelId);
 
   const draftChannelKey = getChannelDraftKey(channelId);
 
@@ -44,7 +51,6 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     getDraftMessage(draftChannelKey)
   );
   const typingUsers = useTypingUsersByChannelId(channelId);
-  const messageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const composeRef = useRef<TMessageComposeHandle>(null);
 
   const { containerRef, onScroll } = useScrollController({
@@ -121,21 +127,17 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         </div>
       )}
 
-      <PinnedMessagesBox messageRefs={messageRefs} messages={messages} />
+      <TextTopbar onScrollToMessage={scrollToMessage} />
 
       <div
         ref={containerRef}
         onScroll={onScroll}
+        data-messages-container
         className="flex-1 overflow-y-auto overflow-x-hidden p-2 animate-in fade-in duration-500"
       >
         <div className="space-y-4">
           {groupedMessages.map((group, index) => (
-            <MessagesGroup
-              key={index}
-              group={group}
-              messageRefs={messageRefs}
-              type="channel"
-            />
+            <MessagesGroup key={index} group={group} />
           ))}
         </div>
       </div>

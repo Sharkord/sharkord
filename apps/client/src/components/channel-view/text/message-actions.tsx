@@ -30,8 +30,8 @@ type TMessageActionsProps = {
   canManage: boolean;
   editable: boolean;
   isThreadReply?: boolean;
-  pinned: boolean;
-  type: string;
+  isPinned?: boolean;
+  disablePin?: boolean;
 };
 
 const MessageActions = memo(
@@ -42,8 +42,8 @@ const MessageActions = memo(
     canManage,
     editable,
     isThreadReply,
-    pinned,
-    type
+    isPinned,
+    disablePin
   }: TMessageActionsProps) => {
     const { recentEmojis } = useRecentEmojis();
     const recentEmojisToShow = useMemo(
@@ -99,6 +99,7 @@ const MessageActions = memo(
 
       try {
         await trpc.messages.togglePin.mutate({ messageId });
+
         toast.success('Message pinned status toggled');
       } catch (error) {
         toast.error('Failed to toggle pin status');
@@ -108,7 +109,7 @@ const MessageActions = memo(
     }, [messageId]);
 
     return (
-      <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-1 transition-all h-8 bg-background">
+      <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-2 transition-all bg-background">
         {!isThreadReply && (
           <IconButton
             size="sm"
@@ -138,6 +139,18 @@ const MessageActions = memo(
             />
           </>
         )}
+        {!disablePin && (
+          <Protect permission={Permission.PIN_MESSAGES}>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              icon={isPinned ? PinOff : Pin}
+              onClick={onPinClick}
+              title={isPinned ? 'Unpin Message' : 'Pin Message'}
+            />
+          </Protect>
+        )}
+
         <Protect permission={Permission.REACT_TO_MESSAGES}>
           <div className="flex items-center space-x-0.5 border-l pl-1 gap-1">
             {recentEmojisToShow.map((emoji) => (
@@ -164,17 +177,6 @@ const MessageActions = memo(
               <IconButton variant="ghost" icon={Smile} title="Add Reaction" />
             </EmojiPicker>
           </div>
-        </Protect>
-        <Protect permission={Permission.PIN_MESSAGES}>
-          {type === 'channel' ? (
-            <IconButton
-              size="sm"
-              variant="ghost"
-              icon={pinned ? PinOff : Pin}
-              onClick={onPinClick}
-              title={pinned ? 'Unpin Message' : 'Pin Message'}
-            />
-          ) : null}
         </Protect>
       </div>
     );

@@ -1,4 +1,4 @@
-import { Permission } from '@sharkord/shared';
+import { ChannelPermission, Permission } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
 import { initTest, uploadFile } from '../../__tests__/helpers';
@@ -138,6 +138,64 @@ describe('messages router', () => {
     expect(result.messages).toBeDefined();
     expect(Array.isArray(result.messages)).toBe(true);
     expect(result.messages.length).toBe(3);
+  });
+
+  test('should get pinned messages from channel', async () => {
+    const { caller } = await initTest();
+
+    const firstMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Pinned message 1',
+      files: []
+    });
+
+    const secondMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Not pinned message',
+      files: []
+    });
+
+    const thirdMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Pinned message 2',
+      files: []
+    });
+
+    await caller.messages.togglePin({ messageId: firstMessageId });
+    await caller.messages.togglePin({ messageId: thirdMessageId });
+
+    const pinnedMessages = await caller.messages.getPinned({ channelId: 1 });
+
+    expect(Array.isArray(pinnedMessages)).toBe(true);
+    expect(pinnedMessages.length).toBe(2);
+    expect(pinnedMessages.every((message) => message.pinned)).toBe(true);
+    expect(
+      pinnedMessages.find((message) => message.id === secondMessageId)
+    ).toBe(undefined);
+  });
+
+  test('should throw when user lacks channel permissions (getPinned)', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    await caller1.channels.update({
+      channelId: 1,
+      name: 'General',
+      topic: 'General text channel',
+      private: true
+    });
+
+    await caller1.channels.updatePermissions({
+      channelId: 1,
+      roleId: 2,
+      permissions: [ChannelPermission.SEND_MESSAGES]
+    });
+
+    await expect(
+      caller2.messages.getPinned({
+        channelId: 1
+      })
+    ).rejects.toThrow('Insufficient channel permissions');
   });
 
   test('should edit own message', async () => {
@@ -548,6 +606,92 @@ describe('messages router', () => {
     );
 
     expect(intersection.length).toBe(0);
+  });
+
+  test('should fetch all messages until targetMessageId plus 20 older', async () => {
+    globalThis.disableRateLimiting = true;
+
+    const { caller } = await initTest();
+
+    const sentMessageIds: number[] = [];
+
+    for (let i = 0; i < 10; i++) {
+      const messageId = await caller.messages.send({
+        channelId: 2,
+        content: `Message ${i + 1}`,
+        files: []
+      });
+
+      sentMessageIds.push(messageId);
+    }
+
+    // target the newest message — should return all 10 + up to 20 older (0 exist)
+    const newestId = sentMessageIds[9]!;
+
+    const result = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      targetMessageId: newestId,
+      limit: 1
+    });
+
+    // only the target itself + 0 newer + 9 older (capped by available)
+    expect(result.messages.length).toBe(10);
+    expect(result.nextCursor).toBeNull();
+    expect(result.messages.some((message) => message.id === newestId)).toBe(
+      true
+    );
+
+    // target the 3rd message (index 2) — 7 newer + target + 2 older = 10
+    const middleId = sentMessageIds[2]!;
+
+    const result2 = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      targetMessageId: middleId,
+      limit: 1
+    });
+
+    expect(result2.messages.length).toBe(10);
+    expect(result2.messages.some((message) => message.id === middleId)).toBe(
+      true
+    );
+
+    // target the oldest — 9 newer + target + 0 older = 10
+    const oldestId = sentMessageIds[0]!;
+
+    const result3 = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      targetMessageId: oldestId,
+      limit: 1
+    });
+
+    expect(result3.messages.length).toBe(10);
+    expect(result3.messages.some((message) => message.id === oldestId)).toBe(
+      true
+    );
+
+    globalThis.disableRateLimiting = false;
+  });
+
+  test('should throw when targetMessageId is not in channel', async () => {
+    const { caller } = await initTest();
+
+    const messageInChannelOne = await caller.messages.send({
+      channelId: 1,
+      content: 'Message in channel 1',
+      files: []
+    });
+
+    await expect(
+      caller.messages.get({
+        channelId: 2,
+        cursor: null,
+        targetMessageId: messageInChannelOne,
+        limit: 50
+      })
+    ).rejects.toThrow('Target message not found');
   });
 
   test('should return empty messages for empty channel', async () => {

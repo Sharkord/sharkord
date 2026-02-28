@@ -216,6 +216,10 @@ const messages = sqliteTable(
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at'),
     pinned: integer('pinned', { mode: 'boolean' }).default(false),
+    pinnedAt: integer('pinned_at'),
+    pinnedBy: integer('pinned_by').references(() => users.id, {
+      onDelete: 'set null'
+    }),
     editedAt: integer('edited_at'),
     editedBy: integer('edited_by').references(() => users.id, {
       onDelete: 'cascade'

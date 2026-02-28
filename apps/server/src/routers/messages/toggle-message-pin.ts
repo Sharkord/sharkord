@@ -4,7 +4,6 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { messages } from '../../db/schema';
-import { eventBus } from '../../plugins/event-bus';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -28,20 +27,24 @@ const toggleMessagePinRoute = protectedProcedure
       message: 'Message not found'
     });
 
+    invariant(!message.parentMessageId, {
+      code: 'BAD_REQUEST',
+      message: 'Cannot pin a thread message'
+    });
+
+    const now = Date.now();
+
     await db
       .update(messages)
-      .set({ pinned: !message.pinned, updatedAt: Date.now() })
+      .set({
+        pinned: !message.pinned,
+        pinnedAt: now,
+        pinnedBy: ctx.user.id,
+        updatedAt: now
+      })
       .where(eq(messages.id, input.messageId));
 
     publishMessage(input.messageId, message.channelId, 'update');
-
-    eventBus.emit('message:pinned', {
-      messageId: input.messageId,
-      channelId: message.channelId,
-      userId: message.userId,
-      content: message.content ?? '',
-      pinned: !message.pinned
-    });
   });
 
 export { toggleMessagePinRoute };

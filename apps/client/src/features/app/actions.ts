@@ -71,20 +71,6 @@ export const closeThreadSidebar = () =>
     })
   );
 
-export const openPinnedMessagesBox = () =>
-  store.dispatch(
-    appSliceActions.setPinnedMessagesBoxOpen({
-      open: true
-    })
-  );
-
-export const closePinnedMessagesBox = () =>
-  store.dispatch(
-    appSliceActions.setPinnedMessagesBoxOpen({
-      open: false
-    })
-  );
-
 export const resetApp = () => {
   store.dispatch(
     appSliceActions.setModViewOpen({
