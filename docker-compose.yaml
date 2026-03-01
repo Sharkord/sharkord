@@ -25,7 +25,7 @@ services:
       - sharkord
     ports:
       - "80:80/tcp"
-      - "443:443/tcp"
+      - "8443:8443/tcp"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
