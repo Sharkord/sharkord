@@ -2,9 +2,6 @@ your.domain.com:8443 {
 	reverse_proxy sharkord:4991
 }
 
-# Port 80 is still needed for Let's Encrypt certificate challenges
-# Make sure both 80 and 8443 are open in your firewall
-
 # For local development without a domain, replace the above with:
 # localhost:8443 {
 # 	tls internal
