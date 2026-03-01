@@ -1,5 +1,9 @@
-localhost {
-	tls internal
-
+your.domain.com {
 	reverse_proxy sharkord:4991
 }
+
+# For local development without a domain, replace the above with:
+# localhost {
+# 	tls internal
+# 	reverse_proxy sharkord:4991
+# }
