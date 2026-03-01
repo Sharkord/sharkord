@@ -98,3 +98,16 @@ export const setDmsOpen = (open: boolean) =>
 
 export const setSelectedDmChannelId = (channelId: number | undefined) =>
   store.dispatch(appSliceActions.setSelectedDmChannelId(channelId));
+
+export const setBrowserNotifications = async (enabled: boolean) => {
+  if (enabled && 'Notification' in window) {
+    const permission = await Notification.requestPermission();
+
+    if (permission !== 'granted') {
+      return;
+    }
+  }
+
+  store.dispatch(appSliceActions.setBrowserNotifications(enabled));
+  setLocalStorageItemBool(LocalStorageKey.BROWSER_NOTIFICATIONS, enabled);
+};

@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import {
   appLoadingSelector,
   autoJoinLastChannelSelector,
+  browserNotificationsSelector,
   devicesSelector,
   dmsOpenSelector,
   isAutoConnectingSelector,
@@ -37,3 +38,6 @@ export const useDmsOpen = () => useSelector(dmsOpenSelector);
 
 export const useSelectedDmChannelId = () =>
   useSelector(selectedDmChannelIdSelector);
+
+export const useBrowserNotifications = () =>
+  useSelector(browserNotificationsSelector);

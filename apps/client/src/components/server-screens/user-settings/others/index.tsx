@@ -1,5 +1,11 @@
-import { setAutoJoinLastChannel } from '@/features/app/actions';
-import { useAutoJoinLastChannel } from '@/features/app/hooks';
+import {
+  setAutoJoinLastChannel,
+  setBrowserNotifications
+} from '@/features/app/actions';
+import {
+  useAutoJoinLastChannel,
+  useBrowserNotifications
+} from '@/features/app/hooks';
 import {
   Card,
   CardContent,
@@ -13,6 +19,7 @@ import { memo } from 'react';
 
 const Others = memo(() => {
   const autoJoinLastChannel = useAutoJoinLastChannel();
+  const browserNotifications = useBrowserNotifications();
 
   return (
     <Card>
@@ -31,6 +38,15 @@ const Others = memo(() => {
           <Switch
             checked={autoJoinLastChannel}
             onCheckedChange={(value) => setAutoJoinLastChannel(value)}
+          />
+        </Group>
+        <Group
+          label="Browser Notifications"
+          description="When enabled, you will receive browser notifications for new messages."
+        >
+          <Switch
+            checked={browserNotifications}
+            onCheckedChange={(value) => setBrowserNotifications(value)}
           />
         </Group>
       </CardContent>

@@ -19,11 +19,15 @@ body:
     validations:
       required: true
 
-  - type: input
+  - type: textarea
     id: environment
     attributes:
       label: Environment
-      placeholder: e.g. Ubuntu 24.04, Docker 19.03, Windows 10, etc.
+      placeholder: |
+        - OS: <e.g. Windows 10, CachyOS>
+        - Browser: <e.g. Chrome 90, Firefox 88>
+        - Using reverse proxy: <e.g. Nginx, Caddy>
+        - Additional details: <e.g. running in Docker, using custom config>
     validations:
       required: true
 

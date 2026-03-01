@@ -1,6 +1,7 @@
 import {
   ActivityLogType,
   ChannelPermission,
+  getPlainTextFromHtml,
   isEmptyMessage,
   Permission,
   toDomCommand
@@ -17,7 +18,6 @@ import {
 import { getSettings } from '../../db/queries/server';
 import { messageFiles, messages } from '../../db/schema';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
-import { getPlainTextFromHtml } from '../../helpers/get-plain-text-from-html';
 import { parseCommandArgs } from '../../helpers/parse-command-args';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
 import { pluginManager } from '../../plugins';

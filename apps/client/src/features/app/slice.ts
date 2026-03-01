@@ -15,6 +15,7 @@ export interface TAppState {
   autoJoinLastChannel: boolean;
   dmsOpen: boolean;
   selectedDmChannelId: number | undefined;
+  browserNotifications: boolean;
 }
 
 const initialState: TAppState = {
@@ -32,7 +33,11 @@ const initialState: TAppState = {
     false
   ),
   dmsOpen: false,
-  selectedDmChannelId: undefined
+  selectedDmChannelId: undefined,
+  browserNotifications: getLocalStorageItemBool(
+    LocalStorageKey.BROWSER_NOTIFICATIONS,
+    false
+  )
 };
 
 export const appSlice = createSlice({
@@ -84,6 +89,9 @@ export const appSlice = createSlice({
       action: PayloadAction<number | undefined>
     ) => {
       state.selectedDmChannelId = action.payload;
+    },
+    setBrowserNotifications: (state, action: PayloadAction<boolean>) => {
+      state.browserNotifications = action.payload;
     }
   }
 });

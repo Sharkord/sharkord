@@ -1,5 +1,6 @@
 import {
   DELETED_USER_IDENTITY_AND_NAME,
+  OWNER_ROLE_ID,
   Permission,
   type TTempFile
 } from '@sharkord/shared';
@@ -519,6 +520,49 @@ describe('users router', () => {
     });
 
     expect(info.user.roleIds).not.toContain(1);
+  });
+
+  test('should throw when non-owner user tries to assign owner role to someone else', async () => {
+    const { caller } = await initTest();
+    const newRoleId = await caller.roles.add();
+
+    await caller.roles.update({
+      roleId: newRoleId,
+      name: 'Test Role',
+      color: '#123456',
+      permissions: [Permission.MANAGE_USERS]
+    });
+
+    await caller.users.addRole({
+      userId: 2,
+      roleId: newRoleId
+    });
+
+    const newUser = await tdb
+      .insert(users)
+      .values({
+        identity: 'tempidentity',
+        name: 'Another User',
+        avatarId: null,
+        password: 'password',
+        bannerId: null,
+        bio: null,
+        bannerColor: null,
+        createdAt: Date.now()
+      })
+      .returning({ id: users.id })
+      .get();
+
+    const { caller: nonOwnerCaller } = await initTest(2);
+
+    await expect(
+      nonOwnerCaller.users.addRole({
+        userId: newUser.id,
+        roleId: OWNER_ROLE_ID
+      })
+    ).rejects.toThrow(
+      'Only users with the owner role can assign the owner role'
+    );
   });
 
   test('should throw when removing non-existent role', async () => {
