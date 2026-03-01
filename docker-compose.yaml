@@ -1,18 +1,34 @@
 services:
-  # Production: uses pre-built image with permission fixes
+  # Production: compiled binary with embedded frontend
   sharkord:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
     container_name: sharkord
     restart: unless-stopped
     profiles: ["prod"]
     ports:
-      - "4991:4991/tcp"
       - "40000:40000/tcp"
       - "40000:40000/udp"
     environment:
       SHARKORD_PORT: "4991"
     volumes:
-      - ./data:/home/bun/.config/sharkord
+      - ./data:/home/sharkord/.config/sharkord
+
+  # HTTPS reverse proxy
+  caddy:
+    image: caddy:alpine
+    container_name: sharkord-caddy
+    restart: unless-stopped
+    profiles: ["prod"]
+    depends_on:
+      - sharkord
+    ports:
+      - "8443:443/tcp"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
 
   # Dev: builds from source, runs Vite + Bun server
   sharkord-dev:
@@ -31,3 +47,7 @@ services:
       SHARKORD_PORT: "4991"
     volumes:
       - ./data:/home/bun/.config/sharkord
+
+volumes:
+  caddy_data:
+  caddy_config:

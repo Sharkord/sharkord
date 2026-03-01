@@ -1,2 +1,16 @@
 #!/usr/bin/env bash
-tmux new-session 'cd ./apps/client && bun dev' \; split-window -h 'cd ./apps/server && bun dev' \; select-pane -t 0
+
+# GET INITIAL OWNER TOKEN
+# docker logs -f sharkord
+
+# MAGIC RESET VOLUMES LINE
+# rm -rf data && docker system prune -a --volumes
+
+# convenience wrapper for prod builds
+SHARKORD_AUTOUPDATE=false docker compose --profile prod down && docker compose --profile prod up --build -d
+
+# build flow
+## copy current code
+## bun install
+## build
+## create caddy certs

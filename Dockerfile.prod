@@ -1,0 +1,58 @@
+FROM oven/bun:latest AS builder
+
+WORKDIR /app
+COPY . .
+RUN bun install
+
+# Build Vite client
+RUN cd apps/client && bun run build
+
+# Create production artifacts (interface.zip, drizzle.zip)
+RUN cd apps/server && mkdir -p build/temp && \
+    bun -e "import {zipDirectory} from './src/helpers/zip.ts'; \
+      await zipDirectory('../client/dist', 'build/temp/interface.zip'); \
+      await zipDirectory('src/db/migrations', 'build/temp/drizzle.zip');"
+
+# Download mediasoup worker binary for linux-x64
+RUN cd apps/server && \
+    MEDIASOUP_VERSION=$(bun -e "import pkg from './package.json'; console.log(pkg.dependencies.mediasoup.replace('^',''))") && \
+    bun -e "const r = await fetch('https://github.com/versatica/mediasoup/releases/download/'+'${MEDIASOUP_VERSION}'+'/mediasoup-worker-'+'${MEDIASOUP_VERSION}'+'-linux-x64-kernel6.tgz'); \
+      await Bun.write('build/temp/mediasoup.tgz', r)" && \
+    tar -xzf build/temp/mediasoup.tgz -C build/temp/
+
+# Compile standalone production binary
+RUN cd apps/server && bun -e "\
+  const pkg = require('../../package.json'); \
+  const version = pkg.version; \
+  const buildDate = new Date().toISOString(); \
+  await Bun.build({ \
+    entrypoints: ['src/index.ts', 'build/temp/interface.zip', 'build/temp/drizzle.zip', 'build/temp/mediasoup-worker'], \
+    compile: { outfile: 'build/out/sharkord', target: 'bun-linux-x64' }, \
+    define: { \
+      'process.env.SHARKORD_ENV': JSON.stringify('production'), \
+      'process.env.SHARKORD_BUILD_VERSION': JSON.stringify(version), \
+      'process.env.SHARKORD_BUILD_DATE': JSON.stringify(buildDate), \
+      'process.env.SHARKORD_MEDIASOUP_BIN_NAME': JSON.stringify('mediasoup-worker'), \
+      'process.env.CURRENT_VERSION': JSON.stringify(version), \
+    } \
+  }); \
+  " && mkdir -p build/out
+
+# --- Runtime stage ---
+FROM debian:bookworm-slim
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates gosu && \
+    rm -rf /var/lib/apt/lists/* && \
+    useradd -m -s /bin/bash sharkord && \
+    mkdir -p /home/sharkord/.config/sharkord && \
+    chown -R sharkord:sharkord /home/sharkord/.config/sharkord
+
+COPY --from=builder /app/apps/server/build/out/sharkord /usr/local/bin/sharkord
+RUN chmod +x /usr/local/bin/sharkord
+
+WORKDIR /home/sharkord
+
+EXPOSE 4991 40000
+
+CMD ["sh", "-c", "chown -R sharkord:sharkord /home/sharkord/.config/sharkord && exec gosu sharkord sharkord"]
