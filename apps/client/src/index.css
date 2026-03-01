@@ -266,6 +266,44 @@ body {
     text-underline-offset: 2px;
   }
 }
+  
+/* Inline code */
+code {
+  background-color: #2d2d2d;
+  color: #dcdcaa;
+  padding: 0.3em;
+  border-radius: 0.5px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9em;
+  border-radius: 0.5em;
+}
+
+/* Code block */
+pre code{
+  display: block;
+  background-color: #2d2d2d;
+  color: #c6a241;
+  padding: 0.5em;
+  border-radius: 0.5em;
+  white-space: pre-wrap;
+  word-wrap: break-word; 
+  font-family: 'Fira Code', monospace;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+blockquote {
+  display: block;
+  margin-left: 0.5em;
+  padding-left: 0.5em;
+  border-left: solid 2px #2d2d2d;
+}
+
+hr {
+  border: none;
+  background-color: #2d2d2d;
+  height: 2px;
+}
 
 .msg-content.emoji-only {
   font-size: 2.5rem;
