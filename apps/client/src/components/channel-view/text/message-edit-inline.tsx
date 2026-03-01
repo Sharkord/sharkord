@@ -4,6 +4,7 @@ import {
   type TMessage,
   isEmptyMessage,
   linkifyHtml,
+  reverseMarkdownCode,
   transformMarkdownCode
 } from '@sharkord/shared';
 import { AutoFocus } from '@sharkord/ui';
@@ -17,7 +18,9 @@ type TMessageEditInlineProps = {
 
 const MessageEditInline = memo(
   ({ message, onBlur }: TMessageEditInlineProps) => {
-    const [value, setValue] = useState<string>(message.content ?? '');
+    const [value, setValue] = useState<string>(
+      reverseMarkdownCode(message.content ?? '')
+    );
 
     const onSubmit = useCallback(
       async (newValue: string | undefined) => {

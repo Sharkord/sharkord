@@ -6,5 +6,5 @@ export { linkifyHtml } from './linkify-html';
 export { isEmojiOnlyMessage, isEmptyMessage } from './message-sanitizer';
 export { sha256 } from './sha256';
 export { stripZalgo } from './strip-zalgo';
-export { transformMarkdownCode } from './transform-code';
+export { transformMarkdownCode, reverseMarkdownCode } from './transform-code';
 export * from './trpc-errors';

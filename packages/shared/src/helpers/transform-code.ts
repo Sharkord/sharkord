@@ -48,4 +48,33 @@ const transformMarkdownCode = (html: string): string => {
   return result;
 };
 
-export { transformMarkdownCode };
+/**
+ * Reverses code HTML back to markdown backtick syntax.
+ * Used when loading stored messages into the TipTap editor for editing.
+ *
+ * - <pre><code class="language-lang">...</code></pre> → ```lang\n...\n```
+ * - <code>text</code> → `text`
+ */
+const reverseMarkdownCode = (html: string): string => {
+  let result = html;
+
+  // Reverse code blocks: <pre><code class="language-lang">code</code></pre> → ```lang<br>code<br>```
+  result = result.replace(
+    /<pre[^>]*>\s*<code(?:\s+class="language-(\w+)")?[^>]*>([\s\S]*?)<\/code>\s*<\/pre>/gi,
+    (_, lang: string | undefined, code: string) => {
+      const langStr = lang || '';
+      const codeWithBr = code.replace(/\n/g, '<br>');
+      return `\`\`\`${langStr}<br>${codeWithBr}<br>\`\`\``;
+    }
+  );
+
+  // Reverse inline code: <code>text</code> → `text`
+  result = result.replace(
+    /<code[^>]*>([\s\S]*?)<\/code>/gi,
+    (_, text: string) => `\`${text}\``
+  );
+
+  return result;
+};
+
+export { transformMarkdownCode, reverseMarkdownCode };
