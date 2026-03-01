@@ -1,0 +1,13 @@
+services:
+  sharkord:
+    build: .
+    container_name: sharkord
+    restart: unless-stopped
+    ports:
+      - "4991:4991/tcp"
+      - "40000:40000/tcp"
+      - "40000:40000/udp"
+    environment:
+      SHARKORD_PORT: "4991"
+    volumes:
+      - ./data:/home/bun/.config/sharkord
