@@ -19,6 +19,10 @@ const sanitizeMessageHtml = (html: string): string => {
       'em',
       'code',
       'pre',
+      // lists
+      'ul',
+      'ol',
+      'li',
       // links
       'a',
       // emoji (span wrapper + img fallback)

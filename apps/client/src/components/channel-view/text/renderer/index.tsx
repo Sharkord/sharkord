@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import {
   imageExtensions,
   isEmojiOnlyMessage,
+  videoExtensions,
   type TJoinedMessage
 } from '@sharkord/shared';
 import { Tooltip } from '@sharkord/ui';
@@ -17,6 +18,7 @@ import { toast } from 'sonner';
 import { FileCard } from '../file-card';
 import { MessageReactions } from '../message-reactions';
 import { ImageOverride } from '../overrides/image';
+import { VideoOverride } from '../overrides/video';
 import { serializer } from './serializer';
 import type { TFoundMedia } from './types';
 
@@ -77,11 +79,15 @@ const MessageRenderer = memo(
 
     const allMedia = useMemo(() => {
       const mediaFromFiles: TFoundMedia[] = message.files
-        .filter((file) =>
-          imageExtensions.includes(file.extension.toLowerCase())
+        .filter(
+          (file) =>
+            imageExtensions.includes(file.extension.toLowerCase()) ||
+            videoExtensions.includes(file.extension.toLowerCase())
         )
         .map((file) => ({
-          type: 'image',
+          type: videoExtensions.includes(file.extension.toLowerCase())
+            ? ('video' as const)
+            : ('image' as const),
           url: getFileUrl(file)
         }));
 
@@ -125,6 +131,12 @@ const MessageRenderer = memo(
           if (media.type === 'image') {
             return (
               <ImageOverride src={media.url} key={`media-image-${index}`} />
+            );
+          }
+
+          if (media.type === 'video') {
+            return (
+              <VideoOverride src={media.url} key={`media-video-${index}`} />
             );
           }
 
