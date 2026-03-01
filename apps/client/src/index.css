@@ -261,6 +261,32 @@ body {
     display: none;
   }
 
+  h1 {
+    font-size: 1.5em;
+    font-weight: 700;
+    margin: 0.25em 0;
+  }
+
+  h2 {
+    font-size: 1.3em;
+    font-weight: 700;
+    margin: 0.25em 0;
+  }
+
+  h3 {
+    font-size: 1.15em;
+    font-weight: 600;
+    margin: 0.2em 0;
+  }
+
+  h4,
+  h5,
+  h6 {
+    font-size: 1em;
+    font-weight: 600;
+    margin: 0.2em 0;
+  }
+
   a {
     text-decoration: underline;
     text-underline-offset: 2px;

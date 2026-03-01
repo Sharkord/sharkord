@@ -23,7 +23,6 @@ const VideoOverride = memo(({ src }: TVideoOverrideProps) => {
         preload="metadata"
         onError={onError}
         className="max-w-full max-h-75 rounded-md"
-        crossOrigin="anonymous"
       />
       <LinkOverride link={src} label="Open in new tab" />
     </OverrideLayout>
