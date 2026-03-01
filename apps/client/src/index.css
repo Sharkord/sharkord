@@ -456,3 +456,7 @@ body {
 .speaking-effect-high {
   animation: speaking-glow-high 0.8s ease-in-out infinite;
 }
+
+.group:fullscreen {
+  background: black;
+}

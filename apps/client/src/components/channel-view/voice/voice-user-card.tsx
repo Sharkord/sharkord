@@ -7,9 +7,10 @@ import { useShowUserBannersInVoice } from '@/features/server/voice/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { cn } from '@/lib/utils';
 import { HeadphoneOff, MicOff, Monitor, Video } from 'lucide-react';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useRef } from 'react';
 import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
+import { FullscreenButton } from './fullscreen-button';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PinButton } from './pin-button';
 import { VolumeButton } from './volume-button';
@@ -50,10 +51,12 @@ const VoiceUserCard = memo(
       }
     }, [isPinned, onPin, onUnpin]);
 
+    const containerRef = useRef<HTMLDivElement>(null);
     const isActivelySpeaking = !voiceUser.state.micMuted && isSpeaking;
 
     return (
       <div
+        ref={containerRef}
         className={cn(
           'relative bg-card rounded-lg overflow-hidden group',
           'flex items-center justify-center',
@@ -82,6 +85,7 @@ const VoiceUserCard = memo(
 
         <CardControls>
           {!isOwnUser && <VolumeButton volumeKey={getUserVolumeKey(userId)} />}
+          <FullscreenButton containerRef={containerRef} />
           {showPinControls && (
             <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
           )}

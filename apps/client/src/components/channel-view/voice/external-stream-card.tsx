@@ -3,9 +3,10 @@ import { cn } from '@/lib/utils';
 import type { TExternalStream } from '@sharkord/shared';
 import { Avatar, AvatarFallback, AvatarImage, IconButton } from '@sharkord/ui';
 import { Headphones, Router, Video, ZoomIn, ZoomOut } from 'lucide-react';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, type RefObject } from 'react';
 import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
+import { FullscreenButton } from './fullscreen-button';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PinButton } from './pin-button';
@@ -23,6 +24,7 @@ type TExternalStreamControlsProps = {
   isMuted: boolean;
   onVolumeChange: (volume: number) => void;
   onMuteToggle: () => void;
+  containerRef: RefObject<HTMLDivElement | null>;
 };
 
 const ExternalStreamControls = memo(
@@ -37,7 +39,8 @@ const ExternalStreamControls = memo(
     volume,
     isMuted,
     onVolumeChange,
-    onMuteToggle
+    onMuteToggle,
+    containerRef
   }: TExternalStreamControlsProps) => {
     return (
       <CardControls>
@@ -58,6 +61,7 @@ const ExternalStreamControls = memo(
             size="sm"
           />
         )}
+        <FullscreenButton containerRef={containerRef} />
         {showPinControls && (
           <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
         )}
@@ -171,6 +175,7 @@ const ExternalStreamCard = memo(
           isMuted={isMuted}
           onVolumeChange={handleVolumeChange}
           onMuteToggle={handleMuteToggle}
+          containerRef={containerRef}
         />
 
         {hasVideo ? (
