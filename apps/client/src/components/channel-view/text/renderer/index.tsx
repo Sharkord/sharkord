@@ -97,7 +97,7 @@ const MessageRenderer = memo(
           )}
         >
           {messageHtml}
-          {message.editedAt && (
+          {message.editedAt ? (
             <Tooltip
               content={
                 <div className="flex flex-col gap-1">
@@ -118,6 +118,8 @@ const MessageRenderer = memo(
                 (edited)
               </span>
             </Tooltip>
+          ) : (
+            <span></span>
           )}
         </div>
 
