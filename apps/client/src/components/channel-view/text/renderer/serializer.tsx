@@ -1,4 +1,5 @@
 import {
+  audioExtensions,
   imageExtensions,
   parseDomCommand,
   videoExtensions
@@ -86,6 +87,7 @@ const serializer = (
       const urlPath = url.pathname;
       const isImage = imageExtensions.some((ext) => urlPath.endsWith(ext));
       const isVideo = videoExtensions.some((ext) => urlPath.endsWith(ext));
+      const isAudio = audioExtensions.some((ext) => urlPath.endsWith(ext));
 
       if (isTweet) {
         const tweetId = href.match(twitterRegex)?.[0].split('/').pop();
@@ -107,6 +109,10 @@ const serializer = (
         return;
       } else if (isVideo) {
         pushMedia({ type: 'video', url: href });
+
+        return;
+      } else if (isAudio) {
+        pushMedia({ type: 'audio', url: href });
 
         return;
       }

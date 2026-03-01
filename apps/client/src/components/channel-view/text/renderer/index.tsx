@@ -6,6 +6,7 @@ import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
+  audioExtensions,
   imageExtensions,
   isEmojiOnlyMessage,
   videoExtensions,
@@ -17,6 +18,7 @@ import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { FileCard } from '../file-card';
 import { MessageReactions } from '../message-reactions';
+import { AudioOverride } from '../overrides/audio';
 import { ImageOverride } from '../overrides/image';
 import { VideoOverride } from '../overrides/video';
 import { serializer } from './serializer';
@@ -79,17 +81,23 @@ const MessageRenderer = memo(
 
     const allMedia = useMemo(() => {
       const mediaFromFiles: TFoundMedia[] = message.files
-        .filter(
-          (file) =>
-            imageExtensions.includes(file.extension.toLowerCase()) ||
-            videoExtensions.includes(file.extension.toLowerCase())
-        )
-        .map((file) => ({
-          type: videoExtensions.includes(file.extension.toLowerCase())
+        .filter((file) => {
+          const ext = file.extension.toLowerCase();
+          return (
+            imageExtensions.includes(ext) ||
+            videoExtensions.includes(ext) ||
+            audioExtensions.includes(ext)
+          );
+        })
+        .map((file) => {
+          const ext = file.extension.toLowerCase();
+          const type = videoExtensions.includes(ext)
             ? ('video' as const)
-            : ('image' as const),
-          url: getFileUrl(file)
-        }));
+            : audioExtensions.includes(ext)
+              ? ('audio' as const)
+              : ('image' as const);
+          return { type, url: getFileUrl(file) };
+        });
 
       return [...foundMedia, ...mediaFromFiles];
     }, [foundMedia, message.files]);
@@ -137,6 +145,12 @@ const MessageRenderer = memo(
           if (media.type === 'video') {
             return (
               <VideoOverride src={media.url} key={`media-video-${index}`} />
+            );
+          }
+
+          if (media.type === 'audio') {
+            return (
+              <AudioOverride src={media.url} key={`media-audio-${index}`} />
             );
           }
 
