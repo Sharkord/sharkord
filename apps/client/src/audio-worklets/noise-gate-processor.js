@@ -10,6 +10,13 @@ class NoiseGateProcessor extends AudioWorkletProcessor {
     this.gateOpen = true;
     this.closeHoldRemainingFrames = 0;
 
+    // smooth gain envelope to avoid hard cuts / clicks
+    this.currentGain = 1.0;
+    this.targetGain = 1.0;
+    // fade speed per sample (~5ms attack, ~20ms release at 48kHz)
+    this.attackCoeff = 1.0 - Math.exp(-1.0 / (0.005 * 48000));
+    this.releaseCoeff = 1.0 - Math.exp(-1.0 / (0.02 * 48000));
+
     this.port.onmessage = (event) => {
       const data = event.data;
 
@@ -23,6 +30,7 @@ class NoiseGateProcessor extends AudioWorkletProcessor {
         if (!this.enabled) {
           this.gateOpen = true;
           this.closeHoldRemainingFrames = 0;
+          this.targetGain = 1.0;
         }
       }
 
@@ -75,9 +83,11 @@ class NoiseGateProcessor extends AudioWorkletProcessor {
     if (!this.enabled) {
       this.gateOpen = true;
       this.closeHoldRemainingFrames = 0;
+      this.targetGain = 1.0;
     } else if (estimatedDecibels >= this.thresholdDb) {
       this.gateOpen = true;
       this.closeHoldRemainingFrames = holdFrames;
+      this.targetGain = 1.0;
     } else if (this.gateOpen) {
       this.closeHoldRemainingFrames = Math.max(
         0,
@@ -86,20 +96,25 @@ class NoiseGateProcessor extends AudioWorkletProcessor {
 
       if (this.closeHoldRemainingFrames <= 0) {
         this.gateOpen = false;
+        this.targetGain = 0.0;
       }
     }
 
-    const shouldPassThrough = !this.enabled || this.gateOpen;
     const channelCount = Math.min(input.length, output.length);
 
     for (let channelIndex = 0; channelIndex < channelCount; channelIndex++) {
       const inputChannel = input[channelIndex];
       const outputChannel = output[channelIndex];
 
-      if (shouldPassThrough) {
-        outputChannel.set(inputChannel);
-      } else {
-        outputChannel.fill(0);
+      for (let i = 0; i < inputChannel.length; i++) {
+        // smooth gain towards target
+        if (this.currentGain < this.targetGain) {
+          this.currentGain += this.attackCoeff * (this.targetGain - this.currentGain);
+        } else {
+          this.currentGain += this.releaseCoeff * (this.targetGain - this.currentGain);
+        }
+
+        outputChannel[i] = inputChannel[i] * this.currentGain;
       }
     }
 
