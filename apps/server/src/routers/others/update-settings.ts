@@ -6,8 +6,6 @@ import {
 import { z } from 'zod';
 import { updateSettings } from '../../db/mutations/server';
 import { publishSettings } from '../../db/publishers';
-import { getSettings } from '../../db/queries/server';
-import { pluginManager } from '../../plugins';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -25,14 +23,11 @@ const updateSettingsRoute = protectedProcedure
       storageMaxBannerSize: z.number().min(0).optional(),
       storageMaxFilesPerMessage: z.number().int().min(0).optional(),
       storageSpaceQuotaByUser: z.number().min(0).optional(),
-      storageOverflowAction: z.enum(StorageOverflowAction).optional(),
-      enablePlugins: z.boolean().optional()
+      storageOverflowAction: z.enum(StorageOverflowAction).optional()
     })
   )
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_SETTINGS);
-
-    const { enablePlugins: oldEnablePlugins } = await getSettings();
 
     await updateSettings({
       name: input.name,
@@ -46,17 +41,8 @@ const updateSettingsRoute = protectedProcedure
       storageMaxBannerSize: input.storageMaxBannerSize,
       storageMaxFilesPerMessage: input.storageMaxFilesPerMessage,
       storageSpaceQuotaByUser: input.storageSpaceQuotaByUser,
-      storageOverflowAction: input.storageOverflowAction,
-      enablePlugins: input.enablePlugins
+      storageOverflowAction: input.storageOverflowAction
     });
-
-    if (oldEnablePlugins !== input.enablePlugins) {
-      if (input.enablePlugins) {
-        await pluginManager.loadPlugins();
-      } else {
-        await pluginManager.unloadPlugins();
-      }
-    }
 
     publishSettings();
 

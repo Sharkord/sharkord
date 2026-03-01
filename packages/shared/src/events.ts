@@ -39,10 +39,6 @@ export enum ServerEvents {
 
   SERVER_SETTINGS_UPDATE = 'serverSettingsUpdate',
 
-  PLUGIN_LOG = 'pluginLog',
-  PLUGIN_COMMANDS_CHANGE = 'pluginCommandsChange',
-  PLUGIN_COMPONENTS_CHANGE = 'pluginComponentsChange',
-
   CATEGORY_CREATE = 'categoryCreate',
   CATEGORY_UPDATE = 'categoryUpdate',
   CATEGORY_DELETE = 'categoryDelete'

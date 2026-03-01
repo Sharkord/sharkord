@@ -1,43 +1,32 @@
-import {
-  zParsedDomCommand,
-  type RegisteredCommand,
-  type TCommandElement,
-  type TParsedDomCommand
-} from '../plugins';
+import z from 'zod';
 
-const toDomCommand = (
-  command: RegisteredCommand & {
-    imageUrl?: string;
-    status: 'pending' | 'completed' | 'failed';
-    response?: unknown;
-  },
-  args: unknown[]
-): string => {
-  const sanitizedArgs =
-    command.args?.map((argDef, index) => {
-      const argValue = args[index];
+// legacy types for rendering old command messages stored in the DB
 
-      if (argDef.sensitive) {
-        return { name: argDef.name, value: '****', status: command.status };
-      }
+const zParsedDomCommand = z.object({
+  pluginId: z.string().min(1),
+  commandName: z.string().min(1),
+  status: z.enum(['pending', 'completed', 'failed']).default('pending'),
+  response: z.string().optional(),
+  logo: z.url().optional(),
+  args: z.array(
+    z.object({
+      name: z.string(),
+      value: z.unknown()
+    })
+  )
+});
 
-      return { name: argDef.name, value: argValue, status: command.status };
-    }) || [];
+export type TParsedDomCommand = z.infer<typeof zParsedDomCommand>;
 
-  const responseString =
-    command.response !== undefined
-      ? typeof command.response === 'string'
-        ? command.response
-        : JSON.stringify(command.response, null, 2)
-      : '';
-
-  const logoAttr = command.imageUrl
-    ? ` data-plugin-logo="${command.imageUrl}"`
-    : '';
-
-  return `<command data-plugin-id="${command.pluginId}"${logoAttr} data-command="${command.name}" data-args='${JSON.stringify(
-    sanitizedArgs
-  )}' data-status='${command.status}' data-response='${responseString}'></command>`;
+type TCommandElement = {
+  attribs: {
+    'data-plugin-id'?: string;
+    'data-plugin-logo'?: string;
+    'data-command'?: string;
+    'data-status'?: string;
+    'data-args'?: string;
+    'data-response'?: string;
+  };
 };
 
 const parseDomCommand = (domElement: TCommandElement): TParsedDomCommand => {
@@ -66,4 +55,4 @@ const parseDomCommand = (domElement: TCommandElement): TParsedDomCommand => {
   });
 };
 
-export { parseDomCommand, toDomCommand };
+export { parseDomCommand };

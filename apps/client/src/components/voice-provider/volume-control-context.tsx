@@ -14,7 +14,7 @@ import {
 
 // volume keys are string-based for persistence
 // user volumes: "user-{userId}"
-// external stream volumes: "external-{pluginId}-{key}"
+// external stream volumes: "external-{sourceId}-{key}"
 type TVolumeKey = string;
 
 type TVolumeSettings = Record<TVolumeKey, number>;
@@ -26,7 +26,7 @@ type TVolumeControlContext = {
   toggleMute: (key: TVolumeKey) => void;
   getUserVolumeKey: (userId: number) => TVolumeKey;
   getUserScreenVolumeKey: (userId: number) => TVolumeKey;
-  getExternalVolumeKey: (pluginId: string, key: string) => TVolumeKey;
+  getExternalVolumeKey: (sourceId: string, key: string) => TVolumeKey;
 };
 
 const VolumeControlContext = createContext<TVolumeControlContext | null>(null);
@@ -109,8 +109,8 @@ const VolumeControlProvider = memo(
     }, []);
 
     const getExternalVolumeKey = useCallback(
-      (pluginId: string, key: string): TVolumeKey => {
-        return `external-${pluginId}-${key}`;
+      (sourceId: string, key: string): TVolumeKey => {
+        return `external-${sourceId}-${key}`;
       },
       []
     );

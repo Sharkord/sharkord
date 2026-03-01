@@ -1,6 +1,6 @@
 import { EmojiPicker } from '@/components/emoji-picker';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
-import type { TCommandInfo } from '@sharkord/shared';
+import { BUILT_IN_COMMANDS } from '@/helpers/built-in-commands';
 import { Button } from '@sharkord/ui';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import { EditorContent, useEditor } from '@tiptap/react';
@@ -15,12 +15,9 @@ import {
   useState
 } from 'react';
 import type { TEmojiItem } from './helpers';
-import {
-  COMMANDS_STORAGE_KEY,
-  CommandSuggestion
-} from './plugins/command-suggestion';
-import { SlashCommands } from './plugins/slash-commands-extension';
-import { EmojiSuggestion } from './plugins/suggestions';
+import { CommandSuggestion } from './commands/command-suggestion';
+import { SlashCommands } from './commands/slash-commands-extension';
+import { EmojiSuggestion } from './commands/suggestions';
 
 type TTiptapInputProps = {
   disabled?: boolean;
@@ -30,7 +27,6 @@ type TTiptapInputProps = {
   onSubmit?: () => void;
   onCancel?: () => void;
   onTyping?: () => void;
-  commands?: TCommandInfo[];
 };
 
 const TiptapInput = memo(
@@ -41,8 +37,7 @@ const TiptapInput = memo(
     onCancel,
     onTyping,
     disabled,
-    readOnly,
-    commands
+    readOnly
   }: TTiptapInputProps) => {
     const readOnlyRef = useRef(readOnly);
     readOnlyRef.current = readOnly;
@@ -85,21 +80,16 @@ const TiptapInput = memo(
           HTMLAttributes: {
             class: 'emoji-image'
           }
-        })
+        }),
+        SlashCommands.configure({
+          commands: BUILT_IN_COMMANDS,
+          suggestion: CommandSuggestion
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }) as any
       ];
 
-      if (commands) {
-        exts.push(
-          SlashCommands.configure({
-            commands,
-            suggestion: CommandSuggestion
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          }) as any
-        );
-      }
-
       return exts;
-    }, [customEmojis, commands]);
+    }, [customEmojis]);
 
     const editor = useEditor({
       extensions,
@@ -181,17 +171,6 @@ const TiptapInput = memo(
         editor.storage.emoji.emojis = [...gitHubEmojis, ...customEmojis];
       }
     }, [editor, customEmojis]);
-
-    // keep commands storage in sync with plugin commands from the store
-    useEffect(() => {
-      if (editor && commands) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const storage = editor.storage as any;
-        if (storage[COMMANDS_STORAGE_KEY]) {
-          storage[COMMANDS_STORAGE_KEY].commands = commands;
-        }
-      }
-    }, [editor, commands]);
 
     useEffect(() => {
       if (editor && value !== undefined) {

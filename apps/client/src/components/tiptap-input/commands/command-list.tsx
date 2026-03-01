@@ -1,4 +1,5 @@
-import type { TCommandInfo } from '@sharkord/shared';
+import type { TBuiltInCommand } from '@/helpers/built-in-commands';
+import { Terminal } from 'lucide-react';
 import {
   forwardRef,
   useCallback,
@@ -8,8 +9,8 @@ import {
 } from 'react';
 
 interface CommandListProps {
-  items: TCommandInfo[];
-  onSelect: (item: TCommandInfo) => void;
+  items: TBuiltInCommand[];
+  onSelect: (item: TBuiltInCommand) => void;
 }
 
 export interface CommandListRef {
@@ -27,6 +28,7 @@ const CommandList = forwardRef<CommandListRef, CommandListProps>(
     const selectItem = useCallback(
       (index: number) => {
         const item = items[index];
+
         if (item) {
           onSelect(item);
         }
@@ -74,28 +76,25 @@ const CommandList = forwardRef<CommandListRef, CommandListProps>(
     }
 
     return (
-      <div className="bg-popover text-popover-foreground border rounded-md shadow-md min-w-[16rem] max-w-[22rem] p-1 z-50">
+      <div className="bg-popover text-popover-foreground border rounded-md shadow-md min-w-[12rem] max-w-[20rem] p-1 z-50">
         {items.map((item, index) => (
           <button
-            key={`${item.pluginId}:${item.name}`}
-            className={`w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground flex flex-col gap-0.5 cursor-default select-none outline-none transition-colors ${
+            key={item.name}
+            className={`w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground flex items-center gap-2 cursor-default select-none outline-none transition-colors ${
               index === selectedIndex ? 'bg-accent text-accent-foreground' : ''
             }`}
             type="button"
             onClick={() => onSelect(item)}
           >
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground shrink-0">/</span>
-              <span className="font-medium truncate">{item.name}</span>
-              <span className="text-[10px] text-muted-foreground ml-auto truncate">
-                {item.pluginId}
-              </span>
+            <Terminal className="size-4 shrink-0 text-muted-foreground" />
+            <div className="flex flex-col min-w-0">
+              <span className="truncate font-medium">/{item.name}</span>
+              {item.description && (
+                <span className="truncate text-xs text-muted-foreground">
+                  {item.description}
+                </span>
+              )}
             </div>
-            {item.description && (
-              <span className="text-xs text-muted-foreground truncate">
-                {item.description}
-              </span>
-            )}
           </button>
         ))}
       </div>

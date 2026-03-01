@@ -16,7 +16,7 @@ export type TVoiceUser = {
 export type TExternalStream = {
   title: string;
   key: string;
-  pluginId: string;
+  sourceId: string;
   avatarUrl?: string;
   tracks: TExternalStreamTracks;
 };

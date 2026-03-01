@@ -1,4 +1,5 @@
 import { MessageCompose } from '@/components/message-compose';
+import { handleBuiltInCommand } from '@/helpers/built-in-commands';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { getTRPCClient } from '@/lib/trpc';
@@ -43,6 +44,11 @@ const ThreadCompose = memo(
     const onSend = useCallback(
       async (message: string, files: { id: string }[]) => {
         sendTypingSignal.cancel();
+
+        if (files.length === 0 && handleBuiltInCommand(message)) {
+          setNewMessage('');
+          return true;
+        }
 
         const trpc = getTRPCClient();
 

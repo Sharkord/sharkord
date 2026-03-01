@@ -25,14 +25,14 @@ describe('http helpers', () => {
       expect(hasPrefixPathSegment('/public', '/public')).toBe(true);
       expect(hasPrefixPathSegment('/public/file.txt', '/public')).toBe(true);
       expect(
-        hasPrefixPathSegment('/plugin-bundle/a/b.js', '/plugin-bundle')
+        hasPrefixPathSegment('/uploads/a/b.js', '/uploads')
       ).toBe(true);
     });
 
     test('does not match lookalike prefixes', () => {
       expect(hasPrefixPathSegment('/publicx', '/public')).toBe(false);
       expect(
-        hasPrefixPathSegment('/plugin-components-extra', '/plugin-components')
+        hasPrefixPathSegment('/publicx-extra', '/publicx')
       ).toBe(false);
     });
   });
@@ -40,11 +40,11 @@ describe('http helpers', () => {
   describe('getRequestPathname', () => {
     test('returns pathname and ignores query params', () => {
       const req = createMockRequest(
-        '/plugin-bundle/plugin-a/index.js?v=123',
+        '/public/images/logo.png?v=123',
         'localhost:9999'
       );
 
-      expect(getRequestPathname(req)).toBe('/plugin-bundle/plugin-a/index.js');
+      expect(getRequestPathname(req)).toBe('/public/images/logo.png');
     });
 
     test('returns null when url is missing', () => {

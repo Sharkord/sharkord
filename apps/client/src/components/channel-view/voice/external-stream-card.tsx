@@ -91,12 +91,12 @@ const ExternalStreamCard = memo(
       externalAudioRef,
       hasExternalVideoStream,
       hasExternalAudioStream
-    } = useVoiceRefs(streamId, stream.pluginId, stream.key);
+    } = useVoiceRefs(streamId, stream.sourceId, stream.key);
 
     const { getVolume, setVolume, toggleMute, getExternalVolumeKey } =
       useVolumeControl();
 
-    const volumeKey = getExternalVolumeKey(stream.pluginId, stream.key);
+    const volumeKey = getExternalVolumeKey(stream.sourceId, stream.key);
     const volume = getVolume(volumeKey);
     const isMuted = volume === 0;
 
@@ -240,12 +240,6 @@ const ExternalStreamCard = memo(
                 />
               )}
             </div>
-
-            {stream.pluginId && (
-              <span className="text-white/50 text-[10px] flex-shrink-0">
-                via {stream.pluginId}
-              </span>
-            )}
 
             {isZoomEnabled && zoom > 1 && (
               <span className="text-white/70 text-xs flex-shrink-0">

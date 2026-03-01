@@ -12,8 +12,6 @@ import { getPublicSettings, getSettings } from '../../db/queries/server';
 import { getPublicUsers } from '../../db/queries/users';
 import { categories, channels, users } from '../../db/schema';
 import { logger } from '../../logger';
-import { pluginManager } from '../../plugins';
-import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { enqueueLogin } from '../../queues/logins';
 import { VoiceRuntime } from '../../runtimes/voice';
@@ -120,11 +118,6 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       ip: connectionInfo?.ip
     });
 
-    eventBus.emit('user:joined', {
-      userId: ctx.user.id,
-      username: ctx.user.name
-    });
-
     return {
       categories: allCategories,
       channels: channelsForUser,
@@ -138,8 +131,6 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       publicSettings,
       channelPermissions,
       readStates,
-      commands: pluginManager.getCommands(),
-      pluginIdsWithComponents: pluginManager.getPluginIdsWithComponents(),
       externalStreamsMap
     };
   });

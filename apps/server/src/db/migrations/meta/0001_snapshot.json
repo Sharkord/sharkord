@@ -1510,39 +1510,6 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "plugin_data": {
-      "name": "plugin_data",
-      "columns": {
-        "plugin_id": {
-          "name": "plugin_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "enabled": {
-          "name": "enabled",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "settings": {
-          "name": "settings",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'{}'"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "role_permissions": {
       "name": "role_permissions",
       "columns": {
@@ -1776,13 +1743,6 @@
         "storage_overflow_action": {
           "name": "storage_overflow_action",
           "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "enable_plugins": {
-          "name": "enable_plugins",
-          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false

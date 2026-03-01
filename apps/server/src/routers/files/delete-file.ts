@@ -7,7 +7,6 @@ import { publishMessage } from '../../db/publishers';
 import { getFilesByMessageId } from '../../db/queries/files';
 import { getMessageByFileId } from '../../db/queries/messages';
 import { messages } from '../../db/schema';
-import { eventBus } from '../../plugins/event-bus';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -40,11 +39,6 @@ const deleteFileRoute = protectedProcedure
       await db.delete(messages).where(eq(messages.id, message.id));
 
       publishMessage(message.id, message.channelId, 'delete');
-
-      eventBus.emit('message:deleted', {
-        channelId: message.channelId,
-        messageId: message.id
-      });
     }
   });
 

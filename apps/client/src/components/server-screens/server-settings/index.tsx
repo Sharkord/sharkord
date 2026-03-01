@@ -7,7 +7,6 @@ import { ServerScreenLayout } from '../server-screen-layout';
 import { Emojis } from './emojis';
 import { General } from './general';
 import { Invites } from './invites';
-import { Plugins } from './plugins';
 import { Roles } from './roles';
 import { Storage } from './storage';
 import { Updates } from './updates';
@@ -70,12 +69,6 @@ const ServerSettings = memo(({ close }: TServerSettingsProps) => {
             >
               Updates
             </TabsTrigger>
-            <TabsTrigger
-              value="plugins"
-              disabled={!can(Permission.MANAGE_PLUGINS)}
-            >
-              Plugins
-            </TabsTrigger>
           </TabsList>
           <TabsContent value="general" className="space-y-6">
             {can(Permission.MANAGE_SETTINGS) && <General />}
@@ -97,9 +90,6 @@ const ServerSettings = memo(({ close }: TServerSettingsProps) => {
           </TabsContent>
           <TabsContent value="updates" className="space-y-6">
             {can(Permission.MANAGE_UPDATES) && <Updates />}
-          </TabsContent>
-          <TabsContent value="plugins" className="space-y-6">
-            {can(Permission.MANAGE_PLUGINS) && <Plugins />}
           </TabsContent>
         </Tabs>
       </div>

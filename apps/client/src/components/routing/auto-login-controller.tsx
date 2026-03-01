@@ -1,5 +1,5 @@
 import { setIsAutoConnecting } from '@/features/app/actions';
-import { useIsAppLoading, useIsPluginsLoading } from '@/features/app/hooks';
+import { useIsAppLoading } from '@/features/app/hooks';
 import { connect } from '@/features/server/actions';
 import { useDisconnectInfo, useIsConnected } from '@/features/server/hooks';
 import {
@@ -16,14 +16,12 @@ import { memo, useEffect, useRef } from 'react';
 const AutoLoginController = memo(() => {
   const isConnected = useIsConnected();
   const isAppLoading = useIsAppLoading();
-  const isPluginsLoading = useIsPluginsLoading();
   const disconnectInfo = useDisconnectInfo();
   const autoLoginAttempted = useRef(false);
 
   useEffect(() => {
     if (
       isAppLoading ||
-      isPluginsLoading ||
       isConnected ||
       disconnectInfo ||
       autoLoginAttempted.current
@@ -60,7 +58,7 @@ const AutoLoginController = memo(() => {
         autoLoginAttempted.current = false;
         setIsAutoConnecting(false);
       });
-  }, [isAppLoading, isPluginsLoading, isConnected, disconnectInfo]);
+  }, [isAppLoading, isConnected, disconnectInfo]);
 
   return null;
 });

@@ -1,11 +1,8 @@
-import { getTRPCClient } from '@/lib/trpc';
 import {
   ChannelPermission,
-  Permission,
-  linkifyHtml,
-  type TPluginSlotContext
+  Permission
 } from '@sharkord/shared';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import type { IRootState } from '../store';
 import { useChannelById, useChannelPermissionsById } from './channels/hooks';
@@ -18,8 +15,6 @@ import {
   isOwnUserOwnerSelector,
   ownUserRolesSelector,
   ownVoiceUserSelector,
-  pluginComponentContextSelector,
-  pluginsEnabledSelector,
   publicServerSettingsSelector,
   serverNameSelector,
   typingUsersByChannelIdSelector,
@@ -44,8 +39,6 @@ export const useOwnUserRoles = () => useSelector(ownUserRolesSelector);
 export const useInfo = () => useSelector(infoSelector);
 
 export const useIsOwnUserOwner = () => useSelector(isOwnUserOwnerSelector);
-
-export const usePluginsEnabled = () => useSelector(pluginsEnabledSelector);
 
 export const useCan = () => {
   const ownUserRoles = useOwnUserRoles();
@@ -121,28 +114,3 @@ export const useUnreadMessagesCount = (channelId: number) =>
   useSelector((state: IRootState) =>
     channelReadStateByIdSelector(state, channelId)
   );
-
-export const usePluginComponentContext = (): TPluginSlotContext => {
-  const stateCtx = useSelector(pluginComponentContextSelector);
-  const controllerRef = useRef(
-    (() => ({
-      sendMessage: async (channelId: number, content: string) => {
-        const trpc = getTRPCClient();
-
-        await trpc.messages.send.mutate({
-          channelId,
-          content: linkifyHtml(`<p>${content}</p>`),
-          files: []
-        });
-      }
-    }))()
-  );
-
-  return useMemo<TPluginSlotContext>(
-    () => ({
-      ...stateCtx,
-      ...controllerRef.current
-    }),
-    [stateCtx]
-  );
-};

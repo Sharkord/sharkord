@@ -5,16 +5,12 @@ import type {
   TCategory,
   TChannel,
   TChannelUserPermissionsMap,
-  TCommandInfo,
-  TCommandsMapByPlugin,
   TExternalStream,
   TExternalStreamsMap,
   TJoinedEmoji,
   TJoinedMessage,
   TJoinedPublicUser,
   TJoinedRole,
-  TPluginComponentsMap,
-  TPluginComponentsMapBySlotId,
   TPublicServerSettings,
   TReadStateMap,
   TServerInfo,
@@ -59,10 +55,8 @@ export interface IServerState {
   readStatesMap: {
     [channelId: number]: number | undefined;
   };
-  pluginCommands: TCommandsMapByPlugin;
   hideNonVideoParticipants: boolean;
   showUserBannersInVoice: boolean;
-  pluginComponents: TPluginComponentsMap;
 }
 
 const initialState: IServerState = {
@@ -96,7 +90,6 @@ const initialState: IServerState = {
   pinnedCard: undefined,
   channelPermissions: {},
   readStatesMap: {},
-  pluginCommands: {},
   hideNonVideoParticipants: getLocalStorageItemBool(
     LocalStorageKey.HIDE_NON_VIDEO_PARTICIPANTS,
     false
@@ -104,8 +97,7 @@ const initialState: IServerState = {
   showUserBannersInVoice: getLocalStorageItemBool(
     LocalStorageKey.VOICE_CHAT_SHOW_USER_BANNERS,
     true
-  ),
-  pluginComponents: {}
+  )
 };
 
 export const serverSlice = createSlice({
@@ -770,62 +762,6 @@ export const serverSlice = createSlice({
       delete state.externalStreamsMap[channelId][streamId];
     },
 
-    // PLUGINS ------------------------------------------------------------
-
-    setPluginCommands: (state, action: PayloadAction<TCommandsMapByPlugin>) => {
-      state.pluginCommands = action.payload;
-    },
-    addPluginCommand: (state, action: PayloadAction<TCommandInfo>) => {
-      const { pluginId } = action.payload;
-
-      if (!state.pluginCommands[pluginId]) {
-        state.pluginCommands[pluginId] = [];
-      }
-
-      const exists = state.pluginCommands[pluginId].find(
-        (c) => c.name === action.payload.name
-      );
-
-      if (exists) return;
-
-      state.pluginCommands[pluginId].push(action.payload);
-    },
-    removePluginCommand: (
-      state,
-      action: PayloadAction<{ commandName: string }>
-    ) => {
-      const { commandName } = action.payload;
-
-      for (const pluginId in state.pluginCommands) {
-        state.pluginCommands[pluginId] = state.pluginCommands[pluginId].filter(
-          (c) => c.name !== commandName
-        );
-      }
-    },
-    addPluginComponents: (
-      state,
-      action: PayloadAction<{
-        pluginId: string;
-        slots: TPluginComponentsMapBySlotId;
-      }>
-    ) => {
-      const { pluginId, slots } = action.payload;
-
-      if (!state.pluginComponents[pluginId]) {
-        state.pluginComponents[pluginId] = {};
-      }
-
-      state.pluginComponents[pluginId] = {
-        ...state.pluginComponents[pluginId],
-        ...slots
-      };
-    },
-    setPluginComponents: (
-      state,
-      action: PayloadAction<TPluginComponentsMap>
-    ) => {
-      state.pluginComponents = action.payload;
-    }
   }
 });
 

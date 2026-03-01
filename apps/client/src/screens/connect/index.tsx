@@ -1,4 +1,3 @@
-import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { connect } from '@/features/server/actions';
 import { useInfo } from '@/features/server/hooks';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
@@ -13,7 +12,7 @@ import {
   setSessionStorageItem
 } from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
-import { PluginSlot, TestId } from '@sharkord/shared';
+import { TestId } from '@sharkord/shared';
 import {
   Alert,
   AlertDescription,
@@ -128,7 +127,6 @@ const Connect = memo(() => {
               </span>
             )}
           </CardTitle>
-          <PluginSlotRenderer slotId={PluginSlot.CONNECT_SCREEN} />
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {info?.description && (

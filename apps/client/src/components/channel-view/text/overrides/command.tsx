@@ -83,10 +83,6 @@ const CommandOverride = memo(({ command }: TCommandOverrideProps) => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {command.pluginId}
-          </div>
-
           {command.args.length > 0 && (
             <div className="mt-0.5 flex flex-col gap-1 rounded-md bg-background/50 px-2 py-1.5">
               {command.args.map((arg, index) => (

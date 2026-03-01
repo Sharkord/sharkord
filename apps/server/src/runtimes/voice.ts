@@ -18,7 +18,6 @@ import type {
 } from 'mediasoup/types';
 import { config } from '../config';
 import { logger } from '../logger';
-import { eventBus } from '../plugins/event-bus';
 import {
   mediaSoupWorker,
   webRtcServer,
@@ -123,7 +122,7 @@ type TExternalStreamProducers = {
 type TExternalStreamInternal = {
   title: string;
   key: string;
-  pluginId: string;
+  sourceId: string;
   avatarUrl?: string;
   producers: TExternalStreamProducers;
 };
@@ -204,10 +203,6 @@ class VoiceRuntime {
     logger.debug(`Initializing voice runtime for channel ${this.id}`);
 
     await this.createRouter();
-
-    eventBus.emit('voice:runtime_initialized', {
-      channelId: this.id
-    });
   };
 
   public destroy = async () => {
@@ -259,10 +254,6 @@ class VoiceRuntime {
     });
 
     voiceRuntimes.delete(this.id);
-
-    eventBus.emit('voice:runtime_closed', {
-      channelId: this.id
-    });
   };
 
   public getState = (): TChannelState => {
@@ -552,7 +543,7 @@ class VoiceRuntime {
   public createExternalStream = (options: {
     title: string;
     key: string;
-    pluginId: string;
+    sourceId: string;
     avatarUrl?: string;
     producers: {
       audio?: Producer;
@@ -561,12 +552,12 @@ class VoiceRuntime {
   }) => {
     const streamId = this.externalCounter++;
 
-    const { title, key, pluginId, avatarUrl, producers } = options;
+    const { title, key, sourceId, avatarUrl, producers } = options;
 
     this.externalStreamsInternal[streamId] = {
       title,
       key,
-      pluginId,
+      sourceId,
       avatarUrl,
       producers: {
         audioProducer: producers.audio,
@@ -593,7 +584,7 @@ class VoiceRuntime {
     this.state.externalStreams[streamId] = {
       title,
       key,
-      pluginId,
+      sourceId,
       avatarUrl,
       tracks: {
         audio: !!producers.audio,

@@ -4,13 +4,11 @@ import type {
   TCategory,
   TChannel,
   TChannelUserPermissionsMap,
-  TCommandsMapByPlugin,
   TExternalStream,
   TJoinedEmoji,
   TJoinedMessage,
   TJoinedPublicUser,
   TJoinedRole,
-  TLogEntry,
   TPublicServerSettings,
   TVoiceUserState
 } from '@sharkord/shared';
@@ -98,10 +96,6 @@ type Events = {
     remoteId: number;
     kind: StreamKind;
   };
-
-  [ServerEvents.PLUGIN_LOG]: TLogEntry;
-  [ServerEvents.PLUGIN_COMMANDS_CHANGE]: TCommandsMapByPlugin;
-  [ServerEvents.PLUGIN_COMPONENTS_CHANGE]: string[]; // list of plugin ids that have components enabled
 
   [ServerEvents.EMOJI_CREATE]: TJoinedEmoji;
   [ServerEvents.EMOJI_UPDATE]: TJoinedEmoji;

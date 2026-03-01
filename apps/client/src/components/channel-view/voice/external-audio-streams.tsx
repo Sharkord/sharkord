@@ -4,15 +4,15 @@ import { useVoiceRefs } from './hooks/use-voice-refs';
 
 type TExternalAudioStreamProps = {
   streamId: number;
-  pluginId: string;
+  sourceId: string;
   streamKey: string;
 };
 
 const ExternalAudioStream = memo(
-  ({ streamId, pluginId, streamKey }: TExternalAudioStreamProps) => {
+  ({ streamId, sourceId, streamKey }: TExternalAudioStreamProps) => {
     const { externalAudioRef, hasExternalAudioStream } = useVoiceRefs(
       streamId,
-      pluginId,
+      sourceId,
       streamKey
     );
 
@@ -43,7 +43,7 @@ const ExternalAudioStreams = memo(
       <ExternalAudioStream
         key={stream.streamId}
         streamId={stream.streamId}
-        pluginId={stream.pluginId}
+        sourceId={stream.sourceId}
         streamKey={stream.key}
       />
     ));

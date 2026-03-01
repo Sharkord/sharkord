@@ -1,3 +1,4 @@
+import './patch-canvas';
 import { Toaster } from '@sharkord/ui';
 import 'prosemirror-view/style/prosemirror.css';
 import { StrictMode } from 'react';
@@ -8,17 +9,13 @@ import { DebugInfo } from './components/debug-info/index.tsx';
 import { StoreDebug } from './components/debug/store-debug.tsx';
 import { DevicesProvider } from './components/devices-provider/index.tsx';
 import { DialogsProvider } from './components/dialogs/index.tsx';
-import { PluginsController } from './components/plugins-controller/index.tsx';
 import { AutoLoginController } from './components/routing/auto-login-controller.tsx';
 import { Routing } from './components/routing/index.tsx';
 import { ServerScreensProvider } from './components/server-screens/index.tsx';
 import { ThemeProvider } from './components/theme-provider/index.tsx';
 import { store } from './features/store.ts';
-import { exposeReact } from './helpers/expose-react.ts';
 import { LocalStorageKey } from './helpers/storage.ts';
 import './index.css';
-
-exposeReact();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -32,7 +29,6 @@ createRoot(document.getElementById('root')!).render(
       <Provider store={store}>
         <StoreDebug />
         <DevicesProvider>
-          <PluginsController />
           <DialogsProvider />
           <ServerScreensProvider />
           <AutoLoginController />

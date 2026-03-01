@@ -39,8 +39,6 @@ describe('others router', () => {
     expect(result).toHaveProperty('roles');
     expect(result).toHaveProperty('emojis');
     expect(result).toHaveProperty('channelPermissions');
-    expect(result).toHaveProperty('commands');
-    expect(result).toHaveProperty('pluginIdsWithComponents');
 
     expect(result.ownUserId).toBe(joiningUserId);
 

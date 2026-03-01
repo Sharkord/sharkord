@@ -56,8 +56,7 @@ const settings = sqliteTable(
       'storage_max_files_per_message'
     ).notNull(),
     storageSpaceQuotaByUser: integer('storage_space_quota_by_user').notNull(),
-    storageOverflowAction: text('storage_overflow_action').notNull(),
-    enablePlugins: integer('enable_plugins', { mode: 'boolean' }).notNull()
+    storageOverflowAction: text('storage_overflow_action').notNull()
   },
   (t) => [
     index('settings_server_idx').on(t.serverId),
@@ -439,15 +438,6 @@ const channelReadStates = sqliteTable(
   ]
 );
 
-const pluginData = sqliteTable('plugin_data', {
-  pluginId: text('plugin_id').notNull().primaryKey(),
-  enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
-  settings: text('settings', { mode: 'json' })
-    .$type<Record<string, unknown>>()
-    .notNull()
-    .default({})
-});
-
 export {
   activityLog,
   categories,
@@ -462,7 +452,6 @@ export {
   messageFiles,
   messageReactions,
   messages,
-  pluginData,
   rolePermissions,
   roles,
   settings,

@@ -42,7 +42,6 @@ export type TPublicServerSettings = Pick<
   | 'storageMaxFilesPerMessage'
   | 'storageSpaceQuotaByUser'
   | 'storageOverflowAction'
-  | 'enablePlugins'
 > & {
   webRtcMaxBitrate: number;
 };

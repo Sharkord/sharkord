@@ -129,7 +129,7 @@ const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
 
     externalAudioStreams.forEach((stream) => {
       streams.push({
-        volumeKey: getExternalVolumeKey(stream.pluginId, stream.key),
+        volumeKey: getExternalVolumeKey(stream.sourceId, stream.key),
         name: stream.title || 'External Audio',
         type: AudioStreamType.External
       });

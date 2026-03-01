@@ -27,7 +27,6 @@ const MEDIASOUP_BINARY_PATH = IS_DEVELOPMENT
       MEDIASOUP_PATH,
       SHARKORD_MEDIASOUP_BIN_NAME || 'mediasoup-worker'
     );
-const PLUGINS_PATH = path.join(DATA_PATH, 'plugins');
 const SRC_MIGRATIONS_PATH = path.join(process.cwd(), 'src', 'db', 'migrations');
 
 export {
@@ -39,7 +38,6 @@ export {
   LOGS_PATH,
   MEDIASOUP_BINARY_PATH,
   MEDIASOUP_PATH,
-  PLUGINS_PATH,
   PUBLIC_PATH,
   SRC_MIGRATIONS_PATH,
   TMP_PATH,

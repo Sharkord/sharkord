@@ -5,7 +5,6 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 export interface TAppState {
   appLoading: boolean;
   isAutoConnecting: boolean;
-  loadingPlugins: boolean;
   devices: TDevices | undefined;
   modViewOpen: boolean;
   modViewUserId: number | undefined;
@@ -18,7 +17,6 @@ export interface TAppState {
 const initialState: TAppState = {
   appLoading: true,
   isAutoConnecting: false,
-  loadingPlugins: true,
   devices: undefined,
   modViewOpen: false,
   modViewUserId: undefined,
@@ -40,9 +38,6 @@ export const appSlice = createSlice({
     },
     setDevices: (state, action: PayloadAction<TDevices>) => {
       state.devices = action.payload;
-    },
-    setLoadingPlugins: (state, action: PayloadAction<boolean>) => {
-      state.loadingPlugins = action.payload;
     },
     setModViewOpen: (
       state,

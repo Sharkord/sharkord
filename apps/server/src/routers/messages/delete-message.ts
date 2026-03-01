@@ -6,7 +6,6 @@ import { removeFile } from '../../db/mutations/files';
 import { publishMessage, publishReplyCount } from '../../db/publishers';
 import { getFilesByMessageId } from '../../db/queries/files';
 import { messages } from '../../db/schema';
-import { eventBus } from '../../plugins/event-bus';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -54,11 +53,6 @@ const deleteMessageRoute = protectedProcedure
     if (targetMessage.parentMessageId) {
       publishReplyCount(targetMessage.parentMessageId, targetMessage.channelId);
     }
-
-    eventBus.emit('message:deleted', {
-      channelId: targetMessage.channelId,
-      messageId: input.messageId
-    });
   });
 
 export { deleteMessageRoute };

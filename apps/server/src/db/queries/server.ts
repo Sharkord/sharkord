@@ -39,7 +39,6 @@ const getPublicSettings: () => Promise<TPublicServerSettings> = async () => {
     storageMaxFilesPerMessage: settings.storageMaxFilesPerMessage,
     storageSpaceQuotaByUser: settings.storageSpaceQuotaByUser,
     storageOverflowAction: settings.storageOverflowAction,
-    enablePlugins: settings.enablePlugins,
     webRtcMaxBitrate: config.webRtc.maxBitrate
   };
 

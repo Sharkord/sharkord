@@ -9,7 +9,7 @@ import { useAudioLevel } from './use-audio-level';
 
 const useVoiceRefs = (
   remoteId: number,
-  pluginId?: string,
+  sourceId?: string,
   streamKey?: string
 ) => {
   const {
@@ -95,7 +95,7 @@ const useVoiceRefs = (
   const userScreenVolume = getVolume(userScreenVolumeKey);
 
   const externalVolumeKey =
-    pluginId && streamKey ? getExternalVolumeKey(pluginId, streamKey) : null;
+    sourceId && streamKey ? getExternalVolumeKey(sourceId, streamKey) : null;
 
   const externalVolume = externalVolumeKey ? getVolume(externalVolumeKey) : 100;
 

@@ -13,8 +13,6 @@ import {
 import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
 import { loginRouteHandler } from './login';
-import { pluginBundleRouteHandler } from './plugin-bundle';
-import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
 import { uploadFileRouteHandler } from './upload';
 import { HttpValidationError } from './utils';
@@ -40,10 +38,7 @@ const routeHandlers: Partial<
       '/info': (req, res) => infoRouteHandler(req, res)
     },
     prefix: {
-      '/public': (req, res) => publicRouteHandler(req, res),
-      '/plugin-components': (req, res) =>
-        pluginsComponentsRouteHandler(req, res),
-      '/plugin-bundle': (req, res) => pluginBundleRouteHandler(req, res)
+      '/public': (req, res) => publicRouteHandler(req, res)
     }
   },
   POST: {

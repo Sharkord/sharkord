@@ -3,11 +3,9 @@ import {
   useIsCurrentVoiceChannelSelected
 } from '@/features/server/channels/hooks';
 import { cn } from '@/lib/utils';
-import { PluginSlot } from '@sharkord/shared';
 import { Button, Tooltip } from '@sharkord/ui';
 import { MessageSquare, PanelRight, PanelRightClose } from 'lucide-react';
 import { memo } from 'react';
-import { PluginSlotRenderer } from '../plugin-slot-renderer';
 import { VoiceOptionsController } from './voice-options-controller';
 import { VolumeController } from './volume-controller';
 
@@ -29,7 +27,6 @@ const TopBar = memo(
     const currentVoiceChannelId = useCurrentVoiceChannelId();
     return (
       <div className="hidden lg:flex h-8 w-full bg-card border-b border-border items-center justify-end px-4 transition-all duration-300 ease-in-out gap-2">
-        <PluginSlotRenderer slotId={PluginSlot.TOPBAR_RIGHT} />
         {isCurrentVoiceChannelSelected && currentVoiceChannelId && (
           <>
             <VoiceOptionsController />

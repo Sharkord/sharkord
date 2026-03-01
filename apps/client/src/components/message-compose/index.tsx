@@ -1,18 +1,15 @@
-import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { TiptapInput } from '@/components/tiptap-input';
 import {
   useCan,
   useChannelCan,
   usePublicServerSettings
 } from '@/features/server/hooks';
-import { useFlatPluginCommands } from '@/features/server/plugins/hooks';
 import { useUploadFiles } from '@/hooks/use-upload-files';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TJoinedPublicUser, TTempFile } from '@sharkord/shared';
 import {
   ChannelPermission,
   Permission,
-  PluginSlot,
   isEmptyMessage
 } from '@sharkord/shared';
 import { Button, Spinner } from '@sharkord/ui';
@@ -37,7 +34,6 @@ type TMessageComposeProps = {
   onSend: (message: string, files: TTempFile[]) => Promise<boolean>;
   onTyping: () => void;
   typingUsers: TJoinedPublicUser[];
-  showPluginSlot?: boolean;
   ref?: Ref<TMessageComposeHandle>;
 };
 
@@ -53,7 +49,6 @@ const MessageCompose = memo(
     onSend,
     onTyping,
     typingUsers,
-    showPluginSlot = false,
     ref
   }: TMessageComposeProps) => {
     const sendingRef = useRef(false);
@@ -62,8 +57,6 @@ const MessageCompose = memo(
     const can = useCan();
     const channelCan = useChannelCan(channelId);
     const publicSettings = usePublicServerSettings();
-    const allPluginCommands = useFlatPluginCommands();
-
     const canSendMessages = useMemo(() => {
       return (
         can(Permission.SEND_MESSAGES) &&
@@ -78,12 +71,6 @@ const MessageCompose = memo(
         channelCan(ChannelPermission.SEND_MESSAGES)
       );
     }, [can, channelCan]);
-
-    const pluginCommands = useMemo(
-      () =>
-        can(Permission.EXECUTE_PLUGIN_COMMANDS) ? allPluginCommands : undefined,
-      [can, allPluginCommands]
-    );
 
     const {
       files,
@@ -173,11 +160,7 @@ const MessageCompose = memo(
             onTyping={onTyping}
             disabled={uploading || !canSendMessages}
             readOnly={sending}
-            commands={pluginCommands}
           />
-          {showPluginSlot && (
-            <PluginSlotRenderer slotId={PluginSlot.CHAT_ACTIONS} />
-          )}
           <input {...fileInputProps} />
           <Button
             size="icon"

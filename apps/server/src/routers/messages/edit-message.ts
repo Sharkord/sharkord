@@ -6,7 +6,6 @@ import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { messages } from '../../db/schema';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
-import { eventBus } from '../../plugins/event-bus';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
@@ -78,13 +77,6 @@ const editMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     publishMessage(input.messageId, message.channelId, 'update');
     enqueueProcessMetadata(sanitizedContent, input.messageId);
-
-    eventBus.emit('message:updated', {
-      messageId: input.messageId,
-      channelId: message.channelId,
-      userId: message.userId,
-      content: sanitizedContent
-    });
   });
 
 export { editMessageRoute };

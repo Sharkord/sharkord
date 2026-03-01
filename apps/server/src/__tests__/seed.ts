@@ -52,8 +52,7 @@ const seedDatabase = async (db: BunSQLiteDatabase) => {
     storageMaxBannerSize: STORAGE_DEFAULT_MAX_BANNER_SIZE,
     storageMaxFilesPerMessage: STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
     storageSpaceQuotaByUser: STORAGE_MIN_QUOTA_PER_USER,
-    storageOverflowAction: STORAGE_OVERFLOW_ACTION,
-    enablePlugins: false
+    storageOverflowAction: STORAGE_OVERFLOW_ACTION
   };
 
   await db.insert(settings).values(initialSettings);

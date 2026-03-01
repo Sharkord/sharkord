@@ -5,7 +5,6 @@ import {
   autoJoinLastChannelSelector,
   devicesSelector,
   isAutoConnectingSelector,
-  loadingPluginsSelector,
   modViewOpenSelector,
   modViewUserIdSelector,
   threadSidebarDataSelector
@@ -14,8 +13,6 @@ import {
 export const useIsAppLoading = () => useSelector(appLoadingSelector);
 
 export const useIsAutoConnecting = () => useSelector(isAutoConnectingSelector);
-
-export const useIsPluginsLoading = () => useSelector(loadingPluginsSelector);
 
 export const useDevices = () => useSelector(devicesSelector);
 

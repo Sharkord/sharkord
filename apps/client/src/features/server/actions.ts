@@ -6,11 +6,6 @@ import { type TPublicServerSettings, type TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
 import { openDialog } from '../dialogs/actions';
 import { store } from '../store';
-import {
-  processPluginComponents,
-  setPluginCommands,
-  setPluginComponents
-} from './plugins/actions';
 import { infoSelector } from './selectors';
 import { serverSliceActions } from './slice';
 import { initSubscriptions } from './subscriptions';
@@ -81,14 +76,6 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
   unsubscribeFromServer = initSubscriptions();
 
   store.dispatch(serverSliceActions.setInitialData(data));
-
-  setPluginCommands(data.commands);
-
-  const components = await processPluginComponents(
-    data.pluginIdsWithComponents
-  );
-
-  setPluginComponents(components);
 };
 
 export const disconnectFromServer = () => {

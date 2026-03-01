@@ -1,12 +1,11 @@
 import { TextChannel } from '@/components/channel-view/text';
 import { VoiceChannel } from '@/components/channel-view/voice';
-import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import {
   useSelectedChannelId,
   useSelectedChannelType
 } from '@/features/server/channels/hooks';
 import { useServerName } from '@/features/server/hooks';
-import { ChannelType, PluginSlot } from '@sharkord/shared';
+import { ChannelType } from '@sharkord/shared';
 import { Alert, AlertDescription } from '@sharkord/ui';
 import { AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { memo } from 'react';
@@ -31,9 +30,7 @@ const ContentWrapper = memo(() => {
   } else {
     content = (
       <>
-        <div className="flex-col gap-2 h-full w-full hidden lg:flex overflow-auto">
-          <PluginSlotRenderer slotId={PluginSlot.HOME_SCREEN} />
-        </div>
+        <div className="flex-col gap-2 h-full w-full hidden lg:flex overflow-auto" />
         <div className="flex flex-col items-center justify-center h-full gap-6 p-8 text-center md:hidden">
           <div className="flex flex-col gap-2">
             <h2 className="text-2xl font-semibold text-foreground">

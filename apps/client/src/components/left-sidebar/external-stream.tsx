@@ -6,22 +6,17 @@ import { memo } from 'react';
 type TExternalStreamProps = {
   title: string;
   tracks?: TExternalStreamTracks;
-  pluginId?: string;
   avatarUrl?: string;
 };
 
 const ExternalStream = memo(
-  ({ title, tracks, pluginId, avatarUrl }: TExternalStreamProps) => {
+  ({ title, tracks, avatarUrl }: TExternalStreamProps) => {
     const hasVideo = tracks?.video;
     const hasAudio = tracks?.audio;
 
     return (
       <div className="flex items-center gap-2 px-2 py-1 rounded hover:bg-accent/30 text-sm">
-        <Tooltip
-          content={
-            pluginId ? `External Stream (${pluginId})` : 'External Stream'
-          }
-        >
+        <Tooltip content="External Stream">
           {avatarUrl ? (
             <img
               src={avatarUrl}

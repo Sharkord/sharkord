@@ -73,7 +73,6 @@ const Voice = memo(({ channel, ...props }: TVoiceProps) => {
               key={stream.streamId}
               title={stream.title}
               tracks={stream.tracks}
-              pluginId={stream.pluginId}
               avatarUrl={stream.avatarUrl}
             />
           ))}

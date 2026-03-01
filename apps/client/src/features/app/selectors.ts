@@ -13,9 +13,6 @@ export const modViewOpenSelector = (state: IRootState) => state.app.modViewOpen;
 export const modViewUserIdSelector = (state: IRootState) =>
   state.app.modViewUserId;
 
-export const loadingPluginsSelector = (state: IRootState) =>
-  state.app.loadingPlugins;
-
 export const threadSidebarOpenSelector = (state: IRootState) =>
   state.app.threadSidebarOpen;
 

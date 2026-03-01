@@ -59,7 +59,7 @@ const EmojiList = forwardRef<EmojiListRef, EmojiListProps>(
             selectItem(selectedIndex);
             return true;
           case 'Escape':
-            return false; // Let the suggestion plugin handle escape
+            return false; // Let the suggestion extension handle escape
           default:
             return false;
         }

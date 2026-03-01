@@ -12,9 +12,6 @@ export const setAppLoading = (loading: boolean) =>
 export const setIsAutoConnecting = (isAutoConnecting: boolean) =>
   store.dispatch(appSliceActions.setIsAutoConnecting(isAutoConnecting));
 
-export const setPluginsLoading = (loading: boolean) =>
-  store.dispatch(appSliceActions.setLoadingPlugins(loading));
-
 export const fetchServerInfo = async (): Promise<TServerInfo | undefined> => {
   try {
     const url = getUrlFromServer();
