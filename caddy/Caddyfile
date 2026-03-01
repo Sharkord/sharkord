@@ -1,9 +1,5 @@
-your.domain.com:8443 {
+:8443 {
+	tls internal
+
 	reverse_proxy sharkord:4991
 }
-
-# For local development without a domain, replace the above with:
-# localhost:8443 {
-# 	tls internal
-# 	reverse_proxy sharkord:4991
-# }
