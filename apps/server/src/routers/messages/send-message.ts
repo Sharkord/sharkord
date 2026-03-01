@@ -11,6 +11,10 @@ import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
 import { publishMessage, publishReplyCount } from '../../db/publishers';
+import {
+  assertDmParticipant,
+  isDirectMessageChannel
+} from '../../db/queries/dms';
 import { getSettings } from '../../db/queries/server';
 import { messageFiles, messages } from '../../db/schema';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
@@ -75,12 +79,33 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       });
     }
 
-    const { storageMaxFilesPerMessage, enablePlugins } = await getSettings();
+    const [settings, isDmChannel] = await Promise.all([
+      getSettings(),
+      isDirectMessageChannel(input.channelId)
+    ]);
+
+    if (isDmChannel) {
+      invariant(settings.directMessagesEnabled, {
+        code: 'FORBIDDEN',
+        message: 'Direct messages are disabled on this server'
+      });
+
+      await assertDmParticipant(input.channelId, ctx.userId);
+    }
+
+    const { storageMaxFilesPerMessage, enablePlugins } = settings;
 
     const limitedFiles = input.files.slice(
       0,
       Math.max(0, storageMaxFilesPerMessage)
     );
+
+    if (isDmChannel && limitedFiles.length > 0) {
+      invariant(settings.storageFileSharingInDirectMessages, {
+        code: 'FORBIDDEN',
+        message: 'File sharing in direct messages is disabled on this server'
+      });
+    }
 
     invariant(!isEmptyMessage(input.content) || limitedFiles.length != 0, {
       code: 'BAD_REQUEST',

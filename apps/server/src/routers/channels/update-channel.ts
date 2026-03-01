@@ -3,8 +3,10 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { publishChannel } from '../../db/publishers';
+import { isDirectMessageChannel } from '../../db/queries/dms';
 import { channels } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const updateChannelRoute = protectedProcedure
@@ -18,6 +20,13 @@ const updateChannelRoute = protectedProcedure
   )
   .mutation(async ({ ctx, input }) => {
     await ctx.needsPermission(Permission.MANAGE_CHANNELS);
+
+    const isDmChannel = await isDirectMessageChannel(input.channelId);
+
+    invariant(!isDmChannel, {
+      code: 'FORBIDDEN',
+      message: 'Cannot update DM channels'
+    });
 
     const updatedChannel = await db
       .update(channels)

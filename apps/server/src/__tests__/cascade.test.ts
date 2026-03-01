@@ -7,6 +7,7 @@ import {
   channelRolePermissions,
   channels,
   channelUserPermissions,
+  directMessages,
   emojis,
   files,
   invites,
@@ -45,7 +46,7 @@ describe('database cascades', async () => {
     await tdb.delete(channels).where(eq(channels.id, channelsBefore[0]!.id));
 
     const messagesAfter = await tdb.select().from(messages);
-    expect(messagesAfter.length).toBe(0);
+    expect(messagesAfter.length).toBe(1); // only the DM message from setup should remain
   });
 
   test('deleting a category cascades to channels and messages', async () => {
@@ -66,7 +67,7 @@ describe('database cascades', async () => {
     );
 
     const messagesAfter = await tdb.select().from(messages);
-    expect(messagesAfter.length).toBe(0);
+    expect(messagesAfter.length).toBe(1); // only the DM message from setup should remain
   });
 
   test('deleting a user cascades to messages, logins, invites, activity logs', async () => {
@@ -109,7 +110,7 @@ describe('database cascades', async () => {
     expect(loginsAfter.length).toBe(0);
     expect(invitesAfter.length).toBe(0);
     expect(activityLogAfter.length).toBe(0);
-    expect(messagesAfter.length).toBe(0);
+    expect(messagesAfter.length).toBe(1); // only the DM message from setup should remain
   });
 
   test('deleting a user cascades to user_roles', async () => {
@@ -506,5 +507,252 @@ describe('database cascades', async () => {
 
     expect(emojisAfter.length).toBe(0);
     expect(messageReactionsAfter.length).toBe(0);
+  });
+
+  test('deleting a channel cascades to direct_messages', async () => {
+    const usersBefore = await tdb.select().from(users);
+    const categoriesBefore = await tdb.select().from(categories);
+
+    let userOneId = usersBefore[0]?.id;
+    let userTwoId = usersBefore[1]?.id;
+
+    if (!userOneId) {
+      const [u1] = await tdb
+        .insert(users)
+        .values({
+          name: 'DM User One',
+          identity: 'dmuser1',
+          password: 'hash',
+          avatarId: null,
+          bannerId: null,
+          bio: null,
+          bannerColor: null,
+          createdAt: Date.now()
+        })
+        .returning();
+      userOneId = u1!.id;
+    }
+
+    if (!userTwoId) {
+      const [u2] = await tdb
+        .insert(users)
+        .values({
+          name: 'DM User Two',
+          identity: 'dmuser2',
+          password: 'hash',
+          avatarId: null,
+          bannerId: null,
+          bio: null,
+          bannerColor: null,
+          createdAt: Date.now()
+        })
+        .returning();
+      userTwoId = u2!.id;
+    }
+
+    let categoryId = categoriesBefore[0]?.id;
+
+    if (!categoryId) {
+      const [cat] = await tdb
+        .insert(categories)
+        .values({ name: 'DM Category', position: 1, createdAt: Date.now() })
+        .returning();
+      categoryId = cat!.id;
+    }
+
+    const [dmChannel] = await tdb
+      .insert(channels)
+      .values({
+        type: 'TEXT',
+        name: 'dm-channel',
+        position: 0,
+        fileAccessToken: 'dm-token-1',
+        fileAccessTokenUpdatedAt: Date.now(),
+        categoryId,
+        isDm: true,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    await tdb.insert(directMessages).values({
+      channelId: dmChannel!.id,
+      userOneId,
+      userTwoId,
+      createdAt: Date.now()
+    });
+
+    const dmsBefore = await tdb
+      .select()
+      .from(directMessages)
+      .where(eq(directMessages.channelId, dmChannel!.id));
+
+    expect(dmsBefore.length).toBe(1);
+
+    await tdb.delete(channels).where(eq(channels.id, dmChannel!.id));
+
+    const dmsAfter = await tdb
+      .select()
+      .from(directMessages)
+      .where(eq(directMessages.channelId, dmChannel!.id));
+
+    expect(dmsAfter.length).toBe(0);
+  });
+
+  test('deleting userOne cascades to direct_messages', async () => {
+    const categoriesBefore = await tdb.select().from(categories);
+
+    const [userOne] = await tdb
+      .insert(users)
+      .values({
+        name: 'DM Cascade UserOne',
+        identity: 'dmcascadeuserone',
+        password: 'hash',
+        avatarId: null,
+        bannerId: null,
+        bio: null,
+        bannerColor: null,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    const [userTwo] = await tdb
+      .insert(users)
+      .values({
+        name: 'DM Cascade UserTwo',
+        identity: 'dmcascadeusertwo',
+        password: 'hash',
+        avatarId: null,
+        bannerId: null,
+        bio: null,
+        bannerColor: null,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    let categoryId = categoriesBefore[0]?.id;
+
+    if (!categoryId) {
+      const [cat] = await tdb
+        .insert(categories)
+        .values({ name: 'DM Category 2', position: 1, createdAt: Date.now() })
+        .returning();
+      categoryId = cat!.id;
+    }
+
+    const [dmChannel] = await tdb
+      .insert(channels)
+      .values({
+        type: 'TEXT',
+        name: 'dm-channel-u1',
+        position: 0,
+        fileAccessToken: 'dm-token-u1',
+        fileAccessTokenUpdatedAt: Date.now(),
+        categoryId,
+        isDm: true,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    await tdb.insert(directMessages).values({
+      channelId: dmChannel!.id,
+      userOneId: userOne!.id,
+      userTwoId: userTwo!.id,
+      createdAt: Date.now()
+    });
+
+    const dmsBefore = await tdb
+      .select()
+      .from(directMessages)
+      .where(eq(directMessages.channelId, dmChannel!.id));
+
+    expect(dmsBefore.length).toBe(1);
+
+    await tdb.delete(users).where(eq(users.id, userOne!.id));
+
+    const dmsAfter = await tdb
+      .select()
+      .from(directMessages)
+      .where(eq(directMessages.channelId, dmChannel!.id));
+
+    expect(dmsAfter.length).toBe(0);
+  });
+
+  test('deleting userTwo cascades to direct_messages', async () => {
+    const categoriesBefore = await tdb.select().from(categories);
+
+    const [userOne] = await tdb
+      .insert(users)
+      .values({
+        name: 'DM Cascade2 UserOne',
+        identity: 'dmcascade2userone',
+        password: 'hash',
+        avatarId: null,
+        bannerId: null,
+        bio: null,
+        bannerColor: null,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    const [userTwo] = await tdb
+      .insert(users)
+      .values({
+        name: 'DM Cascade2 UserTwo',
+        identity: 'dmcascade2usertwo',
+        password: 'hash',
+        avatarId: null,
+        bannerId: null,
+        bio: null,
+        bannerColor: null,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    let categoryId = categoriesBefore[0]?.id;
+
+    if (!categoryId) {
+      const [cat] = await tdb
+        .insert(categories)
+        .values({ name: 'DM Category 3', position: 1, createdAt: Date.now() })
+        .returning();
+      categoryId = cat!.id;
+    }
+
+    const [dmChannel] = await tdb
+      .insert(channels)
+      .values({
+        type: 'TEXT',
+        name: 'dm-channel-u2',
+        position: 0,
+        fileAccessToken: 'dm-token-u2',
+        fileAccessTokenUpdatedAt: Date.now(),
+        categoryId,
+        isDm: true,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    await tdb.insert(directMessages).values({
+      channelId: dmChannel!.id,
+      userOneId: userOne!.id,
+      userTwoId: userTwo!.id,
+      createdAt: Date.now()
+    });
+
+    const dmsBefore = await tdb
+      .select()
+      .from(directMessages)
+      .where(eq(directMessages.channelId, dmChannel!.id));
+
+    expect(dmsBefore.length).toBe(1);
+
+    await tdb.delete(users).where(eq(users.id, userTwo!.id));
+
+    const dmsAfter = await tdb
+      .select()
+      .from(directMessages)
+      .where(eq(directMessages.channelId, dmChannel!.id));
+
+    expect(dmsAfter.length).toBe(0);
   });
 });

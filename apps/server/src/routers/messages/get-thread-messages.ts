@@ -1,12 +1,13 @@
-import {
-  ChannelPermission,
-  DEFAULT_MESSAGES_LIMIT,
-  type TMessage
-} from '@sharkord/shared';
+import { DEFAULT_MESSAGES_LIMIT, type TMessage } from '@sharkord/shared';
 import { and, asc, eq, gt } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
+import {
+  assertDmParticipant,
+  isDirectMessageChannel
+} from '../../db/queries/dms';
 import { joinMessagesWithRelations } from '../../db/queries/messages';
+import { getSettings } from '../../db/queries/server';
 import { channels, messages } from '../../db/schema';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
@@ -40,9 +41,19 @@ const getThreadMessagesRoute = protectedProcedure
       message: 'Cannot get thread for a reply message'
     });
 
-    const channelId = parentMessage.channelId;
+    const [isDmChannel, settings] = await Promise.all([
+      isDirectMessageChannel(parentMessage.channelId),
+      getSettings()
+    ]);
 
-    await ctx.needsChannelPermission(channelId, ChannelPermission.VIEW_CHANNEL);
+    if (isDmChannel) {
+      invariant(settings.directMessagesEnabled, {
+        code: 'FORBIDDEN',
+        message: 'Direct messages are disabled on this server'
+      });
+
+      await assertDmParticipant(parentMessage.channelId, ctx.userId);
+    }
 
     const channel = await db
       .select({
@@ -50,7 +61,7 @@ const getThreadMessagesRoute = protectedProcedure
         fileAccessToken: channels.fileAccessToken
       })
       .from(channels)
-      .where(eq(channels.id, channelId))
+      .where(eq(channels.id, parentMessage.channelId))
       .get();
 
     invariant(channel, {
