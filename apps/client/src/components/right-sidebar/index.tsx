@@ -1,6 +1,7 @@
 import { ResizableSidebar } from '@/components/resizable-sidebar';
 import { UserAvatar } from '@/components/user-avatar';
 import { useUsers } from '@/features/server/users/hooks';
+import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { LocalStorageKey } from '@/helpers/storage';
 import { cn } from '@/lib/utils';
 import { DELETED_USER_IDENTITY_AND_NAME } from '@sharkord/shared';
@@ -14,11 +15,11 @@ const DEFAULT_WIDTH = 240; // w-60 = 240px
 
 type TUserProps = {
   userId: number;
-  name: string;
+  user: { name: string };
   banned: boolean;
 };
 
-const User = memo(({ userId, name, banned }: TUserProps) => {
+const User = memo(({ userId, user, banned }: TUserProps) => {
   return (
     <UserPopover userId={userId}>
       <div className="flex items-center gap-3 rounded px-2 py-1.5 hover:bg-accent select-none min-w-0">
@@ -29,7 +30,7 @@ const User = memo(({ userId, name, banned }: TUserProps) => {
             banned && 'line-through text-muted-foreground'
           )}
         >
-          {name}
+          {getRenderedUsername(user, userId)}
         </span>
       </div>
     </UserPopover>
@@ -79,7 +80,7 @@ const RightSidebar = memo(
               <User
                 key={user.id}
                 userId={user.id}
-                name={user.name}
+                user={user}
                 banned={user.banned}
               />
             ))}

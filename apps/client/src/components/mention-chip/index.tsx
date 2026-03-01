@@ -13,7 +13,7 @@ const MentionChip = memo(({ userId, label: labelProp }: TMentionChipProps) => {
 
   if (!user) return null;
 
-  const label = labelProp ?? getRenderedUsername(user);
+  const label = labelProp ?? getRenderedUsername(user, userId);
 
   return (
     <UserPopover userId={userId}>

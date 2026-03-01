@@ -1,5 +1,6 @@
 import { UserAvatar } from '@/components/user-avatar';
 import type { TVoiceUser } from '@/features/server/types';
+import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import {
   HeadphoneOff,
   Headphones,
@@ -28,7 +29,7 @@ const VoiceUser = memo(({ user }: TVoiceUserProps) => {
         />
 
         <span className="flex-1 text-muted-foreground truncate text-xs">
-          {user.name}
+          {getRenderedUsername(user, user.id)}
         </span>
 
         <div className="flex items-center gap-1 opacity-60">

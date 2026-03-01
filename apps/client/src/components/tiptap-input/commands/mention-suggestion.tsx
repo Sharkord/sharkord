@@ -80,7 +80,7 @@ const UserList = forwardRef<TUserListRef, TUserListProps>(
           >
             <UserAvatar userId={item.id} className="h-6 w-6 shrink-0" />
             <span className="font-medium truncate">
-              {getRenderedUsername(item)}
+              {getRenderedUsername(item, item.id)}
             </span>
           </button>
         ))}
@@ -140,10 +140,10 @@ const MentionSuggestion = {
     if (!query) return users.slice(0, 10);
     const q = query.toLowerCase();
     return users
-      .filter((u) => getRenderedUsername(u).toLowerCase().includes(q))
+      .filter((u) => getRenderedUsername(u, u.id).toLowerCase().includes(q))
       .sort((a, b) => {
-        const aName = getRenderedUsername(a).toLowerCase();
-        const bName = getRenderedUsername(b).toLowerCase();
+        const aName = getRenderedUsername(a, a.id).toLowerCase();
+        const bName = getRenderedUsername(b, b.id).toLowerCase();
         const aS = aName.startsWith(q);
         const bS = bName.startsWith(q);
         if (aS && !bS) return -1;

@@ -111,7 +111,7 @@ const MessageRenderer = memo(
           )}
         >
           {messageHtml}
-          {message.editedAt && (
+          {message.editedAt ? (
             <Tooltip
               content={
                 <div className="flex flex-col gap-1">
@@ -119,7 +119,7 @@ const MessageRenderer = memo(
                     {(relativeTime) => (
                       <span className="text-secondary text-xs">
                         {editedByUser
-                          ? getRenderedUsername(editedByUser)
+                          ? getRenderedUsername(editedByUser, message.editedBy ?? undefined)
                           : 'Unknown User'}{' '}
                         {relativeTime}
                       </span>
@@ -132,6 +132,8 @@ const MessageRenderer = memo(
                 (edited)
               </span>
             </Tooltip>
+          ) : (
+            <span></span>
           )}
         </div>
 

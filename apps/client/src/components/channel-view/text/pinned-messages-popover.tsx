@@ -1,6 +1,7 @@
 import { RelativeTime } from '@/components/relative-time';
 import { useSelectedChannelId } from '@/features/server/channels/hooks';
 import { useUserById } from '@/features/server/users/hooks';
+import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { getTRPCClient } from '@/lib/trpc';
 import { getTrpcError, type TJoinedMessage } from '@sharkord/shared';
 import {
@@ -36,7 +37,7 @@ const PinnedMessageGroupWrapper = memo(
             <span>
               Pinned by{' '}
               <span className="font-medium text-foreground">
-                {user ? user.name : 'Unknown User'}
+                {user ? getRenderedUsername(user, message.pinnedBy ?? undefined) : 'Unknown User'}
               </span>
             </span>
           </div>

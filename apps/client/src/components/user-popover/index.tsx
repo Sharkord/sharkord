@@ -1,22 +1,25 @@
 import { setModViewOpen } from '@/features/app/actions';
 import { useUserRoles } from '@/features/server/hooks';
-import { useUserById } from '@/features/server/users/hooks';
+import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
+import { getNickname, removeNickname, setNickname } from '@/helpers/nicknames';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
   Permission,
   UserStatus
 } from '@sharkord/shared';
 import {
+  Button,
   IconButton,
+  Input,
   Popover,
   PopoverContent,
   PopoverTrigger
 } from '@sharkord/ui';
 import { format } from 'date-fns';
-import { ShieldCheck, Trash, UserCog } from 'lucide-react';
-import { memo } from 'react';
+import { Pencil, ShieldCheck, Trash, UserCog, X } from 'lucide-react';
+import { memo, useCallback, useState } from 'react';
 import { Protect } from '../protect';
 import { RoleBadge } from '../role-badge';
 import { UserAvatar } from '../user-avatar';
@@ -30,6 +33,39 @@ type TUserPopoverProps = {
 const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
   const user = useUserById(userId);
   const roles = useUserRoles(userId);
+  const isOwnUser = useIsOwnUser(userId);
+  const [isEditingNickname, setIsEditingNickname] = useState(false);
+  const [nicknameInput, setNicknameInput] = useState('');
+  const [, forceUpdate] = useState(0);
+
+  const currentNickname = getNickname(userId);
+
+  const handleStartEditing = useCallback(() => {
+    setNicknameInput(currentNickname ?? '');
+    setIsEditingNickname(true);
+  }, [currentNickname]);
+
+  const handleSaveNickname = useCallback(() => {
+    const trimmed = nicknameInput.trim();
+    if (trimmed) {
+      setNickname(userId, trimmed);
+    } else {
+      removeNickname(userId);
+    }
+    setIsEditingNickname(false);
+    forceUpdate((n) => n + 1);
+  }, [nicknameInput, userId]);
+
+  const handleRemoveNickname = useCallback(() => {
+    removeNickname(userId);
+    setIsEditingNickname(false);
+    setNicknameInput('');
+    forceUpdate((n) => n + 1);
+  }, [userId]);
+
+  const handleCancelEditing = useCallback(() => {
+    setIsEditingNickname(false);
+  }, []);
 
   if (!user) return <>{children}</>;
 
@@ -78,9 +114,66 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
 
         <div className="px-4 pt-12 pb-4">
           <div className="mb-3">
-            <span className="text-lg font-semibold text-foreground truncate mb-1">
-              {getRenderedUsername(user)}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg font-semibold text-foreground truncate">
+                {getRenderedUsername(user, user.id)}
+              </span>
+              {!isOwnUser && !isDeleted && !isEditingNickname && (
+                <IconButton
+                  icon={Pencil}
+                  variant="ghost"
+                  size="xs"
+                  title="Set Nickname"
+                  onClick={handleStartEditing}
+                />
+              )}
+            </div>
+            {currentNickname && !isEditingNickname && (
+              <span className="text-xs text-muted-foreground">
+                {user.name}
+              </span>
+            )}
+            {isEditingNickname && (
+              <div className="flex flex-col gap-1.5 mt-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    value={nicknameInput}
+                    onChange={(e) => setNicknameInput(e.target.value)}
+                    placeholder="Enter nickname..."
+                    className="h-7 text-sm"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveNickname();
+                      if (e.key === 'Escape') handleCancelEditing();
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="h-7 px-2 text-xs shrink-0"
+                    onClick={handleSaveNickname}
+                  >
+                    Save
+                  </Button>
+                  <IconButton
+                    icon={X}
+                    variant="ghost"
+                    size="xs"
+                    title="Cancel"
+                    onClick={handleCancelEditing}
+                  />
+                </div>
+                {currentNickname && (
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground hover:text-destructive transition-colors text-left"
+                    onClick={handleRemoveNickname}
+                  >
+                    Remove nickname
+                  </button>
+                )}
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">
                 <UserStatusBadge

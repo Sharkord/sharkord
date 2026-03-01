@@ -39,7 +39,7 @@ const Mention = Extension.create<TMentionOptions>({
         items: this.options.suggestion.items,
         render: this.options.suggestion.render,
         command: ({ editor, range, props }) => {
-          const displayName = getRenderedUsername(props);
+          const displayName = getRenderedUsername(props, props.id);
           editor
             .chain()
             .focus()

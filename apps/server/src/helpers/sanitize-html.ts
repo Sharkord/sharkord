@@ -26,6 +26,11 @@ const sanitizeMessageHtml = (html: string): string => {
       'em',
       'code',
       'pre',
+      's',
+      'i',
+      'u',
+      'hr',
+      'blockquote',
       // lists
       'ul',
       'ol',

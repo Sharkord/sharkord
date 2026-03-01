@@ -35,7 +35,7 @@ const UserAvatar = memo(
         <Avatar className={cn('h-8 w-8', className)}>
           <AvatarImage src={getFileUrl(user.avatar)} key={user.avatarId} />
           <AvatarFallback className="bg-muted text-xs">
-            {getInitialsFromName(getRenderedUsername(user))}
+            {getInitialsFromName(getRenderedUsername(user, userId))}
           </AvatarFallback>
         </Avatar>
         {showStatusBadge && (

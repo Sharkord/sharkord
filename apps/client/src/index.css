@@ -332,6 +332,19 @@ body {
       monospace;
     line-height: 1.5;
   }
+
+  blockquote {
+    margin-left: 0.5em;
+    padding-left: 0.5em;
+    border-left: solid 2px rgba(127, 127, 127, 0.4);
+  }
+
+  hr {
+    border: none;
+    background-color: rgba(127, 127, 127, 0.3);
+    height: 2px;
+    margin: 0.5em 0;
+  }
 }
 
 .hljs-language-badge {

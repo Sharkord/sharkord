@@ -44,7 +44,7 @@ const MessagesGroup = memo(
                 isDeletedUser && 'line-through text-muted-foreground'
               )}
             >
-              {getRenderedUsername(user)}
+              {getRenderedUsername(user, user.id)}
             </span>
             <RelativeTime date={date}>
               {(relativeTime) => (
