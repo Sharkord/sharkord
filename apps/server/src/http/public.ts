@@ -10,6 +10,33 @@ import { verifyFileToken } from '../helpers/files-crypto';
 import { PUBLIC_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 
+const pipeFileStream = (
+  filePath: string,
+  res: http.ServerResponse,
+  streamOptions?: { start: number; end: number }
+) => {
+  const fileStream = fs.createReadStream(filePath, streamOptions);
+
+  fileStream.pipe(res);
+
+  fileStream.on('error', (err) => {
+    logger.error('Error serving file:', err);
+
+    if (!res.headersSent) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Internal server error' }));
+    }
+  });
+
+  res.on('close', () => {
+    fileStream.destroy();
+  });
+
+  fileStream.on('end', () => {
+    res.end();
+  });
+};
+
 const publicRouteHandler = async (
   req: http.IncomingMessage,
   res: http.ServerResponse
@@ -79,7 +106,7 @@ const publicRouteHandler = async (
     return;
   }
 
-  const fileStream = fs.createReadStream(filePath);
+  const stat = fs.statSync(filePath);
 
   const inlineAllowlist = [
     'image/png',
@@ -104,30 +131,53 @@ const publicRouteHandler = async (
     '%27'
   );
 
-  res.writeHead(200, {
-    'Content-Type': dbFile.mimeType,
-    'Content-Length': dbFile.size,
-    'Content-Disposition': `${contentDisposition}; filename="${safeFileName}"; filename*=UTF-8''${encodedFileName}`
-  });
+  const dispositionHeader = `${contentDisposition}; filename="${safeFileName}"; filename*=UTF-8''${encodedFileName}`;
 
-  fileStream.pipe(res);
+  const rangeHeader = req.headers.range;
 
-  fileStream.on('error', (err) => {
-    logger.error('Error serving file:', err);
+  if (rangeHeader) {
+    const match = rangeHeader.match(/^bytes=(\d+)-(\d*)$/);
 
-    if (!res.headersSent) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Internal server error' }));
+    if (!match) {
+      res.writeHead(416, {
+        'Content-Range': `bytes */${stat.size}`
+      });
+      res.end();
+      return;
     }
-  });
 
-  res.on('close', () => {
-    fileStream.destroy();
-  });
+    const start = parseInt(match[1]!, 10);
+    const end = match[2] ? parseInt(match[2], 10) : stat.size - 1;
 
-  fileStream.on('end', () => {
-    res.end();
-  });
+    if (start >= stat.size || end >= stat.size || start > end) {
+      res.writeHead(416, {
+        'Content-Range': `bytes */${stat.size}`
+      });
+      res.end();
+      return;
+    }
+
+    const contentLength = end - start + 1;
+
+    res.writeHead(206, {
+      'Content-Type': dbFile.mimeType,
+      'Content-Length': contentLength,
+      'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Disposition': dispositionHeader
+    });
+
+    pipeFileStream(filePath, res, { start, end });
+  } else {
+    res.writeHead(200, {
+      'Content-Type': dbFile.mimeType,
+      'Content-Length': stat.size,
+      'Accept-Ranges': 'bytes',
+      'Content-Disposition': dispositionHeader
+    });
+
+    pipeFileStream(filePath, res);
+  }
 
   return res;
 };

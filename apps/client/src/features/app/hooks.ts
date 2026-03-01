@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import {
   appLoadingSelector,
   autoJoinLastChannelSelector,
+  browserNotificationsSelector,
   devicesSelector,
   isAutoConnectingSelector,
   modViewOpenSelector,
@@ -27,3 +28,6 @@ export const useThreadSidebar = () => useSelector(threadSidebarDataSelector);
 
 export const useAutoJoinLastChannel = () =>
   useSelector(autoJoinLastChannelSelector);
+
+export const useBrowserNotifications = () =>
+  useSelector(browserNotificationsSelector);

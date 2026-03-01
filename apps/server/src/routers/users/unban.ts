@@ -20,7 +20,8 @@ const unbanRoute = protectedProcedure
       .update(users)
       .set({
         banned: false,
-        banReason: null
+        banReason: null,
+        bannedAt: null
       })
       .where(eq(users.id, input.userId));
 

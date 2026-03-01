@@ -12,6 +12,7 @@ export interface TAppState {
   threadParentMessageId: number | undefined;
   threadChannelId: number | undefined;
   autoJoinLastChannel: boolean;
+  browserNotifications: boolean;
 }
 
 const initialState: TAppState = {
@@ -25,6 +26,10 @@ const initialState: TAppState = {
   threadChannelId: undefined,
   autoJoinLastChannel: getLocalStorageItemBool(
     LocalStorageKey.AUTO_JOIN_LAST_CHANNEL,
+    false
+  ),
+  browserNotifications: getLocalStorageItemBool(
+    LocalStorageKey.BROWSER_NOTIFICATIONS,
     false
   )
 };
@@ -66,6 +71,9 @@ export const appSlice = createSlice({
     },
     setIsAutoConnecting: (state, action: PayloadAction<boolean>) => {
       state.isAutoConnecting = action.payload;
+    },
+    setBrowserNotifications: (state, action: PayloadAction<boolean>) => {
+      state.browserNotifications = action.payload;
     }
   }
 });

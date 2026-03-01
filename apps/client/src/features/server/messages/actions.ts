@@ -1,13 +1,50 @@
-import { threadSidebarDataSelector } from '@/features/app/selectors';
+import {
+  browserNotificationsSelector,
+  threadSidebarDataSelector
+} from '@/features/app/selectors';
 import { store } from '@/features/store';
+import { getFileUrl } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';
-import { TYPING_MS, type TJoinedMessage } from '@sharkord/shared';
-import { selectedChannelIdSelector } from '../channels/selectors';
+import {
+  getPlainTextFromHtml,
+  TYPING_MS,
+  type TJoinedMessage
+} from '@sharkord/shared';
+import {
+  channelByIdSelector,
+  selectedChannelIdSelector
+} from '../channels/selectors';
 import { serverSliceActions } from '../slice';
 import { playSound } from '../sounds/actions';
 import { SoundType } from '../types';
-import { ownUserIdSelector } from '../users/selectors';
+import { ownUserIdSelector, userByIdSelector } from '../users/selectors';
 import { threadMessagesMapSelector } from './selectors';
+
+const sendBrowserNotification = (
+  message: TJoinedMessage,
+  channelId: number
+) => {
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
+    return;
+  }
+
+  const state = store.getState();
+
+  const user = userByIdSelector(state, message.userId);
+  const channel = channelByIdSelector(state, channelId);
+
+  if (!user || !channel) {
+    return;
+  }
+
+  const textContent = getPlainTextFromHtml(message.content ?? '');
+
+  const title = `${user?.name ?? 'Unknown'} in #${channel?.name ?? 'unknown'}`;
+  const body = textContent ? textContent : 'Sent an attachment';
+  const icon = user?.avatar ? getFileUrl(user.avatar) : undefined;
+
+  new Notification(title, { body, icon });
+};
 
 const typingTimeouts: { [key: string]: NodeJS.Timeout } = {};
 
@@ -71,6 +108,7 @@ export const addMessages = (
   if (isSubscriptionMessage && messages.length > 0) {
     const state = store.getState();
     const ownUserId = ownUserIdSelector(state);
+    const hasBrowserNotificationsEnabled = browserNotificationsSelector(state);
     const targetMessage = messages[0];
     const isFromOwnUser = ownUserId === targetMessage.userId;
 
@@ -86,6 +124,10 @@ export const addMessages = (
         }
       } else {
         playSound(SoundType.MESSAGE_RECEIVED);
+      }
+
+      if (hasBrowserNotificationsEnabled) {
+        sendBrowserNotification(targetMessage, channelId);
       }
     }
 
