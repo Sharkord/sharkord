@@ -5,6 +5,7 @@ import {
 } from '@sharkord/shared';
 import { count, eq } from 'drizzle-orm';
 import { db } from '.';
+import { extractMentionUserIds } from '../helpers/extract-mention-user-ids';
 import { pubsub } from '../utils/pubsub';
 import {
   getAffectedUserIdsForChannel,
@@ -59,6 +60,20 @@ const publishMessage = async (
       // this isn't perfectly accurate in some cases but it should be good enough for most cases and it significantly reduces the amount of work the db has to
       delta: 1
     });
+  }
+
+  // notify users who were @mentioned (and can see the channel), excluding the author
+  if (type === 'create' && message.content) {
+    const mentionedIds = extractMentionUserIds(message.content);
+    const affectedSet = new Set(affectedUserIds);
+    const mentionNotify = mentionedIds.filter(
+      (id) => id !== message.userId && affectedSet.has(id)
+    );
+    if (mentionNotify.length > 0) {
+      pubsub.publishFor(mentionNotify, ServerEvents.CHANNEL_MENTION, {
+        channelId
+      });
+    }
   }
 };
 

@@ -6,6 +6,7 @@ import {
 import hljs from 'highlight.js/lib/common';
 import { Element, type DOMNode } from 'html-react-parser';
 import { CommandOverride } from '../overrides/command';
+import { MentionOverride } from '../overrides/mention';
 import { TwitterOverride } from '../overrides/twitter';
 import { YoutubeOverride } from '../overrides/youtube';
 import type { TFoundMedia } from './types';
@@ -113,6 +114,16 @@ const serializer = (
       const command = parseDomCommand(domNode);
 
       return <CommandOverride command={command} />;
+    } else if (
+      domNode instanceof Element &&
+      domNode.name === 'span' &&
+      domNode.attribs['data-type'] === 'mention' &&
+      domNode.attribs['data-user-id']
+    ) {
+      const userId = parseInt(domNode.attribs['data-user-id'], 10);
+      if (!Number.isNaN(userId)) {
+        return <MentionOverride userId={userId} />;
+      }
     }
   } catch (error) {
     console.error(`Error parsing DOM node for message ID ${messageId}:`, error);

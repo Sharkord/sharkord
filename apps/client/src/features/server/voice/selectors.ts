@@ -46,6 +46,14 @@ export const voiceChannelVideoExternalStreamsSelector = createCachedSelector(
     externalStreams.filter((stream) => stream.tracks?.video === true)
 )((_state: IRootState, channelId: number) => channelId);
 
+export const hasSharingScreenUsersSelector = createCachedSelector(
+  voiceChannelStateSelector,
+  (voiceState) => {
+    if (!voiceState) return false;
+    return Object.values(voiceState.users).some((u) => u.sharingScreen);
+  }
+)((_state: IRootState, channelId: number) => channelId);
+
 export const hideNonVideoParticipantsSelector = (state: IRootState) =>
   state.server.hideNonVideoParticipants;
 

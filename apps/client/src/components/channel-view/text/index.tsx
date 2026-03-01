@@ -9,10 +9,12 @@ import {
 import { useMessages } from '@/features/server/messages/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
+import { useUsers } from '@/features/server/users/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { handleBuiltInCommand } from '@/helpers/built-in-commands';
 import {
   ChannelPermission,
+  DELETED_USER_IDENTITY_AND_NAME,
   TYPING_MS,
   getTrpcError,
   linkifyHtml,
@@ -51,6 +53,11 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
   const [newMessage, setNewMessage] = useState(
     getDraftMessage(draftChannelKey)
+  );
+  const allUsers = useUsers();
+  const mentionUsers = useMemo(
+    () => allUsers.filter((u) => u.name !== DELETED_USER_IDENTITY_AND_NAME),
+    [allUsers]
   );
   const typingUsers = useTypingUsersByChannelId(channelId);
   const composeRef = useRef<TMessageComposeHandle>(null);
@@ -157,6 +164,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         onSend={onSend}
         onTyping={sendTypingSignal}
         typingUsers={typingUsers}
+        users={mentionUsers}
       />
     </>
   );

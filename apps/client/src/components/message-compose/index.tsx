@@ -34,6 +34,7 @@ type TMessageComposeProps = {
   onSend: (message: string, files: TTempFile[]) => Promise<boolean>;
   onTyping: () => void;
   typingUsers: TJoinedPublicUser[];
+  users?: TJoinedPublicUser[];
   ref?: Ref<TMessageComposeHandle>;
 };
 
@@ -49,6 +50,7 @@ const MessageCompose = memo(
     onSend,
     onTyping,
     typingUsers,
+    users,
     ref
   }: TMessageComposeProps) => {
     const sendingRef = useRef(false);
@@ -160,6 +162,7 @@ const MessageCompose = memo(
             onTyping={onTyping}
             disabled={uploading || !canSendMessages}
             readOnly={sending}
+            users={users}
           />
           <input {...fileInputProps} />
           <Button

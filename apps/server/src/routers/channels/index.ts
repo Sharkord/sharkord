@@ -5,6 +5,7 @@ import { deletePermissionsRoute } from './delete-permissions';
 import {
   onChannelCreateRoute,
   onChannelDeleteRoute,
+  onChannelMentionRoute,
   onChannelPermissionsUpdateRoute,
   onChannelReadStatesDeltaRoute,
   onChannelReadStatesUpdateRoute,
@@ -34,5 +35,6 @@ export const channelsRouter = t.router({
   onUpdate: onChannelUpdateRoute,
   onPermissionsUpdate: onChannelPermissionsUpdateRoute,
   onReadStateUpdate: onChannelReadStatesUpdateRoute,
-  onReadStateDelta: onChannelReadStatesDeltaRoute
+  onReadStateDelta: onChannelReadStatesDeltaRoute,
+  onMention: onChannelMentionRoute
 });

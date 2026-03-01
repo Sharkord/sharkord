@@ -1,7 +1,9 @@
 import { EmojiPicker } from '@/components/emoji-picker';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { BUILT_IN_COMMANDS } from '@/helpers/built-in-commands';
+import type { TJoinedPublicUser } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
+import type { Extension } from '@tiptap/core';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -16,6 +18,12 @@ import {
 } from 'react';
 import type { TEmojiItem } from './helpers';
 import { CommandSuggestion } from './commands/command-suggestion';
+import { Mention } from './commands/mention-extension';
+import { MentionNode } from './commands/mention-node';
+import {
+  MENTION_STORAGE_KEY,
+  MentionSuggestion
+} from './commands/mention-suggestion';
 import { SlashCommands } from './commands/slash-commands-extension';
 import { EmojiSuggestion } from './commands/suggestions';
 
@@ -27,6 +35,7 @@ type TTiptapInputProps = {
   onSubmit?: () => void;
   onCancel?: () => void;
   onTyping?: () => void;
+  users?: TJoinedPublicUser[];
 };
 
 const TiptapInput = memo(
@@ -37,7 +46,8 @@ const TiptapInput = memo(
     onCancel,
     onTyping,
     disabled,
-    readOnly
+    readOnly,
+    users
   }: TTiptapInputProps) => {
     const readOnlyRef = useRef(readOnly);
     readOnlyRef.current = readOnly;
@@ -50,7 +60,7 @@ const TiptapInput = memo(
 
     const customEmojis = useCustomEmojis();
 
-    const extensions = useMemo(() => {
+    const extensions = useMemo((): Extension[] => {
       const exts = [
         StarterKit.configure({
           code: false,
@@ -84,12 +94,21 @@ const TiptapInput = memo(
         SlashCommands.configure({
           commands: BUILT_IN_COMMANDS,
           suggestion: CommandSuggestion
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        }) as any
-      ];
+        }) as Extension
+      ] as Extension[];
+
+      if (users && users.length > 0) {
+        exts.push(MentionNode as Extension);
+        exts.push(
+          Mention.configure({
+            users,
+            suggestion: MentionSuggestion
+          }) as Extension
+        );
+      }
 
       return exts;
-    }, [customEmojis]);
+    }, [customEmojis, users]);
 
     const editor = useEditor({
       extensions,
@@ -171,6 +190,14 @@ const TiptapInput = memo(
         editor.storage.emoji.emojis = [...gitHubEmojis, ...customEmojis];
       }
     }, [editor, customEmojis]);
+
+    // keep mention storage in sync with users from the store
+    useEffect(() => {
+      if (editor && users) {
+        const slot = (editor.storage as unknown as Record<string, { users?: TJoinedPublicUser[] }>)[MENTION_STORAGE_KEY];
+        if (slot) slot.users = users;
+      }
+    }, [editor, users]);
 
     useEffect(() => {
       if (editor && value !== undefined) {

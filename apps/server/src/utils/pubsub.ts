@@ -110,6 +110,10 @@ type Events = {
   [ServerEvents.CATEGORY_CREATE]: TCategory;
   [ServerEvents.CATEGORY_UPDATE]: TCategory;
   [ServerEvents.CATEGORY_DELETE]: number;
+
+  [ServerEvents.CHANNEL_MENTION]: {
+    channelId: number;
+  };
 };
 
 class PubSub {

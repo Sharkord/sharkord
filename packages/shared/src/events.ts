@@ -41,7 +41,9 @@ export enum ServerEvents {
 
   CATEGORY_CREATE = 'categoryCreate',
   CATEGORY_UPDATE = 'categoryUpdate',
-  CATEGORY_DELETE = 'categoryDelete'
+  CATEGORY_DELETE = 'categoryDelete',
+
+  CHANNEL_MENTION = 'channelMention'
 }
 
 export type TNewMessage = {
