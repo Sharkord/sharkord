@@ -92,3 +92,16 @@ export const setAutoJoinLastChannel = (autoJoin: boolean) => {
 
   setLocalStorageItemBool(LocalStorageKey.AUTO_JOIN_LAST_CHANNEL, autoJoin);
 };
+
+export const setBrowserNotifications = async (enabled: boolean) => {
+  if (enabled && 'Notification' in window) {
+    const permission = await Notification.requestPermission();
+
+    if (permission !== 'granted') {
+      return;
+    }
+  }
+
+  store.dispatch(appSliceActions.setBrowserNotifications(enabled));
+  setLocalStorageItemBool(LocalStorageKey.BROWSER_NOTIFICATIONS, enabled);
+};
