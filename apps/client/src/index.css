@@ -277,6 +277,10 @@ body {
   }
 }
 
+.msg-content > *:nth-last-child(2) {
+  display: inline;
+}
+
 .react-tweet-theme {
   margin: 0 !important;
 }

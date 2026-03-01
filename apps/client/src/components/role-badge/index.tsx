@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import { memo } from 'react';
 
 type TRoleBadgeProps = {
-  role: TRole;
+  role: Pick<TRole, 'id' | 'name' | 'color'>;
   onRemoveRole?: (roleId: number, roleName: string) => void;
 };
 

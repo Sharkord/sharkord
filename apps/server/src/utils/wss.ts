@@ -292,7 +292,12 @@ const createWsServer = async (server: http.Server) => {
     applyWSSHandler({
       wss,
       router: appRouter,
-      createContext
+      createContext,
+      keepAlive: {
+        enabled: true,
+        pingMs: 30_000,
+        pongWaitMs: 5_000
+      }
     });
 
     resolve(wss);

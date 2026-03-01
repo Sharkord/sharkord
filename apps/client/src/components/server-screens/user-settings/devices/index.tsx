@@ -2,7 +2,13 @@ import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { getVoiceControlsBridge } from '@/components/voice-provider/controls-bridge';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
+import { usePublicServerSettings } from '@/features/server/hooks';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
+import { MICROPHONE_GATE_DEFAULT_THRESHOLD_DB } from '@/helpers/audio-gate';
+import {
+  getNoiseGateWorkletAvailabilitySnapshot,
+  subscribeNoiseGateWorkletAvailability
+} from '@/helpers/audio-worklet/noise-gate-worklet';
 import { useForm } from '@/hooks/use-form';
 import { Resolution, VideoCodec } from '@/types';
 import { DEFAULT_BITRATE } from '@sharkord/shared';
@@ -30,17 +36,26 @@ import {
 } from '@sharkord/ui';
 import { filesize } from 'filesize';
 import { Info } from 'lucide-react';
-import { memo, useCallback, useEffect, useRef } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore
+} from 'react';
 import { toast } from 'sonner';
 import { useAvailableDevices } from './hooks/use-available-devices';
 import { useMicrophoneTest } from './hooks/use-microphone-test';
 import { useWebcamTest } from './hooks/use-webcam-test';
+import { MicrophoneTestLevelBar } from './microphone-test-level-bar';
 import ResolutionFpsControl from './resolution-fps-control';
 
 const DEFAULT_NAME = 'default';
 
 const Devices = memo(() => {
   const currentVoiceChannelId = useCurrentVoiceChannelId();
+  const settings = usePublicServerSettings();
   const ownVoiceState = useOwnVoiceState();
   const {
     inputDevices,
@@ -51,11 +66,17 @@ const Devices = memo(() => {
   } = useAvailableDevices();
   const { devices, saveDevices, loading: devicesLoading } = useDevices();
   const { values, onChange } = useForm(devices);
+  const noiseGateWorkletAvailability = useSyncExternalStore(
+    subscribeNoiseGateWorkletAvailability,
+    getNoiseGateWorkletAvailabilitySnapshot,
+    getNoiseGateWorkletAvailabilitySnapshot
+  );
+  const isNoiseGateAvailable = noiseGateWorkletAvailability.available;
   const {
     testAudioRef,
     permissionState,
     isTesting,
-    audioLevel,
+    getAudioLevelSnapshot,
     error: microphoneTestError,
     requestPermission,
     startTest,
@@ -65,7 +86,10 @@ const Devices = memo(() => {
     playbackId: values.playbackId,
     autoGainControl: !!values.autoGainControl,
     echoCancellation: !!values.echoCancellation,
-    noiseSuppression: !!values.noiseSuppression
+    noiseSuppression: !!values.noiseSuppression,
+    noiseGateEnabled: !!values.noiseGateEnabled,
+    noiseGateThresholdDb:
+      values.noiseGateThresholdDb ?? MICROPHONE_GATE_DEFAULT_THRESHOLD_DB
   });
   const {
     testVideoRef,
@@ -197,14 +221,11 @@ const Devices = memo(() => {
   const hasDefaultVideoOption = videoDevices.some(
     (device) => device?.deviceId === DEFAULT_NAME
   );
-  // Meter is linear from -60 dB..0 dB to 0..100%.
-  // Color intensity mirrors the speaking-indicator glow levels.
-  const meterFillColorClass =
-    audioLevel >= 66
-      ? 'bg-green-600'
-      : audioLevel >= 33
-        ? 'bg-green-500'
-        : 'bg-green-300';
+
+  const maxBitrate = useMemo(
+    () => (settings?.webRtcMaxBitrate ? settings.webRtcMaxBitrate / 1000 : 0),
+    [settings?.webRtcMaxBitrate]
+  );
 
   if (availableDevicesLoading || devicesLoading) {
     return <LoadingCard className="h-[600px]" />;
@@ -304,7 +325,27 @@ const Devices = memo(() => {
                   }
                 />
               </Group>
+
+              <Group label="Noise gate">
+                <Switch
+                  checked={values.noiseGateEnabled}
+                  disabled={!isNoiseGateAvailable}
+                  onCheckedChange={(checked) =>
+                    onChange('noiseGateEnabled', checked)
+                  }
+                />
+              </Group>
             </div>
+
+            {!isNoiseGateAvailable && (
+              <p className="text-xs text-muted-foreground">
+                Noise gate is unavailable. Microphone audio will be sent without
+                gating.
+                {noiseGateWorkletAvailability.reason
+                  ? ` ${noiseGateWorkletAvailability.reason}`
+                  : ''}
+              </p>
+            )}
           </Group>
 
           <Group label="Microphone Test">
@@ -340,12 +381,16 @@ const Devices = memo(() => {
               </p>
             )}
 
-            <div className="relative h-6 w-full max-w-120 overflow-hidden rounded-full bg-muted">
-              <div
-                className={`h-full ${meterFillColorClass} transition-[width,background-color] duration-75`}
-                style={{ width: `${audioLevel}%` }}
-              />
-            </div>
+            <MicrophoneTestLevelBar
+              isTesting={isTesting}
+              noiseGateEnabled={values.noiseGateEnabled}
+              noiseGateControlsDisabled={!isNoiseGateAvailable}
+              noiseGateThresholdDb={values.noiseGateThresholdDb}
+              onThresholdChange={(value) =>
+                onChange('noiseGateThresholdDb', value)
+              }
+              getAudioLevelSnapshot={getAudioLevelSnapshot}
+            />
 
             {microphoneTestError && (
               <Alert variant="destructive">
@@ -500,7 +545,7 @@ const Devices = memo(() => {
                   <Slider
                     className="max-w-96"
                     min={200}
-                    max={30000}
+                    max={maxBitrate}
                     step={100}
                     value={[values.screenBitrate ?? DEFAULT_BITRATE]}
                     onValueChange={([value]) =>

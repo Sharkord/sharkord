@@ -41,10 +41,6 @@ const useVoiceControls = ({
 
     if (!currentVoiceChannelId) return;
 
-    localAudioStream?.getAudioTracks().forEach((track) => {
-      track.enabled = !newState;
-    });
-
     try {
       await trpc.voice.updateState.mutate({
         micMuted: newState

@@ -22,6 +22,7 @@ import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { MessagesGroup } from './messages-group';
 import { TextSkeleton } from './text-skeleton';
+import { TextTopbar } from './text-top-bar';
 import {
   getChannelDraftKey,
   getDraftMessage,
@@ -34,8 +35,15 @@ type TChannelProps = {
 };
 
 const TextChannel = memo(({ channelId }: TChannelProps) => {
-  const { messages, hasMore, loadMore, loading, fetching, groupedMessages } =
-    useMessages(channelId);
+  const {
+    messages,
+    hasMore,
+    loadMore,
+    loading,
+    fetching,
+    groupedMessages,
+    scrollToMessage
+  } = useMessages(channelId);
 
   const draftChannelKey = getChannelDraftKey(channelId);
 
@@ -119,9 +127,12 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         </div>
       )}
 
+      <TextTopbar onScrollToMessage={scrollToMessage} />
+
       <div
         ref={containerRef}
         onScroll={onScroll}
+        data-messages-container
         className="flex-1 overflow-y-auto overflow-x-hidden p-2 animate-in fade-in duration-500"
       >
         <div className="space-y-4">

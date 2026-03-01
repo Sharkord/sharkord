@@ -298,7 +298,58 @@ const sfxRemoteUserLeftVoiceChannel = () => {
     osc.stop(t + 0.2);
   });
 };
+// REMOTE STARTED SCREENSHARE — similar to own user but slightly softer
+const sfxRemoteUserStartedScreenshare = () => {
+  const pulses = [
+    { freq: 600, delay: 0 },
+    { freq: 800, delay: 0.06 },
+    { freq: 1000, delay: 0.12 }
+  ];
 
+  pulses.forEach(({ freq, delay }) => {
+    const t = now() + delay;
+    const osc = createOsc('sine', freq);
+    const gain = createGain(0.06);
+
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.1);
+  });
+
+  const osc2 = createOsc('triangle', 1200);
+  const gain2 = createGain(0.02);
+
+  gain2.gain.exponentialRampToValueAtTime(0.0001, now() + 0.2);
+
+  osc2.connect(gain2).connect(audioCtx.destination);
+  osc2.start(now() + 0.08);
+  osc2.stop(now() + 0.22);
+};
+
+// REMOTE STOPPED SCREENSHARE — similar to own user but slightly softer
+const sfxRemoteUserStoppedScreenshare = () => {
+  const osc1 = createOsc('sine', 900);
+  const gain1 = createGain(0.06);
+
+  osc1.frequency.exponentialRampToValueAtTime(550, now() + 0.18);
+  gain1.gain.exponentialRampToValueAtTime(0.0001, now() + 0.2);
+
+  osc1.connect(gain1).connect(audioCtx.destination);
+  osc1.start();
+  osc1.stop(now() + 0.2);
+
+  const osc2 = createOsc('triangle', 1100);
+  const gain2 = createGain(0.02);
+
+  osc2.frequency.exponentialRampToValueAtTime(700, now() + 0.18);
+  gain2.gain.exponentialRampToValueAtTime(0.0001, now() + 0.2);
+
+  osc2.connect(gain2).connect(audioCtx.destination);
+  osc2.start(now() + 0.05);
+  osc2.stop(now() + 0.2);
+};
 export const playSound = (type: SoundType) => {
   switch (type) {
     case SoundType.MESSAGE_RECEIVED:
@@ -335,6 +386,10 @@ export const playSound = (type: SoundType) => {
       return sfxRemoteUserJoinedVoiceChannel();
     case SoundType.REMOTE_USER_LEFT_VOICE_CHANNEL:
       return sfxRemoteUserLeftVoiceChannel();
+    case SoundType.REMOTE_USER_STARTED_SCREENSHARE:
+      return sfxRemoteUserStartedScreenshare();
+    case SoundType.REMOTE_USER_STOPPED_SCREENSHARE:
+      return sfxRemoteUserStoppedScreenshare();
 
     default:
       return;

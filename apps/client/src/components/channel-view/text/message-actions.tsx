@@ -10,7 +10,14 @@ import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
-import { MessageSquareText, Pencil, Smile, Trash } from 'lucide-react';
+import {
+  MessageSquareText,
+  Pencil,
+  Pin,
+  PinOff,
+  Smile,
+  Trash
+} from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
@@ -23,6 +30,8 @@ type TMessageActionsProps = {
   canManage: boolean;
   editable: boolean;
   isThreadReply?: boolean;
+  isPinned?: boolean;
+  disablePin?: boolean;
 };
 
 const MessageActions = memo(
@@ -32,7 +41,9 @@ const MessageActions = memo(
     channelId,
     canManage,
     editable,
-    isThreadReply
+    isThreadReply,
+    isPinned,
+    disablePin
   }: TMessageActionsProps) => {
     const { recentEmojis } = useRecentEmojis();
     const recentEmojisToShow = useMemo(
@@ -83,8 +94,22 @@ const MessageActions = memo(
       openThreadSidebar(messageId, channelId);
     }, [messageId, channelId]);
 
+    const onPinClick = useCallback(async () => {
+      const trpc = getTRPCClient();
+
+      try {
+        await trpc.messages.togglePin.mutate({ messageId });
+
+        toast.success('Message pinned status toggled');
+      } catch (error) {
+        toast.error('Failed to toggle pin status');
+
+        console.error('Error toggling pin status:', error);
+      }
+    }, [messageId]);
+
     return (
-      <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-1 transition-all h-8 bg-background">
+      <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-2 transition-all bg-background">
         {!isThreadReply && (
           <IconButton
             size="sm"
@@ -114,6 +139,18 @@ const MessageActions = memo(
             />
           </>
         )}
+        {!disablePin && (
+          <Protect permission={Permission.PIN_MESSAGES}>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              icon={isPinned ? PinOff : Pin}
+              onClick={onPinClick}
+              title={isPinned ? 'Unpin Message' : 'Pin Message'}
+            />
+          </Protect>
+        )}
+
         <Protect permission={Permission.REACT_TO_MESSAGES}>
           <div className="flex items-center space-x-0.5 border-l pl-1 gap-1">
             {recentEmojisToShow.map((emoji) => (

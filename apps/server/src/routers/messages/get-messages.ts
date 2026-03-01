@@ -4,7 +4,7 @@ import {
   ServerEvents,
   type TMessage
 } from '@sharkord/shared';
-import { and, count, desc, eq, inArray, isNull, lt } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, isNull, lt } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/sqlite-core';
 import { z } from 'zod';
 import { db } from '../../db';
@@ -25,6 +25,7 @@ const getMessagesRoute = protectedProcedure
     z.object({
       channelId: z.number(),
       cursor: z.number().nullish(),
+      targetMessageId: z.number().nullish(),
       limit: z.number().default(DEFAULT_MESSAGES_LIMIT)
     })
   )
@@ -49,7 +50,7 @@ const getMessagesRoute = protectedProcedure
       ChannelPermission.VIEW_CHANNEL
     );
 
-    const { channelId, cursor, limit } = input;
+    const { channelId, cursor, limit, targetMessageId } = input;
 
     const channel = await db
       .select({
@@ -65,31 +66,73 @@ const getMessagesRoute = protectedProcedure
       message: 'Channel not found'
     });
 
-    // only root messages (not thread replies)
-    const rows: TMessage[] = await db
-      .select()
-      .from(messages)
-      .where(
-        cursor
-          ? and(
-              eq(messages.channelId, channelId),
-              isNull(messages.parentMessageId),
-              lt(messages.createdAt, cursor)
-            )
-          : and(
-              eq(messages.channelId, channelId),
-              isNull(messages.parentMessageId)
-            )
-      )
-      .orderBy(desc(messages.createdAt))
-      .limit(limit + 1);
+    const baseWhere = and(
+      eq(messages.channelId, channelId),
+      isNull(messages.parentMessageId)
+    );
 
+    let rows: TMessage[];
     let nextCursor: number | null = null;
 
-    if (rows.length > limit) {
-      const next = rows.pop();
+    if (targetMessageId) {
+      // fetch all messages from newest down to (and including) the target
+      const targetMessage = await db
+        .select({
+          id: messages.id,
+          createdAt: messages.createdAt,
+          parentMessageId: messages.parentMessageId
+        })
+        .from(messages)
+        .where(
+          and(
+            eq(messages.id, targetMessageId),
+            eq(messages.channelId, channelId)
+          )
+        )
+        .get();
 
-      nextCursor = next ? next.createdAt : null;
+      invariant(targetMessage, {
+        code: 'NOT_FOUND',
+        message: 'Target message not found'
+      });
+
+      invariant(!targetMessage.parentMessageId, {
+        code: 'BAD_REQUEST',
+        message: 'Target message must be a root message'
+      });
+
+      // fetch everything from newest down to the target, plus 20 older messages
+      // for context around the target
+      const olderMessages = await db
+        .select()
+        .from(messages)
+        .where(and(baseWhere, lt(messages.createdAt, targetMessage.createdAt)))
+        .orderBy(desc(messages.createdAt))
+        .limit(20);
+
+      const newerMessages = await db
+        .select()
+        .from(messages)
+        .where(and(baseWhere, gte(messages.createdAt, targetMessage.createdAt)))
+        .orderBy(desc(messages.createdAt));
+
+      rows = [...newerMessages, ...olderMessages];
+    } else {
+      // standard cursor-based pagination
+      rows = await db
+        .select()
+        .from(messages)
+        .where(
+          cursor ? and(baseWhere, lt(messages.createdAt, cursor)) : baseWhere
+        )
+        .orderBy(desc(messages.createdAt))
+        .limit(limit + 1);
+
+      if (rows.length > limit) {
+        const next = rows.pop();
+
+        nextCursor = next ? next.createdAt : null;
+      }
     }
 
     if (rows.length === 0) {
