@@ -134,7 +134,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
               </span>
             )}
             {isEditingNickname && (
-              <div className="flex flex-col gap-1.5 mt-1.5">
+              <div className="flex flex-col gap-1.5 py-1.5">
                 <div className="flex items-center gap-1.5">
                   <Input
                     value={nicknameInput}

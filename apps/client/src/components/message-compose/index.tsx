@@ -180,6 +180,7 @@ const MessageCompose = memo(
             className="h-8 w-8"
             onClick={handleSend}
             disabled={uploading || sending || !canSendMessages}
+            title="Send (Ctrl+Enter)"
           >
             <Send className="h-4 w-4" />
           </Button>
