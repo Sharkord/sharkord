@@ -1,6 +1,6 @@
 import { Button } from '@sharkord/ui';
 import type { Editor } from '@tiptap/core';
-import { Link2, Minus, Quote } from 'lucide-react';
+import { Link2, List, ListOrdered, Minus, Quote } from 'lucide-react';
 import { memo } from 'react';
 
 type FormattingToolbarProps = {
@@ -77,6 +77,16 @@ const FormattingToolbar = memo(({ editor }: FormattingToolbarProps) => {
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
         title="Blockquete"
         content={<Quote />}
+      />
+      <FormatButton
+        onClick={() => editor.chain().focus().toggleList('bulletList', 'listItem', false).run()}
+        title="Bullet list"
+        content={<List />}
+      />
+      <FormatButton
+        onClick={() => editor.chain().focus().toggleList('orderedList', 'listItem', false).run()}
+        title="Ordered list"
+        content={<ListOrdered />}
       />
     </div>
   );

@@ -305,6 +305,22 @@ hr {
   height: 2px;
 }
 
+ul {
+  padding-left: 1.5rem;
+  list-style-type: circle;
+  margin: 0;
+}
+
+ol {
+  padding-left: 1.5rem;
+  list-style-type: decimal;
+  margin: 0;
+}
+
+li {
+  list-style-position: outside;
+}
+
 .msg-content.emoji-only {
   font-size: 2.5rem;
   line-height: 1.2;
