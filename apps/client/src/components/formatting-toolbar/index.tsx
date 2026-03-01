@@ -79,12 +79,24 @@ const FormattingToolbar = memo(({ editor }: FormattingToolbarProps) => {
         content={<Quote />}
       />
       <FormatButton
-        onClick={() => editor.chain().focus().toggleList('bulletList', 'listItem', false).run()}
+        onClick={() =>
+          editor
+            .chain()
+            .focus()
+            .toggleList('bulletList', 'listItem', false)
+            .run()
+        }
         title="Bullet list"
         content={<List />}
       />
       <FormatButton
-        onClick={() => editor.chain().focus().toggleList('orderedList', 'listItem', false).run()}
+        onClick={() =>
+          editor
+            .chain()
+            .focus()
+            .toggleList('orderedList', 'listItem', false)
+            .run()
+        }
         title="Ordered list"
         content={<ListOrdered />}
       />

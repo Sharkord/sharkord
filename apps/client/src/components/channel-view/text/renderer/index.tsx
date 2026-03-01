@@ -118,7 +118,9 @@ const MessageRenderer = memo(
                 (edited)
               </span>
             </Tooltip>
-          ) : (<span></span>)}
+          ) : (
+            <span></span>
+          )}
         </div>
 
         {allMedia.map((media, index) => {
