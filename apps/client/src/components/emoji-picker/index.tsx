@@ -81,7 +81,7 @@ const EmojiPicker = memo(
       <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>{children}</PopoverTrigger>
         <PopoverContent
-          className="w-[320px] p-0 h-100"
+          className="w-[320px] p-0 h-100 overflow-hidden"
           align="start"
           sideOffset={8}
         >
@@ -105,7 +105,6 @@ const EmojiPicker = memo(
                   <EmojiGrid
                     emojis={searchResults}
                     onSelect={handleSearchResultSelect}
-                    height={300}
                   />
                 </div>
               </div>

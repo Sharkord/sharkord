@@ -101,7 +101,6 @@ const NativeEmojiTab = memo(({ onEmojiSelect }: TNativeEmojiTabProps) => {
         <EmojiGrid
           emojis={displayEmojis}
           onSelect={handleEmojiSelect}
-          height={260}
         />
       </div>
     </div>

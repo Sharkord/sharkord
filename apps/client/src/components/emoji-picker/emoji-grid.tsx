@@ -42,11 +42,10 @@ const EmojiButton = memo(({ emoji, onSelect }: TEmojiButtonProps) => {
 type TEmojiGridProps = {
   emojis: TEmojiItem[];
   onSelect: (emoji: TEmojiItem) => void;
-  height?: number;
 };
 
 const EmojiGrid = memo(
-  ({ emojis, onSelect, height = 280 }: TEmojiGridProps) => {
+  ({ emojis, onSelect }: TEmojiGridProps) => {
     const rowCount = useMemo(
       () => Math.ceil(emojis.length / GRID_COLS),
       [emojis.length]
@@ -81,7 +80,7 @@ const EmojiGrid = memo(
 
     return (
       <VirtuosoGrid
-        style={{ height }}
+        style={{ height: '100%' }}
         totalCount={emojis.length}
         overscan={200}
         listClassName="grid grid-cols-8 gap-1 p-3"
