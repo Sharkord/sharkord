@@ -7,7 +7,7 @@
 # rm -rf data && docker system prune -a --volumes
 
 # convenience wrapper for prod builds
-SHARKORD_AUTOUPDATE=false docker compose --profile prod down && docker compose --profile prod up --build -d
+SHARKORD_AUTOUPDATE=false docker compose --profile prod down && docker compose --profile prod up --build -d #--no-cache
 
 # build flow
 ## copy current code

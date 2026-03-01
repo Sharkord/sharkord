@@ -75,7 +75,7 @@ const FormattingToolbar = memo(({ editor }: FormattingToolbarProps) => {
       />
       <FormatButton
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        title="Blockquete"
+        title="Blockquote"
         content={<Quote />}
       />
       <FormatButton

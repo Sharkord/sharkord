@@ -5,6 +5,7 @@ import type { TJoinedPublicUser } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import type { Extension } from '@tiptap/core';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
+import { liftListItem } from '@tiptap/pm/schema-list';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { ChevronDown, ChevronUp, Smile } from 'lucide-react';
@@ -150,6 +151,23 @@ const TiptapInput = memo(
               event.preventDefault();
               onSubmit?.();
               return true;
+            }
+
+            // Exit list when pressing Enter in an empty list item
+            const { state } = _view;
+            const { $from, empty } = state.selection;
+            if (empty) {
+              const listItemType = state.schema.nodes.listItem;
+              if (listItemType) {
+                for (let depth = $from.depth; depth > 0; depth--) {
+                  if ($from.node(depth).type === listItemType) {
+                    if ($from.node(depth).textContent === '') {
+                      return liftListItem(listItemType)(state, _view.dispatch);
+                    }
+                    break;
+                  }
+                }
+              }
             }
 
             return false;
