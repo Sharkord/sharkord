@@ -58,12 +58,24 @@ export const removeUserFromVoiceChannel = (
   const currentChannelId = currentVoiceChannelIdSelector(state);
 
   store.dispatch(
-    serverSliceActions.removeUserFromVoiceChannel({ userId, channelId })
+    serverSliceActions.removeUserFromVoiceChannel({
+      userId,
+      channelId
+    })
   );
 
   if (userId !== ownUserId && channelId === currentChannelId) {
     playSound(SoundType.REMOTE_USER_LEFT_VOICE_CHANNEL);
   }
+};
+
+export const updateVoiceChannelState = (
+  channelId: number,
+  activeSince: string | null
+): void => {
+  store.dispatch(
+    serverSliceActions.updateVoiceChannelState({ channelId, activeSince })
+  );
 };
 
 export const addExternalStreamToVoiceChannel = (

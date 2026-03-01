@@ -39,6 +39,7 @@ import { Hash, Volume2 } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { ChannelContextMenu } from '../context-menus/channel';
+import { CallTime } from './call-time';
 import { ExternalStream } from './external-stream';
 import { useSelectChannel } from './hooks';
 import { VoiceUser } from './voice-user';
@@ -56,7 +57,10 @@ const Voice = memo(({ channel, ...props }: TVoiceProps) => {
     <>
       <ItemWrapper {...props}>
         <Volume2 className="h-4 w-4" />
-        <span className="flex-1">{channel.name}</span>
+        <span className="flex items-center flex-1">
+          <span>{channel.name}</span>
+          <CallTime channelId={channel.id} />
+        </span>
         {unreadCount > 0 && (
           <div className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
             {unreadCount > 99 ? '99+' : unreadCount}
