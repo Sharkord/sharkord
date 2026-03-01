@@ -383,7 +383,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           codecOptions: {
             opusStereo: true,
             opusFec: true,
-            opusDtx: true,
+            opusDtx: false,
             opusMaxPlaybackRate: 48000,
             opusMaxAverageBitrate: 128000
           },

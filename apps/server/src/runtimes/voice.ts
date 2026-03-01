@@ -83,7 +83,7 @@ const defaultRouterOptions: RouterOptions<AppData> = {
       channels: 2,
       parameters: {
         useinbandfec: 1,
-        usedtx: 1,
+        usedtx: 0,
         stereo: 1,
         'sprop-stereo': 1,
         maxplaybackrate: 48000,
