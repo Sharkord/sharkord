@@ -87,7 +87,7 @@ const Devices = memo(() => {
     autoGainControl: !!values.autoGainControl,
     echoCancellation: !!values.echoCancellation,
     noiseSuppression: !!values.noiseSuppression,
-    noiseGateEnabled: values.noiseGateEnabled ?? true,
+    noiseGateEnabled: !!values.noiseGateEnabled,
     noiseGateThresholdDb:
       values.noiseGateThresholdDb ?? MICROPHONE_GATE_DEFAULT_THRESHOLD_DB
   });
@@ -328,7 +328,7 @@ const Devices = memo(() => {
 
               <Group label="Noise gate">
                 <Switch
-                  checked={values.noiseGateEnabled ?? true}
+                  checked={values.noiseGateEnabled}
                   disabled={!isNoiseGateAvailable}
                   onCheckedChange={(checked) =>
                     onChange('noiseGateEnabled', checked)
@@ -383,7 +383,7 @@ const Devices = memo(() => {
 
             <MicrophoneTestLevelBar
               isTesting={isTesting}
-              noiseGateEnabled={values.noiseGateEnabled ?? true}
+              noiseGateEnabled={values.noiseGateEnabled}
               noiseGateControlsDisabled={!isNoiseGateAvailable}
               noiseGateThresholdDb={values.noiseGateThresholdDb}
               onThresholdChange={(value) =>

@@ -168,13 +168,15 @@ const MicrophoneTestLevelBar = memo(
           )}
         </div>
 
-        {noiseGateEnabled && (
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{MICROPHONE_LEVEL_METER_MIN_DB} dB</span>
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{MICROPHONE_LEVEL_METER_MIN_DB} dB</span>
+          {noiseGateEnabled ? (
             <span>Gate: {clampedThresholdDb} dB</span>
-            <span>{MICROPHONE_LEVEL_METER_MAX_DB} dB</span>
-          </div>
-        )}
+          ) : (
+            <span />
+          )}
+          <span>{MICROPHONE_LEVEL_METER_MAX_DB} dB</span>
+        </div>
       </div>
     );
   }

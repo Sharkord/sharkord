@@ -25,7 +25,7 @@ const DEFAULT_DEVICE_SETTINGS: TDeviceSettings = {
   echoCancellation: false,
   noiseSuppression: false,
   autoGainControl: true,
-  noiseGateEnabled: true,
+  noiseGateEnabled: false,
   noiseGateThresholdDb: MICROPHONE_GATE_DEFAULT_THRESHOLD_DB,
   shareSystemAudio: true,
   mirrorOwnVideo: false,
