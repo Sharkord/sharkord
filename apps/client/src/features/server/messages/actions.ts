@@ -11,13 +11,13 @@ import {
   type TJoinedMessage
 } from '@sharkord/shared';
 import {
-  channelsSelector,
+  channelByIdSelector,
   selectedChannelIdSelector
 } from '../channels/selectors';
 import { serverSliceActions } from '../slice';
 import { playSound } from '../sounds/actions';
 import { SoundType } from '../types';
-import { ownUserIdSelector, usersSelector } from '../users/selectors';
+import { ownUserIdSelector, userByIdSelector } from '../users/selectors';
 import { threadMessagesMapSelector } from './selectors';
 
 const sendBrowserNotification = (
@@ -29,11 +29,13 @@ const sendBrowserNotification = (
   }
 
   const state = store.getState();
-  const users = usersSelector(state);
-  const channels = channelsSelector(state);
 
-  const user = users.find((u) => u.id === message.userId);
-  const channel = channels.find((c) => c.id === channelId);
+  const user = userByIdSelector(state, message.userId);
+  const channel = channelByIdSelector(state, channelId);
+
+  if (!user || !channel) {
+    return;
+  }
 
   const textContent = getPlainTextFromHtml(message.content ?? '');
 
