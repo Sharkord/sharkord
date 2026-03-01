@@ -265,6 +265,43 @@ body {
     text-decoration: underline;
     text-underline-offset: 2px;
   }
+
+  code:not(pre code) {
+    background: rgba(127, 127, 127, 0.15);
+    padding: 0.1em 0.35em;
+    border-radius: 0.25em;
+    font-size: 0.875em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      monospace;
+  }
+
+  pre {
+    position: relative;
+    border-radius: 0.5em;
+    overflow-x: auto;
+    margin: 0.5em 0;
+  }
+
+  pre code {
+    display: block;
+    padding: 1em;
+    font-size: 0.85em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      monospace;
+    line-height: 1.5;
+  }
+}
+
+.hljs-language-badge {
+  position: absolute;
+  top: 0.35em;
+  right: 0.5em;
+  font-size: 0.7em;
+  color: rgba(127, 127, 127, 0.6);
+  text-transform: uppercase;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  pointer-events: none;
+  user-select: none;
 }
 
 .msg-content.emoji-only {

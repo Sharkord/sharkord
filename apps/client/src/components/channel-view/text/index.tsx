@@ -14,7 +14,8 @@ import {
   ChannelPermission,
   TYPING_MS,
   getTrpcError,
-  linkifyHtml
+  linkifyHtml,
+  transformMarkdownCode
 } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
 import { throttle } from 'lodash-es';
@@ -93,7 +94,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
       try {
         await trpc.messages.send.mutate({
-          content: linkifyHtml(message),
+          content: linkifyHtml(transformMarkdownCode(message)),
           channelId,
           files: files.map((f) => f.id)
         });

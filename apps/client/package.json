@@ -36,6 +36,7 @@
     "date-fns": "^4.1.0",
     "eslint-plugin-react-you-might-not-need-an-effect": "^0.7.0",
     "filesize": "^11.0.13",
+    "highlight.js": "^11.9.0",
     "html-react-parser": "^5.2.6",
     "lodash-es": "^4.17.21",
     "lucide-react": "^0.544.0",

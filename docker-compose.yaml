@@ -1,10 +1,30 @@
 services:
+  # Production: uses pre-built image with permission fixes
   sharkord:
     build: .
     container_name: sharkord
     restart: unless-stopped
+    profiles: ["prod"]
     ports:
       - "4991:4991/tcp"
+      - "40000:40000/tcp"
+      - "40000:40000/udp"
+    environment:
+      SHARKORD_PORT: "4991"
+    volumes:
+      - ./data:/home/bun/.config/sharkord
+
+  # Dev: builds from source, runs Vite + Bun server
+  sharkord-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: sharkord-dev
+    restart: unless-stopped
+    profiles: ["dev"]
+    ports:
+      - "4991:4991/tcp"
+      - "5173:5173/tcp"
       - "40000:40000/tcp"
       - "40000:40000/udp"
     environment:
