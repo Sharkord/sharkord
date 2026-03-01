@@ -28,6 +28,9 @@ export const threadChannelIdSelector = (state: IRootState) =>
 export const autoJoinLastChannelSelector = (state: IRootState) =>
   state.app.autoJoinLastChannel;
 
+export const browserNotificationsSelector = (state: IRootState) =>
+  state.app.browserNotifications;
+
 export const threadSidebarDataSelector = createSelector(
   [
     threadSidebarOpenSelector,
