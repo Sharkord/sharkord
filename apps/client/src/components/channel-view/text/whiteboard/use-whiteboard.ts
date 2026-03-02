@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   findIntersectingLayersWithRectangle,
   penPointsToPathLayer,
+  pointerEventToCanvasPoint,
   resizeBounds
 } from './utils';
 
@@ -23,7 +24,7 @@ type HistoryEntry = {
   layerIds: string[];
 };
 
-export function useWhiteboard(channelId: number) {
+export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGElement | null>) {
   const ownUser = useOwnUser();
   const [layers, setLayers] = useState<Record<string, Layer>>({});
   const [layerIds, setLayerIds] = useState<string[]>([]);
@@ -232,8 +233,6 @@ export function useWhiteboard(channelId: number) {
       setLayers((prev) => ({ ...prev, [layerId]: layer }));
       setLayerIds((prev) => [...prev, layerId]);
       setSelection([layerId]);
-      setCanvasMode(CanvasMode.None);
-      setInsertingLayerType(null);
 
       trpc.whiteboard.addLayer.mutate({ channelId, layerId, layer });
       pushToHistory(
@@ -478,10 +477,7 @@ export function useWhiteboard(channelId: number) {
 
       e.stopPropagation();
 
-      const point = {
-        x: Math.round(e.clientX) - camera.x,
-        y: Math.round(e.clientY) - camera.y
-      };
+      const point = pointerEventToCanvasPoint(e, camera, svgRef.current);
 
       if (!selection.includes(layerId)) {
         setSelection([layerId]);
@@ -490,7 +486,7 @@ export function useWhiteboard(channelId: number) {
       setCanvasMode(CanvasMode.Translating);
       setTranslateOrigin(point);
     },
-    [camera, canvasMode, selection]
+    [camera, canvasMode, selection, svgRef]
   );
 
   // --- Resize handle ---

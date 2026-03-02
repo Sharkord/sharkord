@@ -1,6 +1,6 @@
 import { CanvasMode } from '@sharkord/shared';
 import getStroke from 'perfect-freehand';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useRef } from 'react';
 import { Cursors } from './Cursors';
 import { SelectionBox } from './SelectionBox';
 import { Toolbar } from './Toolbar';
@@ -13,11 +13,12 @@ type WhiteboardPanelProps = {
 };
 
 const WhiteboardPanel = memo(({ channelId }: WhiteboardPanelProps) => {
-  const wb = useWhiteboard(channelId);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const wb = useWhiteboard(channelId, svgRef);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      const point = pointerEventToCanvasPoint(e, wb.camera);
+      const point = pointerEventToCanvasPoint(e, wb.camera, svgRef.current);
       wb.onPointerDown(e, point);
     },
     [wb]
@@ -25,7 +26,7 @@ const WhiteboardPanel = memo(({ channelId }: WhiteboardPanelProps) => {
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
-      const point = pointerEventToCanvasPoint(e, wb.camera);
+      const point = pointerEventToCanvasPoint(e, wb.camera, svgRef.current);
       wb.onPointerMove(e, point);
     },
     [wb]
@@ -72,6 +73,7 @@ const WhiteboardPanel = memo(({ channelId }: WhiteboardPanelProps) => {
       />
 
       <svg
+        ref={svgRef}
         className="w-full h-full"
         style={{ cursor: getCursorStyle() }}
         onPointerDown={handlePointerDown}

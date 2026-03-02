@@ -31,11 +31,15 @@ export function getContrastingTextColor(color: Color): string {
 
 export function pointerEventToCanvasPoint(
   e: React.PointerEvent,
-  camera: Point
+  camera: Point,
+  svgElement: SVGSVGElement | null
 ): Point {
+  const rect = svgElement?.getBoundingClientRect();
+  const offsetX = rect?.left ?? 0;
+  const offsetY = rect?.top ?? 0;
   return {
-    x: Math.round(e.clientX) - camera.x,
-    y: Math.round(e.clientY) - camera.y
+    x: Math.round(e.clientX - offsetX) - camera.x,
+    y: Math.round(e.clientY - offsetY) - camera.y
   };
 }
 

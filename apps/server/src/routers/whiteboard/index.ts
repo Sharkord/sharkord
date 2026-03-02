@@ -1,5 +1,4 @@
 import { ServerEvents, type Layer } from '@sharkord/shared';
-import { observable } from '@trpc/server/observable';
 import { z } from 'zod';
 import { WhiteboardRuntime } from '../../runtimes/whiteboard';
 import { protectedProcedure, t } from '../../utils/trpc';
@@ -148,28 +147,10 @@ const cursorUpdateRoute = protectedProcedure
 const onLayerAddRoute = protectedProcedure
   .input(z.object({ channelId: z.number() }))
   .subscription(({ input, ctx }) => {
-    const runtime = WhiteboardRuntime.findOrCreate(input.channelId);
-    runtime.addSubscriber();
-
-    const sub = ctx.pubsub.subscribeForChannel(
+    return ctx.pubsub.subscribeForChannel(
       input.channelId,
       ServerEvents.WHITEBOARD_LAYER_ADD
     );
-
-    return observable<(typeof ServerEvents.WHITEBOARD_LAYER_ADD extends keyof any ? any : never)>((observer) => {
-      const innerSub = sub.subscribe({
-        next: (data) => observer.next(data),
-        error: (err) => observer.error(err),
-        complete: () => observer.complete()
-      });
-
-      return {
-        unsubscribe() {
-          innerSub.unsubscribe();
-          runtime.removeSubscriber();
-        }
-      };
-    });
   });
 
 const onLayerUpdateRoute = protectedProcedure
