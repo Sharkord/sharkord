@@ -37,7 +37,7 @@ const ConfirmActionDialog = memo(
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{title ?? 'Confirm Action'}</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="whitespace-pre-line">
               {message ?? 'Are you sure you want to perform this action?'}
             </AlertDialogDescription>
           </AlertDialogHeader>
