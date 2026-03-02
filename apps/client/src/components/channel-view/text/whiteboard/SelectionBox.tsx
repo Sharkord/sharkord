@@ -1,4 +1,4 @@
-import { type Layer, Side } from '@sharkord/shared';
+import { type Layer, LayerType, Side } from '@sharkord/shared';
 import { memo } from 'react';
 
 type SelectionBoxProps = {
@@ -12,6 +12,11 @@ const HANDLE_WIDTH = 8;
 const SelectionBox = memo(
   ({ layers, selection, onResizeHandlePointerDown }: SelectionBoxProps) => {
     if (selection.length === 0) return null;
+
+    // Skip selection box for lines — they highlight themselves
+    if (selection.length === 1 && layers[selection[0]]?.type === LayerType.Line) {
+      return null;
+    }
 
     let minX = Infinity;
     let minY = Infinity;

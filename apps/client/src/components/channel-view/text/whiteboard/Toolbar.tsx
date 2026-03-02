@@ -1,6 +1,5 @@
 import { CanvasMode, type Color, LayerType } from '@sharkord/shared';
 import {
-  ChevronRight,
   Circle,
   Hexagon,
   Minus,
@@ -13,7 +12,7 @@ import {
   Type,
   Undo2
 } from 'lucide-react';
-import { memo, useState } from 'react';
+import { memo, useRef, useState } from 'react';
 import { ColorPicker } from './ColorPicker';
 
 type ToolbarProps = {
@@ -52,6 +51,8 @@ const Toolbar = memo(
   }: ToolbarProps) => {
     const [showColorPicker, setShowColorPicker] = useState(false);
     const [showShapes, setShowShapes] = useState(false);
+    const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const didHold = useRef(false);
 
     const isActive = (mode: CanvasMode, layerType?: LayerType) => {
       if (mode === CanvasMode.Inserting) {
@@ -67,7 +68,6 @@ const Toolbar = memo(
       (s) => isActive(CanvasMode.Inserting, s.type)
     );
 
-    // Show the icon of the currently selected shape, or Square by default
     const activeShape =
       shapeOptions.find((s) => insertingLayerType === s.type) ?? shapeOptions[0];
     const ActiveShapeIcon = activeShape.icon;
@@ -97,24 +97,39 @@ const Toolbar = memo(
           <Pencil size={18} />
         </button>
 
-        {/* Shapes button with expander */}
+        {/* Shapes — click to use, hold to pick */}
         <div className="relative">
-          <div className="flex items-center">
-            <button
-              className={buttonClass(isShapeActive)}
-              onClick={() => onModeChange(CanvasMode.Inserting, activeShape.type)}
-              title={activeShape.label}
+          <button
+            className={`${buttonClass(isShapeActive)} relative`}
+            onPointerDown={() => {
+              didHold.current = false;
+              holdTimer.current = setTimeout(() => {
+                didHold.current = true;
+                setShowShapes(true);
+              }, 300);
+            }}
+            onPointerUp={() => {
+              if (holdTimer.current) clearTimeout(holdTimer.current);
+              if (!didHold.current) {
+                onModeChange(CanvasMode.Inserting, activeShape.type);
+                setShowShapes(false);
+              }
+            }}
+            onPointerLeave={() => {
+              if (holdTimer.current) clearTimeout(holdTimer.current);
+            }}
+            title={`${activeShape.label} (hold for more)`}
+          >
+            <ActiveShapeIcon size={18} />
+            <svg
+              className="absolute bottom-1 right-1"
+              width="5"
+              height="5"
+              viewBox="0 0 5 5"
             >
-              <ActiveShapeIcon size={18} />
-            </button>
-            <button
-              className="p-0.5 -ml-1 rounded hover:bg-muted text-muted-foreground transition-colors"
-              onClick={() => setShowShapes(!showShapes)}
-              title="More shapes"
-            >
-              <ChevronRight size={12} />
-            </button>
-          </div>
+              <polygon points="0,5 5,5 5,0" fill="currentColor" opacity="0.4" />
+            </svg>
+          </button>
 
           {showShapes && (
             <div className="absolute left-full ml-2 top-0 flex gap-1 bg-card border border-border rounded-xl p-1.5 shadow-lg">

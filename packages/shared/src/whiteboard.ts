@@ -118,6 +118,8 @@ export type LineLayer = {
   width: number;
   height: number;
   fill: Color;
+  x2: number;
+  y2: number;
 };
 
 export type Layer =

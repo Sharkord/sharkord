@@ -32,6 +32,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
   const [canvasMode, setCanvasMode] = useState<CanvasMode>(CanvasMode.None);
   const [insertingLayerType, setInsertingLayerType] = useState<LayerType | null>(null);
   const [camera, setCamera] = useState<Point>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
   const [selectedColor, setSelectedColor] = useState<Color>({ r: 39, g: 142, b: 237 });
   const [pencilDraft, setPencilDraft] = useState<number[][] | null>(null);
   const [strokeSize, setStrokeSize] = useState(16);
@@ -228,7 +229,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
           layer = { ...baseLayer, type: LayerType.Hexagon };
           break;
         case LayerType.Line:
-          layer = { ...baseLayer, type: LayerType.Line };
+          layer = { ...baseLayer, type: LayerType.Line, x2: position.x, y2: position.y };
           break;
         case LayerType.Text:
           layer = { ...baseLayer, type: LayerType.Text, value: '' };
@@ -388,18 +389,57 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
       // Drag-to-size while inserting
       if (canvasMode === CanvasMode.Inserting && insertDragRef.current) {
         const { layerId, origin } = insertDragRef.current;
-        let width = Math.abs(point.x - origin.x);
-        let height = Math.abs(point.y - origin.y);
-        if (e.shiftKey) {
-          const size = Math.max(width, height);
-          width = size;
-          height = size;
-        }
-        const x = point.x >= origin.x ? origin.x : origin.x - width;
-        const y = point.y >= origin.y ? origin.y : origin.y - height;
+
         setLayers((prev) => {
           const layer = prev[layerId];
           if (!layer) return prev;
+
+          // Lines: update endpoint directly, bounding box computed for selection
+          if (layer.type === LayerType.Line) {
+            let endX = point.x;
+            let endY = point.y;
+            // Shift constrains to 45-degree angles
+            if (e.shiftKey) {
+              const dx = endX - origin.x;
+              const dy = endY - origin.y;
+              const absDx = Math.abs(dx);
+              const absDy = Math.abs(dy);
+              if (absDy < absDx * 0.4) {
+                endY = origin.y;
+              } else if (absDx < absDy * 0.4) {
+                endX = origin.x;
+              } else {
+                const dist = Math.max(absDx, absDy);
+                endX = origin.x + dist * Math.sign(dx);
+                endY = origin.y + dist * Math.sign(dy);
+              }
+            }
+            const minX = Math.min(origin.x, endX);
+            const minY = Math.min(origin.y, endY);
+            return {
+              ...prev,
+              [layerId]: {
+                ...layer,
+                x: minX,
+                y: minY,
+                width: Math.abs(endX - origin.x),
+                height: Math.abs(endY - origin.y),
+                x2: endX,
+                y2: endY
+              } as Layer
+            };
+          }
+
+          // Other shapes: bounding box resize
+          let width = Math.abs(point.x - origin.x);
+          let height = Math.abs(point.y - origin.y);
+          if (e.shiftKey) {
+            const size = Math.max(width, height);
+            width = size;
+            height = size;
+          }
+          const x = point.x >= origin.x ? origin.x : origin.x - width;
+          const y = point.y >= origin.y ? origin.y : origin.y - height;
           return { ...prev, [layerId]: { ...layer, x, y, width, height } as Layer };
         });
         return;
@@ -713,6 +753,8 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     insertingLayerType,
     camera,
     setCamera,
+    zoom,
+    setZoom,
     selectedColor,
     updateColor,
     pencilDraft,

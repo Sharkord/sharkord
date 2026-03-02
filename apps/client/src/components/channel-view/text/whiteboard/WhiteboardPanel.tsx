@@ -5,11 +5,13 @@ import {
   ArrowDownToLine,
   ArrowUp,
   ArrowUpToLine,
+  Maximize,
+  Minimize,
   Minus,
   Plus,
   X
 } from 'lucide-react';
-import { memo, useCallback, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Cursors } from './Cursors';
 import { SelectionBox } from './SelectionBox';
 import { Toolbar } from './Toolbar';
@@ -23,12 +25,32 @@ type WhiteboardPanelProps = {
 };
 
 const WhiteboardPanel = memo(({ channelId, onClose }: WhiteboardPanelProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const wb = useWhiteboard(channelId, svgRef);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Fullscreen tracking
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(document.fullscreenElement === containerRef.current);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!containerRef.current) return;
+    if (document.fullscreenElement === containerRef.current) {
+      document.exitFullscreen();
+    } else {
+      containerRef.current.requestFullscreen();
+    }
+  }, []);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      const point = pointerEventToCanvasPoint(e, wb.camera, svgRef.current);
+      const point = pointerEventToCanvasPoint(e, wb.camera, svgRef.current, wb.zoom);
       wb.onPointerDown(e, point);
     },
     [wb]
@@ -36,7 +58,7 @@ const WhiteboardPanel = memo(({ channelId, onClose }: WhiteboardPanelProps) => {
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
-      const point = pointerEventToCanvasPoint(e, wb.camera, svgRef.current);
+      const point = pointerEventToCanvasPoint(e, wb.camera, svgRef.current, wb.zoom);
       wb.onPointerMove(e, point);
     },
     [wb]
@@ -48,13 +70,25 @@ const WhiteboardPanel = memo(({ channelId, onClose }: WhiteboardPanelProps) => {
 
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
-      wb.setCamera((prev) => ({
-        x: prev.x - e.deltaX,
-        y: prev.y - e.deltaY
-      }));
+      // Ctrl+wheel = zoom, plain wheel = pan
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        wb.setZoom((prev) => Math.round(Math.max(0.2, Math.min(5, prev + delta)) * 100) / 100);
+      } else {
+        wb.setCamera((prev) => ({
+          x: prev.x - e.deltaX / wb.zoom,
+          y: prev.y - e.deltaY / wb.zoom
+        }));
+      }
     },
     [wb]
   );
+
+  const resetView = useCallback(() => {
+    wb.setCamera({ x: 0, y: 0 });
+    wb.setZoom(1);
+  }, [wb]);
 
   const getCursorStyle = () => {
     switch (wb.canvasMode) {
@@ -69,21 +103,54 @@ const WhiteboardPanel = memo(({ channelId, onClose }: WhiteboardPanelProps) => {
 
   const isPenMode = wb.canvasMode === CanvasMode.Pencil;
   const hasSelection = wb.selection.length === 1;
+  const zoomPercent = Math.round(wb.zoom * 100);
 
   return (
-    <div className="relative flex-1 flex flex-col bg-muted/30 overflow-hidden">
+    <div ref={containerRef} className="relative flex-1 flex flex-col bg-muted/30 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-card/50 shrink-0">
         <span className="text-sm font-medium text-muted-foreground">Whiteboard</span>
-        {onClose && (
+        <div className="flex items-center gap-1">
+          {/* Zoom controls */}
           <button
             className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors"
-            onClick={onClose}
-            title="Close whiteboard"
+            onClick={() => wb.setZoom((z) => Math.max(0.2, Math.round((z - 0.1) * 100) / 100))}
+            title="Zoom out"
           >
-            <X size={16} />
+            <Minus size={14} />
           </button>
-        )}
+          <span
+            className="text-xs text-muted-foreground w-10 text-center cursor-pointer select-none"
+            onClick={resetView}
+            title="Reset view"
+          >
+            {zoomPercent}%
+          </span>
+          <button
+            className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors"
+            onClick={() => wb.setZoom((z) => Math.min(5, Math.round((z + 0.1) * 100) / 100))}
+            title="Zoom in"
+          >
+            <Plus size={14} />
+          </button>
+          <div className="w-px h-4 bg-border mx-0.5" />
+          <button
+            className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+          </button>
+          {onClose && (
+            <button
+              className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors"
+              onClick={onClose}
+              title="Close whiteboard"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="relative flex-1 overflow-hidden">
@@ -174,7 +241,8 @@ const WhiteboardPanel = memo(({ channelId, onClose }: WhiteboardPanelProps) => {
       >
         <g
           style={{
-            transform: `translate(${wb.camera.x}px, ${wb.camera.y}px)`
+            transform: `scale(${wb.zoom}) translate(${wb.camera.x}px, ${wb.camera.y}px)`,
+            transformOrigin: '0 0'
           }}
         >
           {/* Grid pattern */}
