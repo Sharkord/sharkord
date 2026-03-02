@@ -21,6 +21,7 @@ import { MessageReactions } from '../message-reactions';
 import { AudioOverride } from '../overrides/audio';
 import { ImageOverride } from '../overrides/image';
 import { VideoOverride } from '../overrides/video';
+import { renderMarkdown } from './render-markdown';
 import { serializer } from './serializer';
 import type { TFoundMedia } from './types';
 
@@ -46,8 +47,9 @@ const MessageRenderer = memo(
 
     const { foundMedia, messageHtml } = useMemo(() => {
       const foundMedia: TFoundMedia[] = [];
+      const renderedContent = renderMarkdown(message.content ?? '');
 
-      const messageHtml = parse(message.content ?? '', {
+      const messageHtml = parse(renderedContent, {
         replace: (domNode) =>
           serializer(domNode, (found) => foundMedia.push(found), message.id)
       });

@@ -3,10 +3,8 @@ import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { BUILT_IN_COMMANDS } from '@/helpers/built-in-commands';
 import type { TJoinedPublicUser } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
-import { Extension, InputRule } from '@tiptap/core';
+import type { Extension } from '@tiptap/core';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
-import { Markdown } from '@tiptap/markdown';
-import { liftListItem, sinkListItem } from '@tiptap/pm/schema-list';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { ChevronDown, ChevronUp, Smile } from 'lucide-react';
@@ -28,31 +26,6 @@ import {
 } from './commands/mention-suggestion';
 import { SlashCommands } from './commands/slash-commands-extension';
 import { EmojiSuggestion } from './commands/suggestions';
-
-const MarkdownLink = Extension.create({
-  name: 'markdownLink',
-  addInputRules() {
-    return [
-      new InputRule({
-        find: /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/,
-        handler: ({ state, range, match }) => {
-          const [, text, url] = match;
-          if (!text || !url) return;
-          const linkMark = state.schema.marks.link.create({
-            href: url,
-            target: '_blank',
-            rel: 'noopener noreferrer'
-          });
-          state.tr.replaceWith(
-            range.from,
-            range.to,
-            state.schema.text(text, [linkMark])
-          );
-        }
-      })
-    ];
-  }
-});
 
 type TTiptapInputProps = {
   disabled?: boolean;
@@ -89,30 +62,16 @@ const TiptapInput = memo(
 
     const extensions = useMemo((): Extension[] => {
       const exts = [
-        Markdown,
         StarterKit.configure({
-          heading: { levels: [1, 2, 3, 4, 5, 6] },
           hardBreak: {
             HTMLAttributes: {
               class: 'hard-break'
-            }
-          },
-          link: {
-            autolink: true,
-            defaultProtocol: 'https',
-            openOnClick: false,
-            HTMLAttributes: {
-              target: '_blank',
-              rel: 'noopener noreferrer'
-            },
-            shouldAutoLink: (url: string) => {
-              return /^https?:\/\//i.test(url);
             }
           }
         }),
         Emoji.configure({
           emojis: [...gitHubEmojis, ...customEmojis],
-          enableEmoticons: true,
+          enableEmoticons: false,
           suggestion: EmojiSuggestion,
           HTMLAttributes: {
             class: 'emoji-image'
@@ -121,8 +80,7 @@ const TiptapInput = memo(
         SlashCommands.configure({
           commands: BUILT_IN_COMMANDS,
           suggestion: CommandSuggestion
-        }) as Extension,
-        MarkdownLink
+        }) as Extension
       ] as Extension[];
 
       if (users && users.length > 0) {
@@ -142,6 +100,8 @@ const TiptapInput = memo(
       extensions,
       content: value,
       editable: !disabled,
+      enableInputRules: false,
+      enablePasteRules: false,
       onUpdate: ({ editor }) => {
         const html = editor.getHTML();
 
@@ -179,43 +139,11 @@ const TiptapInput = memo(
               return true;
             }
 
-            // Exit list when pressing Enter in an empty list item
-            const { state } = _view;
-            const { $from, empty } = state.selection;
-            if (empty) {
-              const listItemType = state.schema.nodes.listItem;
-              if (listItemType) {
-                for (let depth = $from.depth; depth > 0; depth--) {
-                  if ($from.node(depth).type === listItemType) {
-                    if ($from.node(depth).textContent === '') {
-                      return liftListItem(listItemType)(state, _view.dispatch);
-                    }
-                    break;
-                  }
-                }
-              }
-            }
-
             return false;
           }
 
-          // Tab / Shift+Tab: indent/outdent list items
+          // Prevent Tab from moving focus out of the editor
           if (event.key === 'Tab') {
-            const { state } = _view;
-            const listItemType = state.schema.nodes.listItem;
-            if (listItemType) {
-              if (event.shiftKey) {
-                if (liftListItem(listItemType)(state, _view.dispatch)) {
-                  event.preventDefault();
-                  return true;
-                }
-              } else {
-                if (sinkListItem(listItemType)(state, _view.dispatch)) {
-                  event.preventDefault();
-                  return true;
-                }
-              }
-            }
             event.preventDefault();
             return true;
           }
