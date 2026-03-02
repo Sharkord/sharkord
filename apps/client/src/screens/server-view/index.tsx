@@ -5,12 +5,19 @@ import { RightSidebar } from '@/components/right-sidebar';
 import { ThreadSidebar } from '@/components/thread-sidebar';
 import { TopBar } from '@/components/top-bar';
 import { VoiceProvider } from '@/components/voice-provider';
-import { useThreadSidebar } from '@/features/app/hooks';
+import { setDmsOpen } from '@/features/app/actions';
+import {
+  useDmsOpen,
+  useSelectedDmChannelId,
+  useThreadSidebar
+} from '@/features/app/hooks';
+import { setSelectedChannelId } from '@/features/server/channels/actions';
+import { usePublicServerSettings } from '@/features/server/hooks';
 import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
 import { useSwipeGestures } from '@/hooks/use-swipe-gestures';
 import { cn } from '@/lib/utils';
 import { Permission } from '@sharkord/shared';
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { ContentWrapper } from './content-wrapper';
 import { PreventBrowser } from './prevent-browser';
 
@@ -20,6 +27,10 @@ const ServerView = memo(() => {
   const [isDesktopRightSidebarOpen, setIsDesktopRightSidebarOpen] = useState(
     getLocalStorageItemBool(LocalStorageKey.RIGHT_SIDEBAR_STATE, true)
   );
+  const dmsOpen = useDmsOpen();
+  const selectedDmChannelId = useSelectedDmChannelId();
+  const publicSettings = usePublicServerSettings();
+  const previousServerChannelIdRef = useRef<number | undefined>(undefined);
   const { isOpen: isThreadSidebarOpen } = useThreadSidebar();
 
   const handleDesktopRightSidebarToggle = useCallback(() => {
@@ -55,6 +66,16 @@ const ServerView = memo(() => {
     onSwipeRight: handleSwipeRight,
     onSwipeLeft: handleSwipeLeft
   });
+
+  useEffect(() => {
+    if (publicSettings?.directMessagesEnabled === false && dmsOpen) {
+      setDmsOpen(false);
+
+      if (previousServerChannelIdRef.current) {
+        setSelectedChannelId(previousServerChannelIdRef.current);
+      }
+    }
+  }, [publicSettings?.directMessagesEnabled, dmsOpen]);
 
   return (
     <VoiceProvider>
@@ -92,7 +113,10 @@ const ServerView = memo(() => {
             )}
           />
 
-          <ContentWrapper />
+          <ContentWrapper
+            isDmMode={dmsOpen}
+            selectedDmChannelId={selectedDmChannelId}
+          />
 
           <ThreadSidebar isOpen={isThreadSidebarOpen} />
 

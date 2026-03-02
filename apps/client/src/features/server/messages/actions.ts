@@ -1,5 +1,6 @@
 import {
   browserNotificationsSelector,
+  selectedDmChannelIdSelector,
   threadSidebarDataSelector
 } from '@/features/app/selectors';
 import { store } from '@/features/store';
@@ -59,6 +60,7 @@ export const addMessages = (
 ) => {
   const state = store.getState();
   const selectedChannelId = selectedChannelIdSelector(state);
+  const selectedDmChannelId = selectedDmChannelIdSelector(state);
 
   const rootMessages = messages.filter((m) => !m.parentMessageId);
   const threadReplies = messages.filter((m) => !!m.parentMessageId);
@@ -131,11 +133,11 @@ export const addMessages = (
       }
     }
 
-    if (
-      channelId === selectedChannelId &&
-      !isFromOwnUser &&
-      rootMessages.length > 0
-    ) {
+    const isChannelSelected = [selectedChannelId, selectedDmChannelId].includes(
+      channelId
+    );
+
+    if (isChannelSelected && !isFromOwnUser && rootMessages.length > 0) {
       const trpc = getTRPCClient();
 
       try {

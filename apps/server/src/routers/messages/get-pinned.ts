@@ -2,6 +2,7 @@ import { ChannelPermission } from '@sharkord/shared';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
+import { assertDmChannel } from '../../db/queries/dms';
 import { joinMessagesWithRelations } from '../../db/queries/messages';
 import { channels, messages } from '../../db/schema';
 import { invariant } from '../../utils/invariant';
@@ -14,10 +15,13 @@ const getPinnedRoute = protectedProcedure
     })
   )
   .query(async ({ ctx, input }) => {
-    await ctx.needsChannelPermission(
-      input.channelId,
-      ChannelPermission.VIEW_CHANNEL
-    );
+    await Promise.all([
+      assertDmChannel(input.channelId, ctx.userId),
+      ctx.needsChannelPermission(
+        input.channelId,
+        ChannelPermission.VIEW_CHANNEL
+      )
+    ]);
 
     const channel = await db
       .select({

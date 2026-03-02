@@ -44,6 +44,7 @@ export const useAdminGeneral = () => {
     description: '',
     password: '',
     allowNewUsers: false,
+    directMessagesEnabled: true
   });
   const [logo, setLogo] = useState<TFile | null>(null);
 
@@ -57,7 +58,8 @@ export const useAdminGeneral = () => {
       name: settings.name,
       description: settings.description ?? '',
       password: settings.password ?? '',
-      allowNewUsers: settings.allowNewUsers ?? false
+      allowNewUsers: settings.allowNewUsers ?? false,
+      directMessagesEnabled: settings.directMessagesEnabled ?? true
     });
     setLoading(false);
     setLogo(settings.logo);
@@ -71,7 +73,8 @@ export const useAdminGeneral = () => {
         name: settings.name,
         description: settings.description,
         password: settings.password || undefined,
-        allowNewUsers: settings.allowNewUsers
+        allowNewUsers: settings.allowNewUsers,
+        directMessagesEnabled: settings.directMessagesEnabled
       });
       toast.success('Settings updated');
     } catch (error) {
@@ -386,6 +389,7 @@ export const useAdminStorage = () => {
     useForm<TStorageSettings>({
       storageOverflowAction: STORAGE_OVERFLOW_ACTION,
       storageSpaceQuotaByUser: STORAGE_MAX_QUOTA_PER_USER,
+      storageFileSharingInDirectMessages: true,
       storageUploadEnabled: true,
       storageUploadMaxFileSize: STORAGE_MAX_FILE_SIZE,
       storageMaxAvatarSize: STORAGE_DEFAULT_MAX_AVATAR_SIZE,
@@ -415,6 +419,8 @@ export const useAdminStorage = () => {
     try {
       await trpc.others.updateSettings.mutate({
         storageUploadEnabled: values.storageUploadEnabled,
+        storageFileSharingInDirectMessages:
+          values.storageFileSharingInDirectMessages,
         storageQuota: values.storageQuota,
         storageUploadMaxFileSize: values.storageUploadMaxFileSize,
         storageMaxAvatarSize: values.storageMaxAvatarSize,

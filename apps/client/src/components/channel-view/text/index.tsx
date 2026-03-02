@@ -169,6 +169,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
       <TextTopbar
         onScrollToMessage={scrollToMessage}
+        channelId={channelId}
         whiteboardOpen={whiteboardOpen}
         onToggleWhiteboard={() => setWhiteboardOpen((prev) => !prev)}
       />

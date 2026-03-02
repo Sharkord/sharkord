@@ -35,8 +35,10 @@ export type TPublicServerSettings = Pick<
   | 'description'
   | 'serverId'
   | 'storageUploadEnabled'
+  | 'directMessagesEnabled'
   | 'storageQuota'
   | 'storageUploadMaxFileSize'
+  | 'storageFileSharingInDirectMessages'
   | 'storageMaxAvatarSize'
   | 'storageMaxBannerSize'
   | 'storageMaxFilesPerMessage'
@@ -131,3 +133,10 @@ export type TChannelUserPermissionsMap = Record<
 >;
 
 export type TReadStateMap = Record<number, number>;
+
+export type TDirectMessageConversation = {
+  channelId: number;
+  userId: number;
+  unreadCount: number;
+  lastMessageAt: number;
+};

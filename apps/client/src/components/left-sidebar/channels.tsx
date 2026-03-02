@@ -1,7 +1,6 @@
 import { TypingDots } from '@/components/typing-dots';
 import {
   useChannelById,
-  useChannelIds,
   useChannelsByCategoryId,
   useCurrentVoiceChannelId,
   useSelectedChannelId
@@ -39,9 +38,10 @@ import {
   getTrpcError
 } from '@sharkord/shared';
 import { Hash, Volume2 } from 'lucide-react';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { ChannelContextMenu } from '../context-menus/channel';
+import { UnreadCount } from '../unread-count';
 import { ExternalStream } from './external-stream';
 import { useSelectChannel } from './hooks';
 import { VoiceUser } from './voice-user';
@@ -84,9 +84,7 @@ const Voice = memo(({ channel, ...props }: TVoiceProps) => {
           />
         )}
         {!isVoiceActive && unreadCount > 0 && (
-          <div className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </div>
+          <UnreadCount count={unreadCount} />
         )}
       </ItemWrapper>
       {channel.type === 'VOICE' && (
@@ -134,9 +132,7 @@ const Text = memo(({ channel, ...props }: TTextProps) => {
         </div>
       )}
       {!hasTypingUsers && unreadCount > 0 && (
-        <div className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
-          {unreadCount > 99 ? '99+' : unreadCount}
-        </div>
+        <UnreadCount count={unreadCount} />
       )}
     </ItemWrapper>
   );
@@ -253,8 +249,11 @@ type TChannelsProps = {
 const Channels = memo(({ categoryId }: TChannelsProps) => {
   const channels = useChannelsByCategoryId(categoryId);
   const selectedChannelId = useSelectedChannelId();
-  const channelIds = useChannelIds();
   const can = useCan();
+  const channelIds = useMemo(
+    () => channels.map((channel) => channel.id),
+    [channels]
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

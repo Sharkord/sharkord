@@ -81,6 +81,19 @@ const Storage = memo(() => {
         </Group>
 
         <Group
+          label="Allow file sharing in direct messages"
+          description="Allows users to share files in direct messages. This setting only applies if uploads are enabled, and it does not affect existing files in direct messages."
+        >
+          <Switch
+            checked={!!values.storageFileSharingInDirectMessages}
+            onCheckedChange={(checked) =>
+              onChange('storageFileSharingInDirectMessages', checked)
+            }
+            disabled={!values.storageUploadEnabled}
+          />
+        </Group>
+
+        <Group
           label="Quota"
           description="The total amount of storage space allocated to the server."
           help="This is not a hard limit, meaning that files will still be written to disk temporarily even if the quota is exceeded. The overflow action will be applied after the upload is complete. Make sure you have more disk space available than the quota you set here."

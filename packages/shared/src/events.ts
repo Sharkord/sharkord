@@ -49,7 +49,9 @@ export enum ServerEvents {
   WHITEBOARD_LAYER_UPDATE = 'whiteboardLayerUpdate',
   WHITEBOARD_LAYER_DELETE = 'whiteboardLayerDelete',
   WHITEBOARD_CURSOR_UPDATE = 'whiteboardCursorUpdate',
-  WHITEBOARD_CLEAR = 'whiteboardClear'
+  WHITEBOARD_CLEAR = 'whiteboardClear',
+
+  DM_CONVERSATION_OPEN = 'dmConversationOpen'
 }
 
 export type TNewMessage = {

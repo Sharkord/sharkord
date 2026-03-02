@@ -1,13 +1,19 @@
-import { setModViewOpen } from '@/features/app/actions';
-import { useUserRoles } from '@/features/server/hooks';
+import {
+  setDmsOpen,
+  setModViewOpen,
+  setSelectedDmChannelId
+} from '@/features/app/actions';
+import { usePublicServerSettings, useUserRoles } from '@/features/server/hooks';
 import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { getNickname, removeNickname, setNickname } from '@/helpers/nicknames';
+import { getTRPCClient } from '@/lib/trpc';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
   Permission,
-  UserStatus
+  UserStatus,
+  getTrpcError
 } from '@sharkord/shared';
 import {
   Button,
@@ -18,8 +24,9 @@ import {
   PopoverTrigger
 } from '@sharkord/ui';
 import { format } from 'date-fns';
-import { Pencil, ShieldCheck, Trash, UserCog, X } from 'lucide-react';
+import { MessageSquare, Pencil, ShieldCheck, Trash, UserCog, X } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
+import { toast } from 'sonner';
 import { Protect } from '../protect';
 import { RoleBadge } from '../role-badge';
 import { UserAvatar } from '../user-avatar';
@@ -33,6 +40,7 @@ type TUserPopoverProps = {
 const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
   const user = useUserById(userId);
   const roles = useUserRoles(userId);
+  const settings = usePublicServerSettings();
   const isOwnUser = useIsOwnUser(userId);
   const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [nicknameInput, setNicknameInput] = useState('');
@@ -67,9 +75,24 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
     setIsEditingNickname(false);
   }, []);
 
+  const onDirectMessageClick = useCallback(async () => {
+    const trpc = getTRPCClient();
+
+    try {
+      const result = await trpc.dms.open.mutate({ userId });
+
+      setDmsOpen(true);
+      setSelectedDmChannelId(result.channelId);
+    } catch (error) {
+      toast.error(getTrpcError(error, 'Could not open direct message'));
+    }
+  }, [userId]);
+
   if (!user) return <>{children}</>;
 
   const isDeleted = user.name === DELETED_USER_IDENTITY_AND_NAME;
+  const showDmButton =
+    settings?.directMessagesEnabled && !isDeleted && !isOwnUser;
 
   return (
     <Popover>
@@ -207,15 +230,29 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
               Member since {format(new Date(user.createdAt), 'PP')}
             </p>
 
-            <Protect permission={Permission.MANAGE_USERS}>
-              <IconButton
-                icon={UserCog}
-                variant="ghost"
-                size="sm"
-                title="Moderation View"
-                onClick={() => setModViewOpen(true, user.id)}
-              />
-            </Protect>
+            <div className="flex gap-2 items-center">
+              {showDmButton && (
+                <IconButton
+                  icon={MessageSquare}
+                  variant="ghost"
+                  size="sm"
+                  title="Direct Message"
+                  onClick={onDirectMessageClick}
+                />
+              )}
+
+              {
+                <Protect permission={Permission.MANAGE_USERS}>
+                  <IconButton
+                    icon={UserCog}
+                    variant="ghost"
+                    size="sm"
+                    title="Moderation View"
+                    onClick={() => setModViewOpen(true, user.id)}
+                  />
+                </Protect>
+              }
+            </div>
           </div>
         </div>
       </PopoverContent>

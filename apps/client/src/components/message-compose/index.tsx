@@ -1,4 +1,5 @@
 import { TiptapInput } from '@/components/tiptap-input';
+import { useChannelById } from '@/features/server/channels/hooks';
 import {
   useCan,
   useChannelCan,
@@ -58,6 +59,7 @@ const MessageCompose = memo(
     const [sending, setSending] = useState(false);
     const can = useCan();
     const channelCan = useChannelCan(channelId);
+    const channel = useChannelById(channelId);
     const publicSettings = usePublicServerSettings();
     const canSendMessages = useMemo(() => {
       return (
@@ -67,12 +69,16 @@ const MessageCompose = memo(
     }, [can, channelCan]);
 
     const canUploadFiles = useMemo(() => {
+      const canShareFilesInDm =
+        !channel?.isDm || !!publicSettings?.storageFileSharingInDirectMessages;
+
       return (
         can(Permission.SEND_MESSAGES) &&
         can(Permission.UPLOAD_FILES) &&
-        channelCan(ChannelPermission.SEND_MESSAGES)
+        channelCan(ChannelPermission.SEND_MESSAGES) &&
+        canShareFilesInDm
       );
-    }, [can, channelCan]);
+    }, [can, channelCan, channel, publicSettings]);
 
     const {
       files,
@@ -82,7 +88,7 @@ const MessageCompose = memo(
       uploadingSize,
       openFileDialog,
       fileInputProps
-    } = useUploadFiles(containerRef, !canSendMessages);
+    } = useUploadFiles(channelId, containerRef, !canSendMessages);
 
     useImperativeHandle(ref, () => ({ clearFiles }), [clearFiles]);
 

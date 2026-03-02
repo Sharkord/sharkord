@@ -138,6 +138,8 @@ type Events = {
   [ServerEvents.WHITEBOARD_CLEAR]: {
     channelId: number;
   };
+
+  [ServerEvents.DM_CONVERSATION_OPEN]: { channelId: number };
 };
 
 class PubSub {
