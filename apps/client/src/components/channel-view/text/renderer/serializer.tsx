@@ -4,6 +4,7 @@ import {
   parseDomCommand,
   videoExtensions
 } from '@sharkord/shared';
+import { ensureHljsTheme } from '@/components/hljs-theme';
 import hljs from 'highlight.js/lib/common';
 import { Element, type DOMNode } from 'html-react-parser';
 import { CommandOverride } from '../overrides/command';
@@ -40,6 +41,7 @@ const serializer = (
       );
 
       if (codeChild) {
+        ensureHljsTheme();
         const codeText = getTextContent(codeChild);
         const langClass = codeChild.attribs?.class || '';
         const langMatch = langClass.match(/language-(\w+)/);

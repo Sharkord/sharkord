@@ -4,7 +4,6 @@ import 'prosemirror-view/style/prosemirror.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
-import { HljsTheme } from './components/hljs-theme/index.tsx';
 import { DebugInfo } from './components/debug-info/index.tsx';
 import { StoreDebug } from './components/debug/store-debug.tsx';
 import { DevicesProvider } from './components/devices-provider/index.tsx';
@@ -23,7 +22,6 @@ createRoot(document.getElementById('root')!).render(
       defaultTheme="dark"
       storageKey={LocalStorageKey.VITE_UI_THEME}
     >
-      <HljsTheme />
       <DebugInfo />
       <Toaster />
       <Provider store={store}>
