@@ -8,7 +8,7 @@ import {
   TYPING_MS,
   getTrpcError,
   linkifyHtml,
-  transformMarkdownCode
+  transformMarkdown
 } from '@sharkord/shared';
 import { throttle } from 'lodash-es';
 import { memo, useCallback, useMemo, useState } from 'react';
@@ -54,7 +54,7 @@ const ThreadCompose = memo(
 
         try {
           await trpc.messages.send.mutate({
-            content: linkifyHtml(transformMarkdownCode(message)),
+            content: linkifyHtml(transformMarkdown(message)),
             channelId,
             files: files.map((f) => f.id),
             parentMessageId

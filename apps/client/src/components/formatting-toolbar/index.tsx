@@ -44,26 +44,12 @@ function wrapSelection(editor: Editor, wrapper: string) {
 
 function insertLink(editor: Editor) {
   const { from, to } = editor.state.selection;
-  const selectedText = editor.state.doc.textBetween(from, to);
-
-  // If already a link, unset it
-  if (editor.isActive('link')) {
-    editor.chain().focus().unsetLink().run();
-    return;
-  }
-
-  const url = window.prompt('URL:');
-  if (!url) return;
-
-  if (selectedText) {
-    editor.chain().focus().setLink({ href: url }).run();
-  } else {
-    const label = url;
-    editor
-      .chain()
-      .focus()
-      .insertContent(`<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`)
-      .run();
+  const text = editor.state.doc.textBetween(from, to);
+  const link = text ? `[${text}](url)` : '[](url)';
+  editor.chain().focus().insertContentAt({ from, to }, link).run();
+  if (!text) {
+    // place cursor inside the brackets
+    editor.commands.setTextSelection(editor.state.selection.from - 5);
   }
 }
 

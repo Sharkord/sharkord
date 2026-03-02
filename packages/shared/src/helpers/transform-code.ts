@@ -8,7 +8,7 @@ const BR = '\u0000BR\u0000';
  * - Triple backticks (```lang ... ```) → <pre><code class="language-lang">...</code></pre>
  * - Single backticks (`text`) → <code>text</code>
  */
-const transformMarkdownCode = (html: string): string => {
+const transformMarkdown = (html: string): string => {
   let result = html;
 
   // Normalize all <br> variants to a sentinel for easier matching
@@ -27,7 +27,7 @@ const transformMarkdownCode = (html: string): string => {
   // Restore remaining sentinels back to <br>
   result = result.split(BR).join('<br>');
 
-  // Transform inline code: `text` (skip content inside <pre>/<code> tags)
+  // Transform inline code and markdown links (skip content inside <pre>/<code> tags)
   let insidePre = false;
   let insideCode = false;
   const parts = result.split(/(<[^>]+>)/);
@@ -41,7 +41,14 @@ const transformMarkdownCode = (html: string): string => {
         return part;
       }
       if (insidePre || insideCode) return part;
-      return part.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+      // Inline code
+      let transformed = part.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+      // Markdown links: [text](url)
+      transformed = transformed.replace(
+        /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+      );
+      return transformed;
     })
     .join('');
 
@@ -55,7 +62,7 @@ const transformMarkdownCode = (html: string): string => {
  * - <pre><code class="language-lang">...</code></pre> → ```lang\n...\n```
  * - <code>text</code> → `text`
  */
-const reverseMarkdownCode = (html: string): string => {
+const reverseMarkdown = (html: string): string => {
   let result = html;
 
   // Reverse code blocks: <pre><code class="language-lang">code</code></pre> → ```lang<br>code<br>```
@@ -74,7 +81,13 @@ const reverseMarkdownCode = (html: string): string => {
     (_, text: string) => `\`${text}\``
   );
 
+  // Reverse markdown links: <a href="url">text</a> → [text](url)
+  result = result.replace(
+    /<a\s[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi,
+    (_, href: string, text: string) => `[${text}](${href})`
+  );
+
   return result;
 };
 
-export { transformMarkdownCode, reverseMarkdownCode };
+export { transformMarkdown, reverseMarkdown };

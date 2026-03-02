@@ -4,8 +4,8 @@ import {
   type TMessage,
   isEmptyMessage,
   linkifyHtml,
-  reverseMarkdownCode,
-  transformMarkdownCode
+  reverseMarkdown,
+  transformMarkdown
 } from '@sharkord/shared';
 import { AutoFocus } from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
@@ -19,7 +19,7 @@ type TMessageEditInlineProps = {
 const MessageEditInline = memo(
   ({ message, onBlur }: TMessageEditInlineProps) => {
     const [value, setValue] = useState<string>(
-      reverseMarkdownCode(message.content ?? '')
+      reverseMarkdown(message.content ?? '')
     );
 
     const onSubmit = useCallback(
@@ -37,7 +37,7 @@ const MessageEditInline = memo(
         try {
           await trpc.messages.edit.mutate({
             messageId: message.id,
-            content: linkifyHtml(transformMarkdownCode(newValue))
+            content: linkifyHtml(transformMarkdown(newValue))
           });
 
           toast.success('Message edited');
