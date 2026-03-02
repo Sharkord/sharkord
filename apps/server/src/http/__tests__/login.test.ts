@@ -285,4 +285,42 @@ describe('/login', () => {
     expect(data).toHaveProperty('success', true);
     expect(data).toHaveProperty('token');
   });
+
+  test('identity should be case-insensitive', async () => {
+    const response = await login('TESTOWNER', 'password123');
+
+    expect(response.status).toBe(200);
+
+    const data = (await response.json()) as { token: string };
+
+    expect(data).toHaveProperty('success', true);
+    expect(data).toHaveProperty('token');
+
+    const decoded = jwt.verify(
+      data.token,
+      await sha256(TEST_SECRET_TOKEN)
+    ) as jwt.JwtPayload;
+
+    expect(decoded).toHaveProperty('userId');
+
+    const firstUser = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.id, decoded.userId))
+      .get();
+
+    const response2 = await login('testowner', 'password123');
+
+    expect(response2.status).toBe(200);
+
+    const data2 = (await response2.json()) as { token: string };
+
+    const decoded2 = jwt.verify(
+      data2.token,
+      await sha256(TEST_SECRET_TOKEN)
+    ) as jwt.JwtPayload;
+
+    expect(decoded2).toHaveProperty('userId');
+    expect(decoded2.userId).toBe(firstUser?.id);
+  });
 });
