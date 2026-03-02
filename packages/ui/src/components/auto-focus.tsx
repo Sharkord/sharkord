@@ -1,11 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 
 type TAutoFocusProps = {
   skip?: boolean;
   children: React.ReactNode;
 };
 
-export function AutoFocus({ children, skip = false }: TAutoFocusProps) {
+const AutoFocus = memo(({ children, skip = false }: TAutoFocusProps) => {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,4 +38,6 @@ export function AutoFocus({ children, skip = false }: TAutoFocusProps) {
       {children}
     </div>
   );
-}
+});
+
+export { AutoFocus };

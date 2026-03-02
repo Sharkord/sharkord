@@ -1,5 +1,6 @@
 import { UserAvatar } from '@/components/user-avatar';
 import {
+  AutoFocus,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -48,11 +49,13 @@ const SearchUserDropdown = memo(
           className="w-64 max-h-80 overflow-auto"
         >
           <div className="p-2">
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search user"
-            />
+            <AutoFocus>
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search user"
+              />
+            </AutoFocus>
           </div>
           {allUsers.length === 0 && (
             <div className="px-2 pb-2 text-xs text-muted-foreground">
