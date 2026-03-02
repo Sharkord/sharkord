@@ -57,9 +57,6 @@ const serializer = (
 
         return (
           <pre className="hljs-pre">
-            {language && (
-              <span className="hljs-language-badge">{language}</span>
-            )}
             <code
               className={`hljs ${language ? `language-${language}` : ''}`}
               dangerouslySetInnerHTML={{ __html: highlightedHtml }}

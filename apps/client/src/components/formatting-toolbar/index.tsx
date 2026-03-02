@@ -1,6 +1,6 @@
 import { Button } from '@sharkord/ui';
 import type { Editor } from '@tiptap/core';
-import { Link2, List, ListOrdered, Minus, Quote } from 'lucide-react';
+import { Code, CodeXml, Link2, List, ListOrdered, Minus, Quote } from 'lucide-react';
 import { memo } from 'react';
 
 type FormattingToolbarProps = {
@@ -25,6 +25,59 @@ const FormatButton = ({ onClick, title, content }: FormatButtonProps) => (
   </Button>
 );
 
+/** Wrap the current selection with `wrapper` chars (e.g. backtick). */
+function wrapSelection(editor: Editor, wrapper: string) {
+  const { from, to } = editor.state.selection;
+  const text = editor.state.doc.textBetween(from, to);
+  if (text) {
+    editor
+      .chain()
+      .focus()
+      .insertContentAt({ from, to }, wrapper + text + wrapper)
+      .run();
+  } else {
+    editor.chain().focus().insertContent(wrapper + wrapper).run();
+    // place cursor between the wrappers
+    editor.commands.setTextSelection(editor.state.selection.from - wrapper.length);
+  }
+}
+
+function insertLink(editor: Editor) {
+  const { from, to } = editor.state.selection;
+  const selectedText = editor.state.doc.textBetween(from, to);
+
+  // If already a link, unset it
+  if (editor.isActive('link')) {
+    editor.chain().focus().unsetLink().run();
+    return;
+  }
+
+  const url = window.prompt('URL:');
+  if (!url) return;
+
+  if (selectedText) {
+    editor.chain().focus().setLink({ href: url }).run();
+  } else {
+    const label = url;
+    editor
+      .chain()
+      .focus()
+      .insertContent(`<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`)
+      .run();
+  }
+}
+
+function insertCodeBlock(editor: Editor) {
+  const { from, to } = editor.state.selection;
+  const text = editor.state.doc.textBetween(from, to);
+  const block = '```\n' + text + '\n```';
+  editor
+    .chain()
+    .focus()
+    .insertContentAt({ from, to }, block)
+    .run();
+}
+
 const FormattingToolbar = memo(({ editor }: FormattingToolbarProps) => {
   return (
     <div
@@ -44,29 +97,24 @@ const FormattingToolbar = memo(({ editor }: FormattingToolbarProps) => {
         content={<i>I</i>}
       />
       <FormatButton
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-        title="Underline"
-        content={<u>U</u>}
-      />
-      <FormatButton
         onClick={() => editor.chain().focus().toggleStrike().run()}
         title="Strikethrough"
         content={<s>S</s>}
       />
       <FormatButton
-        onClick={() => editor.chain().focus().toggleLink().run()}
+        onClick={() => insertLink(editor)}
         title="Hyperlink"
         content={<Link2 />}
       />
       <FormatButton
-        onClick={() => editor.chain().focus().toggleCode().run()}
-        title="Code"
-        content={'<>'}
+        onClick={() => wrapSelection(editor, '`')}
+        title="Inline code"
+        content={<Code size={16} />}
       />
       <FormatButton
-        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-        title="Codeblock"
-        content={'<;>'}
+        onClick={() => insertCodeBlock(editor)}
+        title="Code block"
+        content={<CodeXml size={16} />}
       />
       <FormatButton
         onClick={() => editor.chain().focus().setHorizontalRule().run()}

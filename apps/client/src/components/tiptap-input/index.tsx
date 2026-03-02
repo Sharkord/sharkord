@@ -5,7 +5,7 @@ import type { TJoinedPublicUser } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import type { Extension } from '@tiptap/core';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
-import { splitBlock } from '@tiptap/pm/commands';
+import { lift, splitBlock } from '@tiptap/pm/commands';
 import { liftListItem } from '@tiptap/pm/schema-list';
 import type { Transaction } from '@tiptap/pm/state';
 import { EditorContent, useEditor } from '@tiptap/react';
@@ -69,6 +69,9 @@ const TiptapInput = memo(
         StarterKit.configure({
           code: false,
           codeBlock: false,
+          heading: {
+            levels: [1, 2, 3, 4, 5, 6]
+          },
           hardBreak: {
             HTMLAttributes: {
               class: 'hard-break'
@@ -171,6 +174,17 @@ const TiptapInput = memo(
                 _view.dispatch(tr as Transaction);
                 event.preventDefault();
                 return true;
+              }
+            }
+
+            // Exit blockquote on Enter in an empty line
+            if (empty && $from.parent.textContent === '') {
+              for (let depth = $from.depth; depth > 0; depth--) {
+                if ($from.node(depth).type.name === 'blockquote') {
+                  lift(state, _view.dispatch);
+                  event.preventDefault();
+                  return true;
+                }
               }
             }
 
