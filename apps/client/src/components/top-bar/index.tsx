@@ -2,9 +2,8 @@ import {
   useCurrentVoiceChannelId,
   useIsCurrentVoiceChannelSelected
 } from '@/features/server/channels/hooks';
-import { cn } from '@/lib/utils';
 import { Button, Tooltip } from '@sharkord/ui';
-import { MessageSquare, PanelRight, PanelRightClose } from 'lucide-react';
+import { PanelRight, PanelRightClose } from 'lucide-react';
 import { memo } from 'react';
 import { VoiceOptionsController } from './voice-options-controller';
 import { VolumeController } from './volume-controller';
@@ -12,16 +11,12 @@ import { VolumeController } from './volume-controller';
 type TTopBarProps = {
   onToggleRightSidebar: () => void;
   isOpen: boolean;
-  onToggleVoiceChat: () => void;
-  isVoiceChatOpen: boolean;
 };
 
 const TopBar = memo(
   ({
     onToggleRightSidebar,
-    isOpen,
-    onToggleVoiceChat,
-    isVoiceChatOpen
+    isOpen
   }: TTopBarProps) => {
     const isCurrentVoiceChannelSelected = useIsCurrentVoiceChannelSelected();
     const currentVoiceChannelId = useCurrentVoiceChannelId();
@@ -31,26 +26,6 @@ const TopBar = memo(
           <>
             <VoiceOptionsController />
             <VolumeController channelId={currentVoiceChannelId} />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onToggleVoiceChat}
-              className="h-6 px-2 transition-all duration-200 ease-in-out"
-            >
-              <Tooltip
-                content={
-                  isVoiceChatOpen ? 'Close Voice Chat' : 'Open Voice Chat'
-                }
-                asChild={false}
-              >
-                <MessageSquare
-                  className={cn(
-                    'w-4 h-4 transition-all duration-200 ease-in-out',
-                    isVoiceChatOpen && 'fill-current'
-                  )}
-                />
-              </Tooltip>
-            </Button>
           </>
         )}
         <Button

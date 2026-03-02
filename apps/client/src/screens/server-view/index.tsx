@@ -4,7 +4,6 @@ import { Protect } from '@/components/protect';
 import { RightSidebar } from '@/components/right-sidebar';
 import { ThreadSidebar } from '@/components/thread-sidebar';
 import { TopBar } from '@/components/top-bar';
-import { VoiceChatSidebar } from '@/components/voice-chat-sidebar';
 import { VoiceProvider } from '@/components/voice-provider';
 import { useThreadSidebar } from '@/features/app/hooks';
 import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
@@ -21,9 +20,6 @@ const ServerView = memo(() => {
   const [isDesktopRightSidebarOpen, setIsDesktopRightSidebarOpen] = useState(
     getLocalStorageItemBool(LocalStorageKey.RIGHT_SIDEBAR_STATE, true)
   );
-  const [isVoiceChatSidebarOpen, setIsVoiceChatSidebarOpen] = useState(
-    getLocalStorageItemBool(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE, false)
-  );
   const { isOpen: isThreadSidebarOpen } = useThreadSidebar();
 
   const handleDesktopRightSidebarToggle = useCallback(() => {
@@ -33,14 +29,6 @@ const ServerView = memo(() => {
       !isDesktopRightSidebarOpen ? 'true' : 'false'
     );
   }, [isDesktopRightSidebarOpen]);
-
-  const handleVoiceChatSidebarToggle = useCallback(() => {
-    setIsVoiceChatSidebarOpen((prev) => !prev);
-    localStorage.setItem(
-      LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE,
-      !isVoiceChatSidebarOpen ? 'true' : 'false'
-    );
-  }, [isVoiceChatSidebarOpen]);
 
   const handleSwipeRight = useCallback(() => {
     if (isMobileMenuOpen || isMobileUsersOpen) {
@@ -77,8 +65,6 @@ const ServerView = memo(() => {
         <TopBar
           onToggleRightSidebar={handleDesktopRightSidebarToggle}
           isOpen={isDesktopRightSidebarOpen}
-          onToggleVoiceChat={handleVoiceChatSidebarToggle}
-          isVoiceChatOpen={isVoiceChatSidebarOpen}
         />
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
           <PreventBrowser />
@@ -107,8 +93,6 @@ const ServerView = memo(() => {
           />
 
           <ContentWrapper />
-
-          <VoiceChatSidebar isOpen={isVoiceChatSidebarOpen} />
 
           <ThreadSidebar isOpen={isThreadSidebarOpen} />
 
