@@ -7,6 +7,7 @@ import {
 import {
   useCan,
   useChannelCan,
+  useHasUnreadMentions,
   useTypingUsersByChannelId,
   useUnreadMessagesCount,
   useVoiceUsersByChannelId
@@ -86,6 +87,7 @@ type TTextProps = Omit<TItemWrapperProps, 'children'> & {
 const Text = memo(({ channel, ...props }: TTextProps) => {
   const typingUsers = useTypingUsersByChannelId(channel.id);
   const unreadCount = useUnreadMessagesCount(channel.id);
+  const hasUnreadMessages = useHasUnreadMentions(channel.id);
   const hasTypingUsers = typingUsers.length > 0;
 
   return (
@@ -98,7 +100,7 @@ const Text = memo(({ channel, ...props }: TTextProps) => {
         </div>
       )}
       {!hasTypingUsers && unreadCount > 0 && (
-        <UnreadCount count={unreadCount} />
+        <UnreadCount count={unreadCount} hasMention={hasUnreadMessages} />
       )}
     </ItemWrapper>
   );

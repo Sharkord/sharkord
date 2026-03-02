@@ -146,4 +146,11 @@ describe('sanitize-html', () => {
   test('should handle plain text without tags', () => {
     expect(sanitizeMessageHtml('just text')).toBe('just text');
   });
+
+  test('should preserve mention <span> with data-user-id attribute', () => {
+    const input =
+      '<span data-type="mention" data-user-id="123" class="mention">@Username</span>';
+
+    expect(sanitizeMessageHtml(input)).toBe(input);
+  });
 });
