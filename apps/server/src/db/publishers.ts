@@ -26,7 +26,11 @@ const publishMessage = async (
   if (!messageId || !channelId) return;
 
   if (type === 'delete') {
-    pubsub.publish(ServerEvents.MESSAGE_DELETE, {
+    const affectedUserIds = await getAffectedUserIdsForChannel(channelId, {
+      permission: ChannelPermission.VIEW_CHANNEL
+    });
+
+    pubsub.publishFor(affectedUserIds, ServerEvents.MESSAGE_DELETE, {
       messageId: messageId,
       channelId: channelId
     });
@@ -145,7 +149,11 @@ const publishChannel = async (
       ? ServerEvents.CHANNEL_CREATE
       : ServerEvents.CHANNEL_UPDATE;
 
-  pubsub.publish(targetEvent, channel);
+  const affectedUserIds = await getAffectedUserIdsForChannel(channel.id, {
+    permission: ChannelPermission.VIEW_CHANNEL
+  });
+
+  pubsub.publishFor(affectedUserIds, targetEvent, channel);
 };
 
 const publishSettings = async () => {
@@ -226,7 +234,11 @@ const publishReplyCount = async (
     .where(eq(messages.parentMessageId, parentMessageId))
     .get();
 
-  pubsub.publish(ServerEvents.THREAD_REPLY_COUNT_UPDATE, {
+  const affectedUserIds = await getAffectedUserIdsForChannel(channelId, {
+    permission: ChannelPermission.VIEW_CHANNEL
+  });
+
+  pubsub.publishFor(affectedUserIds, ServerEvents.THREAD_REPLY_COUNT_UPDATE, {
     messageId: parentMessageId,
     channelId,
     replyCount: replyCountRow?.count ?? 0

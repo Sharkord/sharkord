@@ -11,7 +11,10 @@ import {
 } from '@/features/server/users/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
-import type { TDirectMessageConversation } from '@sharkord/shared';
+import {
+  DELETED_USER_IDENTITY_AND_NAME,
+  type TDirectMessageConversation
+} from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -41,7 +44,7 @@ const DirectMessageItem = memo(
         )}
         onClick={onSelect}
       >
-        <UserAvatar userId={user.id} className="h-6 w-6" />
+        <UserAvatar userId={user.id} className="h-6 w-6" showUserPopover />
         <span className="truncate flex-1 text-left">{user.name}</span>
         <UnreadCount count={unreadCount} />
       </button>
@@ -98,6 +101,7 @@ const DirectMessages = memo(() => {
       (user) =>
         user.id !== ownUserId &&
         !user.banned &&
+        user.name !== DELETED_USER_IDENTITY_AND_NAME &&
         !directMessageUserIds.has(user.id) &&
         user.name.toLowerCase().includes(query.trim().toLowerCase())
     );

@@ -84,7 +84,7 @@ const General = memo(() => {
 
         <Group
           label="Enable Direct Messages"
-          description="Allow users to open and use direct messages."
+          description="Allow users to send direct messages to each other. If disabled, users can only communicate in channels."
         >
           <Switch
             checked={settings.directMessagesEnabled}

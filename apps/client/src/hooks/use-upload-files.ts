@@ -1,7 +1,4 @@
-import {
-  useChannelById,
-  useSelectedChannelId
-} from '@/features/server/channels/hooks';
+import { useChannelById } from '@/features/server/channels/hooks';
 import { useCan, usePublicServerSettings } from '@/features/server/hooks';
 import { uploadFiles } from '@/helpers/upload-file';
 import { Permission, type TTempFile } from '@sharkord/shared';
@@ -17,6 +14,7 @@ import { toast } from 'sonner';
 
 // TODO: check if it works in all browsers
 const useUploadFiles = (
+  channelId: number,
   containerRef: RefObject<HTMLElement | null>,
   disabled: boolean = false
 ) => {
@@ -25,8 +23,7 @@ const useUploadFiles = (
   const [uploading, setUploading] = useState(false);
   const [uploadingSize, setUploadingSize] = useState(0);
   const settings = usePublicServerSettings();
-  const selectedChannelId = useSelectedChannelId();
-  const selectedChannel = useChannelById(selectedChannelId ?? -1);
+  const selectedChannel = useChannelById(channelId);
   const can = useCan();
 
   const isDmChannel = !!selectedChannel?.isDm;

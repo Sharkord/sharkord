@@ -9,12 +9,8 @@ import { alias } from 'drizzle-orm/sqlite-core';
 import { z } from 'zod';
 import { db } from '../../db';
 import { getChannelsReadStatesForUser } from '../../db/queries/channels';
-import {
-  assertDmParticipant,
-  isDirectMessageChannel
-} from '../../db/queries/dms';
+import { assertDmChannel } from '../../db/queries/dms';
 import { joinMessagesWithRelations } from '../../db/queries/messages';
-import { getSettings } from '../../db/queries/server';
 import { channelReadStates, channels, messages } from '../../db/schema';
 import { invariant } from '../../utils/invariant';
 import { pubsub } from '../../utils/pubsub';
@@ -31,24 +27,13 @@ const getMessagesRoute = protectedProcedure
   )
   .meta({ infinite: true })
   .query(async ({ ctx, input }) => {
-    const [isDmChannel, settings] = await Promise.all([
-      isDirectMessageChannel(input.channelId),
-      getSettings()
+    await Promise.all([
+      assertDmChannel(input.channelId, ctx.userId),
+      ctx.needsChannelPermission(
+        input.channelId,
+        ChannelPermission.VIEW_CHANNEL
+      )
     ]);
-
-    if (isDmChannel) {
-      invariant(settings.directMessagesEnabled, {
-        code: 'FORBIDDEN',
-        message: 'Direct messages are disabled on this server'
-      });
-
-      await assertDmParticipant(input.channelId, ctx.userId);
-    }
-
-    await ctx.needsChannelPermission(
-      input.channelId,
-      ChannelPermission.VIEW_CHANNEL
-    );
 
     const { channelId, cursor, limit, targetMessageId } = input;
 

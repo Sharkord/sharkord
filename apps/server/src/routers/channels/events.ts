@@ -3,7 +3,7 @@ import { protectedProcedure } from '../../utils/trpc';
 
 const onChannelCreateRoute = protectedProcedure.subscription(
   async ({ ctx }) => {
-    return ctx.pubsub.subscribe(ServerEvents.CHANNEL_CREATE);
+    return ctx.pubsub.subscribeFor(ctx.userId, ServerEvents.CHANNEL_CREATE);
   }
 );
 
@@ -15,7 +15,7 @@ const onChannelDeleteRoute = protectedProcedure.subscription(
 
 const onChannelUpdateRoute = protectedProcedure.subscription(
   async ({ ctx }) => {
-    return ctx.pubsub.subscribe(ServerEvents.CHANNEL_UPDATE);
+    return ctx.pubsub.subscribeFor(ctx.userId, ServerEvents.CHANNEL_UPDATE);
   }
 );
 

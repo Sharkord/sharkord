@@ -4,6 +4,7 @@ import { and, eq, inArray, max, or } from 'drizzle-orm';
 import { db } from '..';
 import { channels, directMessages, messages } from '../schema';
 import { getChannelsReadStatesForUser } from './channels';
+import { getSettings } from './server';
 
 const normalizePair = (a: number, b: number): [number, number] =>
   a < b ? [a, b] : [b, a];
@@ -154,40 +155,53 @@ const assertDmParticipant = async (
   }
 };
 
-// checks if a channel is a DM channel by looking for it in the directMessages table
-// TODO: this should not be needed since we have channel.isDm
-const isChannelDm = async (channelId: number): Promise<boolean> => {
-  const channel = await db
-    .select({ isDm: channels.isDm })
-    .from(channels)
-    .where(eq(channels.id, channelId))
-    .limit(1)
-    .get();
+// checks if the channel of the message is a DM channel, and if so checks if the user is a participant, throwing if not
+const assertDmChannel = async (
+  channelId: number,
+  userId: number
+): Promise<void> => {
+  const isDm = await isDirectMessageChannel(channelId);
 
-  return !!channel?.isDm;
+  if (!isDm) return;
+
+  const settings = await getSettings();
+
+  if (!settings.directMessagesEnabled) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Direct messages are disabled on this server'
+    });
+  }
+
+  await assertDmParticipant(channelId, userId);
 };
 
-const isMessageFromDmChannel = async (messageId: number): Promise<boolean> => {
-  const message = await db
-    .select({ channelId: messages.channelId })
-    .from(messages)
-    .where(eq(messages.id, messageId))
+const getDirectMessageChannelParticipantIds = async (
+  channelId: number
+): Promise<number[]> => {
+  const dm = await db
+    .select({
+      userOneId: directMessages.userOneId,
+      userTwoId: directMessages.userTwoId
+    })
+    .from(directMessages)
+    .where(eq(directMessages.channelId, channelId))
     .limit(1)
     .get();
 
-  if (!message) return false;
+  if (!dm) return [];
 
-  return isChannelDm(message.channelId);
+  return [dm.userOneId, dm.userTwoId];
 };
 
 export {
+  assertDmChannel,
   assertDmParticipant,
   getDirectMessageChannel,
   getDirectMessageChannelIdsForUser,
+  getDirectMessageChannelParticipantIds,
   getDirectMessageConversations,
-  isChannelDm,
   isDirectMessageChannel,
-  isMessageFromDmChannel,
   isUserDmParticipant,
   normalizePair
 };

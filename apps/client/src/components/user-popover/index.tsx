@@ -21,7 +21,7 @@ import {
   PopoverTrigger
 } from '@sharkord/ui';
 import { format } from 'date-fns';
-import { MessageSquarePlus, ShieldCheck, Trash, UserCog } from 'lucide-react';
+import { MessageSquare, ShieldCheck, Trash, UserCog } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Protect } from '../protect';
@@ -138,7 +138,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
             <div className="flex gap-2 items-center">
               {settings?.directMessagesEnabled && !isDeleted && (
                 <IconButton
-                  icon={MessageSquarePlus}
+                  icon={MessageSquare}
                   variant="ghost"
                   size="sm"
                   title="Direct Message"

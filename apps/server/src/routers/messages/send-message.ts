@@ -11,10 +11,7 @@ import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
 import { publishMessage, publishReplyCount } from '../../db/publishers';
-import {
-  assertDmParticipant,
-  isDirectMessageChannel
-} from '../../db/queries/dms';
+import { assertDmChannel, isDirectMessageChannel } from '../../db/queries/dms';
 import { getSettings } from '../../db/queries/server';
 import { messageFiles, messages } from '../../db/schema';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
@@ -81,17 +78,9 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     const [settings, isDmChannel] = await Promise.all([
       getSettings(),
-      isDirectMessageChannel(input.channelId)
+      isDirectMessageChannel(input.channelId),
+      assertDmChannel(input.channelId, ctx.userId)
     ]);
-
-    if (isDmChannel) {
-      invariant(settings.directMessagesEnabled, {
-        code: 'FORBIDDEN',
-        message: 'Direct messages are disabled on this server'
-      });
-
-      await assertDmParticipant(input.channelId, ctx.userId);
-    }
 
     const { storageMaxFilesPerMessage, enablePlugins } = settings;
 
@@ -100,11 +89,18 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       Math.max(0, storageMaxFilesPerMessage)
     );
 
-    if (isDmChannel && limitedFiles.length > 0) {
-      invariant(settings.storageFileSharingInDirectMessages, {
+    if (limitedFiles.length > 0) {
+      invariant(settings.storageUploadEnabled, {
         code: 'FORBIDDEN',
-        message: 'File sharing in direct messages is disabled on this server'
+        message: 'File uploads are disabled on this server'
       });
+
+      if (isDmChannel) {
+        invariant(settings.storageFileSharingInDirectMessages, {
+          code: 'FORBIDDEN',
+          message: 'File sharing in direct messages is disabled on this server'
+        });
+      }
     }
 
     invariant(!isEmptyMessage(input.content) || limitedFiles.length != 0, {

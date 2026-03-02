@@ -1021,4 +1021,119 @@ describe('channels router', () => {
       })
     ).rejects.toThrow('Cannot rotate file access token for DM channels');
   });
+
+  test('should mark DM channel as read', async () => {
+    // seed: DM channel 3 between User A (3) and User B (4), with 1 message from User A
+    const { caller: callerB } = await initTest(4);
+
+    const beforeRead = await getChannelsReadStatesForUser(4);
+
+    expect(beforeRead[3]).toBe(1);
+
+    await callerB.channels.markAsRead({ channelId: 3 });
+
+    const afterRead = await getChannelsReadStatesForUser(4);
+
+    expect(afterRead[3]).toBe(0);
+  });
+
+  test('should track unread count correctly with multiple DM messages', async () => {
+    // seed already has 1 message from User A in DM channel 3
+    const { caller: callerA } = await initTest(3);
+
+    await callerA.messages.send({
+      channelId: 3,
+      content: 'DM message 2',
+      files: []
+    });
+
+    await callerA.messages.send({
+      channelId: 3,
+      content: 'DM message 3',
+      files: []
+    });
+
+    const readStatesB = await getChannelsReadStatesForUser(4);
+
+    // 1 from seed + 2 new = 3 unread for User B
+    expect(readStatesB[3]).toBe(3);
+  });
+
+  test('should update existing DM read state when marking as read again', async () => {
+    const { caller: callerA } = await initTest(3);
+    const { caller: callerB } = await initTest(4);
+
+    // User B marks as read (clears the seed message)
+    await callerB.channels.markAsRead({ channelId: 3 });
+
+    const afterFirstMark = await getChannelsReadStatesForUser(4);
+
+    expect(afterFirstMark[3]).toBe(0);
+
+    // User A sends another message
+    await callerA.messages.send({
+      channelId: 3,
+      content: 'New DM after mark',
+      files: []
+    });
+
+    const beforeSecondMark = await getChannelsReadStatesForUser(4);
+
+    expect(beforeSecondMark[3]).toBe(1);
+
+    // User B marks as read again
+    await callerB.channels.markAsRead({ channelId: 3 });
+
+    const afterSecondMark = await getChannelsReadStatesForUser(4);
+
+    expect(afterSecondMark[3]).toBe(0);
+  });
+
+  test('should not count own messages as unread in DM (interactive)', async () => {
+    const { caller: callerA } = await initTest(3);
+
+    // User A sends more messages in the DM
+    await callerA.messages.send({
+      channelId: 3,
+      content: 'Another message from A',
+      files: []
+    });
+
+    const readStatesA = await getChannelsReadStatesForUser(3);
+
+    // User A sent all messages, so they should have 0 unread
+    expect(readStatesA[3]).toBe(0);
+  });
+
+  test('should throw when non-participant tries to mark DM channel as read', async () => {
+    // User 1 is not a participant in DM channel 3 (between User A and User B)
+    const { caller } = await initTest(1);
+
+    await expect(caller.channels.markAsRead({ channelId: 3 })).rejects.toThrow(
+      'You are not a participant in this DM channel'
+    );
+  });
+
+  test('should throw when updating permissions for a DM channel', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.channels.updatePermissions({
+        channelId: 3,
+        roleId: 1,
+        permissions: [ChannelPermission.VIEW_CHANNEL]
+      })
+    ).rejects.toThrow('Cannot update DM channel permissions');
+  });
+
+  test('should throw when deleting permissions for a DM channel', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.channels.deletePermissions({
+        channelId: 3,
+        roleId: 1
+      })
+    ).rejects.toThrow('Cannot delete DM channel permissions');
+  });
 });

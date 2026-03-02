@@ -16,7 +16,11 @@ import {
   userRoles,
   users
 } from '../schema';
-import { getDirectMessageChannelIdsForUser } from './dms';
+import {
+  getDirectMessageChannelIdsForUser,
+  getDirectMessageChannelParticipantIds,
+  isUserDmParticipant
+} from './dms';
 import { getUserRoleIds } from './roles';
 
 const getPermissions = async (
@@ -248,6 +252,18 @@ const getAllChannelUserPermissions = async (
       permissions[permissionType] = false;
     }
 
+    if (channel.isDm) {
+      // for DM channels we need to check if the user is a participant, if not we set all permissions to false
+      const isParticipant = await isUserDmParticipant(channel.id, userId);
+
+      if (isParticipant) {
+        // if the user is a participant in the DM channel, we set all permissions to true because DM channels don't have granular permissions
+        for (const permissionType of allPermissionTypes) {
+          permissions[permissionType] = true;
+        }
+      }
+    }
+
     channelPermissions[channel.id] = {
       channelId: channel.id,
       permissions: permissions as Record<ChannelPermission, boolean>
@@ -334,6 +350,11 @@ const getAffectedUserIdsForChannel = async (
 
   if (!channel) {
     return [];
+  }
+
+  if (channel.isDm) {
+    // for DM channels we need to get the two participants and return them as the affected users
+    return getDirectMessageChannelParticipantIds(channelId);
   }
 
   // if channel is public, return all user IDs

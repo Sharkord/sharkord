@@ -8,7 +8,9 @@ import {
   Input
 } from '@sharkord/ui';
 import { Plus } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
+
+const MAX_USERS = 100;
 
 type TSearchUserDropdownProps = {
   query: string;
@@ -24,6 +26,13 @@ const SearchUserDropdown = memo(
     usersToStartDm,
     onStartDm
   }: TSearchUserDropdownProps) => {
+    const allUsers = useMemo(
+      () => usersToStartDm.slice(0, MAX_USERS),
+      [usersToStartDm]
+    );
+
+    const hasMoreUsers = usersToStartDm.length > MAX_USERS;
+
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -34,7 +43,10 @@ const SearchUserDropdown = memo(
             title="Create channel"
           />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent
+          align="end"
+          className="w-64 max-h-80 overflow-auto"
+        >
           <div className="p-2">
             <Input
               value={query}
@@ -42,12 +54,12 @@ const SearchUserDropdown = memo(
               placeholder="Search user"
             />
           </div>
-          {usersToStartDm.length === 0 && (
+          {allUsers.length === 0 && (
             <div className="px-2 pb-2 text-xs text-muted-foreground">
               No users available
             </div>
           )}
-          {usersToStartDm.map((user) => (
+          {allUsers.map((user) => (
             <DropdownMenuItem key={user.id} onClick={() => onStartDm(user.id)}>
               <div className="flex items-center gap-2">
                 <UserAvatar
@@ -59,6 +71,11 @@ const SearchUserDropdown = memo(
               </div>
             </DropdownMenuItem>
           ))}
+          {hasMoreUsers && (
+            <div className="px-2 pb-2 text-xs text-muted-foreground">
+              And {usersToStartDm.length - MAX_USERS} more...
+            </div>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     );

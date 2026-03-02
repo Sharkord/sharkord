@@ -99,7 +99,7 @@ const MessageCompose = memo(
       uploadingSize,
       openFileDialog,
       fileInputProps
-    } = useUploadFiles(containerRef, !canSendMessages);
+    } = useUploadFiles(channelId, containerRef, !canSendMessages);
 
     useImperativeHandle(ref, () => ({ clearFiles }), [clearFiles]);
 

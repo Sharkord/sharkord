@@ -82,7 +82,7 @@ const Storage = memo(() => {
 
         <Group
           label="Allow file sharing in direct messages"
-          description="Controls whether users can attach files in DMs."
+          description="Allows users to share files in direct messages. This setting only applies if uploads are enabled, and it does not affect existing files in direct messages."
         >
           <Switch
             checked={!!values.storageFileSharingInDirectMessages}

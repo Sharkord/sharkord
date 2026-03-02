@@ -8,11 +8,13 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { publishChannelPermissions } from '../../db/publishers';
 import { getAffectedUserIdsForChannel } from '../../db/queries/channels';
+import { isDirectMessageChannel } from '../../db/queries/dms';
 import {
   channelRolePermissions,
   channelUserPermissions
 } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const allPermissions = Object.values(ChannelPermission);
@@ -36,6 +38,13 @@ const updatePermissionsRoute = protectedProcedure
   )
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_CHANNEL_PERMISSIONS);
+
+    const isDmChannel = await isDirectMessageChannel(input.channelId);
+
+    invariant(!isDmChannel, {
+      code: 'FORBIDDEN',
+      message: 'Cannot update DM channel permissions'
+    });
 
     const permissions = input.isCreate ? [] : input.permissions;
 
