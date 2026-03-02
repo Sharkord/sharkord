@@ -202,10 +202,7 @@ const Devices = memo(() => {
     if (didPrimeDevicesOnGrantedRef.current) return;
     didPrimeDevicesOnGrantedRef.current = true;
 
-    void (async () => {
-      await requestPermission({ silent: true });
-      await loadDevices();
-    })();
+    void loadDevices();
   }, [permissionState, requestPermission, loadDevices]);
 
   useEffect(() => {

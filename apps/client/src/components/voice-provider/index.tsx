@@ -1,5 +1,6 @@
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
+import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
 import {
   MICROPHONE_GATE_CLOSE_HOLD_MS,
@@ -152,6 +153,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   const routerRtpCapabilities = useRef<RtpCapabilities | null>(null);
   const audioVideoRefsMap = useRef<Map<number, AudioVideoRefs>>(new Map());
   const ownVoiceState = useOwnVoiceState();
+  const currentVoiceChannelId = useCurrentVoiceChannelId();
   const { devices } = useDevices();
 
   const getOrCreateRefs = useCallback((remoteId: number): AudioVideoRefs => {
@@ -810,6 +812,20 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const prevVoiceChannelId = useRef(currentVoiceChannelId);
+
+  useEffect(() => {
+    const wasInChannel = prevVoiceChannelId.current !== undefined;
+    const leftChannel = currentVoiceChannelId === undefined;
+
+    prevVoiceChannelId.current = currentVoiceChannelId;
+
+    if (wasInChannel && leftChannel) {
+      logVoice('Left voice channel, cleaning up resources');
+      cleanup();
+    }
+  }, [currentVoiceChannelId, cleanup]);
 
   const contextValue = useMemo<TVoiceProvider>(
     () => ({
