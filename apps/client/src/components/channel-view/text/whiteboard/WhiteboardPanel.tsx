@@ -63,8 +63,10 @@ const WhiteboardPanel = memo(({ channelId }: WhiteboardPanelProps) => {
         canvasMode={wb.canvasMode}
         insertingLayerType={wb.insertingLayerType}
         selectedColor={wb.selectedColor}
+        strokeSize={wb.strokeSize}
         onModeChange={wb.onModeChange}
         onColorChange={wb.setSelectedColor}
+        onStrokeSizeChange={wb.setStrokeSize}
         onUndo={wb.undo}
         onRedo={wb.redo}
         onClear={wb.clearAll}
@@ -120,6 +122,7 @@ const WhiteboardPanel = memo(({ channelId }: WhiteboardPanelProps) => {
                   onPointerDown={(e) => wb.onLayerPointerDown(e, layerId)}
                   selectionColor={isSelected ? '#3b82f6' : undefined}
                   onValueChange={(value) => wb.updateLayerValue(layerId, value)}
+                  autoFocus={wb.editingLayerId === layerId}
                 />
               </g>
             );
@@ -154,7 +157,7 @@ const WhiteboardPanel = memo(({ channelId }: WhiteboardPanelProps) => {
             <path
               d={getSvgPathFromStroke(
                 getStroke(wb.pencilDraft, {
-                  size: 16,
+                  size: wb.strokeSize,
                   thinning: 0.5,
                   smoothing: 0.5,
                   streamline: 0.5

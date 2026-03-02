@@ -10,10 +10,10 @@ type PathProps = {
 };
 
 const Path = memo(({ layer, onPointerDown, selectionColor }: PathProps) => {
-  const { x, y, fill, points } = layer;
+  const { x, y, fill, points, strokeSize } = layer;
 
   const stroke = getStroke(points, {
-    size: 16,
+    size: strokeSize ?? 16,
     thinning: 0.5,
     smoothing: 0.5,
     streamline: 0.5

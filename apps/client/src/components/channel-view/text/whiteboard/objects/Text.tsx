@@ -1,16 +1,17 @@
 import { type TextLayer } from '@sharkord/shared';
-import { memo, useCallback, useRef } from 'react';
-import { calculateFontSize, colorToCss, getContrastingTextColor } from '../utils';
+import { memo, useCallback, useEffect, useRef } from 'react';
+import { calculateFontSize, getContrastingTextColor } from '../utils';
 
 type TextProps = {
   layer: TextLayer;
   onPointerDown?: (e: React.PointerEvent) => void;
   selectionColor?: string;
   onValueChange?: (value: string) => void;
+  autoFocus?: boolean;
 };
 
 const Text = memo(
-  ({ layer, onPointerDown, selectionColor, onValueChange }: TextProps) => {
+  ({ layer, onPointerDown, selectionColor, onValueChange, autoFocus }: TextProps) => {
     const { x, y, width, height, fill, value } = layer;
     const contentRef = useRef<HTMLDivElement>(null);
 
@@ -19,6 +20,12 @@ const Text = memo(
         onValueChange(contentRef.current.innerText);
       }
     }, [onValueChange]);
+
+    useEffect(() => {
+      if (autoFocus && contentRef.current) {
+        contentRef.current.focus();
+      }
+    }, [autoFocus]);
 
     const fontSize = calculateFontSize(width, height);
 
@@ -34,6 +41,7 @@ const Text = memo(
         }}
       >
         <div
+          xmlns="http://www.w3.org/1999/xhtml"
           ref={contentRef}
           contentEditable
           suppressContentEditableWarning
@@ -41,14 +49,16 @@ const Text = memo(
           style={{
             width: '100%',
             height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            direction: 'ltr',
+            unicodeBidi: 'normal',
+            textAlign: 'center',
+            lineHeight: `${height}px`,
             fontSize,
             color: getContrastingTextColor(fill),
             outline: 'none',
             wordBreak: 'break-word',
-            overflowWrap: 'break-word'
+            overflowWrap: 'break-word',
+            whiteSpace: 'pre-wrap'
           }}
         >
           {value || ''}

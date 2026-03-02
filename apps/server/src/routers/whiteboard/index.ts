@@ -17,7 +17,8 @@ const layerSchema = z.object({
   height: z.number(),
   fill: colorSchema,
   points: z.array(z.array(z.number())).optional(),
-  value: z.string().optional()
+  value: z.string().optional(),
+  strokeSize: z.number().optional()
 }) as z.ZodType<Layer>;
 
 // --- Queries ---

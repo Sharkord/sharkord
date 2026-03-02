@@ -34,6 +34,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
   const [camera, setCamera] = useState<Point>({ x: 0, y: 0 });
   const [selectedColor, setSelectedColor] = useState<Color>({ r: 39, g: 142, b: 237 });
   const [pencilDraft, setPencilDraft] = useState<number[][] | null>(null);
+  const [strokeSize, setStrokeSize] = useState(16);
   const [cursors, setCursors] = useState<Map<number, WhiteboardCursor>>(new Map());
 
   // Selection net
@@ -46,6 +47,12 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
 
   // Translate
   const [translateOrigin, setTranslateOrigin] = useState<Point | null>(null);
+
+  // Insert drag
+  const insertDragRef = useRef<{ layerId: string; origin: Point } | null>(null);
+
+  // Auto-focus text layer after creation
+  const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
 
   // Undo/redo
   const history = useRef<HistoryEntry[]>([]);
@@ -194,15 +201,15 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     []
   );
 
-  // --- Insert layer ---
-  const insertLayer = useCallback(
+  // --- Start inserting a layer (pointerDown) ---
+  const startInsertLayer = useCallback(
     (type: LayerType, position: Point) => {
       const layerId = generateLayerId();
       const baseLayer = {
         x: position.x,
         y: position.y,
-        width: 100,
-        height: 100,
+        width: 1,
+        height: 1,
         fill: selectedColor
       };
 
@@ -217,15 +224,6 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
         case LayerType.Text:
           layer = { ...baseLayer, type: LayerType.Text, value: '' };
           break;
-        case LayerType.Note:
-          layer = {
-            ...baseLayer,
-            type: LayerType.Note,
-            width: 200,
-            height: 200,
-            value: ''
-          };
-          break;
         default:
           return;
       }
@@ -233,15 +231,47 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
       setLayers((prev) => ({ ...prev, [layerId]: layer }));
       setLayerIds((prev) => [...prev, layerId]);
       setSelection([layerId]);
-
-      trpc.whiteboard.addLayer.mutate({ channelId, layerId, layer });
-      pushToHistory(
-        { ...layers, [layerId]: layer },
-        [...layerIds, layerId]
-      );
+      insertDragRef.current = { layerId, origin: position };
     },
-    [channelId, generateLayerId, layers, layerIds, selectedColor, trpc, pushToHistory]
+    [generateLayerId, selectedColor]
   );
+
+  // --- Finalize inserted layer (pointerUp) ---
+  const finalizeInsertLayer = useCallback(() => {
+    const drag = insertDragRef.current;
+    if (!drag) return;
+
+    insertDragRef.current = null;
+
+    const layer = layers[drag.layerId];
+    if (!layer) return;
+
+    // Enforce minimum size
+    const MIN = 20;
+    const finalLayer = {
+      ...layer,
+      width: Math.max(layer.width, MIN),
+      height: Math.max(layer.height, MIN)
+    } as Layer;
+
+    const newLayers = { ...layers, [drag.layerId]: finalLayer };
+    const newLayerIds = [...layerIds];
+
+    setLayers(newLayers);
+
+    // Commit to server + history
+    trpc.whiteboard.addLayer.mutate({
+      channelId,
+      layerId: drag.layerId,
+      layer: finalLayer
+    });
+    pushToHistory(newLayers, newLayerIds);
+
+    // Auto-focus text layers
+    if (layer.type === LayerType.Text) {
+      setEditingLayerId(drag.layerId);
+    }
+  }, [channelId, layers, layerIds, trpc, pushToHistory]);
 
   // --- Delete selection ---
   const deleteSelection = useCallback(() => {
@@ -289,13 +319,15 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
   // --- Pointer handlers ---
   const onPointerDown = useCallback(
     (e: React.PointerEvent, point: Point) => {
+      setEditingLayerId(null);
+
       if (canvasMode === CanvasMode.Pencil) {
         setPencilDraft([[point.x, point.y, e.pressure]]);
         return;
       }
 
       if (canvasMode === CanvasMode.Inserting && insertingLayerType) {
-        insertLayer(insertingLayerType, point);
+        startInsertLayer(insertingLayerType, point);
         return;
       }
 
@@ -306,7 +338,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
         setCanvasMode(CanvasMode.SelectionNet);
       }
     },
-    [canvasMode, insertingLayerType, insertLayer]
+    [canvasMode, insertingLayerType, startInsertLayer]
   );
 
   const onPointerMove = useCallback(
@@ -317,6 +349,21 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
         setPencilDraft((prev) =>
           prev ? [...prev, [point.x, point.y, e.pressure]] : null
         );
+        return;
+      }
+
+      // Drag-to-size while inserting
+      if (canvasMode === CanvasMode.Inserting && insertDragRef.current) {
+        const { layerId, origin } = insertDragRef.current;
+        const x = Math.min(origin.x, point.x);
+        const y = Math.min(origin.y, point.y);
+        const width = Math.abs(point.x - origin.x);
+        const height = Math.abs(point.y - origin.y);
+        setLayers((prev) => {
+          const layer = prev[layerId];
+          if (!layer) return prev;
+          return { ...prev, [layerId]: { ...layer, x, y, width, height } as Layer };
+        });
         return;
       }
 
@@ -389,8 +436,14 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
   );
 
   const onPointerUp = useCallback(() => {
+    // Finalize drag-to-create
+    if (canvasMode === CanvasMode.Inserting && insertDragRef.current) {
+      finalizeInsertLayer();
+      return;
+    }
+
     if (canvasMode === CanvasMode.Pencil && pencilDraft && pencilDraft.length > 1) {
-      const pathLayer = penPointsToPathLayer(pencilDraft, selectedColor);
+      const pathLayer = penPointsToPathLayer(pencilDraft, selectedColor, strokeSize);
       const layerId = generateLayerId();
 
       setLayers((prev) => ({ ...prev, [layerId]: pathLayer }));
@@ -455,6 +508,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
   }, [
     canvasMode,
     channelId,
+    finalizeInsertLayer,
     generateLayerId,
     layers,
     layerIds,
@@ -462,6 +516,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     pushToHistory,
     selectedColor,
     selection,
+    strokeSize,
     trpc
   ]);
 
@@ -535,11 +590,15 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     selectedColor,
     setSelectedColor,
     pencilDraft,
+    strokeSize,
+    setStrokeSize,
     cursors,
     selectionNetOrigin,
     selectionNetCurrent,
     canUndo,
     canRedo,
+    editingLayerId,
+    setEditingLayerId,
     onModeChange,
     onPointerDown,
     onPointerMove,

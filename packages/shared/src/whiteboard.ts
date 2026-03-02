@@ -67,6 +67,7 @@ export type PathLayer = {
   height: number;
   fill: Color;
   points: number[][];
+  strokeSize?: number;
 };
 
 export type TextLayer = {

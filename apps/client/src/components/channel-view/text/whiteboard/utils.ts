@@ -45,7 +45,8 @@ export function pointerEventToCanvasPoint(
 
 export function penPointsToPathLayer(
   points: number[][],
-  color: Color
+  color: Color,
+  strokeSize: number = 16
 ): PathLayer {
   let minX = Number.POSITIVE_INFINITY;
   let minY = Number.POSITIVE_INFINITY;
@@ -66,7 +67,8 @@ export function penPointsToPathLayer(
     width: maxX - minX,
     height: maxY - minY,
     fill: color,
-    points: points.map(([x, y, pressure]) => [x - minX, y - minY, pressure])
+    points: points.map(([x, y, pressure]) => [x - minX, y - minY, pressure]),
+    strokeSize
   };
 }
 

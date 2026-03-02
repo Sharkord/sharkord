@@ -1,11 +1,12 @@
 import { CanvasMode, type Color, LayerType } from '@sharkord/shared';
 import {
   Circle,
+  Minus,
   MousePointer2,
   Pencil,
+  Plus,
   Redo2,
   Square,
-  StickyNote,
   Trash2,
   Type,
   Undo2
@@ -17,8 +18,10 @@ type ToolbarProps = {
   canvasMode: CanvasMode;
   insertingLayerType: LayerType | null;
   selectedColor: Color;
+  strokeSize: number;
   onModeChange: (mode: CanvasMode, layerType?: LayerType) => void;
   onColorChange: (color: Color) => void;
+  onStrokeSizeChange: (size: number) => void;
   onUndo: () => void;
   onRedo: () => void;
   onClear: () => void;
@@ -31,8 +34,10 @@ const Toolbar = memo(
     canvasMode,
     insertingLayerType,
     selectedColor,
+    strokeSize,
     onModeChange,
     onColorChange,
+    onStrokeSizeChange,
     onUndo,
     onRedo,
     onClear,
@@ -106,15 +111,33 @@ const Toolbar = memo(
           <Type size={18} />
         </button>
 
-        <button
-          className={buttonClass(
-            isActive(CanvasMode.Inserting, LayerType.Note)
-          )}
-          onClick={() => onModeChange(CanvasMode.Inserting, LayerType.Note)}
-          title="Sticky Note"
-        >
-          <StickyNote size={18} />
-        </button>
+        <div className="h-px bg-border my-1" />
+
+        {/* Pen thickness */}
+        <div className="flex flex-col items-center gap-0.5 px-0.5">
+          <button
+            className="p-1 rounded hover:bg-muted text-muted-foreground"
+            onClick={() => onStrokeSizeChange(Math.min(strokeSize + 4, 48))}
+            title="Increase thickness"
+          >
+            <Plus size={14} />
+          </button>
+          <div
+            className="rounded-full bg-foreground"
+            style={{
+              width: Math.max(4, Math.min(strokeSize, 18)),
+              height: Math.max(4, Math.min(strokeSize, 18))
+            }}
+            title={`Thickness: ${strokeSize}`}
+          />
+          <button
+            className="p-1 rounded hover:bg-muted text-muted-foreground"
+            onClick={() => onStrokeSizeChange(Math.max(strokeSize - 4, 4))}
+            title="Decrease thickness"
+          >
+            <Minus size={14} />
+          </button>
+        </div>
 
         <div className="h-px bg-border my-1" />
 
