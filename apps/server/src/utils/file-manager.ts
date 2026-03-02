@@ -189,30 +189,9 @@ class FileManager {
     }
   };
 
-  private getUniqueName = async (originalName: string): Promise<string> => {
-    const baseName = path.basename(originalName, path.extname(originalName));
+  private getUniqueName = (originalName: string): string => {
     const extension = getNormalizedExtension(originalName);
-
-    let fileName = `${baseName}${extension}`;
-    let counter = 2;
-
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const existingFile = await db
-        .select()
-        .from(files)
-        .where(eq(files.name, fileName))
-        .get();
-
-      if (!existingFile) {
-        break;
-      }
-
-      fileName = `${baseName}-${counter}${extension}`;
-      counter++;
-    }
-
-    return fileName;
+    return `${randomUUIDv7()}${extension}`;
   };
 
   public async saveFile(tempFileId: string, userId: number): Promise<TFile> {
@@ -228,7 +207,7 @@ class FileManager {
 
     await this.handleStorageLimits(tempFile);
 
-    const fileName = await this.getUniqueName(tempFile.originalName);
+    const fileName = this.getUniqueName(tempFile.originalName);
     const destinationPath = path.join(PUBLIC_PATH, fileName);
 
     await moveFile(tempFile.path, destinationPath);
