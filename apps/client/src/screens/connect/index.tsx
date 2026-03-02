@@ -125,8 +125,8 @@ const Connect = memo(() => {
                 alt="Sharkord"
                 className={
                   info?.logo
-                    ? 'max-w-full max-h-32 object-contain'
-                    : 'w-32 h-32'
+                    ? 'max-w-full max-h-32 object-contain rounded-xl'
+                    : 'w-32 h-32 rounded-xl'
                 }
               />
             {info?.name && (
