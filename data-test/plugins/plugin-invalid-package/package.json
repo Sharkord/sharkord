@@ -1,0 +1,8 @@
+{
+  "name": "plugin-invalid-package",
+  "version": "not-a-valid-version",
+  "sharkord": {
+    "entry": "index.js",
+    "description": "Invalid package.json"
+  }
+}

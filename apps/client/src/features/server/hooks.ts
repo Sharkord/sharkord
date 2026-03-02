@@ -97,6 +97,12 @@ export const useChannelCan = (channelId: number | undefined) => {
   return can;
 };
 
+export const useChannelInCategoryCan = (channelIds: number[]) => {
+  return channelIds.every((channelId) =>
+    useChannelCan(channelId)(ChannelPermission.VIEW_CHANNEL)
+  );
+};
+
 export const useUserRoles = (userId: number) =>
   useSelector((state: IRootState) => userRolesSelector(state, userId));
 
