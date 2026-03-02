@@ -6,6 +6,7 @@ import { Button } from '@sharkord/ui';
 import type { Extension } from '@tiptap/core';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import { liftListItem } from '@tiptap/pm/schema-list';
+import { TextSelection } from '@tiptap/pm/state';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { ChevronDown, ChevronUp, Smile } from 'lucide-react';
@@ -153,9 +154,26 @@ const TiptapInput = memo(
               return true;
             }
 
-            // Exit list when pressing Enter in an empty list item
+            // Exit heading on Enter — create a paragraph after the heading
             const { state } = _view;
             const { $from, empty } = state.selection;
+            if (
+              empty &&
+              $from.parent.type.name === 'heading' &&
+              $from.parentOffset === $from.parent.content.size
+            ) {
+              const endPos = $from.after();
+              const tr = state.tr.insert(
+                endPos,
+                state.schema.nodes.paragraph.create()
+              );
+              tr.setSelection(TextSelection.create(tr.doc, endPos + 1));
+              _view.dispatch(tr);
+              event.preventDefault();
+              return true;
+            }
+
+            // Exit list when pressing Enter in an empty list item
             if (empty) {
               const listItemType = state.schema.nodes.listItem;
               if (listItemType) {

@@ -5,6 +5,7 @@ import {
   type Color,
   type Layer,
   LayerType,
+  type LineLayer,
   type Point,
   Side,
   type WhiteboardCursor,
@@ -387,8 +388,9 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
         return;
       }
 
-      // Selection mode - start selection net
+      // Selection mode - clear selection and start selection net
       if (canvasMode === CanvasMode.None) {
+        setSelection([]);
         setSelectionNetOrigin(point);
         setSelectionNetCurrent(point);
         setCanvasMode(CanvasMode.SelectionNet);
@@ -523,7 +525,12 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
               }
             }
 
-            next[id] = { ...layer, x: newX, y: newY } as Layer;
+            if (layer.type === LayerType.Line) {
+              const line = layer as LineLayer;
+              next[id] = { ...line, x: newX, y: newY, x2: line.x2 + (newX - line.x), y2: line.y2 + (newY - line.y) };
+            } else {
+              next[id] = { ...layer, x: newX, y: newY } as Layer;
+            }
           }
           return next;
         });
@@ -616,10 +623,16 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
       for (const id of selection) {
         const layer = layers[id];
         if (layer) {
+          const update: Record<string, unknown> = { x: layer.x, y: layer.y };
+          if (layer.type === LayerType.Line) {
+            const line = layer as LineLayer;
+            update.x2 = line.x2;
+            update.y2 = line.y2;
+          }
           trpc.whiteboard.updateLayer.mutate({
             channelId,
             layerId: id,
-            layer: { x: layer.x, y: layer.y }
+            layer: update
           });
         }
       }

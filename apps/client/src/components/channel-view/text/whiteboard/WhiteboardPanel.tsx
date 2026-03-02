@@ -70,31 +70,10 @@ const WhiteboardPanel = memo(({ channelId, onClose }: WhiteboardPanelProps) => {
 
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
-      // Ctrl+wheel = zoom toward cursor, plain wheel = pan
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        const rect = svgRef.current?.getBoundingClientRect();
-        if (!rect) return;
-
-        // Mouse position in screen coords relative to SVG
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
-
-        const delta = e.deltaY > 0 ? -0.1 : 0.1;
-        const newZoom = Math.round(Math.max(0.2, Math.min(5, wb.zoom + delta)) * 100) / 100;
-
-        // Adjust camera so the canvas point under cursor stays fixed
-        wb.setCamera((prev) => ({
-          x: prev.x + mx * (1 / newZoom - 1 / wb.zoom),
-          y: prev.y + my * (1 / newZoom - 1 / wb.zoom)
-        }));
-        wb.setZoom(newZoom);
-      } else {
-        wb.setCamera((prev) => ({
-          x: prev.x - e.deltaX / wb.zoom,
-          y: prev.y - e.deltaY / wb.zoom
-        }));
-      }
+      wb.setCamera((prev) => ({
+        x: prev.x - e.deltaX / wb.zoom,
+        y: prev.y - e.deltaY / wb.zoom
+      }));
     },
     [wb]
   );
