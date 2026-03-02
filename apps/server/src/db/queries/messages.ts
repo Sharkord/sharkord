@@ -5,11 +5,12 @@ import type {
   TMessage,
   TMessageReaction
 } from '@sharkord/shared';
-import { and, count, desc, eq, inArray } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, notExists } from 'drizzle-orm';
 import { db } from '..';
 import { generateFileToken } from '../../helpers/files-crypto';
 import {
   channels,
+  directMessages,
   files,
   messageFiles,
   messageReactions,
@@ -114,11 +115,23 @@ const getMessage = async (
   };
 };
 
-const getMessagesByUserId = async (userId: number): Promise<TMessage[]> =>
+const getNonDirectMessagesFromUserId = async (
+  userId: number
+): Promise<TMessage[]> =>
   db
     .select()
     .from(messages)
-    .where(eq(messages.userId, userId))
+    .where(
+      and(
+        eq(messages.userId, userId),
+        notExists(
+          db
+            .select()
+            .from(directMessages)
+            .where(eq(directMessages.channelId, messages.channelId))
+        )
+      )
+    )
     .orderBy(desc(messages.createdAt));
 
 const getReaction = async (
@@ -225,7 +238,7 @@ const joinMessagesWithRelations = async (
 export {
   getMessage,
   getMessageByFileId,
-  getMessagesByUserId,
+  getNonDirectMessagesFromUserId,
   getReaction,
   joinMessagesWithRelations
 };

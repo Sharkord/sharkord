@@ -2,7 +2,7 @@ import { Permission, type TLogin } from '@sharkord/shared';
 import z from 'zod';
 import { getFilesByUserId } from '../../db/queries/files';
 import { getLastLogins } from '../../db/queries/logins';
-import { getMessagesByUserId } from '../../db/queries/messages';
+import { getNonDirectMessagesFromUserId } from '../../db/queries/messages';
 import { getUserById } from '../../db/queries/users';
 import { clearFields } from '../../helpers/clear-fields';
 import { invariant } from '../../utils/invariant';
@@ -27,7 +27,7 @@ const getUserInfoRoute = protectedProcedure
     const [logins, files, messages] = await Promise.all([
       getLastLogins(user.id, 6),
       getFilesByUserId(user.id),
-      getMessagesByUserId(user.id)
+      getNonDirectMessagesFromUserId(user.id)
     ]);
 
     let cleanUser = clearFields(user, ['password']);
