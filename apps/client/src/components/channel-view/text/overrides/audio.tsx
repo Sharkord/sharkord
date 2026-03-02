@@ -24,7 +24,6 @@ const AudioOverride = memo(({ src }: TAudioOverrideProps) => {
         onError={onError}
         className="max-w-full rounded-md"
       />
-      <LinkOverride link={src} label="Open in new tab" />
     </OverrideLayout>
   );
 });

@@ -54,8 +54,6 @@ const ImageOverride = memo(({ src, alt }: TImageOverrideProps) => {
           crossOrigin="anonymous"
         />
       )}
-
-      <LinkOverride link={src} label="Open in new tab" />
     </OverrideLayout>
   );
 });

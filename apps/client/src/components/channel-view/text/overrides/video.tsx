@@ -24,7 +24,6 @@ const VideoOverride = memo(({ src }: TVideoOverrideProps) => {
         onError={onError}
         className="max-w-full max-h-75 rounded-md"
       />
-      <LinkOverride link={src} label="Open in new tab" />
     </OverrideLayout>
   );
 });
