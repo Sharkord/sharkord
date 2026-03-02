@@ -16,7 +16,8 @@ export enum CanvasMode {
   Translating = 'translating',
   Inserting = 'inserting',
   Resizing = 'resizing',
-  Pencil = 'pencil'
+  Pencil = 'pencil',
+  Panning = 'panning'
 }
 
 export enum Side {

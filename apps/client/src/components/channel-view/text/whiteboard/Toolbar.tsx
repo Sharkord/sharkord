@@ -1,6 +1,7 @@
 import { CanvasMode, type Color, LayerType } from '@sharkord/shared';
 import {
   Circle,
+  Hand,
   Hexagon,
   Minus,
   MousePointer2,
@@ -87,6 +88,14 @@ const Toolbar = memo(
           title="Select"
         >
           <MousePointer2 size={18} />
+        </button>
+
+        <button
+          className={buttonClass(isActive(CanvasMode.Panning))}
+          onClick={() => onModeChange(CanvasMode.Panning)}
+          title="Pan (or middle-click)"
+        >
+          <Hand size={18} />
         </button>
 
         <button

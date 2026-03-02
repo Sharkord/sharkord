@@ -49,6 +49,11 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
   // Translate
   const [translateOrigin, setTranslateOrigin] = useState<Point | null>(null);
 
+  // Panning (middle-click or hand tool)
+  const panStartRef = useRef<{ x: number; y: number } | null>(null);
+  const panCameraStartRef = useRef<Point>({ x: 0, y: 0 });
+  const prevModeRef = useRef<CanvasMode>(CanvasMode.None);
+
   // Insert drag
   const insertDragRef = useRef<{ layerId: string; origin: Point } | null>(null);
 
@@ -355,6 +360,23 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     (e: React.PointerEvent, point: Point) => {
       setEditingLayerId(null);
 
+      // Middle-click pan from any mode
+      if (e.button === 1) {
+        e.preventDefault();
+        prevModeRef.current = canvasMode;
+        panStartRef.current = { x: e.clientX, y: e.clientY };
+        panCameraStartRef.current = { ...camera };
+        setCanvasMode(CanvasMode.Panning);
+        return;
+      }
+
+      // Hand tool pan
+      if (canvasMode === CanvasMode.Panning) {
+        panStartRef.current = { x: e.clientX, y: e.clientY };
+        panCameraStartRef.current = { ...camera };
+        return;
+      }
+
       if (canvasMode === CanvasMode.Pencil) {
         setPencilDraft([[point.x, point.y, e.pressure]]);
         return;
@@ -372,12 +394,23 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
         setCanvasMode(CanvasMode.SelectionNet);
       }
     },
-    [canvasMode, insertingLayerType, startInsertLayer]
+    [camera, canvasMode, insertingLayerType, startInsertLayer]
   );
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent, point: Point) => {
       broadcastCursor(point.x, point.y);
+
+      // Panning (hand tool or middle-click)
+      if (canvasMode === CanvasMode.Panning && panStartRef.current) {
+        const dx = (e.clientX - panStartRef.current.x) / zoom;
+        const dy = (e.clientY - panStartRef.current.y) / zoom;
+        setCamera({
+          x: panCameraStartRef.current.x + dx,
+          y: panCameraStartRef.current.y + dy
+        });
+        return;
+      }
 
       if (canvasMode === CanvasMode.Pencil && pencilDraft) {
         setPencilDraft((prev) =>
@@ -533,11 +566,22 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
       resizeInitialBounds,
       selection,
       selectionNetOrigin,
-      translateOrigin
+      translateOrigin,
+      zoom
     ]
   );
 
-  const onPointerUp = useCallback(() => {
+  const onPointerUp = useCallback((e?: React.PointerEvent) => {
+    // End panning
+    if (canvasMode === CanvasMode.Panning) {
+      panStartRef.current = null;
+      // If middle-click triggered panning, restore previous mode
+      if (e?.button === 1) {
+        setCanvasMode(prevModeRef.current);
+      }
+      return;
+    }
+
     // Finalize drag-to-create
     if (canvasMode === CanvasMode.Inserting && insertDragRef.current) {
       finalizeInsertLayer();
@@ -627,14 +671,15 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     (e: React.PointerEvent, layerId: string) => {
       if (
         canvasMode === CanvasMode.Pencil ||
-        canvasMode === CanvasMode.Inserting
+        canvasMode === CanvasMode.Inserting ||
+        canvasMode === CanvasMode.Panning
       ) {
         return;
       }
 
       e.stopPropagation();
 
-      const point = pointerEventToCanvasPoint(e, camera, svgRef.current);
+      const point = pointerEventToCanvasPoint(e, camera, svgRef.current, zoom);
 
       if (!selection.includes(layerId)) {
         setSelection([layerId]);
@@ -643,7 +688,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
       setCanvasMode(CanvasMode.Translating);
       setTranslateOrigin(point);
     },
-    [camera, canvasMode, selection, svgRef]
+    [camera, canvasMode, selection, svgRef, zoom]
   );
 
   // --- Resize handle ---
