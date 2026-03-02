@@ -102,6 +102,7 @@ export const useChannelCan = (channelId: number | undefined) => {
 };
 
 export const useChannelInCategoryCan = (channelIds: number[]) => {
+  // Returns true if the user can view at least one of the channels in the category
   const isOwner = useIsOwnUserOwner();
   const channels = useSelector(channelsSelector);
   const channelPermissions = useSelector(channelPermissionsSelector);
