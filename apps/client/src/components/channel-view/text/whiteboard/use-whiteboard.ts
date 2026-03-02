@@ -299,6 +299,30 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     pushToHistory({}, []);
   }, [channelId, trpc, pushToHistory]);
 
+  // --- Update color (sets default + applies to selection) ---
+  const updateColor = useCallback(
+    (color: Color) => {
+      setSelectedColor(color);
+      if (selection.length === 0) return;
+
+      setLayers((prev) => {
+        const next = { ...prev };
+        for (const id of selection) {
+          const layer = prev[id];
+          if (!layer) continue;
+          next[id] = { ...layer, fill: color } as Layer;
+          trpc.whiteboard.updateLayer.mutate({
+            channelId,
+            layerId: id,
+            layer: { fill: color }
+          });
+        }
+        return next;
+      });
+    },
+    [channelId, selection, trpc]
+  );
+
   // --- Update layer value (for text/note) ---
   const updateLayerValue = useCallback(
     (layerId: string, value: string) => {
@@ -652,7 +676,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     camera,
     setCamera,
     selectedColor,
-    setSelectedColor,
+    updateColor,
     pencilDraft,
     strokeSize,
     setStrokeSize,

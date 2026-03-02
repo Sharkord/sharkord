@@ -33,6 +33,8 @@ import {
   setDraftMessage
 } from './use-draft-messages';
 import { useScrollController } from './use-scroll-controller';
+import { ResizableSidebar } from '@/components/resizable-sidebar';
+import { LocalStorageKey } from '@/helpers/storage';
 import { WhiteboardPanel } from './whiteboard/WhiteboardPanel';
 
 type TChannelProps = {
@@ -177,11 +179,19 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
           />
         </div>
 
-        {whiteboardOpen && (
-          <div className="border-l border-border flex" style={{ width: '50%' }}>
-            <WhiteboardPanel channelId={channelId} />
-          </div>
-        )}
+        <ResizableSidebar
+          storageKey={LocalStorageKey.WHITEBOARD_SIDEBAR_WIDTH}
+          minWidth={300}
+          maxWidth={900}
+          defaultWidth={500}
+          edge="left"
+          isOpen={whiteboardOpen}
+        >
+          <WhiteboardPanel
+            channelId={channelId}
+            onClose={() => setWhiteboardOpen(false)}
+          />
+        </ResizableSidebar>
       </div>
     </>
   );

@@ -6,7 +6,8 @@ import {
   ArrowUp,
   ArrowUpToLine,
   Minus,
-  Plus
+  Plus,
+  X
 } from 'lucide-react';
 import { memo, useCallback, useRef } from 'react';
 import { Cursors } from './Cursors';
@@ -18,9 +19,10 @@ import { colorToCss, getSvgPathFromStroke, pointerEventToCanvasPoint } from './u
 
 type WhiteboardPanelProps = {
   channelId: number;
+  onClose?: () => void;
 };
 
-const WhiteboardPanel = memo(({ channelId }: WhiteboardPanelProps) => {
+const WhiteboardPanel = memo(({ channelId, onClose }: WhiteboardPanelProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const wb = useWhiteboard(channelId, svgRef);
 
@@ -69,13 +71,28 @@ const WhiteboardPanel = memo(({ channelId }: WhiteboardPanelProps) => {
   const hasSelection = wb.selection.length === 1;
 
   return (
-    <div className="relative flex-1 bg-muted/30 overflow-hidden">
+    <div className="relative flex-1 flex flex-col bg-muted/30 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-card/50 shrink-0">
+        <span className="text-sm font-medium text-muted-foreground">Whiteboard</span>
+        {onClose && (
+          <button
+            className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors"
+            onClick={onClose}
+            title="Close whiteboard"
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
+      <div className="relative flex-1 overflow-hidden">
       <Toolbar
         canvasMode={wb.canvasMode}
         insertingLayerType={wb.insertingLayerType}
         selectedColor={wb.selectedColor}
         onModeChange={wb.onModeChange}
-        onColorChange={wb.setSelectedColor}
+        onColorChange={wb.updateColor}
         onUndo={wb.undo}
         onRedo={wb.redo}
         onClear={wb.clearAll}
@@ -245,6 +262,7 @@ const WhiteboardPanel = memo(({ channelId }: WhiteboardPanelProps) => {
           <Cursors cursors={wb.cursors} currentUserId={wb.ownUserId} />
         </g>
       </svg>
+      </div>
     </div>
   );
 });
