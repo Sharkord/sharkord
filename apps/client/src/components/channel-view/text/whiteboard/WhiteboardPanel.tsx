@@ -1,5 +1,13 @@
 import { CanvasMode } from '@sharkord/shared';
 import getStroke from 'perfect-freehand';
+import {
+  ArrowDown,
+  ArrowDownToLine,
+  ArrowUp,
+  ArrowUpToLine,
+  Minus,
+  Plus
+} from 'lucide-react';
 import { memo, useCallback, useRef } from 'react';
 import { Cursors } from './Cursors';
 import { SelectionBox } from './SelectionBox';
@@ -57,22 +65,85 @@ const WhiteboardPanel = memo(({ channelId }: WhiteboardPanelProps) => {
     }
   };
 
+  const isPenMode = wb.canvasMode === CanvasMode.Pencil;
+  const hasSelection = wb.selection.length === 1;
+
   return (
     <div className="relative flex-1 bg-muted/30 overflow-hidden">
       <Toolbar
         canvasMode={wb.canvasMode}
         insertingLayerType={wb.insertingLayerType}
         selectedColor={wb.selectedColor}
-        strokeSize={wb.strokeSize}
         onModeChange={wb.onModeChange}
         onColorChange={wb.setSelectedColor}
-        onStrokeSizeChange={wb.setStrokeSize}
         onUndo={wb.undo}
         onRedo={wb.redo}
         onClear={wb.clearAll}
         canUndo={wb.canUndo}
         canRedo={wb.canRedo}
       />
+
+      {/* Pen thickness — bottom-right, only in pen mode */}
+      {isPenMode && (
+        <div className="absolute right-3 bottom-3 flex items-center gap-1.5 bg-card border border-border rounded-xl p-1.5 shadow-lg z-10">
+          <button
+            className="p-1 rounded hover:bg-muted text-muted-foreground"
+            onClick={() => wb.setStrokeSize(Math.max(wb.strokeSize - 4, 4))}
+            title="Decrease thickness"
+          >
+            <Minus size={14} />
+          </button>
+          <div
+            className="rounded-full bg-foreground mx-1"
+            style={{
+              width: Math.max(4, Math.min(wb.strokeSize, 18)),
+              height: Math.max(4, Math.min(wb.strokeSize, 18))
+            }}
+            title={`Thickness: ${wb.strokeSize}`}
+          />
+          <button
+            className="p-1 rounded hover:bg-muted text-muted-foreground"
+            onClick={() => wb.setStrokeSize(Math.min(wb.strokeSize + 4, 48))}
+            title="Increase thickness"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Layer order — bottom-right, only when a single layer is selected */}
+      {hasSelection && !isPenMode && (
+        <div className="absolute right-3 bottom-3 flex items-center gap-0.5 bg-card border border-border rounded-xl p-1 shadow-lg z-10">
+          <button
+            className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+            onClick={wb.sendToBack}
+            title="Send to back"
+          >
+            <ArrowDownToLine size={16} />
+          </button>
+          <button
+            className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+            onClick={wb.sendBackward}
+            title="Send backward"
+          >
+            <ArrowDown size={16} />
+          </button>
+          <button
+            className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+            onClick={wb.bringForward}
+            title="Bring forward"
+          >
+            <ArrowUp size={16} />
+          </button>
+          <button
+            className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+            onClick={wb.bringToFront}
+            title="Bring to front"
+          >
+            <ArrowUpToLine size={16} />
+          </button>
+        </div>
+      )}
 
       <svg
         ref={svgRef}

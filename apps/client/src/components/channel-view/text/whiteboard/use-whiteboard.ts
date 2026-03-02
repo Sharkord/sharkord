@@ -554,6 +554,51 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     []
   );
 
+  // --- Layer ordering ---
+  const bringForward = useCallback(() => {
+    if (selection.length !== 1) return;
+    const id = selection[0];
+    setLayerIds((prev) => {
+      const idx = prev.indexOf(id);
+      if (idx === -1 || idx === prev.length - 1) return prev;
+      const next = [...prev];
+      [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+      return next;
+    });
+  }, [selection]);
+
+  const sendBackward = useCallback(() => {
+    if (selection.length !== 1) return;
+    const id = selection[0];
+    setLayerIds((prev) => {
+      const idx = prev.indexOf(id);
+      if (idx <= 0) return prev;
+      const next = [...prev];
+      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+      return next;
+    });
+  }, [selection]);
+
+  const bringToFront = useCallback(() => {
+    if (selection.length !== 1) return;
+    const id = selection[0];
+    setLayerIds((prev) => {
+      const idx = prev.indexOf(id);
+      if (idx === -1 || idx === prev.length - 1) return prev;
+      return [...prev.filter((i) => i !== id), id];
+    });
+  }, [selection]);
+
+  const sendToBack = useCallback(() => {
+    if (selection.length !== 1) return;
+    const id = selection[0];
+    setLayerIds((prev) => {
+      const idx = prev.indexOf(id);
+      if (idx <= 0) return prev;
+      return [id, ...prev.filter((i) => i !== id)];
+    });
+  }, [selection]);
+
   // --- Double-click to edit text layer ---
   const onLayerDoubleClick = useCallback(
     (layerId: string) => {
@@ -630,6 +675,10 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     clearAll,
     undo,
     redo,
+    bringForward,
+    sendBackward,
+    bringToFront,
+    sendToBack,
     ownUserId: ownUser?.id ?? 0
   };
 }
