@@ -8,7 +8,23 @@ import pkg from './package.json';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
-    target: 'esnext'
+    target: 'esnext',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-tiptap': [
+            '@tiptap/core',
+            '@tiptap/react',
+            '@tiptap/starter-kit',
+            '@tiptap/extension-emoji',
+            '@tiptap/suggestion'
+          ],
+          'vendor-mediasoup': ['mediasoup-client'],
+          'vendor-hljs': ['highlight.js']
+        }
+      }
+    }
   },
   resolve: {
     alias: {

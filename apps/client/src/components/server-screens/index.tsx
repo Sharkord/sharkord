@@ -1,19 +1,39 @@
 import { useModViewOpen } from '@/features/app/hooks';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useServerScreenInfo } from '@/features/server-screens/hooks';
-import { createElement, memo, useCallback, useEffect, type JSX } from 'react';
+import {
+  createElement,
+  lazy,
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  type JSX
+} from 'react';
 import { createPortal } from 'react-dom';
-import { CategorySettings } from './category-settings';
-import { ChannelSettings } from './channel-settings';
 import { ServerScreen } from './screens';
-import { ServerSettings } from './server-settings';
-import { UserSettings } from './user-settings';
 
 const ScreensMap = {
-  [ServerScreen.SERVER_SETTINGS]: ServerSettings,
-  [ServerScreen.CHANNEL_SETTINGS]: ChannelSettings,
-  [ServerScreen.USER_SETTINGS]: UserSettings,
-  [ServerScreen.CATEGORY_SETTINGS]: CategorySettings
+  [ServerScreen.SERVER_SETTINGS]: lazy(
+    () =>
+      import('./server-settings').then((m) => ({ default: m.ServerSettings }))
+  ),
+  [ServerScreen.CHANNEL_SETTINGS]: lazy(
+    () =>
+      import('./channel-settings').then((m) => ({
+        default: m.ChannelSettings
+      }))
+  ),
+  [ServerScreen.USER_SETTINGS]: lazy(
+    () =>
+      import('./user-settings').then((m) => ({ default: m.UserSettings }))
+  ),
+  [ServerScreen.CATEGORY_SETTINGS]: lazy(
+    () =>
+      import('./category-settings').then((m) => ({
+        default: m.CategorySettings
+      }))
+  )
 };
 
 const portalRoot = document.getElementById('portal')!;
@@ -60,8 +80,12 @@ const ServerScreensProvider = memo(() => {
       close: closeServerScreens
     };
 
-    // @ts-expect-error - é lidar irmoum
-    component = createElement(ScreensMap[openServerScreen], baseProps);
+    component = (
+      <Suspense fallback={null}>
+        {/* @ts-expect-error - é lidar irmoum */}
+        {createElement(ScreensMap[openServerScreen], baseProps)}
+      </Suspense>
+    );
   }
 
   const realIsOpen = isOpen && !!component;

@@ -10,9 +10,19 @@ import {
 import { Connect } from '@/screens/connect';
 import { Disconnected } from '@/screens/disconnected';
 import { LoadingApp } from '@/screens/loading-app';
-import { ServerView } from '@/screens/server-view';
 import { DisconnectCode } from '@sharkord/shared';
-import { memo, useEffect } from 'react';
+import { Spinner } from '@sharkord/ui';
+import { lazy, memo, Suspense, useEffect } from 'react';
+
+const ServerView = lazy(() =>
+  import('@/screens/server-view').then((m) => ({ default: m.ServerView }))
+);
+
+const ServerViewFallback = () => (
+  <div className="flex flex-col justify-center items-center h-full gap-2">
+    <Spinner size="lg" />
+  </div>
+);
 
 const Routing = memo(() => {
   const isConnected = useIsConnected();
@@ -51,7 +61,11 @@ const Routing = memo(() => {
     return <Connect />;
   }
 
-  return <ServerView />;
+  return (
+    <Suspense fallback={<ServerViewFallback />}>
+      <ServerView />
+    </Suspense>
+  );
 });
 
 export { Routing };

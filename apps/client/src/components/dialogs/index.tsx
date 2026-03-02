@@ -1,26 +1,44 @@
 import { closeDialogs } from '@/features/dialogs/actions';
 import { useDialogInfo } from '@/features/dialogs/hooks';
-import { createElement, memo } from 'react';
-import { AssignRoleDialog } from './assign-role';
-import ConfirmActionDialog from './confirm-action';
-import { CreateCategoryDialog } from './create-category';
-import { CreateChannelDialog } from './create-channel';
-import { CreateInviteDialog } from './create-invite-dialog';
-import { DeleteUserDialog } from './delete-user';
+import { createElement, lazy, memo, Suspense } from 'react';
 import { Dialog } from './dialogs';
-import { ServerPasswordDialog } from './server-password';
-import { TextInputDialog } from './text-input';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const DialogsMap: any = {
-  [Dialog.CONFIRM_ACTION]: ConfirmActionDialog,
-  [Dialog.CREATE_CHANNEL]: CreateChannelDialog,
-  [Dialog.TEXT_INPUT]: TextInputDialog,
-  [Dialog.SERVER_PASSWORD]: ServerPasswordDialog,
-  [Dialog.ASSIGN_ROLE]: AssignRoleDialog,
-  [Dialog.CREATE_INVITE]: CreateInviteDialog,
-  [Dialog.CREATE_CATEGORY]: CreateCategoryDialog,
-  [Dialog.DELETE_USER]: DeleteUserDialog
+const DialogsMap = {
+  [Dialog.CONFIRM_ACTION]: lazy(() => import('./confirm-action')),
+  [Dialog.CREATE_CHANNEL]: lazy(
+    () =>
+      import('./create-channel').then((m) => ({ default: m.CreateChannelDialog }))
+  ),
+  [Dialog.TEXT_INPUT]: lazy(
+    () =>
+      import('./text-input').then((m) => ({ default: m.TextInputDialog }))
+  ),
+  [Dialog.SERVER_PASSWORD]: lazy(
+    () =>
+      import('./server-password').then((m) => ({
+        default: m.ServerPasswordDialog
+      }))
+  ),
+  [Dialog.ASSIGN_ROLE]: lazy(
+    () =>
+      import('./assign-role').then((m) => ({ default: m.AssignRoleDialog }))
+  ),
+  [Dialog.CREATE_INVITE]: lazy(
+    () =>
+      import('./create-invite-dialog').then((m) => ({
+        default: m.CreateInviteDialog
+      }))
+  ),
+  [Dialog.CREATE_CATEGORY]: lazy(
+    () =>
+      import('./create-category').then((m) => ({
+        default: m.CreateCategoryDialog
+      }))
+  ),
+  [Dialog.DELETE_USER]: lazy(
+    () =>
+      import('./delete-user').then((m) => ({ default: m.DeleteUserDialog }))
+  )
 };
 
 const DialogsProvider = memo(() => {
@@ -30,11 +48,15 @@ const DialogsProvider = memo(() => {
 
   const realIsOpen = isOpen && !closing;
 
-  return createElement(DialogsMap[openDialog], {
-    ...props,
-    isOpen: realIsOpen,
-    close: closeDialogs
-  });
+  return (
+    <Suspense fallback={null}>
+      {createElement(DialogsMap[openDialog], {
+        ...props,
+        isOpen: realIsOpen,
+        close: closeDialogs
+      })}
+    </Suspense>
+  );
 });
 
 export { DialogsProvider };
