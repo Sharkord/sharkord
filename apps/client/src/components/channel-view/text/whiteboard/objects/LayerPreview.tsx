@@ -11,11 +11,11 @@ type LayerPreviewProps = {
   onPointerDown?: (e: React.PointerEvent) => void;
   selectionColor?: string;
   onValueChange?: (value: string) => void;
-  autoFocus?: boolean;
+  isEditing?: boolean;
 };
 
 const LayerPreview = memo(
-  ({ layer, onPointerDown, selectionColor, onValueChange, autoFocus }: LayerPreviewProps) => {
+  ({ layer, onPointerDown, selectionColor, onValueChange, isEditing }: LayerPreviewProps) => {
     switch (layer.type) {
       case LayerType.Rectangle:
         return (
@@ -48,7 +48,7 @@ const LayerPreview = memo(
             onPointerDown={onPointerDown}
             selectionColor={selectionColor}
             onValueChange={onValueChange}
-            autoFocus={autoFocus}
+            isEditing={isEditing}
           />
         );
       case LayerType.Note:

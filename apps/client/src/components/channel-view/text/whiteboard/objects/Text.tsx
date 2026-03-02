@@ -7,25 +7,26 @@ type TextProps = {
   onPointerDown?: (e: React.PointerEvent) => void;
   selectionColor?: string;
   onValueChange?: (value: string) => void;
-  autoFocus?: boolean;
+  isEditing?: boolean;
 };
 
 const Text = memo(
-  ({ layer, onPointerDown, selectionColor, onValueChange, autoFocus }: TextProps) => {
+  ({ layer, onPointerDown, selectionColor, onValueChange, isEditing }: TextProps) => {
     const { x, y, width, height, fill, value } = layer;
-    const contentRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    const handleInput = useCallback(() => {
-      if (contentRef.current && onValueChange) {
-        onValueChange(contentRef.current.innerText);
-      }
-    }, [onValueChange]);
+    const handleChange = useCallback(
+      (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        onValueChange?.(e.target.value);
+      },
+      [onValueChange]
+    );
 
     useEffect(() => {
-      if (autoFocus && contentRef.current) {
-        contentRef.current.focus();
+      if (isEditing && textareaRef.current) {
+        textareaRef.current.focus();
       }
-    }, [autoFocus]);
+    }, [isEditing]);
 
     const fontSize = calculateFontSize(width, height);
 
@@ -40,29 +41,33 @@ const Text = memo(
           outline: selectionColor ? `1px solid ${selectionColor}` : 'none'
         }}
       >
-        <div
-          xmlns="http://www.w3.org/1999/xhtml"
-          ref={contentRef}
-          contentEditable
-          suppressContentEditableWarning
-          onInput={handleInput}
+        <textarea
+          ref={textareaRef}
+          dir="ltr"
+          readOnly={!isEditing}
+          value={value || ''}
+          onChange={handleChange}
           style={{
             width: '100%',
             height: '100%',
-            direction: 'ltr',
-            unicodeBidi: 'normal',
             textAlign: 'center',
-            lineHeight: `${height}px`,
             fontSize,
             color: getContrastingTextColor(fill),
+            background: 'transparent',
+            border: 'none',
             outline: 'none',
+            resize: 'none',
+            overflow: 'hidden',
+            padding: 0,
+            margin: 0,
+            fontFamily: 'inherit',
+            lineHeight: `${height}px`,
             wordBreak: 'break-word',
             overflowWrap: 'break-word',
-            whiteSpace: 'pre-wrap'
+            pointerEvents: isEditing ? 'auto' : 'none',
+            cursor: isEditing ? 'text' : 'default'
           }}
-        >
-          {value || ''}
-        </div>
+        />
       </foreignObject>
     );
   }

@@ -116,13 +116,16 @@ const WhiteboardPanel = memo(({ channelId }: WhiteboardPanelProps) => {
             const isSelected = wb.selection.includes(layerId);
 
             return (
-              <g key={layerId}>
+              <g
+                key={layerId}
+                onDoubleClick={() => wb.onLayerDoubleClick(layerId)}
+              >
                 <LayerPreview
                   layer={layer}
                   onPointerDown={(e) => wb.onLayerPointerDown(e, layerId)}
                   selectionColor={isSelected ? '#3b82f6' : undefined}
                   onValueChange={(value) => wb.updateLayerValue(layerId, value)}
-                  autoFocus={wb.editingLayerId === layerId}
+                  isEditing={wb.editingLayerId === layerId}
                 />
               </g>
             );

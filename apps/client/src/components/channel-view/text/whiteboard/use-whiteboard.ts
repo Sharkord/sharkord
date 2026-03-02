@@ -554,16 +554,35 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     []
   );
 
+  // --- Double-click to edit text layer ---
+  const onLayerDoubleClick = useCallback(
+    (layerId: string) => {
+      const layer = layers[layerId];
+      if (layer?.type === LayerType.Text) {
+        setEditingLayerId(layerId);
+      }
+    },
+    [layers]
+  );
+
   // --- Keyboard shortcuts ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Delete' || e.key === 'Backspace') {
+        const tag = document.activeElement?.tagName;
         if (
-          document.activeElement?.tagName !== 'INPUT' &&
+          tag !== 'INPUT' &&
+          tag !== 'TEXTAREA' &&
           !(document.activeElement as HTMLElement)?.isContentEditable
         ) {
           deleteSelection();
         }
+      }
+
+      // Escape exits text editing
+      if (e.key === 'Escape' && editingLayerId) {
+        setEditingLayerId(null);
+        (document.activeElement as HTMLElement)?.blur();
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
@@ -577,7 +596,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [deleteSelection, undo, redo]);
+  }, [deleteSelection, editingLayerId, undo, redo]);
 
   return {
     layers,
@@ -604,6 +623,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     onPointerMove,
     onPointerUp,
     onLayerPointerDown,
+    onLayerDoubleClick,
     onResizeHandlePointerDown,
     updateLayerValue,
     deleteSelection,
