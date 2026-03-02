@@ -17,8 +17,7 @@ import {
   DELETED_USER_IDENTITY_AND_NAME,
   TYPING_MS,
   getTrpcError,
-  linkifyHtml,
-  transformMarkdown
+  linkifyHtml
 } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
 import { throttle } from 'lodash-es';
@@ -112,7 +111,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
       try {
         await trpc.messages.send.mutate({
-          content: linkifyHtml(transformMarkdown(message)),
+          content: linkifyHtml(message),
           channelId,
           files: files.map((f) => f.id)
         });

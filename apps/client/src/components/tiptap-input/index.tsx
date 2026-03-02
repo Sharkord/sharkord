@@ -5,8 +5,9 @@ import type { TJoinedPublicUser } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import type { Extension } from '@tiptap/core';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
+import { Markdown } from '@tiptap/markdown';
 import { splitBlock } from '@tiptap/pm/commands';
-import { liftListItem } from '@tiptap/pm/schema-list';
+import { liftListItem, sinkListItem } from '@tiptap/pm/schema-list';
 import type { Transaction } from '@tiptap/pm/state';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -19,7 +20,6 @@ import {
   useRef,
   useState
 } from 'react';
-import { FormattingToolbar } from '../formatting-toolbar';
 import type { TEmojiItem } from './helpers';
 import { CommandSuggestion } from './commands/command-suggestion';
 import { Mention } from './commands/mention-extension';
@@ -66,9 +66,9 @@ const TiptapInput = memo(
 
     const extensions = useMemo((): Extension[] => {
       const exts = [
+        Markdown,
         StarterKit.configure({
-          code: false,
-          codeBlock: false,
+          heading: { levels: [1, 2, 3, 4, 5, 6] },
           hardBreak: {
             HTMLAttributes: {
               class: 'hard-break'
@@ -192,6 +192,27 @@ const TiptapInput = memo(
             return false;
           }
 
+          // Tab / Shift+Tab: indent/outdent list items
+          if (event.key === 'Tab') {
+            const { state } = _view;
+            const listItemType = state.schema.nodes.listItem;
+            if (listItemType) {
+              if (event.shiftKey) {
+                if (liftListItem(listItemType)(state, _view.dispatch)) {
+                  event.preventDefault();
+                  return true;
+                }
+              } else {
+                if (sinkListItem(listItemType)(state, _view.dispatch)) {
+                  event.preventDefault();
+                  return true;
+                }
+              }
+            }
+            event.preventDefault();
+            return true;
+          }
+
           if (event.key === 'Escape') {
             event.preventDefault();
             onCancel?.();
@@ -286,7 +307,6 @@ const TiptapInput = memo(
               isExpanded ? 'max-h-80' : 'max-h-20'
             } ${disabled ? 'opacity-50 cursor-not-allowed bg-muted' : ''}`}
           />
-          {(isHovering || isFocused) && <FormattingToolbar editor={editor} />}
           {showExpandButton && (isHovering || isFocused) && (
             <Button
               type="button"

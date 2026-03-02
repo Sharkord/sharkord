@@ -4,12 +4,7 @@ import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TJoinedPublicUser } from '@sharkord/shared';
-import {
-  TYPING_MS,
-  getTrpcError,
-  linkifyHtml,
-  transformMarkdown
-} from '@sharkord/shared';
+import { TYPING_MS, getTrpcError, linkifyHtml } from '@sharkord/shared';
 import { throttle } from 'lodash-es';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -54,7 +49,7 @@ const ThreadCompose = memo(
 
         try {
           await trpc.messages.send.mutate({
-            content: linkifyHtml(transformMarkdown(message)),
+            content: linkifyHtml(message),
             channelId,
             files: files.map((f) => f.id),
             parentMessageId

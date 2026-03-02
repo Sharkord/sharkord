@@ -6,5 +6,4 @@ export * from './linkify-html';
 export * from './message-sanitizer';
 export * from './sha256';
 export * from './strip-zalgo';
-export * from './transform-code';
 export * from './trpc-errors';

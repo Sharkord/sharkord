@@ -1,12 +1,6 @@
 import { TiptapInput } from '@/components/tiptap-input';
 import { getTRPCClient } from '@/lib/trpc';
-import {
-  type TMessage,
-  isEmptyMessage,
-  linkifyHtml,
-  reverseMarkdown,
-  transformMarkdown
-} from '@sharkord/shared';
+import { type TMessage, isEmptyMessage, linkifyHtml } from '@sharkord/shared';
 import { AutoFocus } from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';
@@ -18,9 +12,7 @@ type TMessageEditInlineProps = {
 
 const MessageEditInline = memo(
   ({ message, onBlur }: TMessageEditInlineProps) => {
-    const [value, setValue] = useState<string>(
-      reverseMarkdown(message.content ?? '')
-    );
+    const [value, setValue] = useState<string>(message.content ?? '');
 
     const onSubmit = useCallback(
       async (newValue: string | undefined) => {
@@ -37,7 +29,7 @@ const MessageEditInline = memo(
         try {
           await trpc.messages.edit.mutate({
             messageId: message.id,
-            content: linkifyHtml(transformMarkdown(newValue))
+            content: linkifyHtml(newValue)
           });
 
           toast.success('Message edited');
