@@ -3,7 +3,10 @@ export enum LayerType {
   Ellipse = 'ellipse',
   Path = 'path',
   Text = 'text',
-  Note = 'note'
+  Note = 'note',
+  Triangle = 'triangle',
+  Hexagon = 'hexagon',
+  Line = 'line'
 }
 
 export enum CanvasMode {
@@ -90,12 +93,42 @@ export type NoteLayer = {
   value?: string;
 };
 
+export type TriangleLayer = {
+  type: LayerType.Triangle;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fill: Color;
+};
+
+export type HexagonLayer = {
+  type: LayerType.Hexagon;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fill: Color;
+};
+
+export type LineLayer = {
+  type: LayerType.Line;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fill: Color;
+};
+
 export type Layer =
   | RectangleLayer
   | EllipseLayer
   | PathLayer
   | TextLayer
-  | NoteLayer;
+  | NoteLayer
+  | TriangleLayer
+  | HexagonLayer
+  | LineLayer;
 
 export type WhiteboardState = {
   layers: Record<string, Layer>;

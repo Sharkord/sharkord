@@ -221,6 +221,15 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
         case LayerType.Ellipse:
           layer = { ...baseLayer, type: LayerType.Ellipse };
           break;
+        case LayerType.Triangle:
+          layer = { ...baseLayer, type: LayerType.Triangle };
+          break;
+        case LayerType.Hexagon:
+          layer = { ...baseLayer, type: LayerType.Hexagon };
+          break;
+        case LayerType.Line:
+          layer = { ...baseLayer, type: LayerType.Line };
+          break;
         case LayerType.Text:
           layer = { ...baseLayer, type: LayerType.Text, value: '' };
           break;
@@ -379,10 +388,15 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
       // Drag-to-size while inserting
       if (canvasMode === CanvasMode.Inserting && insertDragRef.current) {
         const { layerId, origin } = insertDragRef.current;
-        const x = Math.min(origin.x, point.x);
-        const y = Math.min(origin.y, point.y);
-        const width = Math.abs(point.x - origin.x);
-        const height = Math.abs(point.y - origin.y);
+        let width = Math.abs(point.x - origin.x);
+        let height = Math.abs(point.y - origin.y);
+        if (e.shiftKey) {
+          const size = Math.max(width, height);
+          width = size;
+          height = size;
+        }
+        const x = point.x >= origin.x ? origin.x : origin.x - width;
+        const y = point.y >= origin.y ? origin.y : origin.y - height;
         setLayers((prev) => {
           const layer = prev[layerId];
           if (!layer) return prev;
@@ -412,7 +426,31 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
           for (const id of selection) {
             const layer = prev[id];
             if (!layer) continue;
-            next[id] = { ...layer, x: layer.x + dx, y: layer.y + dy } as Layer;
+            let newX = layer.x + dx;
+            let newY = layer.y + dy;
+
+            // Snap text layers to nearby shape centers
+            if (layer.type === LayerType.Text) {
+              const SNAP_THRESHOLD = 15;
+              const textCx = newX + layer.width / 2;
+              const textCy = newY + layer.height / 2;
+
+              for (const [otherId, other] of Object.entries(prev)) {
+                if (otherId === id || other.type === LayerType.Text || other.type === LayerType.Path) continue;
+                const shapeCx = other.x + other.width / 2;
+                const shapeCy = other.y + other.height / 2;
+                if (
+                  Math.abs(textCx - shapeCx) < SNAP_THRESHOLD &&
+                  Math.abs(textCy - shapeCy) < SNAP_THRESHOLD
+                ) {
+                  newX = shapeCx - layer.width / 2;
+                  newY = shapeCy - layer.height / 2;
+                  break;
+                }
+              }
+            }
+
+            next[id] = { ...layer, x: newX, y: newY } as Layer;
           }
           return next;
         });
@@ -426,7 +464,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
         resizeInitialBounds &&
         selection.length === 1
       ) {
-        const newBounds = resizeBounds(resizeInitialBounds, resizeCorner, point);
+        const newBounds = resizeBounds(resizeInitialBounds, resizeCorner, point, e.shiftKey);
         const layerId = selection[0];
         setLayers((prev) => {
           const layer = prev[layerId];

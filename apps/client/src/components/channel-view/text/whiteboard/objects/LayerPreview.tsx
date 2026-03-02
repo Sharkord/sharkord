@@ -1,8 +1,10 @@
 import { type Layer, LayerType } from '@sharkord/shared';
 import { memo } from 'react';
 import { Ellipse } from './Ellipse';
+import { Line } from './Line';
 import { Note } from './Note';
 import { Path } from './Path';
+import { Polygon } from './Polygon';
 import { Rectangle } from './Rectangle';
 import { Text } from './Text';
 
@@ -28,6 +30,23 @@ const LayerPreview = memo(
       case LayerType.Ellipse:
         return (
           <Ellipse
+            layer={layer}
+            onPointerDown={onPointerDown}
+            selectionColor={selectionColor}
+          />
+        );
+      case LayerType.Triangle:
+      case LayerType.Hexagon:
+        return (
+          <Polygon
+            layer={layer}
+            onPointerDown={onPointerDown}
+            selectionColor={selectionColor}
+          />
+        );
+      case LayerType.Line:
+        return (
+          <Line
             layer={layer}
             onPointerDown={onPointerDown}
             selectionColor={selectionColor}
