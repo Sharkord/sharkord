@@ -1,4 +1,5 @@
 import type {
+  Layer,
   ServerEvents,
   StreamKind,
   TCategory,
@@ -10,7 +11,8 @@ import type {
   TJoinedPublicUser,
   TJoinedRole,
   TPublicServerSettings,
-  TVoiceUserState
+  TVoiceUserState,
+  WhiteboardCursor
 } from '@sharkord/shared';
 import type { Unsubscribable } from '@trpc/server/observable';
 import { observable, type Observable } from '@trpc/server/observable';
@@ -112,6 +114,28 @@ type Events = {
   [ServerEvents.CATEGORY_DELETE]: number;
 
   [ServerEvents.CHANNEL_MENTION]: {
+    channelId: number;
+  };
+
+  [ServerEvents.WHITEBOARD_LAYER_ADD]: {
+    channelId: number;
+    layerId: string;
+    layer: Layer;
+  };
+  [ServerEvents.WHITEBOARD_LAYER_UPDATE]: {
+    channelId: number;
+    layerId: string;
+    layer: Partial<Layer>;
+  };
+  [ServerEvents.WHITEBOARD_LAYER_DELETE]: {
+    channelId: number;
+    layerIds: string[];
+  };
+  [ServerEvents.WHITEBOARD_CURSOR_UPDATE]: {
+    channelId: number;
+    cursor: WhiteboardCursor;
+  };
+  [ServerEvents.WHITEBOARD_CLEAR]: {
     channelId: number;
   };
 };

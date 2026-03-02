@@ -9,6 +9,7 @@ import { othersRouter } from './others';
 import { rolesRouter } from './roles';
 import { usersRouter } from './users';
 import { voiceRouter } from './voice';
+import { whiteboardRouter } from './whiteboard';
 
 const appRouter = t.router({
   others: othersRouter,
@@ -20,7 +21,8 @@ const appRouter = t.router({
   roles: rolesRouter,
   invites: invitesRouter,
   voice: voiceRouter,
-  categories: categoriesRouter
+  categories: categoriesRouter,
+  whiteboard: whiteboardRouter
 });
 
 type AppRouter = typeof appRouter;

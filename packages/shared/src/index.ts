@@ -10,3 +10,4 @@ export * from './test-ids';
 export * from './trpc';
 export * from './types';
 export * from './voice';
+export * from './whiteboard';

@@ -43,7 +43,13 @@ export enum ServerEvents {
   CATEGORY_UPDATE = 'categoryUpdate',
   CATEGORY_DELETE = 'categoryDelete',
 
-  CHANNEL_MENTION = 'channelMention'
+  CHANNEL_MENTION = 'channelMention',
+
+  WHITEBOARD_LAYER_ADD = 'whiteboardLayerAdd',
+  WHITEBOARD_LAYER_UPDATE = 'whiteboardLayerUpdate',
+  WHITEBOARD_LAYER_DELETE = 'whiteboardLayerDelete',
+  WHITEBOARD_CURSOR_UPDATE = 'whiteboardCursorUpdate',
+  WHITEBOARD_CLEAR = 'whiteboardClear'
 }
 
 export type TNewMessage = {

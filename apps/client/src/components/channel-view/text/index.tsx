@@ -33,12 +33,15 @@ import {
   setDraftMessage
 } from './use-draft-messages';
 import { useScrollController } from './use-scroll-controller';
+import { WhiteboardPanel } from './whiteboard/WhiteboardPanel';
 
 type TChannelProps = {
   channelId: number;
 };
 
 const TextChannel = memo(({ channelId }: TChannelProps) => {
+  const [whiteboardOpen, setWhiteboardOpen] = useState(false);
+
   const {
     messages,
     hasMore,
@@ -141,31 +144,45 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         </div>
       )}
 
-      <TextTopbar onScrollToMessage={scrollToMessage} />
-
-      <div
-        ref={containerRef}
-        onScroll={onScroll}
-        data-messages-container
-        className="flex-1 overflow-y-auto overflow-x-hidden p-2 animate-in fade-in duration-500"
-      >
-        <div className="space-y-4">
-          {groupedMessages.map((group, index) => (
-            <MessagesGroup key={index} group={group} />
-          ))}
-        </div>
-      </div>
-
-      <MessageCompose
-        ref={composeRef}
-        channelId={channelId}
-        message={newMessage}
-        onMessageChange={setNewMessageHandler}
-        onSend={onSend}
-        onTyping={sendTypingSignal}
-        typingUsers={typingUsers}
-        users={mentionUsers}
+      <TextTopbar
+        onScrollToMessage={scrollToMessage}
+        whiteboardOpen={whiteboardOpen}
+        onToggleWhiteboard={() => setWhiteboardOpen((prev) => !prev)}
       />
+
+      <div className="flex flex-1 min-h-0">
+        <div className="flex flex-col flex-1 min-w-0">
+          <div
+            ref={containerRef}
+            onScroll={onScroll}
+            data-messages-container
+            className="flex-1 overflow-y-auto overflow-x-hidden p-2 animate-in fade-in duration-500"
+          >
+            <div className="space-y-4">
+              {groupedMessages.map((group, index) => (
+                <MessagesGroup key={index} group={group} />
+              ))}
+            </div>
+          </div>
+
+          <MessageCompose
+            ref={composeRef}
+            channelId={channelId}
+            message={newMessage}
+            onMessageChange={setNewMessageHandler}
+            onSend={onSend}
+            onTyping={sendTypingSignal}
+            typingUsers={typingUsers}
+            users={mentionUsers}
+          />
+        </div>
+
+        {whiteboardOpen && (
+          <div className="border-l border-border flex" style={{ width: '50%' }}>
+            <WhiteboardPanel channelId={channelId} />
+          </div>
+        )}
+      </div>
     </>
   );
 });
