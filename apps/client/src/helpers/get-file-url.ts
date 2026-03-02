@@ -1,4 +1,5 @@
 import type { TFile } from '@sharkord/shared';
+import { getSessionStorageItem, SessionStorageKey } from './storage';
 
 const getHostFromServer = () => {
   if (import.meta.env.MODE === 'development') {
@@ -25,14 +26,20 @@ const getFileUrl = (file: TFile | undefined | null) => {
   if (!file) return '';
 
   const url = getUrlFromServer();
+  const params = new URLSearchParams();
 
-  let baseUrl = `${url}/public/${file.name}`;
-
-  if (file._accessToken) {
-    baseUrl += `?accessToken=${file._accessToken}`;
+  const token = getSessionStorageItem(SessionStorageKey.TOKEN);
+  if (token) {
+    params.set('token', token);
   }
 
-  return encodeURI(baseUrl);
+  if (file._accessToken) {
+    params.set('accessToken', file._accessToken);
+  }
+
+  const query = params.toString();
+
+  return encodeURI(`${url}/public/${file.name}${query ? `?${query}` : ''}`);
 };
 
 export { getFileUrl, getHostFromServer, getUrlFromServer };

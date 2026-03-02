@@ -5,6 +5,8 @@ import path from 'path';
 import { db } from '../db';
 import { isFileOrphaned } from '../db/queries/files';
 import { getMessageByFileId } from '../db/queries/messages';
+import { getSettings } from '../db/queries/server';
+import { getUserByToken } from '../db/queries/users';
 import { channels, files } from '../db/schema';
 import { verifyFileToken } from '../helpers/files-crypto';
 import { PUBLIC_PATH } from '../helpers/paths';
@@ -70,30 +72,46 @@ const publicRouteHandler = async (
     return;
   }
 
-  // it's gonna be defined if it's a message file
-  // otherwise is something like an avatar or banner or something else
-  // we can assume this because of the orphaned check above
-  const associatedMessage = await getMessageByFileId(dbFile.id);
+  // server logo is the only truly public file (shown on login screen)
+  const serverSettings = await getSettings();
+  const isServerLogo = serverSettings.logoId === dbFile.id;
 
-  if (associatedMessage) {
-    const channel = await db
-      .select()
-      .from(channels)
-      .where(eq(channels.id, associatedMessage.channelId))
-      .get();
+  if (!isServerLogo) {
+    // all non-logo files require authentication
+    const token =
+      url.searchParams.get('token') ||
+      (req.headers['x-token'] as string | undefined);
+    const user = await getUserByToken(token || undefined);
 
-    if (channel && channel.private) {
-      const accessToken = url.searchParams.get('accessToken');
-      const isValidToken = verifyFileToken(
-        dbFile.id,
-        channel.fileAccessToken,
-        accessToken || ''
-      );
+    if (!user) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      return;
+    }
 
-      if (!isValidToken) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Forbidden' }));
-        return;
+    // private channel files additionally require a file-specific access token
+    const associatedMessage = await getMessageByFileId(dbFile.id);
+
+    if (associatedMessage) {
+      const channel = await db
+        .select()
+        .from(channels)
+        .where(eq(channels.id, associatedMessage.channelId))
+        .get();
+
+      if (channel && channel.private) {
+        const accessToken = url.searchParams.get('accessToken');
+        const isValidToken = verifyFileToken(
+          dbFile.id,
+          channel.fileAccessToken,
+          accessToken || ''
+        );
+
+        if (!isValidToken) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Forbidden' }));
+          return;
+        }
       }
     }
   }
