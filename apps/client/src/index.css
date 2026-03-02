@@ -294,13 +294,15 @@ body {
 
   ul {
     list-style-type: disc;
-    padding-left: 1.5em;
+    list-style-position: inside;
+    padding-left: 1em;
     margin: 0.25em 0;
   }
 
   ol {
     list-style-type: decimal;
-    padding-left: 1.5em;
+    list-style-position: inside;
+    padding-left: 1em;
     margin: 0.25em 0;
   }
 
@@ -334,9 +336,14 @@ body {
   }
 
   blockquote {
-    margin-left: 0.5em;
-    padding-left: 0.5em;
+    display: block;
+    margin: 0.25em 0 0.25em 0.5em;
+    padding: 0.1em 0 0.1em 0.5em;
     border-left: solid 2px rgba(127, 127, 127, 0.4);
+  }
+
+  blockquote p {
+    margin: 0;
   }
 
   hr {
