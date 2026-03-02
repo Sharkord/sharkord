@@ -3,12 +3,10 @@ import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { BUILT_IN_COMMANDS } from '@/helpers/built-in-commands';
 import type { TJoinedPublicUser } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
-import type { Extension } from '@tiptap/core';
+import { Extension, InputRule } from '@tiptap/core';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import { Markdown } from '@tiptap/markdown';
-import { splitBlock } from '@tiptap/pm/commands';
 import { liftListItem, sinkListItem } from '@tiptap/pm/schema-list';
-import type { Transaction } from '@tiptap/pm/state';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { ChevronDown, ChevronUp, Smile } from 'lucide-react';
@@ -30,6 +28,31 @@ import {
 } from './commands/mention-suggestion';
 import { SlashCommands } from './commands/slash-commands-extension';
 import { EmojiSuggestion } from './commands/suggestions';
+
+const MarkdownLink = Extension.create({
+  name: 'markdownLink',
+  addInputRules() {
+    return [
+      new InputRule({
+        find: /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/,
+        handler: ({ state, range, match }) => {
+          const [, text, url] = match;
+          if (!text || !url) return;
+          const linkMark = state.schema.marks.link.create({
+            href: url,
+            target: '_blank',
+            rel: 'noopener noreferrer'
+          });
+          state.tr.replaceWith(
+            range.from,
+            range.to,
+            state.schema.text(text, [linkMark])
+          );
+        }
+      })
+    ];
+  }
+});
 
 type TTiptapInputProps = {
   disabled?: boolean;
@@ -98,7 +121,8 @@ const TiptapInput = memo(
         SlashCommands.configure({
           commands: BUILT_IN_COMMANDS,
           suggestion: CommandSuggestion
-        }) as Extension
+        }) as Extension,
+        MarkdownLink
       ] as Extension[];
 
       if (users && users.length > 0) {
@@ -155,26 +179,9 @@ const TiptapInput = memo(
               return true;
             }
 
-            // Exit heading on Enter — split, then convert new block to paragraph
+            // Exit list when pressing Enter in an empty list item
             const { state } = _view;
             const { $from, empty } = state.selection;
-            if (empty && $from.parent.type.name === 'heading') {
-              let tr: Transaction | null = null;
-              splitBlock(state, (t) => { tr = t; });
-              if (tr) {
-                const newFrom = (tr as Transaction).selection.$from;
-                (tr as Transaction).setBlockType(
-                  newFrom.before(),
-                  newFrom.after(),
-                  state.schema.nodes.paragraph
-                );
-                _view.dispatch(tr as Transaction);
-                event.preventDefault();
-                return true;
-              }
-            }
-
-            // Exit list when pressing Enter in an empty list item
             if (empty) {
               const listItemType = state.schema.nodes.listItem;
               if (listItemType) {
