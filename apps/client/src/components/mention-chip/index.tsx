@@ -10,10 +10,8 @@ type TMentionChipProps = {
 
 const MentionChip = memo(({ userId, label: labelProp }: TMentionChipProps) => {
   const user = useUserById(userId);
-
-  if (!user) return null;
-
-  const label = labelProp ?? getRenderedUsername(user, userId);
+  const label =
+    labelProp ?? (user ? getRenderedUsername(user, userId) : 'Deleted User');
 
   return (
     <UserPopover userId={userId}>

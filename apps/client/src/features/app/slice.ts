@@ -15,6 +15,7 @@ export interface TAppState {
   dmsOpen: boolean;
   selectedDmChannelId: number | undefined;
   browserNotifications: boolean;
+  browserNotificationsForMentions: boolean;
 }
 
 const initialState: TAppState = {
@@ -34,6 +35,10 @@ const initialState: TAppState = {
   selectedDmChannelId: undefined,
   browserNotifications: getLocalStorageItemBool(
     LocalStorageKey.BROWSER_NOTIFICATIONS,
+    false
+  ),
+  browserNotificationsForMentions: getLocalStorageItemBool(
+    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_MENTIONS,
     false
   )
 };
@@ -87,6 +92,12 @@ export const appSlice = createSlice({
     },
     setBrowserNotifications: (state, action: PayloadAction<boolean>) => {
       state.browserNotifications = action.payload;
+    },
+    setBrowserNotificationsForMentions: (
+      state,
+      action: PayloadAction<boolean>
+    ) => {
+      state.browserNotificationsForMentions = action.payload;
     }
   }
 });

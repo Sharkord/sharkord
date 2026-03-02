@@ -14,6 +14,7 @@ import {
   connectedSelector,
   connectingSelector,
   disconnectInfoSelector,
+  hasUnreadMentionsSelector,
   infoSelector,
   isOwnUserOwnerSelector,
   ownUserRolesSelector,
@@ -127,4 +128,9 @@ export const useHasUnreadMention = (channelId: number) =>
 export const useHasSharingScreenUsers = (channelId: number) =>
   useSelector((state: IRootState) =>
     hasSharingScreenUsersSelector(state, channelId)
+  );
+
+export const useHasUnreadMentions = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    hasUnreadMentionsSelector(state, channelId)
   );

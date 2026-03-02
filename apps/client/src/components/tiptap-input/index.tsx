@@ -50,6 +50,7 @@ const TiptapInput = memo(
     users
   }: TTiptapInputProps) => {
     const readOnlyRef = useRef(readOnly);
+
     readOnlyRef.current = readOnly;
 
     const [isExpanded, setIsExpanded] = useState(false);

@@ -7,7 +7,7 @@ import {
   useUserById
 } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
-import { Permission, type TJoinedMessage } from '@sharkord/shared';
+import { hasMention, Permission, type TJoinedMessage } from '@sharkord/shared';
 import { CornerUpRight, MessageSquareText } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { MessageActions } from './message-actions';
@@ -45,9 +45,7 @@ const Message = memo(
     );
 
     const isMentioned = useMemo(
-      () =>
-        ownUserId != null &&
-        message.content?.includes(`data-user-id="${ownUserId}"`),
+      () => hasMention(message.content, ownUserId),
       [message.content, ownUserId]
     );
 

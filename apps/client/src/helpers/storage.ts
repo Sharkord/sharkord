@@ -23,7 +23,8 @@ export enum LocalStorageKey {
   AUTO_JOIN_LAST_CHANNEL = 'sharkord-auto-join-last-channel',
   BROWSER_NOTIFICATIONS = 'sharkord-browser-notifications',
   NICKNAMES = 'sharkord-nicknames',
-  WHITEBOARD_SIDEBAR_WIDTH = 'sharkord-whiteboard-sidebar-width'
+  WHITEBOARD_SIDEBAR_WIDTH = 'sharkord-whiteboard-sidebar-width',
+  BROWSER_NOTIFICATIONS_FOR_MENTIONS = 'sharkord-browser-notifications-for-mentions'
 }
 
 export enum SessionStorageKey {
