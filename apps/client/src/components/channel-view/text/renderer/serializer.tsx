@@ -7,6 +7,7 @@ import {
 import hljs from 'highlight.js/lib/common';
 import { Element, type DOMNode } from 'html-react-parser';
 import { CommandOverride } from '../overrides/command';
+import { LinkOverride } from '../overrides/link';
 import { MentionOverride } from '../overrides/mention';
 import { TwitterOverride } from '../overrides/twitter';
 import { YoutubeOverride } from '../overrides/youtube';
@@ -112,6 +113,9 @@ const serializer = (
         pushMedia({ type: 'audio', url: href });
 
         return;
+      } else {
+        const label = getTextContent(domNode);
+        return <LinkOverride link={href} label={label || undefined} />;
       }
     } else if (domNode instanceof Element && domNode.name === 'command') {
       const command = parseDomCommand(domNode);

@@ -61,7 +61,7 @@ const MessageEditInline = memo(
           />
         </AutoFocus>
         <span className="text-xs text-primary/60">
-          Press Enter to save, Esc to cancel
+          Press Ctrl + Enter to save, Esc to cancel
         </span>
       </div>
     );
