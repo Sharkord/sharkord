@@ -26,7 +26,10 @@ const renderMarkdown = (content: string): string => {
   const text = content
     .replace(/<br\s*(?:class="[^"]*")?\s*\/?>/gi, '\n')
     .replace(/<\/p>\s*<p>/gi, '\n\n')
-    .replace(/<\/?p>/gi, '');
+    .replace(/<\/?p>/gi, '')
+    .replace(/&gt;/g, '>')
+    .replace(/&lt;/g, '<')
+    .replace(/&amp;/g, '&');
 
   // Convert markdown → HTML (preserves inline HTML like mentions, emojis)
   const html = marked.parse(text) as string;

@@ -142,9 +142,29 @@ const TiptapInput = memo(
             return false;
           }
 
-          // Prevent Tab from moving focus out of the editor
           if (event.key === 'Tab') {
             event.preventDefault();
+            const { state, dispatch } = _view;
+
+            if (event.shiftKey) {
+              // Shift+Tab: remove up to 2 leading spaces from current line
+              const { $from } = state.selection;
+              const startOfBlock = $from.start();
+              const blockText = state.doc.textBetween(startOfBlock, $from.end());
+              const spacesToRemove = blockText.startsWith('    ')
+                ? 4
+                : blockText.match(/^ {1,3}/)?.[0].length ?? 0;
+
+              if (spacesToRemove > 0) {
+                dispatch(
+                  state.tr.delete(startOfBlock, startOfBlock + spacesToRemove)
+                );
+              }
+            } else {
+              // Tab: insert 4 spaces at cursor
+              dispatch(state.tr.insertText('    '));
+            }
+
             return true;
           }
 
