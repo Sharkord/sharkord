@@ -36,6 +36,9 @@ export const selectedDmChannelIdSelector = (state: IRootState) =>
 export const browserNotificationsSelector = (state: IRootState) =>
   state.app.browserNotifications;
 
+export const browserNotificationsForMentionsSelector = (state: IRootState) =>
+  state.app.browserNotificationsForMentions;
+
 export const threadSidebarDataSelector = createSelector(
   [
     threadSidebarOpenSelector,
