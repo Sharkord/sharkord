@@ -6,6 +6,7 @@ import {
   MICROPHONE_GATE_DEFAULT_THRESHOLD_DB,
   clampMicrophoneDecibels
 } from '@/helpers/audio-gate';
+import { createDtlnChain } from '@/helpers/audio-worklet/dtln-worklet';
 import {
   createNoiseGateWorkletNode,
   getNoiseGateWorkletAvailabilitySnapshot,
@@ -15,7 +16,7 @@ import {
 import { logVoice } from '@/helpers/browser-logger';
 import { getResWidthHeight } from '@/helpers/get-res-with-height';
 import { getTRPCClient } from '@/lib/trpc';
-import { VideoCodec } from '@/types';
+import { NoiseSuppression, VideoCodec } from '@/types';
 import {
   DEFAULT_BITRATE,
   StreamKind,
@@ -226,6 +227,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   const microphoneNoiseGateWorkletNodeRef = useRef<AudioWorkletNode | null>(
     null
   );
+  const dtlnAudioContextsRef = useRef<AudioContext[]>([]);
   const micMutedRef = useRef(ownVoiceState.micMuted);
 
   const syncTransmitMicrophoneTrackState = useCallback(() => {
@@ -250,6 +252,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       microphoneNoiseGateAudioContextRef.current.close();
       microphoneNoiseGateAudioContextRef.current = null;
     }
+
+    dtlnAudioContextsRef.current.forEach((ctx) => ctx.close());
+    dtlnAudioContextsRef.current = [];
 
     rawMicrophoneStreamRef.current
       ?.getTracks()
@@ -289,6 +294,10 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       logVoice('Starting microphone stream');
       cleanupMicProcessingResources();
 
+      const useDtln = devices.noiseSuppression === NoiseSuppression.ADVANCED;
+      const useStandardNs =
+        devices.noiseSuppression === NoiseSuppression.STANDARD;
+
       const rawStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           deviceId: {
@@ -296,9 +305,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           },
           autoGainControl: devices.autoGainControl,
           echoCancellation: devices.echoCancellation,
-          noiseSuppression: devices.noiseSuppression,
-          sampleRate: 48000,
-          channelCount: 2
+          noiseSuppression: useStandardNs,
+          sampleRate: useDtln ? 16000 : 48000,
+          channelCount: useDtln ? 1 : 2
         },
         video: false
       });
@@ -370,6 +379,25 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           logVoice('Noise gate unavailable, using ungated microphone stream', {
             reason: noiseGateAvailability.reason
           });
+        }
+
+        if (devices.noiseSuppression === NoiseSuppression.ADVANCED) {
+          logVoice('Setting up DTLN noise suppression');
+
+          dtlnAudioContextsRef.current.forEach((ctx) => ctx.close());
+          dtlnAudioContextsRef.current = [];
+
+          try {
+            const chain = await createDtlnChain(transmitStream);
+            dtlnAudioContextsRef.current = chain.contexts;
+            transmitTrack = chain.outputTrack;
+            transmitStream = new MediaStream([chain.outputTrack]);
+            logVoice('DTLN worklet chain ready');
+          } catch (dtlnError) {
+            logVoice('Failed to set up DTLN noise suppression', {
+              error: dtlnError
+            });
+          }
         }
 
         transmitMicrophoneTrackRef.current = transmitTrack;

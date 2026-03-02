@@ -10,7 +10,7 @@ import {
   subscribeNoiseGateWorkletAvailability
 } from '@/helpers/audio-worklet/noise-gate-worklet';
 import { useForm } from '@/hooks/use-form';
-import { Resolution, VideoCodec } from '@/types';
+import { NoiseSuppression, Resolution, VideoCodec } from '@/types';
 import { DEFAULT_BITRATE } from '@sharkord/shared';
 import {
   Alert,
@@ -35,7 +35,7 @@ import {
   Switch
 } from '@sharkord/ui';
 import { filesize } from 'filesize';
-import { Info } from 'lucide-react';
+import { Info, Sparkles } from 'lucide-react';
 import {
   memo,
   useCallback,
@@ -86,7 +86,7 @@ const Devices = memo(() => {
     playbackId: values.playbackId,
     autoGainControl: !!values.autoGainControl,
     echoCancellation: !!values.echoCancellation,
-    noiseSuppression: !!values.noiseSuppression,
+    noiseSuppression: values.noiseSuppression,
     noiseGateEnabled: !!values.noiseGateEnabled,
     noiseGateThresholdDb:
       values.noiseGateThresholdDb ?? MICROPHONE_GATE_DEFAULT_THRESHOLD_DB
@@ -298,21 +298,40 @@ const Devices = memo(() => {
               </SelectContent>
             </Select>
 
+            <Group label="Noise suppression" className="my-4">
+                <Select
+                  value={values.noiseSuppression}
+                  onValueChange={(value) =>
+                    onChange('noiseSuppression', value as NoiseSuppression)
+                  }
+                >
+                  <SelectTrigger className="w-92">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value={NoiseSuppression.NONE}>
+                        None
+                      </SelectItem>
+                      <SelectItem value={NoiseSuppression.STANDARD}>
+                        Standard
+                      </SelectItem>
+                      <SelectItem value={NoiseSuppression.ADVANCED}>
+                        <span className="flex items-center gap-2">
+                          Advanced <Sparkles className="size-3.5" />
+                        </span>
+                      </SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Group>
+
             <div className="flex items-center gap-4">
               <Group label="Echo cancellation">
                 <Switch
                   checked={!!values.echoCancellation}
                   onCheckedChange={(checked) =>
                     onChange('echoCancellation', checked)
-                  }
-                />
-              </Group>
-
-              <Group label="Noise suppression">
-                <Switch
-                  checked={!!values.noiseSuppression}
-                  onCheckedChange={(checked) =>
-                    onChange('noiseSuppression', checked)
                   }
                 />
               </Group>
