@@ -1,6 +1,6 @@
 import { getLocalStorageItem, LocalStorageKey } from './storage';
 
-const OVERRIDE_DEBUG = true;
+const OVERRIDE_DEBUG = false;
 
 const localStorageDebug = getLocalStorageItem(LocalStorageKey.DEBUG);
 
