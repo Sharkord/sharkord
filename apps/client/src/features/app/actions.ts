@@ -111,3 +111,11 @@ export const setBrowserNotifications = async (enabled: boolean) => {
   store.dispatch(appSliceActions.setBrowserNotifications(enabled));
   setLocalStorageItemBool(LocalStorageKey.BROWSER_NOTIFICATIONS, enabled);
 };
+
+export const setBrowserNotificationsForMentions = (enabled: boolean) => {
+  store.dispatch(appSliceActions.setBrowserNotificationsForMentions(enabled));
+  setLocalStorageItemBool(
+    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_MENTIONS,
+    enabled
+  );
+};

@@ -1,9 +1,9 @@
 import { openThreadSidebar } from '@/features/app/actions';
 import { useThreadSidebar } from '@/features/app/hooks';
 import { useCan } from '@/features/server/hooks';
-import { useIsOwnUser } from '@/features/server/users/hooks';
+import { useIsOwnUser, useOwnUserId } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
-import { Permission, type TJoinedMessage } from '@sharkord/shared';
+import { hasMention, Permission, type TJoinedMessage } from '@sharkord/shared';
 import { MessageSquareText } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { MessageActions } from './message-actions';
@@ -29,10 +29,16 @@ const Message = memo(
     const can = useCan();
     const { isOpen: isThreadOpen, parentMessageId: threadParentId } =
       useThreadSidebar();
+    const ownUserId = useOwnUserId();
 
     const canManage = useMemo(
       () => can(Permission.MANAGE_MESSAGES) || isFromOwnUser,
       [can, isFromOwnUser]
+    );
+
+    const isMentioned = useMemo(
+      () => hasMention(message.content, ownUserId),
+      [message.content, ownUserId]
     );
 
     const isThreadReply = !!message.parentMessageId;
@@ -47,7 +53,8 @@ const Message = memo(
       <div
         className={cn(
           'min-w-0 flex-1 ml-1 relative hover:bg-secondary/50 rounded-md px-1 py-0.5 group',
-          isActiveThread && 'bg-primary/10'
+          isActiveThread && 'bg-primary/10',
+          isMentioned && 'border-primary bg-primary/5'
         )}
         data-message-id={message.id}
       >
