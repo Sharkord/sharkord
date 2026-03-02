@@ -147,18 +147,18 @@ const TiptapInput = memo(
             const { state, dispatch } = _view;
 
             if (event.shiftKey) {
-              // Shift+Tab: remove up to 2 leading spaces from current line
+              // Shift+Tab: remove up to 4 leading spaces from current line
               const { $from } = state.selection;
-              const startOfBlock = $from.start();
-              const blockText = state.doc.textBetween(startOfBlock, $from.end());
-              const spacesToRemove = blockText.startsWith('    ')
-                ? 4
-                : blockText.match(/^ {1,3}/)?.[0].length ?? 0;
+              const startPos = $from.start();
+              const text = $from.parent.textContent;
+              let count = 0;
 
-              if (spacesToRemove > 0) {
-                dispatch(
-                  state.tr.delete(startOfBlock, startOfBlock + spacesToRemove)
-                );
+              while (count < 4 && count < text.length && text[count] === ' ') {
+                count++;
+              }
+
+              if (count > 0) {
+                dispatch(state.tr.delete(startPos, startPos + count));
               }
             } else {
               // Tab: insert 4 spaces at cursor
