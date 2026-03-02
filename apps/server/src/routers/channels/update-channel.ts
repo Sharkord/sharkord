@@ -28,6 +28,12 @@ const updateChannelRoute = protectedProcedure
       message: 'Cannot update DM channels'
     });
 
+    const oldChannel = await db
+      .select({ private: channels.private })
+      .from(channels)
+      .where(eq(channels.id, input.channelId))
+      .get();
+
     const updatedChannel = await db
       .update(channels)
       .set({
@@ -39,7 +45,16 @@ const updateChannelRoute = protectedProcedure
       .returning()
       .get();
 
-    publishChannel(updatedChannel.id, 'update');
+    // privacy setting changed
+    const ensureUserAccess = updatedChannel.private !== oldChannel?.private;
+
+    console.log('updated channel', {
+      updatedChannel,
+      oldChannel,
+      ensureUserAccess
+    });
+
+    publishChannel(updatedChannel.id, 'update', ensureUserAccess);
     enqueueActivityLog({
       type: ActivityLogType.UPDATED_CHANNEL,
       userId: ctx.user.id,

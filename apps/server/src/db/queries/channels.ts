@@ -13,8 +13,7 @@ import {
   channels,
   channelUserPermissions,
   messages,
-  userRoles,
-  users
+  userRoles
 } from '../schema';
 import {
   getDirectMessageChannelIdsForUser,
@@ -22,6 +21,7 @@ import {
   isUserDmParticipant
 } from './dms';
 import { getUserRoleIds } from './roles';
+import { getAllUserIds } from './users';
 
 const getPermissions = async (
   userId: number,
@@ -359,9 +359,7 @@ const getAffectedUserIdsForChannel = async (
 
   // if channel is public, return all user IDs
   if (!channel.private || options?.forceAllUsers) {
-    const allUsers = await db.select({ id: users.id }).from(users);
-
-    return allUsers.map((user) => user.id);
+    return getAllUserIds();
   }
 
   // if a specific permission is required, filter by it

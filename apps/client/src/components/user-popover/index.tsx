@@ -4,7 +4,7 @@ import {
   setSelectedDmChannelId
 } from '@/features/app/actions';
 import { usePublicServerSettings, useUserRoles } from '@/features/server/hooks';
-import { useUserById } from '@/features/server/users/hooks';
+import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { getTRPCClient } from '@/lib/trpc';
@@ -38,6 +38,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
   const user = useUserById(userId);
   const roles = useUserRoles(userId);
   const settings = usePublicServerSettings();
+  const isOwnUser = useIsOwnUser(userId);
 
   const onDirectMessageClick = useCallback(async () => {
     const trpc = getTRPCClient();
@@ -55,6 +56,8 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
   if (!user) return <>{children}</>;
 
   const isDeleted = user.name === DELETED_USER_IDENTITY_AND_NAME;
+  const showDmButton =
+    settings?.directMessagesEnabled && !isDeleted && !isOwnUser;
 
   return (
     <Popover>
@@ -136,7 +139,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
             </p>
 
             <div className="flex gap-2 items-center">
-              {settings?.directMessagesEnabled && !isDeleted && (
+              {showDmButton && (
                 <IconButton
                   icon={MessageSquare}
                   variant="ghost"
@@ -146,15 +149,17 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
                 />
               )}
 
-              <Protect permission={Permission.MANAGE_USERS}>
-                <IconButton
-                  icon={UserCog}
-                  variant="ghost"
-                  size="sm"
-                  title="Moderation View"
-                  onClick={() => setModViewOpen(true, user.id)}
-                />
-              </Protect>
+              {
+                <Protect permission={Permission.MANAGE_USERS}>
+                  <IconButton
+                    icon={UserCog}
+                    variant="ghost"
+                    size="sm"
+                    title="Moderation View"
+                    onClick={() => setModViewOpen(true, user.id)}
+                  />
+                </Protect>
+              }
             </div>
           </div>
         </div>

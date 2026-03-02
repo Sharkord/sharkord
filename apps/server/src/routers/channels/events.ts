@@ -9,7 +9,7 @@ const onChannelCreateRoute = protectedProcedure.subscription(
 
 const onChannelDeleteRoute = protectedProcedure.subscription(
   async ({ ctx }) => {
-    return ctx.pubsub.subscribe(ServerEvents.CHANNEL_DELETE);
+    return ctx.pubsub.subscribeFor(ctx.userId, ServerEvents.CHANNEL_DELETE);
   }
 );
 

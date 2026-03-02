@@ -15,8 +15,8 @@ import { getEmojiById } from './queries/emojis';
 import { getMessage } from './queries/messages';
 import { getRole } from './queries/roles';
 import { getPublicSettings } from './queries/server';
-import { getPublicUserById } from './queries/users';
-import { categories, channels, messages } from './schema';
+import { getAllUserIds, getPublicUserById } from './queries/users';
+import { categories, channels, messages, users } from './schema';
 
 const publishMessage = async (
   messageId: number | undefined,
@@ -127,12 +127,16 @@ const publishUser = async (
 
 const publishChannel = async (
   channelId: number | undefined,
-  type: 'create' | 'update' | 'delete'
+  type: 'create' | 'update' | 'delete',
+  ensureUsersAccess = false
 ) => {
   if (!channelId) return;
 
   if (type === 'delete') {
-    pubsub.publish(ServerEvents.CHANNEL_DELETE, channelId);
+    const affectedUserIds = await getAllUserIds();
+
+    pubsub.publishFor(affectedUserIds, ServerEvents.CHANNEL_DELETE, channelId);
+
     return;
   }
 
@@ -154,6 +158,41 @@ const publishChannel = async (
   });
 
   pubsub.publishFor(affectedUserIds, targetEvent, channel);
+
+  if (ensureUsersAccess) {
+    const allUsers = await db.select().from(users).all();
+    const allUserIds = allUsers.map((u) => u.id);
+
+    // ensureUsersAccess is set to true when the private setting changed
+    // was public -> private: we need to publish delete events to users who lost access
+    // was private -> public: we need to publish create events to users who gained access
+
+    if (type === 'update') {
+      if (channel.private) {
+        // channel is now private, so send delete events to users who lost access to it
+        const lostAccessUserIds = allUsers
+          .map((u) => u.id)
+          .filter((id) => !affectedUserIds.includes(id));
+
+        console.log('now private', { lostAccessUserIds });
+
+        if (lostAccessUserIds.length > 0) {
+          pubsub.publishFor(
+            lostAccessUserIds,
+            ServerEvents.CHANNEL_DELETE,
+            channel.id
+          );
+        }
+      } else {
+        console.log('now public', { allUserIds });
+
+        // channel is now public, so all users should have access to it
+        // send a create event
+        // if a user already has the channel in the state it will ignore the create event, so we don't need to worry about that
+        pubsub.publishFor(allUserIds, ServerEvents.CHANNEL_CREATE, channel);
+      }
+    }
+  }
 };
 
 const publishSettings = async () => {
