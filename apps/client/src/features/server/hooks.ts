@@ -9,7 +9,11 @@ import { useCallback, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import type { IRootState } from '../store';
 import { useChannelById, useChannelPermissionsById } from './channels/hooks';
-import { channelReadStateByIdSelector } from './channels/selectors';
+import {
+  channelPermissionsSelector,
+  channelReadStateByIdSelector,
+  channelsSelector
+} from './channels/selectors';
 import {
   connectedSelector,
   connectingSelector,
@@ -98,9 +102,26 @@ export const useChannelCan = (channelId: number | undefined) => {
 };
 
 export const useChannelInCategoryCan = (channelIds: number[]) => {
-  return channelIds.every((channelId) =>
-    useChannelCan(channelId)(ChannelPermission.VIEW_CHANNEL)
-  );
+  const isOwner = useIsOwnUserOwner();
+  const channels = useSelector(channelsSelector);
+  const channelPermissions = useSelector(channelPermissionsSelector);
+
+  return useMemo(() => {
+    if (channelIds.length === 0) return false;
+    if (isOwner) return true;
+
+    for (const channelId of channelIds) {
+      const channel = channels.find((c) => c.id === channelId);
+      const permissions =
+        channelPermissions[channelId]?.permissions ??
+        ({} as Record<string, boolean>);
+
+      if (!channel) continue;
+      if (!channel.private) return true;
+      if (permissions[ChannelPermission.VIEW_CHANNEL] === true) return true;
+    }
+    return false;
+  }, [channelIds, isOwner, channels, channelPermissions]);
 };
 
 export const useUserRoles = (userId: number) =>
