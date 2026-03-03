@@ -121,7 +121,6 @@ const ScreenShareCard = memo(
       position,
       isDragging,
       handleToggleZoom,
-      handleWheel,
       handleMouseDown,
       handleMouseMove,
       handleMouseUp,
@@ -150,7 +149,6 @@ const ScreenShareCard = memo(
           'border border-border',
           className
         )}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

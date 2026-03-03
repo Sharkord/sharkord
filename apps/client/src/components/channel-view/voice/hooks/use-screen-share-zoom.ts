@@ -1,10 +1,14 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export const useScreenShareZoom = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [isZoomEnabled, setIsZoomEnabled] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const isZoomEnabledRef = useRef(isZoomEnabled);
+  isZoomEnabledRef.current = isZoomEnabled;
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -16,54 +20,56 @@ export const useScreenShareZoom = () => {
     setIsZoomEnabled(false);
   }, []);
 
+  const resetZoomRef = useRef(resetZoom);
+  resetZoomRef.current = resetZoom;
+
   const handleToggleZoom = useCallback(() => {
     setIsZoomEnabled((prev) => {
       if (prev) {
-        // Disabling zoom - reset everything
         resetZoom();
       }
       return !prev;
     });
   }, [resetZoom]);
 
-  const handleWheel = useCallback(
-    (e: React.WheelEvent) => {
-      if (!isZoomEnabled || !containerRef.current) return;
+  // Attach wheel listener as non-passive so preventDefault works
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (!isZoomEnabledRef.current) return;
       e.preventDefault();
 
-      const container = containerRef.current;
-      const rect = container.getBoundingClientRect();
-
-      // Get mouse position relative to container
+      const rect = el.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
-
-      // Get mouse position relative to container center
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
       const offsetX = mouseX - centerX;
       const offsetY = mouseY - centerY;
 
+      const currentZoom = zoomRef.current;
       const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      const newZoom = Math.max(1, Math.min(5, zoom + delta));
+      const newZoom = Math.max(1, Math.min(5, currentZoom + delta));
 
       if (newZoom === 1) {
-        // Reset when back to 100%
-        resetZoom();
+        resetZoomRef.current();
         return;
       }
 
-      // Adjust position to zoom towards mouse cursor
-      const zoomRatio = newZoom / zoom;
+      const zoomRatio = newZoom / currentZoom;
       setPosition((prev) => ({
         x: prev.x * zoomRatio + offsetX * (zoomRatio - 1),
         y: prev.y * zoomRatio + offsetY * (zoomRatio - 1)
       }));
 
       setZoom(newZoom);
-    },
-    [isZoomEnabled, zoom, resetZoom]
-  );
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -105,7 +111,6 @@ export const useScreenShareZoom = () => {
     position,
     isDragging,
     handleToggleZoom,
-    handleWheel,
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,

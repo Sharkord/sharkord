@@ -68,6 +68,9 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
   // Auto-focus text layer after creation
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
 
+  // Clipboard (local, for copy/paste)
+  const clipboardRef = useRef<{ layers: Record<string, Layer>; layerIds: string[] } | null>(null);
+
   // Undo/redo
   const history = useRef<HistoryEntry[]>([]);
   const historyIndex = useRef(-1);
@@ -789,6 +792,73 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     [layers]
   );
 
+  // --- Copy/Paste ---
+  const copySelection = useCallback(() => {
+    if (selection.length === 0) return;
+    const copiedLayers: Record<string, Layer> = {};
+    const copiedIds: string[] = [];
+    for (const id of selection) {
+      const layer = layers[id];
+      if (layer) {
+        copiedLayers[id] = { ...layer };
+        copiedIds.push(id);
+      }
+    }
+    clipboardRef.current = { layers: copiedLayers, layerIds: copiedIds };
+  }, [selection, layers]);
+
+  const pasteClipboard = useCallback(() => {
+    const clip = clipboardRef.current;
+    if (!clip || clip.layerIds.length === 0) return;
+
+    const PASTE_OFFSET = 20;
+    const newSelection: string[] = [];
+    const addedLayers: Record<string, Layer> = {};
+    const addedIds: string[] = [];
+
+    for (const oldId of clip.layerIds) {
+      const original = clip.layers[oldId];
+      if (!original) continue;
+
+      const newId = generateLayerId();
+      const cloned = {
+        ...original,
+        x: original.x + PASTE_OFFSET,
+        y: original.y + PASTE_OFFSET
+      } as Layer;
+
+      // Offset line endpoints too
+      if (cloned.type === LayerType.Line) {
+        (cloned as LineLayer).x2 += PASTE_OFFSET;
+        (cloned as LineLayer).y2 += PASTE_OFFSET;
+      }
+
+      addedLayers[newId] = cloned;
+      addedIds.push(newId);
+      newSelection.push(newId);
+    }
+
+    setLayers((prev) => ({ ...prev, ...addedLayers }));
+    setLayerIds((prev) => [...prev, ...addedIds]);
+    setSelection(newSelection);
+
+    // Commit to server
+    for (const id of addedIds) {
+      trpc.whiteboard.addLayer.mutate({
+        channelId,
+        layerId: id,
+        layer: addedLayers[id]
+      });
+    }
+
+    const allLayers = { ...layersRef.current, ...addedLayers };
+    const allIds = [...layerIdsRef.current, ...addedIds];
+    pushToHistory(allLayers, allIds);
+
+    // Update clipboard offset so repeated pastes cascade
+    clipboardRef.current = { layers: addedLayers, layerIds: addedIds };
+  }, [channelId, generateLayerId, trpc, pushToHistory]);
+
   // --- Keyboard shortcuts ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -830,11 +900,27 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
           undo();
         }
       }
+
+      // Copy
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !editingLayerId) {
+        const tag = document.activeElement?.tagName;
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA' && !(document.activeElement as HTMLElement)?.isContentEditable) {
+          copySelection();
+        }
+      }
+
+      // Paste
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v' && !editingLayerId) {
+        const tag = document.activeElement?.tagName;
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA' && !(document.activeElement as HTMLElement)?.isContentEditable) {
+          pasteClipboard();
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [deleteSelection, editingLayerId, undo, redo]);
+  }, [deleteSelection, editingLayerId, undo, redo, copySelection, pasteClipboard]);
 
   return {
     layers,

@@ -72,7 +72,6 @@ const ExternalVideoCard = memo(
       position,
       isDragging,
       handleToggleZoom,
-      handleWheel,
       handleMouseDown,
       handleMouseMove,
       handleMouseUp,
@@ -101,7 +100,6 @@ const ExternalVideoCard = memo(
           'border border-border',
           className
         )}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

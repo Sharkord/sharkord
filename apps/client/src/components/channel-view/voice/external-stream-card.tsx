@@ -111,7 +111,6 @@ const ExternalStreamCard = memo(
       position,
       isDragging,
       handleToggleZoom,
-      handleWheel,
       handleMouseDown,
       handleMouseMove,
       handleMouseUp,
@@ -152,7 +151,6 @@ const ExternalStreamCard = memo(
           'border border-border',
           className
         )}
-        onWheel={hasVideo ? handleWheel : undefined}
         onMouseDown={hasVideo ? handleMouseDown : undefined}
         onMouseMove={hasVideo ? handleMouseMove : undefined}
         onMouseUp={hasVideo ? handleMouseUp : undefined}

@@ -42,17 +42,18 @@ RUN cd apps/server && bun -e "\
 FROM debian:bookworm-slim
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates gosu && \
+    apt-get install -y --no-install-recommends ca-certificates && \
     rm -rf /var/lib/apt/lists/* && \
     useradd -m -s /bin/bash sharkord && \
     mkdir -p /home/sharkord/.config/sharkord && \
     chown -R sharkord:sharkord /home/sharkord/.config/sharkord
 
-COPY --from=builder /app/apps/server/build/out/sharkord /usr/local/bin/sharkord
+COPY --from=builder --chown=sharkord:sharkord /app/apps/server/build/out/sharkord /usr/local/bin/sharkord
 RUN chmod +x /usr/local/bin/sharkord
 
+USER sharkord
 WORKDIR /home/sharkord
 
 EXPOSE 4991 40000
 
-CMD ["sh", "-c", "chown -R sharkord:sharkord /home/sharkord/.config/sharkord && exec gosu sharkord sharkord"]
+CMD ["sharkord"]

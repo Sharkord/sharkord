@@ -4,7 +4,6 @@ import {
   useVoiceChannelExternalStreamsList
 } from '@/features/server/voice/hooks';
 import { memo, useMemo } from 'react';
-import { ControlsBar } from './controls-bar';
 import { ExternalStreamCard } from './external-stream-card';
 import {
   PinnedCardType,
@@ -139,7 +138,6 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
       <VoiceGrid pinnedCardId={pinnedCard?.id} className="h-full">
         {cards}
       </VoiceGrid>
-      <ControlsBar channelId={channelId} />
     </div>
   );
 });
