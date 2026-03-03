@@ -3,8 +3,10 @@ import {
   useCategories,
   useCategoryById
 } from '@/features/server/categories/hooks';
-import { useChannelsByCategoryId } from '@/features/server/channels/hooks';
-import { useCan, useChannelInCategoryCan } from '@/features/server/hooks';
+import {
+  useCan,
+  useHasVisibleChannelsInCategory
+} from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   DndContext,
@@ -37,10 +39,7 @@ type TCategoryProps = {
 
 const Category = memo(({ categoryId }: TCategoryProps) => {
   const can = useCan();
-  const channels = useChannelsByCategoryId(categoryId);
-  const channelCan = useChannelInCategoryCan(
-    channels.map((channel) => channel.id)
-  );
+  const channelCan = useHasVisibleChannelsInCategory(categoryId);
   const { expanded, toggleExpanded } = useCategoryExpanded(categoryId);
   const category = useCategoryById(categoryId);
 

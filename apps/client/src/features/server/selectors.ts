@@ -1,8 +1,10 @@
 import { createSelector } from '@reduxjs/toolkit';
-import { OWNER_ROLE_ID } from '@sharkord/shared';
+import { ChannelPermission, OWNER_ROLE_ID } from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
 import type { IRootState } from '../store';
 import {
+  channelPermissionsSelector,
+  channelsByCategoryIdSelector,
   currentVoiceChannelIdSelector,
   selectedChannelIdSelector
 } from './channels/selectors';
@@ -54,6 +56,28 @@ export const isOwnUserOwnerSelector = createSelector(
   [ownUserRolesSelector],
   (ownUserRoles) => ownUserRoles.some((role) => role.id === OWNER_ROLE_ID)
 );
+
+export const hasVisibleChannelsInCategorySelector = createCachedSelector(
+  [
+    (state: IRootState, categoryId: number) =>
+      channelsByCategoryIdSelector(state, categoryId),
+    channelPermissionsSelector,
+    isOwnUserOwnerSelector
+  ],
+  (channelsInCategory, channelPermissions, isOwner) => {
+    if (isOwner) return true;
+    if (channelsInCategory.length === 0) return false;
+
+    for (const channel of channelsInCategory) {
+      if (!channel.private) return true;
+      const permissions =
+        channelPermissions[channel.id]?.permissions ??
+        ({} as Record<string, boolean>);
+      if (permissions[ChannelPermission.VIEW_CHANNEL] === true) return true;
+    }
+    return false;
+  }
+)((_, categoryId: number) => categoryId);
 
 export const userRolesSelector = createSelector(
   [rolesSelector, userByIdSelector],
