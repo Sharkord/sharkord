@@ -4,6 +4,7 @@
 ## Feets in fork: 
 
 - Remove plugins system and migrations for early dev
+- Remove per voice channel chat redundant 
 - Whiteboards [stolen from MIT gh](https://github.com/Biplo12/BoardFlow) 
 - Mardown to HTML using `marked` from [npm](https://www.npmjs.com/package/marked) 
 - Links (show external warning) 
@@ -12,10 +13,9 @@
 - Nicknames (JSON local only) 
 - Use actual UUIDs and jwt token for `/public/` path files (unless server login image) 
 - Lazy load most things / Chunk 
-- Cleanup after leaving channel / using settings page 
-- Remove per voice channel chat redundant 
+- Cleanup after leaving channel / using settings page
 - UX/UI candy changes 
-- DMs / Mentions fixes / Direct reply (upstream) 
+- DMs / Mentions fixes / Direct reply (upstream) => Disable mentions in DMs
 - Client-side Embeds for links 
 - Remove hardcoded `SharkordUser` 
 - Search all messages

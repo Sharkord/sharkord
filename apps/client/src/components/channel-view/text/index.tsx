@@ -2,6 +2,7 @@ import {
   MessageCompose,
   type TMessageComposeHandle
 } from '@/components/message-compose';
+import { useChannelById } from '@/features/server/channels/hooks';
 import {
   useChannelCan,
   useTypingUsersByChannelId
@@ -61,10 +62,14 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
   const [newMessage, setNewMessage] = useState(
     getDraftMessage(draftChannelKey)
   );
+  const channel = useChannelById(channelId);
   const allUsers = useUsers();
   const mentionUsers = useMemo(
-    () => allUsers.filter((u) => u.name !== DELETED_USER_IDENTITY_AND_NAME),
-    [allUsers]
+    () =>
+      channel?.isDm
+        ? undefined
+        : allUsers.filter((u) => u.name !== DELETED_USER_IDENTITY_AND_NAME),
+    [allUsers, channel?.isDm]
   );
   const typingUsers = useTypingUsersByChannelId(channelId);
   const composeRef = useRef<TMessageComposeHandle>(null);
