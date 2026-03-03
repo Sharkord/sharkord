@@ -43,3 +43,7 @@ printDebug();
 enqueueActivityLog({
   type: ActivityLogType.SERVER_STARTED
 });
+
+// Graceful shutdown
+process.on('SIGTERM', () => process.exit(0));
+process.on('SIGINT', () => process.exit(0));
