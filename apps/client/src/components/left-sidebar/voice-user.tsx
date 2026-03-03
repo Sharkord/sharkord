@@ -1,6 +1,7 @@
 import { UserAvatar } from '@/components/user-avatar';
 import type { TVoiceUser } from '@/features/server/types';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
+import { getSocialCreditColor } from '@/helpers/get-social-credit-color';
 import {
   HeadphoneOff,
   Headphones,
@@ -28,7 +29,7 @@ const VoiceUser = memo(({ user }: TVoiceUserProps) => {
           showStatusBadge={false}
         />
 
-        <span className="flex-1 text-muted-foreground truncate text-xs">
+        <span className="flex-1 truncate text-xs" style={{ color: getSocialCreditColor(user.socialCredit ?? 0) }}>
           {getRenderedUsername(user, user.id)}
         </span>
 

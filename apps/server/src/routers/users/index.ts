@@ -16,8 +16,10 @@ import { getUsersRoute } from './get-users';
 import { kickRoute } from './kick';
 import { removeRoleRoute } from './remove-role';
 import { unbanRoute } from './unban';
+import { getMyVotesTodayRoute } from './get-my-votes-today';
 import { updatePasswordRoute } from './update-password';
 import { updateUserRoute } from './update-user';
+import { voteSocialCreditRoute } from './vote-social-credit';
 
 export const usersRouter = t.router({
   changeAvatar: changeAvatarRoute,
@@ -32,6 +34,8 @@ export const usersRouter = t.router({
   ban: banRoute,
   unban: unbanRoute,
   delete: deleteUserRoute,
+  voteSocialCredit: voteSocialCreditRoute,
+  getMyVotesToday: getMyVotesTodayRoute,
   onJoin: onUserJoinRoute,
   onLeave: onUserLeaveRoute,
   onUpdate: onUserUpdateRoute,

@@ -2,6 +2,7 @@ import { RelativeTime } from '@/components/relative-time';
 import { UserAvatar } from '@/components/user-avatar';
 import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
+import { getSocialCreditColor } from '@/helpers/get-social-credit-color';
 import { cn } from '@/lib/utils';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
@@ -47,6 +48,7 @@ const MessagesGroup = memo(
                 isOwnUser && 'font-bold',
                 isDeletedUser && 'line-through text-muted-foreground'
               )}
+              style={isDeletedUser ? undefined : { color: getSocialCreditColor(user.socialCredit ?? 0) }}
             >
               {getRenderedUsername(user, user.id)}
             </span>

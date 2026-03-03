@@ -28,6 +28,7 @@ const getPublicUserById = async (
       bannerId: users.bannerId,
       avatar: avatarFiles,
       banner: bannerFiles,
+      socialCredit: users.socialCredit,
       createdAt: users.createdAt
     })
     .from(users)
@@ -53,6 +54,7 @@ const getPublicUserById = async (
     bannerId: results.bannerId,
     avatar: results.avatar,
     banner: results.banner,
+    socialCredit: results.socialCredit,
     createdAt: results.createdAt,
     banned: results.banned,
     roleIds: roles.map((r) => r.roleId)
@@ -77,6 +79,7 @@ const getPublicUsers = async (
         bannerId: users.bannerId,
         avatar: avatarFiles,
         banner: bannerFiles,
+        socialCredit: users.socialCredit,
         createdAt: users.createdAt,
         _identity: users.identity
       })
@@ -112,6 +115,7 @@ const getPublicUsers = async (
       bannerId: result.bannerId,
       avatar: result.avatar,
       banner: result.banner,
+      socialCredit: result.socialCredit,
       createdAt: result.createdAt,
       _identity: result._identity,
       roleIds: rolesMap[result.id] || []
@@ -128,6 +132,7 @@ const getPublicUsers = async (
         bannerId: users.bannerId,
         avatar: avatarFiles,
         banner: bannerFiles,
+        socialCredit: users.socialCredit,
         createdAt: users.createdAt
       })
       .from(users)
@@ -163,6 +168,7 @@ const getPublicUsers = async (
       bannerId: result.bannerId,
       avatar: result.avatar,
       banner: result.banner,
+      socialCredit: result.socialCredit,
       createdAt: result.createdAt,
       roleIds: rolesMap[result.id] || []
     }));

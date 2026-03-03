@@ -7,6 +7,7 @@ import { usePublicServerSettings, useUserRoles } from '@/features/server/hooks';
 import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
+import { getSocialCreditColor } from '@/helpers/get-social-credit-color';
 import { getNickname, removeNickname, setNickname } from '@/helpers/nicknames';
 import { getTRPCClient } from '@/lib/trpc';
 import {
@@ -24,13 +25,40 @@ import {
   PopoverTrigger
 } from '@sharkord/ui';
 import { format } from 'date-fns';
-import { MessageSquare, Pencil, ShieldCheck, Trash, UserCog, X } from 'lucide-react';
-import { memo, useCallback, useState } from 'react';
+import { ChevronDown, ChevronUp, MessageSquare, Pencil, ShieldCheck, Star, Trash, UserCog, X } from 'lucide-react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Protect } from '../protect';
 import { RoleBadge } from '../role-badge';
 import { UserAvatar } from '../user-avatar';
 import { UserStatusBadge } from '../user-status';
+
+// Module-level cache for today's votes (avoids re-fetching on every popover open)
+let votedTodaySet = new Set<number>();
+let votedTodayFetched = false;
+let votedTodayFetchPromise: Promise<void> | null = null;
+
+const fetchVotesToday = async () => {
+  if (votedTodayFetched) return;
+  if (votedTodayFetchPromise) return votedTodayFetchPromise;
+
+  votedTodayFetchPromise = getTRPCClient()
+    .users.getMyVotesToday.query()
+    .then((ids) => {
+      votedTodaySet = new Set(ids);
+      votedTodayFetched = true;
+    })
+    .catch(() => {})
+    .finally(() => {
+      votedTodayFetchPromise = null;
+    });
+
+  return votedTodayFetchPromise;
+};
+
+const markVoted = (targetUserId: number) => {
+  votedTodaySet.add(targetUserId);
+};
 
 type TUserPopoverProps = {
   userId: number;
@@ -45,6 +73,14 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
   const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [nicknameInput, setNicknameInput] = useState('');
   const [, forceUpdate] = useState(0);
+  const [isVoting, setIsVoting] = useState(false);
+  const [hasVotedToday, setHasVotedToday] = useState(() => votedTodaySet.has(userId));
+
+  useEffect(() => {
+    fetchVotesToday().then(() => {
+      setHasVotedToday(votedTodaySet.has(userId));
+    });
+  }, [userId]);
 
   const currentNickname = getNickname(userId);
 
@@ -74,6 +110,22 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
   const handleCancelEditing = useCallback(() => {
     setIsEditingNickname(false);
   }, []);
+
+  const onVote = useCallback(async (type: 'upvote' | 'downvote') => {
+    const trpc = getTRPCClient();
+    setIsVoting(true);
+
+    try {
+      await trpc.users.voteSocialCredit.mutate({ targetUserId: userId, type });
+      markVoted(userId);
+      setHasVotedToday(true);
+      toast.success(type === 'upvote' ? '+10 social credit!' : '-5 social credit');
+    } catch (error) {
+      toast.error(getTrpcError(error, 'Could not vote'));
+    } finally {
+      setIsVoting(false);
+    }
+  }, [userId]);
 
   const onDirectMessageClick = useCallback(async () => {
     const trpc = getTRPCClient();
@@ -138,7 +190,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
         <div className="px-4 pt-12 pb-4">
           <div className="mb-3">
             <div className="flex items-center gap-1.5">
-              <span className="text-lg font-semibold text-foreground truncate">
+              <span className="text-lg font-semibold truncate" style={{ color: getSocialCreditColor(user.socialCredit ?? 0) }}>
                 {getRenderedUsername(user, user.id)}
               </span>
               {!isOwnUser && !isDeleted && !isEditingNickname && (
@@ -208,6 +260,38 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
                 </span>
               </div>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-1.5 bg-muted/50 rounded-md px-2.5 py-1.5">
+              <Star className="h-3.5 w-3.5" style={{ color: getSocialCreditColor(user.socialCredit ?? 0) }} />
+              <span className="text-sm font-medium" style={{ color: getSocialCreditColor(user.socialCredit ?? 0) }}>
+                {user.socialCredit ?? 0}
+              </span>
+              <span className="text-xs text-muted-foreground">SC</span>
+            </div>
+            {!isOwnUser && !isDeleted && !hasVotedToday && (
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  disabled={isVoting}
+                  className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium bg-green-500/10 text-green-500 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                  onClick={() => onVote('upvote')}
+                >
+                  <ChevronUp className="h-3.5 w-3.5" />
+                  +10
+                </button>
+                <button
+                  type="button"
+                  disabled={isVoting}
+                  className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                  onClick={() => onVote('downvote')}
+                >
+                  <ChevronDown className="h-3.5 w-3.5" />
+                  -5
+                </button>
+              </div>
+            )}
           </div>
 
           {roles.length > 0 && (

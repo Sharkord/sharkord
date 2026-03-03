@@ -17,6 +17,7 @@ import {
   rolePermissions,
   roles,
   settings,
+  socialCreditVotes,
   userRoles,
   users
 } from '../../../apps/server/src/db/schema';
@@ -72,6 +73,8 @@ export type TIChannelUserPermission = InferInsertModel<
 >;
 export type TIChannelReadState = InferInsertModel<typeof channelReadStates>;
 export type TIDirectMessage = InferInsertModel<typeof directMessages>;
+export type TSocialCreditVote = InferSelectModel<typeof socialCreditVotes>;
+export type TISocialCreditVote = InferInsertModel<typeof socialCreditVotes>;
 
 export type TStorageSettings = Pick<
   TSettings,
@@ -99,6 +102,7 @@ type TPublicUser = Pick<
   | 'banner'
   | 'bannerId'
   | 'banned'
+  | 'socialCredit'
   | 'createdAt'
 > & {
   status?: UserStatus;

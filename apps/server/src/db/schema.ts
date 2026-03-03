@@ -148,6 +148,7 @@ const users = sqliteTable(
     banReason: text('ban_reason'),
     bannedAt: integer('banned_at'),
     bannerColor: text('banner_color'),
+    socialCredit: integer('social_credit').notNull().default(0),
     lastLoginAt: integer('last_login_at')
       .notNull()
       .$defaultFn(() => Date.now()),
@@ -474,6 +475,30 @@ const directMessages = sqliteTable(
   ]
 );
 
+const socialCreditVotes = sqliteTable(
+  'social_credit_votes',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    voterId: integer('voter_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    targetId: integer('target_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    value: integer('value').notNull(),
+    createdAt: integer('created_at').notNull()
+  },
+  (t) => [
+    index('social_credit_votes_voter_idx').on(t.voterId),
+    index('social_credit_votes_target_idx').on(t.targetId),
+    index('social_credit_votes_voter_target_created_idx').on(
+      t.voterId,
+      t.targetId,
+      t.createdAt
+    )
+  ]
+);
+
 export {
   activityLog,
   categories,
@@ -492,6 +517,7 @@ export {
   rolePermissions,
   roles,
   settings,
+  socialCreditVotes,
   userRoles,
   users
 };
