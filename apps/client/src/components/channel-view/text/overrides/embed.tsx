@@ -30,12 +30,11 @@ const EmbedOverride = memo(({ metadata }: TEmbedOverrideProps) => {
         onClick={toggle}
         className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/80 transition-colors cursor-pointer"
       >
-        {favicon && (
+        {expanded && favicon && (
           <img
             src={favicon}
             alt=""
             className="size-4 shrink-0 rounded-sm"
-            crossOrigin="anonymous"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
             }}
@@ -71,7 +70,6 @@ const EmbedOverride = memo(({ metadata }: TEmbedOverrideProps) => {
               src={image}
               alt=""
               className="size-16 rounded-md object-cover shrink-0"
-              crossOrigin="anonymous"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
