@@ -3,6 +3,7 @@
 
 ## Feets in fork: 
 
+- Remove plugins system and migrations for early dev
 - Whiteboards [stolen from MIT gh](https://github.com/Biplo12/BoardFlow) 
 - Mardown to HTML using `marked` from [npm](https://www.npmjs.com/package/marked) 
 - Links (show external warning) 
