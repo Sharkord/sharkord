@@ -1,6 +1,8 @@
 import { CanvasMode, type Color, LayerType } from '@sharkord/shared';
 import {
+  ArrowRight,
   Circle,
+  Grid3X3,
   Hand,
   Hexagon,
   Minus,
@@ -27,6 +29,8 @@ type ToolbarProps = {
   onClear: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  snapToGrid: boolean;
+  onToggleSnapToGrid: () => void;
 };
 
 const shapeOptions = [
@@ -34,7 +38,8 @@ const shapeOptions = [
   { type: LayerType.Ellipse, icon: Circle, label: 'Ellipse' },
   { type: LayerType.Triangle, icon: Triangle, label: 'Triangle' },
   { type: LayerType.Hexagon, icon: Hexagon, label: 'Hexagon' },
-  { type: LayerType.Line, icon: Minus, label: 'Line' }
+  { type: LayerType.Line, icon: Minus, label: 'Line' },
+  { type: LayerType.Arrow, icon: ArrowRight, label: 'Arrow' }
 ] as const;
 
 const Toolbar = memo(
@@ -48,7 +53,9 @@ const Toolbar = memo(
     onRedo,
     onClear,
     canUndo,
-    canRedo
+    canRedo,
+    snapToGrid,
+    onToggleSnapToGrid
   }: ToolbarProps) => {
     const [showColorPicker, setShowColorPicker] = useState(false);
     const [showShapes, setShowShapes] = useState(false);
@@ -199,6 +206,14 @@ const Toolbar = memo(
             </div>
           )}
         </div>
+
+        <button
+          className={buttonClass(snapToGrid)}
+          onClick={onToggleSnapToGrid}
+          title="Snap to grid"
+        >
+          <Grid3X3 size={18} />
+        </button>
 
         <div className="h-px bg-border my-1" />
 

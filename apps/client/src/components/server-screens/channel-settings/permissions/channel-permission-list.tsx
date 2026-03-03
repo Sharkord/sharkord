@@ -3,7 +3,7 @@ import {
   channelPermissionDescriptions,
   channelPermissionLabels
 } from '@sharkord/shared';
-import { Label, Switch } from '@sharkord/ui';
+import { Switch } from '@sharkord/ui';
 import { memo, useCallback, useMemo } from 'react';
 
 const availableChannelPermissions = Object.values(ChannelPermission);
@@ -19,7 +19,7 @@ const ChannelPermissionItem = memo(
     return (
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
-          <Label>{channelPermissionLabels[permission]}</Label>
+          <span className="text-sm font-medium">{channelPermissionLabels[permission]}</span>
           <span className="text-sm text-muted-foreground">
             {channelPermissionDescriptions[permission]}
           </span>

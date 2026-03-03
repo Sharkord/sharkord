@@ -6,7 +6,8 @@ export enum LayerType {
   Note = 'note',
   Triangle = 'triangle',
   Hexagon = 'hexagon',
-  Line = 'line'
+  Line = 'line',
+  Arrow = 'arrow'
 }
 
 export enum CanvasMode {
@@ -123,6 +124,17 @@ export type LineLayer = {
   y2: number;
 };
 
+export type ArrowLayer = {
+  type: LayerType.Arrow;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fill: Color;
+  x2: number;
+  y2: number;
+};
+
 export type Layer =
   | RectangleLayer
   | EllipseLayer
@@ -131,7 +143,8 @@ export type Layer =
   | NoteLayer
   | TriangleLayer
   | HexagonLayer
-  | LineLayer;
+  | LineLayer
+  | ArrowLayer;
 
 export type WhiteboardState = {
   layers: Record<string, Layer>;

@@ -1,5 +1,6 @@
 import { type Layer, LayerType } from '@sharkord/shared';
 import { memo } from 'react';
+import { Arrow } from './Arrow';
 import { Ellipse } from './Ellipse';
 import { Line } from './Line';
 import { Note } from './Note';
@@ -47,6 +48,14 @@ const LayerPreview = memo(
       case LayerType.Line:
         return (
           <Line
+            layer={layer}
+            onPointerDown={onPointerDown}
+            selectionColor={selectionColor}
+          />
+        );
+      case LayerType.Arrow:
+        return (
+          <Arrow
             layer={layer}
             onPointerDown={onPointerDown}
             selectionColor={selectionColor}

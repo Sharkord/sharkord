@@ -148,13 +148,13 @@ const UpdateRole = memo(
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="role-name">Role Name</Label>
-              <Input {...r('name')} />
+              <Input id="role-name" {...r('name')} />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="role-color">Role Color</Label>
               <div className="flex gap-2">
-                <Input className="h-10 w-20" {...r('color', 'color')} />
+                <Input id="role-color" className="h-10 w-20" {...r('color', 'color')} />
                 <Input className="flex-1" {...r('color')} />
               </div>
             </div>

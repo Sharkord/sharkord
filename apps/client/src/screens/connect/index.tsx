@@ -24,7 +24,6 @@ import {
   CardTitle,
   Group,
   Input,
-  Label,
   Switch
 } from '@sharkord/ui';
 import { memo, useCallback, useMemo, useState } from 'react';
@@ -179,9 +178,9 @@ const Connect = memo(() => {
             }}
           >
             <Switch checked={values.autoLogin} />
-            <Label className="text-sm cursor-pointer">
+            <span className="text-sm font-medium cursor-pointer">
               Login automatically
-            </Label>
+            </span>
           </div>
 
           <div className="flex flex-col gap-2">

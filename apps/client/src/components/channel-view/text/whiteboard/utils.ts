@@ -1,12 +1,15 @@
 import {
+  type ArrowLayer,
   type Color,
   type Layer,
   LayerType,
+  type LineLayer,
   type PathLayer,
   type Point,
   Side,
   type XYWH
 } from '@sharkord/shared';
+import getStroke from 'perfect-freehand';
 
 export const colors: Color[] = [
   { r: 243, g: 82, b: 35 },
@@ -166,9 +169,32 @@ export function randomBorderColor(): string {
 }
 
 export function calculateFontSize(width: number, height: number): number {
-  const maxFontSize = 96;
-  const scaleFactor = 0.5;
+  const maxFontSize = 36;
+  const scaleFactor = 0.15;
   const fontSizeBasedOnHeight = height * scaleFactor;
   const fontSizeBasedOnWidth = width * scaleFactor;
-  return Math.min(fontSizeBasedOnHeight, fontSizeBasedOnWidth, maxFontSize);
+  return Math.max(12, Math.min(fontSizeBasedOnHeight, fontSizeBasedOnWidth, maxFontSize));
+}
+
+export function constrainAngle(origin: Point, point: Point): Point {
+  const dx = point.x - origin.x;
+  const dy = point.y - origin.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const angle = Math.atan2(dy, dx);
+  // Snap to nearest 45-degree increment
+  const snapped = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+  return {
+    x: origin.x + Math.round(distance * Math.cos(snapped)),
+    y: origin.y + Math.round(distance * Math.sin(snapped))
+  };
+}
+
+const GRID_SIZE = 40;
+
+export function snapToGrid(value: number): number {
+  return Math.round(value / GRID_SIZE) * GRID_SIZE;
+}
+
+export function snapPointToGrid(point: Point): Point {
+  return { x: snapToGrid(point.x), y: snapToGrid(point.y) };
 }

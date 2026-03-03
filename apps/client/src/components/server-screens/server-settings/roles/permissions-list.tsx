@@ -3,7 +3,7 @@ import {
   permissionDescriptions,
   permissionLabels
 } from '@sharkord/shared';
-import { Label, Switch } from '@sharkord/ui';
+import { Switch } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 
 const availablePermissions = Object.values(EPermission);
@@ -20,7 +20,7 @@ const Permission = memo(
     return (
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
-          <Label>{permissionLabels[permission]}</Label>
+          <span className="text-sm font-medium">{permissionLabels[permission]}</span>
           <span className="text-sm text-muted-foreground">
             {permissionDescriptions[permission]}
           </span>

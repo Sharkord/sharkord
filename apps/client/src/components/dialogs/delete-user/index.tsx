@@ -67,7 +67,7 @@ const DeleteUserDialog = memo(
 
     return (
       <AlertDialog open={isOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent aria-describedby={undefined}>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {user.name}</AlertDialogTitle>
           </AlertDialogHeader>

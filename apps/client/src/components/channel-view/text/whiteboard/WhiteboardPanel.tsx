@@ -160,6 +160,8 @@ const WhiteboardPanel = memo(({ channelId, onClose }: WhiteboardPanelProps) => {
         onClear={wb.clearAll}
         canUndo={wb.canUndo}
         canRedo={wb.canRedo}
+        snapToGrid={wb.snapToGridEnabled}
+        onToggleSnapToGrid={() => wb.setSnapToGridEnabled((v) => !v)}
       />
 
       {/* Pen thickness — bottom-right, only in pen mode */}

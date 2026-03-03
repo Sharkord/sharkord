@@ -1,5 +1,4 @@
 import {
-  Label,
   Select,
   SelectContent,
   SelectGroup,
@@ -27,7 +26,8 @@ const ResolutionFpsControl = memo(
   }: TResolutionFpsControlProps) => {
     return (
       <div className="flex items-center gap-2">
-        <Label content="Resolution">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium">Resolution</span>
           <Select
             value={resolution}
             onValueChange={onResolutionChange}
@@ -48,9 +48,10 @@ const ResolutionFpsControl = memo(
               </SelectGroup>
             </SelectContent>
           </Select>
-        </Label>
+        </div>
 
-        <Label content="Framerate">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium">Framerate</span>
           <Select
             value={framerate.toString()}
             onValueChange={(value) => onFramerateChange(+value)}
@@ -71,7 +72,7 @@ const ResolutionFpsControl = memo(
               </SelectGroup>
             </SelectContent>
           </Select>
-        </Label>
+        </div>
       </div>
     );
   }

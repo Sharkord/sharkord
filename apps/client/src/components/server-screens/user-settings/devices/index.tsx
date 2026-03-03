@@ -22,7 +22,6 @@ import {
   CardHeader,
   CardTitle,
   Group,
-  Label,
   LoadingCard,
   Select,
   SelectContent,
@@ -537,7 +536,7 @@ const Devices = memo(() => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label>Max Bitrate</Label>
+                  <span className="text-sm font-medium">Max Bitrate</span>
 
                   <Slider
                     className="max-w-96"

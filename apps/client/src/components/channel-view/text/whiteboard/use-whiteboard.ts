@@ -1,6 +1,7 @@
 import { useOwnUser } from '@/features/server/users/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import {
+  type ArrowLayer,
   CanvasMode,
   type Color,
   type Layer,
@@ -14,10 +15,13 @@ import {
 import { throttle } from 'lodash-es';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  constrainAngle,
   findIntersectingLayersWithRectangle,
   penPointsToPathLayer,
   pointerEventToCanvasPoint,
-  resizeBounds
+  resizeBounds,
+  snapPointToGrid,
+  snapToGrid
 } from './utils';
 
 type HistoryEntry = {
@@ -42,6 +46,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
   const [pencilDraft, setPencilDraft] = useState<number[][] | null>(null);
   const [strokeSize, setStrokeSize] = useState(16);
   const [cursors, setCursors] = useState<Map<number, WhiteboardCursor>>(new Map());
+  const [snapToGridEnabled, setSnapToGridEnabled] = useState(false);
 
   // Selection net
   const [selectionNetOrigin, setSelectionNetOrigin] = useState<Point | null>(null);
@@ -206,6 +211,12 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   }, []);
 
+  // --- Snap helper ---
+  const snap = useCallback(
+    (point: Point): Point => (snapToGridEnabled ? snapPointToGrid(point) : point),
+    [snapToGridEnabled]
+  );
+
   // --- Mode changes ---
   const onModeChange = useCallback(
     (mode: CanvasMode, layerType?: LayerType) => {
@@ -233,10 +244,11 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
   // --- Start inserting a layer (pointerDown) ---
   const startInsertLayer = useCallback(
     (type: LayerType, position: Point) => {
+      const pos = snap(position);
       const layerId = generateLayerId();
       const baseLayer = {
-        x: position.x,
-        y: position.y,
+        x: pos.x,
+        y: pos.y,
         width: 1,
         height: 1,
         fill: selectedColor
@@ -257,7 +269,10 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
           layer = { ...baseLayer, type: LayerType.Hexagon };
           break;
         case LayerType.Line:
-          layer = { type: LayerType.Line, x: position.x, y: position.y, width: 0, height: 0, fill: selectedColor, x2: position.x, y2: position.y };
+          layer = { type: LayerType.Line, x: pos.x, y: pos.y, width: 0, height: 0, fill: selectedColor, x2: pos.x, y2: pos.y };
+          break;
+        case LayerType.Arrow:
+          layer = { type: LayerType.Arrow, x: pos.x, y: pos.y, width: 0, height: 0, fill: selectedColor, x2: pos.x, y2: pos.y };
           break;
         case LayerType.Text:
           layer = { ...baseLayer, type: LayerType.Text, value: '' };
@@ -270,14 +285,14 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
       setLayerIds((prev) => [...prev, layerId]);
       setSelection([layerId]);
 
-      if (type === LayerType.Line) {
-        // Line uses click-click: first click sets origin, move previews, second click finalizes
-        linePendingRef.current = { layerId, origin: position };
+      if (type === LayerType.Line || type === LayerType.Arrow) {
+        // Line/Arrow uses click-click: first click sets origin, move previews, second click finalizes
+        linePendingRef.current = { layerId, origin: pos };
       } else {
-        insertDragRef.current = { layerId, origin: position };
+        insertDragRef.current = { layerId, origin: pos };
       }
     },
-    [generateLayerId, selectedColor]
+    [generateLayerId, selectedColor, snap]
   );
 
   // --- Finalize inserted layer (pointerUp or second click for lines) ---
@@ -296,8 +311,9 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     const layer = currentLayers[drag.layerId];
     if (!layer) return;
 
-    // Enforce minimum size (skip for lines — they use x2/y2 directly)
-    const finalLayer = layer.type === LayerType.Line
+    // Enforce minimum size (skip for lines/arrows — they use x2/y2 directly)
+    const isEndpointLayer = layer.type === LayerType.Line || layer.type === LayerType.Arrow;
+    const finalLayer = isEndpointLayer
       ? layer
       : { ...layer, width: Math.max(layer.width, 20), height: Math.max(layer.height, 20) } as Layer;
 
@@ -458,17 +474,21 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
         return;
       }
 
-      // Line click-click preview: just update the endpoint
+      // Line/Arrow click-click preview: just update the endpoint
       if (canvasMode === CanvasMode.Inserting && linePendingRef.current) {
-        const { layerId } = linePendingRef.current;
+        const { layerId, origin } = linePendingRef.current;
+        let sp = snap(point);
+        if (e.shiftKey) {
+          sp = constrainAngle(origin, sp);
+        }
 
         setLayers((prev) => {
           const layer = prev[layerId];
-          if (!layer || layer.type !== LayerType.Line) return prev;
+          if (!layer || (layer.type !== LayerType.Line && layer.type !== LayerType.Arrow)) return prev;
 
           return {
             ...prev,
-            [layerId]: { ...layer, x2: point.x, y2: point.y } as Layer
+            [layerId]: { ...layer, x2: sp.x, y2: sp.y } as Layer
           };
         });
         return;
@@ -477,21 +497,22 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
       // Drag-to-size while inserting (non-line shapes)
       if (canvasMode === CanvasMode.Inserting && insertDragRef.current) {
         const { layerId, origin } = insertDragRef.current;
+        const sp = snap(point);
 
         setLayers((prev) => {
           const layer = prev[layerId];
           if (!layer) return prev;
 
           // Other shapes: bounding box resize
-          let width = Math.abs(point.x - origin.x);
-          let height = Math.abs(point.y - origin.y);
+          let width = Math.abs(sp.x - origin.x);
+          let height = Math.abs(sp.y - origin.y);
           if (e.shiftKey) {
             const size = Math.max(width, height);
             width = size;
             height = size;
           }
-          const x = point.x >= origin.x ? origin.x : origin.x - width;
-          const y = point.y >= origin.y ? origin.y : origin.y - height;
+          const x = sp.x >= origin.x ? origin.x : origin.x - width;
+          const y = sp.y >= origin.y ? origin.y : origin.y - height;
           return { ...prev, [layerId]: { ...layer, x, y, width, height } as Layer };
         });
         return;
@@ -521,6 +542,12 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
             let newX = layer.x + dx;
             let newY = layer.y + dy;
 
+            // Grid snap during translation
+            if (snapToGridEnabled) {
+              newX = snapToGrid(newX);
+              newY = snapToGrid(newY);
+            }
+
             // Snap text layers to nearby shape centers
             if (layer.type === LayerType.Text) {
               const SNAP_THRESHOLD = 15;
@@ -542,8 +569,8 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
               }
             }
 
-            if (layer.type === LayerType.Line) {
-              const line = layer as LineLayer;
+            if (layer.type === LayerType.Line || layer.type === LayerType.Arrow) {
+              const line = layer as LineLayer | ArrowLayer;
               next[id] = { ...line, x: newX, y: newY, x2: line.x2 + (newX - line.x), y2: line.y2 + (newY - line.y) };
             } else {
               next[id] = { ...layer, x: newX, y: newY } as Layer;
@@ -646,8 +673,8 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
         const layer = layers[id];
         if (layer) {
           const update: Record<string, unknown> = { x: layer.x, y: layer.y };
-          if (layer.type === LayerType.Line) {
-            const line = layer as LineLayer;
+          if (layer.type === LayerType.Line || layer.type === LayerType.Arrow) {
+            const line = layer as LineLayer | ArrowLayer;
             update.x2 = line.x2;
             update.y2 = line.y2;
           }
@@ -827,10 +854,10 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
         y: original.y + PASTE_OFFSET
       } as Layer;
 
-      // Offset line endpoints too
-      if (cloned.type === LayerType.Line) {
-        (cloned as LineLayer).x2 += PASTE_OFFSET;
-        (cloned as LineLayer).y2 += PASTE_OFFSET;
+      // Offset line/arrow endpoints too
+      if (cloned.type === LayerType.Line || cloned.type === LayerType.Arrow) {
+        (cloned as LineLayer | ArrowLayer).x2 += PASTE_OFFSET;
+        (cloned as LineLayer | ArrowLayer).y2 += PASTE_OFFSET;
       }
 
       addedLayers[newId] = cloned;
@@ -960,6 +987,8 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     sendBackward,
     bringToFront,
     sendToBack,
+    snapToGridEnabled,
+    setSnapToGridEnabled,
     ownUserId: ownUser?.id ?? 0
   };
 }

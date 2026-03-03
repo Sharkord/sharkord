@@ -73,7 +73,7 @@ const AssignRoleDialog = memo(
 
     return (
       <AlertDialog open={isOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent aria-describedby={undefined}>
           <AlertDialogHeader>
             <AlertDialogTitle>Assign role to {user.name}</AlertDialogTitle>
             {isOwnUser && (

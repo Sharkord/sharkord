@@ -89,7 +89,7 @@ const CreateChannelDialog = memo(
 
     return (
       <Dialog open={isOpen}>
-        <DialogContent onInteractOutside={close} close={close}>
+        <DialogContent onInteractOutside={close} close={close} aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Create New Channel</DialogTitle>
           </DialogHeader>
