@@ -83,7 +83,7 @@ const createHttpServer = async (port: number = config.server.port) => {
         res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         res.setHeader(
           'Content-Security-Policy',
-          "default-src 'self'; script-src 'self' blob: data: 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' wss: ws:; media-src 'self' blob:; font-src 'self'; frame-ancestors 'none'"
+          "default-src 'self'; script-src 'self' blob: data: 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' wss: ws:; media-src 'self' blob:; font-src 'self'; frame-src https://www.youtube-nocookie.com; frame-ancestors 'none'"
         );
 
         const info = getWsInfo(undefined, req);
