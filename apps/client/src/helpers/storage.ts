@@ -22,7 +22,9 @@ export enum LocalStorageKey {
   AUTO_LOGIN = 'sharkord-auto-login',
   AUTO_LOGIN_TOKEN = 'sharkord-auto-login-token',
   LAST_SELECTED_CHANNEL = 'sharkord-last-selected-channel',
-  AUTO_JOIN_LAST_CHANNEL = 'sharkord-auto-join-last-channel'
+  AUTO_JOIN_LAST_CHANNEL = 'sharkord-auto-join-last-channel',
+  BROWSER_NOTIFICATIONS = 'sharkord-browser-notifications',
+  BROWSER_NOTIFICATIONS_FOR_MENTIONS = 'sharkord-browser-notifications-for-mentions'
 }
 
 export enum SessionStorageKey {

@@ -14,6 +14,8 @@ import {
   connectedSelector,
   connectingSelector,
   disconnectInfoSelector,
+  hasUnreadMentionsSelector,
+  hasVisibleChannelsInCategorySelector,
   infoSelector,
   isOwnUserOwnerSelector,
   ownUserRolesSelector,
@@ -97,6 +99,12 @@ export const useChannelCan = (channelId: number | undefined) => {
   return can;
 };
 
+// Returns true if the user can view at least one of the channels in the category
+export const useHasVisibleChannelsInCategory = (categoryId: number) =>
+  useSelector((state: IRootState) =>
+    hasVisibleChannelsInCategorySelector(state, categoryId)
+  );
+
 export const useUserRoles = (userId: number) =>
   useSelector((state: IRootState) => userRolesSelector(state, userId));
 
@@ -146,3 +154,8 @@ export const usePluginComponentContext = (): TPluginSlotContext => {
     [stateCtx]
   );
 };
+
+export const useHasUnreadMentions = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    hasUnreadMentionsSelector(state, channelId)
+  );

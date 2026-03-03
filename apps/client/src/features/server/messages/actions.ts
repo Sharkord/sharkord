@@ -1,13 +1,53 @@
-import { threadSidebarDataSelector } from '@/features/app/selectors';
+import {
+  browserNotificationsForMentionsSelector,
+  browserNotificationsSelector,
+  selectedDmChannelIdSelector,
+  threadSidebarDataSelector
+} from '@/features/app/selectors';
 import { store } from '@/features/store';
+import { getFileUrl } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';
-import { TYPING_MS, type TJoinedMessage } from '@sharkord/shared';
-import { selectedChannelIdSelector } from '../channels/selectors';
+import {
+  getPlainTextFromHtml,
+  hasMention,
+  TYPING_MS,
+  type TJoinedMessage
+} from '@sharkord/shared';
+import {
+  channelByIdSelector,
+  selectedChannelIdSelector
+} from '../channels/selectors';
 import { serverSliceActions } from '../slice';
 import { playSound } from '../sounds/actions';
 import { SoundType } from '../types';
-import { ownUserIdSelector } from '../users/selectors';
+import { ownUserIdSelector, userByIdSelector } from '../users/selectors';
 import { threadMessagesMapSelector } from './selectors';
+
+const sendBrowserNotification = (
+  message: TJoinedMessage,
+  channelId: number
+) => {
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
+    return;
+  }
+
+  const state = store.getState();
+
+  const user = userByIdSelector(state, message.userId);
+  const channel = channelByIdSelector(state, channelId);
+
+  if (!user || !channel) {
+    return;
+  }
+
+  const textContent = getPlainTextFromHtml(message.content ?? '');
+
+  const title = `${user?.name ?? 'Unknown'} in #${channel?.name ?? 'unknown'}`;
+  const body = textContent ? textContent : 'Sent an attachment';
+  const icon = user?.avatar ? getFileUrl(user.avatar) : undefined;
+
+  new Notification(title, { body, icon });
+};
 
 const typingTimeouts: { [key: string]: NodeJS.Timeout } = {};
 
@@ -22,6 +62,7 @@ export const addMessages = (
 ) => {
   const state = store.getState();
   const selectedChannelId = selectedChannelIdSelector(state);
+  const selectedDmChannelId = selectedDmChannelIdSelector(state);
 
   const rootMessages = messages.filter((m) => !m.parentMessageId);
   const threadReplies = messages.filter((m) => !!m.parentMessageId);
@@ -71,6 +112,9 @@ export const addMessages = (
   if (isSubscriptionMessage && messages.length > 0) {
     const state = store.getState();
     const ownUserId = ownUserIdSelector(state);
+    const hasBrowserNotificationsEnabled = browserNotificationsSelector(state);
+    const notificationsForMentionsOnly =
+      browserNotificationsForMentionsSelector(state);
     const targetMessage = messages[0];
     const isFromOwnUser = ownUserId === targetMessage.userId;
 
@@ -87,13 +131,26 @@ export const addMessages = (
       } else {
         playSound(SoundType.MESSAGE_RECEIVED);
       }
+
+      if (notificationsForMentionsOnly) {
+        const isMentioned = hasMention(
+          targetMessage.content ?? null,
+          ownUserId
+        );
+
+        if (isMentioned) {
+          sendBrowserNotification(targetMessage, channelId);
+        }
+      } else if (hasBrowserNotificationsEnabled) {
+        sendBrowserNotification(targetMessage, channelId);
+      }
     }
 
-    if (
-      channelId === selectedChannelId &&
-      !isFromOwnUser &&
-      rootMessages.length > 0
-    ) {
+    const isChannelSelected = [selectedChannelId, selectedDmChannelId].includes(
+      channelId
+    );
+
+    if (isChannelSelected && !isFromOwnUser && rootMessages.length > 0) {
       const trpc = getTRPCClient();
 
       try {

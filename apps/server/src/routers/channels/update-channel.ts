@@ -3,8 +3,10 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { publishChannel } from '../../db/publishers';
+import { isDirectMessageChannel } from '../../db/queries/dms';
 import { channels } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const updateChannelRoute = protectedProcedure
@@ -19,6 +21,19 @@ const updateChannelRoute = protectedProcedure
   .mutation(async ({ ctx, input }) => {
     await ctx.needsPermission(Permission.MANAGE_CHANNELS);
 
+    const isDmChannel = await isDirectMessageChannel(input.channelId);
+
+    invariant(!isDmChannel, {
+      code: 'FORBIDDEN',
+      message: 'Cannot update DM channels'
+    });
+
+    const oldChannel = await db
+      .select({ private: channels.private })
+      .from(channels)
+      .where(eq(channels.id, input.channelId))
+      .get();
+
     const updatedChannel = await db
       .update(channels)
       .set({
@@ -30,7 +45,16 @@ const updateChannelRoute = protectedProcedure
       .returning()
       .get();
 
-    publishChannel(updatedChannel.id, 'update');
+    // privacy setting changed
+    const ensureUserAccess = updatedChannel.private !== oldChannel?.private;
+
+    console.log('updated channel', {
+      updatedChannel,
+      oldChannel,
+      ensureUserAccess
+    });
+
+    publishChannel(updatedChannel.id, 'update', ensureUserAccess);
     enqueueActivityLog({
       type: ActivityLogType.UPDATED_CHANNEL,
       userId: ctx.user.id,

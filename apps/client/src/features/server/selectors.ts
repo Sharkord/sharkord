@@ -1,12 +1,17 @@
 import { createSelector } from '@reduxjs/toolkit';
-import { OWNER_ROLE_ID } from '@sharkord/shared';
+import { ChannelPermission, OWNER_ROLE_ID, hasMention } from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
 import type { IRootState } from '../store';
 import {
+  channelByIdSelector,
+  channelPermissionsSelector,
+  channelReadStateByIdSelector,
+  channelsByCategoryIdSelector,
   currentVoiceChannelIdSelector,
   selectedChannelIdSelector
 } from './channels/selectors';
 import {
+  messagesByChannelIdSelector,
   threadTypingMapSelector,
   typingMapSelector
 } from './messages/selectors';
@@ -54,6 +59,28 @@ export const isOwnUserOwnerSelector = createSelector(
   [ownUserRolesSelector],
   (ownUserRoles) => ownUserRoles.some((role) => role.id === OWNER_ROLE_ID)
 );
+
+export const hasVisibleChannelsInCategorySelector = createCachedSelector(
+  [
+    (state: IRootState, categoryId: number) =>
+      channelsByCategoryIdSelector(state, categoryId),
+    channelPermissionsSelector,
+    isOwnUserOwnerSelector
+  ],
+  (channelsInCategory, channelPermissions, isOwner) => {
+    if (isOwner) return true;
+    if (channelsInCategory.length === 0) return false;
+
+    for (const channel of channelsInCategory) {
+      if (!channel.private) return true;
+      const permissions =
+        channelPermissions[channel.id]?.permissions ??
+        ({} as Record<string, boolean>);
+      if (permissions[ChannelPermission.VIEW_CHANNEL] === true) return true;
+    }
+    return false;
+  }
+)((_, categoryId: number) => categoryId);
 
 export const userRolesSelector = createSelector(
   [rolesSelector, userByIdSelector],
@@ -148,3 +175,26 @@ export const pluginComponentContextSelector = createSelector(
     currentVoiceChannelId
   })
 );
+
+// this approach has some limitations but it should work for most cases
+export const hasUnreadMentionsSelector = createCachedSelector(
+  [
+    channelReadStateByIdSelector,
+    channelByIdSelector,
+    messagesByChannelIdSelector,
+    ownUserIdSelector
+  ],
+  (readState, channel, messages, ownUserId) => {
+    if (!channel || !messages) return false;
+
+    const unreadMessages = messages.slice(-readState);
+
+    return unreadMessages.some((message) => {
+      if (!message.content) return false;
+
+      const isUserMentioned = hasMention(message.content, ownUserId);
+
+      return isUserMentioned;
+    });
+  }
+)((_, channelId: number) => channelId);

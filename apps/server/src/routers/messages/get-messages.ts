@@ -9,6 +9,7 @@ import { alias } from 'drizzle-orm/sqlite-core';
 import { z } from 'zod';
 import { db } from '../../db';
 import { getChannelsReadStatesForUser } from '../../db/queries/channels';
+import { assertDmChannel } from '../../db/queries/dms';
 import { joinMessagesWithRelations } from '../../db/queries/messages';
 import { channelReadStates, channels, messages } from '../../db/schema';
 import { invariant } from '../../utils/invariant';
@@ -26,10 +27,13 @@ const getMessagesRoute = protectedProcedure
   )
   .meta({ infinite: true })
   .query(async ({ ctx, input }) => {
-    await ctx.needsChannelPermission(
-      input.channelId,
-      ChannelPermission.VIEW_CHANNEL
-    );
+    await Promise.all([
+      assertDmChannel(input.channelId, ctx.userId),
+      ctx.needsChannelPermission(
+        input.channelId,
+        ChannelPermission.VIEW_CHANNEL
+      )
+    ]);
 
     const { channelId, cursor, limit, targetMessageId } = input;
 

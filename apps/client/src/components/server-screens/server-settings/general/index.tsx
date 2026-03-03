@@ -82,6 +82,18 @@ const General = memo(() => {
           />
         </Group>
 
+        <Group
+          label="Enable Direct Messages"
+          description="Allow users to send direct messages to each other. If disabled, users can only communicate in channels."
+        >
+          <Switch
+            checked={settings.directMessagesEnabled}
+            onCheckedChange={(checked) =>
+              onChange('directMessagesEnabled', checked)
+            }
+          />
+        </Group>
+
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
             Cancel

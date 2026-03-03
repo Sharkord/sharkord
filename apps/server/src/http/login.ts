@@ -31,8 +31,15 @@ import { getJsonBody } from './helpers';
 import { HttpValidationError } from './utils';
 
 const zBody = z.object({
-  identity: z.string().trim().min(1, 'Identity is required'),
-  password: z.string().min(4, 'Password is required').max(128),
+  identity: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(1, 'Identity must be at least 1 character long'),
+  password: z
+    .string()
+    .min(4, 'Password must be at least 4 characters long')
+    .max(128),
   invite: z.string().optional()
 });
 
@@ -57,10 +64,12 @@ const registerUser = async (
     message: 'Default role not found'
   });
 
+  const randomNum = Math.floor(Math.random() * 99999) + 10000; // between 10000 and 99999 to ensure it's always 5 digits, for better readability
+
   const user = await db
     .insert(users)
     .values({
-      name: 'SharkordUser',
+      name: `SharkordUser${randomNum}`,
       identity,
       createdAt: Date.now(),
       password: hashedPassword

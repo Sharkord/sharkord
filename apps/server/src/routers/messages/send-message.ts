@@ -1,6 +1,7 @@
 import {
   ActivityLogType,
   ChannelPermission,
+  getPlainTextFromHtml,
   isEmptyMessage,
   Permission,
   toDomCommand
@@ -10,10 +11,10 @@ import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
 import { publishMessage, publishReplyCount } from '../../db/publishers';
+import { assertDmChannel, isDirectMessageChannel } from '../../db/queries/dms';
 import { getSettings } from '../../db/queries/server';
 import { messageFiles, messages } from '../../db/schema';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
-import { getPlainTextFromHtml } from '../../helpers/get-plain-text-from-html';
 import { parseCommandArgs } from '../../helpers/parse-command-args';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
 import { pluginManager } from '../../plugins';
@@ -75,12 +76,32 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       });
     }
 
-    const { storageMaxFilesPerMessage, enablePlugins } = await getSettings();
+    const [settings, isDmChannel] = await Promise.all([
+      getSettings(),
+      isDirectMessageChannel(input.channelId),
+      assertDmChannel(input.channelId, ctx.userId)
+    ]);
+
+    const { storageMaxFilesPerMessage, enablePlugins } = settings;
 
     const limitedFiles = input.files.slice(
       0,
       Math.max(0, storageMaxFilesPerMessage)
     );
+
+    if (limitedFiles.length > 0) {
+      invariant(settings.storageUploadEnabled, {
+        code: 'FORBIDDEN',
+        message: 'File uploads are disabled on this server'
+      });
+
+      if (isDmChannel) {
+        invariant(settings.storageFileSharingInDirectMessages, {
+          code: 'FORBIDDEN',
+          message: 'File sharing in direct messages is disabled on this server'
+        });
+      }
+    }
 
     invariant(!isEmptyMessage(input.content) || limitedFiles.length != 0, {
       code: 'BAD_REQUEST',
