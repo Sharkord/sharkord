@@ -62,9 +62,10 @@ const createHttpServer = async (port: number = config.server.port) => {
 
         if (origin && host) {
           try {
-            const originHost = new URL(origin).host;
+            const originHostname = new URL(origin).hostname;
+            const requestHostname = host.split(':')[0];
 
-            if (originHost === host) {
+            if (originHostname === requestHostname) {
               res.setHeader('Access-Control-Allow-Origin', origin);
               res.setHeader('Vary', 'Origin');
             }
