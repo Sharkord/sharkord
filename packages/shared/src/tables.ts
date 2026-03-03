@@ -113,6 +113,7 @@ export type TJoinedMessage = TMessage & {
   files: TFile[];
   reactions: TJoinedMessageReaction[];
   replyCount?: number;
+  replyTo?: { id: number; content: string | null; userId: number } | null;
 };
 
 export type TJoinedEmoji = TEmoji & {

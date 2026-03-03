@@ -7,6 +7,7 @@ import {
   useTypingUsersByChannelId
 } from '@/features/server/hooks';
 import { useMessages } from '@/features/server/messages/hooks';
+import { consumePendingScrollTarget } from '@/features/server/messages/pending-scroll';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { useUsers } from '@/features/server/users/hooks';
@@ -16,11 +17,13 @@ import {
   ChannelPermission,
   DELETED_USER_IDENTITY_AND_NAME,
   TYPING_MS,
-  getTrpcError
+  getTrpcError,
+  type TJoinedMessage
 } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
+import { X } from 'lucide-react';
 import { throttle } from 'lodash-es';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { MessagesGroup } from './messages-group';
 import { TextSkeleton } from './text-skeleton';
@@ -41,6 +44,7 @@ type TChannelProps = {
 
 const TextChannel = memo(({ channelId }: TChannelProps) => {
   const [whiteboardOpen, setWhiteboardOpen] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<TJoinedMessage | null>(null);
 
   const {
     messages,
@@ -74,6 +78,23 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
   });
 
   const channelCan = useChannelCan(channelId);
+
+  const onReply = useCallback((message: TJoinedMessage) => {
+    setReplyingTo(message);
+  }, []);
+
+  // Clear reply state on channel change
+  useEffect(() => {
+    setReplyingTo(null);
+  }, [channelId]);
+
+  useEffect(() => {
+    if (loading) return;
+    const target = consumePendingScrollTarget();
+    if (target) {
+      scrollToMessage(target);
+    }
+  }, [loading, scrollToMessage]);
 
   const sendTypingSignal = useMemo(
     () =>
@@ -112,7 +133,8 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         await trpc.messages.send.mutate({
           content: message,
           channelId,
-          files: files.map((f) => f.id)
+          files: files.map((f) => f.id),
+          ...(replyingTo ? { replyToMessageId: replyingTo.id } : {})
         });
 
         playSound(SoundType.MESSAGE_SENT);
@@ -121,10 +143,11 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         return false;
       }
 
+      setReplyingTo(null);
       setNewMessageHandler('');
       return true;
     },
-    [channelId, sendTypingSignal, setNewMessageHandler]
+    [channelId, sendTypingSignal, setNewMessageHandler, replyingTo]
   );
 
   if (!channelCan(ChannelPermission.VIEW_CHANNEL) || loading) {
@@ -160,11 +183,33 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
           >
             <div className="space-y-4">
               {groupedMessages.map((group, index) => (
-                <MessagesGroup key={index} group={group} />
+                <MessagesGroup
+                  key={index}
+                  group={group}
+                  onReply={onReply}
+                  onScrollToMessage={scrollToMessage}
+                />
               ))}
             </div>
           </div>
 
+          {replyingTo && (
+            <div className="flex items-center gap-2 px-4 py-2 border-t border-border bg-secondary/30 text-sm">
+              <span className="text-muted-foreground">Replying to</span>
+              <span className="font-medium truncate">
+                {replyingTo.content
+                  ? replyingTo.content.replace(/<[^>]*>/g, '').slice(0, 80)
+                  : 'a message'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setReplyingTo(null)}
+                className="ml-auto shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           <MessageCompose
             ref={composeRef}
             channelId={channelId}

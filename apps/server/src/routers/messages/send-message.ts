@@ -31,7 +31,8 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       content: z.string(),
       channelId: z.number(),
       files: z.array(z.string()).default([]),
-      parentMessageId: z.number().optional()
+      parentMessageId: z.number().optional(),
+      replyToMessageId: z.number().optional()
     })
   )
   .mutation(async ({ input, ctx }) => {
@@ -72,6 +73,28 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       });
     }
 
+    if (input.replyToMessageId) {
+      const replyToMessage = await db
+        .select({
+          id: messages.id,
+          channelId: messages.channelId
+        })
+        .from(messages)
+        .where(eq(messages.id, input.replyToMessageId))
+        .limit(1)
+        .get();
+
+      invariant(replyToMessage, {
+        code: 'NOT_FOUND',
+        message: 'Reply target message not found.'
+      });
+
+      invariant(replyToMessage.channelId === input.channelId, {
+        code: 'BAD_REQUEST',
+        message: 'Reply target message must be in the same channel.'
+      });
+    }
+
     const { storageMaxFilesPerMessage } = await getSettings();
 
     const limitedFiles = input.files.slice(
@@ -99,6 +122,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
         userId: ctx.userId,
         content: targetContent,
         parentMessageId: input.parentMessageId ?? null,
+        replyToMessageId: input.replyToMessageId ?? null,
         createdAt: Date.now()
       })
       .returning()

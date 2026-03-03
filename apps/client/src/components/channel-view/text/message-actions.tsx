@@ -15,6 +15,7 @@ import {
   Pencil,
   Pin,
   PinOff,
+  Reply,
   Smile,
   Trash
 } from 'lucide-react';
@@ -27,6 +28,7 @@ type TMessageActionsProps = {
   messageId: number;
   channelId: number;
   onEdit: () => void;
+  onReply?: () => void;
   canManage: boolean;
   editable: boolean;
   isThreadReply?: boolean;
@@ -37,6 +39,7 @@ type TMessageActionsProps = {
 const MessageActions = memo(
   ({
     onEdit,
+    onReply,
     messageId,
     channelId,
     canManage,
@@ -110,6 +113,15 @@ const MessageActions = memo(
 
     return (
       <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-2 transition-all bg-background">
+        {!isThreadReply && onReply && (
+          <IconButton
+            size="sm"
+            variant="ghost"
+            icon={Reply}
+            onClick={onReply}
+            title="Reply"
+          />
+        )}
         {!isThreadReply && (
           <IconButton
             size="sm"

@@ -1,10 +1,14 @@
 import { openThreadSidebar } from '@/features/app/actions';
 import { useThreadSidebar } from '@/features/app/hooks';
 import { useCan } from '@/features/server/hooks';
-import { useIsOwnUser, useOwnUserId } from '@/features/server/users/hooks';
+import {
+  useIsOwnUser,
+  useOwnUserId,
+  useUserById
+} from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
 import { Permission, type TJoinedMessage } from '@sharkord/shared';
-import { MessageSquareText } from 'lucide-react';
+import { CornerUpRight, MessageSquareText } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { MessageActions } from './message-actions';
 import { MessageEditInline } from './message-edit-inline';
@@ -15,6 +19,8 @@ type TMessageProps = {
   disableActions?: boolean;
   disableFiles?: boolean;
   disableReactions?: boolean;
+  onReply?: (message: TJoinedMessage) => void;
+  onScrollToMessage?: (messageId: number) => void;
 };
 
 const Message = memo(
@@ -22,7 +28,9 @@ const Message = memo(
     message,
     disableActions,
     disableFiles,
-    disableReactions
+    disableReactions,
+    onReply,
+    onScrollToMessage
   }: TMessageProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const isFromOwnUser = useIsOwnUser(message.userId);
@@ -47,9 +55,21 @@ const Message = memo(
     const replyCount = message.replyCount ?? 0;
     const isActiveThread = isThreadOpen && threadParentId === message.id;
 
+    const replyToUser = useUserById(message.replyTo?.userId ?? -1);
+
     const onThreadClick = useCallback(() => {
       openThreadSidebar(message.id, message.channelId);
     }, [message.id, message.channelId]);
+
+    const handleReply = useCallback(() => {
+      onReply?.(message);
+    }, [onReply, message]);
+
+    const handleReplyPreviewClick = useCallback(() => {
+      if (message.replyTo?.id && onScrollToMessage) {
+        onScrollToMessage(message.replyTo.id);
+      }
+    }, [message.replyTo?.id, onScrollToMessage]);
 
     return (
       <div
@@ -62,6 +82,23 @@ const Message = memo(
       >
         {!isEditing ? (
           <>
+            {message.replyTo && (
+              <button
+                type="button"
+                onClick={handleReplyPreviewClick}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-0.5 max-w-full truncate transition-colors"
+              >
+                <CornerUpRight className="h-3 w-3 shrink-0" />
+                <span className="font-medium shrink-0">
+                  {replyToUser?.name ?? 'Unknown'}
+                </span>
+                <span className="truncate opacity-70">
+                  {message.replyTo.content
+                    ? message.replyTo.content.replace(/<[^>]*>/g, '').slice(0, 100)
+                    : 'Click to see message'}
+                </span>
+              </button>
+            )}
             <MessageRenderer
               message={message}
               disableFiles={disableFiles}
@@ -82,6 +119,7 @@ const Message = memo(
             {!disableActions && (
               <MessageActions
                 onEdit={() => setIsEditing(true)}
+                onReply={onReply ? handleReply : undefined}
                 canManage={canManage}
                 messageId={message.id}
                 channelId={message.channelId}

@@ -106,11 +106,30 @@ const getMessage = async (
     replyCount = replyCountRow?.count ?? 0;
   }
 
+  let replyTo: { id: number; content: string | null; userId: number } | null =
+    null;
+
+  if (message.replyToMessageId) {
+    const replyToRow = await db
+      .select({
+        id: messages.id,
+        content: messages.content,
+        userId: messages.userId
+      })
+      .from(messages)
+      .where(eq(messages.id, message.replyToMessageId))
+      .limit(1)
+      .get();
+
+    replyTo = replyToRow ?? null;
+  }
+
   return {
     ...message,
     files: filesForMessage ?? [],
     reactions: reactions ?? [],
-    replyCount
+    replyCount,
+    replyTo
   };
 };
 
@@ -215,10 +234,41 @@ const joinMessagesWithRelations = async (
     return acc;
   }, {});
 
+  const replyToIds = rows
+    .map((m) => m.replyToMessageId)
+    .filter((id): id is number => id != null);
+
+  let replyToByMessage: Record<
+    number,
+    { id: number; content: string | null; userId: number }
+  > = {};
+
+  if (replyToIds.length > 0) {
+    const replyToRows = await db
+      .select({
+        id: messages.id,
+        content: messages.content,
+        userId: messages.userId
+      })
+      .from(messages)
+      .where(inArray(messages.id, replyToIds));
+
+    replyToByMessage = replyToRows.reduce<typeof replyToByMessage>(
+      (acc, row) => {
+        acc[row.id] = row;
+        return acc;
+      },
+      {}
+    );
+  }
+
   return rows.map((msg) => ({
     ...msg,
     files: filesByMessage[msg.id] ?? [],
-    reactions: reactionsByMessage[msg.id] ?? []
+    reactions: reactionsByMessage[msg.id] ?? [],
+    replyTo: msg.replyToMessageId
+      ? replyToByMessage[msg.replyToMessageId] ?? null
+      : null
   }));
 };
 

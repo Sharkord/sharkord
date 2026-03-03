@@ -16,6 +16,8 @@ type TMessagesGroupProps = {
   disableActions?: boolean;
   disableFiles?: boolean;
   disableReactions?: boolean;
+  onReply?: (message: TJoinedMessage) => void;
+  onScrollToMessage?: (messageId: number) => void;
 };
 
 const MessagesGroup = memo(
@@ -23,7 +25,9 @@ const MessagesGroup = memo(
     group,
     disableActions,
     disableFiles,
-    disableReactions
+    disableReactions,
+    onReply,
+    onScrollToMessage
   }: TMessagesGroupProps) => {
     const firstMessage = group[0];
     const user = useUserById(firstMessage.userId);
@@ -70,6 +74,8 @@ const MessagesGroup = memo(
                   disableActions={disableActions}
                   disableFiles={disableFiles}
                   disableReactions={disableReactions}
+                  onReply={onReply}
+                  onScrollToMessage={onScrollToMessage}
                 />
               </div>
             ))}
