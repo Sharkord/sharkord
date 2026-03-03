@@ -58,6 +58,9 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
   // Insert drag
   const insertDragRef = useRef<{ layerId: string; origin: Point } | null>(null);
 
+  // Line click-click: tracks a line waiting for the second click
+  const linePendingRef = useRef<{ layerId: string; origin: Point } | null>(null);
+
   // Auto-focus text layer after creation
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
 
@@ -199,6 +202,18 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
   // --- Mode changes ---
   const onModeChange = useCallback(
     (mode: CanvasMode, layerType?: LayerType) => {
+      // Cancel pending line if switching away
+      if (linePendingRef.current) {
+        const pendingId = linePendingRef.current.layerId;
+        linePendingRef.current = null;
+        setLayers((prev) => {
+          const next = { ...prev };
+          delete next[pendingId];
+          return next;
+        });
+        setLayerIds((prev) => prev.filter((id) => id !== pendingId));
+      }
+
       setCanvasMode(mode);
       setInsertingLayerType(layerType ?? null);
       if (mode !== CanvasMode.None) {
@@ -247,16 +262,24 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
       setLayers((prev) => ({ ...prev, [layerId]: layer }));
       setLayerIds((prev) => [...prev, layerId]);
       setSelection([layerId]);
-      insertDragRef.current = { layerId, origin: position };
+
+      if (type === LayerType.Line) {
+        // Line uses click-click: first click sets origin, move previews, second click finalizes
+        linePendingRef.current = { layerId, origin: position };
+      } else {
+        insertDragRef.current = { layerId, origin: position };
+      }
     },
     [generateLayerId, selectedColor]
   );
 
-  // --- Finalize inserted layer (pointerUp) ---
+  // --- Finalize inserted layer (pointerUp or second click for lines) ---
   const finalizeInsertLayer = useCallback(() => {
-    const drag = insertDragRef.current;
+    // Check linePendingRef first (click-click lines), then insertDragRef (drag shapes)
+    const drag = linePendingRef.current ?? insertDragRef.current;
     if (!drag) return;
 
+    linePendingRef.current = null;
     insertDragRef.current = null;
 
     const layer = layers[drag.layerId];
@@ -384,6 +407,12 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
       }
 
       if (canvasMode === CanvasMode.Inserting && insertingLayerType) {
+        // Line tool: second click finalizes the line
+        if (linePendingRef.current) {
+          finalizeInsertLayer();
+          return;
+        }
+
         startInsertLayer(insertingLayerType, point);
         return;
       }
@@ -396,7 +425,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
         setCanvasMode(CanvasMode.SelectionNet);
       }
     },
-    [camera, canvasMode, insertingLayerType, startInsertLayer]
+    [camera, canvasMode, finalizeInsertLayer, insertingLayerType, startInsertLayer]
   );
 
   const onPointerMove = useCallback(
@@ -421,49 +450,57 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
         return;
       }
 
-      // Drag-to-size while inserting
+      // Line click-click preview: update endpoint as cursor moves
+      if (canvasMode === CanvasMode.Inserting && linePendingRef.current) {
+        const { layerId, origin } = linePendingRef.current;
+
+        setLayers((prev) => {
+          const layer = prev[layerId];
+          if (!layer || layer.type !== LayerType.Line) return prev;
+
+          let endX = point.x;
+          let endY = point.y;
+          // Shift constrains to 45-degree angles
+          if (e.shiftKey) {
+            const dx = endX - origin.x;
+            const dy = endY - origin.y;
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+            if (absDy < absDx * 0.4) {
+              endY = origin.y;
+            } else if (absDx < absDy * 0.4) {
+              endX = origin.x;
+            } else {
+              const dist = Math.max(absDx, absDy);
+              endX = origin.x + dist * Math.sign(dx);
+              endY = origin.y + dist * Math.sign(dy);
+            }
+          }
+          const minX = Math.min(origin.x, endX);
+          const minY = Math.min(origin.y, endY);
+          return {
+            ...prev,
+            [layerId]: {
+              ...layer,
+              x: minX,
+              y: minY,
+              width: Math.abs(endX - origin.x),
+              height: Math.abs(endY - origin.y),
+              x2: endX,
+              y2: endY
+            } as Layer
+          };
+        });
+        return;
+      }
+
+      // Drag-to-size while inserting (non-line shapes)
       if (canvasMode === CanvasMode.Inserting && insertDragRef.current) {
         const { layerId, origin } = insertDragRef.current;
 
         setLayers((prev) => {
           const layer = prev[layerId];
           if (!layer) return prev;
-
-          // Lines: update endpoint directly, bounding box computed for selection
-          if (layer.type === LayerType.Line) {
-            let endX = point.x;
-            let endY = point.y;
-            // Shift constrains to 45-degree angles
-            if (e.shiftKey) {
-              const dx = endX - origin.x;
-              const dy = endY - origin.y;
-              const absDx = Math.abs(dx);
-              const absDy = Math.abs(dy);
-              if (absDy < absDx * 0.4) {
-                endY = origin.y;
-              } else if (absDx < absDy * 0.4) {
-                endX = origin.x;
-              } else {
-                const dist = Math.max(absDx, absDy);
-                endX = origin.x + dist * Math.sign(dx);
-                endY = origin.y + dist * Math.sign(dy);
-              }
-            }
-            const minX = Math.min(origin.x, endX);
-            const minY = Math.min(origin.y, endY);
-            return {
-              ...prev,
-              [layerId]: {
-                ...layer,
-                x: minX,
-                y: minY,
-                width: Math.abs(endX - origin.x),
-                height: Math.abs(endY - origin.y),
-                x2: endX,
-                y2: endY
-              } as Layer
-            };
-          }
 
           // Other shapes: bounding box resize
           let width = Math.abs(point.x - origin.x);
@@ -589,9 +626,14 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
       return;
     }
 
-    // Finalize drag-to-create
+    // Finalize drag-to-create (non-line shapes only; lines use click-click)
     if (canvasMode === CanvasMode.Inserting && insertDragRef.current) {
       finalizeInsertLayer();
+      return;
+    }
+
+    // Line pending: don't finalize on pointer up — wait for second click
+    if (canvasMode === CanvasMode.Inserting && linePendingRef.current) {
       return;
     }
 
@@ -782,6 +824,20 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
         ) {
           deleteSelection();
         }
+      }
+
+      // Escape cancels pending line
+      if (e.key === 'Escape' && linePendingRef.current) {
+        const pendingId = linePendingRef.current.layerId;
+        linePendingRef.current = null;
+        setLayers((prev) => {
+          const next = { ...prev };
+          delete next[pendingId];
+          return next;
+        });
+        setLayerIds((prev) => prev.filter((id) => id !== pendingId));
+        setSelection([]);
+        return;
       }
 
       // Escape exits text editing
