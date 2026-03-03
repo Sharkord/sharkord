@@ -1270,4 +1270,342 @@ describe('messages router', () => {
       channelMessages.messages.find((m) => m.id === parentId)!.replyCount
     ).toBe(1);
   });
+
+  test('should reject file attachments in direct messages when disabled', async () => {
+    const { caller: caller1, mockedToken } = await initTest(1);
+
+    const { channelId } = await caller1.dms.open({ userId: 2 });
+
+    await tdb
+      .update(settings)
+      .set({
+        storageFileSharingInDirectMessages: false
+      })
+      .execute();
+
+    const file = new File(['dm attachment'], 'dm.txt', {
+      type: 'text/plain'
+    });
+
+    const uploadResponse = await uploadFile(file, mockedToken);
+    const uploaded = (await uploadResponse.json()) as { id: string };
+
+    await expect(
+      caller1.messages.send({
+        channelId,
+        content: 'hello with file',
+        files: [uploaded.id]
+      })
+    ).rejects.toThrow(
+      'File sharing in direct messages is disabled on this server'
+    );
+  });
+
+  test('should reject sending and fetching direct messages when dms are disabled', async () => {
+    const { caller: caller1 } = await initTest(1);
+
+    const { channelId } = await caller1.dms.open({ userId: 2 });
+
+    await tdb
+      .update(settings)
+      .set({
+        directMessagesEnabled: false
+      })
+      .execute();
+
+    await expect(
+      caller1.messages.send({
+        channelId,
+        content: 'blocked dm',
+        files: []
+      })
+    ).rejects.toThrow('Direct messages are disabled on this server');
+
+    await expect(
+      caller1.messages.get({
+        channelId,
+        cursor: null,
+        limit: 50
+      })
+    ).rejects.toThrow('Direct messages are disabled on this server');
+  });
+
+  test('should throw when non-participant tries to fetch direct messages', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller3 } = await initTest(3);
+
+    const { channelId } = await caller1.dms.open({ userId: 2 });
+
+    await expect(
+      caller3.messages.get({
+        channelId,
+        cursor: null,
+        limit: 50
+      })
+    ).rejects.toThrow('You are not a participant in this DM channel');
+  });
+
+  test('should throw when non-participant tries to send message in direct messages', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller3 } = await initTest(3);
+
+    const { channelId } = await caller1.dms.open({ userId: 2 });
+
+    await expect(
+      caller3.messages.send({
+        channelId,
+        content: 'Intruding DM',
+        files: []
+      })
+    ).rejects.toThrow('Insufficient channel permissions');
+  });
+
+  test('should throw when non-participant tries to signal typing in direct messages', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller3 } = await initTest(3);
+
+    const { channelId } = await caller1.dms.open({ userId: 2 });
+
+    await expect(
+      caller3.messages.signalTyping({
+        channelId
+      })
+    ).rejects.toThrow('You are not a participant in this DM channel');
+  });
+
+  test('should send a message in direct messages', async () => {
+    const { caller: caller1 } = await initTest(3);
+    const { caller: caller2 } = await initTest(4);
+
+    const messagesBefore = await caller2.messages.get({
+      channelId: 3, // DM channel between user 3 and 4
+      cursor: null,
+      limit: 50
+    });
+
+    await caller1.messages.send({
+      channelId: 3, // DM channel between user 3 and 4
+      content: 'Hello in DM',
+      files: []
+    });
+
+    const messagesAfter = await caller2.messages.get({
+      channelId: 3, // DM channel between user 3 and 4
+      cursor: null,
+      limit: 50
+    });
+
+    expect(messagesBefore.messages.length).toBe(1); // first dm is already mocked
+    expect(messagesAfter.messages.length).toBe(2);
+    expect(messagesAfter.messages[0]!.content).toBe('Hello in DM');
+  });
+
+  test('should throw when non-participant tries to pin a DM message', async () => {
+    // User 1 is not a participant in DM channel 3 (message id 2 is from seed)
+    const { caller } = await initTest(1);
+
+    await expect(caller.messages.togglePin({ messageId: 2 })).rejects.toThrow(
+      'You are not a participant in this DM channel'
+    );
+  });
+
+  test('should throw when pinning a DM message with DMs disabled', async () => {
+    const { caller } = await initTest(3);
+
+    // give user 3 PIN_MESSAGES permission via their default role
+    await tdb.insert(rolePermissions).values({
+      roleId: 2,
+      permission: Permission.PIN_MESSAGES,
+      createdAt: Date.now()
+    });
+
+    await tdb.update(settings).set({ directMessagesEnabled: false }).execute();
+
+    await expect(caller.messages.togglePin({ messageId: 2 })).rejects.toThrow(
+      'Direct messages are disabled on this server'
+    );
+  });
+
+  test('should throw when fetching pinned DM messages as non-participant', async () => {
+    const { caller } = await initTest(1);
+
+    await expect(caller.messages.getPinned({ channelId: 3 })).rejects.toThrow(
+      'You are not a participant in this DM channel'
+    );
+  });
+
+  test('should throw when fetching pinned DM messages with DMs disabled', async () => {
+    const { caller } = await initTest(3);
+
+    await tdb.update(settings).set({ directMessagesEnabled: false }).execute();
+
+    await expect(caller.messages.getPinned({ channelId: 3 })).rejects.toThrow(
+      'Direct messages are disabled on this server'
+    );
+  });
+
+  test('should throw when fetching a single DM message with DMs disabled', async () => {
+    const { caller } = await initTest(3);
+
+    await tdb.update(settings).set({ directMessagesEnabled: false }).execute();
+
+    await expect(caller.messages.getOne({ messageId: 2 })).rejects.toThrow(
+      'Direct messages are disabled on this server'
+    );
+  });
+
+  test('should throw when editing a DM message with DMs disabled', async () => {
+    const { caller } = await initTest(3);
+
+    await tdb.update(settings).set({ directMessagesEnabled: false }).execute();
+
+    await expect(
+      caller.messages.edit({ messageId: 2, content: 'edited' })
+    ).rejects.toThrow('Direct messages are disabled on this server');
+  });
+
+  test('should throw when deleting a DM message with DMs disabled', async () => {
+    const { caller } = await initTest(3);
+
+    await tdb.update(settings).set({ directMessagesEnabled: false }).execute();
+
+    await expect(caller.messages.delete({ messageId: 2 })).rejects.toThrow(
+      'Direct messages are disabled on this server'
+    );
+  });
+
+  test('should throw when reacting to a DM message with DMs disabled', async () => {
+    const { caller } = await initTest(3);
+
+    // give user 3 REACT_TO_MESSAGES permission via their default role
+    await tdb.insert(rolePermissions).values({
+      roleId: 2,
+      permission: Permission.REACT_TO_MESSAGES,
+      createdAt: Date.now()
+    });
+
+    await tdb.update(settings).set({ directMessagesEnabled: false }).execute();
+
+    await expect(
+      caller.messages.toggleReaction({ messageId: 2, emoji: '👍' })
+    ).rejects.toThrow('Direct messages are disabled on this server');
+  });
+
+  test('should throw when fetching DM thread messages with DMs disabled', async () => {
+    const { caller: callerA } = await initTest(3);
+
+    // create a thread reply in the DM channel first
+    await callerA.messages.send({
+      channelId: 3,
+      content: 'Thread reply in DM',
+      files: [],
+      parentMessageId: 2
+    });
+
+    await tdb.update(settings).set({ directMessagesEnabled: false }).execute();
+
+    await expect(
+      callerA.messages.getThread({
+        parentMessageId: 2,
+        cursor: null,
+        limit: 50
+      })
+    ).rejects.toThrow('Direct messages are disabled on this server');
+  });
+
+  test('should throw when fetching thread messages without VIEW_CHANNEL on private non-DM channel', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    // make channel 1 private and deny VIEW_CHANNEL for role 2
+    await caller1.channels.update({
+      channelId: 1,
+      name: 'General',
+      topic: 'General text channel',
+      private: true
+    });
+
+    await caller1.channels.updatePermissions({
+      channelId: 1,
+      roleId: 2,
+      permissions: [ChannelPermission.SEND_MESSAGES]
+    });
+
+    // user 1 sends a root message and a thread reply
+    const parentId = await caller1.messages.send({
+      channelId: 1,
+      content: 'Root for thread perm test',
+      files: []
+    });
+
+    await caller1.messages.send({
+      channelId: 1,
+      content: 'Thread reply',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    // user 2 should not be able to read the thread
+    await expect(
+      caller2.messages.getThread({
+        parentMessageId: parentId,
+        cursor: null,
+        limit: 50
+      })
+    ).rejects.toThrow('Insufficient channel permissions');
+  });
+
+  test('should reject file attachments in DMs when file uploads are globally disabled', async () => {
+    const { caller: caller1, mockedToken } = await initTest(1);
+
+    const { channelId } = await caller1.dms.open({ userId: 2 });
+
+    // upload file while uploads are still enabled
+    const file = new File(['dm attachment'], 'dm.txt', {
+      type: 'text/plain'
+    });
+
+    const uploadResponse = await uploadFile(file, mockedToken);
+    const uploaded = (await uploadResponse.json()) as { id: string };
+
+    // disable uploads but keep DM file sharing enabled
+    await tdb
+      .update(settings)
+      .set({
+        storageUploadEnabled: false,
+        storageFileSharingInDirectMessages: true
+      })
+      .execute();
+
+    await expect(
+      caller1.messages.send({
+        channelId,
+        content: 'hello with file',
+        files: [uploaded.id]
+      })
+    ).rejects.toThrow('File uploads are disabled on this server');
+  });
+
+  test('should reject file attachments in regular channels when file uploads are globally disabled', async () => {
+    const { caller, mockedToken } = await initTest(1);
+
+    // upload file while uploads are still enabled
+    const file = new File(['test file'], 'test.txt', {
+      type: 'text/plain'
+    });
+
+    const uploadResponse = await uploadFile(file, mockedToken);
+    const uploaded = (await uploadResponse.json()) as { id: string };
+
+    // disable uploads globally
+    await tdb.update(settings).set({ storageUploadEnabled: false }).execute();
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'hello with file',
+        files: [uploaded.id]
+      })
+    ).rejects.toThrow('File uploads are disabled on this server');
+  });
 });

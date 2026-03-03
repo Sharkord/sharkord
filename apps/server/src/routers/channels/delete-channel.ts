@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { publishChannel } from '../../db/publishers';
+import { isDirectMessageChannel } from '../../db/queries/dms';
 import { channels } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { VoiceRuntime } from '../../runtimes/voice';
@@ -17,6 +18,13 @@ const deleteChannelRoute = protectedProcedure
   )
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_CHANNELS);
+
+    const isDmChannel = await isDirectMessageChannel(input.channelId);
+
+    invariant(!isDmChannel, {
+      code: 'FORBIDDEN',
+      message: 'Cannot delete DM channels'
+    });
 
     const removedChannel = await db
       .delete(channels)

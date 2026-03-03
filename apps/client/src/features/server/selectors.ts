@@ -1,14 +1,17 @@
 import { createSelector } from '@reduxjs/toolkit';
-import { ChannelPermission, OWNER_ROLE_ID } from '@sharkord/shared';
+import { ChannelPermission, OWNER_ROLE_ID, hasMention } from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
 import type { IRootState } from '../store';
 import {
+  channelByIdSelector,
   channelPermissionsSelector,
+  channelReadStateByIdSelector,
   channelsByCategoryIdSelector,
   currentVoiceChannelIdSelector,
   selectedChannelIdSelector
 } from './channels/selectors';
 import {
+  messagesByChannelIdSelector,
   threadTypingMapSelector,
   typingMapSelector
 } from './messages/selectors';
@@ -172,3 +175,26 @@ export const pluginComponentContextSelector = createSelector(
     currentVoiceChannelId
   })
 );
+
+// this approach has some limitations but it should work for most cases
+export const hasUnreadMentionsSelector = createCachedSelector(
+  [
+    channelReadStateByIdSelector,
+    channelByIdSelector,
+    messagesByChannelIdSelector,
+    ownUserIdSelector
+  ],
+  (readState, channel, messages, ownUserId) => {
+    if (!channel || !messages) return false;
+
+    const unreadMessages = messages.slice(-readState);
+
+    return unreadMessages.some((message) => {
+      if (!message.content) return false;
+
+      const isUserMentioned = hasMention(message.content, ownUserId);
+
+      return isUserMentioned;
+    });
+  }
+)((_, channelId: number) => channelId);

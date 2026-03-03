@@ -3,12 +3,15 @@ import { useSelector } from 'react-redux';
 import {
   appLoadingSelector,
   autoJoinLastChannelSelector,
+  browserNotificationsForMentionsSelector,
   browserNotificationsSelector,
   devicesSelector,
+  dmsOpenSelector,
   isAutoConnectingSelector,
   loadingPluginsSelector,
   modViewOpenSelector,
   modViewUserIdSelector,
+  selectedDmChannelIdSelector,
   threadSidebarDataSelector
 } from './selectors';
 
@@ -32,5 +35,13 @@ export const useThreadSidebar = () => useSelector(threadSidebarDataSelector);
 export const useAutoJoinLastChannel = () =>
   useSelector(autoJoinLastChannelSelector);
 
+export const useDmsOpen = () => useSelector(dmsOpenSelector);
+
+export const useSelectedDmChannelId = () =>
+  useSelector(selectedDmChannelIdSelector);
+
 export const useBrowserNotifications = () =>
   useSelector(browserNotificationsSelector);
+
+export const useBrowserNotificationsForMentions = () =>
+  useSelector(browserNotificationsForMentionsSelector);

@@ -1071,4 +1071,21 @@ describe('users router', () => {
     expect(info.user.bannerColor).toBe('#333333');
     expect(info.user.bio).toBe('Final Bio');
   });
+
+  test('should not return dm messages in user info', async () => {
+    const { caller } = await initTest();
+
+    const dbMessages = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.userId, 3))
+      .all();
+
+    const userInfo = await caller.users.getInfo({
+      userId: 3
+    });
+
+    expect(userInfo.messages.length).toBe(0);
+    expect(dbMessages.length).toBeGreaterThan(0);
+  });
 });

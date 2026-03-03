@@ -127,7 +127,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         </div>
       )}
 
-      <TextTopbar onScrollToMessage={scrollToMessage} />
+      <TextTopbar onScrollToMessage={scrollToMessage} channelId={channelId} />
 
       <div
         ref={containerRef}

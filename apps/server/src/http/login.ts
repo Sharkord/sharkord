@@ -64,10 +64,12 @@ const registerUser = async (
     message: 'Default role not found'
   });
 
+  const randomNum = Math.floor(Math.random() * 99999) + 10000; // between 10000 and 99999 to ensure it's always 5 digits, for better readability
+
   const user = await db
     .insert(users)
     .values({
-      name: 'SharkordUser',
+      name: `SharkordUser${randomNum}`,
       identity,
       createdAt: Date.now(),
       password: hashedPassword

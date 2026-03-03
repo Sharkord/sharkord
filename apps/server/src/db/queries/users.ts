@@ -363,7 +363,13 @@ const getUsers = async (): Promise<TJoinedUser[]> => {
   }));
 };
 
+const getAllUserIds = async (): Promise<number[]> => {
+  const results = await db.select({ id: users.id }).from(users);
+  return results.map((r) => r.id);
+};
+
 export {
+  getAllUserIds,
   getPublicUserById,
   getPublicUsers,
   getStorageUsageByUserId,

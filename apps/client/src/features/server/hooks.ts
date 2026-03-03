@@ -15,6 +15,7 @@ import {
   connectingSelector,
   disconnectInfoSelector,
   hasVisibleChannelsInCategorySelector,
+  hasUnreadMentionsSelector,
   infoSelector,
   isOwnUserOwnerSelector,
   ownUserRolesSelector,
@@ -152,3 +153,8 @@ export const usePluginComponentContext = (): TPluginSlotContext => {
     [stateCtx]
   );
 };
+
+export const useHasUnreadMentions = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    hasUnreadMentionsSelector(state, channelId)
+  );

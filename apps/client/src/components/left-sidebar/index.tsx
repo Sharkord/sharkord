@@ -1,27 +1,17 @@
 import { ResizableSidebar } from '@/components/resizable-sidebar';
-import { openDialog } from '@/features/dialogs/actions';
-import { openServerScreen } from '@/features/server-screens/actions';
-import { disconnectFromServer } from '@/features/server/actions';
+import { useDmsOpen } from '@/features/app/hooks';
 import { setSelectedChannelId } from '@/features/server/channels/actions';
-import { useServerName } from '@/features/server/hooks';
+import {
+  usePublicServerSettings,
+  useServerName
+} from '@/features/server/hooks';
 import { LocalStorageKey } from '@/helpers/storage';
 import { cn } from '@/lib/utils';
-import { Permission } from '@sharkord/shared';
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@sharkord/ui';
-import { Menu } from 'lucide-react';
-import { memo, useMemo } from 'react';
-import { Dialog } from '../dialogs/dialogs';
-import { Protect } from '../protect';
-import { ServerScreen } from '../server-screens/screens';
+import { memo } from 'react';
 import { Categories } from './categories';
+import { DirectMessages } from './direct-messages';
+import { DmButton } from './direct-messages/dm-button';
+import { ServerDropdownMenu } from './server-dropdown';
 import { UserControl } from './user-control';
 import { VoiceControl } from './voice-control';
 
@@ -35,18 +25,8 @@ type TLeftSidebarProps = {
 
 const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
   const serverName = useServerName();
-  const serverSettingsPermissions = useMemo(
-    () => [
-      Permission.MANAGE_SETTINGS,
-      Permission.MANAGE_ROLES,
-      Permission.MANAGE_EMOJIS,
-      Permission.MANAGE_STORAGE,
-      Permission.MANAGE_USERS,
-      Permission.MANAGE_INVITES,
-      Permission.MANAGE_UPDATES
-    ],
-    []
-  );
+  const dmsOpen = useDmsOpen();
+  const publicSettings = usePublicServerSettings();
 
   return (
     <ResizableSidebar
@@ -65,39 +45,12 @@ const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
           {serverName}
         </h2>
         <div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuLabel>Server</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <Protect permission={Permission.MANAGE_CATEGORIES}>
-                <DropdownMenuItem
-                  onClick={() => openDialog(Dialog.CREATE_CATEGORY)}
-                >
-                  Add Category
-                </DropdownMenuItem>
-              </Protect>
-              <Protect permission={serverSettingsPermissions}>
-                <DropdownMenuItem
-                  onClick={() => openServerScreen(ServerScreen.SERVER_SETTINGS)}
-                >
-                  Server Settings
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </Protect>
-              <DropdownMenuItem onClick={disconnectFromServer}>
-                Disconnect
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ServerDropdownMenu />
         </div>
       </div>
+      {publicSettings?.directMessagesEnabled && <DmButton />}
       <div className="flex-1 overflow-y-auto">
-        <Categories />
+        {dmsOpen ? <DirectMessages /> : <Categories />}
       </div>
       <VoiceControl />
       <UserControl />

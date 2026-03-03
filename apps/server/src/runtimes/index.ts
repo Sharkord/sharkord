@@ -7,12 +7,15 @@ import { VoiceRuntime } from './voice';
 const initVoiceRuntimes = async () => {
   const voiceChannels = await db
     .select({
-      id: channels.id
+      id: channels.id,
+      isDm: channels.isDm
     })
     .from(channels)
     .where(eq(channels.type, ChannelType.VOICE));
 
   for (const channel of voiceChannels) {
+    if (channel.isDm) continue; // skip DM channels for now, enable if we want to allow private calls between users in the future
+
     const runtime = new VoiceRuntime(channel.id);
 
     await runtime.init();
