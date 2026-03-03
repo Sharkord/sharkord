@@ -114,7 +114,7 @@ const useMicrophoneTest = ({
       echoCancellation,
       noiseSuppression,
       sampleRate: 48000,
-      channelCount: 2
+      channelCount: 1
     };
   }, [microphoneId, autoGainControl, echoCancellation, noiseSuppression]);
 

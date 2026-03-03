@@ -55,7 +55,11 @@ class AudioMeterProcessor extends AudioWorkletProcessor {
     for (let channelIndex = 0; channelIndex < input.length; channelIndex++) {
       const inputChannel = input[channelIndex];
 
-      for (let sampleIndex = 0; sampleIndex < inputChannel.length; sampleIndex++) {
+      for (
+        let sampleIndex = 0;
+        sampleIndex < inputChannel.length;
+        sampleIndex++
+      ) {
         const sample = inputChannel[sampleIndex];
         sum += sample * sample;
       }
@@ -67,7 +71,10 @@ class AudioMeterProcessor extends AudioWorkletProcessor {
     const estimatedDecibels = 20 * Math.log10(rms + 1e-8);
 
     if (this.enabled) {
-      this.peakDbSinceReport = Math.max(this.peakDbSinceReport, estimatedDecibels);
+      this.peakDbSinceReport = Math.max(
+        this.peakDbSinceReport,
+        estimatedDecibels
+      );
       this.framesSinceReport += frameCount;
 
       const reportIntervalFrames = (this.updateIntervalMs / 1000) * sampleRate;
@@ -88,8 +95,16 @@ class AudioMeterProcessor extends AudioWorkletProcessor {
       output[channelIndex].set(input[channelIndex]);
     }
 
-    for (let channelIndex = channelCount; channelIndex < output.length; channelIndex++) {
-      output[channelIndex].fill(0);
+    for (
+      let channelIndex = channelCount;
+      channelIndex < output.length;
+      channelIndex++
+    ) {
+      if (input[0]) {
+        output[channelIndex].set(input[0]);
+      } else {
+        output[channelIndex].fill(0);
+      }
     }
 
     return true;
