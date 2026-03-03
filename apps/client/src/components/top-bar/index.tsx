@@ -35,7 +35,7 @@ const TopBar = memo(
             variant="ghost"
             size="sm"
             onClick={() => setIsSearchOpen(true)}
-            className="h-6 px-2 transition-all duration-200 ease-in-out mr-auto"
+            className="h-6 px-2 transition-all duration-200 ease-in-out"
           >
             <Search className="w-4 h-4" />
           </Button>
