@@ -7,6 +7,7 @@ import {
 } from '@/components/tiptap-input/helpers';
 import { openThreadSidebar } from '@/features/app/actions';
 import { requestConfirmation } from '@/features/dialogs/actions';
+import { deleteMessage } from '@/features/server/messages/actions';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
@@ -69,11 +70,12 @@ const MessageActions = memo(
 
       try {
         await trpc.messages.delete.mutate({ messageId });
+        deleteMessage(channelId, messageId);
         toast.success('Message deleted');
       } catch {
         toast.error('Failed to delete message');
       }
-    }, [messageId]);
+    }, [channelId, messageId]);
 
     const onEmojiSelect = useCallback(
       async (emoji: TEmojiItem) => {
