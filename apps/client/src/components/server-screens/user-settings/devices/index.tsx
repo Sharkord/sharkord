@@ -299,32 +299,30 @@ const Devices = memo(() => {
             </Select>
 
             <Group label="Noise suppression" className="my-4">
-                <Select
-                  value={values.noiseSuppression}
-                  onValueChange={(value) =>
-                    onChange('noiseSuppression', value as NoiseSuppression)
-                  }
-                >
-                  <SelectTrigger className="w-92">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value={NoiseSuppression.NONE}>
-                        None
-                      </SelectItem>
-                      <SelectItem value={NoiseSuppression.STANDARD}>
-                        Standard
-                      </SelectItem>
-                      <SelectItem value={NoiseSuppression.ADVANCED}>
-                        <span className="flex items-center gap-2">
-                          Advanced <Sparkles className="size-3.5" />
-                        </span>
-                      </SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Group>
+              <Select
+                value={values.noiseSuppression}
+                onValueChange={(value) =>
+                  onChange('noiseSuppression', value as NoiseSuppression)
+                }
+              >
+                <SelectTrigger className="w-92">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value={NoiseSuppression.NONE}>None</SelectItem>
+                    <SelectItem value={NoiseSuppression.STANDARD}>
+                      Standard
+                    </SelectItem>
+                    <SelectItem value={NoiseSuppression.ADVANCED}>
+                      <span className="flex items-center gap-2">
+                        Advanced <Sparkles className="size-3.5" />
+                      </span>
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Group>
 
             <div className="flex items-center gap-4">
               <Group label="Echo cancellation">
