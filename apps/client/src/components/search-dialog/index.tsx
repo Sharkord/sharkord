@@ -34,6 +34,9 @@ const formatRelativeTime = (timestamp: number) => {
   return new Date(timestamp).toLocaleDateString();
 };
 
+const stripHtml = (html: string) =>
+  html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+
 const truncate = (text: string, maxLength: number) => {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '...';
@@ -174,7 +177,7 @@ const SearchDialog = ({ open, onClose }: TSearchDialogProps) => {
                   </span>
                 </div>
                 <div className="text-sm truncate">
-                  {truncate(result.content ?? '', 120)}
+                  {truncate(stripHtml(result.content ?? ''), 120)}
                 </div>
               </button>
             ))}

@@ -3,7 +3,8 @@
 # GET INITIAL OWNER TOKEN
 # docker logs -f sharkord
 
-# MAGIC RESET VOLUMES LINE
+# MAGIC RESETS VOLUMES LINE
+# docker compose down -v (drop volumes)
 # rm -rf data && docker system prune -a --volumes
 
 # convenience wrapper for prod builds

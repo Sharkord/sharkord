@@ -28,7 +28,11 @@ type HistoryEntry = {
 export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGElement | null>) {
   const ownUser = useOwnUser();
   const [layers, setLayers] = useState<Record<string, Layer>>({});
+  const layersRef = useRef<Record<string, Layer>>({});
+  layersRef.current = layers;
   const [layerIds, setLayerIds] = useState<string[]>([]);
+  const layerIdsRef = useRef<string[]>([]);
+  layerIdsRef.current = layerIds;
   const [selection, setSelection] = useState<string[]>([]);
   const [canvasMode, setCanvasMode] = useState<CanvasMode>(CanvasMode.None);
   const [insertingLayerType, setInsertingLayerType] = useState<LayerType | null>(null);
@@ -250,7 +254,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
           layer = { ...baseLayer, type: LayerType.Hexagon };
           break;
         case LayerType.Line:
-          layer = { ...baseLayer, type: LayerType.Line, x2: position.x, y2: position.y };
+          layer = { type: LayerType.Line, x: position.x, y: position.y, width: 0, height: 0, fill: selectedColor, x2: position.x, y2: position.y };
           break;
         case LayerType.Text:
           layer = { ...baseLayer, type: LayerType.Text, value: '' };
@@ -282,19 +286,20 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     linePendingRef.current = null;
     insertDragRef.current = null;
 
-    const layer = layers[drag.layerId];
+    // Use refs to get latest state (avoids stale closures)
+    const currentLayers = layersRef.current;
+    const currentLayerIds = layerIdsRef.current;
+
+    const layer = currentLayers[drag.layerId];
     if (!layer) return;
 
-    // Enforce minimum size
-    const MIN = 20;
-    const finalLayer = {
-      ...layer,
-      width: Math.max(layer.width, MIN),
-      height: Math.max(layer.height, MIN)
-    } as Layer;
+    // Enforce minimum size (skip for lines — they use x2/y2 directly)
+    const finalLayer = layer.type === LayerType.Line
+      ? layer
+      : { ...layer, width: Math.max(layer.width, 20), height: Math.max(layer.height, 20) } as Layer;
 
-    const newLayers = { ...layers, [drag.layerId]: finalLayer };
-    const newLayerIds = [...layerIds];
+    const newLayers = { ...currentLayers, [drag.layerId]: finalLayer };
+    const newLayerIds = [...currentLayerIds];
 
     setLayers(newLayers);
 
@@ -310,7 +315,7 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
     if (layer.type === LayerType.Text) {
       setEditingLayerId(drag.layerId);
     }
-  }, [channelId, layers, layerIds, trpc, pushToHistory]);
+  }, [channelId, trpc, pushToHistory]);
 
   // --- Delete selection ---
   const deleteSelection = useCallback(() => {
@@ -450,45 +455,17 @@ export function useWhiteboard(channelId: number, svgRef: React.RefObject<SVGSVGE
         return;
       }
 
-      // Line click-click preview: update endpoint as cursor moves
+      // Line click-click preview: just update the endpoint
       if (canvasMode === CanvasMode.Inserting && linePendingRef.current) {
-        const { layerId, origin } = linePendingRef.current;
+        const { layerId } = linePendingRef.current;
 
         setLayers((prev) => {
           const layer = prev[layerId];
           if (!layer || layer.type !== LayerType.Line) return prev;
 
-          let endX = point.x;
-          let endY = point.y;
-          // Shift constrains to 45-degree angles
-          if (e.shiftKey) {
-            const dx = endX - origin.x;
-            const dy = endY - origin.y;
-            const absDx = Math.abs(dx);
-            const absDy = Math.abs(dy);
-            if (absDy < absDx * 0.4) {
-              endY = origin.y;
-            } else if (absDx < absDy * 0.4) {
-              endX = origin.x;
-            } else {
-              const dist = Math.max(absDx, absDy);
-              endX = origin.x + dist * Math.sign(dx);
-              endY = origin.y + dist * Math.sign(dy);
-            }
-          }
-          const minX = Math.min(origin.x, endX);
-          const minY = Math.min(origin.y, endY);
           return {
             ...prev,
-            [layerId]: {
-              ...layer,
-              x: minX,
-              y: minY,
-              width: Math.abs(endX - origin.x),
-              height: Math.abs(endY - origin.y),
-              x2: endX,
-              y2: endY
-            } as Layer
+            [layerId]: { ...layer, x2: point.x, y2: point.y } as Layer
           };
         });
         return;
