@@ -3,7 +3,7 @@ import { useChannelsMap } from '@/features/server/channels/hooks';
 import { setPendingScrollTarget } from '@/features/server/messages/pending-scroll';
 import { useUsers } from '@/features/server/users/hooks';
 import { getTRPCClient } from '@/lib/trpc';
-import { Dialog, DialogContent, Input, Spinner } from '@sharkord/ui';
+import { Dialog, DialogContent, DialogTitle, Input, Spinner } from '@sharkord/ui';
 import { Hash, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -127,7 +127,8 @@ const SearchDialog = ({ open, onClose }: TSearchDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden">
+      <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden" aria-describedby={undefined}>
+        <DialogTitle className="sr-only">Search messages</DialogTitle>
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
           <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <Input

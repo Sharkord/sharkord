@@ -1,18 +1,14 @@
-# Sharkord Roadmap
+# H8D13's SHARKORD FORK ROADMAP
+> [Recent Commits](https://github.com/h8d13/sharkord/commits/development/)
 
-**This is a work in progress and is subject to change.**
-
-## Short Term Goals
-
-- Focus on core features and stability
-- Focus on Quality of Life (QoL) improvements and bug fixes
-- Extend the plugin SDK
-- Improve documentation and developer experience
-
-## Medium Term Goals
-
-TODO
-
-## Long Term Goals
-
-TODO
+## Feets in fork:
+- Whiteboards [stolen from MIT gh](https://github.com/Biplo12/BoardFlow)
+- Mardown to HTML using `marked` from npm
+- Links (show external warning)
+- Audio/Video preview
+- Nicknames (JSON local only)
+- Use actual UUIDs and jwt token for `/public/` path files (unless server login image)
+- Lazy load most things / Chunk
+- Cleanup after leaving channel / using settings page
+- Remove per voice channel chat redundant
+- UX/UI candy changes

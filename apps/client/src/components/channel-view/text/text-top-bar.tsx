@@ -19,7 +19,7 @@ const TextTopbar = memo(
         return {
           name: 'Direct Message',
           topic:
-            'This is a direct message channel. Only you and the recipient can see the messages here.'
+            'Only you and the recipient can see the messages here.'
         };
       }
 
