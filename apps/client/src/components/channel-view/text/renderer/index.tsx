@@ -10,7 +10,8 @@ import {
   imageExtensions,
   isEmojiOnlyMessage,
   videoExtensions,
-  type TJoinedMessage
+  type TJoinedMessage,
+  type TMessageMetadata
 } from '@sharkord/shared';
 import { Tooltip } from '@sharkord/ui';
 import parse from 'html-react-parser';
@@ -19,6 +20,7 @@ import { toast } from 'sonner';
 import { FileCard } from '../file-card';
 import { MessageReactions } from '../message-reactions';
 import { AudioOverride } from '../overrides/audio';
+import { EmbedOverride } from '../overrides/embed';
 import { ImageOverride } from '../overrides/image';
 import { VideoOverride } from '../overrides/video';
 import { renderMarkdown } from './render-markdown';
@@ -80,6 +82,8 @@ const MessageRenderer = memo(
         toast.error('Failed to delete file');
       }
     }, []);
+
+    const embeds = (message.metadata as TMessageMetadata[] | null) ?? [];
 
     const allMedia = useMemo(() => {
       const mediaFromFiles: TFoundMedia[] = message.files
@@ -160,6 +164,10 @@ const MessageRenderer = memo(
 
           return null;
         })}
+
+        {embeds.map((meta) => (
+          <EmbedOverride key={meta.url} metadata={meta} />
+        ))}
 
         {!disableReactions && (
           <MessageReactions
