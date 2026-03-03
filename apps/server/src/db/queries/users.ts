@@ -202,7 +202,6 @@ const getUserById = async (
       avatarId: users.avatarId,
       bannerId: users.bannerId,
       bio: users.bio,
-      password: users.password,
       bannerColor: users.bannerColor,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
@@ -229,6 +228,7 @@ const getUserById = async (
 
   return {
     ...user,
+    password: '',
     avatar: user.avatar,
     banner: user.banner,
     roleIds: roles.map((r) => r.roleId)
@@ -311,7 +311,6 @@ const getUsers = async (): Promise<TJoinedUser[]> => {
       updatedAt: users.updatedAt,
       createdAt: users.createdAt,
       identity: users.identity,
-      password: users.password,
       lastLoginAt: users.lastLoginAt,
       banned: users.banned,
       banReason: users.banReason,
@@ -354,7 +353,7 @@ const getUsers = async (): Promise<TJoinedUser[]> => {
     createdAt: result.createdAt,
     updatedAt: result.updatedAt,
     identity: result.identity,
-    password: result.password,
+    password: '',
     lastLoginAt: result.lastLoginAt,
     banned: result.banned,
     banReason: result.banReason,

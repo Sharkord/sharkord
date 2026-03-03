@@ -56,9 +56,35 @@ const createHttpServer = async (port: number = config.server.port) => {
   return new Promise<http.Server>((resolve) => {
     const server = http.createServer(
       async (req: http.IncomingMessage, res: http.ServerResponse) => {
-        res.setHeader('Access-Control-Allow-Origin', '*');
+        // CORS: reflect the request origin if it matches the Host header's origin
+        const origin = req.headers.origin;
+        const host = req.headers.host;
+
+        if (origin && host) {
+          try {
+            const originHost = new URL(origin).host;
+
+            if (originHost === host) {
+              res.setHeader('Access-Control-Allow-Origin', origin);
+              res.setHeader('Vary', 'Origin');
+            }
+          } catch {
+            // malformed origin, skip CORS headers
+          }
+        }
+
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', '*');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+        // Security headers
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        res.setHeader(
+          'Content-Security-Policy',
+          "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' wss: ws:; media-src 'self' blob:; font-src 'self'; frame-ancestors 'none'"
+        );
 
         const info = getWsInfo(undefined, req);
 
