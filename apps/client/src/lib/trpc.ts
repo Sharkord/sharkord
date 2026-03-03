@@ -18,6 +18,15 @@ let trpc: ReturnType<typeof createTRPCProxyClient<AppRouter>> | null = null;
 let currentHost: string | null = null;
 let isCleaningUp = false;
 
+// Firefox fires WebSocket onClose during page refresh; Chrome does not. When navigating away,
+// we must not clear auto-login localStorage or it will be lost on refresh in Firefox.
+let isNavigatingAway = false;
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    isNavigatingAway = true;
+  });
+}
+
 const initializeTRPC = (host: string) => {
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
 
@@ -87,9 +96,12 @@ const cleanup = () => {
   currentHost = null;
 
   // cleanup can be called due to various reasons (manual disconnect, connection error, auto-login failure, etc).
-  // so we remove any persisted auto-login token to prevent auto-login loops
-  removeLocalStorageItem(LocalStorageKey.AUTO_LOGIN_TOKEN);
-  setLocalStorageItemBool(LocalStorageKey.AUTO_LOGIN, false);
+  // so we remove any persisted auto-login token to prevent auto-login loops.
+  // skip this when navigating away (refresh/close) - Firefox fires onClose during refresh, Chrome does not
+  if (!isNavigatingAway) {
+    removeLocalStorageItem(LocalStorageKey.AUTO_LOGIN_TOKEN);
+    setLocalStorageItemBool(LocalStorageKey.AUTO_LOGIN, false);
+  }
 
   resetServerScreens();
   resetServerState();

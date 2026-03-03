@@ -170,6 +170,10 @@ const Connect = memo(() => {
             data-testid={TestId.CONNECT_AUTO_LOGIN_SWITCH}
             onClick={() => {
               onChange('autoLogin', !values.autoLogin);
+              setLocalStorageItemBool(
+                LocalStorageKey.AUTO_LOGIN,
+                !values.autoLogin
+              );
             }}
           >
             <Switch checked={values.autoLogin} />
