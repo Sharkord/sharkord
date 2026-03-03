@@ -13,7 +13,7 @@ services:
     environment:
       SHARKORD_PORT: "4991"
     volumes:
-      - ./data:/home/sharkord/.config/sharkord
+      - ./data:/home/nonroot/.config/sharkord
 
   # HTTPS reverse proxy
   caddy:

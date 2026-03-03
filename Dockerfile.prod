@@ -39,21 +39,13 @@ RUN cd apps/server && bun -e "\
   " && mkdir -p build/out
 
 # --- Runtime stage ---
-FROM debian:bookworm-slim
+FROM gcr.io/distroless/cc-debian12
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates && \
-    rm -rf /var/lib/apt/lists/* && \
-    useradd -m -s /bin/bash sharkord && \
-    mkdir -p /home/sharkord/.config/sharkord && \
-    chown -R sharkord:sharkord /home/sharkord/.config/sharkord
+COPY --from=builder --chmod=755 /app/apps/server/build/out/sharkord /usr/local/bin/sharkord
 
-COPY --from=builder --chown=sharkord:sharkord /app/apps/server/build/out/sharkord /usr/local/bin/sharkord
-RUN chmod +x /usr/local/bin/sharkord
-
-USER sharkord
-WORKDIR /home/sharkord
+USER nonroot:nonroot
+WORKDIR /home/nonroot
 
 EXPOSE 4991 40000
 
-CMD ["sharkord"]
+ENTRYPOINT ["sharkord"]
