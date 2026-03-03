@@ -139,7 +139,7 @@ const SearchDialog = ({ open, onClose }: TSearchDialogProps) => {
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
             placeholder="Search messages..."
-            className="border-0 shadow-none focus-visible:ring-0 px-0 h-9 text-sm flex-1"
+            className="border-0 shadow-none focus-visible:ring-0 px-2 h-9 text-sm flex-1"
           />
         </div>
 
