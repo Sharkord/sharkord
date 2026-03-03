@@ -10,13 +10,7 @@ import { Element, type DOMNode } from 'html-react-parser';
 import { CommandOverride } from '../overrides/command';
 import { LinkOverride } from '../overrides/link';
 import { MentionOverride } from '../overrides/mention';
-import { TwitterOverride } from '../overrides/twitter';
-import { YoutubeOverride } from '../overrides/youtube';
 import type { TFoundMedia } from './types';
-
-const twitterRegex = /https:\/\/(twitter|x).com\/\w+\/status\/(\d+)/g;
-const youtubeRegex =
-  /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getTextContent = (node: any): string => {
@@ -77,33 +71,12 @@ const serializer = (
       }
 
       const url = new URL(href);
-
-      const isTweet =
-        url.hostname.match(/(twitter|x).com/) && href.match(twitterRegex);
-      const isYoutube =
-        url.hostname.match(/(youtube.com|youtu.be)/) &&
-        href.match(youtubeRegex);
-
       const urlPath = url.pathname;
       const isImage = imageExtensions.some((ext) => urlPath.endsWith(ext));
       const isVideo = videoExtensions.some((ext) => urlPath.endsWith(ext));
       const isAudio = audioExtensions.some((ext) => urlPath.endsWith(ext));
 
-      if (isTweet) {
-        const tweetId = href.match(twitterRegex)?.[0].split('/').pop();
-
-        if (tweetId) {
-          return <TwitterOverride tweetId={tweetId} />;
-        }
-      } else if (isYoutube) {
-        const videoId = href.match(
-          /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/
-        )?.[7];
-
-        if (videoId) {
-          return <YoutubeOverride videoId={videoId} />;
-        }
-      } else if (isImage) {
+      if (isImage) {
         pushMedia({ type: 'image', url: href });
 
         return;
