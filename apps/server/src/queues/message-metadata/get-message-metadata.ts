@@ -67,6 +67,9 @@ const urlMetadataParser = async (
       }
 
       const metadata = await getLinkPreview(url, {
+        headers: {
+          'user-agent': 'Mozilla/5.0 (compatible; bot)'
+        },
         followRedirects: 'follow',
         resolveDNSHost: async (url: string) => {
           return new Promise((resolve, reject) => {
