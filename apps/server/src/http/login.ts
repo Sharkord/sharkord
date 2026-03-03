@@ -67,7 +67,7 @@ const registerUser = async (
   const user = await db
     .insert(users)
     .values({
-      name: 'SharkordUser',
+      name: identity,
       identity,
       createdAt: Date.now(),
       password: hashedPassword
