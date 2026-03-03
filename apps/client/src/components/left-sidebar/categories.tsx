@@ -39,7 +39,8 @@ type TCategoryProps = {
 
 const Category = memo(({ categoryId }: TCategoryProps) => {
   const can = useCan();
-  const channelCan = useHasVisibleChannelsInCategory(categoryId);
+  const hasVisibleChannelsInCategory =
+    useHasVisibleChannelsInCategory(categoryId);
   const { expanded, toggleExpanded } = useCategoryExpanded(categoryId);
   const category = useCategoryById(categoryId);
 
@@ -56,7 +57,10 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
     openDialog(Dialog.CREATE_CHANNEL, { categoryId });
   }, [categoryId]);
 
-  if (!category || (!channelCan && !can(Permission.MANAGE_CHANNELS))) {
+  if (
+    !category ||
+    (!hasVisibleChannelsInCategory && !can(Permission.MANAGE_CHANNELS))
+  ) {
     return null;
   }
 
