@@ -5,15 +5,26 @@ import LiteYouTubeEmbed from 'react-lite-youtube-embed';
 import 'react-lite-youtube-embed/dist/LiteYouTubeEmbed.css';
 import { LinkOverride } from './link';
 
-const youtubeRegex =
-  /^.*(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?)\??v?=?([^#&?]*).*/;
-
 function getYoutubeVideoId(url: string): string | null {
   try {
     const u = new URL(url);
     if (!u.hostname.match(/youtube\.com|youtu\.be/)) return null;
-    const match = url.match(youtubeRegex);
-    return match?.[1] && match[1].length === 11 ? match[1] : null;
+
+    // youtu.be/VIDEO_ID
+    if (u.hostname.includes('youtu.be')) {
+      const id = u.pathname.slice(1);
+      return id.length === 11 ? id : null;
+    }
+
+    // youtube.com/watch?v=VIDEO_ID
+    const v = u.searchParams.get('v');
+    if (v?.length === 11) return v;
+
+    // youtube.com/shorts/VIDEO_ID, /embed/VIDEO_ID, /live/VIDEO_ID, /v/VIDEO_ID
+    const pathMatch = u.pathname.match(/^\/(shorts|embed|live|v)\/([^/?#]+)/);
+    if (pathMatch?.[2]?.length === 11) return pathMatch[2];
+
+    return null;
   } catch {
     return null;
   }
