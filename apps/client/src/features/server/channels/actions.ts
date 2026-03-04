@@ -1,4 +1,7 @@
-import { selectedDmChannelIdSelector } from '@/features/app/selectors';
+import {
+  dmsOpenSelector,
+  selectedDmChannelIdSelector
+} from '@/features/app/selectors';
 import { store } from '@/features/store';
 import type { TChannel, TChannelUserPermissionsMap } from '@sharkord/shared';
 import { serverSliceActions } from '../slice';
@@ -80,8 +83,10 @@ export const setChannelReadState = (
 
   let actualCount = nextCount;
 
+  const dmsOpen = dmsOpenSelector(state);
+
   // if the channel is currently selected, set the read count to 0
-  if (selectedChannel === channelId || selectedDmChannel === channelId) {
+  if (selectedChannel === channelId || (selectedDmChannel === channelId && dmsOpen)) {
     actualCount = 0;
 
     // we also need to notify the server that the channel has been read

@@ -1,6 +1,7 @@
 import {
   browserNotificationsForMentionsSelector,
   browserNotificationsSelector,
+  dmsOpenSelector,
   selectedDmChannelIdSelector,
   threadSidebarDataSelector
 } from '@/features/app/selectors';
@@ -115,6 +116,7 @@ export const addMessages = (
     const hasBrowserNotificationsEnabled = browserNotificationsSelector(state);
     const notificationsForMentionsOnly =
       browserNotificationsForMentionsSelector(state);
+    const dmsOpen = dmsOpenSelector(state);
     const targetMessage = messages[0];
     const isFromOwnUser = ownUserId === targetMessage.userId;
 
@@ -146,9 +148,9 @@ export const addMessages = (
       }
     }
 
-    const isChannelSelected = [selectedChannelId, selectedDmChannelId].includes(
-      channelId
-    );
+    const isTextChannelSelected = selectedChannelId === channelId;
+    const isDmChannelSelected = selectedDmChannelId === channelId && dmsOpen; // only consider DM channel selected if DMs are open
+    const isChannelSelected = isTextChannelSelected || isDmChannelSelected;
 
     if (isChannelSelected && !isFromOwnUser && rootMessages.length > 0) {
       const trpc = getTRPCClient();
