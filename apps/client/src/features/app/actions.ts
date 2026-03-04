@@ -104,6 +104,8 @@ export const setBrowserNotifications = async (enabled: boolean) => {
     const permission = await Notification.requestPermission();
 
     if (permission !== 'granted') {
+      toast.error('Notification permission was denied.');
+
       return;
     }
   }
