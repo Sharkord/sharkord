@@ -84,9 +84,12 @@ export const setChannelReadState = (
   let actualCount = nextCount;
 
   const dmsOpen = dmsOpenSelector(state);
+  const shouldResetCount =
+    selectedChannel === channelId ||
+    (selectedDmChannel === channelId && dmsOpen);
 
   // if the channel is currently selected, set the read count to 0
-  if (selectedChannel === channelId || (selectedDmChannel === channelId && dmsOpen)) {
+  if (shouldResetCount) {
     actualCount = 0;
 
     // we also need to notify the server that the channel has been read
