@@ -119,3 +119,19 @@ export const setBrowserNotificationsForMentions = (enabled: boolean) => {
     enabled
   );
 };
+
+export const setBrowserNotificationsForDms = async (enabled: boolean) => {
+  if (enabled && 'Notification' in window) {
+    const permission = await Notification.requestPermission();
+
+    if (permission !== 'granted') {
+      return;
+    }
+  }
+
+  store.dispatch(appSliceActions.setBrowserNotificationsForDms(enabled));
+  setLocalStorageItemBool(
+    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_DMS,
+    enabled
+  );
+};

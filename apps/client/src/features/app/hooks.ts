@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import {
   appLoadingSelector,
   autoJoinLastChannelSelector,
+  browserNotificationsForDmsSelector,
   browserNotificationsForMentionsSelector,
   browserNotificationsSelector,
   devicesSelector,
@@ -45,3 +46,6 @@ export const useBrowserNotifications = () =>
 
 export const useBrowserNotificationsForMentions = () =>
   useSelector(browserNotificationsForMentionsSelector);
+
+export const useBrowserNotificationsForDms = () =>
+  useSelector(browserNotificationsForDmsSelector);
