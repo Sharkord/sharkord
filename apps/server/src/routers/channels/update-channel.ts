@@ -48,12 +48,6 @@ const updateChannelRoute = protectedProcedure
     // privacy setting changed
     const ensureUserAccess = updatedChannel.private !== oldChannel?.private;
 
-    console.log('updated channel', {
-      updatedChannel,
-      oldChannel,
-      ensureUserAccess
-    });
-
     publishChannel(updatedChannel.id, 'update', ensureUserAccess);
     enqueueActivityLog({
       type: ActivityLogType.UPDATED_CHANNEL,
