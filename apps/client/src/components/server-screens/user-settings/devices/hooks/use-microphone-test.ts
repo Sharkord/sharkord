@@ -13,6 +13,8 @@ import {
   markNoiseGateWorkletUnavailable,
   postNoiseGateWorkletConfig
 } from '@/helpers/audio-worklet/noise-gate-worklet';
+import { createRnnoiseChain } from '@/helpers/audio-worklet/rnnoise-worklet';
+import { NoiseSuppression } from '@/types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type TPermissionState = 'unknown' | 'granted' | 'denied';
@@ -22,7 +24,7 @@ type TUseMicrophoneTestParams = {
   playbackId: string | undefined;
   autoGainControl: boolean;
   echoCancellation: boolean;
-  noiseSuppression: boolean;
+  noiseSuppression: NoiseSuppression;
   noiseGateEnabled: boolean;
   noiseGateThresholdDb: number;
 };
@@ -78,6 +80,7 @@ const useMicrophoneTest = ({
   const testAudioRef = useRef<HTMLAudioElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const rnnoiseAudioContextsRef = useRef<AudioContext[]>([]);
   const meterIntervalRef = useRef<number | null>(null);
   const meterWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
   const noiseGateWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
@@ -108,13 +111,15 @@ const useMicrophoneTest = ({
     const hasSpecificDevice =
       microphoneId && microphoneId !== DEFAULT_DEVICE_NAME;
 
+    const useStandardNs = noiseSuppression === NoiseSuppression.STANDARD;
+
     return {
       deviceId: hasSpecificDevice ? { exact: microphoneId } : undefined,
       autoGainControl,
       echoCancellation,
-      noiseSuppression,
+      noiseSuppression: useStandardNs,
       sampleRate: 48000,
-      channelCount: 1
+      channelCount: 2
     };
   }, [microphoneId, autoGainControl, echoCancellation, noiseSuppression]);
 
@@ -153,6 +158,9 @@ const useMicrophoneTest = ({
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
+
+    rnnoiseAudioContextsRef.current.forEach((ctx) => ctx.close());
+    rnnoiseAudioContextsRef.current = [];
 
     audioLevelRef.current = 0;
   }, [stopStreamTracks]);
@@ -239,6 +247,9 @@ const useMicrophoneTest = ({
         if (audioContext) {
           audioContext.close();
         }
+
+        rnnoiseAudioContextsRef.current.forEach((ctx) => ctx.close());
+        rnnoiseAudioContextsRef.current = [];
       };
 
       try {
@@ -253,9 +264,29 @@ const useMicrophoneTest = ({
           return false;
         }
 
+        let processedStream: MediaStream = stream;
+
+        if (noiseSuppression === NoiseSuppression.ADVANCED) {
+          try {
+            const rnnoiseChain = await createRnnoiseChain(stream);
+            rnnoiseAudioContextsRef.current = rnnoiseChain.contexts;
+            processedStream = new MediaStream([rnnoiseChain.outputTrack]);
+          } catch (rnnoiseError) {
+            console.error('RNNoise noise suppression failed:', rnnoiseError);
+          }
+        }
+
+        if (isStaleRequest()) {
+          cleanupLocalResources();
+
+          return false;
+        }
+
         audioContext = new window.AudioContext();
 
-        const source = audioContext.createMediaStreamSource(stream);
+        const source: AudioNode =
+          audioContext.createMediaStreamSource(processedStream);
+
         const delay = audioContext.createDelay(1);
         let meterWorkletNode: AudioWorkletNode | null = null;
         let noiseGateWorkletNode: AudioWorkletNode | null = null;
@@ -400,6 +431,7 @@ const useMicrophoneTest = ({
     [
       cleanup,
       getAudioConstraints,
+      noiseSuppression,
       playbackId,
       setAudioLevelFromDecibels,
       startAnalyserMeter,

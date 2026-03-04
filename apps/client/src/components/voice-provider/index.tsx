@@ -12,10 +12,11 @@ import {
   markNoiseGateWorkletUnavailable,
   postNoiseGateWorkletConfig
 } from '@/helpers/audio-worklet/noise-gate-worklet';
+import { createRnnoiseChain } from '@/helpers/audio-worklet/rnnoise-worklet';
 import { logVoice } from '@/helpers/browser-logger';
 import { getResWidthHeight } from '@/helpers/get-res-with-height';
 import { getTRPCClient } from '@/lib/trpc';
-import { VideoCodec } from '@/types';
+import { NoiseSuppression, VideoCodec } from '@/types';
 import {
   DEFAULT_BITRATE,
   StreamKind,
@@ -226,6 +227,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   const microphoneNoiseGateWorkletNodeRef = useRef<AudioWorkletNode | null>(
     null
   );
+  const rnnoiseAudioContextsRef = useRef<AudioContext[]>([]);
   const micMutedRef = useRef(ownVoiceState.micMuted);
 
   const syncTransmitMicrophoneTrackState = useCallback(() => {
@@ -250,6 +252,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       microphoneNoiseGateAudioContextRef.current.close();
       microphoneNoiseGateAudioContextRef.current = null;
     }
+
+    rnnoiseAudioContextsRef.current.forEach((ctx) => ctx.close());
+    rnnoiseAudioContextsRef.current = [];
 
     rawMicrophoneStreamRef.current
       ?.getTracks()
@@ -289,6 +294,10 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       logVoice('Starting microphone stream');
       cleanupMicProcessingResources();
 
+      const useRnnoise = devices.noiseSuppression === NoiseSuppression.ADVANCED;
+      const useStandardNs =
+        devices.noiseSuppression === NoiseSuppression.STANDARD;
+
       const rawStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           deviceId: {
@@ -296,7 +305,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           },
           autoGainControl: devices.autoGainControl,
           echoCancellation: devices.echoCancellation,
-          noiseSuppression: devices.noiseSuppression,
+          noiseSuppression: useStandardNs,
           sampleRate: 48000,
           channelCount: 1
         },
@@ -370,6 +379,25 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           logVoice('Noise gate unavailable, using ungated microphone stream', {
             reason: noiseGateAvailability.reason
           });
+        }
+
+        if (useRnnoise) {
+          logVoice('Setting up RNNoise noise suppression');
+
+          rnnoiseAudioContextsRef.current.forEach((ctx) => ctx.close());
+          rnnoiseAudioContextsRef.current = [];
+
+          try {
+            const chain = await createRnnoiseChain(transmitStream);
+            rnnoiseAudioContextsRef.current = chain.contexts;
+            transmitTrack = chain.outputTrack;
+            transmitStream = new MediaStream([chain.outputTrack]);
+            logVoice('RNNoise worklet chain ready');
+          } catch (rnnoiseError) {
+            logVoice('Failed to set up RNNoise noise suppression', {
+              error: rnnoiseError
+            });
+          }
         }
 
         transmitMicrophoneTrackRef.current = transmitTrack;
