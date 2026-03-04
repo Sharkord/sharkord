@@ -5,7 +5,16 @@ import jwt from 'jsonwebtoken';
 import { login } from '../../__tests__/helpers';
 import { TEST_SECRET_TOKEN } from '../../__tests__/seed';
 import { tdb } from '../../__tests__/setup';
-import { invites, roles, settings, userRoles, users } from '../../db/schema';
+import { getChannelsReadStatesForUser } from '../../db/queries/channels';
+import {
+  channelReadStates,
+  invites,
+  messages,
+  roles,
+  settings,
+  userRoles,
+  users
+} from '../../db/schema';
 
 describe('/login', () => {
   test('should successfully login with valid credentials', async () => {
@@ -52,6 +61,59 @@ describe('/login', () => {
 
     expect(newUser).toBeTruthy();
     expect(newUser?.name).toStartWith('SharkordUser');
+  });
+
+  test('should mark all existing messages as read for first-time users', async () => {
+    const response = await login('readstateuser', 'password123');
+
+    expect(response.status).toBe(200);
+
+    const newUser = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.identity, 'readstateuser'))
+      .get();
+
+    expect(newUser).toBeTruthy();
+
+    const readStates = await tdb
+      .select()
+      .from(channelReadStates)
+      .where(eq(channelReadStates.userId, newUser!.id));
+
+    expect(readStates.length).toBeGreaterThan(0);
+
+    const unreadMap = await getChannelsReadStatesForUser(newUser!.id);
+
+    for (const unreadCount of Object.values(unreadMap)) {
+      expect(unreadCount).toBe(0);
+    }
+  });
+
+  test('should only count new messages as unread after first-time login', async () => {
+    const response = await login('readstateuser2', 'password123');
+
+    expect(response.status).toBe(200);
+
+    const newUser = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.identity, 'readstateuser2'))
+      .get();
+
+    expect(newUser).toBeTruthy();
+
+    await tdb.insert(messages).values({
+      userId: 1,
+      channelId: 1,
+      content: 'A new message after first join',
+      metadata: null,
+      createdAt: Date.now()
+    });
+
+    const unreadMap = await getChannelsReadStatesForUser(newUser!.id);
+
+    expect(unreadMap[1]).toBe(1);
   });
 
   test('should fail when allowNewUsers is false and no invite provided', async () => {
