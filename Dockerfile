@@ -18,6 +18,9 @@ RUN set -eux; \
     chown bun:bun /sharkord; \
     rm -rf /tmp/sharkord-linux-*
 
+RUN mkdir -p /home/bun/.config/sharkord && \
+    chown -R bun:bun /home/bun/.config
+
 COPY docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
