@@ -14,7 +14,7 @@ import {
 } from '@trpc/server/adapters/ws';
 import { eq } from 'drizzle-orm';
 import http from 'http';
-import { WebSocketServer } from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 import { db } from '../db';
 import { getAllChannelUserPermissions } from '../db/queries/channels';
 import { isUserDmParticipant } from '../db/queries/dms';
@@ -250,7 +250,26 @@ const createWsServer = async (server: http.Server) => {
       });
 
       ws.on('close', async () => {
-        const user = await getUserByToken(ws.token);
+        const userId = ws.userId;
+
+        // ignore connections that never authenticated through joinServer
+        if (!userId) {
+          return;
+        }
+
+        // only mark as offline when there are no other active sessions
+        const hasOtherSessions = Array.from(wss?.clients ?? []).some(
+          (client) =>
+            client !== ws &&
+            client.userId === userId &&
+            client.readyState === WebSocket.OPEN
+        );
+
+        if (hasOtherSessions) {
+          return;
+        }
+
+        const user = await getUserById(userId);
 
         if (!user) return;
 
