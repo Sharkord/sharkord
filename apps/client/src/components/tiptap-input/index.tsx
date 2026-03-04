@@ -1,5 +1,6 @@
 import { EmojiPicker } from '@/components/emoji-picker';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
+import { useFilteredUsers } from '@/features/server/users/hooks';
 import type { TCommandInfo } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
@@ -20,6 +21,12 @@ import {
   COMMANDS_STORAGE_KEY,
   CommandSuggestion
 } from './plugins/command-suggestion';
+import { Mention } from './plugins/mentions';
+import { MentionNode } from './plugins/mentions/node';
+import {
+  MENTION_STORAGE_KEY,
+  MentionSuggestion
+} from './plugins/mentions/suggestion';
 import { SlashCommands } from './plugins/slash-commands-extension';
 import { EmojiSuggestion } from './plugins/suggestions';
 
@@ -46,6 +53,7 @@ const TiptapInput = memo(
     commands
   }: TTiptapInputProps) => {
     const readOnlyRef = useRef(readOnly);
+
     readOnlyRef.current = readOnly;
 
     const [isExpanded, setIsExpanded] = useState(false);
@@ -55,6 +63,7 @@ const TiptapInput = memo(
     const editorWrapperRef = useRef<HTMLDivElement>(null);
 
     const customEmojis = useCustomEmojis();
+    const users = useFilteredUsers();
 
     const extensions = useMemo(() => {
       const exts = [
@@ -84,7 +93,12 @@ const TiptapInput = memo(
           HTMLAttributes: {
             class: 'emoji-image'
           }
-        })
+        }),
+        Mention.configure({
+          users,
+          suggestion: MentionSuggestion
+        }),
+        MentionNode
       ];
 
       if (commands) {
@@ -98,7 +112,7 @@ const TiptapInput = memo(
       }
 
       return exts;
-    }, [customEmojis, commands]);
+    }, [customEmojis, commands, users]);
 
     const editor = useEditor({
       extensions,
@@ -191,6 +205,20 @@ const TiptapInput = memo(
         }
       }
     }, [editor, commands]);
+
+    // keep mention users storage in sync with the users from the store
+    useEffect(() => {
+      if (editor) {
+        const storage = editor.storage as unknown as Record<
+          string,
+          { users?: typeof users }
+        >;
+
+        if (storage[MENTION_STORAGE_KEY]) {
+          storage[MENTION_STORAGE_KEY].users = users;
+        }
+      }
+    }, [editor, users]);
 
     useEffect(() => {
       if (editor && value !== undefined) {

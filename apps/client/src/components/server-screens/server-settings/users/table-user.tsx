@@ -33,8 +33,6 @@ const TableUser = memo(({ user, refetch }: TTableUserProps) => {
   }, [user.id]);
 
   const onDeleteClick = useCallback(() => {
-    console.log('Delete user', user.id);
-
     openDialog(Dialog.DELETE_USER, { user, refetch });
   }, [user, refetch]);
 

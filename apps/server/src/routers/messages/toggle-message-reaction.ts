@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
+import { assertDmChannel } from '../../db/queries/dms';
 import { getEmojiFileIdByEmojiName } from '../../db/queries/emojis';
 import { getReaction } from '../../db/queries/messages';
 import { messageReactions, messages } from '../../db/schema';
@@ -29,6 +30,8 @@ const toggleMessageReactionRoute = protectedProcedure
       code: 'NOT_FOUND',
       message: 'Message not found'
     });
+
+    await assertDmChannel(message.channelId, ctx.userId);
 
     const reaction = await getReaction(
       input.messageId,

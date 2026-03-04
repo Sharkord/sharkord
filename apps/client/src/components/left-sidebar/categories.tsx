@@ -3,7 +3,10 @@ import {
   useCategories,
   useCategoryById
 } from '@/features/server/categories/hooks';
-import { useCan } from '@/features/server/hooks';
+import {
+  useCan,
+  useHasVisibleChannelsInCategory
+} from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   DndContext,
@@ -35,6 +38,9 @@ type TCategoryProps = {
 };
 
 const Category = memo(({ categoryId }: TCategoryProps) => {
+  const can = useCan();
+  const hasVisibleChannelsInCategory =
+    useHasVisibleChannelsInCategory(categoryId);
   const { expanded, toggleExpanded } = useCategoryExpanded(categoryId);
   const category = useCategoryById(categoryId);
 
@@ -51,7 +57,10 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
     openDialog(Dialog.CREATE_CHANNEL, { categoryId });
   }, [categoryId]);
 
-  if (!category) {
+  if (
+    !category ||
+    (!hasVisibleChannelsInCategory && !can(Permission.MANAGE_CHANNELS))
+  ) {
     return null;
   }
 

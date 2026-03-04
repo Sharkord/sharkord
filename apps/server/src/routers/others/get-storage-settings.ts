@@ -13,6 +13,8 @@ const getStorageSettingsRoute = protectedProcedure.query(async ({ ctx }) => {
 
   const storageSettings: TStorageSettings = {
     storageUploadEnabled: settings.storageUploadEnabled,
+    storageFileSharingInDirectMessages:
+      settings.storageFileSharingInDirectMessages,
     storageQuota: settings.storageQuota,
     storageUploadMaxFileSize: settings.storageUploadMaxFileSize,
     storageMaxAvatarSize: settings.storageMaxAvatarSize,

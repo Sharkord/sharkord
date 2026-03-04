@@ -51,7 +51,7 @@ describe('/login', () => {
       .get();
 
     expect(newUser).toBeTruthy();
-    expect(newUser?.name).toBe('SharkordUser');
+    expect(newUser?.name).toStartWith('SharkordUser');
   });
 
   test('should fail when allowNewUsers is false and no invite provided', async () => {

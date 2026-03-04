@@ -1,5 +1,7 @@
 import {
+  browserNotificationsForMentionsSelector,
   browserNotificationsSelector,
+  selectedDmChannelIdSelector,
   threadSidebarDataSelector
 } from '@/features/app/selectors';
 import { store } from '@/features/store';
@@ -7,6 +9,7 @@ import { getFileUrl } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   getPlainTextFromHtml,
+  hasMention,
   TYPING_MS,
   type TJoinedMessage
 } from '@sharkord/shared';
@@ -59,6 +62,7 @@ export const addMessages = (
 ) => {
   const state = store.getState();
   const selectedChannelId = selectedChannelIdSelector(state);
+  const selectedDmChannelId = selectedDmChannelIdSelector(state);
 
   const rootMessages = messages.filter((m) => !m.parentMessageId);
   const threadReplies = messages.filter((m) => !!m.parentMessageId);
@@ -109,6 +113,8 @@ export const addMessages = (
     const state = store.getState();
     const ownUserId = ownUserIdSelector(state);
     const hasBrowserNotificationsEnabled = browserNotificationsSelector(state);
+    const notificationsForMentionsOnly =
+      browserNotificationsForMentionsSelector(state);
     const targetMessage = messages[0];
     const isFromOwnUser = ownUserId === targetMessage.userId;
 
@@ -126,16 +132,25 @@ export const addMessages = (
         playSound(SoundType.MESSAGE_RECEIVED);
       }
 
-      if (hasBrowserNotificationsEnabled) {
+      if (notificationsForMentionsOnly) {
+        const isMentioned = hasMention(
+          targetMessage.content ?? null,
+          ownUserId
+        );
+
+        if (isMentioned) {
+          sendBrowserNotification(targetMessage, channelId);
+        }
+      } else if (hasBrowserNotificationsEnabled) {
         sendBrowserNotification(targetMessage, channelId);
       }
     }
 
-    if (
-      channelId === selectedChannelId &&
-      !isFromOwnUser &&
-      rootMessages.length > 0
-    ) {
+    const isChannelSelected = [selectedChannelId, selectedDmChannelId].includes(
+      channelId
+    );
+
+    if (isChannelSelected && !isFromOwnUser && rootMessages.length > 0) {
       const trpc = getTRPCClient();
 
       try {

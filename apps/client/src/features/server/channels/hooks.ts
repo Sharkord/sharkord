@@ -8,6 +8,7 @@ import {
   channelsMapSelector,
   channelsSelector,
   currentVoiceChannelIdSelector,
+  directMessagesUnreadCountSelector,
   isCurrentVoiceChannelSelectedSelector,
   selectedChannelIdSelector,
   selectedChannelSelector,
@@ -47,3 +48,6 @@ export const useSelectedChannelType = () =>
 export const useChannelsMap = () => useSelector(channelsMapSelector);
 
 export const useChannelIds = () => useSelector(channelIdsSelector);
+
+export const useDirectMessagesUnreadCount = () =>
+  useSelector(directMessagesUnreadCountSelector);

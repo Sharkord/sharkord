@@ -1,7 +1,8 @@
-import { ChannelPermission, type TMessage } from '@sharkord/shared';
+import { type TMessage } from '@sharkord/shared';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
+import { assertDmChannel } from '../../db/queries/dms';
 import { channelReadStates, messages } from '../../db/schema';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -12,10 +13,7 @@ const markAsReadRoute = protectedProcedure
     })
   )
   .mutation(async ({ ctx, input }) => {
-    await ctx.needsChannelPermission(
-      input.channelId,
-      ChannelPermission.VIEW_CHANNEL
-    );
+    await assertDmChannel(input.channelId, ctx.userId);
 
     const { channelId } = input;
 

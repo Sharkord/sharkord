@@ -4,13 +4,14 @@ import { z } from 'zod';
 import { db } from '../../db';
 import {
   getAllChannelUserPermissions,
+  getChannelsForUser,
   getChannelsReadStatesForUser
 } from '../../db/queries/channels';
 import { getEmojis } from '../../db/queries/emojis';
 import { getRoles } from '../../db/queries/roles';
 import { getPublicSettings, getSettings } from '../../db/queries/server';
 import { getPublicUsers } from '../../db/queries/users';
-import { categories, channels, users } from '../../db/schema';
+import { categories, users } from '../../db/schema';
 import { logger } from '../../logger';
 import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
@@ -70,7 +71,7 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       publicSettings
     ] = await Promise.all([
       db.select().from(categories),
-      db.select().from(channels),
+      getChannelsForUser(ctx.user.id), // filter channels based on permissions and DM participation
       getPublicUsers(true), // return identity to get status of already connected users
       getRoles(),
       getEmojis(),

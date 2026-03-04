@@ -307,7 +307,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           echoCancellation: devices.echoCancellation,
           noiseSuppression: useStandardNs,
           sampleRate: useDtln ? 16000 : 48000,
-          channelCount: useDtln ? 1 : 2
+          channelCount: 1
         },
         video: false
       });
@@ -409,7 +409,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         localAudioProducer.current = await producerTransport.current?.produce({
           track: transmitTrack,
           codecOptions: {
-            opusStereo: true,
+            opusStereo: false,
             opusFec: true,
             opusDtx: true,
             opusMaxPlaybackRate: 48000,
@@ -592,7 +592,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         audio: {
           echoCancellation: false,
           noiseSuppression: false,
-          autoGainControl: false
+          autoGainControl: false,
+          channelCount: 2,
+          sampleRate: 48000
         }
       });
 

@@ -13,10 +13,15 @@ import {
   channels,
   channelUserPermissions,
   messages,
-  userRoles,
-  users
+  userRoles
 } from '../schema';
+import {
+  getDirectMessageChannelIdsForUser,
+  getDirectMessageChannelParticipantIds,
+  isUserDmParticipant
+} from './dms';
 import { getUserRoleIds } from './roles';
+import { getAllUserIds } from './users';
 
 const getPermissions = async (
   userId: number,
@@ -132,16 +137,18 @@ const getChannelsForUser = async (userId: number): Promise<TChannel[]> => {
     return await db.select().from(channels);
   }
 
-  const allChannels = await db.select().from(channels);
-
-  const { userPermissionMap, rolePermissionMap } = await getPermissions(
-    userId,
-    roleIds,
-    ChannelPermission.VIEW_CHANNEL
-  );
+  const [allChannels, { userPermissionMap, rolePermissionMap }, dmChannelIds] =
+    await Promise.all([
+      db.select().from(channels),
+      getPermissions(userId, roleIds, ChannelPermission.VIEW_CHANNEL),
+      getDirectMessageChannelIdsForUser(userId)
+    ]);
 
   const accessibleChannels = allChannels.filter((channel) => {
-    if (!channel.private) {
+    const isPublicChannel = !channel.private;
+    const isDmChannelParticipant = dmChannelIds.includes(channel.id);
+
+    if (isPublicChannel || isDmChannelParticipant) {
       return true;
     }
 
@@ -245,6 +252,18 @@ const getAllChannelUserPermissions = async (
       permissions[permissionType] = false;
     }
 
+    if (channel.isDm) {
+      // for DM channels we need to check if the user is a participant, if not we set all permissions to false
+      const isParticipant = await isUserDmParticipant(channel.id, userId);
+
+      if (isParticipant) {
+        // if the user is a participant in the DM channel, we set all permissions to true because DM channels don't have granular permissions
+        for (const permissionType of allPermissionTypes) {
+          permissions[permissionType] = true;
+        }
+      }
+    }
+
     channelPermissions[channel.id] = {
       channelId: channel.id,
       permissions: permissions as Record<ChannelPermission, boolean>
@@ -333,11 +352,14 @@ const getAffectedUserIdsForChannel = async (
     return [];
   }
 
+  if (channel.isDm) {
+    // for DM channels we need to get the two participants and return them as the affected users
+    return getDirectMessageChannelParticipantIds(channelId);
+  }
+
   // if channel is public, return all user IDs
   if (!channel.private || options?.forceAllUsers) {
-    const allUsers = await db.select({ id: users.id }).from(users);
-
-    return allUsers.map((user) => user.id);
+    return getAllUserIds();
   }
 
   // if a specific permission is required, filter by it
@@ -399,6 +421,29 @@ const getChannelsReadStatesForUser = async (
   userId: number,
   channelId?: number
 ): Promise<TReadStateMap> => {
+  // get DM channel IDs the user participates in so we can exclude
+  // DM channels between other users from the read state results
+  const dmChannelIds = await getDirectMessageChannelIdsForUser(userId);
+
+  const conditions = [];
+
+  if (channelId) {
+    conditions.push(eq(messages.channelId, channelId));
+  }
+
+  // exclude DM channels the user does not participate in:
+  // include the message if the channel is NOT a DM, or if it IS a DM the user is part of
+  if (dmChannelIds.length > 0) {
+    conditions.push(
+      sql`(${channels.isDm} = 0 OR ${messages.channelId} IN (${sql.join(
+        dmChannelIds.map((id) => sql`${id}`),
+        sql`, `
+      )}))`
+    );
+  } else {
+    conditions.push(eq(channels.isDm, false));
+  }
+
   const results = await db
     .select({
       channelId: messages.channelId,
@@ -413,6 +458,7 @@ const getChannelsReadStatesForUser = async (
       `.as('unread_count')
     })
     .from(messages)
+    .innerJoin(channels, eq(channels.id, messages.channelId))
     .leftJoin(
       channelReadStates,
       and(
@@ -420,7 +466,7 @@ const getChannelsReadStatesForUser = async (
         eq(channelReadStates.userId, userId)
       )
     )
-    .where(channelId ? eq(messages.channelId, channelId) : undefined)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .groupBy(messages.channelId);
 
   const readStateMap: TReadStateMap = {};

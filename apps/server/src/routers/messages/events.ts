@@ -19,7 +19,7 @@ const onMessageRoute = protectedProcedure.subscription(async ({ ctx }) => {
 
 const onMessageTypingRoute = protectedProcedure.subscription(
   async ({ ctx }) => {
-    return ctx.pubsub.subscribe(ServerEvents.MESSAGE_TYPING);
+    return ctx.pubsub.subscribeFor(ctx.userId, ServerEvents.MESSAGE_TYPING);
   }
 );
 
