@@ -3,7 +3,7 @@ import { protectedProcedure } from '../../utils/trpc';
 
 const onMessageDeleteRoute = protectedProcedure.subscription(
   async ({ ctx }) => {
-    return ctx.pubsub.subscribe(ServerEvents.MESSAGE_DELETE);
+    return ctx.pubsub.subscribeFor(ctx.userId, ServerEvents.MESSAGE_DELETE);
   }
 );
 
