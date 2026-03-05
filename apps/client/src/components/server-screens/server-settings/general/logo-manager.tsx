@@ -1,9 +1,9 @@
 import { ImagePicker } from '@/components/image-picker';
-import { Group } from '@/components/ui/group';
 import { uploadFile } from '@/helpers/upload-file';
 import { useFilePicker } from '@/hooks/use-file-picker';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TFile } from '@sharkord/shared';
+import { Group } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 

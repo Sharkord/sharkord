@@ -1,5 +1,9 @@
 import { t } from '../../utils/trpc';
-import { onCommandsChangeRoute, onPluginLogRoute } from './events';
+import {
+  onCommandsChangeRoute,
+  onComponentsChangeRoute,
+  onPluginLogRoute
+} from './events';
 import { executeCommandRoute } from './execute-command';
 import { getCommandsRoute } from './get-commands';
 import { getPluginLogsRoute } from './get-logs';
@@ -16,6 +20,7 @@ export const pluginsRouter = t.router({
   getCommands: getCommandsRoute,
   executeCommand: executeCommandRoute,
   onCommandsChange: onCommandsChangeRoute,
+  onComponentsChange: onComponentsChangeRoute,
   getSettings: getSettingsRoute,
   updateSetting: updateSettingRoute
 });

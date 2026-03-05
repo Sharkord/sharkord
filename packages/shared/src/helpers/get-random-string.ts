@@ -1,8 +1,8 @@
 const getRandomString = (length: number): string => {
   const characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-  let result = "";
+  let result = '';
 
   const charactersLength = characters.length;
 

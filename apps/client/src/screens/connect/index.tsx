@@ -1,23 +1,35 @@
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Group } from '@/components/ui/group';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
+import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { connect } from '@/features/server/actions';
 import { useInfo } from '@/features/server/hooks';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
 import {
   getLocalStorageItem,
   getSessionStorageItem,
+  getLocalStorageItemBool,
   LocalStorageKey,
   removeLocalStorageItem,
   SessionStorageKey,
   setLocalStorageItem,
+  setLocalStorageItemBool,
   setSessionStorageItem
 } from '@/helpers/storage';
 import { useStrictEffect } from '@/hooks/use-strict-effect';
 import { useForm } from '@/hooks/use-form';
+import { PluginSlot, TestId } from '@sharkord/shared';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Group,
+  Input,
+  Label,
+  Switch
+} from '@sharkord/ui';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -26,12 +38,14 @@ const Connect = memo(() => {
     identity: string;
     password: string;
     rememberCredentials: boolean;
+    autoLogin: boolean;
   }>({
     identity: getLocalStorageItem(LocalStorageKey.IDENTITY) || '',
     password: getLocalStorageItem(LocalStorageKey.USER_PASSWORD) || '',
     rememberCredentials: !!getLocalStorageItem(
       LocalStorageKey.REMEMBER_CREDENTIALS
-    )
+    ),
+    autoLogin: getLocalStorageItemBool(LocalStorageKey.AUTO_LOGIN)
   });
 
   const [loading, setLoading] = useState(false);
@@ -74,7 +88,7 @@ const Connect = memo(() => {
 
       if (token) {
         setSessionStorageItem(SessionStorageKey.TOKEN, token);
-        
+
         document.cookie = "sharkord_token=; Max-Age=0; path=/; SameSite=Lax; Secure";
       } else {
         throw new Error("No authentication token found in cookies.");
@@ -98,7 +112,7 @@ const Connect = memo(() => {
     if (oidcStatus === 'success') {
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
-      
+
       handleOidcSuccess();
     }
   }, [handleOidcSuccess]);
@@ -123,7 +137,8 @@ const Connect = memo(() => {
         body: JSON.stringify({
           identity: values.identity,
           password: values.password,
-          invite: inviteCode
+          invite: inviteCode,
+          autoLogin: values.autoLogin || undefined
         })
       });
 
@@ -137,10 +152,12 @@ const Connect = memo(() => {
       const data = (await response.json()) as { token: string };
 
       setSessionStorageItem(SessionStorageKey.TOKEN, data.token);
+      setLocalStorageItemBool(LocalStorageKey.AUTO_LOGIN, values.autoLogin);
 
-      if (values.rememberCredentials) {
-        setLocalStorageItem(LocalStorageKey.IDENTITY, values.identity);
-        setLocalStorageItem(LocalStorageKey.USER_PASSWORD, values.password);
+      if (values.autoLogin) {
+        setLocalStorageItem(LocalStorageKey.AUTO_LOGIN_TOKEN, data.token);
+      } else {
+        removeLocalStorageItem(LocalStorageKey.AUTO_LOGIN_TOKEN);
       }
 
       await connect();
@@ -155,8 +172,8 @@ const Connect = memo(() => {
   }, [
     values.identity,
     values.password,
+    values.autoLogin,
     setErrors,
-    values.rememberCredentials,
     inviteCode
   ]);
 
@@ -180,6 +197,7 @@ const Connect = memo(() => {
               </span>
             )}
           </CardTitle>
+          <PluginSlotRenderer slotId={PluginSlot.CONNECT_SCREEN} />
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {info?.description && (
@@ -189,28 +207,47 @@ const Connect = memo(() => {
           )}
 
           {!(info?.oidcEnabled && !info?.allowNewUsers) && (
-            <div className="flex flex-col gap-2">
+            <form
+              className="flex flex-col gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                onConnectClick();
+              }}
+            >
               <Group
                 label="Identity"
                 help="A unique identifier for your account on this server. You can use whatever you like, such as an email address or a username. This won't be shared publicly."
               >
-                <Input {...r('identity')} />
+                <Input
+                  {...r('identity')}
+                  autoComplete="username"
+                  data-testid={TestId.CONNECT_IDENTITY_INPUT}
+                />
               </Group>
               <Group label="Password">
                 <Input
                   {...r('password')}
                   type="password"
+                  autoComplete="current-password"
                   onEnter={onConnectClick}
+                  data-testid={TestId.CONNECT_PASSWORD_INPUT}
                 />
               </Group>
-              <Group label="Remember Credentials">
-                <Switch
-                  checked={values.rememberCredentials}
-                  onCheckedChange={onRememberCredentialsChange}
-                />
-              </Group>
-            </div>
+            </form>
           )}
+
+          <div
+            className="flex items-center gap-2 w-fit cursor-pointer"
+            data-testid={TestId.CONNECT_AUTO_LOGIN_SWITCH}
+            onClick={() => {
+              onChange('autoLogin', !values.autoLogin);
+            }}
+          >
+            <Switch checked={values.autoLogin} />
+            <Label className="text-sm cursor-pointer">
+              Login automatically
+            </Label>
+          </div>
 
           <div className="flex flex-col gap-2">
             {!window.isSecureContext && (
@@ -234,6 +271,7 @@ const Connect = memo(() => {
                 variant="outline"
                 onClick={onConnectClick}
                 disabled={loading || !values.identity || !values.password}
+                data-testid={TestId.CONNECT_BUTTON}
               >
                 Connect
               </Button>

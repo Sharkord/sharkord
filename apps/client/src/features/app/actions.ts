@@ -1,4 +1,5 @@
 import { getUrlFromServer } from '@/helpers/get-file-url';
+import { LocalStorageKey, setLocalStorageItemBool } from '@/helpers/storage';
 import type { TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
 import { setInfo } from '../server/actions';
@@ -7,6 +8,12 @@ import { appSliceActions } from './slice';
 
 export const setAppLoading = (loading: boolean) =>
   store.dispatch(appSliceActions.setAppLoading(loading));
+
+export const setIsAutoConnecting = (isAutoConnecting: boolean) =>
+  store.dispatch(appSliceActions.setIsAutoConnecting(isAutoConnecting));
+
+export const setPluginsLoading = (loading: boolean) =>
+  store.dispatch(appSliceActions.setLoadingPlugins(loading));
 
 export const fetchServerInfo = async (): Promise<TServerInfo | undefined> => {
   try {
@@ -46,11 +53,87 @@ export const setModViewOpen = (isOpen: boolean, userId?: number) =>
     })
   );
 
+export const openThreadSidebar = (parentMessageId: number, channelId: number) =>
+  store.dispatch(
+    appSliceActions.setThreadSidebarOpen({
+      open: true,
+      parentMessageId,
+      channelId
+    })
+  );
+
+export const closeThreadSidebar = () =>
+  store.dispatch(
+    appSliceActions.setThreadSidebarOpen({
+      open: false,
+      parentMessageId: undefined,
+      channelId: undefined
+    })
+  );
+
 export const resetApp = () => {
   store.dispatch(
     appSliceActions.setModViewOpen({
       modViewOpen: false,
       userId: undefined
     })
+  );
+  store.dispatch(
+    appSliceActions.setThreadSidebarOpen({
+      open: false,
+      parentMessageId: undefined,
+      channelId: undefined
+    })
+  );
+};
+
+export const setAutoJoinLastChannel = (autoJoin: boolean) => {
+  store.dispatch(appSliceActions.setAutoJoinLastChannel(autoJoin));
+
+  setLocalStorageItemBool(LocalStorageKey.AUTO_JOIN_LAST_CHANNEL, autoJoin);
+};
+
+export const setDmsOpen = (open: boolean) =>
+  store.dispatch(appSliceActions.setDmsOpen(open));
+
+export const setSelectedDmChannelId = (channelId: number | undefined) =>
+  store.dispatch(appSliceActions.setSelectedDmChannelId(channelId));
+
+export const setBrowserNotifications = async (enabled: boolean) => {
+  if (enabled && 'Notification' in window) {
+    const permission = await Notification.requestPermission();
+
+    if (permission !== 'granted') {
+      toast.error('Notification permission was denied.');
+
+      return;
+    }
+  }
+
+  store.dispatch(appSliceActions.setBrowserNotifications(enabled));
+  setLocalStorageItemBool(LocalStorageKey.BROWSER_NOTIFICATIONS, enabled);
+};
+
+export const setBrowserNotificationsForMentions = (enabled: boolean) => {
+  store.dispatch(appSliceActions.setBrowserNotificationsForMentions(enabled));
+  setLocalStorageItemBool(
+    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_MENTIONS,
+    enabled
+  );
+};
+
+export const setBrowserNotificationsForDms = async (enabled: boolean) => {
+  if (enabled && 'Notification' in window) {
+    const permission = await Notification.requestPermission();
+
+    if (permission !== 'granted') {
+      return;
+    }
+  }
+
+  store.dispatch(appSliceActions.setBrowserNotificationsForDms(enabled));
+  setLocalStorageItemBool(
+    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_DMS,
+    enabled
   );
 };

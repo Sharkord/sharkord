@@ -12,8 +12,43 @@
     {
       "idx": 1,
       "version": "6",
-      "when": 1771538238413,
-      "tag": "0001_spotty_wolfpack",
+      "when": 1771530010367,
+      "tag": "0001_strange_starjammers",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771718400000,
+      "tag": "0002_add_view_user_sensitive_data_to_owner",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1772243907890,
+      "tag": "0003_polite_mach_iv",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1772480756476,
+      "tag": "0004_tense_crystal",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1772730000000,
+      "tag": "0005_normalize_user_identities",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1772733600000,
+      "tag": "0006_lowercase_remaining_identities",
       "breakpoints": true
     }
   ]

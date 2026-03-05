@@ -30,5 +30,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  /* TODO: this doesn't look right but fuck it for now, it's working*/
+  "include": ["src", "../server/src/declarations.d.ts"]
 }

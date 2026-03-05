@@ -1,4 +1,11 @@
 import http from 'http';
+import path from 'path';
+
+type HttpRouteHandler<TContext = undefined> = (
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  ctx: TContext
+) => Promise<unknown> | unknown;
 
 const getJsonBody = async <T = any>(req: http.IncomingMessage): Promise<T> => {
   return new Promise((resolve, reject) => {
@@ -21,4 +28,44 @@ const getJsonBody = async <T = any>(req: http.IncomingMessage): Promise<T> => {
   });
 };
 
-export { getJsonBody };
+const hasPrefixPathSegment = (pathname: string, prefix: string): boolean => {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+};
+
+const getRequestPathname = (req: http.IncomingMessage): string | null => {
+  if (!req.url) return null;
+
+  try {
+    const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    return url.pathname;
+  } catch {
+    return null;
+  }
+};
+
+const sanitizeFileName = (name: string): string | null => {
+  // reject null bytes which can truncate paths on some
+  if (name.includes('\0')) {
+    return null;
+  }
+
+  const normalized = name.replace(/\\/g, '/');
+
+  // strip any directory components (e.g. "../../etc/passwd" -> "passwd")
+  const baseName = path.basename(normalized);
+
+  // reject empty names (e.g. after stripping path components from "/")
+  if (!baseName || baseName === '.' || baseName === '..') {
+    return null;
+  }
+
+  return baseName;
+};
+
+export {
+  getJsonBody,
+  getRequestPathname,
+  hasPrefixPathSegment,
+  sanitizeFileName
+};
+export type { HttpRouteHandler };

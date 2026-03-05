@@ -3,7 +3,10 @@
   "version": "0.0.1",
   "module": "src/index.ts",
   "sharkord": {
-    "entry": "index.js",
+    "entry": {
+      "server": "index.js",
+      "client": "index.js"
+    },
     "author": "Test Author",
     "description": "A mock plugin with settings for testing."
   },

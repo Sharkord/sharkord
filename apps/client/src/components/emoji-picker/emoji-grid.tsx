@@ -1,4 +1,7 @@
-import type { TEmojiItem } from '@/components/tiptap-input/types';
+import {
+  shouldUseFallbackImage,
+  type TEmojiItem
+} from '@/components/tiptap-input/helpers';
 import { memo, useCallback, useMemo } from 'react';
 import { VirtuosoGrid } from 'react-virtuoso';
 import { GRID_COLS } from './emoji-data';
@@ -8,29 +11,33 @@ type TEmojiButtonProps = {
   onSelect: (emoji: TEmojiItem) => void;
 };
 
-const EmojiButton = memo(({ emoji, onSelect }: TEmojiButtonProps) => (
-  <button
-    type="button"
-    onClick={() => onSelect(emoji)}
-    className="w-8 h-8 flex items-center justify-center hover:bg-accent rounded-md transition-colors cursor-pointer"
-    title={`:${emoji.shortcodes[0]}:`}
-  >
-    {emoji.emoji ? (
-      <span className="text-xl leading-none">{emoji.emoji}</span>
-    ) : emoji.fallbackImage ? (
-      <img
-        src={emoji.fallbackImage}
-        alt={emoji.name}
-        className="w-6 h-6 object-contain"
-        loading="lazy"
-      />
-    ) : (
-      <span className="text-xs text-muted-foreground truncate">
-        {emoji.shortcodes[0]}
-      </span>
-    )}
-  </button>
-));
+const EmojiButton = memo(({ emoji, onSelect }: TEmojiButtonProps) => {
+  const useImage = shouldUseFallbackImage(emoji);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(emoji)}
+      className="w-8 h-8 flex items-center justify-center hover:bg-accent rounded-md transition-colors cursor-pointer"
+      title={`:${emoji.shortcodes[0]}:`}
+    >
+      {emoji.emoji && !useImage ? (
+        <span className="text-xl leading-none">{emoji.emoji}</span>
+      ) : emoji.fallbackImage ? (
+        <img
+          src={emoji.fallbackImage}
+          alt={emoji.name}
+          className="w-6 h-6 object-contain"
+          loading="lazy"
+        />
+      ) : (
+        <span className="text-xs text-muted-foreground truncate">
+          {emoji.shortcodes[0]}
+        </span>
+      )}
+    </button>
+  );
+});
 
 type TEmojiGridProps = {
   emojis: TEmojiItem[];

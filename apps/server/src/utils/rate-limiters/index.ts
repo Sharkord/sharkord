@@ -1,3 +1,5 @@
+import { IS_DEVELOPMENT, IS_TEST } from '../env';
+
 type TFixedWindowRateLimiterOptions = {
   maxRequests: number;
   windowMs: number;
@@ -33,6 +35,15 @@ class FixedWindowRateLimiter {
   }
 
   public consume = (key: string): TRateLimitResult => {
+    if ((IS_DEVELOPMENT && !IS_TEST) || globalThis.disableRateLimiting) {
+      // disable rate limiting in development but not in tests
+      return {
+        allowed: true,
+        remaining: this.maxRequests,
+        retryAfterMs: 0
+      };
+    }
+
     const now = Date.now();
 
     this.gc(now);

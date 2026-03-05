@@ -1,8 +1,7 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { IconButton } from '@/components/ui/icon-button';
 import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
 import { cn } from '@/lib/utils';
 import type { TExternalStream } from '@sharkord/shared';
+import { Avatar, AvatarFallback, AvatarImage, IconButton } from '@sharkord/ui';
 import { Headphones, Router, Video, ZoomIn, ZoomOut } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { CardControls } from './card-controls';
@@ -87,12 +86,8 @@ const ExternalStreamCard = memo(
     className,
     showPinControls = true
   }: TExternalStreamCardProps) => {
-    const {
-      externalVideoRef,
-      externalAudioRef,
-      hasExternalVideoStream,
-      hasExternalAudioStream
-    } = useVoiceRefs(streamId, stream.pluginId, stream.key);
+    const { externalVideoRef, hasExternalVideoStream, hasExternalAudioStream } =
+      useVoiceRefs(streamId, stream.pluginId, stream.key);
 
     const { getVolume, setVolume, toggleMute, getExternalVolumeKey } =
       useVolumeControl();
@@ -209,10 +204,6 @@ const ExternalStreamCard = memo(
               )}
             </div>
           </div>
-        )}
-
-        {hasAudio && (
-          <audio ref={externalAudioRef} autoPlay className="hidden" />
         )}
 
         <div className="absolute bottom-0 left-0 right-0 p-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">

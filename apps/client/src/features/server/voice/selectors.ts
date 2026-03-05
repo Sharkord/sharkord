@@ -45,3 +45,9 @@ export const voiceChannelVideoExternalStreamsSelector = createCachedSelector(
   (externalStreams) =>
     externalStreams.filter((stream) => stream.tracks?.video === true)
 )((_state: IRootState, channelId: number) => channelId);
+
+export const hideNonVideoParticipantsSelector = (state: IRootState) =>
+  state.server.hideNonVideoParticipants;
+
+export const showUserBannersInVoiceSelector = (state: IRootState) =>
+  state.server.showUserBannersInVoice;

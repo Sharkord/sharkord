@@ -3,8 +3,8 @@ import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { updateOwnVoiceState } from '@/features/server/voice/actions';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
+import { getTrpcError } from '@sharkord/shared';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -40,10 +40,6 @@ const useVoiceControls = ({
     );
 
     if (!currentVoiceChannelId) return;
-
-    localAudioStream?.getAudioTracks().forEach((track) => {
-      track.enabled = !newState;
-    });
 
     try {
       await trpc.voice.updateState.mutate({
@@ -110,7 +106,7 @@ const useVoiceControls = ({
       await trpc.voice.updateState.mutate({
         webcamEnabled: newState
       });
-     } catch (error) {
+    } catch (error) {
       updateOwnVoiceState({ webcamEnabled: false });
 
       try {
@@ -143,7 +139,7 @@ const useVoiceControls = ({
     try {
       if (newState) {
         const video = await startScreenShareStream();
-        
+
         // handle native screen share end
         video.onended = async () => {
           stopScreenShareStream();
@@ -178,8 +174,7 @@ const useVoiceControls = ({
   }, [
     ownVoiceState.sharingScreen,
     startScreenShareStream,
-    stopScreenShareStream,
-    currentVoiceChannelId
+    stopScreenShareStream
   ]);
 
   return {

@@ -3,7 +3,7 @@ import {
   ServerEvents,
   type TChannelUserPermissionsMap
 } from '@sharkord/shared';
-import { eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import { db } from '.';
 import { pluginManager } from '../plugins';
 import { pubsub } from '../utils/pubsub';
@@ -15,8 +15,8 @@ import { getEmojiById } from './queries/emojis';
 import { getMessage } from './queries/messages';
 import { getRole } from './queries/roles';
 import { getPublicSettings } from './queries/server';
-import { getPublicUserById } from './queries/users';
-import { categories, channels } from './schema';
+import { getAllUserIds, getPublicUserById } from './queries/users';
+import { categories, channels, messages, users } from './schema';
 
 const publishMessage = async (
   messageId: number | undefined,
@@ -26,7 +26,11 @@ const publishMessage = async (
   if (!messageId || !channelId) return;
 
   if (type === 'delete') {
-    pubsub.publish(ServerEvents.MESSAGE_DELETE, {
+    const affectedUserIds = await getAffectedUserIdsForChannel(channelId, {
+      permission: ChannelPermission.VIEW_CHANNEL
+    });
+
+    pubsub.publishFor(affectedUserIds, ServerEvents.MESSAGE_DELETE, {
       messageId: messageId,
       channelId: channelId
     });
@@ -46,6 +50,9 @@ const publishMessage = async (
   });
 
   pubsub.publishFor(affectedUserIds, targetEvent, message);
+
+  // thread replies should not increment the channel's unread count
+  if (message.parentMessageId) return;
 
   // only send unread updates to users OTHER than the message author
   const usersToNotify = affectedUserIds.filter((id) => id !== message.userId);
@@ -104,14 +111,9 @@ const publishRole = async (
 
 const publishUser = async (
   userId: number | undefined,
-  type: 'create' | 'update' | 'delete'
+  type: 'create' | 'update'
 ) => {
   if (!userId) return;
-
-  if (type === 'delete') {
-    pubsub.publish(ServerEvents.USER_DELETE, userId);
-    return;
-  }
 
   const user = await getPublicUserById(userId);
 
@@ -125,12 +127,16 @@ const publishUser = async (
 
 const publishChannel = async (
   channelId: number | undefined,
-  type: 'create' | 'update' | 'delete'
+  type: 'create' | 'update' | 'delete',
+  ensureUsersAccess = false
 ) => {
   if (!channelId) return;
 
   if (type === 'delete') {
-    pubsub.publish(ServerEvents.CHANNEL_DELETE, channelId);
+    const affectedUserIds = await getAllUserIds();
+
+    pubsub.publishFor(affectedUserIds, ServerEvents.CHANNEL_DELETE, channelId);
+
     return;
   }
 
@@ -147,7 +153,42 @@ const publishChannel = async (
       ? ServerEvents.CHANNEL_CREATE
       : ServerEvents.CHANNEL_UPDATE;
 
-  pubsub.publish(targetEvent, channel);
+  const affectedUserIds = await getAffectedUserIdsForChannel(channel.id, {
+    permission: ChannelPermission.VIEW_CHANNEL
+  });
+
+  pubsub.publishFor(affectedUserIds, targetEvent, channel);
+
+  if (ensureUsersAccess) {
+    const allUsers = await db.select().from(users).all();
+    const allUserIds = allUsers.map((u) => u.id);
+
+    // ensureUsersAccess is set to true when the private setting changed
+    // was public -> private: we need to publish delete events to users who lost access
+    // was private -> public: we need to publish create events to users who gained access
+
+    if (type === 'update') {
+      if (channel.private) {
+        // channel is now private, so send delete events to users who lost access to it
+        const lostAccessUserIds = allUsers
+          .map((u) => u.id)
+          .filter((id) => !affectedUserIds.includes(id));
+
+        if (lostAccessUserIds.length > 0) {
+          pubsub.publishFor(
+            lostAccessUserIds,
+            ServerEvents.CHANNEL_DELETE,
+            channel.id
+          );
+        }
+      } else {
+        // channel is now public, so all users should have access to it
+        // send a create event
+        // if a user already has the channel in the state it will ignore the create event, so we don't need to worry about that
+        pubsub.publishFor(allUserIds, ServerEvents.CHANNEL_CREATE, channel);
+      }
+    }
+  }
 };
 
 const publishSettings = async () => {
@@ -212,6 +253,33 @@ const publishPluginCommands = async () => {
   pubsub.publish(ServerEvents.PLUGIN_COMMANDS_CHANGE, commands);
 };
 
+const publishPluginComponents = async () => {
+  const pluginIds = pluginManager.getPluginIdsWithComponents();
+
+  pubsub.publish(ServerEvents.PLUGIN_COMPONENTS_CHANGE, pluginIds);
+};
+
+const publishReplyCount = async (
+  parentMessageId: number,
+  channelId: number
+) => {
+  const replyCountRow = await db
+    .select({ count: count() })
+    .from(messages)
+    .where(eq(messages.parentMessageId, parentMessageId))
+    .get();
+
+  const affectedUserIds = await getAffectedUserIdsForChannel(channelId, {
+    permission: ChannelPermission.VIEW_CHANNEL
+  });
+
+  pubsub.publishFor(affectedUserIds, ServerEvents.THREAD_REPLY_COUNT_UPDATE, {
+    messageId: parentMessageId,
+    channelId,
+    replyCount: replyCountRow?.count ?? 0
+  });
+};
+
 export {
   publishCategory,
   publishChannel,
@@ -219,6 +287,8 @@ export {
   publishEmoji,
   publishMessage,
   publishPluginCommands,
+  publishPluginComponents,
+  publishReplyCount,
   publishRole,
   publishSettings,
   publishUser

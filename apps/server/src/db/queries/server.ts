@@ -1,6 +1,7 @@
 import type { TJoinedSettings, TPublicServerSettings } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { db } from '..';
+import { config } from '../../config';
 import { files, settings } from '../schema';
 
 // since this is static, we can keep it in memory to avoid querying the DB every time
@@ -31,11 +32,18 @@ const getPublicSettings: () => Promise<TPublicServerSettings> = async () => {
     name: settings.name,
     serverId: settings.serverId,
     storageUploadEnabled: settings.storageUploadEnabled,
+    directMessagesEnabled: settings.directMessagesEnabled,
     storageQuota: settings.storageQuota,
     storageUploadMaxFileSize: settings.storageUploadMaxFileSize,
+    storageFileSharingInDirectMessages:
+      settings.storageFileSharingInDirectMessages,
+    storageMaxAvatarSize: settings.storageMaxAvatarSize,
+    storageMaxBannerSize: settings.storageMaxBannerSize,
+    storageMaxFilesPerMessage: settings.storageMaxFilesPerMessage,
     storageSpaceQuotaByUser: settings.storageSpaceQuotaByUser,
     storageOverflowAction: settings.storageOverflowAction,
-    enablePlugins: settings.enablePlugins
+    enablePlugins: settings.enablePlugins,
+    webRtcMaxBitrate: config.webRtc.maxBitrate
   };
 
   return publicSettings;

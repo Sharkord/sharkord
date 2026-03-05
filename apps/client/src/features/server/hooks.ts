@@ -1,5 +1,11 @@
-import { ChannelPermission, Permission } from '@sharkord/shared';
-import { useCallback } from 'react';
+import { getTRPCClient } from '@/lib/trpc';
+import {
+  ChannelPermission,
+  Permission,
+  linkifyHtml,
+  type TPluginSlotContext
+} from '@sharkord/shared';
+import { useCallback, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import type { IRootState } from '../store';
 import { useChannelById, useChannelPermissionsById } from './channels/hooks';
@@ -8,14 +14,18 @@ import {
   connectedSelector,
   connectingSelector,
   disconnectInfoSelector,
+  hasUnreadMentionsSelector,
+  hasVisibleChannelsInCategorySelector,
   infoSelector,
   isOwnUserOwnerSelector,
   ownUserRolesSelector,
   ownVoiceUserSelector,
+  pluginComponentContextSelector,
   pluginsEnabledSelector,
   publicServerSettingsSelector,
   serverNameSelector,
   typingUsersByChannelIdSelector,
+  typingUsersByThreadIdSelector,
   userRolesSelector,
   voiceUsersByChannelIdSelector
 } from './selectors';
@@ -89,12 +99,23 @@ export const useChannelCan = (channelId: number | undefined) => {
   return can;
 };
 
+// Returns true if the user can view at least one of the channels in the category
+export const useHasVisibleChannelsInCategory = (categoryId: number) =>
+  useSelector((state: IRootState) =>
+    hasVisibleChannelsInCategorySelector(state, categoryId)
+  );
+
 export const useUserRoles = (userId: number) =>
   useSelector((state: IRootState) => userRolesSelector(state, userId));
 
 export const useTypingUsersByChannelId = (channelId: number) =>
   useSelector((state: IRootState) =>
     typingUsersByChannelIdSelector(state, channelId)
+  );
+
+export const useTypingUsersByThreadId = (parentMessageId: number) =>
+  useSelector((state: IRootState) =>
+    typingUsersByThreadIdSelector(state, parentMessageId)
   );
 
 export const useVoiceUsersByChannelId = (channelId: number) =>
@@ -107,4 +128,34 @@ export const useOwnVoiceUser = () => useSelector(ownVoiceUserSelector);
 export const useUnreadMessagesCount = (channelId: number) =>
   useSelector((state: IRootState) =>
     channelReadStateByIdSelector(state, channelId)
+  );
+
+export const usePluginComponentContext = (): TPluginSlotContext => {
+  const stateCtx = useSelector(pluginComponentContextSelector);
+  const controllerRef = useRef(
+    (() => ({
+      sendMessage: async (channelId: number, content: string) => {
+        const trpc = getTRPCClient();
+
+        await trpc.messages.send.mutate({
+          channelId,
+          content: linkifyHtml(`<p>${content}</p>`),
+          files: []
+        });
+      }
+    }))()
+  );
+
+  return useMemo<TPluginSlotContext>(
+    () => ({
+      ...stateCtx,
+      ...controllerRef.current
+    }),
+    [stateCtx]
+  );
+};
+
+export const useHasUnreadMentions = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    hasUnreadMentionsSelector(state, channelId)
   );

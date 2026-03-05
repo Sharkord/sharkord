@@ -1,13 +1,13 @@
-import { Group } from '@/components/ui/group';
-import { Input } from '@/components/ui/input';
+import type { TCommandInfo } from '@sharkord/shared';
 import {
+  Group,
+  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select';
-import type { TCommandInfo } from '@sharkord/shared';
+} from '@sharkord/ui';
 import { memo } from 'react';
 
 type TArgsProps = {

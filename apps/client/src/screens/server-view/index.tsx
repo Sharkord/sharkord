@@ -2,14 +2,23 @@ import { LeftSidebar } from '@/components/left-sidebar';
 import { ModViewSheet } from '@/components/mod-view-sheet';
 import { Protect } from '@/components/protect';
 import { RightSidebar } from '@/components/right-sidebar';
+import { ThreadSidebar } from '@/components/thread-sidebar';
 import { TopBar } from '@/components/top-bar';
 import { VoiceChatSidebar } from '@/components/voice-chat-sidebar';
 import { VoiceProvider } from '@/components/voice-provider';
-import { getLocalStorageItem, LocalStorageKey } from '@/helpers/storage';
+import { setDmsOpen } from '@/features/app/actions';
+import {
+  useDmsOpen,
+  useSelectedDmChannelId,
+  useThreadSidebar
+} from '@/features/app/hooks';
+import { setSelectedChannelId } from '@/features/server/channels/actions';
+import { usePublicServerSettings } from '@/features/server/hooks';
+import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
 import { useSwipeGestures } from '@/hooks/use-swipe-gestures';
 import { cn } from '@/lib/utils';
 import { Permission } from '@sharkord/shared';
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { ContentWrapper } from './content-wrapper';
 import { PreventBrowser } from './prevent-browser';
 
@@ -17,12 +26,16 @@ const ServerView = memo(() => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileUsersOpen, setIsMobileUsersOpen] = useState(false);
   const [isDesktopRightSidebarOpen, setIsDesktopRightSidebarOpen] = useState(
-    getLocalStorageItem(LocalStorageKey.RIGHT_SIDEBAR_STATE) === 'true' || false
+    getLocalStorageItemBool(LocalStorageKey.RIGHT_SIDEBAR_STATE, true)
   );
   const [isVoiceChatSidebarOpen, setIsVoiceChatSidebarOpen] = useState(
-    getLocalStorageItem(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE) === 'true' ||
-      false
+    getLocalStorageItemBool(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE, false)
   );
+  const dmsOpen = useDmsOpen();
+  const selectedDmChannelId = useSelectedDmChannelId();
+  const publicSettings = usePublicServerSettings();
+  const previousServerChannelIdRef = useRef<number | undefined>(undefined);
+  const { isOpen: isThreadSidebarOpen } = useThreadSidebar();
 
   const handleDesktopRightSidebarToggle = useCallback(() => {
     setIsDesktopRightSidebarOpen((prev) => !prev);
@@ -66,6 +79,16 @@ const ServerView = memo(() => {
     onSwipeLeft: handleSwipeLeft
   });
 
+  useEffect(() => {
+    if (publicSettings?.directMessagesEnabled === false && dmsOpen) {
+      setDmsOpen(false);
+
+      if (previousServerChannelIdRef.current) {
+        setSelectedChannelId(previousServerChannelIdRef.current);
+      }
+    }
+  }, [publicSettings?.directMessagesEnabled, dmsOpen]);
+
   return (
     <VoiceProvider>
       <div
@@ -104,13 +127,18 @@ const ServerView = memo(() => {
             )}
           />
 
-          <ContentWrapper />
+          <ContentWrapper
+            isDmMode={dmsOpen}
+            selectedDmChannelId={selectedDmChannelId}
+          />
 
           <VoiceChatSidebar isOpen={isVoiceChatSidebarOpen} />
 
+          <ThreadSidebar isOpen={isThreadSidebarOpen} />
+
           <RightSidebar
             className={cn(
-              'fixed top-0 bottom-0 right-0 h-full z-40 transition-all duration-500 ease-in-out',
+              'fixed top-0 bottom-0 right-0 h-full z-40',
               'lg:relative lg:z-0',
               isMobileUsersOpen
                 ? 'translate-x-0 lg:translate-x-0'

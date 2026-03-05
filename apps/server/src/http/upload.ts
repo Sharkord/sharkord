@@ -4,8 +4,10 @@ import http from 'http';
 import z from 'zod';
 import { getSettings } from '../db/queries/server';
 import { getUserByToken } from '../db/queries/users';
+import { getErrorMessage } from '../helpers/get-error-message';
 import { logger } from '../logger';
 import { fileManager } from '../utils/file-manager';
+import { sanitizeFileName } from './helpers';
 
 const zHeaders = z.object({
   [UploadHeaders.TOKEN]: z.string(),
@@ -18,11 +20,21 @@ const uploadFileRouteHandler = async (
   res: http.ServerResponse
 ) => {
   const parsedHeaders = zHeaders.parse(req.headers);
-  const [token, originalName, contentLength] = [
+
+  const [token, rawOriginalName, contentLength] = [
     parsedHeaders[UploadHeaders.TOKEN],
     parsedHeaders[UploadHeaders.ORIGINAL_NAME],
     parsedHeaders[UploadHeaders.CONTENT_LENGTH]
   ];
+
+  const originalName = sanitizeFileName(rawOriginalName);
+
+  if (!originalName) {
+    req.resume();
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid file name' }));
+    return;
+  }
 
   const user = await getUserByToken(token);
 
@@ -78,18 +90,21 @@ const uploadFileRouteHandler = async (
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(tempFile));
     } catch (error) {
-      logger.error('Error processing uploaded file:', error);
+      logger.error(
+        'Error processing uploaded file: %s',
+        getErrorMessage(error)
+      );
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'File processing failed' }));
     }
   });
 
   fileStream.on('error', (err) => {
-    logger.error('Error uploading file:', err);
+    logger.error('Error uploading file: %s', getErrorMessage(err));
 
     res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'File upload failed' }));
   });
 };
 
-export { uploadFileRouteHandler };
+export { sanitizeFileName, uploadFileRouteHandler };

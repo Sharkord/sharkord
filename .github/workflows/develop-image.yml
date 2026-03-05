@@ -1,0 +1,35 @@
+name: Publish Development Image
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: docker-dev
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  build-and-publish:
+    needs: [ci]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build project artifacts
+        uses: ./.github/actions/build-sharkord
+
+      - name: Build and publish Docker image
+        uses: ./.github/actions/docker-build-publish
+        with:
+          docker_username: ${{ secrets.DOCKER_USERNAME }}
+          docker_password: ${{ secrets.DOCKER_PASSWORD }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/sharkord:dev
+          labels: |
+            org.opencontainers.image.title=Sharkord
+            org.opencontainers.image.description=Sharkord Server (dev)
+            org.opencontainers.image.source=https://github.com/Sharkord/sharkord
+            org.opencontainers.image.revision=${{ github.sha }}

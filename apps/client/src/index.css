@@ -1,6 +1,15 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+@source "../../../packages/ui/src";
+
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -256,6 +265,20 @@ body {
     text-decoration: underline;
     text-underline-offset: 2px;
   }
+}
+
+.msg-content.emoji-only {
+  font-size: 2.5rem;
+  line-height: 1.2;
+
+  img:not(.ProseMirror-separator) {
+    height: 1.2em;
+    width: 1.2em;
+  }
+}
+
+.msg-content > *:nth-last-child(2) {
+  display: inline;
 }
 
 .react-tweet-theme {

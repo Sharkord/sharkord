@@ -1,10 +1,9 @@
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import {
   Permission as EPermission,
   permissionDescriptions,
   permissionLabels
 } from '@sharkord/shared';
+import { Label, Switch } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 
 const availablePermissions = Object.values(EPermission);

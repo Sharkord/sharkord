@@ -25,6 +25,7 @@ import path from 'path';
 import { db } from '../db';
 import { getSettings } from '../db/queries/server';
 import { pluginData } from '../db/schema';
+import { getErrorMessage } from '../helpers/get-error-message';
 import { PLUGINS_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 import { VoiceRuntime } from '../runtimes/voice';
@@ -44,6 +45,7 @@ class PluginManager {
   private logs = new Map<string, TLogEntry[]>();
   private logsListeners = new Map<string, Set<(newLog: TLogEntry) => void>>();
   private commands = new Map<string, RegisteredCommand[]>();
+  private uiState = new Map<string, boolean>();
   private pluginStates: PluginStatesMap = {};
   private settingDefinitions = new Map<string, TPluginSettingDefinition[]>();
   private settingValues = new Map<string, Record<string, unknown>>();
@@ -64,7 +66,7 @@ class PluginManager {
         return acc;
       }, {});
     } catch (error) {
-      logger.error('Failed to load plugin states:', error);
+      logger.error('Failed to load plugin states: %s', getErrorMessage(error));
       this.pluginStates = {};
     }
   };
@@ -97,7 +99,10 @@ class PluginManager {
 
       await fs.unlink(statesFile);
     } catch (error) {
-      logger.error('Failed to migrate plugin states file:', error);
+      logger.error(
+        'Failed to migrate plugin states file: %s',
+        getErrorMessage(error)
+      );
     }
   };
 
@@ -190,7 +195,8 @@ class PluginManager {
         await this.load(file);
       } catch (error) {
         logger.error(
-          `Failed to load plugin ${file}: ${(error as Error).message}`
+          `Failed to load plugin ${file}: %s`,
+          getErrorMessage(error)
         );
       }
     }
@@ -202,7 +208,9 @@ class PluginManager {
         await this.unload(pluginId);
       } catch (error) {
         logger.error(
-          `Failed to unload plugin ${pluginId}: ${(error as Error).message}`
+          `Failed to unload plugin %s: %s`,
+          pluginId,
+          getErrorMessage(error)
         );
       }
     }
@@ -384,6 +392,12 @@ class PluginManager {
     return commands.some((c) => c.name === commandName);
   };
 
+  public getPluginIdsWithComponents = (): string[] => {
+    const pluginIds = Array.from(this.loadedPlugins.keys());
+
+    return pluginIds.filter((pluginId) => this.uiState.get(pluginId));
+  };
+
   public togglePlugin = async (pluginId: string, enabled: boolean) => {
     await this.ensurePluginState(pluginId);
     const wasEnabled = this.isPluginEnabled(pluginId);
@@ -419,12 +433,17 @@ class PluginManager {
 
         await pluginModule.onUnload(unloadCtx);
       } catch (error) {
-        logger.error(`Error in plugin ${pluginId} onUnload:`, error);
+        logger.error(
+          'Error in plugin %s onUnload: %s',
+          pluginId,
+          getErrorMessage(error)
+        );
       }
     }
 
     eventBus.unload(pluginId);
     this.unregisterPluginCommands(pluginId);
+    this.uiState.delete(pluginId);
     this.settingDefinitions.delete(pluginId);
     this.settingValues.delete(pluginId);
     this.loadedPlugins.delete(pluginId);
@@ -446,10 +465,22 @@ class PluginManager {
       JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'))
     );
 
-    const entryFilePath = path.join(pluginPath, packageJson.sharkord.entry);
+    const serverEntryPath = path.join(
+      pluginPath,
+      packageJson.sharkord.entry.server
+    );
 
-    if (!(await fs.exists(entryFilePath))) {
+    const clientEntryPath = path.join(
+      pluginPath,
+      packageJson.sharkord.entry.client
+    );
+
+    if (!(await fs.exists(serverEntryPath))) {
       throw new Error('Plugin entry file not found');
+    }
+
+    if (!(await fs.exists(clientEntryPath))) {
+      throw new Error('Plugin client entry file not found');
     }
 
     const loadError = this.loadErrors.get(pluginId);
@@ -464,7 +495,10 @@ class PluginManager {
       logo: packageJson.sharkord.logo,
       author: packageJson.sharkord.author,
       homepage: packageJson.sharkord.homepage,
-      entry: entryFilePath,
+      entry: {
+        server: serverEntryPath,
+        client: clientEntryPath
+      },
       loadError
     };
   };
@@ -489,7 +523,7 @@ class PluginManager {
 
     try {
       const ctx = this.createContext(pluginId);
-      const mod = await import(info.entry);
+      const mod = await import(info.entry.server);
 
       if (typeof mod.onLoad !== 'function') {
         throw new Error(
@@ -681,6 +715,14 @@ class PluginManager {
       events: {
         on: (event, handler) => {
           eventBus.register(pluginId, event, handler);
+        }
+      },
+      ui: {
+        enable: () => {
+          this.uiState.set(pluginId, true);
+        },
+        disable: () => {
+          this.uiState.set(pluginId, false);
         }
       },
       actions: {

@@ -1,16 +1,18 @@
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { closeServerScreens } from '@/features/server-screens/actions';
+import { useAdminUpdates } from '@/features/server/admin/hooks';
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { Group } from '@/components/ui/group';
-import { LoadingCard } from '@/components/ui/loading-card';
-import { closeServerScreens } from '@/features/server-screens/actions';
-import { useAdminUpdates } from '@/features/server/admin/hooks';
+  CardTitle,
+  Group,
+  LoadingCard
+} from '@sharkord/ui';
 import { ArrowUpCircle, CheckCircle, Download, X } from 'lucide-react';
 import { memo } from 'react';
 

@@ -2,13 +2,13 @@ import {
   zParsedDomCommand,
   type RegisteredCommand,
   type TCommandElement,
-  type TParsedDomCommand,
-} from "../plugins";
+  type TParsedDomCommand
+} from '../plugins';
 
 const toDomCommand = (
   command: RegisteredCommand & {
     imageUrl?: string;
-    status: "pending" | "completed" | "failed";
+    status: 'pending' | 'completed' | 'failed';
     response?: unknown;
   },
   args: unknown[]
@@ -18,7 +18,7 @@ const toDomCommand = (
       const argValue = args[index];
 
       if (argDef.sensitive) {
-        return { name: argDef.name, value: "****", status: command.status };
+        return { name: argDef.name, value: '****', status: command.status };
       }
 
       return { name: argDef.name, value: argValue, status: command.status };
@@ -26,10 +26,10 @@ const toDomCommand = (
 
   const responseString =
     command.response !== undefined
-      ? typeof command.response === "string"
+      ? typeof command.response === 'string'
         ? command.response
         : JSON.stringify(command.response, null, 2)
-      : "";
+      : '';
 
   const logoAttr = command.imageUrl
     ? ` data-plugin-logo="${command.imageUrl}"`
@@ -41,19 +41,19 @@ const toDomCommand = (
 };
 
 const parseDomCommand = (domElement: TCommandElement): TParsedDomCommand => {
-  const pluginId = domElement.attribs["data-plugin-id"];
-  const commandName = domElement.attribs["data-command"];
-  const argsString = domElement.attribs["data-args"];
-  const status = domElement.attribs["data-status"];
-  const response = domElement.attribs["data-response"];
-  const logo = domElement.attribs["data-plugin-logo"];
+  const pluginId = domElement.attribs['data-plugin-id'];
+  const commandName = domElement.attribs['data-command'];
+  const argsString = domElement.attribs['data-args'];
+  const status = domElement.attribs['data-status'];
+  const response = domElement.attribs['data-response'];
+  const logo = domElement.attribs['data-plugin-logo'];
 
   let args: unknown;
 
   try {
-    args = JSON.parse(argsString || "[]");
+    args = JSON.parse(argsString || '[]');
   } catch {
-    throw new Error("Invalid command arguments JSON");
+    throw new Error('Invalid command arguments JSON');
   }
 
   return zParsedDomCommand.parse({
@@ -62,7 +62,7 @@ const parseDomCommand = (domElement: TCommandElement): TParsedDomCommand => {
     args,
     status,
     response,
-    logo,
+    logo
   });
 };
 

@@ -1,4 +1,8 @@
-import { useIsAppLoading } from '@/features/app/hooks';
+import {
+  useIsAppLoading,
+  useIsAutoConnecting,
+  useIsPluginsLoading
+} from '@/features/app/hooks';
 import {
   useDisconnectInfo,
   useIsConnected,
@@ -14,8 +18,10 @@ import { memo, useEffect } from 'react';
 const Routing = memo(() => {
   const isConnected = useIsConnected();
   const isAppLoading = useIsAppLoading();
+  const isPluginsLoading = useIsPluginsLoading();
   const disconnectInfo = useDisconnectInfo();
   const serverName = useServerName();
+  const isAutoConnecting = useIsAutoConnecting();
 
   useEffect(() => {
     if (isConnected && serverName) {
@@ -26,11 +32,19 @@ const Routing = memo(() => {
     document.title = 'Sharkord';
   }, [isConnected, serverName]);
 
-  if (isAppLoading) {
-    return <LoadingApp />;
+  if (isAppLoading || isPluginsLoading) {
+    return (
+      <LoadingApp
+        text={isAppLoading ? 'Loading Sharkord' : 'Loading Plugins'}
+      />
+    );
   }
 
   if (!isConnected) {
+    if (isAutoConnecting) {
+      return <LoadingApp text="Logging in automatically..." />;
+    }
+
     if (
       disconnectInfo &&
       (!disconnectInfo.wasClean ||

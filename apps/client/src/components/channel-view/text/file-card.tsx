@@ -1,6 +1,6 @@
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { FileCategory, getFileCategory } from '@sharkord/shared';
+import { Button } from '@sharkord/ui';
 import { filesize } from 'filesize';
 import {
   File,

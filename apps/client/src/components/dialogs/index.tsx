@@ -6,6 +6,7 @@ import ConfirmActionDialog from './confirm-action';
 import { CreateCategoryDialog } from './create-category';
 import { CreateChannelDialog } from './create-channel';
 import { CreateInviteDialog } from './create-invite-dialog';
+import { DeleteUserDialog } from './delete-user';
 import { Dialog } from './dialogs';
 import { PluginCommandsDialog } from './plugin-commands';
 import { PluginLogsDialog } from './plugin-logs';
@@ -24,7 +25,8 @@ const DialogsMap: any = {
   [Dialog.CREATE_CATEGORY]: CreateCategoryDialog,
   [Dialog.PLUGIN_LOGS]: PluginLogsDialog,
   [Dialog.PLUGIN_COMMANDS]: PluginCommandsDialog,
-  [Dialog.PLUGIN_SETTINGS]: PluginSettingsDialog
+  [Dialog.PLUGIN_SETTINGS]: PluginSettingsDialog,
+  [Dialog.DELETE_USER]: DeleteUserDialog
 };
 
 const DialogsProvider = memo(() => {

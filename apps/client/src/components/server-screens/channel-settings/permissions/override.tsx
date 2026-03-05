@@ -1,11 +1,9 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserAvatar } from '@/components/user-avatar';
 import { useRoleById } from '@/features/server/roles/hooks';
 import { useUserById } from '@/features/server/users/hooks';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
-import { ChannelPermission } from '@sharkord/shared';
+import { ChannelPermission, getTrpcError } from '@sharkord/shared';
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@sharkord/ui';
 import { Trash2 } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';

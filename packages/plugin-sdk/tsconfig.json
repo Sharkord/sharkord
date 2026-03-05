@@ -25,5 +25,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+  },
+  /* TODO: this doesn't look right but fuck it for now, it's working*/
+  "include": ["src", "../../apps/server/src/declarations.d.ts"]
 }

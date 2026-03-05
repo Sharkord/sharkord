@@ -1,5 +1,10 @@
+import { logDebug } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
-import { setPluginCommands } from './actions';
+import {
+  processPluginComponents,
+  setPluginCommands,
+  setPluginComponents
+} from './actions';
 
 const subscribeToPlugins = () => {
   const trpc = getTRPCClient();
@@ -7,14 +12,32 @@ const subscribeToPlugins = () => {
   const onCommandsChangeSub = trpc.plugins.onCommandsChange.subscribe(
     undefined,
     {
-      onData: (data) => setPluginCommands(data),
+      onData: (data) => {
+        logDebug('[EVENTS] plugins.onCommandsChange', { data });
+        setPluginCommands(data);
+      },
       onError: (err) =>
         console.error('onCommandsChange subscription error:', err)
     }
   );
 
+  const onComponentsChangeSub = trpc.plugins.onComponentsChange.subscribe(
+    undefined,
+    {
+      onData: async (data) => {
+        const components = await processPluginComponents(data);
+
+        logDebug('[EVENTS] plugins.onComponentsChange', { data, components });
+        setPluginComponents(components);
+      },
+      onError: (err) =>
+        console.error('onComponentsChange subscription error:', err)
+    }
+  );
+
   return () => {
     onCommandsChangeSub.unsubscribe();
+    onComponentsChangeSub.unsubscribe();
   };
 };
 

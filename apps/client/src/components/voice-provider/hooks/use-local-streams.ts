@@ -17,8 +17,12 @@ const useLocalStreams = () => {
 
   const localVideoProducer = useRef<Producer<AppData> | undefined>(undefined);
   const localAudioProducer = useRef<Producer<AppData> | undefined>(undefined);
-  const localScreenShareProducer = useRef<Producer<AppData> | undefined>(undefined);
-  const localScreenShareAudioProducer = useRef<Producer<AppData> | undefined>(undefined);
+  const localScreenShareProducer = useRef<Producer<AppData> | undefined>(
+    undefined
+  );
+  const localScreenShareAudioProducer = useRef<Producer<AppData> | undefined>(
+    undefined
+  );
 
   const clearLocalStreams = useCallback(() => {
     localVideoStream?.getTracks().forEach((track) => track.stop());
@@ -40,7 +44,12 @@ const useLocalStreams = () => {
     localAudioProducer.current = undefined;
     localScreenShareProducer.current = undefined;
     localScreenShareAudioProducer.current = undefined;
-  }, [localAudioStream, localScreenShareStream, localVideoStream, localScreenShareAudioStream]);
+  }, [
+    localAudioStream,
+    localScreenShareStream,
+    localVideoStream,
+    localScreenShareAudioStream
+  ]);
 
   return {
     localVideoStream,

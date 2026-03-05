@@ -1,4 +1,8 @@
-import type { TGenericObject, TMessageMetadata } from '@sharkord/shared';
+import {
+  extractUrls,
+  type TGenericObject,
+  type TMessageMetadata
+} from '@sharkord/shared';
 import dns from 'dns';
 import { eq } from 'drizzle-orm';
 import ipaddr from 'ipaddr.js';
@@ -6,7 +10,6 @@ import { getLinkPreview } from 'link-preview-js';
 import { isIP } from 'net';
 import { db } from '../../db';
 import { messages } from '../../db/schema';
-import { extractUrls } from '../../helpers/urls-extractor';
 
 const metadataCache = new Map<string, TGenericObject>();
 

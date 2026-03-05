@@ -39,7 +39,7 @@ const md5File = async (path: string): Promise<string> => {
 const moveFile = async (src: string, dest: string) => {
   try {
     await fs.rename(src, dest);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     if (err.code === 'EXDEV') {
       await fs.copyFile(src, dest);
@@ -48,6 +48,10 @@ const moveFile = async (src: string, dest: string) => {
       throw err;
     }
   }
+};
+
+const getNormalizedExtension = (name: string): string => {
+  return path.extname(name).toLowerCase();
 };
 
 class TemporaryFileManager {
@@ -77,7 +81,7 @@ class TemporaryFileManager {
   }): Promise<TTempFile> => {
     const md5 = await md5File(filePath);
     const fileId = randomUUIDv7();
-    const ext = path.extname(originalName);
+    const ext = getNormalizedExtension(originalName);
 
     const tempFilePath = path.join(TMP_PATH, `${fileId}${ext}`);
 
@@ -126,7 +130,7 @@ class TemporaryFileManager {
   };
 
   public getSafeUploadPath = async (name: string): Promise<string> => {
-    const ext = path.extname(name);
+    const ext = getNormalizedExtension(name);
     const safePath = path.join(UPLOADS_PATH, `${randomUUIDv7()}${ext}`);
 
     return safePath;
@@ -187,9 +191,9 @@ class FileManager {
 
   private getUniqueName = async (originalName: string): Promise<string> => {
     const baseName = path.basename(originalName, path.extname(originalName));
-    const extension = path.extname(originalName);
+    const extension = getNormalizedExtension(originalName);
 
-    let fileName = originalName;
+    let fileName = `${baseName}${extension}`;
     let counter = 2;
 
     // eslint-disable-next-line no-constant-condition

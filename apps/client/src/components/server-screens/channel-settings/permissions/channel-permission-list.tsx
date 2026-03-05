@@ -1,10 +1,9 @@
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import {
   ChannelPermission,
   channelPermissionDescriptions,
   channelPermissionLabels
 } from '@sharkord/shared';
+import { Label, Switch } from '@sharkord/ui';
 import { memo, useCallback, useMemo } from 'react';
 
 const availableChannelPermissions = Object.values(ChannelPermission);

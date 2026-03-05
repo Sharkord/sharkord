@@ -1,5 +1,5 @@
 import { PaginatedList } from '@/components/paginated-list';
-import { Button } from '@/components/ui/button';
+import { Button } from '@sharkord/ui';
 import { ExternalLink, Link as LinkIcon } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { useModViewContext } from '../context';

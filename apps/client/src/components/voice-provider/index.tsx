@@ -1,12 +1,31 @@
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
+import {
+  MICROPHONE_GATE_CLOSE_HOLD_MS,
+  MICROPHONE_GATE_DEFAULT_THRESHOLD_DB,
+  clampMicrophoneDecibels
+} from '@/helpers/audio-gate';
+import {
+  createNoiseGateWorkletNode,
+  getNoiseGateWorkletAvailabilitySnapshot,
+  markNoiseGateWorkletUnavailable,
+  postNoiseGateWorkletConfig
+} from '@/helpers/audio-worklet/noise-gate-worklet';
 import { logVoice } from '@/helpers/browser-logger';
 import { getResWidthHeight } from '@/helpers/get-res-with-height';
 import { getTRPCClient } from '@/lib/trpc';
-import { StreamKind, type TVoiceUserState } from '@sharkord/shared';
+import { VideoCodec } from '@/types';
+import {
+  DEFAULT_BITRATE,
+  StreamKind,
+  type TVoiceUserState
+} from '@sharkord/shared';
 import { Device } from 'mediasoup-client';
-import type { RtpCapabilities } from 'mediasoup-client/types';
+import type {
+  RtpCapabilities,
+  RtpCodecCapability
+} from 'mediasoup-client/types';
 import {
   createContext,
   memo,
@@ -17,6 +36,10 @@ import {
   useState
 } from 'react';
 import { useDevices } from '../devices-provider/hooks/use-devices';
+import {
+  clearVoiceControlsBridge,
+  setVoiceControlsBridge
+} from './controls-bridge';
 import { FloatingPinnedCard } from './floating-pinned-card';
 import { useLocalStreams } from './hooks/use-local-streams';
 import { useRemoteStreams } from './hooks/use-remote-streams';
@@ -54,6 +77,7 @@ export type TVoiceProvider = {
   audioVideoRefsMap: Map<number, AudioVideoRefs>;
   ownVoiceState: TVoiceUserState;
   getOrCreateRefs: (remoteId: number) => AudioVideoRefs;
+  getConsumerCodec: (remoteId: number, kind: StreamKind) => string | undefined;
   init: (
     routerRtpCapabilities: RtpCapabilities,
     channelId: number
@@ -77,6 +101,7 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
   transportStats: {
     producer: null,
     consumer: null,
+    screenShare: null,
     totalBytesReceived: 0,
     totalBytesSent: 0,
     isMonitoring: false,
@@ -94,6 +119,7 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
     externalAudioRef: { current: null },
     externalVideoRef: { current: null }
   }),
+  getConsumerCodec: () => undefined,
   init: () => Promise.resolve(),
   toggleMic: () => Promise.resolve(),
   toggleSound: () => Promise.resolve(),
@@ -178,7 +204,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     createConsumerTransport,
     consume,
     consumeExistingProducers,
-    cleanupTransports
+    cleanupTransports,
+    getConsumerCodec
   } = useTransports({
     addExternalStreamTrack,
     removeExternalStreamTrack,
@@ -190,14 +217,79 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     stats: transportStats,
     startMonitoring,
     stopMonitoring,
-    resetStats
+    resetStats,
+    setScreenShareProducer
   } = useTransportStats();
+  const rawMicrophoneStreamRef = useRef<MediaStream | null>(null);
+  const transmitMicrophoneTrackRef = useRef<MediaStreamTrack | null>(null);
+  const microphoneNoiseGateAudioContextRef = useRef<AudioContext | null>(null);
+  const microphoneNoiseGateWorkletNodeRef = useRef<AudioWorkletNode | null>(
+    null
+  );
+  const micMutedRef = useRef(ownVoiceState.micMuted);
+
+  const syncTransmitMicrophoneTrackState = useCallback(() => {
+    const track = transmitMicrophoneTrackRef.current;
+
+    if (!track) return;
+
+    const shouldEnable = !micMutedRef.current;
+
+    if (track.enabled !== shouldEnable) {
+      track.enabled = shouldEnable;
+    }
+  }, []);
+
+  const cleanupMicProcessingResources = useCallback(() => {
+    if (microphoneNoiseGateWorkletNodeRef.current) {
+      microphoneNoiseGateWorkletNodeRef.current.disconnect();
+      microphoneNoiseGateWorkletNodeRef.current = null;
+    }
+
+    if (microphoneNoiseGateAudioContextRef.current) {
+      microphoneNoiseGateAudioContextRef.current.close();
+      microphoneNoiseGateAudioContextRef.current = null;
+    }
+
+    rawMicrophoneStreamRef.current
+      ?.getTracks()
+      .forEach((track) => track.stop());
+    rawMicrophoneStreamRef.current = null;
+
+    transmitMicrophoneTrackRef.current?.stop();
+    transmitMicrophoneTrackRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    micMutedRef.current = ownVoiceState.micMuted;
+    syncTransmitMicrophoneTrackState();
+  }, [ownVoiceState.micMuted, syncTransmitMicrophoneTrackState]);
+
+  useEffect(() => {
+    if (!microphoneNoiseGateWorkletNodeRef.current) return;
+
+    postNoiseGateWorkletConfig(microphoneNoiseGateWorkletNodeRef.current, {
+      enabled: devices.noiseGateEnabled ?? true,
+      holdMs: MICROPHONE_GATE_CLOSE_HOLD_MS
+    });
+  }, [devices.noiseGateEnabled]);
+
+  useEffect(() => {
+    if (!microphoneNoiseGateWorkletNodeRef.current) return;
+
+    postNoiseGateWorkletConfig(microphoneNoiseGateWorkletNodeRef.current, {
+      thresholdDb: clampMicrophoneDecibels(
+        devices.noiseGateThresholdDb ?? MICROPHONE_GATE_DEFAULT_THRESHOLD_DB
+      )
+    });
+  }, [devices.noiseGateThresholdDb]);
 
   const startMicStream = useCallback(async () => {
     try {
       logVoice('Starting microphone stream');
+      cleanupMicProcessingResources();
 
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const rawStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           deviceId: {
             exact: devices.microphoneId
@@ -206,24 +298,95 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           echoCancellation: devices.echoCancellation,
           noiseSuppression: devices.noiseSuppression,
           sampleRate: 48000,
-          channelCount: 2
+          channelCount: 1
         },
         video: false
       });
 
-      logVoice('Microphone stream obtained', { stream });
+      logVoice('Microphone stream obtained', { stream: rawStream });
 
-      setLocalAudioStream(stream);
+      const rawAudioTrack = rawStream.getAudioTracks()[0];
 
-      const audioTrack = stream.getAudioTracks()[0];
+      if (rawAudioTrack) {
+        const shouldUseNoiseGate = !!devices.noiseGateEnabled;
+        const noiseGateAvailability = getNoiseGateWorkletAvailabilitySnapshot();
+        let transmitTrack: MediaStreamTrack = rawAudioTrack;
+        let transmitStream: MediaStream = rawStream;
 
-      if (audioTrack) {
-        audioTrack.enabled = !ownVoiceState.micMuted;
+        if (shouldUseNoiseGate && noiseGateAvailability.available) {
+          let audioContext: AudioContext | null = null;
 
-        logVoice('Obtained audio track', { audioTrack });
+          try {
+            audioContext = new window.AudioContext();
+            const source = audioContext.createMediaStreamSource(rawStream);
+            const noiseGateNode = await createNoiseGateWorkletNode(
+              audioContext,
+              {
+                enabled: true,
+                thresholdDb: clampMicrophoneDecibels(
+                  devices.noiseGateThresholdDb ??
+                    MICROPHONE_GATE_DEFAULT_THRESHOLD_DB
+                ),
+                holdMs: MICROPHONE_GATE_CLOSE_HOLD_MS
+              }
+            );
+            const destination = audioContext.createMediaStreamDestination();
+
+            source.connect(noiseGateNode);
+            noiseGateNode.connect(destination);
+
+            const processedTrack = destination.stream.getAudioTracks()[0];
+
+            if (processedTrack) {
+              rawMicrophoneStreamRef.current = rawStream;
+              microphoneNoiseGateAudioContextRef.current = audioContext;
+              microphoneNoiseGateWorkletNodeRef.current = noiseGateNode;
+              transmitTrack = processedTrack;
+              transmitStream = destination.stream;
+            } else {
+              noiseGateNode.disconnect();
+              audioContext.close();
+              audioContext = null;
+              logVoice(
+                'Noise gate worklet produced no audio track, using ungated mic stream'
+              );
+            }
+          } catch (error) {
+            if (audioContext) {
+              audioContext.close();
+            }
+
+            logVoice(
+              'Failed to initialize live noise gate worklet, using ungated mic stream',
+              {
+                error
+              }
+            );
+            markNoiseGateWorkletUnavailable(
+              'Failed to initialize the noise gate audio processor.'
+            );
+          }
+        } else if (shouldUseNoiseGate && !noiseGateAvailability.available) {
+          logVoice('Noise gate unavailable, using ungated microphone stream', {
+            reason: noiseGateAvailability.reason
+          });
+        }
+
+        transmitMicrophoneTrackRef.current = transmitTrack;
+        setLocalAudioStream(transmitStream);
+        syncTransmitMicrophoneTrackState();
+
+        logVoice('Obtained audio track', { audioTrack: rawAudioTrack });
 
         localAudioProducer.current = await producerTransport.current?.produce({
-          track: audioTrack,
+          track: transmitTrack,
+          codecOptions: {
+            opusStereo: false,
+            opusFec: true,
+            opusDtx: true,
+            opusMaxPlaybackRate: 48000,
+            opusMaxAverageBitrate: 128000
+          },
           appData: { kind: StreamKind.AUDIO }
         });
 
@@ -245,32 +408,38 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           }
         });
 
-        audioTrack.onended = () => {
+        rawAudioTrack.onended = () => {
           logVoice('Audio track ended, cleaning up microphone');
 
-          localAudioStream?.getAudioTracks().forEach((track) => {
+          transmitStream.getAudioTracks().forEach((track) => {
             track.stop();
           });
+          cleanupMicProcessingResources();
           localAudioProducer.current?.close();
 
           setLocalAudioStream(undefined);
         };
       } else {
+        rawStream.getTracks().forEach((track) => track.stop());
         throw new Error('Failed to obtain audio track from microphone');
       }
     } catch (error) {
+      cleanupMicProcessingResources();
+      setLocalAudioStream(undefined);
       logVoice('Error starting microphone stream', { error });
     }
   }, [
+    cleanupMicProcessingResources,
     producerTransport,
     setLocalAudioStream,
     localAudioProducer,
-    localAudioStream,
+    syncTransmitMicrophoneTrackState,
     devices.microphoneId,
     devices.autoGainControl,
     devices.echoCancellation,
     devices.noiseSuppression,
-    ownVoiceState.micMuted
+    devices.noiseGateEnabled,
+    devices.noiseGateThresholdDb
   ]);
 
   const startWebcamStream = useCallback(async () => {
@@ -374,8 +543,14 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     localScreenShareProducer.current?.close();
     localScreenShareProducer.current = undefined;
 
+    setScreenShareProducer(null);
     setLocalScreenShare(undefined);
-  }, [localScreenShareStream, setLocalScreenShare, localScreenShareProducer]);
+  }, [
+    localScreenShareStream,
+    setLocalScreenShare,
+    localScreenShareProducer,
+    setScreenShareProducer
+  ]);
 
   const startScreenShareStream = useCallback(async () => {
     try {
@@ -389,7 +564,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         audio: {
           echoCancellation: false,
           noiseSuppression: false,
-          autoGainControl: false
+          autoGainControl: false,
+          channelCount: 2,
+          sampleRate: 48000
         }
       });
 
@@ -402,11 +579,40 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       if (videoTrack) {
         logVoice('Obtained video track', { videoTrack });
 
+        let preferredCodec: RtpCodecCapability | undefined;
+
+        if (
+          devices.screenCodec &&
+          devices.screenCodec !== VideoCodec.AUTO &&
+          routerRtpCapabilities.current?.codecs
+        ) {
+          preferredCodec = routerRtpCapabilities.current.codecs.find(
+            (c) =>
+              c.mimeType.toLowerCase() === devices.screenCodec.toLowerCase()
+          );
+
+          if (preferredCodec) {
+            logVoice('Using preferred screen share codec', {
+              codec: preferredCodec.mimeType
+            });
+          }
+        }
+
+        const maxBitrateKbps = devices.screenBitrate ?? DEFAULT_BITRATE;
+
         localScreenShareProducer.current =
           await producerTransport.current?.produce({
             track: videoTrack,
+            codec: preferredCodec,
+            codecOptions: {
+              videoGoogleStartBitrate: Math.min(2000, maxBitrateKbps),
+              videoGoogleMaxBitrate: maxBitrateKbps,
+              videoGoogleMinBitrate: Math.min(200, maxBitrateKbps)
+            },
             appData: { kind: StreamKind.SCREEN }
           });
+
+        setScreenShareProducer(localScreenShareProducer.current);
 
         localScreenShareProducer.current?.on('@close', async () => {
           logVoice('Screen share producer closed');
@@ -430,6 +636,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           });
           localScreenShareProducer.current?.close();
 
+          setScreenShareProducer(null);
           setLocalScreenShare(undefined);
         };
 
@@ -439,6 +646,13 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           localScreenShareAudioProducer.current =
             await producerTransport.current?.produce({
               track: audioTrack,
+              codecOptions: {
+                opusStereo: true,
+                opusFec: true,
+                opusDtx: false,
+                opusMaxPlaybackRate: 48000,
+                opusMaxAverageBitrate: 128000
+              },
               appData: { kind: StreamKind.SCREEN_AUDIO }
             });
 
@@ -462,8 +676,11 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     localScreenShareAudioProducer,
     producerTransport,
     localScreenShareStream,
+    setScreenShareProducer,
     devices.screenResolution,
-    devices.screenFramerate
+    devices.screenFramerate,
+    devices.screenCodec,
+    devices.screenBitrate
   ]);
 
   const cleanup = useCallback(() => {
@@ -471,6 +688,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
     stopMonitoring();
     resetStats();
+    cleanupMicProcessingResources();
     clearLocalStreams();
     clearRemoteUserStreams();
     clearExternalStreams();
@@ -480,6 +698,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   }, [
     stopMonitoring,
     resetStats,
+    cleanupMicProcessingResources,
     clearLocalStreams,
     clearRemoteUserStreams,
     clearExternalStreams,
@@ -550,6 +769,33 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       stopScreenShareStream
     });
 
+  const setMicMutedForBridge = useCallback(
+    async (muted: boolean) => {
+      if (ownVoiceState.micMuted === muted) return;
+      await toggleMic();
+    },
+    [ownVoiceState.micMuted, toggleMic]
+  );
+
+  const setSoundMutedForBridge = useCallback(
+    async (muted: boolean) => {
+      if (ownVoiceState.soundMuted === muted) return;
+      await toggleSound();
+    },
+    [ownVoiceState.soundMuted, toggleSound]
+  );
+
+  useEffect(() => {
+    setVoiceControlsBridge({
+      setMicMuted: setMicMutedForBridge,
+      setSoundMuted: setSoundMutedForBridge
+    });
+
+    return () => {
+      clearVoiceControlsBridge();
+    };
+  }, [setMicMutedForBridge, setSoundMutedForBridge]);
+
   useVoiceEvents({
     consume,
     removeRemoteUserStream,
@@ -574,6 +820,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       transportStats,
       audioVideoRefsMap: audioVideoRefsMap.current,
       getOrCreateRefs,
+      getConsumerCodec,
       init,
 
       toggleMic,
@@ -595,6 +842,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       connectionStatus,
       transportStats,
       getOrCreateRefs,
+      getConsumerCodec,
       init,
 
       toggleMic,

@@ -1,15 +1,15 @@
-import { Button } from '@/components/ui/button';
+import { closeServerScreens } from '@/features/server-screens/actions';
+import { useAdminCategoryGeneral } from '@/features/server/admin/hooks';
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { Group } from '@/components/ui/group';
-import { Input } from '@/components/ui/input';
-import { closeServerScreens } from '@/features/server-screens/actions';
-import { useAdminCategoryGeneral } from '@/features/server/admin/hooks';
+  CardTitle,
+  Group,
+  Input
+} from '@sharkord/ui';
 import { memo } from 'react';
 
 type TGeneralProps = {

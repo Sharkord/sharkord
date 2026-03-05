@@ -1,26 +1,27 @@
-import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 import {
-  settings,
-  roles,
-  categories,
-  channels,
-  files,
-  users,
-  logins,
-  messages,
-  messageFiles,
-  rolePermissions,
-  emojis,
-  messageReactions,
-  invites,
   activityLog,
-  userRoles,
-  channelRolePermissions,
-  channelUserPermissions,
+  categories,
   channelReadStates,
-} from "../../../apps/server/src/db/schema";
-import type { UserStatus } from "./types";
-import type { Permission } from "./statics";
+  channelRolePermissions,
+  channels,
+  channelUserPermissions,
+  directMessages,
+  emojis,
+  files,
+  invites,
+  logins,
+  messageFiles,
+  messageReactions,
+  messages,
+  rolePermissions,
+  roles,
+  settings,
+  userRoles,
+  users
+} from '../../../apps/server/src/db/schema';
+import type { Permission } from './statics';
+import type { UserStatus } from './types';
 
 export type TSettings = InferSelectModel<typeof settings>;
 export type TRole = InferSelectModel<typeof roles>;
@@ -46,6 +47,7 @@ export type TChannelUserPermission = InferSelectModel<
   typeof channelUserPermissions
 >;
 export type TChannelReadState = InferSelectModel<typeof channelReadStates>;
+export type TDirectMessage = InferSelectModel<typeof directMessages>;
 
 export type TISettings = InferInsertModel<typeof settings>;
 export type TIRole = InferInsertModel<typeof roles>;
@@ -69,30 +71,35 @@ export type TIChannelUserPermission = InferInsertModel<
   typeof channelUserPermissions
 >;
 export type TIChannelReadState = InferInsertModel<typeof channelReadStates>;
+export type TIDirectMessage = InferInsertModel<typeof directMessages>;
 
 export type TStorageSettings = Pick<
   TSettings,
-  | "storageUploadEnabled"
-  | "storageQuota"
-  | "storageUploadMaxFileSize"
-  | "storageSpaceQuotaByUser"
-  | "storageOverflowAction"
+  | 'storageUploadEnabled'
+  | 'storageFileSharingInDirectMessages'
+  | 'storageQuota'
+  | 'storageUploadMaxFileSize'
+  | 'storageMaxAvatarSize'
+  | 'storageMaxBannerSize'
+  | 'storageMaxFilesPerMessage'
+  | 'storageSpaceQuotaByUser'
+  | 'storageOverflowAction'
 >;
 
 // joined types
 
 type TPublicUser = Pick<
   TJoinedUser,
-  | "id"
-  | "name"
-  | "bannerColor"
-  | "bio"
-  | "avatar"
-  | "avatarId"
-  | "banner"
-  | "bannerId"
-  | "banned"
-  | "createdAt"
+  | 'id'
+  | 'name'
+  | 'bannerColor'
+  | 'bio'
+  | 'avatar'
+  | 'avatarId'
+  | 'banner'
+  | 'bannerId'
+  | 'banned'
+  | 'createdAt'
 > & {
   status?: UserStatus;
   _identity?: string;
@@ -109,6 +116,7 @@ export type TJoinedMessageReaction = TMessageReaction & {
 export type TJoinedMessage = TMessage & {
   files: TFile[];
   reactions: TJoinedMessageReaction[];
+  replyCount?: number;
 };
 
 export type TJoinedEmoji = TEmoji & {
@@ -134,4 +142,5 @@ export type TJoinedSettings = TSettings & {
 
 export type TJoinedInvite = TInvite & {
   creator: TJoinedPublicUser;
+  role: { id: number; name: string; color: string } | null;
 };

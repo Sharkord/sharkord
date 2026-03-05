@@ -1,6 +1,7 @@
 import fs from 'fs';
 import http from 'http';
 import path from 'path';
+import { getErrorMessage } from '../helpers/get-error-message';
 import { INTERFACE_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 import { IS_DEVELOPMENT, IS_TEST } from '../utils/env';
@@ -12,6 +13,7 @@ const interfaceRouteHandler = (
   if (IS_DEVELOPMENT && !IS_TEST) {
     res.writeHead(302, { Location: 'http://localhost:5173' });
     res.end();
+
     return res;
   }
 
@@ -30,12 +32,14 @@ const interfaceRouteHandler = (
   if (!requestedPath.startsWith(basePath)) {
     res.writeHead(403, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Forbidden' }));
+
     return res;
   }
 
   if (!fs.existsSync(requestedPath)) {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Not found' }));
+
     return res;
   }
 
@@ -44,6 +48,7 @@ const interfaceRouteHandler = (
   if (stats.isDirectory()) {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Not found' }));
+
     return res;
   }
 
@@ -59,7 +64,8 @@ const interfaceRouteHandler = (
   });
 
   fileStream.on('error', (err) => {
-    logger.error('Error serving file:', err);
+    logger.error('Error serving file: %s', getErrorMessage(err));
+
     if (!res.headersSent) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Internal server error' }));

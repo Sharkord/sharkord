@@ -1,4 +1,5 @@
 import type { EventPayloads, ServerEvent } from '@sharkord/plugin-sdk';
+import { getErrorMessage } from '../helpers/get-error-message';
 import { logger } from '../logger';
 
 type Handler<E extends ServerEvent> = (
@@ -95,7 +96,10 @@ class EventBus {
       try {
         await handler(payload);
       } catch (err) {
-        logger.error(`[eventBus] ${event} handler failed`, err);
+        logger.error(
+          `[eventBus] ${event} handler failed: %s`,
+          getErrorMessage(err)
+        );
       }
     }
   };

@@ -1,15 +1,31 @@
-import { setModViewOpen } from '@/features/app/actions';
-import { useUserRoles } from '@/features/server/hooks';
-import { useUserById } from '@/features/server/users/hooks';
+import {
+  setDmsOpen,
+  setModViewOpen,
+  setSelectedDmChannelId
+} from '@/features/app/actions';
+import { usePublicServerSettings, useUserRoles } from '@/features/server/hooks';
+import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
-import { Permission, UserStatus } from '@sharkord/shared';
+import { getRenderedUsername } from '@/helpers/get-rendered-username';
+import { getTRPCClient } from '@/lib/trpc';
+import {
+  DELETED_USER_IDENTITY_AND_NAME,
+  Permission,
+  UserStatus,
+  getTrpcError
+} from '@sharkord/shared';
+import {
+  IconButton,
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@sharkord/ui';
 import { format } from 'date-fns';
-import { ShieldCheck, UserCog } from 'lucide-react';
-import { memo } from 'react';
+import { MessageSquare, ShieldCheck, Trash, UserCog } from 'lucide-react';
+import { memo, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Protect } from '../protect';
 import { RoleBadge } from '../role-badge';
-import { IconButton } from '../ui/icon-button';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { UserAvatar } from '../user-avatar';
 import { UserStatusBadge } from '../user-status';
 
@@ -21,8 +37,27 @@ type TUserPopoverProps = {
 const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
   const user = useUserById(userId);
   const roles = useUserRoles(userId);
+  const settings = usePublicServerSettings();
+  const isOwnUser = useIsOwnUser(userId);
+
+  const onDirectMessageClick = useCallback(async () => {
+    const trpc = getTRPCClient();
+
+    try {
+      const result = await trpc.dms.open.mutate({ userId });
+
+      setDmsOpen(true);
+      setSelectedDmChannelId(result.channelId);
+    } catch (error) {
+      toast.error(getTrpcError(error, 'Could not open direct message'));
+    }
+  }, [userId]);
 
   if (!user) return <>{children}</>;
+
+  const isDeleted = user.name === DELETED_USER_IDENTITY_AND_NAME;
+  const showDmButton =
+    settings?.directMessagesEnabled && !isDeleted && !isOwnUser;
 
   return (
     <Popover>
@@ -35,11 +70,17 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
               Banned
             </div>
           )}
+          {isDeleted && (
+            <div className="absolute right-2 top-2 bg-gray-600 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+              <Trash className="h-3 w-3" />
+              Deleted
+            </div>
+          )}
           {user.banner ? (
             <div
               className="h-24 w-full rounded-t-md bg-cover bg-center bg-no-repeat"
               style={{
-                backgroundImage: `url(${getFileUrl(user.banner)})`
+                backgroundImage: `url("${getFileUrl(user.banner)}")`
               }}
             />
           ) : (
@@ -62,7 +103,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
         <div className="px-4 pt-12 pb-4">
           <div className="mb-3">
             <span className="text-lg font-semibold text-foreground truncate mb-1">
-              {user.name}
+              {getRenderedUsername(user)}
             </span>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">
@@ -97,15 +138,29 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
               Member since {format(new Date(user.createdAt), 'PP')}
             </p>
 
-            <Protect permission={Permission.MANAGE_USERS}>
-              <IconButton
-                icon={UserCog}
-                variant="ghost"
-                size="sm"
-                title="Moderation View"
-                onClick={() => setModViewOpen(true, user.id)}
-              />
-            </Protect>
+            <div className="flex gap-2 items-center">
+              {showDmButton && (
+                <IconButton
+                  icon={MessageSquare}
+                  variant="ghost"
+                  size="sm"
+                  title="Direct Message"
+                  onClick={onDirectMessageClick}
+                />
+              )}
+
+              {
+                <Protect permission={Permission.MANAGE_USERS}>
+                  <IconButton
+                    icon={UserCog}
+                    variant="ghost"
+                    size="sm"
+                    title="Moderation View"
+                    onClick={() => setModViewOpen(true, user.id)}
+                  />
+                </Protect>
+              }
+            </div>
           </div>
         </div>
       </PopoverContent>

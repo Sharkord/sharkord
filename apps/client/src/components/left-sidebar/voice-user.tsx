@@ -1,5 +1,4 @@
 import { UserAvatar } from '@/components/user-avatar';
-import { UserPopover } from '../user-popover';
 import type { TVoiceUser } from '@/features/server/types';
 import {
   HeadphoneOff,
@@ -10,6 +9,7 @@ import {
   Video
 } from 'lucide-react';
 import { memo } from 'react';
+import { UserPopover } from '../user-popover';
 
 type TVoiceUserProps = {
   userId: number;

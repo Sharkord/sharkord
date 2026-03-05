@@ -28,13 +28,23 @@ type Events = {
   [ServerEvents.MESSAGE_TYPING]: {
     channelId: number;
     userId: number;
+    parentMessageId?: number;
+  };
+  [ServerEvents.THREAD_REPLY_COUNT_UPDATE]: {
+    messageId: number;
+    channelId: number;
+    replyCount: number;
   };
 
   [ServerEvents.USER_JOIN]: TJoinedPublicUser;
   [ServerEvents.USER_LEAVE]: number;
   [ServerEvents.USER_CREATE]: TJoinedPublicUser;
   [ServerEvents.USER_UPDATE]: TJoinedPublicUser;
-  [ServerEvents.USER_DELETE]: number;
+  [ServerEvents.USER_DELETE]: {
+    isWipe: boolean;
+    userId: number;
+    deletedUserId: number; // the special Deleted User placeholder
+  };
 
   [ServerEvents.CHANNEL_CREATE]: TChannel;
   [ServerEvents.CHANNEL_UPDATE]: TChannel;
@@ -91,6 +101,7 @@ type Events = {
 
   [ServerEvents.PLUGIN_LOG]: TLogEntry;
   [ServerEvents.PLUGIN_COMMANDS_CHANGE]: TCommandsMapByPlugin;
+  [ServerEvents.PLUGIN_COMPONENTS_CHANGE]: string[]; // list of plugin ids that have components enabled
 
   [ServerEvents.EMOJI_CREATE]: TJoinedEmoji;
   [ServerEvents.EMOJI_UPDATE]: TJoinedEmoji;
@@ -105,6 +116,8 @@ type Events = {
   [ServerEvents.CATEGORY_CREATE]: TCategory;
   [ServerEvents.CATEGORY_UPDATE]: TCategory;
   [ServerEvents.CATEGORY_DELETE]: number;
+
+  [ServerEvents.DM_CONVERSATION_OPEN]: { channelId: number };
 };
 
 class PubSub {

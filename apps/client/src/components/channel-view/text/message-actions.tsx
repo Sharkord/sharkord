@@ -1,12 +1,23 @@
 import { EmojiPicker } from '@/components/emoji-picker';
 import { useRecentEmojis } from '@/components/emoji-picker/use-recent-emojis';
 import { Protect } from '@/components/protect';
-import type { TEmojiItem } from '@/components/tiptap-input/types';
-import { IconButton } from '@/components/ui/icon-button';
+import {
+  shouldUseFallbackImage,
+  type TEmojiItem
+} from '@/components/tiptap-input/helpers';
+import { openThreadSidebar } from '@/features/app/actions';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
-import { Pencil, Smile, Trash } from 'lucide-react';
+import { IconButton } from '@sharkord/ui';
+import {
+  MessageSquareText,
+  Pencil,
+  Pin,
+  PinOff,
+  Smile,
+  Trash
+} from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
@@ -14,13 +25,26 @@ const MAX_QUICK_EMOJIS = 4;
 
 type TMessageActionsProps = {
   messageId: number;
+  channelId: number;
   onEdit: () => void;
   canManage: boolean;
   editable: boolean;
+  isThreadReply?: boolean;
+  isPinned?: boolean;
+  disablePin?: boolean;
 };
 
 const MessageActions = memo(
-  ({ onEdit, messageId, canManage, editable }: TMessageActionsProps) => {
+  ({
+    onEdit,
+    messageId,
+    channelId,
+    canManage,
+    editable,
+    isThreadReply,
+    isPinned,
+    disablePin
+  }: TMessageActionsProps) => {
     const { recentEmojis } = useRecentEmojis();
     const recentEmojisToShow = useMemo(
       () => recentEmojis.slice(0, MAX_QUICK_EMOJIS),
@@ -66,8 +90,35 @@ const MessageActions = memo(
       [messageId]
     );
 
+    const onReplyClick = useCallback(() => {
+      openThreadSidebar(messageId, channelId);
+    }, [messageId, channelId]);
+
+    const onPinClick = useCallback(async () => {
+      const trpc = getTRPCClient();
+
+      try {
+        await trpc.messages.togglePin.mutate({ messageId });
+
+        toast.success('Message pinned status toggled');
+      } catch (error) {
+        toast.error('Failed to toggle pin status');
+
+        console.error('Error toggling pin status:', error);
+      }
+    }, [messageId]);
+
     return (
-      <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-1 transition-all h-8 ">
+      <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-2 transition-all bg-background">
+        {!isThreadReply && (
+          <IconButton
+            size="sm"
+            variant="ghost"
+            icon={MessageSquareText}
+            onClick={onReplyClick}
+            title="Reply in Thread"
+          />
+        )}
         {canManage && (
           <>
             <IconButton
@@ -88,6 +139,18 @@ const MessageActions = memo(
             />
           </>
         )}
+        {!disablePin && (
+          <Protect permission={Permission.PIN_MESSAGES}>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              icon={isPinned ? PinOff : Pin}
+              onClick={onPinClick}
+              title={isPinned ? 'Unpin Message' : 'Pin Message'}
+            />
+          </Protect>
+        )}
+
         <Protect permission={Permission.REACT_TO_MESSAGES}>
           <div className="flex items-center space-x-0.5 border-l pl-1 gap-1">
             {recentEmojisToShow.map((emoji) => (
@@ -98,24 +161,20 @@ const MessageActions = memo(
                 className="w-6 h-6 flex items-center justify-center hover:bg-accent rounded-md transition-colors text-md"
                 title={`:${emoji.shortcodes[0]}:`}
               >
-                {emoji.emoji ? (
+                {emoji.emoji && !shouldUseFallbackImage(emoji) ? (
                   <span>{emoji.emoji}</span>
-                ) : (
+                ) : emoji.fallbackImage ? (
                   <img
                     src={emoji.fallbackImage}
                     alt={emoji.name}
                     className="w-5 h-5 object-contain"
                   />
-                )}
+                ) : null}
               </button>
             ))}
 
             <EmojiPicker onEmojiSelect={onEmojiSelect}>
-              <IconButton
-                variant="ghost"
-                icon={Smile}
-                title="Add Reaction"
-              />
+              <IconButton variant="ghost" icon={Smile} title="Add Reaction" />
             </EmojiPicker>
           </div>
         </Protect>

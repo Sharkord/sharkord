@@ -1,0 +1,29 @@
+name: Feature Request
+description: Suggest an idea for Sharkord. Please provide as much detail as possible to help us understand and evaluate your request.
+title: "[Feature]: "
+labels: ["feature"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the roadmap before requesting new features.
+        Large features should be discussed before implementation.
+        If your feature does not align with the project's goals, it may be closed.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem does this solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe your proposed solution
+    validations:
+      required: true

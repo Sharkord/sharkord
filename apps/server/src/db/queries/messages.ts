@@ -5,11 +5,12 @@ import type {
   TMessage,
   TMessageReaction
 } from '@sharkord/shared';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, notExists } from 'drizzle-orm';
 import { db } from '..';
 import { generateFileToken } from '../../helpers/files-crypto';
 import {
   channels,
+  directMessages,
   files,
   messageFiles,
   messageReactions,
@@ -94,18 +95,43 @@ const getMessage = async (
     file: r.file
   }));
 
+  let replyCount = 0;
+
+  if (!message.parentMessageId) {
+    const replyCountRow = await db
+      .select({ count: count() })
+      .from(messages)
+      .where(eq(messages.parentMessageId, messageId))
+      .get();
+
+    replyCount = replyCountRow?.count ?? 0;
+  }
+
   return {
     ...message,
     files: filesForMessage ?? [],
-    reactions: reactions ?? []
+    reactions: reactions ?? [],
+    replyCount
   };
 };
 
-const getMessagesByUserId = async (userId: number): Promise<TMessage[]> =>
+const getNonDirectMessagesFromUserId = async (
+  userId: number
+): Promise<TMessage[]> =>
   db
     .select()
     .from(messages)
-    .where(eq(messages.userId, userId))
+    .where(
+      and(
+        eq(messages.userId, userId),
+        notExists(
+          db
+            .select()
+            .from(directMessages)
+            .where(eq(directMessages.channelId, messages.channelId))
+        )
+      )
+    )
     .orderBy(desc(messages.createdAt));
 
 const getReaction = async (
@@ -125,4 +151,94 @@ const getReaction = async (
     )
     .get();
 
-export { getMessage, getMessageByFileId, getMessagesByUserId, getReaction };
+const joinMessagesWithRelations = async (
+  rows: TMessage[],
+  channel: {
+    private: boolean;
+    fileAccessToken: string;
+  }
+): Promise<TJoinedMessage[]> => {
+  if (rows.length === 0) return [];
+
+  const messageIds = rows.map((m) => m.id);
+
+  const [fileRows, reactionRows] = await Promise.all([
+    db
+      .select({
+        messageId: messageFiles.messageId,
+        file: files
+      })
+      .from(messageFiles)
+      .innerJoin(files, eq(messageFiles.fileId, files.id))
+      .where(inArray(messageFiles.messageId, messageIds)),
+    db
+      .select({
+        messageId: messageReactions.messageId,
+        userId: messageReactions.userId,
+        emoji: messageReactions.emoji,
+        createdAt: messageReactions.createdAt,
+        fileId: messageReactions.fileId,
+        file: files
+      })
+      .from(messageReactions)
+      .leftJoin(files, eq(messageReactions.fileId, files.id))
+      .where(inArray(messageReactions.messageId, messageIds))
+  ]);
+
+  const filesByMessage = fileRows.reduce<Record<number, TFile[]>>(
+    (acc, row) => {
+      if (!acc[row.messageId]) {
+        acc[row.messageId] = [];
+      }
+
+      const rowCopy: TFile = { ...row.file };
+
+      if (channel.private) {
+        rowCopy._accessToken = generateFileToken(
+          row.file.id,
+          channel.fileAccessToken
+        );
+      }
+
+      acc[row.messageId]!.push(rowCopy);
+
+      return acc;
+    },
+    {}
+  );
+
+  const reactionsByMessage = reactionRows.reduce<
+    Record<number, TJoinedMessageReaction[]>
+  >((acc, r) => {
+    const reaction: TJoinedMessageReaction = {
+      messageId: r.messageId,
+      userId: r.userId,
+      emoji: r.emoji,
+      createdAt: r.createdAt,
+      fileId: r.fileId,
+      file: r.file
+    };
+
+    if (!acc[r.messageId]) {
+      acc[r.messageId] = [];
+    }
+
+    acc[r.messageId]!.push(reaction);
+
+    return acc;
+  }, {});
+
+  return rows.map((msg) => ({
+    ...msg,
+    files: filesByMessage[msg.id] ?? [],
+    reactions: reactionsByMessage[msg.id] ?? []
+  }));
+};
+
+export {
+  getMessage,
+  getMessageByFileId,
+  getNonDirectMessagesFromUserId,
+  getReaction,
+  joinMessagesWithRelations
+};

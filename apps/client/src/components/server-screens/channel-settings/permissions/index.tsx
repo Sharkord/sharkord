@@ -1,17 +1,19 @@
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { LoadingCard } from '@/components/ui/loading-card';
 import {
   useAdminChannelGeneral,
   useAdminChannelPermissions
 } from '@/features/server/admin/hooks';
 import { ChannelPermission } from '@sharkord/shared';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  LoadingCard
+} from '@sharkord/ui';
 import { MessageCircleWarning } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
 import { Override } from './override';
