@@ -50,6 +50,13 @@
       "when": 1772733600000,
       "tag": "0006_lowercase_remaining_identities",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1772733600000,
+      "tag": "0007_roles_added_by",
+      "breakpoints": true
     }
   ]
 }
