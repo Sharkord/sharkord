@@ -232,13 +232,13 @@ describe('channels router', () => {
   test('should reorder channels in a category', async () => {
     const { caller } = await initTest();
 
-    await caller.channels.add({
+    const channelAId = await caller.channels.add({
       type: ChannelType.TEXT,
       name: 'channel-a',
       categoryId: 1
     });
 
-    await caller.channels.add({
+    const channelBId = await caller.channels.add({
       type: ChannelType.TEXT,
       name: 'channel-b',
       categoryId: 1
@@ -246,20 +246,53 @@ describe('channels router', () => {
 
     await caller.channels.reorder({
       categoryId: 1,
-      channelIds: [4, 3, 1, 2]
+      channelIds: [channelAId, 3, 1, 2]
     });
 
-    const [channel1, channel2, channel4, channel5] = await Promise.all([
+    const [channel1, channel2, channelA, channelB] = await Promise.all([
       caller.channels.get({ channelId: 1 }),
       caller.channels.get({ channelId: 2 }),
-      caller.channels.get({ channelId: 4 }),
-      caller.channels.get({ channelId: 5 })
+      caller.channels.get({ channelId: channelAId }),
+      caller.channels.get({ channelId: channelBId })
     ]);
 
-    expect(channel4.position).toBe(1);
-    expect(channel5.position).toBe(2);
-    expect(channel1.position).toBe(3);
-    expect(channel2.position).toBe(4);
+    expect(channelA.position).toBe(1);
+    expect(channel1.position).toBe(2);
+    expect(channelB.position).toBe(3);
+    expect(channel2.position).toBe(1);
+  });
+
+  test('should reorder channels when some ids are missing from payload', async () => {
+    const { caller } = await initTest();
+
+    const channelAId = await caller.channels.add({
+      type: ChannelType.TEXT,
+      name: 'channel-a',
+      categoryId: 1
+    });
+
+    const channelBId = await caller.channels.add({
+      type: ChannelType.TEXT,
+      name: 'channel-b',
+      categoryId: 1
+    });
+
+    await caller.channels.reorder({
+      categoryId: 1,
+      channelIds: [channelBId, 1]
+    });
+
+    const [channel1, channel2, channelA, channelB] = await Promise.all([
+      caller.channels.get({ channelId: 1 }),
+      caller.channels.get({ channelId: 2 }),
+      caller.channels.get({ channelId: channelAId }),
+      caller.channels.get({ channelId: channelBId })
+    ]);
+
+    expect(channelB.position).toBe(1);
+    expect(channel1.position).toBe(2);
+    expect(channelA.position).toBe(3);
+    expect(channel2.position).toBe(1);
   });
 
   test('should set channel permissions for a role', async () => {

@@ -59,7 +59,8 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
 
   if (
     !category ||
-    (!hasVisibleChannelsInCategory && !can(Permission.MANAGE_CHANNELS))
+    (!hasVisibleChannelsInCategory &&
+      !can([Permission.MANAGE_CHANNELS, Permission.MANAGE_CATEGORIES]))
   ) {
     return null;
   }

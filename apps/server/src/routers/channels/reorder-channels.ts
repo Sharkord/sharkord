@@ -1,5 +1,5 @@
 import { ActivityLogType, Permission } from '@sharkord/shared';
-import { eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { publishChannel } from '../../db/publishers';
@@ -17,9 +17,33 @@ const reorderChannelsRoute = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_CHANNELS);
 
+    const existingCategoryChannels = await db
+      .select({ id: channels.id })
+      .from(channels)
+      .where(eq(channels.categoryId, input.categoryId))
+      .orderBy(asc(channels.position), asc(channels.id));
+
+    const existingCategoryChannelIds = existingCategoryChannels.map(
+      (channel) => channel.id
+    );
+    const validIds = new Set(existingCategoryChannelIds);
+    const nextVisibleIds: number[] = [];
+
+    for (const channelId of input.channelIds) {
+      if (validIds.has(channelId) && !nextVisibleIds.includes(channelId)) {
+        nextVisibleIds.push(channelId);
+      }
+    }
+
+    const missingChannelIds = existingCategoryChannelIds.filter(
+      (channelId) => !nextVisibleIds.includes(channelId)
+    );
+
+    const nextChannelOrder = [...nextVisibleIds, ...missingChannelIds];
+
     await db.transaction(async (tx) => {
-      for (let i = 0; i < input.channelIds.length; i++) {
-        const channelId = input.channelIds[i]!;
+      for (let i = 0; i < nextChannelOrder.length; i++) {
+        const channelId = nextChannelOrder[i]!;
         const newPosition = i + 1;
 
         await tx
@@ -32,18 +56,18 @@ const reorderChannelsRoute = protectedProcedure
       }
     });
 
-    input.channelIds.forEach((channelId) => {
+    nextChannelOrder.forEach((channelId) => {
       publishChannel(channelId, 'update');
     });
 
-    if (input.channelIds.length > 0) {
+    if (nextChannelOrder.length > 0) {
       enqueueActivityLog({
         type: ActivityLogType.UPDATED_CHANNEL,
         userId: ctx.user.id,
         details: {
-          channelId: input.channelIds[0]!,
+          channelId: nextChannelOrder[0]!,
           values: {
-            position: input.channelIds.length
+            position: nextChannelOrder.length
           }
         }
       });

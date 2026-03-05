@@ -171,7 +171,12 @@ const Channel = memo(({ channelId, isSelected, onClick }: TChannelProps) => {
     return null;
   }
 
-  if (!channelCan(ChannelPermission.VIEW_CHANNEL)) return null;
+  if (
+    !channelCan(ChannelPermission.VIEW_CHANNEL) &&
+    !can(Permission.MANAGE_CHANNELS)
+  ) {
+    return null;
+  }
 
   return (
     <div

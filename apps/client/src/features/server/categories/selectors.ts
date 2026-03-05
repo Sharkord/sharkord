@@ -4,7 +4,8 @@ import { createCachedSelector } from 're-reselect';
 
 export const categoriesSelector = createSelector(
   [(state: IRootState) => state.server.categories],
-  (categories) => [...categories].sort((a, b) => a.position - b.position)
+  (categories) =>
+    [...categories].sort((a, b) => a.position - b.position || a.id - b.id)
 );
 
 export const categoryByIdSelector = createCachedSelector(
