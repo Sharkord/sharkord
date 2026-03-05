@@ -3,13 +3,46 @@ const DTLN_WORKLET_NAME = 'DtlnProcessor';
 
 const DTLN_READY_TIMEOUT_MS = 10000;
 
-const workletLoadPromises = new WeakMap<BaseAudioContext, Promise<void>>();
-
 const isDtlnWorkletSupported = () => {
   if (typeof window === 'undefined') return false;
 
   return !!(window.AudioWorkletNode && window.AudioContext);
 };
+
+const DTLN_CACHE_NAME = 'dtln-worklet-v1';
+
+// resolves to a blob url for the worklet script -- within a session the same
+// promise is reused (no re-fetch, no re-parse); across page loads the response
+// is served from the Cache API
+let dtlnBlobUrlPromise: Promise<string> | null = null;
+
+const getDtlnBlobUrl = (): Promise<string> => {
+  if (!dtlnBlobUrlPromise) {
+    dtlnBlobUrlPromise = caches
+      .open(DTLN_CACHE_NAME)
+      .then(async (cache) => {
+        let response = await cache.match(DTLN_WORKLET_URL);
+
+        if (!response) {
+          await cache.add(DTLN_WORKLET_URL);
+          response = await cache.match(DTLN_WORKLET_URL);
+        }
+
+        if (!response) {
+          throw new Error('failed to cache DTLN worklet');
+        }
+
+        return response.blob();
+      })
+      .then((blob) => URL.createObjectURL(blob));
+  }
+
+  return dtlnBlobUrlPromise;
+};
+
+// keyed on context instance to avoid duplicate addModule calls on the same
+// context instance
+const workletLoadPromises = new Map<BaseAudioContext, Promise<void>>();
 
 const ensureWorkletLoaded = async (audioContext: AudioContext) => {
   if (!isDtlnWorkletSupported()) {
@@ -19,7 +52,9 @@ const ensureWorkletLoaded = async (audioContext: AudioContext) => {
   let loadPromise = workletLoadPromises.get(audioContext);
 
   if (!loadPromise) {
-    loadPromise = audioContext.audioWorklet.addModule(DTLN_WORKLET_URL);
+    loadPromise = getDtlnBlobUrl().then((blobUrl) =>
+      audioContext.audioWorklet.addModule(blobUrl)
+    );
     workletLoadPromises.set(audioContext, loadPromise);
   }
 
