@@ -17,7 +17,8 @@ import {
   serverNameSelector,
   typingUsersByChannelIdSelector,
   userRolesSelector,
-  voiceUsersByChannelIdSelector
+  voiceUsersByChannelIdSelector,
+  hasSharingScreenUsersSelector
 } from './selectors';
 
 export const useIsConnected = () => useSelector(connectedSelector);
@@ -109,9 +110,7 @@ export const useUnreadMessagesCount = (channelId: number) =>
     channelReadStateByIdSelector(state, channelId)
   );
 
-export const useIsSomeoneSharingScreen = (channelId: number) =>
-  useSelector((state: IRootState) => {
-    const voiceState = state.server.voiceMap[channelId];
-    return Object.values(voiceState?.users || {}).some((u) => u.sharingScreen);
-  });
-
+export const useHasSharingScreenUsers = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    hasSharingScreenUsersSelector(state, channelId)
+  );

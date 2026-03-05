@@ -9,7 +9,7 @@ import {
 import {
   useCan,
   useChannelCan,
-  useIsSomeoneSharingScreen,
+  useHasSharingScreenUsers,
   useTypingUsersByChannelId,
   useUnreadMessagesCount,
   useVoiceUsersByChannelId
@@ -59,7 +59,7 @@ const Voice = memo(({ channel, ...props }: TVoiceProps) => {
   const externalStreams = useVoiceChannelExternalStreamsList(channel.id);
   const unreadCount = useUnreadMessagesCount(channel.id);
   const currentVoiceChannelId = useCurrentVoiceChannelId();
-  const someoneIsSharingScreen = useIsSomeoneSharingScreen(channel.id);
+  const someoneIsSharingScreen = useHasSharingScreenUsers(channel.id);
 
   const isVoiceActive = users.length > 0 || externalStreams.length > 0;
   const isOwnChannel = currentVoiceChannelId === channel.id;

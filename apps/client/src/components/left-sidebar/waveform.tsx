@@ -7,14 +7,12 @@ type TIndicatorProps = {
 };
 
 const Waveform = memo(({ className, isScreenSharing }: TIndicatorProps) => {
-  const colorClass = isScreenSharing ? 'text-blue-500' : 'text-green-500';
-
   if (isScreenSharing) {
     return (
       <div
         className={cn(
           'flex items-center justify-center h-4 w-4 animate-in zoom-in-75 duration-300',
-          colorClass,
+          isScreenSharing && 'text-blue-500',
           className
         )}
       >
@@ -57,7 +55,7 @@ const Waveform = memo(({ className, isScreenSharing }: TIndicatorProps) => {
     <div
       className={cn(
         'flex items-center justify-center h-4 w-4 animate-in fade-in duration-700',
-        colorClass,
+        !isScreenSharing && 'text-green-500',
         className
       )}
     >
