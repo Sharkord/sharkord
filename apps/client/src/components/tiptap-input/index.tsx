@@ -190,8 +190,24 @@ const TiptapInput = memo(
     // keep emoji storage in sync with custom emojis from the store
     // this ensures newly added emojis appear in autocomplete without refreshing the app
     useEffect(() => {
-      if (editor && editor.storage.emoji) {
-        editor.storage.emoji.emojis = [...gitHubEmojis, ...customEmojis];
+      if (editor) {
+        const allEmojis = [...gitHubEmojis, ...customEmojis];
+
+        if (editor.storage.emoji) {
+          editor.storage.emoji.emojis = allEmojis;
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const applyEmojiOptions = (extension: any) => {
+          const typed = extension;
+
+          if (typed.name === 'emoji' && typed.options) {
+            typed.options.emojis = allEmojis;
+          }
+        };
+
+        editor.extensionManager.extensions.forEach(applyEmojiOptions);
+        editor.options.extensions?.forEach(applyEmojiOptions);
       }
     }, [editor, customEmojis]);
 
