@@ -41,9 +41,16 @@ const useVoiceRefs = (
 
   const videoStream = useMemo(() => {
     if (isOwnUser) return localVideoStream;
+    if (!ownVoiceState.videoStreamsEnabled) return undefined;
 
     return remoteUserStreams[remoteId]?.[StreamKind.VIDEO];
-  }, [remoteUserStreams, remoteId, isOwnUser, localVideoStream]);
+  }, [
+    remoteUserStreams,
+    remoteId,
+    isOwnUser,
+    localVideoStream,
+    ownVoiceState.videoStreamsEnabled
+  ]);
 
   const audioStream = useMemo(() => {
     if (isOwnUser) return undefined;
@@ -59,9 +66,16 @@ const useVoiceRefs = (
 
   const screenShareStream = useMemo(() => {
     if (isOwnUser) return localScreenShareStream;
+    if (!ownVoiceState.videoStreamsEnabled) return undefined;
 
     return remoteUserStreams[remoteId]?.[StreamKind.SCREEN];
-  }, [remoteUserStreams, remoteId, isOwnUser, localScreenShareStream]);
+  }, [
+    remoteUserStreams,
+    remoteId,
+    isOwnUser,
+    localScreenShareStream,
+    ownVoiceState.videoStreamsEnabled
+  ]);
 
   const screenShareAudioStream = useMemo(() => {
     if (isOwnUser) return undefined;
@@ -79,11 +93,12 @@ const useVoiceRefs = (
 
   const externalVideoStream = useMemo(() => {
     if (isOwnUser) return undefined;
+    if (!ownVoiceState.videoStreamsEnabled) return undefined;
 
     const external = externalStreams[remoteId];
 
     return external?.videoStream;
-  }, [externalStreams, remoteId, isOwnUser]);
+  }, [externalStreams, remoteId, isOwnUser, ownVoiceState.videoStreamsEnabled]);
 
   const { audioLevel, isSpeaking, speakingIntensity } =
     useAudioLevel(audioStreamForLevel);
@@ -100,9 +115,9 @@ const useVoiceRefs = (
   const externalVolume = externalVolumeKey ? getVolume(externalVolumeKey) : 100;
 
   useEffect(() => {
-    if (!videoStream || !videoRef.current) return;
+    if (!videoRef.current) return;
 
-    videoRef.current.srcObject = videoStream;
+    videoRef.current.srcObject = videoStream ?? null;
   }, [videoStream, videoRef]);
 
   useEffect(() => {
@@ -144,10 +159,10 @@ const useVoiceRefs = (
   ]);
 
   useEffect(() => {
-    if (!screenShareStream || !screenShareRef.current) return;
+    if (!screenShareRef.current) return;
 
-    if (screenShareRef.current.srcObject !== screenShareStream) {
-      screenShareRef.current.srcObject = screenShareStream;
+    if (screenShareRef.current.srcObject !== (screenShareStream ?? null)) {
+      screenShareRef.current.srcObject = screenShareStream ?? null;
     }
   }, [screenShareStream, screenShareRef]);
 
@@ -171,10 +186,10 @@ const useVoiceRefs = (
   ]);
 
   useEffect(() => {
-    if (!externalVideoStream || !externalVideoRef.current) return;
+    if (!externalVideoRef.current) return;
 
-    if (externalVideoRef.current.srcObject !== externalVideoStream) {
-      externalVideoRef.current.srcObject = externalVideoStream;
+    if (externalVideoRef.current.srcObject !== (externalVideoStream ?? null)) {
+      externalVideoRef.current.srcObject = externalVideoStream ?? null;
     }
   }, [externalVideoStream, externalVideoRef]);
 

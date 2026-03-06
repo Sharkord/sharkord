@@ -12,6 +12,16 @@ import {
 } from 'mediasoup-client/types';
 import { useCallback, useRef } from 'react';
 
+const VIDEO_STREAM_KINDS: StreamKind[] = [
+  StreamKind.VIDEO,
+  StreamKind.SCREEN,
+  StreamKind.SCREEN_AUDIO,
+  StreamKind.EXTERNAL_VIDEO
+];
+
+const isVideoStreamKind = (kind: StreamKind): boolean =>
+  VIDEO_STREAM_KINDS.includes(kind);
+
 type TUseTransportParams = {
   addRemoteUserStream: (
     userId: number,
@@ -333,9 +343,13 @@ const useTransports = ({
       routerRtpCapabilities: RtpCapabilities,
       externalStreamTracks?: {
         [streamId: number]: { audio?: boolean; video?: boolean };
-      }
+      },
+      videoStreamsEnabled = true
     ) => {
-      logVoice('Consuming existing producers', { routerRtpCapabilities });
+      logVoice('Consuming existing producers', {
+        routerRtpCapabilities,
+        videoStreamsEnabled
+      });
 
       const trpc = getTRPCClient();
 
@@ -359,6 +373,92 @@ const useTransports = ({
           consume(remoteId, StreamKind.AUDIO, routerRtpCapabilities);
         });
 
+        if (videoStreamsEnabled) {
+          remoteVideoIds.forEach((remoteId) => {
+            consume(remoteId, StreamKind.VIDEO, routerRtpCapabilities);
+          });
+
+          remoteScreenIds.forEach((remoteId) => {
+            consume(remoteId, StreamKind.SCREEN, routerRtpCapabilities);
+          });
+
+          remoteScreenAudioIds.forEach((remoteId) => {
+            consume(remoteId, StreamKind.SCREEN_AUDIO, routerRtpCapabilities);
+          });
+
+          remoteExternalStreamIds.forEach((streamId: number) => {
+            const tracks = externalStreamTracks?.[streamId];
+
+            if (tracks?.video !== false) {
+              consume(
+                streamId,
+                StreamKind.EXTERNAL_VIDEO,
+                routerRtpCapabilities
+              );
+            }
+          });
+        }
+
+        remoteExternalStreamIds.forEach((streamId: number) => {
+          const tracks = externalStreamTracks?.[streamId];
+
+          if (tracks?.audio !== false) {
+            consume(streamId, StreamKind.EXTERNAL_AUDIO, routerRtpCapabilities);
+          }
+        });
+      } catch (error) {
+        logVoice('Error consuming existing producers', { error });
+      }
+    },
+    [consume]
+  );
+
+  const stopVideoStreamConsumers = useCallback(() => {
+    logVoice('Stopping video stream consumers');
+
+    Object.entries(consumers.current).forEach(
+      ([remoteIdStr, userConsumers]) => {
+        const remoteId = Number(remoteIdStr);
+
+        Object.entries(userConsumers).forEach(([kind, consumer]) => {
+          if (
+            isVideoStreamKind(kind as StreamKind) &&
+            consumer &&
+            !consumer.closed
+          ) {
+            consumer.close();
+            // Consumer 'close' handler will call removeRemoteUserStream/removeExternalStreamTrack
+            delete consumers.current[remoteId][kind];
+            consumerCodecs.current.delete(`${remoteId}-${kind}`);
+          }
+        });
+
+        if (Object.keys(consumers.current[remoteId] || {}).length === 0) {
+          delete consumers.current[remoteId];
+        }
+      }
+    );
+  }, []);
+
+  const reconsumeVideoProducers = useCallback(
+    async (
+      routerRtpCapabilities: RtpCapabilities,
+      externalStreamTracks?: {
+        [streamId: number]: { audio?: boolean; video?: boolean };
+      }
+    ) => {
+      logVoice('Re-consuming video producers');
+
+      const trpc = getTRPCClient();
+
+      try {
+        const {
+          remoteScreenIds,
+          remoteScreenAudioIds,
+          remoteVideoIds,
+          remoteExternalStreamIds
+        } = await trpc.voice.getProducers.query();
+
         remoteVideoIds.forEach((remoteId) => {
           consume(remoteId, StreamKind.VIDEO, routerRtpCapabilities);
         });
@@ -374,15 +474,12 @@ const useTransports = ({
         remoteExternalStreamIds.forEach((streamId: number) => {
           const tracks = externalStreamTracks?.[streamId];
 
-          if (tracks?.audio !== false) {
-            consume(streamId, StreamKind.EXTERNAL_AUDIO, routerRtpCapabilities);
-          }
           if (tracks?.video !== false) {
             consume(streamId, StreamKind.EXTERNAL_VIDEO, routerRtpCapabilities);
           }
         });
       } catch (error) {
-        logVoice('Error consuming existing producers', { error });
+        logVoice('Error re-consuming video producers', { error });
       }
     },
     [consume]
@@ -434,8 +531,11 @@ const useTransports = ({
     createConsumerTransport,
     consume,
     consumeExistingProducers,
+    stopVideoStreamConsumers,
+    reconsumeVideoProducers,
     cleanupTransports,
-    getConsumerCodec
+    getConsumerCodec,
+    isVideoStreamKind
   };
 };
 

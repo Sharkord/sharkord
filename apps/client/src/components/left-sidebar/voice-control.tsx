@@ -11,6 +11,7 @@ import {
   Monitor,
   MonitorOff,
   PhoneOff,
+  ScreenShareOff,
   Video,
   VideoOff,
   Wifi,
@@ -24,8 +25,13 @@ import { StatsPopover } from './stats-popover';
 const VoiceControl = memo(() => {
   const voiceChannelId = useCurrentVoiceChannelId();
   const channelCan = useChannelCan(voiceChannelId);
-  const { ownVoiceState, toggleWebcam, toggleScreenShare, connectionStatus } =
-    useVoice();
+  const {
+    ownVoiceState,
+    toggleWebcam,
+    toggleScreenShare,
+    toggleVideoStreams,
+    connectionStatus
+  } = useVoice();
 
   const connectionInfo = useMemo(() => {
     switch (connectionStatus) {
@@ -82,6 +88,25 @@ const VoiceControl = memo(() => {
           </Button>
 
           <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                'h-8 w-8 rounded-md transition-all duration-200',
+                ownVoiceState.videoStreamsEnabled
+                  ? 'bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground'
+                  : 'bg-red-500/15 hover:bg-red-500/25 text-red-400 hover:text-red-300'
+              )}
+              onClick={toggleVideoStreams}
+              title={
+                ownVoiceState.videoStreamsEnabled
+                  ? 'Turn off video streams'
+                  : 'Turn on video streams'
+              }
+            >
+              <ScreenShareOff className="h-4 w-4" />
+            </Button>
+
             <Button
               variant="ghost"
               size="icon"

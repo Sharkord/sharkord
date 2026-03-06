@@ -1,6 +1,12 @@
+import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
-import { useOwnVoiceState } from '@/features/server/voice/hooks';
+import {
+  useOwnVoiceState,
+  useVoiceChannelExternalStreamTracks
+} from '@/features/server/voice/hooks';
+import { voiceChannelExternalStreamTracksSelector } from '@/features/server/voice/selectors';
+import { store } from '@/features/store';
 import {
   MICROPHONE_GATE_CLOSE_HOLD_MS,
   MICROPHONE_GATE_DEFAULT_THRESHOLD_DB,
@@ -121,6 +127,7 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
   }),
   getConsumerCodec: () => undefined,
   init: () => Promise.resolve(),
+  toggleVideoStreams: () => Promise.resolve(),
   toggleMic: () => Promise.resolve(),
   toggleSound: () => Promise.resolve(),
   toggleWebcam: () => Promise.resolve(),
@@ -129,7 +136,8 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
     micMuted: false,
     soundMuted: false,
     webcamEnabled: false,
-    sharingScreen: false
+    sharingScreen: false,
+    videoStreamsEnabled: true
   },
   localAudioStream: undefined,
   localVideoStream: undefined,
@@ -152,7 +160,17 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   const routerRtpCapabilities = useRef<RtpCapabilities | null>(null);
   const audioVideoRefsMap = useRef<Map<number, AudioVideoRefs>>(new Map());
   const ownVoiceState = useOwnVoiceState();
+  const currentVoiceChannelId = useCurrentVoiceChannelId();
+  const externalStreamTracks = useVoiceChannelExternalStreamTracks(
+    currentVoiceChannelId ?? 0
+  );
+  const videoStreamsEnabledRef = useRef(ownVoiceState.videoStreamsEnabled);
+  const ownVoiceStateRef = useRef(ownVoiceState);
+  const prevVideoStreamsEnabledRef = useRef<boolean | null>(null);
   const { devices } = useDevices();
+
+  videoStreamsEnabledRef.current = ownVoiceState.videoStreamsEnabled;
+  ownVoiceStateRef.current = ownVoiceState;
 
   const getOrCreateRefs = useCallback((remoteId: number): AudioVideoRefs => {
     if (!audioVideoRefsMap.current.has(remoteId)) {
@@ -204,8 +222,11 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     createConsumerTransport,
     consume,
     consumeExistingProducers,
+    stopVideoStreamConsumers,
+    reconsumeVideoProducers,
     cleanupTransports,
-    getConsumerCodec
+    getConsumerCodec,
+    isVideoStreamKind
   } = useTransports({
     addExternalStreamTrack,
     removeExternalStreamTrack,
@@ -695,6 +716,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     cleanupTransports();
 
     setConnectionStatus(ConnectionStatus.DISCONNECTED);
+    prevVideoStreamsEnabledRef.current = null;
   }, [
     stopMonitoring,
     resetStats,
@@ -731,7 +753,18 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
         await createProducerTransport(device);
         await createConsumerTransport(device);
-        await consumeExistingProducers(incomingRouterRtpCapabilities);
+
+        const state = store.getState();
+        const tracksForChannel = voiceChannelExternalStreamTracksSelector(
+          state,
+          channelId
+        );
+
+        await consumeExistingProducers(
+          incomingRouterRtpCapabilities,
+          tracksForChannel,
+          ownVoiceStateRef.current.videoStreamsEnabled
+        );
         await startMicStream();
 
         startMonitoring(producerTransport.current, consumerTransport.current);
@@ -759,15 +792,42 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     ]
   );
 
-  const { toggleMic, toggleSound, toggleWebcam, toggleScreenShare } =
-    useVoiceControls({
-      startMicStream,
-      localAudioStream,
-      startWebcamStream,
-      stopWebcamStream,
-      startScreenShareStream,
-      stopScreenShareStream
-    });
+  const {
+    toggleMic,
+    toggleSound,
+    toggleWebcam,
+    toggleScreenShare,
+    toggleVideoStreams
+  } = useVoiceControls({
+    startMicStream,
+    localAudioStream,
+    startWebcamStream,
+    stopWebcamStream,
+    startScreenShareStream,
+    stopScreenShareStream
+  });
+
+  const consumeWithVideoStreamsCheck = useCallback(
+    async (
+      remoteId: number,
+      kind: StreamKind,
+      rtpCapabilities: RtpCapabilities
+    ) => {
+      if (isVideoStreamKind(kind) && !videoStreamsEnabledRef.current) {
+        logVoice(
+          'Skipping consume for video stream - videoStreamsEnabled is false',
+          {
+            remoteId,
+            kind
+          }
+        );
+        return;
+      }
+
+      await consume(remoteId, kind, rtpCapabilities);
+    },
+    [consume, isVideoStreamKind]
+  );
 
   const setMicMutedForBridge = useCallback(
     async (muted: boolean) => {
@@ -797,13 +857,45 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   }, [setMicMutedForBridge, setSoundMutedForBridge]);
 
   useVoiceEvents({
-    consume,
+    consume: consumeWithVideoStreamsCheck,
     removeRemoteUserStream,
     removeExternalStreamTrack,
     removeExternalStream,
     clearRemoteUserStreamsForUser,
     rtpCapabilities: routerRtpCapabilities.current!
   });
+
+  useEffect(() => {
+    if (connectionStatus !== ConnectionStatus.CONNECTED) return;
+    if (!routerRtpCapabilities.current) return;
+
+    const enabled = ownVoiceState.videoStreamsEnabled;
+    const prev = prevVideoStreamsEnabledRef.current;
+
+    prevVideoStreamsEnabledRef.current = enabled;
+
+    // Only react to actual toggles, not initial mount
+    if (prev === null) return;
+
+    if (prev === enabled) return;
+
+    if (!enabled) {
+      logVoice('videoStreamsEnabled toggled off - stopping video consumers');
+      stopVideoStreamConsumers();
+    } else {
+      logVoice('videoStreamsEnabled toggled on - re-consuming video producers');
+      reconsumeVideoProducers(
+        routerRtpCapabilities.current,
+        externalStreamTracks
+      );
+    }
+  }, [
+    ownVoiceState.videoStreamsEnabled,
+    connectionStatus,
+    stopVideoStreamConsumers,
+    reconsumeVideoProducers,
+    externalStreamTracks
+  ]);
 
   useEffect(() => {
     return () => {
@@ -827,6 +919,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       toggleSound,
       toggleWebcam,
       toggleScreenShare,
+      toggleVideoStreams,
       ownVoiceState,
 
       localAudioStream,
@@ -849,14 +942,14 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       toggleSound,
       toggleWebcam,
       toggleScreenShare,
-      ownVoiceState,
-
+      toggleVideoStreams,
+      externalStreams,
       localAudioStream,
-      localVideoStream,
-      localScreenShareStream,
       localScreenShareAudioStream,
+      localScreenShareStream,
+      localVideoStream,
       remoteUserStreams,
-      externalStreams
+      ownVoiceState
     ]
   );
 
