@@ -15,7 +15,8 @@ import {
   modViewUserIdSelector,
   selectedDmChannelIdSelector,
   threadSidebarDataSelector,
-  voiceChatSidebarDataSelector
+  voiceChatSidebarDataSelector,
+  activeFullscreenPluginIdSelector
 } from './selectors';
 
 export const useIsAppLoading = () => useSelector(appLoadingSelector);
@@ -57,3 +58,6 @@ export const useMessageJumpTarget = () =>
 
 export const useVoiceChatSidebar = () =>
   useSelector(voiceChatSidebarDataSelector);
+
+export const useActiveFullscreenPluginId = () =>
+  useSelector(activeFullscreenPluginIdSelector);

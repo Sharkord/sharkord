@@ -14,7 +14,13 @@ export const zPluginPackageJson = z.object({
     author: z.string().min(1, 'Plugin author is required'),
     homepage: z.url().optional(),
     description: z.string().min(1, 'Plugin description is required'),
-    logo: z.string().optional()
+    logo: z.string().optional(),
+    sidebar: z
+      .object({
+        icon: z.string().min(1, 'Sidebar icon (SVG string) is required'),
+        title: z.string().min(1, 'Sidebar title is required')
+      })
+      .optional()
   })
 });
 
@@ -132,7 +138,8 @@ export enum PluginSlot {
   CONNECT_SCREEN = 'connect_screen',
   HOME_SCREEN = 'home_screen',
   CHAT_ACTIONS = 'chat_actions',
-  TOPBAR_RIGHT = 'topbar_right'
+  TOPBAR_RIGHT = 'topbar_right',
+  FULL_SCREEN = 'full_screen'
 }
 
 export type TPluginComponentsMapBySlotIdMapListByPlugin = {

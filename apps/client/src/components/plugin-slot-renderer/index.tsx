@@ -19,15 +19,20 @@ const SlotContextProvider = memo(({ children }: TSlotContextProviderProps) => {
 type TPluginSlotRendererProps = {
   slotId: PluginSlot;
   debug?: boolean;
+  activePluginId?: string;
 };
 
 const PluginSlotRenderer = memo(
-  ({ slotId, debug = isDebug() }: TPluginSlotRendererProps) => {
+  ({ slotId, debug = isDebug(), activePluginId }: TPluginSlotRendererProps) => {
     const pluginComponentsBySlot = usePluginComponentsBySlot(slotId);
 
     const content = Object.entries(pluginComponentsBySlot).map(
-      ([pluginId, components]) =>
-        components.map((Component, index) => {
+      ([pluginId, components]) => {
+        if (activePluginId && pluginId !== activePluginId) {
+          return null;
+        }
+
+        return components.map((Component, index) => {
           const content = (
             <SlotContextProvider>
               {(ctx) => <Component {...ctx} />}
@@ -51,7 +56,8 @@ const PluginSlotRenderer = memo(
               {wrappedContent}
             </ErrorBoundary>
           );
-        })
+        });
+      }
     );
 
     return <>{content}</>;
