@@ -18,10 +18,10 @@ const SearchResultMessageCard = memo(
     const handleJump = useCallback(() => {
       onJump({
         channelId: message.channelId,
-        messageId: message.id,
+        messageId: message.parentMessageId ?? message.id,
         isDm: message.channelIsDm
       });
-    }, [onJump, message.channelId, message.id, message.channelIsDm]);
+    }, [onJump, message]);
 
     return (
       <div className="w-full overflow-hidden rounded-lg border border-border bg-card px-3 py-2 text-left">
@@ -43,6 +43,12 @@ const SearchResultMessageCard = memo(
                   {message.channelName}
                 </span>
               </span>
+              {!!message.parentMessageId && (
+                <>
+                  <span>•</span>
+                  <span>In thread</span>
+                </>
+              )}
             </div>
             <div className="mt-1 min-w-0 overflow-hidden">
               <div className="max-h-64 overflow-y-auto overflow-x-hidden pr-1">
@@ -54,10 +60,15 @@ const SearchResultMessageCard = memo(
               </div>
             </div>
           </div>
-          <Tooltip content="Jump to message">
+          <Tooltip
+            content={
+              message.parentMessageId
+                ? 'Jump to thread original message'
+                : 'Jump to message'
+            }
+          >
             <IconButton
               icon={ArrowRight}
-              aria-label="Jump to message"
               variant="ghost"
               size="sm"
               onClick={handleJump}
