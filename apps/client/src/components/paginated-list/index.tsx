@@ -1,41 +1,89 @@
-import { Button, Input } from '@sharkord/ui';
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { Button, cn, Input } from '@sharkord/ui';
+import { ChevronsLeft, ChevronsRight } from 'lucide-react';
+import {
+  createContext,
+  memo,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type Key,
+  type ReactElement,
+  type ReactNode
+} from 'react';
+
+type TPaginatedListContext<T = unknown> = {
+  filteredItems: T[];
+  paginatedItems: T[];
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  searchTerm: string;
+  setSearchTerm: (value: string) => void;
+  setPage: (page: number) => void;
+  nextPage: () => void;
+  prevPage: () => void;
+  itemsPerPage: number;
+};
+
+const PaginatedListContext = createContext<TPaginatedListContext | null>(null);
+
+// if we use an arrow function here instead of function, the code highlighter gets very confused and breaks down completely
+function usePaginatedList<T = unknown>() {
+  const context = useContext(PaginatedListContext);
+
+  if (!context) {
+    throw new Error(
+      'PaginatedList components must be used within <PaginatedList />'
+    );
+  }
+
+  return context as TPaginatedListContext<T>;
+}
 
 type TPaginatedListProps<T> = {
   items: T[];
-  renderItem: (item: T, index: number) => React.ReactNode;
-  searchFilter: (item: T, searchTerm: string) => boolean;
   itemsPerPage?: number;
-  searchPlaceholder?: string;
-  emptyMessage?: string;
+  searchFilter?: (item: T, searchTerm: string) => boolean;
+  children: ReactNode;
 };
 
-const PaginatedListComponent = <T,>({
+const PaginatedListRoot = <T,>({
   items,
-  renderItem,
-  searchFilter,
   itemsPerPage = 10,
-  searchPlaceholder = 'Search...',
-  emptyMessage = 'No items found.'
+  searchFilter,
+  children
 }: TPaginatedListProps<T>) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTermRaw] = useState('');
+
+  const setSearchTerm = useCallback((value: string) => {
+    setSearchTermRaw(value);
+    setCurrentPage(1);
+  }, []);
 
   const filteredItems = useMemo(() => {
-    if (!searchTerm) return items;
-    return items.filter((item) => searchFilter(item, searchTerm));
-  }, [items, searchTerm, searchFilter]);
+    if (!searchTerm || !searchFilter) {
+      return items;
+    }
 
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+    return items.filter((item) => searchFilter(item, searchTerm));
+  }, [items, searchFilter, searchTerm]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredItems.length / itemsPerPage)
+  );
+  const safeCurrentPage = Math.min(currentPage, totalPages);
 
   const paginatedItems = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredItems.slice(startIndex, endIndex);
-  }, [filteredItems, currentPage, itemsPerPage]);
+    const start = (safeCurrentPage - 1) * itemsPerPage;
 
-  const handlePageChange = useCallback(
+    return filteredItems.slice(start, start + itemsPerPage);
+  }, [filteredItems, safeCurrentPage, itemsPerPage]);
+
+  const setPage = useCallback(
     (page: number) => {
       if (page >= 1 && page <= totalPages) {
         setCurrentPage(page);
@@ -44,113 +92,271 @@ const PaginatedListComponent = <T,>({
     [totalPages]
   );
 
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchTerm(value);
-    setCurrentPage(1);
-  }, []);
+  const nextPage = useCallback(() => {
+    setPage(safeCurrentPage + 1);
+  }, [safeCurrentPage, setPage]);
 
-  const getPageNumbers = useCallback(() => {
-    const pages = [];
-    const maxVisiblePages = 5;
+  const prevPage = useCallback(() => {
+    setPage(safeCurrentPage - 1);
+  }, [safeCurrentPage, setPage]);
 
-    if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      const startPage = Math.max(1, currentPage - 2);
-      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-      for (let i = startPage; i <= endPage; i++) {
-        pages.push(i);
-      }
-    }
-
-    return pages;
-  }, [currentPage, totalPages]);
+  const value = useMemo<TPaginatedListContext>(
+    () => ({
+      filteredItems: filteredItems as unknown[],
+      paginatedItems: paginatedItems as unknown[],
+      currentPage: safeCurrentPage,
+      totalPages,
+      totalItems: filteredItems.length,
+      searchTerm,
+      setSearchTerm,
+      setPage,
+      nextPage,
+      prevPage,
+      itemsPerPage
+    }),
+    [
+      filteredItems,
+      paginatedItems,
+      safeCurrentPage,
+      totalPages,
+      searchTerm,
+      setSearchTerm,
+      setPage,
+      nextPage,
+      prevPage,
+      itemsPerPage
+    ]
+  );
 
   return (
-    <div className="space-y-3">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder={searchPlaceholder}
-          value={searchTerm}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          className="pl-9"
-        />
-      </div>
+    <PaginatedListContext.Provider value={value}>
+      {children}
+    </PaginatedListContext.Provider>
+  );
+};
 
-      <div className="flex justify-between items-center text-xs text-muted-foreground">
+type TPaginatedListSearchProps = {
+  placeholder?: string;
+  className?: string;
+};
+
+const PaginatedListSearch = memo(
+  ({ placeholder = 'Search...', className }: TPaginatedListSearchProps) => {
+    const { searchTerm, setSearchTerm } = usePaginatedList();
+
+    const onChange = useCallback(
+      (event: ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(event.target.value);
+      },
+      [setSearchTerm]
+    );
+
+    return (
+      <Input
+        value={searchTerm}
+        onChange={onChange}
+        placeholder={placeholder}
+        className={className}
+      />
+    );
+  }
+);
+
+type TPaginatedListInfoProps = {
+  className?: string;
+  showPage?: boolean;
+};
+
+const PaginatedListInfo = memo(
+  ({ className, showPage = true }: TPaginatedListInfoProps) => {
+    const { totalItems, currentPage, totalPages } = usePaginatedList();
+
+    return (
+      <div
+        className={cn(
+          'flex items-center justify-between text-xs text-muted-foreground',
+          className
+        )}
+      >
         <span>
-          {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}{' '}
-          found
+          {totalItems} item{totalItems !== 1 ? 's' : ''}
         </span>
-        {totalPages > 1 && (
+        {showPage && totalPages > 1 && (
           <span>
             Page {currentPage} of {totalPages}
           </span>
         )}
       </div>
+    );
+  }
+);
 
-      <div className="min-h-[200px]">
-        {paginatedItems.length === 0 ? (
-          <div className="flex items-center justify-center h-32">
-            <p className="text-sm text-muted-foreground">{emptyMessage}</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {paginatedItems.map((item, index) => (
-              <div key={index}>
-                {renderItem(item, (currentPage - 1) * itemsPerPage + index)}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+type TPaginatedListListProps<T> = {
+  className?: string;
+  getItemKey?: (item: T, index: number) => Key;
+  children: (item: T, index: number) => ReactNode;
+};
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+const PaginatedListListInner = <T,>({
+  className,
+  getItemKey,
+  children
+}: TPaginatedListListProps<T>) => {
+  const { paginatedItems, currentPage, itemsPerPage } = usePaginatedList<T>();
 
-          {getPageNumbers().map((pageNum) => (
-            <Button
-              key={pageNum}
-              variant={currentPage === pageNum ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handlePageChange(pageNum)}
-              className="min-w-8"
-            >
-              {pageNum}
-            </Button>
-          ))}
+  if (paginatedItems.length === 0) {
+    return null;
+  }
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
+  return (
+    <div className={className}>
+      {paginatedItems.map((item, pageIndex) => {
+        const absoluteIndex = (currentPage - 1) * itemsPerPage + pageIndex;
+        const key = getItemKey
+          ? getItemKey(item, absoluteIndex)
+          : absoluteIndex;
+
+        return <div key={key}>{children(item, absoluteIndex)}</div>;
+      })}
     </div>
   );
 };
 
-const PaginatedList = memo(PaginatedListComponent) as <T>(
-  props: TPaginatedListProps<T>
-) => React.ReactElement;
+type TPaginatedListItemProps = {
+  className?: string;
+  children: ReactNode;
+};
 
-(PaginatedList as unknown as { displayName: string }).displayName =
-  'PaginatedList';
+const PaginatedListItem = memo(
+  ({ className, children }: TPaginatedListItemProps) => {
+    return <div className={className}>{children}</div>;
+  }
+);
+
+type TPaginatedListEmptyProps = {
+  className?: string;
+  children?: ReactNode;
+};
+
+const PaginatedListEmpty = memo(
+  ({ className, children }: TPaginatedListEmptyProps) => {
+    const { totalItems } = usePaginatedList();
+
+    if (totalItems > 0) {
+      return null;
+    }
+
+    return (
+      <div
+        className={cn(
+          'flex h-32 items-center justify-center text-muted-foreground',
+          className
+        )}
+      >
+        {children ?? 'No items found.'}
+      </div>
+    );
+  }
+);
+
+type TPaginatedListPaginationProps = {
+  className?: string;
+  maxVisiblePages?: number;
+  alwaysShow?: boolean;
+};
+
+const PaginatedListPagination = memo(
+  ({
+    className,
+    maxVisiblePages = 5,
+    alwaysShow = false
+  }: TPaginatedListPaginationProps) => {
+    const { currentPage, totalPages, setPage } = usePaginatedList();
+
+    const pageNumbers = useMemo(() => {
+      const pages: number[] = [];
+
+      if (totalPages <= maxVisiblePages) {
+        for (let i = 1; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        const start = Math.max(
+          1,
+          currentPage - Math.floor(maxVisiblePages / 2)
+        );
+        const end = Math.min(totalPages, start + maxVisiblePages - 1);
+
+        for (let i = start; i <= end; i++) {
+          pages.push(i);
+        }
+      }
+
+      return pages;
+    }, [currentPage, totalPages, maxVisiblePages]);
+
+    if (!alwaysShow && totalPages <= 1) {
+      return null;
+    }
+
+    return (
+      <div className={cn('flex items-center justify-center gap-1', className)}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setPage(1)}
+          disabled={currentPage === 1}
+          title="First page"
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </Button>
+
+        {pageNumbers.map((page) => (
+          <Button
+            key={page}
+            type="button"
+            variant={page === currentPage ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setPage(page)}
+            className="min-w-8"
+          >
+            {page}
+          </Button>
+        ))}
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setPage(totalPages)}
+          disabled={currentPage === totalPages}
+          title="Last page"
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+);
+
+// these ugly af shenanigans are necessary to preserve generic type support while still memoizing the components
+const PaginatedListList: <T>(
+  props: TPaginatedListListProps<T>
+) => ReactElement | null = memo(PaginatedListListInner) as unknown as <T>(
+  props: TPaginatedListListProps<T>
+) => ReactElement | null;
+
+const PaginatedList = Object.assign(
+  memo(PaginatedListRoot) as typeof PaginatedListRoot,
+  {
+    Search: PaginatedListSearch,
+    Info: PaginatedListInfo,
+    List: PaginatedListList,
+    Item: PaginatedListItem,
+    Empty: PaginatedListEmpty,
+    Pagination: PaginatedListPagination
+  }
+);
 
 export { PaginatedList };

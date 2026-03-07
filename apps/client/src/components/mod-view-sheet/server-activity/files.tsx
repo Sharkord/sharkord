@@ -9,6 +9,10 @@ import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useModViewContext } from '../context';
 
+const searchFilter = (file: TFile, term: string) =>
+  file.originalName.toLowerCase().includes(term.toLowerCase()) ||
+  file.extension.toLowerCase().includes(term.toLowerCase());
+
 const Files = memo(() => {
   const { files, refetch } = useModViewContext();
 
@@ -37,35 +41,28 @@ const Files = memo(() => {
     [refetch]
   );
 
-  const renderItem = useCallback(
-    (file: TFile) => (
-      <FileCard
-        name={file.originalName}
-        extension={file.extension}
-        size={file.size}
-        onRemove={() => onRemoveClick(file.id)}
-        href={getFileUrl(file)}
-      />
-    ),
-    [onRemoveClick]
-  );
-
-  const searchFilter = useCallback(
-    (file: TFile, term: string) =>
-      file.originalName.toLowerCase().includes(term.toLowerCase()) ||
-      file.extension.toLowerCase().includes(term.toLowerCase()),
-    []
-  );
-
   return (
-    <PaginatedList
-      items={files}
-      renderItem={renderItem}
-      searchFilter={searchFilter}
-      searchPlaceholder="Search files..."
-      emptyMessage="No files uploaded."
-      itemsPerPage={8}
-    />
+    <PaginatedList items={files} itemsPerPage={12} searchFilter={searchFilter}>
+      <PaginatedList.Search placeholder="Search files..." className="mb-2" />
+      <PaginatedList.Empty className="text-xs">
+        No files uploaded.
+      </PaginatedList.Empty>
+      <PaginatedList.List<TFile>
+        className="flex flex-col gap-2"
+        getItemKey={(file) => file.id}
+      >
+        {(file) => (
+          <FileCard
+            name={file.originalName}
+            extension={file.extension}
+            size={file.size}
+            onRemove={() => onRemoveClick(file.id)}
+            href={getFileUrl(file)}
+          />
+        )}
+      </PaginatedList.List>
+      <PaginatedList.Pagination className="mt-2" />
+    </PaginatedList>
   );
 });
 

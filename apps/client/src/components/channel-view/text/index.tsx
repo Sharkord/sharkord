@@ -20,6 +20,8 @@ import { Spinner } from '@sharkord/ui';
 import { throttle } from 'lodash-es';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { useScrollController } from './hooks/use-scroll-controller';
+import { useScrollToJumpTarget } from './hooks/use-scroll-to-jump-target';
 import { MessagesGroup } from './messages-group';
 import { TextSkeleton } from './text-skeleton';
 import { TextTopbar } from './text-top-bar';
@@ -28,7 +30,6 @@ import {
   getDraftMessage,
   setDraftMessage
 } from './use-draft-messages';
-import { useScrollController } from './use-scroll-controller';
 
 type TChannelProps = {
   channelId: number;
@@ -44,6 +45,8 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     groupedMessages,
     scrollToMessage
   } = useMessages(channelId);
+
+  useScrollToJumpTarget(channelId, scrollToMessage);
 
   const draftChannelKey = getChannelDraftKey(channelId);
 
@@ -105,6 +108,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
       }
 
       setNewMessageHandler('');
+
       return true;
     },
     [channelId, sendTypingSignal, setNewMessageHandler]

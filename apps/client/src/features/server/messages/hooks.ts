@@ -78,7 +78,10 @@ const findMessageElement = (messageId: number) =>
 const nextFrame = () =>
   new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
-const highlightMessageElement = async (element: Element) => {
+const highlightMessageElement = async (
+  element: Element,
+  highlightTime: number
+) => {
   // yield twice: once for layout, once for paint — ensures the browser
   // has fully laid out all newly inserted messages before we scroll
   await nextFrame();
@@ -89,7 +92,7 @@ const highlightMessageElement = async (element: Element) => {
 
   setTimeout(() => {
     element.classList.remove('bg-secondary');
-  }, 2000);
+  }, highlightTime);
 };
 
 const waitForMessageElement = (
@@ -222,12 +225,12 @@ export const useMessages = (channelId: number) => {
   }, [paginated]);
 
   const scrollToMessage = useCallback(
-    async (messageId: number) => {
+    async (messageId: number, highlightTime = 4000) => {
       // check if the message is already rendered in the messages container
       const existing = findMessageElement(messageId);
 
       if (existing) {
-        highlightMessageElement(existing);
+        highlightMessageElement(existing, highlightTime);
         return;
       }
 
@@ -245,7 +248,7 @@ export const useMessages = (channelId: number) => {
       const element = await waitForMessageElement(messageId);
 
       if (element) {
-        highlightMessageElement(element);
+        highlightMessageElement(element, highlightTime);
       }
     },
     [channelId]
