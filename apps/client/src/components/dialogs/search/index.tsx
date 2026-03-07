@@ -42,7 +42,7 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
   return (
     <Dialog open={isOpen}>
       <DialogContent
-        className="h-[86vh] max-h-[94vh] min-w-7xl max-w-2xl gap-0 overflow-hidden p-0"
+        className="h-[86vh] max-h-[94vh] lg:min-w-7xl gap-0 overflow-hidden p-0"
         onInteractOutside={close}
         close={close}
       >

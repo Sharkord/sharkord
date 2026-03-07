@@ -1,5 +1,7 @@
 import { getTRPCClient } from '@/lib/trpc';
+import { getTrpcError } from '@sharkord/shared';
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import type { TSearchResults, TUnifiedSearchResult } from './types';
 
 const EMPTY_RESULTS: TSearchResults = { messages: [], files: [] };
@@ -43,6 +45,10 @@ export const useSearch = (isOpen: boolean) => {
         if (!cancelled) {
           setResults(next);
         }
+      } catch (error) {
+        toast.error(getTrpcError(error, 'Could not load search results.'));
+
+        setResults(EMPTY_RESULTS);
       } finally {
         if (!cancelled) {
           setLoading(false);

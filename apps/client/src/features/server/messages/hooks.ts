@@ -5,6 +5,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { addMessages, addThreadMessages, clearThreadMessages } from './actions';
 import {
+  findMessageElement,
+  highlightMessageElement,
+  waitForMessageElement
+} from './helpers';
+import {
   messagesByChannelIdSelector,
   parentMessageByIdSelector,
   threadMessagesByParentIdSelector
@@ -67,69 +72,6 @@ const storeChannelMessages = (
 
   addMessages(channelId, page, opts);
 };
-
-const getMessagesContainer = () =>
-  document.querySelector('[data-messages-container]');
-
-const findMessageElement = (messageId: number) =>
-  getMessagesContainer()?.querySelector(`[data-message-id="${messageId}"]`) ??
-  null;
-
-const nextFrame = () =>
-  new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-
-const highlightMessageElement = async (
-  element: Element,
-  highlightTime: number
-) => {
-  // yield twice: once for layout, once for paint — ensures the browser
-  // has fully laid out all newly inserted messages before we scroll
-  await nextFrame();
-  await nextFrame();
-
-  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  element.classList.add('bg-secondary', 'animate-pulse');
-
-  setTimeout(() => {
-    element.classList.remove('bg-secondary', 'animate-pulse');
-  }, highlightTime);
-};
-
-const waitForMessageElement = (
-  messageId: number,
-  timeoutMs = 3000
-): Promise<Element | null> =>
-  new Promise((resolve) => {
-    const existing = findMessageElement(messageId);
-
-    if (existing) {
-      resolve(existing);
-      return;
-    }
-
-    const container = getMessagesContainer();
-
-    if (!container) {
-      resolve(null);
-      return;
-    }
-
-    const observer = new MutationObserver(() => {
-      const element = findMessageElement(messageId);
-
-      if (element) {
-        observer.disconnect();
-        resolve(element);
-      }
-    });
-
-    observer.observe(container, { childList: true, subtree: true });
-
-    setTimeout(() => {
-      observer.disconnect();
-      resolve(null);
-    }, timeoutMs);
-  });
 
 const usePaginatedMessages = (
   messages: TJoinedMessage[],
@@ -231,10 +173,10 @@ export const useMessages = (channelId: number) => {
 
       if (existing) {
         highlightMessageElement(existing, highlightTime);
+
         return;
       }
 
-      // message not loaded yet — fetch all messages down to the target
       const { messages: rawPage } = await fetchChannelMessagesPage({
         channelId,
         cursor: null,
@@ -244,7 +186,6 @@ export const useMessages = (channelId: number) => {
 
       storeChannelMessages(channelId, rawPage, { prepend: true });
 
-      // wait for React to render the new messages into the DOM
       const element = await waitForMessageElement(messageId);
 
       if (element) {
