@@ -428,6 +428,18 @@ describe('messages router', () => {
     ).toBe(false);
   });
 
+  test('should throw when search is disabled on server', async () => {
+    const { caller } = await initTest(1);
+
+    await tdb.update(settings).set({ enableSearch: false }).execute();
+
+    await expect(
+      caller.messages.search({
+        query: 'any query'
+      })
+    ).rejects.toThrow('Search is disabled on this server');
+  });
+
   test('should get pinned messages from channel', async () => {
     const { caller } = await initTest();
 

@@ -62,7 +62,8 @@ const seedDatabase = async () => {
     storageFileSharingInDirectMessages: true,
     storageSpaceQuotaByUser: STORAGE_MIN_QUOTA_PER_USER,
     storageOverflowAction: STORAGE_OVERFLOW_ACTION,
-    enablePlugins: false
+    enablePlugins: false,
+    enableSearch: true
   };
 
   await db.insert(settings).values(initialSettings);

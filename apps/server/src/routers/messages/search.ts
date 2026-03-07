@@ -3,8 +3,10 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { getChannelsForUser } from '../../db/queries/channels';
+import { getSettings } from '../../db/queries/server';
 import { channels, files, messageFiles, messages } from '../../db/schema';
 import { generateFileToken } from '../../helpers/files-crypto';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 // this search is pretty basic and it CAN be optimized, however it might not be worth it
@@ -36,6 +38,10 @@ const searchMessagesRoute = protectedProcedure
     })
   )
   .query(async ({ ctx, input }) => {
+    const settings = await getSettings();
+
+    invariant(settings.enableSearch, 'Search is disabled on this server');
+
     const accessibleChannels = await getChannelsForUser(ctx.userId);
 
     const accessibleChannelIds = accessibleChannels

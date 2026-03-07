@@ -88,10 +88,10 @@ const highlightMessageElement = async (
   await nextFrame();
 
   element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  element.classList.add('bg-secondary');
+  element.classList.add('bg-secondary', 'animate-pulse');
 
   setTimeout(() => {
-    element.classList.remove('bg-secondary');
+    element.classList.remove('bg-secondary', 'animate-pulse');
   }, highlightTime);
 };
 
