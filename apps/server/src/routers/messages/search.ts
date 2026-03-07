@@ -1,13 +1,14 @@
 import { getPlainTextFromHtml, type TFile } from '@sharkord/shared';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { config } from '../../config';
 import { db } from '../../db';
 import { getChannelsForUser } from '../../db/queries/channels';
 import { getSettings } from '../../db/queries/server';
 import { channels, files, messageFiles, messages } from '../../db/schema';
 import { generateFileToken } from '../../helpers/files-crypto';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
 // this search is pretty basic and it CAN be optimized, however it might not be worth it
 // some things things we can do:
@@ -17,7 +18,7 @@ import { protectedProcedure } from '../../utils/trpc';
 // however, the quick test I did with close to 10k messages the request was taking around 4-8 ms, which is more than good enough
 
 const SEARCH_QUERY_MIN_LENGTH = 2; // minimum length for search query to prevent too broad searches
-const SEARCH_QUERY_MAX_LENGTH = 120; // maximum length for search query to prevent performance issues and potential abuse
+const SEARCH_QUERY_MAX_LENGTH = 24; // maximum length for search query to prevent performance issues and potential abuse
 const MESSAGE_FETCH_MULTIPLIER = 4; // multiplier to fetch more messages than requested to account for filtering after fetching from the database
 const MAX_MESSAGE_FETCH_LIMIT = 100; // absolute maximum number of messages to fetch from the database before filtering, to prevent performance issues
 
@@ -26,7 +27,11 @@ const FILES_LIMIT = 25;
 
 const escapeLikePattern = (value: string) => value.replace(/[\\%_]/g, '\\$&');
 
-const searchMessagesRoute = protectedProcedure
+const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.search.maxRequests,
+  windowMs: config.rateLimiters.search.windowMs,
+  logLabel: 'search'
+})
   .input(
     z.object({
       query: z
