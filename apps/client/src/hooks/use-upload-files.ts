@@ -198,9 +198,11 @@ const useUploadFiles = (
     };
 
     const handlePaste = async (event: ClipboardEvent) => {
-      if (!checkPermissions()) return;
-
       const items = event.clipboardData?.items ?? [];
+      const hasFiles = Array.from(items).some((item) => item.kind === 'file');
+
+      if (hasFiles && !checkPermissions()) return;
+
       const filesToUpload: File[] = [];
 
       for (let i = 0; i < items.length; i++) {
@@ -218,11 +220,16 @@ const useUploadFiles = (
 
     const handleDrop = async (event: DragEvent) => {
       event.preventDefault();
-      if (!checkPermissions()) return;
 
-      const filesToUpload: File[] = [];
       const items = event.dataTransfer?.items ?? [];
       const dFiles = event.dataTransfer?.files ?? [];
+      const hasFiles =
+        Array.from(items).some((item) => item.kind === 'file') ||
+        dFiles.length > 0;
+
+      if (hasFiles && !checkPermissions()) return;
+
+      const filesToUpload: File[] = [];
 
       if (items) {
         for (let i = 0; i < items.length; i++) {
