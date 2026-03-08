@@ -2,11 +2,13 @@ import { TypingDots } from '@/components/typing-dots';
 import {
   useChannelById,
   useChannelsByCategoryId,
+  useCurrentVoiceChannelId,
   useSelectedChannelId
 } from '@/features/server/channels/hooks';
 import {
   useCan,
   useChannelCan,
+  useHasSharingScreenUsers,
   useHasUnreadMentions,
   useTypingUsersByChannelId,
   useUnreadMessagesCount,
@@ -43,42 +45,75 @@ import { UnreadCount } from '../unread-count';
 import { ExternalStream } from './external-stream';
 import { useSelectChannel } from './hooks';
 import { VoiceUser } from './voice-user';
+import { Waveform } from './waveform';
 
 type TVoiceProps = Omit<TItemWrapperProps, 'children'> & {
   channel: TChannel;
 };
 
-const Voice = memo(({ channel, ...props }: TVoiceProps) => {
-  const users = useVoiceUsersByChannelId(channel.id);
-  const externalStreams = useVoiceChannelExternalStreamsList(channel.id);
-  const unreadCount = useUnreadMessagesCount(channel.id);
+const Voice = memo(
+  ({
+    channel,
+    isSelected,
+    ...props
+  }: TVoiceProps & { isSelected: boolean }) => {
+    const users = useVoiceUsersByChannelId(channel.id);
+    const externalStreams = useVoiceChannelExternalStreamsList(channel.id);
+    const unreadCount = useUnreadMessagesCount(channel.id);
+    const currentVoiceChannelId = useCurrentVoiceChannelId();
+    const someoneIsSharingScreen = useHasSharingScreenUsers(channel.id);
 
-  return (
-    <>
-      <ItemWrapper {...props}>
-        <Volume2 className="h-4 w-4" />
-        <span className="flex-1">{channel.name}</span>
-        <UnreadCount count={unreadCount} />
-      </ItemWrapper>
-      {channel.type === 'VOICE' && (
-        <div className="ml-6 space-y-1 mt-1">
-          {users.map((user) => (
-            <VoiceUser key={user.id} userId={user.id} user={user} />
-          ))}
-          {externalStreams.map((stream) => (
-            <ExternalStream
-              key={stream.streamId}
-              title={stream.title}
-              tracks={stream.tracks}
-              pluginId={stream.pluginId}
-              avatarUrl={stream.avatarUrl}
-            />
-          ))}
-        </div>
-      )}
-    </>
-  );
-});
+    const isVoiceActive = users.length > 0 || externalStreams.length > 0;
+    const isOwnChannel = currentVoiceChannelId === channel.id;
+
+    return (
+      <>
+        <ItemWrapper
+          {...props}
+          isSelected={isSelected}
+          className={cn(props.className, {
+            'text-blue-500':
+              someoneIsSharingScreen && (isOwnChannel || isSelected),
+            'text-green-500':
+              (isOwnChannel && !someoneIsSharingScreen) ||
+              (isSelected &&
+                !someoneIsSharingScreen &&
+                !isOwnChannel &&
+                isVoiceActive)
+          })}
+        >
+          {isVoiceActive ? (
+            <Waveform isScreenSharing={someoneIsSharingScreen} />
+          ) : (
+            <Volume2 className="h-4 w-4" />
+          )}
+
+          <span className="flex-1 truncate">{channel.name}</span>
+
+          {!isVoiceActive && unreadCount > 0 && (
+            <UnreadCount count={unreadCount} />
+          )}
+        </ItemWrapper>
+        {channel.type === 'VOICE' && (
+          <div className="ml-6 space-y-1 mt-1">
+            {users.map((user) => (
+              <VoiceUser key={user.id} userId={user.id} user={user} />
+            ))}
+            {externalStreams.map((stream) => (
+              <ExternalStream
+                key={stream.streamId}
+                title={stream.title}
+                tracks={stream.tracks}
+                pluginId={stream.pluginId}
+                avatarUrl={stream.avatarUrl}
+              />
+            ))}
+          </div>
+        )}
+      </>
+    );
+  }
+);
 
 type TTextProps = Omit<TItemWrapperProps, 'children'> & {
   channel: TChannel;

@@ -14,6 +14,7 @@ import {
   connectedSelector,
   connectingSelector,
   disconnectInfoSelector,
+  hasSharingScreenUsersSelector,
   hasUnreadMentionsSelector,
   hasVisibleChannelsInCategorySelector,
   infoSelector,
@@ -128,6 +129,11 @@ export const useOwnVoiceUser = () => useSelector(ownVoiceUserSelector);
 export const useUnreadMessagesCount = (channelId: number) =>
   useSelector((state: IRootState) =>
     channelReadStateByIdSelector(state, channelId)
+  );
+
+export const useHasSharingScreenUsers = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    hasSharingScreenUsersSelector(state, channelId)
   );
 
 export const usePluginComponentContext = (): TPluginSlotContext => {
