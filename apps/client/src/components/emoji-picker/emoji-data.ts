@@ -1,4 +1,4 @@
-import type { TEmojiItem } from '@/components/tiptap-input/types';
+import type { TEmojiItem } from '@/components/tiptap-input/helpers';
 import type { EmojiItem } from '@tiptap/extension-emoji';
 import { gitHubEmojis } from '@tiptap/extension-emoji';
 
@@ -32,8 +32,13 @@ const processEmojis = () => {
   }
 
   for (const emoji of gitHubEmojis) {
-    if (!emoji.emoji || !emoji.group) continue;
+    if (!emoji.emoji || emoji.group === undefined || emoji.group === null)
+      continue;
     if (emoji.group === 'components' || emoji.group === 'GitHub') continue;
+
+    if (emoji.group === '' && emoji.name.includes('regional_indicator_'))
+      emoji.group = EMOJI_CATEGORIES[7].id;
+    if (emoji.group === '') emoji.group = EMOJI_CATEGORIES[1].id;
 
     const converted = toTEmojiItem(emoji);
 

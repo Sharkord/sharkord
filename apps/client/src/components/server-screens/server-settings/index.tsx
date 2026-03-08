@@ -1,6 +1,6 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCan } from '@/features/server/hooks';
 import { Permission } from '@sharkord/shared';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@sharkord/ui';
 import { memo, useMemo } from 'react';
 import type { TServerScreenBaseProps } from '../screens';
 import { ServerScreenLayout } from '../server-screen-layout';

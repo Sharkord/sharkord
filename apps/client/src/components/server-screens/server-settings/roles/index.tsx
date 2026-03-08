@@ -1,6 +1,5 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { LoadingCard } from '@/components/ui/loading-card';
 import { useAdminRoles } from '@/features/server/admin/hooks';
+import { Card, CardContent, LoadingCard } from '@sharkord/ui';
 import { memo, useMemo, useState } from 'react';
 import { RolesList } from './roles-list';
 import { UpdateRole } from './update-role';

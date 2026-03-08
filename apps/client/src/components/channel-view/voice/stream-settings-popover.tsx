@@ -1,10 +1,10 @@
-import { IconButton } from '@/components/ui/icon-button';
 import {
+  IconButton,
   Popover,
   PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
-import { Slider } from '@/components/ui/slider';
+  PopoverTrigger,
+  Slider
+} from '@sharkord/ui';
 import { Settings, Volume2, VolumeX } from 'lucide-react';
 import { memo } from 'react';
 

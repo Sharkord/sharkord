@@ -1,6 +1,8 @@
 const onLoad = (ctx) => {
   ctx.log('Plugin B loaded');
 
+  ctx.ui.enable();
+
   ctx.commands.register({
     name: 'test-command',
     description: 'A test command',

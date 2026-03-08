@@ -1,11 +1,3 @@
-import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
-import { Slider } from '@/components/ui/slider';
-import { Tooltip } from '@/components/ui/tooltip';
 import { UserAvatar } from '@/components/user-avatar';
 import {
   useVolumeControl,
@@ -14,6 +6,14 @@ import {
 import { useVoiceUsersByChannelId } from '@/features/server/hooks';
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { useVoiceChannelAudioExternalStreams } from '@/features/server/voice/hooks';
+import {
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Slider,
+  Tooltip
+} from '@sharkord/ui';
 import { Headphones, Monitor, Volume2, VolumeX } from 'lucide-react';
 import { memo, useMemo } from 'react';
 

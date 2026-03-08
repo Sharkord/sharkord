@@ -1,5 +1,4 @@
 import { TypingDots } from '@/components/typing-dots';
-import { setSelectedChannelId } from '@/features/server/channels/actions';
 import {
   useChannelById,
   useChannelsByCategoryId,
@@ -10,16 +9,12 @@ import {
   useCan,
   useChannelCan,
   useHasSharingScreenUsers,
+  useHasUnreadMentions,
   useTypingUsersByChannelId,
   useUnreadMessagesCount,
   useVoiceUsersByChannelId
 } from '@/features/server/hooks';
-import { joinVoice } from '@/features/server/voice/actions';
-import {
-  useVoice,
-  useVoiceChannelExternalStreamsList
-} from '@/features/server/voice/hooks';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import { useVoiceChannelExternalStreamsList } from '@/features/server/voice/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
@@ -38,15 +33,17 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   ChannelPermission,
-  ChannelType,
   Permission,
-  type TChannel
+  type TChannel,
+  getTrpcError
 } from '@sharkord/shared';
 import { Hash, Volume2 } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { ChannelContextMenu } from '../context-menus/channel';
+import { UnreadCount } from '../unread-count';
 import { ExternalStream } from './external-stream';
+import { useSelectChannel } from './hooks';
 import { VoiceUser } from './voice-user';
 import { Waveform } from './waveform';
 
@@ -82,9 +79,7 @@ const Voice = memo(({ channel, ...props }: TVoiceProps) => {
       <span className="flex-1 truncate">{channel.name}</span>
 
       {!isVoiceActive && unreadCount > 0 && (
-        <div className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
-          {unreadCount > 99 ? '99+' : unreadCount}
-        </div>
+        <UnreadCount count={unreadCount} />
       )}
     </ItemWrapper>
       {channel.type === 'VOICE' && (
@@ -114,6 +109,7 @@ type TTextProps = Omit<TItemWrapperProps, 'children'> & {
 const Text = memo(({ channel, ...props }: TTextProps) => {
   const typingUsers = useTypingUsersByChannelId(channel.id);
   const unreadCount = useUnreadMessagesCount(channel.id);
+  const hasUnreadMessages = useHasUnreadMentions(channel.id);
   const hasTypingUsers = typingUsers.length > 0;
 
   return (
@@ -126,9 +122,7 @@ const Text = memo(({ channel, ...props }: TTextProps) => {
         </div>
       )}
       {!hasTypingUsers && unreadCount > 0 && (
-        <div className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
-          {unreadCount > 99 ? '99+' : unreadCount}
-        </div>
+        <UnreadCount count={unreadCount} hasMention={hasUnreadMessages} />
       )}
     </ItemWrapper>
   );
@@ -178,14 +172,13 @@ const ItemWrapper = memo(
 type TChannelProps = {
   channelId: number;
   isSelected: boolean;
+  onClick: () => void;
 };
 
-const Channel = memo(({ channelId, isSelected }: TChannelProps) => {
+const Channel = memo(({ channelId, isSelected, onClick }: TChannelProps) => {
   const channel = useChannelById(channelId);
-  const currentVoiceChannelId = useCurrentVoiceChannelId();
   const channelCan = useChannelCan(channelId);
   const can = useCan();
-  const { init } = useVoice();
 
   const {
     attributes,
@@ -196,37 +189,16 @@ const Channel = memo(({ channelId, isSelected }: TChannelProps) => {
     isDragging
   } = useSortable({ id: channelId });
 
-  const onClick = useCallback(async () => {
-    setSelectedChannelId(channelId);
-
-    if (
-      channel?.type === ChannelType.VOICE &&
-      currentVoiceChannelId !== channelId
-    ) {
-      const response = await joinVoice(channelId);
-
-      if (!response) {
-        // joining voice failed
-        setSelectedChannelId(undefined);
-        toast.error('Failed to join voice channel');
-
-        return;
-      }
-
-      try {
-        await init(response, channelId);
-      } catch {
-        setSelectedChannelId(undefined);
-        toast.error('Failed to initialize voice connection');
-      }
-    }
-  }, [channelId, channel?.type, init, currentVoiceChannelId]);
-
   if (!channel) {
     return null;
   }
 
-  if (!channelCan(ChannelPermission.VIEW_CHANNEL)) return null;
+  if (
+    !channelCan(ChannelPermission.VIEW_CHANNEL) &&
+    !can(Permission.MANAGE_CHANNELS)
+  ) {
+    return null;
+  }
 
   return (
     <div
@@ -272,8 +244,11 @@ type TChannelsProps = {
 const Channels = memo(({ categoryId }: TChannelsProps) => {
   const channels = useChannelsByCategoryId(categoryId);
   const selectedChannelId = useSelectedChannelId();
-  const channelIds = useMemo(() => channels.map((ch) => ch.id), [channels]);
   const can = useCan();
+  const channelIds = useMemo(
+    () => channels.map((channel) => channel.id),
+    [channels]
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -282,6 +257,8 @@ const Channels = memo(({ categoryId }: TChannelsProps) => {
       }
     })
   );
+
+  const onChannelClick = useSelectChannel();
 
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
@@ -334,6 +311,7 @@ const Channels = memo(({ categoryId }: TChannelsProps) => {
               key={channel.id}
               channelId={channel.id}
               isSelected={selectedChannelId === channel.id}
+              onClick={() => onChannelClick(channel.id)}
             />
           ))}
         </SortableContext>

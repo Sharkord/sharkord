@@ -1,5 +1,5 @@
-import { IconButton } from '@/components/ui/icon-button';
 import { cn } from '@/lib/utils';
+import { IconButton } from '@sharkord/ui';
 import { Video, ZoomIn, ZoomOut } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { CardControls } from './card-controls';

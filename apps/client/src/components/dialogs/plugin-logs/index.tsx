@@ -1,17 +1,15 @@
+import { getTRPCClient } from '@/lib/trpc';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog';
-import {
+  DialogTitle,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select';
-import { getTRPCClient } from '@/lib/trpc';
+} from '@sharkord/ui';
 import { AlertCircle, Bug, Info } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { TDialogBaseProps } from '../types';

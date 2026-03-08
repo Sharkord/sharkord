@@ -1,16 +1,22 @@
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { useRoleById } from '@/features/server/roles/hooks';
 import { useUserById } from '@/features/server/users/hooks';
 import { getInitialsFromName } from '@/helpers/get-initials-from-name';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import type {
   TChannelRolePermission,
   TChannelUserPermission
 } from '@sharkord/shared';
+import { getTrpcError } from '@sharkord/shared';
+import {
+  Avatar,
+  AvatarFallback,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Separator
+} from '@sharkord/ui';
 import { memo, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { SearchPopover } from './search-popover';

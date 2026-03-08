@@ -7,6 +7,7 @@ export * from './logs';
 export * from './plugins';
 export * from './statics/index';
 export * from './tables';
+export * from './test-ids';
 export * from './trpc';
 export * from './types';
 export * from './voice';

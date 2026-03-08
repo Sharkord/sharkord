@@ -1,8 +1,8 @@
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { setModViewOpen } from '@/features/app/actions';
 import { useModViewOpen } from '@/features/app/hooks';
 import { useAdminUserInfo } from '@/features/server/admin/hooks';
 import { extractUrls } from '@sharkord/shared';
+import { Sheet, SheetContent, SheetTitle } from '@sharkord/ui';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { ModViewContext, ModViewScreen, type TModViewContext } from './context';
 import { ModViewContent } from './mod-view-content';

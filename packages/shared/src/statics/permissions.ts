@@ -1,6 +1,7 @@
 export enum Permission {
   SEND_MESSAGES = 'SEND_MESSAGES',
   REACT_TO_MESSAGES = 'REACT_TO_MESSAGES',
+  PIN_MESSAGES = 'PIN_MESSAGES',
   UPLOAD_FILES = 'UPLOAD_FILES',
   JOIN_VOICE_CHANNELS = 'JOIN_VOICE_CHANNELS',
   SHARE_SCREEN = 'SHARE_SCREEN',
@@ -18,12 +19,14 @@ export enum Permission {
   MANAGE_INVITES = 'MANAGE_INVITES',
   MANAGE_UPDATES = 'MANAGE_UPDATES',
   MANAGE_PLUGINS = 'MANAGE_PLUGINS',
-  EXECUTE_PLUGIN_COMMANDS = 'EXECUTE_PLUGIN_COMMANDS'
+  EXECUTE_PLUGIN_COMMANDS = 'EXECUTE_PLUGIN_COMMANDS',
+  VIEW_USER_SENSITIVE_DATA = 'VIEW_USER_SENSITIVE_DATA'
 }
 
 export const permissionLabels: Record<Permission, string> = {
   [Permission.SEND_MESSAGES]: 'Send messages',
   [Permission.REACT_TO_MESSAGES]: 'React to messages',
+  [Permission.PIN_MESSAGES]: 'Pin messages',
   [Permission.UPLOAD_FILES]: 'Upload files',
   [Permission.JOIN_VOICE_CHANNELS]: 'Join voice channels',
   [Permission.SHARE_SCREEN]: 'Share screen',
@@ -40,13 +43,15 @@ export const permissionLabels: Record<Permission, string> = {
   [Permission.MANAGE_INVITES]: 'Manage invites',
   [Permission.MANAGE_UPDATES]: 'Manage updates',
   [Permission.MANAGE_PLUGINS]: 'Manage plugins',
-  [Permission.EXECUTE_PLUGIN_COMMANDS]: 'Execute plugin commands'
+  [Permission.EXECUTE_PLUGIN_COMMANDS]: 'Execute plugin commands',
+  [Permission.VIEW_USER_SENSITIVE_DATA]: 'View user sensitive data'
 };
 
 export const permissionDescriptions: Record<Permission, string> = {
   [Permission.SEND_MESSAGES]:
     'Grants the ability to send messages in channels.',
   [Permission.REACT_TO_MESSAGES]: 'Grants the ability to react to messages.',
+  [Permission.PIN_MESSAGES]: 'Grants the ability to pin messages.',
   [Permission.UPLOAD_FILES]: 'Grants the ability to upload files in channels.',
   [Permission.JOIN_VOICE_CHANNELS]:
     'Grants the ability to join voice channels.',
@@ -73,7 +78,9 @@ export const permissionDescriptions: Record<Permission, string> = {
   [Permission.MANAGE_UPDATES]: 'Grants the ability to perform updates.',
   [Permission.MANAGE_PLUGINS]: 'Grants the ability to manage plugins.',
   [Permission.EXECUTE_PLUGIN_COMMANDS]:
-    'Grants the ability to execute plugin commands.'
+    'Grants the ability to execute plugin commands.',
+  [Permission.VIEW_USER_SENSITIVE_DATA]:
+    'Grants the ability to view user sensitive data like identity, IP address, and location.'
 };
 
 export const DEFAULT_ROLE_PERMISSIONS = [

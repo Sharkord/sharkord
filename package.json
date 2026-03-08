@@ -1,6 +1,6 @@
 {
   "name": "sharkord",
-  "version": "0.0.4",
+  "version": "0.0.11",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -10,7 +10,9 @@
     "mediasoup"
   ],
   "scripts": {
+    "test": "bun run --filter '*' test",
     "format": "bun run --filter '*' format",
+    "format:check": "bun run --filter '*' format:check",
     "check-types": "bun run --filter '*' check-types",
     "lint": "bun run --filter '*' lint",
     "knip": "knip",

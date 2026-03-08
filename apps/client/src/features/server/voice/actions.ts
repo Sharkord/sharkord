@@ -1,8 +1,16 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
 import { store } from '@/features/store';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
+import {
+  LocalStorageKey,
+  setLocalStorageItem,
+  setLocalStorageItemBool
+} from '@/helpers/storage';
 import { getTRPCClient } from '@/lib/trpc';
-import { type TExternalStream, type TVoiceUserState } from '@sharkord/shared';
+import {
+  getTrpcError,
+  type TExternalStream,
+  type TVoiceUserState
+} from '@sharkord/shared';
 import type { RtpCapabilities } from 'mediasoup-client/types';
 import { toast } from 'sonner';
 import {
@@ -103,6 +111,23 @@ export const updateVoiceUserState = (
   channelId: number,
   newState: Partial<TVoiceUserState>
 ): void => {
+  const state = store.getState();
+  const ownUserId = ownUserIdSelector(state);
+  const currentChannelId = currentVoiceChannelIdSelector(state);
+
+  if (userId !== ownUserId && channelId === currentChannelId) {
+    const currentUserState = state.server.voiceMap[channelId]?.users[userId];
+
+    if (newState.sharingScreen === true && !currentUserState?.sharingScreen) {
+      playSound(SoundType.REMOTE_USER_STARTED_SCREENSHARE);
+    } else if (
+      newState.sharingScreen === false &&
+      currentUserState?.sharingScreen
+    ) {
+      playSound(SoundType.REMOTE_USER_STOPPED_SCREENSHARE);
+    }
+  }
+
   store.dispatch(
     serverSliceActions.updateVoiceUserState({ userId, channelId, newState })
   );
@@ -178,4 +203,30 @@ export const leaveVoice = async (): Promise<void> => {
 
 export const setPinnedCard = (pinnedCard: TPinnedCard | undefined): void => {
   store.dispatch(serverSliceActions.setPinnedCard(pinnedCard));
+};
+
+export const setHideNonVideoParticipants = (value: boolean): void => {
+  store.dispatch(serverSliceActions.setHideNonVideoParticipants(value));
+
+  try {
+    setLocalStorageItem(
+      LocalStorageKey.HIDE_NON_VIDEO_PARTICIPANTS,
+      String(value)
+    );
+  } catch (error) {
+    console.error('Failed to save voice options:', error);
+  }
+};
+
+export const setShowUserBannersInVoice = (value: boolean): void => {
+  store.dispatch(serverSliceActions.setShowUserBannersInVoice(value));
+
+  try {
+    setLocalStorageItemBool(
+      LocalStorageKey.VOICE_CHAT_SHOW_USER_BANNERS,
+      value
+    );
+  } catch (error) {
+    console.error('Failed to save voice options:', error);
+  }
 };

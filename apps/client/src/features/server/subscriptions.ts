@@ -1,3 +1,4 @@
+import { logDebug } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
 import { type TPublicServerSettings } from '@sharkord/shared';
 import { setPublicServerSettings } from './actions';
@@ -16,8 +17,10 @@ const subscribeToServer = () => {
   const onSettingsUpdateSub = trpc.others.onServerSettingsUpdate.subscribe(
     undefined,
     {
-      onData: (settings: TPublicServerSettings) =>
-        setPublicServerSettings(settings),
+      onData: (settings: TPublicServerSettings) => {
+        logDebug('[EVENTS] others.onServerSettingsUpdate', { settings });
+        setPublicServerSettings(settings);
+      },
       onError: (err) =>
         console.error('onSettingsUpdate subscription error:', err)
     }

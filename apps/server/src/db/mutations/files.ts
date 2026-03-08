@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '..';
+import { getErrorMessage } from '../../helpers/get-error-message';
 import { PUBLIC_PATH } from '../../helpers/paths';
 import { logger } from '../../logger';
 import { files, messageFiles } from '../schema';
@@ -22,7 +23,7 @@ const removeFile = async (fileId: number): Promise<TFile | undefined> => {
 
       await fs.unlink(filePath);
     } catch (error) {
-      logger.error('Error deleting file from disk:', error);
+      logger.error('Error deleting file from disk: %s', getErrorMessage(error));
     }
   }
 

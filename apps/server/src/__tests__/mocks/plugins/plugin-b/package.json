@@ -2,7 +2,10 @@
   "name": "plugin-b",
   "version": "1.2.3",
   "sharkord": {
-    "entry": "index.js",
+    "entry": {
+      "server": "index.js",
+      "client": "index.js"
+    },
     "author": "Test Author",
     "homepage": "https://example.com",
     "description": "Plugin B with commands",

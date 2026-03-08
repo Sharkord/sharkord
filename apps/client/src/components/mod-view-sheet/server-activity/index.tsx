@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@sharkord/ui';
 import { Activity, File, Link, MessageSquareText } from 'lucide-react';
 import { memo } from 'react';
 import { ModViewScreen, useModViewContext } from '../context';

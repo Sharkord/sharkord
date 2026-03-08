@@ -1,4 +1,10 @@
 import { ServerScreen } from '@/components/server-screens/screens';
+import { requestConfirmation } from '@/features/dialogs/actions';
+import { openServerScreen } from '@/features/server-screens/actions';
+import { useCategoryById } from '@/features/server/categories/hooks';
+import { useCan } from '@/features/server/hooks';
+import { getTRPCClient } from '@/lib/trpc';
+import { Permission } from '@sharkord/shared';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -6,13 +12,7 @@ import {
   ContextMenuLabel,
   ContextMenuSeparator,
   ContextMenuTrigger
-} from '@/components/ui/context-menu';
-import { requestConfirmation } from '@/features/dialogs/actions';
-import { openServerScreen } from '@/features/server-screens/actions';
-import { useCategoryById } from '@/features/server/categories/hooks';
-import { useCan } from '@/features/server/hooks';
-import { getTRPCClient } from '@/lib/trpc';
-import { Permission } from '@sharkord/shared';
+} from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 

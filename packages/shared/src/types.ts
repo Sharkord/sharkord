@@ -35,12 +35,19 @@ export type TPublicServerSettings = Pick<
   | 'description'
   | 'serverId'
   | 'storageUploadEnabled'
+  | 'directMessagesEnabled'
   | 'storageQuota'
   | 'storageUploadMaxFileSize'
+  | 'storageFileSharingInDirectMessages'
+  | 'storageMaxAvatarSize'
+  | 'storageMaxBannerSize'
+  | 'storageMaxFilesPerMessage'
   | 'storageSpaceQuotaByUser'
   | 'storageOverflowAction'
   | 'enablePlugins'
->;
+> & {
+  webRtcMaxBitrate: number;
+};
 
 export type TGenericObject = {
   [key: string]: any;
@@ -127,3 +134,10 @@ export type TChannelUserPermissionsMap = Record<
 >;
 
 export type TReadStateMap = Record<number, number>;
+
+export type TDirectMessageConversation = {
+  channelId: number;
+  userId: number;
+  unreadCount: number;
+  lastMessageAt: number;
+};

@@ -1,7 +1,7 @@
-import { Button } from '@/components/ui/button';
 import { setDisconnectInfo } from '@/features/server/actions';
 import type { TDisconnectInfo } from '@/features/server/types';
 import { DisconnectCode } from '@sharkord/shared';
+import { Button } from '@sharkord/ui';
 import { AlertCircle, Gavel, RefreshCw, WifiOff } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 

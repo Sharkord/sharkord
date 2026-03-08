@@ -14,11 +14,13 @@ import {
 } from '@trpc/server/adapters/ws';
 import { eq } from 'drizzle-orm';
 import http from 'http';
-import { WebSocketServer } from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 import { db } from '../db';
 import { getAllChannelUserPermissions } from '../db/queries/channels';
+import { isUserDmParticipant } from '../db/queries/dms';
 import { getUserById, getUserByToken } from '../db/queries/users';
 import { channels } from '../db/schema';
+import { getErrorMessage } from '../helpers/get-error-message';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
 import { enqueueActivityLog } from '../queues/activity-log';
@@ -87,7 +89,8 @@ const createContext = async ({
   ) => {
     const channel = await db
       .select({
-        private: channels.private
+        private: channels.private,
+        isDm: channels.isDm
       })
       .from(channels)
       .where(eq(channels.id, channelId))
@@ -95,6 +98,15 @@ const createContext = async ({
       .get();
 
     if (!channel) return false;
+
+    if (channel.isDm) {
+      const isParticipant = await isUserDmParticipant(
+        channelId,
+        decodedUser.id
+      );
+
+      if (isParticipant) return true;
+    }
 
     if (!channel.private) return true;
 
@@ -224,50 +236,84 @@ const createWsServer = async (server: http.Server) => {
     wss = new WebSocketServer({ server });
 
     wss.on('connection', (ws) => {
-      ws.userId = undefined;
-      ws.token = '';
+      try {
+        ws.userId = undefined;
+        ws.token = '';
 
-      ws.once('message', async (message) => {
-        try {
-          const parsed = JSON.parse(message.toString());
-          const { token } = parsed.data as TConnectionParams;
+        ws.once('message', async (message) => {
+          try {
+            const parsed = JSON.parse(message.toString());
+            const { token } = parsed.data as TConnectionParams;
 
-          ws.token = token;
-        } catch {
-          logger.error('Failed to parse initial WebSocket message');
-        }
-      });
-
-      ws.on('close', async () => {
-        const user = await getUserByToken(ws.token);
-
-        if (!user) return;
-
-        const voiceRuntime = VoiceRuntime.findRuntimeByUserId(user.id);
-
-        if (voiceRuntime) {
-          voiceRuntime.removeUser(user.id);
-
-          pubsub.publish(ServerEvents.USER_LEAVE_VOICE, {
-            channelId: voiceRuntime.id,
-            userId: user.id
-          });
-        }
-
-        usersIpMap.delete(user.id);
-        pubsub.publish(ServerEvents.USER_LEAVE, user.id);
-
-        logger.info('%s left the server', user.name);
-
-        enqueueActivityLog({
-          type: ActivityLogType.USER_LEFT,
-          userId: user.id
+            ws.token = token;
+          } catch (error) {
+            logger.error(
+              'Failed to parse initial WebSocket message: %s',
+              getErrorMessage(error)
+            );
+          }
         });
-      });
 
-      ws.on('error', (err) => {
-        logger.error('WebSocket client error:', err);
-      });
+        ws.on('close', async () => {
+          try {
+            const userId = ws.userId;
+
+            // ignore connections that never authenticated through joinServer
+            if (!userId) {
+              return;
+            }
+
+            // only mark as offline when there are no other active sessions
+            const hasOtherSessions = Array.from(wss?.clients ?? []).some(
+              (client) =>
+                client !== ws &&
+                client.userId === userId &&
+                client.readyState === WebSocket.OPEN
+            );
+
+            if (hasOtherSessions) {
+              return;
+            }
+
+            const user = await getUserById(userId);
+
+            if (!user) return;
+
+            const voiceRuntime = VoiceRuntime.findRuntimeByUserId(user.id);
+
+            if (voiceRuntime) {
+              voiceRuntime.removeUser(user.id);
+
+              pubsub.publish(ServerEvents.USER_LEAVE_VOICE, {
+                channelId: voiceRuntime.id,
+                userId: user.id
+              });
+            }
+
+            usersIpMap.delete(user.id);
+            pubsub.publish(ServerEvents.USER_LEAVE, user.id);
+
+            logger.info('%s left the server', user.name);
+
+            enqueueActivityLog({
+              type: ActivityLogType.USER_LEFT,
+              userId: user.id
+            });
+          } catch (error) {
+            logger.error(
+              `Error occurred while handling WebSocket close: ${getErrorMessage(error)}`
+            );
+          }
+        });
+
+        ws.on('error', (err) => {
+          logger.error('WebSocket client error:', err);
+        });
+      } catch (error) {
+        logger.error(
+          `Error occurred while handling WebSocket connection: ${getErrorMessage(error)}`
+        );
+      }
     });
 
     wss.on('close', () => {
@@ -275,13 +321,18 @@ const createWsServer = async (server: http.Server) => {
     });
 
     wss.on('error', (err) => {
-      logger.error('WebSocket server error:', err);
+      logger.error('WebSocket server error: %s', getErrorMessage(err));
     });
 
     applyWSSHandler({
       wss,
       router: appRouter,
-      createContext
+      createContext,
+      keepAlive: {
+        enabled: true,
+        pingMs: 30_000,
+        pongWaitMs: 5_000
+      }
     });
 
     resolve(wss);

@@ -1,16 +1,16 @@
-import { Button } from '@/components/ui/button';
+import { closeServerScreens } from '@/features/server-screens/actions';
+import { useForm } from '@/hooks/use-form';
+import { getTRPCClient } from '@/lib/trpc';
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { Group } from '@/components/ui/group';
-import { Input } from '@/components/ui/input';
-import { closeServerScreens } from '@/features/server-screens/actions';
-import { useForm } from '@/hooks/use-form';
-import { getTRPCClient } from '@/lib/trpc';
+  CardTitle,
+  Group,
+  Input
+} from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 

@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/user-avatar';
 import { setModViewOpen } from '@/features/app/actions';
 import {
@@ -8,9 +7,13 @@ import {
 } from '@/features/dialogs/actions';
 import { useUserRoles } from '@/features/server/hooks';
 import { useOwnUserId, useUserStatus } from '@/features/server/users/hooks';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
 import { getTRPCClient } from '@/lib/trpc';
-import { DELETED_USER_IDENTITY_AND_NAME, UserStatus } from '@sharkord/shared';
+import {
+  DELETED_USER_IDENTITY_AND_NAME,
+  getTrpcError,
+  UserStatus
+} from '@sharkord/shared';
+import { Button } from '@sharkord/ui';
 import { Gavel, Plus, Trash, UserMinus } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';

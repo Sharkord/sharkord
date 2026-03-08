@@ -16,7 +16,7 @@ const updateCategoryRoute = protectedProcedure
     })
   )
   .mutation(async ({ ctx, input }) => {
-    await ctx.needsPermission(Permission.MANAGE_EMOJIS);
+    await ctx.needsPermission(Permission.MANAGE_CATEGORIES);
 
     const existingCategory = await db
       .select()

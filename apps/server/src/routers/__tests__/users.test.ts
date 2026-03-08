@@ -1,6 +1,7 @@
 import {
   DELETED_USER_IDENTITY_AND_NAME,
-  sha256,
+  OWNER_ROLE_ID,
+  Permission,
   type TTempFile
 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
@@ -11,8 +12,13 @@ import {
   channels,
   emojis,
   files,
+  logins,
   messageReactions,
   messages,
+  rolePermissions,
+  roles,
+  settings,
+  userRoles,
   users
 } from '../../db/schema';
 
@@ -127,6 +133,65 @@ describe('users router', () => {
     expect(info.user.id).toBe(2);
   });
 
+  test('should hide sensitive data when user has MANAGE_USERS but not VIEW_USER_SENSITIVE_DATA', async () => {
+    // create a custom role with MANAGE_USERS but without VIEW_USER_SENSITIVE_DATA
+    const [customRole] = await tdb
+      .insert(roles)
+      .values({
+        name: 'Moderator',
+        color: '#00ff00',
+        isPersistent: false,
+        isDefault: false,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    await tdb.insert(rolePermissions).values({
+      roleId: customRole!.id,
+      permission: Permission.MANAGE_USERS,
+      createdAt: Date.now()
+    });
+
+    // assign custom role to user 2
+    await tdb.insert(userRoles).values({
+      userId: 2,
+      roleId: customRole!.id,
+      createdAt: Date.now()
+    });
+
+    // insert a login record for user 1 so we can verify ip and location are hidden
+    await tdb.insert(logins).values({
+      userId: 1,
+      ip: '192.168.1.1',
+      city: 'Gondomar',
+      region: 'Porto',
+      country: 'PT',
+      loc: '41.1833,-8.6333',
+      org: 'MEO',
+      postal: '10001',
+      timezone: 'Europe/Lisbon',
+      createdAt: Date.now()
+    });
+
+    const { caller } = await initTest(2);
+
+    const info = await caller.users.getInfo({
+      userId: 1
+    });
+
+    expect(info).toBeDefined();
+    expect(info.user).toBeDefined();
+    expect(info.user.id).toBe(1);
+
+    expect(info.user.identity).toBeEmpty();
+    expect(info.logins.length).toBeGreaterThan(0);
+
+    info.logins.forEach((login) => {
+      expect(login.ip).toBeNull();
+      expect(login.loc).toBeNull();
+    });
+  });
+
   test('should throw when getting info for non-existing user', async () => {
     const { caller } = await initTest();
 
@@ -196,10 +261,12 @@ describe('users router', () => {
     // should not be plain text
     expect(row!.password).not.toBe(newPassword);
 
-    const hashedPassword = await sha256(newPassword);
+    // should be hashed with argon2
+    expect(row!.password).toStartWith('$argon2');
 
-    // should be hashed
-    expect(row!.password).toBe(hashedPassword);
+    // should verify against the new password
+    const isValid = await Bun.password.verify(newPassword, row!.password);
+    expect(isValid).toBe(true);
   });
 
   test('should throw when current password is incorrect', async () => {
@@ -278,6 +345,34 @@ describe('users router', () => {
     expect(userInfo!.user.avatarId).toBeNull();
   });
 
+  test('should enforce configured avatar size limit', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    await tdb
+      .update(settings)
+      .set({
+        storageMaxAvatarSize: 10
+      })
+      .execute();
+
+    const file = new File(
+      ['avatar content bigger than ten bytes'],
+      'avatar.png',
+      {
+        type: 'image/png'
+      }
+    );
+
+    const uploadResponse = await uploadFile(file, mockedToken);
+    const uploadData = (await uploadResponse.json()) as TTempFile;
+
+    await expect(
+      caller.users.changeAvatar({
+        fileId: uploadData.id
+      })
+    ).rejects.toThrow('Avatar file exceeds the configured maximum size');
+  });
+
   test('should change banner', async () => {
     const { caller, mockedToken } = await initTest();
 
@@ -318,6 +413,34 @@ describe('users router', () => {
 
     expect(userInfo).toBeDefined();
     expect(userInfo!.user.bannerId).toBeNull();
+  });
+
+  test('should enforce configured banner size limit', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    await tdb
+      .update(settings)
+      .set({
+        storageMaxBannerSize: 10
+      })
+      .execute();
+
+    const file = new File(
+      ['banner content bigger than ten bytes'],
+      'banner.png',
+      {
+        type: 'image/png'
+      }
+    );
+
+    const uploadResponse = await uploadFile(file, mockedToken);
+    const uploadData = (await uploadResponse.json()) as TTempFile;
+
+    await expect(
+      caller.users.changeBanner({
+        fileId: uploadData.id
+      })
+    ).rejects.toThrow('Banner file exceeds the configured maximum size');
   });
 
   test('should replace existing avatar', async () => {
@@ -397,6 +520,49 @@ describe('users router', () => {
     });
 
     expect(info.user.roleIds).not.toContain(1);
+  });
+
+  test('should throw when non-owner user tries to assign owner role to someone else', async () => {
+    const { caller } = await initTest();
+    const newRoleId = await caller.roles.add();
+
+    await caller.roles.update({
+      roleId: newRoleId,
+      name: 'Test Role',
+      color: '#123456',
+      permissions: [Permission.MANAGE_USERS]
+    });
+
+    await caller.users.addRole({
+      userId: 2,
+      roleId: newRoleId
+    });
+
+    const newUser = await tdb
+      .insert(users)
+      .values({
+        identity: 'tempidentity',
+        name: 'Another User',
+        avatarId: null,
+        password: 'password',
+        bannerId: null,
+        bio: null,
+        bannerColor: null,
+        createdAt: Date.now()
+      })
+      .returning({ id: users.id })
+      .get();
+
+    const { caller: nonOwnerCaller } = await initTest(2);
+
+    await expect(
+      nonOwnerCaller.users.addRole({
+        userId: newUser.id,
+        roleId: OWNER_ROLE_ID
+      })
+    ).rejects.toThrow(
+      'Only users with the owner role can assign the owner role'
+    );
   });
 
   test('should throw when removing non-existent role', async () => {
@@ -904,5 +1070,22 @@ describe('users router', () => {
     expect(info.user.name).toBe('Final Name');
     expect(info.user.bannerColor).toBe('#333333');
     expect(info.user.bio).toBe('Final Bio');
+  });
+
+  test('should not return dm messages in user info', async () => {
+    const { caller } = await initTest();
+
+    const dbMessages = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.userId, 3))
+      .all();
+
+    const userInfo = await caller.users.getInfo({
+      userId: 3
+    });
+
+    expect(userInfo.messages.length).toBe(0);
+    expect(dbMessages.length).toBeGreaterThan(0);
   });
 });

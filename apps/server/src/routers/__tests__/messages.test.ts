@@ -1,5 +1,9 @@
+import { ChannelPermission, Permission } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
-import { initTest } from '../../__tests__/helpers';
+import { and, eq } from 'drizzle-orm';
+import { initTest, uploadFile } from '../../__tests__/helpers';
+import { tdb } from '../../__tests__/setup';
+import { rolePermissions, settings } from '../../db/schema';
 
 describe('messages router', () => {
   test('should throw when user lacks permissions (edit - not own message)', async () => {
@@ -134,6 +138,64 @@ describe('messages router', () => {
     expect(result.messages).toBeDefined();
     expect(Array.isArray(result.messages)).toBe(true);
     expect(result.messages.length).toBe(3);
+  });
+
+  test('should get pinned messages from channel', async () => {
+    const { caller } = await initTest();
+
+    const firstMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Pinned message 1',
+      files: []
+    });
+
+    const secondMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Not pinned message',
+      files: []
+    });
+
+    const thirdMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Pinned message 2',
+      files: []
+    });
+
+    await caller.messages.togglePin({ messageId: firstMessageId });
+    await caller.messages.togglePin({ messageId: thirdMessageId });
+
+    const pinnedMessages = await caller.messages.getPinned({ channelId: 1 });
+
+    expect(Array.isArray(pinnedMessages)).toBe(true);
+    expect(pinnedMessages.length).toBe(2);
+    expect(pinnedMessages.every((message) => message.pinned)).toBe(true);
+    expect(
+      pinnedMessages.find((message) => message.id === secondMessageId)
+    ).toBe(undefined);
+  });
+
+  test('should throw when user lacks channel permissions (getPinned)', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    await caller1.channels.update({
+      channelId: 1,
+      name: 'General',
+      topic: 'General text channel',
+      private: true
+    });
+
+    await caller1.channels.updatePermissions({
+      channelId: 1,
+      roleId: 2,
+      permissions: [ChannelPermission.SEND_MESSAGES]
+    });
+
+    await expect(
+      caller2.messages.getPinned({
+        channelId: 1
+      })
+    ).rejects.toThrow('Insufficient channel permissions');
   });
 
   test('should edit own message', async () => {
@@ -484,6 +546,25 @@ describe('messages router', () => {
     });
   });
 
+  test('should throw when user lacks permissions (signalTyping)', async () => {
+    const { caller } = await initTest(2);
+
+    await tdb
+      .delete(rolePermissions)
+      .where(
+        and(
+          eq(rolePermissions.roleId, 2),
+          eq(rolePermissions.permission, Permission.SEND_MESSAGES)
+        )
+      );
+
+    await expect(
+      caller.messages.signalTyping({
+        channelId: 1
+      })
+    ).rejects.toThrow('Insufficient permissions');
+  });
+
   test('should paginate messages with cursor', async () => {
     const { caller } = await initTest();
 
@@ -527,6 +608,92 @@ describe('messages router', () => {
     expect(intersection.length).toBe(0);
   });
 
+  test('should fetch all messages until targetMessageId plus 20 older', async () => {
+    globalThis.disableRateLimiting = true;
+
+    const { caller } = await initTest();
+
+    const sentMessageIds: number[] = [];
+
+    for (let i = 0; i < 10; i++) {
+      const messageId = await caller.messages.send({
+        channelId: 2,
+        content: `Message ${i + 1}`,
+        files: []
+      });
+
+      sentMessageIds.push(messageId);
+    }
+
+    // target the newest message — should return all 10 + up to 20 older (0 exist)
+    const newestId = sentMessageIds[9]!;
+
+    const result = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      targetMessageId: newestId,
+      limit: 1
+    });
+
+    // only the target itself + 0 newer + 9 older (capped by available)
+    expect(result.messages.length).toBe(10);
+    expect(result.nextCursor).toBeNull();
+    expect(result.messages.some((message) => message.id === newestId)).toBe(
+      true
+    );
+
+    // target the 3rd message (index 2) — 7 newer + target + 2 older = 10
+    const middleId = sentMessageIds[2]!;
+
+    const result2 = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      targetMessageId: middleId,
+      limit: 1
+    });
+
+    expect(result2.messages.length).toBe(10);
+    expect(result2.messages.some((message) => message.id === middleId)).toBe(
+      true
+    );
+
+    // target the oldest — 9 newer + target + 0 older = 10
+    const oldestId = sentMessageIds[0]!;
+
+    const result3 = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      targetMessageId: oldestId,
+      limit: 1
+    });
+
+    expect(result3.messages.length).toBe(10);
+    expect(result3.messages.some((message) => message.id === oldestId)).toBe(
+      true
+    );
+
+    globalThis.disableRateLimiting = false;
+  });
+
+  test('should throw when targetMessageId is not in channel', async () => {
+    const { caller } = await initTest();
+
+    const messageInChannelOne = await caller.messages.send({
+      channelId: 1,
+      content: 'Message in channel 1',
+      files: []
+    });
+
+    await expect(
+      caller.messages.get({
+        channelId: 2,
+        cursor: null,
+        targetMessageId: messageInChannelOne,
+        limit: 50
+      })
+    ).rejects.toThrow('Target message not found');
+  });
+
   test('should return empty messages for empty channel', async () => {
     const { caller } = await initTest();
 
@@ -560,6 +727,89 @@ describe('messages router', () => {
 
     expect(sentMessage!.content).toBe('Message without files');
     expect(sentMessage!.files).toBeDefined();
+    expect(sentMessage!.files.length).toBe(0);
+  });
+
+  test('should trim attached files to configured max files per message', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    await tdb
+      .update(settings)
+      .set({
+        storageMaxFilesPerMessage: 2
+      })
+      .execute();
+
+    const file1 = new File(['file one'], 'one.txt', { type: 'text/plain' });
+    const file2 = new File(['file two'], 'two.txt', { type: 'text/plain' });
+    const file3 = new File(['file three'], 'three.txt', { type: 'text/plain' });
+
+    const response1 = await uploadFile(file1, mockedToken);
+    const response2 = await uploadFile(file2, mockedToken);
+    const response3 = await uploadFile(file3, mockedToken);
+
+    const temp1 = (await response1.json()) as { id: string };
+    const temp2 = (await response2.json()) as { id: string };
+    const temp3 = (await response3.json()) as { id: string };
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Message with limited attachments',
+      files: [temp1.id, temp2.id, temp3.id]
+    });
+
+    const messages = await caller.messages.get({
+      channelId: 1,
+      cursor: null,
+      limit: 50
+    });
+
+    const sentMessage = messages.messages.find((m) => m.id === messageId);
+
+    expect(sentMessage).toBeDefined();
+    expect(sentMessage!.files.length).toBe(2);
+
+    const names = sentMessage!.files.map((f) => f.originalName);
+
+    expect(names).toContain('one.txt');
+    expect(names).toContain('two.txt');
+    expect(names).not.toContain('three.txt');
+  });
+
+  test('should discard all attached files when max files per message is 0', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    await tdb
+      .update(settings)
+      .set({
+        storageMaxFilesPerMessage: 0
+      })
+      .execute();
+
+    const file1 = new File(['file one'], 'one.txt', { type: 'text/plain' });
+    const file2 = new File(['file two'], 'two.txt', { type: 'text/plain' });
+
+    const response1 = await uploadFile(file1, mockedToken);
+    const response2 = await uploadFile(file2, mockedToken);
+
+    const temp1 = (await response1.json()) as { id: string };
+    const temp2 = (await response2.json()) as { id: string };
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Message with files while limit is zero',
+      files: [temp1.id, temp2.id]
+    });
+
+    const messages = await caller.messages.get({
+      channelId: 1,
+      cursor: null,
+      limit: 50
+    });
+
+    const sentMessage = messages.messages.find((m) => m.id === messageId);
+
+    expect(sentMessage).toBeDefined();
     expect(sentMessage!.files.length).toBe(0);
   });
 
@@ -647,5 +897,715 @@ describe('messages router', () => {
         content: 'One too many'
       })
     ).rejects.toThrow('Too many requests. Please try again shortly.');
+  });
+
+  test('should send a thread reply to a root message', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Parent message',
+      files: []
+    });
+
+    await caller.messages.send({
+      channelId: 1,
+      content: 'Thread reply',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    const thread = await caller.messages.getThread({
+      parentMessageId: parentId,
+      cursor: null,
+      limit: 50
+    });
+
+    expect(thread.messages.length).toBe(1);
+    expect(thread.messages[0]!.content).toBe('Thread reply');
+    expect(thread.messages[0]!.parentMessageId).toBe(parentId);
+  });
+
+  test('should not include thread replies in channel messages', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 2,
+      content: 'Root message',
+      files: []
+    });
+
+    await caller.messages.send({
+      channelId: 2,
+      content: 'Reply 1',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await caller.messages.send({
+      channelId: 2,
+      content: 'Reply 2',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    const channelMessages = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      limit: 50
+    });
+
+    // only the root message should appear, not the replies
+    expect(channelMessages.messages.length).toBe(1);
+    expect(channelMessages.messages[0]!.content).toBe('Root message');
+  });
+
+  test('should include reply count on root messages', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 2,
+      content: 'Root with replies',
+      files: []
+    });
+
+    await caller.messages.send({
+      channelId: 2,
+      content: 'Reply 1',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await caller.messages.send({
+      channelId: 2,
+      content: 'Reply 2',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await caller.messages.send({
+      channelId: 2,
+      content: 'Reply 3',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    const channelMessages = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      limit: 50
+    });
+
+    const rootMessage = channelMessages.messages.find((m) => m.id === parentId);
+
+    expect(rootMessage).toBeDefined();
+    expect(rootMessage!.replyCount).toBe(3);
+  });
+
+  test('should return empty thread for message with no replies', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'No replies here',
+      files: []
+    });
+
+    const thread = await caller.messages.getThread({
+      parentMessageId: parentId,
+      cursor: null,
+      limit: 50
+    });
+
+    expect(thread.messages.length).toBe(0);
+    expect(thread.nextCursor).toBeNull();
+  });
+
+  test('should throw when sending a reply to a non-existing parent', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'Orphan reply',
+        files: [],
+        parentMessageId: 999999
+      })
+    ).rejects.toThrow('Parent message not found');
+  });
+
+  test('should throw when sending a reply to a message in a different channel', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Message in channel 1',
+      files: []
+    });
+
+    await expect(
+      caller.messages.send({
+        channelId: 2,
+        content: 'Reply targeting wrong channel',
+        files: [],
+        parentMessageId: parentId
+      })
+    ).rejects.toThrow('Parent message must be in the same channel');
+  });
+
+  test('should throw when replying to a thread reply (nested threads)', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Root message',
+      files: []
+    });
+
+    const replyId = await caller.messages.send({
+      channelId: 1,
+      content: 'First-level reply',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'Nested reply attempt',
+        files: [],
+        parentMessageId: replyId
+      })
+    ).rejects.toThrow(
+      'Cannot reply to a thread reply. Threads are only one level deep.'
+    );
+  });
+
+  test('should throw when getting thread for non-existing parent', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.messages.getThread({
+        parentMessageId: 999999,
+        cursor: null,
+        limit: 50
+      })
+    ).rejects.toThrow('Parent message not found');
+  });
+
+  test('should throw when getting thread for a reply message', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Root message',
+      files: []
+    });
+
+    const replyId = await caller.messages.send({
+      channelId: 1,
+      content: 'Reply message',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await expect(
+      caller.messages.getThread({
+        parentMessageId: replyId,
+        cursor: null,
+        limit: 50
+      })
+    ).rejects.toThrow('Cannot get thread for a reply message');
+  });
+
+  test('should paginate thread messages', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Root for pagination',
+      files: []
+    });
+
+    for (let i = 0; i < 10; i++) {
+      await caller.messages.send({
+        channelId: 1,
+        content: `Thread reply ${i + 1}`,
+        files: [],
+        parentMessageId: parentId
+      });
+    }
+
+    const firstPage = await caller.messages.getThread({
+      parentMessageId: parentId,
+      cursor: null,
+      limit: 5
+    });
+
+    expect(firstPage.messages.length).toBe(5);
+    expect(firstPage.nextCursor).not.toBeNull();
+
+    const secondPage = await caller.messages.getThread({
+      parentMessageId: parentId,
+      cursor: firstPage.nextCursor,
+      limit: 5
+    });
+
+    expect(secondPage.messages.length).toBeGreaterThan(0);
+
+    // no overlap between pages
+    const firstPageIds = firstPage.messages.map((m) => m.id);
+    const secondPageIds = secondPage.messages.map((m) => m.id);
+    const intersection = firstPageIds.filter((id) =>
+      secondPageIds.includes(id)
+    );
+
+    expect(intersection.length).toBe(0);
+  });
+
+  test('should return thread messages in ascending order (oldest first)', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Root message',
+      files: []
+    });
+
+    for (let i = 0; i < 3; i++) {
+      await caller.messages.send({
+        channelId: 1,
+        content: `Reply ${i + 1}`,
+        files: [],
+        parentMessageId: parentId
+      });
+    }
+
+    const thread = await caller.messages.getThread({
+      parentMessageId: parentId,
+      cursor: null,
+      limit: 50
+    });
+
+    expect(thread.messages.length).toBe(3);
+
+    for (let i = 1; i < thread.messages.length; i++) {
+      expect(thread.messages[i]!.createdAt).toBeGreaterThanOrEqual(
+        thread.messages[i - 1]!.createdAt
+      );
+    }
+  });
+
+  test('should delete a thread reply', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Root message',
+      files: []
+    });
+
+    const replyId = await caller.messages.send({
+      channelId: 1,
+      content: 'Reply to delete',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await caller.messages.delete({ messageId: replyId });
+
+    const thread = await caller.messages.getThread({
+      parentMessageId: parentId,
+      cursor: null,
+      limit: 50
+    });
+
+    expect(thread.messages.find((m) => m.id === replyId)).toBeUndefined();
+  });
+
+  test('should update reply count after deleting a thread reply', async () => {
+    const { caller } = await initTest();
+
+    const parentId = await caller.messages.send({
+      channelId: 2,
+      content: 'Root message',
+      files: []
+    });
+
+    const replyId = await caller.messages.send({
+      channelId: 2,
+      content: 'Reply 1',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    await caller.messages.send({
+      channelId: 2,
+      content: 'Reply 2',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    // should start with 2 replies
+    let channelMessages = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      limit: 50
+    });
+
+    expect(
+      channelMessages.messages.find((m) => m.id === parentId)!.replyCount
+    ).toBe(2);
+
+    // delete one reply
+    await caller.messages.delete({ messageId: replyId });
+
+    channelMessages = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      limit: 50
+    });
+
+    expect(
+      channelMessages.messages.find((m) => m.id === parentId)!.replyCount
+    ).toBe(1);
+  });
+
+  test('should reject file attachments in direct messages when disabled', async () => {
+    const { caller: caller1, mockedToken } = await initTest(1);
+
+    const { channelId } = await caller1.dms.open({ userId: 2 });
+
+    await tdb
+      .update(settings)
+      .set({
+        storageFileSharingInDirectMessages: false
+      })
+      .execute();
+
+    const file = new File(['dm attachment'], 'dm.txt', {
+      type: 'text/plain'
+    });
+
+    const uploadResponse = await uploadFile(file, mockedToken);
+    const uploaded = (await uploadResponse.json()) as { id: string };
+
+    await expect(
+      caller1.messages.send({
+        channelId,
+        content: 'hello with file',
+        files: [uploaded.id]
+      })
+    ).rejects.toThrow(
+      'File sharing in direct messages is disabled on this server'
+    );
+  });
+
+  test('should reject sending and fetching direct messages when dms are disabled', async () => {
+    const { caller: caller1 } = await initTest(1);
+
+    const { channelId } = await caller1.dms.open({ userId: 2 });
+
+    await tdb
+      .update(settings)
+      .set({
+        directMessagesEnabled: false
+      })
+      .execute();
+
+    await expect(
+      caller1.messages.send({
+        channelId,
+        content: 'blocked dm',
+        files: []
+      })
+    ).rejects.toThrow('Direct messages are disabled on this server');
+
+    await expect(
+      caller1.messages.get({
+        channelId,
+        cursor: null,
+        limit: 50
+      })
+    ).rejects.toThrow('Direct messages are disabled on this server');
+  });
+
+  test('should throw when non-participant tries to fetch direct messages', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller3 } = await initTest(3);
+
+    const { channelId } = await caller1.dms.open({ userId: 2 });
+
+    await expect(
+      caller3.messages.get({
+        channelId,
+        cursor: null,
+        limit: 50
+      })
+    ).rejects.toThrow('You are not a participant in this DM channel');
+  });
+
+  test('should throw when non-participant tries to send message in direct messages', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller3 } = await initTest(3);
+
+    const { channelId } = await caller1.dms.open({ userId: 2 });
+
+    await expect(
+      caller3.messages.send({
+        channelId,
+        content: 'Intruding DM',
+        files: []
+      })
+    ).rejects.toThrow('Insufficient channel permissions');
+  });
+
+  test('should throw when non-participant tries to signal typing in direct messages', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller3 } = await initTest(3);
+
+    const { channelId } = await caller1.dms.open({ userId: 2 });
+
+    await expect(
+      caller3.messages.signalTyping({
+        channelId
+      })
+    ).rejects.toThrow('You are not a participant in this DM channel');
+  });
+
+  test('should send a message in direct messages', async () => {
+    const { caller: caller1 } = await initTest(3);
+    const { caller: caller2 } = await initTest(4);
+
+    const messagesBefore = await caller2.messages.get({
+      channelId: 3, // DM channel between user 3 and 4
+      cursor: null,
+      limit: 50
+    });
+
+    await caller1.messages.send({
+      channelId: 3, // DM channel between user 3 and 4
+      content: 'Hello in DM',
+      files: []
+    });
+
+    const messagesAfter = await caller2.messages.get({
+      channelId: 3, // DM channel between user 3 and 4
+      cursor: null,
+      limit: 50
+    });
+
+    expect(messagesBefore.messages.length).toBe(1); // first dm is already mocked
+    expect(messagesAfter.messages.length).toBe(2);
+    expect(messagesAfter.messages[0]!.content).toBe('Hello in DM');
+  });
+
+  test('should throw when non-participant tries to pin a DM message', async () => {
+    // User 1 is not a participant in DM channel 3 (message id 2 is from seed)
+    const { caller } = await initTest(1);
+
+    await expect(caller.messages.togglePin({ messageId: 2 })).rejects.toThrow(
+      'You are not a participant in this DM channel'
+    );
+  });
+
+  test('should throw when pinning a DM message with DMs disabled', async () => {
+    const { caller } = await initTest(3);
+
+    // give user 3 PIN_MESSAGES permission via their default role
+    await tdb.insert(rolePermissions).values({
+      roleId: 2,
+      permission: Permission.PIN_MESSAGES,
+      createdAt: Date.now()
+    });
+
+    await tdb.update(settings).set({ directMessagesEnabled: false }).execute();
+
+    await expect(caller.messages.togglePin({ messageId: 2 })).rejects.toThrow(
+      'Direct messages are disabled on this server'
+    );
+  });
+
+  test('should throw when fetching pinned DM messages as non-participant', async () => {
+    const { caller } = await initTest(1);
+
+    await expect(caller.messages.getPinned({ channelId: 3 })).rejects.toThrow(
+      'You are not a participant in this DM channel'
+    );
+  });
+
+  test('should throw when fetching pinned DM messages with DMs disabled', async () => {
+    const { caller } = await initTest(3);
+
+    await tdb.update(settings).set({ directMessagesEnabled: false }).execute();
+
+    await expect(caller.messages.getPinned({ channelId: 3 })).rejects.toThrow(
+      'Direct messages are disabled on this server'
+    );
+  });
+
+  test('should throw when fetching a single DM message with DMs disabled', async () => {
+    const { caller } = await initTest(3);
+
+    await tdb.update(settings).set({ directMessagesEnabled: false }).execute();
+
+    await expect(caller.messages.getOne({ messageId: 2 })).rejects.toThrow(
+      'Direct messages are disabled on this server'
+    );
+  });
+
+  test('should throw when editing a DM message with DMs disabled', async () => {
+    const { caller } = await initTest(3);
+
+    await tdb.update(settings).set({ directMessagesEnabled: false }).execute();
+
+    await expect(
+      caller.messages.edit({ messageId: 2, content: 'edited' })
+    ).rejects.toThrow('Direct messages are disabled on this server');
+  });
+
+  test('should throw when deleting a DM message with DMs disabled', async () => {
+    const { caller } = await initTest(3);
+
+    await tdb.update(settings).set({ directMessagesEnabled: false }).execute();
+
+    await expect(caller.messages.delete({ messageId: 2 })).rejects.toThrow(
+      'Direct messages are disabled on this server'
+    );
+  });
+
+  test('should throw when reacting to a DM message with DMs disabled', async () => {
+    const { caller } = await initTest(3);
+
+    // give user 3 REACT_TO_MESSAGES permission via their default role
+    await tdb.insert(rolePermissions).values({
+      roleId: 2,
+      permission: Permission.REACT_TO_MESSAGES,
+      createdAt: Date.now()
+    });
+
+    await tdb.update(settings).set({ directMessagesEnabled: false }).execute();
+
+    await expect(
+      caller.messages.toggleReaction({ messageId: 2, emoji: '👍' })
+    ).rejects.toThrow('Direct messages are disabled on this server');
+  });
+
+  test('should throw when fetching DM thread messages with DMs disabled', async () => {
+    const { caller: callerA } = await initTest(3);
+
+    // create a thread reply in the DM channel first
+    await callerA.messages.send({
+      channelId: 3,
+      content: 'Thread reply in DM',
+      files: [],
+      parentMessageId: 2
+    });
+
+    await tdb.update(settings).set({ directMessagesEnabled: false }).execute();
+
+    await expect(
+      callerA.messages.getThread({
+        parentMessageId: 2,
+        cursor: null,
+        limit: 50
+      })
+    ).rejects.toThrow('Direct messages are disabled on this server');
+  });
+
+  test('should throw when fetching thread messages without VIEW_CHANNEL on private non-DM channel', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    // make channel 1 private and deny VIEW_CHANNEL for role 2
+    await caller1.channels.update({
+      channelId: 1,
+      name: 'General',
+      topic: 'General text channel',
+      private: true
+    });
+
+    await caller1.channels.updatePermissions({
+      channelId: 1,
+      roleId: 2,
+      permissions: [ChannelPermission.SEND_MESSAGES]
+    });
+
+    // user 1 sends a root message and a thread reply
+    const parentId = await caller1.messages.send({
+      channelId: 1,
+      content: 'Root for thread perm test',
+      files: []
+    });
+
+    await caller1.messages.send({
+      channelId: 1,
+      content: 'Thread reply',
+      files: [],
+      parentMessageId: parentId
+    });
+
+    // user 2 should not be able to read the thread
+    await expect(
+      caller2.messages.getThread({
+        parentMessageId: parentId,
+        cursor: null,
+        limit: 50
+      })
+    ).rejects.toThrow('Insufficient channel permissions');
+  });
+
+  test('should reject file attachments in DMs when file uploads are globally disabled', async () => {
+    const { caller: caller1, mockedToken } = await initTest(1);
+
+    const { channelId } = await caller1.dms.open({ userId: 2 });
+
+    // upload file while uploads are still enabled
+    const file = new File(['dm attachment'], 'dm.txt', {
+      type: 'text/plain'
+    });
+
+    const uploadResponse = await uploadFile(file, mockedToken);
+    const uploaded = (await uploadResponse.json()) as { id: string };
+
+    // disable uploads but keep DM file sharing enabled
+    await tdb
+      .update(settings)
+      .set({
+        storageUploadEnabled: false,
+        storageFileSharingInDirectMessages: true
+      })
+      .execute();
+
+    await expect(
+      caller1.messages.send({
+        channelId,
+        content: 'hello with file',
+        files: [uploaded.id]
+      })
+    ).rejects.toThrow('File uploads are disabled on this server');
+  });
+
+  test('should reject file attachments in regular channels when file uploads are globally disabled', async () => {
+    const { caller, mockedToken } = await initTest(1);
+
+    // upload file while uploads are still enabled
+    const file = new File(['test file'], 'test.txt', {
+      type: 'text/plain'
+    });
+
+    const uploadResponse = await uploadFile(file, mockedToken);
+    const uploaded = (await uploadResponse.json()) as { id: string };
+
+    // disable uploads globally
+    await tdb.update(settings).set({ storageUploadEnabled: false }).execute();
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'hello with file',
+        files: [uploaded.id]
+      })
+    ).rejects.toThrow('File uploads are disabled on this server');
   });
 });

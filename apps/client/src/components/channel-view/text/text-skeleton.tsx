@@ -1,4 +1,4 @@
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@sharkord/ui';
 import { memo } from 'react';
 
 const TextSkeleton = memo(() => {

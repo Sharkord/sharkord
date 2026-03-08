@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { TChannel, TRole, TSettings } from './tables';
 import type { ChannelType } from './types';
 
@@ -39,7 +40,9 @@ export enum ActivityLogType {
   UPDATED_CATEGORY = 'UPDATED_CATEGORY',
   // -------------------- PLUGINS --------------------
   EXECUTED_PLUGIN_COMMAND = 'EXECUTED_PLUGIN_COMMAND',
-  PLUGIN_TOGGLED = 'PLUGIN_TOGGLED'
+  PLUGIN_TOGGLED = 'PLUGIN_TOGGLED',
+  // -------------------- MESSAGES --------------------
+  TOGGLED_MESSAGE_PIN = 'TOGGLED_MESSAGE_PIN'
 }
 
 export type TActivityLogDetailsMap = {
@@ -173,6 +176,13 @@ export type TActivityLogDetailsMap = {
   [ActivityLogType.PLUGIN_TOGGLED]: {
     pluginId: string;
     enabled: boolean;
+  };
+  // -------------------- MESSAGES --------------------
+  [ActivityLogType.TOGGLED_MESSAGE_PIN]: {
+    messageId: number;
+    channelId: number;
+    pinned: boolean;
+    pinnedBy: number;
   };
 };
 

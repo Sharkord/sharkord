@@ -6,6 +6,7 @@ import {
   channelRolePermissions,
   channels,
   channelUserPermissions,
+  directMessages,
   emojis,
   files,
   invites,
@@ -46,6 +47,7 @@ export type TChannelUserPermission = InferSelectModel<
   typeof channelUserPermissions
 >;
 export type TChannelReadState = InferSelectModel<typeof channelReadStates>;
+export type TDirectMessage = InferSelectModel<typeof directMessages>;
 
 export type TISettings = InferInsertModel<typeof settings>;
 export type TIRole = InferInsertModel<typeof roles>;
@@ -69,12 +71,17 @@ export type TIChannelUserPermission = InferInsertModel<
   typeof channelUserPermissions
 >;
 export type TIChannelReadState = InferInsertModel<typeof channelReadStates>;
+export type TIDirectMessage = InferInsertModel<typeof directMessages>;
 
 export type TStorageSettings = Pick<
   TSettings,
   | 'storageUploadEnabled'
+  | 'storageFileSharingInDirectMessages'
   | 'storageQuota'
   | 'storageUploadMaxFileSize'
+  | 'storageMaxAvatarSize'
+  | 'storageMaxBannerSize'
+  | 'storageMaxFilesPerMessage'
   | 'storageSpaceQuotaByUser'
   | 'storageOverflowAction'
 >;
@@ -109,6 +116,7 @@ export type TJoinedMessageReaction = TMessageReaction & {
 export type TJoinedMessage = TMessage & {
   files: TFile[];
   reactions: TJoinedMessageReaction[];
+  replyCount?: number;
 };
 
 export type TJoinedEmoji = TEmoji & {
@@ -134,4 +142,5 @@ export type TJoinedSettings = TSettings & {
 
 export type TJoinedInvite = TInvite & {
   creator: TJoinedPublicUser;
+  role: { id: number; name: string; color: string } | null;
 };

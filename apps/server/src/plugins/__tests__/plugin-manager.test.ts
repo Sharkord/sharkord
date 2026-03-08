@@ -1,4 +1,4 @@
-import type { TInvokerContext } from '@sharkord/shared';
+import { type TInvokerContext } from '@sharkord/shared';
 import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
@@ -241,6 +241,28 @@ describe('plugin-manager', () => {
       expect(pluginManager.hasCommand('plugin-b', 'sum')).toBe(true);
       expect(pluginManager.hasCommand('plugin-b', 'nonexistent')).toBe(false);
       expect(pluginManager.hasCommand('nonexistent-plugin', 'sum')).toBe(false);
+    });
+  });
+
+  describe('components', () => {
+    test('should return plugin id when ui is enabled', async () => {
+      await pluginManager.load('plugin-b');
+
+      const pluginIds = pluginManager.getPluginIdsWithComponents();
+
+      expect(pluginIds).toContain('plugin-b');
+    });
+
+    test('should remove plugin id from components on unload', async () => {
+      await pluginManager.load('plugin-b');
+
+      expect(pluginManager.getPluginIdsWithComponents()).toContain('plugin-b');
+
+      await pluginManager.unload('plugin-b');
+
+      expect(pluginManager.getPluginIdsWithComponents()).not.toContain(
+        'plugin-b'
+      );
     });
   });
 

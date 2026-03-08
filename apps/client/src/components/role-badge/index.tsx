@@ -1,11 +1,10 @@
 import type { TRole } from '@sharkord/shared';
+import { Badge, IconButton } from '@sharkord/ui';
 import { X } from 'lucide-react';
 import { memo } from 'react';
-import { Badge } from '../ui/badge';
-import { IconButton } from '../ui/icon-button';
 
 type TRoleBadgeProps = {
-  role: TRole;
+  role: Pick<TRole, 'id' | 'name' | 'color'>;
   onRemoveRole?: (roleId: number, roleName: string) => void;
 };
 

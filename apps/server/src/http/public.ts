@@ -7,8 +7,36 @@ import { isFileOrphaned } from '../db/queries/files';
 import { getMessageByFileId } from '../db/queries/messages';
 import { channels, files } from '../db/schema';
 import { verifyFileToken } from '../helpers/files-crypto';
+import { getErrorMessage } from '../helpers/get-error-message';
 import { PUBLIC_PATH } from '../helpers/paths';
 import { logger } from '../logger';
+
+const pipeFileStream = (
+  filePath: string,
+  res: http.ServerResponse,
+  streamOptions?: { start: number; end: number }
+) => {
+  const fileStream = fs.createReadStream(filePath, streamOptions);
+
+  fileStream.pipe(res);
+
+  fileStream.on('error', (err) => {
+    logger.error('Error serving file: %s', getErrorMessage(err));
+
+    if (!res.headersSent) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Internal server error' }));
+    }
+  });
+
+  res.on('close', () => {
+    fileStream.destroy();
+  });
+
+  fileStream.on('end', () => {
+    res.end();
+  });
+};
 
 const publicRouteHandler = async (
   req: http.IncomingMessage,
@@ -79,7 +107,7 @@ const publicRouteHandler = async (
     return;
   }
 
-  const fileStream = fs.createReadStream(filePath);
+  const stat = fs.statSync(filePath);
 
   const inlineAllowlist = [
     'image/png',
@@ -95,30 +123,62 @@ const publicRouteHandler = async (
     ? 'inline'
     : 'attachment';
 
-  res.writeHead(200, {
-    'Content-Type': dbFile.mimeType,
-    'Content-Length': dbFile.size,
-    'Content-Disposition': `${contentDisposition}; filename="${dbFile.originalName}"`
-  });
+  const safeFileName = dbFile.originalName
+    .replace(/[\r\n]/g, '') // strip CR/LF to prevent header injection
+    .replace(/"/g, '\\"'); // escape double quotes for header safety
 
-  fileStream.pipe(res);
+  const encodedFileName = encodeURIComponent(dbFile.originalName).replace(
+    /'/g,
+    '%27'
+  );
 
-  fileStream.on('error', (err) => {
-    logger.error('Error serving file:', err);
+  const dispositionHeader = `${contentDisposition}; filename="${safeFileName}"; filename*=UTF-8''${encodedFileName}`;
 
-    if (!res.headersSent) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Internal server error' }));
+  const rangeHeader = req.headers.range;
+
+  if (rangeHeader) {
+    const match = rangeHeader.match(/^bytes=(\d+)-(\d*)$/);
+
+    if (!match) {
+      res.writeHead(416, {
+        'Content-Range': `bytes */${stat.size}`
+      });
+      res.end();
+      return;
     }
-  });
 
-  res.on('close', () => {
-    fileStream.destroy();
-  });
+    const start = parseInt(match[1]!, 10);
+    const end = match[2] ? parseInt(match[2], 10) : stat.size - 1;
 
-  fileStream.on('end', () => {
-    res.end();
-  });
+    if (start >= stat.size || end >= stat.size || start > end) {
+      res.writeHead(416, {
+        'Content-Range': `bytes */${stat.size}`
+      });
+      res.end();
+      return;
+    }
+
+    const contentLength = end - start + 1;
+
+    res.writeHead(206, {
+      'Content-Type': dbFile.mimeType,
+      'Content-Length': contentLength,
+      'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Disposition': dispositionHeader
+    });
+
+    pipeFileStream(filePath, res, { start, end });
+  } else {
+    res.writeHead(200, {
+      'Content-Type': dbFile.mimeType,
+      'Content-Length': stat.size,
+      'Accept-Ranges': 'bytes',
+      'Content-Disposition': dispositionHeader
+    });
+
+    pipeFileStream(filePath, res);
+  }
 
   return res;
 };

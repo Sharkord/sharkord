@@ -1,46 +1,57 @@
-import { TiptapInput } from '@/components/tiptap-input';
-import Spinner from '@/components/ui/spinner';
 import {
-  useCan,
+  MessageCompose,
+  type TMessageComposeHandle
+} from '@/components/message-compose';
+import {
   useChannelCan,
   useTypingUsersByChannelId
 } from '@/features/server/hooks';
 import { useMessages } from '@/features/server/messages/hooks';
-import { useFlatPluginCommands } from '@/features/server/plugins/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
-import { useUploadFiles } from '@/hooks/use-upload-files';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   ChannelPermission,
-  Permission,
   TYPING_MS,
-  isEmptyMessage
+  getTrpcError,
+  linkifyHtml
 } from '@sharkord/shared';
-import { filesize } from 'filesize';
+import { Spinner } from '@sharkord/ui';
 import { throttle } from 'lodash-es';
-import { Paperclip, Send } from 'lucide-react';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '../../ui/button';
-import { FileCard } from './file-card';
 import { MessagesGroup } from './messages-group';
 import { TextSkeleton } from './text-skeleton';
+import { TextTopbar } from './text-top-bar';
+import {
+  getChannelDraftKey,
+  getDraftMessage,
+  setDraftMessage
+} from './use-draft-messages';
 import { useScrollController } from './use-scroll-controller';
-import { UsersTyping } from './users-typing';
 
 type TChannelProps = {
   channelId: number;
 };
 
 const TextChannel = memo(({ channelId }: TChannelProps) => {
-  const { messages, hasMore, loadMore, loading, fetching, groupedMessages } =
-    useMessages(channelId);
+  const {
+    messages,
+    hasMore,
+    loadMore,
+    loading,
+    fetching,
+    groupedMessages,
+    scrollToMessage
+  } = useMessages(channelId);
 
-  const [newMessage, setNewMessage] = useState('');
-  const allPluginCommands = useFlatPluginCommands();
+  const draftChannelKey = getChannelDraftKey(channelId);
+
+  const [newMessage, setNewMessage] = useState(
+    getDraftMessage(draftChannelKey)
+  );
   const typingUsers = useTypingUsersByChannelId(channelId);
+  const composeRef = useRef<TMessageComposeHandle>(null);
 
   const { containerRef, onScroll } = useScrollController({
     messages,
@@ -50,42 +61,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     hasTypingUsers: typingUsers.length > 0
   });
 
-  // keep this ref just as a safeguard
-  const sendingRef = useRef(false);
-  const [sending, setSending] = useState(false);
-  const can = useCan();
   const channelCan = useChannelCan(channelId);
-
-  const canSendMessages = useMemo(() => {
-    return (
-      can(Permission.SEND_MESSAGES) &&
-      channelCan(ChannelPermission.SEND_MESSAGES)
-    );
-  }, [can, channelCan]);
-
-  const canUploadFiles = useMemo(() => {
-    return (
-      can(Permission.SEND_MESSAGES) &&
-      can(Permission.UPLOAD_FILES) &&
-      channelCan(ChannelPermission.SEND_MESSAGES)
-    );
-  }, [can, channelCan]);
-
-  const pluginCommands = useMemo(
-    () =>
-      can(Permission.EXECUTE_PLUGIN_COMMANDS) ? allPluginCommands : undefined,
-    [can, allPluginCommands]
-  );
-
-  const {
-    files,
-    removeFile,
-    clearFiles,
-    uploading,
-    uploadingSize,
-    openFileDialog,
-    fileInputProps
-  } = useUploadFiles(!canSendMessages);
 
   const sendTypingSignal = useMemo(
     () =>
@@ -101,61 +77,37 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     [channelId]
   );
 
-  const onSendMessage = useCallback(async () => {
-    if (
-      (isEmptyMessage(newMessage) && !files.length) ||
-      !canSendMessages ||
-      sendingRef.current
-    ) {
-      return;
-    }
+  const setNewMessageHandler = useCallback(
+    (value: string) => {
+      setNewMessage(value);
+      setDraftMessage(draftChannelKey, value);
+    },
+    [setNewMessage, draftChannelKey]
+  );
 
-    setSending(true);
-    sendingRef.current = true;
-    sendTypingSignal.cancel();
-
-    const trpc = getTRPCClient();
-
-    try {
-      await trpc.messages.send.mutate({
-        content: newMessage,
-        channelId,
-        files: files.map((f) => f.id)
-      });
-
-      playSound(SoundType.MESSAGE_SENT);
-    } catch (error) {
-      toast.error(getTrpcError(error, 'Failed to send message'));
-      return;
-    } finally {
-      sendingRef.current = false;
-      setSending(false);
-    }
-
-    setNewMessage('');
-    clearFiles();
-  }, [
-    newMessage,
-    channelId,
-    files,
-    clearFiles,
-    sendTypingSignal,
-    canSendMessages
-  ]);
-
-  const onRemoveFileClick = useCallback(
-    async (fileId: string) => {
-      removeFile(fileId);
+  const onSend = useCallback(
+    async (message: string, files: { id: string }[]) => {
+      sendTypingSignal.cancel();
 
       const trpc = getTRPCClient();
 
       try {
-        trpc.files.deleteTemporary.mutate({ fileId });
-      } catch {
-        // ignore error
+        await trpc.messages.send.mutate({
+          content: linkifyHtml(message),
+          channelId,
+          files: files.map((f) => f.id)
+        });
+
+        playSound(SoundType.MESSAGE_SENT);
+      } catch (error) {
+        toast.error(getTrpcError(error, 'Failed to send message'));
+        return false;
       }
+
+      setNewMessageHandler('');
+      return true;
     },
-    [removeFile]
+    [channelId, sendTypingSignal, setNewMessageHandler]
   );
 
   if (!channelCan(ChannelPermission.VIEW_CHANNEL) || loading) {
@@ -175,9 +127,12 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         </div>
       )}
 
+      <TextTopbar onScrollToMessage={scrollToMessage} channelId={channelId} />
+
       <div
         ref={containerRef}
         onScroll={onScroll}
+        data-messages-container
         className="flex-1 overflow-y-auto overflow-x-hidden p-2 animate-in fade-in duration-500"
       >
         <div className="space-y-4">
@@ -187,62 +142,16 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-col gap-2 border-t border-border p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
-        {uploading && (
-          <div className="flex items-center gap-2">
-            <div className="text-xs text-muted-foreground mb-1">
-              Uploading files ({filesize(uploadingSize)})
-            </div>
-            <Spinner size="xxs" />
-          </div>
-        )}
-        {files.length > 0 && (
-          <div className="flex gap-1 flex-wrap">
-            {files.map((file) => (
-              <FileCard
-                key={file.id}
-                name={file.originalName}
-                extension={file.extension}
-                size={file.size}
-                onRemove={() => onRemoveFileClick(file.id)}
-              />
-            ))}
-          </div>
-        )}
-        <UsersTyping channelId={channelId} />
-        <div className="flex items-center gap-2 rounded-lg">
-          <TiptapInput
-            value={newMessage}
-            onChange={setNewMessage}
-            onSubmit={onSendMessage}
-            onTyping={sendTypingSignal}
-            disabled={uploading || !canSendMessages}
-            readOnly={sending}
-            commands={pluginCommands}
-          />
-          <input {...fileInputProps} />
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8"
-            disabled={uploading || !canUploadFiles}
-            onClick={openFileDialog}
-          >
-            <Paperclip className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8"
-            onClick={onSendMessage}
-            disabled={
-              uploading || sending || files.length === 0 || !canSendMessages
-            }
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <MessageCompose
+        ref={composeRef}
+        channelId={channelId}
+        message={newMessage}
+        onMessageChange={setNewMessageHandler}
+        onSend={onSend}
+        onTyping={sendTypingSignal}
+        typingUsers={typingUsers}
+        showPluginSlot
+      />
     </>
   );
 });

@@ -1,14 +1,14 @@
-import { Button } from '@/components/ui/button';
+import { getTRPCClient } from '@/lib/trpc';
+import { getTrpcError } from '@sharkord/shared';
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { Group } from '@/components/ui/group';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
-import { getTRPCClient } from '@/lib/trpc';
+  CardTitle,
+  Group
+} from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { toast } from 'sonner';
 

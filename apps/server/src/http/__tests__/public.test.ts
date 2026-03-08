@@ -142,8 +142,11 @@ describe('/public', () => {
     expect(response.headers.get('Content-Length')).toBe(
       dbFile!.size.toString()
     );
-    expect(response.headers.get('Content-Disposition')).toBe(
-      `attachment; filename="${dbFile!.name}"`
+    const disposition = response.headers.get('Content-Disposition');
+
+    expect(disposition).toInclude(`filename="${dbFile!.name}"`);
+    expect(disposition).toInclude(
+      `filename*=UTF-8''${encodeURIComponent(dbFile!.name)}`
     );
 
     const responseText = await response.text();
@@ -588,5 +591,178 @@ describe('/public', () => {
     const responseText = await response.text();
 
     expect(responseText).toBe(file!.content);
+  });
+
+  test('should sanitize Content-Disposition header against injection', async () => {
+    const file = filesToCreate[0];
+
+    expect(file).toBeDefined();
+    expect(file!.messageId).toBeDefined();
+
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    expect(dbFile).toBeDefined();
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+    );
+
+    expect(response.status).toBe(200);
+
+    const disposition = response.headers.get('Content-Disposition');
+
+    expect(disposition).toBeDefined();
+    expect(disposition).not.toContain('\r');
+    expect(disposition).not.toContain('\n');
+    expect(disposition).toInclude("filename*=UTF-8''");
+  });
+
+  test('should not allow path traversal to read arbitrary files', async () => {
+    const response = await fetch(`${testsBaseUrl}/public/../../../etc/passwd`);
+
+    expect(response.status).toBe(404);
+  });
+
+  test('should include Accept-Ranges header on normal requests', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Accept-Ranges')).toBe('bytes');
+  });
+
+  test('should return 206 Partial Content for valid Range request', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+    const totalSize = dbFile!.size;
+
+    // request first 5 bytes
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`,
+      {
+        headers: { Range: 'bytes=0-4' }
+      }
+    );
+
+    expect(response.status).toBe(206);
+    expect(response.headers.get('Content-Range')).toBe(
+      `bytes 0-4/${totalSize}`
+    );
+    expect(response.headers.get('Content-Length')).toBe('5');
+    expect(response.headers.get('Accept-Ranges')).toBe('bytes');
+
+    const body = await response.text();
+
+    expect(body.length).toBe(5);
+    expect(body).toBe(file!.content.slice(0, 5));
+  });
+
+  test('should return 206 for Range request with open end', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+    const totalSize = dbFile!.size;
+
+    // request from byte 5 to end
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`,
+      {
+        headers: { Range: 'bytes=5-' }
+      }
+    );
+
+    expect(response.status).toBe(206);
+    expect(response.headers.get('Content-Range')).toBe(
+      `bytes 5-${totalSize - 1}/${totalSize}`
+    );
+    expect(response.headers.get('Content-Length')).toBe(String(totalSize - 5));
+
+    const body = await response.text();
+
+    expect(body).toBe(file!.content.slice(5));
+  });
+
+  test('should return 206 for Range request of last byte', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+    const totalSize = dbFile!.size;
+    const lastByteIndex = totalSize - 1;
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`,
+      {
+        headers: { Range: `bytes=${lastByteIndex}-${lastByteIndex}` }
+      }
+    );
+
+    expect(response.status).toBe(206);
+    expect(response.headers.get('Content-Length')).toBe('1');
+
+    const body = await response.text();
+
+    expect(body).toBe(file!.content.charAt(lastByteIndex));
+  });
+
+  test('should return 416 for Range request beyond file size', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+    const totalSize = dbFile!.size;
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`,
+      {
+        headers: { Range: `bytes=${totalSize}-${totalSize + 10}` }
+      }
+    );
+
+    expect(response.status).toBe(416);
+    expect(response.headers.get('Content-Range')).toBe(`bytes */${totalSize}`);
+  });
+
+  test('should return 416 for invalid Range format', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+    const totalSize = dbFile!.size;
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`,
+      {
+        headers: { Range: 'bytes=abc-def' }
+      }
+    );
+
+    expect(response.status).toBe(416);
+    expect(response.headers.get('Content-Range')).toBe(`bytes */${totalSize}`);
+  });
+
+  test('should return 416 when start > end in Range', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+    const totalSize = dbFile!.size;
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`,
+      {
+        headers: { Range: 'bytes=10-5' }
+      }
+    );
+
+    expect(response.status).toBe(416);
+    expect(response.headers.get('Content-Range')).toBe(`bytes */${totalSize}`);
+  });
+
+  test('should not allow encoded path traversal', async () => {
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent('../../../etc/passwd')}`
+    );
+
+    expect(response.status).toBe(404);
+
+    const data = (await response.json()) as { error: string };
+
+    expect(data).toHaveProperty('error', 'File not found');
   });
 });

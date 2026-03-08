@@ -1,5 +1,6 @@
 import type { IRootState } from '@/features/store';
 import { createSelector } from '@reduxjs/toolkit';
+import type { TChannel } from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
 
 const DEFAULT_OBJECT = {};
@@ -39,7 +40,7 @@ export const channelsByCategoryIdSelector = createCachedSelector(
   (channels, categoryId) =>
     channels
       .filter((channel) => channel.categoryId === categoryId)
-      .sort((a, b) => a.position - b.position)
+      .sort((a, b) => a.position - b.position || a.id - b.id)
 )((_, categoryId: number) => categoryId);
 
 export const selectedChannelSelector = createSelector(
@@ -59,3 +60,29 @@ export const channelPermissionsByIdSelector = (
   state: IRootState,
   channelId: number
 ) => state.server.channelPermissions[channelId] || DEFAULT_OBJECT;
+
+export const channelsMapSelector = createSelector(
+  channelsSelector,
+  (channels) => {
+    const map: Record<number, TChannel> = {};
+
+    channels.forEach((channel) => {
+      map[channel.id] = channel;
+    });
+
+    return map;
+  }
+);
+
+export const channelIdsSelector = createSelector(channelsSelector, (channels) =>
+  channels.map((channel) => channel.id)
+);
+
+export const directMessagesUnreadCountSelector = createSelector(
+  [channelsSelector, channelsReadStatesSelector],
+  (channels, readStates) => {
+    return channels
+      .filter((channel) => channel.isDm)
+      .reduce((acc, channel) => acc + (readStates[channel.id] ?? 0), 0);
+  }
+);

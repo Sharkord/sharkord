@@ -1,4 +1,4 @@
-import type { TEmojiItem } from '@/components/tiptap-input/types';
+import type { TEmojiItem } from '@/components/tiptap-input/helpers';
 import {
   getLocalStorageItemAsJSON,
   LocalStorageKey,

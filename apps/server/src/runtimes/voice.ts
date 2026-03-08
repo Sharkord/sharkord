@@ -16,6 +16,7 @@ import type {
   RouterOptions,
   WebRtcTransport
 } from 'mediasoup/types';
+import { config } from '../config';
 import { logger } from '../logger';
 import { eventBus } from '../plugins/event-bus';
 import {
@@ -31,10 +32,19 @@ const defaultRouterOptions: RouterOptions<AppData> = {
   mediaCodecs: [
     {
       kind: 'video',
+      mimeType: 'video/VP9',
+      clockRate: 90000,
+      parameters: {
+        'profile-id': 0,
+        'x-google-start-bitrate': 2000
+      }
+    },
+    {
+      kind: 'video',
       mimeType: 'video/VP8',
       clockRate: 90000,
       parameters: {
-        'x-google-start-bitrate': 1000
+        'x-google-start-bitrate': 2000
       }
     },
     {
@@ -45,14 +55,41 @@ const defaultRouterOptions: RouterOptions<AppData> = {
         'packetization-mode': 1,
         'profile-level-id': '42e01f',
         'level-asymmetry-allowed': 1,
-        'x-google-start-bitrate': 1000
+        'x-google-start-bitrate': 2000
+      }
+    },
+    {
+      kind: 'video',
+      mimeType: 'video/H264',
+      clockRate: 90000,
+      parameters: {
+        'packetization-mode': 1,
+        'profile-level-id': '640032',
+        'level-asymmetry-allowed': 1,
+        'x-google-start-bitrate': 2000
+      }
+    },
+    {
+      kind: 'video',
+      mimeType: 'video/AV1',
+      clockRate: 90000,
+      parameters: {
+        'x-google-start-bitrate': 2000
       }
     },
     {
       kind: 'audio',
       mimeType: 'audio/opus',
       clockRate: 48000,
-      channels: 2
+      channels: 2,
+      parameters: {
+        useinbandfec: 1,
+        usedtx: 1,
+        stereo: 1,
+        'sprop-stereo': 1,
+        maxplaybackrate: 48000,
+        maxaveragebitrate: 128000
+      }
     }
   ]
 };
@@ -318,14 +355,19 @@ class VoiceRuntime {
   public createTransport = async () => {
     const router = this.getRouter();
 
+    const maxBitrate = config.webRtc.maxBitrate;
+
     const transport = await router.createWebRtcTransport({
       webRtcServer,
       enableUdp: true,
       enableTcp: true,
       preferUdp: true,
       preferTcp: false,
-      initialAvailableOutgoingBitrate: 1000000
+      initialAvailableOutgoingBitrate: Math.min(10000000, maxBitrate)
     });
+
+    await transport.setMaxIncomingBitrate(maxBitrate);
+    await transport.setMaxOutgoingBitrate(maxBitrate);
 
     const params: TTransportParams = {
       id: transport.id,

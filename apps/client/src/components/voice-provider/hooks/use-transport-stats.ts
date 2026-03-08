@@ -1,5 +1,5 @@
 import { logVoice } from '@/helpers/browser-logger';
-import type { Transport } from 'mediasoup-client/types';
+import type { AppData, Producer, Transport } from 'mediasoup-client/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type TransportStats = {
@@ -13,9 +13,25 @@ export type TransportStats = {
   timestamp: number;
 };
 
+export type ScreenShareStats = {
+  codec: string;
+  encoderImplementation: string;
+  width: number;
+  height: number;
+  frameRate: number;
+  bitrate: number;
+  packetsSent: number;
+  bytesSent: number;
+  keyFramesEncoded: number;
+  framesEncoded: number;
+  qualityLimitationReason: string;
+  timestamp: number;
+};
+
 export type TransportStatsData = {
   producer: TransportStats | null;
   consumer: TransportStats | null;
+  screenShare: ScreenShareStats | null;
   totalBytesReceived: number;
   totalBytesSent: number;
   currentBitrateSent: number;
@@ -31,6 +47,7 @@ const useTransportStats = () => {
   const [stats, setStats] = useState<TransportStatsData>({
     producer: null,
     consumer: null,
+    screenShare: null,
     totalBytesReceived: 0,
     totalBytesSent: 0,
     currentBitrateSent: 0,
@@ -43,6 +60,7 @@ const useTransportStats = () => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const producerTransportRef = useRef<Transport | null>(null);
   const consumerTransportRef = useRef<Transport | null>(null);
+  const screenShareProducerRef = useRef<Producer<AppData> | null>(null);
   const previousStatsRef = useRef<{
     producer: TransportStats | null;
     consumer: TransportStats | null;
@@ -50,6 +68,10 @@ const useTransportStats = () => {
     producer: null,
     consumer: null
   });
+  const previousScreenShareBytesRef = useRef<{
+    bytesSent: number;
+    timestamp: number;
+  } | null>(null);
 
   // Rolling windows for smoothing bitrate
   const bitrateSentHistoryRef = useRef<number[]>([]);
@@ -99,6 +121,66 @@ const useTransportStats = () => {
     []
   );
 
+  const parseScreenShareStats = useCallback(
+    (statsReport: RTCStatsReport): Omit<ScreenShareStats, 'bitrate'> | null => {
+      let codec = '';
+      let encoderImplementation = '';
+      let width = 0;
+      let height = 0;
+      let frameRate = 0;
+      let packetsSent = 0;
+      let bytesSent = 0;
+      let keyFramesEncoded = 0;
+      let framesEncoded = 0;
+      let qualityLimitationReason = 'none';
+
+      const codecMap = new Map<string, string>();
+
+      for (const stat of statsReport.values()) {
+        if (stat.type === 'codec') {
+          codecMap.set(stat.id, stat.mimeType || '');
+        }
+      }
+
+      for (const stat of statsReport.values()) {
+        if (stat.type === 'outbound-rtp' && stat.kind === 'video') {
+          bytesSent = stat.bytesSent || 0;
+          packetsSent = stat.packetsSent || 0;
+          frameRate = stat.framesPerSecond || 0;
+          width = stat.frameWidth || 0;
+          height = stat.frameHeight || 0;
+          keyFramesEncoded = stat.keyFramesEncoded || 0;
+          framesEncoded = stat.framesEncoded || 0;
+          qualityLimitationReason = stat.qualityLimitationReason || 'none';
+          encoderImplementation = stat.encoderImplementation || '';
+
+          if (stat.codecId && codecMap.has(stat.codecId)) {
+            codec = codecMap.get(stat.codecId)!;
+          }
+        }
+      }
+
+      if (!width && !height && !bytesSent) {
+        return null;
+      }
+
+      return {
+        codec,
+        encoderImplementation,
+        width,
+        height,
+        frameRate,
+        packetsSent,
+        bytesSent,
+        keyFramesEncoded,
+        framesEncoded,
+        qualityLimitationReason,
+        timestamp: Date.now()
+      };
+    },
+    []
+  );
+
   const collectStats = useCallback(async () => {
     if (!producerTransportRef.current && !consumerTransportRef.current) {
       if (intervalRef.current) {
@@ -139,6 +221,49 @@ const useTransportStats = () => {
         } catch {
           consumerTransportRef.current = null;
         }
+      }
+
+      let screenShareStatsResult: ScreenShareStats | null = null;
+
+      if (
+        screenShareProducerRef.current &&
+        !screenShareProducerRef.current.closed
+      ) {
+        try {
+          const screenShareReport =
+            await screenShareProducerRef.current.getStats();
+
+          const parsed = parseScreenShareStats(screenShareReport);
+
+          if (parsed) {
+            let screenShareBitrate = 0;
+            const prev = previousScreenShareBytesRef.current;
+
+            if (prev && parsed.bytesSent > prev.bytesSent) {
+              const timeDelta = (parsed.timestamp - prev.timestamp) / 1000;
+
+              if (timeDelta > 0) {
+                screenShareBitrate =
+                  (parsed.bytesSent - prev.bytesSent) / timeDelta;
+              }
+            }
+
+            previousScreenShareBytesRef.current = {
+              bytesSent: parsed.bytesSent,
+              timestamp: parsed.timestamp
+            };
+
+            screenShareStatsResult = {
+              ...parsed,
+              bitrate: screenShareBitrate
+            };
+          }
+        } catch {
+          screenShareProducerRef.current = null;
+          previousScreenShareBytesRef.current = null;
+        }
+      } else {
+        previousScreenShareBytesRef.current = null;
       }
 
       if (!producerTransportRef.current && !consumerTransportRef.current) {
@@ -222,6 +347,7 @@ const useTransportStats = () => {
       setStats((prev) => ({
         producer: producerStats,
         consumer: consumerStats,
+        screenShare: screenShareStatsResult,
         totalBytesReceived: prev.totalBytesReceived + bytesReceivedDelta,
         totalBytesSent: prev.totalBytesSent + bytesSentDelta,
         currentBitrateSent,
@@ -238,7 +364,7 @@ const useTransportStats = () => {
     } catch (error) {
       logVoice('Error collecting transport stats', { error });
     }
-  }, [parseTransportStats]);
+  }, [parseTransportStats, parseScreenShareStats]);
 
   const startMonitoring = useCallback(
     (
@@ -261,6 +387,22 @@ const useTransportStats = () => {
     [collectStats]
   );
 
+  const setScreenShareProducer = useCallback(
+    (producer: Producer<AppData> | null | undefined) => {
+      screenShareProducerRef.current = producer || null;
+
+      if (!producer) {
+        previousScreenShareBytesRef.current = null;
+
+        setStats((prev) => ({
+          ...prev,
+          screenShare: null
+        }));
+      }
+    },
+    []
+  );
+
   const stopMonitoring = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -269,6 +411,7 @@ const useTransportStats = () => {
 
     producerTransportRef.current = null;
     consumerTransportRef.current = null;
+    screenShareProducerRef.current = null;
 
     setStats((prev) => ({
       ...prev,
@@ -282,6 +425,7 @@ const useTransportStats = () => {
     setStats({
       producer: null,
       consumer: null,
+      screenShare: null,
       totalBytesReceived: 0,
       totalBytesSent: 0,
       currentBitrateSent: 0,
@@ -296,6 +440,7 @@ const useTransportStats = () => {
       consumer: null
     };
 
+    previousScreenShareBytesRef.current = null;
     bitrateSentHistoryRef.current = [];
     bitrateReceivedHistoryRef.current = [];
 
@@ -326,7 +471,8 @@ const useTransportStats = () => {
     stats,
     startMonitoring,
     stopMonitoring,
-    resetStats
+    resetStats,
+    setScreenShareProducer
   };
 };
 

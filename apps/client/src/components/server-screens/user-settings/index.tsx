@@ -1,8 +1,10 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@sharkord/ui';
 import { memo } from 'react';
 import type { TServerScreenBaseProps } from '../screens';
 import { ServerScreenLayout } from '../server-screen-layout';
 import { Devices } from './devices';
+import { Notifications } from './notifications';
+import { Others } from './others';
 import { Password } from './password';
 import { Profile } from './profile';
 
@@ -17,6 +19,8 @@ const UserSettings = memo(({ close }: TUserSettingsProps) => {
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="devices">Devices</TabsTrigger>
             <TabsTrigger value="password">Password</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="others">Others</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-6">
@@ -27,6 +31,12 @@ const UserSettings = memo(({ close }: TUserSettingsProps) => {
           </TabsContent>
           <TabsContent value="password" className="space-y-6">
             <Password />
+          </TabsContent>
+          <TabsContent value="notifications" className="space-y-6">
+            <Notifications />
+          </TabsContent>
+          <TabsContent value="others" className="space-y-6">
+            <Others />
           </TabsContent>
         </Tabs>
       </div>

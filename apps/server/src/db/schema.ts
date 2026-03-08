@@ -45,11 +45,25 @@ const settings = sqliteTable(
       onDelete: 'set null'
     }),
     allowNewUsers: integer('allow_new_users', { mode: 'boolean' }).notNull(),
+    directMessagesEnabled: integer('direct_messages_enabled', {
+      mode: 'boolean'
+    }).notNull(),
     storageUploadEnabled: integer('storage_uploads_enabled', {
       mode: 'boolean'
     }).notNull(),
     storageQuota: integer('storage_quota').notNull(),
     storageUploadMaxFileSize: integer('storage_upload_max_file_size').notNull(),
+    storageMaxAvatarSize: integer('storage_max_avatar_size').notNull(),
+    storageMaxBannerSize: integer('storage_max_banner_size').notNull(),
+    storageMaxFilesPerMessage: integer(
+      'storage_max_files_per_message'
+    ).notNull(),
+    storageFileSharingInDirectMessages: integer(
+      'storage_file_sharing_in_direct_messages',
+      {
+        mode: 'boolean'
+      }
+    ).notNull(),
     storageSpaceQuotaByUser: integer('storage_space_quota_by_user').notNull(),
     storageOverflowAction: text('storage_overflow_action').notNull(),
     enablePlugins: integer('enable_plugins', { mode: 'boolean' }).notNull()
@@ -99,6 +113,9 @@ const channels = sqliteTable(
     fileAccessToken: text('file_access_token').notNull().unique(),
     fileAccessTokenUpdatedAt: integer('file_access_token_updated_at').notNull(),
     private: integer('private', { mode: 'boolean' }).notNull().default(false),
+    isDm: integer('is_dm_channel', { mode: 'boolean' })
+      .notNull()
+      .default(false),
     position: integer('position').notNull(),
     categoryId: integer('category_id').references(() => categories.id, {
       onDelete: 'cascade'
@@ -205,16 +222,27 @@ const messages = sqliteTable(
     channelId: integer('channel_id')
       .notNull()
       .references(() => channels.id, { onDelete: 'cascade' }),
+    parentMessageId: integer('parent_message_id'),
     editable: integer('editable', { mode: 'boolean' }).default(true),
     metadata: text('metadata', { mode: 'json' }).$type<TMessageMetadata[]>(),
     createdAt: integer('created_at').notNull(),
-    updatedAt: integer('updated_at')
+    updatedAt: integer('updated_at'),
+    pinned: integer('pinned', { mode: 'boolean' }).default(false),
+    pinnedAt: integer('pinned_at'),
+    pinnedBy: integer('pinned_by').references(() => users.id, {
+      onDelete: 'set null'
+    }),
+    editedAt: integer('edited_at'),
+    editedBy: integer('edited_by').references(() => users.id, {
+      onDelete: 'cascade'
+    })
   },
   (t) => [
     index('messages_user_idx').on(t.userId),
     index('messages_channel_idx').on(t.channelId),
     index('messages_created_idx').on(t.createdAt),
-    index('messages_channel_created_idx').on(t.channelId, t.createdAt)
+    index('messages_channel_created_idx').on(t.channelId, t.createdAt),
+    index('messages_parent_idx').on(t.parentMessageId)
   ]
 );
 
@@ -307,6 +335,9 @@ const invites = sqliteTable(
     creatorId: integer('creator_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    roleId: integer('role_id').references(() => roles.id, {
+      onDelete: 'set null'
+    }),
     maxUses: integer('max_uses'),
     uses: integer('uses').notNull().default(0),
     expiresAt: integer('expires_at'),
@@ -420,6 +451,28 @@ const channelReadStates = sqliteTable(
   ]
 );
 
+const directMessages = sqliteTable(
+  'direct_messages',
+  {
+    channelId: integer('channel_id')
+      .notNull()
+      .references(() => channels.id, { onDelete: 'cascade' }),
+    userOneId: integer('user_one_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    userTwoId: integer('user_two_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: integer('created_at').notNull()
+  },
+  (t) => [
+    primaryKey({ columns: [t.channelId] }),
+    uniqueIndex('direct_messages_pair_unique_idx').on(t.userOneId, t.userTwoId),
+    index('direct_messages_user_one_idx').on(t.userOneId),
+    index('direct_messages_user_two_idx').on(t.userTwoId)
+  ]
+);
+
 const pluginData = sqliteTable('plugin_data', {
   pluginId: text('plugin_id').notNull().primaryKey(),
   enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
@@ -436,6 +489,7 @@ export {
   channelRolePermissions,
   channels,
   channelUserPermissions,
+  directMessages,
   emojis,
   files,
   invites,

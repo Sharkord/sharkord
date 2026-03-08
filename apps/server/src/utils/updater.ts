@@ -1,5 +1,6 @@
 import { BunUpdater } from 'bun-sfe-autoupdater';
 import { config } from '../config';
+import { getErrorMessage } from '../helpers/get-error-message';
 import { logger } from '../logger';
 import { IS_DOCKER, IS_PRODUCTION, SERVER_VERSION } from './env';
 
@@ -46,7 +47,7 @@ class Updater {
       // the app will restart to apply the update
       await this.bunUpdater.checkForUpdates();
     } catch (error) {
-      logger.error('Failed to check for updates:', error);
+      logger.error('Failed to check for updates: %s', getErrorMessage(error));
     } finally {
       this.isUpdating = false;
     }

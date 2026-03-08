@@ -1,24 +1,25 @@
 import { Dialog } from '@/components/dialogs/dialogs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { openDialog } from '@/features/dialogs/actions';
+import { useAdminPlugins } from '@/features/server/admin/hooks';
+import { usePluginsEnabled } from '@/features/server/hooks';
+import { getTRPCClient } from '@/lib/trpc';
+import { cn } from '@/lib/utils';
+import type { TPluginInfo } from '@sharkord/shared';
+import { getTrpcError } from '@sharkord/shared';
 import {
+  Alert,
+  AlertDescription,
+  Badge,
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { LoadingCard } from '@/components/ui/loading-card';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { openDialog } from '@/features/dialogs/actions';
-import { useAdminPlugins } from '@/features/server/admin/hooks';
-import { usePluginsEnabled } from '@/features/server/hooks';
-import { getTrpcError } from '@/helpers/parse-trpc-errors';
-import { getTRPCClient } from '@/lib/trpc';
-import { cn } from '@/lib/utils';
-import type { TPluginInfo } from '@sharkord/shared';
+  CardTitle,
+  LoadingCard,
+  Separator,
+  Switch
+} from '@sharkord/ui';
 import {
   AlertCircle,
   FileText,

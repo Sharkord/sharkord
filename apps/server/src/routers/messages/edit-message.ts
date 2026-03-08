@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
+import { assertDmChannel } from '../../db/queries/dms';
 import { messages } from '../../db/schema';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
 import { eventBus } from '../../plugins/event-bus';
@@ -39,6 +40,8 @@ const editMessageRoute = rateLimitedProcedure(protectedProcedure, {
       message: 'Message not found'
     });
 
+    await assertDmChannel(message.channelId, ctx.userId);
+
     invariant(message.editable, {
       code: 'FORBIDDEN',
       message: 'This message is not editable'
@@ -70,7 +73,9 @@ const editMessageRoute = rateLimitedProcedure(protectedProcedure, {
       .update(messages)
       .set({
         content: sanitizedContent,
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
+        editedAt: Date.now(),
+        editedBy: ctx.user.id
       })
       .where(eq(messages.id, input.messageId));
 

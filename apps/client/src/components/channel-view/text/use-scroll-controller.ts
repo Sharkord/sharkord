@@ -16,6 +16,8 @@ type TUseScrollControllerReturn = {
   scrollToBottom: () => void;
 };
 
+const SCROLL_THRESHOLD = 80;
+
 const useScrollController = ({
   messages,
   fetching,
@@ -52,7 +54,7 @@ const useScrollController = ({
 
     if (fetching) return;
 
-    if (container.scrollTop <= 50 && hasMore) {
+    if (container.scrollTop <= SCROLL_THRESHOLD && hasMore) {
       const prevScrollHeight = container.scrollHeight;
 
       loadMore().then(() => {
@@ -97,6 +99,20 @@ const useScrollController = ({
       }, 200);
     }
   }, [fetching, messages.length, scrollToBottom]);
+
+  // if user is already at the top when fetching completes
+  // trigger another page load without requiring an extra scroll event
+  useEffect(() => {
+    const container = containerRef.current;
+
+    if (!container || fetching || !hasMore) {
+      return;
+    }
+
+    if (container.scrollTop <= SCROLL_THRESHOLD) {
+      onScroll();
+    }
+  }, [fetching, hasMore, messages.length, onScroll]);
 
   // auto-scroll on new messages if user is near bottom
   useEffect(() => {

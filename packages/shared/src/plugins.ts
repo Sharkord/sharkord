@@ -1,4 +1,5 @@
 import z from 'zod';
+import type { TJoinedPublicUser } from './tables';
 
 export const zPluginPackageJson = z.object({
   version: z
@@ -6,7 +7,10 @@ export const zPluginPackageJson = z.object({
     .regex(/^\d+\.\d+\.\d+(-[a-zA-Z0-9-.]+)?$/, 'Invalid version format'),
   name: z.string().min(1, 'Package name is required'),
   sharkord: z.object({
-    entry: z.string().endsWith('.js', 'Plugin entry file must be a .js file'),
+    entry: z.object({
+      server: z.string().min(1, 'Server entry point is required'),
+      client: z.string().min(1, 'Client entry point is required')
+    }),
     author: z.string().min(1, 'Plugin author is required'),
     homepage: z.url().optional(),
     description: z.string().min(1, 'Plugin description is required'),
@@ -27,7 +31,7 @@ export type TPluginInfo = {
   name: TPluginPackageJson['name'];
   homepage: TPluginPackageJson['sharkord']['homepage'];
   path: string;
-  entry: string;
+  entry: TPluginPackageJson['sharkord']['entry'];
 };
 
 export type TLogEntry = {
@@ -122,4 +126,37 @@ export type TPluginSettingDefinition = {
 export type TPluginSettingsResponse = {
   definitions: TPluginSettingDefinition[];
   values: Record<string, unknown>;
+};
+
+export enum PluginSlot {
+  CONNECT_SCREEN = 'connect_screen',
+  HOME_SCREEN = 'home_screen',
+  CHAT_ACTIONS = 'chat_actions',
+  TOPBAR_RIGHT = 'topbar_right'
+}
+
+export type TPluginComponentsMapBySlotIdMapListByPlugin = {
+  [pluginId: string]: PluginSlot[];
+};
+
+export type TPluginReactComponent = React.ComponentType<TPluginSlotContext>;
+
+export type TPluginComponentsMapBySlotId = {
+  [slot in PluginSlot]?: TPluginReactComponent[];
+};
+
+export type TPluginComponent = {
+  pluginId: string;
+  mod: TPluginReactComponent;
+};
+
+export type TPluginComponentsMap = {
+  [pluginId: string]: TPluginComponentsMapBySlotId;
+};
+
+export type TPluginSlotContext = {
+  users: TJoinedPublicUser[];
+  selectedChannelId: number | undefined;
+  currentVoiceChannelId: number | undefined;
+  sendMessage: (channelId: number, content: string) => void;
 };

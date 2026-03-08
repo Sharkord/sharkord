@@ -1,6 +1,7 @@
 import {
   ActivityLogType,
   ChannelPermission,
+  getPlainTextFromHtml,
   isEmptyMessage,
   Permission,
   toDomCommand
@@ -9,11 +10,11 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
-import { publishMessage } from '../../db/publishers';
+import { publishMessage, publishReplyCount } from '../../db/publishers';
+import { assertDmChannel, isDirectMessageChannel } from '../../db/queries/dms';
 import { getSettings } from '../../db/queries/server';
 import { messageFiles, messages } from '../../db/schema';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
-import { getPlainTextFromHtml } from '../../helpers/get-plain-text-from-html';
 import { parseCommandArgs } from '../../helpers/parse-command-args';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
 import { pluginManager } from '../../plugins';
@@ -30,13 +31,12 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
   logLabel: 'sendMessage'
 })
   .input(
-    z
-      .object({
-        content: z.string(),
-        channelId: z.number(),
-        files: z.array(z.string()).optional()
-      })
-      .required()
+    z.object({
+      content: z.string(),
+      channelId: z.number(),
+      files: z.array(z.string()).default([]),
+      parentMessageId: z.number().optional()
+    })
   )
   .mutation(async ({ input, ctx }) => {
     await Promise.all([
@@ -47,14 +47,70 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       )
     ]);
 
-    invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
+    if (input.parentMessageId) {
+      const parentMessage = await db
+        .select({
+          id: messages.id,
+          channelId: messages.channelId,
+          parentMessageId: messages.parentMessageId
+        })
+        .from(messages)
+        .where(eq(messages.id, input.parentMessageId))
+        .limit(1)
+        .get();
+
+      invariant(parentMessage, {
+        code: 'NOT_FOUND',
+        message: 'Parent message not found.'
+      });
+
+      invariant(parentMessage.channelId === input.channelId, {
+        code: 'BAD_REQUEST',
+        message: 'Parent message must be in the same channel.'
+      });
+
+      invariant(!parentMessage.parentMessageId, {
+        code: 'BAD_REQUEST',
+        message:
+          'Cannot reply to a thread reply. Threads are only one level deep.'
+      });
+    }
+
+    const [settings, isDmChannel] = await Promise.all([
+      getSettings(),
+      isDirectMessageChannel(input.channelId),
+      assertDmChannel(input.channelId, ctx.userId)
+    ]);
+
+    const { storageMaxFilesPerMessage, enablePlugins } = settings;
+
+    const limitedFiles = input.files.slice(
+      0,
+      Math.max(0, storageMaxFilesPerMessage)
+    );
+
+    if (limitedFiles.length > 0) {
+      invariant(settings.storageUploadEnabled, {
+        code: 'FORBIDDEN',
+        message: 'File uploads are disabled on this server'
+      });
+
+      if (isDmChannel) {
+        invariant(settings.storageFileSharingInDirectMessages, {
+          code: 'FORBIDDEN',
+          message: 'File sharing in direct messages is disabled on this server'
+        });
+      }
+    }
+
+    invariant(!isEmptyMessage(input.content) || limitedFiles.length != 0, {
       code: 'BAD_REQUEST',
       message: 'Message cannot be empty.'
     });
 
     let targetContent = sanitizeMessageHtml(input.content);
 
-    invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
+    invariant(!isEmptyMessage(input.content) || limitedFiles.length != 0, {
       code: 'BAD_REQUEST',
       message:
         'Your message only contained unsupported or removed content, so there was nothing to send.'
@@ -62,8 +118,6 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     let editable = true;
     let commandExecutor: ((messageId: number) => void) | undefined = undefined;
-
-    const { enablePlugins } = await getSettings();
 
     if (enablePlugins) {
       // when plugins are enabled, need to check if the message is a command
@@ -165,6 +219,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
         userId: ctx.userId,
         content: targetContent,
         editable,
+        parentMessageId: input.parentMessageId ?? null,
         createdAt: Date.now()
       })
       .returning()
@@ -172,8 +227,8 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     commandExecutor?.(message.id);
 
-    if (input.files.length > 0) {
-      for (const tempFileId of input.files) {
+    if (limitedFiles.length > 0) {
+      for (const tempFileId of limitedFiles) {
         const newFile = await fileManager.saveFile(tempFileId, ctx.userId);
 
         await db.insert(messageFiles).values({
@@ -185,6 +240,11 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
     }
 
     publishMessage(message.id, input.channelId, 'create');
+
+    if (input.parentMessageId) {
+      publishReplyCount(input.parentMessageId, input.channelId);
+    }
+
     enqueueProcessMetadata(targetContent, message.id);
 
     eventBus.emit('message:created', {
