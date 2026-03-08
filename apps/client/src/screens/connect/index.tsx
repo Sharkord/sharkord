@@ -121,7 +121,11 @@ const Connect = memo(() => {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="flex flex-col items-center gap-2 text-center">
-            <img src={logoSrc} alt="Sharkord" className="w-32 h-32" />
+            <img
+              src={logoSrc}
+              alt="Sharkord"
+              className="block max-h-32 max-w-full rounded-[5px]"
+            />
             {info?.name && (
               <span className="text-xl font-bold leading-tight">
                 {info.name}
