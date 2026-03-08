@@ -12,7 +12,6 @@ const Waveform = memo(({ className, isScreenSharing }: TIndicatorProps) => {
       <div
         className={cn(
           'flex items-center justify-center h-4 w-4 animate-in zoom-in-75 duration-300',
-          isScreenSharing && 'text-blue-500',
           className
         )}
       >
@@ -55,7 +54,6 @@ const Waveform = memo(({ className, isScreenSharing }: TIndicatorProps) => {
     <div
       className={cn(
         'flex items-center justify-center h-4 w-4 animate-in fade-in duration-700',
-        !isScreenSharing && 'text-green-500',
         className
       )}
     >
@@ -66,11 +64,41 @@ const Waveform = memo(({ className, isScreenSharing }: TIndicatorProps) => {
         className="h-full w-full"
         style={{ shapeRendering: 'geometricPrecision' }}
       >
-        <rect className="animate-wf-loop" rx="1" fill="currentColor" width="2" x="3" />
-        <rect className="animate-wf-loop" rx="1" fill="currentColor" width="2" x="7" />
-        <rect className="animate-wf-loop" rx="1" fill="currentColor" width="2" x="11" />
-        <rect className="animate-wf-loop" rx="1" fill="currentColor" width="2" x="15" />
-        <rect className="animate-wf-loop" rx="1" fill="currentColor" width="2" x="19" />
+        <rect
+          className="animate-wf-loop"
+          rx="1"
+          fill="currentColor"
+          width="2"
+          x="3"
+        />
+        <rect
+          className="animate-wf-loop"
+          rx="1"
+          fill="currentColor"
+          width="2"
+          x="7"
+        />
+        <rect
+          className="animate-wf-loop"
+          rx="1"
+          fill="currentColor"
+          width="2"
+          x="11"
+        />
+        <rect
+          className="animate-wf-loop"
+          rx="1"
+          fill="currentColor"
+          width="2"
+          x="15"
+        />
+        <rect
+          className="animate-wf-loop"
+          rx="1"
+          fill="currentColor"
+          width="2"
+          x="19"
+        />
       </svg>
 
       <style>{`

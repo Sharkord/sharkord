@@ -14,6 +14,7 @@ import {
   connectedSelector,
   connectingSelector,
   disconnectInfoSelector,
+  hasSharingScreenUsersSelector,
   hasUnreadMentionsSelector,
   hasVisibleChannelsInCategorySelector,
   infoSelector,
@@ -27,8 +28,7 @@ import {
   typingUsersByChannelIdSelector,
   typingUsersByThreadIdSelector,
   userRolesSelector,
-  voiceUsersByChannelIdSelector,
-  hasSharingScreenUsersSelector
+  voiceUsersByChannelIdSelector
 } from './selectors';
 
 export const useIsConnected = () => useSelector(connectedSelector);

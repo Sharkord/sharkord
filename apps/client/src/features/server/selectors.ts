@@ -112,11 +112,9 @@ export const typingUsersByChannelIdSelector = createCachedSelector(
   }
 )((_, channelId: number) => channelId);
 
-
 export const hasSharingScreenUsersSelector = createCachedSelector(
   [voiceChannelStateSelector, (_: IRootState, channelId: number) => channelId],
   (voiceState) => {
-    
     if (!voiceState) return false;
 
     return Object.values(voiceState.users).some((u) => u.sharingScreen);
