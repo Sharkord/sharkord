@@ -93,7 +93,8 @@ const MessageRenderer = memo(
         <div
           className={cn(
             'prose max-w-full wrap-break-word msg-content',
-            emojiOnly && 'emoji-only'
+            emojiOnly && 'emoji-only',
+            message.editedAt && 'msg-edited'
           )}
         >
           {messageHtml}

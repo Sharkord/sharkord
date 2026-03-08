@@ -64,8 +64,11 @@ describe('sanitize-html', () => {
     ).toBe('');
   });
 
-  test('should strip <h1>-<h6> tags but keep content', () => {
-    expect(sanitizeMessageHtml('<h1>heading</h1>')).toBe('heading');
+  test('should allow <h1>-<h6> tags from markdown rendering', () => {
+    expect(sanitizeMessageHtml('<h1>heading</h1>')).toBe('<h1>heading</h1>');
+    expect(sanitizeMessageHtml('<h4>heading</h4><p>body</p>')).toBe(
+      '<h4>heading</h4><p>body</p>'
+    );
   });
 
   test('should strip event handler attributes', () => {

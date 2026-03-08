@@ -11,14 +11,28 @@ const sanitizeMessageHtml = (html: string): string => {
   input = sanitize(input, {
     // this might need some tweaking in the future
     allowedTags: [
-      // basic text structure
+      // block structure
       'p',
       'br',
+      // headings (from markdown rendering)
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      // lists (from markdown rendering)
+      'ul',
+      'ol',
+      'li',
+      // blockquote (from markdown rendering)
+      'blockquote',
       // inline formatting
       'strong',
       'em',
       'code',
       'pre',
+      'del',
       // links
       'a',
       // emoji (span wrapper + img fallback)

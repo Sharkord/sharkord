@@ -1,26 +1,22 @@
 import { EmojiPicker } from '@/components/emoji-picker';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
+import { htmlToTiptapHtml } from '@/helpers/html-to-tiptap-html';
 import type { TCommandInfo } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import Link from '@tiptap/extension-link';
+import { DOMParser as PMMDOMParser } from '@tiptap/pm/model';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { ChevronDown, ChevronUp, Smile } from 'lucide-react';
-import {
-  memo,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState
-} from 'react';
+import { Smile } from 'lucide-react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import type { TEmojiItem } from './helpers';
 import {
   COMMANDS_STORAGE_KEY,
   CommandSuggestion
 } from './plugins/command-suggestion';
+import { MarkdownSyntaxDim } from './plugins/markdown-syntax-dim';
 import { Mention } from './plugins/mentions';
 import { MentionNode } from './plugins/mentions/node';
 import {
@@ -56,10 +52,6 @@ const TiptapInput = memo(
 
     readOnlyRef.current = readOnly;
 
-    const [isExpanded, setIsExpanded] = useState(false);
-    const [hasOverflow, setHasOverflow] = useState(false);
-    const [isHovering, setIsHovering] = useState(false);
-    const [isFocused, setIsFocused] = useState(false);
     const editorWrapperRef = useRef<HTMLDivElement>(null);
 
     const customEmojis = useCustomEmojis();
@@ -68,11 +60,21 @@ const TiptapInput = memo(
     const extensions = useMemo(() => {
       const exts = [
         StarterKit.configure({
-          hardBreak: {
-            HTMLAttributes: {
-              class: 'hard-break'
-            }
-          }
+          // disable all WYSIWYG formatting -- we want to see every character
+          // typed as-is (markdown-aware plain text, not rich text)
+          bold: false,
+          italic: false,
+          strike: false,
+          code: false,
+          codeBlock: false,
+          blockquote: false,
+          heading: false,
+          bulletList: false,
+          orderedList: false,
+          listItem: false,
+          listKeymap: false,
+          horizontalRule: false,
+          hardBreak: false
         }),
         Link.configure({
           autolink: true,
@@ -98,7 +100,8 @@ const TiptapInput = memo(
           users,
           suggestion: MentionSuggestion
         }),
-        MentionNode
+        MentionNode,
+        MarkdownSyntaxDim
       ];
 
       if (commands) {
@@ -128,7 +131,7 @@ const TiptapInput = memo(
         }
       },
       editorProps: {
-        handleKeyDown: (_view, event) => {
+        handleKeyDown: (view, event) => {
           // block all input when readOnly
           if (readOnlyRef.current) {
             event.preventDefault();
@@ -141,7 +144,15 @@ const TiptapInput = memo(
 
           if (event.key === 'Enter') {
             if (event.shiftKey) {
-              return false;
+              // insert a new paragraph instead of a hard-break -- shift+enter
+              // means "new line without submitting", not "inline line break"
+              event.preventDefault();
+              view.dispatch(
+                view.state.tr
+                  .split(view.state.selection.anchor)
+                  .scrollIntoView()
+              );
+              return true;
             }
 
             // if suggestions are active, don't handle Enter - let the suggestion handle it
@@ -174,7 +185,48 @@ const TiptapInput = memo(
 
           return false;
         },
-        handlePaste: () => !!readOnlyRef.current,
+        handlePaste: (view, event) => {
+          if (readOnlyRef.current) return true;
+
+          const html = event.clipboardData?.getData('text/html');
+          const text = event.clipboardData?.getData('text/plain');
+
+          // convert html clipboard content to markdown paragraph html, then
+          // let prosemirror parse and insert it as structured nodes
+          const escapeText = (s: string) =>
+            s
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;');
+
+          const pasteHtml = html
+            ? htmlToTiptapHtml(html)
+            : text
+              ? text
+                  .split(/\r?\n/)
+                  .map((l) => {
+                    const indent = l.match(/^[ \t]*/)?.[0] ?? '';
+                    const encodedIndent = [...indent]
+                      .map((c) =>
+                        c === '\t' ? '&nbsp;&nbsp;&nbsp;&nbsp;' : '&nbsp;'
+                      )
+                      .join('');
+                    return `<p>${encodedIndent}${escapeText(l.slice(indent.length))}</p>`;
+                  })
+                  .join('')
+              : null;
+
+          if (!pasteHtml) return false;
+
+          event.preventDefault();
+
+          const { state, dispatch } = view;
+          const dom = document.createElement('div');
+          dom.innerHTML = pasteHtml;
+          const slice = PMMDOMParser.fromSchema(state.schema).parseSlice(dom);
+          dispatch(state.tr.replaceSelection(slice).scrollIntoView());
+          return true;
+        },
         handleDrop: () => readOnlyRef.current
       }
     });
@@ -253,50 +305,15 @@ const TiptapInput = memo(
       }
     }, [editor, disabled]);
 
-    // Measure if content overflows (more than ~3 lines) when collapsed
-    useLayoutEffect(() => {
-      if (isExpanded) return;
-      const wrapper = editorWrapperRef.current;
-      const el = wrapper?.firstElementChild as HTMLElement | null;
-      if (el) {
-        setHasOverflow(el.scrollHeight > el.clientHeight);
-      }
-    }, [value, isExpanded]);
-
-    const showExpandButton = hasOverflow || isExpanded;
-
     return (
       <div className="flex flex-1 items-center gap-2 min-w-0">
-        <div
-          ref={editorWrapperRef}
-          className="relative flex min-w-0 flex-1"
-          onMouseEnter={() => setIsHovering(true)}
-          onMouseLeave={() => setIsHovering(false)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-        >
+        <div ref={editorWrapperRef} className="relative flex min-w-0 flex-1">
           <EditorContent
             editor={editor}
-            className={`border p-2 rounded w-full min-h-10 tiptap overflow-auto relative transition-colors focus-within:border-ring [&_.ProseMirror:focus]:outline-none ${
-              isExpanded ? 'max-h-80' : 'max-h-20'
-            } ${disabled ? 'opacity-50 cursor-not-allowed bg-muted' : ''}`}
+            className={`border p-2 rounded w-full min-h-10 max-h-80 tiptap overflow-auto relative transition-colors focus-within:border-ring [&_.ProseMirror:focus]:outline-none ${
+              disabled ? ' opacity-50 cursor-not-allowed bg-muted' : ''
+            }`}
           />
-          {showExpandButton && (isHovering || isFocused) && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute -top-1 left-1/2 -translate-y-1/2 -translate-x-1/2 h-5 w-8 shrink-0 rounded border bg-background hover:bg-muted"
-              onClick={() => setIsExpanded((e) => !e)}
-              aria-label={isExpanded ? 'Collapse' : 'Expand'}
-            >
-              {isExpanded ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronUp className="h-4 w-4" />
-              )}
-            </Button>
-          )}
         </div>
 
         <EmojiPicker onEmojiSelect={handleEmojiSelect}>
