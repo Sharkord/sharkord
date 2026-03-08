@@ -1,6 +1,7 @@
 import { getUrlFromServer } from '@/helpers/get-file-url';
 import { LocalStorageKey, setLocalStorageItemBool } from '@/helpers/storage';
-import type { TServerInfo } from '@sharkord/shared';
+import { getTRPCClient } from '@/lib/trpc';
+import type { TDirectMessageConversation, TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
 import { setInfo } from '../server/actions';
 import { store } from '../store';
@@ -98,6 +99,22 @@ export const setDmsOpen = (open: boolean) =>
 
 export const setSelectedDmChannelId = (channelId: number | undefined) =>
   store.dispatch(appSliceActions.setSelectedDmChannelId(channelId));
+
+export const setDmConversations = (
+  conversations: TDirectMessageConversation[]
+) => store.dispatch(appSliceActions.setDmConversations(conversations));
+
+export const fetchDmConversations = async () => {
+  const trpc = getTRPCClient();
+
+  try {
+    const items = await trpc.dms.get.query();
+
+    setDmConversations(items);
+  } catch {
+    toast.error('Failed to load direct messages');
+  }
+};
 
 export const setBrowserNotifications = async (enabled: boolean) => {
   if (enabled && 'Notification' in window) {

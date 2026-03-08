@@ -1,5 +1,6 @@
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { TiptapInput } from '@/components/tiptap-input';
+import { useDmConversationByChannelId } from '@/features/app/hooks';
 import { useChannelById } from '@/features/server/channels/hooks';
 import {
   useCan,
@@ -7,11 +8,13 @@ import {
   usePublicServerSettings
 } from '@/features/server/hooks';
 import { useFlatPluginCommands } from '@/features/server/plugins/hooks';
+import { useOptionalUserById } from '@/features/server/users/hooks';
 import { useUploadFiles } from '@/hooks/use-upload-files';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TJoinedPublicUser, TTempFile } from '@sharkord/shared';
 import {
   ChannelPermission,
+  ChannelType,
   Permission,
   PluginSlot,
   isEmptyMessage
@@ -64,6 +67,8 @@ const MessageCompose = memo(
     const channelCan = useChannelCan(channelId);
     const channel = useChannelById(channelId);
     const publicSettings = usePublicServerSettings();
+    const dmConversation = useDmConversationByChannelId(channelId);
+    const dmOtherUser = useOptionalUserById(dmConversation?.userId);
     const allPluginCommands = useFlatPluginCommands();
 
     const canSendMessages = useMemo(() => {
@@ -84,6 +89,14 @@ const MessageCompose = memo(
         canShareFilesInDm
       );
     }, [can, channelCan, channel, publicSettings]);
+
+    const placeholder = useMemo(() => {
+      if (!channel) return 'Type a message';
+      if (channel.isDm)
+        return dmOtherUser ? `Message @${dmOtherUser.name}` : 'Type a message';
+      const prefix = channel.type === ChannelType.TEXT ? '#' : '';
+      return `Message ${prefix}${channel.name}`;
+    }, [channel, dmOtherUser]);
 
     const pluginCommands = useMemo(
       () =>
@@ -174,6 +187,7 @@ const MessageCompose = memo(
         <div className="flex items-center gap-2 rounded-lg">
           <TiptapInput
             value={message}
+            placeholder={placeholder}
             onChange={onMessageChange}
             onSubmit={handleSend}
             onTyping={onTyping}

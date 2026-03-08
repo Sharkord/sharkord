@@ -1,8 +1,13 @@
 import { UnreadCount } from '@/components/unread-count';
 import { UserAvatar } from '@/components/user-avatar';
-import { setSelectedDmChannelId } from '@/features/app/actions';
-import { useSelectedDmChannelId } from '@/features/app/hooks';
-import { useChannels } from '@/features/server/channels/hooks';
+import {
+  fetchDmConversations,
+  setSelectedDmChannelId
+} from '@/features/app/actions';
+import {
+  useDmConversations,
+  useSelectedDmChannelId
+} from '@/features/app/hooks';
 import { useUnreadMessagesCount } from '@/features/server/hooks';
 import {
   useOwnUserId,
@@ -54,45 +59,17 @@ const DirectMessageItem = memo(
 
 const DirectMessages = memo(() => {
   const [loading, setLoading] = useState(true);
-  const [conversations, setConversations] = useState<
-    TDirectMessageConversation[]
-  >([]);
+  const conversations = useDmConversations();
   const [query, setQuery] = useState('');
   const users = useUsers();
-  const channels = useChannels();
   const ownUserId = useOwnUserId();
   const selectedDmChannelId = useSelectedDmChannelId();
 
-  const fetchConversations = useCallback(async () => {
-    const trpc = getTRPCClient();
-
+  // refresh when the panel opens, in case new conversations arrived since join
+  useEffect(() => {
     setLoading(true);
-
-    try {
-      const items = await trpc.dms.get.query();
-
-      setConversations(items);
-    } catch {
-      toast.error('Failed to load direct messages');
-    } finally {
-      setLoading(false);
-    }
+    fetchDmConversations().finally(() => setLoading(false));
   }, []);
-
-  useEffect(() => {
-    fetchConversations();
-  }, [channels.length, fetchConversations]);
-
-  // subscribe to new conversations being opened, when a new conversation is opened we refetch the list of conversations
-  useEffect(() => {
-    const trpc = getTRPCClient();
-
-    const sub = trpc.dms.onConversationOpen.subscribe(undefined, {
-      onData: () => fetchConversations()
-    });
-
-    return () => sub.unsubscribe();
-  }, [fetchConversations]);
 
   const usersToStartDm = useMemo(() => {
     const directMessageUserIds = new Set(conversations.map((dm) => dm.userId));
@@ -107,21 +84,17 @@ const DirectMessages = memo(() => {
     );
   }, [conversations, ownUserId, query, users]);
 
-  const onStartDm = useCallback(
-    async (userId: number) => {
-      const trpc = getTRPCClient();
+  const onStartDm = useCallback(async (userId: number) => {
+    const trpc = getTRPCClient();
 
-      try {
-        const result = await trpc.dms.open.mutate({ userId });
+    try {
+      const result = await trpc.dms.open.mutate({ userId });
 
-        setSelectedDmChannelId(result.channelId);
-        await fetchConversations();
-      } catch {
-        toast.error('Could not open direct message');
-      }
-    },
-    [fetchConversations]
-  );
+      setSelectedDmChannelId(result.channelId);
+    } catch {
+      toast.error('Could not open direct message');
+    }
+  }, []);
 
   return (
     <div className="flex-1 overflow-y-auto p-2">

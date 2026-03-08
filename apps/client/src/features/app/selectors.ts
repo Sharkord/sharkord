@@ -1,4 +1,5 @@
 import { createSelector } from '@reduxjs/toolkit';
+import { createCachedSelector } from 're-reselect';
 import type { IRootState } from '../store';
 
 export const appLoadingSelector = (state: IRootState) => state.app.appLoading;
@@ -41,6 +42,15 @@ export const browserNotificationsForMentionsSelector = (state: IRootState) =>
 
 export const browserNotificationsForDmsSelector = (state: IRootState) =>
   state.app.browserNotificationsForDms;
+
+export const dmConversationsSelector = (state: IRootState) =>
+  state.app.dmConversations;
+
+export const dmConversationByChannelIdSelector = createCachedSelector(
+  [dmConversationsSelector, (_: IRootState, channelId: number) => channelId],
+  (conversations, channelId) =>
+    conversations.find((dm) => dm.channelId === channelId)
+)((_, channelId: number) => channelId);
 
 export const threadSidebarDataSelector = createSelector(
   [

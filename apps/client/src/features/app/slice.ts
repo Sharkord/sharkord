@@ -1,6 +1,7 @@
 import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
 import type { TDevices } from '@/types';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { TDirectMessageConversation } from '@sharkord/shared';
 
 export interface TAppState {
   appLoading: boolean;
@@ -15,6 +16,7 @@ export interface TAppState {
   autoJoinLastChannel: boolean;
   dmsOpen: boolean;
   selectedDmChannelId: number | undefined;
+  dmConversations: TDirectMessageConversation[];
   browserNotifications: boolean;
   browserNotificationsForMentions: boolean;
   browserNotificationsForDms: boolean;
@@ -36,6 +38,7 @@ const initialState: TAppState = {
   ),
   dmsOpen: false,
   selectedDmChannelId: undefined,
+  dmConversations: [],
   browserNotifications: getLocalStorageItemBool(
     LocalStorageKey.BROWSER_NOTIFICATIONS,
     false
@@ -99,6 +102,12 @@ export const appSlice = createSlice({
       action: PayloadAction<number | undefined>
     ) => {
       state.selectedDmChannelId = action.payload;
+    },
+    setDmConversations: (
+      state,
+      action: PayloadAction<TDirectMessageConversation[]>
+    ) => {
+      state.dmConversations = action.payload;
     },
     setBrowserNotifications: (state, action: PayloadAction<boolean>) => {
       state.browserNotifications = action.payload;

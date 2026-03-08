@@ -5,6 +5,7 @@ import type { TCommandInfo } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import Link from '@tiptap/extension-link';
+import { Placeholder } from '@tiptap/extensions';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { ChevronDown, ChevronUp, Smile } from 'lucide-react';
@@ -34,6 +35,7 @@ type TTiptapInputProps = {
   disabled?: boolean;
   readOnly?: boolean;
   value?: string;
+  placeholder?: string;
   onChange?: (html: string) => void;
   onSubmit?: () => void;
   onCancel?: () => void;
@@ -44,6 +46,7 @@ type TTiptapInputProps = {
 const TiptapInput = memo(
   ({
     value,
+    placeholder,
     onChange,
     onSubmit,
     onCancel,
@@ -98,7 +101,8 @@ const TiptapInput = memo(
           users,
           suggestion: MentionSuggestion
         }),
-        MentionNode
+        MentionNode,
+        Placeholder.configure({ placeholder })
       ];
 
       if (commands) {
@@ -112,7 +116,7 @@ const TiptapInput = memo(
       }
 
       return exts;
-    }, [customEmojis, commands, users]);
+    }, [customEmojis, commands, users, placeholder]);
 
     const editor = useEditor({
       extensions,
