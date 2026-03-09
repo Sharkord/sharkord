@@ -41,6 +41,12 @@ export enum VideoCodec {
   AV1 = 'video/AV1'
 }
 
+export enum NoiseSuppression {
+  NONE = 'none',
+  STANDARD = 'standard',
+  ADVANCED = 'advanced'
+}
+
 export type TDeviceSettings = {
   microphoneId: string | undefined;
   playbackId: string | undefined;
@@ -48,7 +54,7 @@ export type TDeviceSettings = {
   webcamResolution: Resolution;
   webcamFramerate: number;
   echoCancellation: boolean;
-  noiseSuppression: boolean;
+  noiseSuppression: NoiseSuppression;
   autoGainControl: boolean;
   noiseGateEnabled: boolean;
   noiseGateThresholdDb: number;
