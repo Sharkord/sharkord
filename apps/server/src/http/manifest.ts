@@ -34,7 +34,7 @@ const manifestRouteHandler = async (
 
   res.writeHead(200, {
     'Content-Type': 'application/manifest+json',
-    'Cache-Control': 'public, max-age=60'
+    'Cache-Control': 'public, max-age=3600'
   });
   res.end(JSON.stringify(manifest));
 };
