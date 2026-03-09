@@ -1,6 +1,7 @@
 import { Button } from '@sharkord/ui';
 import { ArrowLeft } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ModViewScreen, useModViewContext } from './context';
 import { Details } from './details';
 import { Header } from './header';
@@ -14,6 +15,7 @@ type TWrapperProps = {
 };
 
 const Wrapper = memo(({ children }: TWrapperProps) => {
+  const { t } = useTranslation('settings');
   const { setView } = useModViewContext();
 
   const onBackClick = useCallback(() => {
@@ -29,7 +31,7 @@ const Wrapper = memo(({ children }: TWrapperProps) => {
         className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-3 w-3 mr-1" />
-        Go back
+        {t('goBack')}
       </Button>
       {children}
     </div>

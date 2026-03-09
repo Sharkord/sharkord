@@ -18,6 +18,7 @@ import {
   Separator
 } from '@sharkord/ui';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SearchPopover } from './search-popover';
 import type { TChannelPermissionType } from './types';
@@ -103,6 +104,7 @@ type TRolesSectionProps = {
 
 const RolesSection = memo(
   ({ rolePermissions, selectedKey, setSelectedKey }: TRolesSectionProps) => {
+    const { t } = useTranslation('settings');
     const roleIds = useMemo(
       () => Array.from(new Set(rolePermissions.map((perm) => perm.roleId))),
       [rolePermissions]
@@ -113,7 +115,7 @@ const RolesSection = memo(
     return (
       <>
         <div className="px-3 py-1 text-xs font-semibold uppercase text-muted-foreground">
-          Roles
+          {t('rolesSection')}
         </div>
         {roleIds.map((roleId) => (
           <RoleItem
@@ -136,6 +138,7 @@ type TUsersSectionProps = {
 
 const UsersSection = memo(
   ({ userPermissions, selectedKey, setSelectedKey }: TUsersSectionProps) => {
+    const { t } = useTranslation('settings');
     const userIds = useMemo(
       () => Array.from(new Set(userPermissions.map((perm) => perm.userId))),
       [userPermissions]
@@ -146,7 +149,7 @@ const UsersSection = memo(
     return (
       <>
         <div className="px-3 py-1 text-xs font-semibold uppercase text-muted-foreground">
-          Users
+          {t('usersSection')}
         </div>
         {userIds.map((userId) => (
           <UserItem
@@ -179,6 +182,7 @@ const OverridesList = memo(
     setSelectedOverrideId,
     refetch
   }: TOverridesListProps) => {
+    const { t } = useTranslation('settings');
     const hasRoles = rolePermissions.length > 0;
     const hasUsers = userPermissions.length > 0;
     const isEmpty = !hasRoles && !hasUsers;
@@ -211,23 +215,23 @@ const OverridesList = memo(
             isCreate: true
           });
 
-          toast.success('Permission override added');
+          toast.success(t('permissionOverrideAdded'));
 
           setSelectedOverrideId(`${type}-${targetId}`);
 
           await refetch();
         } catch (error) {
-          toast.error(getTrpcError(error, 'Failed to add permission override'));
+          toast.error(getTrpcError(error, t('failedAddPermissionOverride')));
         }
       },
-      [channelId, setSelectedOverrideId, refetch]
+      [channelId, setSelectedOverrideId, refetch, t]
     );
 
     return (
       <Card className="w-64 flex-shrink-0">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Roles/Users</CardTitle>
+            <CardTitle className="text-base">{t('rolesUsersTitle')}</CardTitle>
             <SearchPopover
               onSelect={onSelect}
               ignoreRoleIds={usedRolesIds}
@@ -238,7 +242,7 @@ const OverridesList = memo(
         <CardContent className="space-y-2 p-2">
           {isEmpty ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
-              No permission overrides yet
+              {t('noPermissionOverridesYet')}
             </div>
           ) : (
             <>

@@ -4,6 +4,7 @@ import { useAdminUserInfo } from '@/features/server/admin/hooks';
 import { extractUrls } from '@sharkord/shared';
 import { Sheet, SheetContent, SheetTitle } from '@sharkord/ui';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ModViewContext, ModViewScreen, type TModViewContext } from './context';
 import { ModViewContent } from './mod-view-content';
 
@@ -12,6 +13,7 @@ type TContentWrapperProps = {
 };
 
 const ContentWrapper = memo(({ userId }: TContentWrapperProps) => {
+  const { t } = useTranslation('settings');
   const [currentView, setCurrentView] = useState<ModViewScreen | undefined>(
     undefined
   );
@@ -40,7 +42,7 @@ const ContentWrapper = memo(({ userId }: TContentWrapperProps) => {
   if (loading || !user) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t('modViewLoading')}</p>
       </div>
     );
   }
@@ -53,6 +55,7 @@ const ContentWrapper = memo(({ userId }: TContentWrapperProps) => {
 });
 
 const ModViewSheet = memo(() => {
+  const { t } = useTranslation('settings');
   const { isOpen, userId } = useModViewOpen();
 
   const handleClose = useCallback(() => {
@@ -75,7 +78,7 @@ const ModViewSheet = memo(() => {
   return (
     <Sheet defaultOpen={false} open={isOpen}>
       <SheetContent close={handleClose}>
-        <SheetTitle className="sr-only">User Moderation Panel</SheetTitle>
+        <SheetTitle className="sr-only">{t('modViewTitle')}</SheetTitle>
         {userId && <ContentWrapper userId={userId} />}
       </SheetContent>
     </Sheet>

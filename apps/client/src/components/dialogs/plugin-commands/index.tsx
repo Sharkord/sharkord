@@ -1,22 +1,20 @@
-import { usePluginCommands } from '@/features/server/plugins/hooks';
 import { getTRPCClient } from '@/lib/trpc';
-import { getTrpcError } from '@sharkord/shared';
+import { getTrpcError, type TCommandInfo } from '@sharkord/shared';
 import {
   Button,
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle
 } from '@sharkord/ui';
-import { Play } from 'lucide-react';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { TDialogBaseProps } from '../types';
-import { Args } from './args';
+import { CommandArgs } from './args';
 import { CommandsList } from './commands-list';
-import { Helpers } from './helpers';
-import { Response } from './response';
-import type { TCommandResponse } from './types';
+import { CommandResponse } from './response';
 
 type TPluginCommandsDialogProps = TDialogBaseProps & {
   pluginId: string;
@@ -24,180 +22,115 @@ type TPluginCommandsDialogProps = TDialogBaseProps & {
 
 const PluginCommandsDialog = memo(
   ({ isOpen, close, pluginId }: TPluginCommandsDialogProps) => {
-    const commandsMap = usePluginCommands();
-    const [selectedCommand, setSelectedCommand] = useState<string>('');
-    const [commandArgs, setCommandArgs] = useState<Record<string, unknown>>({});
-    const [isExecuting, setIsExecuting] = useState(false);
-    const [commandResponse, setCommandResponse] =
-      useState<TCommandResponse | null>(null);
+    const { t } = useTranslation('dialogs');
+    const [commands, setCommands] = useState<TCommandInfo[]>([]);
+    const [selectedCommand, setSelectedCommand] = useState<TCommandInfo | null>(null);
+    const [argValues, setArgValues] = useState<Record<string, unknown>>({});
+    const [loading, setLoading] = useState(false);
+    const [executing, setExecuting] = useState(false);
+    const [response, setResponse] = useState<string | null>(null);
 
-    const availableCommands = useMemo(() => {
-      return commandsMap[pluginId] || [];
-    }, [commandsMap, pluginId]);
-
-    const selectedCommandInfo = useMemo(() => {
-      return availableCommands.find((cmd) => cmd.name === selectedCommand);
-    }, [availableCommands, selectedCommand]);
-
-    const handleCommandChange = useCallback((commandName: string) => {
-      setSelectedCommand(commandName);
-      setCommandArgs({});
-      setCommandResponse(null);
-    }, []);
-
-    const handleArgChange = useCallback(
-      (argName: string, value: string, type: string) => {
-        setCommandArgs((prev) => {
-          let parsedValue: unknown = value;
-
-          if (type === 'number') {
-            parsedValue = value === '' ? undefined : Number(value);
-          } else if (type === 'boolean') {
-            parsedValue = value === 'true';
-          }
-
-          return {
-            ...prev,
-            [argName]: parsedValue
-          };
-        });
-      },
-      []
-    );
-
-    const handleExecute = useCallback(async () => {
-      if (!pluginId || !selectedCommand) return;
-
-      setIsExecuting(true);
-      setCommandResponse(null);
+    const fetchCommands = useCallback(async () => {
+      setLoading(true);
 
       try {
         const trpc = getTRPCClient();
-
-        const response = await trpc.plugins.executeCommand.mutate({
-          pluginId,
-          commandName: selectedCommand,
-          args: commandArgs
-        });
-
-        setCommandResponse({
-          success: true,
-          data: response
-        });
-
-        toast.success(`Command '${selectedCommand}' executed successfully`);
+        const result = await trpc.plugins.getCommands.query({ pluginId });
+        setCommands(result[pluginId] ?? []);
       } catch (error) {
-        const errorMessage = getTrpcError(error, 'Failed to execute command');
+        toast.error(getTrpcError(error, 'Failed to load plugin commands'));
+      } finally {
+        setLoading(false);
+      }
+    }, [pluginId]);
 
-        setCommandResponse({
-          success: false,
-          error: errorMessage
+    useEffect(() => {
+      if (isOpen) fetchCommands();
+    }, [isOpen, fetchCommands]);
+
+    const handleSelectCommand = useCallback((cmd: TCommandInfo) => {
+      setSelectedCommand(cmd);
+      setArgValues({});
+      setResponse(null);
+    }, []);
+
+    const handleExecute = useCallback(async () => {
+      if (!selectedCommand) return;
+
+      setExecuting(true);
+      setResponse(null);
+
+      try {
+        const trpc = getTRPCClient();
+        const result = await trpc.plugins.executeCommand.mutate({
+          pluginId,
+          commandName: selectedCommand.name,
+          args: argValues
         });
 
-        toast.error(errorMessage);
+        setResponse(result != null ? String(result) : null);
+        toast.success(t('commandSuccess', { command: selectedCommand.name }));
+      } catch (error) {
+        toast.error(getTrpcError(error, t('commandFailed')));
       } finally {
-        setIsExecuting(false);
+        setExecuting(false);
       }
-    }, [pluginId, selectedCommand, commandArgs]);
-
-    const canExecute = useMemo(() => {
-      if (!selectedCommandInfo) return false;
-
-      if (selectedCommandInfo.args) {
-        for (const arg of selectedCommandInfo.args) {
-          if (arg.required && !commandArgs[arg.name]) {
-            return false;
-          }
-        }
-      }
-
-      return true;
-    }, [selectedCommandInfo, commandArgs]);
+    }, [selectedCommand, pluginId, argValues, t]);
 
     return (
-      <Dialog open={isOpen} onOpenChange={close}>
-        <DialogContent className="flex flex-col min-w-[90vw] h-[85vh] p-0 gap-0">
-          <DialogHeader className="px-6 py-4 border-b">
-            <DialogTitle>Available Commands For {pluginId}</DialogTitle>
+      <Dialog open={isOpen}>
+        <DialogContent
+          onInteractOutside={close}
+          close={close}
+          className="max-w-2xl"
+        >
+          <DialogHeader>
+            <DialogTitle>
+              {t('commandsTitle', { pluginId })}
+            </DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex gap-4 min-h-[300px]">
             <CommandsList
-              availableCommands={availableCommands}
-              handleCommandChange={handleCommandChange}
+              commands={commands}
+              loading={loading}
               selectedCommand={selectedCommand}
+              onSelect={handleSelectCommand}
             />
 
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {!selectedCommandInfo ? (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <Play className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                    <p className="text-lg">Select a command to execute</p>
-                  </div>
-                </div>
+            <div className="flex-1 flex flex-col gap-3">
+              {!selectedCommand ? (
+                <p className="text-sm text-muted-foreground">
+                  {t('selectCommandToExecute')}
+                </p>
               ) : (
                 <>
-                  <div className="flex-1 overflow-y-auto p-6">
-                    <div className="max-w-2xl">
-                      <div className="mb-6">
-                        <h2 className="text-xl font-semibold mb-2">
-                          {selectedCommandInfo.name}
-                        </h2>
-                        {selectedCommandInfo.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {selectedCommandInfo.description}
-                          </p>
-                        )}
-                      </div>
-
-                      {selectedCommandInfo.args &&
-                      selectedCommandInfo.args.length > 0 ? (
-                        <Args
-                          selectedCommandInfo={selectedCommandInfo}
-                          commandArgs={commandArgs}
-                          handleArgChange={handleArgChange}
-                        />
-                      ) : (
-                        <div className="p-4 border rounded-lg bg-muted/30">
-                          <p className="text-sm text-muted-foreground">
-                            This command does not require any arguments.
-                          </p>
-                        </div>
-                      )}
-
-                      {commandResponse && (
-                        <Response response={commandResponse} />
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="border-t p-4 bg-muted/30">
-                    <div className="flex justify-start gap-4">
-                      <Button variant="outline" onClick={close}>
-                        Close
-                      </Button>
-                      <Button
-                        onClick={handleExecute}
-                        disabled={!canExecute || isExecuting}
-                      >
-                        <Play className="w-4 h-4 mr-2" />
-                        {isExecuting ? 'Executing...' : 'Execute Command'}
-                      </Button>
-                    </div>
-                  </div>
+                  <CommandArgs
+                    command={selectedCommand}
+                    argValues={argValues}
+                    onChange={setArgValues}
+                  />
+                  <CommandResponse response={response} />
                 </>
               )}
             </div>
-
-            <Helpers />
           </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={close}>
+              {t('cancel')}
+            </Button>
+            <Button
+              onClick={handleExecute}
+              disabled={!selectedCommand || executing}
+            >
+              {executing ? t('executingBtn') : t('executeCommandBtn')}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     );
   }
 );
-
-PluginCommandsDialog.displayName = 'PluginCommandsDialog';
 
 export { PluginCommandsDialog };

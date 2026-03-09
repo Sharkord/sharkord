@@ -1,7 +1,3 @@
-import { joinServer } from '@/features/server/actions';
-import { useForm } from '@/hooks/use-form';
-import { cleanup } from '@/lib/trpc';
-import {} from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,65 +11,55 @@ import {
   Input
 } from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TDialogBaseProps } from '../types';
 
 type TServerPasswordDialogProps = TDialogBaseProps & {
-  handshakeHash: string;
+  onConfirm: (password: string) => void;
+  onCancel: () => void;
 };
 
 const ServerPasswordDialog = memo(
-  ({ isOpen, close, handshakeHash }: TServerPasswordDialogProps) => {
-    const { r, values, setTrpcErrors, errors } = useForm({
-      password: ''
-    });
-    const [loading, setLoading] = useState(false);
+  ({ isOpen, close, onConfirm, onCancel }: TServerPasswordDialogProps) => {
+    const { t } = useTranslation('dialogs');
+    const [password, setPassword] = useState('');
 
-    const onSubmit = useCallback(async () => {
-      try {
-        setLoading(true);
-        await joinServer(handshakeHash, values.password);
+    const handleConfirm = useCallback(() => {
+      onConfirm(password);
+    }, [password, onConfirm]);
 
-        close();
-      } catch (error) {
-        setTrpcErrors(error);
-      } finally {
-        setLoading(false);
-      }
-    }, [handshakeHash, values.password, close, setTrpcErrors]);
-
-    const onCancel = useCallback(() => {
-      cleanup();
+    const handleCancel = useCallback(() => {
+      onCancel();
       close();
-    }, [close]);
+    }, [onCancel, close]);
 
     return (
       <AlertDialog open={isOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Enter the password</AlertDialogTitle>
+            <AlertDialogTitle>{t('serverPasswordTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This server is password protected. Please enter the password to
-              join.
+              {t('serverPasswordDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="flex flex-col gap-2">
-            <AutoFocus>
-              <Input
-                {...r('password')}
-                className="mt-2"
-                type="password"
-                error={errors._general}
-              />
-            </AutoFocus>
-          </div>
+
+          <AutoFocus>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onEnter={handleConfirm}
+              autoFocus
+            />
+          </AutoFocus>
+
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={handleCancel}>
+              {t('cancel')}
+            </AlertDialogCancel>
             <AutoFocus>
-              <AlertDialogAction
-                onClick={onSubmit}
-                disabled={!values.password || loading}
-              >
-                Join
+              <AlertDialogAction onClick={handleConfirm}>
+                {t('joinBtn')}
               </AlertDialogAction>
             </AutoFocus>
           </AlertDialogFooter>

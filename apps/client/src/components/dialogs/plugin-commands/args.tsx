@@ -9,62 +9,60 @@ import {
   SelectValue
 } from '@sharkord/ui';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
-type TArgsProps = {
-  selectedCommandInfo: TCommandInfo;
-  commandArgs: Record<string, unknown>;
-  handleArgChange: (argName: string, value: string, type: string) => void;
+type TCommandArgsProps = {
+  command: TCommandInfo;
+  argValues: Record<string, unknown>;
+  onChange: (values: Record<string, unknown>) => void;
 };
 
-const Args = memo(
-  ({ selectedCommandInfo, commandArgs, handleArgChange }: TArgsProps) => {
+const CommandArgs = memo(({ command, argValues, onChange }: TCommandArgsProps) => {
+  const { t } = useTranslation('dialogs');
+
+  if (!command.args || command.args.length === 0) {
     return (
-      <div className="space-y-4">
-        {(selectedCommandInfo.args || []).map((arg) => (
-          <Group
-            key={arg.name}
-            label={arg.name}
-            description={`(${arg.type}) ${arg.description}`}
-            required={arg.required}
-          >
-            {arg.type === 'boolean' ? (
-              <Select
-                value={
-                  commandArgs[arg.name] !== undefined
-                    ? String(commandArgs[arg.name])
-                    : ''
-                }
-                onValueChange={(value) =>
-                  handleArgChange(arg.name, value, arg.type)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select value..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">True</SelectItem>
-                  <SelectItem value="false">False</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input
-                type={arg.type === 'number' ? 'number' : 'text'}
-                value={
-                  commandArgs[arg.name] !== undefined
-                    ? String(commandArgs[arg.name])
-                    : ''
-                }
-                onChange={(e) =>
-                  handleArgChange(arg.name, e.target.value, arg.type)
-                }
-                placeholder={`Enter ${arg.name}...`}
-              />
-            )}
-          </Group>
-        ))}
-      </div>
+      <p className="text-sm text-muted-foreground">{t('noArgsRequired')}</p>
     );
   }
-);
 
-export { Args };
+  return (
+    <div className="space-y-3">
+      {command.args.map((arg) => (
+        <Group
+          key={arg.name}
+          label={arg.name}
+          description={arg.description}
+          required={arg.required}
+        >
+          {arg.type === 'boolean' ? (
+            <Select
+              value={String(argValues[arg.name] ?? '')}
+              onValueChange={(value) =>
+                onChange({ ...argValues, [arg.name]: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">True</SelectItem>
+                <SelectItem value="false">False</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              type={arg.type === 'number' ? 'number' : 'text'}
+              value={String(argValues[arg.name] ?? '')}
+              onChange={(e) =>
+                onChange({ ...argValues, [arg.name]: e.target.value })
+              }
+            />
+          )}
+        </Group>
+      ))}
+    </div>
+  );
+});
+
+export { CommandArgs };

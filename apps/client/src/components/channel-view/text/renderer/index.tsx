@@ -13,6 +13,7 @@ import {
 import { Tooltip } from '@sharkord/ui';
 import parse from 'html-react-parser';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { FileCard } from '../file-card';
 import { MessageReactions } from '../message-reactions';
@@ -28,6 +29,7 @@ type TMessageRendererProps = {
 
 const MessageRenderer = memo(
   ({ message, disableFiles, disableReactions }: TMessageRendererProps) => {
+    const { t } = useTranslation();
     const ownUserId = useOwnUserId();
     const editedByUser = useUserById(message.editedBy ?? -1);
     const isOwnMessage = useMemo(
@@ -55,9 +57,9 @@ const MessageRenderer = memo(
       if (!fileId) return;
 
       const choice = await requestConfirmation({
-        title: 'Delete file',
-        message: 'Are you sure you want to delete this file?',
-        confirmLabel: 'Delete'
+        title: t('deleteFileTitle'),
+        message: t('deleteFileMsg'),
+        confirmLabel: t('deleteLabel')
       });
 
       if (!choice) return;
@@ -69,11 +71,11 @@ const MessageRenderer = memo(
           fileId
         });
 
-        toast.success('File deleted');
+        toast.success(t('fileDeleted'));
       } catch {
-        toast.error('Failed to delete file');
+        toast.error(t('failedDeleteFile'));
       }
-    }, []);
+    }, [t]);
 
     const allMedia = useMemo(() => {
       const mediaFromFiles: TFoundMedia[] = message.files
@@ -107,7 +109,7 @@ const MessageRenderer = memo(
                       <span className="text-secondary text-xs">
                         {editedByUser
                           ? getRenderedUsername(editedByUser)
-                          : 'Unknown User'}{' '}
+                          : t('unknownUser')}{' '}
                         {relativeTime}
                       </span>
                     )}
@@ -116,7 +118,7 @@ const MessageRenderer = memo(
               }
             >
               <span className="msg-edit ml-1 text-xs text-muted-foreground">
-                (edited)
+                {t('edited')}
               </span>
             </Tooltip>
           )}

@@ -8,11 +8,13 @@ import { ChannelPermission } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import { HeadphoneOff, Headphones, Mic, MicOff, Settings } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ServerScreen } from '../server-screens/screens';
 import { UserAvatar } from '../user-avatar';
 import { UserPopover } from '../user-popover';
 
 const UserControl = memo(() => {
+  const { t } = useTranslation('sidebar');
   const ownPublicUser = useOwnPublicUser();
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const { ownVoiceState, toggleMic, toggleSound } = useVoice();
@@ -59,8 +61,8 @@ const UserControl = memo(() => {
           onClick={toggleMic}
           title={
             ownVoiceState.micMuted
-              ? 'Unmute microphone (Ctrl+Shift+M)'
-              : 'Mute microphone (Ctrl+Shift+M)'
+              ? t('unmuteMic')
+              : t('muteMic')
           }
           disabled={!channelCan(ChannelPermission.SPEAK)}
         >
@@ -83,8 +85,8 @@ const UserControl = memo(() => {
           onClick={toggleSound}
           title={
             ownVoiceState.soundMuted
-              ? 'Undeafen (Ctrl+Shift+D)'
-              : 'Deafen (Ctrl+Shift+D)'
+              ? t('undeafen')
+              : t('deafen')
           }
         >
           {ownVoiceState.soundMuted ? (
@@ -99,7 +101,7 @@ const UserControl = memo(() => {
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
           onClick={handleSettingsClick}
-          title="User settings"
+          title={t('userSettings')}
         >
           <Settings className="h-4 w-4" />
         </Button>

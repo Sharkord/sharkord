@@ -13,11 +13,13 @@ import {
 } from '@sharkord/ui';
 import { Menu } from 'lucide-react';
 import { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
 import { ServerScreen } from '../server-screens/screens';
 
 const ServerDropdownMenu = memo(() => {
+  const { t } = useTranslation('sidebar');
   const serverSettingsPermissions = useMemo(
     () => [
       Permission.MANAGE_SETTINGS,
@@ -39,23 +41,23 @@ const ServerDropdownMenu = memo(() => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuLabel>Server</DropdownMenuLabel>
+        <DropdownMenuLabel>{t('server')}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <Protect permission={Permission.MANAGE_CATEGORIES}>
           <DropdownMenuItem onClick={() => openDialog(Dialog.CREATE_CATEGORY)}>
-            Add Category
+            {t('addCategory')}
           </DropdownMenuItem>
         </Protect>
         <Protect permission={serverSettingsPermissions}>
           <DropdownMenuItem
             onClick={() => openServerScreen(ServerScreen.SERVER_SETTINGS)}
           >
-            Server Settings
+            {t('serverSettings')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
         </Protect>
         <DropdownMenuItem onClick={disconnectFromServer}>
-          Disconnect
+          {t('disconnect')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

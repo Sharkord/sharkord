@@ -13,12 +13,14 @@ import {
   Textarea
 } from '@sharkord/ui';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type TGeneralProps = {
   channelId: number;
 };
 
 const General = memo(({ channelId }: TGeneralProps) => {
+  const { t } = useTranslation('settings');
   const { channel, loading, onChange, submit, errors } =
     useAdminChannelGeneral(channelId);
 
@@ -27,32 +29,32 @@ const General = memo(({ channelId }: TGeneralProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Channel Information</CardTitle>
+        <CardTitle>{t('channelInfoTitle')}</CardTitle>
         <CardDescription>
-          Manage your channel's basic information
+          {t('channelInfoDesc')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Group label="Name">
+        <Group label={t('channelNameLabel')}>
           <Input
             value={channel.name}
             onChange={(e) => onChange('name', e.target.value)}
-            placeholder="Enter server name"
+            placeholder={t('channelNamePlaceholder')}
             error={errors.name}
           />
         </Group>
 
-        <Group label="Topic">
+        <Group label={t('channelTopicLabel')}>
           <Textarea
             value={channel.topic ?? ''}
             onChange={(e) => onChange('topic', e.target.value || null)}
-            placeholder="Enter channel topic"
+            placeholder={t('channelTopicPlaceholder')}
           />
         </Group>
 
         <Group
-          label="Private"
-          description="Restricts access to this channel to specific roles and members."
+          label={t('privateLabel')}
+          description={t('privateDesc')}
         >
           <Switch
             checked={channel.private}
@@ -62,10 +64,10 @@ const General = memo(({ channelId }: TGeneralProps) => {
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
-            Cancel
+            {t('cancel')}
           </Button>
           <Button onClick={submit} disabled={loading}>
-            Save Changes
+            {t('saveChanges')}
           </Button>
         </div>
       </CardContent>

@@ -23,6 +23,7 @@ import {
 } from '@sharkord/ui';
 import { Info } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { TDialogBaseProps } from '../types';
 
@@ -33,12 +34,12 @@ type TAssignRoleDialogProps = TDialogBaseProps & {
 
 const AssignRoleDialog = memo(
   ({ isOpen, close, user, refetch }: TAssignRoleDialogProps) => {
+    const { t } = useTranslation('dialogs');
     const ownUserId = useOwnUserId();
     const roles = useRoles();
     const [selectedRoleId, setSelectedRoleId] = useState<number>(0);
     const isOwnUser = ownUserId === user.id;
 
-    // Filter out roles the user already has
     const availableRoles = useMemo(
       () => roles.filter((role) => !user.roleIds.includes(role.id)),
       [roles, user.roleIds]
@@ -51,7 +52,7 @@ const AssignRoleDialog = memo(
 
     const onSubmit = useCallback(async () => {
       if (selectedRoleId === 0) {
-        toast.error('Please select a role');
+        toast.error(t('pleaseSelectRole'));
         return;
       }
 
@@ -63,24 +64,24 @@ const AssignRoleDialog = memo(
           roleId: selectedRoleId
         });
 
-        toast.success('Role assigned successfully');
+        toast.success(t('roleAssigned'));
         close();
         refetch();
       } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to assign role'));
+        toast.error(getTrpcError(error, t('failedAssignRole')));
       }
-    }, [user.id, selectedRoleId, close, refetch]);
+    }, [user.id, selectedRoleId, close, refetch, t]);
 
     return (
       <AlertDialog open={isOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Assign role to {user.name}</AlertDialogTitle>
+            <AlertDialogTitle>{t('assignRoleTitle', { name: user.name })}</AlertDialogTitle>
             {isOwnUser && (
               <Alert variant="default">
                 <Info />
                 <AlertDescription>
-                  You are assigning a role to yourself.
+                  {t('selfRoleAssignWarning')}
                 </AlertDescription>
               </Alert>
             )}
@@ -88,20 +89,20 @@ const AssignRoleDialog = memo(
               <Alert variant="default">
                 <Info />
                 <AlertDescription>
-                  This user already has all available roles.
+                  {t('userHasAllRoles')}
                 </AlertDescription>
               </Alert>
             )}
           </AlertDialogHeader>
           <div className="flex flex-col gap-4">
-            <Group label="Role">
+            <Group label={t('roleLabel')}>
               <Select
                 onValueChange={(value) => setSelectedRoleId(Number(value))}
                 value={selectedRoleId.toString()}
                 disabled={availableRoles.length === 0}
               >
                 <SelectTrigger className="w-[230px]">
-                  <SelectValue placeholder="Select a role" />
+                  <SelectValue placeholder={t('selectRolePlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableRoles.map((role) => (
@@ -122,13 +123,13 @@ const AssignRoleDialog = memo(
             )}
           </div>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel onClick={close}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={close}>{t('cancel')}</AlertDialogCancel>
             <AutoFocus>
               <AlertDialogAction
                 onClick={onSubmit}
                 disabled={availableRoles.length === 0 || selectedRoleId === 0}
               >
-                Assign Role
+                {t('assignRoleBtn')}
               </AlertDialogAction>
             </AutoFocus>
           </AlertDialogFooter>

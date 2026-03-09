@@ -26,6 +26,7 @@ import { Permission, getTrpcError } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CategoryContextMenu } from '../context-menus/category';
 import { Dialog } from '../dialogs/dialogs';
@@ -38,6 +39,7 @@ type TCategoryProps = {
 };
 
 const Category = memo(({ categoryId }: TCategoryProps) => {
+  const { t } = useTranslation('sidebar');
   const can = useCan();
   const hasVisibleChannelsInCategory =
     useHasVisibleChannelsInCategory(categoryId);
@@ -84,7 +86,7 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
             size="sm"
             icon={ChevronIcon}
             onClick={toggleExpanded}
-            title={expanded ? 'Collapse category' : 'Expand category'}
+            title={expanded ? t('collapseCategory') : t('expandCategory')}
           />
           <CategoryContextMenu categoryId={category.id}>
             <span
@@ -103,7 +105,7 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
             size="sm"
             icon={Plus}
             onClick={onCreateChannelClick}
-            title="Create channel"
+            title={t('createChannel')}
           />
         </Protect>
       </div>
@@ -114,6 +116,7 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
 });
 
 const Categories = memo(() => {
+  const { t } = useTranslation('sidebar');
   const can = useCan();
   const categories = useCategories();
   const categoryIds = useMemo(
@@ -154,10 +157,10 @@ const Categories = memo(() => {
       try {
         await trpc.categories.reorder.mutate({ categoryIds: reorderedIds });
       } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to reorder categories'));
+        toast.error(getTrpcError(error, t('failedReorderCategories')));
       }
     },
-    [categoryIds]
+    [categoryIds, t]
   );
 
   return (
