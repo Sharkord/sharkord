@@ -485,6 +485,44 @@ const useTransports = ({
     [consume]
   );
 
+  const stopVideoStreamConsumer = useCallback(
+    (remoteId: number, kind: StreamKind) => {
+      if (!isVideoStreamKind(kind)) return;
+
+      const userConsumers = consumers.current[remoteId];
+      if (!userConsumers) return;
+
+      const consumer = userConsumers[kind];
+      if (!consumer || consumer.closed) return;
+
+      logVoice('Stopping single video stream consumer', { remoteId, kind });
+
+      consumer.close();
+      delete consumers.current[remoteId][kind];
+      consumerCodecs.current.delete(`${remoteId}-${kind}`);
+
+      if (Object.keys(consumers.current[remoteId] || {}).length === 0) {
+        delete consumers.current[remoteId];
+      }
+    },
+    []
+  );
+
+  const consumeVideoStream = useCallback(
+    async (
+      remoteId: number,
+      kind: StreamKind,
+      routerRtpCapabilities: RtpCapabilities
+    ) => {
+      if (!isVideoStreamKind(kind)) return;
+
+      logVoice('Consuming single video stream', { remoteId, kind });
+
+      await consume(remoteId, kind, routerRtpCapabilities);
+    },
+    [consume]
+  );
+
   const getConsumerCodec = useCallback(
     (remoteId: number, kind: StreamKind): string | undefined => {
       return consumerCodecs.current.get(`${remoteId}-${kind}`);
@@ -532,7 +570,9 @@ const useTransports = ({
     consume,
     consumeExistingProducers,
     stopVideoStreamConsumers,
+    stopVideoStreamConsumer,
     reconsumeVideoProducers,
+    consumeVideoStream,
     cleanupTransports,
     getConsumerCodec,
     isVideoStreamKind

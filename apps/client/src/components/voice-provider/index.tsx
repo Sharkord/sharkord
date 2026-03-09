@@ -99,7 +99,10 @@ export type TVoiceProvider = {
     ReturnType<typeof useRemoteStreams>,
     'remoteUserStreams' | 'externalStreams'
   > &
-  ReturnType<typeof useVoiceControls>;
+  ReturnType<typeof useVoiceControls> & {
+    stopVideoStreamConsumer: (remoteId: number, kind: StreamKind) => void;
+    consumeVideoStream: (remoteId: number, kind: StreamKind) => Promise<void>;
+  };
 
 const VoiceProviderContext = createContext<TVoiceProvider>({
   loading: false,
@@ -145,7 +148,9 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
   localScreenShareAudioStream: undefined,
 
   remoteUserStreams: {},
-  externalStreams: {}
+  externalStreams: {},
+  stopVideoStreamConsumer: () => {},
+  consumeVideoStream: () => Promise.resolve()
 });
 
 type TVoiceProviderProps = {
@@ -223,7 +228,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     consume,
     consumeExistingProducers,
     stopVideoStreamConsumers,
+    stopVideoStreamConsumer,
     reconsumeVideoProducers,
+    consumeVideoStream,
     cleanupTransports,
     getConsumerCodec,
     isVideoStreamKind
@@ -829,6 +836,21 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     [consume, isVideoStreamKind]
   );
 
+  const stopVideoStreamConsumerForContext = useCallback(
+    (remoteId: number, kind: StreamKind) => {
+      stopVideoStreamConsumer(remoteId, kind);
+    },
+    [stopVideoStreamConsumer]
+  );
+
+  const consumeVideoStreamForContext = useCallback(
+    async (remoteId: number, kind: StreamKind) => {
+      if (!routerRtpCapabilities.current) return;
+      await consumeVideoStream(remoteId, kind, routerRtpCapabilities.current);
+    },
+    [consumeVideoStream]
+  );
+
   const setMicMutedForBridge = useCallback(
     async (muted: boolean) => {
       if (ownVoiceState.micMuted === muted) return;
@@ -920,6 +942,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       toggleWebcam,
       toggleScreenShare,
       toggleVideoStreams,
+      stopVideoStreamConsumer: stopVideoStreamConsumerForContext,
+      consumeVideoStream: consumeVideoStreamForContext,
       ownVoiceState,
 
       localAudioStream,
@@ -943,6 +967,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       toggleWebcam,
       toggleScreenShare,
       toggleVideoStreams,
+      stopVideoStreamConsumerForContext,
+      consumeVideoStreamForContext,
       externalStreams,
       localAudioStream,
       localScreenShareAudioStream,
