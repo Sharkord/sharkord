@@ -13,8 +13,8 @@ import {
 } from './helpers';
 import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
-import { manifestRouteHandler } from './manifest';
 import { loginRouteHandler } from './login';
+import { manifestRouteHandler } from './manifest';
 import { pluginBundleRouteHandler } from './plugin-bundle';
 import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
