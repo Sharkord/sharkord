@@ -35,12 +35,13 @@ const Security = memo(({ channelId }: TSecurityProps) => {
     <Card>
       <CardHeader>
         <CardTitle>{t('securityTitle')}</CardTitle>
-        <CardDescription>
-          {t('securityDesc')}
-        </CardDescription>
+        <CardDescription>{t('securityDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Group label={t('fileAccessTokenLabel')} help={t('fileAccessTokenHelp')}>
+        <Group
+          label={t('fileAccessTokenLabel')}
+          help={t('fileAccessTokenHelp')}
+        >
           <p className="text-sm text-muted-foreground">
             {t('fileAccessTokenDesc')}
           </p>

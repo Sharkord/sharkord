@@ -66,16 +66,12 @@ const ChannelPermissions = memo(({ channelId }: TChannelPermissionsProps) => {
       <CardHeader>
         <CardTitle>{t('permissionsTitle')}</CardTitle>
         <CardDescription className="flex flex-col space-y-4">
-          <span>
-            {t('permissionsDesc')}
-          </span>
+          <span>{t('permissionsDesc')}</span>
           {!channel?.private && (
             <Alert variant="destructive">
               <MessageCircleWarning />
               <AlertTitle>{t('publicChannelTitle')}</AlertTitle>
-              <AlertDescription>
-                {t('publicChannelDesc')}
-              </AlertDescription>
+              <AlertDescription>{t('publicChannelDesc')}</AlertDescription>
             </Alert>
           )}
         </CardDescription>

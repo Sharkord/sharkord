@@ -62,7 +62,9 @@ const CategoryContextMenu = memo(
         <ContextMenuContent>
           <ContextMenuLabel>{category?.name}</ContextMenuLabel>
           <ContextMenuSeparator />
-          <ContextMenuItem onClick={onEditClick}>{t('editLabel')}</ContextMenuItem>
+          <ContextMenuItem onClick={onEditClick}>
+            {t('editLabel')}
+          </ContextMenuItem>
           <ContextMenuItem variant="destructive" onClick={onDeleteClick}>
             {t('deleteLabel')}
           </ContextMenuItem>

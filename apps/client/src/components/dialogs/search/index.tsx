@@ -51,9 +51,7 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
         <div className="flex h-full min-h-0 flex-col">
           <DialogHeader className="border-b border-border bg-card/70 px-5 py-4 text-left">
             <DialogTitle className="text-base">{t('searchTitle')}</DialogTitle>
-            <DialogDescription>
-              {t('searchDesc')}
-            </DialogDescription>
+            <DialogDescription>{t('searchDesc')}</DialogDescription>
             <div className="mt-3">
               <Input
                 value={query}

@@ -58,9 +58,7 @@ const MessageEditInline = memo(
             onCancel={onBlur}
           />
         </AutoFocus>
-        <span className="text-xs text-primary/60">
-          {t('pressEnterToSave')}
-        </span>
+        <span className="text-xs text-primary/60">{t('pressEnterToSave')}</span>
       </div>
     );
   }

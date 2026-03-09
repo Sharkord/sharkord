@@ -61,7 +61,10 @@ const DiskMetrics = memo(({ diskMetrics }: DiskMetricsProps) => {
         </div>
         <div className="text-xs text-muted-foreground mt-1">
           {t('diskUsedPercent', {
-            percent: ((diskMetrics.usedSpace / diskMetrics.totalSpace) * 100).toFixed(1)
+            percent: (
+              (diskMetrics.usedSpace / diskMetrics.totalSpace) *
+              100
+            ).toFixed(1)
           })}
         </div>
       </div>

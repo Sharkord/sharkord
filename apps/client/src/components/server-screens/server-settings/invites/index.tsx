@@ -28,9 +28,7 @@ const Invites = memo(() => {
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>{t('invitesTitle')}</CardTitle>
-          <CardDescription>
-            {t('invitesDesc')}
-          </CardDescription>
+          <CardDescription>{t('invitesDesc')}</CardDescription>
         </div>
         <Button
           onClick={() =>

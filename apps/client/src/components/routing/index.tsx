@@ -36,9 +36,7 @@ const Routing = memo(() => {
 
   if (isAppLoading || isPluginsLoading) {
     return (
-      <LoadingApp
-        text={isAppLoading ? t('loadingApp') : t('loadingPlugins')}
-      />
+      <LoadingApp text={isAppLoading ? t('loadingApp') : t('loadingPlugins')} />
     );
   }
 

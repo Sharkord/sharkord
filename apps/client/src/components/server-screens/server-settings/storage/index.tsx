@@ -59,9 +59,7 @@ const Storage = memo(() => {
     <Card>
       <CardHeader>
         <CardTitle>{t('storageTitle')}</CardTitle>
-        <CardDescription>
-          {t('storageDesc')}
-        </CardDescription>
+        <CardDescription>{t('storageDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <DiskMetrics diskMetrics={diskMetrics!} />
@@ -111,10 +109,7 @@ const Storage = memo(() => {
           />
         </Group>
 
-        <Group
-          label={t('maxFileSizeLabel')}
-          description={t('maxFileSizeDesc')}
-        >
+        <Group label={t('maxFileSizeLabel')} description={t('maxFileSizeDesc')}>
           <StorageSizeControl
             value={Number(values.storageUploadMaxFileSize)}
             max={STORAGE_MAX_FILE_SIZE}
@@ -226,7 +221,9 @@ const Storage = memo(() => {
                   );
                 }}
               />
-              <span className="text-xs text-muted-foreground">{t('filesUnit')}</span>
+              <span className="text-xs text-muted-foreground">
+                {t('filesUnit')}
+              </span>
             </div>
 
             <div className="flex items-center gap-2">

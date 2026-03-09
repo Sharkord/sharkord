@@ -238,17 +238,13 @@ const Devices = memo(() => {
     <Card>
       <CardHeader>
         <CardTitle>{t('devicesTitle')}</CardTitle>
-        <CardDescription>
-          {t('devicesDesc')}
-        </CardDescription>
+        <CardDescription>{t('devicesDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {currentVoiceChannelId && (
           <Alert variant="default">
             <Info />
-            <AlertDescription>
-              {t('voiceChannelActiveInfo')}
-            </AlertDescription>
+            <AlertDescription>{t('voiceChannelActiveInfo')}</AlertDescription>
           </Alert>
         )}
         <div className="space-y-6">
@@ -263,7 +259,9 @@ const Devices = memo(() => {
               <SelectContent>
                 <SelectGroup>
                   {!hasDefaultPlaybackOption && (
-                    <SelectItem value={DEFAULT_NAME}>{t('defaultOutput')}</SelectItem>
+                    <SelectItem value={DEFAULT_NAME}>
+                      {t('defaultOutput')}
+                    </SelectItem>
                   )}
                   {playbackDevices.map((device) => (
                     <SelectItem
@@ -524,7 +522,9 @@ const Devices = memo(() => {
                       }
                     >
                       <SelectTrigger className="w-40">
-                        <SelectValue placeholder={t('selectCodecPlaceholder')} />
+                        <SelectValue
+                          placeholder={t('selectCodecPlaceholder')}
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>

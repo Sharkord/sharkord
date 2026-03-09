@@ -7,8 +7,8 @@ import { usePublicServerSettings, useUserRoles } from '@/features/server/hooks';
 import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
-import { getTRPCClient } from '@/lib/trpc';
 import { useDateLocale } from '@/hooks/use-date-locale';
+import { getTRPCClient } from '@/lib/trpc';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
   Permission,
@@ -139,7 +139,11 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
           )}
           <div className="flex justify-between items-center mt-4 pt-3 border-t border-border">
             <p className="text-xs text-muted-foreground">
-              {t('memberSince', { date: format(new Date(user.createdAt), 'PP', { locale: dateLocale }) })}
+              {t('memberSince', {
+                date: format(new Date(user.createdAt), 'PP', {
+                  locale: dateLocale
+                })
+              })}
             </p>
 
             <div className="flex gap-2 items-center">

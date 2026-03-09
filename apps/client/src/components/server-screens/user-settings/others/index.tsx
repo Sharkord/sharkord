@@ -21,9 +21,7 @@ const Others = memo(() => {
     <Card>
       <CardHeader>
         <CardTitle>{t('othersTitle')}</CardTitle>
-        <CardDescription>
-          {t('othersDesc')}
-        </CardDescription>
+        <CardDescription>{t('othersDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Group
@@ -36,10 +34,7 @@ const Others = memo(() => {
           />
         </Group>
 
-        <Group
-          label={t('languageLabel')}
-          description={t('languageDesc')}
-        >
+        <Group label={t('languageLabel')} description={t('languageDesc')}>
           <LanguageSwitcher />
         </Group>
       </CardContent>

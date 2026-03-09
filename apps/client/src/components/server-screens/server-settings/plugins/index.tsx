@@ -235,9 +235,7 @@ const Plugins = memo(() => {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>{t('pluginsTitle')}</CardTitle>
-            <CardDescription>
-              {t('pluginsManageDesc')}
-            </CardDescription>
+            <CardDescription>{t('pluginsManageDesc')}</CardDescription>
           </div>
           <Button
             variant="outline"
@@ -284,7 +282,9 @@ const Plugins = memo(() => {
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
-            <h3 className="font-semibold text-lg mb-1">{t('pluginsDisabledTitle')}</h3>
+            <h3 className="font-semibold text-lg mb-1">
+              {t('pluginsDisabledTitle')}
+            </h3>
             <p className="text-sm text-muted-foreground max-w-sm">
               {t('pluginsDisabledDesc')}
             </p>

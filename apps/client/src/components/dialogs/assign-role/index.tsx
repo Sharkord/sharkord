@@ -76,7 +76,9 @@ const AssignRoleDialog = memo(
       <AlertDialog open={isOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('assignRoleTitle', { name: user.name })}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('assignRoleTitle', { name: user.name })}
+            </AlertDialogTitle>
             {isOwnUser && (
               <Alert variant="default">
                 <Info />
@@ -88,9 +90,7 @@ const AssignRoleDialog = memo(
             {availableRoles.length === 0 && (
               <Alert variant="default">
                 <Info />
-                <AlertDescription>
-                  {t('userHasAllRoles')}
-                </AlertDescription>
+                <AlertDescription>{t('userHasAllRoles')}</AlertDescription>
               </Alert>
             )}
           </AlertDialogHeader>

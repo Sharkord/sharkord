@@ -71,7 +71,9 @@ const DeleteUserDialog = memo(
       <AlertDialog open={isOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('deleteUserTitle', { name: user.name })}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('deleteUserTitle', { name: user.name })}
+            </AlertDialogTitle>
           </AlertDialogHeader>
           <div className="flex flex-col gap-4">
             <Group label={t('wipeAllDataLabel')}>

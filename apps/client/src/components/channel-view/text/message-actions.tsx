@@ -175,7 +175,11 @@ const MessageActions = memo(
             ))}
 
             <EmojiPicker onEmojiSelect={onEmojiSelect}>
-              <IconButton variant="ghost" icon={Smile} title={t('addReaction')} />
+              <IconButton
+                variant="ghost"
+                icon={Smile}
+                title={t('addReaction')}
+              />
             </EmojiPicker>
           </div>
         </Protect>

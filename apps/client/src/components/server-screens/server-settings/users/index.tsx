@@ -23,9 +23,7 @@ const Users = memo(() => {
     <Card>
       <CardHeader>
         <CardTitle>{t('usersTitle')}</CardTitle>
-        <CardDescription>
-          {t('usersDesc')}
-        </CardDescription>
+        <CardDescription>{t('usersDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <UsersTable users={users} refetch={refetch} />

@@ -1,7 +1,7 @@
-import i18n from 'i18next';
-import resourcesToBackend from 'i18next-resources-to-backend';
 import type { Locale } from 'date-fns';
 import { enUS, zhCN } from 'date-fns/locale';
+import i18n from 'i18next';
+import resourcesToBackend from 'i18next-resources-to-backend';
 import { initReactI18next } from 'react-i18next';
 
 export const SUPPORTED_LANGUAGES = [
@@ -42,7 +42,15 @@ export const i18nReady = i18n
   .init({
     lng: initialLanguage,
     fallbackLng: 'en',
-    ns: ['common', 'connect', 'disconnected', 'sidebar', 'topbar', 'dialogs', 'settings'],
+    ns: [
+      'common',
+      'connect',
+      'disconnected',
+      'sidebar',
+      'topbar',
+      'dialogs',
+      'settings'
+    ],
     defaultNS: 'common',
     fallbackNS: 'common',
     interpolation: {

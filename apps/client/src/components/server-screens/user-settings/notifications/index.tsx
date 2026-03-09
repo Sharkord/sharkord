@@ -30,15 +30,10 @@ const Notifications = memo(() => {
     <Card>
       <CardHeader>
         <CardTitle>{t('notificationsTitle')}</CardTitle>
-        <CardDescription>
-          {t('notificationsDesc')}
-        </CardDescription>
+        <CardDescription>{t('notificationsDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Group
-          label={t('allMessagesLabel')}
-          description={t('allMessagesDesc')}
-        >
+        <Group label={t('allMessagesLabel')} description={t('allMessagesDesc')}>
           <Switch
             checked={browserNotifications}
             onCheckedChange={(value) => setBrowserNotifications(value)}

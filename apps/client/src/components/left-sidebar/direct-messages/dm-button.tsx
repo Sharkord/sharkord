@@ -17,7 +17,9 @@ const DmButton = memo(() => {
 
   return (
     <div className="border-b border-border px-2 py-2">
-      <Tooltip content={dmsOpen ? t('closeDirectMessages') : t('openDirectMessages')}>
+      <Tooltip
+        content={dmsOpen ? t('closeDirectMessages') : t('openDirectMessages')}
+      >
         <button
           type="button"
           onClick={onToggleDmMode}

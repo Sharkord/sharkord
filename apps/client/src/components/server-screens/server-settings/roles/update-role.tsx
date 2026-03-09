@@ -130,18 +130,14 @@ const UpdateRole = memo(
           {selectedRole.isDefault && (
             <Alert variant="default">
               <Star />
-              <AlertDescription>
-                {t('defaultRoleInfo')}
-              </AlertDescription>
+              <AlertDescription>{t('defaultRoleInfo')}</AlertDescription>
             </Alert>
           )}
 
           {isOwnerRole && (
             <Alert variant="default">
               <Info />
-              <AlertDescription>
-                {t('ownerRoleInfo')}
-              </AlertDescription>
+              <AlertDescription>{t('ownerRoleInfo')}</AlertDescription>
             </Alert>
           )}
 

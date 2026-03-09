@@ -73,9 +73,7 @@ const ContentWrapper = memo(
             </div>
             <Alert variant="destructive" className="max-w-md">
               <AlertTriangle />
-              <AlertDescription>
-                {t('mobileNotOptimized')}
-              </AlertDescription>
+              <AlertDescription>{t('mobileNotOptimized')}</AlertDescription>
             </Alert>
             <div className="flex flex-col gap-3 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">

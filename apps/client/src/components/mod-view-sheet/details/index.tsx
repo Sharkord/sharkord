@@ -115,13 +115,19 @@ const Details = memo(() => {
           <Row
             icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
             label={t('joinedServerLabel')}
-            value={formatDistanceToNow(user.createdAt, { addSuffix: true, locale: dateLocale })}
+            value={formatDistanceToNow(user.createdAt, {
+              addSuffix: true,
+              locale: dateLocale
+            })}
           />
 
           <Row
             icon={<Clock className="h-4 w-4 text-muted-foreground" />}
             label={t('lastActiveLabel')}
-            value={formatDistanceToNow(user.lastLoginAt, { addSuffix: true, locale: dateLocale })}
+            value={formatDistanceToNow(user.lastLoginAt, {
+              addSuffix: true,
+              locale: dateLocale
+            })}
           />
 
           {user.banned && (
@@ -141,8 +147,12 @@ const Details = memo(() => {
               <Row
                 icon={<Gavel className="h-4 w-4 text-muted-foreground" />}
                 label={t('bannedAtLabel')}
-                value={format(user.bannedAt ?? 0, 'PPP', { locale: dateLocale })}
-                details={format(user.bannedAt ?? 0, 'PPpp', { locale: dateLocale })}
+                value={format(user.bannedAt ?? 0, 'PPP', {
+                  locale: dateLocale
+                })}
+                details={format(user.bannedAt ?? 0, 'PPpp', {
+                  locale: dateLocale
+                })}
               />
             </>
           )}

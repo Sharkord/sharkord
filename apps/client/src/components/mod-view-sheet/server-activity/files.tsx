@@ -45,7 +45,10 @@ const Files = memo(() => {
 
   return (
     <PaginatedList items={files} itemsPerPage={12} searchFilter={searchFilter}>
-      <PaginatedList.Search placeholder={t('searchFilesPlaceholder')} className="mb-2" />
+      <PaginatedList.Search
+        placeholder={t('searchFilesPlaceholder')}
+        className="mb-2"
+      />
       <PaginatedList.Empty className="text-xs">
         {t('noFilesUploaded')}
       </PaginatedList.Empty>

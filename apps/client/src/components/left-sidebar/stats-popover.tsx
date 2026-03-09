@@ -56,7 +56,9 @@ const StatsPopover = memo(({ children }: StatsPopoverProps) => {
     }
 
     return {
-      label: t('unknownEncoder', { encoder: screenShare.encoderImplementation }),
+      label: t('unknownEncoder', {
+        encoder: screenShare.encoderImplementation
+      }),
       isHardware: null
     };
   }, [screenShare?.encoderImplementation, t]);
@@ -77,11 +79,17 @@ const StatsPopover = memo(({ children }: StatsPopoverProps) => {
           </h3>
           <div className="grid grid-cols-2 gap-4 mb-3">
             <div>
-              <h4 className="font-medium text-green-400 mb-1">{t('outgoing')}</h4>
+              <h4 className="font-medium text-green-400 mb-1">
+                {t('outgoing')}
+              </h4>
               {producer ? (
                 <div className="space-y-1 text-muted-foreground">
                   <div>{t('rate', { rate: filesize(currentBitrateSent) })}</div>
-                  <div>{t('packets', { packets: formatBigNumber(producer.packetsSent) })}</div>
+                  <div>
+                    {t('packets', {
+                      packets: formatBigNumber(producer.packetsSent)
+                    })}
+                  </div>
                   <div>{t('rtt', { rtt: producer.rtt.toFixed(1) })}</div>
                 </div>
               ) : (
@@ -90,28 +98,40 @@ const StatsPopover = memo(({ children }: StatsPopoverProps) => {
             </div>
 
             <div>
-              <h4 className="font-medium text-cyan-400 mb-1">{t('incoming')}</h4>
+              <h4 className="font-medium text-cyan-400 mb-1">
+                {t('incoming')}
+              </h4>
               {consumer ? (
                 <div className="space-y-1 text-muted-foreground">
-                  <div>{t('rate', { rate: filesize(currentBitrateReceived) })}</div>
                   <div>
-                    {t('packets', { packets: formatBigNumber(consumer.packetsReceived) })}
+                    {t('rate', { rate: filesize(currentBitrateReceived) })}
+                  </div>
+                  <div>
+                    {t('packets', {
+                      packets: formatBigNumber(consumer.packetsReceived)
+                    })}
                   </div>
                   {consumer.packetsLost > 0 && (
                     <div className="text-red-400">
-                      {t('packetsLost', { lost: formatBigNumber(consumer.packetsLost) })}
+                      {t('packetsLost', {
+                        lost: formatBigNumber(consumer.packetsLost)
+                      })}
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="text-muted-foreground">{t('noRemoteStreams')}</div>
+                <div className="text-muted-foreground">
+                  {t('noRemoteStreams')}
+                </div>
               )}
             </div>
           </div>
 
           {screenShare && (
             <div className="border-t border-border/50 pt-2 mb-3">
-              <h4 className="font-medium text-blue-400 mb-1">{t('screenShare')}</h4>
+              <h4 className="font-medium text-blue-400 mb-1">
+                {t('screenShare')}
+              </h4>
               <div className="space-y-1 text-muted-foreground">
                 {screenShare.codec && <div>{t('codec', { codec })}</div>}
                 {encoder && (
@@ -131,16 +151,27 @@ const StatsPopover = memo(({ children }: StatsPopoverProps) => {
                   </div>
                 )}
                 <div>
-                  {t('resolution', { width: screenShare.width, height: screenShare.height })}
+                  {t('resolution', {
+                    width: screenShare.width,
+                    height: screenShare.height
+                  })}
                 </div>
-                <div>{t('frameRate', { fps: Math.round(screenShare.frameRate) })}</div>
-                <div>{t('bitrate', { bitrate: filesize(screenShare.bitrate) })}</div>
                 <div>
-                  {t('framesEncoded', { frames: formatBigNumber(screenShare.framesEncoded) })}
+                  {t('frameRate', { fps: Math.round(screenShare.frameRate) })}
+                </div>
+                <div>
+                  {t('bitrate', { bitrate: filesize(screenShare.bitrate) })}
+                </div>
+                <div>
+                  {t('framesEncoded', {
+                    frames: formatBigNumber(screenShare.framesEncoded)
+                  })}
                 </div>
                 {screenShare.qualityLimitationReason !== 'none' && (
                   <div className="text-yellow-400">
-                    {t('qualityLimited', { reason: screenShare.qualityLimitationReason })}
+                    {t('qualityLimited', {
+                      reason: screenShare.qualityLimitationReason
+                    })}
                   </div>
                 )}
               </div>
@@ -148,7 +179,9 @@ const StatsPopover = memo(({ children }: StatsPopoverProps) => {
           )}
 
           <div className="border-t border-border/50 pt-2">
-            <h4 className="font-medium text-yellow-400 mb-1">{t('sessionTotals')}</h4>
+            <h4 className="font-medium text-yellow-400 mb-1">
+              {t('sessionTotals')}
+            </h4>
             <div className="grid grid-cols-2 gap-2 text-muted-foreground">
               <div>↑ {filesize(totalBytesSent)}</div>
               <div>↓ {filesize(totalBytesReceived)}</div>

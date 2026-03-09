@@ -2,9 +2,9 @@ import { RoleBadge } from '@/components/role-badge';
 import { UserAvatar } from '@/components/user-avatar';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getUrlFromServer } from '@/helpers/get-file-url';
+import { useDateLocale } from '@/hooks/use-date-locale';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
-import { useDateLocale } from '@/hooks/use-date-locale';
 import type { TJoinedInvite } from '@sharkord/shared';
 import { getTrpcError } from '@sharkord/shared';
 import {
@@ -72,7 +72,10 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
     if (isExpired) {
       return t('inviteExpired');
     }
-    return formatDistanceToNow(invite.expiresAt, { addSuffix: true, locale: dateLocale });
+    return formatDistanceToNow(invite.expiresAt, {
+      addSuffix: true,
+      locale: dateLocale
+    });
   }, [invite.expiresAt, isExpired, t, dateLocale]);
 
   const statusBadge = useMemo(() => {
@@ -122,7 +125,9 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
         {invite.role ? (
           <RoleBadge role={invite.role} />
         ) : (
-          <span className="text-xs text-muted-foreground">{t('inviteDefault')}</span>
+          <span className="text-xs text-muted-foreground">
+            {t('inviteDefault')}
+          </span>
         )}
       </div>
 
@@ -140,7 +145,9 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
             'text-destructive': isExpired
           })}
           title={
-            invite.expiresAt ? format(invite.expiresAt, 'PPP p', { locale: dateLocale }) : undefined
+            invite.expiresAt
+              ? format(invite.expiresAt, 'PPP p', { locale: dateLocale })
+              : undefined
           }
         >
           {expiresText}
@@ -148,8 +155,14 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
       </div>
 
       <div className="flex items-center text-muted-foreground">
-        <span className="text-xs" title={format(invite.createdAt, 'PPP p', { locale: dateLocale })}>
-          {formatDistanceToNow(invite.createdAt, { addSuffix: true, locale: dateLocale })}
+        <span
+          className="text-xs"
+          title={format(invite.createdAt, 'PPP p', { locale: dateLocale })}
+        >
+          {formatDistanceToNow(invite.createdAt, {
+            addSuffix: true,
+            locale: dateLocale
+          })}
         </span>
       </div>
 

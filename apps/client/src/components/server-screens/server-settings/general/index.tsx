@@ -30,9 +30,7 @@ const General = memo(() => {
     <Card>
       <CardHeader>
         <CardTitle>{t('serverInfoTitle')}</CardTitle>
-        <CardDescription>
-          {t('serverInfoDesc')}
-        </CardDescription>
+        <CardDescription>{t('serverInfoDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Group label={t('nameLabel')}>
@@ -74,10 +72,7 @@ const General = memo(() => {
           />
         </Group>
 
-        <Group
-          label={t('pluginsLabel')}
-          description={t('pluginsDesc')}
-        >
+        <Group label={t('pluginsLabel')} description={t('pluginsDesc')}>
           <Switch
             checked={settings.enablePlugins}
             onCheckedChange={(checked) => onChange('enablePlugins', checked)}

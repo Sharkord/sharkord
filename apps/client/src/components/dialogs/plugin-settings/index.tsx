@@ -24,9 +24,13 @@ type TPluginSettingsDialogProps = TDialogBaseProps & {
 const PluginSettingsDialog = memo(
   ({ isOpen, close, pluginId, pluginName }: TPluginSettingsDialogProps) => {
     const { t } = useTranslation('dialogs');
-    const [definitions, setDefinitions] = useState<TPluginSettingDefinition[]>([]);
+    const [definitions, setDefinitions] = useState<TPluginSettingDefinition[]>(
+      []
+    );
     const [values, setValues] = useState<Record<string, unknown>>({});
-    const [editedValues, setEditedValues] = useState<Record<string, string | number | boolean>>({});
+    const [editedValues, setEditedValues] = useState<
+      Record<string, string | number | boolean>
+    >({});
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);

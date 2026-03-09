@@ -93,9 +93,7 @@ const Override = memo(
 
         await refetch();
       } catch (error) {
-        toast.error(
-          getTrpcError(error, t('failedDeletePermissionOverride'))
-        );
+        toast.error(getTrpcError(error, t('failedDeletePermissionOverride')));
       }
     }, [channelId, isRole, targetId, setSelectedOverrideId, refetch, t]);
 
@@ -123,9 +121,7 @@ const Override = memo(
         toast.success(t('permissionOverrideUpdated'));
         await refetch();
       } catch (error) {
-        toast.error(
-          getTrpcError(error, t('failedUpdatePermissionOverride'))
-        );
+        toast.error(getTrpcError(error, t('failedUpdatePermissionOverride')));
       }
     }, [channelId, isRole, targetId, localPermissions, refetch, t]);
 

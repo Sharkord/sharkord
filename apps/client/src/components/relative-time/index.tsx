@@ -34,11 +34,7 @@ const getUpdateInterval = (date: Date): number | null => {
 };
 
 const RelativeTime = memo(
-  ({
-    date,
-    interval,
-    children
-  }: TRelativeTimeProps) => {
+  ({ date, interval, children }: TRelativeTimeProps) => {
     const dateLocale = useDateLocale();
     const parsedDate = useMemo(
       () => (typeof date === 'string' ? new Date(date) : date),

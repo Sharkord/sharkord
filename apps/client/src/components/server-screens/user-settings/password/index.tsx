@@ -38,9 +38,7 @@ const Password = memo(() => {
     <Card>
       <CardHeader>
         <CardTitle>{t('passwordTitle')}</CardTitle>
-        <CardDescription>
-          {t('passwordDesc')}
-        </CardDescription>
+        <CardDescription>{t('passwordDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Group label={t('currentPasswordLabel')}>

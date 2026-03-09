@@ -77,14 +77,23 @@ const TableUser = memo(({ user, refetch }: TTableUserProps) => {
         </div>
 
         <div className="flex items-center text-muted-foreground">
-          <span className="text-xs" title={format(user.createdAt, 'PPP p', { locale: dateLocale })}>
-            {formatDistanceToNow(user.createdAt, { addSuffix: true, locale: dateLocale })}
+          <span
+            className="text-xs"
+            title={format(user.createdAt, 'PPP p', { locale: dateLocale })}
+          >
+            {formatDistanceToNow(user.createdAt, {
+              addSuffix: true,
+              locale: dateLocale
+            })}
           </span>
         </div>
 
         <div className="flex items-center text-muted-foreground">
           <span className="text-xs">
-            {formatDistanceToNow(user.lastLoginAt, { addSuffix: true, locale: dateLocale })}
+            {formatDistanceToNow(user.lastLoginAt, {
+              addSuffix: true,
+              locale: dateLocale
+            })}
           </span>
         </div>
 

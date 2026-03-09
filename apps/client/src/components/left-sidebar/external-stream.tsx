@@ -21,7 +21,9 @@ const ExternalStream = memo(
       <div className="flex items-center gap-2 px-2 py-1 rounded hover:bg-accent/30 text-sm">
         <Tooltip
           content={
-            pluginId ? t('externalStreamPlugin', { pluginId }) : t('externalStream')
+            pluginId
+              ? t('externalStreamPlugin', { pluginId })
+              : t('externalStream')
           }
         >
           {avatarUrl ? (

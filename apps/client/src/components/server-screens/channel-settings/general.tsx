@@ -30,9 +30,7 @@ const General = memo(({ channelId }: TGeneralProps) => {
     <Card>
       <CardHeader>
         <CardTitle>{t('channelInfoTitle')}</CardTitle>
-        <CardDescription>
-          {t('channelInfoDesc')}
-        </CardDescription>
+        <CardDescription>{t('channelInfoDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Group label={t('channelNameLabel')}>
@@ -52,10 +50,7 @@ const General = memo(({ channelId }: TGeneralProps) => {
           />
         </Group>
 
-        <Group
-          label={t('privateLabel')}
-          description={t('privateDesc')}
-        >
+        <Group label={t('privateLabel')} description={t('privateDesc')}>
           <Switch
             checked={channel.private}
             onCheckedChange={(value) => onChange('private', value)}

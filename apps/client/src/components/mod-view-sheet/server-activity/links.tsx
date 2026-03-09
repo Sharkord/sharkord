@@ -69,7 +69,10 @@ const Links = memo(() => {
 
   return (
     <PaginatedList items={links} itemsPerPage={8} searchFilter={searchFilter}>
-      <PaginatedList.Search placeholder={t('searchLinksPlaceholder')} className="mb-2" />
+      <PaginatedList.Search
+        placeholder={t('searchLinksPlaceholder')}
+        className="mb-2"
+      />
       <PaginatedList.Empty className="text-xs">
         {t('noLinksFound')}
       </PaginatedList.Empty>

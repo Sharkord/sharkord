@@ -24,7 +24,9 @@ const PluginCommandsDialog = memo(
   ({ isOpen, close, pluginId }: TPluginCommandsDialogProps) => {
     const { t } = useTranslation('dialogs');
     const [commands, setCommands] = useState<TCommandInfo[]>([]);
-    const [selectedCommand, setSelectedCommand] = useState<TCommandInfo | null>(null);
+    const [selectedCommand, setSelectedCommand] = useState<TCommandInfo | null>(
+      null
+    );
     const [argValues, setArgValues] = useState<Record<string, unknown>>({});
     const [loading, setLoading] = useState(false);
     const [executing, setExecuting] = useState(false);
@@ -85,9 +87,7 @@ const PluginCommandsDialog = memo(
           className="max-w-2xl"
         >
           <DialogHeader>
-            <DialogTitle>
-              {t('commandsTitle', { pluginId })}
-            </DialogTitle>
+            <DialogTitle>{t('commandsTitle', { pluginId })}</DialogTitle>
           </DialogHeader>
 
           <div className="flex gap-4 min-h-[300px]">

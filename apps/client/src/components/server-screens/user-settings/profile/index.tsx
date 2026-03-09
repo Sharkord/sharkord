@@ -46,9 +46,7 @@ const Profile = memo(() => {
     <Card>
       <CardHeader>
         <CardTitle>{t('profileTitle')}</CardTitle>
-        <CardDescription>
-          {t('profileDesc')}
-        </CardDescription>
+        <CardDescription>{t('profileDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <AvatarManager user={ownPublicUser} />

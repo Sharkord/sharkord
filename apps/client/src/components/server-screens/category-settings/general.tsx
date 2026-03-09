@@ -28,9 +28,7 @@ const General = memo(({ categoryId }: TGeneralProps) => {
     <Card>
       <CardHeader>
         <CardTitle>{t('categoryInfoTitle')}</CardTitle>
-        <CardDescription>
-          {t('categoryInfoDesc')}
-        </CardDescription>
+        <CardDescription>{t('categoryInfoDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Group label={t('categoryNameLabel')}>

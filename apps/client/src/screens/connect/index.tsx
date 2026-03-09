@@ -152,10 +152,7 @@ const Connect = memo(() => {
               onConnectClick();
             }}
           >
-            <Group
-              label={t('identityLabel')}
-              help={t('identityHelp')}
-            >
+            <Group label={t('identityLabel')} help={t('identityHelp')}>
               <Input
                 {...r('identity')}
                 autoComplete="username"
@@ -190,9 +187,7 @@ const Connect = memo(() => {
             {!window.isSecureContext && (
               <Alert variant="destructive">
                 <AlertTitle>{t('insecureTitle')}</AlertTitle>
-                <AlertDescription>
-                  {t('insecureDesc')}
-                </AlertDescription>
+                <AlertDescription>{t('insecureDesc')}</AlertDescription>
               </Alert>
             )}
 

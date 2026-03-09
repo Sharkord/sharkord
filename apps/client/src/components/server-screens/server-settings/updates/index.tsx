@@ -36,22 +36,24 @@ const Updates = memo(() => {
     <Card>
       <CardHeader>
         <CardTitle>{t('updatesTitle')}</CardTitle>
-        <CardDescription>
-          {t('updatesDesc')}
-        </CardDescription>
+        <CardDescription>{t('updatesDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Group label={t('currentVersionLabel')}>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CheckCircle className="h-4 w-4" />
-            <span className="font-mono">{currentVersion || t('unknownVersion')}</span>
+            <span className="font-mono">
+              {currentVersion || t('unknownVersion')}
+            </span>
           </div>
         </Group>
 
         <Group label={t('latestVersionLabel')}>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <ArrowUpCircle className="h-4 w-4" />
-            <span className="font-mono">{latestVersion || t('unknownVersion')}</span>
+            <span className="font-mono">
+              {latestVersion || t('unknownVersion')}
+            </span>
           </div>
         </Group>
 
@@ -59,9 +61,7 @@ const Updates = memo(() => {
           <Alert variant="destructive">
             <X />
             <AlertTitle>{t('updatesNotSupportedTitle')}</AlertTitle>
-            <AlertDescription>
-              {t('updatesNotSupportedDesc')}
-            </AlertDescription>
+            <AlertDescription>{t('updatesNotSupportedDesc')}</AlertDescription>
           </Alert>
         ) : (
           <>
@@ -79,9 +79,7 @@ const Updates = memo(() => {
               <Alert variant="info">
                 <CheckCircle />
                 <AlertTitle>{t('upToDateTitle')}</AlertTitle>
-                <AlertDescription>
-                  {t('upToDateDesc')}
-                </AlertDescription>
+                <AlertDescription>{t('upToDateDesc')}</AlertDescription>
               </Alert>
             )}
           </>

@@ -65,9 +65,7 @@ const CreateInviteDialog = memo(
         <DialogContent onInteractOutside={close} close={close}>
           <DialogHeader>
             <DialogTitle>{t('createInviteTitle')}</DialogTitle>
-            <DialogDescription>
-              {t('createInviteDesc')}
-            </DialogDescription>
+            <DialogDescription>{t('createInviteDesc')}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -75,12 +73,12 @@ const CreateInviteDialog = memo(
               <Input placeholder={t('inviteCodePlaceholder')} {...r('code')} />
             </Group>
             <Group label={t('maxUsesLabel')} description={t('maxUsesDesc')}>
-              <Input placeholder={t('maxUsesPlaceholder')} {...r('maxUses', 'number')} />
+              <Input
+                placeholder={t('maxUsesPlaceholder')}
+                {...r('maxUses', 'number')}
+              />
             </Group>
-            <Group
-              label={t('expiresInLabel')}
-              description={t('expiresInDesc')}
-            >
+            <Group label={t('expiresInLabel')} description={t('expiresInDesc')}>
               <DatePicker {...rrn('expiresAt')} minDate={Date.now()} />
             </Group>
             <Group

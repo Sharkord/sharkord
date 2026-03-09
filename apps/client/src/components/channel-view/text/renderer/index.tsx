@@ -53,29 +53,32 @@ const MessageRenderer = memo(
       return { messageHtml, foundMedia };
     }, [message.content, message.id]);
 
-    const onRemoveFileClick = useCallback(async (fileId: number) => {
-      if (!fileId) return;
+    const onRemoveFileClick = useCallback(
+      async (fileId: number) => {
+        if (!fileId) return;
 
-      const choice = await requestConfirmation({
-        title: t('deleteFileTitle'),
-        message: t('deleteFileMsg'),
-        confirmLabel: t('deleteLabel')
-      });
-
-      if (!choice) return;
-
-      const trpc = getTRPCClient();
-
-      try {
-        await trpc.files.delete.mutate({
-          fileId
+        const choice = await requestConfirmation({
+          title: t('deleteFileTitle'),
+          message: t('deleteFileMsg'),
+          confirmLabel: t('deleteLabel')
         });
 
-        toast.success(t('fileDeleted'));
-      } catch {
-        toast.error(t('failedDeleteFile'));
-      }
-    }, [t]);
+        if (!choice) return;
+
+        const trpc = getTRPCClient();
+
+        try {
+          await trpc.files.delete.mutate({
+            fileId
+          });
+
+          toast.success(t('fileDeleted'));
+        } catch {
+          toast.error(t('failedDeleteFile'));
+        }
+      },
+      [t]
+    );
 
     const allMedia = useMemo(() => {
       const mediaFromFiles: TFoundMedia[] = message.files

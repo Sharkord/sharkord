@@ -39,7 +39,9 @@ const ConfirmActionDialog = memo(
       <AlertDialog open={isOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{title ?? t('confirmActionTitle')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {title ?? t('confirmActionTitle')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {message ?? t('confirmActionMsg')}
             </AlertDialogDescription>

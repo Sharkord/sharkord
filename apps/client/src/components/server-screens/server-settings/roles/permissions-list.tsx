@@ -1,6 +1,4 @@
-import {
-  Permission as EPermission
-} from '@sharkord/shared';
+import { Permission as EPermission } from '@sharkord/shared';
 import { Label, Switch } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
