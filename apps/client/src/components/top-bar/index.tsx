@@ -9,8 +9,8 @@ import { Button, Tooltip } from '@sharkord/ui';
 import { MessageSquare, PanelRight, PanelRightClose } from 'lucide-react';
 import { memo } from 'react';
 import { PluginSlotRenderer } from '../plugin-slot-renderer';
-import { VideoController } from './video-controller';
 import { ServerSearch } from './server-search';
+import { VideoController } from './video-controller';
 import { VoiceOptionsController } from './voice-options-controller';
 import { VolumeController } from './volume-controller';
 
