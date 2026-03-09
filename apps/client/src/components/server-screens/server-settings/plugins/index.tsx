@@ -58,7 +58,7 @@ const PluginItem = memo(({ plugin, onToggle }: TPluginItemProps) => {
     openDialog(Dialog.PLUGIN_LOGS, {
       pluginName: plugin.name,
       pluginId: plugin.id,
-      logs: []
+      logs: [] // will be populated by subscription later
     });
   }, [plugin.name, plugin.id]);
 

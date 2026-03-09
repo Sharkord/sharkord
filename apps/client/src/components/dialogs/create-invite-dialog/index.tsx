@@ -45,6 +45,7 @@ const CreateInviteDialog = memo(
       try {
         const payload: Record<string, unknown> = { ...values };
 
+        // Only send roleId if a role was selected (not "None")
         if (!payload.roleId) {
           delete payload.roleId;
         }

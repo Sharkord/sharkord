@@ -71,7 +71,7 @@ const Details = memo(() => {
   const { t } = useTranslation('settings');
   const dateLocale = useDateLocale();
   const { user, logins } = useModViewContext();
-  const lastLogin = logins[0];
+  const lastLogin = logins[0]; // TODO: in the future we might show a list of logins, atm we just show info about the last one
 
   return (
     <Card>

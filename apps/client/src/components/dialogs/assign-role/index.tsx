@@ -40,6 +40,7 @@ const AssignRoleDialog = memo(
     const [selectedRoleId, setSelectedRoleId] = useState<number>(0);
     const isOwnUser = ownUserId === user.id;
 
+    // Filter out roles the user already has
     const availableRoles = useMemo(
       () => roles.filter((role) => !user.roleIds.includes(role.id)),
       [roles, user.roleIds]

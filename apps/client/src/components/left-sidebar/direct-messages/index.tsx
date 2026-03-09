@@ -85,6 +85,7 @@ const DirectMessages = memo(() => {
     fetchConversations();
   }, [channels.length, fetchConversations]);
 
+  // subscribe to new conversations being opened, when a new conversation is opened we refetch the list of conversations
   useEffect(() => {
     const trpc = getTRPCClient();
 

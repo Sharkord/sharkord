@@ -130,9 +130,11 @@ const PluginLogsDialog = memo(
       }
 
       const limit = parseInt(logLimit, 10);
+      // Get the last N logs (most recent)
       return sorted.slice(-limit);
     }, [logs, logLimit]);
 
+    // auto-scroll to bottom
     useEffect(() => {
       if (autoScroll && scrollRef.current) {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;

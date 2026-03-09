@@ -50,7 +50,7 @@ const RoleHeader = memo(({ roleId }: TRoleHeaderProps) => {
 
 type TOverrideProps = {
   channelId: number;
-  overrideId: string;
+  overrideId: string; // Format: "role-{id}" or "user-{id}"
   permissions: TChannelPermission[];
   setSelectedOverrideId: (id: string | undefined) => void;
   refetch: () => Promise<void>;
