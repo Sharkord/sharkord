@@ -44,9 +44,14 @@ const zConfig = z.object({
     clientId: z.string(),
     clientSecret: z.string(),
     rolesMapping: jsonTransform<Record<string, string>>({}),
-    requiredGroup: z.string().optional(),
+    requiredGroups: commaSeparatedTransform([]),
     allowedOrigins: commaSeparatedTransform([]),
-    caCertPath: z.string().optional()
+    caCertPath: z.string().optional(),
+    groupsClaim: z.string(),
+    usernameClaim: z.string(),
+    displayNameClaim: z.string(),
+    enforceOidcDisplayName: z.coerce.boolean(),
+    additionalScopes: commaSeparatedTransform([])
   }),
   webRtc: z.object({
     port: z.coerce.number().int().positive(),
@@ -88,10 +93,15 @@ const defaultConfig : TConfig = {
     issuer: 'https://auth.example.com/.well-known/openid-configuration',
     clientId: '',
     clientSecret: '',
-    rolesMapping: {"Group1":"Role1"},
-    requiredGroup: 'ExampleOIDCGroup',
-    allowedOrigins: ['https://sharkord.example.com', 'https://sharkord2.example.com'],
-    caCertPath: ''
+    rolesMapping: {},
+    requiredGroups: [],
+    allowedOrigins: [],
+    caCertPath: '',
+    groupsClaim: 'groups',
+    usernameClaim: 'preferred_username',
+    displayNameClaim: '',
+    enforceOidcDisplayName: true,
+    additionalScopes: []
   },
   webRtc: {
     port: 40000,
@@ -157,7 +167,7 @@ if (!configExists) {
   }
 }
 
-config = applyEnvOverrides(config, {
+config = zConfig.parse(applyEnvOverrides(config, {
   'server.port': 'SHARKORD_PORT',
   'server.debug': 'SHARKORD_DEBUG',
   'server.autoupdate': 'SHARKORD_AUTOUPDATE',
@@ -169,14 +179,19 @@ config = applyEnvOverrides(config, {
   'oidc.clientId': 'OIDC_CLIENT_ID',
   'oidc.clientSecret': 'OIDC_CLIENT_SECRET',
   'oidc.rolesMapping': 'OIDC_ROLES_MAPPING',
-  'oidc.requiredGroup': 'OIDC_REQUIRED_GROUP',
+  'oidc.requiredGroups': 'OIDC_REQUIRED_GROUPS',
   'oidc.allowedOrigins': 'OIDC_ALLOWED_ORIGINS',
   'oidc.caCertPath': 'OIDC_CA_CERT_PATH',
+  'oidc.groupsClaim': 'OIDC_GROUPS_CLAIM',
+  'oidc.usernameClaim': 'OIDC_USERNAME_CLAIM',
+  'oidc.displayNameClaim': 'OIDC_DISPLAY_NAME_CLAIM',
+  'oidc.enforceOidcDisplayName': 'OIDC_ENFORCE_DISPLAY_NAME',
+  'oidc.additionalScopes': 'OIDC_ADDITIONAL_SCOPES',
 
   'webRtc.port': 'SHARKORD_WEBRTC_PORT',
   'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS',
   'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE'
-});
+}));
 
 config = Object.freeze(config);
 

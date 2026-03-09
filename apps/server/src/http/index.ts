@@ -41,7 +41,7 @@ const routeHandlers: Partial<
       '/healthz': (req, res) => healthRouteHandler(req, res),
       '/info': (req, res) => infoRouteHandler(req, res),
       '/auth/login': (req, res) => oidcLogin(req, res),
-      'auth/callback': (req, res) => oidcCallback(req, res)
+      '/auth/callback': (req, res) => oidcCallback(req, res)
     },
     prefix: {
       '/public': (req, res) => publicRouteHandler(req, res),

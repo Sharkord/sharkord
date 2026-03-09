@@ -150,6 +150,7 @@ const users = sqliteTable(
     banReason: text('ban_reason'),
     bannedAt: integer('banned_at'),
     bannerColor: text('banner_color'),
+    oidcSub: text('oidc_sub').unique(),
     lastLoginAt: integer('last_login_at')
       .notNull()
       .$defaultFn(() => Date.now()),
@@ -158,6 +159,7 @@ const users = sqliteTable(
   },
   (t) => [
     uniqueIndex('users_identity_idx').on(t.identity),
+    uniqueIndex('users_oidc_sub_idx').on(t.oidcSub),
     index('users_name_idx').on(t.name),
     index('users_banned_idx').on(t.banned),
     index('users_last_login_idx').on(t.lastLoginAt)

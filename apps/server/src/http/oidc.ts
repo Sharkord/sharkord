@@ -8,7 +8,7 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { getDefaultRole, getRoles } from '../db/queries/roles';
 import { getServerToken } from '../db/queries/server';
 import { publishUser } from '../db/publishers';
-import { getUserByIdentity } from '../db/queries/users';
+import { getUserByIdentity, getUserByOidcSub } from '../db/queries/users';
 import { randomBytes, createHash, timingSafeEqual } from 'crypto';
 import fs from 'fs/promises';
 
@@ -24,12 +24,21 @@ const safeCompare = (a: string, b: string) => {
   return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
 };
 
+// Cache the OIDC discovery document for 5 minutes to avoid hitting the
+// IdP well-known endpoint on every login and every callback.
+let discoveryCache: { value: Awaited<ReturnType<typeof client.discovery>>; issuer: string; expiresAt: number } | null = null;
+const DISCOVERY_CACHE_TTL_MS = 5 * 60 * 1000;
+
 export const getOidcConfig = async () => {
   const issuerUrl = new URL(config.oidc.issuer);
-  
+
   const isLocal = issuerUrl.hostname === 'localhost' || issuerUrl.hostname === '127.0.0.1';
   if (!isLocal && issuerUrl.protocol !== 'https:') {
     throw new Error(`Security Error: OIDC Issuer must use HTTPS for non-local host: ${issuerUrl.hostname}`);
+  }
+
+  if (discoveryCache && discoveryCache.issuer === config.oidc.issuer && Date.now() < discoveryCache.expiresAt) {
+    return discoveryCache.value;
   }
 
   const discoveryOptions: any = {};
@@ -37,11 +46,11 @@ export const getOidcConfig = async () => {
   if (config.oidc.caCertPath) {
     try {
       const ca = await fs.readFile(config.oidc.caCertPath);
-      
+
       discoveryOptions[client.customFetch] = (url: string, options: any) => {
         return fetch(url, {
           ...options,
-          ca: ca, 
+          ca: ca,
         });
       };
     } catch (err) {
@@ -49,13 +58,16 @@ export const getOidcConfig = async () => {
     }
   }
 
-  return await client.discovery(
+  const result = await client.discovery(
     issuerUrl,
     config.oidc.clientId,
     config.oidc.clientSecret,
     undefined,
     discoveryOptions
   );
+
+  discoveryCache = { value: result, issuer: config.oidc.issuer, expiresAt: Date.now() + DISCOVERY_CACHE_TTL_MS };
+  return result;
 };
 
 export const oidcLogin = async (req: http.IncomingMessage, res: http.ServerResponse) => {
@@ -91,7 +103,7 @@ export const oidcLogin = async (req: http.IncomingMessage, res: http.ServerRespo
 
     const parameters: Record<string, string> = {
       redirect_uri: redirectUri,
-      scope: 'openid profile email groups',
+      scope: ['openid', 'profile', 'email', config.oidc.groupsClaim, ...config.oidc.additionalScopes].filter(Boolean).join(' '),
       code_challenge,
       code_challenge_method: 'S256',
       state,
@@ -115,7 +127,12 @@ export const oidcCallback = async (req: http.IncomingMessage, res: http.ServerRe
     const as = await getOidcConfig();
     
     const rawCookies = req.headers.cookie || '';
-    const cookieMap = Object.fromEntries(rawCookies.split('; ').map(v => v.split('=')));
+    const cookieMap = Object.fromEntries(
+      rawCookies.split('; ').map(v => {
+        const idx = v.indexOf('=');
+        return [v.slice(0, idx), v.slice(idx + 1)];
+      })
+    );
     const sessionCookie = cookieMap['__Host-oidc_session'];
 
     if (!sessionCookie) throw new Error('Missing OIDC session cookie');
@@ -148,20 +165,37 @@ export const oidcCallback = async (req: http.IncomingMessage, res: http.ServerRe
       expectedNonce,
     });
 
-    const claims = tokenResponse.claims();
-    if (!claims || !claims.sub || !claims.email) {
-      throw new Error('Invalid claims structure');
+    const idTokenClaims = tokenResponse.claims();
+    if (!idTokenClaims?.sub) {
+      throw new Error('Invalid claims: missing sub');
     }
 
-    if (config.oidc.requiredGroup) {
-      const groups = (claims.groups as string[]) || [];
-      if (!groups.some(g => g.toLowerCase() === config.oidc.requiredGroup?.toLowerCase())) {
+    let mergedClaims: Record<string, unknown> = { ...idTokenClaims };
+    const needsUserInfo = !idTokenClaims.email ||
+      !idTokenClaims[config.oidc.groupsClaim] ||
+      !idTokenClaims[config.oidc.usernameClaim] ||
+      (!!config.oidc.displayNameClaim && !idTokenClaims[config.oidc.displayNameClaim]);
+
+    if (needsUserInfo) {
+      try {
+        const userInfo = await client.fetchUserInfo(as, tokenResponse.access_token, idTokenClaims.sub);
+        // ID token claims take precedence over UserInfo (ID token is signed)
+        mergedClaims = { ...userInfo, ...idTokenClaims };
+      } catch (err) {
+        console.warn('OIDC: Could not fetch UserInfo endpoint:', err);
+      }
+    }
+
+    if (config.oidc.requiredGroups.length > 0) {
+      const userGroups = ((mergedClaims[config.oidc.groupsClaim] as string[]) || []).map(g => g.toLowerCase());
+      const hasRequired = config.oidc.requiredGroups.some(r => userGroups.includes(r.toLowerCase()));
+      if (!hasRequired) {
         return res.writeHead(403).end('Forbidden');
       }
     }
 
-    const identity = (claims.email || claims.sub) as string;
-    const user = await syncUserWithDatabase(identity, claims);
+    const identity = ((mergedClaims.email as string) || idTokenClaims.sub) as string;
+    const user = await syncUserWithDatabase(identity, mergedClaims);
 
     const appToken = jwt.sign({ userId: user.id }, await getServerToken(), { expiresIn: '1d' });
     
@@ -183,19 +217,32 @@ export const oidcCallback = async (req: http.IncomingMessage, res: http.ServerRe
   }
 };
 
-async function syncUserWithDatabase(identity: string, claims: any) {
-  let user = await getUserByIdentity(identity);
+function resolveDisplayName(claims: Record<string, unknown>): string {
+  if (config.oidc.displayNameClaim) {
+    const val = claims[config.oidc.displayNameClaim] as string | undefined;
+    if (val) return val;
+  }
+  return (claims[config.oidc.usernameClaim] as string) ?? (claims.sub as string);
+}
+
+async function syncUserWithDatabase(identity: string, claims: Record<string, unknown>) {
+  const sub = claims.sub as string;
+
+  // Look up by stable IdP subject first, fall back to identity for users
+  // created before oidcSub was introduced.
+  let user = await getUserByOidcSub(sub) ?? await getUserByIdentity(identity);
 
   if (!user) {
     const defaultRole = await getDefaultRole();
     if (!defaultRole) throw new Error('Default role missing');
 
     const randomPassword = createHash('sha256').update(randomBytes(32).toString('hex')).digest('hex');
-    
+
     const [insertedUser] = await db.insert(users).values({
-      identity: identity,
+      identity,
       password: randomPassword,
-      name: (claims.name as string) ?? identity.split('@')[0],
+      name: resolveDisplayName(claims),
+      oidcSub: sub,
       createdAt: Date.now(),
       lastLoginAt: Date.now(),
       banned: false,
@@ -212,12 +259,37 @@ async function syncUserWithDatabase(identity: string, claims: any) {
     });
 
     publishUser(insertedUser.id, 'create');
-    
-    user = await getUserByIdentity(identity);
+
+    user = await getUserByOidcSub(sub);
+  } else {
+    // Sync mutable fields that may have changed on the IdP.
+    const updates: Partial<typeof users.$inferInsert> = {};
+
+    // Always update lastLoginAt.
+    updates.lastLoginAt = Date.now();
+
+    // Always backfill oidcSub for users created before this feature.
+    if (!user.oidcSub) updates.oidcSub = sub;
+
+    // Sync identity (e.g. email) if it changed on the IdP.
+    if (user.identity !== identity) updates.identity = identity;
+
+    // Sync display name: always when enforceOidcDisplayName, otherwise only
+    // on first login (oidcSub was null, covered by the backfill path above).
+    if (config.oidc.enforceOidcDisplayName) {
+      const idpName = resolveDisplayName(claims);
+      if (user.name !== idpName) updates.name = idpName;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await db.update(users).set({ ...updates, updatedAt: Date.now() }).where(eq(users.id, user.id));
+      publishUser(user.id, 'update');
+      user = await getUserByOidcSub(sub);
+    }
   }
 
   if (!user) throw new Error('User synchronization failed');
-  
+
   await applyRoleMappings(user.id, claims);
   return user;
 }
@@ -226,7 +298,7 @@ async function applyRoleMappings(userId: number, claims: any) {
   const rolesMapping = config.oidc.rolesMapping;
   if (Object.keys(rolesMapping).length === 0) return;
 
-  const oidcGroups = ((claims.groups as string[]) || []).map((g: string) => g.toLowerCase());
+  const oidcGroups = ((claims[config.oidc.groupsClaim] as string[]) || []).map((g: string) => g.toLowerCase());
   const allDbRoles = await getRoles();
   const targetRoleIds: number[] = [];
 
@@ -238,6 +310,7 @@ async function applyRoleMappings(userId: number, claims: any) {
       if (dbRole) targetRoleIds.push(dbRole.id);
     }
   }
+  const uniqueTargetRoleIds = [...new Set(targetRoleIds)];
   const userCurrentRoles = await db.query.userRoles.findMany({ where: eq(userRoles.userId, userId) });
 
   if (config.oidc.enforceOidcRoles) {
@@ -248,7 +321,7 @@ async function applyRoleMappings(userId: number, claims: any) {
     const mappedDbRoleIds = mappedDbRoles.map(r => r.id);
     const userCurrentRoleIds = userCurrentRoles.map(r => r.roleId);
 
-    const rolesToRemove = userCurrentRoleIds.filter(id => mappedDbRoleIds.includes(id) && !targetRoleIds.includes(id));
+    const rolesToRemove = userCurrentRoleIds.filter(id => mappedDbRoleIds.includes(id) && !uniqueTargetRoleIds.includes(id));
     if (rolesToRemove.length > 0) {
       await db.delete(userRoles).where(and(
         eq(userRoles.userId, userId),
@@ -260,7 +333,7 @@ async function applyRoleMappings(userId: number, claims: any) {
       .filter((r) => r.addedBy === 'oidc')
       .map((r) => r.roleId);
 
-    const rolesToRemove = oidcManagedRoleIds.filter((id) => !targetRoleIds.includes(id));
+    const rolesToRemove = oidcManagedRoleIds.filter((id) => !uniqueTargetRoleIds.includes(id));
     if (rolesToRemove.length > 0) {
       await db.delete(userRoles).where(and(
         eq(userRoles.userId, userId),
@@ -270,7 +343,7 @@ async function applyRoleMappings(userId: number, claims: any) {
     }
   }
 
-  const rolesToAdd = targetRoleIds.filter((id) => !userCurrentRoles.some((r) => r.roleId === id));
+  const rolesToAdd = uniqueTargetRoleIds.filter((id) => !userCurrentRoles.some((r) => r.roleId === id));
   if (rolesToAdd.length > 0) {
     await db.insert(userRoles).values(
       rolesToAdd.map(roleId => ({

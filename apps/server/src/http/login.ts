@@ -166,10 +166,6 @@ const loginRouteHandler = async (
       );
     }
 
-    if (!settings.allowNewUsers) {
-      const inviteError = await isInviteValid(data.invite);
-    }
-    
     let inviteRoleId: number | null = null;
 
     const result = await isInviteValid(data.invite);
