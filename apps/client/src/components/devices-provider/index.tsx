@@ -4,7 +4,12 @@ import {
   LocalStorageKey,
   setLocalStorageItemAsJSON
 } from '@/helpers/storage';
-import { Resolution, VideoCodec, type TDeviceSettings } from '@/types';
+import {
+  NoiseSuppression,
+  Resolution,
+  VideoCodec,
+  type TDeviceSettings
+} from '@/types';
 import { DEFAULT_BITRATE } from '@sharkord/shared';
 import {
   createContext,
@@ -23,7 +28,7 @@ const DEFAULT_DEVICE_SETTINGS: TDeviceSettings = {
   webcamResolution: Resolution['720p'],
   webcamFramerate: 30,
   echoCancellation: false,
-  noiseSuppression: false,
+  noiseSuppression: NoiseSuppression.NONE,
   autoGainControl: true,
   noiseGateEnabled: false,
   noiseGateThresholdDb: MICROPHONE_GATE_DEFAULT_THRESHOLD_DB,
