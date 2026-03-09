@@ -73,7 +73,7 @@ const General = memo(() => {
         </Group>
 
         <Group
-          label="Enable Plugins"
+          label="Plugins"
           description="Enable or disable plugins for your server."
         >
           <Switch
@@ -83,7 +83,7 @@ const General = memo(() => {
         </Group>
 
         <Group
-          label="Enable Direct Messages"
+          label="Direct Messages"
           description="Allow users to send direct messages to each other. If disabled, users can only communicate in channels."
         >
           <Switch
@@ -91,6 +91,16 @@ const General = memo(() => {
             onCheckedChange={(checked) =>
               onChange('directMessagesEnabled', checked)
             }
+          />
+        </Group>
+
+        <Group
+          label="Search"
+          description="Allow users to search for messages and files across the server."
+        >
+          <Switch
+            checked={settings.enableSearch}
+            onCheckedChange={(checked) => onChange('enableSearch', checked)}
           />
         </Group>
 

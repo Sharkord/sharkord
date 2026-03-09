@@ -28,9 +28,9 @@ const MAX_BANNER_SIZE_PRESETS = [
 
 const QUOTA_BY_USER_PRESETS = [
   { label: 'Unlimited', value: 0 },
-  { label: '1 GB', value: 5 * 1024 * 1024 * 1024 },
-  { label: '5 GB', value: 20 * 1024 * 1024 * 1024 },
-  { label: '20 GB', value: 100 * 1024 * 1024 * 1024 }
+  { label: '1 GB', value: 1 * 1024 * 1024 * 1024 },
+  { label: '20 GB', value: 20 * 1024 * 1024 * 1024 },
+  { label: '100 GB', value: 100 * 1024 * 1024 * 1024 }
 ];
 
 const MAX_FILES_PER_MESSAGE_PRESETS = [

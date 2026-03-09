@@ -37,6 +37,10 @@ const zConfig = z.object({
     joinServer: z.object({
       maxRequests: z.coerce.number().int().positive(),
       windowMs: z.coerce.number().int().positive()
+    }),
+    search: z.object({
+      maxRequests: z.coerce.number().int().positive(),
+      windowMs: z.coerce.number().int().positive()
     })
   })
 });
@@ -65,6 +69,10 @@ const defaultConfig: TConfig = {
     },
     joinServer: {
       maxRequests: 5,
+      windowMs: 60_000
+    },
+    search: {
+      maxRequests: 15,
       windowMs: 60_000
     }
   }

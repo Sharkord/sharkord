@@ -3,7 +3,12 @@ import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
 import { initTest, uploadFile } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
-import { rolePermissions, settings } from '../../db/schema';
+import {
+  files,
+  messageFiles,
+  rolePermissions,
+  settings
+} from '../../db/schema';
 
 describe('messages router', () => {
   test('should throw when user lacks permissions (edit - not own message)', async () => {
@@ -138,6 +143,301 @@ describe('messages router', () => {
     expect(result.messages).toBeDefined();
     expect(Array.isArray(result.messages)).toBe(true);
     expect(result.messages.length).toBe(3);
+  });
+
+  test('should search messages and message files', async () => {
+    const { caller } = await initTest(1);
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Needle message from search test',
+      files: []
+    });
+
+    const now = Date.now();
+
+    const [insertedFile] = await tdb
+      .insert(files)
+      .values({
+        name: `search-${now}.pdf`,
+        originalName: 'needle-document.pdf',
+        md5: `md5-${now}`,
+        userId: 1,
+        size: 1234,
+        mimeType: 'application/pdf',
+        extension: 'pdf',
+        createdAt: now
+      })
+      .returning({ id: files.id });
+
+    await tdb.insert(messageFiles).values({
+      messageId,
+      fileId: insertedFile!.id,
+      createdAt: now
+    });
+
+    const result = await caller.messages.search({
+      query: 'needle'
+    });
+
+    expect(result.messages.some((message) => message.id === messageId)).toBe(
+      true
+    );
+    expect(
+      result.files.some(
+        (item) => item.file.originalName === 'needle-document.pdf'
+      )
+    ).toBe(true);
+  });
+
+  test('should not return private channel matches without access', async () => {
+    const { caller: owner } = await initTest(1);
+    const { caller: member } = await initTest(2);
+
+    await owner.channels.update({
+      channelId: 1,
+      name: 'General',
+      topic: 'General text channel',
+      private: true
+    });
+
+    await owner.channels.updatePermissions({
+      channelId: 1,
+      roleId: 2,
+      permissions: [ChannelPermission.SEND_MESSAGES]
+    });
+
+    const messageId = await owner.messages.send({
+      channelId: 1,
+      content: 'ultra-secret-search-term',
+      files: []
+    });
+
+    const now = Date.now();
+
+    const [insertedFile] = await tdb
+      .insert(files)
+      .values({
+        name: `secret-${now}.txt`,
+        originalName: 'ultra-secret-search-file.txt',
+        md5: `md5-secret-${now}`,
+        userId: 1,
+        size: 42,
+        mimeType: 'text/plain',
+        extension: 'txt',
+        createdAt: now
+      })
+      .returning({ id: files.id });
+
+    await tdb.insert(messageFiles).values({
+      messageId,
+      fileId: insertedFile!.id,
+      createdAt: now
+    });
+
+    const deniedResult = await member.messages.search({
+      query: 'ultra-secret-search'
+    });
+
+    expect(deniedResult.messages.length).toBe(0);
+    expect(deniedResult.files.length).toBe(0);
+
+    const ownerResult = await owner.messages.search({
+      query: 'ultra-secret-search'
+    });
+
+    expect(ownerResult.messages.length).toBeGreaterThan(0);
+    expect(ownerResult.files.length).toBeGreaterThan(0);
+  });
+
+  test('should not return DM matches even for participants', async () => {
+    const { caller: userA } = await initTest(3);
+    const { caller: outsider } = await initTest(2);
+
+    const participantResult = await userA.messages.search({
+      query: 'hello user b'
+    });
+
+    const outsiderResult = await outsider.messages.search({
+      query: 'hello user b'
+    });
+
+    expect(participantResult.messages.length).toBe(0);
+    expect(participantResult.files.length).toBe(0);
+    expect(outsiderResult.messages.length).toBe(0);
+    expect(outsiderResult.files.length).toBe(0);
+  });
+
+  test('should not return DM matches for owner if not participant', async () => {
+    const { caller: owner } = await initTest(1);
+    const { caller: userA } = await initTest(3);
+
+    const participantResult = await userA.messages.search({
+      query: 'hello user b'
+    });
+
+    const ownerResult = await owner.messages.search({
+      query: 'hello user b'
+    });
+
+    expect(participantResult.messages.length).toBe(0);
+    expect(participantResult.files.length).toBe(0);
+    expect(ownerResult.messages.length).toBe(0);
+    expect(ownerResult.files.length).toBe(0);
+  });
+
+  test('should only search files attached to messages', async () => {
+    const { caller } = await initTest(1);
+
+    const now = Date.now();
+
+    await tdb.insert(files).values({
+      name: `avatar-${now}.png`,
+      originalName: 'search-only-avatar.png',
+      md5: `avatar-md5-${now}`,
+      userId: 1,
+      size: 2048,
+      mimeType: 'image/png',
+      extension: 'png',
+      createdAt: now
+    });
+
+    const result = await caller.messages.search({
+      query: 'search-only-avatar'
+    });
+
+    expect(result.files.length).toBe(0);
+  });
+
+  test('should handle SQL injection-like query safely', async () => {
+    const { caller } = await initTest(1);
+
+    await caller.messages.send({
+      channelId: 1,
+      content: "literal payload ' OR 1=1 -- in text",
+      files: []
+    });
+
+    await caller.messages.send({
+      channelId: 1,
+      content: 'normal unrelated message',
+      files: []
+    });
+
+    const result = await caller.messages.search({
+      query: "' OR 1=1 --"
+    });
+
+    expect(result.messages.length).toBe(1);
+    expect(result.messages[0]?.plainContent.toLowerCase()).toContain(
+      "' or 1=1 --"
+    );
+    expect(result.files.length).toBe(0);
+  });
+
+  test('should not leak private matches when public matches exist', async () => {
+    const { caller: owner } = await initTest(1);
+    const { caller: member } = await initTest(2);
+
+    await owner.channels.update({
+      channelId: 1,
+      name: 'General',
+      topic: 'General text channel',
+      private: true
+    });
+
+    await owner.channels.updatePermissions({
+      channelId: 1,
+      roleId: 2,
+      permissions: [ChannelPermission.SEND_MESSAGES]
+    });
+
+    const privateMessageId = await owner.messages.send({
+      channelId: 1,
+      content: 'scope-token private',
+      files: []
+    });
+
+    const publicMessageId = await owner.messages.send({
+      channelId: 2,
+      content: 'scope-token public',
+      files: []
+    });
+
+    const now = Date.now();
+
+    const [privateFile] = await tdb
+      .insert(files)
+      .values({
+        name: `scope-private-${now}.txt`,
+        originalName: 'scope-token-private-file.txt',
+        md5: `scope-private-md5-${now}`,
+        userId: 1,
+        size: 64,
+        mimeType: 'text/plain',
+        extension: 'txt',
+        createdAt: now
+      })
+      .returning({ id: files.id });
+
+    const [publicFile] = await tdb
+      .insert(files)
+      .values({
+        name: `scope-public-${now}.txt`,
+        originalName: 'scope-token-public-file.txt',
+        md5: `scope-public-md5-${now}`,
+        userId: 1,
+        size: 64,
+        mimeType: 'text/plain',
+        extension: 'txt',
+        createdAt: now
+      })
+      .returning({ id: files.id });
+
+    await tdb.insert(messageFiles).values({
+      messageId: privateMessageId,
+      fileId: privateFile!.id,
+      createdAt: now
+    });
+
+    await tdb.insert(messageFiles).values({
+      messageId: publicMessageId,
+      fileId: publicFile!.id,
+      createdAt: now
+    });
+
+    const result = await member.messages.search({
+      query: 'scope-token'
+    });
+
+    expect(
+      result.messages.some((message) => message.id === publicMessageId)
+    ).toBe(true);
+    expect(
+      result.messages.some((message) => message.id === privateMessageId)
+    ).toBe(false);
+    expect(
+      result.files.some((fileMatch) =>
+        fileMatch.file.originalName.includes('scope-token-public-file')
+      )
+    ).toBe(true);
+    expect(
+      result.files.some((fileMatch) =>
+        fileMatch.file.originalName.includes('scope-token-private-file')
+      )
+    ).toBe(false);
+  });
+
+  test('should throw when search is disabled on server', async () => {
+    const { caller } = await initTest(1);
+
+    await tdb.update(settings).set({ enableSearch: false }).execute();
+
+    await expect(
+      caller.messages.search({
+        query: 'any query'
+      })
+    ).rejects.toThrow('Search is disabled on this server');
   });
 
   test('should get pinned messages from channel', async () => {

@@ -39,7 +39,7 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
   return (
     <div
       className={cn(
-        'absolute bottom-8 left-0 right-0 flex justify-center items-center pointer-events-none z-50',
+        'absolute bottom-8 left-0 right-0 hidden md:flex justify-center items-center pointer-events-none',
         'transition-all duration-300 ease-in-out gap-3',
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
       )}

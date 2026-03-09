@@ -27,12 +27,16 @@ const SearchUserDropdown = memo(
     usersToStartDm,
     onStartDm
   }: TSearchUserDropdownProps) => {
-    const allUsers = useMemo(
-      () => usersToStartDm.slice(0, MAX_USERS),
-      [usersToStartDm]
-    );
+    const { allUsers, extraUsers } = useMemo(() => {
+      const filtered = usersToStartDm.filter((user) =>
+        user.name.toLowerCase().includes(query.toLowerCase())
+      );
 
-    const hasMoreUsers = usersToStartDm.length > MAX_USERS;
+      return {
+        allUsers: filtered.slice(0, MAX_USERS),
+        extraUsers: filtered.length - MAX_USERS
+      };
+    }, [usersToStartDm, query]);
 
     return (
       <DropdownMenu>
@@ -74,9 +78,9 @@ const SearchUserDropdown = memo(
               </div>
             </DropdownMenuItem>
           ))}
-          {hasMoreUsers && (
+          {extraUsers > 0 && (
             <div className="px-2 pb-2 text-xs text-muted-foreground">
-              And {usersToStartDm.length - MAX_USERS} more...
+              And {extraUsers} more...
             </div>
           )}
         </DropdownMenuContent>
