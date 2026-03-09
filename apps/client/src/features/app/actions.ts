@@ -1,4 +1,4 @@
-import { getUrlFromServer } from '@/helpers/get-file-url';
+import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
 import { LocalStorageKey, setLocalStorageItemBool } from '@/helpers/storage';
 import type { TMessageJumpToTarget } from '@/types';
 import type { TServerInfo } from '@sharkord/shared';
@@ -15,6 +15,42 @@ export const setIsAutoConnecting = (isAutoConnecting: boolean) =>
 
 export const setPluginsLoading = (loading: boolean) =>
   store.dispatch(appSliceActions.setLoadingPlugins(loading));
+
+const setOrCreateMeta = (name: string, content: string) => {
+  let el = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
+
+  if (!el) {
+    el = document.createElement('meta');
+    el.name = name;
+    document.head.appendChild(el);
+  }
+
+  el.content = content;
+};
+
+const setOrCreateLink = (rel: string, href: string) => {
+  let el = document.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
+
+  if (!el) {
+    el = document.createElement('link');
+    el.rel = rel;
+    document.head.appendChild(el);
+  }
+
+  el.href = href;
+};
+
+const applyServerBranding = (info: TServerInfo) => {
+  document.title = info.name;
+
+  const logoUrl = info.logo
+    ? getFileUrl(info.logo)
+    : `${getUrlFromServer()}/favicon.ico`;
+
+  setOrCreateLink('icon', logoUrl);
+  setOrCreateLink('apple-touch-icon', logoUrl);
+  setOrCreateMeta('apple-mobile-web-app-title', info.name);
+};
 
 export const fetchServerInfo = async (): Promise<TServerInfo | undefined> => {
   try {
@@ -43,6 +79,7 @@ export const loadApp = async () => {
   }
 
   setInfo(info);
+  applyServerBranding(info);
   setAppLoading(false);
 };
 
