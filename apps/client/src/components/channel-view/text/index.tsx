@@ -113,7 +113,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
       return true;
     },
-    [channelId, sendTypingSignal, setNewMessageHandler]
+    [channelId, sendTypingSignal, setNewMessageHandler, t]
   );
 
   if (!channelCan(ChannelPermission.VIEW_CHANNEL) || loading) {

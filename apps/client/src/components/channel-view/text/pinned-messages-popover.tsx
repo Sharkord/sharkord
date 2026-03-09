@@ -134,7 +134,7 @@ const PinnedMessagesPopover = memo(
       return () => {
         isCancelled = true;
       };
-    }, [isOpen, selectedChannelId]);
+    }, [isOpen, selectedChannelId, t]);
 
     return (
       <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -146,7 +146,9 @@ const PinnedMessagesPopover = memo(
           side="bottom"
           className="w-120 max-h-120 overflow-auto"
         >
-          <div className="px-4 py-2 font-semibold">{t('pinnedMessagesTitle')}</div>
+          <div className="px-4 py-2 font-semibold">
+            {t('pinnedMessagesTitle')}
+          </div>
           {loading ? (
             <div className="p-4">
               <Spinner size="xs" />
