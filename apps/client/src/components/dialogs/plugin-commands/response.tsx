@@ -1,23 +1,60 @@
+import { cn } from '@/lib/utils';
+import { CheckCircle2, XCircle } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TCommandResponse } from './types';
 
-type TCommandResponseProps = {
-  response: string | null;
+type TResponseProps = {
+  response: TCommandResponse;
 };
 
-const CommandResponse = memo(({ response }: TCommandResponseProps) => {
+const Response = memo(({ response }: TResponseProps) => {
   const { t } = useTranslation('dialogs');
 
-  if (response === null) return null;
-
   return (
-    <div className="flex flex-col gap-1">
-      <p className="text-xs font-semibold">{t('responseLabel')}</p>
-      <pre className="text-xs bg-muted/30 p-3 rounded overflow-x-auto whitespace-pre-wrap">
-        {response}
-      </pre>
+    <div className="mt-6">
+      <h3 className="font-medium text-sm mb-2">{t('responseLabel')}</h3>
+      <div
+        className={cn(
+          'p-4 rounded-lg border',
+          response.success
+            ? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800'
+            : 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800'
+        )}
+      >
+        <div className="flex items-start gap-2">
+          {response.success ? (
+            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+          ) : (
+            <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          )}
+          <div className="flex-1 min-w-0">
+            {response.success ? (
+              <div>
+                <p className="font-medium text-sm text-green-900 dark:text-green-100 mb-2">
+                  {t('commandExecutedSuccess')}
+                </p>
+                {response.data !== undefined && (
+                  <pre className="text-xs bg-black/10 dark:bg-white/10 p-3 rounded overflow-x-auto">
+                    {JSON.stringify(response.data, null, 2)}
+                  </pre>
+                )}
+              </div>
+            ) : (
+              <div>
+                <p className="font-medium text-sm text-red-900 dark:text-red-100 mb-1">
+                  {t('commandFailed')}
+                </p>
+                <p className="text-sm text-red-800 dark:text-red-200">
+                  {response.error}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 });
 
-export { CommandResponse };
+export { Response };

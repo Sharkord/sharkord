@@ -1,12 +1,7 @@
 import { getTRPCClient } from '@/lib/trpc';
-import type { TLogEntry } from '@sharkord/shared';
-import { getTrpcError } from '@sharkord/shared';
 import {
-  Badge,
-  Button,
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   Select,
@@ -15,133 +10,234 @@ import {
   SelectTrigger,
   SelectValue
 } from '@sharkord/ui';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertCircle, Bug, Info } from 'lucide-react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import type { TDialogBaseProps } from '../types';
+
+type TLogEntry = {
+  type: 'info' | 'error' | 'debug';
+  timestamp: number;
+  message: string;
+};
 
 type TPluginLogsDialogProps = TDialogBaseProps & {
   pluginId: string;
-  pluginName?: string;
+};
+
+const LogEntry = memo(({ log }: { log: TLogEntry }) => {
+  const color = useMemo(() => {
+    switch (log.type) {
+      case 'error':
+        return 'text-destructive';
+      case 'debug':
+        return 'text-muted-foreground';
+      case 'info':
+      default:
+        return 'text-primary';
+    }
+  }, [log.type]);
+
+  const Icon = useMemo(() => {
+    switch (log.type) {
+      case 'error':
+        return (
+          <AlertCircle
+            className={`w-3.5 h-3.5 ${color} flex-shrink-0 mt-0.5`}
+          />
+        );
+      case 'debug':
+        return <Bug className={`w-3.5 h-3.5 ${color} flex-shrink-0 mt-0.5`} />;
+      case 'info':
+      default:
+        return <Info className={`w-3.5 h-3.5 ${color} flex-shrink-0 mt-0.5`} />;
+    }
+  }, [log.type, color]);
+
+  return (
+    <div className="flex items-start gap-2 py-0.5 px-2 rounded hover:bg-muted/50 font-mono text-xs">
+      {Icon}
+      <span className="text-muted-foreground flex-shrink-0 min-w-[70px]">
+        {new Date(log.timestamp).toLocaleTimeString()}
+      </span>
+      <span className="flex-1 break-all">{log.message}</span>
+    </div>
+  );
+});
+
+const useSubscribeToPluginLogs = (pluginId: string) => {
+  const [logs, setLogs] = useState<TLogEntry[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const subRef = useRef<any>(null);
+  const loadedFirstLogs = useRef(false);
+
+  const setupSubscription = useCallback(async () => {
+    const trpc = getTRPCClient();
+
+    try {
+      if (!loadedFirstLogs.current) {
+        const logs = await trpc.plugins.getLogs.query({ pluginId });
+
+        setLogs(logs);
+        loadedFirstLogs.current = true;
+      }
+
+      if (subRef.current) return;
+
+      subRef.current = trpc.plugins.onLog.subscribe(undefined, {
+        onData: (data) => {
+          if (data.pluginId === pluginId) {
+            setLogs((prevLogs) => [...prevLogs, data]);
+          }
+        },
+        onError: (err) => console.error('onPluginLog subscription error:', err)
+      });
+    } catch (error) {
+      console.error('Failed to subscribe to plugin logs:', error);
+    }
+  }, [pluginId]);
+
+  useEffect(() => {
+    setupSubscription();
+
+    return () => {
+      if (subRef.current) {
+        subRef.current.unsubscribe();
+      }
+    };
+  }, [pluginId, setupSubscription]);
+
+  return logs;
 };
 
 const PluginLogsDialog = memo(
-  ({ isOpen, close, pluginId, pluginName }: TPluginLogsDialogProps) => {
+  ({ isOpen, close, pluginId }: TPluginLogsDialogProps) => {
     const { t } = useTranslation('dialogs');
-    const [logs, setLogs] = useState<TLogEntry[]>([]);
-    const [showCount, setShowCount] = useState(100);
+    const logs = useSubscribeToPluginLogs(pluginId);
+    const [logLimit, setLogLimit] = useState<'100' | '500' | 'all'>('100');
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [autoScroll, setAutoScroll] = useState(true);
 
-    const fetchLogs = useCallback(async () => {
-      try {
-        const trpc = getTRPCClient();
-        const result = await trpc.plugins.getLogs.query({ pluginId });
-        setLogs(result);
-      } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to load plugin logs'));
+    const handleLogLimitChange = useCallback((value: string) => {
+      setLogLimit(value as '100' | '500' | 'all');
+    }, []);
+
+    const sortedLogs = useMemo(() => {
+      const sorted = [...logs].sort((a, b) => a.timestamp - b.timestamp);
+
+      if (logLimit === 'all') {
+        return sorted;
       }
-    }, [pluginId]);
+
+      const limit = parseInt(logLimit, 10);
+      return sorted.slice(-limit);
+    }, [logs, logLimit]);
 
     useEffect(() => {
-      if (isOpen) fetchLogs();
-    }, [isOpen, fetchLogs]);
+      if (autoScroll && scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    }, [sortedLogs, autoScroll]);
 
-    const slicedLogs = useMemo(
-      () => (showCount === -1 ? logs : logs.slice(-showCount)),
-      [logs, showCount]
+    const handleScroll = useCallback(() => {
+      if (!scrollRef.current) return;
+
+      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+      const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 10;
+
+      setAutoScroll(isAtBottom);
+    }, []);
+
+    const errorCount = useMemo(
+      () => logs.filter((log) => log.type === 'error').length,
+      [logs]
     );
 
-    const counts = useMemo(() => {
-      const info = logs.filter((l) => l.type === 'info').length;
-      const errors = logs.filter((l) => l.type === 'error').length;
-      const debug = logs.filter((l) => l.type === 'debug').length;
+    const debugCount = useMemo(
+      () => logs.filter((log) => log.type === 'debug').length,
+      [logs]
+    );
 
-      return { info, errors, debug };
-    }, [logs]);
+    const infoCount = useMemo(
+      () => logs.filter((log) => log.type === 'info').length,
+      [logs]
+    );
 
     return (
-      <Dialog open={isOpen}>
-        <DialogContent
-          onInteractOutside={close}
-          close={close}
-          className="max-w-2xl"
-        >
+      <Dialog open={isOpen} onOpenChange={close}>
+        <DialogContent className="flex flex-col min-w-[64vw] h-[80vh]">
           <DialogHeader>
-            <DialogTitle>{pluginName ?? pluginId}</DialogTitle>
+            <DialogTitle>{pluginId}</DialogTitle>
           </DialogHeader>
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>
-              {t('infoLabel')} {counts.info}
-            </span>
-            <span>
-              {t('errorsLabel')} {counts.errors}
-            </span>
-            <span>
-              {t('debugLabel')} {counts.debug}
-            </span>
-            <span className="ml-auto">
-              {t('totalLogs', { count: logs.length })}
-            </span>
+          <div className="flex items-center gap-3 mt-4 text-sm">
+            <div className="flex items-center gap-1.5">
+              <Info className="w-4 h-4 text-primary" />
+              <span className="text-muted-foreground">
+                {t('infoLabel')} <span className="font-semibold">{infoCount}</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 text-destructive" />
+              <span className="text-muted-foreground">
+                {t('errorsLabel')} <span className="font-semibold">{errorCount}</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Bug className="w-4 h-4 text-muted-foreground" />
+              <span className="text-muted-foreground">
+                {t('debugLabel')} <span className="font-semibold">{debugCount}</span>
+              </span>
+            </div>
+            <div className="ml-auto flex items-center gap-3">
+              <span className="text-muted-foreground">
+                {t('totalLogs', { count: logs.length })}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground text-xs">{t('showLabel')}</span>
+                <Select value={logLimit} onValueChange={handleLogLimitChange}>
+                  <SelectTrigger className="h-7 w-[100px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="100">{t('logs100')}</SelectItem>
+                    <SelectItem value="500">{t('logs500')}</SelectItem>
+                    <SelectItem value="all">{t('logsAll')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              {t('showLabel')}
-            </span>
-            <Select
-              value={showCount.toString()}
-              onValueChange={(v) => setShowCount(Number(v))}
-            >
-              <SelectTrigger className="w-28 h-7 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="100">{t('logs100')}</SelectItem>
-                <SelectItem value="500">{t('logs500')}</SelectItem>
-                <SelectItem value="-1">{t('logsAll')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="max-h-96 overflow-y-auto font-mono text-xs bg-muted/30 rounded p-3 space-y-1">
-            {slicedLogs.length === 0 ? (
-              <div className="text-muted-foreground text-center py-8">
-                <p>{t('noLogsYet')}</p>
-                <p className="text-xs mt-1">{t('logsWillAppear')}</p>
+          <div className="flex-1 min-h-0 mt-4">
+            {sortedLogs.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <div className="text-center">
+                  <Info className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>{t('noLogsYet')}</p>
+                  <p className="text-sm mt-1">{t('logsWillAppear')}</p>
+                </div>
               </div>
             ) : (
-              slicedLogs.map((log, i) => (
-                <div
-                  key={i}
-                  className={
-                    log.type === 'error'
-                      ? 'text-destructive'
-                      : log.type === 'debug'
-                        ? 'text-muted-foreground'
-                        : ''
-                  }
-                >
-                  <Badge variant="outline" className="mr-2 text-[10px] py-0">
-                    {log.type}
-                  </Badge>
-                  <span className="text-muted-foreground mr-2">
-                    {new Date(log.timestamp).toLocaleTimeString()}
-                  </span>
-                  {log.message}
+              <div
+                ref={scrollRef}
+                className="h-full overflow-y-auto"
+                onScroll={handleScroll}
+              >
+                <div className="space-y-0.5 pr-4">
+                  {sortedLogs.map((log, index) => (
+                    <LogEntry key={`${log.timestamp}-${index}`} log={log} />
+                  ))}
                 </div>
-              ))
+              </div>
             )}
           </div>
-
-          <DialogFooter>
-            <Button variant="ghost" onClick={close}>
-              {t('close')}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     );
   }
 );
+
+PluginLogsDialog.displayName = 'PluginLogsDialog';
 
 export { PluginLogsDialog };

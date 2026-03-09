@@ -4,47 +4,72 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 type TCommandsListProps = {
-  commands: TCommandInfo[];
-  loading: boolean;
-  selectedCommand: TCommandInfo | null;
-  onSelect: (cmd: TCommandInfo) => void;
+  availableCommands: TCommandInfo[];
+  handleCommandChange: (commandName: string) => void;
+  selectedCommand: string | null;
 };
 
 const CommandsList = memo(
-  ({ commands, loading, selectedCommand, onSelect }: TCommandsListProps) => {
+  ({
+    availableCommands,
+    handleCommandChange,
+    selectedCommand
+  }: TCommandsListProps) => {
     const { t } = useTranslation('dialogs');
 
     return (
-      <div className="w-48 border-r pr-4 flex flex-col gap-1 overflow-y-auto">
-        <p className="text-xs font-semibold text-muted-foreground mb-2">
-          {t('commandsLabel')}
-        </p>
-        {loading || commands.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            {t('noCommandsAvailable')}
-          </p>
-        ) : (
-          commands.map((cmd) => (
-            <button
-              key={cmd.name}
-              type="button"
-              onClick={() => onSelect(cmd)}
-              className={cn(
-                'text-left text-sm px-2 py-1 rounded flex flex-col',
-                selectedCommand?.name === cmd.name
-                  ? 'bg-primary/10 text-primary'
-                  : 'hover:bg-muted/50'
-              )}
-            >
-              <span className="font-medium">{cmd.name}</span>
-              {cmd.args && cmd.args.length > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  {t('argument', { count: cmd.args.length })}
-                </span>
-              )}
-            </button>
-          ))
-        )}
+      <div className="w-80 border-r flex flex-col">
+        <div className="px-4 py-3 border-b bg-muted/30">
+          <h3 className="font-semibold text-sm">{t('commandsLabel')}</h3>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {availableCommands.length === 0 ? (
+            <div className="p-4 text-sm text-muted-foreground text-center">
+              {t('noCommandsAvailable')}
+            </div>
+          ) : (
+            <div className="p-2">
+              {availableCommands.map((cmd) => (
+                <button
+                  key={cmd.name}
+                  onClick={() => handleCommandChange(cmd.name)}
+                  className={cn(
+                    'w-full text-left px-3 py-2 rounded-md text-sm transition-colors',
+                    'hover:bg-muted',
+                    selectedCommand === cmd.name &&
+                      'bg-primary text-primary-foreground hover:bg-primary/90'
+                  )}
+                >
+                  <div className="font-medium">{cmd.name}</div>
+                  {cmd.description && (
+                    <div
+                      className={cn(
+                        'text-xs mt-1',
+                        selectedCommand === cmd.name
+                          ? 'text-primary-foreground/70'
+                          : 'text-muted-foreground'
+                      )}
+                    >
+                      {cmd.description}
+                    </div>
+                  )}
+                  {cmd.args && cmd.args.length > 0 && (
+                    <div
+                      className={cn(
+                        'text-xs mt-1',
+                        selectedCommand === cmd.name
+                          ? 'text-primary-foreground/70'
+                          : 'text-muted-foreground'
+                      )}
+                    >
+                      {t('argument', { count: cmd.args.length })}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     );
   }

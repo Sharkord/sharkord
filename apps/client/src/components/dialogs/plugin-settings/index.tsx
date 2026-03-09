@@ -1,16 +1,20 @@
 import { getTRPCClient } from '@/lib/trpc';
+import { cn } from '@/lib/utils';
 import type { TPluginSettingDefinition } from '@sharkord/shared';
 import { getTrpcError } from '@sharkord/shared';
 import {
-  Badge,
   Button,
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  Input
+  Input,
+  Label,
+  Spinner,
+  Switch,
+  Textarea
 } from '@sharkord/ui';
+import { Save, Settings } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -18,199 +22,344 @@ import type { TDialogBaseProps } from '../types';
 
 type TPluginSettingsDialogProps = TDialogBaseProps & {
   pluginId: string;
-  pluginName?: string;
+  pluginName: string;
 };
+
+type TSettingsListProps = {
+  definitions: TPluginSettingDefinition[];
+  selectedKey: string | null;
+  onSelect: (key: string) => void;
+  dirtyKeys: Set<string>;
+};
+
+const SettingsList = memo(
+  ({ definitions, selectedKey, onSelect, dirtyKeys }: TSettingsListProps) => {
+    const { t } = useTranslation('dialogs');
+
+    return (
+      <div className="w-80 border-r flex flex-col">
+        <div className="px-4 py-3 border-b bg-muted/30">
+          <h3 className="font-semibold text-sm">{t('settingsLabel')}</h3>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {definitions.length === 0 ? (
+            <div className="p-4 text-sm text-muted-foreground text-center">
+              {t('noSettingsAvailable')}
+            </div>
+          ) : (
+            <div className="p-2">
+              {definitions.map((def) => (
+                <button
+                  key={def.key}
+                  onClick={() => onSelect(def.key)}
+                  className={cn(
+                    'w-full text-left px-3 py-2 rounded-md text-sm transition-colors',
+                    'hover:bg-muted',
+                    selectedKey === def.key &&
+                      'bg-primary text-primary-foreground hover:bg-primary/90'
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium">{def.name}</div>
+                    {dirtyKeys.has(def.key) && (
+                      <span
+                        className={cn(
+                          'text-xs font-semibold',
+                          selectedKey === def.key
+                            ? 'text-primary-foreground/80'
+                            : 'text-primary'
+                        )}
+                      >
+                        {t('editedLabel')}
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className={cn(
+                      'text-xs mt-1',
+                      selectedKey === def.key
+                        ? 'text-primary-foreground/70'
+                        : 'text-muted-foreground'
+                    )}
+                  >
+                    {def.type}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+);
 
 const PluginSettingsDialog = memo(
   ({ isOpen, close, pluginId, pluginName }: TPluginSettingsDialogProps) => {
     const { t } = useTranslation('dialogs');
+    const [loading, setLoading] = useState(true);
     const [definitions, setDefinitions] = useState<TPluginSettingDefinition[]>(
       []
     );
-    const [values, setValues] = useState<Record<string, unknown>>({});
-    const [editedValues, setEditedValues] = useState<
-      Record<string, string | number | boolean>
-    >({});
+    const [initialValues, setInitialValues] = useState<Record<string, unknown>>(
+      {}
+    );
+    const [draftValues, setDraftValues] = useState<Record<string, unknown>>({});
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [saving, setSaving] = useState(false);
-
-    const fetchSettings = useCallback(async () => {
-      setLoading(true);
-
-      try {
-        const trpc = getTRPCClient();
-        const result = await trpc.plugins.getSettings.query({ pluginId });
-        setDefinitions(result.definitions);
-        setValues(result.values);
-      } catch (error) {
-        toast.error(getTrpcError(error, t('failedLoadPluginSettings')));
-      } finally {
-        setLoading(false);
-      }
-    }, [pluginId, t]);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
-      if (isOpen) fetchSettings();
-    }, [isOpen, fetchSettings]);
+      if (!isOpen) return;
 
-    const dirtyKeys = useMemo(
-      () =>
-        new Set(
-          Object.entries(editedValues)
-            .filter(([key, value]) => values[key] !== value)
-            .map(([key]) => key)
-        ),
-      [editedValues, values]
+      const fetchSettings = async () => {
+        setLoading(true);
+
+        const trpc = getTRPCClient();
+
+        try {
+          const result = await trpc.plugins.getSettings.query({ pluginId });
+
+          setDefinitions(result.definitions);
+          setInitialValues(result.values);
+          setDraftValues(result.values);
+          setSelectedKey(result.definitions[0]?.key ?? null);
+        } catch (error) {
+          toast.error(getTrpcError(error, t('failedLoadPluginSettings')));
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchSettings();
+    }, [isOpen, pluginId, t]);
+
+    const selectedSetting = useMemo(() => {
+      return definitions.find((def) => def.key === selectedKey) || null;
+    }, [definitions, selectedKey]);
+
+    const dirtyKeys = useMemo(() => {
+      const changed = new Set<string>();
+
+      for (const def of definitions) {
+        const currentValue = draftValues[def.key];
+        const initialValue = initialValues[def.key];
+
+        if (def.type === 'number') {
+          const parsed =
+            currentValue === '' || currentValue === undefined
+              ? NaN
+              : Number(currentValue);
+          if (Number.isNaN(parsed)) {
+            if (initialValue !== undefined) {
+              changed.add(def.key);
+            }
+            continue;
+          }
+          if (parsed !== initialValue) {
+            changed.add(def.key);
+          }
+        } else if (def.type === 'boolean') {
+          if (Boolean(currentValue) !== Boolean(initialValue)) {
+            changed.add(def.key);
+          }
+        } else if (String(currentValue ?? '') !== String(initialValue ?? '')) {
+          changed.add(def.key);
+        }
+      }
+
+      return changed;
+    }, [definitions, draftValues, initialValues]);
+
+    const handleDraftChange = useCallback((key: string, value: unknown) => {
+      setDraftValues((prev) => ({ ...prev, [key]: value }));
+    }, []);
+
+    const renderSettingInput = useCallback(
+      (def: TPluginSettingDefinition) => {
+        const currentValue = draftValues[def.key];
+        const inputId = `setting-${def.key}`;
+
+        switch (def.type) {
+          case 'boolean':
+            return (
+              <Switch
+                id={inputId}
+                checked={Boolean(currentValue)}
+                onCheckedChange={(checked) =>
+                  handleDraftChange(def.key, checked)
+                }
+              />
+            );
+          case 'number':
+            return (
+              <Input
+                id={inputId}
+                type="number"
+                value={currentValue !== undefined ? String(currentValue) : ''}
+                onChange={(e) => handleDraftChange(def.key, e.target.value)}
+                className="max-w-xs"
+              />
+            );
+          case 'string':
+          default:
+            return (
+              <Textarea
+                id={inputId}
+                value={String(currentValue ?? '')}
+                onChange={(e) => handleDraftChange(def.key, e.target.value)}
+                className="max-w-md"
+              />
+            );
+        }
+      },
+      [draftValues, handleDraftChange]
     );
 
     const handleSave = useCallback(async () => {
-      setSaving(true);
+      if (isSaving || dirtyKeys.size === 0) return;
+
+      setIsSaving(true);
 
       try {
         const trpc = getTRPCClient();
+        const updates: Record<string, string | number | boolean> = {};
 
-        for (const key of dirtyKeys) {
+        for (const def of definitions) {
+          if (!dirtyKeys.has(def.key)) continue;
+
+          const rawValue = draftValues[def.key];
+
+          if (def.type === 'number') {
+            const parsed =
+              rawValue === '' || rawValue === undefined
+                ? NaN
+                : Number(rawValue);
+
+            if (Number.isNaN(parsed)) {
+              throw new Error(`${def.name} must be a number`);
+            }
+
+            updates[def.key] = parsed;
+          } else if (def.type === 'boolean') {
+            updates[def.key] = Boolean(rawValue);
+          } else {
+            updates[def.key] = String(rawValue ?? '');
+          }
+        }
+
+        for (const [key, value] of Object.entries(updates)) {
           await trpc.plugins.updateSetting.mutate({
             pluginId,
             key,
-            value: editedValues[key] ?? ''
+            value
           });
         }
 
+        setInitialValues((prev) => ({ ...prev, ...updates }));
+        setDraftValues((prev) => ({ ...prev, ...updates }));
+
         toast.success(t('settingsSaved'));
-        setEditedValues({});
-        await fetchSettings();
       } catch (error) {
         toast.error(getTrpcError(error, t('failedSaveSettings')));
       } finally {
-        setSaving(false);
+        setIsSaving(false);
       }
-    }, [dirtyKeys, editedValues, fetchSettings, pluginId, t]);
-
-    const selectedDef = useMemo(
-      () => definitions.find((d) => d.key === selectedKey) ?? null,
-      [definitions, selectedKey]
-    );
-
-    const selectedValue = selectedKey
-      ? String(editedValues[selectedKey] ?? values[selectedKey] ?? '')
-      : '';
-
-    const isSelectedDirty = selectedKey ? dirtyKeys.has(selectedKey) : false;
+    }, [isSaving, dirtyKeys, definitions, draftValues, pluginId, t]);
 
     return (
-      <Dialog open={isOpen}>
-        <DialogContent
-          onInteractOutside={close}
-          close={close}
-          className="max-w-2xl"
-        >
-          <DialogHeader>
-            <DialogTitle>
-              {t('pluginSettingsTitle', { name: pluginName ?? pluginId })}
-            </DialogTitle>
+      <Dialog open={isOpen} onOpenChange={close}>
+        <DialogContent className="flex flex-col min-w-[90vw] h-[85vh] p-0 gap-0">
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle>{t('pluginSettingsTitle', { name: pluginName })}</DialogTitle>
           </DialogHeader>
 
-          <div className="flex gap-4 min-h-[300px]">
-            <div className="w-48 border-r pr-4 flex flex-col gap-1 overflow-y-auto">
-              <p className="text-xs font-semibold text-muted-foreground mb-2">
-                {t('settingsLabel')}
-              </p>
-              {loading ? (
-                <p className="text-xs text-muted-foreground">
-                  {t('noSettingsAvailable')}
-                </p>
-              ) : definitions.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  {t('noConfigurableSettings')}
-                </p>
-              ) : (
-                definitions.map((def) => (
-                  <button
-                    key={def.key}
-                    type="button"
-                    onClick={() => setSelectedKey(def.key)}
-                    className={`text-left text-sm px-2 py-1 rounded flex items-center gap-1 ${
-                      selectedKey === def.key
-                        ? 'bg-primary/10 text-primary'
-                        : 'hover:bg-muted/50'
-                    }`}
-                  >
-                    <span className="truncate flex-1">{def.name}</span>
-                    {dirtyKeys.has(def.key) && (
-                      <Badge variant="secondary" className="text-[10px] py-0">
-                        {t('editedLabel')}
-                      </Badge>
-                    )}
-                  </button>
-                ))
-              )}
+          {loading ? (
+            <div className="flex flex-1 items-center justify-center py-12">
+              <Spinner size="sm" />
             </div>
-
-            <div className="flex-1 flex flex-col gap-3">
-              {!selectedDef ? (
-                <p className="text-sm text-muted-foreground">
-                  {t('selectSettingToEdit')}
-                </p>
-              ) : (
-                <>
-                  <div>
-                    <p className="text-xs text-muted-foreground">
-                      {t('keyLabel', { key: selectedDef.key })}
-                    </p>
-                    {selectedDef.description && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {selectedDef.description}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <p className="text-xs font-semibold">{t('valueLabel')}</p>
-                    <Input
-                      value={selectedValue}
-                      onChange={(e) =>
-                        setEditedValues((prev) => ({
-                          ...prev,
-                          [selectedKey!]: e.target.value
-                        }))
-                      }
-                    />
-                    {isSelectedDirty && (
-                      <Badge
-                        variant="secondary"
-                        className="w-fit text-[10px] py-0"
-                      >
-                        {t('editedLabel')}
-                      </Badge>
-                    )}
-                  </div>
-                </>
-              )}
+          ) : definitions.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <Settings className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                <p className="text-lg">{t('noConfigurableSettings')}</p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-1 overflow-hidden">
+              <SettingsList
+                definitions={definitions}
+                selectedKey={selectedKey}
+                onSelect={setSelectedKey}
+                dirtyKeys={dirtyKeys}
+              />
 
-          <DialogFooter className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground mr-auto">
-              {dirtyKeys.size > 0
-                ? t('unsavedChange', { count: dirtyKeys.size })
-                : t('noUnsavedChanges')}
-            </span>
-            <Button variant="ghost" onClick={close}>
-              {t('cancel')}
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={saving || dirtyKeys.size === 0}
-            >
-              {saving ? t('savingBtn') : t('saveChanges')}
-            </Button>
-          </DialogFooter>
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {!selectedSetting ? (
+                  <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                    <div className="text-center">
+                      <Settings className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                      <p className="text-lg">{t('selectSettingToEdit')}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex-1 overflow-y-auto p-6">
+                      <div className="max-w-2xl">
+                        <div className="mb-6">
+                          <h2 className="text-xl font-semibold mb-2">
+                            {selectedSetting.name}
+                          </h2>
+                          {selectedSetting.description && (
+                            <p className="text-sm text-muted-foreground">
+                              {selectedSetting.description}
+                            </p>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-2">
+                            {t('keyLabel', { key: selectedSetting.key })}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor={`setting-${selectedSetting.key}`}>
+                            {t('valueLabel')}
+                          </Label>
+                          {renderSettingInput(selectedSetting)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t p-4 bg-muted/30">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="text-xs text-muted-foreground">
+                          {dirtyKeys.size > 0
+                            ? t('unsavedChange', { count: dirtyKeys.size })
+                            : t('noUnsavedChanges')}
+                        </div>
+                        <div className="flex gap-3">
+                          <Button variant="outline" onClick={close}>
+                            {t('close')}
+                          </Button>
+                          <Button
+                            onClick={handleSave}
+                            disabled={dirtyKeys.size === 0 || isSaving}
+                          >
+                            <Save className="w-4 h-4 mr-2" />
+                            {isSaving ? t('savingBtn') : t('saveChanges')}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     );
   }
 );
+
+PluginSettingsDialog.displayName = 'PluginSettingsDialog';
 
 export { PluginSettingsDialog };

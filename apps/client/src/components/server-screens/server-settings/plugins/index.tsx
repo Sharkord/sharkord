@@ -210,12 +210,12 @@ const Plugins = memo(() => {
   }, [refetch, t]);
 
   const handleToggle = useCallback(
-    async (pluginId: string, pluginEnabled: boolean) => {
+    async (pluginId: string, enabled: boolean) => {
       const trpc = getTRPCClient();
 
       try {
-        await trpc.plugins.toggle.mutate({ pluginId, enabled: pluginEnabled });
-        toast.success(pluginEnabled ? t('pluginEnabled') : t('pluginDisabled'));
+        await trpc.plugins.toggle.mutate({ pluginId, enabled });
+        toast.success(enabled ? t('pluginEnabled') : t('pluginDisabled'));
       } catch (error) {
         toast.error(getTrpcError(error, t('failedTogglePlugin')));
       } finally {
