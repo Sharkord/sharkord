@@ -25,7 +25,10 @@ const onMessageTypingRoute = protectedProcedure.subscription(
 
 const onThreadReplyCountUpdateRoute = protectedProcedure.subscription(
   async ({ ctx }) => {
-    return ctx.pubsub.subscribe(ServerEvents.THREAD_REPLY_COUNT_UPDATE);
+    return ctx.pubsub.subscribeFor(
+      ctx.userId,
+      ServerEvents.THREAD_REPLY_COUNT_UPDATE
+    );
   }
 );
 

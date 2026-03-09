@@ -45,6 +45,7 @@ export type TPublicServerSettings = Pick<
   | 'storageSpaceQuotaByUser'
   | 'storageOverflowAction'
   | 'enablePlugins'
+  | 'enableSearch'
 > & {
   webRtcMaxBitrate: number;
 };

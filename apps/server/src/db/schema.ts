@@ -66,7 +66,8 @@ const settings = sqliteTable(
     ).notNull(),
     storageSpaceQuotaByUser: integer('storage_space_quota_by_user').notNull(),
     storageOverflowAction: text('storage_overflow_action').notNull(),
-    enablePlugins: integer('enable_plugins', { mode: 'boolean' }).notNull()
+    enablePlugins: integer('enable_plugins', { mode: 'boolean' }).notNull(),
+    enableSearch: integer('enable_search', { mode: 'boolean' }).notNull()
   },
   (t) => [
     index('settings_server_idx').on(t.serverId),

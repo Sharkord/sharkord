@@ -1,5 +1,6 @@
 import { getUrlFromServer } from '@/helpers/get-file-url';
 import { LocalStorageKey, setLocalStorageItemBool } from '@/helpers/storage';
+import type { TMessageJumpToTarget } from '@/types';
 import type { TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
 import { setInfo } from '../server/actions';
@@ -137,3 +138,7 @@ export const setBrowserNotificationsForDms = async (enabled: boolean) => {
     enabled
   );
 };
+
+export const setMessageJumpTarget = (
+  payload: TMessageJumpToTarget | undefined
+) => store.dispatch(appSliceActions.setMessageJumpTarget(payload));

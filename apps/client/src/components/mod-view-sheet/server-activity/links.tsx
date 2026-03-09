@@ -53,6 +53,9 @@ const LinkCard = memo(({ url, onOpen }: TLinkCardProps) => {
   );
 });
 
+const searchFilter = (url: string, term: string) =>
+  url.toLowerCase().includes(term.toLowerCase());
+
 const Links = memo(() => {
   const { links } = useModViewContext();
 
@@ -60,26 +63,17 @@ const Links = memo(() => {
     window.open(url, '_blank', 'noopener,noreferrer');
   }, []);
 
-  const renderItem = useCallback(
-    (url: string) => <LinkCard url={url} onOpen={() => onOpenClick(url)} />,
-    [onOpenClick]
-  );
-
-  const searchFilter = useCallback(
-    (url: string, term: string) =>
-      url.toLowerCase().includes(term.toLowerCase()),
-    []
-  );
-
   return (
-    <PaginatedList
-      items={links}
-      renderItem={renderItem}
-      searchFilter={searchFilter}
-      searchPlaceholder="Search links..."
-      emptyMessage="No links found."
-      itemsPerPage={8}
-    />
+    <PaginatedList items={links} itemsPerPage={8} searchFilter={searchFilter}>
+      <PaginatedList.Search placeholder="Search links..." className="mb-2" />
+      <PaginatedList.Empty className="text-xs">
+        No links found.
+      </PaginatedList.Empty>
+      <PaginatedList.List<string> className="flex flex-col gap-2">
+        {(url) => <LinkCard url={url} onOpen={() => onOpenClick(url)} />}
+      </PaginatedList.List>
+      <PaginatedList.Pagination className="mt-2" />
+    </PaginatedList>
   );
 });
 

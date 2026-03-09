@@ -17,7 +17,7 @@ import { usePublicServerSettings } from '@/features/server/hooks';
 import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
 import { useSwipeGestures } from '@/hooks/use-swipe-gestures';
 import { cn } from '@/lib/utils';
-import { Permission } from '@sharkord/shared';
+import { Permission, TestId } from '@sharkord/shared';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { ContentWrapper } from './content-wrapper';
 import { PreventBrowser } from './prevent-browser';
@@ -92,6 +92,7 @@ const ServerView = memo(() => {
   return (
     <VoiceProvider>
       <div
+        data-testid={TestId.SERVER_VIEW}
         className="flex h-dvh flex-col bg-background text-foreground dark"
         {...swipeHandlers}
       >
