@@ -184,7 +184,9 @@ const PluginCommandsDialog = memo(
                         disabled={!canExecute || isExecuting}
                       >
                         <Play className="w-4 h-4 mr-2" />
-                        {isExecuting ? t('executingBtn') : t('executeCommandBtn')}
+                        {isExecuting
+                          ? t('executingBtn')
+                          : t('executeCommandBtn')}
                       </Button>
                     </div>
                   </div>

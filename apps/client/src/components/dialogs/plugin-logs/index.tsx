@@ -176,19 +176,22 @@ const PluginLogsDialog = memo(
             <div className="flex items-center gap-1.5">
               <Info className="w-4 h-4 text-primary" />
               <span className="text-muted-foreground">
-                {t('infoLabel')} <span className="font-semibold">{infoCount}</span>
+                {t('infoLabel')}{' '}
+                <span className="font-semibold">{infoCount}</span>
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <AlertCircle className="w-4 h-4 text-destructive" />
               <span className="text-muted-foreground">
-                {t('errorsLabel')} <span className="font-semibold">{errorCount}</span>
+                {t('errorsLabel')}{' '}
+                <span className="font-semibold">{errorCount}</span>
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <Bug className="w-4 h-4 text-muted-foreground" />
               <span className="text-muted-foreground">
-                {t('debugLabel')} <span className="font-semibold">{debugCount}</span>
+                {t('debugLabel')}{' '}
+                <span className="font-semibold">{debugCount}</span>
               </span>
             </div>
             <div className="ml-auto flex items-center gap-3">
@@ -196,7 +199,9 @@ const PluginLogsDialog = memo(
                 {t('totalLogs', { count: logs.length })}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground text-xs">{t('showLabel')}</span>
+                <span className="text-muted-foreground text-xs">
+                  {t('showLabel')}
+                </span>
                 <Select value={logLimit} onValueChange={handleLogLimitChange}>
                   <SelectTrigger className="h-7 w-[100px] text-xs">
                     <SelectValue />

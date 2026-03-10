@@ -68,7 +68,9 @@ const ServerPasswordDialog = memo(
             </AutoFocus>
           </div>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel onClick={onCancel}>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogCancel onClick={onCancel}>
+              {t('cancel')}
+            </AlertDialogCancel>
             <AutoFocus>
               <AlertDialogAction
                 onClick={onSubmit}

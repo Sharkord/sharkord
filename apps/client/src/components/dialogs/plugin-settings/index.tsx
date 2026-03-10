@@ -270,7 +270,9 @@ const PluginSettingsDialog = memo(
       <Dialog open={isOpen} onOpenChange={close}>
         <DialogContent className="flex flex-col min-w-[90vw] h-[85vh] p-0 gap-0">
           <DialogHeader className="px-6 py-4 border-b">
-            <DialogTitle>{t('pluginSettingsTitle', { name: pluginName })}</DialogTitle>
+            <DialogTitle>
+              {t('pluginSettingsTitle', { name: pluginName })}
+            </DialogTitle>
           </DialogHeader>
 
           {loading ? (
