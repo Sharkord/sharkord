@@ -44,6 +44,7 @@ import {
   useRef,
   useSyncExternalStore
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useAvailableDevices } from './hooks/use-available-devices';
 import { useMicrophoneTest } from './hooks/use-microphone-test';
@@ -54,6 +55,7 @@ import ResolutionFpsControl from './resolution-fps-control';
 const DEFAULT_NAME = 'default';
 
 const Devices = memo(() => {
+  const { t } = useTranslation('settings');
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const settings = usePublicServerSettings();
   const ownVoiceState = useOwnVoiceState();
@@ -107,8 +109,8 @@ const Devices = memo(() => {
 
   const saveDeviceSettings = useCallback(() => {
     saveDevices(values);
-    toast.success('Device settings saved');
-  }, [saveDevices, values]);
+    toast.success(t('deviceSettingsSaved'));
+  }, [saveDevices, values, t]);
   const didPrimeDevicesOnGrantedRef = useRef(false);
   const mutedByTestRef = useRef<{
     previousMicMuted: boolean;
@@ -131,13 +133,13 @@ const Devices = memo(() => {
 
     const voiceControlsBridge = getVoiceControlsBridge();
     if (!voiceControlsBridge) {
-      toast.error('Voice controls are unavailable right now.');
+      toast.error(t('voiceControlsUnavailable'));
       return;
     }
 
     await voiceControlsBridge.setMicMuted(mutedByTest.previousMicMuted);
     await voiceControlsBridge.setSoundMuted(mutedByTest.previousSoundMuted);
-  }, [currentVoiceChannelId]);
+  }, [currentVoiceChannelId, t]);
 
   useEffect(() => {
     restoreVoiceStateAfterTestRef.current = restoreVoiceStateAfterTest;
@@ -147,7 +149,7 @@ const Devices = memo(() => {
     if (currentVoiceChannelId) {
       const voiceControlsBridge = getVoiceControlsBridge();
       if (!voiceControlsBridge) {
-        toast.error('Voice controls are unavailable right now.');
+        toast.error(t('voiceControlsUnavailable'));
         return;
       }
 
@@ -173,7 +175,8 @@ const Devices = memo(() => {
     ownVoiceState.micMuted,
     ownVoiceState.soundMuted,
     startTest,
-    restoreVoiceStateAfterTest
+    restoreVoiceStateAfterTest,
+    t
   ]);
 
   const stopMicrophoneTest = useCallback(async () => {
@@ -234,41 +237,38 @@ const Devices = memo(() => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Devices</CardTitle>
-        <CardDescription>
-          Manage your peripheral devices and their settings.
-        </CardDescription>
+        <CardTitle>{t('devicesTitle')}</CardTitle>
+        <CardDescription>{t('devicesDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {currentVoiceChannelId && (
           <Alert variant="default">
             <Info />
-            <AlertDescription>
-              You are in a voice channel, changes will only take effect after
-              you leave and rejoin the channel.
-            </AlertDescription>
+            <AlertDescription>{t('voiceChannelActiveInfo')}</AlertDescription>
           </Alert>
         )}
         <div className="space-y-6">
-          <Group label="Playback">
+          <Group label={t('playbackLabel')}>
             <Select
               onValueChange={(value) => onChange('playbackId', value)}
               value={values.playbackId}
             >
               <SelectTrigger className="w-92">
-                <SelectValue placeholder="Select the output device" />
+                <SelectValue placeholder={t('playbackPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   {!hasDefaultPlaybackOption && (
-                    <SelectItem value={DEFAULT_NAME}>Default Output</SelectItem>
+                    <SelectItem value={DEFAULT_NAME}>
+                      {t('defaultOutput')}
+                    </SelectItem>
                   )}
                   {playbackDevices.map((device) => (
                     <SelectItem
                       key={device?.deviceId}
                       value={device?.deviceId || DEFAULT_NAME}
                     >
-                      {device?.label.trim() || 'Default Output'}
+                      {device?.label.trim() || t('defaultOutput')}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -276,13 +276,13 @@ const Devices = memo(() => {
             </Select>
           </Group>
 
-          <Group label="Microphone">
+          <Group label={t('microphoneLabel')}>
             <Select
               onValueChange={(value) => onChange('microphoneId', value)}
               value={values.microphoneId}
             >
               <SelectTrigger className="w-92">
-                <SelectValue placeholder="Select the input device" />
+                <SelectValue placeholder={t('microphonePlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
@@ -291,7 +291,7 @@ const Devices = memo(() => {
                       key={device?.deviceId}
                       value={device?.deviceId || DEFAULT_NAME}
                     >
-                      {device?.label.trim() || 'Default Microphone'}
+                      {device?.label.trim() || t('defaultMicrophone')}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -299,7 +299,7 @@ const Devices = memo(() => {
             </Select>
 
             <div className="flex items-center gap-4">
-              <Group label="Echo cancellation">
+              <Group label={t('echoCancellationLabel')}>
                 <Switch
                   checked={!!values.echoCancellation}
                   onCheckedChange={(checked) =>
@@ -308,7 +308,7 @@ const Devices = memo(() => {
                 />
               </Group>
 
-              <Group label="Noise suppression">
+              <Group label={t('noiseSuppressionLabel')}>
                 <Switch
                   checked={!!values.noiseSuppression}
                   onCheckedChange={(checked) =>
@@ -317,7 +317,7 @@ const Devices = memo(() => {
                 />
               </Group>
 
-              <Group label="Automatic gain control">
+              <Group label={t('autoGainControlLabel')}>
                 <Switch
                   checked={!!values.autoGainControl}
                   onCheckedChange={(checked) =>
@@ -326,7 +326,7 @@ const Devices = memo(() => {
                 />
               </Group>
 
-              <Group label="Noise gate">
+              <Group label={t('noiseGateLabel')}>
                 <Switch
                   checked={values.noiseGateEnabled}
                   disabled={!isNoiseGateAvailable}
@@ -339,8 +339,7 @@ const Devices = memo(() => {
 
             {!isNoiseGateAvailable && (
               <p className="text-xs text-muted-foreground">
-                Noise gate is unavailable. Microphone audio will be sent without
-                gating.
+                {t('noiseGateUnavailable')}
                 {noiseGateWorkletAvailability.reason
                   ? ` ${noiseGateWorkletAvailability.reason}`
                   : ''}
@@ -348,11 +347,11 @@ const Devices = memo(() => {
             )}
           </Group>
 
-          <Group label="Microphone Test">
+          <Group label={t('microphoneTestLabel')}>
             <div className="flex items-center gap-2">
               {permissionState !== 'granted' && (
                 <Button variant="outline" onClick={requestMicrophonePermission}>
-                  Permit Microphone Access
+                  {t('permitMicAccess')}
                 </Button>
               )}
 
@@ -362,22 +361,21 @@ const Devices = memo(() => {
                   onClick={() => void startMicrophoneTest()}
                   disabled={permissionState === 'denied' || !hasMicrophones}
                 >
-                  Start Test
+                  {t('startTestBtn')}
                 </Button>
               ) : (
                 <Button
                   variant="secondary"
                   onClick={() => void stopMicrophoneTest()}
                 >
-                  Stop Test
+                  {t('stopTestBtn')}
                 </Button>
               )}
             </div>
 
             {currentVoiceChannelId && isTesting && (
               <p className="text-sm text-muted-foreground">
-                You are temporarily muted and deafened while the test is
-                running.
+                {t('mutedDuringTest')}
               </p>
             )}
 
@@ -406,20 +404,20 @@ const Devices = memo(() => {
         <Separator />
 
         <div className="space-y-6">
-          <Group label="Webcam">
+          <Group label={t('webcamLabel')}>
             <div className="space-y-4">
               <Select
                 onValueChange={(value) => onChange('webcamId', value)}
                 value={values.webcamId}
               >
                 <SelectTrigger className="w-full max-w-96">
-                  <SelectValue placeholder="Select the input device" />
+                  <SelectValue placeholder={t('webcamPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
                     {!hasDefaultVideoOption && (
                       <SelectItem value={DEFAULT_NAME}>
-                        Default Webcam
+                        {t('defaultWebcam')}
                       </SelectItem>
                     )}
                     {videoDevices.map((device) => (
@@ -427,7 +425,7 @@ const Devices = memo(() => {
                         key={device?.deviceId}
                         value={device?.deviceId || DEFAULT_NAME}
                       >
-                        {device?.label.trim() || 'Default Webcam'}
+                        {device?.label.trim() || t('defaultWebcam')}
                       </SelectItem>
                     ))}
                   </SelectGroup>
@@ -451,7 +449,7 @@ const Devices = memo(() => {
                       variant="secondary"
                       onClick={() => void startWebcamTest()}
                     >
-                      Start Video Preview
+                      {t('startVideoPreviewBtn')}
                     </Button>
                   </div>
                 )}
@@ -459,7 +457,7 @@ const Devices = memo(() => {
                 {(isVideoStarting ||
                   (isVideoTesting && !isVideoPreviewReady)) && (
                   <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
-                    Starting camera...
+                    {t('startingCamera')}
                   </div>
                 )}
 
@@ -470,7 +468,7 @@ const Devices = memo(() => {
                       className="pointer-events-auto"
                       onClick={stopVideoTest}
                     >
-                      Stop Video Preview
+                      {t('stopVideoPreviewBtn')}
                     </Button>
                   </div>
                 )}
@@ -494,7 +492,7 @@ const Devices = memo(() => {
                 }
               />
 
-              <Group label="Mirror own video">
+              <Group label={t('mirrorOwnVideoLabel')}>
                 <Switch
                   checked={!!values.mirrorOwnVideo}
                   onCheckedChange={(checked) =>
@@ -503,7 +501,7 @@ const Devices = memo(() => {
                 />
               </Group>
 
-              <Group label="Screen Sharing">
+              <Group label={t('screenSharingLabel')}>
                 <div className="flex">
                   <ResolutionFpsControl
                     framerate={values.screenFramerate}
@@ -524,7 +522,9 @@ const Devices = memo(() => {
                       }
                     >
                       <SelectTrigger className="w-40">
-                        <SelectValue placeholder="Select codec" />
+                        <SelectValue
+                          placeholder={t('selectCodecPlaceholder')}
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
@@ -540,7 +540,7 @@ const Devices = memo(() => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label>Max Bitrate</Label>
+                  <Label>{t('maxBitrateLabel')}</Label>
 
                   <Slider
                     className="max-w-96"
@@ -566,13 +566,7 @@ const Devices = memo(() => {
                 </div>
 
                 <span className="text-sm text-muted-foreground">
-                  These screen sharing settings are best effort and may not be
-                  supported on all platforms or browsers, which means that in
-                  some cases the actual resolution, framerate or codec used may
-                  differ from the selected ones. In the end, is up to the
-                  browser to handle the screen sharing stream in the best way
-                  possible, based on the current system performance and network
-                  conditions.
+                  {t('screenSharingNote')}
                 </span>
               </Group>
             </div>
@@ -580,9 +574,9 @@ const Devices = memo(() => {
         </div>
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
-            Cancel
+            {t('cancel')}
           </Button>
-          <Button onClick={saveDeviceSettings}>Save Changes</Button>
+          <Button onClick={saveDeviceSettings}>{t('saveChanges')}</Button>
         </div>
       </CardContent>
     </Card>

@@ -4,6 +4,7 @@ import { setModViewOpen } from '@/features/app/actions';
 import { openDialog } from '@/features/dialogs/actions';
 import { useUserRoles } from '@/features/server/hooks';
 import { useOwnUserId, useUserStatus } from '@/features/server/users/hooks';
+import { useDateLocale } from '@/hooks/use-date-locale';
 import { cn } from '@/lib/utils';
 import { UserStatus, type TJoinedUser } from '@sharkord/shared';
 import {
@@ -17,6 +18,7 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import { MoreVertical, Trash2, UserCog } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type TTableUserProps = {
   user: TJoinedUser;
@@ -24,6 +26,8 @@ type TTableUserProps = {
 };
 
 const TableUser = memo(({ user, refetch }: TTableUserProps) => {
+  const { t } = useTranslation('settings');
+  const dateLocale = useDateLocale();
   const roles = useUserRoles(user.id);
   const status = useUserStatus(user.id);
   const ownUserId = useOwnUserId();
@@ -73,14 +77,23 @@ const TableUser = memo(({ user, refetch }: TTableUserProps) => {
         </div>
 
         <div className="flex items-center text-muted-foreground">
-          <span className="text-xs" title={format(user.createdAt, 'PPP p')}>
-            {formatDistanceToNow(user.createdAt, { addSuffix: true })}
+          <span
+            className="text-xs"
+            title={format(user.createdAt, 'PPP p', { locale: dateLocale })}
+          >
+            {formatDistanceToNow(user.createdAt, {
+              addSuffix: true,
+              locale: dateLocale
+            })}
           </span>
         </div>
 
         <div className="flex items-center text-muted-foreground">
           <span className="text-xs">
-            {formatDistanceToNow(user.lastLoginAt, { addSuffix: true })}
+            {formatDistanceToNow(user.lastLoginAt, {
+              addSuffix: true,
+              locale: dateLocale
+            })}
           </span>
         </div>
 
@@ -109,7 +122,7 @@ const TableUser = memo(({ user, refetch }: TTableUserProps) => {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={onModerateClick}>
                 <UserCog className="h-4 w-4" />
-                Moderate User
+                {t('moderateUserAction')}
               </DropdownMenuItem>
               {ownUserId !== user.id && (
                 <>
@@ -119,7 +132,7 @@ const TableUser = memo(({ user, refetch }: TTableUserProps) => {
                     className="text-destructive focus:text-destructive"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Delete User
+                    {t('deleteUserAction', { defaultValue: t('deleteBtn') })}
                   </DropdownMenuItem>
                 </>
               )}

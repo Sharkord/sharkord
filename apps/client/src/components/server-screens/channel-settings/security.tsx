@@ -10,6 +10,7 @@ import {
   Group
 } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TSecurityProps = {
@@ -17,36 +18,35 @@ type TSecurityProps = {
 };
 
 const Security = memo(({ channelId }: TSecurityProps) => {
+  const { t } = useTranslation('settings');
   const onRotateToken = useCallback(async () => {
     const trpc = getTRPCClient();
 
     try {
       await trpc.channels.rotateFileAccessToken.mutate({ channelId });
 
-      toast.success('File access token rotated successfully');
+      toast.success(t('tokenRotatedSuccess'));
     } catch (error) {
-      toast.error(getTrpcError(error, 'Failed to rotate file access token'));
+      toast.error(getTrpcError(error, t('failedRotateToken')));
     }
-  }, [channelId]);
+  }, [channelId, t]);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Security</CardTitle>
-        <CardDescription>
-          Manage some security settings for this channel
-        </CardDescription>
+        <CardTitle>{t('securityTitle')}</CardTitle>
+        <CardDescription>{t('securityDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Group label="File Access Token" help="Only used for private channels">
+        <Group
+          label={t('fileAccessTokenLabel')}
+          help={t('fileAccessTokenHelp')}
+        >
           <p className="text-sm text-muted-foreground">
-            The file access token is used to secure access to files in this
-            channel. Rotating the token will invalidate all existing file links.
-            This means that ALL previously shared files will no longer be
-            accessible.
+            {t('fileAccessTokenDesc')}
           </p>
           <Button variant="destructive" onClick={onRotateToken}>
-            Rotate Token
+            {t('rotateTokenBtn')}
           </Button>
         </Group>
       </CardContent>

@@ -11,6 +11,7 @@ import {
 import { Button, Tooltip } from '@sharkord/ui';
 import { gitHubEmojis } from '@tiptap/extension-emoji';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 const MAX_REACTORS_PREVIEW = 4;
@@ -159,6 +160,7 @@ type TAggregatedReaction = {
 
 const MessageReactions = memo(
   ({ messageId, reactions }: TMessageReactionsProps) => {
+    const { t } = useTranslation();
     const ownUserId = useOwnUserId();
 
     const handleReactionClick = useCallback(
@@ -173,10 +175,10 @@ const MessageReactions = memo(
             emoji
           });
         } catch (error) {
-          toast.error(getTrpcError(error, 'Failed to toggle reaction'));
+          toast.error(getTrpcError(error, t('failedToggleReaction')));
         }
       },
-      [messageId, ownUserId]
+      [messageId, ownUserId, t]
     );
 
     const aggregatedReactions = useMemo((): TAggregatedReaction[] => {

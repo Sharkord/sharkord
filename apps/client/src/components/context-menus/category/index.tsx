@@ -14,6 +14,7 @@ import {
   ContextMenuTrigger
 } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TCategoryContextMenuProps = {
@@ -23,16 +24,16 @@ type TCategoryContextMenuProps = {
 
 const CategoryContextMenu = memo(
   ({ children, categoryId }: TCategoryContextMenuProps) => {
+    const { t } = useTranslation('sidebar');
     const can = useCan();
     const category = useCategoryById(categoryId);
 
     const onDeleteClick = useCallback(async () => {
       const choice = await requestConfirmation({
-        title: 'Delete Category',
-        message:
-          'Are you sure you want to delete this category? This WILL delete all the channels within this category. This action cannot be undone.',
-        confirmLabel: 'Delete',
-        cancelLabel: 'Cancel'
+        title: t('deleteCategoryTitle'),
+        message: t('deleteCategoryMsg'),
+        confirmLabel: t('deleteLabel'),
+        cancelLabel: t('cancel', { ns: 'common' })
       });
 
       if (!choice) return;
@@ -41,11 +42,11 @@ const CategoryContextMenu = memo(
 
       try {
         await trpc.categories.delete.mutate({ categoryId });
-        toast.success('Category deleted');
+        toast.success(t('categoryDeleted'));
       } catch {
-        toast.error('Failed to delete category');
+        toast.error(t('failedDeleteCategory'));
       }
-    }, [categoryId]);
+    }, [categoryId, t]);
 
     const onEditClick = useCallback(() => {
       openServerScreen(ServerScreen.CATEGORY_SETTINGS, { categoryId });
@@ -61,9 +62,11 @@ const CategoryContextMenu = memo(
         <ContextMenuContent>
           <ContextMenuLabel>{category?.name}</ContextMenuLabel>
           <ContextMenuSeparator />
-          <ContextMenuItem onClick={onEditClick}>Edit</ContextMenuItem>
+          <ContextMenuItem onClick={onEditClick}>
+            {t('editLabel')}
+          </ContextMenuItem>
           <ContextMenuItem variant="destructive" onClick={onDeleteClick}>
-            Delete
+            {t('deleteLabel')}
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>

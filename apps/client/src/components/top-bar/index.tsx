@@ -8,6 +8,7 @@ import { PluginSlot } from '@sharkord/shared';
 import { Button, Tooltip } from '@sharkord/ui';
 import { MessageSquare, PanelRight, PanelRightClose } from 'lucide-react';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PluginSlotRenderer } from '../plugin-slot-renderer';
 import { ServerSearch } from './server-search';
 import { VoiceOptionsController } from './voice-options-controller';
@@ -27,6 +28,7 @@ const TopBar = memo(
     onToggleVoiceChat,
     isVoiceChatOpen
   }: TTopBarProps) => {
+    const { t } = useTranslation('topbar');
     const isCurrentVoiceChannelSelected = useIsCurrentVoiceChannelSelected();
     const currentVoiceChannelId = useCurrentVoiceChannelId();
     const settings = usePublicServerSettings();
@@ -53,7 +55,7 @@ const TopBar = memo(
               >
                 <Tooltip
                   content={
-                    isVoiceChatOpen ? 'Close Voice Chat' : 'Open Voice Chat'
+                    isVoiceChatOpen ? t('closeVoiceChat') : t('openVoiceChat')
                   }
                   asChild={false}
                 >
@@ -74,13 +76,13 @@ const TopBar = memo(
             className="h-7 px-2 transition-all duration-200 ease-in-out"
           >
             {isOpen ? (
-              <Tooltip content="Close Members Sidebar">
+              <Tooltip content={t('closeMembersSidebar')}>
                 <div>
                   <PanelRightClose className="w-4 h-4 transition-transform duration-200 ease-in-out" />
                 </div>
               </Tooltip>
             ) : (
-              <Tooltip content="Open Members Sidebar">
+              <Tooltip content={t('openMembersSidebar')}>
                 <div>
                   <PanelRight className="w-4 h-4 transition-transform duration-200 ease-in-out" />
                 </div>

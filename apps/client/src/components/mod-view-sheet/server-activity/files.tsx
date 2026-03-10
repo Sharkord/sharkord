@@ -6,6 +6,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import type { TFile } from '@sharkord/shared';
 import { getTrpcError } from '@sharkord/shared';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useModViewContext } from '../context';
 
@@ -14,15 +15,16 @@ const searchFilter = (file: TFile, term: string) =>
   file.extension.toLowerCase().includes(term.toLowerCase());
 
 const Files = memo(() => {
+  const { t } = useTranslation('settings');
   const { files, refetch } = useModViewContext();
 
   const onRemoveClick = useCallback(
     async (fileId: number) => {
       const answer = await requestConfirmation({
-        title: 'Delete file',
-        message: 'Are you sure you want to delete this file?',
-        confirmLabel: 'Delete',
-        cancelLabel: 'Cancel'
+        title: t('deleteFileTitle'),
+        message: t('deleteFileMsg'),
+        confirmLabel: t('deleteBtn'),
+        cancelLabel: t('cancel')
       });
 
       if (!answer) return;
@@ -31,21 +33,24 @@ const Files = memo(() => {
         const trpc = getTRPCClient();
 
         await trpc.files.delete.mutate({ fileId });
-        toast.success('File deleted successfully');
+        toast.success(t('fileDeletedSuccess'));
       } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to delete file'));
+        toast.error(getTrpcError(error, t('failedDeleteFile')));
       } finally {
         refetch();
       }
     },
-    [refetch]
+    [refetch, t]
   );
 
   return (
     <PaginatedList items={files} itemsPerPage={12} searchFilter={searchFilter}>
-      <PaginatedList.Search placeholder="Search files..." className="mb-2" />
+      <PaginatedList.Search
+        placeholder={t('searchFilesPlaceholder')}
+        className="mb-2"
+      />
       <PaginatedList.Empty className="text-xs">
-        No files uploaded.
+        {t('noFilesUploaded')}
       </PaginatedList.Empty>
       <PaginatedList.List<TFile>
         className="flex flex-col gap-2"

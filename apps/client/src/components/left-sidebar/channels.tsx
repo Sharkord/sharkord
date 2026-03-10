@@ -39,6 +39,7 @@ import {
 } from '@sharkord/shared';
 import { Hash, Volume2 } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ChannelContextMenu } from '../context-menus/channel';
 import { UnreadCount } from '../unread-count';
@@ -255,6 +256,7 @@ type TChannelsProps = {
 };
 
 const Channels = memo(({ categoryId }: TChannelsProps) => {
+  const { t } = useTranslation('sidebar');
   const channels = useChannelsByCategoryId(categoryId);
   const selectedChannelId = useSelectedChannelId();
   const can = useCan();
@@ -301,10 +303,10 @@ const Channels = memo(({ categoryId }: TChannelsProps) => {
           channelIds: reorderedIds
         });
       } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to reorder channels'));
+        toast.error(getTrpcError(error, t('failedReorderChannels')));
       }
     },
-    [categoryId, channelIds]
+    [categoryId, channelIds, t]
   );
 
   return (

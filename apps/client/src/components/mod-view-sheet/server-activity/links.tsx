@@ -2,6 +2,7 @@ import { PaginatedList } from '@/components/paginated-list';
 import { Button } from '@sharkord/ui';
 import { ExternalLink, Link as LinkIcon } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useModViewContext } from '../context';
 
 type TLinkCardProps = {
@@ -10,6 +11,8 @@ type TLinkCardProps = {
 };
 
 const LinkCard = memo(({ url, onOpen }: TLinkCardProps) => {
+  const { t } = useTranslation('settings');
+
   const truncatedUrl = useMemo(() => {
     const maxLength = 50;
 
@@ -23,9 +26,9 @@ const LinkCard = memo(({ url, onOpen }: TLinkCardProps) => {
       const hostname = new URL(url).hostname;
       return hostname.replace(/^www\./, '');
     } catch {
-      return 'Invalid URL';
+      return t('naValue');
     }
-  }, [url]);
+  }, [url, t]);
 
   return (
     <div className="py-2 px-1 border-b border-border last:border-0 bg-secondary/50 rounded-md">
@@ -57,6 +60,7 @@ const searchFilter = (url: string, term: string) =>
   url.toLowerCase().includes(term.toLowerCase());
 
 const Links = memo(() => {
+  const { t } = useTranslation('settings');
   const { links } = useModViewContext();
 
   const onOpenClick = useCallback((url: string) => {
@@ -65,9 +69,12 @@ const Links = memo(() => {
 
   return (
     <PaginatedList items={links} itemsPerPage={8} searchFilter={searchFilter}>
-      <PaginatedList.Search placeholder="Search links..." className="mb-2" />
+      <PaginatedList.Search
+        placeholder={t('searchLinksPlaceholder')}
+        className="mb-2"
+      />
       <PaginatedList.Empty className="text-xs">
-        No links found.
+        {t('noLinksFound')}
       </PaginatedList.Empty>
       <PaginatedList.List<string> className="flex flex-col gap-2">
         {(url) => <LinkCard url={url} onOpen={() => onOpenClick(url)} />}

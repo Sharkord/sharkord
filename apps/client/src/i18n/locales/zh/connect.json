@@ -1,0 +1,16 @@
+{
+  "identityLabel": "身份标识",
+  "identityHelp": "这是您在此服务器上账户的唯一标识符。您可以使用任何您喜欢的内容，例如电子邮件地址或用户名。此信息不会公开共享。",
+  "passwordLabel": "密码",
+  "autoLoginLabel": "自动登录",
+  "insecureTitle": "不安全的连接",
+  "insecureDesc": "您正在通过不安全的连接（HTTP）访问服务器。默认情况下，浏览器会阻止在不安全来源上访问摄像头和麦克风等媒体设备。这意味着在通过 HTTP 连接到服务器时，您将无法使用视频或语音聊天功能。如果您是服务器管理员，可以按照文档中的说明设置 HTTPS。",
+  "connectBtn": "连接",
+  "registrationDisabled": "当前已禁止新用户注册。如果您还没有账户，需要由现有用户邀请才能加入此服务器。",
+  "invitedTitle": "您受邀加入此服务器",
+  "inviteCode": "邀请码：{{code}}",
+  "connectError": "连接失败：{{message}}",
+  "loggingInAutomatically": "正在自动登录...",
+  "loadingApp": "正在加载 Sharkord",
+  "loadingPlugins": "正在加载插件"
+}

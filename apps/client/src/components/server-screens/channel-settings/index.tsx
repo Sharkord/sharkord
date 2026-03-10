@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@sharkord/ui';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TServerScreenBaseProps } from '../screens';
 import { ServerScreenLayout } from '../server-screen-layout';
 import { General } from './general';
@@ -11,14 +12,16 @@ type TChannelSettingsProps = TServerScreenBaseProps & {
 };
 
 const ChannelSettings = memo(({ close, channelId }: TChannelSettingsProps) => {
+  const { t } = useTranslation('settings');
+
   return (
-    <ServerScreenLayout close={close} title="Channel Settings">
+    <ServerScreenLayout close={close} title={t('channelSettingsTitle')}>
       <div className="mx-auto max-w-4xl">
         <Tabs defaultValue="general" className="w-full">
           <TabsList className="mb-6">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="permissions">Permissions</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
+            <TabsTrigger value="general">{t('generalTab')}</TabsTrigger>
+            <TabsTrigger value="permissions">{t('permissionsTab')}</TabsTrigger>
+            <TabsTrigger value="security">{t('securityTab')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-6">

@@ -12,12 +12,14 @@ import {
   Input
 } from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TDialogBaseProps } from '../types';
 
 type TCreateCategoryDialogProps = TDialogBaseProps;
 
 const CreateCategoryDialog = memo(
   ({ isOpen, close }: TCreateCategoryDialogProps) => {
+    const { t } = useTranslation('dialogs');
     const { values, r, setTrpcErrors } = useForm({
       name: 'New Category'
     });
@@ -45,14 +47,14 @@ const CreateCategoryDialog = memo(
       <Dialog open={isOpen}>
         <DialogContent onInteractOutside={close} close={close}>
           <DialogHeader>
-            <DialogTitle>Create New Category</DialogTitle>
+            <DialogTitle>{t('createCategoryTitle')}</DialogTitle>
           </DialogHeader>
 
-          <Group label="Category name">
+          <Group label={t('categoryNameLabel')}>
             <AutoFocus>
               <Input
                 {...r('name')}
-                placeholder="Category name"
+                placeholder={t('categoryNamePlaceholder')}
                 onEnter={onSubmit}
               />
             </AutoFocus>
@@ -60,10 +62,10 @@ const CreateCategoryDialog = memo(
 
           <DialogFooter className="gap-2">
             <Button variant="ghost" onClick={close}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button onClick={onSubmit} disabled={loading}>
-              Create Category
+              {t('createCategoryBtn')}
             </Button>
           </DialogFooter>
         </DialogContent>

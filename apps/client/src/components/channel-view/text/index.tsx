@@ -14,11 +14,12 @@ import {
   ChannelPermission,
   TYPING_MS,
   getTrpcError,
-  linkifyHtml
+  prepareMessageHtml
 } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
 import { throttle } from 'lodash-es';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useScrollController } from './hooks/use-scroll-controller';
 import { useScrollToJumpTarget } from './hooks/use-scroll-to-jump-target';
@@ -36,6 +37,7 @@ type TChannelProps = {
 };
 
 const TextChannel = memo(({ channelId }: TChannelProps) => {
+  const { t } = useTranslation();
   const {
     messages,
     hasMore,
@@ -96,14 +98,14 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
       try {
         await trpc.messages.send.mutate({
-          content: linkifyHtml(message),
+          content: prepareMessageHtml(message),
           channelId,
           files: files.map((f) => f.id)
         });
 
         playSound(SoundType.MESSAGE_SENT);
       } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to send message'));
+        toast.error(getTrpcError(error, t('failedSendMessage')));
         return false;
       }
 
@@ -111,7 +113,7 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
       return true;
     },
-    [channelId, sendTypingSignal, setNewMessageHandler]
+    [channelId, sendTypingSignal, setNewMessageHandler, t]
   );
 
   if (!channelCan(ChannelPermission.VIEW_CHANNEL) || loading) {

@@ -60,6 +60,7 @@ const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
         image={logo}
         onImageClick={onLogoClick}
         onRemoveImageClick={removeLogo}
+        className="object-scale-down"
       />
     </Group>
   );

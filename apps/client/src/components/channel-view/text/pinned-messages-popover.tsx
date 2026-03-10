@@ -14,6 +14,7 @@ import {
 import { format } from 'date-fns';
 import { ArrowRight, Pin } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { MessagesGroup } from './messages-group';
 
@@ -24,6 +25,7 @@ type TPinnedMessageGroupWrapperProps = {
 
 const PinnedMessageGroupWrapper = memo(
   ({ message, onScrollToMessage }: TPinnedMessageGroupWrapperProps) => {
+    const { t } = useTranslation();
     const group = useMemo(() => [message], [message]);
     const user = useUserById(message.pinnedBy ?? 0);
     const pinnedDate = message.pinnedAt ? new Date(message.pinnedAt) : null;
@@ -34,10 +36,7 @@ const PinnedMessageGroupWrapper = memo(
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Pin className="h-3.5 w-3.5 text-primary/80" />
             <span>
-              Pinned by{' '}
-              <span className="font-medium text-foreground">
-                {user ? user.name : 'Unknown User'}
-              </span>
+              {t('pinnedBy', { name: user ? user.name : t('unknownUser') })}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -54,10 +53,10 @@ const PinnedMessageGroupWrapper = memo(
               </RelativeTime>
             ) : (
               <span className="text-xs text-muted-foreground">
-                Unknown time
+                {t('unknownTime')}
               </span>
             )}
-            <Tooltip content="Scroll to message">
+            <Tooltip content={t('scrollToMessage')}>
               <IconButton
                 icon={ArrowRight}
                 size="xs"
@@ -83,6 +82,7 @@ type TPinnedMessagesPopoverProps = {
 
 const PinnedMessagesPopover = memo(
   ({ onScrollToMessage }: TPinnedMessagesPopoverProps) => {
+    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const [pinnedMessages, setPinnedMessages] = useState<TJoinedMessage[]>([]);
     const [loading, setLoading] = useState(false);
@@ -120,7 +120,7 @@ const PinnedMessagesPopover = memo(
           }
         } catch (error) {
           if (!isCancelled) {
-            toast.error(getTrpcError(error, 'Failed to load pinned messages'));
+            toast.error(getTrpcError(error, t('failedLoadPinnedMessages')));
           }
         } finally {
           if (!isCancelled) {
@@ -134,7 +134,7 @@ const PinnedMessagesPopover = memo(
       return () => {
         isCancelled = true;
       };
-    }, [isOpen, selectedChannelId]);
+    }, [isOpen, selectedChannelId, t]);
 
     return (
       <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -146,7 +146,9 @@ const PinnedMessagesPopover = memo(
           side="bottom"
           className="w-120 max-h-120 overflow-auto"
         >
-          <div className="px-4 py-2 font-semibold">Pinned Messages</div>
+          <div className="px-4 py-2 font-semibold">
+            {t('pinnedMessagesTitle')}
+          </div>
           {loading ? (
             <div className="p-4">
               <Spinner size="xs" />
@@ -155,7 +157,7 @@ const PinnedMessagesPopover = memo(
             <div className="p-2">
               {pinnedMessages.length === 0 ? (
                 <div className="p-4 text-sm text-muted-foreground">
-                  No pinned messages
+                  {t('noPinnedMessages')}
                 </div>
               ) : (
                 <div className="space-y-2">

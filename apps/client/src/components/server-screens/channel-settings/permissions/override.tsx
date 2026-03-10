@@ -6,6 +6,7 @@ import { ChannelPermission, getTrpcError } from '@sharkord/shared';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@sharkord/ui';
 import { Trash2 } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ChannelPermissionList } from './channel-permission-list';
 import type { TChannelPermission } from './types';
@@ -63,6 +64,7 @@ const Override = memo(
     setSelectedOverrideId,
     refetch
   }: TOverrideProps) => {
+    const { t } = useTranslation('settings');
     const [localPermissions, setLocalPermissions] =
       useState<TChannelPermission[]>(permissions);
     const [overrideType, targetIdStr] = overrideId.split('-');
@@ -86,16 +88,14 @@ const Override = memo(
           channelId
         });
 
-        toast.success('Permission override deleted');
+        toast.success(t('permissionOverrideDeleted'));
         setSelectedOverrideId(undefined);
 
         await refetch();
       } catch (error) {
-        toast.error(
-          getTrpcError(error, 'Failed to delete permission override')
-        );
+        toast.error(getTrpcError(error, t('failedDeletePermissionOverride')));
       }
-    }, [channelId, isRole, targetId, setSelectedOverrideId, refetch]);
+    }, [channelId, isRole, targetId, setSelectedOverrideId, refetch, t]);
 
     const onUpdateOverride = useCallback(async () => {
       const trpc = getTRPCClient();
@@ -118,14 +118,12 @@ const Override = memo(
           permissions: allowedPermissions
         });
 
-        toast.success('Permission override updated');
+        toast.success(t('permissionOverrideUpdated'));
         await refetch();
       } catch (error) {
-        toast.error(
-          getTrpcError(error, 'Failed to update permission override')
-        );
+        toast.error(getTrpcError(error, t('failedUpdatePermissionOverride')));
       }
-    }, [channelId, isRole, targetId, localPermissions, refetch]);
+    }, [channelId, isRole, targetId, localPermissions, refetch, t]);
 
     const onTogglePermission = useCallback((permission: ChannelPermission) => {
       setLocalPermissions((prevPermissions) =>
@@ -169,9 +167,9 @@ const Override = memo(
               variant="outline"
               onClick={() => setSelectedOverrideId(undefined)}
             >
-              Cancel
+              {t('cancel')}
             </Button>
-            <Button onClick={onUpdateOverride}>Save Changes</Button>
+            <Button onClick={onUpdateOverride}>{t('saveChanges')}</Button>
           </div>
         </CardContent>
       </Card>

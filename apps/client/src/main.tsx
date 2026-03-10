@@ -1,3 +1,4 @@
+import { i18nReady } from '@/i18n';
 import { Toaster } from '@sharkord/ui';
 import 'prosemirror-view/style/prosemirror.css';
 import { StrictMode } from 'react';
@@ -18,6 +19,8 @@ import { LocalStorageKey } from './helpers/storage.ts';
 import './index.css';
 
 exposeReact();
+
+await i18nReady;
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

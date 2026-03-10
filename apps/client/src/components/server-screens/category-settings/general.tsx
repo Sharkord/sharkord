@@ -11,12 +11,14 @@ import {
   Input
 } from '@sharkord/ui';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type TGeneralProps = {
   categoryId: number;
 };
 
 const General = memo(({ categoryId }: TGeneralProps) => {
+  const { t } = useTranslation('settings');
   const { category, loading, onChange, submit, errors } =
     useAdminCategoryGeneral(categoryId);
 
@@ -25,27 +27,25 @@ const General = memo(({ categoryId }: TGeneralProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Category Information</CardTitle>
-        <CardDescription>
-          Manage your category's basic information
-        </CardDescription>
+        <CardTitle>{t('categoryInfoTitle')}</CardTitle>
+        <CardDescription>{t('categoryInfoDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Group label="Name">
+        <Group label={t('categoryNameLabel')}>
           <Input
             value={category.name}
             onChange={(e) => onChange('name', e.target.value)}
-            placeholder="Enter category name"
+            placeholder={t('categoryNamePlaceholder')}
             error={errors.name}
           />
         </Group>
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
-            Cancel
+            {t('cancel')}
           </Button>
           <Button onClick={submit} disabled={loading}>
-            Save Changes
+            {t('saveChanges')}
           </Button>
         </div>
       </CardContent>

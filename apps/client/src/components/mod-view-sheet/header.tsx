@@ -16,12 +16,14 @@ import {
 import { Button } from '@sharkord/ui';
 import { Gavel, Plus, Trash, UserMinus } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog } from '../dialogs/dialogs';
 import { RoleBadge } from '../role-badge';
 import { useModViewContext } from './context';
 
 const Header = memo(() => {
+  const { t } = useTranslation('settings');
   const ownUserId = useOwnUserId();
   const { user, refetch } = useModViewContext();
   const status = useUserStatus(user.id);
@@ -32,9 +34,9 @@ const Header = memo(() => {
   const onRemoveRole = useCallback(
     async (roleId: number, roleName: string) => {
       const answer = await requestConfirmation({
-        title: 'Remove Role',
-        message: `Are you sure you want to remove the role "${roleName}" from this user?`,
-        confirmLabel: 'Remove'
+        title: t('removeRoleTitle'),
+        message: t('removeRoleMsg', { roleName }),
+        confirmLabel: t('removeRoleConfirm')
       });
 
       if (!answer) {
@@ -48,21 +50,21 @@ const Header = memo(() => {
           userId: user.id,
           roleId
         });
-        toast.success('Role removed successfully');
+        toast.success(t('roleRemovedSuccess'));
       } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to remove role'));
+        toast.error(getTrpcError(error, t('failedRemoveRole')));
       } finally {
         refetch();
       }
     },
-    [user.id, refetch]
+    [user.id, refetch, t]
   );
 
   const onKick = useCallback(async () => {
     const reason = await requestTextInput({
-      title: 'Kick User',
-      message: 'Please provide a reason for kicking this user (optional).',
-      confirmLabel: 'Kick',
+      title: t('kickTitle'),
+      message: t('kickMsg'),
+      confirmLabel: t('kickConfirm'),
       allowEmpty: true
     });
 
@@ -77,27 +79,26 @@ const Header = memo(() => {
         userId: user.id,
         reason
       });
-
-      toast.success('User kicked successfully');
+      toast.success(t('kickedSuccess'));
     } catch (error) {
-      toast.error(getTrpcError(error, 'Failed to kick user'));
+      toast.error(getTrpcError(error, t('failedKick')));
     } finally {
       refetch();
     }
-  }, [user.id, refetch]);
+  }, [user.id, refetch, t]);
 
   const onBan = useCallback(async () => {
     if (isDeletedUser) {
-      toast.error('Cannot ban or unban the deleted user placeholder');
+      toast.error(t('cannotBanDeletedUser'));
       return;
     }
 
     const trpc = getTRPCClient();
 
     const reason = await requestTextInput({
-      title: 'Ban User',
-      message: 'Please provide a reason for banning this user (optional).',
-      confirmLabel: 'Ban',
+      title: t('banTitle'),
+      message: t('banMsg'),
+      confirmLabel: t('banConfirm'),
       allowEmpty: true
     });
 
@@ -110,26 +111,26 @@ const Header = memo(() => {
         userId: user.id,
         reason
       });
-      toast.success('User banned successfully');
+      toast.success(t('bannedSuccess'));
     } catch (error) {
-      toast.error(getTrpcError(error, 'Failed to ban user'));
+      toast.error(getTrpcError(error, t('failedBan')));
     } finally {
       refetch();
     }
-  }, [user.id, refetch, isDeletedUser]);
+  }, [user.id, refetch, isDeletedUser, t]);
 
   const onUnban = useCallback(async () => {
     if (isDeletedUser) {
-      toast.error('Cannot ban or unban the deleted user placeholder');
+      toast.error(t('cannotBanDeletedUser'));
       return;
     }
 
     const trpc = getTRPCClient();
 
     const answer = await requestConfirmation({
-      title: 'Unban User',
-      message: 'Are you sure you want to unban this user?',
-      confirmLabel: 'Unban'
+      title: t('unbanTitle'),
+      message: t('unbanMsg'),
+      confirmLabel: t('unbanConfirm')
     });
 
     if (!answer) {
@@ -140,13 +141,13 @@ const Header = memo(() => {
       await trpc.users.unban.mutate({
         userId: user.id
       });
-      toast.success('User unbanned successfully');
+      toast.success(t('unbannedSuccess'));
     } catch (error) {
-      toast.error(getTrpcError(error, 'Failed to unban user'));
+      toast.error(getTrpcError(error, t('failedUnban')));
     } finally {
       refetch();
     }
-  }, [user.id, refetch, isDeletedUser]);
+  }, [user.id, refetch, isDeletedUser, t]);
 
   return (
     <div className="space-y-3">
@@ -163,7 +164,7 @@ const Header = memo(() => {
           disabled={status === UserStatus.OFFLINE}
         >
           <UserMinus className="h-4 w-4" />
-          Kick
+          {t('kickBtn')}
         </Button>
         <Button
           variant="outline"
@@ -172,7 +173,7 @@ const Header = memo(() => {
           disabled={isOwnUser || isDeletedUser}
         >
           <Gavel className="h-4 w-4" />
-          {user.banned ? 'Unban' : 'Ban'}
+          {user.banned ? t('unbanBtn') : t('banBtn')}
         </Button>
         <Button
           variant="outline"
@@ -187,7 +188,7 @@ const Header = memo(() => {
           disabled={isOwnUser || isDeletedUser}
         >
           <Trash className="h-4 w-4" />
-          Delete
+          {t('deleteBtn')}
         </Button>
       </div>
 
@@ -203,7 +204,7 @@ const Header = memo(() => {
           onClick={() => openDialog(Dialog.ASSIGN_ROLE, { user, refetch })}
         >
           <Plus className="h-3 w-3" />
-          Assign Role
+          {t('modViewAssignRoleBtn')}
         </Button>
       </div>
     </div>

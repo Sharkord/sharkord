@@ -14,6 +14,7 @@ import {
   Spinner
 } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearch } from './hooks';
 import { SearchResultFileCard } from './search-result-file';
 import { SearchResultMessageCard } from './search-result-message';
@@ -24,6 +25,7 @@ const ITEMS_PER_PAGE = 12;
 type TSearchDialogProps = TDialogBaseProps;
 
 const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
+  const { t } = useTranslation('dialogs');
   useOnEsc(close);
 
   const usernames = useUsernames();
@@ -48,16 +50,13 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
       >
         <div className="flex h-full min-h-0 flex-col">
           <DialogHeader className="border-b border-border bg-card/70 px-5 py-4 text-left">
-            <DialogTitle className="text-base">Search</DialogTitle>
-            <DialogDescription>
-              Find content in this server. Both messages and files are
-              searchable.
-            </DialogDescription>
+            <DialogTitle className="text-base">{t('searchTitle')}</DialogTitle>
+            <DialogDescription>{t('searchDesc')}</DialogDescription>
             <div className="mt-3">
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search messages and files..."
+                placeholder={t('searchPlaceholder')}
                 autoFocus
                 className="h-10"
               />
@@ -67,8 +66,7 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
           <div className="flex min-h-0 flex-1 flex-col px-5 py-4">
             {!canSearch && !loading && (
               <div className="flex h-full min-h-55 items-center justify-center rounded-lg bg-muted/20 px-6 text-sm text-muted-foreground">
-                Start typing to search messages and files. Type at least 2
-                characters.
+                {t('searchHint')}
               </div>
             )}
 
@@ -84,7 +82,7 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
                 itemsPerPage={ITEMS_PER_PAGE}
               >
                 <PaginatedList.Empty className="flex h-full min-h-55 items-center justify-center rounded-lg bg-muted/20 px-6 text-sm text-muted-foreground">
-                  No results.
+                  {t('noResults')}
                 </PaginatedList.Empty>
 
                 <PaginatedList.List<TUnifiedSearchResult>
@@ -97,7 +95,7 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
                         <SearchResultMessageCard
                           message={entry.item}
                           userName={
-                            usernames[entry.item.userId] ?? 'Unknown user'
+                            usernames[entry.item.userId] ?? t('unknownUser')
                           }
                           onJump={onJump}
                         />
