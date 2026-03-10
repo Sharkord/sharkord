@@ -5,8 +5,8 @@ import { useInfo } from '@/features/server/hooks';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
 import {
   getLocalStorageItem,
-  getSessionStorageItem,
   getLocalStorageItemBool,
+  getSessionStorageItem,
   LocalStorageKey,
   removeLocalStorageItem,
   SessionStorageKey,
@@ -14,8 +14,8 @@ import {
   setLocalStorageItemBool,
   setSessionStorageItem
 } from '@/helpers/storage';
-import { useStrictEffect } from '@/hooks/use-strict-effect';
 import { useForm } from '@/hooks/use-form';
+import { useStrictEffect } from '@/hooks/use-strict-effect';
 import { PluginSlot, TestId } from '@sharkord/shared';
 import {
   Alert,
@@ -81,24 +81,28 @@ const Connect = memo(() => {
   const handleOidcSuccess = useCallback(async () => {
     setLoading(true);
     try {
-      const cookies = document.cookie.split('; ').reduce((acc, current) => {
-        const [name, value] = current.split('=');
-        acc[name] = value;
-        return acc;
-      }, {} as Record<string, string>);
+      const cookies = document.cookie.split('; ').reduce(
+        (acc, current) => {
+          const [name, value] = current.split('=');
+          acc[name] = value;
+          return acc;
+        },
+        {} as Record<string, string>
+      );
 
       const token = cookies['sharkord_token'];
 
       if (token) {
         setSessionStorageItem(SessionStorageKey.TOKEN, token);
 
-        document.cookie = "sharkord_token=; Max-Age=0; path=/; SameSite=Lax; Secure";
+        document.cookie =
+          'sharkord_token=; Max-Age=0; path=/; SameSite=Lax; Secure';
       } else {
-        throw new Error("No authentication token found in cookies.");
+        throw new Error('No authentication token found in cookies.');
       }
 
       await connect();
-      toast.success("Logged in with OIDC");
+      toast.success('Logged in with OIDC');
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);

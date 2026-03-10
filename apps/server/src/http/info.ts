@@ -16,7 +16,9 @@ const infoRouteHandler = async (
     name: settings.name,
     description: settings.description,
     logo: settings.logo,
-    allowNewUsers: config.server.disableLocalSignup ? false : settings.allowNewUsers,
+    allowNewUsers: config.server.disableLocalSignup
+      ? false
+      : settings.allowNewUsers,
     oidcEnabled: config.oidc.oidcEnabled
   };
 

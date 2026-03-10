@@ -15,19 +15,24 @@ const [SERVER_PUBLIC_IP, SERVER_PRIVATE_IP] = await Promise.all([
 ]);
 
 const jsonTransform = <T>(fallback: T) =>
-  z.preprocess((val) => {
-    if (typeof val !== 'string') return val;
-    try {
-      return JSON.parse(val);
-    } catch {
-      return fallback;
-    }
-  }, z.any()).transform((val) => val as T);
+  z
+    .preprocess((val) => {
+      if (typeof val !== 'string') return val;
+      try {
+        return JSON.parse(val);
+      } catch {
+        return fallback;
+      }
+    }, z.any())
+    .transform((val) => val as T);
 
 const commaSeparatedTransform = (fallback: string[]) =>
   z.preprocess((val) => {
     if (typeof val !== 'string') return val;
-    return val.split(',').map((s) => s.trim()).filter(Boolean);
+    return val
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
   }, z.string().array());
 
 const zConfig = z.object({
@@ -80,7 +85,7 @@ const zConfig = z.object({
 
 type TConfig = z.output<typeof zConfig>;
 
-const defaultConfig : TConfig = {
+const defaultConfig: TConfig = {
   server: {
     port: 4991,
     debug: IS_DEVELOPMENT,
@@ -137,7 +142,7 @@ const prepareForSave = (data: TConfig) => {
     oidc: {
       ...oidcRest,
       rolesMapping: JSON.stringify(rolesMapping),
-      allowedOrigins: allowedOrigins.join(','),
+      allowedOrigins: allowedOrigins.join(',')
     }
   };
 };
@@ -152,9 +157,11 @@ if (!configExists) {
   await fs.writeFile(CONFIG_INI_PATH, stringify(prepareForSave(config)));
 } else {
   try {
-    const existingConfigText = await fs.readFile(CONFIG_INI_PATH, { encoding: 'utf-8' });
+    const existingConfigText = await fs.readFile(CONFIG_INI_PATH, {
+      encoding: 'utf-8'
+    });
     const existingConfig = parse(existingConfigText);
-    
+
     const mergedConfig = deepMerge(defaultConfig, existingConfig);
     config = zConfig.parse(mergedConfig);
 
@@ -167,31 +174,33 @@ if (!configExists) {
   }
 }
 
-config = zConfig.parse(applyEnvOverrides(config, {
-  'server.port': 'SHARKORD_PORT',
-  'server.debug': 'SHARKORD_DEBUG',
-  'server.autoupdate': 'SHARKORD_AUTOUPDATE',
-  'server.disableLocalSignup': 'SHARKORD_DISABLE_LOCAL_SIGNUP',
+config = zConfig.parse(
+  applyEnvOverrides(config, {
+    'server.port': 'SHARKORD_PORT',
+    'server.debug': 'SHARKORD_DEBUG',
+    'server.autoupdate': 'SHARKORD_AUTOUPDATE',
+    'server.disableLocalSignup': 'SHARKORD_DISABLE_LOCAL_SIGNUP',
 
-  'oidc.oidcEnabled': 'OIDC_ENABLED',
-  'oidc.enforceOidcRoles': 'OIDC_ENFORCE_ROLES',
-  'oidc.issuer': 'OIDC_ISSUER',
-  'oidc.clientId': 'OIDC_CLIENT_ID',
-  'oidc.clientSecret': 'OIDC_CLIENT_SECRET',
-  'oidc.rolesMapping': 'OIDC_ROLES_MAPPING',
-  'oidc.requiredGroups': 'OIDC_REQUIRED_GROUPS',
-  'oidc.allowedOrigins': 'OIDC_ALLOWED_ORIGINS',
-  'oidc.caCertPath': 'OIDC_CA_CERT_PATH',
-  'oidc.groupsClaim': 'OIDC_GROUPS_CLAIM',
-  'oidc.usernameClaim': 'OIDC_USERNAME_CLAIM',
-  'oidc.displayNameClaim': 'OIDC_DISPLAY_NAME_CLAIM',
-  'oidc.enforceOidcDisplayName': 'OIDC_ENFORCE_DISPLAY_NAME',
-  'oidc.additionalScopes': 'OIDC_ADDITIONAL_SCOPES',
+    'oidc.oidcEnabled': 'OIDC_ENABLED',
+    'oidc.enforceOidcRoles': 'OIDC_ENFORCE_ROLES',
+    'oidc.issuer': 'OIDC_ISSUER',
+    'oidc.clientId': 'OIDC_CLIENT_ID',
+    'oidc.clientSecret': 'OIDC_CLIENT_SECRET',
+    'oidc.rolesMapping': 'OIDC_ROLES_MAPPING',
+    'oidc.requiredGroups': 'OIDC_REQUIRED_GROUPS',
+    'oidc.allowedOrigins': 'OIDC_ALLOWED_ORIGINS',
+    'oidc.caCertPath': 'OIDC_CA_CERT_PATH',
+    'oidc.groupsClaim': 'OIDC_GROUPS_CLAIM',
+    'oidc.usernameClaim': 'OIDC_USERNAME_CLAIM',
+    'oidc.displayNameClaim': 'OIDC_DISPLAY_NAME_CLAIM',
+    'oidc.enforceOidcDisplayName': 'OIDC_ENFORCE_DISPLAY_NAME',
+    'oidc.additionalScopes': 'OIDC_ADDITIONAL_SCOPES',
 
-  'webRtc.port': 'SHARKORD_WEBRTC_PORT',
-  'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS',
-  'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE'
-}));
+    'webRtc.port': 'SHARKORD_WEBRTC_PORT',
+    'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS',
+    'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE'
+  })
+);
 
 config = Object.freeze(config);
 
