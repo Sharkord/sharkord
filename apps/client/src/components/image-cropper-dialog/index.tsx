@@ -9,8 +9,8 @@ import {
 } from '@sharkord/ui';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useState } from 'react';
-import Cropper from 'react-easy-crop';
 import type { Area, Point } from 'react-easy-crop';
+import Cropper from 'react-easy-crop';
 import { useTranslation } from 'react-i18next';
 import { getCroppedImage } from './get-cropped-image';
 
