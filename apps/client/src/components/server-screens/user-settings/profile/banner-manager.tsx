@@ -74,7 +74,7 @@ const BannerManager = memo(({ user }: TBannerManagerProps) => {
 
   return (
     <>
-      <Group label="Banner">
+      <Group label={t('bannerLabel')}>
         <div className="space-y-2">
           <div
             className="relative group cursor-pointer w-80 h-24"
@@ -104,7 +104,7 @@ const BannerManager = memo(({ user }: TBannerManagerProps) => {
         {user.bannerId && (
           <div>
             <Button size="sm" variant="outline" onClick={removeBanner}>
-              Remove banner
+              {t('removeBanner')}
             </Button>
           </div>
         )}

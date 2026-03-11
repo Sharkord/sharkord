@@ -77,8 +77,8 @@ const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
   return (
     <>
       <Group
-        label="Logo"
-        description="Recommended max resolution: 1200x400 or 1024x1024."
+        label={t('logoLabel')}
+        description={t('logoRecommendedResolution')}
       >
         <ImagePicker
           image={logo}

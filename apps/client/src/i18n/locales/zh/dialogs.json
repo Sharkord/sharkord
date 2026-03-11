@@ -118,5 +118,11 @@
   "bannerRemovedSuccess": "横幅已移除",
   "bannerRemoveFailed": "移除横幅失败，请重试。",
   "bannerUpdatedSuccess": "横幅已更新",
-  "bannerUpdateFailed": "更新横幅失败，请重试。"
+  "bannerUpdateFailed": "更新横幅失败，请重试。",
+  "logoLabel": "徽标",
+  "logoRecommendedResolution": "建议最大分辨率：1200x400 或 1024x1024。",
+  "avatarLabel": "头像",
+  "bannerLabel": "横幅",
+  "removeAvatar": "移除头像",
+  "removeBanner": "移除横幅"
 }

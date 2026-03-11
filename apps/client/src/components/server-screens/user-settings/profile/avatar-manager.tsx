@@ -73,7 +73,7 @@ const AvatarManager = memo(({ user }: TAvatarManagerProps) => {
 
   return (
     <>
-      <Group label="Avatar">
+      <Group label={t('avatarLabel')}>
         <div className="space-y-2">
           <div
             className="relative group cursor-pointer w-32 h-32"
@@ -95,7 +95,7 @@ const AvatarManager = memo(({ user }: TAvatarManagerProps) => {
         {user.avatarId && (
           <div>
             <Button size="sm" variant="outline" onClick={removeAvatar}>
-              Remove avatar
+              {t('removeAvatar')}
             </Button>
           </div>
         )}

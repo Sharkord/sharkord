@@ -118,5 +118,11 @@
   "bannerRemovedSuccess": "Banner removed successfully!",
   "bannerRemoveFailed": "Could not remove banner. Please try again.",
   "bannerUpdatedSuccess": "Banner updated successfully!",
-  "bannerUpdateFailed": "Could not update banner. Please try again."
+  "bannerUpdateFailed": "Could not update banner. Please try again.",
+  "logoLabel": "Logo",
+  "logoRecommendedResolution": "Recommended max resolution: 1200x400 or 1024x1024.",
+  "avatarLabel": "Avatar",
+  "bannerLabel": "Banner",
+  "removeAvatar": "Remove avatar",
+  "removeBanner": "Remove banner"
 }
