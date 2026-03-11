@@ -1,6 +1,7 @@
 import type { IRootState } from '@/features/store';
 import type { PluginSlot } from '@sharkord/shared';
 import { useSelector } from 'react-redux';
+import { fullscreenPluginIdsSelector } from './selectors';
 import {
   commandsSelector,
   flatCommandsSelector,
@@ -15,3 +16,5 @@ export const usePluginComponentsBySlot = (slotId: PluginSlot) =>
   useSelector((state: IRootState) =>
     pluginComponentsBySlotSelector(state, slotId)
   );
+
+  export const useFullscreenPluginIds = () => useSelector(fullscreenPluginIdsSelector);

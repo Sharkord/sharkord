@@ -1,25 +1,22 @@
-import { setActivePluginId } from '@/features/app/actions';
-import { useActivePluginId } from '@/features/app/hooks';
-import { usePluginComponentsBySlot } from '@/features/server/plugins/hooks';
-import { PluginSlot } from '@sharkord/shared';
+import { setActiveFullscreenPluginId } from '@/features/app/actions';
+import { useActiveFullscreenPluginId } from '@/features/app/hooks';
+import { useFullscreenPluginIds } from '@/features/server/plugins/hooks';
 import { cn, Tooltip } from '@sharkord/ui';
 import { PuzzleIcon, X } from 'lucide-react';
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 
 export const PluginSidebarButtons = memo(() => {
-  const componentsMap = usePluginComponentsBySlot(PluginSlot.FULL_SCREEN);
-  const activePluginId = useActivePluginId();
-
-  const sidebarPluginIds = useMemo(() => {
-    return Object.keys(componentsMap);
-  }, [componentsMap]);
+  // Use the new cached selector hook instead of useMemo and the components map
+  const sidebarPluginIds = useFullscreenPluginIds();
+  // Use the newly renamed hook
+  const activeFullscreenPluginId = useActiveFullscreenPluginId();
 
   if (sidebarPluginIds.length === 0) return null;
 
   return (
     <div className="border-b border-border px-2 py-2">
       {sidebarPluginIds.map((pluginId) => {
-        const isActive = activePluginId === pluginId;
+        const isActive = activeFullscreenPluginId === pluginId;
 
         return (
           <Tooltip
@@ -30,7 +27,8 @@ export const PluginSidebarButtons = memo(() => {
               type="button"
               onClick={() => {
                 const nextId = isActive ? undefined : pluginId;
-                setActivePluginId(nextId);
+                // Use the newly renamed action
+                setActiveFullscreenPluginId(nextId);
               }}
               className={cn(
                 'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground',
