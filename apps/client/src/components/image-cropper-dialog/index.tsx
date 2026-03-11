@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import {
   Button,
   Dialog,
@@ -61,9 +62,10 @@ const ImageCropperDialog = ({
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent
-        className={`data-[state=open]:animate-none data-[state=closed]:animate-none ${
+        className={cn(
+          'data-[state=open]:animate-none data-[state=closed]:animate-none',
           isWideAspect ? 'w-[85vw] sm:max-w-4xl p-4 gap-3' : 'sm:max-w-lg'
-        }`}
+        )}
         close={handleClose}
       >
         <DialogHeader>
@@ -71,9 +73,10 @@ const ImageCropperDialog = ({
         </DialogHeader>
 
         <div
-          className={`relative w-full bg-black rounded-md overflow-hidden ${
+          className={cn(
+            'relative w-full bg-black rounded-md overflow-hidden',
             isWideAspect ? 'h-72' : 'h-96'
-          }`}
+          )}
         >
           <Cropper
             image={imageSrc}
