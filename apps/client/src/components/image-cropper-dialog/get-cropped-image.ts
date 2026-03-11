@@ -1,5 +1,18 @@
 import type { Area } from 'react-easy-crop';
 
+const getExtensionFromMimeType = (mimeType: string) => {
+  switch (mimeType) {
+    case 'image/jpeg':
+      return 'jpg';
+    case 'image/png':
+      return 'png';
+    case 'image/webp':
+      return 'webp';
+    default:
+      return 'jpg';
+  }
+};
+
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image();
@@ -43,7 +56,8 @@ const getCroppedImage = async (
         reject(new Error('Canvas is empty'));
         return;
       }
-      resolve(new File([blob], 'cropped.jpg', { type: mimeType }));
+      const ext = getExtensionFromMimeType(mimeType);
+      resolve(new File([blob], `cropped.${ext}`, { type: mimeType }));
     }, mimeType);
   });
 };
