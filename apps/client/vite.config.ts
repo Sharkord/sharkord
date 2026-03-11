@@ -13,15 +13,14 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
-    },
-    dedupe: ['react', 'react-dom']
+    }
   },
   define: {
     VITE_APP_VERSION: JSON.stringify(pkg.version)
   },
   server: {
     proxy: {
-      '/manifest.json': 'http://localhost:4991'
+      '/manifest.json': `http://localhost:${process.env.SERVER_PORT || 4991}`
     }
   }
 });
