@@ -1,10 +1,11 @@
+import { ImageCropperDialog } from '@/components/image-cropper-dialog';
 import { ImagePicker } from '@/components/image-picker';
 import { uploadFile } from '@/helpers/upload-file';
 import { useFilePicker } from '@/hooks/use-file-picker';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TFile } from '@sharkord/shared';
 import { Group } from '@sharkord/ui';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
 type TLogoManagerProps = {
@@ -14,6 +15,8 @@ type TLogoManagerProps = {
 
 const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
   const openFilePicker = useFilePicker();
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [pendingImageSrc, setPendingImageSrc] = useState<string | null>(null);
 
   const removeLogo = useCallback(async () => {
     const trpc = getTRPCClient();
@@ -30,39 +33,74 @@ const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
   }, [refetch]);
 
   const onLogoClick = useCallback(async () => {
-    const trpc = getTRPCClient();
-
     try {
       const [file] = await openFilePicker('image/*');
 
-      const temporaryFile = await uploadFile(file);
-
-      if (!temporaryFile) {
-        toast.error('Could not upload file. Please try again.');
-        return;
-      }
-
-      await trpc.others.changeLogo.mutate({ fileId: temporaryFile.id });
-      await refetch();
-
-      toast.success('Logo updated successfully!');
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPendingImageSrc(reader.result as string);
+        setCropperOpen(true);
+      };
+      reader.readAsDataURL(file);
     } catch {
-      toast.error('Could not update logo. Please try again.');
+      // user cancelled
     }
-  }, [openFilePicker, refetch]);
+  }, [openFilePicker]);
+
+  const onCropConfirm = useCallback(
+    async (croppedFile: File) => {
+      const trpc = getTRPCClient();
+
+      try {
+        const temporaryFile = await uploadFile(croppedFile);
+
+        if (!temporaryFile) {
+          toast.error('Could not upload file. Please try again.');
+          return;
+        }
+
+        await trpc.others.changeLogo.mutate({ fileId: temporaryFile.id });
+        await refetch();
+
+        toast.success('Logo updated successfully!');
+      } catch {
+        toast.error('Could not update logo. Please try again.');
+      } finally {
+        setPendingImageSrc(null);
+      }
+    },
+    [refetch]
+  );
 
   return (
-    <Group
-      label="Logo"
-      description="Recommended max resolution: 1200x400 or 1024x1024."
-    >
-      <ImagePicker
-        image={logo}
-        onImageClick={onLogoClick}
-        onRemoveImageClick={removeLogo}
-        className="object-scale-down"
-      />
-    </Group>
+    <>
+      <Group
+        label="Logo"
+        description="Recommended max resolution: 1200x400 or 1024x1024."
+      >
+        <ImagePicker
+          image={logo}
+          onImageClick={onLogoClick}
+          onRemoveImageClick={removeLogo}
+          className="w-48 h-48"
+        />
+      </Group>
+
+      {pendingImageSrc && (
+        <ImageCropperDialog
+          open={cropperOpen}
+          onClose={() => {
+            setCropperOpen(false);
+            setPendingImageSrc(null);
+          }}
+          imageSrc={pendingImageSrc}
+          aspect={1}
+          cropShape="rect"
+          title="Crop Logo"
+          onConfirm={onCropConfirm}
+        />
+      )}
+    </>
   );
 });
 
