@@ -6,6 +6,7 @@ import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
 import {
   getLocalStorageItem,
   getLocalStorageItemBool,
+  getSessionStorageItem,
   LocalStorageKey,
   removeLocalStorageItem,
   SessionStorageKey,
@@ -14,6 +15,7 @@ import {
   setSessionStorageItem
 } from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
+import { useStrictEffect } from '@/hooks/use-strict-effect';
 import { PluginSlot, TestId } from '@sharkord/shared';
 import {
   Alert,
@@ -57,6 +59,77 @@ const Connect = memo(() => {
     const invite = urlParams.get('invite');
     return invite || undefined;
   }, []);
+
+  const onRememberCredentialsChange = useCallback(
+    (checked: boolean) => {
+      onChange('rememberCredentials', checked);
+
+      if (checked) {
+        setLocalStorageItem(LocalStorageKey.REMEMBER_CREDENTIALS, 'true');
+      } else {
+        removeLocalStorageItem(LocalStorageKey.REMEMBER_CREDENTIALS);
+      }
+    },
+    [onChange]
+  );
+
+  const onOidcLoginClick = useCallback(() => {
+    const url = getUrlFromServer();
+    window.location.href = `${url}/auth/login`;
+  }, []);
+
+  const handleOidcSuccess = useCallback(async () => {
+    setLoading(true);
+    try {
+      const cookies = document.cookie.split('; ').reduce(
+        (acc, current) => {
+          const [name, value] = current.split('=');
+          acc[name] = value;
+          return acc;
+        },
+        {} as Record<string, string>
+      );
+
+      const token = cookies['sharkord_token'];
+
+      if (token) {
+        setSessionStorageItem(SessionStorageKey.TOKEN, token);
+
+        document.cookie =
+          'sharkord_token=; Max-Age=0; path=/; SameSite=Lax; Secure';
+      } else {
+        throw new Error('No authentication token found in cookies.');
+      }
+
+      await connect();
+      toast.success('Logged in with OIDC');
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      toast.error(`Could not connect with OIDC: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useStrictEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const oidcStatus = urlParams.get('oidc_status');
+
+    if (oidcStatus === 'success') {
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+
+      handleOidcSuccess();
+    }
+  }, [handleOidcSuccess]);
+
+  useStrictEffect(() => {
+    const token = getSessionStorageItem(SessionStorageKey.TOKEN);
+    if (info && info.oidcEnabled && !info.allowNewUsers && !token) {
+      onOidcLoginClick();
+    }
+  }, [info, onOidcLoginClick]);
 
   const onConnectClick = useCallback(async () => {
     setLoading(true);
@@ -121,10 +194,7 @@ const Connect = memo(() => {
   }, [info]);
 
   return (
-    <div className="flex flex-col gap-2 justify-center items-center h-full relative">
-      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
-        <LanguageSwitcher variant="icon" />
-      </div>
+    <div className="flex flex-col gap-2 justify-center items-center h-full">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="flex flex-col items-center gap-2 text-center">
@@ -148,30 +218,32 @@ const Connect = memo(() => {
             </span>
           )}
 
-          <form
-            className="flex flex-col gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              onConnectClick();
-            }}
-          >
-            <Group label={t('identityLabel')} help={t('identityHelp')}>
-              <Input
-                {...r('identity')}
-                autoComplete="username"
-                data-testid={TestId.CONNECT_IDENTITY_INPUT}
-              />
-            </Group>
-            <Group label={t('passwordLabel')}>
-              <Input
-                {...r('password')}
-                type="password"
-                autoComplete="current-password"
-                onEnter={onConnectClick}
-                data-testid={TestId.CONNECT_PASSWORD_INPUT}
-              />
-            </Group>
-          </form>
+          {!(info?.oidcEnabled && !info?.allowNewUsers) && (
+            <form
+              className="flex flex-col gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                onConnectClick();
+              }}
+            >
+              <Group label={t('identityLabel')} help={t('identityHelp')}>
+                <Input
+                  {...r('identity')}
+                  autoComplete="username"
+                  data-testid={TestId.CONNECT_IDENTITY_INPUT}
+                />
+              </Group>
+              <Group label={t('passwordLabel')}>
+                <Input
+                  {...r('password')}
+                  type="password"
+                  autoComplete="current-password"
+                  onEnter={onConnectClick}
+                  data-testid={TestId.CONNECT_PASSWORD_INPUT}
+                />
+              </Group>
+            </form>
+          )}
 
           <div
             className="flex items-center gap-2 w-fit cursor-pointer"
@@ -194,24 +266,33 @@ const Connect = memo(() => {
               </Alert>
             )}
 
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={onConnectClick}
-              disabled={loading || !values.identity || !values.password}
-              data-testid={TestId.CONNECT_BUTTON}
-            >
-              {t('connectBtn')}
-            </Button>
+            {!(info?.oidcEnabled && !info?.allowNewUsers) && (
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={onConnectClick}
+                disabled={loading || !values.identity || !values.password}
+                data-testid={TestId.CONNECT_BUTTON}
+              >
+                {t('connectBtn')}
+              </Button>
+            )}
 
-            {!info?.allowNewUsers && (
-              <>
-                {!inviteCode && (
-                  <span className="text-xs text-muted-foreground text-center">
-                    {t('registrationDisabled')}
-                  </span>
-                )}
-              </>
+            {info?.oidcEnabled && (
+              <Button
+                className="w-full"
+                variant="secondary"
+                onClick={onOidcLoginClick}
+                disabled={loading}
+              >
+                Login with OIDC
+              </Button>
+            )}
+
+            {!info?.allowNewUsers && !inviteCode && (
+              <span className="text-xs text-muted-foreground text-center">
+                {t('registrationDisabled')}
+              </span>
             )}
 
             {inviteCode && (
@@ -228,8 +309,8 @@ const Connect = memo(() => {
         </CardContent>
       </Card>
 
-      <div className="flex justify-center items-center gap-2 text-xs text-muted-foreground select-none">
-        <span>v{VITE_APP_VERSION}</span>
+      <div className="flex justify-center gap-2 text-xs text-muted-foreground select-none">
+        <span>v{import.meta.env.VITE_APP_VERSION}</span>
         <a
           href="https://github.com/sharkord/sharkord"
           target="_blank"
@@ -246,6 +327,8 @@ const Connect = memo(() => {
         >
           Sharkord
         </a>
+
+        <LanguageSwitcher variant="icon" />
       </div>
     </div>
   );

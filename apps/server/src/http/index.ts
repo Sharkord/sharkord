@@ -14,6 +14,7 @@ import {
 import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
 import { loginRouteHandler } from './login';
+import { oidcCallback, oidcLogin } from './oidc';
 import { pluginBundleRouteHandler } from './plugin-bundle';
 import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
@@ -38,7 +39,9 @@ const routeHandlers: Partial<
   GET: {
     exact: {
       '/healthz': (req, res) => healthRouteHandler(req, res),
-      '/info': (req, res) => infoRouteHandler(req, res)
+      '/info': (req, res) => infoRouteHandler(req, res),
+      '/auth/login': (req, res) => oidcLogin(req, res),
+      '/auth/callback': (req, res) => oidcCallback(req, res)
     },
     prefix: {
       '/public': (req, res) => publicRouteHandler(req, res),

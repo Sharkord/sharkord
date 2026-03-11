@@ -159,6 +159,13 @@ const loginRouteHandler = async (
   }
 
   if (!existingUser) {
+    if (config.server.disableLocalSignup && config.oidc.oidcEnabled) {
+      throw new HttpValidationError(
+        'identity',
+        'Registration is only allowed via OIDC'
+      );
+    }
+
     let inviteRoleId: number | null = null;
 
     const result = await isInviteValid(data.invite);

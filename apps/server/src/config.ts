@@ -14,11 +14,49 @@ const [SERVER_PUBLIC_IP, SERVER_PRIVATE_IP] = await Promise.all([
   getPrivateIp()
 ]);
 
+const jsonTransform = <T>(fallback: T) =>
+  z
+    .preprocess((val) => {
+      if (typeof val !== 'string') return val;
+      try {
+        return JSON.parse(val);
+      } catch {
+        return fallback;
+      }
+    }, z.any())
+    .transform((val) => val as T);
+
+const commaSeparatedTransform = (fallback: string[]) =>
+  z.preprocess((val) => {
+    if (typeof val !== 'string') return val;
+    return val
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }, z.string().array());
+
 const zConfig = z.object({
   server: z.object({
     port: z.coerce.number().int().positive(),
     debug: z.coerce.boolean(),
-    autoupdate: z.coerce.boolean()
+    autoupdate: z.coerce.boolean(),
+    disableLocalSignup: z.coerce.boolean()
+  }),
+  oidc: z.object({
+    oidcEnabled: z.coerce.boolean(),
+    enforceOidcRoles: z.coerce.boolean(),
+    issuer: z.string(),
+    clientId: z.string(),
+    clientSecret: z.string(),
+    rolesMapping: jsonTransform<Record<string, string>>({}),
+    requiredGroups: commaSeparatedTransform([]),
+    allowedOrigins: commaSeparatedTransform([]),
+    caCertPath: z.string().optional(),
+    groupsClaim: z.string(),
+    usernameClaim: z.string(),
+    displayNameClaim: z.string(),
+    enforceOidcDisplayName: z.coerce.boolean(),
+    additionalScopes: commaSeparatedTransform([])
   }),
   webRtc: z.object({
     port: z.coerce.number().int().positive(),
@@ -45,13 +83,30 @@ const zConfig = z.object({
   })
 });
 
-type TConfig = z.infer<typeof zConfig>;
+type TConfig = z.output<typeof zConfig>;
 
 const defaultConfig: TConfig = {
   server: {
     port: 4991,
     debug: IS_DEVELOPMENT,
-    autoupdate: false
+    autoupdate: false,
+    disableLocalSignup: false
+  },
+  oidc: {
+    oidcEnabled: false,
+    enforceOidcRoles: true,
+    issuer: 'https://auth.example.com/.well-known/openid-configuration',
+    clientId: '',
+    clientSecret: '',
+    rolesMapping: {},
+    requiredGroups: [],
+    allowedOrigins: [],
+    caCertPath: '',
+    groupsClaim: 'groups',
+    usernameClaim: 'preferred_username',
+    displayNameClaim: '',
+    enforceOidcDisplayName: true,
+    additionalScopes: []
   },
   webRtc: {
     port: 40000,
@@ -78,48 +133,74 @@ const defaultConfig: TConfig = {
   }
 };
 
-let config: TConfig = structuredClone(defaultConfig);
+const prepareForSave = (data: TConfig) => {
+  const { oidc, ...rest } = data;
+  const { allowedOrigins, rolesMapping, ...oidcRest } = oidc;
+
+  return {
+    ...rest,
+    oidc: {
+      ...oidcRest,
+      rolesMapping: JSON.stringify(rolesMapping),
+      allowedOrigins: allowedOrigins.join(',')
+    }
+  };
+};
+
+let config: TConfig = zConfig.parse(defaultConfig);
 
 await ensureServerDirs();
 
 const configExists = await fs.exists(CONFIG_INI_PATH);
 
 if (!configExists) {
-  // config does not exist, create it with the default config
-  await fs.writeFile(CONFIG_INI_PATH, stringify(config));
+  await fs.writeFile(CONFIG_INI_PATH, stringify(prepareForSave(config)));
 } else {
   try {
-    // config exists, we need to make sure it is up to date with the schema
-    // to make this easy, we will read the existing config, merge it with the default config, and write it back to the file
-    // this way we don't have to worry about migrating old config files when we add/remove config options
     const existingConfigText = await fs.readFile(CONFIG_INI_PATH, {
       encoding: 'utf-8'
     });
+    const existingConfig = parse(existingConfigText);
 
-    const existingConfig = parse(existingConfigText) as Partial<TConfig>;
-    const mergedConfig = deepMerge(config, existingConfig);
-
+    const mergedConfig = deepMerge(defaultConfig, existingConfig);
     config = zConfig.parse(mergedConfig);
 
-    await fs.writeFile(CONFIG_INI_PATH, stringify(config));
+    await fs.writeFile(CONFIG_INI_PATH, stringify(prepareForSave(config)));
   } catch (error) {
-    // something went wrong, just log the error and overwrite the config file with the default config
     console.error(
-      `Error reading or parsing config.ini. Overwriting with default config. Error: ${getErrorMessage(error)}`
+      `Error parsing config.ini. Resetting to defaults. Error: ${getErrorMessage(error)}`
     );
-
-    await fs.writeFile(CONFIG_INI_PATH, stringify(config));
+    await fs.writeFile(CONFIG_INI_PATH, stringify(prepareForSave(config)));
   }
 }
 
-config = applyEnvOverrides(config, {
-  'server.port': 'SHARKORD_PORT',
-  'server.debug': 'SHARKORD_DEBUG',
-  'server.autoupdate': 'SHARKORD_AUTOUPDATE',
-  'webRtc.port': 'SHARKORD_WEBRTC_PORT',
-  'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS',
-  'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE'
-});
+config = zConfig.parse(
+  applyEnvOverrides(config, {
+    'server.port': 'SHARKORD_PORT',
+    'server.debug': 'SHARKORD_DEBUG',
+    'server.autoupdate': 'SHARKORD_AUTOUPDATE',
+    'server.disableLocalSignup': 'SHARKORD_DISABLE_LOCAL_SIGNUP',
+
+    'oidc.oidcEnabled': 'OIDC_ENABLED',
+    'oidc.enforceOidcRoles': 'OIDC_ENFORCE_ROLES',
+    'oidc.issuer': 'OIDC_ISSUER',
+    'oidc.clientId': 'OIDC_CLIENT_ID',
+    'oidc.clientSecret': 'OIDC_CLIENT_SECRET',
+    'oidc.rolesMapping': 'OIDC_ROLES_MAPPING',
+    'oidc.requiredGroups': 'OIDC_REQUIRED_GROUPS',
+    'oidc.allowedOrigins': 'OIDC_ALLOWED_ORIGINS',
+    'oidc.caCertPath': 'OIDC_CA_CERT_PATH',
+    'oidc.groupsClaim': 'OIDC_GROUPS_CLAIM',
+    'oidc.usernameClaim': 'OIDC_USERNAME_CLAIM',
+    'oidc.displayNameClaim': 'OIDC_DISPLAY_NAME_CLAIM',
+    'oidc.enforceOidcDisplayName': 'OIDC_ENFORCE_DISPLAY_NAME',
+    'oidc.additionalScopes': 'OIDC_ADDITIONAL_SCOPES',
+
+    'webRtc.port': 'SHARKORD_WEBRTC_PORT',
+    'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS',
+    'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE'
+  })
+);
 
 config = Object.freeze(config);
 

@@ -210,6 +210,7 @@ const getUserById = async (
       banned: users.banned,
       banReason: users.banReason,
       bannedAt: users.bannedAt,
+      oidcSub: users.oidcSub,
       avatar: avatarFiles,
       banner: bannerFiles
     })
@@ -225,6 +226,54 @@ const getUserById = async (
     .select({ roleId: userRoles.roleId })
     .from(userRoles)
     .where(eq(userRoles.userId, userId))
+    .all();
+
+  return {
+    ...user,
+    avatar: user.avatar,
+    banner: user.banner,
+    roleIds: roles.map((r) => r.roleId)
+  };
+};
+
+const getUserByOidcSub = async (
+  oidcSub: string
+): Promise<TJoinedUser | undefined> => {
+  const avatarFiles = alias(files, 'avatarFiles');
+  const bannerFiles = alias(files, 'bannerFiles');
+
+  const user = await db
+    .select({
+      id: users.id,
+      identity: users.identity,
+      name: users.name,
+      avatarId: users.avatarId,
+      bannerId: users.bannerId,
+      bio: users.bio,
+      bannerColor: users.bannerColor,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      password: users.password,
+      lastLoginAt: users.lastLoginAt,
+      banned: users.banned,
+      banReason: users.banReason,
+      bannedAt: users.bannedAt,
+      oidcSub: users.oidcSub,
+      avatar: avatarFiles,
+      banner: bannerFiles
+    })
+    .from(users)
+    .leftJoin(avatarFiles, eq(users.avatarId, avatarFiles.id))
+    .leftJoin(bannerFiles, eq(users.bannerId, bannerFiles.id))
+    .where(eq(users.oidcSub, oidcSub))
+    .get();
+
+  if (!user) return undefined;
+
+  const roles = await db
+    .select({ roleId: userRoles.roleId })
+    .from(userRoles)
+    .where(eq(userRoles.userId, user.id))
     .all();
 
   return {
@@ -257,6 +306,7 @@ const getUserByIdentity = async (
       banned: users.banned,
       banReason: users.banReason,
       bannedAt: users.bannedAt,
+      oidcSub: users.oidcSub,
       avatar: avatarFiles,
       banner: bannerFiles
     })
@@ -316,6 +366,7 @@ const getUsers = async (): Promise<TJoinedUser[]> => {
       banned: users.banned,
       banReason: users.banReason,
       bannedAt: users.bannedAt,
+      oidcSub: users.oidcSub,
       avatar: avatarFiles,
       banner: bannerFiles
     })
@@ -359,6 +410,7 @@ const getUsers = async (): Promise<TJoinedUser[]> => {
     banned: result.banned,
     banReason: result.banReason,
     bannedAt: result.bannedAt,
+    oidcSub: result.oidcSub,
     roleIds: rolesMap[result.id] || []
   }));
 };
@@ -375,6 +427,7 @@ export {
   getStorageUsageByUserId,
   getUserById,
   getUserByIdentity,
+  getUserByOidcSub,
   getUserByToken,
   getUsers
 };
