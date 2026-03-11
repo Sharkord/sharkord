@@ -1,3 +1,4 @@
+import type { TWebAppManifest } from '@sharkord/shared';
 import http from 'http';
 import { getSettings } from '../db/queries/server';
 
@@ -21,7 +22,7 @@ const manifestRouteHandler = async (
         { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }
       ];
 
-  const manifest = {
+  const manifest: TWebAppManifest = {
     name: settings.name,
     short_name: settings.name.slice(0, 12),
     description: settings.description ?? '',

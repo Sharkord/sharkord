@@ -1,3 +1,4 @@
+import type { TWebAppManifest } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { testsBaseUrl } from '../../__tests__/setup';
 
@@ -11,7 +12,7 @@ describe('/manifest.json', () => {
     );
     expect(response.headers.get('Cache-Control')).toBe('public, max-age=3600');
 
-    const manifest = await response.json();
+    const manifest = (await response.json()) as TWebAppManifest;
 
     expect(manifest).toHaveProperty('name');
     expect(manifest).toHaveProperty('short_name');
@@ -28,11 +29,7 @@ describe('/manifest.json', () => {
 
   test('should use server settings for name and description', async () => {
     const response = await fetch(`${testsBaseUrl}/manifest.json`);
-    const manifest = (await response.json()) as {
-      name: string;
-      short_name: string;
-      description: string;
-    };
+    const manifest = (await response.json()) as TWebAppManifest;
 
     expect(manifest.name).toBe('Test Server');
     expect(manifest.short_name).toBe('Test Server');
@@ -41,10 +38,7 @@ describe('/manifest.json', () => {
 
   test('should truncate short_name to 12 characters', async () => {
     const response = await fetch(`${testsBaseUrl}/manifest.json`);
-    const manifest = (await response.json()) as {
-      name: string;
-      short_name: string;
-    };
+    const manifest = (await response.json()) as TWebAppManifest;
 
     expect(manifest.short_name.length).toBeLessThanOrEqual(12);
     expect(manifest.short_name).toBe(manifest.name.slice(0, 12));
@@ -52,9 +46,7 @@ describe('/manifest.json', () => {
 
   test('should include default icons when no custom logo', async () => {
     const response = await fetch(`${testsBaseUrl}/manifest.json`);
-    const manifest = (await response.json()) as {
-      icons: Array<{ src: string; sizes: string }>;
-    };
+    const manifest = (await response.json()) as TWebAppManifest;
 
     const hasDefaultIcon192 = manifest.icons.some(
       (icon) => icon.src === '/icon-192.png' && icon.sizes === '192x192'
@@ -69,9 +61,7 @@ describe('/manifest.json', () => {
 
   test('should include required icon properties', async () => {
     const response = await fetch(`${testsBaseUrl}/manifest.json`);
-    const manifest = (await response.json()) as {
-      icons: Array<{ src: string; sizes: string; type: string }>;
-    };
+    const manifest = (await response.json()) as TWebAppManifest;
 
     for (const icon of manifest.icons) {
       expect(icon).toHaveProperty('src');
