@@ -49,5 +49,21 @@
   "deleteFileMsg": "您确定要删除此文件吗？",
   "fileDeleted": "文件已删除",
   "failedDeleteFile": "删除文件失败",
-  "edited": "（已编辑）"
+  "edited": "（已编辑）",
+  "reply_one": "{{count}} 条回复",
+  "reply_other": "{{count}} 条回复",
+  "thread": "话题",
+  "noThreadSelected": "未选择话题",
+  "noRepliesYet": "暂无回复",
+  "beFirstToReply": "成为第一个回复的人",
+  "noCustomEmojis": "暂无自定义表情",
+  "serverAdminsCanUpload": "服务器管理员可以在服务器设置中上传自定义表情",
+  "serverEmojis": "服务器表情（{{count}}）",
+  "noPermissions": "无权限",
+  "searchAllEmojis": "搜索所有表情...",
+  "emojiTab": "表情",
+  "customTab": "自定义",
+  "searchResults": "搜索结果（{{count}}）",
+  "wasReactedBy": "{{reacters}} 做出了反应。",
+  "andMore": "以及其他 {{count}} 人"
 }

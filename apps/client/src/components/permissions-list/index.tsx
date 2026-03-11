@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 import { Permission, permissionLabels } from '@sharkord/shared';
 import { Badge } from '@sharkord/ui';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type PermissionsListProps = {
   permissions: Permission[];
@@ -21,6 +22,8 @@ const PermissionsList = memo(
     className = '',
     maxDisplay
   }: PermissionsListProps) => {
+    const { t } = useTranslation('common');
+
     if (!permissions.length) {
       return (
         <div
@@ -32,7 +35,7 @@ const PermissionsList = memo(
             className
           )}
         >
-          <span>No permissions</span>
+          <span>{t('noPermissions')}</span>
         </div>
       );
     }

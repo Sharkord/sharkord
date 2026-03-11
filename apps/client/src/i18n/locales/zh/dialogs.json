@@ -97,5 +97,8 @@
   "argument_other": "{{count}} 个参数",
   "serverPasswordTitle": "请输入密码",
   "serverPasswordDesc": "此服务器已设置密码保护，请输入密码以加入。",
-  "joinBtn": "加入"
+  "joinBtn": "加入",
+  "inThread": "在话题中",
+  "jumpToThreadMessage": "跳转到话题原始消息",
+  "jumpToMessage": "跳转到消息"
 }

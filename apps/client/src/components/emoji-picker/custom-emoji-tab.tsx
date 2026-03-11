@@ -1,6 +1,7 @@
 import type { TEmojiItem } from '@/components/tiptap-input/helpers';
 import type { EmojiItem } from '@tiptap/extension-emoji';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toTEmojiItem } from './emoji-data';
 import { EmojiGrid } from './emoji-grid';
 import { useRecentEmojis } from './use-recent-emojis';
@@ -12,6 +13,7 @@ interface CustomEmojiTabProps {
 
 const CustomEmojiTab = memo(
   ({ customEmojis, onEmojiSelect }: CustomEmojiTabProps) => {
+    const { t } = useTranslation('common');
     const { addRecent } = useRecentEmojis();
 
     const convertedEmojis = useMemo(
@@ -31,10 +33,8 @@ const CustomEmojiTab = memo(
       return (
         <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-4 text-center">
           <span className="text-3xl mb-2">:(</span>
-          <p className="text-sm">No custom emojis available</p>
-          <p className="text-xs mt-1">
-            Server admins can upload custom emojis in server settings
-          </p>
+          <p className="text-sm">{t('noCustomEmojis')}</p>
+          <p className="text-xs mt-1">{t('serverAdminsCanUpload')}</p>
         </div>
       );
     }
@@ -42,7 +42,7 @@ const CustomEmojiTab = memo(
     return (
       <div className="flex flex-col h-full">
         <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-          Server emojis ({convertedEmojis.length})
+          {t('serverEmojis', { count: convertedEmojis.length })}
         </div>
 
         <div className="flex-1 min-h-0">

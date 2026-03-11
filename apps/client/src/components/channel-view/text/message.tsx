@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { hasMention, Permission, type TJoinedMessage } from '@sharkord/shared';
 import { MessageSquareText } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageActions } from './message-actions';
 import { MessageEditInline } from './message-edit-inline';
 import { MessageRenderer } from './renderer';
@@ -24,6 +25,7 @@ const Message = memo(
     disableFiles,
     disableReactions
   }: TMessageProps) => {
+    const { t } = useTranslation('common');
     const [isEditing, setIsEditing] = useState(false);
     const isFromOwnUser = useIsOwnUser(message.userId);
     const can = useCan();
@@ -72,9 +74,7 @@ const Message = memo(
                 className="flex items-center gap-1 text-xs text-primary/70 hover:text-primary hover:underline mt-1 transition-colors"
               >
                 <MessageSquareText className="h-3 w-3" />
-                <span>
-                  {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
-                </span>
+                <span>{t('reply', { count: replyCount })}</span>
               </button>
             )}
             {!disableActions && (

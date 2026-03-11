@@ -5,6 +5,7 @@ import type { TMessageJumpToTarget } from '@/types';
 import { IconButton, Tooltip } from '@sharkord/ui';
 import { ArrowRight, Hash } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TSearchResultMessage } from './types';
 
 type TSearchResultMessageCardProps = {
@@ -15,6 +16,8 @@ type TSearchResultMessageCardProps = {
 
 const SearchResultMessageCard = memo(
   ({ message, userName, onJump }: TSearchResultMessageCardProps) => {
+    const { t } = useTranslation('dialogs');
+
     const handleJump = useCallback(() => {
       onJump({
         channelId: message.channelId,
@@ -46,7 +49,7 @@ const SearchResultMessageCard = memo(
               {!!message.parentMessageId && (
                 <>
                   <span>•</span>
-                  <span>In thread</span>
+                  <span>{t('inThread')}</span>
                 </>
               )}
             </div>
@@ -63,8 +66,8 @@ const SearchResultMessageCard = memo(
           <Tooltip
             content={
               message.parentMessageId
-                ? 'Jump to thread original message'
-                : 'Jump to message'
+                ? t('jumpToThreadMessage')
+                : t('jumpToMessage')
             }
           >
             <IconButton

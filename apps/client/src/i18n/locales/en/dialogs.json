@@ -97,5 +97,8 @@
   "argument_other": "{{count}} arguments",
   "serverPasswordTitle": "Enter the password",
   "serverPasswordDesc": "This server is password protected. Please enter the password to join.",
-  "joinBtn": "Join"
+  "joinBtn": "Join",
+  "inThread": "In thread",
+  "jumpToThreadMessage": "Jump to thread original message",
+  "jumpToMessage": "Jump to message"
 }

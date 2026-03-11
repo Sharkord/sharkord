@@ -24,13 +24,15 @@ type TTooltipPreviewProps = {
 
 const TooltipPreview = memo(
   ({ emojiName, emojiSlot, reacters }: TTooltipPreviewProps) => {
+    const { t } = useTranslation('common');
+
     return (
       <div className="flex items-center gap-2 max-w-xs wrap-break-word whitespace-pre-wrap text-sm">
         <div className="flex items-center flex-col">
           {emojiSlot}
           <span className="text-[8px]">:{emojiName}:</span>
         </div>
-        <span className="text-xs">was reacted by {reacters}.</span>
+        <span className="text-xs">{t('wasReactedBy', { reacters })}</span>
       </div>
     );
   }
@@ -97,6 +99,7 @@ type TReactionProps = {
 
 const Reaction = memo(
   ({ emoji, count, isUserReacted, onClick, file, userIds }: TReactionProps) => {
+    const { t } = useTranslation('common');
     const usernames = useUsernames();
     const tooltipContent = useMemo(() => {
       const names = userIds
@@ -104,11 +107,13 @@ const Reaction = memo(
         .map((userId) => usernames[userId] || 'Unknown');
 
       if (userIds.length > MAX_REACTORS_PREVIEW) {
-        names.push(`and ${userIds.length - MAX_REACTORS_PREVIEW} more`);
+        names.push(
+          t('andMore', { count: userIds.length - MAX_REACTORS_PREVIEW })
+        );
       }
 
       return names.join(', ');
-    }, [userIds, usernames]);
+    }, [userIds, usernames, t]);
 
     return (
       <Tooltip

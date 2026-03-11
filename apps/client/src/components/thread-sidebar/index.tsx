@@ -2,6 +2,7 @@ import { ResizableSidebar } from '@/components/resizable-sidebar';
 import { useThreadSidebar } from '@/features/app/hooks';
 import { LocalStorageKey } from '@/helpers/storage';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ThreadContent } from './tread-content';
 
 const MIN_WIDTH = 360;
@@ -9,12 +10,13 @@ const MAX_WIDTH = 600;
 const DEFAULT_WIDTH = 384;
 
 const ThreadContentWrapper = memo(() => {
+  const { t } = useTranslation('common');
   const { parentMessageId, channelId } = useThreadSidebar();
 
   if (!parentMessageId || !channelId) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <span className="text-muted-foreground">No thread selected</span>
+        <span className="text-muted-foreground">{t('noThreadSelected')}</span>
       </div>
     );
   }

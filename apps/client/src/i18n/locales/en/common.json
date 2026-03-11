@@ -49,5 +49,21 @@
   "deleteFileMsg": "Are you sure you want to delete this file?",
   "fileDeleted": "File deleted",
   "failedDeleteFile": "Failed to delete file",
-  "edited": "(edited)"
+  "edited": "(edited)",
+  "reply_one": "{{count}} reply",
+  "reply_other": "{{count}} replies",
+  "thread": "Thread",
+  "noThreadSelected": "No thread selected",
+  "noRepliesYet": "No replies yet",
+  "beFirstToReply": "Be the first to reply",
+  "noCustomEmojis": "No custom emojis available",
+  "serverAdminsCanUpload": "Server admins can upload custom emojis in server settings",
+  "serverEmojis": "Server emojis ({{count}})",
+  "noPermissions": "No permissions",
+  "searchAllEmojis": "Search all emojis...",
+  "emojiTab": "Emoji",
+  "customTab": "Custom",
+  "searchResults": "Search results ({{count}})",
+  "wasReactedBy": "was reacted by {{reacters}}.",
+  "andMore": "and {{count}} more"
 }
