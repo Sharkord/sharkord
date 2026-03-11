@@ -119,6 +119,7 @@ const BannerManager = memo(({ user }: TBannerManagerProps) => {
           }}
           imageSrc={pendingImageSrc}
           aspect={10 / 3}
+          variant="wide"
           cropShape="rect"
           title={t('cropBannerTitle')}
           onConfirm={onCropConfirm}

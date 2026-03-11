@@ -20,6 +20,7 @@ type TImageCropperDialogProps = {
   onClose: () => void;
   imageSrc: string;
   aspect: number;
+  variant?: 'default' | 'wide';
   cropShape?: 'rect' | 'round';
   onConfirm: (file: File) => void;
   title?: string;
@@ -30,6 +31,7 @@ const ImageCropperDialog = ({
   onClose,
   imageSrc,
   aspect,
+  variant = 'default',
   cropShape = 'rect',
   onConfirm,
   title
@@ -38,7 +40,7 @@ const ImageCropperDialog = ({
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
-  const isWideAspect = aspect >= 2;
+  const isWide = variant === 'wide';
 
   const onCropComplete = useCallback((_: Area, croppedArea: Area) => {
     setCroppedAreaPixels(croppedArea);
@@ -64,7 +66,7 @@ const ImageCropperDialog = ({
       <DialogContent
         className={cn(
           'data-[state=open]:animate-none data-[state=closed]:animate-none',
-          isWideAspect ? 'w-[85vw] sm:max-w-4xl p-4 gap-3' : 'sm:max-w-lg'
+          isWide ? 'w-[85vw] sm:max-w-4xl p-4 gap-3' : 'sm:max-w-lg'
         )}
         close={handleClose}
       >
@@ -75,7 +77,7 @@ const ImageCropperDialog = ({
         <div
           className={cn(
             'relative w-full bg-black rounded-md overflow-hidden',
-            isWideAspect ? 'h-72' : 'h-96'
+            isWide ? 'h-72' : 'h-96'
           )}
         >
           <Cropper
@@ -86,7 +88,7 @@ const ImageCropperDialog = ({
             cropShape={cropShape}
             showGrid={false}
             minZoom={1}
-            objectFit={isWideAspect ? 'cover' : 'contain'}
+            objectFit={isWide ? 'cover' : 'contain'}
             onCropChange={setCrop}
             onZoomChange={setZoom}
             onCropComplete={onCropComplete}
