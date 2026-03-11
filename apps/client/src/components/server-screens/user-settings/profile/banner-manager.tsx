@@ -27,11 +27,11 @@ const BannerManager = memo(({ user }: TBannerManagerProps) => {
     try {
       await trpc.users.changeBanner.mutate({ fileId: undefined });
 
-      toast.success('Banner removed successfully!');
+      toast.success(t('bannerRemovedSuccess'));
     } catch {
-      toast.error('Could not remove banner. Please try again.');
+      toast.error(t('bannerRemoveFailed'));
     }
-  }, []);
+  }, [t]);
 
   const onBannerClick = useCallback(async () => {
     try {
@@ -48,26 +48,29 @@ const BannerManager = memo(({ user }: TBannerManagerProps) => {
     }
   }, [openFilePicker]);
 
-  const onCropConfirm = useCallback(async (croppedFile: File) => {
-    const trpc = getTRPCClient();
+  const onCropConfirm = useCallback(
+    async (croppedFile: File) => {
+      const trpc = getTRPCClient();
 
-    try {
-      const temporaryFile = await uploadFile(croppedFile);
+      try {
+        const temporaryFile = await uploadFile(croppedFile);
 
-      if (!temporaryFile) {
-        toast.error('Could not upload file. Please try again.');
-        return;
+        if (!temporaryFile) {
+          toast.error(t('uploadFailed'));
+          return;
+        }
+
+        await trpc.users.changeBanner.mutate({ fileId: temporaryFile.id });
+
+        toast.success(t('bannerUpdatedSuccess'));
+      } catch {
+        toast.error(t('bannerUpdateFailed'));
+      } finally {
+        setPendingImageSrc(null);
       }
-
-      await trpc.users.changeBanner.mutate({ fileId: temporaryFile.id });
-
-      toast.success('Banner updated successfully!');
-    } catch {
-      toast.error('Could not update banner. Please try again.');
-    } finally {
-      setPendingImageSrc(null);
-    }
-  }, []);
+    },
+    [t]
+  );
 
   return (
     <>

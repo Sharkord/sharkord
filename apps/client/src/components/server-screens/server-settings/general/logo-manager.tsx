@@ -27,12 +27,12 @@ const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
       await trpc.others.changeLogo.mutate({ fileId: undefined });
       await refetch();
 
-      toast.success('Logo removed successfully!');
+      toast.success(t('logoRemovedSuccess'));
     } catch (error) {
       console.error(error);
-      toast.error('Could not remove logo. Please try again.');
+      toast.error(t('logoRemoveFailed'));
     }
-  }, [refetch]);
+  }, [refetch, t]);
 
   const onLogoClick = useCallback(async () => {
     try {
@@ -57,21 +57,21 @@ const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
         const temporaryFile = await uploadFile(croppedFile);
 
         if (!temporaryFile) {
-          toast.error('Could not upload file. Please try again.');
+          toast.error(t('uploadFailed'));
           return;
         }
 
         await trpc.others.changeLogo.mutate({ fileId: temporaryFile.id });
         await refetch();
 
-        toast.success('Logo updated successfully!');
+        toast.success(t('logoUpdatedSuccess'));
       } catch {
-        toast.error('Could not update logo. Please try again.');
+        toast.error(t('logoUpdateFailed'));
       } finally {
         setPendingImageSrc(null);
       }
     },
-    [refetch]
+    [refetch, t]
   );
 
   return (

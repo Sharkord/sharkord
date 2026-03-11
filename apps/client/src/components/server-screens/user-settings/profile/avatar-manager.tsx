@@ -26,11 +26,11 @@ const AvatarManager = memo(({ user }: TAvatarManagerProps) => {
     try {
       await trpc.users.changeAvatar.mutate({ fileId: undefined });
 
-      toast.success('Avatar removed successfully!');
+      toast.success(t('avatarRemovedSuccess'));
     } catch (error) {
-      toast.error(getTrpcError(error, 'Failed to remove avatar'));
+      toast.error(getTrpcError(error, t('avatarRemoveFailed')));
     }
-  }, []);
+  }, [t]);
 
   const onAvatarClick = useCallback(async () => {
     try {
@@ -47,26 +47,29 @@ const AvatarManager = memo(({ user }: TAvatarManagerProps) => {
     }
   }, [openFilePicker]);
 
-  const onCropConfirm = useCallback(async (croppedFile: File) => {
-    const trpc = getTRPCClient();
+  const onCropConfirm = useCallback(
+    async (croppedFile: File) => {
+      const trpc = getTRPCClient();
 
-    try {
-      const temporaryFile = await uploadFile(croppedFile);
+      try {
+        const temporaryFile = await uploadFile(croppedFile);
 
-      if (!temporaryFile) {
-        toast.error('Could not upload file. Please try again.');
-        return;
+        if (!temporaryFile) {
+          toast.error(t('uploadFailed'));
+          return;
+        }
+
+        await trpc.users.changeAvatar.mutate({ fileId: temporaryFile.id });
+
+        toast.success(t('avatarUpdatedSuccess'));
+      } catch (error) {
+        toast.error(getTrpcError(error, t('avatarUpdateFailed')));
+      } finally {
+        setPendingImageSrc(null);
       }
-
-      await trpc.users.changeAvatar.mutate({ fileId: temporaryFile.id });
-
-      toast.success('Avatar updated successfully!');
-    } catch (error) {
-      toast.error(getTrpcError(error, 'Failed to update avatar'));
-    } finally {
-      setPendingImageSrc(null);
-    }
-  }, []);
+    },
+    [t]
+  );
 
   return (
     <>

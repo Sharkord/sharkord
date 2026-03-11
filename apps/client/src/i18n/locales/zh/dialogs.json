@@ -105,5 +105,18 @@
   "cropBannerTitle": "裁剪横幅",
   "cropAvatarTitle": "裁剪头像",
   "cropLogoTitle": "裁剪徽标",
-  "apply": "应用"
+  "apply": "应用",
+  "uploadFailed": "上传失败，请重试。",
+  "logoRemovedSuccess": "徽标已移除",
+  "logoRemoveFailed": "移除徽标失败，请重试。",
+  "logoUpdatedSuccess": "徽标已更新",
+  "logoUpdateFailed": "更新徽标失败，请重试。",
+  "avatarRemovedSuccess": "头像已移除",
+  "avatarRemoveFailed": "移除头像失败",
+  "avatarUpdatedSuccess": "头像已更新",
+  "avatarUpdateFailed": "更新头像失败",
+  "bannerRemovedSuccess": "横幅已移除",
+  "bannerRemoveFailed": "移除横幅失败，请重试。",
+  "bannerUpdatedSuccess": "横幅已更新",
+  "bannerUpdateFailed": "更新横幅失败，请重试。"
 }

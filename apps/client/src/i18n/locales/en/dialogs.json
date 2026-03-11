@@ -105,5 +105,18 @@
   "cropBannerTitle": "Crop Banner",
   "cropAvatarTitle": "Crop Avatar",
   "cropLogoTitle": "Crop Logo",
-  "apply": "Apply"
+  "apply": "Apply",
+  "uploadFailed": "Could not upload file. Please try again.",
+  "logoRemovedSuccess": "Logo removed successfully!",
+  "logoRemoveFailed": "Could not remove logo. Please try again.",
+  "logoUpdatedSuccess": "Logo updated successfully!",
+  "logoUpdateFailed": "Could not update logo. Please try again.",
+  "avatarRemovedSuccess": "Avatar removed successfully!",
+  "avatarRemoveFailed": "Failed to remove avatar",
+  "avatarUpdatedSuccess": "Avatar updated successfully!",
+  "avatarUpdateFailed": "Failed to update avatar",
+  "bannerRemovedSuccess": "Banner removed successfully!",
+  "bannerRemoveFailed": "Could not remove banner. Please try again.",
+  "bannerUpdatedSuccess": "Banner updated successfully!",
+  "bannerUpdateFailed": "Could not update banner. Please try again."
 }
