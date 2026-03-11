@@ -105,7 +105,6 @@ const EmojiPicker = memo(
                   <EmojiGrid
                     emojis={searchResults}
                     onSelect={handleSearchResultSelect}
-                    height={300}
                   />
                 </div>
               </div>

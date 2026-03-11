@@ -49,7 +49,6 @@ const CustomEmojiTab = memo(
           <EmojiGrid
             emojis={convertedEmojis}
             onSelect={handleEmojiSelect}
-            height={300}
           />
         </div>
       </div>

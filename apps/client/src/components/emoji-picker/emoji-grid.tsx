@@ -81,7 +81,7 @@ const EmojiGrid = memo(
 
     return (
       <VirtuosoGrid
-        style={{ height }}
+        style={{ height: '100%' }}
         totalCount={emojis.length}
         overscan={200}
         listClassName="grid grid-cols-8 gap-1 p-3"
