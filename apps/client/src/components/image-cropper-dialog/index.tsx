@@ -11,6 +11,7 @@ import { ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Area, Point } from 'react-easy-crop';
+import { useTranslation } from 'react-i18next';
 import { getCroppedImage } from './get-cropped-image';
 
 type TImageCropperDialogProps = {
@@ -30,11 +31,13 @@ const ImageCropperDialog = ({
   aspect,
   cropShape = 'rect',
   onConfirm,
-  title = 'Crop Image'
+  title
 }: TImageCropperDialogProps) => {
+  const { t } = useTranslation('dialogs');
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const isWideAspect = aspect >= 2;
 
   const onCropComplete = useCallback((_: Area, croppedArea: Area) => {
     setCroppedAreaPixels(croppedArea);
@@ -57,12 +60,21 @@ const ImageCropperDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogContent className="sm:max-w-lg" close={handleClose}>
+      <DialogContent
+        className={`data-[state=open]:animate-none data-[state=closed]:animate-none ${
+          isWideAspect ? 'w-[85vw] sm:max-w-4xl p-4 gap-3' : 'sm:max-w-lg'
+        }`}
+        close={handleClose}
+      >
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>{title ?? t('cropImageTitle')}</DialogTitle>
         </DialogHeader>
 
-        <div className="relative w-full h-72 bg-black rounded-md overflow-hidden">
+        <div
+          className={`relative w-full bg-black rounded-md overflow-hidden ${
+            isWideAspect ? 'h-72' : 'h-96'
+          }`}
+        >
           <Cropper
             image={imageSrc}
             crop={crop}
@@ -70,6 +82,8 @@ const ImageCropperDialog = ({
             aspect={aspect}
             cropShape={cropShape}
             showGrid={false}
+            minZoom={1}
+            objectFit={isWideAspect ? 'cover' : 'contain'}
             onCropChange={setCrop}
             onZoomChange={setZoom}
             onCropComplete={onCropComplete}
@@ -91,9 +105,9 @@ const ImageCropperDialog = ({
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            {t('cancel')}
           </Button>
-          <Button onClick={handleConfirm}>Apply</Button>
+          <Button onClick={handleConfirm}>{t('apply')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

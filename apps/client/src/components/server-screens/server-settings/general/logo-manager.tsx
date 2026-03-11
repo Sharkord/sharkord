@@ -6,6 +6,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import type { TFile } from '@sharkord/shared';
 import { Group } from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TLogoManagerProps = {
@@ -14,6 +15,7 @@ type TLogoManagerProps = {
 };
 
 const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
+  const { t } = useTranslation('dialogs');
   const openFilePicker = useFilePicker();
   const [cropperOpen, setCropperOpen] = useState(false);
   const [pendingImageSrc, setPendingImageSrc] = useState<string | null>(null);
@@ -96,7 +98,7 @@ const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
           imageSrc={pendingImageSrc}
           aspect={1}
           cropShape="rect"
-          title="Crop Logo"
+          title={t('cropLogoTitle')}
           onConfirm={onCropConfirm}
         />
       )}

@@ -8,6 +8,7 @@ import type { TJoinedPublicUser } from '@sharkord/shared';
 import { Button, buttonVariants, Group } from '@sharkord/ui';
 import { Upload } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TBannerManagerProps = {
@@ -15,6 +16,7 @@ type TBannerManagerProps = {
 };
 
 const BannerManager = memo(({ user }: TBannerManagerProps) => {
+  const { t } = useTranslation('dialogs');
   const openFilePicker = useFilePicker();
   const [cropperOpen, setCropperOpen] = useState(false);
   const [pendingImageSrc, setPendingImageSrc] = useState<string | null>(null);
@@ -115,7 +117,7 @@ const BannerManager = memo(({ user }: TBannerManagerProps) => {
           imageSrc={pendingImageSrc}
           aspect={10 / 3}
           cropShape="rect"
-          title="Crop Banner"
+          title={t('cropBannerTitle')}
           onConfirm={onCropConfirm}
         />
       )}

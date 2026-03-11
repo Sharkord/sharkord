@@ -100,5 +100,10 @@
   "joinBtn": "Join",
   "inThread": "In thread",
   "jumpToThreadMessage": "Jump to thread original message",
-  "jumpToMessage": "Jump to message"
+  "jumpToMessage": "Jump to message",
+  "cropImageTitle": "Crop Image",
+  "cropBannerTitle": "Crop Banner",
+  "cropAvatarTitle": "Crop Avatar",
+  "cropLogoTitle": "Crop Logo",
+  "apply": "Apply"
 }

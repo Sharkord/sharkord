@@ -7,6 +7,7 @@ import { getTrpcError, type TJoinedPublicUser } from '@sharkord/shared';
 import { Button, Group } from '@sharkord/ui';
 import { Upload } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TAvatarManagerProps = {
@@ -14,6 +15,7 @@ type TAvatarManagerProps = {
 };
 
 const AvatarManager = memo(({ user }: TAvatarManagerProps) => {
+  const { t } = useTranslation('dialogs');
   const openFilePicker = useFilePicker();
   const [cropperOpen, setCropperOpen] = useState(false);
   const [pendingImageSrc, setPendingImageSrc] = useState<string | null>(null);
@@ -106,7 +108,7 @@ const AvatarManager = memo(({ user }: TAvatarManagerProps) => {
           imageSrc={pendingImageSrc}
           aspect={1}
           cropShape="round"
-          title="Crop Avatar"
+          title={t('cropAvatarTitle')}
           onConfirm={onCropConfirm}
         />
       )}
