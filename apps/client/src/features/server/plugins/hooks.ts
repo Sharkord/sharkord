@@ -1,10 +1,10 @@
 import type { IRootState } from '@/features/store';
 import type { PluginSlot } from '@sharkord/shared';
 import { useSelector } from 'react-redux';
-import { fullscreenPluginIdsSelector } from './selectors';
 import {
   commandsSelector,
   flatCommandsSelector,
+  fullscreenPluginIdsSelector,
   pluginComponentsBySlotSelector
 } from './selectors';
 
@@ -17,4 +17,5 @@ export const usePluginComponentsBySlot = (slotId: PluginSlot) =>
     pluginComponentsBySlotSelector(state, slotId)
   );
 
-  export const useFullscreenPluginIds = () => useSelector(fullscreenPluginIdsSelector);
+export const useFullscreenPluginIds = () =>
+  useSelector(fullscreenPluginIdsSelector);

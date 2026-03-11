@@ -35,6 +35,9 @@ export const pluginComponentsBySlotSelector = createCachedSelector(
 )((_state, slotId) => slotId);
 
 export const fullscreenPluginIdsSelector = createSelector(
-  [(state: IRootState) => pluginComponentsBySlotSelector(state, PluginSlot.FULL_SCREEN)],
+  [
+    (state: IRootState) =>
+      pluginComponentsBySlotSelector(state, PluginSlot.FULL_SCREEN)
+  ],
   (componentsMap) => Object.keys(componentsMap)
 );
