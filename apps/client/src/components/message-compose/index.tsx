@@ -94,8 +94,7 @@ const MessageCompose = memo(
       if (!channel) return 'Type a message';
       if (channel.isDm)
         return dmOtherUser ? `Message @${dmOtherUser.name}` : 'Type a message';
-      const prefix = channel.type === ChannelType.TEXT ? '#' : '';
-      return `Message ${prefix}${channel.name}`;
+      return `Message "${channel.name}"`;
     }, [channel, dmOtherUser]);
 
     const pluginCommands = useMemo(
