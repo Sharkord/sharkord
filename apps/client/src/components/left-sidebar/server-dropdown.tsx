@@ -1,4 +1,4 @@
-import { openDialog } from '@/features/dialogs/actions';
+import { openDialog, requestConfirmation } from '@/features/dialogs/actions';
 import { openServerScreen } from '@/features/server-screens/actions';
 import { disconnectFromServer } from '@/features/server/actions';
 import { Permission } from '@sharkord/shared';
@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger
 } from '@sharkord/ui';
 import { Menu } from 'lucide-react';
-import { memo, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
@@ -32,6 +32,18 @@ const ServerDropdownMenu = memo(() => {
     ],
     []
   );
+
+  const handleDisconnectClick = useCallback(async () => {
+    const confirmed = await requestConfirmation({
+      title: t('disconnectConfirmTitle'),
+      message: t('disconnectConfirmMsg'),
+      confirmLabel: t('disconnect')
+    });
+
+    if (confirmed) {
+      disconnectFromServer();
+    }
+  }, [t]);
 
   return (
     <DropdownMenu>
@@ -56,7 +68,10 @@ const ServerDropdownMenu = memo(() => {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
         </Protect>
-        <DropdownMenuItem onClick={disconnectFromServer}>
+        <DropdownMenuItem
+          onClick={handleDisconnectClick}
+          className="text-destructive focus:text-destructive"
+        >
           {t('disconnect')}
         </DropdownMenuItem>
       </DropdownMenuContent>

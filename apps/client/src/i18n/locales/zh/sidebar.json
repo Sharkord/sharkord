@@ -3,6 +3,8 @@
   "addCategory": "添加分类",
   "serverSettings": "服务器设置",
   "disconnect": "断开连接",
+  "disconnectConfirmTitle": "断开连接",
+  "disconnectConfirmMsg": "确定要断开与服务器的连接吗？",
   "unmuteMic": "取消静音麦克风 (Ctrl+Shift+M)",
   "muteMic": "静音麦克风 (Ctrl+Shift+M)",
   "undeafen": "取消静音 (Ctrl+Shift+D)",

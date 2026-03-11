@@ -3,6 +3,8 @@
   "addCategory": "Add Category",
   "serverSettings": "Server Settings",
   "disconnect": "Disconnect",
+  "disconnectConfirmTitle": "Disconnect",
+  "disconnectConfirmMsg": "Are you sure you want to disconnect?",
   "unmuteMic": "Unmute microphone (Ctrl+Shift+M)",
   "muteMic": "Mute microphone (Ctrl+Shift+M)",
   "undeafen": "Undeafen (Ctrl+Shift+D)",
