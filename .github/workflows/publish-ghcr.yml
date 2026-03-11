@@ -17,6 +17,7 @@ name: Publish Docker Images to GHCR
 #     - ghcr.io/<owner>/<repo>:1 (major only)
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - development
