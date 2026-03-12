@@ -1,10 +1,16 @@
-import { MessageCompose, type TMessageComposeHandle } from '@/components/message-compose';
-import { useChannelCan, useTypingUsersByChannelId } from '@/features/server/hooks';
+import {
+  MessageCompose,
+  type TMessageComposeHandle
+} from '@/components/message-compose';
+import {
+  useChannelCan,
+  useTypingUsersByChannelId
+} from '@/features/server/hooks';
 import { useMessages } from '@/features/server/messages/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
-import { getTRPCClient } from '@/lib/trpc';
 import { prepareMessageHtml } from '@/helpers/prepare-message-html';
+import { getTRPCClient } from '@/lib/trpc';
 import { ChannelPermission, TYPING_MS, getTrpcError } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
 import { throttle } from 'lodash-es';

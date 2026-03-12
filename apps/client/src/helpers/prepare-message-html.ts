@@ -1,5 +1,5 @@
-import { marked, Renderer } from 'marked';
 import { linkifyHtml } from '@sharkord/shared';
+import { marked, Renderer } from 'marked';
 
 const customRenderer = new Renderer();
 // don't escape html inside code spans
@@ -18,7 +18,10 @@ const tiptapHtmlToMarkdown = (html: string): string =>
     .replace(/^(&gt;)/gm, '>')
     // collapse \n\n between consecutive list item lines so marked treats them
     // as a tight list rather than a loose one
-    .replace(/(^[ \t]*(?:-|\d+\.)\s[^\n]*)\n\n(?=[ \t]*(?:-|\d+\.)\s)/gm, '$1\n')
+    .replace(
+      /(^[ \t]*(?:-|\d+\.)\s[^\n]*)\n\n(?=[ \t]*(?:-|\d+\.)\s)/gm,
+      '$1\n'
+    )
     .trim();
 
 const normaliseFences = (md: string): string =>

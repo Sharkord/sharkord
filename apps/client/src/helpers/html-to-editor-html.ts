@@ -21,16 +21,28 @@ const nodeToMarkdown = (node: Node): string => {
   const inner = Array.from(node.childNodes).map(nodeToMarkdown).join('');
 
   switch (tag) {
-    case 'strong': case 'b': return `**${inner}**`;
-    case 'em': case 'i': return `*${inner}*`;
-    case 'del': case 's': return `~~${inner}~~`;
-    case 'code': return `\`${inner}\``;
-    case 'a': return inner; // already linkified -- just use text
-    case 'li': return `- ${inner}`;
-    case 'p': return inner;
+    case 'strong':
+    case 'b':
+      return `**${inner}**`;
+    case 'em':
+    case 'i':
+      return `*${inner}*`;
+    case 'del':
+    case 's':
+      return `~~${inner}~~`;
+    case 'code':
+      return `\`${inner}\``;
+    case 'a':
+      return inner; // already linkified -- just use text
+    case 'li':
+      return `- ${inner}`;
+    case 'p':
+      return inner;
     // our emoji/mention spans -- pass through as-is
-    case 'span': return node.outerHTML;
-    default: return inner;
+    case 'span':
+      return node.outerHTML;
+    default:
+      return inner;
   }
 };
 
@@ -39,23 +51,38 @@ const blockToEditorParagraph = (el: Element): string => {
   const inner = Array.from(el.childNodes).map(nodeToMarkdown).join('');
 
   switch (tag) {
-    case 'h1': return `<p># ${inner}</p>`;
-    case 'h2': return `<p>## ${inner}</p>`;
-    case 'h3': return `<p>### ${inner}</p>`;
-    case 'h4': return `<p>#### ${inner}</p>`;
-    case 'h5': return `<p>##### ${inner}</p>`;
-    case 'h6': return `<p>###### ${inner}</p>`;
+    case 'h1':
+      return `<p># ${inner}</p>`;
+    case 'h2':
+      return `<p>## ${inner}</p>`;
+    case 'h3':
+      return `<p>### ${inner}</p>`;
+    case 'h4':
+      return `<p>#### ${inner}</p>`;
+    case 'h5':
+      return `<p>##### ${inner}</p>`;
+    case 'h6':
+      return `<p>###### ${inner}</p>`;
     case 'blockquote':
       return Array.from(el.children)
-        .map((c) => `<p>&gt; ${Array.from(c.childNodes).map(nodeToMarkdown).join('')}</p>`)
+        .map(
+          (c) =>
+            `<p>&gt; ${Array.from(c.childNodes).map(nodeToMarkdown).join('')}</p>`
+        )
         .join('');
     case 'ul':
       return Array.from(el.children)
-        .map((li) => `<p>- ${Array.from(li.childNodes).map(nodeToMarkdown).join('')}</p>`)
+        .map(
+          (li) =>
+            `<p>- ${Array.from(li.childNodes).map(nodeToMarkdown).join('')}</p>`
+        )
         .join('');
     case 'ol':
       return Array.from(el.children)
-        .map((li, i) => `<p>${i + 1}. ${Array.from(li.childNodes).map(nodeToMarkdown).join('')}</p>`)
+        .map(
+          (li, i) =>
+            `<p>${i + 1}. ${Array.from(li.childNodes).map(nodeToMarkdown).join('')}</p>`
+        )
         .join('');
     case 'pre': {
       const code = el.querySelector('code');

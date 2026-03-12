@@ -1,11 +1,8 @@
 import { TiptapInput } from '@/components/tiptap-input';
-import { getTRPCClient } from '@/lib/trpc';
-import { prepareMessageHtml } from '@/helpers/prepare-message-html';
 import { htmlToEditorHtml } from '@/helpers/html-to-editor-html';
-import {
-  type TMessage,
-  isEmptyMessage
-} from '@sharkord/shared';
+import { prepareMessageHtml } from '@/helpers/prepare-message-html';
+import { getTRPCClient } from '@/lib/trpc';
+import { type TMessage, isEmptyMessage } from '@sharkord/shared';
 import { AutoFocus } from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';

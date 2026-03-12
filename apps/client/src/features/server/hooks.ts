@@ -1,5 +1,5 @@
-import { getTRPCClient } from '@/lib/trpc';
 import { prepareMessageHtml } from '@/helpers/prepare-message-html';
+import { getTRPCClient } from '@/lib/trpc';
 import {
   ChannelPermission,
   Permission,

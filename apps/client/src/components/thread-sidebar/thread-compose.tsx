@@ -1,7 +1,7 @@
 import { MessageCompose } from '@/components/message-compose';
-import { prepareMessageHtml } from '@/helpers/prepare-message-html';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
+import { prepareMessageHtml } from '@/helpers/prepare-message-html';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TJoinedPublicUser } from '@sharkord/shared';
 import { TYPING_MS, getTrpcError } from '@sharkord/shared';
