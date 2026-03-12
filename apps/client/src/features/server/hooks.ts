@@ -1,8 +1,8 @@
 import { getTRPCClient } from '@/lib/trpc';
+import { prepareMessageHtml } from '@/helpers/prepare-message-html';
 import {
   ChannelPermission,
   Permission,
-  prepareMessageHtml,
   type TPluginSlotContext
 } from '@sharkord/shared';
 import { useCallback, useMemo, useRef } from 'react';
@@ -139,7 +139,7 @@ export const usePluginComponentContext = (): TPluginSlotContext => {
 
         await trpc.messages.send.mutate({
           channelId,
-          content: prepareMessageHtml(`<p>${content}</p>`),
+          content: prepareMessageHtml(content),
           files: []
         });
       }

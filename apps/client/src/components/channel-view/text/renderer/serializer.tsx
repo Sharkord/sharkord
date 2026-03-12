@@ -1,6 +1,7 @@
 import { imageExtensions, parseDomCommand } from '@sharkord/shared';
 import { Element, type DOMNode } from 'html-react-parser';
 import { CommandOverride } from '../overrides/command';
+import { EmojiOverride } from '../overrides/emoji';
 import { MentionOverride } from '../overrides/mention';
 import { TwitterOverride } from '../overrides/twitter';
 import { YoutubeOverride } from '../overrides/youtube';
@@ -67,6 +68,20 @@ const serializer = (
       if (!Number.isNaN(userId)) {
         return <MentionOverride userId={userId} />;
       }
+    } else if (
+      domNode instanceof Element &&
+      domNode.name === 'span' &&
+      domNode.attribs['data-type'] === 'emoji'
+    ) {
+      // prefer data-name attribute; fall back to stripping colons from text
+      // content for messages stored before data-name was added
+      const name =
+        domNode.attribs['data-name'] ||
+        domNode.children
+          .map((c) => ('data' in c ? (c as { data: string }).data : ''))
+          .join('')
+          .replace(/^:|:$/g, '');
+      if (name) return <EmojiOverride name={name} />;
     }
   } catch (error) {
     console.error(`Error parsing DOM node for message ID ${messageId}:`, error);

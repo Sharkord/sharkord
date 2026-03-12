@@ -1,16 +1,15 @@
 import { EmojiPicker } from '@/components/emoji-picker';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
-import { htmlToTiptapHtml } from '@/helpers/html-to-tiptap-html';
+import { htmlToEditorHtml } from '@/helpers/html-to-editor-html';
 import type { TCommandInfo } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
-import Link from '@tiptap/extension-link';
-import { DOMParser as PMMDOMParser } from '@tiptap/pm/model';
+import { Placeholder } from '@tiptap/extensions';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Smile } from 'lucide-react';
-import { memo, useEffect, useMemo, useRef } from 'react';
+import { ChevronDown, ChevronUp, Smile } from 'lucide-react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { TEmojiItem } from './helpers';
 import {
   COMMANDS_STORAGE_KEY,
@@ -30,7 +29,8 @@ type TTiptapInputProps = {
   disabled?: boolean;
   readOnly?: boolean;
   value?: string;
-  onChange?: (html: string) => void;
+  placeholder?: string;
+  onChange?: (markdown: string) => void;
   onSubmit?: () => void;
   onCancel?: () => void;
   onTyping?: () => void;
@@ -40,6 +40,7 @@ type TTiptapInputProps = {
 const TiptapInput = memo(
   ({
     value,
+    placeholder,
     onChange,
     onSubmit,
     onCancel,
@@ -52,6 +53,10 @@ const TiptapInput = memo(
 
     readOnlyRef.current = readOnly;
 
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [hasOverflow, setHasOverflow] = useState(false);
+    const [isHovering, setIsHovering] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
     const editorWrapperRef = useRef<HTMLDivElement>(null);
 
     const customEmojis = useCustomEmojis();
@@ -60,8 +65,8 @@ const TiptapInput = memo(
     const extensions = useMemo(() => {
       const exts = [
         StarterKit.configure({
-          // disable all WYSIWYG formatting -- we want to see every character
-          // typed as-is (markdown-aware plain text, not rich text)
+          // disable all wysiwyg formatting nodes -- the editor stays as
+          // plain-text markdown; @tiptap/markdown handles serialisation only
           bold: false,
           italic: false,
           strike: false,
@@ -74,20 +79,19 @@ const TiptapInput = memo(
           listItem: false,
           listKeymap: false,
           horizontalRule: false,
-          hardBreak: false
-        }),
-        Link.configure({
-          autolink: true,
-          defaultProtocol: 'https',
-          openOnClick: false,
-          HTMLAttributes: {
-            target: '_blank',
-            rel: 'noopener noreferrer'
-          },
-          shouldAutoLink: (url) => {
-            return /^https?:\/\//i.test(url);
+          hardBreak: false,
+          link: {
+            autolink: true,
+            defaultProtocol: 'https',
+            openOnClick: false,
+            HTMLAttributes: {
+              target: '_blank',
+              rel: 'noopener noreferrer'
+            },
+            shouldAutoLink: (url) => /^https?:\/\//i.test(url)
           }
         }),
+        // emoji renders as <span data-type="emoji" data-name="..."> in html
         Emoji.configure({
           emojis: [...gitHubEmojis, ...customEmojis],
           enableEmoticons: true,
@@ -96,12 +100,14 @@ const TiptapInput = memo(
             class: 'emoji-image'
           }
         }),
+        // mention is handled by MentionNode with renderMarkdown
         Mention.configure({
           users,
           suggestion: MentionSuggestion
         }),
         MentionNode,
-        MarkdownSyntaxDim
+        MarkdownSyntaxDim,
+        Placeholder.configure({ placeholder })
       ];
 
       if (commands) {
@@ -115,23 +121,21 @@ const TiptapInput = memo(
       }
 
       return exts;
-    }, [customEmojis, commands, users]);
+    }, [customEmojis, commands, users, placeholder]);
 
     const editor = useEditor({
       extensions,
-      content: value,
+      content: value ?? '',
       editable: !disabled,
       onUpdate: ({ editor }) => {
-        const html = editor.getHTML();
-
-        onChange?.(html);
+        onChange?.(editor.getHTML());
 
         if (!editor.isEmpty) {
           onTyping?.();
         }
       },
       editorProps: {
-        handleKeyDown: (view, event) => {
+        handleKeyDown: (_view, event) => {
           // block all input when readOnly
           if (readOnlyRef.current) {
             event.preventDefault();
@@ -144,14 +148,9 @@ const TiptapInput = memo(
 
           if (event.key === 'Enter') {
             if (event.shiftKey) {
-              // insert a new paragraph instead of a hard-break -- shift+enter
-              // means "new line without submitting", not "inline line break"
-              event.preventDefault();
-              view.dispatch(
-                view.state.tr
-                  .split(view.state.selection.anchor)
-                  .scrollIntoView()
-              );
+              // treat shift+enter as a plain enter (new paragraph) -- the shift
+              // just means "don't submit", not "insert a hard break"
+              editor.commands.splitBlock();
               return true;
             }
 
@@ -176,55 +175,30 @@ const TiptapInput = memo(
         handleClickOn: (_view, _pos, _node, _nodePos, event) => {
           const target = event.target as HTMLElement;
 
-          // prevents clicking on links inside the edit from opening them in the browser
+          // prevents clicking on links inside the editor from opening them
           if (target.tagName === 'A') {
             event.preventDefault();
-
             return true;
           }
 
           return false;
         },
-        handlePaste: (view, event) => {
+        handlePaste: (_view, event) => {
           if (readOnlyRef.current) return true;
 
           const html = event.clipboardData?.getData('text/html');
-          const text = event.clipboardData?.getData('text/plain');
-
-          // convert html clipboard content to markdown paragraph html, then
-          // let prosemirror parse and insert it as structured nodes
-          const escapeText = (s: string) =>
-            s
-              .replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;');
-
-          const pasteHtml = html
-            ? htmlToTiptapHtml(html)
-            : text
-              ? text
-                  .split(/\r?\n/)
-                  .map((l) => {
-                    const indent = l.match(/^[ \t]*/)?.[0] ?? '';
-                    const encodedIndent = [...indent]
-                      .map((c) =>
-                        c === '\t' ? '&nbsp;&nbsp;&nbsp;&nbsp;' : '&nbsp;'
-                      )
-                      .join('');
-                    return `<p>${encodedIndent}${escapeText(l.slice(indent.length))}</p>`;
-                  })
-                  .join('')
-              : null;
-
-          if (!pasteHtml) return false;
+          const plain = event.clipboardData?.getData('text/plain');
 
           event.preventDefault();
 
-          const { state, dispatch } = view;
-          const dom = document.createElement('div');
-          dom.innerHTML = pasteHtml;
-          const slice = PMMDOMParser.fromSchema(state.schema).parseSlice(dom);
-          dispatch(state.tr.replaceSelection(slice).scrollIntoView());
+          if (html) {
+            // convert rich html to editor html (markdown syntax as literal text)
+            editor?.commands.insertContent(htmlToEditorHtml(html));
+          } else if (plain) {
+            // insert plain text as-is so < > aren't interpreted as html
+            editor?.commands.insertContent({ type: 'text', text: plain });
+          }
+
           return true;
         },
         handleDrop: () => readOnlyRef.current
@@ -240,7 +214,6 @@ const TiptapInput = memo(
     };
 
     // keep emoji storage in sync with custom emojis from the store
-    // this ensures newly added emojis appear in autocomplete without refreshing the app
     useEffect(() => {
       if (editor) {
         const allEmojis = [...gitHubEmojis, ...customEmojis];
@@ -294,7 +267,11 @@ const TiptapInput = memo(
 
         // only update if content is actually different to avoid cursor jumping
         if (currentContent !== value) {
-          editor.commands.setContent(value);
+          if (!value) {
+            editor.commands.clearContent();
+          } else {
+            editor.commands.setContent(value);
+          }
         }
       }
     }, [editor, value]);
@@ -305,15 +282,50 @@ const TiptapInput = memo(
       }
     }, [editor, disabled]);
 
+    // measure if content overflows (more than ~3 lines) when collapsed
+    useLayoutEffect(() => {
+      if (isExpanded) return;
+      const wrapper = editorWrapperRef.current;
+      const el = wrapper?.firstElementChild as HTMLElement | null;
+      if (el) {
+        setHasOverflow(el.scrollHeight > el.clientHeight);
+      }
+    }, [value, isExpanded]);
+
+    const showExpandButton = hasOverflow || isExpanded;
+
     return (
       <div className="flex flex-1 items-center gap-2 min-w-0">
-        <div ref={editorWrapperRef} className="relative flex min-w-0 flex-1">
+        <div
+          ref={editorWrapperRef}
+          className="relative flex min-w-0 flex-1"
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+        >
           <EditorContent
             editor={editor}
-            className={`border p-2 rounded w-full min-h-10 max-h-80 tiptap overflow-auto relative transition-colors focus-within:border-ring [&_.ProseMirror:focus]:outline-none ${
-              disabled ? ' opacity-50 cursor-not-allowed bg-muted' : ''
-            }`}
+            className={`border p-2 rounded w-full min-h-10 tiptap overflow-auto relative transition-colors focus-within:border-ring [&_.ProseMirror:focus]:outline-none ${
+              isExpanded ? 'max-h-80' : 'max-h-20'
+            } ${disabled ? 'opacity-50 cursor-not-allowed bg-muted' : ''}`}
           />
+          {showExpandButton && (isHovering || isFocused) && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute -top-1 left-1/2 -translate-y-1/2 -translate-x-1/2 h-5 w-8 shrink-0 rounded border bg-background hover:bg-muted"
+              onClick={() => setIsExpanded((e) => !e)}
+              aria-label={isExpanded ? 'Collapse' : 'Expand'}
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronUp className="h-4 w-4" />
+              )}
+            </Button>
+          )}
         </div>
 
         <EmojiPicker onEmojiSelect={handleEmojiSelect}>
