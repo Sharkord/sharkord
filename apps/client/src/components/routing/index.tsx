@@ -14,8 +14,10 @@ import { LoadingApp } from '@/screens/loading-app';
 import { ServerView } from '@/screens/server-view';
 import { DisconnectCode } from '@sharkord/shared';
 import { memo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const Routing = memo(() => {
+  const { t } = useTranslation('connect');
   const isConnected = useIsConnected();
   const isAppLoading = useIsAppLoading();
   const isPluginsLoading = useIsPluginsLoading();
@@ -34,15 +36,13 @@ const Routing = memo(() => {
 
   if (isAppLoading || isPluginsLoading) {
     return (
-      <LoadingApp
-        text={isAppLoading ? 'Loading Sharkord' : 'Loading Plugins'}
-      />
+      <LoadingApp text={isAppLoading ? t('loadingApp') : t('loadingPlugins')} />
     );
   }
 
   if (!isConnected) {
     if (isAutoConnecting) {
-      return <LoadingApp text="Logging in automatically..." />;
+      return <LoadingApp text={t('loggingInAutomatically')} />;
     }
 
     if (

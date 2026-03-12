@@ -1,7 +1,7 @@
 name: Feature Request
 description: Suggest an idea for Sharkord. Please provide as much detail as possible to help us understand and evaluate your request.
 title: "[Feature]: "
-labels: ["feature"]
+labels: ["feature", "needs-triage"]
 assignees: []
 
 body:

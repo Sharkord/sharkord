@@ -15,8 +15,10 @@ import {
 } from '@sharkord/ui';
 import { ArrowUpCircle, CheckCircle, Download, X } from 'lucide-react';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const Updates = memo(() => {
+  const { t } = useTranslation('settings');
   const {
     loading,
     hasUpdate,
@@ -33,46 +35,42 @@ const Updates = memo(() => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Updates</CardTitle>
-        <CardDescription>
-          Check for and install updates to keep your Sharkord server running
-          with the latest features and security improvements.
-        </CardDescription>
+        <CardTitle>{t('updatesTitle')}</CardTitle>
+        <CardDescription>{t('updatesDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Group label="Current Version">
+        <Group label={t('currentVersionLabel')}>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CheckCircle className="h-4 w-4" />
-            <span className="font-mono">{currentVersion || 'Unknown'}</span>
+            <span className="font-mono">
+              {currentVersion || t('unknownVersion')}
+            </span>
           </div>
         </Group>
 
-        <Group label="Latest Version">
+        <Group label={t('latestVersionLabel')}>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <ArrowUpCircle className="h-4 w-4" />
-            <span className="font-mono">{latestVersion || 'Unknown'}</span>
+            <span className="font-mono">
+              {latestVersion || t('unknownVersion')}
+            </span>
           </div>
         </Group>
 
         {!canUpdate ? (
           <Alert variant="destructive">
             <X />
-            <AlertTitle>Updates Not Supported</AlertTitle>
-            <AlertDescription>
-              Automatic updates are not supported in this environment. Please
-              refer to the documentation for manual update instructions.
-            </AlertDescription>
+            <AlertTitle>{t('updatesNotSupportedTitle')}</AlertTitle>
+            <AlertDescription>{t('updatesNotSupportedDesc')}</AlertDescription>
           </Alert>
         ) : (
           <>
             {hasUpdate && (
               <Alert>
                 <Download />
-                <AlertTitle>Update Available</AlertTitle>
+                <AlertTitle>{t('updateAvailableTitle')}</AlertTitle>
                 <AlertDescription>
-                  A new version ({latestVersion}) is available for download.
-                  Updating will restart the server and may cause temporary
-                  downtime.
+                  {t('updateAvailableDesc', { version: latestVersion })}
                 </AlertDescription>
               </Alert>
             )}
@@ -80,10 +78,8 @@ const Updates = memo(() => {
             {!hasUpdate && !loading && (
               <Alert variant="info">
                 <CheckCircle />
-                <AlertTitle>Up to Date</AlertTitle>
-                <AlertDescription>
-                  Your server is running the latest version of Sharkord.
-                </AlertDescription>
+                <AlertTitle>{t('upToDateTitle')}</AlertTitle>
+                <AlertDescription>{t('upToDateDesc')}</AlertDescription>
               </Alert>
             )}
           </>
@@ -91,13 +87,13 @@ const Updates = memo(() => {
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
-            Close
+            {t('close')}
           </Button>
           <Button
             onClick={update}
             disabled={loading || !hasUpdate || !canUpdate}
           >
-            {hasUpdate ? 'Update Server' : 'No Updates Available'}
+            {hasUpdate ? t('updateServerBtn') : t('noUpdatesAvailableBtn')}
           </Button>
         </div>
       </CardContent>

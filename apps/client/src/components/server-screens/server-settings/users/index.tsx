@@ -8,9 +8,11 @@ import {
   LoadingCard
 } from '@sharkord/ui';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UsersTable } from './users-table';
 
 const Users = memo(() => {
+  const { t } = useTranslation('settings');
   const { users, loading, refetch } = useAdminUsers();
 
   if (loading) {
@@ -20,10 +22,8 @@ const Users = memo(() => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Users</CardTitle>
-        <CardDescription>
-          Manage server users and their permissions
-        </CardDescription>
+        <CardTitle>{t('usersTitle')}</CardTitle>
+        <CardDescription>{t('usersDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <UsersTable users={users} refetch={refetch} />

@@ -16,8 +16,10 @@ import {
 } from '@sharkord/ui';
 import { Settings } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const VoiceOptionsController = memo(() => {
+  const { t } = useTranslation('topbar');
   const hideNonVideoParticipants = useHideNonVideoParticipants();
   const showUserBanners = useShowUserBannersInVoice();
 
@@ -37,7 +39,7 @@ const VoiceOptionsController = memo(() => {
           size="sm"
           className="h-6 px-2 transition-all duration-200 ease-in-out"
         >
-          <Tooltip content="Voice Options" asChild={false}>
+          <Tooltip content={t('voiceOptions')} asChild={false}>
             <Settings className="w-4 h-4" />
           </Tooltip>
         </Button>
@@ -45,7 +47,7 @@ const VoiceOptionsController = memo(() => {
       <PopoverContent align="end" className="w-80">
         <div className="space-y-3">
           <h4 className="font-medium text-sm cursor-default mb-3">
-            Voice Options
+            {t('voiceOptions')}
           </h4>
 
           <div className="flex items-center justify-between space-x-3">
@@ -55,7 +57,7 @@ const VoiceOptionsController = memo(() => {
               }
               className="text-sm text-foreground cursor-pointer select-none flex-1"
             >
-              Hide non-video participants
+              {t('hideNonVideoParticipants')}
             </span>
             <Switch
               id="hide-non-video"
@@ -71,7 +73,7 @@ const VoiceOptionsController = memo(() => {
               onClick={() => handleToggleShowUserBanners(!showUserBanners)}
               className="text-sm text-foreground cursor-pointer select-none flex-1"
             >
-              Display user banners
+              {t('displayUserBanners')}
             </span>
             <Switch
               id="show-user-banners"

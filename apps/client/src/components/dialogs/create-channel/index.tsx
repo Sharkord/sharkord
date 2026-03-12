@@ -18,6 +18,7 @@ import {
 } from '@sharkord/ui';
 import { Hash, Mic } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TDialogBaseProps } from '../types';
 
 type TChannelTypeItemProps = {
@@ -62,6 +63,7 @@ const CreateChannelDialog = memo(
     close,
     defaultChannelType = ChannelType.TEXT
   }: TCreateChannelDialogProps) => {
+    const { t } = useTranslation('dialogs');
     const [channelType, setChannelType] = useState(defaultChannelType);
     const [name, setName] = useState('New Channel');
     const [loading, setLoading] = useState(false);
@@ -91,31 +93,31 @@ const CreateChannelDialog = memo(
       <Dialog open={isOpen}>
         <DialogContent onInteractOutside={close} close={close}>
           <DialogHeader>
-            <DialogTitle>Create New Channel</DialogTitle>
+            <DialogTitle>{t('createChannelTitle')}</DialogTitle>
           </DialogHeader>
 
-          <Group label="Channel type">
+          <Group label={t('channelTypeLabel')}>
             <ChannelTypeItem
-              title="Text Channel"
-              description="Share text, images, files and more"
+              title={t('textChannelTitle')}
+              description={t('textChannelDesc')}
               icon={<Hash className="h-6 w-6" />}
               isActive={channelType === ChannelType.TEXT}
               onClick={() => setChannelType(ChannelType.TEXT)}
             />
 
             <ChannelTypeItem
-              title="Voice Channel"
-              description="Hangout with voice, video and screen sharing"
+              title={t('voiceChannelTitle')}
+              description={t('voiceChannelDesc')}
               icon={<Mic className="h-6 w-6" />}
               isActive={channelType === ChannelType.VOICE}
               onClick={() => setChannelType(ChannelType.VOICE)}
             />
           </Group>
 
-          <Group label="Channel name">
+          <Group label={t('channelNameLabel')}>
             <AutoFocus>
               <Input
-                placeholder="Channel name"
+                placeholder={t('channelNamePlaceholder')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 name="name"
@@ -128,13 +130,13 @@ const CreateChannelDialog = memo(
 
           <DialogFooter className="gap-2">
             <Button variant="ghost" onClick={close}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               onClick={onSubmit}
               disabled={loading || !name || !channelType}
             >
-              Create channel
+              {t('createChannelBtn')}
             </Button>
           </DialogFooter>
         </DialogContent>

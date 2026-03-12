@@ -8,11 +8,14 @@ customRenderer.codespan = ({ text }: { text: string }) =>
 
 // convert tiptap html to markdown for rendering.
 // tiptap wraps content in <p> tags, escaping user-typed < as &lt; etc.
-// we keep those entities as-is -- marked passes them through correctly.
+// we decode &gt; at line starts so marked recognises blockquote syntax (> ...)
+// but leave other entities alone so marked passes them through correctly.
 const tiptapHtmlToMarkdown = (html: string): string =>
   html
     .replace(/<p>([\s\S]*?)<\/p>/g, (_, content) => content + '\n\n')
     .replace(/<br\s*\/?>/g, '\n')
+    // decode &gt; only at the start of a line so blockquote syntax works
+    .replace(/^(&gt;)/gm, '>')
     // collapse \n\n between consecutive list item lines so marked treats them
     // as a tight list rather than a loose one
     .replace(/(^[ \t]*(?:-|\d+\.)\s[^\n]*)\n\n(?=[ \t]*(?:-|\d+\.)\s)/gm, '$1\n')

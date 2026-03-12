@@ -12,9 +12,11 @@ import {
   Input
 } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 const Password = memo(() => {
+  const { t } = useTranslation('settings');
   const { setTrpcErrors, r, values } = useForm({
     currentPassword: '',
     newPassword: '',
@@ -26,38 +28,36 @@ const Password = memo(() => {
 
     try {
       await trpc.users.updatePassword.mutate(values);
-      toast.success('Password updated!');
+      toast.success(t('passwordUpdated'));
     } catch (error) {
       setTrpcErrors(error);
     }
-  }, [values, setTrpcErrors]);
+  }, [values, setTrpcErrors, t]);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Password</CardTitle>
-        <CardDescription>
-          In this section, you can update your password.
-        </CardDescription>
+        <CardTitle>{t('passwordTitle')}</CardTitle>
+        <CardDescription>{t('passwordDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Group label="Current Password">
+        <Group label={t('currentPasswordLabel')}>
           <Input {...r('currentPassword', 'password')} />
         </Group>
 
-        <Group label="New Password">
+        <Group label={t('newPasswordLabel')}>
           <Input {...r('newPassword', 'password')} />
         </Group>
 
-        <Group label="Confirm New Password">
+        <Group label={t('confirmNewPasswordLabel')}>
           <Input {...r('confirmNewPassword', 'password')} />
         </Group>
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
-            Cancel
+            {t('cancel')}
           </Button>
-          <Button onClick={updatePassword}>Save Changes</Button>
+          <Button onClick={updatePassword}>{t('saveChanges')}</Button>
         </div>
       </CardContent>
     </Card>

@@ -52,12 +52,15 @@ const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
   }, [openFilePicker, refetch]);
 
   return (
-    <Group label="Logo">
+    <Group
+      label="Logo"
+      description="Recommended max resolution: 1200x400 or 1024x1024."
+    >
       <ImagePicker
         image={logo}
         onImageClick={onLogoClick}
         onRemoveImageClick={removeLogo}
-        className="w-48 h-48"
+        className="object-scale-down"
       />
     </Group>
   );

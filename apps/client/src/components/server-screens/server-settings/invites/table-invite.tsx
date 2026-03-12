@@ -2,6 +2,7 @@ import { RoleBadge } from '@/components/role-badge';
 import { UserAvatar } from '@/components/user-avatar';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getUrlFromServer } from '@/helpers/get-file-url';
+import { useDateLocale } from '@/hooks/use-date-locale';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import type { TJoinedInvite } from '@sharkord/shared';
@@ -17,6 +18,7 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import { Copy, MoreVertical, Trash2 } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TTableInviteProps = {
@@ -25,22 +27,22 @@ type TTableInviteProps = {
 };
 
 const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
+  const { t } = useTranslation('settings');
+  const dateLocale = useDateLocale();
   const isExpired = invite.expiresAt && invite.expiresAt < Date.now();
   const isMaxUsesReached = invite.maxUses && invite.uses >= invite.maxUses;
 
   const handleCopyCode = useCallback(() => {
     const inviteUrl = `${getUrlFromServer()}/?invite=${invite.code}`;
-
     navigator.clipboard.writeText(inviteUrl);
-    toast.success('Invite code copied to clipboard');
-  }, [invite.code]);
+    toast.success(t('inviteCopied'));
+  }, [invite.code, t]);
 
   const handleDelete = useCallback(async () => {
     const answer = await requestConfirmation({
-      title: 'Delete Invite',
-      message:
-        'Are you sure you want to delete this invite? This action cannot be undone.',
-      confirmLabel: 'Delete'
+      title: t('deleteInviteTitle'),
+      message: t('deleteInviteMsg'),
+      confirmLabel: t('deleteBtn')
     });
 
     if (!answer) return;
@@ -49,12 +51,12 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
 
     try {
       await trpc.invites.delete.mutate({ inviteId: invite.id });
-      toast.success('Invite deleted');
+      toast.success(t('inviteDeletedSuccess'));
       refetch();
     } catch (error) {
-      toast.error(getTrpcError(error, 'Failed to delete invite'));
+      toast.error(getTrpcError(error, t('failedDeleteInvite')));
     }
-  }, [invite.id, refetch]);
+  }, [invite.id, refetch, t]);
 
   const usesText = useMemo(() => {
     if (!invite.maxUses) {
@@ -65,35 +67,38 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
 
   const expiresText = useMemo(() => {
     if (!invite.expiresAt) {
-      return 'Never';
+      return t('inviteNever');
     }
     if (isExpired) {
-      return 'Expired';
+      return t('inviteExpired');
     }
-    return formatDistanceToNow(invite.expiresAt, { addSuffix: true });
-  }, [invite.expiresAt, isExpired]);
+    return formatDistanceToNow(invite.expiresAt, {
+      addSuffix: true,
+      locale: dateLocale
+    });
+  }, [invite.expiresAt, isExpired, t, dateLocale]);
 
   const statusBadge = useMemo(() => {
     if (isExpired) {
       return (
         <Badge variant="destructive" className="text-xs">
-          Expired
+          {t('inviteExpired')}
         </Badge>
       );
     }
     if (isMaxUsesReached) {
       return (
         <Badge variant="secondary" className="text-xs">
-          Max Uses
+          {t('inviteMaxUses')}
         </Badge>
       );
     }
     return (
       <Badge variant="default" className="text-xs">
-        Active
+        {t('inviteActive')}
       </Badge>
     );
-  }, [isExpired, isMaxUsesReached]);
+  }, [isExpired, isMaxUsesReached, t]);
 
   return (
     <div
@@ -120,7 +125,9 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
         {invite.role ? (
           <RoleBadge role={invite.role} />
         ) : (
-          <span className="text-xs text-muted-foreground">Default</span>
+          <span className="text-xs text-muted-foreground">
+            {t('inviteDefault')}
+          </span>
         )}
       </div>
 
@@ -138,7 +145,9 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
             'text-destructive': isExpired
           })}
           title={
-            invite.expiresAt ? format(invite.expiresAt, 'PPP p') : undefined
+            invite.expiresAt
+              ? format(invite.expiresAt, 'PPP p', { locale: dateLocale })
+              : undefined
           }
         >
           {expiresText}
@@ -146,8 +155,14 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
       </div>
 
       <div className="flex items-center text-muted-foreground">
-        <span className="text-xs" title={format(invite.createdAt, 'PPP p')}>
-          {formatDistanceToNow(invite.createdAt, { addSuffix: true })}
+        <span
+          className="text-xs"
+          title={format(invite.createdAt, 'PPP p', { locale: dateLocale })}
+        >
+          {formatDistanceToNow(invite.createdAt, {
+            addSuffix: true,
+            locale: dateLocale
+          })}
         </span>
       </div>
 
@@ -167,14 +182,14 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={handleCopyCode}>
               <Copy className="h-4 w-4" />
-              Copy Invite Link
+              {t('copyInviteLink')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={handleDelete}
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="h-4 w-4" />
-              Delete
+              {t('deleteBtn')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

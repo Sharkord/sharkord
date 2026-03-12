@@ -2,6 +2,7 @@ import type { TExternalStreamTracks } from '@sharkord/shared';
 import { Tooltip } from '@sharkord/ui';
 import { Headphones, Router, Video } from 'lucide-react';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type TExternalStreamProps = {
   title: string;
@@ -12,6 +13,7 @@ type TExternalStreamProps = {
 
 const ExternalStream = memo(
   ({ title, tracks, pluginId, avatarUrl }: TExternalStreamProps) => {
+    const { t } = useTranslation('sidebar');
     const hasVideo = tracks?.video;
     const hasAudio = tracks?.audio;
 
@@ -19,7 +21,9 @@ const ExternalStream = memo(
       <div className="flex items-center gap-2 px-2 py-1 rounded hover:bg-accent/30 text-sm">
         <Tooltip
           content={
-            pluginId ? `External Stream (${pluginId})` : 'External Stream'
+            pluginId
+              ? t('externalStreamPlugin', { pluginId })
+              : t('externalStream')
           }
         >
           {avatarUrl ? (

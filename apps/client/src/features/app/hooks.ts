@@ -10,6 +10,7 @@ import {
   dmsOpenSelector,
   isAutoConnectingSelector,
   loadingPluginsSelector,
+  messageJumpTargetSelector,
   modViewOpenSelector,
   modViewUserIdSelector,
   selectedDmChannelIdSelector,
@@ -49,3 +50,6 @@ export const useBrowserNotificationsForMentions = () =>
 
 export const useBrowserNotificationsForDms = () =>
   useSelector(browserNotificationsForDmsSelector);
+
+export const useMessageJumpTarget = () =>
+  useSelector(messageJumpTargetSelector);

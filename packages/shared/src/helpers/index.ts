@@ -5,6 +5,7 @@ export * from './get-random-string';
 export * from './has-mention';
 export * from './linkify-html';
 export * from './message-sanitizer';
+export * from './prepare-message-html';
 export * from './sha256';
 export * from './strip-zalgo';
 export * from './trpc-errors';

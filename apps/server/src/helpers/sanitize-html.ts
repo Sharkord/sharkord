@@ -49,7 +49,6 @@ const sanitizeMessageHtml = (html: string): string => {
       '*': []
     },
     allowedSchemes: ['http', 'https', 'mailto'],
-    // disallow any script or event handler attributes globally
     disallowedTagsMode: 'discard'
   });
 

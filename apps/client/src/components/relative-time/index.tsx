@@ -1,11 +1,13 @@
+import { useDateLocale } from '@/hooks/use-date-locale';
 import {
   format,
   formatDistanceToNow,
   isFuture,
   isWithinInterval,
-  subHours
+  subHours,
+  type Locale
 } from 'date-fns';
-import { memo, type ReactNode, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 const ONE_MINUTE = 60_000;
 const ONE_HOUR = 60 * ONE_MINUTE;
@@ -15,6 +17,18 @@ type TRelativeTimeProps = {
   date: Date | string;
   interval?: number;
   children: (relativeTime: string) => ReactNode;
+};
+
+const getFormattedTime = (d: Date, dateLocale: Locale): string => {
+  const now = new Date();
+  const twentyFourHoursAgo = subHours(now, 24);
+
+  // past 24 hours show relative time, eg: 5 minutes ago
+  if (isWithinInterval(d, { start: twentyFourHoursAgo, end: now })) {
+    return formatDistanceToNow(d, { addSuffix: true, locale: dateLocale });
+  }
+
+  return format(d, DEFAULT_FORMAT, { locale: dateLocale });
 };
 
 const getUpdateInterval = (date: Date): number | null => {
@@ -35,24 +49,13 @@ const getUpdateInterval = (date: Date): number | null => {
   return ONE_HOUR;
 };
 
-const getFormattedTime = (date: Date): string => {
-  const now = new Date();
-  const twentyFourHoursAgo = subHours(now, 24);
-
-  // past 24 hours show relative time, eg: 5 minutes ago
-  if (isWithinInterval(date, { start: twentyFourHoursAgo, end: now })) {
-    return formatDistanceToNow(date, { addSuffix: true });
-  }
-
-  return format(date, DEFAULT_FORMAT);
-};
-
 const RelativeTime = memo(
   ({
     date,
     interval, // optional override
     children
   }: TRelativeTimeProps) => {
+    const dateLocale = useDateLocale();
     const parsedDate = useMemo(
       () => (typeof date === 'string' ? new Date(date) : date),
       [date]
@@ -76,7 +79,7 @@ const RelativeTime = memo(
       return () => clearInterval(timer);
     }, [interval, parsedDate]);
 
-    return children(getFormattedTime(parsedDate));
+    return children(getFormattedTime(parsedDate, dateLocale));
   }
 );
 
