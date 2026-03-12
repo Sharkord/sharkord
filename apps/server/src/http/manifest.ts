@@ -9,14 +9,29 @@ const manifestRouteHandler = async (
   const settings = await getSettings();
 
   const icons = settings.logo
-    ? [
-        {
-          src: `/public/${settings.logo.name}`,
-          sizes: 'any',
-          type: settings.logo.mimeType,
-          purpose: 'any'
-        }
-      ]
+    ? settings.logo.mimeType === 'image/svg+xml'
+      ? [
+          {
+            src: `/public/${settings.logo.name}`,
+            sizes: 'any',
+            type: settings.logo.mimeType,
+            purpose: 'any'
+          }
+        ]
+      : [
+          {
+            src: `/public/${settings.logo.name}`,
+            sizes: '192x192',
+            type: settings.logo.mimeType,
+            purpose: 'any'
+          },
+          {
+            src: `/public/${settings.logo.name}`,
+            sizes: '512x512',
+            type: settings.logo.mimeType,
+            purpose: 'any'
+          }
+        ]
     : [
         { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
         { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }
