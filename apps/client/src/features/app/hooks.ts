@@ -14,7 +14,8 @@ import {
   modViewOpenSelector,
   modViewUserIdSelector,
   selectedDmChannelIdSelector,
-  threadSidebarDataSelector
+  threadSidebarDataSelector,
+  voiceChatSidebarDataSelector
 } from './selectors';
 
 export const useIsAppLoading = () => useSelector(appLoadingSelector);
@@ -53,3 +54,6 @@ export const useBrowserNotificationsForDms = () =>
 
 export const useMessageJumpTarget = () =>
   useSelector(messageJumpTargetSelector);
+
+export const useVoiceChatSidebar = () =>
+  useSelector(voiceChatSidebarDataSelector);

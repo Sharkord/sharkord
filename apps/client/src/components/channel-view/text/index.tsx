@@ -34,9 +34,10 @@ import {
 
 type TChannelProps = {
   channelId: number;
+  onClose?: () => void;
 };
 
-const TextChannel = memo(({ channelId }: TChannelProps) => {
+const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
   const { t } = useTranslation();
   const {
     messages,
@@ -133,7 +134,11 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         </div>
       )}
 
-      <TextTopbar onScrollToMessage={scrollToMessage} channelId={channelId} />
+      <TextTopbar
+        onScrollToMessage={scrollToMessage}
+        channelId={channelId}
+        onClose={onClose}
+      />
 
       <div
         ref={containerRef}

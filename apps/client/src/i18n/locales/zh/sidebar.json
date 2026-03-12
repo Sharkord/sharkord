@@ -58,7 +58,7 @@
   "membersHeader": "成员 — {{count}}",
   "openDirectMessages": "打开私信",
   "closeDirectMessages": "关闭私信",
-
+  "openChat": "打开聊天",
   "editLabel": "编辑",
   "deleteLabel": "删除",
   "deleteChannelTitle": "删除频道",

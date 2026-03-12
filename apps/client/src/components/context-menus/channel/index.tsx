@@ -1,10 +1,11 @@
 import { ServerScreen } from '@/components/server-screens/screens';
+import { openVoiceChatSidebar } from '@/features/app/actions';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { openServerScreen } from '@/features/server-screens/actions';
 import { useChannelById } from '@/features/server/channels/hooks';
 import { useCan } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
-import { Permission } from '@sharkord/shared';
+import { ChannelType, Permission } from '@sharkord/shared';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -28,6 +29,13 @@ const ChannelContextMenu = memo(
     const can = useCan();
     const channel = useChannelById(channelId);
 
+    const canManageChannels = can(Permission.MANAGE_CHANNELS);
+    const isVoiceChannel = channel?.type === ChannelType.VOICE;
+
+    const onOpenChat = useCallback(() => {
+      openVoiceChatSidebar(channelId);
+    }, [channelId]);
+
     const onDeleteClick = useCallback(async () => {
       const choice = await requestConfirmation({
         title: t('deleteChannelTitle'),
@@ -42,6 +50,7 @@ const ChannelContextMenu = memo(
 
       try {
         await trpc.channels.delete.mutate({ channelId });
+
         toast.success(t('channelDeleted'));
       } catch {
         toast.error(t('failedDeleteChannel'));
@@ -52,7 +61,7 @@ const ChannelContextMenu = memo(
       openServerScreen(ServerScreen.CHANNEL_SETTINGS, { channelId });
     }, [channelId]);
 
-    if (!can(Permission.MANAGE_CHANNELS)) {
+    if (!canManageChannels && !isVoiceChannel) {
       return <>{children}</>;
     }
 
@@ -62,12 +71,22 @@ const ChannelContextMenu = memo(
         <ContextMenuContent>
           <ContextMenuLabel>{channel?.name}</ContextMenuLabel>
           <ContextMenuSeparator />
-          <ContextMenuItem onClick={onEditClick}>
-            {t('editLabel')}
-          </ContextMenuItem>
-          <ContextMenuItem variant="destructive" onClick={onDeleteClick}>
-            {t('deleteLabel')}
-          </ContextMenuItem>
+          {isVoiceChannel && (
+            <ContextMenuItem onClick={onOpenChat}>
+              {t('openChat')}
+            </ContextMenuItem>
+          )}
+          {canManageChannels && (
+            <>
+              {isVoiceChannel && <ContextMenuSeparator />}
+              <ContextMenuItem onClick={onEditClick}>
+                {t('editLabel')}
+              </ContextMenuItem>
+              <ContextMenuItem variant="destructive" onClick={onDeleteClick}>
+                {t('deleteLabel')}
+              </ContextMenuItem>
+            </>
+          )}
         </ContextMenuContent>
       </ContextMenu>
     );

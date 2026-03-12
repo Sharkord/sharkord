@@ -1,10 +1,18 @@
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
-import { LocalStorageKey, setLocalStorageItemBool } from '@/helpers/storage';
+import {
+  LocalStorageKey,
+  setLocalStorageItem,
+  setLocalStorageItemBool
+} from '@/helpers/storage';
 import type { TMessageJumpToTarget } from '@/types';
 import type { TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
 import { setInfo } from '../server/actions';
 import { store } from '../store';
+import {
+  voiceChatChannelIdSelector,
+  voiceChatSidebarDataSelector
+} from './selectors';
 import { appSliceActions } from './slice';
 
 export const setAppLoading = (loading: boolean) =>
@@ -179,3 +187,53 @@ export const setBrowserNotificationsForDms = async (enabled: boolean) => {
 export const setMessageJumpTarget = (
   payload: TMessageJumpToTarget | undefined
 ) => store.dispatch(appSliceActions.setMessageJumpTarget(payload));
+
+export const openVoiceChatSidebar = (channelId: number) => {
+  store.dispatch(
+    appSliceActions.setVoiceChatSidebar({ open: true, channelId })
+  );
+
+  setLocalStorageItem(
+    LocalStorageKey.VOICE_CHAT_SIDEBAR_CHANNEL_ID,
+    channelId.toString()
+  );
+  setLocalStorageItemBool(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE, true);
+};
+
+export const closeVoiceChatSidebar = () => {
+  const state = store.getState();
+  const voiceChatChannelId = voiceChatChannelIdSelector(state);
+
+  store.dispatch(
+    appSliceActions.setVoiceChatSidebar({
+      open: false,
+      channelId: voiceChatChannelId
+    })
+  );
+
+  setLocalStorageItemBool(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE, false);
+};
+
+export const toggleVoiceChatSidebar = (channelId: number) => {
+  const state = store.getState();
+  const { isOpen, channelId: voiceChatChannelId } =
+    voiceChatSidebarDataSelector(state);
+
+  const isSameChannel = voiceChatChannelId === channelId;
+
+  if (isOpen && isSameChannel) {
+    closeVoiceChatSidebar();
+  } else {
+    openVoiceChatSidebar(channelId);
+  }
+};
+
+export const assertVoiceChatClose = (channelId: number) => {
+  const state = store.getState();
+  const { isOpen, channelId: voiceChatChannelId } =
+    voiceChatSidebarDataSelector(state);
+
+  if (isOpen && voiceChatChannelId === channelId) {
+    closeVoiceChatSidebar();
+  }
+};

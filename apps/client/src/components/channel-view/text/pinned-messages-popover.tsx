@@ -139,7 +139,12 @@ const PinnedMessagesPopover = memo(
     return (
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <IconButton icon={Pin} size="sm" onClick={togglePinnedMessages} />
+          <IconButton
+            icon={Pin}
+            size="sm"
+            variant="ghost"
+            onClick={togglePinnedMessages}
+          />
         </PopoverTrigger>
         <PopoverContent
           align="end"

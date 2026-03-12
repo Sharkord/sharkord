@@ -58,7 +58,7 @@
   "membersHeader": "Members — {{count}}",
   "openDirectMessages": "Open Direct Messages",
   "closeDirectMessages": "Close Direct Messages",
-
+  "openChat": "Open Text Chat",
   "editLabel": "Edit",
   "deleteLabel": "Delete",
   "deleteChannelTitle": "Delete Channel",
