@@ -1,12 +1,7 @@
 import { UserAvatar } from '@/components/user-avatar';
 import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
 import type { TVoiceUser } from '@/features/server/types';
-import {
-  Button,
-  ContextMenu,
-  ContextMenuContent,
-  Slider
-} from '@sharkord/ui';
+import { Button, ContextMenu, ContextMenuContent, Slider } from '@sharkord/ui';
 import { Volume2, VolumeX } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
