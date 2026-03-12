@@ -98,7 +98,8 @@ const defaultUserState: TVoiceUserState = {
   micMuted: false,
   soundMuted: false,
   webcamEnabled: false,
-  sharingScreen: false
+  sharingScreen: false,
+  videoStreamsEnabled: true
 };
 
 type TTransportMap = {

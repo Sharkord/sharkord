@@ -46,6 +46,19 @@ export const voiceChannelVideoExternalStreamsSelector = createCachedSelector(
     externalStreams.filter((stream) => stream.tracks?.video === true)
 )((_state: IRootState, channelId: number) => channelId);
 
+export const voiceChannelExternalStreamTracksSelector = createCachedSelector(
+  voiceChannelExternalStreamsSelector,
+  (externalStreamsMap) => {
+    if (!externalStreamsMap) return {};
+    return Object.fromEntries(
+      Object.entries(externalStreamsMap).map(([streamId, stream]) => [
+        Number(streamId),
+        stream.tracks ?? {}
+      ])
+    );
+  }
+)((_state: IRootState, channelId: number) => channelId);
+
 export const hideNonVideoParticipantsSelector = (state: IRootState) =>
   state.server.hideNonVideoParticipants;
 

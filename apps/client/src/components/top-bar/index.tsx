@@ -11,6 +11,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PluginSlotRenderer } from '../plugin-slot-renderer';
 import { ServerSearch } from './server-search';
+import { VideoController } from './video-controller';
 import { VoiceOptionsController } from './voice-options-controller';
 import { VolumeController } from './volume-controller';
 
@@ -46,6 +47,7 @@ const TopBar = memo(
           {isCurrentVoiceChannelSelected && currentVoiceChannelId && (
             <>
               <VoiceOptionsController />
+              <VideoController channelId={currentVoiceChannelId} />
               <VolumeController channelId={currentVoiceChannelId} />
               <Button
                 variant="ghost"

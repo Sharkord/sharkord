@@ -177,11 +177,39 @@ const useVoiceControls = ({
     stopScreenShareStream
   ]);
 
+  const toggleVideoStreams = useCallback(async () => {
+    // this turns off video and screen sharing screens for the user and all other users in the voice channel
+    // if the user manually clicks to share their screen, share their video, or toggles this again, then this will turn off and permit them to share again
+    const trpc = getTRPCClient();
+
+    if (!currentVoiceChannelId) return;
+
+    const newState = !ownVoiceState.videoStreamsEnabled;
+
+    updateOwnVoiceState({ videoStreamsEnabled: newState });
+
+    if (!newState) {
+      updateOwnVoiceState({ webcamEnabled: false, sharingScreen: false });
+      await Promise.all([stopWebcamStream(), stopScreenShareStream()]);
+      await trpc.voice.updateState.mutate({
+        webcamEnabled: false,
+        sharingScreen: false
+      });
+      // disable video and screen sharing streams from all other users in the voice channel
+    }
+  }, [
+    ownVoiceState.videoStreamsEnabled,
+    currentVoiceChannelId,
+    stopWebcamStream,
+    stopScreenShareStream
+  ]);
+
   return {
     toggleMic,
     toggleSound,
     toggleWebcam,
-    toggleScreenShare
+    toggleScreenShare,
+    toggleVideoStreams
   };
 };
 
