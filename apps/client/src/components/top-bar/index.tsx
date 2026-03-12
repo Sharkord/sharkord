@@ -26,7 +26,11 @@ const TopBar = memo(({ onToggleRightSidebar, isOpen }: TTopBarProps) => {
   const isCurrentVoiceChannelSelected = useIsCurrentVoiceChannelSelected();
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const settings = usePublicServerSettings();
-  const { isOpen: isVoiceChatOpen } = useVoiceChatSidebar();
+  const { isOpen: isAnyVoiceChatOpen, channelId: openVoiceChatChannelId } =
+    useVoiceChatSidebar();
+
+  const isVoiceChatOpen =
+    isAnyVoiceChatOpen && openVoiceChatChannelId === currentVoiceChannelId;
 
   const handleToggleVoiceChat = useCallback(() => {
     if (currentVoiceChannelId) {
