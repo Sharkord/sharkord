@@ -2,8 +2,11 @@ import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { UserAvatar } from '@/components/user-avatar';
 import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
 import type { TVoiceUser } from '@/features/server/types';
-import { useOwnUserId } from '@/features/server/users/hooks';
-import { useShowUserBannersInVoice } from '@/features/server/voice/hooks';
+import { useIsOwnUser } from '@/features/server/users/hooks';
+import {
+  useShowUserBannersInVoice,
+  useSpeakingState
+} from '@/features/server/voice/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { cn } from '@/lib/utils';
 import { HeadphoneOff, MicOff, Monitor, Video } from 'lucide-react';
@@ -34,13 +37,13 @@ const VoiceUserCard = memo(
     showPinControls = true,
     voiceUser
   }: TVoiceUserCardProps) => {
-    const { videoRef, hasVideoStream, isSpeaking, speakingIntensity } =
-      useVoiceRefs(userId);
+    const { videoRef, hasVideoStream } = useVoiceRefs(userId);
     const { getUserVolumeKey } = useVolumeControl();
     const { devices } = useDevices();
-    const ownUserId = useOwnUserId();
-    const isOwnUser = userId === ownUserId;
+    const isOwnUser = useIsOwnUser(userId);
     const showUserBanners = useShowUserBannersInVoice();
+    const { isActivelySpeaking, speakingEffectClass } =
+      useSpeakingState(userId);
 
     const handlePinToggle = useCallback(() => {
       if (isPinned) {
@@ -50,8 +53,6 @@ const VoiceUserCard = memo(
       }
     }, [isPinned, onPin, onUnpin]);
 
-    const isActivelySpeaking = !voiceUser.state.micMuted && isSpeaking;
-
     return (
       <div
         className={cn(
@@ -59,13 +60,7 @@ const VoiceUserCard = memo(
           'flex items-center justify-center',
           'w-full h-full',
           'border border-border',
-          isActivelySpeaking
-            ? speakingIntensity === 1
-              ? 'speaking-effect-low'
-              : speakingIntensity === 2
-                ? 'speaking-effect-medium'
-                : 'speaking-effect-high'
-            : '',
+          isActivelySpeaking && speakingEffectClass,
           className
         )}
       >

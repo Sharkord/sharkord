@@ -1,5 +1,7 @@
 import { UserAvatar } from '@/components/user-avatar';
 import type { TVoiceUser } from '@/features/server/types';
+import { useSpeakingState } from '@/features/server/voice/hooks';
+import { cn } from '@sharkord/ui';
 import {
   HeadphoneOff,
   Headphones,
@@ -17,12 +19,14 @@ type TVoiceUserProps = {
 };
 
 const VoiceUser = memo(({ user }: TVoiceUserProps) => {
+  const { isActivelySpeaking, speakingEffectClass } = useSpeakingState(user.id);
+
   return (
     <UserPopover userId={user.id}>
       <div className="flex items-center gap-2 px-2 py-1 rounded hover:bg-accent/30 text-sm">
         <UserAvatar
           userId={user.id}
-          className="h-5 w-5"
+          className={cn('h-5 w-5', isActivelySpeaking && speakingEffectClass)}
           showUserPopover={true}
           showStatusBadge={false}
         />
