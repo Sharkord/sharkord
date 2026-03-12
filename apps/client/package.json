@@ -25,6 +25,7 @@
     "@tailwindcss/vite": "^4.1.13",
     "@tiptap/core": "^3.7.2",
     "@tiptap/extension-emoji": "^3.7.2",
+    "@tiptap/extensions": "^3.20.1",
     "@tiptap/pm": "^3.19.0",
     "@tiptap/react": "^3.7.2",
     "@tiptap/starter-kit": "^3.7.2",
