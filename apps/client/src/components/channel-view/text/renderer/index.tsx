@@ -27,6 +27,8 @@ type TMessageRendererProps = {
   disableReactions?: boolean;
 };
 
+const ALLOWED_MEDIA_TYPES = ['image', 'video'];
+
 const MessageRenderer = memo(
   ({ message, disableFiles, disableReactions }: TMessageRendererProps) => {
     const { t } = useTranslation();
@@ -91,21 +93,16 @@ const MessageRenderer = memo(
         .map((metadata) => {
           if (!metadata.url) return undefined;
 
-          if (metadata.mediaType === 'image') {
-            return {
-              type: 'image',
-              url: metadata.url
-            };
-          }
+          const isAllowedType = ALLOWED_MEDIA_TYPES.includes(
+            metadata.mediaType
+          );
 
-          if (metadata.mediaType === 'video') {
-            return {
-              type: 'video',
-              url: metadata.url
-            };
-          }
+          if (!isAllowedType) return undefined;
 
-          return undefined;
+          return {
+            type: metadata.mediaType,
+            url: metadata.url
+          };
         })
         .filter((media) => !!media) as TFoundMedia[];
 
