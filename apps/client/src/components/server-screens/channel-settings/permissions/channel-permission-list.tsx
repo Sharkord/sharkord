@@ -54,7 +54,9 @@ const ChannelPermissionList = memo(
 
     return (
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold">{t('channelPermissionsHeader')}</h3>
+        <h3 className="text-sm font-semibold">
+          {t('channelPermissionsHeader')}
+        </h3>
 
         <div className="space-y-3">
           {availableChannelPermissions.map((permission) => (

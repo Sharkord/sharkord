@@ -67,7 +67,11 @@ const SearchPopover = memo(
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder={activeTab === 'role' ? t('searchRolesPlaceholder') : t('searchPermissionsUsersPlaceholder')}
+                  placeholder={
+                    activeTab === 'role'
+                      ? t('searchRolesPlaceholder')
+                      : t('searchPermissionsUsersPlaceholder')
+                  }
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-8"
