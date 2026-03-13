@@ -26,8 +26,13 @@ const VoiceControl = memo(() => {
   const { t } = useTranslation('sidebar');
   const voiceChannelId = useCurrentVoiceChannelId();
   const channelCan = useChannelCan(voiceChannelId);
-  const { ownVoiceState, toggleWebcam, toggleScreenShare, connectionStatus } =
-    useVoice();
+  const {
+    ownVoiceState,
+    toggleWebcam,
+    toggleScreenShare,
+    connectionStatus,
+    isScreenShareSupported
+  } = useVoice();
 
   const connectionInfo = useMemo(() => {
     switch (connectionStatus) {
@@ -108,29 +113,31 @@ const VoiceControl = memo(() => {
               )}
             </Button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                'h-8 w-8 rounded-md transition-all duration-200',
-                ownVoiceState.sharingScreen
-                  ? 'bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 hover:text-blue-300'
-                  : 'bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground'
-              )}
-              onClick={toggleScreenShare}
-              title={
-                ownVoiceState.sharingScreen
-                  ? t('stopScreenShare')
-                  : t('startScreenShare')
-              }
-              disabled={!channelCan(ChannelPermission.SHARE_SCREEN)}
-            >
-              {ownVoiceState.sharingScreen ? (
-                <Monitor className="h-4 w-4" />
-              ) : (
-                <MonitorOff className="h-4 w-4" />
-              )}
-            </Button>
+            {isScreenShareSupported && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  'h-8 w-8 rounded-md transition-all duration-200',
+                  ownVoiceState.sharingScreen
+                    ? 'bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 hover:text-blue-300'
+                    : 'bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground'
+                )}
+                onClick={toggleScreenShare}
+                title={
+                  ownVoiceState.sharingScreen
+                    ? t('stopScreenShare')
+                    : t('startScreenShare')
+                }
+                disabled={!channelCan(ChannelPermission.SHARE_SCREEN)}
+              >
+                {ownVoiceState.sharingScreen ? (
+                  <Monitor className="h-4 w-4" />
+                ) : (
+                  <MonitorOff className="h-4 w-4" />
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </div>
