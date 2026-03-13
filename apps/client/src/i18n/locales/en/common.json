@@ -59,7 +59,6 @@
   "noCustomEmojis": "No custom emojis available",
   "serverAdminsCanUpload": "Server admins can upload custom emojis in server settings",
   "serverEmojis": "Server emojis ({{count}})",
-  "noPermissions": "No permissions",
   "searchAllEmojis": "Search all emojis...",
   "emojiTab": "Emoji",
   "customTab": "Custom",

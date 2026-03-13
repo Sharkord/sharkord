@@ -57,7 +57,8 @@ export const i18nReady = i18n
       'sidebar',
       'topbar',
       'dialogs',
-      'settings'
+      'settings',
+      'permissions'
     ],
     defaultNS: 'common',
     fallbackNS: 'common',
