@@ -67,7 +67,13 @@ const settings = sqliteTable(
     storageSpaceQuotaByUser: integer('storage_space_quota_by_user').notNull(),
     storageOverflowAction: text('storage_overflow_action').notNull(),
     enablePlugins: integer('enable_plugins', { mode: 'boolean' }).notNull(),
-    enableSearch: integer('enable_search', { mode: 'boolean' }).notNull()
+    enableSearch: integer('enable_search', { mode: 'boolean' }).notNull(),
+    storageSignedUrlsEnabled: integer('storage_signed_urls_enabled', {
+      mode: 'boolean'
+    }).notNull(),
+    storageSignedUrlsTtlSeconds: integer(
+      'storage_signed_urls_ttl_seconds'
+    ).notNull()
   },
   (t) => [
     index('settings_server_idx').on(t.serverId),
@@ -111,8 +117,6 @@ const channels = sqliteTable(
     type: text('type').notNull(),
     name: text('name').notNull(),
     topic: text('topic'),
-    fileAccessToken: text('file_access_token').notNull().unique(),
-    fileAccessTokenUpdatedAt: integer('file_access_token_updated_at').notNull(),
     private: integer('private', { mode: 'boolean' }).notNull().default(false),
     isDm: integer('is_dm_channel', { mode: 'boolean' })
       .notNull()

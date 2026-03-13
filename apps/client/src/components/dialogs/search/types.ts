@@ -19,6 +19,7 @@ export type TSearchResultFile = {
     md5: string;
     userId: number;
     _accessToken?: string;
+    _accessTokenExpiresAt?: number;
   };
   messageId: number;
   channelId: number;

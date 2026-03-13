@@ -7,6 +7,7 @@ import {
   STORAGE_DEFAULT_MAX_AVATAR_SIZE,
   STORAGE_DEFAULT_MAX_BANNER_SIZE,
   STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
+  STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
   STORAGE_MAX_FILE_SIZE,
   STORAGE_MIN_QUOTA_PER_USER,
   STORAGE_OVERFLOW_ACTION,
@@ -75,7 +76,9 @@ const seedDatabase = async (db: BunSQLiteDatabase) => {
     storageSpaceQuotaByUser: STORAGE_MIN_QUOTA_PER_USER,
     storageOverflowAction: STORAGE_OVERFLOW_ACTION,
     enablePlugins: false,
-    enableSearch: true
+    enableSearch: true,
+    storageSignedUrlsEnabled: false,
+    storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS
   };
 
   await db.insert(settings).values(initialSettings);
@@ -100,8 +103,6 @@ const seedDatabase = async (db: BunSQLiteDatabase) => {
       type: ChannelType.TEXT,
       name: 'General',
       position: 0,
-      fileAccessToken: randomUUIDv7(),
-      fileAccessTokenUpdatedAt: Date.now(),
       categoryId: 1,
       topic: 'General text channel',
       createdAt: firstStart
@@ -110,8 +111,6 @@ const seedDatabase = async (db: BunSQLiteDatabase) => {
       type: ChannelType.VOICE,
       name: 'Voice',
       position: 1,
-      fileAccessToken: randomUUIDv7(),
-      fileAccessTokenUpdatedAt: Date.now(),
       categoryId: 2,
       topic: 'General voice channel',
       createdAt: firstStart
@@ -263,8 +262,6 @@ const seedDatabase = async (db: BunSQLiteDatabase) => {
     position: 0,
     isDm: true,
     private: true,
-    fileAccessToken: randomUUIDv7(),
-    fileAccessTokenUpdatedAt: Date.now(),
     categoryId: null,
     topic: null,
     createdAt: firstStart

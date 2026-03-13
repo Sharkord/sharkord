@@ -4,8 +4,8 @@ import http from 'http';
 import path from 'path';
 import { db } from '../db';
 import { isFileOrphaned } from '../db/queries/files';
-import { getMessageByFileId } from '../db/queries/messages';
-import { channels, files } from '../db/schema';
+import { getSettings } from '../db/queries/server';
+import { files } from '../db/schema';
 import { verifyFileToken } from '../helpers/files-crypto';
 import { getErrorMessage } from '../helpers/get-error-message';
 import { PUBLIC_PATH } from '../helpers/paths';
@@ -60,6 +60,7 @@ const publicRouteHandler = async (
   if (!dbFile) {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'File not found' }));
+
     return;
   }
 
@@ -68,34 +69,43 @@ const publicRouteHandler = async (
   if (isOrphaned) {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'File not found' }));
+
     return;
   }
 
-  // it's gonna be defined if it's a message file
-  // otherwise is something like an avatar or banner or something else
-  // we can assume this because of the orphaned check above
-  const associatedMessage = await getMessageByFileId(dbFile.id);
+  const { storageSignedUrlsEnabled } = await getSettings();
 
-  if (associatedMessage) {
-    const channel = await db
-      .select()
-      .from(channels)
-      .where(eq(channels.id, associatedMessage.channelId))
-      .get();
+  if (storageSignedUrlsEnabled) {
+    const accessTokenParam = url.searchParams.get('accessToken');
+    const expiresParam = url.searchParams.get('expires');
 
-    if (channel && channel.private) {
-      const accessToken = url.searchParams.get('accessToken');
-      const isValidToken = verifyFileToken(
-        dbFile.id,
-        channel.fileAccessToken,
-        accessToken || ''
-      );
+    if (!accessTokenParam || !expiresParam) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Forbidden' }));
 
-      if (!isValidToken) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Forbidden' }));
-        return;
-      }
+      return;
+    }
+
+    const expiresAt = parseInt(expiresParam, 10);
+
+    if (isNaN(expiresAt)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Forbidden' }));
+
+      return;
+    }
+
+    const isValidToken = verifyFileToken(
+      dbFile.id,
+      accessTokenParam,
+      expiresAt
+    );
+
+    if (!isValidToken) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Forbidden' }));
+
+      return;
     }
   }
 
@@ -104,6 +114,13 @@ const publicRouteHandler = async (
   if (!fs.existsSync(filePath)) {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'File not found on disk' }));
+
+    logger.error(
+      'File %s exists in database but not on disk (%s)',
+      dbFile.name,
+      filePath
+    );
+
     return;
   }
 

@@ -44,7 +44,8 @@ const getPublicSettings: () => Promise<TPublicServerSettings> = async () => {
     storageOverflowAction: settings.storageOverflowAction,
     enablePlugins: settings.enablePlugins,
     webRtcMaxBitrate: config.webRtc.maxBitrate,
-    enableSearch: settings.enableSearch
+    enableSearch: settings.enableSearch,
+    storageSignedUrlsEnabled: settings.storageSignedUrlsEnabled
   };
 
   return publicSettings;
