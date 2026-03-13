@@ -11,14 +11,28 @@ const sanitizeMessageHtml = (html: string): string => {
   input = sanitize(input, {
     // this might need some tweaking in the future
     allowedTags: [
-      // basic text structure
+      // block structure
       'p',
       'br',
+      // headings (from markdown rendering)
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      // lists (from markdown rendering)
+      'ul',
+      'ol',
+      'li',
+      // blockquote (from markdown rendering)
+      'blockquote',
       // inline formatting
       'strong',
       'em',
       'code',
       'pre',
+      'del',
       // links
       'a',
       // emoji (span wrapper + img fallback)
@@ -35,21 +49,7 @@ const sanitizeMessageHtml = (html: string): string => {
       '*': []
     },
     allowedSchemes: ['http', 'https', 'mailto'],
-    // disallow any script or event handler attributes globally
-    disallowedTagsMode: 'discard',
-    // headings and list items contain inline content only, so replace with <p>
-    // to preserve their text as a block rather than collapsing it to bare text
-    // block containers (div, blockquote, section etc) may wrap <p> children, so
-    // just discard the wrapper -- the inner <p> tags are already correct structure
-    transformTags: {
-      h1: 'p',
-      h2: 'p',
-      h3: 'p',
-      h4: 'p',
-      h5: 'p',
-      h6: 'p',
-      li: 'p'
-    }
+    disallowedTagsMode: 'discard'
   });
 
   return input;

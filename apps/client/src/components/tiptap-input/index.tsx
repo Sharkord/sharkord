@@ -1,10 +1,11 @@
 import { EmojiPicker } from '@/components/emoji-picker';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
+import { htmlToEditorHtml } from '@/helpers/html-to-editor-html';
 import type { TCommandInfo } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
-import Link from '@tiptap/extension-link';
+import { Placeholder } from '@tiptap/extensions';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { ChevronDown, ChevronUp, Smile } from 'lucide-react';
@@ -21,6 +22,7 @@ import {
   COMMANDS_STORAGE_KEY,
   CommandSuggestion
 } from './plugins/command-suggestion';
+import { MarkdownSyntaxDim } from './plugins/markdown-syntax-dim';
 import { Mention } from './plugins/mentions';
 import { MentionNode } from './plugins/mentions/node';
 import {
@@ -34,7 +36,8 @@ type TTiptapInputProps = {
   disabled?: boolean;
   readOnly?: boolean;
   value?: string;
-  onChange?: (html: string) => void;
+  placeholder?: string;
+  onChange?: (markdown: string) => void;
   onSubmit?: () => void;
   onCancel?: () => void;
   onTyping?: () => void;
@@ -44,6 +47,7 @@ type TTiptapInputProps = {
 const TiptapInput = memo(
   ({
     value,
+    placeholder,
     onChange,
     onSubmit,
     onCancel,
@@ -68,24 +72,33 @@ const TiptapInput = memo(
     const extensions = useMemo(() => {
       const exts = [
         StarterKit.configure({
-          hardBreak: {
+          // disable all wysiwyg formatting nodes -- the editor stays as
+          // plain-text markdown; @tiptap/markdown handles serialisation only
+          bold: false,
+          italic: false,
+          strike: false,
+          code: false,
+          codeBlock: false,
+          blockquote: false,
+          heading: false,
+          bulletList: false,
+          orderedList: false,
+          listItem: false,
+          listKeymap: false,
+          horizontalRule: false,
+          hardBreak: false,
+          link: {
+            autolink: true,
+            defaultProtocol: 'https',
+            openOnClick: false,
             HTMLAttributes: {
-              class: 'hard-break'
-            }
+              target: '_blank',
+              rel: 'noopener noreferrer'
+            },
+            shouldAutoLink: (url) => /^https?:\/\//i.test(url)
           }
         }),
-        Link.configure({
-          autolink: true,
-          defaultProtocol: 'https',
-          openOnClick: false,
-          HTMLAttributes: {
-            target: '_blank',
-            rel: 'noopener noreferrer'
-          },
-          shouldAutoLink: (url) => {
-            return /^https?:\/\//i.test(url);
-          }
-        }),
+        // emoji renders as <span data-type="emoji" data-name="..."> in html
         Emoji.configure({
           emojis: [...gitHubEmojis, ...customEmojis],
           enableEmoticons: true,
@@ -94,11 +107,14 @@ const TiptapInput = memo(
             class: 'emoji-image'
           }
         }),
+        // mention is handled by MentionNode with renderMarkdown
         Mention.configure({
           users,
           suggestion: MentionSuggestion
         }),
-        MentionNode
+        MentionNode,
+        MarkdownSyntaxDim,
+        Placeholder.configure({ placeholder })
       ];
 
       if (commands) {
@@ -112,16 +128,14 @@ const TiptapInput = memo(
       }
 
       return exts;
-    }, [customEmojis, commands, users]);
+    }, [customEmojis, commands, users, placeholder]);
 
     const editor = useEditor({
       extensions,
-      content: value,
+      content: value ?? '',
       editable: !disabled,
       onUpdate: ({ editor }) => {
-        const html = editor.getHTML();
-
-        onChange?.(html);
+        onChange?.(editor.getHTML());
 
         if (!editor.isEmpty) {
           onTyping?.();
@@ -141,7 +155,10 @@ const TiptapInput = memo(
 
           if (event.key === 'Enter') {
             if (event.shiftKey) {
-              return false;
+              // treat shift+enter as a plain enter (new paragraph) -- the shift
+              // just means "don't submit", not "insert a hard break"
+              editor.commands.splitBlock();
+              return true;
             }
 
             // if suggestions are active, don't handle Enter - let the suggestion handle it
@@ -165,16 +182,32 @@ const TiptapInput = memo(
         handleClickOn: (_view, _pos, _node, _nodePos, event) => {
           const target = event.target as HTMLElement;
 
-          // prevents clicking on links inside the edit from opening them in the browser
+          // prevents clicking on links inside the editor from opening them
           if (target.tagName === 'A') {
             event.preventDefault();
-
             return true;
           }
 
           return false;
         },
-        handlePaste: () => !!readOnlyRef.current,
+        handlePaste: (_view, event) => {
+          if (readOnlyRef.current) return true;
+
+          const html = event.clipboardData?.getData('text/html');
+          const plain = event.clipboardData?.getData('text/plain');
+
+          event.preventDefault();
+
+          if (html) {
+            // convert rich html to editor html (markdown syntax as literal text)
+            editor?.commands.insertContent(htmlToEditorHtml(html));
+          } else if (plain) {
+            // insert plain text as-is so < > aren't interpreted as html
+            editor?.commands.insertContent({ type: 'text', text: plain });
+          }
+
+          return true;
+        },
         handleDrop: () => readOnlyRef.current
       }
     });
@@ -188,7 +221,6 @@ const TiptapInput = memo(
     };
 
     // keep emoji storage in sync with custom emojis from the store
-    // this ensures newly added emojis appear in autocomplete without refreshing the app
     useEffect(() => {
       if (editor) {
         const allEmojis = [...gitHubEmojis, ...customEmojis];
@@ -242,7 +274,11 @@ const TiptapInput = memo(
 
         // only update if content is actually different to avoid cursor jumping
         if (currentContent !== value) {
-          editor.commands.setContent(value);
+          if (!value) {
+            editor.commands.clearContent();
+          } else {
+            editor.commands.setContent(value);
+          }
         }
       }
     }, [editor, value]);
@@ -253,7 +289,7 @@ const TiptapInput = memo(
       }
     }, [editor, disabled]);
 
-    // Measure if content overflows (more than ~3 lines) when collapsed
+    // measure if content overflows (more than ~3 lines) when collapsed
     useLayoutEffect(() => {
       if (isExpanded) return;
       const wrapper = editorWrapperRef.current;

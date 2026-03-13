@@ -64,10 +64,10 @@ describe('sanitize-html', () => {
     ).toBe('');
   });
 
-  test('should convert <h1>-<h6> tags to <p> to preserve block structure', () => {
-    expect(sanitizeMessageHtml('<h1>heading</h1>')).toBe('<p>heading</p>');
+  test('should allow <h1>-<h6> tags from markdown rendering', () => {
+    expect(sanitizeMessageHtml('<h1>heading</h1>')).toBe('<h1>heading</h1>');
     expect(sanitizeMessageHtml('<h4>heading</h4><p>body</p>')).toBe(
-      '<p>heading</p><p>body</p>'
+      '<h4>heading</h4><p>body</p>'
     );
   });
 

@@ -174,6 +174,7 @@ const MessageCompose = memo(
         <div className="flex items-center gap-2 rounded-lg">
           <TiptapInput
             value={message}
+            placeholder="Type a message"
             onChange={onMessageChange}
             onSubmit={handleSend}
             onTyping={onTyping}

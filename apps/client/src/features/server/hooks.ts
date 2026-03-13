@@ -1,8 +1,8 @@
+import { prepareMessageHtml } from '@/helpers/prepare-message-html';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   ChannelPermission,
   Permission,
-  prepareMessageHtml,
   type TPluginSlotContext
 } from '@sharkord/shared';
 import { useCallback, useMemo, useRef } from 'react';
