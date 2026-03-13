@@ -1,3 +1,5 @@
+import { Dialog } from '@/components/dialogs/dialogs';
+import { openDialog } from '@/features/dialogs/actions';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { uploadFile } from '@/helpers/upload-file';
 import { useFilePicker } from '@/hooks/use-file-picker';
@@ -7,6 +9,7 @@ import type { TJoinedPublicUser } from '@sharkord/shared';
 import { Button, buttonVariants, Group } from '@sharkord/ui';
 import { Upload } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TBannerManagerProps = {
@@ -14,6 +17,7 @@ type TBannerManagerProps = {
 };
 
 const BannerManager = memo(({ user }: TBannerManagerProps) => {
+  const { t } = useTranslation('dialogs');
   const openFilePicker = useFilePicker();
 
   const removeBanner = useCallback(async () => {
@@ -22,35 +26,58 @@ const BannerManager = memo(({ user }: TBannerManagerProps) => {
     try {
       await trpc.users.changeBanner.mutate({ fileId: undefined });
 
-      toast.success('Banner removed successfully!');
+      toast.success(t('bannerRemovedSuccess'));
     } catch {
-      toast.error('Could not remove banner. Please try again.');
+      toast.error(t('bannerRemoveFailed'));
     }
-  }, []);
+  }, [t]);
+
+  const onCropConfirm = useCallback(
+    async (croppedFile: File) => {
+      const trpc = getTRPCClient();
+
+      try {
+        const temporaryFile = await uploadFile(croppedFile);
+
+        if (!temporaryFile) {
+          toast.error(t('uploadFailed'));
+          return;
+        }
+
+        await trpc.users.changeBanner.mutate({ fileId: temporaryFile.id });
+
+        toast.success(t('bannerUpdatedSuccess'));
+      } catch {
+        toast.error(t('bannerUpdateFailed'));
+      }
+    },
+    [t]
+  );
 
   const onBannerClick = useCallback(async () => {
-    const trpc = getTRPCClient();
-
     try {
       const [file] = await openFilePicker('image/*');
 
-      const temporaryFile = await uploadFile(file);
-
-      if (!temporaryFile) {
-        toast.error('Could not upload file. Please try again.');
-        return;
-      }
-
-      await trpc.users.changeBanner.mutate({ fileId: temporaryFile.id });
-
-      toast.success('Banner updated successfully!');
+      const reader = new FileReader();
+      reader.onload = () => {
+        openDialog(Dialog.IMAGE_CROPPER, {
+          imageSrc: reader.result as string,
+          originalFileName: file.name,
+          aspect: 10 / 3,
+          variant: 'wide',
+          cropShape: 'rect',
+          title: t('cropBannerTitle'),
+          onConfirm: onCropConfirm
+        });
+      };
+      reader.readAsDataURL(file);
     } catch {
-      toast.error('Could not update banner. Please try again.');
+      // user cancelled
     }
-  }, [openFilePicker]);
+  }, [openFilePicker, onCropConfirm, t]);
 
   return (
-    <Group label="Banner">
+    <Group label={t('bannerLabel')}>
       <div className="space-y-2">
         <div
           className="relative group cursor-pointer w-80 h-24"
@@ -80,7 +107,7 @@ const BannerManager = memo(({ user }: TBannerManagerProps) => {
       {user.bannerId && (
         <div>
           <Button size="sm" variant="outline" onClick={removeBanner}>
-            Remove banner
+            {t('removeBanner')}
           </Button>
         </div>
       )}

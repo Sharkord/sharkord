@@ -8,6 +8,7 @@ import { CreateChannelDialog } from './create-channel';
 import { CreateInviteDialog } from './create-invite-dialog';
 import { DeleteUserDialog } from './delete-user';
 import { Dialog } from './dialogs';
+import { ImageCropperDialog } from './image-cropper';
 import { PluginCommandsDialog } from './plugin-commands';
 import { PluginLogsDialog } from './plugin-logs';
 import { PluginSettingsDialog } from './plugin-settings';
@@ -28,7 +29,8 @@ const DialogsMap: any = {
   [Dialog.PLUGIN_COMMANDS]: PluginCommandsDialog,
   [Dialog.PLUGIN_SETTINGS]: PluginSettingsDialog,
   [Dialog.DELETE_USER]: DeleteUserDialog,
-  [Dialog.SEARCH]: SearchDialog
+  [Dialog.SEARCH]: SearchDialog,
+  [Dialog.IMAGE_CROPPER]: ImageCropperDialog
 };
 
 const DialogsProvider = memo(() => {

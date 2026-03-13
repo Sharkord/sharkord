@@ -1,4 +1,6 @@
+import { Dialog } from '@/components/dialogs/dialogs';
 import { UserAvatar } from '@/components/user-avatar';
+import { openDialog } from '@/features/dialogs/actions';
 import { uploadFile } from '@/helpers/upload-file';
 import { useFilePicker } from '@/hooks/use-file-picker';
 import { getTRPCClient } from '@/lib/trpc';
@@ -6,6 +8,7 @@ import { getTrpcError, type TJoinedPublicUser } from '@sharkord/shared';
 import { Button, Group } from '@sharkord/ui';
 import { Upload } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TAvatarManagerProps = {
@@ -13,6 +16,7 @@ type TAvatarManagerProps = {
 };
 
 const AvatarManager = memo(({ user }: TAvatarManagerProps) => {
+  const { t } = useTranslation('dialogs');
   const openFilePicker = useFilePicker();
 
   const removeAvatar = useCallback(async () => {
@@ -21,35 +25,57 @@ const AvatarManager = memo(({ user }: TAvatarManagerProps) => {
     try {
       await trpc.users.changeAvatar.mutate({ fileId: undefined });
 
-      toast.success('Avatar removed successfully!');
+      toast.success(t('avatarRemovedSuccess'));
     } catch (error) {
-      toast.error(getTrpcError(error, 'Failed to remove avatar'));
+      toast.error(getTrpcError(error, t('avatarRemoveFailed')));
     }
-  }, []);
+  }, [t]);
+
+  const onCropConfirm = useCallback(
+    async (croppedFile: File) => {
+      const trpc = getTRPCClient();
+
+      try {
+        const temporaryFile = await uploadFile(croppedFile);
+
+        if (!temporaryFile) {
+          toast.error(t('uploadFailed'));
+          return;
+        }
+
+        await trpc.users.changeAvatar.mutate({ fileId: temporaryFile.id });
+
+        toast.success(t('avatarUpdatedSuccess'));
+      } catch (error) {
+        toast.error(getTrpcError(error, t('avatarUpdateFailed')));
+      }
+    },
+    [t]
+  );
 
   const onAvatarClick = useCallback(async () => {
-    const trpc = getTRPCClient();
-
     try {
       const [file] = await openFilePicker('image/*');
 
-      const temporaryFile = await uploadFile(file);
-
-      if (!temporaryFile) {
-        toast.error('Could not upload file. Please try again.');
-        return;
-      }
-
-      await trpc.users.changeAvatar.mutate({ fileId: temporaryFile.id });
-
-      toast.success('Avatar updated successfully!');
-    } catch (error) {
-      toast.error(getTrpcError(error, 'Failed to update avatar'));
+      const reader = new FileReader();
+      reader.onload = () => {
+        openDialog(Dialog.IMAGE_CROPPER, {
+          imageSrc: reader.result as string,
+          originalFileName: file.name,
+          aspect: 1,
+          cropShape: 'round',
+          title: t('cropAvatarTitle'),
+          onConfirm: onCropConfirm
+        });
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      // user cancelled
     }
-  }, [openFilePicker]);
+  }, [openFilePicker, onCropConfirm, t]);
 
   return (
-    <Group label="Avatar">
+    <Group label={t('avatarLabel')}>
       <div className="space-y-2">
         <div
           className="relative group cursor-pointer w-32 h-32"
@@ -71,7 +97,7 @@ const AvatarManager = memo(({ user }: TAvatarManagerProps) => {
       {user.avatarId && (
         <div>
           <Button size="sm" variant="outline" onClick={removeAvatar}>
-            Remove avatar
+            {t('removeAvatar')}
           </Button>
         </div>
       )}
