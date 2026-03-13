@@ -1,6 +1,14 @@
 import { useDateFormat } from '@/hooks/use-date-format';
 import { useDateLocale } from '@/hooks/use-date-locale';
-import { Group, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from '@sharkord/ui';
+import {
+  Group,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Switch
+} from '@sharkord/ui';
 import type { Locale } from 'date-fns';
 import { format } from 'date-fns';
 import { memo, useMemo } from 'react';
@@ -27,7 +35,10 @@ const generatePresetLabels = (
 ) => {
   return presets.map((preset) => {
     try {
-      return { ...preset, label: format(previewDate, preset.value, { locale }) };
+      return {
+        ...preset,
+        label: format(previewDate, preset.value, { locale })
+      };
     } catch {
       return { ...preset, label: preset.value };
     }
@@ -43,7 +54,13 @@ type FormatSelectorProps = {
 };
 
 const FormatSelector = memo(
-  ({ label, description, presets, currentFormat, onFormatChange }: FormatSelectorProps) => (
+  ({
+    label,
+    description,
+    presets,
+    currentFormat,
+    onFormatChange
+  }: FormatSelectorProps) => (
     <Group label={label} description={description}>
       <Select value={currentFormat} onValueChange={onFormatChange}>
         <SelectTrigger className="min-w-40">
@@ -65,7 +82,14 @@ FormatSelector.displayName = 'FormatSelector';
 
 const DateFormatSettings = memo(() => {
   const { t } = useTranslation('settings');
-  const { dateFormat, timeFormat, preferAbsoluteTime, setDateFormat, setTimeFormat, setPreferAbsoluteTime } = useDateFormat();
+  const {
+    dateFormat,
+    timeFormat,
+    preferAbsoluteTime,
+    setDateFormat,
+    setTimeFormat,
+    setPreferAbsoluteTime
+  } = useDateFormat();
   const dateLocale = useDateLocale();
 
   const previewDate = useMemo(() => new Date(2024, 7, 12, 14, 30, 0), []);

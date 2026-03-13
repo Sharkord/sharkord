@@ -8,7 +8,7 @@ import {
   subHours,
   type Locale
 } from 'date-fns';
-import { memo, type ReactNode, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 const ONE_MINUTE = 60_000;
 const ONE_HOUR = 60 * ONE_MINUTE;
@@ -64,50 +64,57 @@ const getUpdateInterval = (date: Date): number | null => {
   return ONE_HOUR;
 };
 
-const RelativeTime = memo(({ date, interval, children }: TRelativeTimeProps) => {
-  const dateLocale = useDateLocale();
-  const { dateTimeFormat, preferAbsoluteTime } = useDateFormat();
-  const parsedDate = useMemo(
-    () => (typeof date === 'string' ? new Date(date) : date),
-    [date]
-  );
+const RelativeTime = memo(
+  ({ date, interval, children }: TRelativeTimeProps) => {
+    const dateLocale = useDateLocale();
+    const { dateTimeFormat, preferAbsoluteTime } = useDateFormat();
+    const parsedDate = useMemo(
+      () => (typeof date === 'string' ? new Date(date) : date),
+      [date]
+    );
 
-  const [, setCounter] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
+    const [, setCounter] = useState(0);
+    const [isHovered, setIsHovered] = useState(false);
 
-  useEffect(() => {
-    const updateInterval = interval ?? getUpdateInterval(parsedDate);
+    useEffect(() => {
+      const updateInterval = interval ?? getUpdateInterval(parsedDate);
 
-    // if no update interval is needed, don't set up a timer
-    if (updateInterval === null) {
-      return;
-    }
+      // if no update interval is needed, don't set up a timer
+      if (updateInterval === null) {
+        return;
+      }
 
-    const timer = setInterval(() => {
-      // force re-render to update the relative time display
-      setCounter((prev) => prev + 1);
-    }, updateInterval);
+      const timer = setInterval(() => {
+        // force re-render to update the relative time display
+        setCounter((prev) => prev + 1);
+      }, updateInterval);
 
-    return () => clearInterval(timer);
-  }, [interval, parsedDate]);
+      return () => clearInterval(timer);
+    }, [interval, parsedDate]);
 
-  const shouldShowAbsolute = preferAbsoluteTime || isHovered;
-  const displayTime = useMemo(
-    () =>
-      getFormattedTime(parsedDate, dateLocale, dateTimeFormat, shouldShowAbsolute),
-    [parsedDate, dateLocale, dateTimeFormat, shouldShowAbsolute]
-  );
+    const shouldShowAbsolute = preferAbsoluteTime || isHovered;
+    const displayTime = useMemo(
+      () =>
+        getFormattedTime(
+          parsedDate,
+          dateLocale,
+          dateTimeFormat,
+          shouldShowAbsolute
+        ),
+      [parsedDate, dateLocale, dateTimeFormat, shouldShowAbsolute]
+    );
 
-  const hoverProps: THoverProps = useMemo(
-    () => ({
-      onMouseEnter: () => setIsHovered(true),
-      onMouseLeave: () => setIsHovered(false)
-    }),
-    []
-  );
+    const hoverProps: THoverProps = useMemo(
+      () => ({
+        onMouseEnter: () => setIsHovered(true),
+        onMouseLeave: () => setIsHovered(false)
+      }),
+      []
+    );
 
-  return children(displayTime, hoverProps);
-});
+    return children(displayTime, hoverProps);
+  }
+);
 
 RelativeTime.displayName = 'RelativeTime';
 

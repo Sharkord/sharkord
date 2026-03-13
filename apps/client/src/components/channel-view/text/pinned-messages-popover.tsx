@@ -42,7 +42,10 @@ const PinnedMessageGroupWrapper = memo(
             {pinnedDate ? (
               <RelativeTime date={pinnedDate}>
                 {(relativeTime, hoverProps) => (
-                  <span className="text-xs text-muted-foreground" {...hoverProps}>
+                  <span
+                    className="text-xs text-muted-foreground"
+                    {...hoverProps}
+                  >
                     {relativeTime}
                   </span>
                 )}
