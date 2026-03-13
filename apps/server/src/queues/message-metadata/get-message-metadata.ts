@@ -125,6 +125,10 @@ export const processMessageMetadata = async (
 ) => {
   const metadata = await urlMetadataParser(content);
 
+  const hasMetadata = metadata && metadata.length > 0;
+
+  if (!hasMetadata) return;
+
   return db
     .update(messages)
     .set({
