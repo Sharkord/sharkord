@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import {
+  activeFullscreenPluginIdSelector,
   appLoadingSelector,
   autoJoinLastChannelSelector,
   browserNotificationsForDmsSelector,
@@ -15,8 +16,7 @@ import {
   modViewUserIdSelector,
   selectedDmChannelIdSelector,
   threadSidebarDataSelector,
-  voiceChatSidebarDataSelector,
-  activeFullscreenPluginIdSelector
+  voiceChatSidebarDataSelector
 } from './selectors';
 
 export const useIsAppLoading = () => useSelector(appLoadingSelector);

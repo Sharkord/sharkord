@@ -32,7 +32,7 @@ const ContentWrapper = memo(
           <div className="flex-col gap-2 h-full w-full flex overflow-auto relative bg-background">
             <PluginSlotRenderer
               slotId={PluginSlot.FULL_SCREEN}
-              activePluginId={activeFullscreenPluginId}
+              activeFullscreenPluginId={activeFullscreenPluginId}
             />
           </div>
         </main>
