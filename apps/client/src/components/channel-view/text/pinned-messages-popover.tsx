@@ -11,7 +11,6 @@ import {
   Spinner,
   Tooltip
 } from '@sharkord/ui';
-import { format } from 'date-fns';
 import { ArrowRight, Pin } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -42,11 +41,8 @@ const PinnedMessageGroupWrapper = memo(
           <div className="flex items-center gap-2">
             {pinnedDate ? (
               <RelativeTime date={pinnedDate}>
-                {(relativeTime) => (
-                  <span
-                    className="text-xs text-muted-foreground"
-                    title={format(pinnedDate, 'PPpp')}
-                  >
+                {(relativeTime, hoverProps) => (
+                  <span className="text-xs text-muted-foreground" {...hoverProps}>
                     {relativeTime}
                   </span>
                 )}

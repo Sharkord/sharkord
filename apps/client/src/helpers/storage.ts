@@ -26,7 +26,10 @@ export enum LocalStorageKey {
   BROWSER_NOTIFICATIONS = 'sharkord-browser-notifications',
   BROWSER_NOTIFICATIONS_FOR_MENTIONS = 'sharkord-browser-notifications-for-mentions',
   BROWSER_NOTIFICATIONS_FOR_DMS = 'sharkord-browser-notifications-for-dms',
-  LANGUAGE = 'sharkord-language'
+  LANGUAGE = 'sharkord-language',
+  DATE_FORMAT = 'sharkord-date-format',
+  TIME_FORMAT = 'sharkord-time-format',
+  PREFER_ABSOLUTE_TIME = 'sharkord-prefer-absolute-time'
 }
 
 export enum SessionStorageKey {

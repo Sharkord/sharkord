@@ -8,6 +8,7 @@
   "passwordTab": "Password",
   "notificationsTab": "Notifications",
   "othersTab": "Others",
+  "interfaceTab": "Interface",
   "serverSettingsTitle": "Server Settings",
   "generalTab": "General",
   "rolesTab": "Roles",
@@ -382,5 +383,14 @@
   "deleteFileTitle": "Delete file",
   "deleteFileMsg": "Are you sure you want to delete this file?",
   "fileDeletedSuccess": "File deleted successfully",
-  "failedDeleteFile": "Failed to delete file"
+  "failedDeleteFile": "Failed to delete file",
+
+  "dateFormatLabel": "Date Format",
+  "dateFormatDesc": "Choose how dates are displayed.",
+  "timeFormatLabel": "Time Format",
+  "timeFormatDesc": "Choose how times are displayed.",
+  "preferAbsoluteTimeLabel": "Always Show Absolute Time",
+  "preferAbsoluteTimeDesc": "Show absolute timestamps instead of relative time (e.g., \"2:30 PM\" instead of \"5 minutes ago\").",
+  "interfaceTitle": "Interface",
+  "interfaceDesc": "Customize the appearance and display settings."
 }

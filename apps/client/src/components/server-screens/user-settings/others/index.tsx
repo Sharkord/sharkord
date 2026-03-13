@@ -1,4 +1,3 @@
-import { LanguageSwitcher } from '@/components/language-switcher';
 import { setAutoJoinLastChannel } from '@/features/app/actions';
 import { useAutoJoinLastChannel } from '@/features/app/hooks';
 import {
@@ -32,10 +31,6 @@ const Others = memo(() => {
             checked={autoJoinLastChannel}
             onCheckedChange={(value) => setAutoJoinLastChannel(value)}
           />
-        </Group>
-
-        <Group label={t('languageLabel')} description={t('languageDesc')}>
-          <LanguageSwitcher />
         </Group>
       </CardContent>
     </Card>

@@ -7,7 +7,6 @@ import {
   DELETED_USER_IDENTITY_AND_NAME,
   type TJoinedMessage
 } from '@sharkord/shared';
-import { format } from 'date-fns';
 import { memo } from 'react';
 import { Message } from './message';
 
@@ -47,11 +46,8 @@ const MessagesGroup = memo(
               {getRenderedUsername(user)}
             </span>
             <RelativeTime date={date}>
-              {(relativeTime) => (
-                <span
-                  className="text-primary/60 text-xs"
-                  title={format(date, 'PPpp')}
-                >
+              {(relativeTime, hoverProps) => (
+                <span className="text-primary/60 text-xs" {...hoverProps}>
                   {relativeTime}
                 </span>
               )}

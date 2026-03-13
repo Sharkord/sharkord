@@ -44,7 +44,9 @@ const SearchResultFileCard = memo(
             <span className="truncate wrap-anywhere">{result.channelName}</span>
           </span>
           <RelativeTime date={new Date(result.messageCreatedAt)}>
-            {(relativeTime) => <span>{relativeTime}</span>}
+            {(relativeTime, hoverProps) => (
+              <span {...hoverProps}>{relativeTime}</span>
+            )}
           </RelativeTime>
         </div>
 

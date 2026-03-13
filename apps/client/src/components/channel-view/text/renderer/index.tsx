@@ -107,16 +107,16 @@ const MessageRenderer = memo(
             <Tooltip
               content={
                 <div className="flex flex-col gap-1">
-                  <RelativeTime date={new Date(message.editedAt)}>
-                    {(relativeTime) => (
-                      <span className="text-secondary text-xs">
-                        {editedByUser
-                          ? getRenderedUsername(editedByUser)
-                          : t('unknownUser')}{' '}
-                        {relativeTime}
-                      </span>
-                    )}
-                  </RelativeTime>
+                  <span className="text-secondary text-xs">
+                    {editedByUser
+                      ? getRenderedUsername(editedByUser)
+                      : t('unknownUser')}{' '}
+                    <RelativeTime date={new Date(message.editedAt)}>
+                      {(relativeTime, hoverProps) => (
+                        <span {...hoverProps}>{relativeTime}</span>
+                      )}
+                    </RelativeTime>
+                  </span>
                 </div>
               }
             >
