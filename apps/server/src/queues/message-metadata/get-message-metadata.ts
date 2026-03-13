@@ -1,16 +1,19 @@
 import {
+  audioExtensions,
   extractUrls,
+  imageExtensions,
+  videoExtensions,
   type TGenericObject,
   type TMessageMetadata
 } from '@sharkord/shared';
 import dns from 'dns';
 import { eq } from 'drizzle-orm';
-import ipaddr from 'ipaddr.js';
 import { getLinkPreview } from 'link-preview-js';
 import { isIP } from 'net';
 import { db } from '../../db';
 import { messages } from '../../db/schema';
 import { getErrorMessage } from '../../helpers/get-error-message';
+import { isPrivateIP } from '../../helpers/network';
 import { logger } from '../../logger';
 
 const metadataCache = new Map<string, TGenericObject>();
@@ -20,25 +23,39 @@ setInterval(
   1000 * 60 * 60 * 2 // clear cache every 2 hours
 );
 
-const isPrivateIP = (ip: string): boolean => {
+// if it ends in a known media extension, we just assume it's a direct media link and skip the DNS resolution and metadata fetching
+// there might be cases where this is not true, but it's a good heuristic to avoid unnecessary work
+const getDirectMediaMetaFromUrl = (
+  parsedUrl: URL
+): {
+  isDirectMediaLink: boolean;
+  mediaType: 'image' | 'video' | 'audio' | 'none';
+} => {
   try {
-    const addr = ipaddr.parse(ip);
-    const range = addr.range();
+    const pathname = parsedUrl.pathname.toLowerCase();
 
-    const blockedRanges = [
-      'unspecified',
-      'broadcast',
-      'multicast',
-      'linkLocal',
-      'loopback',
-      'private',
-      'uniqueLocal'
-    ];
+    const isImage = imageExtensions.some((ext) => pathname.endsWith(ext));
 
-    return blockedRanges.includes(range);
+    if (isImage) {
+      return { isDirectMediaLink: true, mediaType: 'image' };
+    }
+
+    const isAudio = audioExtensions.some((ext) => pathname.endsWith(ext));
+
+    if (isAudio) {
+      return { isDirectMediaLink: true, mediaType: 'audio' };
+    }
+
+    const isVideo = videoExtensions.some((ext) => pathname.endsWith(ext));
+
+    if (isVideo) {
+      return { isDirectMediaLink: true, mediaType: 'video' };
+    }
   } catch {
-    return true; // if we can't parse it, block it
+    // ignore
   }
+
+  return { isDirectMediaLink: false, mediaType: 'none' };
 };
 
 const urlMetadataParser = async (
@@ -66,6 +83,22 @@ const urlMetadataParser = async (
       // it's already an ip address, check if it's private
       if (isIP(parsed.hostname) && isPrivateIP(parsed.hostname)) {
         return;
+      }
+
+      const { isDirectMediaLink, mediaType } =
+        getDirectMediaMetaFromUrl(parsed);
+
+      if (isDirectMediaLink) {
+        const metadata: TMessageMetadata = {
+          url,
+          title: parsed.pathname.split('/').pop() || url,
+          description: '',
+          mediaType
+        };
+
+        metadataCache.set(url, metadata);
+
+        return metadata;
       }
 
       const metadata = await getLinkPreview(url, {
