@@ -92,41 +92,47 @@ const urlMetadataParser = async (
         return;
       }
 
-      const metadata = await getLinkPreview(url, {
-        followRedirects: 'follow',
-        resolveDNSHost: async (url: string) => {
-          return new Promise((resolve, reject) => {
-            try {
-              const hostname = new URL(url).hostname;
+      let metadata;
 
-              dns.lookup(hostname, { all: true }, (err, addresses) => {
-                if (err) {
-                  reject(err);
-                  return;
-                }
+      try {
+        metadata = await getLinkPreview(url, {
+          followRedirects: 'follow',
+          resolveDNSHost: async (url: string) => {
+            return new Promise((resolve, reject) => {
+              try {
+                const hostname = new URL(url).hostname;
 
-                for (const entry of addresses) {
-                  if (isPrivateIP(entry.address)) {
-                    reject(new Error('Cannot resolve private IP addresses'));
+                dns.lookup(hostname, { all: true }, (err, addresses) => {
+                  if (err) {
+                    reject(err);
                     return;
                   }
-                }
 
-                const firstAddress = addresses[0]?.address;
+                  for (const entry of addresses) {
+                    if (isPrivateIP(entry.address)) {
+                      reject(new Error('Cannot resolve private IP addresses'));
+                      return;
+                    }
+                  }
 
-                if (!firstAddress) {
-                  reject(new Error('No addresses found'));
-                  return;
-                }
+                  const firstAddress = addresses[0]?.address;
 
-                resolve(firstAddress);
-              });
-            } catch (error) {
-              reject(error);
-            }
-          });
-        }
-      });
+                  if (!firstAddress) {
+                    reject(new Error('No addresses found'));
+                    return;
+                  }
+
+                  resolve(firstAddress);
+                });
+              } catch (error) {
+                reject(error);
+              }
+            });
+          }
+        });
+      } catch {
+        // getLinkPreview failed (blocked, timeout, etc.)
+      }
 
       if (!metadata) {
         // no metadata was found, fallback to extension-based detection for direct media links
