@@ -2,6 +2,8 @@ import {
   audioExtensions,
   extractUrls,
   imageExtensions,
+  removeCommandElements,
+  removeEmojiElements,
   videoExtensions,
   type TGenericObject,
   type TMessageMetadata
@@ -57,13 +59,13 @@ const getDirectMediaMetaFromUrl = (
 };
 
 const sanitizeContent = (content: string): string => {
-  // do not attempt to parse custom emojis
-  const cleanedContent = content.replace(
-    /<img[^>]*class="emoji-image"[^>]*\/?>/gi,
-    ''
-  );
+  let cleanContent = content;
 
-  return cleanedContent;
+  // this will remove plugin commands AND emojis because they need to be ignored for metadata extraction
+  cleanContent = removeCommandElements(cleanContent);
+  cleanContent = removeEmojiElements(cleanContent);
+
+  return cleanContent;
 };
 
 const urlMetadataParser = async (
@@ -101,50 +103,11 @@ const urlMetadataParser = async (
         return;
       }
 
-      const metadata = await getLinkPreview(url, {
-        followRedirects: 'follow',
-        resolveDNSHost: async (url: string) => {
-          return new Promise((resolve, reject) => {
-            try {
-              const hostname = new URL(url).hostname;
+      // if the URL has a known media extension, skip getLinkPreview entirely and use extension-based detection
+      const { isDirectMediaLink, mediaType } =
+        getDirectMediaMetaFromUrl(parsed);
 
-              dns.lookup(hostname, { all: true }, (err, addresses) => {
-                if (err) {
-                  reject(err);
-                  return;
-                }
-
-                for (const entry of addresses) {
-                  if (isPrivateIP(entry.address)) {
-                    reject(new Error('Cannot resolve private IP addresses'));
-                    return;
-                  }
-                }
-
-                const firstAddress = addresses[0]?.address;
-
-                if (!firstAddress) {
-                  reject(new Error('No addresses found'));
-                  return;
-                }
-
-                resolve(firstAddress);
-              });
-            } catch (error) {
-              reject(error);
-            }
-          });
-        }
-      });
-
-      if (!metadata) {
-        // no metadata was found, fallback to extension-based detection for direct media links
-        // this is not perfect, but it's better than nothing and can catch cases where the metadata fetching fails for some reason (rate-limiting, banned ips, etc.)
-        const { isDirectMediaLink, mediaType } =
-          getDirectMediaMetaFromUrl(parsed);
-
-        if (!isDirectMediaLink) return;
-
+      if (isDirectMediaLink) {
         const directMetadata: TMessageMetadata = {
           url,
           title: parsed.pathname.split('/').pop() || url,
@@ -156,6 +119,50 @@ const urlMetadataParser = async (
 
         return directMetadata;
       }
+
+      let metadata;
+
+      try {
+        metadata = await getLinkPreview(url, {
+          followRedirects: 'follow',
+          resolveDNSHost: async (url: string) => {
+            return new Promise((resolve, reject) => {
+              try {
+                const hostname = new URL(url).hostname;
+
+                dns.lookup(hostname, { all: true }, (err, addresses) => {
+                  if (err) {
+                    reject(err);
+                    return;
+                  }
+
+                  for (const entry of addresses) {
+                    if (isPrivateIP(entry.address)) {
+                      reject(new Error('Cannot resolve private IP addresses'));
+                      return;
+                    }
+                  }
+
+                  const firstAddress = addresses[0]?.address;
+
+                  if (!firstAddress) {
+                    reject(new Error('No addresses found'));
+                    return;
+                  }
+
+                  resolve(firstAddress);
+                });
+              } catch (error) {
+                reject(error);
+              }
+            });
+          }
+        });
+      } catch {
+        // getLinkPreview failed (blocked, timeout, etc.)
+      }
+
+      if (!metadata) return;
 
       metadataCache.set(url, metadata);
 
