@@ -8,6 +8,7 @@
   "passwordTab": "密码",
   "notificationsTab": "通知",
   "othersTab": "其他",
+  "interfaceTab": "界面",
   "serverSettingsTitle": "服务器设置",
   "generalTab": "常规",
   "rolesTab": "角色",
@@ -338,5 +339,14 @@
   "deleteFileTitle": "删除文件",
   "deleteFileMsg": "您确定要删除此文件吗？",
   "fileDeletedSuccess": "文件已成功删除",
-  "failedDeleteFile": "删除文件失败"
+  "failedDeleteFile": "删除文件失败",
+
+  "dateFormatLabel": "日期格式",
+  "dateFormatDesc": "选择日期的显示方式。",
+  "timeFormatLabel": "时间格式",
+  "timeFormatDesc": "选择时间的显示方式。",
+  "preferAbsoluteTimeLabel": "总是显示绝对时间",
+  "preferAbsoluteTimeDesc": "显示绝对时间戳而不是相对时间（例如，显示「下午 2:30」而不是「5 分钟前」）。",
+  "interfaceTitle": "界面",
+  "interfaceDesc": "自定义外观和显示设置。"
 }

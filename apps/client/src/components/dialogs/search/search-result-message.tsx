@@ -37,7 +37,9 @@ const SearchResultMessageCard = memo(
               </span>
               <span>•</span>
               <RelativeTime date={new Date(message.createdAt)}>
-                {(relativeTime) => <span>{relativeTime}</span>}
+                {(relativeTime, hoverProps) => (
+                  <span {...hoverProps}>{relativeTime}</span>
+                )}
               </RelativeTime>
               <span>•</span>
               <span className="inline-flex min-w-0 max-w-full items-center gap-1">
