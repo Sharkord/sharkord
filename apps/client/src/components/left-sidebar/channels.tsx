@@ -114,7 +114,9 @@ const Voice = memo(
                 title={stream.title}
                 tracks={stream.tracks}
                 pluginId={stream.pluginId}
+                streamKey={stream.key}
                 avatarUrl={stream.avatarUrl}
+                isOwnChannel={isOwnChannel}
               />
             ))}
           </div>
