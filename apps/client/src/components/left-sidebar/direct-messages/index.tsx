@@ -1,9 +1,6 @@
 import { UnreadCount } from '@/components/unread-count';
 import { UserAvatar } from '@/components/user-avatar';
-import {
-  fetchDmConversations,
-  setSelectedDmChannelId
-} from '@/features/app/actions';
+import { setSelectedDmChannelId } from '@/features/app/actions';
 import {
   useDmConversations,
   useSelectedDmChannelId
@@ -20,8 +17,7 @@ import {
   DELETED_USER_IDENTITY_AND_NAME,
   type TDirectMessageConversation
 } from '@sharkord/shared';
-import { Spinner } from '@sharkord/ui';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { SearchUserDropdown } from './search-user-dropdown';
 
@@ -58,18 +54,11 @@ const DirectMessageItem = memo(
 );
 
 const DirectMessages = memo(() => {
-  const [loading, setLoading] = useState(true);
   const conversations = useDmConversations();
   const [query, setQuery] = useState('');
   const users = useUsers();
   const ownUserId = useOwnUserId();
   const selectedDmChannelId = useSelectedDmChannelId();
-
-  // refresh when the panel opens, in case new conversations arrived since join
-  useEffect(() => {
-    setLoading(true);
-    fetchDmConversations().finally(() => setLoading(false));
-  }, []);
 
   const usersToStartDm = useMemo(() => {
     const directMessageUserIds = new Set(conversations.map((dm) => dm.userId));
@@ -110,27 +99,21 @@ const DirectMessages = memo(() => {
         />
       </div>
 
-      {loading ? (
-        <div className="flex h-24 items-center justify-center">
-          <Spinner size="sm" />
-        </div>
-      ) : (
-        <div className="space-y-0.5">
-          {conversations.map((dm) => (
-            <DirectMessageItem
-              key={dm.channelId}
-              dm={dm}
-              selected={selectedDmChannelId === dm.channelId}
-              onSelect={() => setSelectedDmChannelId(dm.channelId)}
-            />
-          ))}
-          {conversations.length === 0 && (
-            <div className="px-2 py-4 text-xs text-muted-foreground">
-              No direct messages yet
-            </div>
-          )}
-        </div>
-      )}
+      <div className="space-y-0.5">
+        {conversations.map((dm) => (
+          <DirectMessageItem
+            key={dm.channelId}
+            dm={dm}
+            selected={selectedDmChannelId === dm.channelId}
+            onSelect={() => setSelectedDmChannelId(dm.channelId)}
+          />
+        ))}
+        {conversations.length === 0 && (
+          <div className="px-2 py-4 text-xs text-muted-foreground">
+            No direct messages yet
+          </div>
+        )}
+      </div>
     </div>
   );
 });

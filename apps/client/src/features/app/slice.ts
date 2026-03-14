@@ -109,6 +109,39 @@ export const appSlice = createSlice({
     ) => {
       state.dmConversations = action.payload;
     },
+    addDmConversation: (
+      state,
+      action: PayloadAction<TDirectMessageConversation>
+    ) => {
+      // upsert -- replace if the conversation already exists, otherwise insert
+      const idx = state.dmConversations.findIndex(
+        (c) => c.channelId === action.payload.channelId
+      );
+
+      if (idx !== -1) {
+        state.dmConversations[idx] = action.payload;
+      } else {
+        state.dmConversations.push(action.payload);
+      }
+
+      // keep sorted by most recent message first
+      state.dmConversations.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+    },
+    updateDmConversationLastMessage: (
+      state,
+      action: PayloadAction<{ channelId: number; lastMessageAt: number }>
+    ) => {
+      const conv = state.dmConversations.find(
+        (c) => c.channelId === action.payload.channelId
+      );
+
+      if (!conv) return;
+
+      conv.lastMessageAt = action.payload.lastMessageAt;
+
+      // re-sort so the updated conversation bubbles to the correct position
+      state.dmConversations.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+    },
     setBrowserNotifications: (state, action: PayloadAction<boolean>) => {
       state.browserNotifications = action.payload;
     },

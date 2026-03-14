@@ -1,6 +1,6 @@
 import { logDebug } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
-import { fetchDmConversations } from '../actions';
+import { addDmConversation } from '../actions';
 
 const subscribeToDms = () => {
   const trpc = getTRPCClient();
@@ -8,9 +8,9 @@ const subscribeToDms = () => {
   const onConversationOpenSub = trpc.dms.onConversationOpen.subscribe(
     undefined,
     {
-      onData: () => {
-        logDebug('[EVENTS] dms.onConversationOpen');
-        fetchDmConversations();
+      onData: (conversation) => {
+        logDebug('[EVENTS] dms.onConversationOpen', { conversation });
+        addDmConversation(conversation);
       },
       onError: (err) =>
         console.error('onConversationOpen subscription error:', err)

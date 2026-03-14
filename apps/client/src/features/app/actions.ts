@@ -104,6 +104,17 @@ export const setDmConversations = (
   conversations: TDirectMessageConversation[]
 ) => store.dispatch(appSliceActions.setDmConversations(conversations));
 
+export const addDmConversation = (conversation: TDirectMessageConversation) =>
+  store.dispatch(appSliceActions.addDmConversation(conversation));
+
+export const updateDmConversationLastMessage = (
+  channelId: number,
+  lastMessageAt: number
+) =>
+  store.dispatch(
+    appSliceActions.updateDmConversationLastMessage({ channelId, lastMessageAt })
+  );
+
 export const fetchDmConversations = async () => {
   const trpc = getTRPCClient();
 

@@ -6,6 +6,7 @@ import {
   selectedDmChannelIdSelector,
   threadSidebarDataSelector
 } from '@/features/app/selectors';
+import { updateDmConversationLastMessage } from '@/features/app/actions';
 import { store } from '@/features/store';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';
@@ -163,6 +164,16 @@ export const addMessages = (
         } else if (hasBrowserNotificationsEnabled) {
           sendBrowserNotification(targetMessage, channelId);
         }
+      }
+    }
+
+    // if this is a DM channel, update lastMessageAt so the conversation
+    // re-sorts to the top of the list
+    if (rootMessages.length > 0) {
+      const channel = channelByIdSelector(state, channelId);
+
+      if (channel?.isDm) {
+        updateDmConversationLastMessage(channelId, targetMessage.createdAt);
       }
     }
 
