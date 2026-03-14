@@ -104,11 +104,6 @@ const urlMetadataParser = async (
           mediaType
         };
 
-        console.log(
-          'Direct media link detected, skipping getLinkPreview',
-          directMetadata
-        );
-
         metadataCache.set(url, directMetadata);
 
         return directMetadata;
@@ -153,7 +148,6 @@ const urlMetadataParser = async (
           }
         });
       } catch {
-        console.log(`Failed to fetch metadata for URL: ${url}`);
         // getLinkPreview failed (blocked, timeout, etc.)
       }
 
@@ -170,11 +164,8 @@ const urlMetadataParser = async (
 
     const validMetadata = (metadata ?? []).filter((m) => !!m);
 
-    console.log({ validMetadata });
-
     return validMetadata ?? [];
   } catch {
-    console.log('deu merda');
     // ignore
   }
 
