@@ -1,6 +1,7 @@
 import { TextChannel } from '@/components/channel-view/text';
 import { VoiceChannel } from '@/components/channel-view/voice';
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
+import { useActiveFullscreenPluginId } from '@/features/app/hooks';
 import {
   useSelectedChannelId,
   useSelectedChannelType
@@ -23,6 +24,20 @@ const ContentWrapper = memo(
     const selectedChannelId = useSelectedChannelId();
     const selectedChannelType = useSelectedChannelType();
     const serverName = useServerName();
+    const activeFullscreenPluginId = useActiveFullscreenPluginId();
+
+    if (activeFullscreenPluginId) {
+      return (
+        <main className="flex flex-1 flex-col bg-background relative min-w-0 min-h-0">
+          <div className="flex-col gap-2 h-full w-full flex overflow-auto relative bg-background">
+            <PluginSlotRenderer
+              slotId={PluginSlot.FULL_SCREEN}
+              activeFullscreenPluginId={activeFullscreenPluginId}
+            />
+          </div>
+        </main>
+      );
+    }
 
     let content;
 

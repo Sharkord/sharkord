@@ -25,6 +25,7 @@ export interface TAppState {
   messageJumpTarget: TMessageJumpToTarget | undefined;
   voiceChatSidebarOpen: boolean;
   voiceChatChannelId: number | undefined;
+  activeFullscreenPluginId: string | undefined;
 }
 
 const initialState: TAppState = {
@@ -62,7 +63,8 @@ const initialState: TAppState = {
   ),
   voiceChatChannelId: getLocalStorageItemAsNumber(
     LocalStorageKey.VOICE_CHAT_SIDEBAR_CHANNEL_ID
-  )
+  ),
+  activeFullscreenPluginId: undefined
 };
 
 export const appSlice = createSlice({
@@ -142,6 +144,15 @@ export const appSlice = createSlice({
     ) => {
       state.voiceChatSidebarOpen = action.payload.open;
       state.voiceChatChannelId = action.payload.channelId;
+    },
+    setActiveFullscreenPluginId: (
+      state,
+      action: PayloadAction<string | undefined>
+    ) => {
+      state.activeFullscreenPluginId = action.payload;
+      if (action.payload) {
+        state.dmsOpen = false;
+      }
     }
   }
 });

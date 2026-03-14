@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import {
+  activeFullscreenPluginIdSelector,
   appLoadingSelector,
   autoJoinLastChannelSelector,
   browserNotificationsForDmsSelector,
@@ -57,3 +58,6 @@ export const useMessageJumpTarget = () =>
 
 export const useVoiceChatSidebar = () =>
   useSelector(voiceChatSidebarDataSelector);
+
+export const useActiveFullscreenPluginId = () =>
+  useSelector(activeFullscreenPluginIdSelector);

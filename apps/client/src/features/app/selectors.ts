@@ -68,3 +68,6 @@ export const threadSidebarDataSelector = createSelector(
     channelId
   })
 );
+
+export const activeFullscreenPluginIdSelector = (state: IRootState) =>
+  state.app.activeFullscreenPluginId;

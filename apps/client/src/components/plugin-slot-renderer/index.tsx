@@ -19,15 +19,24 @@ const SlotContextProvider = memo(({ children }: TSlotContextProviderProps) => {
 type TPluginSlotRendererProps = {
   slotId: PluginSlot;
   debug?: boolean;
+  activeFullscreenPluginId?: string;
 };
 
 const PluginSlotRenderer = memo(
-  ({ slotId, debug = isDebug() }: TPluginSlotRendererProps) => {
+  ({
+    slotId,
+    debug = isDebug(),
+    activeFullscreenPluginId
+  }: TPluginSlotRendererProps) => {
     const pluginComponentsBySlot = usePluginComponentsBySlot(slotId);
 
     const content = Object.entries(pluginComponentsBySlot).map(
-      ([pluginId, components]) =>
-        components.map((Component, index) => {
+      ([pluginId, components]) => {
+        if (activeFullscreenPluginId && pluginId !== activeFullscreenPluginId) {
+          return null;
+        }
+
+        return components.map((Component, index) => {
           const content = (
             <SlotContextProvider>
               {(ctx) => <Component {...ctx} />}
@@ -51,7 +60,8 @@ const PluginSlotRenderer = memo(
               {wrappedContent}
             </ErrorBoundary>
           );
-        })
+        });
+      }
     );
 
     return <>{content}</>;

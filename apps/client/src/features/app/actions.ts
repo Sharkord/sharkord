@@ -237,3 +237,6 @@ export const assertVoiceChatClose = (channelId: number) => {
     closeVoiceChatSidebar();
   }
 };
+
+export const setActiveFullscreenPluginId = (pluginId: string | undefined) =>
+  store.dispatch(appSliceActions.setActiveFullscreenPluginId(pluginId));

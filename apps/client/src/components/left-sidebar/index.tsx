@@ -11,6 +11,7 @@ import { memo } from 'react';
 import { Categories } from './categories';
 import { DirectMessages } from './direct-messages';
 import { DmButton } from './direct-messages/dm-button';
+import { PluginSidebarButtons } from './plugin-buttons';
 import { ServerDropdownMenu } from './server-dropdown';
 import { UserControl } from './user-control';
 import { VoiceControl } from './voice-control';
@@ -49,6 +50,7 @@ const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
         </div>
       </div>
       {publicSettings?.directMessagesEnabled && <DmButton />}
+      <PluginSidebarButtons />
       <div className="flex-1 overflow-y-auto">
         {dmsOpen ? <DirectMessages /> : <Categories />}
       </div>
