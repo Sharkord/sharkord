@@ -2,6 +2,7 @@ import {
   audioExtensions,
   extractUrls,
   imageExtensions,
+  removeCommandElements,
   removeEmojiElements,
   videoExtensions,
   type TGenericObject,
@@ -57,11 +58,21 @@ const getDirectMediaMetaFromUrl = (
   return { isDirectMediaLink: false, mediaType: 'none' };
 };
 
+const sanitizeContent = (content: string): string => {
+  let cleanContent = content;
+
+  // this will remove plugin commands AND emojis because they need to be ignored for metadata extraction
+  cleanContent = removeCommandElements(cleanContent);
+  cleanContent = removeEmojiElements(cleanContent);
+
+  return cleanContent;
+};
+
 const urlMetadataParser = async (
   content: string
 ): Promise<TMessageMetadata[]> => {
   try {
-    const cleanContent = removeEmojiElements(content);
+    const cleanContent = sanitizeContent(content);
     const urls = extractUrls(cleanContent);
 
     if (!urls) return [];
