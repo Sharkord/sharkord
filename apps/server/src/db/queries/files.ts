@@ -69,8 +69,7 @@ const getFilesByUserId = async (userId: number): Promise<TFile[]> => {
         file: files
       })
       .from(files)
-      .where(eq(files.userId, userId))
-      .all(),
+      .where(eq(files.userId, userId)),
     getSettings()
   ]);
 
