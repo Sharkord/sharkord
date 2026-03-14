@@ -30,6 +30,10 @@ const getFileUrl = (file: TFile | undefined | null) => {
 
   if (file._accessToken) {
     baseUrl += `?accessToken=${file._accessToken}`;
+
+    if (file._accessTokenExpiresAt) {
+      baseUrl += `&expires=${file._accessTokenExpiresAt}`;
+    }
   }
 
   return encodeURI(baseUrl);

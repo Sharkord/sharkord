@@ -19,7 +19,6 @@
   "pluginsTab": "Plugins",
   "channelSettingsTitle": "Channel Settings",
   "permissionsTab": "Permissions",
-  "securityTab": "Security",
   "categorySettingsTitle": "Category Settings",
   "profileTitle": "Your Profile",
   "profileDesc": "Update your personal information and settings here.",
@@ -209,14 +208,6 @@
   "channelTopicPlaceholder": "Enter channel topic",
   "privateLabel": "Private",
   "privateDesc": "Restricts access to this channel to specific roles and members.",
-  "securityTitle": "Security",
-  "securityDesc": "Manage some security settings for this channel",
-  "fileAccessTokenLabel": "File Access Token",
-  "fileAccessTokenHelp": "Only used for private channels",
-  "fileAccessTokenDesc": "The file access token is used to secure access to files in this channel. Rotating the token will invalidate all existing file links. This means that ALL previously shared files will no longer be accessible.",
-  "rotateTokenBtn": "Rotate Token",
-  "tokenRotatedSuccess": "File access token rotated successfully",
-  "failedRotateToken": "Failed to rotate file access token",
   "permissionsTitle": "Permissions",
   "permissionsDesc": "Manage channel-specific permissions for roles and users. These permissions are not inherited from server-level permissions. User permissions take precedence over role permissions.",
   "publicChannelTitle": "Public channel",
@@ -267,6 +258,12 @@
 
   "overflowDeleteOldFiles": "Delete old files",
   "overflowPreventUploads": "Prevent new file uploads",
+
+  "signedUrlsLabel": "Signed URLs",
+  "signedUrlsDesc": "When enabled, all file URLs require a signed token with an expiration time. This prevents unauthorized access to files by URL guessing. When disabled, files in public channels are accessible by anyone with the URL.",
+  "signedUrlsTtlLabel": "Signed URL expiration",
+  "signedUrlsTtlDesc": "How long a signed URL remains valid before it expires. Shorter durations enhance security but may cause inconvenience for users accessing files.",
+  "signedUrlsTtlUnit": "minutes",
 
   "moderateUserAction": "Moderate User",
 

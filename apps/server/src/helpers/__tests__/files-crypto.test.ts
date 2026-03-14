@@ -8,16 +8,16 @@ mock.module('../../db/queries/server', () => ({
 }));
 
 describe('files-crypto', () => {
+  const fileId = 123;
+  const futureExpiresAt = Date.now() + 3600000; // 1 hour from now
+
   beforeEach(() => {
     mockGetServerTokenSync.mockClear();
   });
 
   describe('generateFileToken', () => {
-    test('should generate a valid token for given fileId and channelAccessToken', () => {
-      const fileId = 123;
-      const channelAccessToken = 'channel-token-abc';
-
-      const token = generateFileToken(fileId, channelAccessToken);
+    test('should generate a valid hex token of 64 characters', () => {
+      const token = generateFileToken(fileId, futureExpiresAt);
 
       expect(token).toBeDefined();
       expect(typeof token).toBe('string');
@@ -26,160 +26,120 @@ describe('files-crypto', () => {
     });
 
     test('should generate different tokens for different fileIds', () => {
-      const channelAccessToken = 'channel-token-abc';
-
-      const token1 = generateFileToken(1, channelAccessToken);
-      const token2 = generateFileToken(2, channelAccessToken);
+      const token1 = generateFileToken(1, futureExpiresAt);
+      const token2 = generateFileToken(2, futureExpiresAt);
 
       expect(token1).not.toBe(token2);
     });
 
-    test('should generate different tokens for different channelAccessTokens', () => {
-      const fileId = 123;
-
-      const token1 = generateFileToken(fileId, 'channel-token-1');
-      const token2 = generateFileToken(fileId, 'channel-token-2');
+    test('should generate different tokens for different expiresAt values', () => {
+      const token1 = generateFileToken(fileId, Date.now() + 3600000);
+      const token2 = generateFileToken(fileId, Date.now() + 7200000);
 
       expect(token1).not.toBe(token2);
     });
 
     test('should generate consistent tokens for same inputs', () => {
-      const fileId = 123;
-      const channelAccessToken = 'channel-token-abc';
-
-      const token1 = generateFileToken(fileId, channelAccessToken);
-      const token2 = generateFileToken(fileId, channelAccessToken);
+      const token1 = generateFileToken(fileId, futureExpiresAt);
+      const token2 = generateFileToken(fileId, futureExpiresAt);
 
       expect(token1).toBe(token2);
     });
 
     test('should use server token from getServerTokenSync', () => {
-      const fileId = 123;
-      const channelAccessToken = 'channel-token-abc';
-
-      generateFileToken(fileId, channelAccessToken);
+      generateFileToken(fileId, futureExpiresAt);
 
       expect(mockGetServerTokenSync).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('verifyFileToken', () => {
-    test('should return true for valid token', () => {
-      const fileId = 123;
-      const channelAccessToken = 'channel-token-abc';
-
-      const token = generateFileToken(fileId, channelAccessToken);
-      const isValid = verifyFileToken(fileId, channelAccessToken, token);
+    test('should return true for valid token with future expiresAt', () => {
+      const token = generateFileToken(fileId, futureExpiresAt);
+      const isValid = verifyFileToken(fileId, token, futureExpiresAt);
 
       expect(isValid).toBe(true);
     });
 
-    test('should return false for invalid token', () => {
-      const fileId = 123;
-      const channelAccessToken = 'channel-token-abc';
+    test('should return false for expired token', () => {
+      const pastExpiresAt = Date.now() - 1000;
+      const token = generateFileToken(fileId, pastExpiresAt);
+      const isValid = verifyFileToken(fileId, token, pastExpiresAt);
 
+      expect(isValid).toBe(false);
+    });
+
+    test('should return false for invalid token string', () => {
       const isValid = verifyFileToken(
         fileId,
-        channelAccessToken,
-        'invalid-token-xyz'
+        'invalid-token-xyz',
+        futureExpiresAt
       );
 
       expect(isValid).toBe(false);
     });
 
     test('should return false for token with different fileId', () => {
-      const channelAccessToken = 'channel-token-abc';
-
-      const token = generateFileToken(123, channelAccessToken);
-      const isValid = verifyFileToken(456, channelAccessToken, token);
+      const token = generateFileToken(123, futureExpiresAt);
+      const isValid = verifyFileToken(456, token, futureExpiresAt);
 
       expect(isValid).toBe(false);
     });
 
-    test('should return false for token with different channelAccessToken', () => {
-      const fileId = 123;
-
-      const token = generateFileToken(fileId, 'channel-token-1');
-      const isValid = verifyFileToken(fileId, 'channel-token-2', token);
+    test('should return false for token with different expiresAt', () => {
+      const expiresAt1 = Date.now() + 3600000;
+      const expiresAt2 = Date.now() + 7200000;
+      const token = generateFileToken(fileId, expiresAt1);
+      const isValid = verifyFileToken(fileId, token, expiresAt2);
 
       expect(isValid).toBe(false);
     });
 
     test('should return false for token with different length', () => {
-      const fileId = 123;
-      const channelAccessToken = 'channel-token-abc';
-
-      const isValid = verifyFileToken(fileId, channelAccessToken, 'short');
+      const isValid = verifyFileToken(fileId, 'short', futureExpiresAt);
 
       expect(isValid).toBe(false);
     });
 
     test('should return false for empty token', () => {
-      const fileId = 123;
-      const channelAccessToken = 'channel-token-abc';
-
-      const isValid = verifyFileToken(fileId, channelAccessToken, '');
+      const isValid = verifyFileToken(fileId, '', futureExpiresAt);
 
       expect(isValid).toBe(false);
     });
 
     test('should use timing-safe comparison to prevent timing attacks', () => {
-      const fileId = 123;
-      const channelAccessToken = 'channel-token-abc';
-
-      const token = generateFileToken(fileId, channelAccessToken);
+      const token = generateFileToken(fileId, futureExpiresAt);
       const almostValidToken = token.slice(0, -1) + 'x';
 
       const isValid = verifyFileToken(
         fileId,
-        channelAccessToken,
-        almostValidToken
+        almostValidToken,
+        futureExpiresAt
       );
 
       expect(isValid).toBe(false);
     });
 
     test('should handle numeric fileIds correctly', () => {
-      const channelAccessToken = 'channel-token-abc';
+      const token1 = generateFileToken(1, futureExpiresAt);
+      const token2 = generateFileToken(10, futureExpiresAt);
+      const token3 = generateFileToken(100, futureExpiresAt);
 
-      const token1 = generateFileToken(1, channelAccessToken);
-      const token2 = generateFileToken(10, channelAccessToken);
-      const token3 = generateFileToken(100, channelAccessToken);
+      expect(verifyFileToken(1, token1, futureExpiresAt)).toBe(true);
+      expect(verifyFileToken(10, token2, futureExpiresAt)).toBe(true);
+      expect(verifyFileToken(100, token3, futureExpiresAt)).toBe(true);
 
-      expect(verifyFileToken(1, channelAccessToken, token1)).toBe(true);
-      expect(verifyFileToken(10, channelAccessToken, token2)).toBe(true);
-      expect(verifyFileToken(100, channelAccessToken, token3)).toBe(true);
-
-      expect(verifyFileToken(1, channelAccessToken, token2)).toBe(false);
-      expect(verifyFileToken(10, channelAccessToken, token3)).toBe(false);
-    });
-
-    test('should handle special characters in channelAccessToken', () => {
-      const fileId = 123;
-      const specialTokens = [
-        'token-with-dashes',
-        'token_with_underscores',
-        'token.with.dots',
-        'token/with/slashes',
-        'token:with:colons'
-      ];
-
-      for (const channelAccessToken of specialTokens) {
-        const token = generateFileToken(fileId, channelAccessToken);
-        const isValid = verifyFileToken(fileId, channelAccessToken, token);
-
-        expect(isValid).toBe(true);
-      }
+      expect(verifyFileToken(1, token2, futureExpiresAt)).toBe(false);
+      expect(verifyFileToken(10, token3, futureExpiresAt)).toBe(false);
     });
   });
 
   describe('integration', () => {
     test('should generate and verify tokens for multiple files', () => {
-      const channelAccessToken = 'channel-token-abc';
       const fileIds = [1, 2, 3, 4, 5];
 
       const tokens = fileIds.map((id) =>
-        generateFileToken(id, channelAccessToken)
+        generateFileToken(id, futureExpiresAt)
       );
 
       const uniqueTokens = new Set(tokens);
@@ -189,13 +149,14 @@ describe('files-crypto', () => {
       for (let i = 0; i < fileIds.length; i++) {
         const isValid = verifyFileToken(
           fileIds[i]!,
-          channelAccessToken,
-          tokens[i]!
+          tokens[i]!,
+          futureExpiresAt
         );
         expect(isValid).toBe(true);
       }
 
-      expect(verifyFileToken(fileIds[0]!, channelAccessToken, tokens[1]!)).toBe(
+      // cross-file verification should fail
+      expect(verifyFileToken(fileIds[0]!, tokens[1]!, futureExpiresAt)).toBe(
         false
       );
     });

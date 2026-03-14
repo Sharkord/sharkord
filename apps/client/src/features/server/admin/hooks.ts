@@ -8,6 +8,7 @@ import {
   STORAGE_DEFAULT_MAX_AVATAR_SIZE,
   STORAGE_DEFAULT_MAX_BANNER_SIZE,
   STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
+  STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
   STORAGE_MAX_FILE_SIZE,
   STORAGE_MAX_QUOTA_PER_USER,
   STORAGE_OVERFLOW_ACTION,
@@ -438,7 +439,9 @@ export const useAdminStorage = () => {
       storageMaxAvatarSize: STORAGE_DEFAULT_MAX_AVATAR_SIZE,
       storageMaxBannerSize: STORAGE_DEFAULT_MAX_BANNER_SIZE,
       storageMaxFilesPerMessage: STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
-      storageQuota: STORAGE_QUOTA
+      storageQuota: STORAGE_QUOTA,
+      storageSignedUrlsEnabled: false,
+      storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS
     });
   const [diskMetrics, setDiskMetrics] = useState<TDiskMetrics | undefined>(
     undefined
@@ -471,7 +474,9 @@ export const useAdminStorage = () => {
         storageMaxFilesPerMessage: values.storageMaxFilesPerMessage,
         storageSpaceQuotaByUser: values.storageSpaceQuotaByUser,
         storageOverflowAction:
-          values.storageOverflowAction as StorageOverflowAction
+          values.storageOverflowAction as StorageOverflowAction,
+        storageSignedUrlsEnabled: values.storageSignedUrlsEnabled,
+        storageSignedUrlsTtlSeconds: values.storageSignedUrlsTtlSeconds
       });
       toast.success('Storage settings updated');
     } catch (error) {

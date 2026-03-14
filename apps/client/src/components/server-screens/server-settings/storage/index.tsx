@@ -7,10 +7,12 @@ import {
   STORAGE_MAX_FILE_SIZE,
   STORAGE_MAX_QUOTA,
   STORAGE_MAX_QUOTA_PER_USER,
+  STORAGE_MAX_SIGNED_URLS_TTL_SECONDS,
   STORAGE_MIN_FILES_PER_MESSAGE,
   STORAGE_MIN_FILE_SIZE,
   STORAGE_MIN_QUOTA,
   STORAGE_MIN_QUOTA_PER_USER,
+  STORAGE_MIN_SIGNED_URLS_TTL_SECONDS,
   StorageOverflowAction
 } from '@sharkord/shared';
 import {
@@ -28,6 +30,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Separator,
   Switch
 } from '@sharkord/ui';
 import { memo } from 'react';
@@ -39,7 +42,8 @@ import {
   MAX_FILES_PER_MESSAGE_PRESETS,
   MAX_FILE_SIZE_PRESETS,
   QUOTA_BY_USER_PRESETS,
-  QUOTA_PRESETS
+  QUOTA_PRESETS,
+  SIGNED_URLS_TTL_PRESETS
 } from './presets';
 import { StorageSizeControl } from './storage-size-control';
 
@@ -267,6 +271,72 @@ const Storage = memo(() => {
               </SelectItem>
             </SelectContent>
           </Select>
+        </Group>
+
+        <Separator />
+
+        <Group label={t('signedUrlsLabel')} description={t('signedUrlsDesc')}>
+          <Switch
+            checked={!!values.storageSignedUrlsEnabled}
+            onCheckedChange={(checked) =>
+              onChange('storageSignedUrlsEnabled', checked)
+            }
+          />
+        </Group>
+
+        <Group
+          label={t('signedUrlsTtlLabel')}
+          description={t('signedUrlsTtlDesc')}
+        >
+          <div className="flex items-center max-w-150 justify-between">
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                className="border-input bg-background text-foreground h-8 w-28 rounded-md border px-2 text-sm"
+                min={Math.ceil(STORAGE_MIN_SIGNED_URLS_TTL_SECONDS / 60)}
+                max={Math.floor(STORAGE_MAX_SIGNED_URLS_TTL_SECONDS / 60)}
+                step={1}
+                value={Math.round(
+                  Number(values.storageSignedUrlsTtlSeconds) / 60
+                )}
+                disabled={!values.storageSignedUrlsEnabled}
+                onChange={(e) => {
+                  const nextMinutes = Number(e.target.value);
+
+                  if (!Number.isFinite(nextMinutes)) {
+                    return;
+                  }
+
+                  const nextSeconds = clamp(
+                    Math.round(nextMinutes) * 60,
+                    STORAGE_MIN_SIGNED_URLS_TTL_SECONDS,
+                    STORAGE_MAX_SIGNED_URLS_TTL_SECONDS
+                  );
+
+                  onChange('storageSignedUrlsTtlSeconds', nextSeconds);
+                }}
+              />
+              <span className="text-xs text-muted-foreground">
+                {t('signedUrlsTtlUnit')}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {SIGNED_URLS_TTL_PRESETS.map((preset) => (
+                <Button
+                  key={preset.value}
+                  size="sm"
+                  variant="outline"
+                  disabled={!values.storageSignedUrlsEnabled}
+                  onClick={() =>
+                    onChange('storageSignedUrlsTtlSeconds', preset.value)
+                  }
+                >
+                  {preset.label}
+                </Button>
+              ))}
+            </div>
+          </div>
         </Group>
 
         <div className="flex justify-end gap-2 pt-4">

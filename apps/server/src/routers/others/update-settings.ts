@@ -29,7 +29,9 @@ const updateSettingsRoute = protectedProcedure
       storageSpaceQuotaByUser: z.number().min(0).optional(),
       storageOverflowAction: z.enum(StorageOverflowAction).optional(),
       enablePlugins: z.boolean().optional(),
-      enableSearch: z.boolean().optional()
+      enableSearch: z.boolean().optional(),
+      storageSignedUrlsEnabled: z.boolean().optional(),
+      storageSignedUrlsTtlSeconds: z.number().int().min(0).optional()
     })
   )
   .mutation(async ({ input, ctx }) => {
@@ -54,7 +56,9 @@ const updateSettingsRoute = protectedProcedure
       storageSpaceQuotaByUser: input.storageSpaceQuotaByUser,
       storageOverflowAction: input.storageOverflowAction,
       enablePlugins: input.enablePlugins,
-      enableSearch: input.enableSearch
+      enableSearch: input.enableSearch,
+      storageSignedUrlsEnabled: input.storageSignedUrlsEnabled,
+      storageSignedUrlsTtlSeconds: input.storageSignedUrlsTtlSeconds
     });
 
     if (oldEnablePlugins !== input.enablePlugins) {

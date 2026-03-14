@@ -25,8 +25,7 @@ const getPinnedRoute = protectedProcedure
 
     const channel = await db
       .select({
-        private: channels.private,
-        fileAccessToken: channels.fileAccessToken
+        private: channels.private
       })
       .from(channels)
       .where(eq(channels.id, input.channelId))
@@ -45,7 +44,7 @@ const getPinnedRoute = protectedProcedure
       )
       .orderBy(desc(messages.createdAt));
 
-    return joinMessagesWithRelations(rows, channel);
+    return joinMessagesWithRelations(rows);
   });
 
 export { getPinnedRoute };

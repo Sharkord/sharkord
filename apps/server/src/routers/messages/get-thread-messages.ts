@@ -51,8 +51,7 @@ const getThreadMessagesRoute = protectedProcedure
 
     const channel = await db
       .select({
-        private: channels.private,
-        fileAccessToken: channels.fileAccessToken
+        private: channels.private
       })
       .from(channels)
       .where(eq(channels.id, parentMessage.channelId))
@@ -89,10 +88,7 @@ const getThreadMessagesRoute = protectedProcedure
       return { messages: [], nextCursor };
     }
 
-    const messagesWithRelations = await joinMessagesWithRelations(
-      rows,
-      channel
-    );
+    const messagesWithRelations = await joinMessagesWithRelations(rows);
 
     return { messages: messagesWithRelations, nextCursor };
   });
