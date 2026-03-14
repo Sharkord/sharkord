@@ -92,6 +92,28 @@ const urlMetadataParser = async (
         return;
       }
 
+      // if the URL has a known media extension, skip getLinkPreview entirely and use extension-based detection
+      const { isDirectMediaLink, mediaType } =
+        getDirectMediaMetaFromUrl(parsed);
+
+      if (isDirectMediaLink) {
+        const directMetadata: TMessageMetadata = {
+          url,
+          title: parsed.pathname.split('/').pop() || url,
+          description: '',
+          mediaType
+        };
+
+        console.log(
+          'Direct media link detected, skipping getLinkPreview',
+          directMetadata
+        );
+
+        metadataCache.set(url, directMetadata);
+
+        return directMetadata;
+      }
+
       let metadata;
 
       try {
@@ -131,28 +153,11 @@ const urlMetadataParser = async (
           }
         });
       } catch {
+        console.log(`Failed to fetch metadata for URL: ${url}`);
         // getLinkPreview failed (blocked, timeout, etc.)
       }
 
-      if (!metadata) {
-        // no metadata was found, fallback to extension-based detection for direct media links
-        // this is not perfect, but it's better than nothing and can catch cases where the metadata fetching fails for some reason (rate-limiting, banned ips, etc.)
-        const { isDirectMediaLink, mediaType } =
-          getDirectMediaMetaFromUrl(parsed);
-
-        if (!isDirectMediaLink) return;
-
-        const directMetadata: TMessageMetadata = {
-          url,
-          title: parsed.pathname.split('/').pop() || url,
-          description: '',
-          mediaType
-        };
-
-        metadataCache.set(url, directMetadata);
-
-        return directMetadata;
-      }
+      if (!metadata) return;
 
       metadataCache.set(url, metadata);
 
@@ -165,8 +170,11 @@ const urlMetadataParser = async (
 
     const validMetadata = (metadata ?? []).filter((m) => !!m);
 
+    console.log({ validMetadata });
+
     return validMetadata ?? [];
   } catch {
+    console.log('deu merda');
     // ignore
   }
 
