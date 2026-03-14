@@ -1,6 +1,12 @@
 import { LanguageSwitcher } from '@/components/language-switcher';
-import { setAutoJoinLastChannel, setChatInputMaxHeightVh } from '@/features/app/actions';
-import { useAutoJoinLastChannel, useChatInputMaxHeightVh } from '@/features/app/hooks';
+import {
+  setAutoJoinLastChannel,
+  setChatInputMaxHeightVh
+} from '@/features/app/actions';
+import {
+  useAutoJoinLastChannel,
+  useChatInputMaxHeightVh
+} from '@/features/app/hooks';
 import {
   Card,
   CardContent,
