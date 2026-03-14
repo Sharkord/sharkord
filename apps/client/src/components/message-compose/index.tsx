@@ -171,7 +171,7 @@ const MessageCompose = memo(
           </div>
         )}
         <UsersTypingIndicator typingUsers={typingUsers} />
-        <div className="flex items-center gap-2 rounded-lg">
+        <div className="flex items-start gap-2 rounded-lg">
           <TiptapInput
             value={message}
             onChange={onMessageChange}

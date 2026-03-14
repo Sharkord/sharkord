@@ -1,6 +1,7 @@
 import {
   getLocalStorageItemAsNumber,
   getLocalStorageItemBool,
+  getLocalStorageItemNumber,
   LocalStorageKey
 } from '@/helpers/storage';
 import type { TDevices, TMessageJumpToTarget } from '@/types';
@@ -22,6 +23,7 @@ export interface TAppState {
   browserNotifications: boolean;
   browserNotificationsForMentions: boolean;
   browserNotificationsForDms: boolean;
+  chatInputMaxHeightVh: number;
   messageJumpTarget: TMessageJumpToTarget | undefined;
   voiceChatSidebarOpen: boolean;
   voiceChatChannelId: number | undefined;
@@ -54,6 +56,10 @@ const initialState: TAppState = {
   browserNotificationsForDms: getLocalStorageItemBool(
     LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_DMS,
     false
+  ),
+  chatInputMaxHeightVh: getLocalStorageItemNumber(
+    LocalStorageKey.CHAT_INPUT_MAX_HEIGHT_VH,
+    35
   ),
   messageJumpTarget: undefined,
   voiceChatSidebarOpen: getLocalStorageItemBool(
@@ -126,6 +132,9 @@ export const appSlice = createSlice({
     },
     setBrowserNotificationsForDms: (state, action: PayloadAction<boolean>) => {
       state.browserNotificationsForDms = action.payload;
+    },
+    setChatInputMaxHeightVh: (state, action: PayloadAction<number>) => {
+      state.chatInputMaxHeightVh = action.payload;
     },
     setMessageJumpTarget: (
       state,
