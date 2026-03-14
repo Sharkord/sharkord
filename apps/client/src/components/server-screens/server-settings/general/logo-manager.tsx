@@ -52,12 +52,15 @@ const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
   }, [openFilePicker, refetch]);
 
   return (
-    <Group label="Logo">
+    <Group
+      label="Logo"
+      description="Square image is recommended. If your image is not perfectly square, the PWA icons will fall back to the default Sharkord icon."
+    >
       <ImagePicker
         image={logo}
         onImageClick={onLogoClick}
         onRemoveImageClick={removeLogo}
-        className="w-48 h-48"
+        className="object-scale-down"
       />
     </Group>
   );

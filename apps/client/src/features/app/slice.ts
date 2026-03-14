@@ -1,9 +1,10 @@
 import {
+  getLocalStorageItemAsNumber,
   getLocalStorageItemBool,
   getLocalStorageItemNumber,
   LocalStorageKey
 } from '@/helpers/storage';
-import type { TDevices } from '@/types';
+import type { TDevices, TMessageJumpToTarget } from '@/types';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 export interface TAppState {
@@ -23,6 +24,9 @@ export interface TAppState {
   browserNotificationsForMentions: boolean;
   browserNotificationsForDms: boolean;
   chatInputMaxHeightVh: number;
+  messageJumpTarget: TMessageJumpToTarget | undefined;
+  voiceChatSidebarOpen: boolean;
+  voiceChatChannelId: number | undefined;
 }
 
 const initialState: TAppState = {
@@ -55,7 +59,15 @@ const initialState: TAppState = {
   ),
   chatInputMaxHeightVh: getLocalStorageItemNumber(
     LocalStorageKey.CHAT_INPUT_MAX_HEIGHT_VH,
-    40
+    35
+  ),
+  messageJumpTarget: undefined,
+  voiceChatSidebarOpen: getLocalStorageItemBool(
+    LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE,
+    false
+  ),
+  voiceChatChannelId: getLocalStorageItemAsNumber(
+    LocalStorageKey.VOICE_CHAT_SIDEBAR_CHANNEL_ID
   )
 };
 
@@ -123,6 +135,22 @@ export const appSlice = createSlice({
     },
     setChatInputMaxHeightVh: (state, action: PayloadAction<number>) => {
       state.chatInputMaxHeightVh = action.payload;
+    },
+    setMessageJumpTarget: (
+      state,
+      action: PayloadAction<TMessageJumpToTarget | undefined>
+    ) => {
+      state.messageJumpTarget = action.payload;
+    },
+    setVoiceChatSidebar: (
+      state,
+      action: PayloadAction<{
+        open: boolean;
+        channelId?: number;
+      }>
+    ) => {
+      state.voiceChatSidebarOpen = action.payload.open;
+      state.voiceChatChannelId = action.payload.channelId;
     }
   }
 });

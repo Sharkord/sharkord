@@ -277,8 +277,12 @@ body {
   }
 }
 
-.msg-content > *:nth-last-child(2) {
+.msg-content.msg-edited > *:nth-last-child(2) {
   display: inline;
+}
+
+.msg-content p:empty {
+  min-height: 1em;
 }
 
 .react-tweet-theme {

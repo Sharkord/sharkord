@@ -14,6 +14,7 @@ import {
 import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
 import { loginRouteHandler } from './login';
+import { manifestRouteHandler } from './manifest';
 import { pluginBundleRouteHandler } from './plugin-bundle';
 import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
@@ -38,7 +39,8 @@ const routeHandlers: Partial<
   GET: {
     exact: {
       '/healthz': (req, res) => healthRouteHandler(req, res),
-      '/info': (req, res) => infoRouteHandler(req, res)
+      '/info': (req, res) => infoRouteHandler(req, res),
+      '/manifest.json': (req, res) => manifestRouteHandler(req, res)
     },
     prefix: {
       '/public': (req, res) => publicRouteHandler(req, res),

@@ -2,7 +2,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   ChannelPermission,
   Permission,
-  linkifyHtml,
+  prepareMessageHtml,
   type TPluginSlotContext
 } from '@sharkord/shared';
 import { useCallback, useMemo, useRef } from 'react';
@@ -14,6 +14,7 @@ import {
   connectedSelector,
   connectingSelector,
   disconnectInfoSelector,
+  hasSharingScreenUsersSelector,
   hasUnreadMentionsSelector,
   hasVisibleChannelsInCategorySelector,
   infoSelector,
@@ -130,6 +131,11 @@ export const useUnreadMessagesCount = (channelId: number) =>
     channelReadStateByIdSelector(state, channelId)
   );
 
+export const useHasSharingScreenUsers = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    hasSharingScreenUsersSelector(state, channelId)
+  );
+
 export const usePluginComponentContext = (): TPluginSlotContext => {
   const stateCtx = useSelector(pluginComponentContextSelector);
   const controllerRef = useRef(
@@ -139,7 +145,7 @@ export const usePluginComponentContext = (): TPluginSlotContext => {
 
         await trpc.messages.send.mutate({
           channelId,
-          content: linkifyHtml(`<p>${content}</p>`),
+          content: prepareMessageHtml(`<p>${content}</p>`),
           files: []
         });
       }

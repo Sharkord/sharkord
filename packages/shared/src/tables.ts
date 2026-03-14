@@ -29,6 +29,7 @@ export type TCategory = InferSelectModel<typeof categories>;
 export type TChannel = InferSelectModel<typeof channels>;
 export type TFile = InferSelectModel<typeof files> & {
   _accessToken?: string;
+  _accessTokenExpiresAt?: number;
 };
 export type TUser = InferSelectModel<typeof users>;
 export type TLogin = InferSelectModel<typeof logins>;
@@ -84,6 +85,8 @@ export type TStorageSettings = Pick<
   | 'storageMaxFilesPerMessage'
   | 'storageSpaceQuotaByUser'
   | 'storageOverflowAction'
+  | 'storageSignedUrlsEnabled'
+  | 'storageSignedUrlsTtlSeconds'
 >;
 
 // joined types

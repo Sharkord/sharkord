@@ -1,4 +1,5 @@
 import { Protect } from '@/components/protect';
+import { useDateLocale } from '@/hooks/use-date-locale';
 import { Permission } from '@sharkord/shared/src/statics/permissions';
 import {
   Card,
@@ -21,6 +22,7 @@ import {
   Network
 } from 'lucide-react';
 import { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useModViewContext } from '../context';
 
 type TRowProps = {
@@ -66,6 +68,8 @@ const Row = memo(
 );
 
 const Details = memo(() => {
+  const { t } = useTranslation('settings');
+  const dateLocale = useDateLocale();
   const { user, logins } = useModViewContext();
   const lastLogin = logins[0]; // TODO: in the future we might show a list of logins, atm we just show info about the last one
 
@@ -74,71 +78,81 @@ const Details = memo(() => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ClipboardList className="h-5 w-5" />
-          Details
+          {t('detailsTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         <div className="space-y-2">
           <Row
             icon={<IdCard className="h-4 w-4 text-muted-foreground" />}
-            label="User ID"
+            label={t('userIdLabel')}
             value={user.id}
           />
 
           <Protect permission={Permission.VIEW_USER_SENSITIVE_DATA}>
             <Row
               icon={<IdCard className="h-4 w-4 text-muted-foreground" />}
-              label="Identity"
+              label={t('identityDetailLabel')}
               value={user.identity}
               hidden
             />
 
             <Row
               icon={<Network className="h-4 w-4 text-muted-foreground" />}
-              label="IP Address"
-              value={lastLogin?.ip || 'Unknown'}
+              label={t('ipAddressLabel')}
+              value={lastLogin?.ip || t('unknownValue')}
               hidden
             />
 
             <Row
               icon={<Globe className="h-4 w-4 text-muted-foreground" />}
-              label="Location"
-              value={`${lastLogin?.country || 'N/A'} - ${lastLogin?.city || 'N/A'}`}
+              label={t('locationLabel')}
+              value={`${lastLogin?.country || t('naValue')} - ${lastLogin?.city || t('naValue')}`}
               hidden
             />
           </Protect>
 
           <Row
             icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
-            label="Joined Server"
-            value={formatDistanceToNow(user.createdAt, { addSuffix: true })}
+            label={t('joinedServerLabel')}
+            value={formatDistanceToNow(user.createdAt, {
+              addSuffix: true,
+              locale: dateLocale
+            })}
           />
 
           <Row
             icon={<Clock className="h-4 w-4 text-muted-foreground" />}
-            label="Last Active"
-            value={formatDistanceToNow(user.lastLoginAt, { addSuffix: true })}
+            label={t('lastActiveLabel')}
+            value={formatDistanceToNow(user.lastLoginAt, {
+              addSuffix: true,
+              locale: dateLocale
+            })}
           />
 
           {user.banned && (
             <>
               <Row
                 icon={<Gavel className="h-4 w-4 text-muted-foreground" />}
-                label="Banned"
-                value="Yes"
+                label={t('bannedDetailLabel')}
+                value={t('bannedDetailValue')}
               />
 
               <Row
                 icon={<Gavel className="h-4 w-4 text-muted-foreground" />}
-                label="Ban Reason"
-                value={user.banReason || 'No reason provided'}
+                label={t('banReasonLabel')}
+                value={user.banReason || t('noReasonProvidedDetail')}
               />
 
               <Row
                 icon={<Gavel className="h-4 w-4 text-muted-foreground" />}
-                label="Banned At"
-                value={format(user.bannedAt ?? 0, 'PPP')}
-                details={format(user.bannedAt ?? 0, 'PPpp')}
+                label={t('bannedAtLabel')}
+                value={format(user.bannedAt ?? 0, 'PPP', {
+                  locale: dateLocale
+                })}
+                details={format(user.bannedAt ?? 0, 'PPpp', {
+                  locale: dateLocale
+                })}
               />
             </>
           )}

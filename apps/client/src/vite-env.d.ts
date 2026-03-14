@@ -19,4 +19,21 @@ declare global {
   const VITE_APP_VERSION: string;
 }
 
+// this provides type definitions for i18n setup
+declare module 'i18next' {
+  interface CustomTypeOptions {
+    defaultNS: 'common';
+    resources: {
+      common: typeof import('./locales/en/common.json');
+      connect: typeof import('./locales/en/connect.json');
+      disconnected: typeof import('./locales/en/disconnected.json');
+      sidebar: typeof import('./locales/en/sidebar.json');
+      topbar: typeof import('./locales/en/topbar.json');
+      dialogs: typeof import('./locales/en/dialogs.json');
+      settings: typeof import('./locales/en/settings.json');
+      permissions: typeof import('./locales/en/permissions.json');
+    };
+  }
+}
+
 export {};

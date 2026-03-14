@@ -1,17 +1,20 @@
 import type { TDiskMetrics } from '@sharkord/shared';
 import { filesize } from 'filesize';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface DiskMetricsProps {
   diskMetrics: TDiskMetrics;
 }
 
 const DiskMetrics = memo(({ diskMetrics }: DiskMetricsProps) => {
+  const { t } = useTranslation('settings');
+
   return (
     <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg border">
       <div>
         <div className="text-sm font-medium text-muted-foreground">
-          Total Disk Space
+          {t('diskTotalSpace')}
         </div>
         <div className="text-lg font-semibold">
           {filesize(diskMetrics.totalSpace, { standard: 'jedec' })}
@@ -19,7 +22,7 @@ const DiskMetrics = memo(({ diskMetrics }: DiskMetricsProps) => {
       </div>
       <div>
         <div className="text-sm font-medium text-muted-foreground">
-          Available Space
+          {t('diskAvailableSpace')}
         </div>
         <div className="text-lg font-semibold">
           {filesize(diskMetrics.freeSpace, { standard: 'jedec' })}
@@ -27,7 +30,7 @@ const DiskMetrics = memo(({ diskMetrics }: DiskMetricsProps) => {
       </div>
       <div>
         <div className="text-sm font-medium text-muted-foreground">
-          System Used
+          {t('diskSystemUsed')}
         </div>
         <div className="text-lg font-semibold">
           {filesize(diskMetrics.usedSpace, { standard: 'jedec' })}
@@ -35,7 +38,7 @@ const DiskMetrics = memo(({ diskMetrics }: DiskMetricsProps) => {
       </div>
       <div>
         <div className="text-sm font-medium text-muted-foreground">
-          Sharkord Used
+          {t('diskSharkordUsed')}
         </div>
         <div className="text-lg font-semibold">
           {filesize(diskMetrics.sharkordUsedSpace, { standard: 'jedec' })}
@@ -43,7 +46,7 @@ const DiskMetrics = memo(({ diskMetrics }: DiskMetricsProps) => {
       </div>
       <div className="col-span-2 mt-2">
         <div className="text-sm font-medium text-muted-foreground mb-2">
-          Disk Usage
+          {t('diskUsage')}
         </div>
         <div className="w-full bg-muted rounded-full h-2">
           <div
@@ -57,8 +60,12 @@ const DiskMetrics = memo(({ diskMetrics }: DiskMetricsProps) => {
           />
         </div>
         <div className="text-xs text-muted-foreground mt-1">
-          {((diskMetrics.usedSpace / diskMetrics.totalSpace) * 100).toFixed(1)}%
-          used
+          {t('diskUsedPercent', {
+            percent: (
+              (diskMetrics.usedSpace / diskMetrics.totalSpace) *
+              100
+            ).toFixed(1)
+          })}
         </div>
       </div>
     </div>

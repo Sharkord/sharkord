@@ -45,6 +45,8 @@ export type TPublicServerSettings = Pick<
   | 'storageSpaceQuotaByUser'
   | 'storageOverflowAction'
   | 'enablePlugins'
+  | 'enableSearch'
+  | 'storageSignedUrlsEnabled'
 > & {
   webRtcMaxBitrate: number;
 };
@@ -99,6 +101,22 @@ export type TServerInfo = Pick<
 > & {
   logo: TFile | null;
   version: string;
+};
+
+export type TWebAppManifest = {
+  name: string;
+  short_name: string;
+  description: string;
+  start_url: string;
+  display: string;
+  background_color: string;
+  theme_color: string;
+  icons: Array<{
+    src: string;
+    sizes: string;
+    type: string;
+    purpose?: string;
+  }>;
 };
 
 export type TArtifact = {

@@ -1,8 +1,8 @@
 import type { TFile } from '@sharkord/shared';
 import { asc, eq, sql, sum } from 'drizzle-orm';
 import { db } from '..';
-import { generateFileToken } from '../../helpers/files-crypto';
-import { channels, files, messageFiles, messages } from '../schema';
+import { attachFileToken } from '../../helpers/files-crypto';
+import { files, messageFiles } from '../schema';
 import { getSettings } from './server';
 
 const getExceedingOldFiles = async (newFileSize: number) => {
@@ -63,30 +63,23 @@ const getFilesByMessageId = async (messageId: number): Promise<TFile[]> =>
     .map((row) => row.files);
 
 const getFilesByUserId = async (userId: number): Promise<TFile[]> => {
-  const result = await db
-    .select({
-      file: files,
-      channel: channels
-    })
-    .from(files)
-    .leftJoin(messageFiles, eq(files.id, messageFiles.fileId))
-    .leftJoin(messages, eq(messageFiles.messageId, messages.id))
-    .leftJoin(channels, eq(messages.channelId, channels.id))
-    .where(eq(files.userId, userId))
-    .all();
+  const [result, settings] = await Promise.all([
+    db
+      .select({
+        file: files
+      })
+      .from(files)
+      .where(eq(files.userId, userId)),
+    getSettings()
+  ]);
 
-  const results = result.map((r) => {
-    const rowCopy: TFile = { ...r.file };
-
-    if (r.channel?.private) {
-      rowCopy._accessToken = generateFileToken(
-        r.file.id,
-        r.channel.fileAccessToken
-      );
-    }
-
-    return rowCopy;
-  });
+  const results = result.map((r) =>
+    attachFileToken(
+      r.file,
+      settings.storageSignedUrlsEnabled,
+      settings.storageSignedUrlsTtlSeconds
+    )
+  );
 
   return results;
 };

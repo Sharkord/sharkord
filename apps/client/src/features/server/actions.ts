@@ -2,10 +2,17 @@ import { Dialog } from '@/components/dialogs/dialogs';
 import { logDebug } from '@/helpers/browser-logger';
 import { getHostFromServer } from '@/helpers/get-file-url';
 import { cleanup, connectToTRPC, getTRPCClient } from '@/lib/trpc';
+import type { TMessageJumpToTarget } from '@/types';
 import { type TPublicServerSettings, type TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
+import {
+  setDmsOpen,
+  setMessageJumpTarget,
+  setSelectedDmChannelId
+} from '../app/actions';
 import { openDialog } from '../dialogs/actions';
 import { store } from '../store';
+import { setSelectedChannelId } from './channels/actions';
 import {
   processPluginComponents,
   setPluginCommands,
@@ -94,6 +101,21 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
 export const disconnectFromServer = () => {
   cleanup();
   unsubscribeFromServer?.();
+};
+
+export const jumpToMessage = (target: TMessageJumpToTarget) => {
+  setMessageJumpTarget(target);
+
+  if (target.isDm) {
+    setDmsOpen(true);
+    setSelectedDmChannelId(target.channelId);
+
+    return;
+  }
+
+  setDmsOpen(false);
+  setSelectedDmChannelId(undefined);
+  setSelectedChannelId(target.channelId);
 };
 
 window.useToken = async (token: string) => {

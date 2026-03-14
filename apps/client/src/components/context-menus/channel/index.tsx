@@ -1,10 +1,11 @@
 import { ServerScreen } from '@/components/server-screens/screens';
+import { openVoiceChatSidebar } from '@/features/app/actions';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { openServerScreen } from '@/features/server-screens/actions';
 import { useChannelById } from '@/features/server/channels/hooks';
 import { useCan } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
-import { Permission } from '@sharkord/shared';
+import { ChannelType, Permission } from '@sharkord/shared';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -14,6 +15,7 @@ import {
   ContextMenuTrigger
 } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TChannelContextMenuProps = {
@@ -23,16 +25,23 @@ type TChannelContextMenuProps = {
 
 const ChannelContextMenu = memo(
   ({ children, channelId }: TChannelContextMenuProps) => {
+    const { t } = useTranslation('sidebar');
     const can = useCan();
     const channel = useChannelById(channelId);
 
+    const canManageChannels = can(Permission.MANAGE_CHANNELS);
+    const isVoiceChannel = channel?.type === ChannelType.VOICE;
+
+    const onOpenChat = useCallback(() => {
+      openVoiceChatSidebar(channelId);
+    }, [channelId]);
+
     const onDeleteClick = useCallback(async () => {
       const choice = await requestConfirmation({
-        title: 'Delete Channel',
-        message:
-          'Are you sure you want to delete this channel? This action cannot be undone.',
-        confirmLabel: 'Delete',
-        cancelLabel: 'Cancel'
+        title: t('deleteChannelTitle'),
+        message: t('deleteChannelMsg'),
+        confirmLabel: t('deleteLabel'),
+        cancelLabel: t('cancel', { ns: 'common' })
       });
 
       if (!choice) return;
@@ -41,17 +50,18 @@ const ChannelContextMenu = memo(
 
       try {
         await trpc.channels.delete.mutate({ channelId });
-        toast.success('Channel deleted');
+
+        toast.success(t('channelDeleted'));
       } catch {
-        toast.error('Failed to delete channel');
+        toast.error(t('failedDeleteChannel'));
       }
-    }, [channelId]);
+    }, [channelId, t]);
 
     const onEditClick = useCallback(() => {
       openServerScreen(ServerScreen.CHANNEL_SETTINGS, { channelId });
     }, [channelId]);
 
-    if (!can(Permission.MANAGE_CHANNELS)) {
+    if (!canManageChannels && !isVoiceChannel) {
       return <>{children}</>;
     }
 
@@ -61,10 +71,22 @@ const ChannelContextMenu = memo(
         <ContextMenuContent>
           <ContextMenuLabel>{channel?.name}</ContextMenuLabel>
           <ContextMenuSeparator />
-          <ContextMenuItem onClick={onEditClick}>Edit</ContextMenuItem>
-          <ContextMenuItem variant="destructive" onClick={onDeleteClick}>
-            Delete
-          </ContextMenuItem>
+          {isVoiceChannel && (
+            <ContextMenuItem onClick={onOpenChat}>
+              {t('openChat')}
+            </ContextMenuItem>
+          )}
+          {canManageChannels && (
+            <>
+              {isVoiceChannel && <ContextMenuSeparator />}
+              <ContextMenuItem onClick={onEditClick}>
+                {t('editLabel')}
+              </ContextMenuItem>
+              <ContextMenuItem variant="destructive" onClick={onDeleteClick}>
+                {t('deleteLabel')}
+              </ContextMenuItem>
+            </>
+          )}
         </ContextMenuContent>
       </ContextMenu>
     );

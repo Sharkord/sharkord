@@ -11,6 +11,7 @@ import {
   TabsTrigger
 } from '@sharkord/ui';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CustomEmojiTab } from './custom-emoji-tab';
 import { ALL_EMOJIS, searchEmojis, toTEmojiItem } from './emoji-data';
 import { EmojiGrid } from './emoji-grid';
@@ -25,6 +26,7 @@ type TEmojiPickerProps = {
 
 const EmojiPicker = memo(
   ({ children, onEmojiSelect, defaultTab = 'native' }: TEmojiPickerProps) => {
+    const { t } = useTranslation('common');
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState('');
     const customEmojis = useCustomEmojis();
@@ -88,7 +90,7 @@ const EmojiPicker = memo(
           <div className="h-full flex flex-col">
             <div className="p-3 border-b">
               <Input
-                placeholder="Search all emojis..."
+                placeholder={t('searchAllEmojis')}
                 value={search}
                 onChange={handleSearchChange}
                 className="h-9"
@@ -99,13 +101,12 @@ const EmojiPicker = memo(
             {isSearching ? (
               <div className="flex flex-col flex-1 min-h-0">
                 <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-                  Search results ({searchResults.length})
+                  {t('searchResults', { count: searchResults.length })}
                 </div>
                 <div className="flex-1 min-h-0">
                   <EmojiGrid
                     emojis={searchResults}
                     onSelect={handleSearchResultSelect}
-                    height={300}
                   />
                 </div>
               </div>
@@ -115,8 +116,8 @@ const EmojiPicker = memo(
                 className="flex-1 flex flex-col min-h-0"
               >
                 <TabsList className="grid w-full grid-cols-2 rounded-none border-b">
-                  <TabsTrigger value="native">Emoji</TabsTrigger>
-                  <TabsTrigger value="custom">Custom</TabsTrigger>
+                  <TabsTrigger value="native">{t('emojiTab')}</TabsTrigger>
+                  <TabsTrigger value="custom">{t('customTab')}</TabsTrigger>
                 </TabsList>
                 <TabsContent value="native" className="flex-1 mt-0 min-h-0">
                   <NativeEmojiTab onEmojiSelect={handleEmojiSelect} />

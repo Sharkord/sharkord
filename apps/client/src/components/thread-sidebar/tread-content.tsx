@@ -3,8 +3,9 @@ import { useThreadMessages } from '@/features/server/messages/hooks';
 import { Spinner } from '@sharkord/ui';
 import { MessageSquareText } from 'lucide-react';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useScrollController } from '../channel-view/text/hooks/use-scroll-controller';
 import { MessagesGroup } from '../channel-view/text/messages-group';
-import { useScrollController } from '../channel-view/text/use-scroll-controller';
 import { ParentMessagePreview } from './parent-message-preview';
 import { ThreadCompose } from './thread-compose';
 import { ThreadHeader } from './thread-header';
@@ -16,6 +17,7 @@ type TThreadContentProps = {
 
 const ThreadContent = memo(
   ({ parentMessageId, channelId }: TThreadContentProps) => {
+    const { t } = useTranslation('common');
     const { messages, hasMore, loadMore, loading, fetching, groupedMessages } =
       useThreadMessages(parentMessageId);
 
@@ -55,8 +57,8 @@ const ThreadContent = memo(
                 {messages.length === 0 && !fetching ? (
                   <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-sm">
                     <MessageSquareText className="h-8 w-8 mb-2 opacity-50" />
-                    <p>No replies yet</p>
-                    <p className="text-xs">Be the first to reply</p>
+                    <p>{t('noRepliesYet')}</p>
+                    <p className="text-xs">{t('beFirstToReply')}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">

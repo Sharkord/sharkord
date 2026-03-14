@@ -12,9 +12,11 @@ import {
 } from '@sharkord/ui';
 import { Plus } from 'lucide-react';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { InvitesTable } from './invites-table';
 
 const Invites = memo(() => {
+  const { t } = useTranslation('settings');
   const { invites, loading, refetch } = useAdminInvites();
 
   if (loading) {
@@ -25,10 +27,8 @@ const Invites = memo(() => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Server Invites</CardTitle>
-          <CardDescription>
-            Manage invitation links for users to join the server
-          </CardDescription>
+          <CardTitle>{t('invitesTitle')}</CardTitle>
+          <CardDescription>{t('invitesDesc')}</CardDescription>
         </div>
         <Button
           onClick={() =>
@@ -39,7 +39,7 @@ const Invites = memo(() => {
           className="gap-2"
         >
           <Plus className="h-4 w-4" />
-          Create Invite
+          {t('createInviteBtn')}
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">

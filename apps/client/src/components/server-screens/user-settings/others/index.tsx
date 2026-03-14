@@ -1,3 +1,4 @@
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { setAutoJoinLastChannel, setChatInputMaxHeightVh } from '@/features/app/actions';
 import { useAutoJoinLastChannel, useChatInputMaxHeightVh } from '@/features/app/hooks';
 import {
@@ -11,23 +12,23 @@ import {
   Switch
 } from '@sharkord/ui';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const Others = memo(() => {
+  const { t } = useTranslation('settings');
   const autoJoinLastChannel = useAutoJoinLastChannel();
   const chatInputMaxHeightVh = useChatInputMaxHeightVh();
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Others</CardTitle>
-        <CardDescription>
-          General settings related to Sharkord's behavior.
-        </CardDescription>
+        <CardTitle>{t('othersTitle')}</CardTitle>
+        <CardDescription>{t('othersDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Group
-          label="Auto-Join Last Channel"
-          description="Automatically rejoin the last text channel on connect."
+          label={t('autoJoinLastChannelLabel')}
+          description={t('autoJoinLastChannelDesc')}
         >
           <Switch
             checked={autoJoinLastChannel}
@@ -56,6 +57,9 @@ const Others = memo(() => {
               }
             />
           </div>
+        </Group>
+        <Group label={t('languageLabel')} description={t('languageDesc')}>
+          <LanguageSwitcher />
         </Group>
       </CardContent>
     </Card>

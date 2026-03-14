@@ -3,6 +3,16 @@ import { toast } from 'sonner';
 import { getUrlFromServer } from './get-file-url';
 import { getSessionStorageItem, SessionStorageKey } from './storage';
 
+const getSafeFileName = (name: string) => {
+  return (
+    name
+      .trim()
+      .normalize('NFKD') // decomposes accented chars
+      // eslint-disable-next-line no-control-regex
+      .replace(/[^\x00-\x7F]/g, '_') // replaces non-ASCII chars with underscore
+  );
+};
+
 const uploadFile = async (file: File) => {
   const url = getUrlFromServer();
 
@@ -12,7 +22,7 @@ const uploadFile = async (file: File) => {
       'Content-Type': 'application/octet-stream',
       [UploadHeaders.TYPE]: file.type,
       [UploadHeaders.CONTENT_LENGTH]: file.size.toString(),
-      [UploadHeaders.ORIGINAL_NAME]: file.name,
+      [UploadHeaders.ORIGINAL_NAME]: getSafeFileName(file.name),
       [UploadHeaders.TOKEN]:
         getSessionStorageItem(SessionStorageKey.TOKEN) ?? ''
     },
