@@ -39,7 +39,7 @@ const getMessagesRoute = protectedProcedure
 
     const channel = await db
       .select({
-        private: channels.private
+        id: channels.id
       })
       .from(channels)
       .where(eq(channels.id, channelId))

@@ -8,7 +8,13 @@ import { files, settings } from '../schema';
 let token: string;
 
 const getSettings = async (): Promise<TJoinedSettings> => {
-  const serverSettings = await db.select().from(settings).get()!;
+  const serverSettings = await db.select().from(settings).get();
+
+  if (!serverSettings) {
+    throw new Error(
+      'Server settings not found in database. Something is wrong.'
+    );
+  }
 
   if (!token && serverSettings.secretToken) {
     token = serverSettings.secretToken;
