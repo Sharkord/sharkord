@@ -54,7 +54,7 @@ const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
   return (
     <Group
       label="Logo"
-      description="Recommended max resolution: 1200x400 or 1024x1024."
+      description="Square image is recommended. If your image is not perfectly square, the PWA icons will fall back to the default Sharkord icon."
     >
       <ImagePicker
         image={logo}

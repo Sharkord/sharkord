@@ -10,7 +10,7 @@
     },
     "apps/client": {
       "name": "client",
-      "version": "0.0.11",
+      "version": "0.0.15",
       "dependencies": {
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/sortable": "^10.0.0",
@@ -74,7 +74,7 @@
     },
     "apps/server": {
       "name": "@sharkord/server",
-      "version": "0.0.11",
+      "version": "0.0.15",
       "dependencies": {
         "@sharkord/plugin-sdk": "workspace:*",
         "@sharkord/shared": "workspace:*",
@@ -83,6 +83,7 @@
         "chalk": "^5.6.2",
         "cron": "^4.4.0",
         "drizzle-orm": "^0.44.5",
+        "image-size": "^2.0.2",
         "ini": "^5.0.0",
         "ipaddr.js": "^2.3.0",
         "jsonwebtoken": "^9.0.2",
@@ -161,7 +162,7 @@
     },
     "packages/shared": {
       "name": "@sharkord/shared",
-      "version": "0.0.11",
+      "version": "0.0.15",
       "dependencies": {
         "drizzle-orm": "^0.44.6",
         "js-sha256": "^0.11.1",
@@ -1007,6 +1008,8 @@
     "i18next-resources-to-backend": ["i18next-resources-to-backend@1.2.1", "", { "dependencies": { "@babel/runtime": "^7.23.2" } }, "sha512-okHbVA+HZ7n1/76MsfhPqDou0fptl2dAlhRDu2ideXloRRduzHsqDOznJBef+R3DFZnbvWoBW+KxJ7fnFjd6Yw=="],
 
     "ignore": ["ignore@7.0.5", "", {}, "sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg=="],
+
+    "image-size": ["image-size@2.0.2", "", { "bin": { "image-size": "bin/image-size.js" } }, "sha512-IRqXKlaXwgSMAMtpNzZa1ZAe8m+Sa1770Dhk8VkSsP9LS+iHD62Zd8FQKs8fbPiagBE7BzoFX23cxFnwshpV6w=="],
 
     "immer": ["immer@11.1.4", "", {}, "sha512-XREFCPo6ksxVzP4E0ekD5aMdf8WMwmdNaz6vuvxgI40UaEiu6q3p8X52aU6GdyvLY3XXX/8R7JOTXStz/nBbRw=="],
 
