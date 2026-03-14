@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
+import type { IRootState } from '../store';
 import {
   appLoadingSelector,
   autoJoinLastChannelSelector,
@@ -7,6 +8,8 @@ import {
   browserNotificationsForMentionsSelector,
   browserNotificationsSelector,
   devicesSelector,
+  dmConversationByChannelIdSelector,
+  dmConversationsSelector,
   dmsOpenSelector,
   isAutoConnectingSelector,
   loadingPluginsSelector,
@@ -51,6 +54,13 @@ export const useBrowserNotificationsForMentions = () =>
 
 export const useBrowserNotificationsForDms = () =>
   useSelector(browserNotificationsForDmsSelector);
+
+export const useDmConversations = () => useSelector(dmConversationsSelector);
+
+export const useDmConversationByChannelId = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    dmConversationByChannelIdSelector(state, channelId)
+  );
 
 export const useMessageJumpTarget = () =>
   useSelector(messageJumpTargetSelector);

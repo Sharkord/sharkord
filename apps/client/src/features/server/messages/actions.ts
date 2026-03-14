@@ -1,3 +1,4 @@
+import { updateDmConversationLastMessage } from '@/features/app/actions';
 import {
   browserNotificationsForDmsSelector,
   browserNotificationsForMentionsSelector,
@@ -163,6 +164,16 @@ export const addMessages = (
         } else if (hasBrowserNotificationsEnabled) {
           sendBrowserNotification(targetMessage, channelId);
         }
+      }
+    }
+
+    // if this is a DM channel, update lastMessageAt so the conversation
+    // re-sorts to the top of the list
+    if (rootMessages.length > 0) {
+      const channel = channelByIdSelector(state, channelId);
+
+      if (channel?.isDm) {
+        updateDmConversationLastMessage(channelId, targetMessage.createdAt);
       }
     }
 

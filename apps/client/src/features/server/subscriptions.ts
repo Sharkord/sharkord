@@ -1,3 +1,4 @@
+import { subscribeToDms } from '@/features/app/dms/subscriptions';
 import { logDebug } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
 import { type TPublicServerSettings } from '@sharkord/shared';
@@ -41,7 +42,8 @@ const initSubscriptions = () => {
     subscribeToMessages,
     subscribeToVoice,
     subscribeToCategories,
-    subscribeToPlugins
+    subscribeToPlugins,
+    subscribeToDms
   ];
 
   const unsubscribes = subscriptors.map((subscriptor) => subscriptor());

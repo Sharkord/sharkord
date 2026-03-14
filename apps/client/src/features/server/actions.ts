@@ -6,6 +6,7 @@ import type { TMessageJumpToTarget } from '@/types';
 import { type TPublicServerSettings, type TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
 import {
+  fetchDmConversations,
   setDmsOpen,
   setMessageJumpTarget,
   setSelectedDmChannelId
@@ -88,6 +89,8 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
   unsubscribeFromServer = initSubscriptions();
 
   store.dispatch(serverSliceActions.setInitialData(data));
+
+  await fetchDmConversations();
 
   setPluginCommands(data.commands);
 

@@ -24,6 +24,11 @@ export const useIsOwnUser = (userId: number) =>
 export const useUserById = (userId: number) =>
   useSelector((state: IRootState) => userByIdSelector(state, userId));
 
+export const useOptionalUserById = (userId: number | undefined) =>
+  useSelector((state: IRootState) =>
+    userId !== undefined ? userByIdSelector(state, userId) : undefined
+  );
+
 export const useOwnPublicUser = () =>
   useSelector((state: IRootState) => ownPublicUserSelector(state));
 

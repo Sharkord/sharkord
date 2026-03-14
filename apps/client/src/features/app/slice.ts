@@ -5,6 +5,7 @@ import {
 } from '@/helpers/storage';
 import type { TDevices, TMessageJumpToTarget } from '@/types';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { TDirectMessageConversation } from '@sharkord/shared';
 
 export interface TAppState {
   appLoading: boolean;
@@ -19,6 +20,7 @@ export interface TAppState {
   autoJoinLastChannel: boolean;
   dmsOpen: boolean;
   selectedDmChannelId: number | undefined;
+  dmConversations: TDirectMessageConversation[];
   browserNotifications: boolean;
   browserNotificationsForMentions: boolean;
   browserNotificationsForDms: boolean;
@@ -43,6 +45,7 @@ const initialState: TAppState = {
   ),
   dmsOpen: false,
   selectedDmChannelId: undefined,
+  dmConversations: [],
   browserNotifications: getLocalStorageItemBool(
     LocalStorageKey.BROWSER_NOTIFICATIONS,
     false
@@ -114,6 +117,45 @@ export const appSlice = createSlice({
       action: PayloadAction<number | undefined>
     ) => {
       state.selectedDmChannelId = action.payload;
+    },
+    setDmConversations: (
+      state,
+      action: PayloadAction<TDirectMessageConversation[]>
+    ) => {
+      state.dmConversations = action.payload;
+    },
+    addDmConversation: (
+      state,
+      action: PayloadAction<TDirectMessageConversation>
+    ) => {
+      // upsert -- replace if the conversation already exists, otherwise insert
+      const idx = state.dmConversations.findIndex(
+        (c) => c.channelId === action.payload.channelId
+      );
+
+      if (idx !== -1) {
+        state.dmConversations[idx] = action.payload;
+      } else {
+        state.dmConversations.push(action.payload);
+      }
+
+      // keep sorted by most recent message first
+      state.dmConversations.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+    },
+    updateDmConversationLastMessage: (
+      state,
+      action: PayloadAction<{ channelId: number; lastMessageAt: number }>
+    ) => {
+      const conv = state.dmConversations.find(
+        (c) => c.channelId === action.payload.channelId
+      );
+
+      if (!conv) return;
+
+      conv.lastMessageAt = action.payload.lastMessageAt;
+
+      // re-sort so the updated conversation bubbles to the correct position
+      state.dmConversations.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
     },
     setBrowserNotifications: (state, action: PayloadAction<boolean>) => {
       state.browserNotifications = action.payload;

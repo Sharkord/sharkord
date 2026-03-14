@@ -236,6 +236,17 @@ body {
   display: inline-block;
 }
 
+.tiptap {
+  .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: var(--muted-foreground);
+    opacity: 0.4;
+    pointer-events: none;
+    float: left;
+    height: 0;
+  }
+}
+
 .tiptap,
 .msg-content {
   line-height: 1.6;

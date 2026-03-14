@@ -5,6 +5,7 @@ import type {
   TChannel,
   TChannelUserPermissionsMap,
   TCommandsMapByPlugin,
+  TDirectMessageConversation,
   TExternalStream,
   TJoinedEmoji,
   TJoinedMessage,
@@ -117,7 +118,7 @@ type Events = {
   [ServerEvents.CATEGORY_UPDATE]: TCategory;
   [ServerEvents.CATEGORY_DELETE]: number;
 
-  [ServerEvents.DM_CONVERSATION_OPEN]: { channelId: number };
+  [ServerEvents.DM_CONVERSATION_OPEN]: TDirectMessageConversation;
 };
 
 class PubSub {
