@@ -42,6 +42,9 @@ export const browserNotificationsForMentionsSelector = (state: IRootState) =>
 export const browserNotificationsForDmsSelector = (state: IRootState) =>
   state.app.browserNotificationsForDms;
 
+export const chatInputMaxHeightVhSelector = (state: IRootState) =>
+  state.app.chatInputMaxHeightVh;
+
 export const threadSidebarDataSelector = createSelector(
   [
     threadSidebarOpenSelector,

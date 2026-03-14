@@ -1,4 +1,5 @@
 import { EmojiPicker } from '@/components/emoji-picker';
+import { useChatInputMaxHeightVh } from '@/features/app/hooks';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
 import type { TCommandInfo } from '@sharkord/shared';
@@ -50,6 +51,8 @@ const TiptapInput = memo(
     readOnlyRef.current = readOnly;
 
     const editorWrapperRef = useRef<HTMLDivElement>(null);
+
+    const chatInputMaxHeightVh = useChatInputMaxHeightVh();
 
     const customEmojis = useCustomEmojis();
     const users = useFilteredUsers();
@@ -243,13 +246,14 @@ const TiptapInput = memo(
     }, [editor, disabled]);
 
     return (
-      <div className="flex flex-1 items-center gap-2 min-w-0">
+      <div className="flex flex-1 items-start gap-2 min-w-0">
         <div ref={editorWrapperRef} className="relative flex min-w-0 flex-1">
           <EditorContent
             editor={editor}
-            className={`border p-2 rounded w-full min-h-10 max-h-80 tiptap overflow-auto relative transition-colors focus-within:border-ring [&_.ProseMirror:focus]:outline-none ${
+            className={`border p-2 rounded w-full min-h-10 tiptap overflow-auto relative transition-colors focus-within:border-ring [&_.ProseMirror:focus]:outline-none ${
               disabled ? ' opacity-50 cursor-not-allowed bg-muted' : ''
             }`}
+            style={{ maxHeight: `${chatInputMaxHeightVh}vh` }}
           />
         </div>
 

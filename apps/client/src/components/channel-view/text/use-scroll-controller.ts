@@ -146,6 +146,12 @@ const useScrollController = ({
 
     observer.observe(container);
 
+    // also observe the parent so we catch flex redistribution when
+    // a sibling (the compose area) grows and shrinks the scroll container
+    if (container.parentElement) {
+      observer.observe(container.parentElement);
+    }
+
     return () => {
       observer.disconnect();
     };

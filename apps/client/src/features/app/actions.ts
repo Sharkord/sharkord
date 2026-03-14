@@ -1,5 +1,9 @@
 import { getUrlFromServer } from '@/helpers/get-file-url';
-import { LocalStorageKey, setLocalStorageItemBool } from '@/helpers/storage';
+import {
+  LocalStorageKey,
+  setLocalStorageItemBool,
+  setLocalStorageItemNumber
+} from '@/helpers/storage';
 import type { TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
 import { setInfo } from '../server/actions';
@@ -120,6 +124,13 @@ export const setBrowserNotificationsForMentions = (enabled: boolean) => {
     LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_MENTIONS,
     enabled
   );
+};
+
+export const setChatInputMaxHeightVh = (vh: number) => {
+  const clamped = Math.min(80, Math.max(2, Math.round(vh)));
+
+  store.dispatch(appSliceActions.setChatInputMaxHeightVh(clamped));
+  setLocalStorageItemNumber(LocalStorageKey.CHAT_INPUT_MAX_HEIGHT_VH, clamped);
 };
 
 export const setBrowserNotificationsForDms = async (enabled: boolean) => {

@@ -1,4 +1,8 @@
-import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
+import {
+  getLocalStorageItemBool,
+  getLocalStorageItemNumber,
+  LocalStorageKey
+} from '@/helpers/storage';
 import type { TDevices } from '@/types';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
@@ -18,6 +22,7 @@ export interface TAppState {
   browserNotifications: boolean;
   browserNotificationsForMentions: boolean;
   browserNotificationsForDms: boolean;
+  chatInputMaxHeightVh: number;
 }
 
 const initialState: TAppState = {
@@ -47,6 +52,10 @@ const initialState: TAppState = {
   browserNotificationsForDms: getLocalStorageItemBool(
     LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_DMS,
     false
+  ),
+  chatInputMaxHeightVh: getLocalStorageItemNumber(
+    LocalStorageKey.CHAT_INPUT_MAX_HEIGHT_VH,
+    40
   )
 };
 
@@ -111,6 +120,9 @@ export const appSlice = createSlice({
     },
     setBrowserNotificationsForDms: (state, action: PayloadAction<boolean>) => {
       state.browserNotificationsForDms = action.payload;
+    },
+    setChatInputMaxHeightVh: (state, action: PayloadAction<number>) => {
+      state.chatInputMaxHeightVh = action.payload;
     }
   }
 });

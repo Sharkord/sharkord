@@ -25,7 +25,8 @@ export enum LocalStorageKey {
   AUTO_JOIN_LAST_CHANNEL = 'sharkord-auto-join-last-channel',
   BROWSER_NOTIFICATIONS = 'sharkord-browser-notifications',
   BROWSER_NOTIFICATIONS_FOR_MENTIONS = 'sharkord-browser-notifications-for-mentions',
-  BROWSER_NOTIFICATIONS_FOR_DMS = 'sharkord-browser-notifications-for-dms'
+  BROWSER_NOTIFICATIONS_FOR_DMS = 'sharkord-browser-notifications-for-dms',
+  CHAT_INPUT_MAX_HEIGHT_VH = 'sharkord-chat-input-max-height-vh'
 }
 
 export enum SessionStorageKey {
@@ -54,6 +55,28 @@ const setLocalStorageItemBool = (
   value: boolean
 ): void => {
   localStorage.setItem(key, value.toString());
+};
+
+const getLocalStorageItemNumber = (
+  key: LocalStorageKey,
+  defaultValue: number
+): number => {
+  const item = localStorage.getItem(key);
+
+  if (item === null) {
+    return defaultValue;
+  }
+
+  const parsed = Number(item);
+
+  return Number.isFinite(parsed) ? parsed : defaultValue;
+};
+
+const setLocalStorageItemNumber = (
+  key: LocalStorageKey,
+  value: number
+): void => {
+  localStorage.setItem(key, String(value));
 };
 
 const getLocalStorageItemAsJSON = <T>(
@@ -97,11 +120,13 @@ export {
   getLocalStorageItem,
   getLocalStorageItemAsJSON,
   getLocalStorageItemBool,
+  getLocalStorageItemNumber,
   getSessionStorageItem,
   removeLocalStorageItem,
   removeSessionStorageItem,
   setLocalStorageItem,
   setLocalStorageItemAsJSON,
   setLocalStorageItemBool,
+  setLocalStorageItemNumber,
   setSessionStorageItem
 };
