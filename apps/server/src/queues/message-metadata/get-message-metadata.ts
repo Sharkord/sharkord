@@ -75,6 +75,13 @@ const urlMetadataParser = async (
 
       const parsed = new URL(url);
 
+      const isEmojiImage =
+        parsed.hostname === 'cdn.jsdelivr.net' &&
+        parsed.pathname.includes('emoji-datasource');
+
+      // it's a tiptap emoji, ignore
+      if (isEmojiImage) return;
+
       // allow only http and https protocols
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
         return;
@@ -83,22 +90,6 @@ const urlMetadataParser = async (
       // it's already an ip address, check if it's private
       if (isIP(parsed.hostname) && isPrivateIP(parsed.hostname)) {
         return;
-      }
-
-      const { isDirectMediaLink, mediaType } =
-        getDirectMediaMetaFromUrl(parsed);
-
-      if (isDirectMediaLink) {
-        const metadata: TMessageMetadata = {
-          url,
-          title: parsed.pathname.split('/').pop() || url,
-          description: '',
-          mediaType
-        };
-
-        metadataCache.set(url, metadata);
-
-        return metadata;
       }
 
       const metadata = await getLinkPreview(url, {
@@ -137,16 +128,38 @@ const urlMetadataParser = async (
         }
       });
 
-      if (!metadata) return;
+      if (!metadata) {
+        // no metadata was found, fallback to extension-based detection for direct media links
+        // this is not perfect, but it's better than nothing and can catch cases where the metadata fetching fails for some reason (rate-limiting, banned ips, etc.)
+        const { isDirectMediaLink, mediaType } =
+          getDirectMediaMetaFromUrl(parsed);
+
+        if (!isDirectMediaLink) return;
+
+        const directMetadata: TMessageMetadata = {
+          url,
+          title: parsed.pathname.split('/').pop() || url,
+          description: '',
+          mediaType
+        };
+
+        metadataCache.set(url, directMetadata);
+
+        return directMetadata;
+      }
 
       metadataCache.set(url, metadata);
 
       return metadata;
     });
 
-    const metadata = (await Promise.all(promises)) as TMessageMetadata[]; // TODO: fix these types
+    const metadata = (await Promise.all(
+      promises
+    )) as (TMessageMetadata | null)[]; // TODO: fix these types
 
-    return metadata ?? [];
+    const validMetadata = (metadata ?? []).filter((m) => !!m);
+
+    return validMetadata ?? [];
   } catch (error) {
     logger.error('Error parsing URL metadata: %s', getErrorMessage(error));
   }

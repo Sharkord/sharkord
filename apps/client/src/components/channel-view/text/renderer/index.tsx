@@ -91,7 +91,7 @@ const MessageRenderer = memo(
 
       const mediaFromMetadata: TFoundMedia[] = (message.metadata ?? [])
         .map((metadata) => {
-          if (!metadata.url) return undefined;
+          if (!metadata || !metadata.url) return undefined;
 
           const isAllowedType = ALLOWED_MEDIA_TYPES.includes(
             metadata.mediaType
