@@ -56,4 +56,9 @@ const getPlainTextFromHtml = (html: string): string => {
   return stripToText(html, [removeProseMirrorArtifacts, removeEmojiElements]);
 };
 
-export { getPlainTextFromHtml, isEmojiOnlyMessage, isEmptyMessage };
+export {
+  getPlainTextFromHtml,
+  isEmojiOnlyMessage,
+  isEmptyMessage,
+  removeEmojiElements
+};

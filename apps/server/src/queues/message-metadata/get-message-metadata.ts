@@ -2,6 +2,7 @@ import {
   audioExtensions,
   extractUrls,
   imageExtensions,
+  removeEmojiElements,
   videoExtensions,
   type TGenericObject,
   type TMessageMetadata
@@ -56,21 +57,11 @@ const getDirectMediaMetaFromUrl = (
   return { isDirectMediaLink: false, mediaType: 'none' };
 };
 
-const sanitizeContent = (content: string): string => {
-  // do not attempt to parse custom emojis
-  const cleanedContent = content.replace(
-    /<img[^>]*class="emoji-image"[^>]*\/?>/gi,
-    ''
-  );
-
-  return cleanedContent;
-};
-
 const urlMetadataParser = async (
   content: string
 ): Promise<TMessageMetadata[]> => {
   try {
-    const cleanContent = sanitizeContent(content);
+    const cleanContent = removeEmojiElements(content);
     const urls = extractUrls(cleanContent);
 
     if (!urls) return [];
