@@ -6,8 +6,12 @@ const store: Record<string, string> = {};
 Object.defineProperty(globalThis, 'localStorage', {
   value: {
     getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => { store[key] = value; },
-    removeItem: (key: string) => { delete store[key]; }
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    }
   }
 });
 
@@ -77,7 +81,6 @@ describe('addDmConversation', () => {
   });
 
   test('upsert re-sorts when lastMessageAt changes', () => {
-
     // start with conv 2 most recent
     const after = reduce(
       addDmConversation(conv(1, 2, 1000)),

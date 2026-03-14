@@ -1,3 +1,4 @@
+import { updateDmConversationLastMessage } from '@/features/app/actions';
 import {
   browserNotificationsForDmsSelector,
   browserNotificationsForMentionsSelector,
@@ -6,7 +7,6 @@ import {
   selectedDmChannelIdSelector,
   threadSidebarDataSelector
 } from '@/features/app/selectors';
-import { updateDmConversationLastMessage } from '@/features/app/actions';
 import { store } from '@/features/store';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';

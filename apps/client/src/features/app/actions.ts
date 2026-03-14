@@ -158,7 +158,10 @@ export const updateDmConversationLastMessage = (
   lastMessageAt: number
 ) =>
   store.dispatch(
-    appSliceActions.updateDmConversationLastMessage({ channelId, lastMessageAt })
+    appSliceActions.updateDmConversationLastMessage({
+      channelId,
+      lastMessageAt
+    })
   );
 
 export const fetchDmConversations = async () => {

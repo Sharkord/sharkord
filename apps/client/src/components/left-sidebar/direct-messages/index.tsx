@@ -75,17 +75,20 @@ const DirectMessages = memo(() => {
     );
   }, [conversations, ownUserId, query, users]);
 
-  const onStartDm = useCallback(async (userId: number) => {
-    const trpc = getTRPCClient();
+  const onStartDm = useCallback(
+    async (userId: number) => {
+      const trpc = getTRPCClient();
 
-    try {
-      const result = await trpc.dms.open.mutate({ userId });
+      try {
+        const result = await trpc.dms.open.mutate({ userId });
 
-      setSelectedDmChannelId(result.channelId);
-    } catch {
-      toast.error(t('couldNotOpenDM'));
-    }
-  }, [t]);
+        setSelectedDmChannelId(result.channelId);
+      } catch {
+        toast.error(t('couldNotOpenDM'));
+      }
+    },
+    [t]
+  );
 
   return (
     <div className="flex-1 overflow-y-auto p-2">

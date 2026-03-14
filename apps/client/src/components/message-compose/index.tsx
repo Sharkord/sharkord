@@ -14,7 +14,6 @@ import { getTRPCClient } from '@/lib/trpc';
 import type { TJoinedPublicUser, TTempFile } from '@sharkord/shared';
 import {
   ChannelPermission,
-  ChannelType,
   Permission,
   PluginSlot,
   isEmptyMessage
