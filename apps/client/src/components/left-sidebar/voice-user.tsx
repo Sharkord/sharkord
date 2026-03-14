@@ -1,5 +1,5 @@
 import { UserAvatar } from '@/components/user-avatar';
-import { useUserVolumeControl } from '@/components/voice-provider/hooks/use-user-volume-control';
+import { useStreamVolumeControl } from '@/components/voice-provider/hooks/use-stream-volume-control';
 import type { TVoiceUser } from '@/features/server/types';
 import { useIsOwnUser } from '@/features/server/users/hooks';
 import { useSpeakingState } from '@/features/server/voice/hooks';
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { memo } from 'react';
 import { UserPopover } from '../user-popover';
-import { VoiceUserContextMenu } from './voice-user-context-menu';
+import { StreamContextMenu } from './stream-context-menu';
 
 type TVoiceUserProps = {
   userId: number;
@@ -25,7 +25,7 @@ type TVoiceUserProps = {
 
 const VoiceUser = memo(({ user, isOwnChannel = false }: TVoiceUserProps) => {
   const isOwnUser = useIsOwnUser(user.id);
-  const { isMuted } = useUserVolumeControl(user.id);
+  const { isMuted } = useStreamVolumeControl({ type: 'user', userId: user.id });
   const { isActivelySpeaking, speakingEffectClass } = useSpeakingState(user.id);
   const shouldShowMuteIndicator = isOwnChannel && !isOwnUser && isMuted;
 
@@ -79,9 +79,9 @@ const VoiceUser = memo(({ user, isOwnChannel = false }: TVoiceUserProps) => {
   }
 
   return (
-    <VoiceUserContextMenu user={user}>
+    <StreamContextMenu type="user" userId={user.id} name={user.name}>
       <UserPopover userId={user.id}>{userRow}</UserPopover>
-    </VoiceUserContextMenu>
+    </StreamContextMenu>
   );
 });
 

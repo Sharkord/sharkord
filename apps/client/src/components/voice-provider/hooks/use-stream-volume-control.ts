@@ -1,11 +1,24 @@
 import { useCallback, useMemo } from 'react';
 import { useVolumeControl } from '../volume-control-context';
 
-export const useUserVolumeControl = (userId: number) => {
-  const { getUserVolumeKey, getVolume, setVolume, toggleMute } =
-    useVolumeControl();
+type TStreamVolumeProps =
+  | { type: 'user'; userId: number }
+  | { type: 'external'; pluginId: string; streamKey: string };
 
-  const volumeKey = getUserVolumeKey(userId);
+export const useStreamVolumeControl = (props: TStreamVolumeProps) => {
+  const {
+    getVolume,
+    setVolume,
+    toggleMute,
+    getUserVolumeKey,
+    getExternalVolumeKey
+  } = useVolumeControl();
+
+  const volumeKey =
+    props.type === 'user'
+      ? getUserVolumeKey(props.userId)
+      : getExternalVolumeKey(props.pluginId, props.streamKey);
+
   const volume = getVolume(volumeKey);
   const isMuted = volume === 0;
 

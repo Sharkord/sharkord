@@ -1,6 +1,6 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { UserAvatar } from '@/components/user-avatar';
-import { useUserVolumeControl } from '@/components/voice-provider/hooks/use-user-volume-control';
+import { useStreamVolumeControl } from '@/components/voice-provider/hooks/use-stream-volume-control';
 import type { TVoiceUser } from '@/features/server/types';
 import { useIsOwnUser } from '@/features/server/users/hooks';
 import {
@@ -38,7 +38,7 @@ const VoiceUserCard = memo(
     voiceUser
   }: TVoiceUserCardProps) => {
     const { videoRef, hasVideoStream } = useVoiceRefs(userId);
-    const { volumeKey } = useUserVolumeControl(userId);
+    const { volumeKey } = useStreamVolumeControl({ type: 'user', userId });
     const { devices } = useDevices();
     const isOwnUser = useIsOwnUser(userId);
     const showUserBanners = useShowUserBannersInVoice();

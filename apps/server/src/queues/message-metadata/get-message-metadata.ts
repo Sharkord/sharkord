@@ -2,6 +2,8 @@ import {
   audioExtensions,
   extractUrls,
   imageExtensions,
+  removeCommandElements,
+  removeEmojiElements,
   videoExtensions,
   type TGenericObject,
   type TMessageMetadata
@@ -12,9 +14,7 @@ import { getLinkPreview } from 'link-preview-js';
 import { isIP } from 'net';
 import { db } from '../../db';
 import { messages } from '../../db/schema';
-import { getErrorMessage } from '../../helpers/get-error-message';
 import { isPrivateIP } from '../../helpers/network';
-import { logger } from '../../logger';
 
 const metadataCache = new Map<string, TGenericObject>();
 
@@ -58,11 +58,22 @@ const getDirectMediaMetaFromUrl = (
   return { isDirectMediaLink: false, mediaType: 'none' };
 };
 
+const sanitizeContent = (content: string): string => {
+  let cleanContent = content;
+
+  // this will remove plugin commands AND emojis because they need to be ignored for metadata extraction
+  cleanContent = removeCommandElements(cleanContent);
+  cleanContent = removeEmojiElements(cleanContent);
+
+  return cleanContent;
+};
+
 const urlMetadataParser = async (
   content: string
 ): Promise<TMessageMetadata[]> => {
   try {
-    const urls = extractUrls(content);
+    const cleanContent = sanitizeContent(content);
+    const urls = extractUrls(cleanContent);
 
     if (!urls) return [];
 
@@ -92,50 +103,11 @@ const urlMetadataParser = async (
         return;
       }
 
-      const metadata = await getLinkPreview(url, {
-        followRedirects: 'follow',
-        resolveDNSHost: async (url: string) => {
-          return new Promise((resolve, reject) => {
-            try {
-              const hostname = new URL(url).hostname;
+      // if the URL has a known media extension, skip getLinkPreview entirely and use extension-based detection
+      const { isDirectMediaLink, mediaType } =
+        getDirectMediaMetaFromUrl(parsed);
 
-              dns.lookup(hostname, { all: true }, (err, addresses) => {
-                if (err) {
-                  reject(err);
-                  return;
-                }
-
-                for (const entry of addresses) {
-                  if (isPrivateIP(entry.address)) {
-                    reject(new Error('Cannot resolve private IP addresses'));
-                    return;
-                  }
-                }
-
-                const firstAddress = addresses[0]?.address;
-
-                if (!firstAddress) {
-                  reject(new Error('No addresses found'));
-                  return;
-                }
-
-                resolve(firstAddress);
-              });
-            } catch (error) {
-              reject(error);
-            }
-          });
-        }
-      });
-
-      if (!metadata) {
-        // no metadata was found, fallback to extension-based detection for direct media links
-        // this is not perfect, but it's better than nothing and can catch cases where the metadata fetching fails for some reason (rate-limiting, banned ips, etc.)
-        const { isDirectMediaLink, mediaType } =
-          getDirectMediaMetaFromUrl(parsed);
-
-        if (!isDirectMediaLink) return;
-
+      if (isDirectMediaLink) {
         const directMetadata: TMessageMetadata = {
           url,
           title: parsed.pathname.split('/').pop() || url,
@@ -147,6 +119,50 @@ const urlMetadataParser = async (
 
         return directMetadata;
       }
+
+      let metadata;
+
+      try {
+        metadata = await getLinkPreview(url, {
+          followRedirects: 'follow',
+          resolveDNSHost: async (url: string) => {
+            return new Promise((resolve, reject) => {
+              try {
+                const hostname = new URL(url).hostname;
+
+                dns.lookup(hostname, { all: true }, (err, addresses) => {
+                  if (err) {
+                    reject(err);
+                    return;
+                  }
+
+                  for (const entry of addresses) {
+                    if (isPrivateIP(entry.address)) {
+                      reject(new Error('Cannot resolve private IP addresses'));
+                      return;
+                    }
+                  }
+
+                  const firstAddress = addresses[0]?.address;
+
+                  if (!firstAddress) {
+                    reject(new Error('No addresses found'));
+                    return;
+                  }
+
+                  resolve(firstAddress);
+                });
+              } catch (error) {
+                reject(error);
+              }
+            });
+          }
+        });
+      } catch {
+        // getLinkPreview failed (blocked, timeout, etc.)
+      }
+
+      if (!metadata) return;
 
       metadataCache.set(url, metadata);
 
@@ -160,8 +176,8 @@ const urlMetadataParser = async (
     const validMetadata = (metadata ?? []).filter((m) => !!m);
 
     return validMetadata ?? [];
-  } catch (error) {
-    logger.error('Error parsing URL metadata: %s', getErrorMessage(error));
+  } catch {
+    // ignore
   }
 
   return [];
