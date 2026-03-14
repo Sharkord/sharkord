@@ -10,6 +10,10 @@ let token: string;
 const getSettings = async (): Promise<TJoinedSettings> => {
   const serverSettings = await db.select().from(settings).get()!;
 
+  if (!token && serverSettings.secretToken) {
+    token = serverSettings.secretToken;
+  }
+
   const logo = serverSettings.logoId
     ? await db
         .select()

@@ -73,9 +73,10 @@ const publicRouteHandler = async (
     return;
   }
 
-  const { storageSignedUrlsEnabled } = await getSettings();
+  const { storageSignedUrlsEnabled, logoId } = await getSettings();
 
-  if (storageSignedUrlsEnabled) {
+  // server logo is the only exception to signed URLs
+  if (storageSignedUrlsEnabled && dbFile.id !== logoId) {
     const accessTokenParam = url.searchParams.get('accessToken');
     const expiresParam = url.searchParams.get('expires');
 

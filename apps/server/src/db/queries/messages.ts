@@ -7,7 +7,7 @@ import type {
 } from '@sharkord/shared';
 import { and, count, desc, eq, inArray, notExists } from 'drizzle-orm';
 import { db } from '..';
-import { attachFileToken } from '../../helpers/files-crypto';
+import { attachFileToken, signFile } from '../../helpers/files-crypto';
 import {
   directMessages,
   files,
@@ -80,7 +80,11 @@ const getMessage = async (
     emoji: r.emoji,
     createdAt: r.createdAt,
     fileId: r.fileId,
-    file: r.file
+    file: signFile(
+      r.file,
+      storageSignedUrlsEnabled,
+      storageSignedUrlsTtlSeconds
+    )
   }));
 
   let replyCount = 0;
@@ -200,7 +204,11 @@ const joinMessagesWithRelations = async (
       emoji: r.emoji,
       createdAt: r.createdAt,
       fileId: r.fileId,
-      file: r.file
+      file: signFile(
+        r.file,
+        storageSignedUrlsEnabled,
+        storageSignedUrlsTtlSeconds
+      )
     };
 
     if (!acc[r.messageId]) {

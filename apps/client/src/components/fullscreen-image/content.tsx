@@ -45,16 +45,21 @@ const FullScreenImage = memo((props: TFullScreenImageProps) => {
     setTimeout(() => setOpen(false), 300);
   }, []);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    draggingRef.current = true;
-    lastMouseRef.current = { x: e.clientX, y: e.clientY };
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLImageElement>) => {
+      if (e.button !== 0) return;
 
-    const el = imgRef.current;
+      draggingRef.current = true;
+      lastMouseRef.current = { x: e.clientX, y: e.clientY };
 
-    if (el) {
-      el.style.cursor = 'grabbing';
-    }
-  }, []);
+      const el = imgRef.current;
+
+      if (el) {
+        el.style.cursor = 'grabbing';
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (!open) return;

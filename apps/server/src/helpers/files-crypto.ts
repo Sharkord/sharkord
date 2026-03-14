@@ -47,4 +47,15 @@ const attachFileToken = (
   };
 };
 
-export { attachFileToken, generateFileToken, verifyFileToken };
+// used to attach token to the file, but in cases where the file might not exist (eg: user logo, user might not have a logo set, so file can be null)
+const signFile = (
+  file: TFile | null,
+  enabled: boolean,
+  ttl: number
+): TFile | null => {
+  if (!file) return null;
+
+  return attachFileToken(file, enabled, ttl);
+};
+
+export { attachFileToken, generateFileToken, signFile, verifyFileToken };
