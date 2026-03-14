@@ -22,6 +22,9 @@ const removeProseMirrorArtifacts = (html: string): string =>
     .replace(/<img[^>]*ProseMirror-separator[^>]*>/gi, '')
     .replace(/<br[^>]*ProseMirror-trailingBreak[^>]*>/gi, '');
 
+const removeCommandElements = (html: string): string =>
+  html.replace(/<command\b[^>]*>.*?<\/command>/gi, '');
+
 const removeEmojiElements = (html: string): string =>
   html
     .replace(/<span[^>]*data-type="emoji"[^>]*>.*?<\/span>/gi, '')
@@ -56,4 +59,10 @@ const getPlainTextFromHtml = (html: string): string => {
   return stripToText(html, [removeProseMirrorArtifacts, removeEmojiElements]);
 };
 
-export { getPlainTextFromHtml, isEmojiOnlyMessage, isEmptyMessage };
+export {
+  getPlainTextFromHtml,
+  isEmojiOnlyMessage,
+  isEmptyMessage,
+  removeCommandElements,
+  removeEmojiElements
+};

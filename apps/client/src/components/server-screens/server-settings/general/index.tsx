@@ -14,9 +14,11 @@ import {
   Textarea
 } from '@sharkord/ui';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LogoManager } from './logo-manager';
 
 const General = memo(() => {
+  const { t } = useTranslation('settings');
   const { settings, logo, loading, onChange, submit, errors, refetch } =
     useAdminGeneral();
 
@@ -27,35 +29,33 @@ const General = memo(() => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Server Information</CardTitle>
-        <CardDescription>
-          Manage your server's basic information
-        </CardDescription>
+        <CardTitle>{t('serverInfoTitle')}</CardTitle>
+        <CardDescription>{t('serverInfoDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Group label="Name">
+        <Group label={t('nameLabel')}>
           <Input
             value={settings.name}
             onChange={(e) => onChange('name', e.target.value)}
-            placeholder="Enter server name"
+            placeholder={t('namePlaceholder')}
             error={errors.name}
           />
         </Group>
 
-        <Group label="Description">
+        <Group label={t('descriptionLabel')}>
           <Textarea
             value={settings.description}
             onChange={(e) => onChange('description', e.target.value)}
-            placeholder="Enter server description"
+            placeholder={t('descriptionPlaceholder')}
             rows={4}
           />
         </Group>
 
-        <Group label="Password">
+        <Group label={t('serverPasswordLabel')}>
           <Input
             value={settings.password}
             onChange={(e) => onChange('password', e.target.value)}
-            placeholder="Leave empty for no password"
+            placeholder={t('serverPasswordPlaceholder')}
             error={errors.password}
           />
         </Group>
@@ -63,8 +63,8 @@ const General = memo(() => {
         <LogoManager logo={logo} refetch={refetch} />
 
         <Group
-          label="Allow New Users"
-          description="Allow anyone to register and join your server. If disabled, only users you invite can join."
+          label={t('allowNewUsersLabel')}
+          description={t('allowNewUsersDesc')}
         >
           <Switch
             checked={settings.allowNewUsers}
@@ -72,10 +72,7 @@ const General = memo(() => {
           />
         </Group>
 
-        <Group
-          label="Enable Plugins"
-          description="Enable or disable plugins for your server."
-        >
+        <Group label={t('pluginsLabel')} description={t('pluginsDesc')}>
           <Switch
             checked={settings.enablePlugins}
             onCheckedChange={(checked) => onChange('enablePlugins', checked)}
@@ -83,8 +80,8 @@ const General = memo(() => {
         </Group>
 
         <Group
-          label="Enable Direct Messages"
-          description="Allow users to send direct messages to each other. If disabled, users can only communicate in channels."
+          label={t('directMessagesEnabledLabel')}
+          description={t('directMessagesEnabledDesc')}
         >
           <Switch
             checked={settings.directMessagesEnabled}
@@ -94,12 +91,22 @@ const General = memo(() => {
           />
         </Group>
 
+        <Group
+          label={t('searchEnabledLabel')}
+          description={t('searchEnabledDesc')}
+        >
+          <Switch
+            checked={settings.enableSearch}
+            onCheckedChange={(checked) => onChange('enableSearch', checked)}
+          />
+        </Group>
+
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
-            Cancel
+            {t('cancel')}
           </Button>
           <Button onClick={submit} disabled={loading}>
-            Save Changes
+            {t('saveChanges')}
           </Button>
         </div>
       </CardContent>

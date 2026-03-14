@@ -1,10 +1,19 @@
-import { getUrlFromServer } from '@/helpers/get-file-url';
-import { LocalStorageKey, setLocalStorageItemBool } from '@/helpers/storage';
+import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
+import {
+  LocalStorageKey,
+  setLocalStorageItem,
+  setLocalStorageItemBool
+} from '@/helpers/storage';
 import { getTRPCClient } from '@/lib/trpc';
+import type { TMessageJumpToTarget } from '@/types';
 import type { TDirectMessageConversation, TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
 import { setInfo } from '../server/actions';
 import { store } from '../store';
+import {
+  voiceChatChannelIdSelector,
+  voiceChatSidebarDataSelector
+} from './selectors';
 import { appSliceActions } from './slice';
 
 export const setAppLoading = (loading: boolean) =>
@@ -15,6 +24,42 @@ export const setIsAutoConnecting = (isAutoConnecting: boolean) =>
 
 export const setPluginsLoading = (loading: boolean) =>
   store.dispatch(appSliceActions.setLoadingPlugins(loading));
+
+const setOrCreateMeta = (name: string, content: string) => {
+  let el = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
+
+  if (!el) {
+    el = document.createElement('meta');
+    el.name = name;
+    document.head.appendChild(el);
+  }
+
+  el.content = content;
+};
+
+const setOrCreateLink = (rel: string, href: string) => {
+  let el = document.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
+
+  if (!el) {
+    el = document.createElement('link');
+    el.rel = rel;
+    document.head.appendChild(el);
+  }
+
+  el.href = href;
+};
+
+const applyServerBranding = (info: TServerInfo) => {
+  document.title = info.name;
+
+  const logoUrl = info.logo
+    ? getFileUrl(info.logo)
+    : `${getUrlFromServer()}/favicon.ico`;
+
+  setOrCreateLink('icon', logoUrl);
+  setOrCreateLink('apple-touch-icon', logoUrl);
+  setOrCreateMeta('apple-mobile-web-app-title', info.name);
+};
 
 export const fetchServerInfo = async (): Promise<TServerInfo | undefined> => {
   try {
@@ -43,6 +88,7 @@ export const loadApp = async () => {
   }
 
   setInfo(info);
+  applyServerBranding(info);
   setAppLoading(false);
 };
 
@@ -164,4 +210,58 @@ export const setBrowserNotificationsForDms = async (enabled: boolean) => {
     LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_DMS,
     enabled
   );
+};
+
+export const setMessageJumpTarget = (
+  payload: TMessageJumpToTarget | undefined
+) => store.dispatch(appSliceActions.setMessageJumpTarget(payload));
+
+export const openVoiceChatSidebar = (channelId: number) => {
+  store.dispatch(
+    appSliceActions.setVoiceChatSidebar({ open: true, channelId })
+  );
+
+  setLocalStorageItem(
+    LocalStorageKey.VOICE_CHAT_SIDEBAR_CHANNEL_ID,
+    channelId.toString()
+  );
+  setLocalStorageItemBool(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE, true);
+};
+
+export const closeVoiceChatSidebar = () => {
+  const state = store.getState();
+  const voiceChatChannelId = voiceChatChannelIdSelector(state);
+
+  store.dispatch(
+    appSliceActions.setVoiceChatSidebar({
+      open: false,
+      channelId: voiceChatChannelId
+    })
+  );
+
+  setLocalStorageItemBool(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE, false);
+};
+
+export const toggleVoiceChatSidebar = (channelId: number) => {
+  const state = store.getState();
+  const { isOpen, channelId: voiceChatChannelId } =
+    voiceChatSidebarDataSelector(state);
+
+  const isSameChannel = voiceChatChannelId === channelId;
+
+  if (isOpen && isSameChannel) {
+    closeVoiceChatSidebar();
+  } else {
+    openVoiceChatSidebar(channelId);
+  }
+};
+
+export const assertVoiceChatClose = (channelId: number) => {
+  const state = store.getState();
+  const { isOpen, channelId: voiceChatChannelId } =
+    voiceChatSidebarDataSelector(state);
+
+  if (isOpen && voiceChatChannelId === channelId) {
+    closeVoiceChatSidebar();
+  }
 };

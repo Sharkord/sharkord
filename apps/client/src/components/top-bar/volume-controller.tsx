@@ -16,6 +16,7 @@ import {
 } from '@sharkord/ui';
 import { Headphones, Monitor, Volume2, VolumeX } from 'lucide-react';
 import { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type AudioStreamControlProps = {
   userId?: number;
@@ -99,6 +100,7 @@ const AudioStreamControl = memo(
 );
 
 const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
+  const { t } = useTranslation('topbar');
   const voiceUsers = useVoiceUsersByChannelId(channelId);
   const externalAudioStreams = useVoiceChannelAudioExternalStreams(channelId);
   const { getUserVolumeKey, getUserScreenVolumeKey, getExternalVolumeKey } =
@@ -130,7 +132,7 @@ const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
     externalAudioStreams.forEach((stream) => {
       streams.push({
         volumeKey: getExternalVolumeKey(stream.pluginId, stream.key),
-        name: stream.title || 'External Audio',
+        name: stream.title || t('externalAudio'),
         type: AudioStreamType.External
       });
     });
@@ -142,7 +144,8 @@ const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
     ownUserId,
     getUserVolumeKey,
     getUserScreenVolumeKey,
-    getExternalVolumeKey
+    getExternalVolumeKey,
+    t
   ]);
 
   return (
@@ -153,7 +156,7 @@ const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
           size="sm"
           className="h-6 px-2 transition-all duration-200 ease-in-out"
         >
-          <Tooltip content="Volume Controls" asChild={false}>
+          <Tooltip content={t('volumeControls')} asChild={false}>
             <Volume2 className="w-4 h-4" />
           </Tooltip>
         </Button>
@@ -161,10 +164,9 @@ const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
       <PopoverContent align="end" className="w-80">
         <div className="space-y-2">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="font-medium text-sm">Audio Controls</h4>
+            <h4 className="font-medium text-sm">{t('audioControls')}</h4>
             <span className="text-xs text-muted-foreground">
-              {audioStreams.length}{' '}
-              {audioStreams.length === 1 ? 'stream' : 'streams'}
+              {t('stream', { count: audioStreams.length })}
             </span>
           </div>
 
@@ -180,7 +182,7 @@ const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
             ))}
             {audioStreams.length === 0 && (
               <div className="text-sm text-muted-foreground py-4 text-center">
-                No remote audio streams available.
+                {t('noRemoteAudioStreams')}
               </div>
             )}
           </div>

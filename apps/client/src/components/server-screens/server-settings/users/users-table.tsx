@@ -1,6 +1,7 @@
 import { PaginatedTable } from '@/components/paginated-table';
 import type { TJoinedUser } from '@sharkord/shared';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TableUser } from './table-user';
 
 type TUsersTableProps = {
@@ -9,6 +10,7 @@ type TUsersTableProps = {
 };
 
 const UsersTable = memo(({ users, refetch }: TUsersTableProps) => {
+  const { t } = useTranslation('settings');
   const searchFilter = useCallback((user: TJoinedUser, searchTerm: string) => {
     const query = searchTerm.toLowerCase();
 
@@ -25,19 +27,19 @@ const UsersTable = memo(({ users, refetch }: TUsersTableProps) => {
       searchFilter={searchFilter}
       headerColumns={
         <>
-          <div>Avatar</div>
-          <div>User</div>
-          <div>Roles</div>
-          <div>Joined At</div>
-          <div>Last Join</div>
-          <div>Status</div>
-          <div>Actions</div>
+          <div>{t('usersAvatarCol')}</div>
+          <div>{t('usersUserCol')}</div>
+          <div>{t('usersRolesCol')}</div>
+          <div>{t('usersJoinedAtCol')}</div>
+          <div>{t('usersLastJoinCol')}</div>
+          <div>{t('usersStatusCol')}</div>
+          <div>{t('usersActionsCol')}</div>
         </>
       }
       gridCols="grid-cols-[60px_1fr_120px_120px_120px_80px_50px]"
       itemsPerPage={8}
-      searchPlaceholder="Search users by name or identity..."
-      emptyMessage="No users found"
+      searchPlaceholder={t('searchUsersPlaceholder')}
+      emptyMessage={t('noUsersFound')}
     />
   );
 });

@@ -1,3 +1,4 @@
+import ipaddr from 'ipaddr.js';
 import os from 'os';
 
 const getPrivateIp = async () => {
@@ -60,4 +61,25 @@ const getPublicIp = async () => {
   return ip;
 };
 
-export { getPrivateIp, getPublicIp };
+const isPrivateIP = (ip: string): boolean => {
+  try {
+    const addr = ipaddr.parse(ip);
+    const range = addr.range();
+
+    const blockedRanges = [
+      'unspecified',
+      'broadcast',
+      'multicast',
+      'linkLocal',
+      'loopback',
+      'private',
+      'uniqueLocal'
+    ];
+
+    return blockedRanges.includes(range);
+  } catch {
+    return true; // if we can't parse it, block it
+  }
+};
+
+export { getPrivateIp, getPublicIp, isPrivateIP };

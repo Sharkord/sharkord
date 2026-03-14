@@ -10,6 +10,7 @@ import { ChannelType, PluginSlot } from '@sharkord/shared';
 import { Alert, AlertDescription } from '@sharkord/ui';
 import { AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type TContentWrapperProps = {
   isDmMode: boolean;
@@ -18,6 +19,7 @@ type TContentWrapperProps = {
 
 const ContentWrapper = memo(
   ({ isDmMode, selectedDmChannelId }: TContentWrapperProps) => {
+    const { t } = useTranslation();
     const selectedChannelId = useSelectedChannelId();
     const selectedChannelType = useSelectedChannelType();
     const serverName = useServerName();
@@ -35,7 +37,7 @@ const ContentWrapper = memo(
       } else {
         content = (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            Select a direct message or start a new one.
+            {t('selectDmPrompt')}
           </div>
         );
       }
@@ -66,28 +68,25 @@ const ContentWrapper = memo(
           <div className="flex flex-col items-center justify-center h-full gap-6 p-8 text-center md:hidden">
             <div className="flex flex-col gap-2">
               <h2 className="text-2xl font-semibold text-foreground">
-                Welcome to <span className="bold">{serverName}</span>.
+                {t('welcomeToServer', { name: serverName })}
               </h2>
             </div>
             <Alert variant="destructive" className="max-w-md">
               <AlertTriangle />
-              <AlertDescription>
-                Sharkord is not optimized for mobile devices yet. The experience
-                will not be ideal.
-              </AlertDescription>
+              <AlertDescription>{t('mobileNotOptimized')}</AlertDescription>
             </Alert>
             <div className="flex flex-col gap-3 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <span className="text-lg">
                   <ArrowRight />
                 </span>
-                <span>Swipe right to open the channel list</span>
+                <span>{t('swipeRightForChannels')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-lg">
                   <ArrowLeft />
                 </span>
-                <span>Swipe left to open the user list</span>
+                <span>{t('swipeLeftForUsers')}</span>
               </div>
             </div>
           </div>

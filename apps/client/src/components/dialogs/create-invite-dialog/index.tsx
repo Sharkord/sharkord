@@ -20,6 +20,7 @@ import {
   SelectValue
 } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { TDialogBaseProps } from '../types';
 
@@ -29,6 +30,7 @@ type TCreateInviteDialogProps = TDialogBaseProps & {
 
 const CreateInviteDialog = memo(
   ({ refetch, close, isOpen }: TCreateInviteDialogProps) => {
+    const { t } = useTranslation('dialogs');
     const roles = useRoles();
     const { r, rrn, values, setTrpcErrors, onChange } = useForm({
       maxUses: 0,
@@ -50,51 +52,49 @@ const CreateInviteDialog = memo(
 
         await trpc.invites.add.mutate(payload);
 
-        toast.success('Invite created');
+        toast.success(t('inviteCreated'));
 
         refetch();
         close();
       } catch (error) {
         setTrpcErrors(error);
       }
-    }, [close, refetch, setTrpcErrors, values]);
+    }, [close, refetch, setTrpcErrors, values, t]);
 
     return (
       <Dialog open={isOpen}>
         <DialogContent onInteractOutside={close} close={close}>
           <DialogHeader>
-            <DialogTitle>Create Server Invite</DialogTitle>
-            <DialogDescription>
-              Create a new invitation link for users to join the server.
-            </DialogDescription>
+            <DialogTitle>{t('createInviteTitle')}</DialogTitle>
+            <DialogDescription>{t('createInviteDesc')}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            <Group label="Code">
-              <Input placeholder="Invite code" {...r('code')} />
+            <Group label={t('inviteCodeLabel')}>
+              <Input placeholder={t('inviteCodePlaceholder')} {...r('code')} />
             </Group>
-            <Group label="Max uses" description="Use 0 for unlimited uses.">
-              <Input placeholder="Max uses" {...r('maxUses', 'number')} />
+            <Group label={t('maxUsesLabel')} description={t('maxUsesDesc')}>
+              <Input
+                placeholder={t('maxUsesPlaceholder')}
+                {...r('maxUses', 'number')}
+              />
             </Group>
-            <Group
-              label="Expires in"
-              description="Leave empty for no expiration."
-            >
+            <Group label={t('expiresInLabel')} description={t('expiresInDesc')}>
               <DatePicker {...rrn('expiresAt')} minDate={Date.now()} />
             </Group>
             <Group
-              label="Assign Role"
-              description="Users joining with this invite will be assigned this role."
+              label={t('assignRoleLabel')}
+              description={t('assignRoleDesc')}
             >
               <Select
                 onValueChange={(value) => onChange('roleId', Number(value))}
                 value={values.roleId.toString()}
               >
                 <SelectTrigger className="w-[230px]">
-                  <SelectValue placeholder="Select a role" />
+                  <SelectValue placeholder={t('selectRolePlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">Default</SelectItem>
+                  <SelectItem value="0">{t('roleDefault')}</SelectItem>
                   {roles.map((role) => (
                     <SelectItem key={role.id} value={role.id.toString()}>
                       {role.name}
@@ -107,9 +107,9 @@ const CreateInviteDialog = memo(
 
           <DialogFooter className="gap-2">
             <Button variant="ghost" onClick={close}>
-              Cancel
+              {t('cancel')}
             </Button>
-            <Button onClick={handleCreate}>Create Invite</Button>
+            <Button onClick={handleCreate}>{t('createInviteBtn')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

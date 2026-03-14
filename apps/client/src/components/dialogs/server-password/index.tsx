@@ -15,6 +15,7 @@ import {
   Input
 } from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TDialogBaseProps } from '../types';
 
 type TServerPasswordDialogProps = TDialogBaseProps & {
@@ -23,6 +24,7 @@ type TServerPasswordDialogProps = TDialogBaseProps & {
 
 const ServerPasswordDialog = memo(
   ({ isOpen, close, handshakeHash }: TServerPasswordDialogProps) => {
+    const { t } = useTranslation('dialogs');
     const { r, values, setTrpcErrors, errors } = useForm({
       password: ''
     });
@@ -50,10 +52,9 @@ const ServerPasswordDialog = memo(
       <AlertDialog open={isOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Enter the password</AlertDialogTitle>
+            <AlertDialogTitle>{t('serverPasswordTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This server is password protected. Please enter the password to
-              join.
+              {t('serverPasswordDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex flex-col gap-2">
@@ -67,13 +68,15 @@ const ServerPasswordDialog = memo(
             </AutoFocus>
           </div>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={onCancel}>
+              {t('cancel')}
+            </AlertDialogCancel>
             <AutoFocus>
               <AlertDialogAction
                 onClick={onSubmit}
                 disabled={!values.password || loading}
               >
-                Join
+                {t('joinBtn')}
               </AlertDialogAction>
             </AutoFocus>
           </AlertDialogFooter>

@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test';
-import { isEmojiOnlyMessage, isEmptyMessage } from '../message-sanitizer';
+import {
+  isEmojiOnlyMessage,
+  isEmptyMessage,
+  removeCommandElements,
+  removeEmojiElements
+} from '../message-sanitizer';
 
 describe('isEmptyMessage', () => {
   test('should return true for empty string', () => {
@@ -224,5 +229,96 @@ describe('isEmojiOnlyMessage', () => {
         '<p><img src="https://cdn.example.com/emoji.png" alt="custom" class="emoji-image" /></p>'
       )
     ).toBe(true);
+  });
+});
+
+describe('removeEmojiElements', () => {
+  test('should remove native emoji spans', () => {
+    const html =
+      '<p><span data-type="emoji" data-name="smile" class="emoji-image">😄</span></p>';
+    expect(removeEmojiElements(html)).toBe('<p></p>');
+  });
+
+  test('should remove custom emoji img with class on parent span', () => {
+    const html =
+      '<p><span data-name="cool_doge" class="emoji-image" data-type="emoji"><img src="https://rc.sharkord.com/public/Cool%20Doge.gif" draggable="false" loading="lazy" align="absmiddle" alt="cool_doge emoji" /></span></p>';
+    expect(removeEmojiElements(html)).toBe('<p></p>');
+  });
+
+  test('should remove bare emoji img tags', () => {
+    const html =
+      '<p><img src="https://cdn.example.com/emoji.png" alt="custom" class="emoji-image"></p>';
+    expect(removeEmojiElements(html)).toBe('<p></p>');
+  });
+
+  test('should remove self-closing emoji img tags', () => {
+    const html =
+      '<p><img src="https://cdn.example.com/emoji.png" alt="custom" class="emoji-image" /></p>';
+    expect(removeEmojiElements(html)).toBe('<p></p>');
+  });
+
+  test('should preserve non-emoji content', () => {
+    const html =
+      '<p>Hello <span data-type="emoji" data-name="smile" class="emoji-image">😄</span> world</p>';
+    expect(removeEmojiElements(html)).toBe('<p>Hello  world</p>');
+  });
+
+  test('should remove multiple emojis', () => {
+    const html =
+      '<p><span data-type="emoji" data-name="smile" class="emoji-image">😄</span><span data-type="emoji" data-name="heart" class="emoji-image">❤️</span></p>';
+    expect(removeEmojiElements(html)).toBe('<p></p>');
+  });
+
+  test('should not remove non-emoji images', () => {
+    const html = '<p><img src="https://example.com/photo.jpg" alt="photo"></p>';
+    expect(removeEmojiElements(html)).toBe(html);
+  });
+
+  test('should not remove non-emoji spans', () => {
+    const html = '<p><span class="highlight">text</span></p>';
+    expect(removeEmojiElements(html)).toBe(html);
+  });
+
+  test('should return unchanged string with no emoji elements', () => {
+    const html = '<p>Just some text</p>';
+    expect(removeEmojiElements(html)).toBe(html);
+  });
+});
+
+describe('removeCommandElements', () => {
+  test('should remove a command element', () => {
+    const html = `<command data-plugin-id="sharkord-music-bot" data-plugin-logo="https://i.imgur.com/uVBNUK9.png" data-command="stop" data-args='[]' data-status='completed' data-response=''></command>`;
+    expect(removeCommandElements(html)).toBe('');
+  });
+
+  test('should remove a command element with inner content', () => {
+    const html = `<command data-plugin-id="test" data-command="play">some content</command>`;
+    expect(removeCommandElements(html)).toBe('');
+  });
+
+  test('should remove command element and preserve surrounding content', () => {
+    const html = `<p>Hello</p><command data-plugin-id="sharkord-music-bot" data-command="stop" data-args='[]' data-status='completed' data-response=''></command><p>World</p>`;
+    expect(removeCommandElements(html)).toBe('<p>Hello</p><p>World</p>');
+  });
+
+  test('should remove multiple command elements', () => {
+    const html = `<command data-plugin-id="a" data-command="play"></command><p>text</p><command data-plugin-id="b" data-command="stop"></command>`;
+    expect(removeCommandElements(html)).toBe('<p>text</p>');
+  });
+
+  test('should not affect non-command elements', () => {
+    const html = '<p>Hello <strong>world</strong></p>';
+    expect(removeCommandElements(html)).toBe(html);
+  });
+
+  test('should not affect emoji elements', () => {
+    const html =
+      '<p><span data-type="emoji" data-name="smile" class="emoji-image">😄</span></p>';
+    expect(removeCommandElements(html)).toBe(html);
+  });
+
+  test('should return unchanged string with no command elements', () => {
+    const html = '<p>Just some text</p>';
+    expect(removeCommandElements(html)).toBe(html);
   });
 });

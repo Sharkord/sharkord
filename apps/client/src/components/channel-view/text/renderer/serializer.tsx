@@ -1,20 +1,12 @@
-import { imageExtensions, parseDomCommand } from '@sharkord/shared';
+import { parseDomCommand } from '@sharkord/shared';
 import { Element, type DOMNode } from 'html-react-parser';
 import { CommandOverride } from '../overrides/command';
 import { MentionOverride } from '../overrides/mention';
 import { TwitterOverride } from '../overrides/twitter';
 import { YoutubeOverride } from '../overrides/youtube';
-import type { TFoundMedia } from './types';
+import { getTweetInfo, getYoutubeInfo } from './helpers';
 
-const twitterRegex = /https:\/\/(twitter|x).com\/\w+\/status\/(\d+)/g;
-const youtubeRegex =
-  /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-
-const serializer = (
-  domNode: DOMNode,
-  pushMedia: (media: TFoundMedia) => void,
-  messageId: number
-) => {
+const serializer = (domNode: DOMNode, messageId: number) => {
   try {
     if (domNode instanceof Element && domNode.name === 'a') {
       const href = domNode.attribs.href;
@@ -23,34 +15,17 @@ const serializer = (
         return null;
       }
 
-      const url = new URL(href);
-
-      const isTweet =
-        url.hostname.match(/(twitter|x).com/) && href.match(twitterRegex);
-      const isYoutube =
-        url.hostname.match(/(youtube.com|youtu.be)/) &&
-        href.match(youtubeRegex);
-
-      const isImage = imageExtensions.some((ext) => href.endsWith(ext));
+      const { isTweet, tweetId } = getTweetInfo(href);
+      const { isYoutube, videoId } = getYoutubeInfo(href);
 
       if (isTweet) {
-        const tweetId = href.match(twitterRegex)?.[0].split('/').pop();
-
         if (tweetId) {
           return <TwitterOverride tweetId={tweetId} />;
         }
       } else if (isYoutube) {
-        const videoId = href.match(
-          /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/
-        )?.[7];
-
         if (videoId) {
           return <YoutubeOverride videoId={videoId} />;
         }
-      } else if (isImage) {
-        pushMedia({ type: 'image', url: href });
-
-        return;
       }
     } else if (domNode instanceof Element && domNode.name === 'command') {
       const command = parseDomCommand(domNode);

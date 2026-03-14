@@ -1,0 +1,1 @@
+ALTER TABLE `settings` ADD `enable_search` integer NOT NULL DEFAULT 1;

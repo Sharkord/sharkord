@@ -1,15 +1,20 @@
 import {
+  audioExtensions,
   extractUrls,
+  imageExtensions,
+  removeCommandElements,
+  removeEmojiElements,
+  videoExtensions,
   type TGenericObject,
   type TMessageMetadata
 } from '@sharkord/shared';
 import dns from 'dns';
 import { eq } from 'drizzle-orm';
-import ipaddr from 'ipaddr.js';
 import { getLinkPreview } from 'link-preview-js';
 import { isIP } from 'net';
 import { db } from '../../db';
 import { messages } from '../../db/schema';
+import { isPrivateIP } from '../../helpers/network';
 
 const metadataCache = new Map<string, TGenericObject>();
 
@@ -18,32 +23,57 @@ setInterval(
   1000 * 60 * 60 * 2 // clear cache every 2 hours
 );
 
-const isPrivateIP = (ip: string): boolean => {
+// if it ends in a known media extension, we just assume it's a direct media link and skip the DNS resolution and metadata fetching
+// there might be cases where this is not true, but it's a good heuristic to avoid unnecessary work
+const getDirectMediaMetaFromUrl = (
+  parsedUrl: URL
+): {
+  isDirectMediaLink: boolean;
+  mediaType: 'image' | 'video' | 'audio' | 'none';
+} => {
   try {
-    const addr = ipaddr.parse(ip);
-    const range = addr.range();
+    const pathname = parsedUrl.pathname.toLowerCase();
 
-    const blockedRanges = [
-      'unspecified',
-      'broadcast',
-      'multicast',
-      'linkLocal',
-      'loopback',
-      'private',
-      'uniqueLocal'
-    ];
+    const isImage = imageExtensions.some((ext) => pathname.endsWith(ext));
 
-    return blockedRanges.includes(range);
+    if (isImage) {
+      return { isDirectMediaLink: true, mediaType: 'image' };
+    }
+
+    const isAudio = audioExtensions.some((ext) => pathname.endsWith(ext));
+
+    if (isAudio) {
+      return { isDirectMediaLink: true, mediaType: 'audio' };
+    }
+
+    const isVideo = videoExtensions.some((ext) => pathname.endsWith(ext));
+
+    if (isVideo) {
+      return { isDirectMediaLink: true, mediaType: 'video' };
+    }
   } catch {
-    return true; // if we can't parse it, block it
+    // ignore
   }
+
+  return { isDirectMediaLink: false, mediaType: 'none' };
+};
+
+const sanitizeContent = (content: string): string => {
+  let cleanContent = content;
+
+  // this will remove plugin commands AND emojis because they need to be ignored for metadata extraction
+  cleanContent = removeCommandElements(cleanContent);
+  cleanContent = removeEmojiElements(cleanContent);
+
+  return cleanContent;
 };
 
 const urlMetadataParser = async (
   content: string
 ): Promise<TMessageMetadata[]> => {
   try {
-    const urls = extractUrls(content);
+    const cleanContent = sanitizeContent(content);
+    const urls = extractUrls(cleanContent);
 
     if (!urls) return [];
 
@@ -56,6 +86,13 @@ const urlMetadataParser = async (
 
       const parsed = new URL(url);
 
+      const isEmojiImage =
+        parsed.hostname === 'cdn.jsdelivr.net' &&
+        parsed.pathname.includes('emoji-datasource');
+
+      // it's a tiptap emoji, ignore
+      if (isEmojiImage) return;
+
       // allow only http and https protocols
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
         return;
@@ -66,41 +103,64 @@ const urlMetadataParser = async (
         return;
       }
 
-      const metadata = await getLinkPreview(url, {
-        followRedirects: 'follow',
-        resolveDNSHost: async (url: string) => {
-          return new Promise((resolve, reject) => {
-            try {
-              const hostname = new URL(url).hostname;
+      // if the URL has a known media extension, skip getLinkPreview entirely and use extension-based detection
+      const { isDirectMediaLink, mediaType } =
+        getDirectMediaMetaFromUrl(parsed);
 
-              dns.lookup(hostname, { all: true }, (err, addresses) => {
-                if (err) {
-                  reject(err);
-                  return;
-                }
+      if (isDirectMediaLink) {
+        const directMetadata: TMessageMetadata = {
+          url,
+          title: parsed.pathname.split('/').pop() || url,
+          description: '',
+          mediaType
+        };
 
-                for (const entry of addresses) {
-                  if (isPrivateIP(entry.address)) {
-                    reject(new Error('Cannot resolve private IP addresses'));
+        metadataCache.set(url, directMetadata);
+
+        return directMetadata;
+      }
+
+      let metadata;
+
+      try {
+        metadata = await getLinkPreview(url, {
+          followRedirects: 'follow',
+          resolveDNSHost: async (url: string) => {
+            return new Promise((resolve, reject) => {
+              try {
+                const hostname = new URL(url).hostname;
+
+                dns.lookup(hostname, { all: true }, (err, addresses) => {
+                  if (err) {
+                    reject(err);
                     return;
                   }
-                }
 
-                const firstAddress = addresses[0]?.address;
+                  for (const entry of addresses) {
+                    if (isPrivateIP(entry.address)) {
+                      reject(new Error('Cannot resolve private IP addresses'));
+                      return;
+                    }
+                  }
 
-                if (!firstAddress) {
-                  reject(new Error('No addresses found'));
-                  return;
-                }
+                  const firstAddress = addresses[0]?.address;
 
-                resolve(firstAddress);
-              });
-            } catch (error) {
-              reject(error);
-            }
-          });
-        }
-      });
+                  if (!firstAddress) {
+                    reject(new Error('No addresses found'));
+                    return;
+                  }
+
+                  resolve(firstAddress);
+                });
+              } catch (error) {
+                reject(error);
+              }
+            });
+          }
+        });
+      } catch {
+        // getLinkPreview failed (blocked, timeout, etc.)
+      }
 
       if (!metadata) return;
 
@@ -109,9 +169,13 @@ const urlMetadataParser = async (
       return metadata;
     });
 
-    const metadata = (await Promise.all(promises)) as TMessageMetadata[]; // TODO: fix these types
+    const metadata = (await Promise.all(
+      promises
+    )) as (TMessageMetadata | null)[]; // TODO: fix these types
 
-    return metadata ?? [];
+    const validMetadata = (metadata ?? []).filter((m) => !!m);
+
+    return validMetadata ?? [];
   } catch {
     // ignore
   }
@@ -124,6 +188,10 @@ export const processMessageMetadata = async (
   messageId: number
 ) => {
   const metadata = await urlMetadataParser(content);
+
+  const hasMetadata = metadata && metadata.length > 0;
+
+  if (!hasMetadata) return;
 
   return db
     .update(messages)

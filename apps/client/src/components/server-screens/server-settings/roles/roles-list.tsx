@@ -3,6 +3,7 @@ import type { TJoinedRole } from '@sharkord/shared';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@sharkord/ui';
 import { Plus } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TRolesListProps = {
@@ -14,6 +15,7 @@ type TRolesListProps = {
 
 const RolesList = memo(
   ({ roles, selectedRoleId, setSelectedRoleId, refetch }: TRolesListProps) => {
+    const { t } = useTranslation('settings');
     const onAddRole = useCallback(async () => {
       const trpc = getTRPCClient();
 
@@ -23,17 +25,17 @@ const RolesList = memo(
         await refetch();
 
         setSelectedRoleId(newRoleId);
-        toast.success('Role created');
+        toast.success(t('roleCreated'));
       } catch {
-        toast.error('Could not create role');
+        toast.error(t('roleCreateFailed'));
       }
-    }, [refetch, setSelectedRoleId]);
+    }, [refetch, setSelectedRoleId, t]);
 
     return (
       <Card className="w-64 flex-shrink-0">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Roles</CardTitle>
+            <CardTitle className="text-base">{t('rolesTitle')}</CardTitle>
             <Button size="icon" variant="ghost" onClick={onAddRole}>
               <Plus className="h-4 w-4" />
             </Button>

@@ -14,12 +14,15 @@ import {
   ChannelPermission,
   TYPING_MS,
   getTrpcError,
-  linkifyHtml
+  prepareMessageHtml
 } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
 import { throttle } from 'lodash-es';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { useScrollController } from './hooks/use-scroll-controller';
+import { useScrollToJumpTarget } from './hooks/use-scroll-to-jump-target';
 import { MessagesGroup } from './messages-group';
 import { TextSkeleton } from './text-skeleton';
 import { TextTopbar } from './text-top-bar';
@@ -28,13 +31,14 @@ import {
   getDraftMessage,
   setDraftMessage
 } from './use-draft-messages';
-import { useScrollController } from './use-scroll-controller';
 
 type TChannelProps = {
   channelId: number;
+  onClose?: () => void;
 };
 
-const TextChannel = memo(({ channelId }: TChannelProps) => {
+const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
+  const { t } = useTranslation();
   const {
     messages,
     hasMore,
@@ -44,6 +48,8 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
     groupedMessages,
     scrollToMessage
   } = useMessages(channelId);
+
+  useScrollToJumpTarget(channelId, scrollToMessage);
 
   const draftChannelKey = getChannelDraftKey(channelId);
 
@@ -93,21 +99,22 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
 
       try {
         await trpc.messages.send.mutate({
-          content: linkifyHtml(message),
+          content: prepareMessageHtml(message),
           channelId,
           files: files.map((f) => f.id)
         });
 
         playSound(SoundType.MESSAGE_SENT);
       } catch (error) {
-        toast.error(getTrpcError(error, 'Failed to send message'));
+        toast.error(getTrpcError(error, t('failedSendMessage')));
         return false;
       }
 
       setNewMessageHandler('');
+
       return true;
     },
-    [channelId, sendTypingSignal, setNewMessageHandler]
+    [channelId, sendTypingSignal, setNewMessageHandler, t]
   );
 
   if (!channelCan(ChannelPermission.VIEW_CHANNEL) || loading) {
@@ -127,7 +134,11 @@ const TextChannel = memo(({ channelId }: TChannelProps) => {
         </div>
       )}
 
-      <TextTopbar onScrollToMessage={scrollToMessage} channelId={channelId} />
+      <TextTopbar
+        onScrollToMessage={scrollToMessage}
+        channelId={channelId}
+        onClose={onClose}
+      />
 
       <div
         ref={containerRef}

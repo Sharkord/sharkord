@@ -8,6 +8,7 @@ export enum LocalStorageKey {
   FLOATING_CARD_POSITION = 'sharkord-floating-card-position',
   RIGHT_SIDEBAR_STATE = 'sharkord-right-sidebar-state',
   VOICE_CHAT_SIDEBAR_STATE = 'sharkord-voice-chat-sidebar-state',
+  VOICE_CHAT_SIDEBAR_CHANNEL_ID = 'sharkord-voice-chat-sidebar-channel-id',
   VOICE_CHAT_SIDEBAR_WIDTH = 'sharkord-voice-chat-sidebar-width',
   VOICE_CHAT_SHOW_USER_BANNERS = 'sharkord-voice-chat-show-user-banners',
   VOLUME_SETTINGS = 'sharkord-volume-settings',
@@ -25,7 +26,8 @@ export enum LocalStorageKey {
   AUTO_JOIN_LAST_CHANNEL = 'sharkord-auto-join-last-channel',
   BROWSER_NOTIFICATIONS = 'sharkord-browser-notifications',
   BROWSER_NOTIFICATIONS_FOR_MENTIONS = 'sharkord-browser-notifications-for-mentions',
-  BROWSER_NOTIFICATIONS_FOR_DMS = 'sharkord-browser-notifications-for-dms'
+  BROWSER_NOTIFICATIONS_FOR_DMS = 'sharkord-browser-notifications-for-dms',
+  LANGUAGE = 'sharkord-language'
 }
 
 export enum SessionStorageKey {
@@ -54,6 +56,21 @@ const setLocalStorageItemBool = (
   value: boolean
 ): void => {
   localStorage.setItem(key, value.toString());
+};
+
+const getLocalStorageItemAsNumber = (
+  key: LocalStorageKey,
+  defaultValue?: number
+): number | undefined => {
+  const item = localStorage.getItem(key);
+
+  if (item === null) {
+    return defaultValue;
+  }
+
+  const parsed = parseInt(item, 10);
+
+  return Number.isNaN(parsed) ? defaultValue : parsed;
 };
 
 const getLocalStorageItemAsJSON = <T>(
@@ -96,6 +113,7 @@ const removeSessionStorageItem = (key: SessionStorageKey): void => {
 export {
   getLocalStorageItem,
   getLocalStorageItemAsJSON,
+  getLocalStorageItemAsNumber,
   getLocalStorageItemBool,
   getSessionStorageItem,
   removeLocalStorageItem,

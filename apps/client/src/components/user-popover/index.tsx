@@ -7,6 +7,7 @@ import { usePublicServerSettings, useUserRoles } from '@/features/server/hooks';
 import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
+import { useDateLocale } from '@/hooks/use-date-locale';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
@@ -23,6 +24,7 @@ import {
 import { format } from 'date-fns';
 import { MessageSquare, ShieldCheck, Trash, UserCog } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Protect } from '../protect';
 import { RoleBadge } from '../role-badge';
@@ -35,6 +37,8 @@ type TUserPopoverProps = {
 };
 
 const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
+  const { t } = useTranslation();
+  const dateLocale = useDateLocale();
   const user = useUserById(userId);
   const roles = useUserRoles(userId);
   const settings = usePublicServerSettings();
@@ -49,9 +53,9 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
       setDmsOpen(true);
       setSelectedDmChannelId(result.channelId);
     } catch (error) {
-      toast.error(getTrpcError(error, 'Could not open direct message'));
+      toast.error(getTrpcError(error, t('couldNotOpenDM')));
     }
-  }, [userId]);
+  }, [userId, t]);
 
   if (!user) return <>{children}</>;
 
@@ -67,13 +71,13 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
           {user.banned && (
             <div className="absolute right-2 top-2 bg-red-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
               <ShieldCheck className="h-3 w-3" />
-              Banned
+              {t('bannedBadge')}
             </div>
           )}
           {isDeleted && (
             <div className="absolute right-2 top-2 bg-gray-600 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
               <Trash className="h-3 w-3" />
-              Deleted
+              {t('deletedBadge')}
             </div>
           )}
           {user.banner ? (
@@ -135,7 +139,11 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
           )}
           <div className="flex justify-between items-center mt-4 pt-3 border-t border-border">
             <p className="text-xs text-muted-foreground">
-              Member since {format(new Date(user.createdAt), 'PP')}
+              {t('memberSince', {
+                date: format(new Date(user.createdAt), 'PP', {
+                  locale: dateLocale
+                })
+              })}
             </p>
 
             <div className="flex gap-2 items-center">
@@ -144,7 +152,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
                   icon={MessageSquare}
                   variant="ghost"
                   size="sm"
-                  title="Direct Message"
+                  title={t('directMessage')}
                   onClick={onDirectMessageClick}
                 />
               )}
@@ -155,7 +163,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
                     icon={UserCog}
                     variant="ghost"
                     size="sm"
-                    title="Moderation View"
+                    title={t('moderationView')}
                     onClick={() => setModViewOpen(true, user.id)}
                   />
                 </Protect>

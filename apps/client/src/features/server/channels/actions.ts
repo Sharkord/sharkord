@@ -1,3 +1,4 @@
+import { assertVoiceChatClose } from '@/features/app/actions';
 import {
   dmsOpenSelector,
   selectedDmChannelIdSelector
@@ -35,6 +36,8 @@ export const updateChannel = (
 
 export const removeChannel = (channelId: number) => {
   store.dispatch(serverSliceActions.removeChannel({ channelId }));
+
+  assertVoiceChatClose(channelId);
 };
 
 export const setChannelPermissions = (
@@ -58,6 +61,7 @@ export const setChannelPermissions = (
   if (!canViewChannel) {
     // user lost VIEW_CHANNEL permission, deselect the channel
     setSelectedChannelId(undefined);
+    assertVoiceChatClose(selectedChannel);
   }
 };
 

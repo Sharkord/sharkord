@@ -11,6 +11,7 @@ import { Dialog } from './dialogs';
 import { PluginCommandsDialog } from './plugin-commands';
 import { PluginLogsDialog } from './plugin-logs';
 import { PluginSettingsDialog } from './plugin-settings';
+import { SearchDialog } from './search';
 import { ServerPasswordDialog } from './server-password';
 import { TextInputDialog } from './text-input';
 
@@ -26,7 +27,8 @@ const DialogsMap: any = {
   [Dialog.PLUGIN_LOGS]: PluginLogsDialog,
   [Dialog.PLUGIN_COMMANDS]: PluginCommandsDialog,
   [Dialog.PLUGIN_SETTINGS]: PluginSettingsDialog,
-  [Dialog.DELETE_USER]: DeleteUserDialog
+  [Dialog.DELETE_USER]: DeleteUserDialog,
+  [Dialog.SEARCH]: SearchDialog
 };
 
 const DialogsProvider = memo(() => {

@@ -18,6 +18,7 @@ import {
   type TDirectMessageConversation
 } from '@sharkord/shared';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SearchUserDropdown } from './search-user-dropdown';
 
@@ -54,6 +55,7 @@ const DirectMessageItem = memo(
 );
 
 const DirectMessages = memo(() => {
+  const { t } = useTranslation('sidebar');
   const conversations = useDmConversations();
   const [query, setQuery] = useState('');
   const users = useUsers();
@@ -81,15 +83,15 @@ const DirectMessages = memo(() => {
 
       setSelectedDmChannelId(result.channelId);
     } catch {
-      toast.error('Could not open direct message');
+      toast.error(t('couldNotOpenDM'));
     }
-  }, []);
+  }, [t]);
 
   return (
     <div className="flex-1 overflow-y-auto p-2">
       <div className="mb-1 flex items-center justify-between px-2 py-1">
         <span className="text-xs font-semibold text-muted-foreground">
-          Direct Messages
+          {t('directMessages')}
         </span>
         <SearchUserDropdown
           query={query}
@@ -110,7 +112,7 @@ const DirectMessages = memo(() => {
         ))}
         {conversations.length === 0 && (
           <div className="px-2 py-4 text-xs text-muted-foreground">
-            No direct messages yet
+            {t('noDMsYet')}
           </div>
         )}
       </div>
