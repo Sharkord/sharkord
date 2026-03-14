@@ -27,6 +27,8 @@ type TMessageRendererProps = {
   disableReactions?: boolean;
 };
 
+const ALLOWED_MEDIA_TYPES = ['image', 'video'];
+
 const MessageRenderer = memo(
   ({ message, disableFiles, disableReactions }: TMessageRendererProps) => {
     const { t } = useTranslation();
@@ -42,16 +44,13 @@ const MessageRenderer = memo(
       [message.content]
     );
 
-    const { foundMedia, messageHtml } = useMemo(() => {
-      const foundMedia: TFoundMedia[] = [];
-
-      const messageHtml = parse(message.content ?? '', {
-        replace: (domNode) =>
-          serializer(domNode, (found) => foundMedia.push(found), message.id)
-      });
-
-      return { messageHtml, foundMedia };
-    }, [message.content, message.id]);
+    const messageHtml = useMemo(
+      () =>
+        parse(message.content ?? '', {
+          replace: (domNode) => serializer(domNode, message.id)
+        }),
+      [message.content, message.id]
+    );
 
     const onRemoveFileClick = useCallback(
       async (fileId: number) => {
@@ -90,8 +89,25 @@ const MessageRenderer = memo(
           url: getFileUrl(file)
         }));
 
-      return [...foundMedia, ...mediaFromFiles];
-    }, [foundMedia, message.files]);
+      const mediaFromMetadata: TFoundMedia[] = (message.metadata ?? [])
+        .map((metadata) => {
+          if (!metadata || !metadata.url) return undefined;
+
+          const isAllowedType = ALLOWED_MEDIA_TYPES.includes(
+            metadata.mediaType
+          );
+
+          if (!isAllowedType) return undefined;
+
+          return {
+            type: metadata.mediaType,
+            url: metadata.url
+          };
+        })
+        .filter((media) => !!media) as TFoundMedia[];
+
+      return [...mediaFromFiles, ...mediaFromMetadata];
+    }, [message.files, message.metadata]);
 
     return (
       <div className="flex flex-col gap-1">

@@ -68,5 +68,6 @@
   "deleteCategoryTitle": "删除分类",
   "deleteCategoryMsg": "您确定要删除此分类吗？分类内的所有频道也将被删除，此操作不可撤销。",
   "categoryDeleted": "分类已删除",
-  "failedDeleteCategory": "删除分类失败"
+  "failedDeleteCategory": "删除分类失败",
+  "userVolume": "用户音量"
 }

@@ -14,14 +14,14 @@ type TPermissionProps = {
 
 const Permission = memo(
   ({ permission, enabled, onChange, disabled }: TPermissionProps) => {
-    const { t } = useTranslation('settings');
+    const { t } = useTranslation('permissions');
 
     return (
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
-          <Label>{t(`perm_${permission}`)}</Label>
+          <Label>{t(`server.${permission}`)}</Label>
           <span className="text-sm text-muted-foreground">
-            {t(`permDesc_${permission}`)}
+            {t(`serverDescriptions.${permission}`)}
           </span>
         </div>
         <Switch
@@ -42,7 +42,7 @@ type TPermissionListProps = {
 
 const PermissionList = memo(
   ({ permissions, setPermissions, disabled }: TPermissionListProps) => {
-    const { t } = useTranslation('settings');
+    const { t } = useTranslation('permissions');
 
     const onTogglePermission = useCallback(
       (permission: EPermission) => {
@@ -57,7 +57,7 @@ const PermissionList = memo(
 
     return (
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold">{t('permissionsHeader')}</h3>
+        <h3 className="text-sm font-semibold">{t('headers.server')}</h3>
 
         <div className="space-y-3">
           {availablePermissions.map((permission) => (

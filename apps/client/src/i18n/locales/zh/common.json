@@ -59,7 +59,6 @@
   "noCustomEmojis": "暂无自定义表情",
   "serverAdminsCanUpload": "服务器管理员可以在服务器设置中上传自定义表情",
   "serverEmojis": "服务器表情（{{count}}）",
-  "noPermissions": "无权限",
   "searchAllEmojis": "搜索所有表情...",
   "emojiTab": "表情",
   "customTab": "自定义",

@@ -19,12 +19,10 @@ import { getAllUserIds, getPublicUserById } from './queries/users';
 import { categories, channels, messages, users } from './schema';
 
 const publishMessage = async (
-  messageId: number | undefined,
-  channelId: number | undefined,
+  messageId: number,
+  channelId: number,
   type: 'create' | 'update' | 'delete'
 ) => {
-  if (!messageId || !channelId) return;
-
   if (type === 'delete') {
     const affectedUserIds = await getAffectedUserIdsForChannel(channelId, {
       permission: ChannelPermission.VIEW_CHANNEL

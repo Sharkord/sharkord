@@ -1,6 +1,6 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { UserAvatar } from '@/components/user-avatar';
-import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
+import { useStreamVolumeControl } from '@/components/voice-provider/hooks/use-stream-volume-control';
 import type { TVoiceUser } from '@/features/server/types';
 import { useIsOwnUser } from '@/features/server/users/hooks';
 import {
@@ -38,7 +38,7 @@ const VoiceUserCard = memo(
     voiceUser
   }: TVoiceUserCardProps) => {
     const { videoRef, hasVideoStream } = useVoiceRefs(userId);
-    const { getUserVolumeKey } = useVolumeControl();
+    const { volumeKey } = useStreamVolumeControl({ type: 'user', userId });
     const { devices } = useDevices();
     const isOwnUser = useIsOwnUser(userId);
     const showUserBanners = useShowUserBannersInVoice();
@@ -76,7 +76,7 @@ const VoiceUserCard = memo(
         )}
 
         <CardControls>
-          {!isOwnUser && <VolumeButton volumeKey={getUserVolumeKey(userId)} />}
+          {!isOwnUser && <VolumeButton volumeKey={volumeKey} />}
           {showPinControls && (
             <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
           )}

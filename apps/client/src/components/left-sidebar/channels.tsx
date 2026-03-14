@@ -96,9 +96,17 @@ const Voice = memo(
           )}
         </ItemWrapper>
         {channel.type === 'VOICE' && (
-          <div className="ml-6 space-y-1 mt-1">
+          <div
+            className="ml-6 space-y-1 mt-1"
+            onContextMenu={(e) => e.stopPropagation()}
+          >
             {users.map((user) => (
-              <VoiceUser key={user.id} userId={user.id} user={user} />
+              <VoiceUser
+                key={user.id}
+                userId={user.id}
+                user={user}
+                isOwnChannel={isOwnChannel}
+              />
             ))}
             {externalStreams.map((stream) => (
               <ExternalStream
@@ -106,7 +114,9 @@ const Voice = memo(
                 title={stream.title}
                 tracks={stream.tracks}
                 pluginId={stream.pluginId}
+                streamKey={stream.key}
                 avatarUrl={stream.avatarUrl}
+                isOwnChannel={isOwnChannel}
               />
             ))}
           </div>

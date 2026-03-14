@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Permission, permissionLabels } from '@sharkord/shared';
+import { Permission } from '@sharkord/shared';
 import { Badge } from '@sharkord/ui';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +22,7 @@ const PermissionsList = memo(
     className = '',
     maxDisplay
   }: PermissionsListProps) => {
-    const { t } = useTranslation('common');
+    const { t } = useTranslation('permissions');
 
     if (!permissions.length) {
       return (
@@ -69,7 +69,7 @@ const PermissionsList = memo(
               size === 'lg' && 'text-sm px-2.5 py-1 h-7'
             )}
           >
-            {permissionLabels[permission]}
+            {t(`server.${permission}`)}
           </Badge>
         ))}
         {remainingCount > 0 && (

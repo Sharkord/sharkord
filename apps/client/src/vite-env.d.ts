@@ -31,6 +31,7 @@ declare module 'i18next' {
       topbar: typeof import('./locales/en/topbar.json');
       dialogs: typeof import('./locales/en/dialogs.json');
       settings: typeof import('./locales/en/settings.json');
+      permissions: typeof import('./locales/en/permissions.json');
     };
   }
 }

@@ -1,0 +1,69 @@
+{
+  "noPermissions": "No permissions",
+  "headers": {
+    "server": "Permissions",
+    "channel": "Channel Permissions"
+  },
+  "server": {
+    "SEND_MESSAGES": "Send messages",
+    "REACT_TO_MESSAGES": "React to messages",
+    "PIN_MESSAGES": "Pin messages",
+    "UPLOAD_FILES": "Upload files",
+    "JOIN_VOICE_CHANNELS": "Join voice channels",
+    "SHARE_SCREEN": "Share screen",
+    "ENABLE_WEBCAM": "Enable webcam",
+    "MANAGE_CHANNELS": "Manage channels",
+    "MANAGE_CHANNEL_PERMISSIONS": "Manage channel permissions",
+    "MANAGE_CATEGORIES": "Manage categories",
+    "MANAGE_ROLES": "Manage roles",
+    "MANAGE_EMOJIS": "Manage emojis",
+    "MANAGE_SETTINGS": "Manage server settings",
+    "MANAGE_USERS": "Manage users",
+    "MANAGE_MESSAGES": "Manage messages",
+    "MANAGE_STORAGE": "Manage storage",
+    "MANAGE_INVITES": "Manage invites",
+    "MANAGE_UPDATES": "Manage updates",
+    "MANAGE_PLUGINS": "Manage plugins",
+    "EXECUTE_PLUGIN_COMMANDS": "Execute plugin commands",
+    "VIEW_USER_SENSITIVE_DATA": "View user sensitive data"
+  },
+  "serverDescriptions": {
+    "SEND_MESSAGES": "Grants the ability to send messages in channels.",
+    "REACT_TO_MESSAGES": "Grants the ability to react to messages.",
+    "PIN_MESSAGES": "Grants the ability to pin messages.",
+    "UPLOAD_FILES": "Grants the ability to upload files in channels.",
+    "JOIN_VOICE_CHANNELS": "Grants the ability to join voice channels.",
+    "SHARE_SCREEN": "Grants the ability to share the screen.",
+    "ENABLE_WEBCAM": "Grants the ability to enable the webcam.",
+    "MANAGE_CHANNELS": "Grants the ability to create, update, and delete channels.",
+    "MANAGE_CHANNEL_PERMISSIONS": "Grants the ability to manage channel-specific permissions for roles and users.",
+    "MANAGE_CATEGORIES": "Grants the ability to create, update, and delete categories.",
+    "MANAGE_ROLES": "Grants the ability to create, update, and delete roles.",
+    "MANAGE_EMOJIS": "Grants the ability to create, update, and delete emojis.",
+    "MANAGE_SETTINGS": "Grants the ability to manage server settings.",
+    "MANAGE_USERS": "Grants the ability to manage users.",
+    "MANAGE_MESSAGES": "Grants the ability to manage messages from all users by editing or deleting them.",
+    "MANAGE_STORAGE": "Grants the ability to manage storage, such as enabling or disabling uploads.",
+    "MANAGE_INVITES": "Grants the ability to create, edit, and delete server invites.",
+    "MANAGE_UPDATES": "Grants the ability to perform updates.",
+    "MANAGE_PLUGINS": "Grants the ability to manage plugins.",
+    "EXECUTE_PLUGIN_COMMANDS": "Grants the ability to execute plugin commands.",
+    "VIEW_USER_SENSITIVE_DATA": "Grants the ability to view user sensitive data like identity, IP address, and location."
+  },
+  "channel": {
+    "VIEW_CHANNEL": "View Channel",
+    "SEND_MESSAGES": "Send Messages",
+    "JOIN": "Join Channel",
+    "SPEAK": "Speak",
+    "SHARE_SCREEN": "Share Screen",
+    "WEBCAM": "Enable Webcam"
+  },
+  "channelDescriptions": {
+    "VIEW_CHANNEL": "Allows the user to view the channel.",
+    "SEND_MESSAGES": "Allows the user to send messages.",
+    "JOIN": "Allows the user to join the channel.",
+    "SPEAK": "Allows the user to speak in voice channels.",
+    "SHARE_SCREEN": "Allows the user to share their screen.",
+    "WEBCAM": "Allows the user to enable their webcam."
+  }
+}

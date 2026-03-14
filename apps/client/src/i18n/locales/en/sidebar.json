@@ -68,5 +68,6 @@
   "deleteCategoryTitle": "Delete Category",
   "deleteCategoryMsg": "Are you sure you want to delete this category? This WILL delete all the channels within this category. This action cannot be undone.",
   "categoryDeleted": "Category deleted",
-  "failedDeleteCategory": "Failed to delete category"
+  "failedDeleteCategory": "Failed to delete category",
+  "userVolume": "User volume"
 }
