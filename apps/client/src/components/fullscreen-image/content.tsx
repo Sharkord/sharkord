@@ -120,14 +120,18 @@ const FullScreenImage = memo((props: TFullScreenImageProps) => {
   }, [onCloseClick]);
 
   const onCopyLink = useCallback(
-    (e: React.MouseEvent) => {
+    async (e: React.MouseEvent) => {
       e.stopPropagation();
 
       if (!props.src) return;
 
-      navigator.clipboard.writeText(props.src);
+      try {
+        navigator.clipboard.writeText(props.src);
 
-      toast.success('Image link copied to clipboard');
+        toast.success('Image link copied to clipboard');
+      } catch {
+        toast.error('Failed to copy image link');
+      }
     },
     [props.src]
   );
