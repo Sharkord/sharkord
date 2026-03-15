@@ -16,6 +16,7 @@ import {
   useRef,
   useState
 } from 'react';
+import { FormattingToolbar } from '../formatting-toolbar';
 import type { TEmojiItem } from './helpers';
 import {
   COMMANDS_STORAGE_KEY,
@@ -149,9 +150,13 @@ const TiptapInput = memo(
               return false;
             }
 
-            event.preventDefault();
-            onSubmit?.();
-            return true;
+            if (event.ctrlKey) {
+              event.preventDefault();
+              onSubmit?.();
+              return true;
+            }
+
+            return false;
           }
 
           if (event.key === 'Escape') {
@@ -281,6 +286,7 @@ const TiptapInput = memo(
               isExpanded ? 'max-h-80' : 'max-h-20'
             } ${disabled ? 'opacity-50 cursor-not-allowed bg-muted' : ''}`}
           />
+          {(isHovering || isFocused) && <FormattingToolbar editor={editor} />}
           {showExpandButton && (isHovering || isFocused) && (
             <Button
               type="button"
