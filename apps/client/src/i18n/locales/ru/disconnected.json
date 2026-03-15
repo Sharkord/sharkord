@@ -1,0 +1,11 @@
+{
+  "kicked": "Вас кикнули",
+  "banned": "Вас забанили",
+  "connectionLost": "Соединение потеряно",
+  "noReasonProvided": "Причина не указана.",
+  "lostConnectionMessage": "Неожиданно потеряно соединение с сервером.",
+  "goToConnectScreen": "Перейти к экрану подключения",
+  "details": "Подробнее",
+  "code": "Код: {{code}}",
+  "time": "Время: {{time}}"
+}
