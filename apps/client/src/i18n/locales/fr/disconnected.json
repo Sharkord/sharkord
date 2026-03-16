@@ -1,0 +1,11 @@
+{
+  "kicked": "Vous avez été expulsé",
+  "banned": "Vous avez été banni",
+  "connectionLost": "Connexion perdue",
+  "noReasonProvided": "Aucune justification n'a été fournie.",
+  "lostConnectionMessage": "Connection avec le serveur perdue.",
+  "goToConnectScreen": "Accéder à l'écran de connexion",
+  "details": "Détails",
+  "code": "Code: {{code}}",
+  "time": "Date: {{time}}"
+}
