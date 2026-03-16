@@ -257,6 +257,12 @@ const publishPluginComponents = async () => {
   pubsub.publish(ServerEvents.PLUGIN_COMPONENTS_CHANGE, pluginIds);
 };
 
+const publishPluginMetadata = async () => {
+  const metadata = await pluginManager.getActivePluginMetadata();
+
+  pubsub.publish(ServerEvents.PLUGIN_METADATA_CHANGE, metadata);
+};
+
 const publishReplyCount = async (
   parentMessageId: number,
   channelId: number
@@ -286,6 +292,7 @@ export {
   publishMessage,
   publishPluginCommands,
   publishPluginComponents,
+  publishPluginMetadata,
   publishReplyCount,
   publishRole,
   publishSettings,

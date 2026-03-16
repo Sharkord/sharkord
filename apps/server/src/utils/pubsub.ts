@@ -11,6 +11,7 @@ import type {
   TJoinedPublicUser,
   TJoinedRole,
   TLogEntry,
+  TPluginMetadata,
   TPublicServerSettings,
   TVoiceUserState
 } from '@sharkord/shared';
@@ -102,6 +103,7 @@ type Events = {
   [ServerEvents.PLUGIN_LOG]: TLogEntry;
   [ServerEvents.PLUGIN_COMMANDS_CHANGE]: TCommandsMapByPlugin;
   [ServerEvents.PLUGIN_COMPONENTS_CHANGE]: string[]; // list of plugin ids that have components enabled
+  [ServerEvents.PLUGIN_METADATA_CHANGE]: TPluginMetadata[];
 
   [ServerEvents.EMOJI_CREATE]: TJoinedEmoji;
   [ServerEvents.EMOJI_UPDATE]: TJoinedEmoji;

@@ -6,9 +6,13 @@ import {
   type TCommandInfo,
   type TCommandsMapByPlugin,
   type TPluginComponentsMap,
-  type TPluginComponentsMapBySlotId
+  type TPluginComponentsMapBySlotId,
+  type TPluginMetadata
 } from '@sharkord/shared';
 import { serverSliceActions } from '../slice';
+
+export const setPluginsMetadata = (pluginsMetadata: TPluginMetadata[]) =>
+  store.dispatch(serverSliceActions.setPluginsMetadata(pluginsMetadata));
 
 export const setPluginCommands = (commands: TCommandsMapByPlugin) =>
   store.dispatch(serverSliceActions.setPluginCommands(commands));

@@ -160,3 +160,10 @@ export type TPluginSlotContext = {
   currentVoiceChannelId: number | undefined;
   sendMessage: (channelId: number, content: string) => void;
 };
+
+export type TPluginMetadata = {
+  pluginId: string;
+  name: string;
+  description: string;
+  avatarUrl?: string;
+};

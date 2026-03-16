@@ -68,7 +68,8 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       emojis,
       channelPermissions,
       readStates,
-      publicSettings
+      publicSettings,
+      pluginsMetadata
     ] = await Promise.all([
       db.select().from(categories),
       getChannelsForUser(ctx.user.id), // filter channels based on permissions and DM participation
@@ -77,7 +78,8 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       getEmojis(),
       getAllChannelUserPermissions(ctx.user.id),
       getChannelsReadStatesForUser(ctx.user.id),
-      getPublicSettings()
+      getPublicSettings(),
+      pluginManager.getActivePluginMetadata()
     ]);
 
     const processedPublicUsers = publicUsers.map((u) => ({
@@ -141,6 +143,7 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       readStates,
       commands: pluginManager.getCommands(),
       pluginIdsWithComponents: pluginManager.getPluginIdsWithComponents(),
+      pluginsMetadata,
       externalStreamsMap
     };
   });

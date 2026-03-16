@@ -2,6 +2,7 @@ import { t } from '../../utils/trpc';
 import {
   onCommandsChangeRoute,
   onComponentsChangeRoute,
+  onMetadataChangeRoute,
   onPluginLogRoute
 } from './events';
 import { executeCommandRoute } from './execute-command';
@@ -21,6 +22,7 @@ export const pluginsRouter = t.router({
   executeCommand: executeCommandRoute,
   onCommandsChange: onCommandsChangeRoute,
   onComponentsChange: onComponentsChangeRoute,
+  onMetadataChange: onMetadataChangeRoute,
   getSettings: getSettingsRoute,
   updateSetting: updateSettingRoute
 });

@@ -64,6 +64,13 @@
       "when": 1773427281204,
       "tag": "0008_stiff_killmonger",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1773685648905,
+      "tag": "0009_third_thunderbolt",
+      "breakpoints": true
     }
   ]
 }

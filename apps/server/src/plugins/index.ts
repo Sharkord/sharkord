@@ -15,6 +15,7 @@ import {
   type TInvokerContext,
   type TLogEntry,
   type TPluginInfo,
+  type TPluginMetadata,
   type TPluginSettingDefinition,
   type TPluginSettingsResponse
 } from '@sharkord/shared';
@@ -30,6 +31,7 @@ import { PLUGINS_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 import { VoiceRuntime } from '../runtimes/voice';
 import { pubsub } from '../utils/pubsub';
+import { createPluginMessage } from './create-plugin-message';
 import { eventBus } from './event-bus';
 
 type PluginModule = {
@@ -396,6 +398,27 @@ class PluginManager {
     const pluginIds = Array.from(this.loadedPlugins.keys());
 
     return pluginIds.filter((pluginId) => this.uiState.get(pluginId));
+  };
+
+  public getActivePluginMetadata = async (): Promise<TPluginMetadata[]> => {
+    const metadata: TPluginMetadata[] = [];
+
+    for (const pluginId of this.loadedPlugins.keys()) {
+      try {
+        const info = await this.getPluginInfo(pluginId);
+
+        metadata.push({
+          pluginId: info.id,
+          name: info.name,
+          description: info.description,
+          avatarUrl: info.logo
+        });
+      } catch {
+        // plugin info may not be available, skip
+      }
+    }
+
+    return metadata;
   };
 
   public togglePlugin = async (pluginId: string, enabled: boolean) => {
@@ -818,6 +841,29 @@ class PluginManager {
             };
           },
           getListenInfo: () => VoiceRuntime.getListenInfo()
+        }
+      },
+      messages: {
+        send: async (channelId: number, content: string) => {
+          this.logPlugin(
+            pluginId,
+            'debug',
+            `Sending message to channel ${channelId}`
+          );
+
+          const result = await createPluginMessage({
+            pluginId,
+            channelId,
+            content
+          });
+
+          this.logPlugin(
+            pluginId,
+            'debug',
+            `Message sent to channel ${channelId} (id: ${result.messageId})`
+          );
+
+          return result;
         }
       },
       commands: {

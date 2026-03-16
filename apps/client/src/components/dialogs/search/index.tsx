@@ -94,9 +94,6 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
                       return (
                         <SearchResultMessageCard
                           message={entry.item}
-                          userName={
-                            usernames[entry.item.userId] ?? t('unknownUser')
-                          }
                           onJump={onJump}
                         />
                       );

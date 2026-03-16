@@ -29,7 +29,11 @@ const useGroupedMessages = (messages: TJoinedMessage[]) =>
 
       const lastMessage = last[last.length - 1];
 
-      if (lastMessage.userId === message.userId) {
+      const sameAuthor = message.pluginId
+        ? lastMessage.pluginId === message.pluginId
+        : lastMessage.userId === message.userId;
+
+      if (sameAuthor) {
         const lastDate = lastMessage.createdAt;
         const currentDate = message.createdAt;
         const timeDifference = Math.abs(currentDate - lastDate) / 1000 / 60;

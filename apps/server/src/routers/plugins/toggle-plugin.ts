@@ -2,7 +2,8 @@ import { ActivityLogType, Permission } from '@sharkord/shared';
 import { z } from 'zod';
 import {
   publishPluginCommands,
-  publishPluginComponents
+  publishPluginComponents,
+  publishPluginMetadata
 } from '../../db/publishers';
 import { pluginManager } from '../../plugins';
 import { enqueueActivityLog } from '../../queues/activity-log';
@@ -22,6 +23,7 @@ const togglePluginRoute = protectedProcedure
 
     publishPluginCommands();
     publishPluginComponents();
+    publishPluginMetadata();
 
     enqueueActivityLog({
       type: ActivityLogType.PLUGIN_TOGGLED,

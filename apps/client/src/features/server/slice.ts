@@ -15,6 +15,7 @@ import type {
   TJoinedRole,
   TPluginComponentsMap,
   TPluginComponentsMapBySlotId,
+  TPluginMetadata,
   TPublicServerSettings,
   TReadStateMap,
   TServerInfo,
@@ -59,6 +60,7 @@ export interface IServerState {
   readStatesMap: {
     [channelId: number]: number | undefined;
   };
+  pluginsMetadata: TPluginMetadata[];
   pluginCommands: TCommandsMapByPlugin;
   hideNonVideoParticipants: boolean;
   showUserBannersInVoice: boolean;
@@ -96,6 +98,7 @@ const initialState: IServerState = {
   pinnedCard: undefined,
   channelPermissions: {},
   readStatesMap: {},
+  pluginsMetadata: [],
   pluginCommands: {},
   hideNonVideoParticipants: getLocalStorageItemBool(
     LocalStorageKey.HIDE_NON_VIDEO_PARTICIPANTS,
@@ -155,6 +158,7 @@ export const serverSlice = createSlice({
         externalStreamsMap: TExternalStreamsMap;
         channelPermissions: TChannelUserPermissionsMap;
         readStates: TReadStateMap;
+        pluginsMetadata: TPluginMetadata[];
       }>
     ) => {
       state.connected = true;
@@ -170,6 +174,7 @@ export const serverSlice = createSlice({
       state.serverId = action.payload.serverId;
       state.channelPermissions = action.payload.channelPermissions;
       state.readStatesMap = action.payload.readStates;
+      state.pluginsMetadata = action.payload.pluginsMetadata;
     },
     addMessages: (
       state,
@@ -772,6 +777,9 @@ export const serverSlice = createSlice({
 
     // PLUGINS ------------------------------------------------------------
 
+    setPluginsMetadata: (state, action: PayloadAction<TPluginMetadata[]>) => {
+      state.pluginsMetadata = action.payload;
+    },
     setPluginCommands: (state, action: PayloadAction<TCommandsMapByPlugin>) => {
       state.pluginCommands = action.payload;
     },

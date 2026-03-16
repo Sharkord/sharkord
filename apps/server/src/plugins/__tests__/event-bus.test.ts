@@ -140,6 +140,7 @@ describe('event-bus', () => {
         messageId: 1,
         channelId: 2,
         userId: 3,
+        pluginId: null,
         content: 'test message'
       });
 
@@ -148,6 +149,7 @@ describe('event-bus', () => {
         messageId: 1,
         channelId: 2,
         userId: 3,
+        pluginId: null,
         content: 'test message'
       });
     });
@@ -163,6 +165,7 @@ describe('event-bus', () => {
         messageId: 1,
         channelId: 2,
         userId: 3,
+        pluginId: null,
         content: 'test'
       });
 
@@ -179,6 +182,7 @@ describe('event-bus', () => {
         messageId: 1,
         channelId: 2,
         userId: 3,
+        pluginId: null,
         content: 'test'
       });
 
@@ -190,6 +194,7 @@ describe('event-bus', () => {
         messageId: 2,
         channelId: 2,
         userId: 3,
+        pluginId: null,
         content: 'test2'
       });
 
@@ -217,6 +222,7 @@ describe('event-bus', () => {
           messageId: 1,
           channelId: 2,
           userId: 3,
+          pluginId: null,
           content: 'test'
         })
       ).resolves.toBeUndefined();
@@ -235,6 +241,7 @@ describe('event-bus', () => {
         messageId: 1,
         channelId: 2,
         userId: 3,
+        pluginId: null,
         content: 'test'
       });
 
@@ -253,6 +260,7 @@ describe('event-bus', () => {
         messageId: 1,
         channelId: 2,
         userId: 3,
+        pluginId: null,
         content: 'test'
       });
 
@@ -268,6 +276,7 @@ describe('event-bus', () => {
         messageId: 1,
         channelId: 2,
         userId: 3,
+        pluginId: null,
         content: 'test'
       });
 
@@ -279,6 +288,7 @@ describe('event-bus', () => {
         messageId: 2,
         channelId: 2,
         userId: 3,
+        pluginId: null,
         content: 'test2'
       });
 
@@ -321,6 +331,7 @@ describe('event-bus', () => {
         messageId: 1,
         channelId: 2,
         userId: 3,
+        pluginId: null,
         content: 'test'
       });
 
@@ -334,6 +345,7 @@ describe('event-bus', () => {
         messageId: 2,
         channelId: 2,
         userId: 3,
+        pluginId: null,
         content: 'test2'
       });
 
@@ -356,6 +368,7 @@ describe('event-bus', () => {
         messageId: 1,
         channelId: 2,
         userId: 3,
+        pluginId: null,
         content: 'test'
       });
 
@@ -370,6 +383,7 @@ describe('event-bus', () => {
         messageId: 2,
         channelId: 2,
         userId: 3,
+        pluginId: null,
         content: 'test2'
       });
 

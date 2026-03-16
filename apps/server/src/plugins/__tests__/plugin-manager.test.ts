@@ -787,6 +787,7 @@ describe('plugin-manager', () => {
         messageId: 1,
         channelId: 1,
         userId: 1,
+        pluginId: null,
         content: 'test message'
       });
 
@@ -809,6 +810,7 @@ describe('plugin-manager', () => {
         messageId: 1,
         channelId: 1,
         userId: 1,
+        pluginId: null,
         content: 'test'
       });
 
@@ -829,6 +831,7 @@ describe('plugin-manager', () => {
         messageId: 2,
         channelId: 1,
         userId: 1,
+        pluginId: null,
         content: 'test2'
       });
 

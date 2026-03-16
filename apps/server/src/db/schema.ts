@@ -221,9 +221,10 @@ const messages = sqliteTable(
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     content: text('content'),
-    userId: integer('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+    userId: integer('user_id').references(() => users.id, {
+      onDelete: 'cascade'
+    }),
+    pluginId: text('plugin_id'),
     channelId: integer('channel_id')
       .notNull()
       .references(() => channels.id, { onDelete: 'cascade' }),

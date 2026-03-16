@@ -60,13 +60,15 @@ export interface EventPayloads {
   'message:created': {
     messageId: number;
     channelId: number;
-    userId: number;
+    userId: number | null;
+    pluginId: string | null;
     content: string;
   };
   'message:updated': {
     messageId: number;
     channelId: number;
-    userId: number;
+    userId: number | null;
+    pluginId: string | null;
     content: string;
   };
   'message:deleted': {
@@ -128,6 +130,10 @@ export interface PluginContext {
         announcedAddress: string | undefined;
       };
     };
+  };
+
+  messages: {
+    send(channelId: number, content: string): Promise<{ messageId: number }>;
   };
 
   commands: {

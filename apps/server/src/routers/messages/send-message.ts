@@ -251,6 +251,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       messageId: message.id,
       channelId: input.channelId,
       userId: ctx.userId,
+      pluginId: null,
       content: targetContent
     });
 

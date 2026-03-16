@@ -1,10 +1,12 @@
+import { PluginAvatar } from '@/components/plugin-avatar';
 import { useThreadSidebar } from '@/features/app/hooks';
 import { useParentMessage } from '@/features/server/messages/hooks';
+import { usePluginMetadata } from '@/features/server/plugins/hooks';
 import { useUserById } from '@/features/server/users/hooks';
-import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import type { TJoinedMessage } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
 import { memo } from 'react';
+import { useMessageRenderedName } from '../channel-view/text/hooks/use-message-rendered-name';
 import { MessageRenderer } from '../channel-view/text/renderer';
 import { UserAvatar } from '../user-avatar';
 
@@ -14,23 +16,32 @@ type TParentMessageContentProps = {
 
 const ParentMessageContent = memo(
   ({ parentMessage }: TParentMessageContentProps) => {
+    const pluginMetadata = usePluginMetadata(parentMessage.pluginId);
     const user = useUserById(parentMessage.userId);
+    const isPluginMessage = !!parentMessage.pluginId;
+    const authorName = useMessageRenderedName(parentMessage);
 
-    if (!user) {
+    if (!pluginMetadata && !user) {
       return null;
     }
 
     return (
       <div className="px-4 py-3 border-b border-border bg-secondary/30 max-h-64 overflow-auto">
         <div className="flex items-center gap-2 mb-1">
-          <UserAvatar
-            userId={parentMessage.userId}
-            className="h-8 w-8"
-            showUserPopover
-          />
-          <span className="text-sm font-medium">
-            {getRenderedUsername(user)}
-          </span>
+          {isPluginMessage ? (
+            <PluginAvatar
+              name={pluginMetadata?.name}
+              avatarUrl={pluginMetadata?.avatarUrl}
+              className="h-8 w-8"
+            />
+          ) : (
+            <UserAvatar
+              userId={parentMessage.userId!}
+              className="h-8 w-8"
+              showUserPopover
+            />
+          )}
+          <span className="text-sm font-medium">{authorName}</span>
         </div>
         <div className="text-sm line-clamp-3 opacity-80">
           <MessageRenderer message={parentMessage} />
