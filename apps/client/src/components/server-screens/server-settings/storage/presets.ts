@@ -40,6 +40,13 @@ const MAX_FILES_PER_MESSAGE_PRESETS = [
   { label: '20', value: 20 }
 ];
 
+const SIGNED_URLS_TTL_PRESETS = [
+  { label: '1 hr', value: 60 * 60 },
+  { label: '6 hr', value: 6 * 60 * 60 },
+  { label: '12 hr', value: 12 * 60 * 60 },
+  { label: '24 hr', value: 24 * 60 * 60 }
+];
+
 export {
   FILE_SIZE_STEP,
   MAX_AVATAR_SIZE_PRESETS,
@@ -48,5 +55,6 @@ export {
   MAX_FILE_SIZE_PRESETS,
   MEGABYTE,
   QUOTA_BY_USER_PRESETS,
-  QUOTA_PRESETS
+  QUOTA_PRESETS,
+  SIGNED_URLS_TTL_PRESETS
 };

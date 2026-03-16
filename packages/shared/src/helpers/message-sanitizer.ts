@@ -56,7 +56,11 @@ const isEmojiOnlyMessage = (content: string | undefined | null): boolean => {
 };
 
 const getPlainTextFromHtml = (html: string): string => {
-  return stripToText(html, [removeProseMirrorArtifacts, removeEmojiElements]);
+  return stripToText(html, [
+    removeProseMirrorArtifacts,
+    removeEmojiElements,
+    removeCommandElements
+  ]);
 };
 
 export {

@@ -57,6 +57,13 @@
       "when": 1772897866100,
       "tag": "0007_overrated_carnage",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1773427281204,
+      "tag": "0008_stiff_killmonger",
+      "breakpoints": true
     }
   ]
 }

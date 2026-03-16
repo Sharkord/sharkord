@@ -1,13 +1,18 @@
 import { ChannelType, type TFile, type TTempFile } from '@sharkord/shared';
-import { describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
-import { beforeEach } from 'node:test';
 import path from 'path';
 import { initTest, login, uploadFile } from '../../__tests__/helpers';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
 import { loadCrons } from '../../crons';
-import { channels, files, messageFiles, messages } from '../../db/schema';
+import {
+  channels,
+  files,
+  messageFiles,
+  messages,
+  settings
+} from '../../db/schema';
 import { generateFileToken } from '../../helpers/files-crypto';
 import { PUBLIC_PATH } from '../../helpers/paths';
 import { fileManager } from '../../utils/file-manager';
@@ -39,6 +44,19 @@ const getFileByMessageId = async (
     .get();
 
   return dbFile;
+};
+
+const enableSignedUrls = async (ttlSeconds: number = 3600) => {
+  await tdb.update(settings).set({
+    storageSignedUrlsEnabled: true,
+    storageSignedUrlsTtlSeconds: ttlSeconds
+  });
+};
+
+const disableSignedUrls = async () => {
+  await tdb.update(settings).set({
+    storageSignedUrlsEnabled: false
+  });
 };
 
 describe('/public', () => {
@@ -303,7 +321,7 @@ describe('/public', () => {
     expect(await fs.exists(path.join(PUBLIC_PATH, dbFile!.name))).toBe(false);
   });
 
-  test('should return 403 when trying to access a private channel file without token', async () => {
+  test('should allow access to private channel files without token when signed URLs disabled', async () => {
     const { caller } = await initTest();
 
     const channelId = await caller.channels.add({
@@ -325,100 +343,6 @@ describe('/public', () => {
 
     expect(channel).toBeDefined();
     expect(channel?.private).toBe(true);
-
-    const tempFile = await upload(
-      new File(['Private file content'], 'private-file.txt', {
-        type: 'text/plain'
-      }),
-      token
-    );
-
-    const messageId = await caller.messages.send({
-      content: 'Message with private file',
-      channelId,
-      files: [tempFile.id]
-    });
-
-    const dbFile = await getFileByMessageId(messageId);
-
-    expect(dbFile).toBeDefined();
-
-    const response = await fetch(
-      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
-    );
-
-    expect(response.status).toBe(403);
-
-    const data = (await response.json()) as { error: string };
-
-    expect(data).toHaveProperty('error', 'Forbidden');
-  });
-
-  test('should return 403 when trying to access a private channel file with invalid token', async () => {
-    const { caller } = await initTest();
-
-    const channelId = await caller.channels.add({
-      name: 'Private Channel',
-      categoryId: 1,
-      type: ChannelType.TEXT
-    });
-
-    await caller.channels.update({
-      channelId: channelId,
-      private: true
-    });
-
-    const tempFile = await upload(
-      new File(['Private file content'], 'private-file.txt', {
-        type: 'text/plain'
-      }),
-      token
-    );
-
-    const messageId = await caller.messages.send({
-      content: 'Message with private file',
-      channelId,
-      files: [tempFile.id]
-    });
-
-    const dbFile = await getFileByMessageId(messageId);
-
-    expect(dbFile).toBeDefined();
-
-    const response = await fetch(
-      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}?accessToken=invalid-token-xyz`
-    );
-
-    expect(response.status).toBe(403);
-
-    const data = (await response.json()) as { error: string };
-
-    expect(data).toHaveProperty('error', 'Forbidden');
-  });
-
-  test('should return 200 when accessing a private channel file with valid token', async () => {
-    const { caller } = await initTest();
-
-    const channelId = await caller.channels.add({
-      name: 'Private Channel',
-      categoryId: 1,
-      type: ChannelType.TEXT
-    });
-
-    await caller.channels.update({
-      channelId: channelId,
-      private: true
-    });
-
-    const channel = await tdb
-      .select()
-      .from(channels)
-      .where(eq(channels.id, channelId))
-      .get();
-
-    expect(channel).toBeDefined();
-    expect(channel?.private).toBe(true);
-    expect(channel?.fileAccessToken).toBeDefined();
 
     const fileContent = 'Private file content';
     const tempFile = await upload(
@@ -438,91 +362,15 @@ describe('/public', () => {
 
     expect(dbFile).toBeDefined();
 
-    const validToken = generateFileToken(dbFile!.id, channel!.fileAccessToken);
     const response = await fetch(
-      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}?accessToken=${validToken}`
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
     );
 
     expect(response.status).toBe(200);
-    expect(response.headers.get('Content-Type')).toInclude('text/plain');
 
     const responseText = await response.text();
 
     expect(responseText).toBe(fileContent);
-  });
-
-  test('should return 403 when using token from different channel', async () => {
-    const { caller } = await initTest();
-
-    const channelId1 = await caller.channels.add({
-      name: 'Private Chan 1',
-      categoryId: 1,
-      type: ChannelType.TEXT
-    });
-
-    await caller.channels.update({
-      channelId: channelId1,
-      private: true
-    });
-
-    const channelId2 = await caller.channels.add({
-      name: 'Private Chan 2',
-      categoryId: 1,
-      type: ChannelType.TEXT
-    });
-
-    await caller.channels.update({
-      channelId: channelId2,
-      private: true
-    });
-
-    const channel1 = await tdb
-      .select()
-      .from(channels)
-      .where(eq(channels.id, channelId1))
-      .get();
-
-    const channel2 = await tdb
-      .select()
-      .from(channels)
-      .where(eq(channels.id, channelId2))
-      .get();
-
-    expect(channel1).toBeDefined();
-    expect(channel2).toBeDefined();
-    expect(channel1?.fileAccessToken).not.toBe(channel2?.fileAccessToken);
-
-    const tempFile = await upload(
-      new File(['Private file content'], 'private-file.txt', {
-        type: 'text/plain'
-      }),
-      token
-    );
-
-    const messageId = await caller.messages.send({
-      content: 'Message with private file',
-      channelId: channelId1,
-      files: [tempFile.id]
-    });
-
-    const dbFile = await getFileByMessageId(messageId);
-
-    expect(dbFile).toBeDefined();
-
-    const wrongChannelToken = generateFileToken(
-      dbFile!.id,
-      channel2!.fileAccessToken
-    );
-
-    const response = await fetch(
-      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}?accessToken=${wrongChannelToken}`
-    );
-
-    expect(response.status).toBe(403);
-
-    const data = (await response.json()) as { error: string };
-
-    expect(data).toHaveProperty('error', 'Forbidden');
   });
 
   test('should allow access to public channel files without token', async () => {
@@ -764,5 +612,285 @@ describe('/public', () => {
     const data = (await response.json()) as { error: string };
 
     expect(data).toHaveProperty('error', 'File not found');
+  });
+
+  test('should return 403 when signed URLs enabled and no token provided', async () => {
+    const file = filesToCreate[0];
+
+    expect(file).toBeDefined();
+    expect(file!.messageId).toBeDefined();
+
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    expect(dbFile).toBeDefined();
+
+    await enableSignedUrls();
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+    );
+
+    expect(response.status).toBe(403);
+
+    const data = (await response.json()) as { error: string };
+
+    expect(data).toHaveProperty('error', 'Forbidden');
+
+    await disableSignedUrls();
+  });
+
+  test('should return 403 when signed URLs enabled and only accessToken provided without expires', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    expect(dbFile).toBeDefined();
+
+    await enableSignedUrls();
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}?accessToken=some-token`
+    );
+
+    expect(response.status).toBe(403);
+
+    await disableSignedUrls();
+  });
+
+  test('should return 403 when signed URLs enabled and only expires provided without accessToken', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    expect(dbFile).toBeDefined();
+
+    await enableSignedUrls();
+
+    const expiresAt = Date.now() + 3600000;
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}?expires=${expiresAt}`
+    );
+
+    expect(response.status).toBe(403);
+
+    await disableSignedUrls();
+  });
+
+  test('should return 200 when signed URLs enabled and valid token + expires provided', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    expect(dbFile).toBeDefined();
+
+    await enableSignedUrls();
+
+    const expiresAt = Date.now() + 3600000;
+    const validToken = generateFileToken(dbFile!.id, expiresAt);
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}?accessToken=${validToken}&expires=${expiresAt}`
+    );
+
+    expect(response.status).toBe(200);
+
+    const responseText = await response.text();
+
+    expect(responseText).toBe(file!.content);
+
+    await disableSignedUrls();
+  });
+
+  test('should return 403 when signed URLs enabled and token is expired', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    expect(dbFile).toBeDefined();
+
+    await enableSignedUrls();
+
+    // set expires to 1 second in the past
+    const expiresAt = Date.now() - 1000;
+    const validToken = generateFileToken(dbFile!.id, expiresAt);
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}?accessToken=${validToken}&expires=${expiresAt}`
+    );
+
+    expect(response.status).toBe(403);
+
+    await disableSignedUrls();
+  });
+
+  test('should return 403 when signed URLs enabled and invalid token provided', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    expect(dbFile).toBeDefined();
+
+    await enableSignedUrls();
+
+    const expiresAt = Date.now() + 3600000;
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}?accessToken=invalid-token&expires=${expiresAt}`
+    );
+
+    expect(response.status).toBe(403);
+
+    await disableSignedUrls();
+  });
+
+  test('should return 403 when signed URLs enabled and expires is not a valid number', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    expect(dbFile).toBeDefined();
+
+    await enableSignedUrls();
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}?accessToken=some-token&expires=not-a-number`
+    );
+
+    expect(response.status).toBe(403);
+
+    await disableSignedUrls();
+  });
+
+  test('should enforce signed URLs on public channel files when enabled', async () => {
+    const { caller } = await initTest();
+
+    const channelId = await caller.channels.add({
+      name: 'Public Channel',
+      categoryId: 1,
+      type: ChannelType.TEXT
+    });
+
+    const fileContent = 'Public file for signed URL test';
+    const tempFile = await upload(
+      new File([fileContent], 'signed-public-file.txt', {
+        type: 'text/plain'
+      }),
+      token
+    );
+
+    const messageId = await caller.messages.send({
+      content: 'Message with file',
+      channelId,
+      files: [tempFile.id]
+    });
+
+    const dbFile = await getFileByMessageId(messageId);
+
+    expect(dbFile).toBeDefined();
+
+    // without signed URLs, public channel file should be accessible
+    const responseWithout = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+    );
+
+    expect(responseWithout.status).toBe(200);
+
+    // enable signed URLs
+    await enableSignedUrls();
+
+    // now it should be blocked without token
+    const responseBlocked = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+    );
+
+    expect(responseBlocked.status).toBe(403);
+
+    // with valid token it should work
+    const expiresAt = Date.now() + 3600000;
+    const validToken = generateFileToken(dbFile!.id, expiresAt);
+
+    const responseWithToken = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}?accessToken=${validToken}&expires=${expiresAt}`
+    );
+
+    expect(responseWithToken.status).toBe(200);
+
+    const responseText = await responseWithToken.text();
+
+    expect(responseText).toBe(fileContent);
+
+    await disableSignedUrls();
+  });
+
+  test('should enforce signed URLs on non-message files (e.g. avatars) when enabled', async () => {
+    // create a file that is not attached to a message but is linked (e.g. via a user avatar)
+    const { caller } = await initTest();
+
+    const tempFile = await upload(
+      new File(['avatar content'], 'avatar.png', {
+        type: 'image/png'
+      }),
+      token
+    );
+
+    // link it to the user as avatar so it's not orphaned
+    await caller.users.changeAvatar({
+      fileId: tempFile.id
+    });
+
+    const dbFile = await tdb
+      .select()
+      .from(files)
+      .where(eq(files.md5, tempFile.md5))
+      .get();
+
+    expect(dbFile).toBeDefined();
+
+    // without signed URLs, file should be accessible
+    const responseWithout = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+    );
+
+    expect(responseWithout.status).toBe(200);
+
+    // enable signed URLs
+    await enableSignedUrls();
+
+    // now it should be blocked without token
+    const responseBlocked = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+    );
+
+    expect(responseBlocked.status).toBe(403);
+
+    // with valid token it should work
+    const expiresAt = Date.now() + 3600000;
+    const validToken = generateFileToken(dbFile!.id, expiresAt);
+
+    const responseWithToken = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}?accessToken=${validToken}&expires=${expiresAt}`
+    );
+
+    expect(responseWithToken.status).toBe(200);
+
+    await disableSignedUrls();
+  });
+
+  test('should allow access to files without token when signed URLs are disabled', async () => {
+    await disableSignedUrls();
+
+    const file = filesToCreate[0];
+
+    expect(file).toBeDefined();
+    expect(file!.messageId).toBeDefined();
+
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    expect(dbFile).toBeDefined();
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+    );
+
+    expect(response.status).toBe(200);
+
+    const responseText = await response.text();
+
+    expect(responseText).toBe(file!.content);
   });
 });

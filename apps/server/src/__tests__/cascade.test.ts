@@ -566,8 +566,6 @@ describe('database cascades', async () => {
         type: 'TEXT',
         name: 'dm-channel',
         position: 0,
-        fileAccessToken: 'dm-token-1',
-        fileAccessTokenUpdatedAt: Date.now(),
         categoryId,
         isDm: true,
         createdAt: Date.now()
@@ -645,8 +643,6 @@ describe('database cascades', async () => {
         type: 'TEXT',
         name: 'dm-channel-u1',
         position: 0,
-        fileAccessToken: 'dm-token-u1',
-        fileAccessTokenUpdatedAt: Date.now(),
         categoryId,
         isDm: true,
         createdAt: Date.now()
@@ -724,8 +720,6 @@ describe('database cascades', async () => {
         type: 'TEXT',
         name: 'dm-channel-u2',
         position: 0,
-        fileAccessToken: 'dm-token-u2',
-        fileAccessTokenUpdatedAt: Date.now(),
         categoryId,
         isDm: true,
         createdAt: Date.now()

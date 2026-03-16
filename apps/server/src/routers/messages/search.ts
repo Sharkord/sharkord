@@ -6,7 +6,7 @@ import { db } from '../../db';
 import { getChannelsForUser } from '../../db/queries/channels';
 import { getSettings } from '../../db/queries/server';
 import { channels, files, messageFiles, messages } from '../../db/schema';
-import { generateFileToken } from '../../helpers/files-crypto';
+import { attachFileToken } from '../../helpers/files-crypto';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
@@ -72,8 +72,7 @@ const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
           message: messages,
           channelName: channels.name,
           channelIsDm: channels.isDm,
-          channelPrivate: channels.private,
-          channelFileAccessToken: channels.fileAccessToken
+          channelPrivate: channels.private
         })
         .from(messages)
         .innerJoin(channels, eq(channels.id, messages.channelId))
@@ -94,8 +93,7 @@ const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
           messageCreatedAt: messages.createdAt,
           channelName: channels.name,
           channelIsDm: channels.isDm,
-          channelPrivate: channels.private,
-          channelFileAccessToken: channels.fileAccessToken
+          channelPrivate: channels.private
         })
         .from(messageFiles)
         .innerJoin(files, eq(files.id, messageFiles.fileId))
@@ -157,16 +155,13 @@ const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
     const matchedMessagesWithFiles = matchedMessages.map((row) => {
       const messageFiles = filesByMessageId.get(row.message.id) ?? [];
 
-      const preparedFiles = messageFiles.map((file) => {
-        if (!row.channelPrivate) {
-          return file;
-        }
-
-        return {
-          ...file,
-          _accessToken: generateFileToken(file.id, row.channelFileAccessToken)
-        };
-      });
+      const preparedFiles = messageFiles.map((file) =>
+        attachFileToken(
+          file,
+          settings.storageSignedUrlsEnabled,
+          settings.storageSignedUrlsTtlSeconds
+        )
+      );
 
       return {
         ...row.message,
@@ -179,14 +174,11 @@ const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
     });
 
     const matchedFiles = fileRows.map((row) => {
-      const file: TFile = { ...row.file };
-
-      if (row.channelPrivate) {
-        file._accessToken = generateFileToken(
-          file.id,
-          row.channelFileAccessToken
-        );
-      }
+      const file = attachFileToken(
+        row.file,
+        settings.storageSignedUrlsEnabled,
+        settings.storageSignedUrlsTtlSeconds
+      );
 
       return {
         file,

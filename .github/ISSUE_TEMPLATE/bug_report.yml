@@ -51,6 +51,13 @@ body:
       required: true
 
   - type: textarea
+    id: expected
+    attributes:
+      label: Actual Behavior
+    validations:
+      required: true
+
+  - type: textarea
     id: logs
     attributes:
       label: Logs / Screenshots

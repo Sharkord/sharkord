@@ -47,6 +47,7 @@
     "chalk": "^5.6.2",
     "cron": "^4.4.0",
     "drizzle-orm": "^0.44.5",
+    "image-size": "^2.0.2",
     "ini": "^5.0.0",
     "ipaddr.js": "^2.3.0",
     "jsonwebtoken": "^9.0.2",

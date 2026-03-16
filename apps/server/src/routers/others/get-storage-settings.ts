@@ -21,7 +21,9 @@ const getStorageSettingsRoute = protectedProcedure.query(async ({ ctx }) => {
     storageMaxBannerSize: settings.storageMaxBannerSize,
     storageMaxFilesPerMessage: settings.storageMaxFilesPerMessage,
     storageSpaceQuotaByUser: settings.storageSpaceQuotaByUser,
-    storageOverflowAction: settings.storageOverflowAction
+    storageOverflowAction: settings.storageOverflowAction,
+    storageSignedUrlsEnabled: settings.storageSignedUrlsEnabled,
+    storageSignedUrlsTtlSeconds: settings.storageSignedUrlsTtlSeconds
   };
 
   return { storageSettings, diskMetrics };

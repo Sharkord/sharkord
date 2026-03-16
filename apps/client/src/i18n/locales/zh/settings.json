@@ -19,7 +19,6 @@
   "pluginsTab": "插件",
   "channelSettingsTitle": "频道设置",
   "permissionsTab": "权限",
-  "securityTab": "安全",
   "categorySettingsTitle": "分类设置",
   "profileTitle": "您的个人资料",
   "profileDesc": "在此处更新您的个人信息和设置。",
@@ -209,14 +208,6 @@
   "channelTopicPlaceholder": "输入频道话题",
   "privateLabel": "私密",
   "privateDesc": "将此频道的访问权限限制为特定角色和成员。",
-  "securityTitle": "安全",
-  "securityDesc": "管理此频道的安全设置",
-  "fileAccessTokenLabel": "文件访问令牌",
-  "fileAccessTokenHelp": "仅用于私密频道",
-  "fileAccessTokenDesc": "文件访问令牌用于保护此频道中文件的访问权限。轮换令牌将使所有现有文件链接失效，这意味着所有之前共享的文件将不再可访问。",
-  "rotateTokenBtn": "轮换令牌",
-  "tokenRotatedSuccess": "文件访问令牌已成功轮换",
-  "failedRotateToken": "轮换文件访问令牌失败",
   "permissionsTitle": "权限",
   "permissionsDesc": "管理频道特定的角色和用户权限。这些权限不继承自服务器级权限。用户权限优先于角色权限。",
   "publicChannelTitle": "公开频道",
@@ -267,6 +258,12 @@
 
   "overflowDeleteOldFiles": "删除旧文件",
   "overflowPreventUploads": "禁止新文件上传",
+
+  "signedUrlsLabel": "签名 URL",
+  "signedUrlsDesc": "启用后，所有文件 URL 都需要带有过期时间的签名令牌。这可以防止通过猜测 URL 未经授权访问文件。禁用时，公共频道中的文件可被任何拥有 URL 的人访问。",
+  "signedUrlsTtlLabel": "签名 URL 过期时间",
+  "signedUrlsTtlDesc": "签名 URL 在过期前保持有效的时间。较短的持续时间可以增强安全性，但可能会给访问文件的用户带来不便。",
+  "signedUrlsTtlUnit": "分钟",
 
   "moderateUserAction": "管理用户",
 

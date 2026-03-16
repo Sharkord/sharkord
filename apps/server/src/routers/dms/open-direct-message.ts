@@ -1,5 +1,4 @@
 import { ChannelType, ServerEvents } from '@sharkord/shared';
-import { randomUUIDv7 } from 'bun';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
@@ -65,8 +64,6 @@ const openDirectMessageRoute = protectedProcedure
           isDm: true,
           position: 0,
           categoryId: null,
-          fileAccessToken: randomUUIDv7(),
-          fileAccessTokenUpdatedAt: now,
           createdAt: now
         })
         .returning()
