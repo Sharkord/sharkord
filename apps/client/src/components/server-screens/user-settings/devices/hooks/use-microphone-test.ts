@@ -7,13 +7,13 @@ import {
 } from '@/helpers/audio-gate';
 import { applyAudioOutputDevice } from '@/helpers/audio-output';
 import { createAudioMeterWorkletNode } from '@/helpers/audio-worklet/audio-meter-worklet';
-import { createNsChain } from '@/helpers/audio-worklet/ns-worklet';
 import {
   createNoiseGateWorkletNode,
   getNoiseGateWorkletAvailabilitySnapshot,
   markNoiseGateWorkletUnavailable,
   postNoiseGateWorkletConfig
 } from '@/helpers/audio-worklet/noise-gate-worklet';
+import { createNsChain } from '@/helpers/audio-worklet/ns-worklet';
 
 import { NoiseSuppression } from '@/types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -293,8 +293,7 @@ const useMicrophoneTest = ({
           audioContext.createMediaStreamSource(processedStream);
 
         // DTLN outputs mono; duplicate ch0 to ch1 so the loopback plays centred
-        const needsMonoToStereo =
-          noiseSuppression === NoiseSuppression.DTLN;
+        const needsMonoToStereo = noiseSuppression === NoiseSuppression.DTLN;
 
         if (needsMonoToStereo) {
           const splitter = audioContext.createChannelSplitter(2);

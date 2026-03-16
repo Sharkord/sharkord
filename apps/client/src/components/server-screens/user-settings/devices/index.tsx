@@ -311,9 +311,7 @@ const Devices = memo(() => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value={NoiseSuppression.NONE}>
-                      None
-                    </SelectItem>
+                    <SelectItem value={NoiseSuppression.NONE}>None</SelectItem>
                     <SelectItem value={NoiseSuppression.STANDARD}>
                       Standard
                     </SelectItem>
