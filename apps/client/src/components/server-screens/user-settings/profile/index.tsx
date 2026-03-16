@@ -15,11 +15,13 @@ import {
   Textarea
 } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { AvatarManager } from './avatar-manager';
 import { BannerManager } from './banner-manager';
 
 const Profile = memo(() => {
+  const { t } = useTranslation('settings');
   const ownPublicUser = useOwnPublicUser();
   const { setTrpcErrors, r, rr, values } = useForm({
     name: ownPublicUser?.name ?? '',
@@ -32,34 +34,32 @@ const Profile = memo(() => {
 
     try {
       await trpc.users.update.mutate(values);
-      toast.success('Profile updated');
+      toast.success(t('profileUpdated'));
     } catch (error) {
       setTrpcErrors(error);
     }
-  }, [values, setTrpcErrors]);
+  }, [values, setTrpcErrors, t]);
 
   if (!ownPublicUser) return null;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your Profile</CardTitle>
-        <CardDescription>
-          Update your personal information and settings here.
-        </CardDescription>
+        <CardTitle>{t('profileTitle')}</CardTitle>
+        <CardDescription>{t('profileDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <AvatarManager user={ownPublicUser} />
 
-        <Group label="Username">
-          <Input placeholder="Username" {...r('name')} />
+        <Group label={t('usernameLabel')}>
+          <Input placeholder={t('usernamePlaceholder')} {...r('name')} />
         </Group>
 
-        <Group label="Bio">
-          <Textarea placeholder="Tell us about yourself..." {...r('bio')} />
+        <Group label={t('bioLabel')}>
+          <Textarea placeholder={t('bioPlaceholder')} {...r('bio')} />
         </Group>
 
-        <Group label="Banner color">
+        <Group label={t('bannerColorLabel')}>
           <Color {...rr('bannerColor')} defaultValue="#FFFFFF" />
         </Group>
 
@@ -67,9 +67,9 @@ const Profile = memo(() => {
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
-            Cancel
+            {t('cancel')}
           </Button>
-          <Button onClick={onUpdateUser}>Save Changes</Button>
+          <Button onClick={onUpdateUser}>{t('saveChanges')}</Button>
         </div>
       </CardContent>
     </Card>

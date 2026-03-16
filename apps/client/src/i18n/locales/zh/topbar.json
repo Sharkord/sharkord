@@ -1,0 +1,16 @@
+{
+  "closeVoiceChat": "关闭语音聊天",
+  "openVoiceChat": "打开语音聊天",
+  "closeMembersSidebar": "关闭成员侧边栏",
+  "openMembersSidebar": "打开成员侧边栏",
+  "searchContent": "搜索内容...",
+  "voiceOptions": "语音选项",
+  "hideNonVideoParticipants": "隐藏无视频参与者",
+  "displayUserBanners": "显示用户横幅",
+  "audioControls": "音频控制",
+  "stream_one": "路流",
+  "stream_other": "路流",
+  "noRemoteAudioStreams": "暂无远程音频流。",
+  "volumeControls": "音量控制",
+  "externalAudio": "外部音频"
+}

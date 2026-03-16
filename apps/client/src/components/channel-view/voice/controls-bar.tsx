@@ -22,7 +22,8 @@ type TControlsBarProps = {
 };
 
 const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
-  const { toggleMic, toggleWebcam, toggleScreenShare } = useVoice();
+  const { toggleMic, toggleWebcam, toggleScreenShare, isScreenShareSupported } =
+    useVoice();
   const ownVoiceState = useOwnVoiceState();
   const channelCan = useChannelCan(channelId);
   const isVisible = useControlsBarVisibility();
@@ -39,7 +40,7 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
   return (
     <div
       className={cn(
-        'absolute bottom-8 left-0 right-0 flex justify-center items-center pointer-events-none z-50',
+        'absolute bottom-8 left-0 right-0 hidden md:flex justify-center items-center pointer-events-none',
         'transition-all duration-300 ease-in-out gap-3',
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
       )}
@@ -73,16 +74,18 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
           disabled={!permissions.canWebcam}
         />
 
-        <ControlToggleButton
-          enabled={ownVoiceState.sharingScreen}
-          enabledLabel="Stop Sharing"
-          disabledLabel="Share Screen"
-          enabledIcon={ScreenShareOff}
-          disabledIcon={Monitor}
-          enabledClassName="bg-blue-500/20 text-blue-500 hover:bg-blue-500/30 hover:text-blue-500"
-          onClick={toggleScreenShare}
-          disabled={!permissions.canShareScreen}
-        />
+        {isScreenShareSupported && (
+          <ControlToggleButton
+            enabled={ownVoiceState.sharingScreen}
+            enabledLabel="Stop Sharing"
+            disabledLabel="Share Screen"
+            enabledIcon={ScreenShareOff}
+            disabledIcon={Monitor}
+            enabledClassName="bg-blue-500/20 text-blue-500 hover:bg-blue-500/30 hover:text-blue-500"
+            onClick={toggleScreenShare}
+            disabled={!permissions.canShareScreen}
+          />
+        )}
       </div>
 
       <Tooltip content="Disconnect">

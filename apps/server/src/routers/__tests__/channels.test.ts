@@ -2,7 +2,6 @@ import { ChannelPermission, ChannelType } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { initTest } from '../../__tests__/helpers';
 import { getChannelsReadStatesForUser } from '../../db/queries/channels';
-import { generateFileToken, verifyFileToken } from '../../helpers/files-crypto';
 
 describe('channels router', () => {
   test('should throw when user lacks permissions (add)', async () => {
@@ -90,16 +89,6 @@ describe('channels router', () => {
       caller.channels.deletePermissions({
         channelId: 1,
         roleId: 1
-      })
-    ).rejects.toThrow('Insufficient permissions');
-  });
-
-  test('should throw when user lacks permissions (rotateFileAccessToken)', async () => {
-    const { caller } = await initTest(2);
-
-    await expect(
-      caller.channels.rotateFileAccessToken({
-        channelId: 1
       })
     ).rejects.toThrow('Insufficient permissions');
   });
@@ -232,13 +221,13 @@ describe('channels router', () => {
   test('should reorder channels in a category', async () => {
     const { caller } = await initTest();
 
-    await caller.channels.add({
+    const channelAId = await caller.channels.add({
       type: ChannelType.TEXT,
       name: 'channel-a',
       categoryId: 1
     });
 
-    await caller.channels.add({
+    const channelBId = await caller.channels.add({
       type: ChannelType.TEXT,
       name: 'channel-b',
       categoryId: 1
@@ -246,20 +235,53 @@ describe('channels router', () => {
 
     await caller.channels.reorder({
       categoryId: 1,
-      channelIds: [4, 3, 1, 2]
+      channelIds: [channelAId, 3, 1, 2]
     });
 
-    const [channel1, channel2, channel4, channel5] = await Promise.all([
+    const [channel1, channel2, channelA, channelB] = await Promise.all([
       caller.channels.get({ channelId: 1 }),
       caller.channels.get({ channelId: 2 }),
-      caller.channels.get({ channelId: 4 }),
-      caller.channels.get({ channelId: 5 })
+      caller.channels.get({ channelId: channelAId }),
+      caller.channels.get({ channelId: channelBId })
     ]);
 
-    expect(channel4.position).toBe(1);
-    expect(channel5.position).toBe(2);
-    expect(channel1.position).toBe(3);
-    expect(channel2.position).toBe(4);
+    expect(channelA.position).toBe(1);
+    expect(channel1.position).toBe(2);
+    expect(channelB.position).toBe(3);
+    expect(channel2.position).toBe(1);
+  });
+
+  test('should reorder channels when some ids are missing from payload', async () => {
+    const { caller } = await initTest();
+
+    const channelAId = await caller.channels.add({
+      type: ChannelType.TEXT,
+      name: 'channel-a',
+      categoryId: 1
+    });
+
+    const channelBId = await caller.channels.add({
+      type: ChannelType.TEXT,
+      name: 'channel-b',
+      categoryId: 1
+    });
+
+    await caller.channels.reorder({
+      categoryId: 1,
+      channelIds: [channelBId, 1]
+    });
+
+    const [channel1, channel2, channelA, channelB] = await Promise.all([
+      caller.channels.get({ channelId: 1 }),
+      caller.channels.get({ channelId: 2 }),
+      caller.channels.get({ channelId: channelAId }),
+      caller.channels.get({ channelId: channelBId })
+    ]);
+
+    expect(channelB.position).toBe(1);
+    expect(channel1.position).toBe(2);
+    expect(channelA.position).toBe(3);
+    expect(channel2.position).toBe(1);
   });
 
   test('should set channel permissions for a role', async () => {
@@ -867,128 +889,6 @@ describe('channels router', () => {
     expect(channel2.categoryId).toBe(2);
   });
 
-  test('should rotate file access token for a channel', async () => {
-    const { caller } = await initTest();
-
-    const channelBefore = await caller.channels.get({ channelId: 1 });
-    const originalToken = channelBefore.fileAccessToken;
-
-    expect(originalToken).toBeDefined();
-    expect(channelBefore.fileAccessTokenUpdatedAt).toBeDefined();
-
-    await caller.channels.rotateFileAccessToken({
-      channelId: 1
-    });
-
-    const channelAfter = await caller.channels.get({ channelId: 1 });
-    const newToken = channelAfter.fileAccessToken;
-
-    expect(newToken).toBeDefined();
-    expect(newToken).not.toBe(originalToken);
-    expect(channelAfter.fileAccessTokenUpdatedAt).toBeGreaterThan(
-      channelBefore.fileAccessTokenUpdatedAt!
-    );
-  });
-
-  test('should throw when rotating token for non-existing channel', async () => {
-    const { caller } = await initTest();
-
-    await expect(
-      caller.channels.rotateFileAccessToken({
-        channelId: 999
-      })
-    ).rejects.toThrow('Channel not found');
-  });
-
-  test('should generate unique tokens on multiple rotations', async () => {
-    const { caller } = await initTest();
-
-    const channel = await caller.channels.get({ channelId: 1 });
-    const originalToken = channel.fileAccessToken;
-
-    await caller.channels.rotateFileAccessToken({
-      channelId: 1
-    });
-
-    const afterFirstRotation = await caller.channels.get({ channelId: 1 });
-    const firstNewToken = afterFirstRotation.fileAccessToken;
-
-    await caller.channels.rotateFileAccessToken({
-      channelId: 1
-    });
-
-    const afterSecondRotation = await caller.channels.get({ channelId: 1 });
-    const secondNewToken = afterSecondRotation.fileAccessToken;
-
-    expect(originalToken).not.toBe(firstNewToken);
-    expect(firstNewToken).not.toBe(secondNewToken);
-    expect(originalToken).not.toBe(secondNewToken);
-  });
-
-  test('should invalidate old file tokens after rotation', async () => {
-    const { caller } = await initTest();
-
-    await caller.channels.update({
-      channelId: 1,
-      private: true
-    });
-
-    const channelBefore = await caller.channels.get({ channelId: 1 });
-    const oldToken = channelBefore.fileAccessToken;
-
-    const oldFileToken = generateFileToken(123, oldToken);
-
-    await caller.channels.rotateFileAccessToken({
-      channelId: 1
-    });
-
-    const channelAfter = await caller.channels.get({ channelId: 1 });
-    const newToken = channelAfter.fileAccessToken;
-
-    const newFileToken = generateFileToken(123, newToken);
-
-    expect(oldFileToken).not.toBe(newFileToken);
-
-    const isOldTokenValid = verifyFileToken(123, newToken, oldFileToken);
-    const isNewTokenValid = verifyFileToken(123, newToken, newFileToken);
-
-    expect(isOldTokenValid).toBe(false);
-    expect(isNewTokenValid).toBe(true);
-  });
-
-  test('should allow rotating token for both public and private channels', async () => {
-    const { caller } = await initTest();
-
-    const publicChannelBefore = await caller.channels.get({ channelId: 1 });
-    const publicTokenBefore = publicChannelBefore.fileAccessToken;
-
-    await caller.channels.rotateFileAccessToken({
-      channelId: 1
-    });
-
-    const publicChannelAfter = await caller.channels.get({ channelId: 1 });
-    const publicTokenAfter = publicChannelAfter.fileAccessToken;
-
-    expect(publicTokenAfter).not.toBe(publicTokenBefore);
-
-    await caller.channels.update({
-      channelId: 2,
-      private: true
-    });
-
-    const privateChannelBefore = await caller.channels.get({ channelId: 2 });
-    const privateTokenBefore = privateChannelBefore.fileAccessToken;
-
-    await caller.channels.rotateFileAccessToken({
-      channelId: 2
-    });
-
-    const privateChannelAfter = await caller.channels.get({ channelId: 2 });
-    const privateTokenAfter = privateChannelAfter.fileAccessToken;
-
-    expect(privateTokenAfter).not.toBe(privateTokenBefore);
-  });
-
   test('should throw when deleting a DM channel', async () => {
     const { caller } = await initTest();
 
@@ -1010,16 +910,6 @@ describe('channels router', () => {
         private: false
       })
     ).rejects.toThrow('Cannot update DM channels');
-  });
-
-  test('should throw when rotating file token for a DM channel', async () => {
-    const { caller } = await initTest();
-
-    await expect(
-      caller.channels.rotateFileAccessToken({
-        channelId: 3
-      })
-    ).rejects.toThrow('Cannot rotate file access token for DM channels');
   });
 
   test('should mark DM channel as read', async () => {

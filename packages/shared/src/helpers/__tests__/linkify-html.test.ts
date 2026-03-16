@@ -38,6 +38,23 @@ describe('linkify-html', () => {
     expect(linkifyHtml(input)).toBe(input);
   });
 
+  test('should update href when anchor text is an explicit URL', () => {
+    expect(
+      linkifyHtml(
+        '<p><a href="https://google.pt" target="_blank" rel="noopener noreferrer">https://reddit.com</a></p>'
+      )
+    ).toBe(
+      '<p><a href="https://reddit.com" target="_blank" rel="noopener noreferrer">https://reddit.com</a></p>'
+    );
+  });
+
+  test('should keep custom-label links unchanged', () => {
+    const input =
+      '<p><a href="https://example.com" target="_blank" rel="noopener noreferrer">click here</a></p>';
+
+    expect(linkifyHtml(input)).toBe(input);
+  });
+
   test('should linkify URL mixed with plain text', () => {
     expect(linkifyHtml('<p>check https://google.com ok</p>')).toBe(
       `<p>check ${link('https://google.com')} ok</p>`

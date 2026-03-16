@@ -5,7 +5,7 @@ import {
   type TJoinedUser
 } from '@sharkord/shared';
 import chalk from 'chalk';
-import { eq, sql } from 'drizzle-orm';
+import { eq, isNull, max, sql } from 'drizzle-orm';
 import http from 'http';
 import jwt from 'jsonwebtoken';
 import z from 'zod';
@@ -16,7 +16,13 @@ import { isInviteValid } from '../db/queries/invites';
 import { getDefaultRole } from '../db/queries/roles';
 import { getServerToken, getSettings } from '../db/queries/server';
 import { getUserByIdentity } from '../db/queries/users';
-import { invites, userRoles, users } from '../db/schema';
+import {
+  channelReadStates,
+  invites,
+  messages,
+  userRoles,
+  users
+} from '../db/schema';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { safeCompare } from '../helpers/safe-compare';
 import { logger } from '../logger';
@@ -181,6 +187,30 @@ const loginRouteHandler = async (
       inviteRoleId,
       connectionInfo?.ip
     );
+
+    // mark all existing messages as read so the new user doesn't see
+    // a flood of unread messages on first join
+    const latestMessagePerChannel = await db
+      .select({
+        channelId: messages.channelId,
+        latestMessageId: max(messages.id)
+      })
+      .from(messages)
+      .where(isNull(messages.parentMessageId))
+      .groupBy(messages.channelId);
+
+    const readStateValues = latestMessagePerChannel
+      .filter((row) => row.latestMessageId !== null)
+      .map((row) => ({
+        channelId: row.channelId,
+        userId: existingUser!.id,
+        lastReadMessageId: row.latestMessageId!,
+        lastReadAt: Date.now()
+      }));
+
+    if (readStateValues.length > 0) {
+      await db.insert(channelReadStates).values(readStateValues);
+    }
   }
 
   if (existingUser.banned) {

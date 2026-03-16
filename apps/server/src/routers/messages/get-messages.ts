@@ -39,8 +39,7 @@ const getMessagesRoute = protectedProcedure
 
     const channel = await db
       .select({
-        private: channels.private,
-        fileAccessToken: channels.fileAccessToken
+        id: channels.id
       })
       .from(channels)
       .where(eq(channels.id, channelId))
@@ -124,10 +123,7 @@ const getMessagesRoute = protectedProcedure
       return { messages: [], nextCursor };
     }
 
-    const messagesWithRelations = await joinMessagesWithRelations(
-      rows,
-      channel
-    );
+    const messagesWithRelations = await joinMessagesWithRelations(rows);
 
     const messageIds = rows.map((m) => m.id);
     const replies = alias(messages, 'replies');

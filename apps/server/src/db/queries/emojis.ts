@@ -1,7 +1,9 @@
 import type { TJoinedEmoji } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { db } from '..';
+import { attachFileToken } from '../../helpers/files-crypto';
 import { emojis, files, users } from '../schema';
+import { getSettings } from './server';
 
 const emojiSelectFields = {
   emoji: emojis,
@@ -18,36 +20,45 @@ const emojiSelectFields = {
   }
 };
 
-// TODO: check this any
-const parseEmoji = (row: any): TJoinedEmoji => ({
-  ...row.emoji,
-  file: row.file,
-  user: row.user
-});
+type TEmojiRow = Awaited<ReturnType<typeof getEmojiRows>>[number];
 
-const getEmojiById = async (id: number): Promise<TJoinedEmoji | undefined> => {
-  const row = await db
-    .select(emojiSelectFields)
-    .from(emojis)
-    .innerJoin(files, eq(emojis.fileId, files.id))
-    .innerJoin(users, eq(emojis.userId, users.id))
-    .where(eq(emojis.id, id))
-    .limit(1)
-    .get();
-
-  if (!row) return undefined;
-
-  return parseEmoji(row);
-};
-
-const getEmojis = async (): Promise<TJoinedEmoji[]> => {
-  const rows = await db
+const getEmojiRows = () =>
+  db
     .select(emojiSelectFields)
     .from(emojis)
     .innerJoin(files, eq(emojis.fileId, files.id))
     .innerJoin(users, eq(emojis.userId, users.id));
 
-  return rows.map(parseEmoji);
+const parseEmoji = (
+  row: TEmojiRow,
+  signedUrlsEnabled: boolean,
+  signedUrlsTtlSeconds: number
+): TJoinedEmoji => ({
+  ...row.emoji,
+  file: attachFileToken(row.file, signedUrlsEnabled, signedUrlsTtlSeconds),
+  user: { ...row.user, avatar: null, banner: null }
+});
+
+const getEmojiById = async (id: number): Promise<TJoinedEmoji | undefined> => {
+  const row = await getEmojiRows().where(eq(emojis.id, id)).limit(1).get();
+
+  if (!row) return undefined;
+
+  const { storageSignedUrlsEnabled, storageSignedUrlsTtlSeconds } =
+    await getSettings();
+
+  return parseEmoji(row, storageSignedUrlsEnabled, storageSignedUrlsTtlSeconds);
+};
+
+const getEmojis = async (): Promise<TJoinedEmoji[]> => {
+  const rows = await getEmojiRows();
+
+  const { storageSignedUrlsEnabled, storageSignedUrlsTtlSeconds } =
+    await getSettings();
+
+  return rows.map((row) =>
+    parseEmoji(row, storageSignedUrlsEnabled, storageSignedUrlsTtlSeconds)
+  );
 };
 
 const emojiExists = async (name: string): Promise<boolean> => {

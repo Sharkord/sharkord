@@ -81,3 +81,9 @@ export type TRemoteStreams = {
     [StreamKind.SCREEN_AUDIO]: MediaStream | undefined;
   };
 };
+
+export type TMessageJumpToTarget = {
+  channelId: number;
+  messageId: number;
+  isDm: boolean;
+};

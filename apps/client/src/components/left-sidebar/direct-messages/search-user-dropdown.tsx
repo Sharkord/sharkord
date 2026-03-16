@@ -10,6 +10,7 @@ import {
 } from '@sharkord/ui';
 import { Plus } from 'lucide-react';
 import { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const MAX_USERS = 100;
 
@@ -27,12 +28,17 @@ const SearchUserDropdown = memo(
     usersToStartDm,
     onStartDm
   }: TSearchUserDropdownProps) => {
-    const allUsers = useMemo(
-      () => usersToStartDm.slice(0, MAX_USERS),
-      [usersToStartDm]
-    );
+    const { t } = useTranslation('sidebar');
+    const { allUsers, extraUsers } = useMemo(() => {
+      const filtered = usersToStartDm.filter((user) =>
+        user.name.toLowerCase().includes(query.toLowerCase())
+      );
 
-    const hasMoreUsers = usersToStartDm.length > MAX_USERS;
+      return {
+        allUsers: filtered.slice(0, MAX_USERS),
+        extraUsers: filtered.length - MAX_USERS
+      };
+    }, [usersToStartDm, query]);
 
     return (
       <DropdownMenu>
@@ -41,7 +47,7 @@ const SearchUserDropdown = memo(
             variant="ghost"
             size="sm"
             icon={Plus}
-            title="Start new conversation"
+            title={t('startNewConversation')}
           />
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -53,13 +59,13 @@ const SearchUserDropdown = memo(
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search user"
+                placeholder={t('searchUser')}
               />
             </AutoFocus>
           </div>
           {allUsers.length === 0 && (
             <div className="px-2 pb-2 text-xs text-muted-foreground">
-              No users available
+              {t('noUsersAvailable')}
             </div>
           )}
           {allUsers.map((user) => (
@@ -74,9 +80,9 @@ const SearchUserDropdown = memo(
               </div>
             </DropdownMenuItem>
           ))}
-          {hasMoreUsers && (
+          {extraUsers > 0 && (
             <div className="px-2 pb-2 text-xs text-muted-foreground">
-              And {usersToStartDm.length - MAX_USERS} more...
+              {t('andMore', { count: extraUsers })}
             </div>
           )}
         </DropdownMenuContent>

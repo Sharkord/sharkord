@@ -1,6 +1,8 @@
 import {
+  browserNotificationsForDmsSelector,
   browserNotificationsForMentionsSelector,
   browserNotificationsSelector,
+  dmsOpenSelector,
   selectedDmChannelIdSelector,
   threadSidebarDataSelector
 } from '@/features/app/selectors';
@@ -25,7 +27,8 @@ import { threadMessagesMapSelector } from './selectors';
 
 const sendBrowserNotification = (
   message: TJoinedMessage,
-  channelId: number
+  channelId: number,
+  isDm = false
 ) => {
   if (!('Notification' in window) || Notification.permission !== 'granted') {
     return;
@@ -42,7 +45,9 @@ const sendBrowserNotification = (
 
   const textContent = getPlainTextFromHtml(message.content ?? '');
 
-  const title = `${user?.name ?? 'Unknown'} in #${channel?.name ?? 'unknown'}`;
+  const title = isDm
+    ? `${user?.name ?? 'Unknown'} (DM)`
+    : `${user?.name ?? 'Unknown'} in #${channel?.name ?? 'unknown'}`;
   const body = textContent ? textContent : 'Sent an attachment';
   const icon = user?.avatar ? getFileUrl(user.avatar) : undefined;
 
@@ -115,8 +120,13 @@ export const addMessages = (
     const hasBrowserNotificationsEnabled = browserNotificationsSelector(state);
     const notificationsForMentionsOnly =
       browserNotificationsForMentionsSelector(state);
+    const dmsOpen = dmsOpenSelector(state);
     const targetMessage = messages[0];
     const isFromOwnUser = ownUserId === targetMessage.userId;
+
+    const isTextChannelSelected = selectedChannelId === channelId;
+    const isDmChannelSelected = selectedDmChannelId === channelId && dmsOpen; // only consider DM channel selected if DMs are open
+    const isChannelSelected = isTextChannelSelected || isDmChannelSelected;
 
     if (!isFromOwnUser) {
       const isThreadReply = !!targetMessage.parentMessageId;
@@ -132,23 +142,29 @@ export const addMessages = (
         playSound(SoundType.MESSAGE_RECEIVED);
       }
 
-      if (notificationsForMentionsOnly) {
-        const isMentioned = hasMention(
-          targetMessage.content ?? null,
-          ownUserId
-        );
+      // only send browser notifications if the user is not currently viewing this channel
+      if (!isChannelSelected) {
+        const channel = channelByIdSelector(state, channelId);
+        const isDmChannel = !!channel?.isDm;
+        const hasDmNotificationsEnabled =
+          browserNotificationsForDmsSelector(state);
 
-        if (isMentioned) {
+        if (isDmChannel && hasDmNotificationsEnabled) {
+          sendBrowserNotification(targetMessage, channelId, true);
+        } else if (notificationsForMentionsOnly) {
+          const isMentioned = hasMention(
+            targetMessage.content ?? null,
+            ownUserId
+          );
+
+          if (isMentioned) {
+            sendBrowserNotification(targetMessage, channelId);
+          }
+        } else if (hasBrowserNotificationsEnabled) {
           sendBrowserNotification(targetMessage, channelId);
         }
-      } else if (hasBrowserNotificationsEnabled) {
-        sendBrowserNotification(targetMessage, channelId);
       }
     }
-
-    const isChannelSelected = [selectedChannelId, selectedDmChannelId].includes(
-      channelId
-    );
 
     if (isChannelSelected && !isFromOwnUser && rootMessages.length > 0) {
       const trpc = getTRPCClient();

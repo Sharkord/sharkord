@@ -38,4 +38,19 @@ test.describe('Connect Screen', () => {
 
     await expect(connectButton).toBeEnabled();
   });
+
+  test('should connect to the server', async ({ page }) => {
+    await page.goto('/');
+
+    const identityInput = page.getByTestId(TestId.CONNECT_IDENTITY_INPUT);
+    const passwordInput = page.getByTestId(TestId.CONNECT_PASSWORD_INPUT);
+    const connectButton = page.getByTestId(TestId.CONNECT_BUTTON);
+
+    await identityInput.fill('testuser');
+    await passwordInput.fill('testpassword');
+    await connectButton.click();
+
+    const mainAppElement = page.getByTestId(TestId.SERVER_VIEW);
+    await expect(mainAppElement).toBeVisible();
+  });
 });

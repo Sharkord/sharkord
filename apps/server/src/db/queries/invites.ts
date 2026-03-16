@@ -2,7 +2,9 @@ import type { TInvite, TJoinedInvite } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/sqlite-core';
 import { db } from '..';
+import { signFile } from '../../helpers/files-crypto';
 import { files, invites, roles, userRoles, users } from '../schema';
+import { getSettings } from './server';
 
 const isInviteValid = async (
   code: string | undefined
@@ -63,13 +65,19 @@ const getInvites = async (): Promise<TJoinedInvite[]> => {
     .leftJoin(bannerFiles, eq(users.bannerId, bannerFiles.id))
     .leftJoin(roles, eq(invites.roleId, roles.id));
 
-  const rolesByUser = await db
-    .select({
-      userId: userRoles.userId,
-      roleId: userRoles.roleId
-    })
-    .from(userRoles)
-    .all();
+  const [
+    rolesByUser,
+    { storageSignedUrlsEnabled, storageSignedUrlsTtlSeconds }
+  ] = await Promise.all([
+    db
+      .select({
+        userId: userRoles.userId,
+        roleId: userRoles.roleId
+      })
+      .from(userRoles)
+      .all(),
+    getSettings()
+  ]);
 
   const rolesMap = rolesByUser.reduce(
     (acc, { userId, roleId }) => {
@@ -84,8 +92,16 @@ const getInvites = async (): Promise<TJoinedInvite[]> => {
     ...row.invite,
     creator: {
       ...row.creator,
-      avatar: row.avatar,
-      banner: row.banner,
+      avatar: signFile(
+        row.avatar,
+        storageSignedUrlsEnabled,
+        storageSignedUrlsTtlSeconds
+      ),
+      banner: signFile(
+        row.banner,
+        storageSignedUrlsEnabled,
+        storageSignedUrlsTtlSeconds
+      ),
       roleIds: rolesMap[row.creator.id] || []
     },
     role: row.role?.id ? row.role : null

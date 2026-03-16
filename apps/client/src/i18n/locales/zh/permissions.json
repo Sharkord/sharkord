@@ -1,0 +1,69 @@
+{
+  "noPermissions": "无权限",
+  "headers": {
+    "server": "权限",
+    "channel": "频道权限"
+  },
+  "server": {
+    "SEND_MESSAGES": "发送消息",
+    "REACT_TO_MESSAGES": "对消息作出反应",
+    "PIN_MESSAGES": "置顶消息",
+    "UPLOAD_FILES": "上传文件",
+    "JOIN_VOICE_CHANNELS": "加入语音频道",
+    "SHARE_SCREEN": "共享屏幕",
+    "ENABLE_WEBCAM": "启用摄像头",
+    "MANAGE_CHANNELS": "管理频道",
+    "MANAGE_CHANNEL_PERMISSIONS": "管理频道权限",
+    "MANAGE_CATEGORIES": "管理分类",
+    "MANAGE_ROLES": "管理角色",
+    "MANAGE_EMOJIS": "管理表情",
+    "MANAGE_SETTINGS": "管理服务器设置",
+    "MANAGE_USERS": "管理用户",
+    "MANAGE_MESSAGES": "管理消息",
+    "MANAGE_STORAGE": "管理存储",
+    "MANAGE_INVITES": "管理邀请",
+    "MANAGE_UPDATES": "管理更新",
+    "MANAGE_PLUGINS": "管理插件",
+    "EXECUTE_PLUGIN_COMMANDS": "执行插件命令",
+    "VIEW_USER_SENSITIVE_DATA": "查看用户敏感数据"
+  },
+  "serverDescriptions": {
+    "SEND_MESSAGES": "授予在频道中发送消息的权限。",
+    "REACT_TO_MESSAGES": "授予对消息作出反应的权限。",
+    "PIN_MESSAGES": "授予置顶消息的权限。",
+    "UPLOAD_FILES": "授予在频道中上传文件的权限。",
+    "JOIN_VOICE_CHANNELS": "授予加入语音频道的权限。",
+    "SHARE_SCREEN": "授予共享屏幕的权限。",
+    "ENABLE_WEBCAM": "授予启用摄像头的权限。",
+    "MANAGE_CHANNELS": "授予创建、更新和删除频道的权限。",
+    "MANAGE_CHANNEL_PERMISSIONS": "授予管理角色和用户频道特定权限的权限。",
+    "MANAGE_CATEGORIES": "授予创建、更新和删除分类的权限。",
+    "MANAGE_ROLES": "授予创建、更新和删除角色的权限。",
+    "MANAGE_EMOJIS": "授予创建、更新和删除表情的权限。",
+    "MANAGE_SETTINGS": "授予管理服务器设置的权限。",
+    "MANAGE_USERS": "授予管理用户的权限。",
+    "MANAGE_MESSAGES": "授予通过编辑或删除来管理所有用户消息的权限。",
+    "MANAGE_STORAGE": "授予管理存储（如启用或禁用上传）的权限。",
+    "MANAGE_INVITES": "授予创建、编辑和删除服务器邀请的权限。",
+    "MANAGE_UPDATES": "授予执行更新的权限。",
+    "MANAGE_PLUGINS": "授予管理插件的权限。",
+    "EXECUTE_PLUGIN_COMMANDS": "授予执行插件命令的权限。",
+    "VIEW_USER_SENSITIVE_DATA": "授予查看用户敏感数据（如身份标识、IP 地址和位置）的权限。"
+  },
+  "channel": {
+    "VIEW_CHANNEL": "查看频道",
+    "SEND_MESSAGES": "发送消息",
+    "JOIN": "加入频道",
+    "SPEAK": "发言",
+    "SHARE_SCREEN": "共享屏幕",
+    "WEBCAM": "启用摄像头"
+  },
+  "channelDescriptions": {
+    "VIEW_CHANNEL": "允许用户查看该频道。",
+    "SEND_MESSAGES": "允许用户发送消息。",
+    "JOIN": "允许用户加入该频道。",
+    "SPEAK": "允许用户在语音频道中发言。",
+    "SHARE_SCREEN": "允许用户共享屏幕。",
+    "WEBCAM": "允许用户启用摄像头。"
+  }
+}

@@ -1,10 +1,12 @@
 import { useAdminRoles } from '@/features/server/admin/hooks';
 import { Card, CardContent, LoadingCard } from '@sharkord/ui';
 import { memo, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RolesList } from './roles-list';
 import { UpdateRole } from './update-role';
 
 const Roles = memo(() => {
+  const { t } = useTranslation('settings');
   const { roles, refetch, loading } = useAdminRoles();
 
   const [selectedRoleId, setSelectedRoleId] = useState<number | undefined>();
@@ -36,7 +38,7 @@ const Roles = memo(() => {
       ) : (
         <Card className="flex flex-1 items-center justify-center">
           <CardContent className="py-12 text-center text-muted-foreground">
-            Select a role to edit or create a new one
+            {t('selectRoleToEdit')}
           </CardContent>
         </Card>
       )}

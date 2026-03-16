@@ -1,3 +1,4 @@
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { connect } from '@/features/server/actions';
 import { useInfo } from '@/features/server/hooks';
@@ -29,9 +30,11 @@ import {
   Switch
 } from '@sharkord/ui';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 const Connect = memo(() => {
+  const { t } = useTranslation('connect');
   const { values, r, setErrors, onChange } = useForm<{
     identity: string;
     password: string;
@@ -96,7 +99,7 @@ const Connect = memo(() => {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 
-      toast.error(`Could not connect: ${errorMessage}`);
+      toast.error(t('connectError', { message: errorMessage }));
     } finally {
       setLoading(false);
     }
@@ -105,7 +108,8 @@ const Connect = memo(() => {
     values.password,
     values.autoLogin,
     setErrors,
-    inviteCode
+    inviteCode,
+    t
   ]);
 
   const logoSrc = useMemo(() => {
@@ -117,11 +121,18 @@ const Connect = memo(() => {
   }, [info]);
 
   return (
-    <div className="flex flex-col gap-2 justify-center items-center h-full">
+    <div className="flex flex-col gap-2 justify-center items-center h-full relative">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
+        <LanguageSwitcher variant="icon" />
+      </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="flex flex-col items-center gap-2 text-center">
-            <img src={logoSrc} alt="Sharkord" className="w-32 h-32" />
+            <img
+              src={logoSrc}
+              alt="Sharkord"
+              className="block max-h-32 max-w-full rounded-[5px]"
+            />
             {info?.name && (
               <span className="text-xl font-bold leading-tight">
                 {info.name}
@@ -144,17 +155,14 @@ const Connect = memo(() => {
               onConnectClick();
             }}
           >
-            <Group
-              label="Identity"
-              help="A unique identifier for your account on this server. You can use whatever you like, such as an email address or a username. This won't be shared publicly."
-            >
+            <Group label={t('identityLabel')} help={t('identityHelp')}>
               <Input
                 {...r('identity')}
                 autoComplete="username"
                 data-testid={TestId.CONNECT_IDENTITY_INPUT}
               />
             </Group>
-            <Group label="Password">
+            <Group label={t('passwordLabel')}>
               <Input
                 {...r('password')}
                 type="password"
@@ -174,23 +182,15 @@ const Connect = memo(() => {
           >
             <Switch checked={values.autoLogin} />
             <Label className="text-sm cursor-pointer">
-              Login automatically
+              {t('autoLoginLabel')}
             </Label>
           </div>
 
           <div className="flex flex-col gap-2">
             {!window.isSecureContext && (
               <Alert variant="destructive">
-                <AlertTitle>Insecure Connection</AlertTitle>
-                <AlertDescription>
-                  You are accessing the server over an insecure connection
-                  (HTTP). By default, browsers block access to media devices
-                  such as your camera and microphone on insecure origins. This
-                  means that you won't be able to use video or voice chat
-                  features while connected to the server over HTTP. If you are
-                  the server administrator, you can set up HTTPS by following
-                  the instructions in the documentation.
-                </AlertDescription>
+                <AlertTitle>{t('insecureTitle')}</AlertTitle>
+                <AlertDescription>{t('insecureDesc')}</AlertDescription>
               </Alert>
             )}
 
@@ -201,16 +201,14 @@ const Connect = memo(() => {
               disabled={loading || !values.identity || !values.password}
               data-testid={TestId.CONNECT_BUTTON}
             >
-              Connect
+              {t('connectBtn')}
             </Button>
 
             {!info?.allowNewUsers && (
               <>
                 {!inviteCode && (
                   <span className="text-xs text-muted-foreground text-center">
-                    New user registrations are currently disabled. If you do not
-                    have an account yet, you need to be invited by an existing
-                    user to join this server.
+                    {t('registrationDisabled')}
                   </span>
                 )}
               </>
@@ -218,10 +216,10 @@ const Connect = memo(() => {
 
             {inviteCode && (
               <Alert variant="info">
-                <AlertTitle>You were invited to join this server</AlertTitle>
+                <AlertTitle>{t('invitedTitle')}</AlertTitle>
                 <AlertDescription>
                   <span className="font-mono text-xs">
-                    Invite code: {inviteCode}
+                    {t('inviteCode', { code: inviteCode })}
                   </span>
                 </AlertDescription>
               </Alert>
@@ -230,7 +228,7 @@ const Connect = memo(() => {
         </CardContent>
       </Card>
 
-      <div className="flex justify-center gap-2 text-xs text-muted-foreground select-none">
+      <div className="flex justify-center items-center gap-2 text-xs text-muted-foreground select-none">
         <span>v{VITE_APP_VERSION}</span>
         <a
           href="https://github.com/sharkord/sharkord"

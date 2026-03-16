@@ -41,10 +41,13 @@ export const Mention = Extension.create<TMentionOptions>({
             .chain()
             .focus()
             .deleteRange(range)
-            .insertContent({
-              type: 'mention',
-              attrs: { userId: props.id, label: displayName }
-            })
+            .insertContent([
+              {
+                type: 'mention',
+                attrs: { userId: props.id, label: displayName }
+              },
+              { type: 'text', text: ' ' }
+            ])
             .run();
         }
       })

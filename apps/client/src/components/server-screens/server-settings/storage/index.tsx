@@ -7,11 +7,12 @@ import {
   STORAGE_MAX_FILE_SIZE,
   STORAGE_MAX_QUOTA,
   STORAGE_MAX_QUOTA_PER_USER,
+  STORAGE_MAX_SIGNED_URLS_TTL_SECONDS,
   STORAGE_MIN_FILES_PER_MESSAGE,
   STORAGE_MIN_FILE_SIZE,
   STORAGE_MIN_QUOTA,
   STORAGE_MIN_QUOTA_PER_USER,
-  STORAGE_OVERFLOW_ACTIONS_DICT,
+  STORAGE_MIN_SIGNED_URLS_TTL_SECONDS,
   StorageOverflowAction
 } from '@sharkord/shared';
 import {
@@ -29,9 +30,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Separator,
   Switch
 } from '@sharkord/ui';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DiskMetrics } from './metrics';
 import {
   MAX_AVATAR_SIZE_PRESETS,
@@ -39,7 +42,8 @@ import {
   MAX_FILES_PER_MESSAGE_PRESETS,
   MAX_FILE_SIZE_PRESETS,
   QUOTA_BY_USER_PRESETS,
-  QUOTA_PRESETS
+  QUOTA_PRESETS,
+  SIGNED_URLS_TTL_PRESETS
 } from './presets';
 import { StorageSizeControl } from './storage-size-control';
 
@@ -47,6 +51,7 @@ const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(value, max));
 
 const Storage = memo(() => {
+  const { t } = useTranslation('settings');
   const { values, loading, submit, onChange, labels, diskMetrics } =
     useAdminStorage();
 
@@ -57,20 +62,15 @@ const Storage = memo(() => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Storage</CardTitle>
-        <CardDescription>
-          Manage your server's storage settings. Control how data is stored,
-          accessed, and managed. Here you can configure storage limits, backup
-          options, and data retention policies to ensure optimal performance and
-          reliability.
-        </CardDescription>
+        <CardTitle>{t('storageTitle')}</CardTitle>
+        <CardDescription>{t('storageDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <DiskMetrics diskMetrics={diskMetrics!} />
 
         <Group
-          label="Allow uploads"
-          description="Allows users to upload files to the server. Existing files won't be affected."
+          label={t('allowUploadsLabel')}
+          description={t('allowUploadsDesc')}
         >
           <Switch
             checked={!!values.storageUploadEnabled}
@@ -81,8 +81,8 @@ const Storage = memo(() => {
         </Group>
 
         <Group
-          label="Allow file sharing in direct messages"
-          description="Allows users to share files in direct messages. This setting only applies if uploads are enabled, and it does not affect existing files in direct messages."
+          label={t('allowFileSharingInDMsLabel')}
+          description={t('allowFileSharingInDMsDesc')}
         >
           <Switch
             checked={!!values.storageFileSharingInDirectMessages}
@@ -94,9 +94,9 @@ const Storage = memo(() => {
         </Group>
 
         <Group
-          label="Quota"
-          description="The total amount of storage space allocated to the server."
-          help="This is not a hard limit, meaning that files will still be written to disk temporarily even if the quota is exceeded. The overflow action will be applied after the upload is complete. Make sure you have more disk space available than the quota you set here."
+          label={t('quotaLabel')}
+          description={t('quotaDesc')}
+          help={t('quotaHelp')}
         >
           <StorageSizeControl
             value={Number(values.storageQuota)}
@@ -113,10 +113,7 @@ const Storage = memo(() => {
           />
         </Group>
 
-        <Group
-          label="Max file size"
-          description="The maximum size of a single file that can be uploaded to the server."
-        >
+        <Group label={t('maxFileSizeLabel')} description={t('maxFileSizeDesc')}>
           <StorageSizeControl
             value={Number(values.storageUploadMaxFileSize)}
             max={STORAGE_MAX_FILE_SIZE}
@@ -134,8 +131,8 @@ const Storage = memo(() => {
         </Group>
 
         <Group
-          label="Max avatar size"
-          description="The maximum avatar file size users are allowed to set on their profile."
+          label={t('maxAvatarSizeLabel')}
+          description={t('maxAvatarSizeDesc')}
         >
           <StorageSizeControl
             value={Number(values.storageMaxAvatarSize)}
@@ -154,8 +151,8 @@ const Storage = memo(() => {
         </Group>
 
         <Group
-          label="Max banner size"
-          description="The maximum profile banner file size users are allowed to set."
+          label={t('maxBannerSizeLabel')}
+          description={t('maxBannerSizeDesc')}
         >
           <StorageSizeControl
             value={Number(values.storageMaxBannerSize)}
@@ -174,8 +171,8 @@ const Storage = memo(() => {
         </Group>
 
         <Group
-          label="Quota per user"
-          description="The maximum amount of storage space each user can use on the server. You can also configure quotas on a per-role basis in the Roles settings, which will override this global setting for users with that specific role. Use 0 for unlimited"
+          label={t('quotaPerUserLabel')}
+          description={t('quotaPerUserDesc')}
         >
           <StorageSizeControl
             value={Number(values.storageSpaceQuotaByUser)}
@@ -185,7 +182,7 @@ const Storage = memo(() => {
             onChange={(value) => onChange('storageSpaceQuotaByUser', value)}
             preview={
               Number(values.storageSpaceQuotaByUser) === 0 ? (
-                'Unlimited'
+                t('unlimitedLabel')
               ) : (
                 <>
                   {labels.storageSpaceQuotaByUser.value}{' '}
@@ -198,8 +195,8 @@ const Storage = memo(() => {
         </Group>
 
         <Group
-          label="Max files per message"
-          description="Maximum number of attachments allowed on a single message. Extra files are ignored."
+          label={t('maxFilesPerMessageLabel')}
+          description={t('maxFilesPerMessageDesc')}
         >
           <div className="flex items-center max-w-150 justify-between">
             <div className="flex items-center gap-2">
@@ -228,7 +225,9 @@ const Storage = memo(() => {
                   );
                 }}
               />
-              <span className="text-xs text-muted-foreground">files</span>
+              <span className="text-xs text-muted-foreground">
+                {t('filesUnit')}
+              </span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -250,8 +249,8 @@ const Storage = memo(() => {
         </Group>
 
         <Group
-          label="Overflow action"
-          description="Action to take when the global storage quota is exceeded."
+          label={t('overflowActionLabel')}
+          description={t('overflowActionDesc')}
         >
           <Select
             onValueChange={(value) =>
@@ -261,24 +260,91 @@ const Storage = memo(() => {
             disabled={!values.storageUploadEnabled}
           >
             <SelectTrigger className="w-[230px]">
-              <SelectValue placeholder="Select the polling interval" />
+              <SelectValue placeholder={t('overflowActionPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(StorageOverflowAction).map(([key, value]) => (
-                <SelectItem key={key} value={value}>
-                  {STORAGE_OVERFLOW_ACTIONS_DICT[value]}
-                </SelectItem>
-              ))}
+              <SelectItem value={StorageOverflowAction.DELETE_OLD_FILES}>
+                {t('overflowDeleteOldFiles')}
+              </SelectItem>
+              <SelectItem value={StorageOverflowAction.PREVENT_UPLOADS}>
+                {t('overflowPreventUploads')}
+              </SelectItem>
             </SelectContent>
           </Select>
         </Group>
 
+        <Separator />
+
+        <Group label={t('signedUrlsLabel')} description={t('signedUrlsDesc')}>
+          <Switch
+            checked={!!values.storageSignedUrlsEnabled}
+            onCheckedChange={(checked) =>
+              onChange('storageSignedUrlsEnabled', checked)
+            }
+          />
+        </Group>
+
+        <Group
+          label={t('signedUrlsTtlLabel')}
+          description={t('signedUrlsTtlDesc')}
+        >
+          <div className="flex items-center max-w-150 justify-between">
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                className="border-input bg-background text-foreground h-8 w-28 rounded-md border px-2 text-sm"
+                min={Math.ceil(STORAGE_MIN_SIGNED_URLS_TTL_SECONDS / 60)}
+                max={Math.floor(STORAGE_MAX_SIGNED_URLS_TTL_SECONDS / 60)}
+                step={1}
+                value={Math.round(
+                  Number(values.storageSignedUrlsTtlSeconds) / 60
+                )}
+                disabled={!values.storageSignedUrlsEnabled}
+                onChange={(e) => {
+                  const nextMinutes = Number(e.target.value);
+
+                  if (!Number.isFinite(nextMinutes)) {
+                    return;
+                  }
+
+                  const nextSeconds = clamp(
+                    Math.round(nextMinutes) * 60,
+                    STORAGE_MIN_SIGNED_URLS_TTL_SECONDS,
+                    STORAGE_MAX_SIGNED_URLS_TTL_SECONDS
+                  );
+
+                  onChange('storageSignedUrlsTtlSeconds', nextSeconds);
+                }}
+              />
+              <span className="text-xs text-muted-foreground">
+                {t('signedUrlsTtlUnit')}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {SIGNED_URLS_TTL_PRESETS.map((preset) => (
+                <Button
+                  key={preset.value}
+                  size="sm"
+                  variant="outline"
+                  disabled={!values.storageSignedUrlsEnabled}
+                  onClick={() =>
+                    onChange('storageSignedUrlsTtlSeconds', preset.value)
+                  }
+                >
+                  {preset.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </Group>
+
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
-            Cancel
+            {t('cancel')}
           </Button>
           <Button onClick={submit} disabled={loading}>
-            Save Changes
+            {t('saveChanges')}
           </Button>
         </div>
       </CardContent>

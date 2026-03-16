@@ -16,6 +16,7 @@ import {
 } from '@sharkord/ui';
 import { MessageCircleWarning } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Override } from './override';
 import { OverridesList } from './overrides-list';
 import type { TChannelPermission } from './types';
@@ -25,6 +26,7 @@ type TChannelPermissionsProps = {
 };
 
 const ChannelPermissions = memo(({ channelId }: TChannelPermissionsProps) => {
+  const { t } = useTranslation('settings');
   const [selectedOverrideId, setSelectedOverrideId] = useState<
     string | undefined
   >();
@@ -62,22 +64,14 @@ const ChannelPermissions = memo(({ channelId }: TChannelPermissionsProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Permissions</CardTitle>
+        <CardTitle>{t('permissionsTitle')}</CardTitle>
         <CardDescription className="flex flex-col space-y-4">
-          <span>
-            Manage channel-specific permissions for roles and users. These
-            permissions are not inherited from server-level permissions. User
-            permissions take precedence over role permissions.
-          </span>
+          <span>{t('permissionsDesc')}</span>
           {!channel?.private && (
             <Alert variant="destructive">
               <MessageCircleWarning />
-              <AlertTitle>Public channel</AlertTitle>
-              <AlertDescription>
-                This is a public channel; everyone has access by default. These
-                permissions will not be applied unless the channel is set to
-                private. You can do this in the General Settings tab.
-              </AlertDescription>
+              <AlertTitle>{t('publicChannelTitle')}</AlertTitle>
+              <AlertDescription>{t('publicChannelDesc')}</AlertDescription>
             </Alert>
           )}
         </CardDescription>
@@ -105,7 +99,7 @@ const ChannelPermissions = memo(({ channelId }: TChannelPermissionsProps) => {
           ) : (
             <Card className="flex flex-1 items-center justify-center">
               <CardContent className="py-12 text-center text-muted-foreground text-sm">
-                Select a role or user to edit permissions, or add a new override
+                {t('selectRoleOrUser')}
               </CardContent>
             </Card>
           )}

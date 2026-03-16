@@ -4,8 +4,10 @@ import { useDirectMessagesUnreadCount } from '@/features/server/channels/hooks';
 import { cn, Tooltip } from '@sharkord/ui';
 import { MessageCircleMore, X } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const DmButton = memo(() => {
+  const { t } = useTranslation('sidebar');
   const directMessagesUnreadCount = useDirectMessagesUnreadCount();
   const dmsOpen = useDmsOpen();
 
@@ -15,7 +17,9 @@ const DmButton = memo(() => {
 
   return (
     <div className="border-b border-border px-2 py-2">
-      <Tooltip content={`${dmsOpen ? 'Close' : 'Open'} Direct Messages`}>
+      <Tooltip
+        content={dmsOpen ? t('closeDirectMessages') : t('openDirectMessages')}
+      >
         <button
           type="button"
           onClick={onToggleDmMode}
@@ -25,7 +29,7 @@ const DmButton = memo(() => {
           )}
         >
           <MessageCircleMore className="h-4 w-4" />
-          <span className="flex-1 text-left">Direct Messages</span>
+          <span className="flex-1 text-left">{t('directMessages')}</span>
           {dmsOpen && <X className="h-4 w-4" />}
           {directMessagesUnreadCount > 0 && (
             <div className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">

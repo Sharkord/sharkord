@@ -7,11 +7,38 @@ import {
 } from '../utils/env';
 import { getAppDataPath } from './fs';
 
-const DATA_PATH = IS_TEST
-  ? path.resolve(process.cwd(), './data-test')
-  : IS_DEVELOPMENT
-    ? path.resolve(process.cwd(), './data')
-    : path.join(getAppDataPath(), 'sharkord');
+const getDataPath = (): string => {
+  const INJECTED_DATA_PATH = process.env.SHARKORD_DATA_PATH;
+
+  if (INJECTED_DATA_PATH) {
+    return path.resolve(INJECTED_DATA_PATH);
+  }
+
+  if (IS_TEST) {
+    return path.resolve(process.cwd(), './data-test');
+  }
+
+  if (IS_DEVELOPMENT) {
+    return path.resolve(process.cwd(), './data');
+  }
+
+  return path.join(getAppDataPath(), 'sharkord');
+};
+
+const getMediasoupBinaryPath = (): string | undefined => {
+  if (IS_DEVELOPMENT) {
+    return undefined;
+  }
+
+  return path.join(
+    getDataPath(),
+    'mediasoup',
+    SHARKORD_MEDIASOUP_BIN_NAME || 'mediasoup-worker'
+  );
+};
+
+const DATA_PATH = getDataPath();
+const MEDIASOUP_BINARY_PATH = getMediasoupBinaryPath();
 const DB_PATH = path.join(DATA_PATH, 'db.sqlite');
 const LOGS_PATH = path.join(DATA_PATH, 'logs');
 const PUBLIC_PATH = path.join(DATA_PATH, 'public');
@@ -21,12 +48,6 @@ const INTERFACE_PATH = path.resolve(DATA_PATH, 'interface', SERVER_VERSION);
 const DRIZZLE_PATH = path.resolve(DATA_PATH, 'drizzle');
 const MEDIASOUP_PATH = path.resolve(DATA_PATH, 'mediasoup');
 const CONFIG_INI_PATH = path.resolve(DATA_PATH, 'config.ini');
-const MEDIASOUP_BINARY_PATH = IS_DEVELOPMENT
-  ? undefined
-  : path.join(
-      MEDIASOUP_PATH,
-      SHARKORD_MEDIASOUP_BIN_NAME || 'mediasoup-worker'
-    );
 const PLUGINS_PATH = path.join(DATA_PATH, 'plugins');
 const SRC_MIGRATIONS_PATH = path.join(process.cwd(), 'src', 'db', 'migrations');
 

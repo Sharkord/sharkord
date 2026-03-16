@@ -40,7 +40,7 @@ export const channelsByCategoryIdSelector = createCachedSelector(
   (channels, categoryId) =>
     channels
       .filter((channel) => channel.categoryId === categoryId)
-      .sort((a, b) => a.position - b.position)
+      .sort((a, b) => a.position - b.position || a.id - b.id)
 )((_, categoryId: number) => categoryId);
 
 export const selectedChannelSelector = createSelector(

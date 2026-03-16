@@ -13,6 +13,7 @@ import {
 } from '@sharkord/ui';
 import { Plus, Search } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TChannelPermissionType } from './types';
 
 type TSearchPopoverProps = {
@@ -23,6 +24,7 @@ type TSearchPopoverProps = {
 
 const SearchPopover = memo(
   ({ onSelect, ignoreUserIds, ignoreRoleIds }: TSearchPopoverProps) => {
+    const { t } = useTranslation('settings');
     const [open, setOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState<TChannelPermissionType>('role');
@@ -65,7 +67,11 @@ const SearchPopover = memo(
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder={`Search ${activeTab}...`}
+                  placeholder={
+                    activeTab === 'role'
+                      ? t('searchRolesPlaceholder')
+                      : t('searchPermissionsUsersPlaceholder')
+                  }
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-8"
@@ -74,17 +80,17 @@ const SearchPopover = memo(
             </div>
             <TabsList className="w-full rounded-none border-b bg-transparent p-0">
               <TabsTrigger value="role" className="rounded-none">
-                Roles
+                {t('rolesSection')}
               </TabsTrigger>
               <TabsTrigger value="user" className="rounded-none">
-                Users
+                {t('usersSection')}
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="role" className="m-0 max-h-64 overflow-y-auto">
               {filteredRoles.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
-                  No roles found
+                  {t('noRolesFound')}
                 </div>
               ) : (
                 <div className="p-2">
@@ -108,7 +114,7 @@ const SearchPopover = memo(
             <TabsContent value="user" className="m-0 max-h-64 overflow-y-auto">
               {filteredUsers.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
-                  No users found
+                  {t('noUsersFound')}
                 </div>
               ) : (
                 <div className="p-2">

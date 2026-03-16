@@ -25,6 +25,7 @@ import path from 'path';
 import { db } from '../db';
 import { getSettings } from '../db/queries/server';
 import { pluginData } from '../db/schema';
+import { getErrorMessage } from '../helpers/get-error-message';
 import { PLUGINS_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 import { VoiceRuntime } from '../runtimes/voice';
@@ -65,7 +66,7 @@ class PluginManager {
         return acc;
       }, {});
     } catch (error) {
-      logger.error('Failed to load plugin states:', error);
+      logger.error('Failed to load plugin states: %s', getErrorMessage(error));
       this.pluginStates = {};
     }
   };
@@ -98,7 +99,10 @@ class PluginManager {
 
       await fs.unlink(statesFile);
     } catch (error) {
-      logger.error('Failed to migrate plugin states file:', error);
+      logger.error(
+        'Failed to migrate plugin states file: %s',
+        getErrorMessage(error)
+      );
     }
   };
 
@@ -191,7 +195,8 @@ class PluginManager {
         await this.load(file);
       } catch (error) {
         logger.error(
-          `Failed to load plugin ${file}: ${(error as Error).message}`
+          `Failed to load plugin ${file}: %s`,
+          getErrorMessage(error)
         );
       }
     }
@@ -203,7 +208,9 @@ class PluginManager {
         await this.unload(pluginId);
       } catch (error) {
         logger.error(
-          `Failed to unload plugin ${pluginId}: ${(error as Error).message}`
+          `Failed to unload plugin %s: %s`,
+          pluginId,
+          getErrorMessage(error)
         );
       }
     }
@@ -426,7 +433,11 @@ class PluginManager {
 
         await pluginModule.onUnload(unloadCtx);
       } catch (error) {
-        logger.error(`Error in plugin ${pluginId} onUnload:`, error);
+        logger.error(
+          'Error in plugin %s onUnload: %s',
+          pluginId,
+          getErrorMessage(error)
+        );
       }
     }
 

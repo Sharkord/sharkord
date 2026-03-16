@@ -99,6 +99,28 @@ describe('categories router', () => {
     expect(secondCategory.position).toBe(1);
   });
 
+  test('should reorder categories when some ids are missing from payload', async () => {
+    const { caller } = await initTest();
+
+    const categoryId = await caller.categories.add({
+      name: 'Third Category'
+    });
+
+    await caller.categories.reorder({
+      categoryIds: [categoryId]
+    });
+
+    const [category1, category2, category3] = await Promise.all([
+      caller.categories.get({ categoryId: 1 }),
+      caller.categories.get({ categoryId: 2 }),
+      caller.categories.get({ categoryId })
+    ]);
+
+    expect(category3.position).toBe(1);
+    expect(category1.position).toBe(2);
+    expect(category2.position).toBe(3);
+  });
+
   test('should update existing category', async () => {
     const { caller } = await initTest();
 

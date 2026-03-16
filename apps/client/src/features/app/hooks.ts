@@ -3,16 +3,19 @@ import { useSelector } from 'react-redux';
 import {
   appLoadingSelector,
   autoJoinLastChannelSelector,
+  browserNotificationsForDmsSelector,
   browserNotificationsForMentionsSelector,
   browserNotificationsSelector,
   devicesSelector,
   dmsOpenSelector,
   isAutoConnectingSelector,
   loadingPluginsSelector,
+  messageJumpTargetSelector,
   modViewOpenSelector,
   modViewUserIdSelector,
   selectedDmChannelIdSelector,
-  threadSidebarDataSelector
+  threadSidebarDataSelector,
+  voiceChatSidebarDataSelector
 } from './selectors';
 
 export const useIsAppLoading = () => useSelector(appLoadingSelector);
@@ -45,3 +48,12 @@ export const useBrowserNotifications = () =>
 
 export const useBrowserNotificationsForMentions = () =>
   useSelector(browserNotificationsForMentionsSelector);
+
+export const useBrowserNotificationsForDms = () =>
+  useSelector(browserNotificationsForDmsSelector);
+
+export const useMessageJumpTarget = () =>
+  useSelector(messageJumpTargetSelector);
+
+export const useVoiceChatSidebar = () =>
+  useSelector(voiceChatSidebarDataSelector);

@@ -19,12 +19,10 @@ import { getAllUserIds, getPublicUserById } from './queries/users';
 import { categories, channels, messages, users } from './schema';
 
 const publishMessage = async (
-  messageId: number | undefined,
-  channelId: number | undefined,
+  messageId: number,
+  channelId: number,
   type: 'create' | 'update' | 'delete'
 ) => {
-  if (!messageId || !channelId) return;
-
   if (type === 'delete') {
     const affectedUserIds = await getAffectedUserIdsForChannel(channelId, {
       permission: ChannelPermission.VIEW_CHANNEL
@@ -174,8 +172,6 @@ const publishChannel = async (
           .map((u) => u.id)
           .filter((id) => !affectedUserIds.includes(id));
 
-        console.log('now private', { lostAccessUserIds });
-
         if (lostAccessUserIds.length > 0) {
           pubsub.publishFor(
             lostAccessUserIds,
@@ -184,8 +180,6 @@ const publishChannel = async (
           );
         }
       } else {
-        console.log('now public', { allUserIds });
-
         // channel is now public, so all users should have access to it
         // send a create event
         // if a user already has the channel in the state it will ignore the create event, so we don't need to worry about that

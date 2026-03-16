@@ -43,6 +43,27 @@
       "when": 1772730000000,
       "tag": "0005_normalize_user_identities",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1772733600000,
+      "tag": "0006_lowercase_remaining_identities",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1772897866100,
+      "tag": "0007_overrated_carnage",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1773427281204,
+      "tag": "0008_stiff_killmonger",
+      "breakpoints": true
     }
   ]
 }

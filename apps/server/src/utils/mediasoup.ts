@@ -33,13 +33,13 @@ const loadMediasoup = async () => {
     patchSpawnForMediasoup();
     mediaSoupWorker = await mediasoup.createWorker(workerConfig);
   } catch (error) {
-    logger.error(`Failed to load mediasoup worker: ${getErrorMessage(error)}`);
+    logger.error('Failed to load mediasoup worker: %s', getErrorMessage(error));
   } finally {
     restoreSpawn();
   }
 
   mediaSoupWorker.on('died', (error) => {
-    logger.error('Mediasoup worker died', error);
+    logger.error('Mediasoup worker died: %s', getErrorMessage(error));
 
     setTimeout(() => process.exit(0), 2000);
   });

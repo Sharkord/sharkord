@@ -7,6 +7,7 @@ import {
   STORAGE_DEFAULT_MAX_AVATAR_SIZE,
   STORAGE_DEFAULT_MAX_BANNER_SIZE,
   STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
+  STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
   STORAGE_MAX_FILE_SIZE,
   STORAGE_MIN_QUOTA_PER_USER,
   STORAGE_OVERFLOW_ACTION,
@@ -62,7 +63,10 @@ const seedDatabase = async () => {
     storageFileSharingInDirectMessages: true,
     storageSpaceQuotaByUser: STORAGE_MIN_QUOTA_PER_USER,
     storageOverflowAction: STORAGE_OVERFLOW_ACTION,
-    enablePlugins: false
+    enablePlugins: false,
+    enableSearch: true,
+    storageSignedUrlsEnabled: false,
+    storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS
   };
 
   await db.insert(settings).values(initialSettings);
@@ -85,8 +89,6 @@ const seedDatabase = async () => {
       type: ChannelType.TEXT,
       name: 'General Text',
       position: 0,
-      fileAccessToken: randomUUIDv7(),
-      fileAccessTokenUpdatedAt: Date.now(),
       categoryId: 1,
       topic: 'General text channel',
       createdAt: firstStart
@@ -95,8 +97,6 @@ const seedDatabase = async () => {
       type: ChannelType.TEXT,
       name: 'General Text 2',
       position: 1,
-      fileAccessToken: randomUUIDv7(),
-      fileAccessTokenUpdatedAt: Date.now(),
       categoryId: 1,
       topic: 'General text channel 2',
       createdAt: firstStart
@@ -105,8 +105,6 @@ const seedDatabase = async () => {
       type: ChannelType.VOICE,
       name: 'General Voice',
       position: 0,
-      fileAccessToken: randomUUIDv7(),
-      fileAccessTokenUpdatedAt: Date.now(),
       categoryId: 2,
       topic: 'General voice channel',
       createdAt: firstStart
@@ -115,8 +113,6 @@ const seedDatabase = async () => {
       type: ChannelType.VOICE,
       name: 'General Voice 2',
       position: 1,
-      fileAccessToken: randomUUIDv7(),
-      fileAccessTokenUpdatedAt: Date.now(),
       categoryId: 2,
       topic: 'General voice channel 2',
       createdAt: firstStart

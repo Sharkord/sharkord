@@ -1,4 +1,8 @@
-import { selectedDmChannelIdSelector } from '@/features/app/selectors';
+import { assertVoiceChatClose } from '@/features/app/actions';
+import {
+  dmsOpenSelector,
+  selectedDmChannelIdSelector
+} from '@/features/app/selectors';
 import { store } from '@/features/store';
 import type { TChannel, TChannelUserPermissionsMap } from '@sharkord/shared';
 import { serverSliceActions } from '../slice';
@@ -32,6 +36,8 @@ export const updateChannel = (
 
 export const removeChannel = (channelId: number) => {
   store.dispatch(serverSliceActions.removeChannel({ channelId }));
+
+  assertVoiceChatClose(channelId);
 };
 
 export const setChannelPermissions = (
@@ -55,6 +61,7 @@ export const setChannelPermissions = (
   if (!canViewChannel) {
     // user lost VIEW_CHANNEL permission, deselect the channel
     setSelectedChannelId(undefined);
+    assertVoiceChatClose(selectedChannel);
   }
 };
 
@@ -80,8 +87,13 @@ export const setChannelReadState = (
 
   let actualCount = nextCount;
 
+  const dmsOpen = dmsOpenSelector(state);
+  const shouldResetCount =
+    selectedChannel === channelId ||
+    (selectedDmChannel === channelId && dmsOpen);
+
   // if the channel is currently selected, set the read count to 0
-  if (selectedChannel === channelId || selectedDmChannel === channelId) {
+  if (shouldResetCount) {
     actualCount = 0;
 
     // we also need to notify the server that the channel has been read

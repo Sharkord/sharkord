@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { e2eDataPath } from './tests/statics';
 
 const SERVER_PORT = 4991;
 const CLIENT_PORT = 5173;
@@ -6,6 +7,7 @@ const CLIENT_PORT = 5173;
 export default defineConfig({
   testDir: './tests',
   testMatch: '**/*.pw.ts',
+  globalTeardown: './tests/setup/global.teardown.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -30,7 +32,10 @@ export default defineConfig({
       cwd: '../../apps/server',
       port: SERVER_PORT,
       reuseExistingServer: !process.env.CI,
-      timeout: 30_000
+      timeout: 30_000,
+      env: {
+        SHARKORD_DATA_PATH: e2eDataPath
+      }
     },
     {
       command: 'bun dev',

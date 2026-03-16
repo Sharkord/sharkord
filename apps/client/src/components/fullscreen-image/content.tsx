@@ -1,8 +1,9 @@
 import { cn } from '@/lib/utils';
-import { Button } from '@sharkord/ui';
-import { X } from 'lucide-react';
+import { IconButton } from '@sharkord/ui';
+import { Link, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { toast } from 'sonner';
 
 const portalRoot = document.getElementById('imagePortal')!;
 
@@ -44,16 +45,21 @@ const FullScreenImage = memo((props: TFullScreenImageProps) => {
     setTimeout(() => setOpen(false), 300);
   }, []);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    draggingRef.current = true;
-    lastMouseRef.current = { x: e.clientX, y: e.clientY };
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLImageElement>) => {
+      if (e.button !== 0) return;
 
-    const el = imgRef.current;
+      draggingRef.current = true;
+      lastMouseRef.current = { x: e.clientX, y: e.clientY };
 
-    if (el) {
-      el.style.cursor = 'grabbing';
-    }
-  }, []);
+      const el = imgRef.current;
+
+      if (el) {
+        el.style.cursor = 'grabbing';
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -118,6 +124,23 @@ const FullScreenImage = memo((props: TFullScreenImageProps) => {
     }
   }, [onCloseClick]);
 
+  const onCopyLink = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+
+      if (!props.src) return;
+
+      try {
+        navigator.clipboard.writeText(props.src);
+
+        toast.success('Image link copied to clipboard');
+      } catch {
+        toast.error('Failed to copy image link');
+      }
+    },
+    [props.src]
+  );
+
   const portalContainer = createPortal(
     <>
       <div
@@ -140,14 +163,10 @@ const FullScreenImage = memo((props: TFullScreenImageProps) => {
           draggable={false}
           onClick={(e) => e.stopPropagation()}
         />
-        <Button
-          onClick={onCloseClick}
-          size="icon"
-          variant="outline"
-          className="absolute top-2 right-2 z-50"
-        >
-          <X size="1.1rem" />
-        </Button>
+        <div className="flex gap-2 absolute top-2 right-2 z-50">
+          <IconButton icon={Link} variant="ghost" onClick={onCopyLink} />
+          <IconButton onClick={onCloseClick} icon={X} variant="ghost" />
+        </div>
       </div>
     </>,
     portalRoot

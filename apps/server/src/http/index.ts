@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import http from 'http';
 import z from 'zod';
 import { config } from '../config';
+import { getErrorMessage } from '../helpers/get-error-message';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
 import { healthRouteHandler } from './healthz';
@@ -13,6 +14,7 @@ import {
 import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
 import { loginRouteHandler } from './login';
+import { manifestRouteHandler } from './manifest';
 import { pluginBundleRouteHandler } from './plugin-bundle';
 import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
@@ -37,7 +39,8 @@ const routeHandlers: Partial<
   GET: {
     exact: {
       '/healthz': (req, res) => healthRouteHandler(req, res),
-      '/info': (req, res) => infoRouteHandler(req, res)
+      '/info': (req, res) => infoRouteHandler(req, res),
+      '/manifest.json': (req, res) => manifestRouteHandler(req, res)
     },
     prefix: {
       '/public': (req, res) => publicRouteHandler(req, res),
@@ -135,7 +138,7 @@ const createHttpServer = async (port: number = config.server.port) => {
             return;
           }
 
-          logger.error('HTTP route error:', error);
+          logger.error('HTTP route error: %s', getErrorMessage(error));
 
           res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Internal server error' }));

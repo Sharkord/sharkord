@@ -17,7 +17,7 @@ import { usePublicServerSettings } from '@/features/server/hooks';
 import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
 import { useSwipeGestures } from '@/hooks/use-swipe-gestures';
 import { cn } from '@/lib/utils';
-import { Permission } from '@sharkord/shared';
+import { Permission, TestId } from '@sharkord/shared';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { ContentWrapper } from './content-wrapper';
 import { PreventBrowser } from './prevent-browser';
@@ -27,9 +27,6 @@ const ServerView = memo(() => {
   const [isMobileUsersOpen, setIsMobileUsersOpen] = useState(false);
   const [isDesktopRightSidebarOpen, setIsDesktopRightSidebarOpen] = useState(
     getLocalStorageItemBool(LocalStorageKey.RIGHT_SIDEBAR_STATE, true)
-  );
-  const [isVoiceChatSidebarOpen, setIsVoiceChatSidebarOpen] = useState(
-    getLocalStorageItemBool(LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE, false)
   );
   const dmsOpen = useDmsOpen();
   const selectedDmChannelId = useSelectedDmChannelId();
@@ -44,14 +41,6 @@ const ServerView = memo(() => {
       !isDesktopRightSidebarOpen ? 'true' : 'false'
     );
   }, [isDesktopRightSidebarOpen]);
-
-  const handleVoiceChatSidebarToggle = useCallback(() => {
-    setIsVoiceChatSidebarOpen((prev) => !prev);
-    localStorage.setItem(
-      LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE,
-      !isVoiceChatSidebarOpen ? 'true' : 'false'
-    );
-  }, [isVoiceChatSidebarOpen]);
 
   const handleSwipeRight = useCallback(() => {
     if (isMobileMenuOpen || isMobileUsersOpen) {
@@ -92,14 +81,13 @@ const ServerView = memo(() => {
   return (
     <VoiceProvider>
       <div
+        data-testid={TestId.SERVER_VIEW}
         className="flex h-dvh flex-col bg-background text-foreground dark"
         {...swipeHandlers}
       >
         <TopBar
           onToggleRightSidebar={handleDesktopRightSidebarToggle}
           isOpen={isDesktopRightSidebarOpen}
-          onToggleVoiceChat={handleVoiceChatSidebarToggle}
-          isVoiceChatOpen={isVoiceChatSidebarOpen}
         />
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
           <PreventBrowser />
@@ -132,7 +120,7 @@ const ServerView = memo(() => {
             selectedDmChannelId={selectedDmChannelId}
           />
 
-          <VoiceChatSidebar isOpen={isVoiceChatSidebarOpen} />
+          <VoiceChatSidebar />
 
           <ThreadSidebar isOpen={isThreadSidebarOpen} />
 

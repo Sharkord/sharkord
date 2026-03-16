@@ -2,6 +2,7 @@ import fs from 'fs';
 import http from 'http';
 import path from 'path';
 import { getSettings } from '../db/queries/server';
+import { getErrorMessage } from '../helpers/get-error-message';
 import { PLUGINS_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 
@@ -114,7 +115,7 @@ const pluginBundleRouteHandler = async (
   fileStream.pipe(res);
 
   fileStream.on('error', (err) => {
-    logger.error('Error serving file:', err);
+    logger.error('Error serving file: %s', getErrorMessage(err));
 
     if (!res.headersSent) {
       res.writeHead(500, { 'Content-Type': 'application/json' });

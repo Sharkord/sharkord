@@ -21,7 +21,7 @@ const ParentMessageContent = memo(
     }
 
     return (
-      <div className="px-4 py-3 border-b border-border bg-secondary/30">
+      <div className="px-4 py-3 border-b border-border bg-secondary/30 max-h-64 overflow-auto">
         <div className="flex items-center gap-2 mb-1">
           <UserAvatar
             userId={parentMessage.userId}

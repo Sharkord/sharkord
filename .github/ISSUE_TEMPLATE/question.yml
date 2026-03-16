@@ -1,0 +1,22 @@
+name: Question
+description: Use this template for questions about the project, such as how to use it or how it works.
+title: "[Question]: "
+labels: ["question"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search for existing questions before submitting a new one. It's possible your question has already been answered in the documentation or in a previous issue.
+
+         Check [Common Questions](https://sharkord.com/docs/common-questions) for answers to frequently asked questions.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: Describe what you are trying to do and what is unclear.
+      placeholder: Ask your question here.
+    validations:
+      required: true

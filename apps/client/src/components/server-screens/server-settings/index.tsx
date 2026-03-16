@@ -2,6 +2,7 @@ import { useCan } from '@/features/server/hooks';
 import { Permission } from '@sharkord/shared';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@sharkord/ui';
 import { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TServerScreenBaseProps } from '../screens';
 import { ServerScreenLayout } from '../server-screen-layout';
 import { Emojis } from './emojis';
@@ -16,6 +17,7 @@ import { Users } from './users';
 type TServerSettingsProps = TServerScreenBaseProps;
 
 const ServerSettings = memo(({ close }: TServerSettingsProps) => {
+  const { t } = useTranslation('settings');
   const can = useCan();
 
   const defaultTab = useMemo(() => {
@@ -30,7 +32,7 @@ const ServerSettings = memo(({ close }: TServerSettingsProps) => {
   }, [can]);
 
   return (
-    <ServerScreenLayout close={close} title="Server Settings">
+    <ServerScreenLayout close={close} title={t('serverSettingsTitle')}>
       <div className="mx-auto max-w-4xl">
         <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="mb-6">
@@ -38,43 +40,43 @@ const ServerSettings = memo(({ close }: TServerSettingsProps) => {
               value="general"
               disabled={!can(Permission.MANAGE_SETTINGS)}
             >
-              General
+              {t('generalTab')}
             </TabsTrigger>
             <TabsTrigger value="roles" disabled={!can(Permission.MANAGE_ROLES)}>
-              Roles
+              {t('rolesTab')}
             </TabsTrigger>
             <TabsTrigger
               value="emojis"
               disabled={!can(Permission.MANAGE_EMOJIS)}
             >
-              Emojis
+              {t('emojisTab')}
             </TabsTrigger>
             <TabsTrigger
               value="storage"
               disabled={!can(Permission.MANAGE_STORAGE)}
             >
-              Storage
+              {t('storageTab')}
             </TabsTrigger>
             <TabsTrigger value="users" disabled={!can(Permission.MANAGE_USERS)}>
-              Users
+              {t('usersTab')}
             </TabsTrigger>
             <TabsTrigger
               value="invites"
               disabled={!can(Permission.MANAGE_INVITES)}
             >
-              Invites
+              {t('invitesTab')}
             </TabsTrigger>
             <TabsTrigger
               value="updates"
               disabled={!can(Permission.MANAGE_UPDATES)}
             >
-              Updates
+              {t('updatesTab')}
             </TabsTrigger>
             <TabsTrigger
               value="plugins"
               disabled={!can(Permission.MANAGE_PLUGINS)}
             >
-              Plugins
+              {t('pluginsTab')}
             </TabsTrigger>
           </TabsList>
           <TabsContent value="general" className="space-y-6">

@@ -10,6 +10,7 @@ import {
   AutoFocus
 } from '@sharkord/ui';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TDialogBaseProps } from '../types';
 
 type TConfirmActionDialogProps = TDialogBaseProps & {
@@ -32,22 +33,26 @@ const ConfirmActionDialog = memo(
     confirmLabel,
     cancelLabel
   }: TConfirmActionDialogProps) => {
+    const { t } = useTranslation('dialogs');
+
     return (
       <AlertDialog open={isOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{title ?? 'Confirm Action'}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {title ?? t('confirmActionTitle')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {message ?? 'Are you sure you want to perform this action?'}
+              {message ?? t('confirmActionMsg')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel onClick={onCancel}>
-              {cancelLabel ?? 'Cancel'}
+              {cancelLabel ?? t('cancel')}
             </AlertDialogCancel>
             <AutoFocus>
               <AlertDialogAction onClick={onConfirm}>
-                {confirmLabel ?? 'Confirm'}
+                {confirmLabel ?? t('confirm')}
               </AlertDialogAction>
             </AutoFocus>
           </AlertDialogFooter>

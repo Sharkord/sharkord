@@ -28,9 +28,9 @@ const MAX_BANNER_SIZE_PRESETS = [
 
 const QUOTA_BY_USER_PRESETS = [
   { label: 'Unlimited', value: 0 },
-  { label: '1 GB', value: 5 * 1024 * 1024 * 1024 },
-  { label: '5 GB', value: 20 * 1024 * 1024 * 1024 },
-  { label: '20 GB', value: 100 * 1024 * 1024 * 1024 }
+  { label: '1 GB', value: 1 * 1024 * 1024 * 1024 },
+  { label: '20 GB', value: 20 * 1024 * 1024 * 1024 },
+  { label: '100 GB', value: 100 * 1024 * 1024 * 1024 }
 ];
 
 const MAX_FILES_PER_MESSAGE_PRESETS = [
@@ -38,6 +38,13 @@ const MAX_FILES_PER_MESSAGE_PRESETS = [
   { label: '5', value: 5 },
   { label: '10', value: 10 },
   { label: '20', value: 20 }
+];
+
+const SIGNED_URLS_TTL_PRESETS = [
+  { label: '1 hr', value: 60 * 60 },
+  { label: '6 hr', value: 6 * 60 * 60 },
+  { label: '12 hr', value: 12 * 60 * 60 },
+  { label: '24 hr', value: 24 * 60 * 60 }
 ];
 
 export {
@@ -48,5 +55,6 @@ export {
   MAX_FILE_SIZE_PRESETS,
   MEGABYTE,
   QUOTA_BY_USER_PRESETS,
-  QUOTA_PRESETS
+  QUOTA_PRESETS,
+  SIGNED_URLS_TTL_PRESETS
 };

@@ -16,6 +16,7 @@ import { createNsChain } from '@/helpers/audio-worklet/ns-worklet';
 
 import { logVoice } from '@/helpers/browser-logger';
 import { getResWidthHeight } from '@/helpers/get-res-with-height';
+import { useScreenShareSupport } from '@/hooks/use-screen-share-support';
 import { getTRPCClient } from '@/lib/trpc';
 import { NoiseSuppression, VideoCodec } from '@/types';
 import {
@@ -78,6 +79,7 @@ export type TVoiceProvider = {
   transportStats: TransportStatsData;
   audioVideoRefsMap: Map<number, AudioVideoRefs>;
   ownVoiceState: TVoiceUserState;
+  isScreenShareSupported: boolean;
   getOrCreateRefs: (remoteId: number) => AudioVideoRefs;
   getConsumerCodec: (remoteId: number, kind: StreamKind) => string | undefined;
   init: (
@@ -113,6 +115,7 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
     averageBitrateSent: 0
   },
   audioVideoRefsMap: new Map(),
+  isScreenShareSupported: false,
   getOrCreateRefs: () => ({
     videoRef: { current: null },
     audioRef: { current: null },
@@ -155,6 +158,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   const audioVideoRefsMap = useRef<Map<number, AudioVideoRefs>>(new Map());
   const ownVoiceState = useOwnVoiceState();
   const { devices } = useDevices();
+  const { isScreenShareSupported } = useScreenShareSupport();
 
   const getOrCreateRefs = useCallback((remoteId: number): AudioVideoRefs => {
     if (!audioVideoRefsMap.current.has(remoteId)) {
@@ -851,6 +855,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       connectionStatus,
       transportStats,
       audioVideoRefsMap: audioVideoRefsMap.current,
+      isScreenShareSupported,
       getOrCreateRefs,
       getConsumerCodec,
       init,
@@ -873,6 +878,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       loading,
       connectionStatus,
       transportStats,
+      isScreenShareSupported,
       getOrCreateRefs,
       getConsumerCodec,
       init,

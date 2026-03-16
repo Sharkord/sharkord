@@ -1,8 +1,13 @@
 import { TiptapInput } from '@/components/tiptap-input';
 import { getTRPCClient } from '@/lib/trpc';
-import { type TMessage, isEmptyMessage, linkifyHtml } from '@sharkord/shared';
+import {
+  type TMessage,
+  isEmptyMessage,
+  prepareMessageHtml
+} from '@sharkord/shared';
 import { AutoFocus } from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TMessageEditInlineProps = {
@@ -12,12 +17,13 @@ type TMessageEditInlineProps = {
 
 const MessageEditInline = memo(
   ({ message, onBlur }: TMessageEditInlineProps) => {
+    const { t } = useTranslation();
     const [value, setValue] = useState<string>(message.content ?? '');
 
     const onSubmit = useCallback(
       async (newValue: string | undefined) => {
         if (!newValue || isEmptyMessage(newValue)) {
-          toast.error('Message cannot be empty');
+          toast.error(t('messageCannotBeEmpty'));
 
           onBlur();
 
@@ -29,17 +35,17 @@ const MessageEditInline = memo(
         try {
           await trpc.messages.edit.mutate({
             messageId: message.id,
-            content: linkifyHtml(newValue)
+            content: prepareMessageHtml(newValue)
           });
 
-          toast.success('Message edited');
+          toast.success(t('messageEdited'));
         } catch {
-          toast.error('Failed to edit message');
+          toast.error(t('failedEditMessage'));
         } finally {
           onBlur();
         }
       },
-      [message.id, onBlur]
+      [message.id, onBlur, t]
     );
 
     return (
@@ -52,9 +58,7 @@ const MessageEditInline = memo(
             onCancel={onBlur}
           />
         </AutoFocus>
-        <span className="text-xs text-primary/60">
-          Press Enter to save, Esc to cancel
-        </span>
+        <span className="text-xs text-primary/60">{t('pressEnterToSave')}</span>
       </div>
     );
   }

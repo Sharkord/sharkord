@@ -8,6 +8,7 @@ import {
   STORAGE_DEFAULT_MAX_AVATAR_SIZE,
   STORAGE_DEFAULT_MAX_BANNER_SIZE,
   STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
+  STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
   STORAGE_MAX_FILE_SIZE,
   STORAGE_MAX_QUOTA_PER_USER,
   STORAGE_OVERFLOW_ACTION,
@@ -46,7 +47,8 @@ export const useAdminGeneral = () => {
     password: '',
     allowNewUsers: false,
     directMessagesEnabled: true,
-    enablePlugins: false
+    enablePlugins: false,
+    enableSearch: true
   });
   const [logo, setLogo] = useState<TFile | null>(null);
 
@@ -62,7 +64,8 @@ export const useAdminGeneral = () => {
       password: settings.password ?? '',
       allowNewUsers: settings.allowNewUsers ?? false,
       directMessagesEnabled: settings.directMessagesEnabled ?? true,
-      enablePlugins: settings.enablePlugins ?? false
+      enablePlugins: settings.enablePlugins ?? false,
+      enableSearch: settings.enableSearch ?? true
     });
     setLoading(false);
     setLogo(settings.logo);
@@ -78,7 +81,8 @@ export const useAdminGeneral = () => {
         password: settings.password || undefined,
         allowNewUsers: settings.allowNewUsers,
         directMessagesEnabled: settings.directMessagesEnabled,
-        enablePlugins: settings.enablePlugins
+        enablePlugins: settings.enablePlugins,
+        enableSearch: settings.enableSearch
       });
       toast.success('Settings updated');
     } catch (error) {
@@ -435,7 +439,9 @@ export const useAdminStorage = () => {
       storageMaxAvatarSize: STORAGE_DEFAULT_MAX_AVATAR_SIZE,
       storageMaxBannerSize: STORAGE_DEFAULT_MAX_BANNER_SIZE,
       storageMaxFilesPerMessage: STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
-      storageQuota: STORAGE_QUOTA
+      storageQuota: STORAGE_QUOTA,
+      storageSignedUrlsEnabled: false,
+      storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS
     });
   const [diskMetrics, setDiskMetrics] = useState<TDiskMetrics | undefined>(
     undefined
@@ -468,7 +474,9 @@ export const useAdminStorage = () => {
         storageMaxFilesPerMessage: values.storageMaxFilesPerMessage,
         storageSpaceQuotaByUser: values.storageSpaceQuotaByUser,
         storageOverflowAction:
-          values.storageOverflowAction as StorageOverflowAction
+          values.storageOverflowAction as StorageOverflowAction,
+        storageSignedUrlsEnabled: values.storageSignedUrlsEnabled,
+        storageSignedUrlsTtlSeconds: values.storageSignedUrlsTtlSeconds
       });
       toast.success('Storage settings updated');
     } catch (error) {

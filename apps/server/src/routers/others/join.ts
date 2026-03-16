@@ -95,7 +95,7 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       message: 'User not present in public users'
     });
 
-    logger.info(`%s joined the server`, ctx.user.name);
+    logger.info('%s joined the server', ctx.user.name);
 
     ctx.pubsub.publish(ServerEvents.USER_JOIN, {
       ...foundPublicUser,

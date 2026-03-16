@@ -1,10 +1,7 @@
-import {
-  Permission as EPermission,
-  permissionDescriptions,
-  permissionLabels
-} from '@sharkord/shared';
+import { Permission as EPermission } from '@sharkord/shared';
 import { Label, Switch } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const availablePermissions = Object.values(EPermission);
 
@@ -17,12 +14,14 @@ type TPermissionProps = {
 
 const Permission = memo(
   ({ permission, enabled, onChange, disabled }: TPermissionProps) => {
+    const { t } = useTranslation('permissions');
+
     return (
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
-          <Label>{permissionLabels[permission]}</Label>
+          <Label>{t(`server.${permission}`)}</Label>
           <span className="text-sm text-muted-foreground">
-            {permissionDescriptions[permission]}
+            {t(`serverDescriptions.${permission}`)}
           </span>
         </div>
         <Switch
@@ -43,6 +42,8 @@ type TPermissionListProps = {
 
 const PermissionList = memo(
   ({ permissions, setPermissions, disabled }: TPermissionListProps) => {
+    const { t } = useTranslation('permissions');
+
     const onTogglePermission = useCallback(
       (permission: EPermission) => {
         if (permissions.includes(permission)) {
@@ -56,7 +57,7 @@ const PermissionList = memo(
 
     return (
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold">Permissions</h3>
+        <h3 className="text-sm font-semibold">{t('headers.server')}</h3>
 
         <div className="space-y-3">
           {availablePermissions.map((permission) => (
