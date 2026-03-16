@@ -7,13 +7,14 @@ import {
 } from '@/helpers/audio-gate';
 import { applyAudioOutputDevice } from '@/helpers/audio-output';
 import { createAudioMeterWorkletNode } from '@/helpers/audio-worklet/audio-meter-worklet';
-import { createDtlnChain } from '@/helpers/audio-worklet/dtln-worklet';
+import { createNsChain } from '@/helpers/audio-worklet/ns-worklet';
 import {
   createNoiseGateWorkletNode,
   getNoiseGateWorkletAvailabilitySnapshot,
   markNoiseGateWorkletUnavailable,
   postNoiseGateWorkletConfig
 } from '@/helpers/audio-worklet/noise-gate-worklet';
+
 import { NoiseSuppression } from '@/types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -80,7 +81,7 @@ const useMicrophoneTest = ({
   const testAudioRef = useRef<HTMLAudioElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const dtlnAudioContextsRef = useRef<AudioContext[]>([]);
+  const nsAudioContextsRef = useRef<AudioContext[]>([]);
   const meterIntervalRef = useRef<number | null>(null);
   const meterWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
   const noiseGateWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
@@ -111,7 +112,7 @@ const useMicrophoneTest = ({
     const hasSpecificDevice =
       microphoneId && microphoneId !== DEFAULT_DEVICE_NAME;
 
-    const useDtln = noiseSuppression === NoiseSuppression.ADVANCED;
+    const useDtln = noiseSuppression === NoiseSuppression.DTLN;
     const useStandardNs = noiseSuppression === NoiseSuppression.STANDARD;
 
     return {
@@ -160,8 +161,8 @@ const useMicrophoneTest = ({
       audioContextRef.current = null;
     }
 
-    dtlnAudioContextsRef.current.forEach((ctx) => ctx.close());
-    dtlnAudioContextsRef.current = [];
+    nsAudioContextsRef.current.forEach((ctx) => ctx.close());
+    nsAudioContextsRef.current = [];
 
     audioLevelRef.current = 0;
   }, [stopStreamTracks]);
@@ -249,8 +250,8 @@ const useMicrophoneTest = ({
           audioContext.close();
         }
 
-        dtlnAudioContextsRef.current.forEach((ctx) => ctx.close());
-        dtlnAudioContextsRef.current = [];
+        nsAudioContextsRef.current.forEach((ctx) => ctx.close());
+        nsAudioContextsRef.current = [];
       };
 
       try {
@@ -267,13 +268,16 @@ const useMicrophoneTest = ({
 
         let processedStream: MediaStream = stream;
 
-        if (noiseSuppression === NoiseSuppression.ADVANCED) {
+        if (
+          noiseSuppression === NoiseSuppression.DTLN ||
+          noiseSuppression === NoiseSuppression.RNNOISE
+        ) {
           try {
-            const dtlnChain = await createDtlnChain(stream);
-            dtlnAudioContextsRef.current = dtlnChain.contexts;
-            processedStream = new MediaStream([dtlnChain.outputTrack]);
-          } catch (dtlnError) {
-            console.error('DTLN noise suppression failed:', dtlnError);
+            const chain = await createNsChain(noiseSuppression, stream);
+            nsAudioContextsRef.current = chain.contexts;
+            processedStream = new MediaStream([chain.outputTrack]);
+          } catch (nsError) {
+            console.error('Noise suppression failed:', nsError);
           }
         }
 
@@ -288,8 +292,9 @@ const useMicrophoneTest = ({
         let source: AudioNode =
           audioContext.createMediaStreamSource(processedStream);
 
+        // DTLN outputs mono; duplicate ch0 to ch1 so the loopback plays centred
         const needsMonoToStereo =
-          noiseSuppression === NoiseSuppression.ADVANCED;
+          noiseSuppression === NoiseSuppression.DTLN;
 
         if (needsMonoToStereo) {
           const splitter = audioContext.createChannelSplitter(2);

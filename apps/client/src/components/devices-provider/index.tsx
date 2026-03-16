@@ -79,9 +79,23 @@ const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
     );
 
     if (savedSettings) {
+      // migrate stale boolean noiseSuppression values from before the enum was
+      // introduced as true => STANDARD, false/anything else => NONE
+      const noiseSuppressionValues = Object.values(
+        NoiseSuppression
+      ) as string[];
+      const rawNs = savedSettings.noiseSuppression as unknown;
+      const noiseSuppression: NoiseSuppression =
+        noiseSuppressionValues.includes(rawNs as string)
+          ? (rawNs as NoiseSuppression)
+          : rawNs === true
+            ? NoiseSuppression.STANDARD
+            : NoiseSuppression.NONE;
+
       setDevices({
         ...DEFAULT_DEVICE_SETTINGS,
-        ...savedSettings
+        ...savedSettings,
+        noiseSuppression
       });
     }
 

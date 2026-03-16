@@ -9,7 +9,8 @@ const isDtlnWorkletSupported = () => {
   return !!(window.AudioWorkletNode && window.AudioContext);
 };
 
-const DTLN_CACHE_NAME = 'dtln-worklet-v1';
+const DTLN_CACHE_NAME = 'dtln-worklet-v3';
+const DTLN_CACHE_ENABLED = true;
 
 // resolves to a blob url for the worklet script -- within a session the same
 // promise is reused (no re-fetch, no re-parse); across page loads the response
@@ -18,23 +19,24 @@ let dtlnBlobUrlPromise: Promise<string> | null = null;
 
 const getDtlnBlobUrl = (): Promise<string> => {
   if (!dtlnBlobUrlPromise) {
-    dtlnBlobUrlPromise = caches
-      .open(DTLN_CACHE_NAME)
-      .then(async (cache) => {
-        let response = await cache.match(DTLN_WORKLET_URL);
+    dtlnBlobUrlPromise = (
+      DTLN_CACHE_ENABLED
+        ? caches.open(DTLN_CACHE_NAME).then(async (cache) => {
+            let response = await cache.match(DTLN_WORKLET_URL);
 
-        if (!response) {
-          await cache.add(DTLN_WORKLET_URL);
-          response = await cache.match(DTLN_WORKLET_URL);
-        }
+            if (!response) {
+              await cache.add(DTLN_WORKLET_URL);
+              response = await cache.match(DTLN_WORKLET_URL);
+            }
 
-        if (!response) {
-          throw new Error('failed to cache DTLN worklet');
-        }
+            if (!response) {
+              throw new Error('failed to cache DTLN worklet');
+            }
 
-        return response.blob();
-      })
-      .then((blob) => URL.createObjectURL(blob));
+            return response.blob();
+          })
+        : fetch(DTLN_WORKLET_URL).then((r) => r.blob())
+    ).then((blob) => URL.createObjectURL(blob));
   }
 
   return dtlnBlobUrlPromise;
@@ -68,7 +70,7 @@ const waitForReady = (node: AudioWorkletNode) =>
     }, DTLN_READY_TIMEOUT_MS);
 
     node.port.onmessage = (e) => {
-      if (e.data === 'ready') {
+      if (typeof e.data === 'string' && e.data.startsWith('ready:')) {
         clearTimeout(timer);
         resolve();
       }
@@ -92,18 +94,21 @@ const createDtlnChain = async (
     throw new Error('AudioWorklet is not supported in this browser');
   }
 
-  const nativeSampleRate =
-    inputStream.getAudioTracks()[0]?.getSettings().sampleRate ?? 48000;
-  const ctx = new AudioContext({ sampleRate: nativeSampleRate });
+  const ctx = new AudioContext({ sampleRate: 16000 });
   await ensureWorkletLoaded(ctx);
   const workletNode = new AudioWorkletNode(ctx, DTLN_WORKLET_NAME);
-  await waitForReady(workletNode);
 
   const source = ctx.createMediaStreamSource(inputStream);
   const destination = ctx.createMediaStreamDestination();
 
   source.connect(workletNode);
   workletNode.connect(destination);
+
+  if (ctx.state === 'suspended') {
+    await ctx.resume();
+  }
+
+  await waitForReady(workletNode);
 
   const outputTrack = destination.stream.getAudioTracks()[0];
 

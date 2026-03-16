@@ -35,7 +35,7 @@ import {
   Switch
 } from '@sharkord/ui';
 import { filesize } from 'filesize';
-import { Info, Sparkles } from 'lucide-react';
+import { Info } from 'lucide-react';
 import {
   memo,
   useCallback,
@@ -72,6 +72,7 @@ const Devices = memo(() => {
     getNoiseGateWorkletAvailabilitySnapshot
   );
   const isNoiseGateAvailable = noiseGateWorkletAvailability.available;
+
   const {
     testAudioRef,
     permissionState,
@@ -310,14 +311,17 @@ const Devices = memo(() => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value={NoiseSuppression.NONE}>None</SelectItem>
+                    <SelectItem value={NoiseSuppression.NONE}>
+                      None
+                    </SelectItem>
                     <SelectItem value={NoiseSuppression.STANDARD}>
                       Standard
                     </SelectItem>
-                    <SelectItem value={NoiseSuppression.ADVANCED}>
-                      <span className="flex items-center gap-2">
-                        Advanced <Sparkles className="size-3.5" />
-                      </span>
+                    <SelectItem value={NoiseSuppression.RNNOISE}>
+                      Advanced (RNNoise)
+                    </SelectItem>
+                    <SelectItem value={NoiseSuppression.DTLN}>
+                      Experimental (DTLN)
                     </SelectItem>
                   </SelectGroup>
                 </SelectContent>

@@ -6,13 +6,14 @@ import {
   MICROPHONE_GATE_DEFAULT_THRESHOLD_DB,
   clampMicrophoneDecibels
 } from '@/helpers/audio-gate';
-import { createDtlnChain } from '@/helpers/audio-worklet/dtln-worklet';
 import {
   createNoiseGateWorkletNode,
   getNoiseGateWorkletAvailabilitySnapshot,
   markNoiseGateWorkletUnavailable,
   postNoiseGateWorkletConfig
 } from '@/helpers/audio-worklet/noise-gate-worklet';
+import { createNsChain } from '@/helpers/audio-worklet/ns-worklet';
+
 import { logVoice } from '@/helpers/browser-logger';
 import { getResWidthHeight } from '@/helpers/get-res-with-height';
 import { getTRPCClient } from '@/lib/trpc';
@@ -227,7 +228,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   const microphoneNoiseGateWorkletNodeRef = useRef<AudioWorkletNode | null>(
     null
   );
-  const dtlnAudioContextsRef = useRef<AudioContext[]>([]);
+  const nsAudioContextsRef = useRef<AudioContext[]>([]);
   const micMutedRef = useRef(ownVoiceState.micMuted);
 
   const syncTransmitMicrophoneTrackState = useCallback(() => {
@@ -253,8 +254,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       microphoneNoiseGateAudioContextRef.current = null;
     }
 
-    dtlnAudioContextsRef.current.forEach((ctx) => ctx.close());
-    dtlnAudioContextsRef.current = [];
+    nsAudioContextsRef.current.forEach((ctx) => ctx.close());
+    nsAudioContextsRef.current = [];
 
     rawMicrophoneStreamRef.current
       ?.getTracks()
@@ -294,7 +295,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       logVoice('Starting microphone stream');
       cleanupMicProcessingResources();
 
-      const useDtln = devices.noiseSuppression === NoiseSuppression.ADVANCED;
+      const useNsChain =
+        devices.noiseSuppression === NoiseSuppression.DTLN ||
+        devices.noiseSuppression === NoiseSuppression.RNNOISE;
       const useStandardNs =
         devices.noiseSuppression === NoiseSuppression.STANDARD;
 
@@ -306,7 +309,6 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           autoGainControl: devices.autoGainControl,
           echoCancellation: devices.echoCancellation,
           noiseSuppression: useStandardNs,
-          sampleRate: useDtln ? 16000 : 48000,
           channelCount: 1
         },
         video: false
@@ -381,21 +383,23 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           });
         }
 
-        if (devices.noiseSuppression === NoiseSuppression.ADVANCED) {
-          logVoice('Setting up DTLN noise suppression');
-
-          dtlnAudioContextsRef.current.forEach((ctx) => ctx.close());
-          dtlnAudioContextsRef.current = [];
+        if (useNsChain) {
+          logVoice('Setting up noise suppression', {
+            type: devices.noiseSuppression
+          });
 
           try {
-            const chain = await createDtlnChain(transmitStream);
-            dtlnAudioContextsRef.current = chain.contexts;
+            const chain = await createNsChain(
+              devices.noiseSuppression,
+              transmitStream
+            );
+            nsAudioContextsRef.current = chain.contexts;
             transmitTrack = chain.outputTrack;
             transmitStream = new MediaStream([chain.outputTrack]);
-            logVoice('DTLN worklet chain ready');
-          } catch (dtlnError) {
-            logVoice('Failed to set up DTLN noise suppression', {
-              error: dtlnError
+            logVoice('Noise suppression chain ready');
+          } catch (nsError) {
+            logVoice('Failed to set up noise suppression', {
+              error: nsError
             });
           }
         }

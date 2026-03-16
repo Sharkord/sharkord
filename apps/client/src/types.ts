@@ -44,7 +44,8 @@ export enum VideoCodec {
 export enum NoiseSuppression {
   NONE = 'none',
   STANDARD = 'standard',
-  ADVANCED = 'advanced'
+  RNNOISE = 'rnnoise',
+  DTLN = 'dtln'
 }
 
 export type TDeviceSettings = {

@@ -15,12 +15,20 @@ class DtlnProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
 
-    Module.postRun = [() => {
-      this.isModuleReady = true;
-      this.port.postMessage('ready');
-    }];
-
     this.isModuleReady = false;
+
+    const signalReady = () => {
+      this.isModuleReady = true;
+      const path = sampleRate === DTLN_SAMPLE_RATE ? 'native' : 'resampling';
+      this.port.postMessage('ready:' + sampleRate + ':' + path);
+    };
+
+    if (Module['calledRun']) {
+      signalReady();
+    } else {
+      DtlnPlugin.postRun = DtlnPlugin.postRun || [];
+      DtlnPlugin.postRun.push(signalReady);
+    }
     this.dtln_handle = null;
 
     // native mode state (16kHz context)
