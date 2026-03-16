@@ -1,5 +1,12 @@
 import z from 'zod';
-import type { TJoinedPublicUser } from './tables';
+import type {
+  TCategory,
+  TChannel,
+  TJoinedEmoji,
+  TJoinedPublicUser,
+  TJoinedRole
+} from './tables';
+import type { TPublicServerSettings } from './types';
 
 export const zPluginPackageJson = z.object({
   version: z
@@ -11,6 +18,7 @@ export const zPluginPackageJson = z.object({
       server: z.string().min(1, 'Server entry point is required'),
       client: z.string().min(1, 'Client entry point is required')
     }),
+    sdkRange: z.string().min(1).optional(),
     author: z.string().min(1, 'Plugin author is required'),
     homepage: z.url().optional(),
     description: z.string().min(1, 'Plugin description is required'),
@@ -24,6 +32,7 @@ export type TPluginInfo = {
   id: string;
   enabled: boolean;
   loadError?: string;
+  sdkRange?: string;
   author: TPluginPackageJson['sharkord']['author'];
   description: TPluginPackageJson['sharkord']['description'];
   version: TPluginPackageJson['version'];
@@ -139,7 +148,7 @@ export type TPluginComponentsMapBySlotIdMapListByPlugin = {
   [pluginId: string]: PluginSlot[];
 };
 
-export type TPluginReactComponent = React.ComponentType<TPluginSlotContext>;
+export type TPluginReactComponent = React.ComponentType;
 
 export type TPluginComponentsMapBySlotId = {
   [slot in PluginSlot]?: TPluginReactComponent[];
@@ -154,11 +163,28 @@ export type TPluginComponentsMap = {
   [pluginId: string]: TPluginComponentsMapBySlotId;
 };
 
-export type TPluginSlotContext = {
+export type TPluginStoreState = {
   users: TJoinedPublicUser[];
+  channels: TChannel[];
+  categories: TCategory[];
+  roles: TJoinedRole[];
+  emojis: TJoinedEmoji[];
+  plugins: TPluginMetadata[];
+  ownUserId: number | undefined;
   selectedChannelId: number | undefined;
   currentVoiceChannelId: number | undefined;
-  sendMessage: (channelId: number, content: string) => void;
+  publicSettings: TPublicServerSettings | undefined;
+};
+
+export type TPluginActions = {
+  sendMessage: (channelId: number, content: string) => Promise<void>;
+  selectChannel: (channelId: number) => void;
+};
+
+export type TPluginStore = {
+  getState: () => TPluginStoreState;
+  subscribe: (listener: () => void) => () => void;
+  actions: TPluginActions;
 };
 
 export type TPluginMetadata = {
@@ -167,3 +193,5 @@ export type TPluginMetadata = {
   description: string;
   avatarUrl?: string;
 };
+
+export const PLUGIN_SDK_VERSION = '0.1.0';

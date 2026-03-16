@@ -25,7 +25,7 @@ describe('plugins router', () => {
     const { plugins } = await caller.plugins.get();
 
     expect(plugins).toBeDefined();
-    expect(plugins.length).toBe(7);
+    expect(plugins.length).toBe(10);
   });
 
   test('should include plugin metadata', async () => {

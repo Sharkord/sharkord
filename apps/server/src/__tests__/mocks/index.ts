@@ -36,7 +36,10 @@ const resetPluginMocks = async () => {
     { pluginId: 'plugin-with-settings', enabled: true },
     { pluginId: 'plugin-no-unload', enabled: true },
     { pluginId: 'plugin-no-onload', enabled: true },
-    { pluginId: 'plugin-throws-error', enabled: true }
+    { pluginId: 'plugin-throws-error', enabled: true },
+    { pluginId: 'plugin-no-sdk-range', enabled: true },
+    { pluginId: 'plugin-invalid-sdk-range', enabled: true },
+    { pluginId: 'plugin-incompatible-sdk-range', enabled: true }
   ]);
 
   // reload plugin states into memory

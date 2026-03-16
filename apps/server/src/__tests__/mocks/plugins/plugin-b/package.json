@@ -6,6 +6,7 @@
       "server": "index.js",
       "client": "index.js"
     },
+    "sdkRange": "^0.1.0",
     "author": "Test Author",
     "homepage": "https://example.com",
     "description": "Plugin B with commands",

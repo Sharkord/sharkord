@@ -121,6 +121,21 @@
         "typescript": "^5",
       },
     },
+    "packages/client-types": {
+      "name": "@sharkord/client-types",
+      "version": "0.0.15",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "@typescript-eslint/eslint-plugin": "^8.46.1",
+        "eslint": "^8.56.0",
+        "eslint-plugin-unused-imports": "^4.1.4",
+        "prettier": "^3.5.3",
+        "prettier-plugin-organize-imports": "^4.1.0",
+        "typescript": "^5",
+      },
+    },
     "packages/e2e": {
       "name": "@sharkord/e2e",
       "version": "0.0.1",
@@ -143,6 +158,7 @@
       "name": "@sharkord/plugin-sdk",
       "version": "0.0.1",
       "devDependencies": {
+        "@sharkord/client-types": "workspace:*",
         "@sharkord/shared": "workspace:*",
         "@types/bun": "latest",
         "@types/react": "^19.1.13",
@@ -560,6 +576,8 @@
     "@rollup/rollup-win32-x64-gnu": ["@rollup/rollup-win32-x64-gnu@4.59.0", "", { "os": "win32", "cpu": "x64" }, "sha512-laBkYlSS1n2L8fSo1thDNGrCTQMmxjYY5G0WFWjFFYZkKPjsMBsgJfGf4TLxXrF6RyhI60L8TMOjBMvXiTcxeA=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.59.0", "", { "os": "win32", "cpu": "x64" }, "sha512-2HRCml6OztYXyJXAvdDXPKcawukWY2GpR5/nxKp4iBgiO3wcoEGkAaqctIbZcNB6KlUQBIqt8VYkNSj2397EfA=="],
+
+    "@sharkord/client-types": ["@sharkord/client-types@workspace:packages/client-types"],
 
     "@sharkord/e2e": ["@sharkord/e2e@workspace:packages/e2e"],
 

@@ -1,13 +1,13 @@
 {
-  "name": "plugin-no-onload",
+  "name": "plugin-incompatible-sdk-range",
   "version": "1.0.0",
   "sharkord": {
     "entry": {
       "server": "index.js",
       "client": "index.js"
     },
-    "sdkRange": "^0.1.0",
+    "sdkRange": "^9.9.9",
     "author": "Test Author",
-    "description": "Plugin without onLoad export"
+    "description": "Plugin with incompatible sdkRange"
   }
 }

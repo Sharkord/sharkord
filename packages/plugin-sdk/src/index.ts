@@ -1,19 +1,14 @@
 import type {
   CommandDefinition,
   TInvokerContext,
+  TPluginActions,
   TPluginComponentsMapBySlotId,
   TPluginSettingDefinition,
-  TPluginSlotContext
+  TPluginStore,
+  TPluginStoreState
 } from '@sharkord/shared';
-import { PluginSlot } from '@sharkord/shared';
+import { PLUGIN_SDK_VERSION, PluginSlot } from '@sharkord/shared';
 import type { AppData, Producer, Router } from 'mediasoup/types';
-
-export { PluginSlot };
-export type {
-  TInvokerContext,
-  TPluginComponentsMapBySlotId,
-  TPluginSlotContext
-};
 
 export type TCreateStreamOptions = {
   channelId: number;
@@ -158,6 +153,8 @@ export interface UnloadPluginContext extends Pick<
   'log' | 'debug' | 'error'
 > {}
 
+type TSharkordState = ReturnType<TPluginStore['getState']>;
+
 // re-export mediasoup types for plugin usage
 export type {
   AppData,
@@ -172,3 +169,14 @@ export type {
   RtpParameters,
   Transport
 } from 'mediasoup/types';
+
+export type {
+  TInvokerContext,
+  TPluginActions,
+  TPluginComponentsMapBySlotId,
+  TPluginStore,
+  TPluginStoreState,
+  TSharkordState
+};
+
+export { PLUGIN_SDK_VERSION, PluginSlot };

@@ -13,12 +13,15 @@ import { AutoLoginController } from './components/routing/auto-login-controller.
 import { Routing } from './components/routing/index.tsx';
 import { ServerScreensProvider } from './components/server-screens/index.tsx';
 import { ThemeProvider } from './components/theme-provider/index.tsx';
+import { exposePluginStore } from './features/server/plugins/plugin-store.ts';
 import { store } from './features/store.ts';
-import { exposeReact } from './helpers/expose-react.ts';
 import { LocalStorageKey } from './helpers/storage.ts';
 import './index.css';
+import { exposeLibs, exposeReact } from './helpers/exposes.ts';
 
 exposeReact();
+exposeLibs();
+exposePluginStore();
 
 await i18nReady;
 

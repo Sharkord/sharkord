@@ -7,8 +7,7 @@ import {
   channelPermissionsSelector,
   channelReadStateByIdSelector,
   channelsByCategoryIdSelector,
-  currentVoiceChannelIdSelector,
-  selectedChannelIdSelector
+  currentVoiceChannelIdSelector
 } from './channels/selectors';
 import {
   messagesByChannelIdSelector,
@@ -174,15 +173,6 @@ export const ownVoiceUserSelector = createSelector(
   ],
   (ownUserId, voiceUsers) =>
     voiceUsers?.find((voiceUser) => voiceUser.id === ownUserId)
-);
-
-export const pluginComponentContextSelector = createSelector(
-  [usersSelector, selectedChannelIdSelector, currentVoiceChannelIdSelector],
-  (users, selectedChannelId, currentVoiceChannelId) => ({
-    users,
-    selectedChannelId,
-    currentVoiceChannelId
-  })
 );
 
 // this approach has some limitations but it should work for most cases

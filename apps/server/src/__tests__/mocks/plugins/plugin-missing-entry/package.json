@@ -6,6 +6,7 @@
       "server": "nonexistent.js",
       "client": "nonexistent.js"
     },
+    "sdkRange": "^0.1.0",
     "author": "Test Author",
     "description": "Plugin with missing entry file"
   }

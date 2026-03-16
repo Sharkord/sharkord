@@ -6,6 +6,7 @@ import type {
   UnloadPluginContext
 } from '@sharkord/plugin-sdk';
 import {
+  PLUGIN_SDK_VERSION,
   ServerEvents,
   StreamKind,
   zPluginPackageJson,
@@ -23,6 +24,7 @@ import chalk from 'chalk';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
+import semver from 'semver';
 import { db } from '../db';
 import { getSettings } from '../db/queries/server';
 import { pluginData } from '../db/schema';
@@ -400,6 +402,28 @@ class PluginManager {
     return pluginIds.filter((pluginId) => this.uiState.get(pluginId));
   };
 
+  private getSdkRangeError = (sdkRange: string | undefined): string | null => {
+    if (!sdkRange) {
+      return `Plugin is missing SDK Range (expected ${PLUGIN_SDK_VERSION}).`;
+    }
+
+    const validRange = semver.validRange(sdkRange);
+
+    if (!validRange) {
+      return `Plugin has invalid SDK Range: ${sdkRange}.`;
+    }
+
+    const compatible = semver.satisfies(PLUGIN_SDK_VERSION, validRange, {
+      includePrerelease: true
+    });
+
+    if (!compatible) {
+      return `Plugin requires SDK ${sdkRange}, but server provides ${PLUGIN_SDK_VERSION}.`;
+    }
+
+    return null;
+  };
+
   public getActivePluginMetadata = async (): Promise<TPluginMetadata[]> => {
     const metadata: TPluginMetadata[] = [];
 
@@ -515,6 +539,7 @@ class PluginManager {
       path: pluginPath,
       description: packageJson.sharkord.description,
       version: packageJson.version,
+      sdkRange: packageJson.sharkord.sdkRange,
       logo: packageJson.sharkord.logo,
       author: packageJson.sharkord.author,
       homepage: packageJson.sharkord.homepage,
@@ -543,6 +568,20 @@ class PluginManager {
     }
 
     const info = await this.getPluginInfo(pluginId);
+
+    const sdkRangeError = this.getSdkRangeError(info.sdkRange);
+
+    if (sdkRangeError) {
+      this.loadErrors.set(pluginId, sdkRangeError);
+
+      this.logPlugin(
+        pluginId,
+        'error',
+        `Failed to load plugin ${pluginId}: ${sdkRangeError}`
+      );
+
+      return;
+    }
 
     try {
       const ctx = this.createContext(pluginId);

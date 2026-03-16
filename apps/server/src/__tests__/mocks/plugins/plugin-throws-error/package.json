@@ -6,6 +6,7 @@
       "server": "index.js",
       "client": "index.js"
     },
+    "sdkRange": "^0.1.0",
     "author": "Test Author",
     "description": "Plugin that throws error on load"
   }
