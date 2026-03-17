@@ -1,4 +1,4 @@
-import { StorageOverflowAction } from '@sharkord/shared';
+import { FileSaveType, StorageOverflowAction } from '@sharkord/shared';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
@@ -6,6 +6,7 @@ import path from 'path';
 import { tdb } from '../../__tests__/setup';
 import { files, settings } from '../../db/schema';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../../helpers/paths';
+import { pluginManager } from '../../plugins';
 import { fileManager } from '../file-manager';
 
 describe('file manager', () => {
@@ -670,5 +671,325 @@ describe('file manager', () => {
 
     expect(saved1.name).toBe('report.txt');
     expect(saved2.name).toBe('report-2.txt');
+  });
+});
+
+describe('file manager – beforeFileSave hooks', () => {
+  const tempFilesToCleanup: string[] = [];
+  let testFilePath: string;
+  let testFileName: string;
+
+  beforeEach(async () => {
+    pluginManager.clearBeforeFileSaveHooks();
+
+    testFileName = `hook-test-${Date.now()}.txt`;
+    testFilePath = path.join(UPLOADS_PATH, testFileName);
+    await fs.writeFile(testFilePath, 'hook test content');
+  });
+
+  afterEach(async () => {
+    pluginManager.clearBeforeFileSaveHooks();
+
+    for (const p of tempFilesToCleanup) {
+      try {
+        await fs.unlink(p);
+      } catch {
+        // ignore
+      }
+    }
+    tempFilesToCleanup.length = 0;
+
+    try {
+      await fs.unlink(testFilePath);
+    } catch {
+      // ignore
+    }
+  });
+
+  const addTempFile = async (content = 'hook test content') => {
+    const filePath = path.join(
+      UPLOADS_PATH,
+      `src-${Date.now()}-${Math.random()}.txt`
+    );
+    await fs.writeFile(filePath, content);
+    const stats = await fs.stat(filePath);
+    return fileManager.addTemporaryFile({
+      filePath,
+      size: stats.size,
+      originalName: `test-${Date.now()}.txt`,
+      userId: 1
+    });
+  };
+
+  test('hook is not called when saveFile is called without a type', async () => {
+    let hookCalled = false;
+
+    pluginManager.registerBeforeFileSaveHook('test-plugin', async () => {
+      hookCalled = true;
+    });
+
+    const tempFile = await addTempFile();
+    const saved = await fileManager.saveFile(tempFile.id, 1);
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, saved.name));
+
+    expect(hookCalled).toBe(false);
+  });
+
+  test('hook is called with correct payload when type is provided', async () => {
+    let capturedPayload:
+      | Parameters<
+          Parameters<typeof pluginManager.registerBeforeFileSaveHook>[1]
+        >[0]
+      | null = null;
+
+    pluginManager.registerBeforeFileSaveHook('test-plugin', async (payload) => {
+      capturedPayload = payload;
+    });
+
+    const tempFile = await addTempFile();
+    const saved = await fileManager.saveFile(
+      tempFile.id,
+      1,
+      FileSaveType.MESSAGE
+    );
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, saved.name));
+
+    expect(capturedPayload).not.toBeNull();
+    expect(capturedPayload!.userId).toBe(1);
+    expect(capturedPayload!.type).toBe(FileSaveType.MESSAGE);
+    expect(capturedPayload!.tempFile.id).toBe(tempFile.id);
+    expect(capturedPayload!.tempFile.userId).toBe(1);
+  });
+
+  test('hook returning void leaves the file unchanged', async () => {
+    pluginManager.registerBeforeFileSaveHook('test-plugin', async () => {
+      // return nothing
+    });
+
+    const tempFile = await addTempFile('original content');
+    const originalMd5 = tempFile.md5;
+
+    const saved = await fileManager.saveFile(
+      tempFile.id,
+      1,
+      FileSaveType.MESSAGE
+    );
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, saved.name));
+
+    expect(saved.md5).toBe(originalMd5);
+
+    const content = await fs.readFile(
+      path.join(PUBLIC_PATH, saved.name),
+      'utf-8'
+    );
+    expect(content).toBe('original content');
+  });
+
+  test('hook returning a new file path replaces the file content and updates metadata', async () => {
+    const replacementContent = 'replaced by plugin';
+    const replacementPath = path.join(
+      TMP_PATH,
+      `replacement-${Date.now()}.txt`
+    );
+    await fs.writeFile(replacementPath, replacementContent);
+    // track for cleanup in case of failure
+    tempFilesToCleanup.push(replacementPath);
+
+    pluginManager.registerBeforeFileSaveHook('test-plugin', async () => {
+      return replacementPath;
+    });
+
+    const tempFile = await addTempFile('original content');
+    const originalMd5 = tempFile.md5;
+    const originalPath = tempFile.path;
+
+    const saved = await fileManager.saveFile(
+      tempFile.id,
+      1,
+      FileSaveType.MESSAGE
+    );
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, saved.name));
+
+    // content in public should be the replacement
+    const savedContent = await fs.readFile(
+      path.join(PUBLIC_PATH, saved.name),
+      'utf-8'
+    );
+    expect(savedContent).toBe(replacementContent);
+
+    // metadata should reflect the replacement
+    expect(saved.size).toBe(Buffer.byteLength(replacementContent, 'utf-8'));
+    expect(saved.md5).not.toBe(originalMd5);
+
+    // original temp file should have been deleted
+    expect(await fs.exists(originalPath)).toBe(false);
+    // replacement temp file should also be gone (moved to public)
+    expect(await fs.exists(replacementPath)).toBe(false);
+  });
+
+  test('hook throwing an error aborts the save and propagates the error', async () => {
+    pluginManager.registerBeforeFileSaveHook('test-plugin', async () => {
+      throw new Error('rejected by plugin');
+    });
+
+    const tempFile = await addTempFile();
+
+    await expect(
+      fileManager.saveFile(tempFile.id, 1, FileSaveType.MESSAGE)
+    ).rejects.toThrow('rejected by plugin');
+
+    // temp file should still be tracked (save was aborted)
+    expect(fileManager.getTemporaryFile(tempFile.id)).toBeDefined();
+
+    // temp file should still exist on disk
+    expect(await fs.exists(tempFile.path)).toBe(true);
+
+    // clean up manually
+    await fileManager.removeTemporaryFile(tempFile.id);
+  });
+
+  test('hook returning a non-existent path throws a wrapped error', async () => {
+    pluginManager.registerBeforeFileSaveHook('test-plugin', async () => {
+      return path.join(TMP_PATH, 'does-not-exist.txt');
+    });
+
+    const tempFile = await addTempFile();
+
+    await expect(
+      fileManager.saveFile(tempFile.id, 1, FileSaveType.MESSAGE)
+    ).rejects.toThrow('Failed to apply file changes from beforeFileSave hook');
+
+    // clean up
+    await fileManager.removeTemporaryFile(tempFile.id);
+  });
+
+  test('multiple hooks from different plugins all run in sequence', async () => {
+    const callOrder: string[] = [];
+
+    pluginManager.registerBeforeFileSaveHook('plugin-one', async () => {
+      callOrder.push('plugin-one');
+    });
+    pluginManager.registerBeforeFileSaveHook('plugin-two', async () => {
+      callOrder.push('plugin-two');
+    });
+
+    const tempFile = await addTempFile();
+    const saved = await fileManager.saveFile(
+      tempFile.id,
+      1,
+      FileSaveType.AVATAR
+    );
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, saved.name));
+
+    expect(callOrder).toEqual(['plugin-one', 'plugin-two']);
+  });
+
+  test('multiple hooks from the same plugin all run', async () => {
+    const callCount = { n: 0 };
+
+    pluginManager.registerBeforeFileSaveHook('test-plugin', async () => {
+      callCount.n++;
+    });
+    pluginManager.registerBeforeFileSaveHook('test-plugin', async () => {
+      callCount.n++;
+    });
+
+    const tempFile = await addTempFile();
+    const saved = await fileManager.saveFile(
+      tempFile.id,
+      1,
+      FileSaveType.EMOJI
+    );
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, saved.name));
+
+    expect(callCount.n).toBe(2);
+  });
+
+  test('first hook rejection stops subsequent hooks from running', async () => {
+    let secondHookCalled = false;
+
+    pluginManager.registerBeforeFileSaveHook('plugin-one', async () => {
+      throw new Error('first hook rejects');
+    });
+    pluginManager.registerBeforeFileSaveHook('plugin-two', async () => {
+      secondHookCalled = true;
+    });
+
+    const tempFile = await addTempFile();
+
+    await expect(
+      fileManager.saveFile(tempFile.id, 1, FileSaveType.MESSAGE)
+    ).rejects.toThrow('first hook rejects');
+
+    expect(secondHookCalled).toBe(false);
+
+    await fileManager.removeTemporaryFile(tempFile.id);
+  });
+
+  test('tempFile passed to hook is frozen (cannot be mutated directly)', async () => {
+    let wasFrozen = false;
+
+    pluginManager.registerBeforeFileSaveHook('test-plugin', async (payload) => {
+      wasFrozen = Object.isFrozen(payload.tempFile);
+    });
+
+    const tempFile = await addTempFile();
+    const saved = await fileManager.saveFile(
+      tempFile.id,
+      1,
+      FileSaveType.BANNER
+    );
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, saved.name));
+
+    expect(wasFrozen).toBe(true);
+  });
+
+  test('hooks are cleared when clearBeforeFileSaveHooks is called', async () => {
+    let hookCalled = false;
+
+    pluginManager.registerBeforeFileSaveHook('test-plugin', async () => {
+      hookCalled = true;
+    });
+
+    pluginManager.clearBeforeFileSaveHooks();
+
+    const tempFile = await addTempFile();
+    const saved = await fileManager.saveFile(
+      tempFile.id,
+      1,
+      FileSaveType.MESSAGE
+    );
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, saved.name));
+
+    expect(hookCalled).toBe(false);
+  });
+
+  test('hook receives correct FileSaveType for each caller', async () => {
+    const capturedTypes: FileSaveType[] = [];
+
+    pluginManager.registerBeforeFileSaveHook(
+      'test-plugin',
+      async ({ type }) => {
+        capturedTypes.push(type);
+      }
+    );
+
+    const types = [
+      FileSaveType.MESSAGE,
+      FileSaveType.AVATAR,
+      FileSaveType.BANNER,
+      FileSaveType.EMOJI,
+      FileSaveType.SERVER_LOGO
+    ];
+
+    for (const type of types) {
+      const tempFile = await addTempFile();
+      const saved = await fileManager.saveFile(tempFile.id, 1, type);
+      tempFilesToCleanup.push(path.join(PUBLIC_PATH, saved.name));
+    }
+
+    expect(capturedTypes).toEqual(types);
   });
 });

@@ -1,5 +1,7 @@
 import type {
   CommandDefinition,
+  TBeforeFileSaveHook,
+  TBeforeFileSaveResult,
   TInvokerContext,
   TPluginActions,
   TPluginComponentsMapBySlotId,
@@ -7,7 +9,7 @@ import type {
   TPluginStore,
   TPluginStoreState
 } from '@sharkord/shared';
-import { PLUGIN_SDK_VERSION, PluginSlot } from '@sharkord/shared';
+import { FileSaveType, PLUGIN_SDK_VERSION, PluginSlot } from '@sharkord/shared';
 import type { AppData, Producer, Router } from 'mediasoup/types';
 
 export type TCreateStreamOptions = {
@@ -141,6 +143,10 @@ export interface PluginContext {
     ): Promise<PluginSettings<T>>;
   };
 
+  hooks: {
+    onBeforeFileSave(handler: TBeforeFileSaveHook): TBeforeFileSaveResult;
+  };
+
   ui: {
     enable(): void;
     disable(): void;
@@ -171,6 +177,7 @@ export type {
 } from 'mediasoup/types';
 
 export type {
+  TBeforeFileSaveHook,
   TInvokerContext,
   TPluginActions,
   TPluginComponentsMapBySlotId,
@@ -179,4 +186,4 @@ export type {
   TSharkordState
 };
 
-export { PLUGIN_SDK_VERSION, PluginSlot };
+export { FileSaveType, PLUGIN_SDK_VERSION, PluginSlot };

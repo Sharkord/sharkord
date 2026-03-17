@@ -32,6 +32,7 @@ const resetPluginMocks = async () => {
   await tdb.insert(pluginData).values([
     { pluginId: 'plugin-a', enabled: true },
     { pluginId: 'plugin-b', enabled: true },
+    { pluginId: 'plugin-before-file-save', enabled: true },
     { pluginId: 'plugin-with-events', enabled: true },
     { pluginId: 'plugin-with-settings', enabled: true },
     { pluginId: 'plugin-no-unload', enabled: true },

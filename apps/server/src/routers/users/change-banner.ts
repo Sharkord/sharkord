@@ -1,3 +1,4 @@
+import { FileSaveType } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import z from 'zod';
 import { db } from '../../db';
@@ -48,7 +49,11 @@ const changeBannerRoute = protectedProcedure
         message: `Banner file exceeds the configured maximum size of ${settings.storageMaxBannerSize / (1024 * 1024)} MB`
       });
 
-      const newFile = await fileManager.saveFile(input.fileId, ctx.userId);
+      const newFile = await fileManager.saveFile(
+        input.fileId,
+        ctx.userId,
+        FileSaveType.BANNER
+      );
 
       await db
         .update(users)

@@ -1,3 +1,4 @@
+import { FileSaveType } from '@sharkord/shared';
 import z from 'zod';
 import { removeFile } from '../../db/mutations/files';
 import { updateSettings } from '../../db/mutations/server';
@@ -21,7 +22,11 @@ const changeLogoRoute = protectedProcedure
     }
 
     if (input.fileId) {
-      const newFile = await fileManager.saveFile(input.fileId, ctx.userId);
+      const newFile = await fileManager.saveFile(
+        input.fileId,
+        ctx.userId,
+        FileSaveType.SERVER_LOGO
+      );
 
       await updateSettings({ logoId: newFile.id });
     }

@@ -1,3 +1,4 @@
+import { FileSaveType } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import z from 'zod';
 import { db } from '../../db';
@@ -49,7 +50,11 @@ const changeAvatarRoute = protectedProcedure
         message: `Avatar file exceeds the configured maximum size of ${settings.storageMaxAvatarSize / (1024 * 1024)} MB`
       });
 
-      const newFile = await fileManager.saveFile(input.fileId, ctx.userId);
+      const newFile = await fileManager.saveFile(
+        input.fileId,
+        ctx.userId,
+        FileSaveType.AVATAR
+      );
 
       await db
         .update(users)

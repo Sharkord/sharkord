@@ -12,6 +12,7 @@ import {
   zPluginPackageJson,
   type CommandDefinition,
   type RegisteredCommand,
+  type TBeforeFileSaveHook,
   type TCommandsMapByPlugin,
   type TInvokerContext,
   type TLogEntry,
@@ -53,6 +54,7 @@ class PluginManager {
   private pluginStates: PluginStatesMap = {};
   private settingDefinitions = new Map<string, TPluginSettingDefinition[]>();
   private settingValues = new Map<string, Record<string, unknown>>();
+  private beforeFileSaveHooks = new Map<string, TBeforeFileSaveHook[]>();
 
   private loadPluginStates = async () => {
     try {
@@ -126,7 +128,7 @@ class PluginManager {
     this.pluginStates[pluginId] = enabled;
   };
 
-  private isPluginEnabled = (pluginId: string): boolean => {
+  public isEnabled = (pluginId: string): boolean => {
     return this.pluginStates[pluginId] ?? false;
   };
 
@@ -328,7 +330,7 @@ class PluginManager {
     invokerCtx: TInvokerContext,
     args: TArgs
   ): Promise<unknown> => {
-    const isEnabled = this.isPluginEnabled(pluginId);
+    const isEnabled = this.isEnabled(pluginId);
 
     if (!isEnabled) {
       throw new Error(`Plugin '${pluginId}' is not enabled.`);
@@ -402,6 +404,28 @@ class PluginManager {
     return pluginIds.filter((pluginId) => this.uiState.get(pluginId));
   };
 
+  public registerBeforeFileSaveHook = (
+    pluginId: string,
+    handler: TBeforeFileSaveHook
+  ) => {
+    const existing = this.beforeFileSaveHooks.get(pluginId) ?? [];
+    existing.push(handler);
+    this.beforeFileSaveHooks.set(pluginId, existing);
+  };
+
+  public clearBeforeFileSaveHooks = () => {
+    this.beforeFileSaveHooks.clear();
+  };
+
+  public getBeforeFileSaveHooks = (): Array<{
+    pluginId: string;
+    handlers: TBeforeFileSaveHook[];
+  }> => {
+    return Array.from(this.beforeFileSaveHooks.entries()).map(
+      ([pluginId, handlers]) => ({ pluginId, handlers })
+    );
+  };
+
   private getSdkRangeError = (sdkRange: string | undefined): string | null => {
     if (!sdkRange) {
       return `Plugin is missing SDK Range (expected ${PLUGIN_SDK_VERSION}).`;
@@ -447,7 +471,7 @@ class PluginManager {
 
   public togglePlugin = async (pluginId: string, enabled: boolean) => {
     await this.ensurePluginState(pluginId);
-    const wasEnabled = this.isPluginEnabled(pluginId);
+    const wasEnabled = this.isEnabled(pluginId);
 
     await this.setPluginEnabled(pluginId, enabled);
 
@@ -493,6 +517,7 @@ class PluginManager {
     this.uiState.delete(pluginId);
     this.settingDefinitions.delete(pluginId);
     this.settingValues.delete(pluginId);
+    this.beforeFileSaveHooks.delete(pluginId);
     this.loadedPlugins.delete(pluginId);
     this.loadErrors.delete(pluginId);
 
@@ -534,7 +559,7 @@ class PluginManager {
 
     return {
       id: pluginId,
-      enabled: this.isPluginEnabled(pluginId),
+      enabled: this.isEnabled(pluginId),
       name: packageJson.name,
       path: pluginPath,
       description: packageJson.sharkord.description,
@@ -558,7 +583,7 @@ class PluginManager {
       throw new Error('Plugins are disabled.');
     }
 
-    if (!this.isPluginEnabled(pluginId)) {
+    if (!this.isEnabled(pluginId)) {
       this.logPlugin(
         pluginId,
         'debug',
@@ -946,6 +971,11 @@ class PluginManager {
           return this.registerSettings(pluginId, definitions) as ReturnType<
             PluginContext['settings']['register']
           >;
+        }
+      },
+      hooks: {
+        onBeforeFileSave: (handler) => {
+          this.registerBeforeFileSaveHook(pluginId, handler);
         }
       }
     };

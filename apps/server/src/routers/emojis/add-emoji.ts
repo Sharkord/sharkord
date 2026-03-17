@@ -1,4 +1,4 @@
-import { ActivityLogType, Permission } from '@sharkord/shared';
+import { ActivityLogType, FileSaveType, Permission } from '@sharkord/shared';
 import { z } from 'zod';
 import { db } from '../../db';
 import { publishEmoji } from '../../db/publishers';
@@ -21,7 +21,12 @@ const addEmojiRoute = protectedProcedure
     await ctx.needsPermission(Permission.MANAGE_EMOJIS);
 
     for (const data of input) {
-      const newFile = await fileManager.saveFile(data.fileId, ctx.userId);
+      const newFile = await fileManager.saveFile(
+        data.fileId,
+        ctx.userId,
+        FileSaveType.EMOJI
+      );
+
       const uniqueEmojiName = await getUniqueEmojiName(data.name);
 
       const emoji = db

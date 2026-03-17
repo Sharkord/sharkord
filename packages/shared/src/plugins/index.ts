@@ -5,8 +5,8 @@ import type {
   TJoinedEmoji,
   TJoinedPublicUser,
   TJoinedRole
-} from './tables';
-import type { TPublicServerSettings } from './types';
+} from '../tables';
+import type { TPublicServerSettings } from '../types';
 
 export const zPluginPackageJson = z.object({
   version: z
@@ -195,3 +195,4 @@ export type TPluginMetadata = {
 };
 
 export const PLUGIN_SDK_VERSION = '0.1.0';
+export * from './hooks';

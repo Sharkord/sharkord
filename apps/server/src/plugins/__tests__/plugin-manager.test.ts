@@ -1,4 +1,4 @@
-import { type TInvokerContext } from '@sharkord/shared';
+import { FileSaveType, type TInvokerContext } from '@sharkord/shared';
 import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
@@ -7,7 +7,8 @@ import { pluginManager } from '..';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { tdb } from '../../__tests__/setup';
 import { pluginData, settings } from '../../db/schema';
-import { PLUGINS_PATH } from '../../helpers/paths';
+import { PLUGINS_PATH, PUBLIC_PATH, UPLOADS_PATH } from '../../helpers/paths';
+import { fileManager } from '../../utils/file-manager';
 import { eventBus } from '../event-bus';
 
 describe('plugin-manager', () => {
@@ -872,6 +873,37 @@ describe('plugin-manager', () => {
       // since the plugin is unloaded, we can't query it, but we can verify
       // the event bus no longer has handlers for this plugin
       expect(eventBus.hasPlugin('plugin-with-events')).toBe(false);
+    });
+  });
+
+  describe('beforeFileSave hooks integration', () => {
+    test('should allow plugins to modify file contents before saving', async () => {
+      await pluginManager.load('plugin-before-file-save');
+
+      const fileName = `plugin-hook-${Date.now()}.txt`;
+      const sourcePath = path.join(UPLOADS_PATH, fileName);
+      await fs.writeFile(sourcePath, 'original content');
+      const stats = await fs.stat(sourcePath);
+
+      const tempFile = await fileManager.addTemporaryFile({
+        filePath: sourcePath,
+        size: stats.size,
+        originalName: fileName,
+        userId: 1
+      });
+
+      const saved = await fileManager.saveFile(
+        tempFile.id,
+        1,
+        FileSaveType.MESSAGE
+      );
+
+      const savedPath = path.join(PUBLIC_PATH, saved.name);
+      const savedContent = await fs.readFile(savedPath, 'utf-8');
+
+      expect(savedContent).toBe('original content\nmodified by plugin');
+
+      await fs.unlink(savedPath);
     });
   });
 });

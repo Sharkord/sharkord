@@ -1,6 +1,7 @@
 import {
   ActivityLogType,
   ChannelPermission,
+  FileSaveType,
   getPlainTextFromHtml,
   isEmptyMessage,
   Permission,
@@ -229,7 +230,11 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     if (limitedFiles.length > 0) {
       for (const tempFileId of limitedFiles) {
-        const newFile = await fileManager.saveFile(tempFileId, ctx.userId);
+        const newFile = await fileManager.saveFile(
+          tempFileId,
+          ctx.userId,
+          FileSaveType.MESSAGE
+        );
 
         await db.insert(messageFiles).values({
           messageId: message.id,
