@@ -131,6 +131,8 @@ export interface PluginContext {
 
   messages: {
     send(channelId: number, content: string): Promise<{ messageId: number }>;
+    edit(messageId: number, content: string): Promise<void>;
+    delete(messageId: number): Promise<void>;
   };
 
   commands: {

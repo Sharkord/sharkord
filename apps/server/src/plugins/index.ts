@@ -35,6 +35,8 @@ import { logger } from '../logger';
 import { VoiceRuntime } from '../runtimes/voice';
 import { pubsub } from '../utils/pubsub';
 import { createPluginMessage } from './create-plugin-message';
+import { deletePluginMessage } from './delete-plugin-message';
+import { editPluginMessage } from './edit-plugin-message';
 import { eventBus } from './event-bus';
 
 type PluginModule = {
@@ -908,27 +910,23 @@ class PluginManager {
         }
       },
       messages: {
-        send: async (channelId: number, content: string) => {
-          this.logPlugin(
-            pluginId,
-            'debug',
-            `Sending message to channel ${channelId}`
-          );
-
-          const result = await createPluginMessage({
+        send: async (channelId: number, content: string) =>
+          createPluginMessage({
             pluginId,
             channelId,
             content
-          });
-
-          this.logPlugin(
+          }),
+        edit: async (messageId: number, content: string) =>
+          editPluginMessage({
             pluginId,
-            'debug',
-            `Message sent to channel ${channelId} (id: ${result.messageId})`
-          );
-
-          return result;
-        }
+            messageId,
+            content
+          }),
+        delete: async (messageId: number) =>
+          deletePluginMessage({
+            pluginId,
+            messageId
+          })
       },
       commands: {
         register: <TArgs = void>(command: CommandDefinition<TArgs>) => {

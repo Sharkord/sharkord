@@ -1,12 +1,4 @@
 import z from 'zod';
-import type {
-  TCategory,
-  TChannel,
-  TJoinedEmoji,
-  TJoinedPublicUser,
-  TJoinedRole
-} from '../tables';
-import type { TPublicServerSettings } from '../types';
 
 export const zPluginPackageJson = z.object({
   version: z
@@ -163,30 +155,6 @@ export type TPluginComponentsMap = {
   [pluginId: string]: TPluginComponentsMapBySlotId;
 };
 
-export type TPluginStoreState = {
-  users: TJoinedPublicUser[];
-  channels: TChannel[];
-  categories: TCategory[];
-  roles: TJoinedRole[];
-  emojis: TJoinedEmoji[];
-  plugins: TPluginMetadata[];
-  ownUserId: number | undefined;
-  selectedChannelId: number | undefined;
-  currentVoiceChannelId: number | undefined;
-  publicSettings: TPublicServerSettings | undefined;
-};
-
-export type TPluginActions = {
-  sendMessage: (channelId: number, content: string) => Promise<void>;
-  selectChannel: (channelId: number) => void;
-};
-
-export type TPluginStore = {
-  getState: () => TPluginStoreState;
-  subscribe: (listener: () => void) => () => void;
-  actions: TPluginActions;
-};
-
 export type TPluginMetadata = {
   pluginId: string;
   name: string;
@@ -195,4 +163,6 @@ export type TPluginMetadata = {
 };
 
 export const PLUGIN_SDK_VERSION = '0.1.0';
+
+export * from './client-sdk';
 export * from './hooks';

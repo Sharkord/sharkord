@@ -6,7 +6,7 @@ import path from 'path';
 import { pluginManager } from '..';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { tdb } from '../../__tests__/setup';
-import { pluginData, settings } from '../../db/schema';
+import { messages, pluginData, settings } from '../../db/schema';
 import { PLUGINS_PATH, PUBLIC_PATH, UPLOADS_PATH } from '../../helpers/paths';
 import { fileManager } from '../../utils/file-manager';
 import { eventBus } from '../event-bus';
@@ -904,6 +904,69 @@ describe('plugin-manager', () => {
       expect(savedContent).toBe('original content\nmodified by plugin');
 
       await fs.unlink(savedPath);
+    });
+  });
+
+  describe('messages actions', () => {
+    test('should let plugin edit its own message', async () => {
+      await pluginManager.load('plugin-message-actions');
+
+      const { messageId } = (await pluginManager.executeCommand(
+        'plugin-message-actions',
+        'send-message',
+        mockInvokerCtx,
+        {
+          channelId: 1,
+          content: 'plugin original'
+        }
+      )) as { messageId: number };
+
+      await pluginManager.executeCommand(
+        'plugin-message-actions',
+        'edit-message',
+        mockInvokerCtx,
+        {
+          messageId,
+          content: 'plugin edited'
+        }
+      );
+
+      const updated = await tdb
+        .select({ content: messages.content })
+        .from(messages)
+        .where(eq(messages.id, messageId))
+        .get();
+
+      expect(updated?.content).toBe('plugin edited');
+    });
+
+    test('should let plugin delete its own message', async () => {
+      await pluginManager.load('plugin-message-actions');
+
+      const { messageId } = (await pluginManager.executeCommand(
+        'plugin-message-actions',
+        'send-message',
+        mockInvokerCtx,
+        {
+          channelId: 1,
+          content: 'plugin delete me'
+        }
+      )) as { messageId: number };
+
+      await pluginManager.executeCommand(
+        'plugin-message-actions',
+        'delete-message',
+        mockInvokerCtx,
+        { messageId }
+      );
+
+      const deleted = await tdb
+        .select({ id: messages.id })
+        .from(messages)
+        .where(eq(messages.id, messageId))
+        .get();
+
+      expect(deleted).toBeUndefined();
     });
   });
 });
