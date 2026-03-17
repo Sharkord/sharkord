@@ -14,7 +14,7 @@ import {
   UserStatus
 } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
-import { Gavel, Plus, Trash, UserMinus } from 'lucide-react';
+import { Gavel, Pencil, Plus, Trash, UserMinus } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -87,6 +87,43 @@ const Header = memo(() => {
     }
   }, [user.id, refetch, t]);
 
+  const onRename = useCallback(async () => {
+    if (isDeletedUser) {
+      toast.error(t('cannotRenameDeletedUser'));
+      return;
+    }
+
+    const nextName = await requestTextInput({
+      title: t('renameTitle'),
+      message: t('renameMsg', { name: user.name }),
+      confirmLabel: t('renameConfirm')
+    });
+
+    if (nextName === null) {
+      return;
+    }
+
+    const trimmedName = nextName.trim();
+
+    if (!trimmedName || trimmedName === user.name) {
+      return;
+    }
+
+    const trpc = getTRPCClient();
+
+    try {
+      await trpc.users.rename.mutate({
+        userId: user.id,
+        name: trimmedName
+      });
+      toast.success(t('renamedSuccess'));
+    } catch (error) {
+      toast.error(getTrpcError(error, t('failedRename')));
+    } finally {
+      refetch();
+    }
+  }, [user.id, user.name, refetch, isDeletedUser, t]);
+
   const onBan = useCallback(async () => {
     if (isDeletedUser) {
       toast.error(t('cannotBanDeletedUser'));
@@ -157,6 +194,15 @@ const Header = memo(() => {
       </div>
 
       <div className="flex flex-wrap gap-1.5">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRename}
+          disabled={isOwnUser || isDeletedUser}
+        >
+          <Pencil className="h-4 w-4" />
+          {t('renameBtn')}
+        </Button>
         <Button
           variant="outline"
           size="sm"

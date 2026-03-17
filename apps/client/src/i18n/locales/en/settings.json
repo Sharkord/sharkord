@@ -307,6 +307,13 @@
   "unbannedSuccess": "User unbanned successfully",
   "failedUnban": "Failed to unban user",
   "deleteBtn": "Delete",
+  "renameTitle": "Rename User",
+  "renameMsg": "Enter a new username for {{name}}.",
+  "renameConfirm": "Rename",
+  "renameBtn": "Rename",
+  "renamedSuccess": "User renamed successfully",
+  "failedRename": "Failed to rename user",
+  "cannotRenameDeletedUser": "Cannot rename the deleted user placeholder",
   "modViewAssignRoleBtn": "Assign Role",
 
   "serverActivityTitle": "Server Activity",

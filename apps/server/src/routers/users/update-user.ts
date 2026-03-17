@@ -6,16 +6,19 @@ import { publishUser } from '../../db/publishers';
 import { users } from '../../db/schema';
 import { protectedProcedure } from '../../utils/trpc';
 
+const usernameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(24)
+  .refine((val) => val !== DELETED_USER_IDENTITY_AND_NAME, {
+    message: 'Protected username'
+  });
+
 const updateUserRoute = protectedProcedure
   .input(
     z.object({
-      name: z
-        .string()
-        .min(1)
-        .max(24)
-        .refine((val) => val !== DELETED_USER_IDENTITY_AND_NAME, {
-          message: 'Protected username'
-        }),
+      name: usernameSchema,
       bannerColor: z
         .string()
         .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
@@ -37,4 +40,4 @@ const updateUserRoute = protectedProcedure
     publishUser(updatedUser.id, 'update');
   });
 
-export { updateUserRoute };
+export { updateUserRoute, usernameSchema };

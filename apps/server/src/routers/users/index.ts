@@ -15,6 +15,7 @@ import { getUserInfoRoute } from './get-user-info';
 import { getUsersRoute } from './get-users';
 import { kickRoute } from './kick';
 import { removeRoleRoute } from './remove-role';
+import { renameRoute } from './rename';
 import { unbanRoute } from './unban';
 import { updatePasswordRoute } from './update-password';
 import { updateUserRoute } from './update-user';
@@ -36,5 +37,6 @@ export const usersRouter = t.router({
   onLeave: onUserLeaveRoute,
   onUpdate: onUserUpdateRoute,
   onCreate: onUserCreateRoute,
-  onDelete: onUserDeleteRoute
+  onDelete: onUserDeleteRoute,
+  rename: renameRoute
 });
