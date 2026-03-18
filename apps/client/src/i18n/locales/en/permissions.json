@@ -25,7 +25,8 @@
     "MANAGE_UPDATES": "Manage updates",
     "MANAGE_PLUGINS": "Manage plugins",
     "EXECUTE_PLUGIN_COMMANDS": "Execute plugin commands",
-    "VIEW_USER_SENSITIVE_DATA": "View user sensitive data"
+    "VIEW_USER_SENSITIVE_DATA": "View user sensitive data",
+    "CHANGE_USER_NAME": "Manage usernames"
   },
   "serverDescriptions": {
     "SEND_MESSAGES": "Grants the ability to send messages in channels.",
@@ -48,7 +49,8 @@
     "MANAGE_UPDATES": "Grants the ability to perform updates.",
     "MANAGE_PLUGINS": "Grants the ability to manage plugins.",
     "EXECUTE_PLUGIN_COMMANDS": "Grants the ability to execute plugin commands.",
-    "VIEW_USER_SENSITIVE_DATA": "Grants the ability to view user sensitive data like identity, IP address, and location."
+    "VIEW_USER_SENSITIVE_DATA": "Grants the ability to view user sensitive data like identity, IP address, and location.",
+    "CHANGE_USER_NAME": "Grants the ability to change the usernames of other users."
   },
   "channel": {
     "VIEW_CHANNEL": "View Channel",

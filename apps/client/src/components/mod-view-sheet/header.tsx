@@ -21,6 +21,8 @@ import { toast } from 'sonner';
 import { Dialog } from '../dialogs/dialogs';
 import { RoleBadge } from '../role-badge';
 import { useModViewContext } from './context';
+import { Permission } from '@sharkord/shared';
+
 
 const Header = memo(() => {
   const { t } = useTranslation('settings');
@@ -28,6 +30,7 @@ const Header = memo(() => {
   const { user, refetch } = useModViewContext();
   const status = useUserStatus(user.id);
   const userRoles = useUserRoles(user.id);
+  const ownRoles = useUserRoles(ownUserId);
   const isDeletedUser = user.identity === DELETED_USER_IDENTITY_AND_NAME;
   const isOwnUser = user.id === ownUserId;
 
@@ -198,7 +201,8 @@ const Header = memo(() => {
           variant="outline"
           size="sm"
           onClick={onRename}
-          disabled={isOwnUser || isDeletedUser}
+          disabled={!ownRoles?.some((role) =>  role.permissions?.includes(Permission.CHANGE_USER_NAME)
+)}
         >
           <Pencil className="h-4 w-4" />
           {t('renameBtn')}
