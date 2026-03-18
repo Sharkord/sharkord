@@ -17,6 +17,7 @@ import {
   type TInvokerContext,
   type TLogEntry,
   type TPluginInfo,
+  type TPluginManifest,
   type TPluginMetadata,
   type TPluginSettingDefinition,
   type TPluginSettingsResponse
@@ -538,9 +539,15 @@ class PluginManager {
       throw new Error('manifest.json not found');
     }
 
-    const manifest = zPluginManifest.parse(
-      JSON.parse(await fs.readFile(manifestPath, 'utf-8'))
-    );
+    let manifest: TPluginManifest;
+
+    try {
+      manifest = zPluginManifest.parse(
+        JSON.parse(await fs.readFile(manifestPath, 'utf-8'))
+      );
+    } catch (error) {
+      throw new Error(`Invalid manifest.json: ${getErrorMessage(error)}`);
+    }
 
     const serverEntryPath = path.join(pluginPath, SERVER_ENTRY_FILE);
     const clientEntryPath = path.join(pluginPath, CLIENT_ENTRY_FILE);
@@ -560,12 +567,12 @@ class PluginManager {
       enabled: this.isEnabled(pluginId),
       name: manifest.name,
       path: pluginPath,
-      description: manifest.sharkord.description,
+      description: manifest.description,
       version: manifest.version,
-      sdkRange: manifest.sharkord.sdkRange,
-      logo: manifest.sharkord.logo,
-      author: manifest.sharkord.author,
-      homepage: manifest.sharkord.homepage,
+      sdkRange: manifest.sdkRange,
+      logo: manifest.logo,
+      author: manifest.author,
+      homepage: manifest.homepage,
       loadError
     };
   };

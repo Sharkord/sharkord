@@ -44,7 +44,12 @@ export const processPluginComponents = async (pluginIds: string[]) => {
     try {
       componentsMap[pluginId] = {};
 
-      const moduleUrl = `${getUrlFromServer()}/plugin-bundle/${pluginId}/client.js`;
+      const moduleUrl = `${getUrlFromServer()}/plugin-bundle/${pluginId}/client/index.js`;
+
+      logDebug(
+        `Dynamically importing plugin module for plugin ${pluginId} from URL:`,
+        moduleUrl
+      );
 
       // if you are developing, after making a change in the plugin you NEED to refresh the page to load the new version of the plugin, because of browser caching dynamic imports
       const mod = await import(/* @vite-ignore */ moduleUrl);
