@@ -15,15 +15,15 @@ Create a plugin folder, e.g., `my-plugin`.
 
 Run `bun init` to bootstrap your plugin.
 
-### 3. Edit `package.json`
+### 3. Create `manifest.json`
 
-Make sure your `package.json` includes the necessary fields.
+Store plugin metadata in a `manifest.json` file at the root of the built plugin directory.
+Keep `package.json` limited to normal package/runtime fields such as `name`, `version`, `type`, scripts, and dependencies.
 
 **Required fields:**
 
 - `name`: Plugin identifier
 - `version`: Semver version (e.g., `1.0.0`)
-- `sharkord.entry`: Entry file (must be `.js`)
 - `sharkord.author`: Plugin author name
 - `sharkord.description`: Brief description
 
@@ -32,6 +32,24 @@ Make sure your `package.json` includes the necessary fields.
 - `sharkord.homepage`: Plugin website/repository URL
 - `sharkord.logo`: Logo image filename
 
+Example `manifest.json`:
+
+```json
+{
+  "name": "my-plugin",
+  "version": "0.0.1",
+  "sharkord": {
+    "sdkRange": "^0.1.0",
+    "author": "Me",
+    "homepage": "https://some-page.com",
+    "description": "This is my first Sharkord plugin!",
+    "logo": "https://some-page.com/logo.png"
+  }
+}
+```
+
+Plugin code must be compiled to `index.js` at the root of the distributed plugin folder.
+
 Example `package.json`:
 
 ```json
@@ -39,16 +57,9 @@ Example `package.json`:
   "name": "my-plugin",
   "version": "0.0.1",
   "module": "src/index.ts",
-  "sharkord": {
-    "entry": "index.js",
-    "author": "Me",
-    "homepage": "https://some-page.com",
-    "description": "This is my first Sharkord plugin!",
-    "logo": "https://some-page.com/logo.png"
-  },
   "type": "module",
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target bun --minify --format esm && cp package.json dist/"
+    "build": "bun build src/index.ts --outdir dist --target bun --minify --format esm && cp manifest.json dist/"
   },
   "devDependencies": {
     "@types/bun": "latest"
@@ -68,7 +79,7 @@ bun add @sharkord/plugin-sdk
 > [!NOTE]
 > The SDK is not published to any package registry. For now, you need to link it locally using `bun link`.
 
-### 3. Edit Entry File
+### 5. Edit Entry File
 
 ```typescript
 import type { PluginContext } from "@sharkord/plugin-sdk";

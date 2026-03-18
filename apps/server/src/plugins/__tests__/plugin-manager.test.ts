@@ -89,7 +89,7 @@ describe('plugin-manager', () => {
       );
     });
 
-    test('should handle plugin with invalid package.json', async () => {
+    test('should handle plugin with invalid manifest.json', async () => {
       await expect(
         pluginManager.getPluginInfo('plugin-invalid-package')
       ).rejects.toThrow();
@@ -98,7 +98,13 @@ describe('plugin-manager', () => {
     test('should handle plugin with missing entry file', async () => {
       await expect(
         pluginManager.getPluginInfo('plugin-missing-entry')
-      ).rejects.toThrow('Plugin entry file not found');
+      ).rejects.toThrow('Plugin server entry file not found');
+    });
+
+    test('should handle plugin with missing client entry file', async () => {
+      await expect(
+        pluginManager.getPluginInfo('plugin-missing-client-entry')
+      ).rejects.toThrow('Plugin client entry file not found');
     });
 
     test('should load plugin without onUnload', async () => {
@@ -372,7 +378,7 @@ describe('plugin-manager', () => {
     test('should throw error for non-existent plugin', async () => {
       await expect(
         pluginManager.getPluginInfo('nonexistent-plugin')
-      ).rejects.toThrow('package.json not found');
+      ).rejects.toThrow('manifest.json not found');
     });
   });
 

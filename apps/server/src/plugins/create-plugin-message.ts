@@ -38,7 +38,7 @@ const createPluginMessage = async (
 
   const sanitizedContent = sanitizeMessageHtml(content);
 
-  invariant(isEmptyMessage(sanitizedContent), {
+  invariant(!isEmptyMessage(sanitizedContent), {
     code: 'BAD_REQUEST',
     message: 'Plugin message content cannot be empty.'
   });

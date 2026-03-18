@@ -40,11 +40,13 @@ describe('http helpers', () => {
   describe('getRequestPathname', () => {
     test('returns pathname and ignores query params', () => {
       const req = createMockRequest(
-        '/plugin-bundle/plugin-a/index.js?v=123',
+        '/plugin-bundle/plugin-a/server/index.js?v=123',
         'localhost:9999'
       );
 
-      expect(getRequestPathname(req)).toBe('/plugin-bundle/plugin-a/index.js');
+      expect(getRequestPathname(req)).toBe(
+        '/plugin-bundle/plugin-a/server/index.js'
+      );
     });
 
     test('returns null when url is missing', () => {

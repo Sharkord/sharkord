@@ -1,15 +1,11 @@
 import z from 'zod';
 
-export const zPluginPackageJson = z.object({
+export const zPluginManifest = z.object({
   version: z
     .string()
     .regex(/^\d+\.\d+\.\d+(-[a-zA-Z0-9-.]+)?$/, 'Invalid version format'),
-  name: z.string().min(1, 'Package name is required'),
+  name: z.string().min(1, 'Plugin name is required'),
   sharkord: z.object({
-    entry: z.object({
-      server: z.string().min(1, 'Server entry point is required'),
-      client: z.string().min(1, 'Client entry point is required')
-    }),
     sdkRange: z.string().min(1).optional(),
     author: z.string().min(1, 'Plugin author is required'),
     homepage: z.url().optional(),
@@ -18,21 +14,24 @@ export const zPluginPackageJson = z.object({
   })
 });
 
-export type TPluginPackageJson = z.infer<typeof zPluginPackageJson>;
+export type TPluginManifest = z.infer<typeof zPluginManifest>;
+
+export const zPluginPackageJson = zPluginManifest;
+
+export type TPluginPackageJson = TPluginManifest;
 
 export type TPluginInfo = {
   id: string;
   enabled: boolean;
   loadError?: string;
   sdkRange?: string;
-  author: TPluginPackageJson['sharkord']['author'];
-  description: TPluginPackageJson['sharkord']['description'];
-  version: TPluginPackageJson['version'];
-  logo: TPluginPackageJson['sharkord']['logo'];
-  name: TPluginPackageJson['name'];
-  homepage: TPluginPackageJson['sharkord']['homepage'];
+  author: TPluginManifest['sharkord']['author'];
+  description: TPluginManifest['sharkord']['description'];
+  version: TPluginManifest['version'];
+  logo: TPluginManifest['sharkord']['logo'];
+  name: TPluginManifest['name'];
+  homepage: TPluginManifest['sharkord']['homepage'];
   path: string;
-  entry: TPluginPackageJson['sharkord']['entry'];
 };
 
 export type TLogEntry = {

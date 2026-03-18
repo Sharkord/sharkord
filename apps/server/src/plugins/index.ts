@@ -9,7 +9,7 @@ import {
   PLUGIN_SDK_VERSION,
   ServerEvents,
   StreamKind,
-  zPluginPackageJson,
+  zPluginManifest,
   type CommandDefinition,
   type RegisteredCommand,
   type TBeforeFileSaveHook,
@@ -45,6 +45,9 @@ type PluginModule = {
 };
 
 type PluginStatesMap = Record<string, boolean>;
+
+const SERVER_ENTRY_FILE = 'server/index.js';
+const CLIENT_ENTRY_FILE = 'client/index.js';
 
 class PluginManager {
   private loadedPlugins = new Map<string, PluginModule>();
@@ -529,28 +532,21 @@ class PluginManager {
   public getPluginInfo = async (pluginId: string): Promise<TPluginInfo> => {
     await this.ensurePluginState(pluginId);
     const pluginPath = this.getPluginPath(pluginId);
-    const packageJsonPath = path.join(pluginPath, 'package.json');
+    const manifestPath = path.join(pluginPath, 'manifest.json');
 
-    if (!(await fs.exists(packageJsonPath))) {
-      throw new Error('package.json not found');
+    if (!(await fs.exists(manifestPath))) {
+      throw new Error('manifest.json not found');
     }
 
-    const packageJson = zPluginPackageJson.parse(
-      JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'))
+    const manifest = zPluginManifest.parse(
+      JSON.parse(await fs.readFile(manifestPath, 'utf-8'))
     );
 
-    const serverEntryPath = path.join(
-      pluginPath,
-      packageJson.sharkord.entry.server
-    );
-
-    const clientEntryPath = path.join(
-      pluginPath,
-      packageJson.sharkord.entry.client
-    );
+    const serverEntryPath = path.join(pluginPath, SERVER_ENTRY_FILE);
+    const clientEntryPath = path.join(pluginPath, CLIENT_ENTRY_FILE);
 
     if (!(await fs.exists(serverEntryPath))) {
-      throw new Error('Plugin entry file not found');
+      throw new Error('Plugin server entry file not found');
     }
 
     if (!(await fs.exists(clientEntryPath))) {
@@ -562,18 +558,14 @@ class PluginManager {
     return {
       id: pluginId,
       enabled: this.isEnabled(pluginId),
-      name: packageJson.name,
+      name: manifest.name,
       path: pluginPath,
-      description: packageJson.sharkord.description,
-      version: packageJson.version,
-      sdkRange: packageJson.sharkord.sdkRange,
-      logo: packageJson.sharkord.logo,
-      author: packageJson.sharkord.author,
-      homepage: packageJson.sharkord.homepage,
-      entry: {
-        server: serverEntryPath,
-        client: clientEntryPath
-      },
+      description: manifest.sharkord.description,
+      version: manifest.version,
+      sdkRange: manifest.sharkord.sdkRange,
+      logo: manifest.sharkord.logo,
+      author: manifest.sharkord.author,
+      homepage: manifest.sharkord.homepage,
       loadError
     };
   };
@@ -612,7 +604,7 @@ class PluginManager {
 
     try {
       const ctx = this.createContext(pluginId);
-      const mod = await import(info.entry.server);
+      const mod = await import(path.join(info.path, SERVER_ENTRY_FILE));
 
       if (typeof mod.onLoad !== 'function') {
         throw new Error(

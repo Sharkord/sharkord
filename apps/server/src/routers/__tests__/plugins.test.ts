@@ -43,7 +43,7 @@ describe('plugins router', () => {
     expect(pluginA!.description).toBeDefined();
   });
 
-  test('should filter out plugins with invalid package.json', async () => {
+  test('should filter out plugins with invalid manifest.json', async () => {
     const { caller } = await initTest();
 
     const result = await caller.plugins.get();

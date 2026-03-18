@@ -1,0 +1,11 @@
+{
+  "name": "plugin-message-actions",
+  "version": "0.0.1",
+  "sharkord": {
+    "sdkRange": "^0.1.0",
+    "author": "Mocked",
+    "homepage": "https://mocked.com",
+    "description": "Mock plugin for message edit/delete actions.",
+    "logo": "https://some-page.com/logo.png"
+  }
+}

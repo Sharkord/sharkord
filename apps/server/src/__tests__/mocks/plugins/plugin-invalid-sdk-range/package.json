@@ -1,13 +1,5 @@
 {
   "name": "plugin-invalid-sdk-range",
   "version": "1.0.0",
-  "sharkord": {
-    "entry": {
-      "server": "index.js",
-      "client": "index.js"
-    },
-    "sdkRange": "not-a-range",
-    "author": "Test Author",
-    "description": "Plugin with invalid sdkRange"
-  }
+  "version": "1.0.0"
 }
