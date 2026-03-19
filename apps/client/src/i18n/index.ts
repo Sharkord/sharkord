@@ -1,6 +1,6 @@
 import { getLocalStorageItem, LocalStorageKey } from '@/helpers/storage';
 import type { Locale } from 'date-fns';
-import { enUS, zhCN, fr } from 'date-fns/locale';
+import { enUS, fr, zhCN } from 'date-fns/locale';
 import i18n from 'i18next';
 import resourcesToBackend from 'i18next-resources-to-backend';
 import { initReactI18next } from 'react-i18next';
