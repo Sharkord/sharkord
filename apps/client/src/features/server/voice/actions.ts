@@ -1,11 +1,11 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
 import { store } from '@/features/store';
+import { logVoice } from '@/helpers/browser-logger';
 import {
   LocalStorageKey,
   setLocalStorageItem,
   setLocalStorageItemBool
 } from '@/helpers/storage';
-import { logVoice } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   getTrpcError,
@@ -180,11 +180,9 @@ export type TLeaveVoiceReason =
   | 'switch_channel'
   | 'unknown';
 
-export const leaveVoice = async (
-  options?: {
-    reason?: TLeaveVoiceReason;
-  }
-): Promise<void> => {
+export const leaveVoice = async (options?: {
+  reason?: TLeaveVoiceReason;
+}): Promise<void> => {
   const state = store.getState();
   const currentChannelId = currentVoiceChannelIdSelector(state);
   const selectedChannelId = selectedChannelIdSelector(state);
