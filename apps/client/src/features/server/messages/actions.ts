@@ -128,6 +128,8 @@ export const addMessages = (
     const isDmChannelSelected = selectedDmChannelId === channelId && dmsOpen; // only consider DM channel selected if DMs are open
     const isChannelSelected = isTextChannelSelected || isDmChannelSelected;
 
+    const isWindowHidden = document?.hidden;  
+
     if (!isFromOwnUser) {
       const isThreadReply = !!targetMessage.parentMessageId;
 
@@ -143,7 +145,7 @@ export const addMessages = (
       }
 
       // only send browser notifications if the user is not currently viewing this channel
-      if (!isChannelSelected) {
+      if (!isChannelSelected || isWindowHidden) {
         const channel = channelByIdSelector(state, channelId);
         const isDmChannel = !!channel?.isDm;
         const hasDmNotificationsEnabled =
