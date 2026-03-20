@@ -3,9 +3,9 @@
   "banned": "Vous avez été banni",
   "connectionLost": "Connexion perdue",
   "noReasonProvided": "Aucune justification n'a été fournie.",
-  "lostConnectionMessage": "Connection avec le serveur perdue.",
+  "lostConnectionMessage": "Connexion avec le serveur perdue.",
   "goToConnectScreen": "Accéder à l'écran de connexion",
   "details": "Détails",
-  "code": "Code: {{code}}",
-  "time": "Date: {{time}}"
+  "code": "Code : {{code}}",
+  "time": "Date : {{time}}"
 }

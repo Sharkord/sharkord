@@ -8,8 +8,8 @@
   "connectBtn": "Connecter",
   "registrationDisabled": "Les inscriptions de nouveaux utilisateurs sont actuellement désactivées. Si vous n'avez pas encore de compte, vous devez être invité par un utilisateur existant pour rejoindre ce serveur.",
   "invitedTitle": "Vous avez été invité à rejoindre ce serveur",
-  "inviteCode": "Code d'invitation:{{code}}",
-  "connectError": "Impossible de se connecter: {{message}}",
+  "inviteCode": "Code d'invitation : {{code}}",
+  "connectError": "Impossible de se connecter : {{message}}",
   "loggingInAutomatically": "Connexion automatique...",
   "loadingApp": "Chargement de Sharkord",
   "loadingPlugins": "Chargement des plugins"
