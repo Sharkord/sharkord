@@ -1,10 +1,10 @@
 import { useVoiceUsersByChannelId } from '@/features/server/hooks';
+import { useOwnUserId } from '@/features/server/users/hooks';
 import {
   useHideNonVideoParticipants,
   useHideOwnScreenShare,
   useVoiceChannelExternalStreamsList
 } from '@/features/server/voice/hooks';
-import { useOwnUserId } from '@/features/server/users/hooks';
 import { memo, useMemo } from 'react';
 import { ControlsBar } from './controls-bar';
 import { ExternalStreamCard } from './external-stream-card';
