@@ -9,7 +9,12 @@ type TVoiceGridProps = {
 };
 
 const VoiceGrid = memo(
-  ({ children, pinnedCardId, className, verticalLayout = false }: TVoiceGridProps) => {
+  ({
+    children,
+    pinnedCardId,
+    className,
+    verticalLayout = false
+  }: TVoiceGridProps) => {
     const { gridCols, pinnedCard, regularCards } = useMemo(() => {
       const childArray = Array.isArray(children) ? children : [children];
 
@@ -25,7 +30,11 @@ const VoiceGrid = memo(
         );
 
         return {
-          gridCols: verticalLayout ? 1 : (regular.length <= 4 ? regular.length : 4),
+          gridCols: verticalLayout
+            ? 1
+            : regular.length <= 4
+              ? regular.length
+              : 4,
           pinnedCard: pinned,
           regularCards: regular
         };
