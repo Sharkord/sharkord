@@ -49,7 +49,7 @@ const PluginInstallConfirmDialog = memo(
 
     return (
       <AlertDialog open={isOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent aria-describedby={undefined}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {t('pluginInstallConfirmTitle', { name: pluginName })}

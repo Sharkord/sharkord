@@ -1,18 +1,11 @@
-import { cn } from '@/lib/utils';
 import type { TPluginInfo } from '@sharkord/shared';
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Input,
-  Separator
-} from '@sharkord/ui';
+import { Button, Card, CardContent, Input } from '@sharkord/ui';
 import { AlertCircle, Package, RefreshCw, Search } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ListWithSeparators } from '../list-with-separators';
+import { SectionHeader } from '../section-header';
+import { StatePanel } from '../state-panel';
 import { useMarketplaceData } from './hooks';
 import { MarketplaceItem } from './marketplace-item';
 import { MarketplaceSkeleton } from './marketplace-skeleton';
@@ -46,19 +39,16 @@ const Marketplace = memo(({ plugins }: TMarketplaceProps) => {
 
     if (error) {
       return (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
-          <h3 className="font-semibold text-lg mb-1">{error}</h3>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            className="mt-4"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            {t('marketplaceRetry')}
-          </Button>
-        </div>
+        <StatePanel
+          icon={AlertCircle}
+          title={error}
+          action={
+            <Button variant="outline" size="sm" onClick={handleRefresh}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              {t('marketplaceRetry')}
+            </Button>
+          }
+        />
       );
     }
 
@@ -74,27 +64,19 @@ const Marketplace = memo(({ plugins }: TMarketplaceProps) => {
           />
         </div>
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Package className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="font-semibold text-lg mb-1">
-              {t('marketplaceNoResults')}
-            </h3>
-          </div>
+          <StatePanel icon={Package} title={t('marketplaceNoResults')} />
         ) : (
-          <div className="space-y-3">
-            {filtered.map((entry, index) => (
-              <div key={entry.plugin.id}>
-                <MarketplaceItem
-                  entry={entry}
-                  isInstalled={installedPluginIds.has(entry.plugin.id)}
-                  installedVersion={installedPluginsById.get(entry.plugin.id)}
-                />
-                {index < filtered.length - 1 && <Separator className="mt-3" />}
-              </div>
-            ))}
-          </div>
+          <ListWithSeparators
+            items={filtered}
+            getKey={(entry) => entry.plugin.id}
+            renderItem={(entry) => (
+              <MarketplaceItem
+                entry={entry}
+                isInstalled={installedPluginIds.has(entry.plugin.id)}
+                installedVersion={installedPluginsById.get(entry.plugin.id)}
+              />
+            )}
+          />
         )}
       </>
     );
@@ -102,26 +84,14 @@ const Marketplace = memo(({ plugins }: TMarketplaceProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>{t('marketplaceTitle')}</CardTitle>
-            <CardDescription>{t('marketplaceDesc')}</CardDescription>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing || loading}
-            className="shrink-0"
-          >
-            <RefreshCw
-              className={cn('w-4 h-4 mr-2', isRefreshing && 'animate-spin')}
-            />
-            {t('refreshBtn')}
-          </Button>
-        </div>
-      </CardHeader>
+      <SectionHeader
+        title={t('marketplaceTitle')}
+        description={t('marketplaceDesc')}
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
+        refreshDisabled={isRefreshing || loading}
+        refreshLabel={t('refreshBtn')}
+      />
       <CardContent>{renderContent()}</CardContent>
     </Card>
   );

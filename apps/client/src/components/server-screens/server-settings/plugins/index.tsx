@@ -11,6 +11,8 @@ const Plugins = memo(() => {
   const { plugins, loading, refetch } = useAdminPlugins();
   const pluginsEnabled = usePluginsEnabled();
 
+  console.log('Plugins component rendered with plugins:', plugins);
+
   return (
     <Tabs defaultValue="installed" className="w-full">
       <TabsList className="mb-4 grid w-full grid-cols-2">

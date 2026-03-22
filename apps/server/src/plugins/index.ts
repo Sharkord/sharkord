@@ -171,8 +171,6 @@ class PluginManager {
     const files = await fs.readdir(PLUGINS_PATH);
     const result: string[] = [];
 
-    logger.debug(`Found ${files.length} plugins`);
-
     for (const file of files) {
       try {
         // check if it's a directory

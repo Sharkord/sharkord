@@ -182,6 +182,7 @@
   "marketplaceSdkCompatible": "Compatible",
   "marketplaceSdkIncompatible": "Incompatible",
   "marketplaceVerifiedTooltip": "This plugin was verified by Sharkord.",
+  "marketplaceInstallSuccess": "Plugin \"{{name}}\" installed successfully. You need to enable it manually to start using it.",
   "storageTitle": "Storage",
   "storageDesc": "Manage your server's storage settings. Control how data is stored, accessed, and managed. Here you can configure storage limits, backup options, and data retention policies to ensure optimal performance and reliability.",
   "allowUploadsLabel": "Allow uploads",

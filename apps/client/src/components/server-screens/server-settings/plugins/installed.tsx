@@ -2,7 +2,6 @@ import { Dialog } from '@/components/dialogs/dialogs';
 import { openDialog } from '@/features/dialogs/actions';
 import { usePluginsEnabled } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
-import { cn } from '@/lib/utils';
 import type { TPluginInfo } from '@sharkord/shared';
 import { getTrpcError } from '@sharkord/shared';
 import {
@@ -12,18 +11,13 @@ import {
   Button,
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   LoadingCard,
-  Separator,
   Switch
 } from '@sharkord/ui';
 import {
   AlertCircle,
   FileText,
   Package,
-  RefreshCw,
   Settings,
   Terminal,
   User
@@ -31,7 +25,10 @@ import {
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { ListWithSeparators } from './list-with-separators';
 import { ImageWithFallback } from './marketplace/image-with-fallback';
+import { SectionHeader } from './section-header';
+import { StatePanel } from './state-panel';
 
 type TPluginItemProps = {
   plugin: TPluginInfo;
@@ -86,11 +83,7 @@ const PluginItem = memo(({ plugin, onToggle }: TPluginItemProps) => {
             iconFallback={<Package className="w-6 h-6 text-muted-foreground" />}
           />
         ) : (
-          <div
-            className={cn(
-              'w-12 h-12 rounded-md bg-muted flex items-center justify-center'
-            )}
-          >
+          <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center">
             <Package className="w-6 h-6 text-muted-foreground" />
           </div>
         )}
@@ -232,64 +225,39 @@ const InstalledPlugins = memo(
 
     return (
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>{t('pluginsTitle')}</CardTitle>
-              <CardDescription>{t('pluginsManageDesc')}</CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isRefreshing || loading || !enabled}
-              className="shrink-0"
-            >
-              <RefreshCw
-                className={cn('w-4 h-4 mr-2', isRefreshing && 'animate-spin')}
-              />
-              {t('refreshBtn')}
-            </Button>
-          </div>
-        </CardHeader>
+        <SectionHeader
+          title={t('pluginsTitle')}
+          description={t('pluginsManageDesc')}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
+          refreshDisabled={isRefreshing || loading || !enabled}
+          refreshLabel={t('refreshBtn')}
+        />
         <CardContent>
           {enabled ? (
             <>
               {plugins.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                    <Package className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-1">
-                    {t('noPluginsTitle')}
-                  </h3>
-                  <p className="text-sm text-muted-foreground max-w-sm">
-                    {t('noPluginsDesc')}
-                  </p>
-                </div>
+                <StatePanel
+                  icon={Package}
+                  title={t('noPluginsTitle')}
+                  description={t('noPluginsDesc')}
+                />
               ) : (
-                <div className="space-y-3">
-                  {plugins.map((plugin, index) => (
-                    <div key={plugin.id}>
-                      <PluginItem plugin={plugin} onToggle={handleToggle} />
-                      {index < plugins.length - 1 && (
-                        <Separator className="mt-3" />
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <ListWithSeparators
+                  items={plugins}
+                  getKey={(plugin) => plugin.id}
+                  renderItem={(plugin) => (
+                    <PluginItem plugin={plugin} onToggle={handleToggle} />
+                  )}
+                />
               )}
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
-              <h3 className="font-semibold text-lg mb-1">
-                {t('pluginsDisabledTitle')}
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                {t('pluginsDisabledDesc')}
-              </p>
-            </div>
+            <StatePanel
+              icon={AlertCircle}
+              title={t('pluginsDisabledTitle')}
+              description={t('pluginsDisabledDesc')}
+            />
           )}
         </CardContent>
       </Card>

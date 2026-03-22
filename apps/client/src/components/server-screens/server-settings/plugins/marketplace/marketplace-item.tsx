@@ -24,9 +24,9 @@ type TMarketplaceItemProps = {
 
 const MarketplaceItem = memo(
   ({ entry, isInstalled, installedVersion }: TMarketplaceItemProps) => {
+    const { t } = useTranslation('settings');
     const [installingId, setInstallingId] = useState<string | null>(null);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
-    const { t } = useTranslation('settings');
     const { plugin, versions } = entry;
     const latestVersion = versions[0];
 
@@ -71,12 +71,14 @@ const MarketplaceItem = memo(
         await trpc.plugins.install.mutate({
           url: latestVersion.downloadUrl
         });
+
+        toast.success(t('marketplaceInstallSuccess', { name: plugin.name }));
       } catch (error) {
         toast.error(getTrpcError(error, t('marketplaceInstallError')));
       } finally {
         setInstallingId(null);
       }
-    }, [plugin.id, latestVersion.downloadUrl, t]);
+    }, [plugin.id, latestVersion.downloadUrl, t, plugin.name]);
 
     const performUpdate = useCallback(async () => {
       if (!latestCompatibleVersion) return;
