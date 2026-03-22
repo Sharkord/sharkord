@@ -10,6 +10,7 @@ import {
   ownVoiceStateSelector,
   pinnedCardSelector,
   showUserBannersInVoiceSelector,
+  voiceVerticalLayoutSelector,
   voiceChannelAudioExternalStreamsSelector,
   voiceChannelExternalStreamsListSelector,
   voiceChannelExternalStreamsSelector,
@@ -63,6 +64,9 @@ export const useHideNonVideoParticipants = () =>
 
 export const useShowUserBannersInVoice = () =>
   useSelector(showUserBannersInVoiceSelector);
+
+export const useVoiceVerticalLayout = () =>
+  useSelector(voiceVerticalLayoutSelector);
 
 export const useSpeakingState = (userId: number) => {
   const { remoteUserStreams, localAudioStream } = useVoice();
