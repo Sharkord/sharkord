@@ -1,10 +1,10 @@
 import { EmojiPicker } from '@/components/emoji-picker';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
+import { htmlToEditorHtml } from '@/helpers/tiptap-markdown';
 import type { TCommandInfo } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
-import Link from '@tiptap/extension-link';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { ChevronDown, ChevronUp, Smile } from 'lucide-react';
@@ -16,11 +16,13 @@ import {
   useRef,
   useState
 } from 'react';
+
 import type { TEmojiItem } from './helpers';
 import {
   COMMANDS_STORAGE_KEY,
   CommandSuggestion
 } from './plugins/command-suggestion';
+import { MarkSyntaxDecorations } from './plugins/mark-syntax-decorations';
 import { Mention } from './plugins/mentions';
 import { MentionNode } from './plugins/mentions/node';
 import {
@@ -68,23 +70,12 @@ const TiptapInput = memo(
     const extensions = useMemo(() => {
       const exts = [
         StarterKit.configure({
-          hardBreak: {
-            HTMLAttributes: {
-              class: 'hard-break'
-            }
-          }
-        }),
-        Link.configure({
-          autolink: true,
-          defaultProtocol: 'https',
-          openOnClick: false,
-          HTMLAttributes: {
-            target: '_blank',
-            rel: 'noopener noreferrer'
-          },
-          shouldAutoLink: (url) => {
-            return /^https?:\/\//i.test(url);
-          }
+          heading: false,
+          bold: false,
+          italic: false,
+          strike: false,
+          code: false,
+          link: false
         }),
         Emoji.configure({
           emojis: [...gitHubEmojis, ...customEmojis],
@@ -98,7 +89,8 @@ const TiptapInput = memo(
           users,
           suggestion: MentionSuggestion
         }),
-        MentionNode
+        MentionNode,
+        MarkSyntaxDecorations
       ];
 
       if (commands) {
@@ -118,6 +110,10 @@ const TiptapInput = memo(
       extensions,
       content: value,
       editable: !disabled,
+      // only allow emoji input/paste rules --
+      // suppresses *bold*, _italic_, ~~strike~~ etc so users see raw syntax
+      enableInputRules: ['emoji'],
+      enablePasteRules: ['emoji'],
       onUpdate: ({ editor }) => {
         const html = editor.getHTML();
 
@@ -140,13 +136,20 @@ const TiptapInput = memo(
             suggestionElement && document.body.contains(suggestionElement);
 
           if (event.key === 'Enter') {
-            if (event.shiftKey) {
-              return false;
-            }
-
             // if suggestions are active, don't handle Enter - let the suggestion handle it
             if (hasSuggestions) {
               return false;
+            }
+
+            if (event.shiftKey) {
+              // shift is just "don't send" so insert a plain newline, not a hard break
+              event.preventDefault();
+              _view.dispatch(
+                _view.state.tr.replaceSelectionWith(
+                  _view.state.schema.nodes.paragraph.create()
+                )
+              );
+              return true;
             }
 
             event.preventDefault();
@@ -174,7 +177,18 @@ const TiptapInput = memo(
 
           return false;
         },
-        handlePaste: () => !!readOnlyRef.current,
+        handlePaste: (_view, event) => {
+          if (readOnlyRef.current) return true;
+
+          const html = event.clipboardData?.getData('text/html');
+          if (!html) return false;
+
+          const editorHtml = htmlToEditorHtml(html);
+          setTimeout(() => {
+            editor?.commands.insertContent(editorHtml);
+          }, 0);
+          return true;
+        },
         handleDrop: () => readOnlyRef.current
       }
     });
