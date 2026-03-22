@@ -10,12 +10,12 @@ import {
   ownVoiceStateSelector,
   pinnedCardSelector,
   showUserBannersInVoiceSelector,
-  voiceVerticalLayoutSelector,
   voiceChannelAudioExternalStreamsSelector,
   voiceChannelExternalStreamsListSelector,
   voiceChannelExternalStreamsSelector,
   voiceChannelStateSelector,
-  voiceChannelVideoExternalStreamsSelector
+  voiceChannelVideoExternalStreamsSelector,
+  voiceVerticalLayoutSelector
 } from './selectors';
 
 export const useVoiceChannelState = (channelId: number) =>
