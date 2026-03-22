@@ -66,7 +66,9 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
 
       // Screen shares always have video, so always show them
       // Skip own screen share if hideOwnScreenShare is enabled
-      if (voiceUser.state.sharingScreen && !(hideOwnScreenShare && voiceUser.id === ownUserId)) {
+      const isOwnScreenShare =
+        hideOwnScreenShare && voiceUser.id === ownUserId;
+      if (voiceUser.state.sharingScreen && !isOwnScreenShare) {
         const screenShareCardId = `screen-share-${voiceUser.id}`;
 
         cards.push(
