@@ -123,7 +123,7 @@ describe('plugin-manager', () => {
       const info = await pluginManager.getPluginInfo('plugin-no-sdk-range');
 
       expect(info.loadError).toBeDefined();
-      expect(info.loadError).toContain('missing SDK Range');
+      expect(info.loadError).toContain('missing SDK version');
     });
 
     test('should fail to load plugin with invalid sdk range', async () => {

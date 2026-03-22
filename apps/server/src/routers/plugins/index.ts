@@ -10,7 +10,9 @@ import { getCommandsRoute } from './get-commands';
 import { getPluginLogsRoute } from './get-logs';
 import { getPluginsRoute } from './get-plugins';
 import { getSettingsRoute } from './get-settings';
+import { installRoute } from './install-plugin';
 import { togglePluginRoute } from './toggle-plugin';
+import { updateRoute } from './update-plugin';
 import { updateSettingRoute } from './update-setting';
 
 export const pluginsRouter = t.router({
@@ -24,5 +26,7 @@ export const pluginsRouter = t.router({
   onComponentsChange: onComponentsChangeRoute,
   onMetadataChange: onMetadataChangeRoute,
   getSettings: getSettingsRoute,
-  updateSetting: updateSettingRoute
+  updateSetting: updateSettingRoute,
+  install: installRoute,
+  update: updateRoute
 });

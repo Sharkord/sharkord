@@ -2,7 +2,7 @@
   "name": "plugin-missing-client-entry",
   "version": "1.0.0",
   "sharkord": {
-    "sdkRange": "^0.1.0",
+    "sdkVersion": 1,
     "author": "Test Author",
     "description": "Plugin with missing client entry file"
   }

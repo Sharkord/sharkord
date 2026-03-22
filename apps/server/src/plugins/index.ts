@@ -26,7 +26,6 @@ import chalk from 'chalk';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
-import semver from 'semver';
 import { db } from '../db';
 import { getSettings } from '../db/queries/server';
 import { pluginData } from '../db/schema';
@@ -309,7 +308,27 @@ class PluginManager {
 
   private getPluginPath = (pluginId: string) => {
     this.validatePluginId(pluginId);
+
     return path.join(PLUGINS_PATH, pluginId);
+  };
+
+  public removePlugin = async (pluginId: string) => {
+    await this.unload(pluginId);
+
+    const pluginPath = this.getPluginPath(pluginId);
+
+    try {
+      await fs.rm(pluginPath, { recursive: true, force: true });
+
+      logger.debug(`Plugin removed: ${pluginId}`);
+    } catch (error) {
+      logger.error(
+        `Failed to remove plugin ${pluginId}: %s`,
+        getErrorMessage(error)
+      );
+
+      throw new Error(`Failed to remove plugin: ${getErrorMessage(error)}`);
+    }
   };
 
   private unregisterPluginCommands = (pluginId: string) => {
@@ -432,26 +451,40 @@ class PluginManager {
     );
   };
 
-  private getSdkRangeError = (sdkRange: string | undefined): string | null => {
-    if (!sdkRange) {
-      return `Plugin is missing SDK Range (expected ${PLUGIN_SDK_VERSION}).`;
+  private verifySdkVersion = (
+    sdkVersion: number
+  ): { isValid: boolean; error?: string } => {
+    if (sdkVersion === undefined) {
+      return {
+        isValid: false,
+        error: 'Plugin manifest must specify sdkVersion'
+      };
     }
 
-    const validRange = semver.validRange(sdkRange);
+    let parsedVersion: number | null = null;
 
-    if (!validRange) {
-      return `Plugin has invalid SDK Range: ${sdkRange}.`;
+    if (typeof sdkVersion === 'number' && Number.isFinite(sdkVersion)) {
+      parsedVersion = sdkVersion;
+    } else if (typeof sdkVersion === 'string') {
+      const numeric = Number(sdkVersion);
+      parsedVersion = Number.isFinite(numeric) ? numeric : null;
     }
 
-    const compatible = semver.satisfies(PLUGIN_SDK_VERSION, validRange, {
-      includePrerelease: true
-    });
-
-    if (!compatible) {
-      return `Plugin requires SDK ${sdkRange}, but server provides ${PLUGIN_SDK_VERSION}.`;
+    if (parsedVersion === null) {
+      return {
+        isValid: false,
+        error: `Plugin has invalid SDK version: ${sdkVersion}.`
+      };
     }
 
-    return null;
+    if (parsedVersion !== PLUGIN_SDK_VERSION) {
+      return {
+        isValid: false,
+        error: `Plugin SDK version ${parsedVersion} is not compatible with server SDK version ${PLUGIN_SDK_VERSION}.`
+      };
+    }
+
+    return { isValid: true };
   };
 
   public getActivePluginMetadata = async (): Promise<TPluginMetadata[]> => {
@@ -569,7 +602,7 @@ class PluginManager {
       path: pluginPath,
       description: manifest.description,
       version: manifest.version,
-      sdkRange: manifest.sdkRange,
+      sdkVersion: manifest.sdkVersion,
       logo: manifest.logo,
       author: manifest.author,
       homepage: manifest.homepage,
@@ -595,15 +628,17 @@ class PluginManager {
 
     const info = await this.getPluginInfo(pluginId);
 
-    const sdkRangeError = this.getSdkRangeError(info.sdkRange);
+    const { isValid, error } = this.verifySdkVersion(info.sdkVersion);
 
-    if (sdkRangeError) {
-      this.loadErrors.set(pluginId, sdkRangeError);
+    if (!isValid) {
+      const errorMessage = error || 'Unknown SDK version error';
+
+      this.loadErrors.set(pluginId, errorMessage);
 
       this.logPlugin(
         pluginId,
         'error',
-        `Failed to load plugin ${pluginId}: ${sdkRangeError}`
+        `Failed to load plugin ${pluginId}: ${errorMessage}`
       );
 
       return;

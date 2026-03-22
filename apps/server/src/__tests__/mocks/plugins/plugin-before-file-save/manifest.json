@@ -2,7 +2,7 @@
   "name": "plugin-before-file-save",
   "version": "0.0.1",
   "sharkord": {
-    "sdkRange": "^0.1.0",
+    "sdkVersion": 1,
     "author": "Mocked",
     "homepage": "https://mocked.com",
     "description": "Mock plugin that modifies files before save.",

@@ -2,8 +2,8 @@
   "name": "plugin-invalid-sdk-range",
   "version": "1.0.0",
   "sharkord": {
-    "sdkRange": "not-a-range",
+    "sdkVersion": "invalid",
     "author": "Test Author",
-    "description": "Plugin with invalid sdkRange"
+    "description": "Plugin with invalid sdkVersion"
   }
 }

@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "sharkord": {
     "author": "Test Author",
-    "description": "Plugin without sdkRange"
+    "description": "Plugin without sdkVersion"
   }
 }

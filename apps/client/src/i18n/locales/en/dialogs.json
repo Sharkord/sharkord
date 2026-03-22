@@ -100,5 +100,17 @@
   "joinBtn": "Join",
   "inThread": "In thread",
   "jumpToThreadMessage": "Jump to thread original message",
-  "jumpToMessage": "Jump to message"
+  "jumpToMessage": "Jump to message",
+  "pluginInstallConfirmTitle": "Install \"{{name}}\" plugin?",
+  "pluginInstallConfirmLead": "Plugins are a very powerful way to extend Sharkord's functionality, but they also come with significant security risks.",
+  "pluginInstallWarningLine1": "Plugins can read, modify, or delete",
+  "pluginInstallWarningHighlight1": "all server data",
+  "pluginInstallWarningLine2": "Plugins can execute",
+  "pluginInstallWarningHighlight2": "arbitrary code",
+  "pluginInstallWarningLine3": "Malicious plugins can compromise",
+  "pluginInstallWarningHighlight3": "user accounts, steal data, or damage your server",
+  "pluginInstallUseDocker": "We strongly recommend running Sharkord in a Docker container for isolation and reduced risk.",
+  "pluginInstallDocsNote": "For more details, read the docs at:",
+  "pluginInstallConfirmBtn": "Install Plugin",
+  "pluginInstallConfirmCountdown": "Wait ({{seconds}}s)"
 }

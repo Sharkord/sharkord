@@ -7,7 +7,7 @@ export const zPluginManifest = z.object({
   description: z.string().min(1, 'Plugin description is required'),
   homepage: z.url().optional(),
   logo: z.url().optional(),
-  sdkRange: z.string().min(1).optional(),
+  sdkVersion: z.number().int().nonnegative(),
   version: z
     .string()
     .regex(/^\d+\.\d+\.\d+(-[a-zA-Z0-9-.]+)?$/, 'Invalid version format')
@@ -23,7 +23,7 @@ export type TPluginInfo = {
   id: string;
   enabled: boolean;
   loadError?: string;
-  sdkRange?: string;
+  sdkVersion: TPluginManifest['sdkVersion'];
   author: TPluginManifest['author'];
   description: TPluginManifest['description'];
   version: TPluginManifest['version'];
@@ -160,7 +160,8 @@ export type TPluginMetadata = {
   avatarUrl?: string;
 };
 
-export const PLUGIN_SDK_VERSION = '0.1.0';
+export const PLUGIN_SDK_VERSION = 1;
 
 export * from './client-sdk';
 export * from './hooks';
+export * from './marketplace';
