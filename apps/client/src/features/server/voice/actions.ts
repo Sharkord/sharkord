@@ -230,3 +230,13 @@ export const setShowUserBannersInVoice = (value: boolean): void => {
     console.error('Failed to save voice options:', error);
   }
 };
+
+export const setHideOwnScreenShare = (value: boolean): void => {
+  store.dispatch(serverSliceActions.setHideOwnScreenShare(value));
+
+  try {
+    setLocalStorageItemBool(LocalStorageKey.HIDE_OWN_SCREEN_SHARE, value);
+  } catch (error) {
+    console.error('Failed to save voice options:', error);
+  }
+};

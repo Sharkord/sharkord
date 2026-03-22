@@ -1,8 +1,10 @@
 import { useVoiceUsersByChannelId } from '@/features/server/hooks';
 import {
   useHideNonVideoParticipants,
+  useHideOwnScreenShare,
   useVoiceChannelExternalStreamsList
 } from '@/features/server/voice/hooks';
+import { useOwnUserId } from '@/features/server/users/hooks';
 import { memo, useMemo } from 'react';
 import { ControlsBar } from './controls-bar';
 import { ExternalStreamCard } from './external-stream-card';
@@ -23,6 +25,8 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
   const externalStreams = useVoiceChannelExternalStreamsList(channelId);
   const { pinnedCard, pinCard, unpinCard, isPinned } = usePinCardController();
   const hideNonVideoParticipants = useHideNonVideoParticipants();
+  const hideOwnScreenShare = useHideOwnScreenShare();
+  const ownUserId = useOwnUserId();
 
   const cards = useMemo(() => {
     const cards: React.ReactNode[] = [];
@@ -61,7 +65,8 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
       }
 
       // Screen shares always have video, so always show them
-      if (voiceUser.state.sharingScreen) {
+      // Skip own screen share if hideOwnScreenShare is enabled
+      if (voiceUser.state.sharingScreen && !(hideOwnScreenShare && voiceUser.id === ownUserId)) {
         const screenShareCardId = `screen-share-${voiceUser.id}`;
 
         cards.push(
@@ -116,7 +121,9 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
     isPinned,
     pinCard,
     unpinCard,
-    hideNonVideoParticipants
+    hideNonVideoParticipants,
+    hideOwnScreenShare,
+    ownUserId
   ]);
 
   if (voiceUsers.length === 0) {
