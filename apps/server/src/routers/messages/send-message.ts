@@ -128,7 +128,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       const foundCommand = pluginManager.getCommandByName(commandName);
 
       if (foundCommand) {
-        if (await ctx.hasPermission(Permission.EXECUTE_PLUGIN_COMMANDS)) {
+        if (await ctx.hasPermission(Permission.USE_PLUGINS)) {
           const argsObject: Record<string, unknown> = {};
 
           if (foundCommand.args) {

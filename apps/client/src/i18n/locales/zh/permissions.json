@@ -24,7 +24,7 @@
     "MANAGE_INVITES": "管理邀请",
     "MANAGE_UPDATES": "管理更新",
     "MANAGE_PLUGINS": "管理插件",
-    "EXECUTE_PLUGIN_COMMANDS": "执行插件命令",
+    "USE_PLUGINS": "使用插件",
     "VIEW_USER_SENSITIVE_DATA": "查看用户敏感数据"
   },
   "serverDescriptions": {
@@ -47,7 +47,7 @@
     "MANAGE_INVITES": "授予创建、编辑和删除服务器邀请的权限。",
     "MANAGE_UPDATES": "授予执行更新的权限。",
     "MANAGE_PLUGINS": "授予管理插件的权限。",
-    "EXECUTE_PLUGIN_COMMANDS": "授予执行插件命令的权限。",
+    "USE_PLUGINS": "授予使用插件的权限，例如执行插件命令或查看插件添加的 UI 元素。",
     "VIEW_USER_SENSITIVE_DATA": "授予查看用户敏感数据（如身份标识、IP 地址和位置）的权限。"
   },
   "channel": {

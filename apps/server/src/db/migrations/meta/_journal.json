@@ -71,6 +71,13 @@
       "when": 1773685648905,
       "tag": "0009_third_thunderbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1774512000000,
+      "tag": "0010_rename_execute_plugin_commands",
+      "breakpoints": true
     }
   ]
 }

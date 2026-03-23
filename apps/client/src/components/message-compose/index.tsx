@@ -87,7 +87,7 @@ const MessageCompose = memo(
 
     const pluginCommands = useMemo(
       () =>
-        can(Permission.EXECUTE_PLUGIN_COMMANDS) ? allPluginCommands : undefined,
+        can(Permission.USE_PLUGINS) ? allPluginCommands : undefined,
       [can, allPluginCommands]
     );
 
