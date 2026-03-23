@@ -116,38 +116,32 @@ describe('plugin-manager', () => {
       expect(info.loadError).toBeUndefined();
     });
 
-    test('should fail to load plugin missing sdk range', async () => {
-      await pluginManager.togglePlugin('plugin-no-sdk-range', true);
-      await pluginManager.load('plugin-no-sdk-range');
+    test('should fail to load plugin missing sdk version', async () => {
+      await pluginManager.togglePlugin('plugin-no-sdk-version', true);
 
-      const info = await pluginManager.getPluginInfo('plugin-no-sdk-range');
-
-      expect(info.loadError).toBeDefined();
-      expect(info.loadError).toContain('missing SDK version');
+      await expect(pluginManager.load('plugin-no-sdk-version')).rejects.toThrow(
+        'Invalid manifest.json'
+      );
     });
 
-    test('should fail to load plugin with invalid sdk range', async () => {
-      await pluginManager.togglePlugin('plugin-invalid-sdk-range', true);
-      await pluginManager.load('plugin-invalid-sdk-range');
+    test('should fail to load plugin with invalid sdk version', async () => {
+      await pluginManager.togglePlugin('plugin-invalid-sdk-version', true);
+
+      await expect(
+        pluginManager.load('plugin-invalid-sdk-version')
+      ).rejects.toThrow('Invalid manifest.json');
+    });
+
+    test('should fail to load plugin with incompatible sdk version', async () => {
+      await pluginManager.togglePlugin('plugin-incompatible-sdk-version', true);
+      await pluginManager.load('plugin-incompatible-sdk-version');
 
       const info = await pluginManager.getPluginInfo(
-        'plugin-invalid-sdk-range'
+        'plugin-incompatible-sdk-version'
       );
 
       expect(info.loadError).toBeDefined();
-      expect(info.loadError).toContain('invalid');
-    });
-
-    test('should fail to load plugin with incompatible sdk range', async () => {
-      await pluginManager.togglePlugin('plugin-incompatible-sdk-range', true);
-      await pluginManager.load('plugin-incompatible-sdk-range');
-
-      const info = await pluginManager.getPluginInfo(
-        'plugin-incompatible-sdk-range'
-      );
-
-      expect(info.loadError).toBeDefined();
-      expect(info.loadError).toContain('requires SDK');
+      expect(info.loadError).toContain('not compatible');
     });
   });
 

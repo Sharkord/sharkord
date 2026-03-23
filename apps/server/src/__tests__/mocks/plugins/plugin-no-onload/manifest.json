@@ -1,9 +1,8 @@
 {
+  "id": "plugin-no-onload",
   "name": "plugin-no-onload",
   "version": "1.0.0",
-  "sharkord": {
-    "sdkVersion": 1,
-    "author": "Test Author",
-    "description": "Plugin without onLoad export"
-  }
+  "sdkVersion": 1,
+  "author": "Test Author",
+  "description": "Plugin without onLoad export"
 }

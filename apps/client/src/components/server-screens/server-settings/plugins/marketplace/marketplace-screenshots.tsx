@@ -61,7 +61,7 @@ const MarketplaceScreenshots = memo(
                 <FullScreenImage
                   src={url}
                   alt={`${pluginName} screenshot ${index + 1}`}
-                  className="h-40 w-full rounded-md object-cover"
+                  className="h-28 w-full rounded-md object-cover"
                   as={ImageWithFallback}
                 />
               </div>

@@ -1,8 +1,0 @@
-{
-  "name": "plugin-no-sdk-range",
-  "version": "1.0.0",
-  "sharkord": {
-    "author": "Test Author",
-    "description": "Plugin without sdkVersion"
-  }
-}

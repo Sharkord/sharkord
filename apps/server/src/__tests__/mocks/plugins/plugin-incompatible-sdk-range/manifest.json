@@ -1,9 +1,0 @@
-{
-  "name": "plugin-incompatible-sdk-range",
-  "version": "1.0.0",
-  "sharkord": {
-    "sdkVersion": 2,
-    "author": "Test Author",
-    "description": "Plugin with incompatible sdkVersion"
-  }
-}

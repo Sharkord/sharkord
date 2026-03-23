@@ -1,7 +1,8 @@
 {
+  "id": "plugin-invalid-package",
   "name": "plugin-invalid-package",
   "version": "not-a-valid-version",
-  "sharkord": {
-    "description": "Invalid manifest.json"
-  }
+  "sdkVersion": 1,
+  "author": "Test Author",
+  "description": "Invalid manifest.json"
 }

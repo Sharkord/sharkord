@@ -32,7 +32,7 @@ const useMarketplaceData = (t: TFunction<'settings'>) => {
             homepage: 'https://example.com/plugin-example',
             screenshots: [
               'https://placehold.co/600x400/111827/e5e7eb',
-              'https://placehold.co/600x400/1f2937/f3f4f6'
+              'https://placehold.co/600x400/111827/e5e7eb'
             ],
             tags: ['test'],
             verified: true
