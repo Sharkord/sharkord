@@ -31,7 +31,7 @@ const Plugins = memo(() => {
         />
       </TabsContent>
       <TabsContent value="marketplace">
-        <Marketplace plugins={plugins} />
+        <Marketplace plugins={plugins} refetchInstalled={refetch} />
       </TabsContent>
     </Tabs>
   );

@@ -12,9 +12,10 @@ import { MarketplaceSkeleton } from './marketplace-skeleton';
 
 type TMarketplaceProps = {
   plugins: TPluginInfo[];
+  refetchInstalled: () => Promise<void>;
 };
 
-const Marketplace = memo(({ plugins }: TMarketplaceProps) => {
+const Marketplace = memo(({ plugins, refetchInstalled }: TMarketplaceProps) => {
   const installedPluginIds = useMemo(
     () => new Set(plugins.map((p) => p.id)),
     [plugins]
@@ -74,6 +75,7 @@ const Marketplace = memo(({ plugins }: TMarketplaceProps) => {
                 entry={entry}
                 isInstalled={installedPluginIds.has(entry.plugin.id)}
                 installedVersion={installedPluginsById.get(entry.plugin.id)}
+                refetchInstalled={refetchInstalled}
               />
             )}
           />

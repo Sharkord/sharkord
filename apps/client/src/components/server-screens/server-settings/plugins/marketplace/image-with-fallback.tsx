@@ -6,13 +6,15 @@ type ImageWithFallbackProps = {
   alt: string;
   className?: string;
   iconFallback?: React.ReactNode;
+  onClick?: React.MouseEventHandler<HTMLImageElement>;
 };
 
 const ImageWithFallback = ({
   src,
   alt,
   className,
-  iconFallback = null
+  iconFallback = null,
+  onClick
 }: ImageWithFallbackProps) => {
   const [hasError, setHasError] = useState(false);
 
@@ -40,6 +42,7 @@ const ImageWithFallback = ({
       className={className}
       onError={handleError}
       onLoad={() => setHasError(false)}
+      onClick={onClick}
     />
   );
 };

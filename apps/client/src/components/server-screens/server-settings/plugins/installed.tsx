@@ -1,5 +1,5 @@
 import { Dialog } from '@/components/dialogs/dialogs';
-import { openDialog } from '@/features/dialogs/actions';
+import { openDialog, requestConfirmation } from '@/features/dialogs/actions';
 import { usePluginsEnabled } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TPluginInfo } from '@sharkord/shared';
@@ -8,11 +8,12 @@ import {
   Alert,
   AlertDescription,
   Badge,
-  Button,
   Card,
   CardContent,
+  IconButton,
   LoadingCard,
-  Switch
+  Switch,
+  Tooltip
 } from '@sharkord/ui';
 import {
   AlertCircle,
@@ -20,6 +21,7 @@ import {
   Package,
   Settings,
   Terminal,
+  Trash2,
   User
 } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
@@ -33,11 +35,13 @@ import { StatePanel } from './state-panel';
 type TPluginItemProps = {
   plugin: TPluginInfo;
   onToggle: (pluginId: string, enabled: boolean) => Promise<void>;
+  onRemove: (pluginId: string) => Promise<void>;
 };
 
-const PluginItem = memo(({ plugin, onToggle }: TPluginItemProps) => {
+const PluginItem = memo(({ plugin, onToggle, onRemove }: TPluginItemProps) => {
   const { t } = useTranslation('settings');
   const [isToggling, setIsToggling] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const handleToggle = useCallback(
     async (checked: boolean) => {
@@ -50,6 +54,25 @@ const PluginItem = memo(({ plugin, onToggle }: TPluginItemProps) => {
     },
     [plugin.id, onToggle]
   );
+
+  const handleRemove = useCallback(async () => {
+    const confirmed = await requestConfirmation({
+      title: t('removePluginTitle'),
+      message: t('removePluginConfirm', { name: plugin.name }),
+      confirmLabel: t('removeBtn'),
+      variant: 'danger'
+    });
+
+    if (!confirmed) return;
+
+    setIsRemoving(true);
+
+    try {
+      await onRemove(plugin.id);
+    } finally {
+      setIsRemoving(false);
+    }
+  }, [plugin.id, plugin.name, onRemove, t]);
 
   const handleViewLogs = useCallback(() => {
     openDialog(Dialog.PLUGIN_LOGS, {
@@ -100,35 +123,41 @@ const PluginItem = memo(({ plugin, onToggle }: TPluginItemProps) => {
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleViewLogs}
-              className="h-8"
-            >
-              <FileText className="w-4 h-4 mr-1.5" />
-              {t('logsBtn')}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleViewCommands}
-              className="h-8"
-              disabled={!plugin.enabled}
-            >
-              <Terminal className="w-4 h-4 mr-1.5" />
-              {t('commandsBtn')}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleViewSettings}
-              className="h-8"
-              disabled={!plugin.enabled}
-            >
-              <Settings className="w-4 h-4 mr-1.5" />
-              {t('settingsBtn')}
-            </Button>
+            <Tooltip content={t('logsBtn')}>
+              <IconButton
+                icon={FileText}
+                variant="ghost"
+                size="sm"
+                onClick={handleViewLogs}
+              />
+            </Tooltip>
+            <Tooltip content={t('commandsBtn')}>
+              <IconButton
+                icon={Terminal}
+                variant="ghost"
+                size="sm"
+                onClick={handleViewCommands}
+                disabled={!plugin.enabled}
+              />
+            </Tooltip>
+            <Tooltip content={t('settingsBtn')}>
+              <IconButton
+                icon={Settings}
+                variant="ghost"
+                size="sm"
+                onClick={handleViewSettings}
+                disabled={!plugin.enabled}
+              />
+            </Tooltip>
+            <Tooltip content={t('removeBtn')}>
+              <IconButton
+                icon={Trash2}
+                variant="ghost"
+                size="sm"
+                onClick={handleRemove}
+                disabled={isRemoving}
+              />
+            </Tooltip>
             {plugin.loadError ? (
               <Badge variant="destructive">{t('errorBadge')}</Badge>
             ) : (
@@ -219,6 +248,22 @@ const InstalledPlugins = memo(
       [refetch, t]
     );
 
+    const handleRemove = useCallback(
+      async (pluginId: string) => {
+        const trpc = getTRPCClient();
+
+        try {
+          await trpc.plugins.remove.mutate({ pluginId });
+          toast.success(t('pluginRemoved'));
+        } catch (error) {
+          toast.error(getTrpcError(error, t('failedRemovePlugin')));
+        } finally {
+          refetch();
+        }
+      },
+      [refetch, t]
+    );
+
     if (loading) {
       return <LoadingCard className="h-[600px]" />;
     }
@@ -247,7 +292,11 @@ const InstalledPlugins = memo(
                   items={plugins}
                   getKey={(plugin) => plugin.id}
                   renderItem={(plugin) => (
-                    <PluginItem plugin={plugin} onToggle={handleToggle} />
+                    <PluginItem
+                      plugin={plugin}
+                      onToggle={handleToggle}
+                      onRemove={handleRemove}
+                    />
                   )}
                 />
               )}

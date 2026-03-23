@@ -11,6 +11,7 @@ import { getPluginLogsRoute } from './get-logs';
 import { getPluginsRoute } from './get-plugins';
 import { getSettingsRoute } from './get-settings';
 import { installRoute } from './install-plugin';
+import { removeRoute } from './remove-plugin';
 import { togglePluginRoute } from './toggle-plugin';
 import { updateRoute } from './update-plugin';
 import { updateSettingRoute } from './update-setting';
@@ -28,5 +29,6 @@ export const pluginsRouter = t.router({
   getSettings: getSettingsRoute,
   updateSetting: updateSettingRoute,
   install: installRoute,
-  update: updateRoute
+  update: updateRoute,
+  remove: removeRoute
 });

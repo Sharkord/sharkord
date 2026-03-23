@@ -20,10 +20,16 @@ type TMarketplaceItemProps = {
   entry: TMarketplaceEntry;
   isInstalled: boolean;
   installedVersion?: string;
+  refetchInstalled: () => Promise<void>;
 };
 
 const MarketplaceItem = memo(
-  ({ entry, isInstalled, installedVersion }: TMarketplaceItemProps) => {
+  ({
+    entry,
+    isInstalled,
+    installedVersion,
+    refetchInstalled
+  }: TMarketplaceItemProps) => {
     const { t } = useTranslation('settings');
     const [installingId, setInstallingId] = useState<string | null>(null);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -73,12 +79,20 @@ const MarketplaceItem = memo(
         });
 
         toast.success(t('marketplaceInstallSuccess', { name: plugin.name }));
+
+        await refetchInstalled();
       } catch (error) {
         toast.error(getTrpcError(error, t('marketplaceInstallError')));
       } finally {
         setInstallingId(null);
       }
-    }, [plugin.id, latestVersion.downloadUrl, t, plugin.name]);
+    }, [
+      plugin.id,
+      latestVersion.downloadUrl,
+      t,
+      plugin.name,
+      refetchInstalled
+    ]);
 
     const performUpdate = useCallback(async () => {
       if (!latestCompatibleVersion) return;
@@ -92,12 +106,14 @@ const MarketplaceItem = memo(
           pluginId: plugin.id,
           url: latestCompatibleVersion.downloadUrl
         });
+
+        await refetchInstalled();
       } catch (error) {
         toast.error(getTrpcError(error, t('marketplaceUpdateError')));
       } finally {
         setUpdatingId(null);
       }
-    }, [latestCompatibleVersion, plugin.id, t]);
+    }, [latestCompatibleVersion, plugin.id, t, refetchInstalled]);
 
     const onInstallClick = useCallback(() => {
       openDialog(Dialog.PLUGIN_INSTALL_CONFIRM, {

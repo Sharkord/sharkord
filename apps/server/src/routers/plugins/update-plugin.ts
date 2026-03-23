@@ -1,3 +1,4 @@
+import { Permission } from '@sharkord/shared';
 import z from 'zod';
 import { downloadPlugin } from '../../helpers/downloads';
 import { pluginManager } from '../../plugins';
@@ -10,7 +11,9 @@ const updateRoute = protectedProcedure
       url: z.url()
     })
   )
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input, ctx }) => {
+    await ctx.needsPermission(Permission.MANAGE_PLUGINS);
+
     const wasEnabled = pluginManager.isEnabled(input.pluginId);
 
     if (wasEnabled) {

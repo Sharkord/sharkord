@@ -1,15 +1,20 @@
 import { type TPluginInfo } from '@sharkord/shared';
-import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
+import fs from 'fs/promises';
+import path from 'path';
 import { initTest } from '../../__tests__/helpers';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { tdb } from '../../__tests__/setup';
 import { pluginData } from '../../db/schema';
+import { PLUGINS_PATH } from '../../helpers/paths';
 import { pluginManager } from '../../plugins';
 
 describe('plugins router', () => {
-  beforeAll(loadMockedPlugins);
-  beforeEach(resetPluginMocks);
+  beforeEach(async () => {
+    await loadMockedPlugins();
+    await resetPluginMocks();
+  });
 
   test('should throw when user lacks permissions', async () => {
     const { caller } = await initTest(2);
@@ -415,5 +420,278 @@ describe('plugins router', () => {
     expect(logs.length).toBeGreaterThan(0);
     const errorLog = logs.find((log) => log.type === 'error');
     expect(errorLog).toBeDefined();
+  });
+
+  describe('remove', () => {
+    test('should throw when user lacks permissions', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.plugins.remove({
+          pluginId: 'plugin-a'
+        })
+      ).rejects.toThrow('Insufficient permissions');
+    });
+
+    test('should remove plugin successfully', async () => {
+      const { caller } = await initTest();
+
+      const before = await caller.plugins.get();
+      const hadPlugin = before.plugins.some(
+        (p: TPluginInfo) => p.id === 'plugin-a'
+      );
+      expect(hadPlugin).toBe(true);
+
+      await caller.plugins.remove({ pluginId: 'plugin-a' });
+
+      const after = await caller.plugins.get();
+      const hasPlugin = after.plugins.some(
+        (p: TPluginInfo) => p.id === 'plugin-a'
+      );
+      expect(hasPlugin).toBe(false);
+    });
+
+    test('should remove plugin directory from filesystem', async () => {
+      const { caller } = await initTest();
+
+      const pluginPath = path.join(PLUGINS_PATH, 'plugin-a');
+      const existsBefore = await fs
+        .access(pluginPath)
+        .then(() => true)
+        .catch(() => false);
+      expect(existsBefore).toBe(true);
+
+      await caller.plugins.remove({ pluginId: 'plugin-a' });
+
+      const existsAfter = await fs
+        .access(pluginPath)
+        .then(() => true)
+        .catch(() => false);
+      expect(existsAfter).toBe(false);
+    });
+
+    test('should unload plugin before removing', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-b');
+
+      const before = await caller.plugins.get();
+      const pluginB = before.plugins.find(
+        (p: TPluginInfo) => p.id === 'plugin-b'
+      );
+      expect(pluginB!.enabled).toBe(true);
+
+      await caller.plugins.remove({ pluginId: 'plugin-b' });
+
+      const after = await caller.plugins.get();
+      const removed = after.plugins.find(
+        (p: TPluginInfo) => p.id === 'plugin-b'
+      );
+      expect(removed).toBeUndefined();
+    });
+  });
+
+  describe('getSettings', () => {
+    test('should throw when user lacks permissions', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.plugins.getSettings({
+          pluginId: 'plugin-with-settings'
+        })
+      ).rejects.toThrow('Insufficient permissions');
+    });
+
+    test('should return settings for plugin with settings', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-with-settings');
+
+      const result = await caller.plugins.getSettings({
+        pluginId: 'plugin-with-settings'
+      });
+
+      expect(result).toBeDefined();
+      expect(result.definitions).toBeDefined();
+      expect(result.definitions.length).toBe(3);
+      expect(result.values).toBeDefined();
+    });
+
+    test('should include setting definitions with correct metadata', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-with-settings');
+
+      const result = await caller.plugins.getSettings({
+        pluginId: 'plugin-with-settings'
+      });
+
+      const greetingSetting = result.definitions.find(
+        (d: { key: string }) => d.key === 'greeting'
+      );
+      expect(greetingSetting).toBeDefined();
+      expect(greetingSetting!.type).toBe('string');
+      expect(greetingSetting!.defaultValue).toBe('Hello!');
+    });
+
+    test('should return empty definitions for plugin without settings', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-a');
+
+      const result = await caller.plugins.getSettings({
+        pluginId: 'plugin-a'
+      });
+
+      expect(result).toBeDefined();
+      expect(result.definitions).toEqual([]);
+    });
+  });
+
+  describe('updateSetting', () => {
+    test('should throw when user lacks permissions', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.plugins.updateSetting({
+          pluginId: 'plugin-with-settings',
+          key: 'greeting',
+          value: 'Hi!'
+        })
+      ).rejects.toThrow('Insufficient permissions');
+    });
+
+    test('should update a setting value', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-with-settings');
+
+      await caller.plugins.updateSetting({
+        pluginId: 'plugin-with-settings',
+        key: 'greeting',
+        value: 'Hi there!'
+      });
+
+      const result = await caller.plugins.getSettings({
+        pluginId: 'plugin-with-settings'
+      });
+
+      expect(result.values.greeting).toBe('Hi there!');
+    });
+
+    test('should update numeric setting', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-with-settings');
+
+      await caller.plugins.updateSetting({
+        pluginId: 'plugin-with-settings',
+        key: 'maxRetries',
+        value: 10
+      });
+
+      const result = await caller.plugins.getSettings({
+        pluginId: 'plugin-with-settings'
+      });
+
+      expect(result.values.maxRetries).toBe(10);
+    });
+
+    test('should update boolean setting', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-with-settings');
+
+      await caller.plugins.updateSetting({
+        pluginId: 'plugin-with-settings',
+        key: 'enabled',
+        value: false
+      });
+
+      const result = await caller.plugins.getSettings({
+        pluginId: 'plugin-with-settings'
+      });
+
+      expect(result.values.enabled).toBe(false);
+    });
+
+    test('should throw when setting key does not exist', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-with-settings');
+
+      await expect(
+        caller.plugins.updateSetting({
+          pluginId: 'plugin-with-settings',
+          key: 'nonexistent-key',
+          value: 'test'
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should throw when plugin has no settings', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-a');
+
+      await expect(
+        caller.plugins.updateSetting({
+          pluginId: 'plugin-a',
+          key: 'some-key',
+          value: 'test'
+        })
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('install', () => {
+    test('should throw when user lacks permissions', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.plugins.install({
+          url: 'https://example.com/plugin.tar.gz'
+        })
+      ).rejects.toThrow('Insufficient permissions');
+    });
+
+    test('should call downloadPlugin with correct URL', async () => {
+      const { caller } = await initTest();
+      const mockDownload = mock(() => Promise.resolve());
+
+      mock.module('../../helpers/downloads', () => ({
+        downloadPlugin: mockDownload,
+        downloadFile: mock(() => Promise.resolve())
+      }));
+
+      await caller.plugins.install({
+        url: 'https://example.com/plugin.tar.gz'
+      });
+
+      expect(mockDownload).toHaveBeenCalledWith(
+        'https://example.com/plugin.tar.gz'
+      );
+    });
+  });
+
+  describe('update', () => {
+    test('should call downloadPlugin with correct URL', async () => {
+      const { caller } = await initTest();
+      const mockDownload = mock(() => Promise.resolve());
+
+      mock.module('../../helpers/downloads', () => ({
+        downloadPlugin: mockDownload,
+        downloadFile: mock(() => Promise.resolve())
+      }));
+
+      await caller.plugins.update({
+        pluginId: 'plugin-a',
+        url: 'https://example.com/plugin-a-v2.tar.gz'
+      });
+
+      expect(mockDownload).toHaveBeenCalledWith(
+        'https://example.com/plugin-a-v2.tar.gz'
+      );
+    });
   });
 });
