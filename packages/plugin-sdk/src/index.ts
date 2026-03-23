@@ -1,4 +1,5 @@
 import type {
+  ActionDefinition,
   CommandDefinition,
   TBeforeFileSaveHook,
   TBeforeFileSaveResult,
@@ -119,6 +120,7 @@ export interface PluginContext {
   };
 
   actions: {
+    register<TPayload = void>(action: ActionDefinition<TPayload>): void;
     voice: {
       getRouter(channelId: number): Router<AppData>;
       createStream(options: TCreateStreamOptions): TExternalStreamHandle;
@@ -179,6 +181,7 @@ export type {
 } from 'mediasoup/types';
 
 export type {
+  ActionDefinition,
   TBeforeFileSaveHook,
   TInvokerContext,
   TPluginActions,

@@ -11,7 +11,8 @@ import { setInfo } from '../server/actions';
 import { store } from '../store';
 import {
   voiceChatChannelIdSelector,
-  voiceChatSidebarDataSelector
+  voiceChatSidebarDataSelector,
+  pluginSlotDebugSelector
 } from './selectors';
 import { appSliceActions } from './slice';
 
@@ -236,4 +237,13 @@ export const assertVoiceChatClose = (channelId: number) => {
   if (isOpen && voiceChatChannelId === channelId) {
     closeVoiceChatSidebar();
   }
+};
+
+export const togglePluginSlotDebug = () => {
+  const state = store.getState();
+  const current = pluginSlotDebugSelector(state);
+  const next = !current;
+
+  store.dispatch(appSliceActions.setPluginSlotDebug(next));
+  setLocalStorageItemBool(LocalStorageKey.PLUGIN_SLOT_DEBUG, next);
 };

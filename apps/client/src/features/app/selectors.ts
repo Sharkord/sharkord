@@ -51,6 +51,9 @@ export const voiceChatSidebarOpenSelector = (state: IRootState) =>
 export const voiceChatChannelIdSelector = (state: IRootState) =>
   state.app.voiceChatChannelId;
 
+export const pluginSlotDebugSelector = (state: IRootState) =>
+  state.app.pluginSlotDebug;
+
 export const voiceChatSidebarDataSelector = createSelector(
   [voiceChatSidebarOpenSelector, voiceChatChannelIdSelector],
   (isOpen, channelId) => ({ isOpen, channelId })

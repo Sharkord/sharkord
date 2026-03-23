@@ -8,6 +8,7 @@ import { DebugInfo } from './components/debug-info/index.tsx';
 import { StoreDebug } from './components/debug/store-debug.tsx';
 import { DevicesProvider } from './components/devices-provider/index.tsx';
 import { DialogsProvider } from './components/dialogs/index.tsx';
+import { HotkeysController } from './components/hotkeys-controller/index.tsx';
 import { PluginsController } from './components/plugins-controller/index.tsx';
 import { AutoLoginController } from './components/routing/auto-login-controller.tsx';
 import { Routing } from './components/routing/index.tsx';
@@ -35,6 +36,7 @@ createRoot(document.getElementById('root')!).render(
       <Toaster />
       <Provider store={store}>
         <StoreDebug />
+        <HotkeysController />
         <DevicesProvider>
           <PluginsController />
           <DialogsProvider />

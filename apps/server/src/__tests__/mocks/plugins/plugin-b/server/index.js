@@ -39,6 +39,14 @@ const onLoad = (ctx) => {
       return { result: args.a + args.b };
     }
   });
+
+  ctx.actions.register({
+    name: 'multiply',
+    description: 'Multiply two numbers',
+    async execute(invokerCtx, payload) {
+      return { result: payload.a * payload.b };
+    }
+  });
 };
 
 const onUnload = (ctx) => {

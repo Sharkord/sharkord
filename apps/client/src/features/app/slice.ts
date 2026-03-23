@@ -25,6 +25,7 @@ export interface TAppState {
   messageJumpTarget: TMessageJumpToTarget | undefined;
   voiceChatSidebarOpen: boolean;
   voiceChatChannelId: number | undefined;
+  pluginSlotDebug: boolean;
 }
 
 const initialState: TAppState = {
@@ -62,6 +63,10 @@ const initialState: TAppState = {
   ),
   voiceChatChannelId: getLocalStorageItemAsNumber(
     LocalStorageKey.VOICE_CHAT_SIDEBAR_CHANNEL_ID
+  ),
+  pluginSlotDebug: getLocalStorageItemBool(
+    LocalStorageKey.PLUGIN_SLOT_DEBUG,
+    false
   )
 };
 
@@ -142,6 +147,9 @@ export const appSlice = createSlice({
     ) => {
       state.voiceChatSidebarOpen = action.payload.open;
       state.voiceChatChannelId = action.payload.channelId;
+    },
+    setPluginSlotDebug: (state, action: PayloadAction<boolean>) => {
+      state.pluginSlotDebug = action.payload;
     }
   }
 });

@@ -177,6 +177,16 @@ describe('plugin-manager', () => {
       expect(pluginManager.hasCommand('plugin-b', 'test-command')).toBe(false);
     });
 
+    test('should unregister actions on unload', async () => {
+      await pluginManager.load('plugin-b');
+
+      expect(pluginManager.hasAction('plugin-b', 'multiply')).toBe(true);
+
+      await pluginManager.unload('plugin-b');
+
+      expect(pluginManager.hasAction('plugin-b', 'multiply')).toBe(false);
+    });
+
     test('should unload plugin without onUnload gracefully', async () => {
       await pluginManager.togglePlugin('plugin-no-unload', true);
       await pluginManager.load('plugin-no-unload');
@@ -276,6 +286,47 @@ describe('plugin-manager', () => {
       expect(pluginManager.hasCommand('plugin-b', 'sum')).toBe(true);
       expect(pluginManager.hasCommand('plugin-b', 'nonexistent')).toBe(false);
       expect(pluginManager.hasCommand('nonexistent-plugin', 'sum')).toBe(false);
+    });
+  });
+
+  describe('actions', () => {
+    test('should execute action successfully', async () => {
+      await pluginManager.load('plugin-b');
+
+      const result = await pluginManager.executeAction(
+        'plugin-b',
+        'multiply',
+        mockInvokerCtx,
+        {
+          a: 6,
+          b: 7
+        }
+      );
+
+      expect(result).toEqual({ result: 42 });
+    });
+
+    test('should check if plugin has specific action', async () => {
+      await pluginManager.load('plugin-b');
+
+      expect(pluginManager.hasAction('plugin-b', 'multiply')).toBe(true);
+      expect(pluginManager.hasAction('plugin-b', 'nonexistent')).toBe(false);
+      expect(pluginManager.hasAction('nonexistent-plugin', 'multiply')).toBe(
+        false
+      );
+    });
+
+    test('should throw error when action does not exist', async () => {
+      await pluginManager.load('plugin-b');
+
+      await expect(
+        pluginManager.executeAction(
+          'plugin-b',
+          'nonexistent',
+          mockInvokerCtx,
+          {}
+        )
+      ).rejects.toThrow('not found');
     });
   });
 
@@ -594,9 +645,6 @@ describe('plugin-manager', () => {
       // get-counts doesn't throw, but the error path is covered
       // by the 'command not found' and 'plugin not enabled' tests.
       // Let's verify error logging when executeCommand hits an error.
-      const logs = pluginManager.getLogs('plugin-b');
-      const initialLogCount = logs.length;
-
       // Execute a valid command to verify debug logging
       await pluginManager.executeCommand('plugin-b', 'sum', mockInvokerCtx, {
         a: 1,
@@ -605,7 +653,7 @@ describe('plugin-manager', () => {
 
       const logsAfter = pluginManager.getLogs('plugin-b');
       const hasDebugLog = logsAfter
-        .slice(initialLogCount)
+        .slice(-20)
         .some(
           (log) =>
             log.type === 'debug' && log.message.includes('Executing command')

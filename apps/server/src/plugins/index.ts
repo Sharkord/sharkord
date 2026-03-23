@@ -10,7 +10,9 @@ import {
   ServerEvents,
   StreamKind,
   zPluginManifest,
+  type ActionDefinition,
   type CommandDefinition,
+  type RegisteredAction,
   type RegisteredCommand,
   type TBeforeFileSaveHook,
   type TCommandsMapByPlugin,
@@ -55,6 +57,7 @@ class PluginManager {
   private logs = new Map<string, TLogEntry[]>();
   private logsListeners = new Map<string, Set<(newLog: TLogEntry) => void>>();
   private commands = new Map<string, RegisteredCommand[]>();
+  private actions = new Map<string, RegisteredAction[]>();
   private uiState = new Map<string, boolean>();
   private pluginStates: PluginStatesMap = {};
   private settingDefinitions = new Map<string, TPluginSettingDefinition[]>();
@@ -347,6 +350,24 @@ class PluginManager {
     );
   };
 
+  private unregisterPluginActions = (pluginId: string) => {
+    const pluginActions = this.actions.get(pluginId);
+
+    if (!pluginActions || pluginActions.length === 0) {
+      return;
+    }
+
+    const actionNames = pluginActions.map((a) => a.name);
+
+    this.actions.delete(pluginId);
+
+    this.logPlugin(
+      pluginId,
+      'debug',
+      `Unregistered ${actionNames.length} action(s): ${actionNames.join(', ')}`
+    );
+  };
+
   public executeCommand = async <TArgs = unknown>(
     pluginId: string,
     commandName: string,
@@ -396,6 +417,64 @@ class PluginManager {
     }
   };
 
+  public executeAction = async <TPayload = unknown>(
+    pluginId: string,
+    actionName: string,
+    invokerCtx: TInvokerContext,
+    payload: TPayload
+  ): Promise<unknown> => {
+    const isEnabled = this.isEnabled(pluginId);
+
+    if (!isEnabled) {
+      throw new Error(`Plugin '${pluginId}' is not enabled.`);
+    }
+
+    const actions = this.actions.get(pluginId);
+
+    if (!actions) {
+      throw new Error(`Plugin '${pluginId}' has no registered actions.`);
+    }
+
+    const foundAction = actions.find((a) => a.name === actionName);
+
+    if (!foundAction) {
+      throw new Error(
+        `Action '${actionName}' not found for plugin '${pluginId}'.`
+      );
+    }
+
+    try {
+      this.logPlugin(
+        pluginId,
+        'debug',
+        `Executing action '${actionName}' with payload:`,
+        payload
+      );
+
+      const actionExecutor =
+        foundAction.action.executes ?? foundAction.action.execute;
+
+      if (!actionExecutor) {
+        throw new Error(
+          `Action '${actionName}' from plugin '${pluginId}' has no execute handler.`
+        );
+      }
+
+      return await actionExecutor(invokerCtx, payload);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      this.logPlugin(
+        pluginId,
+        'error',
+        `Error executing action '${actionName}': ${errorMessage}`
+      );
+
+      throw error;
+    }
+  };
+
   public getCommands = (): TCommandsMapByPlugin => {
     const allCommands: TCommandsMapByPlugin = {};
 
@@ -419,6 +498,16 @@ class PluginManager {
     }
 
     return commands.some((c) => c.name === commandName);
+  };
+
+  public hasAction = (pluginId: string, actionName: string): boolean => {
+    const actions = this.actions.get(pluginId);
+
+    if (!actions) {
+      return false;
+    }
+
+    return actions.some((a) => a.name === actionName);
   };
 
   public getPluginIdsWithComponents = (): string[] => {
@@ -551,6 +640,7 @@ class PluginManager {
 
     eventBus.unload(pluginId);
     this.unregisterPluginCommands(pluginId);
+    this.unregisterPluginActions(pluginId);
     this.uiState.delete(pluginId);
     this.settingDefinitions.delete(pluginId);
     this.settingValues.delete(pluginId);
@@ -847,6 +937,45 @@ class PluginManager {
         }
       },
       actions: {
+        register: <TPayload = void>(action: ActionDefinition<TPayload>) => {
+          if (!action.executes && !action.execute) {
+            throw new Error(
+              `Action '${action.name}' must define either executes() or execute().`
+            );
+          }
+
+          if (!this.actions.has(pluginId)) {
+            this.actions.set(pluginId, []);
+          }
+
+          const pluginActions = this.actions.get(pluginId)!;
+
+          const existingIndex = pluginActions.findIndex(
+            (a) => a.name === action.name
+          );
+
+          if (existingIndex !== -1) {
+            this.logPlugin(
+              pluginId,
+              'error',
+              `Action '${action.name}' is already registered. Overwriting.`
+            );
+            pluginActions.splice(existingIndex, 1);
+          }
+
+          pluginActions.push({
+            pluginId,
+            name: action.name,
+            description: action.description,
+            action: action as ActionDefinition<unknown>
+          });
+
+          this.logPlugin(
+            pluginId,
+            'debug',
+            `Registered action: ${action.name}${action.description ? ` - ${action.description}` : ''}`
+          );
+        },
         voice: {
           getRouter: (channelId: number) => {
             const channel = VoiceRuntime.findById(channelId);

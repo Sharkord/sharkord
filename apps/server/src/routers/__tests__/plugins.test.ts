@@ -354,6 +354,47 @@ describe('plugins router', () => {
     expect((result as Record<string, number>).messageCreated).toBe(0);
   });
 
+  test('should throw when user lacks permissions for executeAction', async () => {
+    const { caller } = await initTest(2);
+
+    await expect(
+      caller.plugins.executeAction({
+        pluginId: 'plugin-b',
+        actionName: 'multiply',
+        payload: { a: 2, b: 3 }
+      })
+    ).rejects.toThrow('Insufficient permissions');
+  });
+
+  test('should execute action successfully', async () => {
+    const { caller } = await initTest();
+
+    await pluginManager.load('plugin-b');
+
+    const result = await caller.plugins.executeAction({
+      pluginId: 'plugin-b',
+      actionName: 'multiply',
+      payload: { a: 8, b: 5 }
+    });
+
+    expect(result).toBeDefined();
+    expect((result as Record<string, number>).result).toBe(40);
+  });
+
+  test('should throw when action does not exist', async () => {
+    const { caller } = await initTest();
+
+    await pluginManager.load('plugin-b');
+
+    await expect(
+      caller.plugins.executeAction({
+        pluginId: 'plugin-b',
+        actionName: 'nonexistent',
+        payload: {}
+      })
+    ).rejects.toThrow('not found');
+  });
+
   test('should throw when user lacks permissions', async () => {
     const { caller } = await initTest(2);
 

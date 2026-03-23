@@ -60,6 +60,13 @@ export interface CommandDefinition<TArgs = void> {
   executes(ctx: TInvokerContext, args: TArgs): Promise<unknown>;
 }
 
+export interface ActionDefinition<TPayload = void> {
+  name: string;
+  description?: string;
+  executes?: (ctx: TInvokerContext, payload: TPayload) => Promise<unknown>;
+  execute?: (ctx: TInvokerContext, payload: TPayload) => Promise<unknown>;
+}
+
 export type TPluginCommand = {
   pluginId: string;
   name: string;
@@ -83,6 +90,13 @@ export type RegisteredCommand = {
   description?: string;
   args?: CommandDefinition<unknown>['args'];
   command: CommandDefinition<unknown>;
+};
+
+export type RegisteredAction = {
+  pluginId: string;
+  name: string;
+  description?: string;
+  action: ActionDefinition<unknown>;
 };
 
 export const zParsedDomCommand = z.object({

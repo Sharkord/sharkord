@@ -24,6 +24,10 @@ export type TPluginStoreState = {
 export type TPluginActions = {
   sendMessage: (channelId: number, content: string) => Promise<void>;
   selectChannel: (channelId: number) => void;
+  executePluginAction: <TResponse = unknown, TPayload = unknown>(
+    actionName: string,
+    payload?: TPayload
+  ) => Promise<TResponse>;
 };
 
 export type TPluginStore = {

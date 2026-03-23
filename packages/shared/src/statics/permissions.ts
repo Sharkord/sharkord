@@ -27,7 +27,6 @@ export const DEFAULT_ROLE_PERMISSIONS = [
   Permission.JOIN_VOICE_CHANNELS,
   Permission.SEND_MESSAGES,
   Permission.UPLOAD_FILES,
-  Permission.REACT_TO_MESSAGES,
   Permission.SHARE_SCREEN,
   Permission.ENABLE_WEBCAM
 ];

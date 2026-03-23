@@ -13,6 +13,7 @@ import {
   messageJumpTargetSelector,
   modViewOpenSelector,
   modViewUserIdSelector,
+  pluginSlotDebugSelector,
   selectedDmChannelIdSelector,
   threadSidebarDataSelector,
   voiceChatSidebarDataSelector
@@ -57,3 +58,6 @@ export const useMessageJumpTarget = () =>
 
 export const useVoiceChatSidebar = () =>
   useSelector(voiceChatSidebarDataSelector);
+
+export const usePluginSlotDebug = () =>
+  useSelector(pluginSlotDebugSelector);
