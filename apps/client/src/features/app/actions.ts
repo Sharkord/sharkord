@@ -10,9 +10,9 @@ import { toast } from 'sonner';
 import { setInfo } from '../server/actions';
 import { store } from '../store';
 import {
+  pluginSlotDebugSelector,
   voiceChatChannelIdSelector,
-  voiceChatSidebarDataSelector,
-  pluginSlotDebugSelector
+  voiceChatSidebarDataSelector
 } from './selectors';
 import { appSliceActions } from './slice';
 

@@ -59,5 +59,4 @@ export const useMessageJumpTarget = () =>
 export const useVoiceChatSidebar = () =>
   useSelector(voiceChatSidebarDataSelector);
 
-export const usePluginSlotDebug = () =>
-  useSelector(pluginSlotDebugSelector);
+export const usePluginSlotDebug = () => useSelector(pluginSlotDebugSelector);

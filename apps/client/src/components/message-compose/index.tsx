@@ -86,8 +86,7 @@ const MessageCompose = memo(
     }, [can, channelCan, channel, publicSettings]);
 
     const pluginCommands = useMemo(
-      () =>
-        can(Permission.USE_PLUGINS) ? allPluginCommands : undefined,
+      () => (can(Permission.USE_PLUGINS) ? allPluginCommands : undefined),
       [can, allPluginCommands]
     );
 
