@@ -30,7 +30,7 @@ const createRegisterAction = <TActions extends TActionContract>(
   const registerAction: TypedRegisterAction<TActions> = (name, handler) => {
     ctx.actions.register({
       name,
-      async executes(invokerCtx, payload) {
+      async execute(invokerCtx, payload) {
         return handler(invokerCtx, payload as never);
       }
     });

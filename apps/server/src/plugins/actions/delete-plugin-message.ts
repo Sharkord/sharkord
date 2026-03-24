@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm';
-import { pluginManager } from '.';
-import { db } from '../db';
-import { removeFile } from '../db/mutations/files';
-import { publishMessage, publishReplyCount } from '../db/publishers';
-import { getFilesByMessageId } from '../db/queries/files';
-import { messages } from '../db/schema';
-import { invariant } from '../utils/invariant';
-import { eventBus } from './event-bus';
+import { pluginManager } from '..';
+import { db } from '../../db';
+import { removeFile } from '../../db/mutations/files';
+import { publishMessage, publishReplyCount } from '../../db/publishers';
+import { getFilesByMessageId } from '../../db/queries/files';
+import { messages } from '../../db/schema';
+import { invariant } from '../../utils/invariant';
+import { eventBus } from '../event-bus';
 
 type TDeletePluginMessageOptions = {
   pluginId: string;

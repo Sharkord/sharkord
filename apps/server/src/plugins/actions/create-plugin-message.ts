@@ -1,13 +1,13 @@
 import { isEmptyMessage } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
-import { pluginManager } from '.';
-import { db } from '../db';
-import { publishMessage } from '../db/publishers';
-import { channels, messages } from '../db/schema';
-import { sanitizeMessageHtml } from '../helpers/sanitize-html';
-import { enqueueProcessMetadata } from '../queues/message-metadata';
-import { invariant } from '../utils/invariant';
-import { eventBus } from './event-bus';
+import { pluginManager } from '..';
+import { db } from '../../db';
+import { publishMessage } from '../../db/publishers';
+import { channels, messages } from '../../db/schema';
+import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
+import { enqueueProcessMetadata } from '../../queues/message-metadata';
+import { invariant } from '../../utils/invariant';
+import { eventBus } from '../event-bus';
 
 type TCreatePluginMessageOptions = {
   pluginId: string;

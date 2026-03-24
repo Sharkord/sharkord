@@ -68,8 +68,7 @@ export interface CommandDefinition<TArgs = void> {
 export interface ActionDefinition<TPayload = void> {
   name: string;
   description?: string;
-  executes?: (ctx: TInvokerContext, payload: TPayload) => Promise<unknown>;
-  execute?: (ctx: TInvokerContext, payload: TPayload) => Promise<unknown>;
+  execute: (ctx: TInvokerContext, payload: TPayload) => Promise<unknown>;
 }
 
 export type TPluginCommand = {

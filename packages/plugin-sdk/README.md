@@ -1,9 +1,10 @@
 # Sharkord Plugin SDK
 
-The official SDK for building Sharkord plugins. This package provides TypeScript types and interfaces to extend Sharkord with custom functionality.
+The official SDK for building Sharkord plugins. This package provides TypeScript
+types and interfaces to extend Sharkord with custom functionality.
 
-> [!NOTE]
-> Sharkord plugins are an experimental feature and the SDK API may change in future releases.
+> [!NOTE] Sharkord plugins are an experimental feature and the SDK API may
+> change in future releases.
 
 ## Creating a Plugin
 
@@ -17,8 +18,9 @@ Run `bun init` to bootstrap your plugin.
 
 ### 3. Create `manifest.json`
 
-Store plugin metadata in a `manifest.json` file at the root of the built plugin directory.
-Keep `package.json` limited to normal package/runtime fields such as `name`, `version`, `type`, scripts, and dependencies.
+Store plugin metadata in a `manifest.json` file at the root of the built plugin
+directory. Keep `package.json` limited to normal package/runtime fields such as
+`name`, `version`, `type`, scripts, and dependencies.
 
 **Required fields:**
 
@@ -48,7 +50,8 @@ Example `manifest.json`:
 }
 ```
 
-Plugin code must be compiled to `index.js` at the root of the distributed plugin folder.
+Plugin code must be compiled to `index.js` at the root of the distributed plugin
+folder.
 
 Example `package.json`:
 
@@ -76,24 +79,24 @@ Example `package.json`:
 bun add @sharkord/plugin-sdk
 ```
 
-> [!NOTE]
-> The SDK is not published to any package registry. For now, you need to link it locally using `bun link`.
+> [!NOTE] The SDK is not published to any package registry. For now, you need to
+> link it locally using `bun link`.
 
 ### 5. Edit Entry File
 
 ```typescript
-import type { PluginContext } from "@sharkord/plugin-sdk";
+import type { PluginContext } from '@sharkord/plugin-sdk';
 
 const onLoad = (ctx: PluginContext) => {
-  ctx.log("My Plugin loaded");
+  ctx.log('My Plugin loaded');
 
-  ctx.events.on("user:joined", ({ userId, username }) => {
+  ctx.events.on('user:joined', ({ userId, username }) => {
     ctx.log(`User joined: ${username} (ID: ${userId})`);
   });
 };
 
 const onUnload = (ctx: PluginContext) => {
-  ctx.log("My Plugin unloaded");
+  ctx.log('My Plugin unloaded');
 };
 
 export { onLoad, onUnload };
@@ -124,35 +127,37 @@ Called when the plugin is unloaded or the server shuts down. Use this to:
 - Close connections
 - Save state
 
-**Note:** All event listeners and commands are automatically unregistered when the plugin unloads.
+**Note:** All event listeners and commands are automatically unregistered when
+the plugin unloads.
 
 ## Commands
 
-Plugins can register custom commands that users can execute. Commands can accept arguments and return results.
+Plugins can register custom commands that users can execute. Commands can accept
+arguments and return results.
 
 ### Registering a Command
 
 ```typescript
-import type { PluginContext, TInvokerContext } from "@sharkord/plugin-sdk";
+import type { PluginContext, TInvokerContext } from '@sharkord/plugin-sdk';
 
 const onLoad = (ctx: PluginContext) => {
   ctx.commands.register({
-    name: "greet",
-    description: "Greet a user",
+    name: 'greet',
+    description: 'Greet a user',
     args: [
       {
-        name: "username",
-        type: "string",
-        description: "The user to greet",
+        name: 'username',
+        type: 'string',
+        description: 'The user to greet',
         required: true,
-        sensitive: false, // set to true if the argument is sensitive (e.g., passwords), in the interface it will be shown as ****
-      },
+        sensitive: false // set to true if the argument is sensitive (e.g., passwords), in the interface it will be shown as ****
+      }
     ],
-    async executes(invokerCtx: TInvokerContext, args: { username: string }) {
+    async execute(invokerCtx: TInvokerContext, args: { username: string }) {
       ctx.log(`Greeting ${args.username} invoked by user ${invokerCtx.userId}`);
 
-      return "Hello, " + args.username + "!";
-    },
+      return 'Hello, ' + args.username + '!';
+    }
   });
 };
 ```
@@ -162,7 +167,8 @@ const onLoad = (ctx: PluginContext) => {
 1. Go to the Sharkord data directory (usually `~/.config/sharkord`).
 2. Create a `plugins` folder if it doesn't exist.
 3. Create a folder for your plugin (e.g., `my-plugin`).
-4. Copy your compiled plugin files (e.g., from `dist/`) into the `my-plugin` folder.
+4. Copy your compiled plugin files (e.g., from `dist/`) into the `my-plugin`
+   folder.
 5. Enable your plugin in the server settings under the "Plugins" section.
 6. Restart Sharkord or reload plugins from the admin panel.
 7. Your plugin should now be loaded and active!
@@ -175,12 +181,16 @@ const onLoad = (ctx: PluginContext) => {
 4. **Log appropriately**: Use `debug` for verbose info, `error` for failures
 5. **Validate inputs**: Check command arguments before using them
 6. **Version carefully**: Follow semver for plugin updates
-7. **Prevent blocking operations**: Do NOT block the event loop with long-running tasks (example: using Bun.spawnSync). Use asynchronous methods instead.
+7. **Prevent blocking operations**: Do NOT block the event loop with
+   long-running tasks (example: using Bun.spawnSync). Use asynchronous methods
+   instead.
 
 ## API Reference
 
-No documentation available yet. Use the types in `packages/plugin-sdk/src/index.ts` as a reference.
+No documentation available yet. Use the types in
+`packages/plugin-sdk/src/index.ts` as a reference.
 
 ## License
 
-This SDK is part of the Sharkord project. See the main repository for license information.
+This SDK is part of the Sharkord project. See the main repository for license
+information.

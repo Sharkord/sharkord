@@ -1,6 +1,5 @@
 import type {
   PluginContext,
-  PluginSettings,
   TCreateStreamOptions,
   TExternalStreamHandle,
   UnloadPluginContext
@@ -10,43 +9,34 @@ import {
   ServerEvents,
   StreamKind,
   zPluginManifest,
-  type ActionDefinition,
-  type CommandDefinition,
-  type RegisteredAction,
-  type RegisteredCommand,
-  type TBeforeFileSaveHook,
-  type TCommandsMapByPlugin,
   type TInvokerContext,
-  type TLogEntry,
   type TPluginInfo,
   type TPluginManifest,
-  type TPluginMetadata,
-  type TPluginSettingDefinition,
-  type TPluginSettingsResponse
+  type TPluginMetadata
 } from '@sharkord/shared';
-import chalk from 'chalk';
-import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
-import { db } from '../db';
 import { getSettings } from '../db/queries/server';
-import { pluginData } from '../db/schema';
 import { getErrorMessage } from '../helpers/get-error-message';
 import { PLUGINS_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 import { VoiceRuntime } from '../runtimes/voice';
 import { pubsub } from '../utils/pubsub';
-import { createPluginMessage } from './create-plugin-message';
-import { deletePluginMessage } from './delete-plugin-message';
-import { editPluginMessage } from './edit-plugin-message';
+import { ActionRegistry } from './action-registry';
+import { createPluginMessage } from './actions/create-plugin-message';
+import { deletePluginMessage } from './actions/delete-plugin-message';
+import { editPluginMessage } from './actions/edit-plugin-message';
+import { CommandRegistry } from './command-registry';
 import { eventBus } from './event-bus';
+import { HooksManager } from './hooks-manager';
+import { PluginLogger } from './plugin-logger';
+import { PluginSettingsManager } from './plugin-settings-manager';
+import { PluginStateStore } from './plugin-state-store';
 
 type PluginModule = {
   onLoad: (ctx: PluginContext) => void | Promise<void>;
   onUnload?: (ctx: UnloadPluginContext) => void | Promise<void>;
 };
-
-type PluginStatesMap = Record<string, boolean>;
 
 const SERVER_ENTRY_FILE = 'server/index.js';
 const CLIENT_ENTRY_FILE = 'client/index.js';
@@ -54,121 +44,76 @@ const CLIENT_ENTRY_FILE = 'client/index.js';
 class PluginManager {
   private loadedPlugins = new Map<string, PluginModule>();
   private loadErrors = new Map<string, string>();
-  private logs = new Map<string, TLogEntry[]>();
-  private logsListeners = new Map<string, Set<(newLog: TLogEntry) => void>>();
-  private commands = new Map<string, RegisteredCommand[]>();
-  private actions = new Map<string, RegisteredAction[]>();
   private uiState = new Map<string, boolean>();
-  private pluginStates: PluginStatesMap = {};
-  private settingDefinitions = new Map<string, TPluginSettingDefinition[]>();
-  private settingValues = new Map<string, Record<string, unknown>>();
-  private beforeFileSaveHooks = new Map<string, TBeforeFileSaveHook[]>();
 
-  private loadPluginStates = async () => {
-    try {
-      await this.migratePluginStatesFile();
+  public readonly stateStore = new PluginStateStore();
+  public readonly pluginLogger = new PluginLogger();
+  public readonly settingsManager = new PluginSettingsManager(
+    this.pluginLogger,
+    this.stateStore
+  );
+  public readonly commandRegistry = new CommandRegistry(
+    this.pluginLogger,
+    this.stateStore
+  );
+  public readonly actionRegistry = new ActionRegistry(
+    this.pluginLogger,
+    this.stateStore
+  );
+  public readonly hooksManager = new HooksManager();
 
-      const rows = await db
-        .select({
-          pluginId: pluginData.pluginId,
-          enabled: pluginData.enabled
-        })
-        .from(pluginData);
+  public isEnabled = (pluginId: string) => this.stateStore.isEnabled(pluginId);
 
-      this.pluginStates = rows.reduce<PluginStatesMap>((acc, row) => {
-        acc[row.pluginId] = row.enabled;
-        return acc;
-      }, {});
-    } catch (error) {
-      logger.error('Failed to load plugin states: %s', getErrorMessage(error));
-      this.pluginStates = {};
-    }
-  };
+  public getLogs = (pluginId: string) => this.pluginLogger.getLogs(pluginId);
 
-  private migratePluginStatesFile = async () => {
-    const statesFile = path.join(PLUGINS_PATH, 'plugin-states.json');
+  public onLog = (
+    pluginId: string,
+    listener: Parameters<PluginLogger['onLog']>[1]
+  ) => this.pluginLogger.onLog(pluginId, listener);
 
-    try {
-      if (!(await fs.exists(statesFile))) return;
+  public getCommands = () => this.commandRegistry.getAll();
 
-      const content = await fs.readFile(statesFile, 'utf-8');
-      const states = JSON.parse(content) as PluginStatesMap;
+  public getCommandByName = (commandName: string | undefined) =>
+    this.commandRegistry.getByName(commandName);
 
-      const entries = Object.entries(states).map(([pluginId, enabled]) => ({
-        pluginId,
-        enabled
-      }));
+  public hasCommand = (pluginId: string, commandName: string) =>
+    this.commandRegistry.has(pluginId, commandName);
 
-      if (entries.length > 0) {
-        for (const entry of entries) {
-          await db
-            .insert(pluginData)
-            .values(entry)
-            .onConflictDoUpdate({
-              target: pluginData.pluginId,
-              set: { enabled: entry.enabled }
-            });
-        }
-      }
+  public executeCommand = <TArgs = unknown>(
+    pluginId: string,
+    commandName: string,
+    invokerCtx: TInvokerContext,
+    args: TArgs
+  ) => this.commandRegistry.execute(pluginId, commandName, invokerCtx, args);
 
-      await fs.unlink(statesFile);
-    } catch (error) {
-      logger.error(
-        'Failed to migrate plugin states file: %s',
-        getErrorMessage(error)
-      );
-    }
-  };
+  public hasAction = (pluginId: string, actionName: string) =>
+    this.actionRegistry.has(pluginId, actionName);
 
-  private getPluginEnabledFromDb = async (pluginId: string) => {
-    const rows = await db
-      .select({ enabled: pluginData.enabled })
-      .from(pluginData)
-      .where(eq(pluginData.pluginId, pluginId));
+  public executeAction = <TPayload = unknown>(
+    pluginId: string,
+    actionName: string,
+    invokerCtx: TInvokerContext,
+    payload: TPayload
+  ) => this.actionRegistry.execute(pluginId, actionName, invokerCtx, payload);
 
-    return rows[0]?.enabled ?? false;
-  };
+  public getPluginSettings = (pluginId: string) =>
+    this.settingsManager.getSettings(pluginId);
 
-  private ensurePluginState = async (pluginId: string) => {
-    if (this.pluginStates[pluginId] !== undefined) return;
+  public updatePluginSetting = (
+    pluginId: string,
+    key: string,
+    value: unknown
+  ) => this.settingsManager.updateSetting(pluginId, key, value);
 
-    const enabled = await this.getPluginEnabledFromDb(pluginId);
-    this.pluginStates[pluginId] = enabled;
-  };
+  public registerBeforeFileSaveHook = (
+    ...args: Parameters<HooksManager['registerBeforeFileSave']>
+  ) => this.hooksManager.registerBeforeFileSave(...args);
 
-  public isEnabled = (pluginId: string): boolean => {
-    return this.pluginStates[pluginId] ?? false;
-  };
+  public clearBeforeFileSaveHooks = () =>
+    this.hooksManager.clearBeforeFileSaveHooks();
 
-  private setPluginEnabled = async (pluginId: string, enabled: boolean) => {
-    this.pluginStates[pluginId] = enabled;
-
-    await db
-      .insert(pluginData)
-      .values({ pluginId, enabled })
-      .onConflictDoUpdate({
-        target: pluginData.pluginId,
-        set: { enabled }
-      });
-  };
-
-  public getCommandByName = (
-    commandName: string | undefined
-  ): RegisteredCommand | undefined => {
-    if (!commandName) {
-      return undefined;
-    }
-
-    for (const commands of this.commands.values()) {
-      const foundCommand = commands.find((c) => c.name === commandName);
-
-      if (foundCommand) {
-        return foundCommand;
-      }
-    }
-
-    return undefined;
-  };
+  public getBeforeFileSaveHooks = () =>
+    this.hooksManager.getBeforeFileSaveHooks();
 
   public getPluginsFromPath = async (): Promise<string[]> => {
     const files = await fs.readdir(PLUGINS_PATH);
@@ -176,7 +121,6 @@ class PluginManager {
 
     for (const file of files) {
       try {
-        // check if it's a directory
         const pluginPath = path.join(PLUGINS_PATH, file);
         const stat = await fs.stat(pluginPath);
 
@@ -191,112 +135,34 @@ class PluginManager {
     return result;
   };
 
-  public loadPlugins = async () => {
-    const settings = await getSettings();
+  public getPluginIdsWithComponents = (): string[] => {
+    const pluginIds = Array.from(this.loadedPlugins.keys());
 
-    if (!settings.enablePlugins) return;
-
-    await this.loadPluginStates();
-
-    const files = await this.getPluginsFromPath();
-
-    logger.info(`Loading ${files.length} plugins...`);
-
-    for (const file of files) {
-      try {
-        await this.load(file);
-      } catch (error) {
-        logger.error(
-          `Failed to load plugin ${file}: %s`,
-          getErrorMessage(error)
-        );
-      }
-    }
+    return pluginIds.filter((pluginId) => this.uiState.get(pluginId));
   };
 
-  public unloadPlugins = async () => {
+  public getActivePluginMetadata = async (): Promise<TPluginMetadata[]> => {
+    const metadata: TPluginMetadata[] = [];
+
     for (const pluginId of this.loadedPlugins.keys()) {
       try {
-        await this.unload(pluginId);
-      } catch (error) {
-        logger.error(
-          `Failed to unload plugin %s: %s`,
-          pluginId,
-          getErrorMessage(error)
-        );
-      }
-    }
-  };
+        const info = await this.getPluginInfo(pluginId);
 
-  public onLog = (pluginId: string, listener: (newLog: TLogEntry) => void) => {
-    if (!this.logsListeners.has(pluginId)) {
-      this.logsListeners.set(pluginId, new Set());
-    }
-
-    this.logsListeners.get(pluginId)!.add(listener);
-
-    return () => {
-      const listeners = this.logsListeners.get(pluginId);
-
-      if (listeners) {
-        listeners.delete(listener);
-
-        if (listeners.size === 0) {
-          this.logsListeners.delete(pluginId);
-        }
-      }
-    };
-  };
-
-  public getLogs = (pluginId: string): TLogEntry[] => {
-    return this.logs.get(pluginId) || [];
-  };
-
-  private logPlugin = (
-    pluginId: string,
-    type: 'info' | 'error' | 'debug',
-    ...message: unknown[]
-  ) => {
-    if (!this.logs.has(pluginId)) {
-      this.logs.set(pluginId, []);
-    }
-
-    const loggerFn = logger[type];
-    const parsedMessage = message
-      .map((m) => (typeof m === 'object' ? JSON.stringify(m) : String(m)))
-      .join(' ');
-
-    loggerFn(`${chalk.magentaBright(`[plugin:${pluginId}]`)} ${parsedMessage}`);
-
-    const pluginLogs = this.logs.get(pluginId)!;
-
-    const newLog: TLogEntry = {
-      type,
-      timestamp: Date.now(),
-      message: parsedMessage,
-      pluginId
-    };
-
-    pluginLogs.push(newLog);
-
-    // keep only the last 1000 logs per plugin
-    if (pluginLogs.length > 1000) {
-      pluginLogs.shift();
-    }
-
-    const listeners = this.logsListeners.get(pluginId);
-
-    if (listeners) {
-      for (const listener of listeners) {
-        listener(newLog);
+        metadata.push({
+          pluginId: info.id,
+          name: info.name,
+          description: info.description,
+          avatarUrl: info.logo
+        });
+      } catch {
+        // plugin info may not be available, skip
       }
     }
 
-    pubsub.publish(ServerEvents.PLUGIN_LOG, newLog);
+    return metadata;
   };
 
   private validatePluginId = (pluginId: string) => {
-    // prevent path traversal attacks (e.g. "../../etc/passwd")
     if (
       pluginId.includes('..') ||
       pluginId.includes('/') ||
@@ -311,231 +177,6 @@ class PluginManager {
     this.validatePluginId(pluginId);
 
     return path.join(PLUGINS_PATH, pluginId);
-  };
-
-  public removePlugin = async (pluginId: string) => {
-    await this.unload(pluginId);
-
-    const pluginPath = this.getPluginPath(pluginId);
-
-    try {
-      await fs.rm(pluginPath, { recursive: true, force: true });
-
-      logger.debug(`Plugin removed: ${pluginId}`);
-    } catch (error) {
-      logger.error(
-        `Failed to remove plugin ${pluginId}: %s`,
-        getErrorMessage(error)
-      );
-
-      throw new Error(`Failed to remove plugin: ${getErrorMessage(error)}`);
-    }
-  };
-
-  private unregisterPluginCommands = (pluginId: string) => {
-    const pluginCommands = this.commands.get(pluginId);
-
-    if (!pluginCommands || pluginCommands.length === 0) {
-      return;
-    }
-
-    const commandNames = pluginCommands.map((c) => c.name);
-
-    this.commands.delete(pluginId);
-
-    this.logPlugin(
-      pluginId,
-      'debug',
-      `Unregistered ${commandNames.length} command(s): ${commandNames.join(', ')}`
-    );
-  };
-
-  private unregisterPluginActions = (pluginId: string) => {
-    const pluginActions = this.actions.get(pluginId);
-
-    if (!pluginActions || pluginActions.length === 0) {
-      return;
-    }
-
-    const actionNames = pluginActions.map((a) => a.name);
-
-    this.actions.delete(pluginId);
-
-    this.logPlugin(
-      pluginId,
-      'debug',
-      `Unregistered ${actionNames.length} action(s): ${actionNames.join(', ')}`
-    );
-  };
-
-  public executeCommand = async <TArgs = unknown>(
-    pluginId: string,
-    commandName: string,
-    invokerCtx: TInvokerContext,
-    args: TArgs
-  ): Promise<unknown> => {
-    const isEnabled = this.isEnabled(pluginId);
-
-    if (!isEnabled) {
-      throw new Error(`Plugin '${pluginId}' is not enabled.`);
-    }
-
-    const commands = this.commands.get(pluginId);
-
-    if (!commands) {
-      throw new Error(`Plugin '${pluginId}' has no registered commands.`);
-    }
-
-    const foundCommand = commands.find((c) => c.name === commandName);
-
-    if (!foundCommand) {
-      throw new Error(
-        `Command '${commandName}' not found for plugin '${pluginId}'.`
-      );
-    }
-
-    try {
-      this.logPlugin(
-        pluginId,
-        'debug',
-        `Executing command '${commandName}' with args:`,
-        args
-      );
-
-      return await foundCommand.command.execute(invokerCtx, args);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-
-      this.logPlugin(
-        pluginId,
-        'error',
-        `Error executing command '${commandName}': ${errorMessage}`
-      );
-
-      throw error;
-    }
-  };
-
-  public executeAction = async <TPayload = unknown>(
-    pluginId: string,
-    actionName: string,
-    invokerCtx: TInvokerContext,
-    payload: TPayload
-  ): Promise<unknown> => {
-    const isEnabled = this.isEnabled(pluginId);
-
-    if (!isEnabled) {
-      throw new Error(`Plugin '${pluginId}' is not enabled.`);
-    }
-
-    const actions = this.actions.get(pluginId);
-
-    if (!actions) {
-      throw new Error(`Plugin '${pluginId}' has no registered actions.`);
-    }
-
-    const foundAction = actions.find((a) => a.name === actionName);
-
-    if (!foundAction) {
-      throw new Error(
-        `Action '${actionName}' not found for plugin '${pluginId}'.`
-      );
-    }
-
-    try {
-      this.logPlugin(
-        pluginId,
-        'debug',
-        `Executing action '${actionName}' with payload:`,
-        payload
-      );
-
-      const actionExecutor =
-        foundAction.action.executes ?? foundAction.action.execute;
-
-      if (!actionExecutor) {
-        throw new Error(
-          `Action '${actionName}' from plugin '${pluginId}' has no execute handler.`
-        );
-      }
-
-      return await actionExecutor(invokerCtx, payload);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-
-      this.logPlugin(
-        pluginId,
-        'error',
-        `Error executing action '${actionName}': ${errorMessage}`
-      );
-
-      throw error;
-    }
-  };
-
-  public getCommands = (): TCommandsMapByPlugin => {
-    const allCommands: TCommandsMapByPlugin = {};
-
-    for (const [pluginId, commands] of this.commands.entries()) {
-      allCommands[pluginId] = commands.map(({ name, description, args }) => ({
-        pluginId,
-        name,
-        description,
-        args
-      }));
-    }
-
-    return allCommands;
-  };
-
-  public hasCommand = (pluginId: string, commandName: string): boolean => {
-    const commands = this.commands.get(pluginId);
-
-    if (!commands) {
-      return false;
-    }
-
-    return commands.some((c) => c.name === commandName);
-  };
-
-  public hasAction = (pluginId: string, actionName: string): boolean => {
-    const actions = this.actions.get(pluginId);
-
-    if (!actions) {
-      return false;
-    }
-
-    return actions.some((a) => a.name === actionName);
-  };
-
-  public getPluginIdsWithComponents = (): string[] => {
-    const pluginIds = Array.from(this.loadedPlugins.keys());
-
-    return pluginIds.filter((pluginId) => this.uiState.get(pluginId));
-  };
-
-  public registerBeforeFileSaveHook = (
-    pluginId: string,
-    handler: TBeforeFileSaveHook
-  ) => {
-    const existing = this.beforeFileSaveHooks.get(pluginId) ?? [];
-    existing.push(handler);
-    this.beforeFileSaveHooks.set(pluginId, existing);
-  };
-
-  public clearBeforeFileSaveHooks = () => {
-    this.beforeFileSaveHooks.clear();
-  };
-
-  public getBeforeFileSaveHooks = (): Array<{
-    pluginId: string;
-    handlers: TBeforeFileSaveHook[];
-  }> => {
-    return Array.from(this.beforeFileSaveHooks.entries()).map(
-      ([pluginId, handlers]) => ({ pluginId, handlers })
-    );
   };
 
   private verifySdkVersion = (
@@ -574,85 +215,8 @@ class PluginManager {
     return { isValid: true };
   };
 
-  public getActivePluginMetadata = async (): Promise<TPluginMetadata[]> => {
-    const metadata: TPluginMetadata[] = [];
-
-    for (const pluginId of this.loadedPlugins.keys()) {
-      try {
-        const info = await this.getPluginInfo(pluginId);
-
-        metadata.push({
-          pluginId: info.id,
-          name: info.name,
-          description: info.description,
-          avatarUrl: info.logo
-        });
-      } catch {
-        // plugin info may not be available, skip
-      }
-    }
-
-    return metadata;
-  };
-
-  public togglePlugin = async (pluginId: string, enabled: boolean) => {
-    await this.ensurePluginState(pluginId);
-    const wasEnabled = this.isEnabled(pluginId);
-
-    await this.setPluginEnabled(pluginId, enabled);
-
-    // was enabled and is now being disabled
-    if (wasEnabled && !enabled && this.loadedPlugins.has(pluginId)) {
-      await this.unload(pluginId);
-    }
-
-    // was disabled and is now being enabled
-    if (!wasEnabled && enabled && !this.loadedPlugins.has(pluginId)) {
-      await this.load(pluginId);
-    }
-  };
-
-  public unload = async (pluginId: string) => {
-    const pluginModule = this.loadedPlugins.get(pluginId);
-
-    if (!pluginModule) {
-      this.logPlugin(
-        pluginId,
-        'debug',
-        `Plugin ${pluginId} is not loaded; nothing to unload.`
-      );
-      return;
-    }
-
-    if (typeof pluginModule.onUnload === 'function') {
-      try {
-        const unloadCtx = this.createUnloadContext(pluginId);
-
-        await pluginModule.onUnload(unloadCtx);
-      } catch (error) {
-        logger.error(
-          'Error in plugin %s onUnload: %s',
-          pluginId,
-          getErrorMessage(error)
-        );
-      }
-    }
-
-    eventBus.unload(pluginId);
-    this.unregisterPluginCommands(pluginId);
-    this.unregisterPluginActions(pluginId);
-    this.uiState.delete(pluginId);
-    this.settingDefinitions.delete(pluginId);
-    this.settingValues.delete(pluginId);
-    this.beforeFileSaveHooks.delete(pluginId);
-    this.loadedPlugins.delete(pluginId);
-    this.loadErrors.delete(pluginId);
-
-    logger.info(`Plugin unloaded: ${pluginId}`);
-  };
-
   public getPluginInfo = async (pluginId: string): Promise<TPluginInfo> => {
-    await this.ensurePluginState(pluginId);
+    await this.stateStore.ensure(pluginId);
     const pluginPath = this.getPluginPath(pluginId);
     const manifestPath = path.join(pluginPath, 'manifest.json');
 
@@ -685,7 +249,7 @@ class PluginManager {
 
     return {
       id: pluginId,
-      enabled: this.isEnabled(pluginId),
+      enabled: this.stateStore.isEnabled(pluginId),
       name: manifest.name,
       path: pluginPath,
       description: manifest.description,
@@ -698,6 +262,60 @@ class PluginManager {
     };
   };
 
+  public loadPlugins = async () => {
+    const settings = await getSettings();
+
+    if (!settings.enablePlugins) return;
+
+    await this.stateStore.loadAll();
+
+    const files = await this.getPluginsFromPath();
+
+    logger.info(`Loading ${files.length} plugins...`);
+
+    for (const file of files) {
+      try {
+        await this.load(file);
+      } catch (error) {
+        logger.error(
+          `Failed to load plugin ${file}: %s`,
+          getErrorMessage(error)
+        );
+      }
+    }
+  };
+
+  public unloadPlugins = async () => {
+    for (const pluginId of this.loadedPlugins.keys()) {
+      try {
+        await this.unload(pluginId);
+      } catch (error) {
+        logger.error(
+          `Failed to unload plugin %s: %s`,
+          pluginId,
+          getErrorMessage(error)
+        );
+      }
+    }
+  };
+
+  public togglePlugin = async (pluginId: string, enabled: boolean) => {
+    await this.stateStore.ensure(pluginId);
+    const wasEnabled = this.stateStore.isEnabled(pluginId);
+
+    await this.stateStore.setEnabled(pluginId, enabled);
+
+    // was enabled and is now being disabled
+    if (wasEnabled && !enabled && this.loadedPlugins.has(pluginId)) {
+      await this.unload(pluginId);
+    }
+
+    // was disabled and is now being enabled
+    if (!wasEnabled && enabled && !this.loadedPlugins.has(pluginId)) {
+      await this.load(pluginId);
+    }
+  };
+
   public load = async (pluginId: string) => {
     const { enablePlugins } = await getSettings();
 
@@ -705,8 +323,8 @@ class PluginManager {
       throw new Error('Plugins are disabled.');
     }
 
-    if (!this.isEnabled(pluginId)) {
-      this.logPlugin(
+    if (!this.stateStore.isEnabled(pluginId)) {
+      this.pluginLogger.log(
         pluginId,
         'debug',
         `Plugin ${pluginId} is disabled; skipping load.`
@@ -723,7 +341,7 @@ class PluginManager {
 
       this.loadErrors.set(pluginId, errorMessage);
 
-      this.logPlugin(
+      this.pluginLogger.log(
         pluginId,
         'error',
         `Failed to load plugin ${pluginId}: ${errorMessage}`
@@ -747,7 +365,7 @@ class PluginManager {
       this.loadedPlugins.set(pluginId, mod);
       this.loadErrors.delete(pluginId);
 
-      this.logPlugin(
+      this.pluginLogger.log(
         pluginId,
         'info',
         `Plugin loaded: ${pluginId}@v${info.version} by ${info.author}`
@@ -758,7 +376,7 @@ class PluginManager {
 
       this.loadErrors.set(pluginId, errorMessage);
 
-      this.logPlugin(
+      this.pluginLogger.log(
         pluginId,
         'error',
         `Failed to load plugin ${pluginId}: ${errorMessage}`
@@ -768,161 +386,70 @@ class PluginManager {
     }
   };
 
-  private loadSettingsFromDb = async (
-    pluginId: string
-  ): Promise<Record<string, unknown>> => {
-    const rows = await db
-      .select()
-      .from(pluginData)
-      .where(eq(pluginData.pluginId, pluginId));
+  public unload = async (pluginId: string) => {
+    const pluginModule = this.loadedPlugins.get(pluginId);
 
-    if (rows.length > 0 && rows[0]!.settings) {
-      return rows[0]!.settings;
-    }
-
-    return {};
-  };
-
-  private saveSettingsToDb = async (
-    pluginId: string,
-    values: Record<string, unknown>
-  ) => {
-    const enabled = this.pluginStates[pluginId] ?? true;
-
-    await db
-      .insert(pluginData)
-      .values({ pluginId, enabled, settings: values })
-      .onConflictDoUpdate({
-        target: pluginData.pluginId,
-        set: { settings: values }
-      });
-  };
-
-  private registerSettings = async (
-    pluginId: string,
-    definitions: readonly TPluginSettingDefinition[]
-  ): Promise<PluginSettings> => {
-    this.settingDefinitions.set(pluginId, [...definitions]);
-
-    // load existing values from DB, merge with defaults
-    const dbValues = await this.loadSettingsFromDb(pluginId);
-    const merged: Record<string, unknown> = {};
-
-    for (const def of definitions) {
-      merged[def.key] =
-        dbValues[def.key] !== undefined ? dbValues[def.key] : def.defaultValue;
-    }
-
-    this.settingValues.set(pluginId, merged);
-
-    // persist merged values back (in case new defaults were added)
-    await this.saveSettingsToDb(pluginId, merged);
-
-    this.logPlugin(
-      pluginId,
-      'debug',
-      `Registered ${definitions.length} setting(s): ${definitions.map((d) => d.key).join(', ')}`
-    );
-
-    return {
-      get: (key: string) => {
-        const values = this.settingValues.get(pluginId);
-        if (!values) return undefined;
-        return values[key];
-      },
-      set: (key: string, value: unknown) => {
-        const values = this.settingValues.get(pluginId);
-        if (!values) return;
-
-        const def = this.settingDefinitions
-          .get(pluginId)
-          ?.find((d) => d.key === key);
-        if (!def) {
-          this.logPlugin(
-            pluginId,
-            'error',
-            `Setting key '${key}' is not registered.`
-          );
-          return;
-        }
-
-        values[key] = value;
-
-        // persist async without blocking
-        this.saveSettingsToDb(pluginId, values).catch((err) => {
-          this.logPlugin(
-            pluginId,
-            'error',
-            `Failed to persist setting '${key}':`,
-            err
-          );
-        });
-      }
-    };
-  };
-
-  public getPluginSettings = async (
-    pluginId: string
-  ): Promise<TPluginSettingsResponse> => {
-    const definitions = this.settingDefinitions.get(pluginId) || [];
-    let values = this.settingValues.get(pluginId);
-
-    if (!values) {
-      // plugin might not be loaded, try reading from DB
-      const dbValues = await this.loadSettingsFromDb(pluginId);
-      values = {};
-
-      for (const def of definitions) {
-        values[def.key] =
-          dbValues[def.key] !== undefined
-            ? dbValues[def.key]
-            : def.defaultValue;
-      }
-    }
-
-    return { definitions, values };
-  };
-
-  public updatePluginSetting = async (
-    pluginId: string,
-    key: string,
-    value: unknown
-  ) => {
-    const definitions = this.settingDefinitions.get(pluginId);
-
-    if (!definitions) {
-      throw new Error(`Plugin '${pluginId}' has no registered settings.`);
-    }
-
-    const def = definitions.find((d) => d.key === key);
-
-    if (!def) {
-      throw new Error(
-        `Setting '${key}' is not registered for plugin '${pluginId}'.`
+    if (!pluginModule) {
+      this.pluginLogger.log(
+        pluginId,
+        'debug',
+        `Plugin ${pluginId} is not loaded; nothing to unload.`
       );
+      return;
     }
 
-    const values = this.settingValues.get(pluginId) || {};
-    values[key] = value;
-    this.settingValues.set(pluginId, values);
+    if (typeof pluginModule.onUnload === 'function') {
+      try {
+        const unloadCtx: UnloadPluginContext =
+          this.pluginLogger.createScopedLogger(pluginId);
 
-    await this.saveSettingsToDb(pluginId, values);
+        await pluginModule.onUnload(unloadCtx);
+      } catch (error) {
+        logger.error(
+          'Error in plugin %s onUnload: %s',
+          pluginId,
+          getErrorMessage(error)
+        );
+      }
+    }
 
-    this.logPlugin(pluginId, 'debug', `Setting '${key}' updated to:`, value);
+    eventBus.unload(pluginId);
+    this.commandRegistry.unload(pluginId);
+    this.actionRegistry.unload(pluginId);
+    this.settingsManager.unload(pluginId);
+    this.hooksManager.unload(pluginId);
+    this.uiState.delete(pluginId);
+    this.loadedPlugins.delete(pluginId);
+    this.loadErrors.delete(pluginId);
+
+    logger.info(`Plugin unloaded: ${pluginId}`);
+  };
+
+  public removePlugin = async (pluginId: string) => {
+    await this.unload(pluginId);
+
+    const pluginPath = this.getPluginPath(pluginId);
+
+    try {
+      await fs.rm(pluginPath, { recursive: true, force: true });
+
+      logger.debug(`Plugin removed: ${pluginId}`);
+    } catch (error) {
+      logger.error(
+        `Failed to remove plugin ${pluginId}: %s`,
+        getErrorMessage(error)
+      );
+
+      throw new Error(`Failed to remove plugin: ${getErrorMessage(error)}`);
+    }
   };
 
   private createContext = (pluginId: string): PluginContext => {
+    const scopedLogger = this.pluginLogger.createScopedLogger(pluginId);
+
     return {
       path: this.getPluginPath(pluginId),
-      log: (...message: unknown[]) => {
-        this.logPlugin(pluginId, 'info', ...message);
-      },
-      debug: (...message: unknown[]) => {
-        this.logPlugin(pluginId, 'debug', ...message);
-      },
-      error: (...message: unknown[]) => {
-        this.logPlugin(pluginId, 'error', ...message);
-      },
+      ...scopedLogger,
       events: {
         on: (event, handler) => {
           eventBus.register(pluginId, event, handler);
@@ -937,44 +464,8 @@ class PluginManager {
         }
       },
       actions: {
-        register: <TPayload = void>(action: ActionDefinition<TPayload>) => {
-          if (!action.executes && !action.execute) {
-            throw new Error(
-              `Action '${action.name}' must define either executes() or execute().`
-            );
-          }
-
-          if (!this.actions.has(pluginId)) {
-            this.actions.set(pluginId, []);
-          }
-
-          const pluginActions = this.actions.get(pluginId)!;
-
-          const existingIndex = pluginActions.findIndex(
-            (a) => a.name === action.name
-          );
-
-          if (existingIndex !== -1) {
-            this.logPlugin(
-              pluginId,
-              'error',
-              `Action '${action.name}' is already registered. Overwriting.`
-            );
-            pluginActions.splice(existingIndex, 1);
-          }
-
-          pluginActions.push({
-            pluginId,
-            name: action.name,
-            description: action.description,
-            action: action as ActionDefinition<unknown>
-          });
-
-          this.logPlugin(
-            pluginId,
-            'debug',
-            `Registered action: ${action.name}${action.description ? ` - ${action.description}` : ''}`
-          );
+        register: (action) => {
+          this.actionRegistry.register(pluginId, action);
         }
       },
       voice: {
@@ -1040,9 +531,7 @@ class PluginManager {
             );
           }
 
-          this.logPlugin(
-            pluginId,
-            'debug',
+          scopedLogger.debug(
             `Created external stream '${options.title}' (key: ${options.key}, id: ${streamId}) with tracks: audio=${!!options.producers.audio}, video=${!!options.producers.video}`
           );
 
@@ -1051,18 +540,14 @@ class PluginManager {
             remove: () => {
               channel.removeExternalStream(streamId);
 
-              this.logPlugin(
-                pluginId,
-                'debug',
+              scopedLogger.debug(
                 `Removed external stream '${options.title}' (key: ${options.key}, id: ${streamId})`
               );
             },
             update: (updateOptions) => {
               channel.updateExternalStream(streamId, updateOptions);
 
-              this.logPlugin(
-                pluginId,
-                'debug',
+              scopedLogger.debug(
                 `Updated external stream '${options.title}' (key: ${options.key}, id: ${streamId})`
               );
             }
@@ -1090,66 +575,22 @@ class PluginManager {
           })
       },
       commands: {
-        register: <TArgs = void>(command: CommandDefinition<TArgs>) => {
-          if (!this.commands.has(pluginId)) {
-            this.commands.set(pluginId, []);
-          }
-
-          const pluginCommands = this.commands.get(pluginId)!;
-
-          const existingIndex = pluginCommands.findIndex(
-            (c) => c.name === command.name
-          );
-
-          if (existingIndex !== -1) {
-            this.logPlugin(
-              pluginId,
-              'error',
-              `Command '${command.name}' is already registered. Overwriting.`
-            );
-            pluginCommands.splice(existingIndex, 1);
-          }
-
-          pluginCommands.push({
-            pluginId,
-            name: command.name,
-            description: command.description,
-            args: command.args,
-            command: command as CommandDefinition<unknown>
-          });
-
-          this.logPlugin(
-            pluginId,
-            'debug',
-            `Registered command: ${command.name}${command.description ? ` - ${command.description}` : ''}`
-          );
+        register: (command) => {
+          this.commandRegistry.register(pluginId, command);
         }
       },
       settings: {
         register: (definitions) => {
-          return this.registerSettings(pluginId, definitions) as ReturnType<
-            PluginContext['settings']['register']
-          >;
+          return this.settingsManager.register(
+            pluginId,
+            definitions
+          ) as ReturnType<PluginContext['settings']['register']>;
         }
       },
       hooks: {
         onBeforeFileSave: (handler) => {
-          this.registerBeforeFileSaveHook(pluginId, handler);
+          this.hooksManager.registerBeforeFileSave(pluginId, handler);
         }
-      }
-    };
-  };
-
-  private createUnloadContext = (pluginId: string): UnloadPluginContext => {
-    return {
-      log: (...message: unknown[]) => {
-        this.logPlugin(pluginId, 'info', ...message);
-      },
-      debug: (...message: unknown[]) => {
-        this.logPlugin(pluginId, 'debug', ...message);
-      },
-      error: (...message: unknown[]) => {
-        this.logPlugin(pluginId, 'error', ...message);
       }
     };
   };
