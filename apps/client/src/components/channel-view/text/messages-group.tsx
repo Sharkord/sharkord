@@ -10,7 +10,7 @@ import {
 } from '@sharkord/shared';
 import { format } from 'date-fns';
 import { memo } from 'react';
-import { useMessageRenderedName } from './hooks/use-message-rendered-name';
+import { useMessageAuthorName } from './hooks/use-message-author-name';
 import { Message } from './message';
 
 type TMessagesGroupProps = {
@@ -32,7 +32,7 @@ const MessagesGroup = memo(
     const user = useUserById(firstMessage.userId);
     const date = new Date(firstMessage.createdAt);
     const isOwnUser = useIsOwnUser(firstMessage.userId);
-    const authorName = useMessageRenderedName(firstMessage);
+    const authorName = useMessageAuthorName(firstMessage);
     const isDeletedUser = user?.name === DELETED_USER_IDENTITY_AND_NAME;
     const isPluginMessage = !!firstMessage.pluginId;
 

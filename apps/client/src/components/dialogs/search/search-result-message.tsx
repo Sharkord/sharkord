@@ -1,4 +1,4 @@
-import { useMessageRenderedName } from '@/components/channel-view/text/hooks/use-message-rendered-name';
+import { useMessageAuthorName } from '@/components/channel-view/text/hooks/use-message-author-name';
 import { MessageRenderer } from '@/components/channel-view/text/renderer';
 import { PluginAvatar } from '@/components/plugin-avatar';
 import { RelativeTime } from '@/components/relative-time';
@@ -21,7 +21,7 @@ const SearchResultMessageCard = memo(
     const { t } = useTranslation('dialogs');
     const isPluginMessage = !!message.pluginId;
     const plugin = usePluginMetadata(message.pluginId);
-    const renderedName = useMessageRenderedName(message);
+    const authorName = useMessageAuthorName(message);
 
     const handleJump = useCallback(() => {
       onJump({
@@ -46,7 +46,7 @@ const SearchResultMessageCard = memo(
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span className="max-w-55 truncate font-medium text-foreground">
-                {renderedName}
+                {authorName}
               </span>
               <span>•</span>
               <RelativeTime date={new Date(message.createdAt)}>

@@ -3,7 +3,7 @@ import { useUserById } from '@/features/server/users/hooks';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import type { TMessage } from '@sharkord/shared';
 
-const useMessageRenderedName = (message: TMessage) => {
+const useMessageAuthorName = (message: TMessage) => {
   const pluginMetadata = usePluginMetadata(message.pluginId);
   const user = useUserById(message.userId);
 
@@ -12,11 +12,10 @@ const useMessageRenderedName = (message: TMessage) => {
   }
 
   if (user) {
-    // TODO: check all places where getRenderedUsername is used to see if we can replace it with useMessageRenderedName for consistency
     return getRenderedUsername(user);
   }
 
   return 'Unknown';
 };
 
-export { useMessageRenderedName };
+export { useMessageAuthorName };

@@ -6,7 +6,7 @@ import { useUserById } from '@/features/server/users/hooks';
 import type { TJoinedMessage } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
 import { memo } from 'react';
-import { useMessageRenderedName } from '../channel-view/text/hooks/use-message-rendered-name';
+import { useMessageAuthorName } from '../channel-view/text/hooks/use-message-author-name';
 import { MessageRenderer } from '../channel-view/text/renderer';
 import { UserAvatar } from '../user-avatar';
 
@@ -19,7 +19,7 @@ const ParentMessageContent = memo(
     const pluginMetadata = usePluginMetadata(parentMessage.pluginId);
     const user = useUserById(parentMessage.userId);
     const isPluginMessage = !!parentMessage.pluginId;
-    const authorName = useMessageRenderedName(parentMessage);
+    const authorName = useMessageAuthorName(parentMessage);
 
     if (!pluginMetadata && !user) {
       return null;
