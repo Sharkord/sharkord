@@ -30,7 +30,7 @@ describe('plugins router', () => {
     const { plugins } = await caller.plugins.get();
 
     expect(plugins).toBeDefined();
-    expect(plugins.length).toBe(10);
+    expect(plugins.length).toBe(11);
   });
 
   test('should include plugin metadata', async () => {
@@ -691,12 +691,13 @@ describe('plugins router', () => {
 
       await expect(
         caller.plugins.install({
-          url: 'https://example.com/plugin.tar.gz'
+          url: 'https://example.com/plugin.tar.gz',
+          checksum: 'abc123'
         })
       ).rejects.toThrow('Insufficient permissions');
     });
 
-    test('should call downloadPlugin with correct URL', async () => {
+    test('should call downloadPlugin with correct URL and checksum', async () => {
       const { caller } = await initTest();
       const mockDownload = mock(() => Promise.resolve());
 
@@ -706,17 +707,41 @@ describe('plugins router', () => {
       }));
 
       await caller.plugins.install({
-        url: 'https://example.com/plugin.tar.gz'
+        url: 'https://example.com/plugin.tar.gz',
+        checksum: 'deadbeef1234'
       });
 
       expect(mockDownload).toHaveBeenCalledWith(
-        'https://example.com/plugin.tar.gz'
+        'https://example.com/plugin.tar.gz',
+        'deadbeef1234'
       );
+    });
+
+    test('should reject an invalid URL format', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.install({
+          url: 'not-a-url',
+          checksum: 'abc123'
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should reject missing checksum', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        // @ts-expect-error intentionally omitting required field
+        caller.plugins.install({
+          url: 'https://example.com/plugin.tar.gz'
+        })
+      ).rejects.toThrow();
     });
   });
 
   describe('update', () => {
-    test('should call downloadPlugin with correct URL', async () => {
+    test('should call downloadPlugin with correct URL and checksum', async () => {
       const { caller } = await initTest();
       const mockDownload = mock(() => Promise.resolve());
 
@@ -727,12 +752,95 @@ describe('plugins router', () => {
 
       await caller.plugins.update({
         pluginId: 'plugin-a',
-        url: 'https://example.com/plugin-a-v2.tar.gz'
+        url: 'https://example.com/plugin-a-v2.tar.gz',
+        checksum: 'cafebabe5678'
       });
 
       expect(mockDownload).toHaveBeenCalledWith(
-        'https://example.com/plugin-a-v2.tar.gz'
+        'https://example.com/plugin-a-v2.tar.gz',
+        'cafebabe5678'
       );
+    });
+
+    test('should reject an invalid URL format', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.update({
+          pluginId: 'plugin-a',
+          url: 'not-a-valid-url',
+          checksum: 'abc123'
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should reject invalid plugin ID with uppercase', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.update({
+          pluginId: 'Plugin-A',
+          url: 'https://example.com/plugin-a-v2.tar.gz',
+          checksum: 'abc123'
+        })
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('pluginId validation in routes', () => {
+    test('should reject uppercase pluginId in toggle', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.toggle({
+          pluginId: 'Plugin-A',
+          enabled: true
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should reject pluginId with underscores in executeCommand', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.executeCommand({
+          pluginId: 'plugin_a',
+          commandName: 'sum',
+          args: {}
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should reject pluginId with path traversal in getLogs', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.getLogs({
+          pluginId: '../../../etc'
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should reject pluginId with uppercase in executeAction', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.executeAction({
+          pluginId: 'Plugin-B',
+          actionName: 'multiply',
+          payload: {}
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should reject pluginId with underscores in remove', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.remove({
+          pluginId: 'plugin_a'
+        })
+      ).rejects.toThrow();
     });
   });
 });

@@ -10,6 +10,7 @@ import { messages, pluginData, settings } from '../../db/schema';
 import { PLUGINS_PATH, PUBLIC_PATH, UPLOADS_PATH } from '../../helpers/paths';
 import { fileManager } from '../../utils/file-manager';
 import { eventBus } from '../event-bus';
+import { withTimeout } from '../execution-timeout';
 
 describe('plugin-manager', () => {
   beforeAll(loadMockedPlugins);
@@ -252,7 +253,7 @@ describe('plugin-manager', () => {
           mockInvokerCtx,
           {}
         )
-      ).rejects.toThrow('has no registered commands');
+      ).rejects.toThrow('has no registered command');
     });
 
     test('should throw error when command does not exist', async () => {
@@ -705,6 +706,38 @@ describe('plugin-manager', () => {
         'Invalid plugin ID'
       );
     });
+
+    test('should reject plugin ID with uppercase letters', async () => {
+      await expect(pluginManager.getPluginInfo('Plugin-A')).rejects.toThrow(
+        'Invalid plugin ID'
+      );
+    });
+
+    test('should reject plugin ID with underscores', async () => {
+      await expect(pluginManager.getPluginInfo('plugin_a')).rejects.toThrow(
+        'Invalid plugin ID'
+      );
+    });
+
+    test('should reject empty plugin ID', async () => {
+      await expect(pluginManager.getPluginInfo('')).rejects.toThrow(
+        'Invalid plugin ID'
+      );
+    });
+
+    test('should accept valid lowercase-and-dashes plugin ID', async () => {
+      await expect(
+        pluginManager.getPluginInfo('valid-id-123')
+      ).rejects.not.toThrow('Invalid plugin ID');
+    });
+  });
+
+  describe('manifest ID mismatch', () => {
+    test('should throw when manifest.id does not match plugin directory name', async () => {
+      await expect(
+        pluginManager.getPluginInfo('plugin-mismatched-id')
+      ).rejects.toThrow('must match plugin directory');
+    });
   });
 
   describe('settings', () => {
@@ -1015,6 +1048,39 @@ describe('plugin-manager', () => {
         .get();
 
       expect(deleted).toBeUndefined();
+    });
+  });
+
+  describe('execution timeout', () => {
+    test('should resolve before timeout when execution completes', async () => {
+      const result = await withTimeout(
+        Promise.resolve('done'),
+        1000,
+        'should not timeout'
+      );
+
+      expect(result).toBe('done');
+    });
+  });
+
+  describe('ctx.events unsubscribe', () => {
+    test('ctx.events.on() returns an unsubscribe function that stops events', async () => {
+      await pluginManager.load('plugin-with-events');
+
+      await eventBus.emit('user:joined', { userId: 1, username: 'alice' });
+
+      const result1 = (await pluginManager.executeCommand(
+        'plugin-with-events',
+        'get-counts',
+        mockInvokerCtx,
+        {}
+      )) as Record<string, number>;
+
+      expect(result1.userJoined).toBe(1);
+
+      await pluginManager.unload('plugin-with-events');
+
+      expect(eventBus.hasPlugin('plugin-with-events')).toBe(false);
     });
   });
 });
