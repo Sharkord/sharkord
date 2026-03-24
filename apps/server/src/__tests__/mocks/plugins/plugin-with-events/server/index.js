@@ -25,7 +25,7 @@ const onLoad = (ctx) => {
   ctx.commands.register({
     name: 'get-counts',
     description: 'Get event counts',
-    async executes() {
+    async execute() {
       return eventCounts;
     }
   });

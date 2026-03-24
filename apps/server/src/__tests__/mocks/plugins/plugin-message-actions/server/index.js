@@ -16,7 +16,7 @@ const onLoad = (ctx) => {
         required: true
       }
     ],
-    async executes(invokerCtx, args) {
+    async execute(invokerCtx, args) {
       return ctx.messages.send(args.channelId, args.content);
     }
   });
@@ -36,7 +36,7 @@ const onLoad = (ctx) => {
         required: true
       }
     ],
-    async executes(invokerCtx, args) {
+    async execute(invokerCtx, args) {
       await ctx.messages.edit(args.messageId, args.content);
       return { success: true };
     }
@@ -52,7 +52,7 @@ const onLoad = (ctx) => {
         required: true
       }
     ],
-    async executes(invokerCtx, args) {
+    async execute(invokerCtx, args) {
       await ctx.messages.delete(args.messageId);
       return { success: true };
     }

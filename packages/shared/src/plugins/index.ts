@@ -53,11 +53,16 @@ export type TInvokerContext = {
   currentVoiceChannelId?: number;
 };
 
+export type TCommandContract = Record<
+  string,
+  { args: unknown; response: unknown }
+>;
+
 export interface CommandDefinition<TArgs = void> {
   name: string;
   description?: string;
   args?: TCommandArg[];
-  executes(ctx: TInvokerContext, args: TArgs): Promise<unknown>;
+  execute(ctx: TInvokerContext, args: TArgs): Promise<unknown>;
 }
 
 export interface ActionDefinition<TPayload = void> {

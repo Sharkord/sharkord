@@ -402,7 +402,7 @@ class PluginManager {
         args
       );
 
-      return await foundCommand.command.executes(invokerCtx, args);
+      return await foundCommand.command.execute(invokerCtx, args);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -975,100 +975,100 @@ class PluginManager {
             'debug',
             `Registered action: ${action.name}${action.description ? ` - ${action.description}` : ''}`
           );
-        },
-        voice: {
-          getRouter: (channelId: number) => {
-            const channel = VoiceRuntime.findById(channelId);
-
-            if (!channel) {
-              throw new Error(
-                `Voice runtime not found for channel ID ${channelId}`
-              );
-            }
-
-            return channel.getRouter();
-          },
-          createStream: (
-            options: TCreateStreamOptions
-          ): TExternalStreamHandle => {
-            const channel = VoiceRuntime.findById(options.channelId);
-
-            if (!channel) {
-              throw new Error(
-                `Voice runtime not found for channel ID ${options.channelId}`
-              );
-            }
-
-            const streamId = channel.createExternalStream({
-              title: options.title,
-              key: options.key,
-              pluginId,
-              avatarUrl: options.avatarUrl,
-              producers: options.producers
-            });
-
-            const stream = channel.getState().externalStreams[streamId]!;
-
-            pubsub.publish(ServerEvents.VOICE_ADD_EXTERNAL_STREAM, {
-              channelId: options.channelId,
-              streamId,
-              stream
-            });
-
-            if (options.producers.audio) {
-              pubsub.publishForChannel(
-                options.channelId,
-                ServerEvents.VOICE_NEW_PRODUCER,
-                {
-                  channelId: options.channelId,
-                  remoteId: streamId,
-                  kind: StreamKind.EXTERNAL_AUDIO
-                }
-              );
-            }
-
-            if (options.producers.video) {
-              pubsub.publishForChannel(
-                options.channelId,
-                ServerEvents.VOICE_NEW_PRODUCER,
-                {
-                  channelId: options.channelId,
-                  remoteId: streamId,
-                  kind: StreamKind.EXTERNAL_VIDEO
-                }
-              );
-            }
-
-            this.logPlugin(
-              pluginId,
-              'debug',
-              `Created external stream '${options.title}' (key: ${options.key}, id: ${streamId}) with tracks: audio=${!!options.producers.audio}, video=${!!options.producers.video}`
-            );
-
-            return {
-              streamId,
-              remove: () => {
-                channel.removeExternalStream(streamId);
-
-                this.logPlugin(
-                  pluginId,
-                  'debug',
-                  `Removed external stream '${options.title}' (key: ${options.key}, id: ${streamId})`
-                );
-              },
-              update: (updateOptions) => {
-                channel.updateExternalStream(streamId, updateOptions);
-
-                this.logPlugin(
-                  pluginId,
-                  'debug',
-                  `Updated external stream '${options.title}' (key: ${options.key}, id: ${streamId})`
-                );
-              }
-            };
-          },
-          getListenInfo: () => VoiceRuntime.getListenInfo()
         }
+      },
+      voice: {
+        getRouter: (channelId: number) => {
+          const channel = VoiceRuntime.findById(channelId);
+
+          if (!channel) {
+            throw new Error(
+              `Voice runtime not found for channel ID ${channelId}`
+            );
+          }
+
+          return channel.getRouter();
+        },
+        createStream: (
+          options: TCreateStreamOptions
+        ): TExternalStreamHandle => {
+          const channel = VoiceRuntime.findById(options.channelId);
+
+          if (!channel) {
+            throw new Error(
+              `Voice runtime not found for channel ID ${options.channelId}`
+            );
+          }
+
+          const streamId = channel.createExternalStream({
+            title: options.title,
+            key: options.key,
+            pluginId,
+            avatarUrl: options.avatarUrl,
+            producers: options.producers
+          });
+
+          const stream = channel.getState().externalStreams[streamId]!;
+
+          pubsub.publish(ServerEvents.VOICE_ADD_EXTERNAL_STREAM, {
+            channelId: options.channelId,
+            streamId,
+            stream
+          });
+
+          if (options.producers.audio) {
+            pubsub.publishForChannel(
+              options.channelId,
+              ServerEvents.VOICE_NEW_PRODUCER,
+              {
+                channelId: options.channelId,
+                remoteId: streamId,
+                kind: StreamKind.EXTERNAL_AUDIO
+              }
+            );
+          }
+
+          if (options.producers.video) {
+            pubsub.publishForChannel(
+              options.channelId,
+              ServerEvents.VOICE_NEW_PRODUCER,
+              {
+                channelId: options.channelId,
+                remoteId: streamId,
+                kind: StreamKind.EXTERNAL_VIDEO
+              }
+            );
+          }
+
+          this.logPlugin(
+            pluginId,
+            'debug',
+            `Created external stream '${options.title}' (key: ${options.key}, id: ${streamId}) with tracks: audio=${!!options.producers.audio}, video=${!!options.producers.video}`
+          );
+
+          return {
+            streamId,
+            remove: () => {
+              channel.removeExternalStream(streamId);
+
+              this.logPlugin(
+                pluginId,
+                'debug',
+                `Removed external stream '${options.title}' (key: ${options.key}, id: ${streamId})`
+              );
+            },
+            update: (updateOptions) => {
+              channel.updateExternalStream(streamId, updateOptions);
+
+              this.logPlugin(
+                pluginId,
+                'debug',
+                `Updated external stream '${options.title}' (key: ${options.key}, id: ${streamId})`
+              );
+            }
+          };
+        },
+        getListenInfo: () => VoiceRuntime.getListenInfo()
       },
       messages: {
         send: async (channelId: number, content: string) =>
@@ -1115,7 +1115,7 @@ class PluginManager {
             name: command.name,
             description: command.description,
             args: command.args,
-            command
+            command: command as CommandDefinition<unknown>
           });
 
           this.logPlugin(

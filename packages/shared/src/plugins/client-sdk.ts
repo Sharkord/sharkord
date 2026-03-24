@@ -21,6 +21,11 @@ export type TPluginStoreState = {
   publicSettings: TPublicServerSettings | undefined;
 };
 
+export type TActionContract = Record<
+  string,
+  { payload: unknown; response: unknown }
+>;
+
 export type TPluginActions = {
   sendMessage: (channelId: number, content: string) => Promise<void>;
   selectChannel: (channelId: number) => void;

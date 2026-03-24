@@ -1,8 +1,11 @@
 import type {
   ActionDefinition,
   CommandDefinition,
+  TActionContract,
   TBeforeFileSaveHook,
   TBeforeFileSaveResult,
+  TCommandArg,
+  TCommandContract,
   TInvokerContext,
   TPluginActions,
   TPluginComponentsMapBySlotId,
@@ -121,13 +124,14 @@ export interface PluginContext {
 
   actions: {
     register<TPayload = void>(action: ActionDefinition<TPayload>): void;
-    voice: {
-      getRouter(channelId: number): Router<AppData>;
-      createStream(options: TCreateStreamOptions): TExternalStreamHandle;
-      getListenInfo(): {
-        ip: string;
-        announcedAddress: string | undefined;
-      };
+  };
+
+  voice: {
+    getRouter(channelId: number): Router<AppData>;
+    createStream(options: TCreateStreamOptions): TExternalStreamHandle;
+    getListenInfo(): {
+      ip: string;
+      announcedAddress: string | undefined;
     };
   };
 
@@ -182,7 +186,11 @@ export type {
 
 export type {
   ActionDefinition,
+  CommandDefinition,
+  TActionContract,
   TBeforeFileSaveHook,
+  TCommandArg,
+  TCommandContract,
   TInvokerContext,
   TPluginActions,
   TPluginComponentsMapBySlotId,
@@ -191,4 +199,6 @@ export type {
   TSharkordState
 };
 
+export * from './actions';
+export * from './commands';
 export { FileSaveType, PLUGIN_SDK_VERSION, PluginSlot };
