@@ -65,7 +65,8 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
       }
 
       // Screen shares always have video, so always show them
-      const shouldHideOwnScreenShare = hideOwnScreenShare && voiceUser.id === ownUserId;
+      const shouldHideOwnScreenShare =
+        hideOwnScreenShare && voiceUser.id === ownUserId;
       if (voiceUser.state.sharingScreen && !shouldHideOwnScreenShare) {
         const screenShareCardId = `screen-share-${voiceUser.id}`;
 
