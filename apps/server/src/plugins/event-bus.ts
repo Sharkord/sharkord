@@ -68,7 +68,8 @@ class EventBus {
     }
 
     const globalHandlers = this.listeners.get(event);
-    globalHandlers?.delete(handler as Handler<any>);
+
+    globalHandlers?.delete(handler);
 
     if (globalHandlers && globalHandlers.size === 0) {
       this.listeners.delete(event);

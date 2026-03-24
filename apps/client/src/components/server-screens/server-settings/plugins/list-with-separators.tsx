@@ -1,4 +1,3 @@
-import { Separator } from '@sharkord/ui';
 import type { ReactNode } from 'react';
 
 type TListWithSeparatorsProps<T> = {
@@ -14,11 +13,8 @@ const ListWithSeparators = <T,>({
 }: TListWithSeparatorsProps<T>) => {
   return (
     <div className="space-y-3">
-      {items.map((item, index) => (
-        <div key={getKey(item)}>
-          {renderItem(item)}
-          {index < items.length - 1 && <Separator className="mt-3" />}
-        </div>
+      {items.map((item) => (
+        <div key={getKey(item)}>{renderItem(item)}</div>
       ))}
     </div>
   );

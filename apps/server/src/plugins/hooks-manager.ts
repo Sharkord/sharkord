@@ -22,9 +22,9 @@ class HooksManager {
     pluginId: string;
     handlers: TBeforeFileSaveHook[];
   }> => {
-    return Array.from(this.beforeFileSaveHooks.entries()).map(
-      ([pluginId, handlers]) => ({ pluginId, handlers })
-    );
+    const entries = Array.from(this.beforeFileSaveHooks.entries());
+
+    return entries.map(([pluginId, handlers]) => ({ pluginId, handlers }));
   };
 
   public unload = (pluginId: string) => {

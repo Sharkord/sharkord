@@ -2,6 +2,7 @@ import { store } from '@/features/store';
 import { logDebug } from '@/helpers/browser-logger';
 import { getUrlFromServer } from '@/helpers/get-file-url';
 import {
+  CLIENT_ENTRY_FILE,
   PluginSlot,
   type TCommandInfo,
   type TCommandsMapByPlugin,
@@ -44,7 +45,7 @@ export const processPluginComponents = async (pluginIds: string[]) => {
     try {
       componentsMap[pluginId] = {};
 
-      const moduleUrl = `${getUrlFromServer()}/plugin-bundle/${pluginId}/client/index.js`;
+      const moduleUrl = `${getUrlFromServer()}/plugin-bundle/${pluginId}/${CLIENT_ENTRY_FILE}`;
 
       logDebug(
         `Dynamically importing plugin module for plugin ${pluginId} from URL:`,

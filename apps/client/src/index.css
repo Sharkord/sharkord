@@ -285,10 +285,6 @@ body {
   min-height: 1em;
 }
 
-.msg-content .hidden {
-  display: none;
-}
-
 .react-tweet-theme {
   margin: 0 !important;
 }

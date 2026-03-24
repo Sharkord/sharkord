@@ -42,6 +42,8 @@ export type TExternalStreamHandle = {
 export type ServerEvent =
   | 'user:joined'
   | 'user:left'
+  | 'user:joined_voice'
+  | 'user:left_voice'
   | 'message:created'
   | 'message:updated'
   | 'message:deleted'
@@ -56,6 +58,14 @@ export interface EventPayloads {
   'user:left': {
     userId: number;
     username: string;
+  };
+  'user:joined_voice': {
+    userId: number;
+    channelId: number;
+  };
+  'user:left_voice': {
+    userId: number;
+    channelId: number;
   };
   'message:created': {
     messageId: number;

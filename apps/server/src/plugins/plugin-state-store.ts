@@ -20,10 +20,12 @@ class PluginStateStore {
 
       this.pluginStates = rows.reduce<PluginStatesMap>((acc, row) => {
         acc[row.pluginId] = row.enabled;
+
         return acc;
       }, {});
     } catch (error) {
       logger.error('Failed to load plugin states: %s', getErrorMessage(error));
+
       this.pluginStates = {};
     }
   };
@@ -41,6 +43,7 @@ class PluginStateStore {
     if (this.pluginStates[pluginId] !== undefined) return;
 
     const enabled = await this.getPluginEnabledFromDb(pluginId);
+
     this.pluginStates[pluginId] = enabled;
   };
 

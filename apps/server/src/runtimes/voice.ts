@@ -292,12 +292,22 @@ class VoiceRuntime {
         ...state
       }
     });
+
+    eventBus.emit('user:joined_voice', {
+      userId: userId,
+      channelId: this.id
+    });
   };
 
   public removeUser = (userId: number) => {
     this.state.users = this.state.users.filter((u) => u.userId !== userId);
 
     this.cleanupUserResources(userId);
+
+    eventBus.emit('user:left_voice', {
+      userId: userId,
+      channelId: this.id
+    });
   };
 
   private cleanupUserResources = (userId: number) => {

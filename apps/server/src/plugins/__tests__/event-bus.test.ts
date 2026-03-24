@@ -396,7 +396,11 @@ describe('event-bus', () => {
     test('register() returns a function that removes the handler', async () => {
       const handler = mock(() => {});
 
-      const unsubscribe = eventBus.register('plugin1', 'message:created', handler);
+      const unsubscribe = eventBus.register(
+        'plugin1',
+        'message:created',
+        handler
+      );
 
       await eventBus.emit('message:created', {
         messageId: 1,
@@ -425,7 +429,11 @@ describe('event-bus', () => {
       const handler1 = mock(() => {});
       const handler2 = mock(() => {});
 
-      const unsubscribe1 = eventBus.register('plugin1', 'message:created', handler1);
+      const unsubscribe1 = eventBus.register(
+        'plugin1',
+        'message:created',
+        handler1
+      );
       eventBus.register('plugin1', 'message:created', handler2);
 
       unsubscribe1();
@@ -445,7 +453,11 @@ describe('event-bus', () => {
     test('unsubscribing via return value removes plugin entry when no more handlers', () => {
       const handler = mock(() => {});
 
-      const unsubscribe = eventBus.register('plugin1', 'message:created', handler);
+      const unsubscribe = eventBus.register(
+        'plugin1',
+        'message:created',
+        handler
+      );
 
       expect(eventBus.hasPlugin('plugin1')).toBe(true);
 
