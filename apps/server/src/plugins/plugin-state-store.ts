@@ -1,7 +1,7 @@
+import { getErrorMessage } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { pluginData } from '../db/schema';
-import { getErrorMessage } from '../helpers/get-error-message';
 import { logger } from '../logger';
 
 type PluginStatesMap = Record<string, boolean>;

@@ -1,5 +1,6 @@
 export * from './command-parser';
 export * from './extract-urls';
+export * from './get-error-message';
 export * from './get-mediasoup-kind';
 export * from './get-random-string';
 export * from './has-mention';

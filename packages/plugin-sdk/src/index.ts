@@ -3,7 +3,6 @@ import type {
   CommandDefinition,
   TActionContract,
   TBeforeFileSaveHook,
-  TBeforeFileSaveResult,
   TCommandArg,
   TCommandContract,
   TInvokerContext,
@@ -111,12 +110,22 @@ export interface PluginSettings<
 export interface PluginContext {
   path: string;
 
+  logger: {
+    log(...args: unknown[]): void;
+    debug(...args: unknown[]): void;
+    error(...args: unknown[]): void;
+  };
+
   log(...args: unknown[]): void;
   debug(...args: unknown[]): void;
   error(...args: unknown[]): void;
 
   events: {
     on<E extends ServerEvent>(
+      event: E,
+      handler: (payload: EventPayloads[E]) => void | Promise<void>
+    ): () => void;
+    off<E extends ServerEvent>(
       event: E,
       handler: (payload: EventPayloads[E]) => void | Promise<void>
     ): void;
@@ -152,7 +161,13 @@ export interface PluginContext {
   };
 
   hooks: {
-    onBeforeFileSave(handler: TBeforeFileSaveHook): TBeforeFileSaveResult;
+    onBeforeFileSave(handler: TBeforeFileSaveHook): void;
+  };
+
+  data: {
+    getUser(userId: number): Promise<unknown | undefined>;
+    getChannel(channelId: number): Promise<unknown | undefined>;
+    getPublicUsers(): Promise<unknown[]>;
   };
 
   ui: {
@@ -164,7 +179,7 @@ export interface PluginContext {
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface UnloadPluginContext extends Pick<
   PluginContext,
-  'log' | 'debug' | 'error'
+  'path' | 'logger' | 'log' | 'debug' | 'error' | 'voice' | 'messages' | 'ui'
 > {}
 
 type TSharkordState = ReturnType<TPluginStore['getState']>;

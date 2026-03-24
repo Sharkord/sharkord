@@ -1,7 +1,7 @@
+import { getErrorMessage } from '@sharkord/shared';
 import fs from 'fs';
 import http from 'http';
 import path from 'path';
-import { getErrorMessage } from '../helpers/get-error-message';
 import { INTERFACE_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 import { IS_DEVELOPMENT, IS_TEST } from '../utils/env';

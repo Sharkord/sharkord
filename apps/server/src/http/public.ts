@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import fs from 'fs';
 import http from 'http';
@@ -7,7 +8,6 @@ import { isFileOrphaned } from '../db/queries/files';
 import { getSettings } from '../db/queries/server';
 import { files } from '../db/schema';
 import { verifyFileToken } from '../helpers/files-crypto';
-import { getErrorMessage } from '../helpers/get-error-message';
 import { PUBLIC_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 

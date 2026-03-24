@@ -1,8 +1,8 @@
+import { getErrorMessage } from '@sharkord/shared';
 import chalk from 'chalk';
 import http from 'http';
 import z from 'zod';
 import { config } from '../config';
-import { getErrorMessage } from '../helpers/get-error-message';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
 import { healthRouteHandler } from './healthz';

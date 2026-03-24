@@ -1,6 +1,7 @@
 import {
   ActivityLogType,
   ChannelPermission,
+  getErrorMessage,
   OWNER_ROLE_ID,
   Permission,
   ServerEvents,
@@ -20,7 +21,6 @@ import { getAllChannelUserPermissions } from '../db/queries/channels';
 import { isUserDmParticipant } from '../db/queries/dms';
 import { getUserById, getUserByToken } from '../db/queries/users';
 import { channels } from '../db/schema';
-import { getErrorMessage } from '../helpers/get-error-message';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
 import { enqueueActivityLog } from '../queues/activity-log';

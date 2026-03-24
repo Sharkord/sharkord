@@ -5,19 +5,26 @@ import type {
   UnloadPluginContext
 } from '@sharkord/plugin-sdk';
 import {
+  CLIENT_ENTRY_FILE,
+  getErrorMessage,
   PLUGIN_SDK_VERSION,
+  SERVER_ENTRY_FILE,
   ServerEvents,
   StreamKind,
+  zPluginId,
   zPluginManifest,
   type TInvokerContext,
   type TPluginInfo,
   type TPluginManifest,
   type TPluginMetadata
 } from '@sharkord/shared';
+import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
+import { db } from '../db';
 import { getSettings } from '../db/queries/server';
-import { getErrorMessage } from '../helpers/get-error-message';
+import { getPublicUserById, getPublicUsers } from '../db/queries/users';
+import { channels } from '../db/schema';
 import { PLUGINS_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 import { VoiceRuntime } from '../runtimes/voice';
@@ -38,29 +45,29 @@ type PluginModule = {
   onUnload?: (ctx: UnloadPluginContext) => void | Promise<void>;
 };
 
-const SERVER_ENTRY_FILE = 'server/index.js';
-const CLIENT_ENTRY_FILE = 'client/index.js';
-
 class PluginManager {
   private loadedPlugins = new Map<string, PluginModule>();
   private loadErrors = new Map<string, string>();
   private uiState = new Map<string, boolean>();
 
-  public readonly stateStore = new PluginStateStore();
-  public readonly pluginLogger = new PluginLogger();
-  public readonly settingsManager = new PluginSettingsManager(
+  private readonly stateStore = new PluginStateStore();
+  private readonly pluginLogger = new PluginLogger();
+  private readonly hooksManager = new HooksManager();
+
+  private readonly settingsManager = new PluginSettingsManager(
     this.pluginLogger,
     this.stateStore
   );
-  public readonly commandRegistry = new CommandRegistry(
+
+  private readonly commandRegistry = new CommandRegistry(
     this.pluginLogger,
     this.stateStore
   );
-  public readonly actionRegistry = new ActionRegistry(
+
+  private readonly actionRegistry = new ActionRegistry(
     this.pluginLogger,
     this.stateStore
   );
-  public readonly hooksManager = new HooksManager();
 
   public isEnabled = (pluginId: string) => this.stateStore.isEnabled(pluginId);
 
@@ -117,22 +124,21 @@ class PluginManager {
 
   public getPluginsFromPath = async (): Promise<string[]> => {
     const files = await fs.readdir(PLUGINS_PATH);
-    const result: string[] = [];
 
-    for (const file of files) {
+    const checks = files.map(async (file) => {
       try {
         const pluginPath = path.join(PLUGINS_PATH, file);
         const stat = await fs.stat(pluginPath);
 
-        if (!stat.isDirectory()) continue;
-
-        result.push(file);
+        return stat.isDirectory() ? file : undefined;
       } catch {
-        // ignore
+        return undefined;
       }
-    }
+    });
 
-    return result;
+    const resolved = await Promise.all(checks);
+
+    return resolved.filter((file) => Boolean(file)) as string[];
   };
 
   public getPluginIdsWithComponents = (): string[] => {
@@ -142,33 +148,35 @@ class PluginManager {
   };
 
   public getActivePluginMetadata = async (): Promise<TPluginMetadata[]> => {
-    const metadata: TPluginMetadata[] = [];
+    const pluginIds = Array.from(this.loadedPlugins.keys());
 
-    for (const pluginId of this.loadedPlugins.keys()) {
-      try {
-        const info = await this.getPluginInfo(pluginId);
+    const metadataResults: Array<TPluginMetadata | undefined> =
+      await Promise.all(
+        pluginIds.map(async (pluginId) => {
+          try {
+            const info = await this.getPluginInfo(pluginId);
 
-        metadata.push({
-          pluginId: info.id,
-          name: info.name,
-          description: info.description,
-          avatarUrl: info.logo
-        });
-      } catch {
-        // plugin info may not be available, skip
-      }
-    }
+            return {
+              pluginId: info.id,
+              name: info.name,
+              description: info.description,
+              avatarUrl: info.logo
+            };
+          } catch {
+            return undefined;
+          }
+        })
+      );
 
-    return metadata;
+    return metadataResults.filter(
+      (metadata) => !!metadata
+    ) as TPluginMetadata[];
   };
 
   private validatePluginId = (pluginId: string) => {
-    if (
-      pluginId.includes('..') ||
-      pluginId.includes('/') ||
-      pluginId.includes('\\') ||
-      pluginId.includes('\0')
-    ) {
+    try {
+      zPluginId.parse(pluginId);
+    } catch {
       throw new Error(`Invalid plugin ID: '${pluginId}'`);
     }
   };
@@ -182,33 +190,10 @@ class PluginManager {
   private verifySdkVersion = (
     sdkVersion: number
   ): { isValid: boolean; error?: string } => {
-    if (sdkVersion === undefined) {
+    if (sdkVersion !== PLUGIN_SDK_VERSION) {
       return {
         isValid: false,
-        error: 'Plugin manifest must specify sdkVersion'
-      };
-    }
-
-    let parsedVersion: number | null = null;
-
-    if (typeof sdkVersion === 'number' && Number.isFinite(sdkVersion)) {
-      parsedVersion = sdkVersion;
-    } else if (typeof sdkVersion === 'string') {
-      const numeric = Number(sdkVersion);
-      parsedVersion = Number.isFinite(numeric) ? numeric : null;
-    }
-
-    if (parsedVersion === null) {
-      return {
-        isValid: false,
-        error: `Plugin has invalid SDK version: ${sdkVersion}.`
-      };
-    }
-
-    if (parsedVersion !== PLUGIN_SDK_VERSION) {
-      return {
-        isValid: false,
-        error: `Plugin SDK version ${parsedVersion} is not compatible with server SDK version ${PLUGIN_SDK_VERSION}.`
+        error: `Plugin SDK version ${sdkVersion} is not compatible with server SDK version ${PLUGIN_SDK_VERSION}.`
       };
     }
 
@@ -232,6 +217,12 @@ class PluginManager {
       );
     } catch (error) {
       throw new Error(`Invalid manifest.json: ${getErrorMessage(error)}`);
+    }
+
+    if (manifest.id !== pluginId) {
+      throw new Error(
+        `Plugin manifest id '${manifest.id}' must match plugin directory '${pluginId}'`
+      );
     }
 
     const serverEntryPath = path.join(pluginPath, SERVER_ENTRY_FILE);
@@ -273,13 +264,15 @@ class PluginManager {
 
     logger.info(`Loading ${files.length} plugins...`);
 
-    for (const file of files) {
-      try {
-        await this.load(file);
-      } catch (error) {
+    const results = await Promise.allSettled(
+      files.map((file) => this.load(file))
+    );
+
+    for (const [index, result] of results.entries()) {
+      if (result.status === 'rejected') {
         logger.error(
-          `Failed to load plugin ${file}: %s`,
-          getErrorMessage(error)
+          `Failed to load plugin ${files[index]}: %s`,
+          getErrorMessage(result.reason)
         );
       }
     }
@@ -305,12 +298,10 @@ class PluginManager {
 
     await this.stateStore.setEnabled(pluginId, enabled);
 
-    // was enabled and is now being disabled
     if (wasEnabled && !enabled && this.loadedPlugins.has(pluginId)) {
       await this.unload(pluginId);
     }
 
-    // was disabled and is now being enabled
     if (!wasEnabled && enabled && !this.loadedPlugins.has(pluginId)) {
       await this.load(pluginId);
     }
@@ -371,8 +362,7 @@ class PluginManager {
         `Plugin loaded: ${pluginId}@v${info.version} by ${info.author}`
       );
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = getErrorMessage(error);
 
       this.loadErrors.set(pluginId, errorMessage);
 
@@ -401,7 +391,7 @@ class PluginManager {
     if (typeof pluginModule.onUnload === 'function') {
       try {
         const unloadCtx: UnloadPluginContext =
-          this.pluginLogger.createScopedLogger(pluginId);
+          this.createUnloadContext(pluginId);
 
         await pluginModule.onUnload(unloadCtx);
       } catch (error) {
@@ -449,18 +439,30 @@ class PluginManager {
 
     return {
       path: this.getPluginPath(pluginId),
+      logger: scopedLogger,
       ...scopedLogger,
       events: {
         on: (event, handler) => {
-          eventBus.register(pluginId, event, handler);
+          return eventBus.register(pluginId, event, handler);
+        },
+        off: (event, handler) => {
+          eventBus.unregister(pluginId, event, handler);
         }
       },
       ui: {
         enable: () => {
           this.uiState.set(pluginId, true);
+          pubsub.publish(
+            ServerEvents.PLUGIN_COMPONENTS_CHANGE,
+            this.getPluginIdsWithComponents()
+          );
         },
         disable: () => {
           this.uiState.set(pluginId, false);
+          pubsub.publish(
+            ServerEvents.PLUGIN_COMPONENTS_CHANGE,
+            this.getPluginIdsWithComponents()
+          );
         }
       },
       actions: {
@@ -591,7 +593,37 @@ class PluginManager {
         onBeforeFileSave: (handler) => {
           this.hooksManager.registerBeforeFileSave(pluginId, handler);
         }
+      },
+      data: {
+        getUser: async (userId: number) => {
+          return getPublicUserById(userId);
+        },
+        getChannel: async (channelId: number) => {
+          return db
+            .select()
+            .from(channels)
+            .where(eq(channels.id, channelId))
+            .get();
+        },
+        getPublicUsers: async () => {
+          return getPublicUsers();
+        }
       }
+    };
+  };
+
+  private createUnloadContext = (pluginId: string): UnloadPluginContext => {
+    const baseContext = this.createContext(pluginId);
+
+    return {
+      path: baseContext.path,
+      logger: baseContext.logger,
+      log: baseContext.log,
+      debug: baseContext.debug,
+      error: baseContext.error,
+      voice: baseContext.voice,
+      messages: baseContext.messages,
+      ui: baseContext.ui
     };
   };
 }

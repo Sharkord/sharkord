@@ -1,4 +1,4 @@
-import { ActivityLogType, Permission } from '@sharkord/shared';
+import { ActivityLogType, Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
 import { pluginManager } from '../../plugins';
@@ -9,7 +9,7 @@ import { protectedProcedure } from '../../utils/trpc';
 const executeCommandRoute = protectedProcedure
   .input(
     z.object({
-      pluginId: z.string(),
+      pluginId: zPluginId,
       commandName: z.string(),
       args: z.record(z.string(), z.any()).optional()
     })

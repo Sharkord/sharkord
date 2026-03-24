@@ -1,7 +1,15 @@
 import z from 'zod';
 
+export const zPluginId = z
+  .string()
+  .min(1, 'Plugin ID is required')
+  .regex(
+    /^[a-z0-9-]+$/,
+    'Plugin ID must contain only lowercase letters, numbers, and dashes'
+  );
+
 export const zPluginManifest = z.object({
-  id: z.string().min(1, 'Plugin ID is required'),
+  id: zPluginId,
   name: z.string().min(1, 'Plugin name is required'),
   author: z.string().min(1, 'Plugin author is required'),
   description: z.string().min(1, 'Plugin description is required'),
@@ -104,7 +112,7 @@ export type RegisteredAction = {
 };
 
 export const zParsedDomCommand = z.object({
-  pluginId: z.string().min(1),
+  pluginId: zPluginId,
   commandName: z.string().min(1),
   status: z.enum(['pending', 'completed', 'failed']).default('pending'),
   response: z.string().optional(),
@@ -179,6 +187,9 @@ export type TPluginMetadata = {
 };
 
 export const PLUGIN_SDK_VERSION = 1;
+
+export const SERVER_ENTRY_FILE = 'server/index.js';
+export const CLIENT_ENTRY_FILE = 'client/index.js';
 
 export * from './client-sdk';
 export * from './hooks';

@@ -1,10 +1,9 @@
-import { UploadHeaders } from '@sharkord/shared';
+import { getErrorMessage, UploadHeaders } from '@sharkord/shared';
 import fs from 'fs';
 import http from 'http';
 import z from 'zod';
 import { getSettings } from '../db/queries/server';
 import { getUserByToken } from '../db/queries/users';
-import { getErrorMessage } from '../helpers/get-error-message';
 import { logger } from '../logger';
 import { fileManager } from '../utils/file-manager';
 import { sanitizeFileName } from './helpers';

@@ -1,4 +1,4 @@
-import { Permission } from '@sharkord/shared';
+import { Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
 import { pluginManager } from '../../plugins';
 import { protectedProcedure } from '../../utils/trpc';
@@ -6,7 +6,7 @@ import { protectedProcedure } from '../../utils/trpc';
 const updateSettingRoute = protectedProcedure
   .input(
     z.object({
-      pluginId: z.string(),
+      pluginId: zPluginId,
       key: z.string(),
       value: z.union([z.string(), z.number(), z.boolean()])
     })

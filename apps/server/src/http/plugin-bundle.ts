@@ -1,8 +1,8 @@
+import { getErrorMessage } from '@sharkord/shared';
 import fs from 'fs';
 import http from 'http';
 import path from 'path';
 import { getSettings } from '../db/queries/server';
-import { getErrorMessage } from '../helpers/get-error-message';
 import { PLUGINS_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 

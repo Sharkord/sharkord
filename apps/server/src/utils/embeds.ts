@@ -1,7 +1,7 @@
+import { getErrorMessage } from '@sharkord/shared';
 import { embeddedFiles } from 'bun';
 import fs from 'fs/promises';
 import path from 'path';
-import { getErrorMessage } from '../helpers/get-error-message';
 import { getExecutableName } from '../helpers/get-executable-name';
 import {
   DRIZZLE_PATH,

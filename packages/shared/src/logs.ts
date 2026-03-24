@@ -39,6 +39,7 @@ export enum ActivityLogType {
   UPDATED_CATEGORY = 'UPDATED_CATEGORY',
   // -------------------- PLUGINS --------------------
   EXECUTED_PLUGIN_COMMAND = 'EXECUTED_PLUGIN_COMMAND',
+  EXECUTED_PLUGIN_ACTION = 'EXECUTED_PLUGIN_ACTION',
   PLUGIN_TOGGLED = 'PLUGIN_TOGGLED',
   // -------------------- MESSAGES --------------------
   TOGGLED_MESSAGE_PIN = 'TOGGLED_MESSAGE_PIN'
@@ -168,6 +169,11 @@ export type TActivityLogDetailsMap = {
     pluginId: string;
     commandName: string;
     args: Record<string, any>;
+  };
+  [ActivityLogType.EXECUTED_PLUGIN_ACTION]: {
+    pluginId: string;
+    actionName: string;
+    payload: unknown;
   };
   [ActivityLogType.PLUGIN_TOGGLED]: {
     pluginId: string;

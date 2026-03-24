@@ -14,6 +14,7 @@ class PluginSettingsManager {
   private stateStore: PluginStateStore;
   private settingDefinitions = new Map<string, TPluginSettingDefinition[]>();
   private settingValues = new Map<string, Record<string, unknown>>();
+  private saveQueues = new Map<string, Promise<void>>();
 
   constructor(pluginLogger: PluginLogger, stateStore: PluginStateStore) {
     this.pluginLogger = pluginLogger;
@@ -50,6 +51,30 @@ class PluginSettingsManager {
       });
   };
 
+  private enqueueSave = async (
+    pluginId: string,
+    values: Record<string, unknown>
+  ): Promise<void> => {
+    const nextValues = { ...values };
+    const previous = this.saveQueues.get(pluginId) ?? Promise.resolve();
+
+    const current = previous
+      .catch(() => {
+        // keep queue alive after previous failure
+      })
+      .then(() => this.saveToDb(pluginId, nextValues));
+
+    this.saveQueues.set(pluginId, current);
+
+    try {
+      await current;
+    } finally {
+      if (this.saveQueues.get(pluginId) === current) {
+        this.saveQueues.delete(pluginId);
+      }
+    }
+  };
+
   public register = async (
     pluginId: string,
     definitions: readonly TPluginSettingDefinition[]
@@ -68,7 +93,7 @@ class PluginSettingsManager {
     this.settingValues.set(pluginId, merged);
 
     // persist merged values back (in case new defaults were added)
-    await this.saveToDb(pluginId, merged);
+    await this.enqueueSave(pluginId, merged);
 
     this.pluginLogger.log(
       pluginId,
@@ -100,8 +125,7 @@ class PluginSettingsManager {
 
         values[key] = value;
 
-        // persist async without blocking
-        this.saveToDb(pluginId, values).catch((err) => {
+        this.enqueueSave(pluginId, values).catch((err) => {
           this.pluginLogger.log(
             pluginId,
             'error',
@@ -158,7 +182,7 @@ class PluginSettingsManager {
     values[key] = value;
     this.settingValues.set(pluginId, values);
 
-    await this.saveToDb(pluginId, values);
+    await this.enqueueSave(pluginId, values);
 
     this.pluginLogger.log(
       pluginId,
@@ -171,6 +195,7 @@ class PluginSettingsManager {
   public unload = (pluginId: string) => {
     this.settingDefinitions.delete(pluginId);
     this.settingValues.delete(pluginId);
+    this.saveQueues.delete(pluginId);
   };
 }
 

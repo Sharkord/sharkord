@@ -1,196 +1,140 @@
 # Sharkord Plugin SDK
 
-The official SDK for building Sharkord plugins. This package provides TypeScript
-types and interfaces to extend Sharkord with custom functionality.
+Type-safe SDK for writing Sharkord server/client plugins.
 
-> [!NOTE] Sharkord plugins are an experimental feature and the SDK API may
-> change in future releases.
+## Manifest (`manifest.json`)
 
-## Creating a Plugin
+The plugin root must include:
 
-### 1. Create Plugin Directory
+- `manifest.json`
+- `server/index.js`
+- `client/index.js`
 
-Create a plugin folder, e.g., `my-plugin`.
-
-### 2. Initialize Package
-
-Run `bun init` to bootstrap your plugin.
-
-### 3. Create `manifest.json`
-
-Store plugin metadata in a `manifest.json` file at the root of the built plugin
-directory. Keep `package.json` limited to normal package/runtime fields such as
-`name`, `version`, `type`, scripts, and dependencies.
-
-**Required fields:**
-
-- `name`: Plugin identifier
-- `version`: Semver version (e.g., `1.0.0`)
-- `sharkord.author`: Plugin author name
-- `sharkord.description`: Brief description
-
-**Optional fields:**
-
-- `sharkord.homepage`: Plugin website/repository URL
-- `sharkord.logo`: Logo image filename
-
-Example `manifest.json`:
+Manifest format:
 
 ```json
 {
-  "name": "my-plugin",
-  "version": "0.0.1",
-  "sharkord": {
-    "sdkRange": "^0.1.0",
-    "author": "Me",
-    "homepage": "https://some-page.com",
-    "description": "This is my first Sharkord plugin!",
-    "logo": "https://some-page.com/logo.png"
-  }
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "author": "You",
+  "description": "Example Sharkord plugin",
+  "version": "0.1.0",
+  "sdkVersion": 1,
+  "homepage": "https://example.com/my-plugin",
+  "logo": "https://example.com/my-plugin/logo.png"
 }
 ```
 
-Plugin code must be compiled to `index.js` at the root of the distributed plugin
-folder.
+Notes:
 
-Example `package.json`:
+- `id` must match the plugin directory name.
+- `sdkVersion` must match the server SDK version.
 
-```json
-{
-  "name": "my-plugin",
-  "version": "0.0.1",
-  "module": "src/index.ts",
-  "type": "module",
-  "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target bun --minify --format esm && cp manifest.json dist/"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  }
-}
-```
+## Quick Start
 
-### 4. Install SDK
-
-```bash
-bun add @sharkord/plugin-sdk
-```
-
-> [!NOTE] The SDK is not published to any package registry. For now, you need to
-> link it locally using `bun link`.
-
-### 5. Edit Entry File
-
-```typescript
+```ts
 import type { PluginContext } from '@sharkord/plugin-sdk';
 
 const onLoad = (ctx: PluginContext) => {
-  ctx.log('My Plugin loaded');
+  ctx.logger.log('plugin loaded');
 
-  ctx.events.on('user:joined', ({ userId, username }) => {
-    ctx.log(`User joined: ${username} (ID: ${userId})`);
+  const unsubscribe = ctx.events.on('user:joined', ({ username }) => {
+    ctx.logger.debug(`joined: ${username}`);
   });
+
+  // optional explicit cleanup before unload
+  unsubscribe();
 };
 
 const onUnload = (ctx: PluginContext) => {
-  ctx.log('My Plugin unloaded');
+  ctx.logger.log('plugin unloaded');
 };
 
 export { onLoad, onUnload };
 ```
 
-Compile to JavaScript before loading:
+## Actions vs Commands
 
-```bash
-bun run build
-```
+- `commands`: user-facing commands listed/executed by users (description, args).
+- `actions`: programmatic RPC endpoints used by plugins/client integrations.
 
-## Lifecycle
+Use commands for UI-triggered features, actions for internal API-style calls.
 
-### onLoad
+## Server Context API
 
-Called when the plugin is loaded. This is where you should:
+`PluginContext` exposes:
 
-- Register event listeners
-- Register commands
-- Initialize resources
-- Set up external connections
+- `ctx.logger.log/debug/error` (plus top-level `ctx.log/debug/error` for compatibility)
+- `ctx.events.on(event, handler)` and `ctx.events.off(event, handler)`
+- `ctx.commands.register(...)`
+- `ctx.actions.register(...)`
+- `ctx.settings.register(definitions)`
+- `ctx.messages.send/edit/delete(...)`
+- `ctx.voice.getRouter/createStream/getListenInfo`
+- `ctx.hooks.onBeforeFileSave(handler)`
+- `ctx.data.getUser/getChannel/getMembers`
+- `ctx.ui.enable()` / `ctx.ui.disable()`
 
-### onUnload
+`onUnload` receives the same context shape, so plugins can release external streams,
+messages, and UI state during cleanup.
 
-Called when the plugin is unloaded or the server shuts down. Use this to:
+## Typed Helpers
 
-- Clean up resources
-- Close connections
-- Save state
+### `createRegisterCommand`
 
-**Note:** All event listeners and commands are automatically unregistered when
-the plugin unloads.
+```ts
+import { createRegisterCommand } from '@sharkord/plugin-sdk';
 
-## Commands
-
-Plugins can register custom commands that users can execute. Commands can accept
-arguments and return results.
-
-### Registering a Command
-
-```typescript
-import type { PluginContext, TInvokerContext } from '@sharkord/plugin-sdk';
+type Commands = {
+  greet: { args: { name: string }; response: string };
+};
 
 const onLoad = (ctx: PluginContext) => {
-  ctx.commands.register({
-    name: 'greet',
-    description: 'Greet a user',
-    args: [
-      {
-        name: 'username',
-        type: 'string',
-        description: 'The user to greet',
-        required: true,
-        sensitive: false // set to true if the argument is sensitive (e.g., passwords), in the interface it will be shown as ****
-      }
-    ],
-    async execute(invokerCtx: TInvokerContext, args: { username: string }) {
-      ctx.log(`Greeting ${args.username} invoked by user ${invokerCtx.userId}`);
+  const registerCommand = createRegisterCommand<Commands>(ctx);
 
-      return 'Hello, ' + args.username + '!';
-    }
-  });
+  registerCommand(
+    'greet',
+    {
+      description: 'Greets a user',
+      args: [{ name: 'name', type: 'string', required: true }]
+    },
+    async (_invoker, args) => `Hello ${args.name}`
+  );
 };
 ```
 
-## Adding The Plugin to Sharkord
+### `createRegisterAction` / `createCallAction`
 
-1. Go to the Sharkord data directory (usually `~/.config/sharkord`).
-2. Create a `plugins` folder if it doesn't exist.
-3. Create a folder for your plugin (e.g., `my-plugin`).
-4. Copy your compiled plugin files (e.g., from `dist/`) into the `my-plugin`
-   folder.
-5. Enable your plugin in the server settings under the "Plugins" section.
-6. Restart Sharkord or reload plugins from the admin panel.
-7. Your plugin should now be loaded and active!
+```ts
+import { createCallAction, createRegisterAction } from '@sharkord/plugin-sdk';
 
-## Best Practices
+type Actions = {
+  ping: { payload: { value: string }; response: { ok: boolean } };
+};
 
-1. **Always handle errors**: Wrap async operations in try-catch blocks
-2. **Clean up resources**: Implement `onUnload` to prevent memory leaks
-3. **Use TypeScript**: Get type safety and better IDE support
-4. **Log appropriately**: Use `debug` for verbose info, `error` for failures
-5. **Validate inputs**: Check command arguments before using them
-6. **Version carefully**: Follow semver for plugin updates
-7. **Prevent blocking operations**: Do NOT block the event loop with
-   long-running tasks (example: using Bun.spawnSync). Use asynchronous methods
-   instead.
+const register = createRegisterAction<Actions>(ctx);
+register('ping', async (_invoker, payload) => ({ ok: payload.value.length > 0 }));
 
-## API Reference
+const call = createCallAction<Actions>(pluginStore.actions);
+await call('ping', { value: 'hello' });
+```
 
-No documentation available yet. Use the types in
-`packages/plugin-sdk/src/index.ts` as a reference.
+## Hooks
 
-## License
+`ctx.hooks.onBeforeFileSave(handler)` receives `{ tempFile, userId, type }`.
 
-This SDK is part of the Sharkord project. See the main repository for license
-information.
+- Return `string` to replace file path.
+- Return `void` to keep original path.
+
+`type` is `FileSaveType` (`MESSAGE`, `AVATAR`, `BANNER`, `EMOJI`, `SERVER_LOGO`).
+
+## Client-side Types
+
+- `TPluginStore` and `TPluginStoreState` describe client plugin state.
+- `PluginSlot` lists supported UI mount slots.
+
+## Packaging Notes
+
+- Build plugin output as ESM JavaScript.
+- Ship `manifest.json`, `server/index.js`, and `client/index.js` together.
+- Keep plugin IDs stable across releases.

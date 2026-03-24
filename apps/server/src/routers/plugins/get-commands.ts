@@ -1,4 +1,4 @@
-import { Permission } from '@sharkord/shared';
+import { Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
 import { pluginManager } from '../../plugins';
 import { protectedProcedure } from '../../utils/trpc';
@@ -6,7 +6,7 @@ import { protectedProcedure } from '../../utils/trpc';
 const getCommandsRoute = protectedProcedure
   .input(
     z.object({
-      pluginId: z.string().optional()
+      pluginId: zPluginId.optional()
     })
   )
   .query(async ({ ctx, input }) => {

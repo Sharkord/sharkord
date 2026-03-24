@@ -1,5 +1,6 @@
-import { Permission } from '@sharkord/shared';
+import { Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
+import { publishPlugins } from '../../db/publishers';
 import { downloadPlugin } from '../../helpers/downloads';
 import { pluginManager } from '../../plugins';
 import { protectedProcedure } from '../../utils/trpc';
@@ -7,8 +8,9 @@ import { protectedProcedure } from '../../utils/trpc';
 const updateRoute = protectedProcedure
   .input(
     z.object({
-      pluginId: z.string().min(1),
-      url: z.url()
+      pluginId: zPluginId,
+      url: z.url(),
+      checksum: z.string().min(1)
     })
   )
   .mutation(async ({ input, ctx }) => {
@@ -20,11 +22,13 @@ const updateRoute = protectedProcedure
       await pluginManager.togglePlugin(input.pluginId, false);
     }
 
-    await downloadPlugin(input.url);
+    await downloadPlugin(input.url, input.checksum);
 
     if (wasEnabled) {
       await pluginManager.togglePlugin(input.pluginId, true);
     }
+
+    publishPlugins();
   });
 
 export { updateRoute };
