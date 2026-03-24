@@ -1,7 +1,6 @@
 import {
   CLIENT_ENTRY_FILE,
   SERVER_ENTRY_FILE,
-  sha256,
   zPluginManifest
 } from '@sharkord/shared';
 import { randomUUIDv7 } from 'bun';
@@ -10,6 +9,7 @@ import path from 'path';
 import { logger } from '../logger';
 import { ensureDir } from './fs';
 import { PLUGINS_PATH, TMP_PATH } from './paths';
+import { sha256File } from './sha-256-file';
 
 const downloadsPath = path.join(TMP_PATH, 'downloads');
 
@@ -75,7 +75,7 @@ const downloadPlugin = async (
   try {
     await downloadFile(url, archivePath);
 
-    const actualChecksum = await sha256(archivePath);
+    const actualChecksum = await sha256File(archivePath);
 
     if (actualChecksum !== expectedChecksum) {
       throw new Error(

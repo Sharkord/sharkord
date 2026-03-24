@@ -691,13 +691,13 @@ describe('plugins router', () => {
 
       await expect(
         caller.plugins.install({
-          url: 'https://example.com/plugin.tar.gz',
-          checksum: 'abc123'
+          pluginId: 'plugin-example',
+          version: '0.0.1'
         })
       ).rejects.toThrow('Insufficient permissions');
     });
 
-    test('should call downloadPlugin with correct URL and checksum', async () => {
+    test('should call downloadPlugin with fetched URL and checksum', async () => {
       const { caller } = await initTest();
       const mockDownload = mock(() => Promise.resolve());
 
@@ -706,9 +706,21 @@ describe('plugins router', () => {
         downloadFile: mock(() => Promise.resolve())
       }));
 
+      mock.module('../../helpers/marketplace', () => ({
+        fetchMarketplaceVersion: mock(() =>
+          Promise.resolve({
+            version: '0.0.1',
+            downloadUrl: 'https://example.com/plugin.tar.gz',
+            checksum: 'deadbeef1234',
+            sdkVersion: 1,
+            size: 1000
+          })
+        )
+      }));
+
       await caller.plugins.install({
-        url: 'https://example.com/plugin.tar.gz',
-        checksum: 'deadbeef1234'
+        pluginId: 'plugin-example',
+        version: '0.0.1'
       });
 
       expect(mockDownload).toHaveBeenCalledWith(
@@ -717,31 +729,31 @@ describe('plugins router', () => {
       );
     });
 
-    test('should reject an invalid URL format', async () => {
+    test('should reject empty pluginId', async () => {
       const { caller } = await initTest();
 
       await expect(
         caller.plugins.install({
-          url: 'not-a-url',
-          checksum: 'abc123'
+          pluginId: '',
+          version: '0.0.1'
         })
       ).rejects.toThrow();
     });
 
-    test('should reject missing checksum', async () => {
+    test('should reject missing version', async () => {
       const { caller } = await initTest();
 
       await expect(
         // @ts-expect-error intentionally omitting required field
         caller.plugins.install({
-          url: 'https://example.com/plugin.tar.gz'
+          pluginId: 'plugin-example'
         })
       ).rejects.toThrow();
     });
   });
 
   describe('update', () => {
-    test('should call downloadPlugin with correct URL and checksum', async () => {
+    test('should call downloadPlugin with fetched URL and checksum', async () => {
       const { caller } = await initTest();
       const mockDownload = mock(() => Promise.resolve());
 
@@ -750,10 +762,21 @@ describe('plugins router', () => {
         downloadFile: mock(() => Promise.resolve())
       }));
 
+      mock.module('../../helpers/marketplace', () => ({
+        fetchMarketplaceVersion: mock(() =>
+          Promise.resolve({
+            version: '2.0.0',
+            downloadUrl: 'https://example.com/plugin-a-v2.tar.gz',
+            checksum: 'cafebabe5678',
+            sdkVersion: 1,
+            size: 2000
+          })
+        )
+      }));
+
       await caller.plugins.update({
         pluginId: 'plugin-a',
-        url: 'https://example.com/plugin-a-v2.tar.gz',
-        checksum: 'cafebabe5678'
+        version: '2.0.0'
       });
 
       expect(mockDownload).toHaveBeenCalledWith(
@@ -762,14 +785,13 @@ describe('plugins router', () => {
       );
     });
 
-    test('should reject an invalid URL format', async () => {
+    test('should reject empty version', async () => {
       const { caller } = await initTest();
 
       await expect(
         caller.plugins.update({
           pluginId: 'plugin-a',
-          url: 'not-a-valid-url',
-          checksum: 'abc123'
+          version: ''
         })
       ).rejects.toThrow();
     });
@@ -780,8 +802,7 @@ describe('plugins router', () => {
       await expect(
         caller.plugins.update({
           pluginId: 'Plugin-A',
-          url: 'https://example.com/plugin-a-v2.tar.gz',
-          checksum: 'abc123'
+          version: '1.0.0'
         })
       ).rejects.toThrow();
     });

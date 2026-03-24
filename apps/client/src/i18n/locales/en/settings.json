@@ -180,7 +180,6 @@
   "marketplaceInstalledBadge": "Installed",
   "marketplaceUpdateBtn": "Update",
   "marketplaceVerified": "Verified",
-  "marketplaceRepoBtn": "Repository",
   "marketplaceInstallError": "Failed to install plugin",
   "marketplaceUpdateError": "Failed to update plugin",
   "marketplaceSdkBadge": "{{status}}",

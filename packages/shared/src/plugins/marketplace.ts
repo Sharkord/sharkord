@@ -1,9 +1,11 @@
+const MARKETPLACE_REGISTRY_URL =
+  'https://cdn.jsdelivr.net/gh/Sharkord/plugins@latest/plugins.json';
+
 type TMarketplacePlugin = {
   id: string;
   name: string;
   description: string;
   author: string;
-  repo: string;
   logo: string;
   homepage?: string;
   tags?: string[];
@@ -25,8 +27,9 @@ type TMarketplaceEntry = {
   versions: TMarketplacePluginVersion[];
 };
 
-export type {
-  TMarketplaceEntry,
-  TMarketplacePlugin,
-  TMarketplacePluginVersion
+export {
+  MARKETPLACE_REGISTRY_URL,
+  type TMarketplaceEntry,
+  type TMarketplacePlugin,
+  type TMarketplacePluginVersion
 };

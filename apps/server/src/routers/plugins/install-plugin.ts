@@ -1,19 +1,25 @@
-import { Permission } from '@sharkord/shared';
+import { Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
 import { downloadPlugin } from '../../helpers/downloads';
+import { fetchMarketplaceVersion } from '../../helpers/marketplace';
 import { protectedProcedure } from '../../utils/trpc';
 
 const installRoute = protectedProcedure
   .input(
     z.object({
-      url: z.url(),
-      checksum: z.string().min(1)
+      pluginId: zPluginId,
+      version: z.string().min(1)
     })
   )
   .mutation(async ({ ctx, input }) => {
     await ctx.needsPermission(Permission.MANAGE_PLUGINS);
 
-    await downloadPlugin(input.url, input.checksum);
+    const versionData = await fetchMarketplaceVersion(
+      input.pluginId,
+      input.version
+    );
+
+    await downloadPlugin(versionData.downloadUrl, versionData.checksum);
   });
 
 export { installRoute };

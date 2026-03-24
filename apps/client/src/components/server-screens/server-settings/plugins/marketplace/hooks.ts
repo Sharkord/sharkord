@@ -1,4 +1,7 @@
-import type { TMarketplaceEntry } from '@sharkord/shared';
+import {
+  MARKETPLACE_REGISTRY_URL,
+  type TMarketplaceEntry
+} from '@sharkord/shared';
 import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -13,43 +16,15 @@ const useMarketplaceData = (t: TFunction<'settings'>) => {
     setError(null);
 
     try {
-      // const response = await fetch(MARKETPLACE_INDEX_URL);
-      // if (!response.ok) {
-      //   throw new Error(`HTTP ${response.status}`);
-      // }
-      // const data = (await response.json()) as TMarketplaceEntry[];
-      // setEntries(data);
+      const response = await fetch(MARKETPLACE_REGISTRY_URL);
 
-      setEntries([
-        {
-          plugin: {
-            id: 'plugin-example',
-            name: 'Plugin Example',
-            description: 'An example plugin to demonstrate the plugin system.',
-            author: 'John Doe',
-            repo: 'https://github.com/johndoe/plugin-example',
-            logo: 'https://placehold.co/100x100/white/black',
-            homepage: 'https://example.com/plugin-example',
-            screenshots: [
-              'https://placehold.co/600x400/111827/e5e7eb',
-              'https://placehold.co/600x400/111827/e5e7eb'
-            ],
-            tags: ['test'],
-            verified: true
-          },
-          versions: [
-            {
-              version: '0.0.1',
-              downloadUrl:
-                'https://files.diogomartino.run/public/plugin-example-0.0.1.tar.gz',
-              checksum:
-                'xyz123abc456def789ghi012jkl345mno678pqr901stu234vwx567yz890',
-              sdkVersion: 1,
-              size: 123456
-            }
-          ]
-        }
-      ]);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = (await response.json()) as TMarketplaceEntry[];
+
+      setEntries(data);
     } catch {
       setError(t('marketplaceFetchError'));
     } finally {

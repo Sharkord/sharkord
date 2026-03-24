@@ -8,7 +8,7 @@ import {
   type TMarketplaceEntry
 } from '@sharkord/shared';
 import { Badge, Button, Tooltip } from '@sharkord/ui';
-import { BadgeCheck, Code2, Download, Package, User } from 'lucide-react';
+import { BadgeCheck, Download, Package, User } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import semver from 'semver';
@@ -69,13 +69,16 @@ const MarketplaceItem = memo(
     }, [installedVersion, latestCompatibleVersion, isNewerVersion]);
 
     const performInstall = useCallback(async () => {
+      if (!latestVersion) return;
+
       const trpc = getTRPCClient();
 
       try {
         setInstallingId(plugin.id);
 
         await trpc.plugins.install.mutate({
-          url: latestVersion.downloadUrl
+          pluginId: plugin.id,
+          version: latestVersion.version
         });
 
         toast.success(t('marketplaceInstallSuccess', { name: plugin.name }));
@@ -86,13 +89,7 @@ const MarketplaceItem = memo(
       } finally {
         setInstallingId(null);
       }
-    }, [
-      plugin.id,
-      latestVersion.downloadUrl,
-      t,
-      plugin.name,
-      refetchInstalled
-    ]);
+    }, [plugin.id, latestVersion, t, plugin.name, refetchInstalled]);
 
     const performUpdate = useCallback(async () => {
       if (!latestCompatibleVersion) return;
@@ -104,7 +101,7 @@ const MarketplaceItem = memo(
 
         await trpc.plugins.update.mutate({
           pluginId: plugin.id,
-          url: latestCompatibleVersion.downloadUrl
+          version: latestCompatibleVersion.version
         });
 
         await refetchInstalled();
@@ -181,18 +178,6 @@ const MarketplaceItem = memo(
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              {plugin.repo && (
-                <Button variant="ghost" size="sm" className="h-8" asChild>
-                  <a
-                    href={plugin.repo}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Code2 className="w-4 h-4 mr-1.5" />
-                    {t('marketplaceRepoBtn')}
-                  </a>
-                </Button>
-              )}
               {isInstalled && (
                 <Badge variant="secondary">
                   {t('marketplaceInstalledBadge')}
