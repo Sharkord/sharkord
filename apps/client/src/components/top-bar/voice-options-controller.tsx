@@ -70,8 +70,6 @@ const VoiceOptionsController = memo(() => {
               id="hide-non-video"
               checked={hideNonVideoParticipants}
               onCheckedChange={handleToggleHideNonVideo}
-              data-1p-ignore
-              data-lpignore="true"
             />
           </div>
 
@@ -86,8 +84,6 @@ const VoiceOptionsController = memo(() => {
               id="show-user-banners"
               checked={showUserBanners}
               onCheckedChange={handleToggleShowUserBanners}
-              data-1p-ignore
-              data-lpignore="true"
             />
           </div>
 
@@ -104,8 +100,6 @@ const VoiceOptionsController = memo(() => {
               id="hide-own-screen-share"
               checked={hideOwnScreenShare}
               onCheckedChange={handleToggleHideOwnScreenShare}
-              data-1p-ignore
-              data-lpignore="true"
             />
           </div>
         </div>
