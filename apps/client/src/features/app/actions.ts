@@ -247,3 +247,6 @@ export const togglePluginSlotDebug = () => {
   store.dispatch(appSliceActions.setPluginSlotDebug(next));
   setLocalStorageItemBool(LocalStorageKey.PLUGIN_SLOT_DEBUG, next);
 };
+
+export const setActiveFullscreenPluginId = (pluginId: string | undefined) =>
+  store.dispatch(appSliceActions.setActiveFullscreenPluginId(pluginId));

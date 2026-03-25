@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import {
   commandsSelector,
   flatCommandsSelector,
+  fullscreenPluginIdsSelector,
   pluginComponentsBySlotSelector,
   pluginMetadataByIdSelector
 } from './selectors';
@@ -21,3 +22,6 @@ export const usePluginMetadata = (pluginId: string | null | undefined) =>
   useSelector((state: IRootState) =>
     pluginId ? pluginMetadataByIdSelector(state, pluginId) : undefined
   );
+
+export const useFullscreenPluginIds = () =>
+  useSelector(fullscreenPluginIdsSelector);

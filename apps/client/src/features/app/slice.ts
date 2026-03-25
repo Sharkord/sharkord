@@ -26,6 +26,7 @@ export interface TAppState {
   voiceChatSidebarOpen: boolean;
   voiceChatChannelId: number | undefined;
   pluginSlotDebug: boolean;
+  activeFullscreenPluginId: string | undefined;
 }
 
 const initialState: TAppState = {
@@ -67,7 +68,8 @@ const initialState: TAppState = {
   pluginSlotDebug: getLocalStorageItemBool(
     LocalStorageKey.PLUGIN_SLOT_DEBUG,
     false
-  )
+  ),
+  activeFullscreenPluginId: undefined
 };
 
 export const appSlice = createSlice({
@@ -150,6 +152,16 @@ export const appSlice = createSlice({
     },
     setPluginSlotDebug: (state, action: PayloadAction<boolean>) => {
       state.pluginSlotDebug = action.payload;
+    },
+    setActiveFullscreenPluginId: (
+      state,
+      action: PayloadAction<string | undefined>
+    ) => {
+      state.activeFullscreenPluginId = action.payload;
+
+      if (action.payload) {
+        state.dmsOpen = false;
+      }
     }
   }
 });
