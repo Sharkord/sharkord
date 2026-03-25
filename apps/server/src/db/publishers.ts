@@ -8,7 +8,7 @@ import { db } from '.';
 import { pluginManager } from '../plugins';
 import { pubsub } from '../utils/pubsub';
 import {
-  getAffectedUserIdsForChannel,
+  getAffectedOnlineUserIdsForChannel,
   getAllChannelUserPermissions
 } from './queries/channels';
 import { getEmojiById } from './queries/emojis';
@@ -24,9 +24,12 @@ const publishMessage = async (
   type: 'create' | 'update' | 'delete'
 ) => {
   if (type === 'delete') {
-    const affectedUserIds = await getAffectedUserIdsForChannel(channelId, {
-      permission: ChannelPermission.VIEW_CHANNEL
-    });
+    const affectedUserIds = await getAffectedOnlineUserIdsForChannel(
+      channelId,
+      {
+        permission: ChannelPermission.VIEW_CHANNEL
+      }
+    );
 
     pubsub.publishFor(affectedUserIds, ServerEvents.MESSAGE_DELETE, {
       messageId: messageId,
@@ -43,7 +46,7 @@ const publishMessage = async (
   const targetEvent =
     type === 'create' ? ServerEvents.NEW_MESSAGE : ServerEvents.MESSAGE_UPDATE;
 
-  const affectedUserIds = await getAffectedUserIdsForChannel(channelId, {
+  const affectedUserIds = await getAffectedOnlineUserIdsForChannel(channelId, {
     permission: ChannelPermission.VIEW_CHANNEL
   });
 
@@ -151,7 +154,7 @@ const publishChannel = async (
       ? ServerEvents.CHANNEL_CREATE
       : ServerEvents.CHANNEL_UPDATE;
 
-  const affectedUserIds = await getAffectedUserIdsForChannel(channel.id, {
+  const affectedUserIds = await getAffectedOnlineUserIdsForChannel(channel.id, {
     permission: ChannelPermission.VIEW_CHANNEL
   });
 
@@ -267,7 +270,7 @@ const publishReplyCount = async (
     .where(eq(messages.parentMessageId, parentMessageId))
     .get();
 
-  const affectedUserIds = await getAffectedUserIdsForChannel(channelId, {
+  const affectedUserIds = await getAffectedOnlineUserIdsForChannel(channelId, {
     permission: ChannelPermission.VIEW_CHANNEL
   });
 
