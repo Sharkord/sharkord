@@ -8,44 +8,54 @@ import { PlugSlotDebugWrapper } from './plugin-slot-debug-wrapper';
 
 type TPluginSlotRendererProps = {
   slotId: PluginSlot;
+  activeFullscreenPluginId?: string;
 };
 
-const PluginSlotRenderer = memo(({ slotId }: TPluginSlotRendererProps) => {
-  const debug = usePluginSlotDebug();
+const PluginSlotRenderer = memo(
+  ({ slotId, activeFullscreenPluginId }: TPluginSlotRendererProps) => {
+    const debug = usePluginSlotDebug();
+    const pluginComponentsBySlot = usePluginComponentsBySlot(slotId);
 
-  const pluginComponentsBySlot = usePluginComponentsBySlot(slotId);
-  const can = useCan();
+    const can = useCan();
 
-  if (!can(Permission.USE_PLUGINS)) {
-    return null;
+    if (!can(Permission.USE_PLUGINS)) {
+      return null;
+    }
+
+    const content = Object.entries(pluginComponentsBySlot).map(
+      ([pluginId, components]) =>
+        components.map((Component, index) => {
+          if (
+            activeFullscreenPluginId &&
+            pluginId !== activeFullscreenPluginId
+          ) {
+            return null;
+          }
+
+          const rendered = <Component />;
+
+          const wrappedContent = debug ? (
+            <PlugSlotDebugWrapper pluginId={pluginId} slotId={slotId}>
+              {rendered}
+            </PlugSlotDebugWrapper>
+          ) : (
+            rendered
+          );
+
+          return (
+            <ErrorBoundary
+              pluginId={pluginId}
+              slotId={slotId}
+              key={`${pluginId}-${index}`}
+            >
+              {wrappedContent}
+            </ErrorBoundary>
+          );
+        })
+    );
+
+    return <>{content}</>;
   }
-
-  const content = Object.entries(pluginComponentsBySlot).map(
-    ([pluginId, components]) =>
-      components.map((Component, index) => {
-        const rendered = <Component />;
-
-        const wrappedContent = debug ? (
-          <PlugSlotDebugWrapper pluginId={pluginId} slotId={slotId}>
-            {rendered}
-          </PlugSlotDebugWrapper>
-        ) : (
-          rendered
-        );
-
-        return (
-          <ErrorBoundary
-            pluginId={pluginId}
-            slotId={slotId}
-            key={`${pluginId}-${index}`}
-          >
-            {wrappedContent}
-          </ErrorBoundary>
-        );
-      })
-  );
-
-  return <>{content}</>;
-});
+);
 
 export { PluginSlotRenderer };

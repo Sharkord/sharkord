@@ -1,6 +1,6 @@
-import { setDmsOpen } from '@/features/app/actions';
-import { useDmsOpen } from '@/features/app/hooks';
+import { setDmsOpen } from '@/features/server/actions';
 import { useDirectMessagesUnreadCount } from '@/features/server/channels/hooks';
+import { useDmsOpen } from '@/features/server/hooks';
 import { cn, Tooltip } from '@sharkord/ui';
 import { MessageCircleMore, X } from 'lucide-react';
 import { memo, useCallback } from 'react';
@@ -25,7 +25,8 @@ const DmButton = memo(() => {
           onClick={onToggleDmMode}
           className={cn(
             'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-            dmsOpen && 'bg-accent text-accent-foreground ring-1 ring-primary/30'
+            dmsOpen &&
+              'bg-accent text-accent-foreground ring-1 ring-inset ring-primary/30'
           )}
         >
           <MessageCircleMore className="h-4 w-4" />

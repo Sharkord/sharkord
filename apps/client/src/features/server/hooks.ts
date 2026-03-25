@@ -5,9 +5,11 @@ import type { IRootState } from '../store';
 import { useChannelById, useChannelPermissionsById } from './channels/hooks';
 import { channelReadStateByIdSelector } from './channels/selectors';
 import {
+  activeFullscreenPluginIdSelector,
   connectedSelector,
   connectingSelector,
   disconnectInfoSelector,
+  dmsOpenSelector,
   hasSharingScreenUsersSelector,
   hasUnreadMentionsSelector,
   hasVisibleChannelsInCategorySelector,
@@ -133,3 +135,8 @@ export const useHasUnreadMentions = (channelId: number) =>
   useSelector((state: IRootState) =>
     hasUnreadMentionsSelector(state, channelId)
   );
+
+export const useActiveFullscreenPluginId = () =>
+  useSelector(activeFullscreenPluginIdSelector);
+
+export const useDmsOpen = () => useSelector(dmsOpenSelector);

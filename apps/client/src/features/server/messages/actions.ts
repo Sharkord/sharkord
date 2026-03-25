@@ -2,7 +2,6 @@ import {
   browserNotificationsForDmsSelector,
   browserNotificationsForMentionsSelector,
   browserNotificationsSelector,
-  dmsOpenSelector,
   selectedDmChannelIdSelector,
   threadSidebarDataSelector
 } from '@/features/app/selectors';
@@ -20,6 +19,7 @@ import {
   selectedChannelIdSelector
 } from '../channels/selectors';
 import { pluginMetadataByIdSelector } from '../plugins/selectors';
+import { dmsOpenSelector } from '../selectors';
 import { serverSliceActions } from '../slice';
 import { playSound } from '../sounds/actions';
 import { SoundType } from '../types';

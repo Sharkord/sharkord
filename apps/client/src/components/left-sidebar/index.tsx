@@ -1,7 +1,7 @@
 import { ResizableSidebar } from '@/components/resizable-sidebar';
-import { useDmsOpen } from '@/features/app/hooks';
 import { setSelectedChannelId } from '@/features/server/channels/actions';
 import {
+  useDmsOpen,
   usePublicServerSettings,
   useServerName
 } from '@/features/server/hooks';
@@ -11,7 +11,7 @@ import { memo } from 'react';
 import { Categories } from './categories';
 import { DirectMessages } from './direct-messages';
 import { DmButton } from './direct-messages/dm-button';
-import { PluginSidebarButtons } from './plugin-buttons';
+import { PluginButtons } from './plugin-buttons';
 import { ServerDropdownMenu } from './server-dropdown';
 import { UserControl } from './user-control';
 import { VoiceControl } from './voice-control';
@@ -50,7 +50,7 @@ const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
         </div>
       </div>
       {publicSettings?.directMessagesEnabled && <DmButton />}
-      <PluginSidebarButtons />
+      <PluginButtons />
       <div className="flex-1 overflow-y-auto">
         {dmsOpen ? <DirectMessages /> : <Categories />}
       </div>

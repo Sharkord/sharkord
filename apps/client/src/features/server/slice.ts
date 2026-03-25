@@ -65,6 +65,8 @@ export interface IServerState {
   hideNonVideoParticipants: boolean;
   showUserBannersInVoice: boolean;
   pluginComponents: TPluginComponentsMap;
+  activeFullscreenPluginId: string | undefined;
+  dmsOpen: boolean;
 }
 
 const initialState: IServerState = {
@@ -108,7 +110,9 @@ const initialState: IServerState = {
     LocalStorageKey.VOICE_CHAT_SHOW_USER_BANNERS,
     true
   ),
-  pluginComponents: {}
+  pluginComponents: {},
+  activeFullscreenPluginId: undefined,
+  dmsOpen: false
 };
 
 export const serverSlice = createSlice({
@@ -580,6 +584,7 @@ export const serverSlice = createSlice({
         // reset unread count on select
         // for now this is good enough
         state.readStatesMap[action.payload] = 0;
+        state.activeFullscreenPluginId = undefined;
       }
     },
     setCurrentVoiceChannelId: (
@@ -833,6 +838,28 @@ export const serverSlice = createSlice({
       action: PayloadAction<TPluginComponentsMap>
     ) => {
       state.pluginComponents = action.payload;
+    },
+    setActiveFullscreenPluginId: (
+      state,
+      action: PayloadAction<string | undefined>
+    ) => {
+      state.activeFullscreenPluginId = action.payload;
+
+      if (action.payload) {
+        state.selectedChannelId = undefined;
+        state.dmsOpen = false;
+      }
+    },
+
+    // OTHERS ------------------------------------------------------------
+
+    setDmsOpen: (state, action: PayloadAction<boolean>) => {
+      state.dmsOpen = action.payload;
+
+      if (action.payload) {
+        state.selectedChannelId = undefined;
+        state.activeFullscreenPluginId = undefined;
+      }
     }
   }
 });

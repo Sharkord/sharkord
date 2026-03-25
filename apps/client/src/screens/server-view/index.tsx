@@ -6,14 +6,10 @@ import { ThreadSidebar } from '@/components/thread-sidebar';
 import { TopBar } from '@/components/top-bar';
 import { VoiceChatSidebar } from '@/components/voice-chat-sidebar';
 import { VoiceProvider } from '@/components/voice-provider';
-import { setDmsOpen } from '@/features/app/actions';
-import {
-  useDmsOpen,
-  useSelectedDmChannelId,
-  useThreadSidebar
-} from '@/features/app/hooks';
+import { useSelectedDmChannelId, useThreadSidebar } from '@/features/app/hooks';
+import { setDmsOpen } from '@/features/server/actions';
 import { setSelectedChannelId } from '@/features/server/channels/actions';
-import { usePublicServerSettings } from '@/features/server/hooks';
+import { useDmsOpen, usePublicServerSettings } from '@/features/server/hooks';
 import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
 import { useSwipeGestures } from '@/hooks/use-swipe-gestures';
 import { cn } from '@/lib/utils';

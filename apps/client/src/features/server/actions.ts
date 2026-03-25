@@ -5,11 +5,7 @@ import { cleanup, connectToTRPC, getTRPCClient } from '@/lib/trpc';
 import type { TMessageJumpToTarget } from '@/types';
 import { type TPublicServerSettings, type TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
-import {
-  setDmsOpen,
-  setMessageJumpTarget,
-  setSelectedDmChannelId
-} from '../app/actions';
+import { setMessageJumpTarget, setSelectedDmChannelId } from '../app/actions';
 import { openDialog } from '../dialogs/actions';
 import { store } from '../store';
 import { setSelectedChannelId } from './channels/actions';
@@ -45,6 +41,10 @@ export const setServerId = (id: string) => {
   store.dispatch(serverSliceActions.setServerId(id));
 };
 
+export const setDmsOpen = (open: boolean) => {
+  store.dispatch(serverSliceActions.setDmsOpen(open));
+};
+
 export const setPublicServerSettings = (
   settings: TPublicServerSettings | undefined
 ) => {
@@ -53,6 +53,10 @@ export const setPublicServerSettings = (
 
 export const setInfo = (info: TServerInfo | undefined) => {
   store.dispatch(serverSliceActions.setInfo(info));
+};
+
+export const setActiveFullscreenPluginId = (pluginId: string | undefined) => {
+  store.dispatch(serverSliceActions.setActiveFullscreenPluginId(pluginId));
 };
 
 export const connect = async () => {

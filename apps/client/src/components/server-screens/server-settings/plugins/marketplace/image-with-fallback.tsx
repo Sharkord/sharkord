@@ -2,7 +2,7 @@ import { cn } from '@sharkord/ui';
 import { useCallback, useState } from 'react';
 
 type ImageWithFallbackProps = {
-  src: string;
+  src: string | undefined;
   alt: string;
   className?: string;
   iconFallback?: React.ReactNode;
@@ -16,7 +16,7 @@ const ImageWithFallback = ({
   iconFallback = null,
   onClick
 }: ImageWithFallbackProps) => {
-  const [hasError, setHasError] = useState(false);
+  const [hasError, setHasError] = useState(src ? false : true);
 
   const handleError = useCallback(() => {
     setHasError(true);

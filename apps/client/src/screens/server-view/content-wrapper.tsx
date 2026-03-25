@@ -1,12 +1,14 @@
 import { TextChannel } from '@/components/channel-view/text';
 import { VoiceChannel } from '@/components/channel-view/voice';
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
-import { useActiveFullscreenPluginId } from '@/features/app/hooks';
 import {
   useSelectedChannelId,
   useSelectedChannelType
 } from '@/features/server/channels/hooks';
-import { useServerName } from '@/features/server/hooks';
+import {
+  useActiveFullscreenPluginId,
+  useServerName
+} from '@/features/server/hooks';
 import { ChannelType, PluginSlot } from '@sharkord/shared';
 import { Alert, AlertDescription } from '@sharkord/ui';
 import { AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
