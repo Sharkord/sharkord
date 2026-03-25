@@ -21,7 +21,8 @@ CREATE TABLE `__new_messages` (
 	FOREIGN KEY (`edited_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-INSERT INTO `__new_messages`("id", "content", "user_id", "plugin_id", "channel_id", "parent_message_id", "editable", "metadata", "created_at", "updated_at", "pinned", "pinned_at", "pinned_by", "edited_at", "edited_by") SELECT "id", "content", "user_id", "plugin_id", "channel_id", "parent_message_id", "editable", "metadata", "created_at", "updated_at", "pinned", "pinned_at", "pinned_by", "edited_at", "edited_by" FROM `messages`;--> statement-breakpoint
+INSERT INTO `__new_messages`("id", "content", "user_id", "plugin_id", "channel_id", "parent_message_id", "editable", "metadata", "created_at", "updated_at", "pinned", "pinned_at", "pinned_by", "edited_at", "edited_by") SELECT "id", "content", "user_id", NULL, "channel_id", "parent_message_id", "editable", "metadata", "created_at", "updated_at", "pinned", "pinned_at", "pinned_by", "edited_at", "edited_by" FROM `messages`;--> statement-breakpoint
+DELETE FROM `channel_read_states`;--> statement-breakpoint
 DROP TABLE `messages`;--> statement-breakpoint
 ALTER TABLE `__new_messages` RENAME TO `messages`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;--> statement-breakpoint
