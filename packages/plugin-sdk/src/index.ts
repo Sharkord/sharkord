@@ -48,7 +48,8 @@ export type ServerEvent =
   | 'message:updated'
   | 'message:deleted'
   | 'voice:runtime_initialized'
-  | 'voice:runtime_closed';
+  | 'voice:runtime_closed'
+  | 'setting:set';
 
 export interface EventPayloads {
   'user:joined': {
@@ -90,6 +91,10 @@ export interface EventPayloads {
   };
   'voice:runtime_closed': {
     channelId: number;
+  };
+  'setting:set': {
+    key: string;
+    value: unknown;
   };
 }
 

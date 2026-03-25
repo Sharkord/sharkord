@@ -6,6 +6,7 @@ import type {
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { pluginData } from '../db/schema';
+import { eventBus } from './event-bus';
 import type { PluginLogger } from './plugin-logger';
 import type { PluginStateStore } from './plugin-state-store';
 
@@ -125,14 +126,18 @@ class PluginSettingsManager {
 
         values[key] = value;
 
-        this.enqueueSave(pluginId, values).catch((err) => {
-          this.pluginLogger.log(
-            pluginId,
-            'error',
-            `Failed to persist setting '${key}':`,
-            err
-          );
-        });
+        this.enqueueSave(pluginId, values)
+          .finally(() => {
+            eventBus.emit('setting:set', { key, value });
+          })
+          .catch((err) => {
+            this.pluginLogger.log(
+              pluginId,
+              'error',
+              `Failed to persist setting '${key}':`,
+              err
+            );
+          });
       }
     };
   };
