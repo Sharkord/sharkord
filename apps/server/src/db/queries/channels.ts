@@ -429,8 +429,6 @@ const getAffectedOnlineUserIdsForChannel = async (
     channelId,
     options
   );
-
-  // filter the affected user IDs to only include online users
   const onlineUserIds = getOnlineUserIds();
 
   const onlineAffectedUserIds = affectedUserIds.filter((userId) =>
