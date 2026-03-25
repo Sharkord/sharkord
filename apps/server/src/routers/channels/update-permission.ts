@@ -7,7 +7,7 @@ import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { publishChannelPermissions } from '../../db/publishers';
-import { getAffectedUserIdsForChannel } from '../../db/queries/channels';
+import { getAffectedOnlineUserIdsForChannel } from '../../db/queries/channels';
 import { isDirectMessageChannel } from '../../db/queries/dms';
 import {
   channelRolePermissions,
@@ -90,9 +90,11 @@ const updatePermissionsRoute = protectedProcedure
       }
     });
 
-    publishChannelPermissions(
-      await getAffectedUserIdsForChannel(input.channelId)
+    const affectedUserIds = await getAffectedOnlineUserIdsForChannel(
+      input.channelId
     );
+
+    publishChannelPermissions(affectedUserIds);
     enqueueActivityLog({
       type: ActivityLogType.UPDATED_CHANNEL_PERMISSIONS,
       userId: ctx.user.id,
