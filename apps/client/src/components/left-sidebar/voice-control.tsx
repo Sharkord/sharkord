@@ -86,9 +86,7 @@ const VoiceControl = memo(() => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              void leaveVoice({ reason: 'user_disconnect_button' })
-            }
+            onClick={() => leaveVoice({ reason: 'user_disconnect_button' })}
           >
             <PhoneOff className="h-3.5 w-3.5 mr-1.5" />
             {t('disconnectVoice')}
