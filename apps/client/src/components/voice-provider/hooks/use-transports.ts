@@ -82,7 +82,7 @@ const useTransports = ({
       producerTransport.current.on('connectionstatechange', (state) => {
         logVoice('Producer transport connection state changed', { state });
 
-        if (state === 'failed' || state === 'disconnected') {
+        if (state === 'failed') {
           logVoice(`Producer transport ${state}`);
           producerTransport.current?.close();
         } else if (state === 'closed') {
@@ -169,7 +169,7 @@ const useTransports = ({
       consumerTransport.current.on('connectionstatechange', (state) => {
         logVoice('Consumer transport connection state changed', { state });
 
-        if (state === 'failed' || state === 'disconnected') {
+        if (state === 'failed') {
           logVoice(`Consumer transport ${state}, attempting cleanup`);
 
           Object.values(consumers.current).forEach((userConsumers) => {
