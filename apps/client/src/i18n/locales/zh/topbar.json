@@ -7,6 +7,7 @@
   "voiceOptions": "语音选项",
   "hideNonVideoParticipants": "隐藏无视频参与者",
   "displayUserBanners": "显示用户横幅",
+  "hideOwnScreenShare": "隐藏自己的屏幕共享",
   "audioControls": "音频控制",
   "stream_one": "路流",
   "stream_other": "路流",

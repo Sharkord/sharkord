@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { useIsOwnUser } from '../users/hooks';
 import {
   hideNonVideoParticipantsSelector,
+  hideOwnScreenShareSelector,
   ownVoiceStateSelector,
   pinnedCardSelector,
   showUserBannersInVoiceSelector,
@@ -63,6 +64,9 @@ export const useHideNonVideoParticipants = () =>
 
 export const useShowUserBannersInVoice = () =>
   useSelector(showUserBannersInVoiceSelector);
+
+export const useHideOwnScreenShare = () =>
+  useSelector(hideOwnScreenShareSelector);
 
 export const useSpeakingState = (userId: number) => {
   const { remoteUserStreams, localAudioStream } = useVoice();
