@@ -128,7 +128,7 @@ export const addMessages = (
     const isDmChannelSelected = selectedDmChannelId === channelId && dmsOpen; // only consider DM channel selected if DMs are open
     const isChannelSelected = isTextChannelSelected || isDmChannelSelected;
 
-    const isWindowHidden = document?.hidden;  
+    const isWindowHidden = document?.hidden;
 
     if (!isFromOwnUser) {
       const isThreadReply = !!targetMessage.parentMessageId;
