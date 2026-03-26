@@ -4,7 +4,12 @@ import {
   LocalStorageKey,
   setLocalStorageItemAsJSON
 } from '@/helpers/storage';
-import { Resolution, VideoCodec, type TDeviceSettings } from '@/types';
+import {
+  NoiseSuppression,
+  Resolution,
+  VideoCodec,
+  type TDeviceSettings
+} from '@/types';
 import { DEFAULT_BITRATE } from '@sharkord/shared';
 import {
   createContext,
@@ -12,6 +17,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState
 } from 'react';
 import { useAvailableDevices } from './hooks/use-available-devices';
@@ -23,7 +29,7 @@ const DEFAULT_DEVICE_SETTINGS: TDeviceSettings = {
   webcamResolution: Resolution['720p'],
   webcamFramerate: 30,
   echoCancellation: false,
-  noiseSuppression: false,
+  noiseSuppression: NoiseSuppression.NONE,
   autoGainControl: true,
   noiseGateEnabled: false,
   noiseGateThresholdDb: MICROPHONE_GATE_DEFAULT_THRESHOLD_DB,
@@ -56,7 +62,13 @@ const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
   const [devices, setDevices] = useState<TDeviceSettings>(
     DEFAULT_DEVICE_SETTINGS
   );
-  const { loading: devicesLoading } = useAvailableDevices();
+  const initializedRef = useRef(false);
+  const {
+    loading: devicesLoading,
+    inputDevices,
+    playbackDevices,
+    videoDevices
+  } = useAvailableDevices();
 
   const saveDevices = useCallback((newDevices: TDeviceSettings) => {
     setDevices(newDevices);
@@ -67,21 +79,60 @@ const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
   }, []);
 
   useEffect(() => {
-    if (devicesLoading) return;
+    if (devicesLoading || initializedRef.current) return;
+
+    initializedRef.current = true;
 
     const savedSettings = getLocalStorageItemAsJSON<TDeviceSettings>(
       LocalStorageKey.DEVICES_SETTINGS
     );
 
+    const autoMicrophoneId =
+      inputDevices.find((d) => d?.deviceId === 'default')?.deviceId ??
+      inputDevices[0]?.deviceId;
+
+    const autoPlaybackId =
+      playbackDevices.find((d) => d?.deviceId === 'default')?.deviceId ??
+      playbackDevices[0]?.deviceId;
+
+    const autoWebcamId =
+      videoDevices.find((d) => d?.deviceId === 'default')?.deviceId ??
+      videoDevices[0]?.deviceId;
+
     if (savedSettings) {
+      // migrate stale boolean noiseSuppression values from before the enum was
+      // introduced as true => STANDARD, false/anything else => NONE
+      const noiseSuppressionValues = Object.values(
+        NoiseSuppression
+      ) as string[];
+
+      const rawNs = savedSettings.noiseSuppression as unknown;
+      const noiseSuppression: NoiseSuppression =
+        noiseSuppressionValues.includes(rawNs as string)
+          ? (rawNs as NoiseSuppression)
+          : rawNs === true
+            ? NoiseSuppression.STANDARD
+            : NoiseSuppression.NONE;
+
       setDevices({
         ...DEFAULT_DEVICE_SETTINGS,
-        ...savedSettings
+        ...savedSettings,
+        noiseSuppression,
+        microphoneId: savedSettings.microphoneId ?? autoMicrophoneId,
+        playbackId: savedSettings.playbackId ?? autoPlaybackId,
+        webcamId: savedSettings.webcamId ?? autoWebcamId
+      });
+    } else {
+      setDevices({
+        ...DEFAULT_DEVICE_SETTINGS,
+        microphoneId: autoMicrophoneId,
+        playbackId: autoPlaybackId,
+        webcamId: autoWebcamId
       });
     }
 
     setLoading(false);
-  }, [devicesLoading]);
+  }, [devicesLoading, inputDevices, playbackDevices, videoDevices]);
 
   const contextValue = useMemo<TDevicesProvider>(
     () => ({

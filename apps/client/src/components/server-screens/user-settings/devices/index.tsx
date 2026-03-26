@@ -10,7 +10,7 @@ import {
   subscribeNoiseGateWorkletAvailability
 } from '@/helpers/audio-worklet/noise-gate-worklet';
 import { useForm } from '@/hooks/use-form';
-import { Resolution, VideoCodec } from '@/types';
+import { NoiseSuppression, Resolution, VideoCodec } from '@/types';
 import { DEFAULT_BITRATE } from '@sharkord/shared';
 import {
   Alert,
@@ -51,6 +51,7 @@ import { useMicrophoneTest } from './hooks/use-microphone-test';
 import { useWebcamTest } from './hooks/use-webcam-test';
 import { MicrophoneTestLevelBar } from './microphone-test-level-bar';
 import ResolutionFpsControl from './resolution-fps-control';
+import { SupressionHelp } from './supression-help';
 
 const DEFAULT_NAME = 'default';
 
@@ -74,6 +75,7 @@ const Devices = memo(() => {
     getNoiseGateWorkletAvailabilitySnapshot
   );
   const isNoiseGateAvailable = noiseGateWorkletAvailability.available;
+
   const {
     testAudioRef,
     permissionState,
@@ -88,7 +90,7 @@ const Devices = memo(() => {
     playbackId: values.playbackId,
     autoGainControl: !!values.autoGainControl,
     echoCancellation: !!values.echoCancellation,
-    noiseSuppression: !!values.noiseSuppression,
+    noiseSuppression: values.noiseSuppression,
     noiseGateEnabled: !!values.noiseGateEnabled,
     noiseGateThresholdDb:
       values.noiseGateThresholdDb ?? MICROPHONE_GATE_DEFAULT_THRESHOLD_DB
@@ -252,6 +254,7 @@ const Devices = memo(() => {
             <Select
               onValueChange={(value) => onChange('playbackId', value)}
               value={values.playbackId}
+              disabled={playbackDevices.length === 0}
             >
               <SelectTrigger className="w-92">
                 <SelectValue placeholder={t('playbackPlaceholder')} />
@@ -280,6 +283,7 @@ const Devices = memo(() => {
             <Select
               onValueChange={(value) => onChange('microphoneId', value)}
               value={values.microphoneId}
+              disabled={inputDevices.length === 0}
             >
               <SelectTrigger className="w-92">
                 <SelectValue placeholder={t('microphonePlaceholder')} />
@@ -298,21 +302,45 @@ const Devices = memo(() => {
               </SelectContent>
             </Select>
 
+            <Group
+              label={t('noiseSuppressionLabel')}
+              className="my-4"
+              help={<SupressionHelp />}
+            >
+              <Select
+                value={values.noiseSuppression}
+                onValueChange={(value) =>
+                  onChange('noiseSuppression', value as NoiseSuppression)
+                }
+              >
+                <SelectTrigger className="w-92">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value={NoiseSuppression.NONE}>
+                      {t('noiseSuppressionNone')}
+                    </SelectItem>
+                    <SelectItem value={NoiseSuppression.STANDARD}>
+                      {t('standard')}
+                    </SelectItem>
+                    <SelectItem value={NoiseSuppression.RNNOISE}>
+                      RNNoise ({t('experimental')})
+                    </SelectItem>
+                    <SelectItem value={NoiseSuppression.DTLN}>
+                      DTLN ({t('experimental')})
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Group>
+
             <div className="flex items-center gap-4">
               <Group label={t('echoCancellationLabel')}>
                 <Switch
                   checked={!!values.echoCancellation}
                   onCheckedChange={(checked) =>
                     onChange('echoCancellation', checked)
-                  }
-                />
-              </Group>
-
-              <Group label={t('noiseSuppressionLabel')}>
-                <Switch
-                  checked={!!values.noiseSuppression}
-                  onCheckedChange={(checked) =>
-                    onChange('noiseSuppression', checked)
                   }
                 />
               </Group>
@@ -409,6 +437,7 @@ const Devices = memo(() => {
               <Select
                 onValueChange={(value) => onChange('webcamId', value)}
                 value={values.webcamId}
+                disabled={videoDevices.length === 0}
               >
                 <SelectTrigger className="w-full max-w-96">
                   <SelectValue placeholder={t('webcamPlaceholder')} />
