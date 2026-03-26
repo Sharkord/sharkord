@@ -254,6 +254,7 @@ const Devices = memo(() => {
             <Select
               onValueChange={(value) => onChange('playbackId', value)}
               value={values.playbackId}
+              disabled={playbackDevices.length === 0}
             >
               <SelectTrigger className="w-92">
                 <SelectValue placeholder={t('playbackPlaceholder')} />
@@ -282,6 +283,7 @@ const Devices = memo(() => {
             <Select
               onValueChange={(value) => onChange('microphoneId', value)}
               value={values.microphoneId}
+              disabled={inputDevices.length === 0}
             >
               <SelectTrigger className="w-92">
                 <SelectValue placeholder={t('microphonePlaceholder')} />
@@ -435,6 +437,7 @@ const Devices = memo(() => {
               <Select
                 onValueChange={(value) => onChange('webcamId', value)}
                 value={values.webcamId}
+                disabled={videoDevices.length === 0}
               >
                 <SelectTrigger className="w-full max-w-96">
                   <SelectValue placeholder={t('webcamPlaceholder')} />

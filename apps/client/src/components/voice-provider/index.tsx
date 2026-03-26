@@ -304,15 +304,20 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         devices.noiseSuppression === NoiseSuppression.RNNOISE;
       const useStandardNs =
         devices.noiseSuppression === NoiseSuppression.STANDARD;
+      const useDtln = devices.noiseSuppression === NoiseSuppression.DTLN;
+
+      const hasSpecificMic =
+        !!devices.microphoneId && devices.microphoneId !== 'default';
 
       const rawStream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          deviceId: {
-            exact: devices.microphoneId
-          },
+          deviceId: hasSpecificMic
+            ? { exact: devices.microphoneId }
+            : undefined,
           autoGainControl: devices.autoGainControl,
           echoCancellation: devices.echoCancellation,
           noiseSuppression: useStandardNs,
+          sampleRate: useDtln ? 16000 : 48000,
           channelCount: 1
         },
         video: false
