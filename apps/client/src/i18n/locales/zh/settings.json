@@ -187,6 +187,7 @@
   "pluginsRefreshed": "插件列表已刷新",
   "failedRefreshPlugins": "刷新插件列表失败",
   "failedTogglePlugin": "切换插件状态失败",
+  "marketplaceReleasedOn": "发布于 {{date}}",
   "storageTitle": "存储",
   "storageDesc": "管理您服务器的存储设置。控制数据的存储、访问和管理方式。您可以在此配置存储限制、备份选项和数据保留策略，以确保最佳性能和可靠性。",
   "allowUploadsLabel": "允许上传",

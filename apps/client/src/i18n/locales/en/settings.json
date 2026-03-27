@@ -209,6 +209,7 @@
   "marketplaceSdkBadge": "{{status}}",
   "marketplaceSdkCompatible": "Compatible",
   "marketplaceSdkIncompatible": "Incompatible",
+  "marketplaceReleasedOn": "Released {{date}}",
   "marketplaceVerifiedTooltip": "This plugin was verified by Sharkord.",
   "marketplaceInstallSuccess": "\"{{name}}\" was installed successfully. You need to enable it manually to start using it.",
   "storageTitle": "Storage",

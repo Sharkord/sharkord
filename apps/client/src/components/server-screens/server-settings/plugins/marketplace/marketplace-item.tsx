@@ -1,5 +1,6 @@
 import { Dialog } from '@/components/dialogs/dialogs';
 import { openDialog } from '@/features/dialogs/actions';
+import { useDateLocale } from '@/hooks/use-date-locale';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
@@ -8,7 +9,8 @@ import {
   type TMarketplaceEntry
 } from '@sharkord/shared';
 import { Badge, Button, Tooltip } from '@sharkord/ui';
-import { BadgeCheck, Download, Package, User } from 'lucide-react';
+import { format } from 'date-fns';
+import { BadgeCheck, Calendar, Download, Package, User } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import semver from 'semver';
@@ -31,6 +33,7 @@ const MarketplaceItem = memo(
     refetchInstalled
   }: TMarketplaceItemProps) => {
     const { t } = useTranslation('settings');
+    const dateLocale = useDateLocale();
     const [installingId, setInstallingId] = useState<string | null>(null);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const { plugin, versions } = entry;
@@ -67,6 +70,17 @@ const MarketplaceItem = memo(
 
       return isNewerVersion(latestCompatibleVersion.version, installedVersion);
     }, [installedVersion, latestCompatibleVersion, isNewerVersion]);
+
+    const releaseDate = useMemo(() => {
+      return {
+        short: format(latestVersion.timestamp ?? 0, 'PPP', {
+          locale: dateLocale
+        }),
+        full: format(latestVersion.timestamp ?? 0, 'PPP p', {
+          locale: dateLocale
+        })
+      };
+    }, [dateLocale, latestVersion?.timestamp]);
 
     const performInstall = useCallback(async () => {
       if (!latestVersion) return;
@@ -213,6 +227,15 @@ const MarketplaceItem = memo(
                 <span className="font-mono">v{latestVersion.version}</span>
               </div>
             )}
+            <div
+              className="flex items-center gap-1"
+              title={t('marketplaceReleasedOn', { date: releaseDate.full })}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>
+                {t('marketplaceReleasedOn', { date: releaseDate.short })}
+              </span>
+            </div>
             <div className="flex items-center gap-1">
               <User className="w-3.5 h-3.5" />
               <span>{plugin.author}</span>

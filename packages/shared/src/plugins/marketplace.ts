@@ -23,6 +23,7 @@ type TMarketplacePluginVersion = {
   checksum: string;
   sdkVersion: number | string;
   size: number;
+  timestamp: number;
 };
 
 type TMarketplaceEntry = {

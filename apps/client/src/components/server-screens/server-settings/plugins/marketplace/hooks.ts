@@ -5,6 +5,10 @@ import {
 import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+const getLatestTimestamp = (entry: TMarketplaceEntry) => {
+  return entry.versions[0]?.timestamp ?? 0;
+};
+
 const useMarketplaceData = (t: TFunction<'settings'>) => {
   const [entries, setEntries] = useState<TMarketplaceEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +28,18 @@ const useMarketplaceData = (t: TFunction<'settings'>) => {
 
       const data = (await response.json()) as TMarketplaceEntry[];
 
-      setEntries(data);
+      const sortedEntries = data
+        .map((entry) => ({
+          ...entry,
+          versions: [...entry.versions].sort(
+            (left, right) => right.timestamp - left.timestamp
+          )
+        }))
+        .sort(
+          (left, right) => getLatestTimestamp(right) - getLatestTimestamp(left)
+        );
+
+      setEntries(sortedEntries);
     } catch {
       setError(t('marketplaceFetchError'));
     } finally {
