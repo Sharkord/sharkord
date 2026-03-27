@@ -1,3 +1,4 @@
+import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
@@ -156,6 +157,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   );
   const routerRtpCapabilities = useRef<RtpCapabilities | null>(null);
   const audioVideoRefsMap = useRef<Map<number, AudioVideoRefs>>(new Map());
+  const previousVoiceChannelIdRef = useRef<number | undefined>(undefined);
+  const currentVoiceChannelId = useCurrentVoiceChannelId();
   const ownVoiceState = useOwnVoiceState();
   const { devices } = useDevices();
   const { isScreenShareSupported } = useScreenShareSupport();
@@ -845,6 +848,20 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     clearRemoteUserStreamsForUser,
     rtpCapabilities: routerRtpCapabilities.current!
   });
+
+  useEffect(() => {
+    const previousVoiceChannelId = previousVoiceChannelIdRef.current;
+
+    previousVoiceChannelIdRef.current = currentVoiceChannelId;
+
+    if (
+      previousVoiceChannelId !== undefined &&
+      currentVoiceChannelId === undefined
+    ) {
+      logVoice('Left voice channel, releasing local voice resources');
+      cleanup();
+    }
+  }, [currentVoiceChannelId, cleanup]);
 
   useEffect(() => {
     return () => {
