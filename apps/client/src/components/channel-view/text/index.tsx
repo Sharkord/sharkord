@@ -59,7 +59,7 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
   const typingUsers = useTypingUsersByChannelId(channelId);
   const composeRef = useRef<TMessageComposeHandle>(null);
 
-  const { containerRef, onScroll } = useScrollController({
+  const { containerRef, onScroll, onAsyncContentLoaded } = useScrollController({
     messages,
     fetching,
     hasMore,
@@ -143,6 +143,7 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
       <div
         ref={containerRef}
         onScroll={onScroll}
+        onLoadCapture={onAsyncContentLoaded}
         data-messages-container
         className="flex-1 overflow-y-auto overflow-x-hidden p-2 animate-in fade-in duration-500"
       >

@@ -23,13 +23,14 @@ const ThreadContent = memo(
 
     const typingUsers = useTypingUsersByThreadId(parentMessageId);
 
-    const { containerRef, onScroll } = useScrollController({
-      messages,
-      fetching,
-      hasMore,
-      loadMore,
-      hasTypingUsers: typingUsers.length > 0
-    });
+    const { containerRef, onScroll, onAsyncContentLoaded } =
+      useScrollController({
+        messages,
+        fetching,
+        hasMore,
+        loadMore,
+        hasTypingUsers: typingUsers.length > 0
+      });
 
     return (
       <div className="flex flex-col h-full w-full">
@@ -52,6 +53,7 @@ const ThreadContent = memo(
               <div
                 ref={containerRef}
                 onScroll={onScroll}
+                onLoadCapture={onAsyncContentLoaded}
                 className="flex-1 overflow-y-auto overflow-x-hidden p-2 animate-in fade-in duration-500"
               >
                 {messages.length === 0 && !fetching ? (

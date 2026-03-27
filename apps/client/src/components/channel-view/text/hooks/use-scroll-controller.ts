@@ -14,6 +14,7 @@ type TUseScrollControllerReturn = {
   containerRef: React.RefObject<HTMLDivElement | null>;
   onScroll: () => void;
   scrollToBottom: () => void;
+  onAsyncContentLoaded: () => void;
 };
 
 const SCROLL_THRESHOLD = 80;
@@ -151,10 +152,18 @@ const useScrollController = ({
     };
   }, [scrollToBottom]);
 
+  // scroll to bottom when async content loads (e.g. metadata images)
+  const onAsyncContentLoaded = useCallback(() => {
+    if (shouldStickToBottom.current) {
+      scrollToBottom();
+    }
+  }, [scrollToBottom]);
+
   return {
     containerRef,
     onScroll,
-    scrollToBottom
+    scrollToBottom,
+    onAsyncContentLoaded
   };
 };
 
