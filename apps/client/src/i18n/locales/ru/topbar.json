@@ -12,5 +12,6 @@
   "stream_other": "стримы",
   "noRemoteAudioStreams": "Нет доступных удаленных аудио-стримов.",
   "volumeControls": "Управление громкостью",
-  "externalAudio": "Внешнее аудио"
+  "externalAudio": "Внешнее аудио",
+  "hideOwnScreenShare": "Скрыть свою демонстрацию экрана"
 }

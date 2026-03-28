@@ -100,5 +100,17 @@
   "joinBtn": "Присоединиться",
   "inThread": "В ветке",
   "jumpToThreadMessage": "Перейти к исходному сообщению в ветке",
-  "jumpToMessage": "Перейти к сообщению"
+  "jumpToMessage": "Перейти к сообщению",
+  "pluginInstallConfirmTitle": "Установить плагин \"{{name}}\"?",
+  "pluginInstallConfirmLead": "Плагины — это очень мощный способ расширить функциональность Sharkord, но они также несут значительные риски безопасности.",
+  "pluginInstallWarningLine1": "Плагины могут читать, изменять или удалять",
+  "pluginInstallWarningHighlight1": "все данные сервера",
+  "pluginInstallWarningLine2": "Плагины могут выполнять",
+  "pluginInstallWarningHighlight2": "произвольный код",
+  "pluginInstallWarningLine3": "Вредоносные плагины могут скомпрометировать",
+  "pluginInstallWarningHighlight3": "учетные записи пользователей, украсть данные или повредить ваш сервер",
+  "pluginInstallUseDocker": "Мы настоятельно рекомендуем запускать Sharkord в Docker-контейнере для изоляции и снижения рисков.",
+  "pluginInstallDocsNote": "Подробнее читайте в документации:",
+  "pluginInstallConfirmBtn": "Установить плагин",
+  "pluginInstallConfirmCountdown": "Подождите ({{seconds}}s)"
 }

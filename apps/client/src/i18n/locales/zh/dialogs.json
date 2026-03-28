@@ -100,5 +100,17 @@
   "joinBtn": "加入",
   "inThread": "在话题中",
   "jumpToThreadMessage": "跳转到话题原始消息",
-  "jumpToMessage": "跳转到消息"
+  "jumpToMessage": "跳转到消息",
+  "pluginInstallConfirmTitle": "安装 \"{{name}}\" 插件？",
+  "pluginInstallConfirmLead": "插件是扩展 Sharkord 功能的强大方式，但也存在重大安全风险。",
+  "pluginInstallWarningLine1": "插件可以读取、修改或删除",
+  "pluginInstallWarningHighlight1": "所有服务器数据",
+  "pluginInstallWarningLine2": "插件可以执行",
+  "pluginInstallWarningHighlight2": "任意代码",
+  "pluginInstallWarningLine3": "恶意插件可能会危害",
+  "pluginInstallWarningHighlight3": "用户账户、窃取数据或损坏您的服务器",
+  "pluginInstallUseDocker": "我们强烈建议在 Docker 容器中运行 Sharkord 以实现隔离并降低风险。",
+  "pluginInstallDocsNote": "欲了解更多详情，请阅读文档：",
+  "pluginInstallConfirmBtn": "安装插件",
+  "pluginInstallConfirmCountdown": "等待 ({{seconds}}s)"
 }
