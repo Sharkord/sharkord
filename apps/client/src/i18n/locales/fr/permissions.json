@@ -31,7 +31,7 @@
     "SEND_MESSAGES": "Permet d'envoyer des messages dans les canaux.",
     "REACT_TO_MESSAGES": "Permet de réagir aux messages.",
     "PIN_MESSAGES": "Permet d'épingler des messages.",
-    "UPLOAD_FILES": "Permet d'téléverser des fichiers dans les canaux.",
+    "UPLOAD_FILES": "Permet de téléverser des fichiers dans les canaux.",
     "JOIN_VOICE_CHANNELS": "Permet de rejoindre des canaux vocaux.",
     "SHARE_SCREEN": "Permet de partager l'écran.",
     "ENABLE_WEBCAM": "Permet d'activer la webcam.",
