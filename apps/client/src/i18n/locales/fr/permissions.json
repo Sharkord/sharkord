@@ -1,0 +1,69 @@
+{
+  "noPermissions": "Aucune autorisation",
+  "headers": {
+    "server": "Autorisations",
+    "channel": "Autorisations du canal"
+  },
+  "server": {
+    "SEND_MESSAGES": "Envoyer des messages",
+    "REACT_TO_MESSAGES": "Réagir aux messages",
+    "PIN_MESSAGES": "Epingler des messages",
+    "UPLOAD_FILES": "Téléverser des fichiers",
+    "JOIN_VOICE_CHANNELS": "Rejoindre les canaux vocaux",
+    "SHARE_SCREEN": "Partager l'écran",
+    "ENABLE_WEBCAM": "Activer la webcam",
+    "MANAGE_CHANNELS": "Gérer les canaux",
+    "MANAGE_CHANNEL_PERMISSIONS": "Gérer les autorisations du canal",
+    "MANAGE_CATEGORIES": "Gérer les catégories",
+    "MANAGE_ROLES": "Gérer les rôles",
+    "MANAGE_EMOJIS": "Gérer les émojis",
+    "MANAGE_SETTINGS": "Gérer les paramètres du serveur",
+    "MANAGE_USERS": "Gérer les utilisateurs",
+    "MANAGE_MESSAGES": "Gérer les messages",
+    "MANAGE_STORAGE": "Gérer le stockage",
+    "MANAGE_INVITES": "Gérer les invitations",
+    "MANAGE_UPDATES": "Gérer les mises à jour",
+    "MANAGE_PLUGINS": "Gérer les plugins",
+    "EXECUTE_PLUGIN_COMMANDS": "Exécuter les commandes plugin",
+    "VIEW_USER_SENSITIVE_DATA": "Afficher les données sensibles des utilisateurs"
+  },
+  "serverDescriptions": {
+    "SEND_MESSAGES": "Permet d'envoyer des messages dans les canaux.",
+    "REACT_TO_MESSAGES": "Permet de réagir aux messages.",
+    "PIN_MESSAGES": "Permet d'épingler des messages.",
+    "UPLOAD_FILES": "Permet de téléverser des fichiers dans les canaux.",
+    "JOIN_VOICE_CHANNELS": "Permet de rejoindre des canaux vocaux.",
+    "SHARE_SCREEN": "Permet de partager l'écran.",
+    "ENABLE_WEBCAM": "Permet d'activer la webcam.",
+    "MANAGE_CHANNELS": "Permet de créer, de mettre à jour et de supprimer des canaux.",
+    "MANAGE_CHANNEL_PERMISSIONS": "Permet de gérer les autorisations spécifiques à chaque canal pour les rôles et les utilisateurs.",
+    "MANAGE_CATEGORIES": "Permet de créer, de mettre à jour et de supprimer des catégories.",
+    "MANAGE_ROLES": "Permet de créer, de mettre à jour et de supprimer des rôles.",
+    "MANAGE_EMOJIS": "Permet de créer, de mettre à jour et de supprimer des émojis.",
+    "MANAGE_SETTINGS": "Permet de gérer les paramètres du serveur.",
+    "MANAGE_USERS": "Permet de gérer les utilisateurs.",
+    "MANAGE_MESSAGES": "Permet de gérer les messages de tous les utilisateurs en les modifiant ou en les supprimant.",
+    "MANAGE_STORAGE": "Permet de gérer le stockage, notamment d'activer ou de désactiver les téléversements.",
+    "MANAGE_INVITES": "Permet de créer, modifier et supprimer des invitations au serveur.",
+    "MANAGE_UPDATES": "Permet d'effectuer des mises à jour.",
+    "MANAGE_PLUGINS": "Permet de gérer les plugins.",
+    "EXECUTE_PLUGIN_COMMANDS": "Permet d'exécuter des commandes plugin.",
+    "VIEW_USER_SENSITIVE_DATA": "Permet de consulter les données sensibles des utilisateurs, telles que leurs identités, leurs adresses IP et leurs localisations."
+  },
+  "channel": {
+    "VIEW_CHANNEL": "Voir le canal",
+    "SEND_MESSAGES": "Envoyer des messages",
+    "JOIN": "Rejoindre le canal",
+    "SPEAK": "Parler",
+    "SHARE_SCREEN": "Partager l'écran",
+    "WEBCAM": "Activer la webcam"
+  },
+  "channelDescriptions": {
+    "VIEW_CHANNEL": "Permet à l'utilisateur de voir le canal.",
+    "SEND_MESSAGES": "Permet à l'utilisateur d'envoyer des messages.",
+    "JOIN": "Permet à l'utilisateur de rejoindre le canal.",
+    "SPEAK": "Permet à l'utilisateur de parler dans les canaux vocaux.",
+    "SHARE_SCREEN": "Permet à l'utilisateur de partager son écran.",
+    "WEBCAM": "Permet à l'utilisateur d'activer sa webcam."
+  }
+}
