@@ -16,6 +16,10 @@ import {
 import { createNsChain } from '@/helpers/audio-worklet/ns-worklet';
 
 import { logVoice } from '@/helpers/browser-logger';
+import {
+  getRestrictOwnAudioSupport,
+  getSuppressLocalAudioPlaybackSupport
+} from '@/helpers/get-display-media-support';
 import { getResWidthHeight } from '@/helpers/get-res-with-height';
 import { useScreenShareSupport } from '@/hooks/use-screen-share-support';
 import { getTRPCClient } from '@/lib/trpc';
@@ -599,6 +603,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   const startScreenShareStream = useCallback(async () => {
     try {
       logVoice('Starting screen share stream');
+      const canRestrictOwnAudio = getRestrictOwnAudioSupport();
+      const canSuppressLocalAudioPlayback =
+        getSuppressLocalAudioPlaybackSupport();
 
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: {
@@ -610,7 +617,14 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           noiseSuppression: false,
           autoGainControl: false,
           channelCount: 2,
-          sampleRate: 48000
+          sampleRate: 48000,
+          // @ts-expect-error - experimental, not in types yet
+          suppressLocalAudioPlayback: canSuppressLocalAudioPlayback
+            ? (devices.suppressLocalAudioPlayback ?? false)
+            : undefined,
+          restrictOwnAudio: canRestrictOwnAudio
+            ? (devices.restrictOwnAudio ?? false)
+            : undefined
         }
       });
 
@@ -724,7 +738,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     devices.screenResolution,
     devices.screenFramerate,
     devices.screenCodec,
-    devices.screenBitrate
+    devices.screenBitrate,
+    devices.restrictOwnAudio,
+    devices.suppressLocalAudioPlayback
   ]);
 
   const cleanup = useCallback(() => {
