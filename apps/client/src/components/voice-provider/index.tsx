@@ -316,7 +316,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       const hasSpecificMic =
         !!devices.microphoneId && devices.microphoneId !== 'default';
 
-      const rawStream = await navigator.mediaDevices.getUserMedia({
+      const micStreamConstraints: MediaStreamConstraints = {
         audio: {
           deviceId: hasSpecificMic
             ? { exact: devices.microphoneId }
@@ -328,7 +328,15 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           channelCount: 1
         },
         video: false
-      });
+      };
+
+      logVoice(
+        'Requesting microphone stream with constraints',
+        micStreamConstraints
+      );
+
+      const rawStream =
+        await navigator.mediaDevices.getUserMedia(micStreamConstraints);
 
       logVoice('Microphone stream obtained', { stream: rawStream });
 
@@ -497,14 +505,19 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       const hasSpecificWebcam =
         !!devices?.webcamId && devices.webcamId !== 'default';
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
+      const webcamConstraints: MediaStreamConstraints = {
         video: {
           deviceId: hasSpecificWebcam ? { exact: devices.webcamId } : undefined,
           frameRate: devices.webcamFramerate,
           ...getResWidthHeight(devices?.webcamResolution)
-        }
-      });
+        },
+        audio: false
+      };
+
+      logVoice('Requesting webcam stream with constraints', webcamConstraints);
+
+      const stream =
+        await navigator.mediaDevices.getUserMedia(webcamConstraints);
 
       logVoice('Webcam stream obtained', { stream });
 
@@ -610,7 +623,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       const canSuppressLocalAudioPlayback =
         getSuppressLocalAudioPlaybackSupport();
 
-      const stream = await navigator.mediaDevices.getDisplayMedia({
+      const displayMediaConstraints: MediaStreamConstraints = {
         video: {
           ...getResWidthHeight(devices?.screenResolution),
           frameRate: devices?.screenFramerate
@@ -629,7 +642,16 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
             ? (devices.restrictOwnAudio ?? false)
             : undefined
         }
-      });
+      };
+
+      logVoice(
+        'Requesting display media with constraints',
+        displayMediaConstraints
+      );
+
+      const stream = await navigator.mediaDevices.getDisplayMedia(
+        displayMediaConstraints
+      );
 
       logVoice('Screen share stream obtained', { stream });
       setLocalScreenShare(stream);
