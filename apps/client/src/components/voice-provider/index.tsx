@@ -494,10 +494,13 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     try {
       logVoice('Starting webcam stream');
 
+      const hasSpecificWebcam =
+        !!devices?.webcamId && devices.webcamId !== 'default';
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
-          deviceId: { exact: devices?.webcamId },
+          deviceId: hasSpecificWebcam ? { exact: devices.webcamId } : undefined,
           frameRate: devices.webcamFramerate,
           ...getResWidthHeight(devices?.webcamResolution)
         }
