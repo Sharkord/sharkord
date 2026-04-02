@@ -1,4 +1,5 @@
 import { MICROPHONE_GATE_DEFAULT_THRESHOLD_DB } from '@/helpers/audio-gate';
+import { getRestrictOwnAudioSupport } from '@/helpers/get-display-media-support';
 import {
   getLocalStorageItemAsJSON,
   LocalStorageKey,
@@ -20,9 +21,8 @@ import {
   useRef,
   useState
 } from 'react';
-import { useAvailableDevices } from './hooks/use-available-devices';
 
-const DEFAULT_DEVICE_SETTINGS: TDeviceSettings = {
+const getDefaultDeviceSettings = (): TDeviceSettings => ({
   microphoneId: undefined,
   playbackId: undefined,
   webcamId: undefined,
@@ -34,23 +34,81 @@ const DEFAULT_DEVICE_SETTINGS: TDeviceSettings = {
   noiseGateEnabled: false,
   noiseGateThresholdDb: MICROPHONE_GATE_DEFAULT_THRESHOLD_DB,
   shareSystemAudio: true,
+  restrictOwnAudio: getRestrictOwnAudioSupport(),
+  suppressLocalAudioPlayback: false,
   mirrorOwnVideo: false,
   screenResolution: Resolution['720p'],
   screenFramerate: 30,
   screenCodec: VideoCodec.AUTO,
   screenBitrate: DEFAULT_BITRATE
+});
+
+const resolveDeviceId = (
+  savedId: string | undefined,
+  availableDevices: (MediaDeviceInfo | undefined)[]
+): string => {
+  if (savedId && availableDevices.some((d) => d?.deviceId === savedId)) {
+    return savedId;
+  }
+
+  const defaultDevice = availableDevices.find((d) => d?.deviceId === 'default');
+
+  if (defaultDevice) return defaultDevice.deviceId;
+
+  return availableDevices[0]?.deviceId ?? 'default';
+};
+
+const normalizeDevices = (
+  devices: MediaDeviceInfo[],
+  kind: MediaDeviceKind
+) => {
+  const seen = new Set<string>();
+  const normalized: MediaDeviceInfo[] = [];
+
+  for (const device of devices) {
+    if (!device.deviceId && !device.label) {
+      continue;
+    }
+
+    const dedupeKey =
+      device.deviceId || `${kind}-fallback-${device.groupId || 'default'}`;
+
+    if (seen.has(dedupeKey)) {
+      continue;
+    }
+
+    seen.add(dedupeKey);
+    normalized.push(device);
+  }
+
+  normalized.sort((a, b) => {
+    if (a.deviceId === 'default') return -1;
+    if (b.deviceId === 'default') return 1;
+
+    return a.label.localeCompare(b.label);
+  });
+
+  return normalized;
 };
 
 export type TDevicesProvider = {
   loading: boolean;
   devices: TDeviceSettings;
+  inputDevices: (MediaDeviceInfo | undefined)[];
+  playbackDevices: (MediaDeviceInfo | undefined)[];
+  videoDevices: (MediaDeviceInfo | undefined)[];
   saveDevices: (newDevices: TDeviceSettings) => void;
+  loadDevices: () => Promise<void>;
 };
 
 const DevicesProviderContext = createContext<TDevicesProvider>({
-  loading: false,
-  devices: DEFAULT_DEVICE_SETTINGS,
-  saveDevices: () => {}
+  loading: true,
+  devices: getDefaultDeviceSettings(),
+  inputDevices: [],
+  playbackDevices: [],
+  videoDevices: [],
+  saveDevices: () => {},
+  loadDevices: () => Promise.resolve()
 });
 
 type TDevicesProviderProps = {
@@ -58,17 +116,77 @@ type TDevicesProviderProps = {
 };
 
 const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [devices, setDevices] = useState<TDeviceSettings>(
-    DEFAULT_DEVICE_SETTINGS
+  const [loading, setLoading] = useState(true);
+  const [devices, setDevices] = useState<TDeviceSettings>(() =>
+    getDefaultDeviceSettings()
   );
+  const [inputDevices, setInputDevices] = useState<
+    (MediaDeviceInfo | undefined)[]
+  >([]);
+  const [playbackDevices, setPlaybackDevices] = useState<
+    (MediaDeviceInfo | undefined)[]
+  >([]);
+  const [videoDevices, setVideoDevices] = useState<
+    (MediaDeviceInfo | undefined)[]
+  >([]);
+  const [devicesEnumerated, setDevicesEnumerated] = useState(false);
   const initializedRef = useRef(false);
-  const {
-    loading: devicesLoading,
-    inputDevices,
-    playbackDevices,
-    videoDevices
-  } = useAvailableDevices();
+  const devicesRef = useRef(devices);
+  devicesRef.current = devices;
+
+  const loadDevices = useCallback(async () => {
+    if (!navigator.mediaDevices?.enumerateDevices) {
+      setDevicesEnumerated(true);
+
+      return;
+    }
+
+    try {
+      const allDevices = await navigator.mediaDevices.enumerateDevices();
+
+      setInputDevices(
+        normalizeDevices(
+          allDevices.filter((d) => d.kind === 'audioinput'),
+          'audioinput'
+        )
+      );
+
+      setPlaybackDevices(
+        normalizeDevices(
+          allDevices.filter((d) => d.kind === 'audiooutput'),
+          'audiooutput'
+        )
+      );
+
+      setVideoDevices(
+        normalizeDevices(
+          allDevices.filter((d) => d.kind === 'videoinput'),
+          'videoinput'
+        )
+      );
+    } finally {
+      setDevicesEnumerated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDevices();
+
+    if (!navigator.mediaDevices?.addEventListener) return;
+
+    const onDeviceChange = () => {
+      loadDevices();
+    };
+
+    navigator.mediaDevices.addEventListener('devicechange', onDeviceChange);
+
+    return () => {
+      navigator.mediaDevices.removeEventListener(
+        'devicechange',
+        onDeviceChange
+      );
+    };
+  }, [loadDevices]);
 
   const saveDevices = useCallback((newDevices: TDeviceSettings) => {
     setDevices(newDevices);
@@ -79,68 +197,97 @@ const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
   }, []);
 
   useEffect(() => {
-    if (devicesLoading || initializedRef.current) return;
+    if (!devicesEnumerated) return;
 
-    initializedRef.current = true;
+    if (!initializedRef.current) {
+      initializedRef.current = true;
 
-    const savedSettings = getLocalStorageItemAsJSON<TDeviceSettings>(
-      LocalStorageKey.DEVICES_SETTINGS
-    );
+      const savedSettings = getLocalStorageItemAsJSON<TDeviceSettings>(
+        LocalStorageKey.DEVICES_SETTINGS
+      );
+      const defaultDeviceSettings = getDefaultDeviceSettings();
 
-    const autoMicrophoneId =
-      inputDevices.find((d) => d?.deviceId === 'default')?.deviceId ??
-      inputDevices[0]?.deviceId;
+      let base: TDeviceSettings;
 
-    const autoPlaybackId =
-      playbackDevices.find((d) => d?.deviceId === 'default')?.deviceId ??
-      playbackDevices[0]?.deviceId;
+      if (savedSettings) {
+        const noiseSuppressionValues = Object.values(
+          NoiseSuppression
+        ) as string[];
 
-    const autoWebcamId =
-      videoDevices.find((d) => d?.deviceId === 'default')?.deviceId ??
-      videoDevices[0]?.deviceId;
+        const rawNs = savedSettings.noiseSuppression as unknown;
+        const noiseSuppression: NoiseSuppression =
+          noiseSuppressionValues.includes(rawNs as string)
+            ? (rawNs as NoiseSuppression)
+            : rawNs === true
+              ? NoiseSuppression.STANDARD
+              : NoiseSuppression.NONE;
 
-    if (savedSettings) {
-      // migrate stale boolean noiseSuppression values from before the enum was
-      // introduced as true => STANDARD, false/anything else => NONE
-      const noiseSuppressionValues = Object.values(
-        NoiseSuppression
-      ) as string[];
+        const restrictOwnAudio = defaultDeviceSettings.restrictOwnAudio
+          ? (savedSettings.restrictOwnAudio ?? true)
+          : false;
 
-      const rawNs = savedSettings.noiseSuppression as unknown;
-      const noiseSuppression: NoiseSuppression =
-        noiseSuppressionValues.includes(rawNs as string)
-          ? (rawNs as NoiseSuppression)
-          : rawNs === true
-            ? NoiseSuppression.STANDARD
-            : NoiseSuppression.NONE;
+        base = {
+          ...defaultDeviceSettings,
+          ...savedSettings,
+          noiseSuppression,
+          restrictOwnAudio
+        };
+      } else {
+        base = defaultDeviceSettings;
+      }
 
-      setDevices({
-        ...DEFAULT_DEVICE_SETTINGS,
-        ...savedSettings,
-        noiseSuppression,
-        microphoneId: savedSettings.microphoneId ?? autoMicrophoneId,
-        playbackId: savedSettings.playbackId ?? autoPlaybackId,
-        webcamId: savedSettings.webcamId ?? autoWebcamId
-      });
-    } else {
-      setDevices({
-        ...DEFAULT_DEVICE_SETTINGS,
-        microphoneId: autoMicrophoneId,
-        playbackId: autoPlaybackId,
-        webcamId: autoWebcamId
-      });
+      const resolved: TDeviceSettings = {
+        ...base,
+        microphoneId: resolveDeviceId(base.microphoneId, inputDevices),
+        playbackId: resolveDeviceId(base.playbackId, playbackDevices),
+        webcamId: resolveDeviceId(base.webcamId, videoDevices)
+      };
+
+      setDevices(resolved);
+      setLocalStorageItemAsJSON(LocalStorageKey.DEVICES_SETTINGS, resolved);
+      setLoading(false);
+
+      return;
     }
 
-    setLoading(false);
-  }, [devicesLoading, inputDevices, playbackDevices, videoDevices]);
+    const prev = devicesRef.current;
+    const microphoneId = resolveDeviceId(prev.microphoneId, inputDevices);
+    const playbackId = resolveDeviceId(prev.playbackId, playbackDevices);
+    const webcamId = resolveDeviceId(prev.webcamId, videoDevices);
+
+    if (
+      microphoneId === prev.microphoneId &&
+      playbackId === prev.playbackId &&
+      webcamId === prev.webcamId
+    ) {
+      return;
+    }
+
+    const updated = { ...prev, microphoneId, playbackId, webcamId };
+
+    setDevices(updated);
+    setLocalStorageItemAsJSON(LocalStorageKey.DEVICES_SETTINGS, updated);
+  }, [devicesEnumerated, inputDevices, playbackDevices, videoDevices]);
 
   const contextValue = useMemo<TDevicesProvider>(
     () => ({
       loading,
       devices,
-      saveDevices
+      inputDevices,
+      playbackDevices,
+      videoDevices,
+      saveDevices,
+      loadDevices
     }),
-    [loading, devices, saveDevices]
+    [
+      loading,
+      devices,
+      inputDevices,
+      playbackDevices,
+      videoDevices,
+      saveDevices,
+      loadDevices
+    ]
   );
 
   return (

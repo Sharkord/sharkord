@@ -60,6 +60,8 @@ export type TDeviceSettings = {
   noiseGateEnabled: boolean;
   noiseGateThresholdDb: number;
   shareSystemAudio: boolean;
+  restrictOwnAudio: boolean;
+  suppressLocalAudioPlayback: boolean;
   mirrorOwnVideo: boolean;
   screenResolution: Resolution;
   screenFramerate: number;
