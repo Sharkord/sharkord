@@ -324,7 +324,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           autoGainControl: devices.autoGainControl,
           echoCancellation: devices.echoCancellation,
           noiseSuppression: useStandardNs,
-          sampleRate: useDtln ? 16000 : 48000,
+          sampleRate: useDtln ? 16000 : undefined,
           channelCount: 1
         },
         video: false
@@ -439,7 +439,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           codecOptions: {
             opusStereo: false,
             opusFec: true,
-            opusDtx: true,
+            opusDtx: false,
             opusMaxPlaybackRate: 48000,
             opusMaxAverageBitrate: 128000
           },
