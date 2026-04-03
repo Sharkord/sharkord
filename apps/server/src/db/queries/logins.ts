@@ -11,4 +11,15 @@ const getLastLogins = async (userId: number, limit = 10): Promise<TLogin[]> =>
     .orderBy(desc(logins.createdAt))
     .limit(limit);
 
-export { getLastLogins };
+const hasUserJoinedBefore = async (userId: number): Promise<boolean> => {
+  const login = await db
+    .select({ id: logins.id })
+    .from(logins)
+    .where(eq(logins.userId, userId))
+    .limit(1)
+    .get();
+
+  return !!login;
+};
+
+export { getLastLogins, hasUserJoinedBefore };

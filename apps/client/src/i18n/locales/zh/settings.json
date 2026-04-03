@@ -120,6 +120,8 @@
   "descriptionPlaceholder": "输入服务器描述",
   "serverPasswordLabel": "密码",
   "serverPasswordPlaceholder": "留空表示无密码",
+  "onlyAskForPasswordOnFirstJoinLabel": "仅在首次加入时询问密码",
+  "onlyAskForPasswordOnFirstJoinDesc": "启用后，用户只需在第一次加入服务器时输入密码。",
   "allowNewUsersLabel": "允许新用户",
   "allowNewUsersDesc": "允许任何人注册并加入您的服务器。若禁用，则只有您邀请的用户才能加入。",
   "pluginsLabel": "插件",

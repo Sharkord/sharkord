@@ -78,6 +78,13 @@
       "when": 1774512000000,
       "tag": "0010_rename_execute_plugin_commands",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1775219959496,
+      "tag": "0011_soft_quentin_quire",
+      "breakpoints": true
     }
   ]
 }

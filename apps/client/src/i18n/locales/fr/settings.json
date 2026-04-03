@@ -96,6 +96,8 @@
   "descriptionPlaceholder": "Entrez la description du serveur",
   "serverPasswordLabel": "Mot de passe",
   "serverPasswordPlaceholder": "Laisser vide pour aucun mot de passe",
+  "onlyAskForPasswordOnFirstJoinLabel": "Demander Le Mot De Passe Uniquement À La Première Connexion",
+  "onlyAskForPasswordOnFirstJoinDesc": "Lorsqu'elle est activée, les utilisateurs n'ont besoin de saisir le mot de passe du serveur qu'à leur première connexion.",
   "allowNewUsersLabel": "Autoriser les nouveaux utilisateurs",
   "allowNewUsersDesc": "Permet à quiconque de s'inscrire et de rejoindre votre serveur. Si désactivé, seuls les utilisateurs que vous invitez peuvent rejoindre.",
   "pluginsLabel": "Extensions",

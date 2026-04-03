@@ -39,6 +39,12 @@ const settings = sqliteTable(
     name: text('name').notNull(),
     description: text('description'),
     password: text('password'),
+    onlyAskForPasswordOnFirstJoin: integer(
+      'only_ask_for_password_on_first_join',
+      {
+        mode: 'boolean'
+      }
+    ).notNull(),
     serverId: text('server_id').notNull(),
     secretToken: text('secret_token'),
     logoId: integer('logo_id').references(() => files.id, {

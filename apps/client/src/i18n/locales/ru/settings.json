@@ -97,6 +97,8 @@
   "descriptionPlaceholder": "Введите описание сервера",
   "serverPasswordLabel": "Пароль",
   "serverPasswordPlaceholder": "Оставьте пустым, если пароль отсутствует",
+  "onlyAskForPasswordOnFirstJoinLabel": "Запрашивать пароль только при первом входе",
+  "onlyAskForPasswordOnFirstJoinDesc": "Если включено, пользователю нужно ввести пароль сервера только при первом входе.",
   "allowNewUsersLabel": "Новые пользователи",
   "allowNewUsersDesc": "Разрешить любому зарегистрироваться и присоединиться к вашему серверу. Если этот параметр отключен, присоединиться смогут только приглашенные вами пользователи.",
   "pluginsLabel": "Плагины",

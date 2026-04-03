@@ -60,6 +60,18 @@ const General = memo(() => {
           />
         </Group>
 
+        <Group
+          label={t('onlyAskForPasswordOnFirstJoinLabel')}
+          description={t('onlyAskForPasswordOnFirstJoinDesc')}
+        >
+          <Switch
+            checked={settings.onlyAskForPasswordOnFirstJoin}
+            onCheckedChange={(checked) =>
+              onChange('onlyAskForPasswordOnFirstJoin', checked)
+            }
+          />
+        </Group>
+
         <LogoManager logo={logo} refetch={refetch} />
 
         <Group

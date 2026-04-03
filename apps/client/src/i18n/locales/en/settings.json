@@ -120,6 +120,8 @@
   "descriptionPlaceholder": "Enter server description",
   "serverPasswordLabel": "Password",
   "serverPasswordPlaceholder": "Leave empty for no password",
+  "onlyAskForPasswordOnFirstJoinLabel": "Only Ask For Password On First Join",
+  "onlyAskForPasswordOnFirstJoinDesc": "When enabled, users only need to enter the server password the first time they join.",
   "allowNewUsersLabel": "Allow New Users",
   "allowNewUsersDesc": "Allow anyone to register and join your server. If disabled, only users you invite can join.",
   "pluginsLabel": "Plugins",
