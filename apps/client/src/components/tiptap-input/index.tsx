@@ -11,10 +11,12 @@ import { ChevronDown, ChevronUp, Smile } from 'lucide-react';
 import {
   memo,
   useEffect,
+  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
-  useState
+  useState,
+  type Ref
 } from 'react';
 import type { TEmojiItem } from './helpers';
 import {
@@ -39,6 +41,11 @@ type TTiptapInputProps = {
   onCancel?: () => void;
   onTyping?: () => void;
   commands?: TCommandInfo[];
+  ref?: Ref<TTiptapInputHandle>;
+};
+
+type TTiptapInputHandle = {
+  focus: () => void;
 };
 
 const TiptapInput = memo(
@@ -50,7 +57,8 @@ const TiptapInput = memo(
     onTyping,
     disabled,
     readOnly,
-    commands
+    commands,
+    ref
   }: TTiptapInputProps) => {
     const readOnlyRef = useRef(readOnly);
 
@@ -178,6 +186,14 @@ const TiptapInput = memo(
         handleDrop: () => readOnlyRef.current
       }
     });
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        focus: () => editor?.chain().focus().run()
+      }),
+      [editor]
+    );
 
     const handleEmojiSelect = (emoji: TEmojiItem) => {
       if (disabled || readOnly) return;
@@ -309,4 +325,4 @@ const TiptapInput = memo(
   }
 );
 
-export { TiptapInput };
+export { TiptapInput, type TTiptapInputHandle };

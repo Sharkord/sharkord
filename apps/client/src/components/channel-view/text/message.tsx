@@ -16,6 +16,8 @@ type TMessageProps = {
   disableActions?: boolean;
   disableFiles?: boolean;
   disableReactions?: boolean;
+  onReplyMessageSelect?: (message: TJoinedMessage) => void;
+  isInlineReplyTarget?: boolean;
 };
 
 const Message = memo(
@@ -23,7 +25,9 @@ const Message = memo(
     message,
     disableActions,
     disableFiles,
-    disableReactions
+    disableReactions,
+    onReplyMessageSelect,
+    isInlineReplyTarget
   }: TMessageProps) => {
     const { t } = useTranslation('common');
     const [isEditing, setIsEditing] = useState(false);
@@ -56,7 +60,8 @@ const Message = memo(
         className={cn(
           'min-w-0 flex-1 ml-1 relative hover:bg-secondary/50 rounded-md px-1 py-0.5 group',
           isActiveThread && 'bg-primary/10',
-          isMentioned && 'border-primary bg-primary/5'
+          isMentioned && 'border-primary bg-primary/5',
+          isInlineReplyTarget && 'ring-1 ring-primary/50 bg-primary/10'
         )}
         data-message-id={message.id}
       >
@@ -87,6 +92,7 @@ const Message = memo(
                 isPinned={message.pinned ?? false}
                 disablePin={!!message.parentMessageId}
                 isThreadReply={isThreadReply}
+                onReply={() => onReplyMessageSelect?.(message)}
               />
             )}
           </>

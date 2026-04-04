@@ -3,7 +3,9 @@ import { useUserById } from '@/features/server/users/hooks';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import type { TMessage } from '@sharkord/shared';
 
-const useMessageAuthorName = (message: TMessage) => {
+const useMessageAuthorName = (
+  message: Pick<TMessage, 'pluginId' | 'userId'>
+) => {
   const pluginMetadata = usePluginMetadata(message.pluginId);
   const user = useUserById(message.userId);
 

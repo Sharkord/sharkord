@@ -1226,6 +1226,168 @@ describe('messages router', () => {
     expect(thread.messages[0]!.parentMessageId).toBe(parentId);
   });
 
+  test('should send an inline reply and include reply preview', async () => {
+    const { caller } = await initTest();
+
+    const targetMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Original message',
+      files: []
+    });
+
+    const inlineReplyId = await caller.messages.send({
+      channelId: 1,
+      content: 'Inline reply',
+      files: [],
+      replyToMessageId: targetMessageId
+    });
+
+    const channelMessages = await caller.messages.get({
+      channelId: 1,
+      cursor: null,
+      limit: 50
+    });
+
+    const inlineReply = channelMessages.messages.find(
+      (m) => m.id === inlineReplyId
+    );
+
+    expect(inlineReply).toBeDefined();
+    expect(inlineReply!.replyToMessageId).toBe(targetMessageId);
+    expect(inlineReply!.replyTo).toBeDefined();
+    expect(inlineReply!.replyTo!.id).toBe(targetMessageId);
+    expect(inlineReply!.replyTo!.content).toBe('Original message');
+  });
+
+  test('should throw when sending an inline reply to a non-existing target', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'Inline reply',
+        files: [],
+        replyToMessageId: 999999
+      })
+    ).rejects.toThrow('Reply target message not found');
+  });
+
+  test('should throw when sending an inline reply to a message in a different channel', async () => {
+    const { caller } = await initTest();
+
+    const targetMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Message in channel 1',
+      files: []
+    });
+
+    await expect(
+      caller.messages.send({
+        channelId: 2,
+        content: 'Inline reply targeting wrong channel',
+        files: [],
+        replyToMessageId: targetMessageId
+      })
+    ).rejects.toThrow('Reply target message must be in the same channel');
+  });
+
+  test('should clear inline reply reference when target message is deleted', async () => {
+    const { caller } = await initTest();
+
+    const targetMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Soon deleted',
+      files: []
+    });
+
+    const inlineReplyId = await caller.messages.send({
+      channelId: 1,
+      content: 'Reply to deleted message',
+      files: [],
+      replyToMessageId: targetMessageId
+    });
+
+    await caller.messages.delete({ messageId: targetMessageId });
+
+    const inlineReply = await caller.messages.getOne({
+      messageId: inlineReplyId
+    });
+
+    expect(inlineReply.replyToMessageId).toBeNull();
+    expect(inlineReply.replyTo).toBeNull();
+  });
+
+  test('should clear replyToMessageId for multiple messages referencing the deleted message', async () => {
+    const { caller } = await initTest();
+
+    const targetMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Widely replied-to message',
+      files: []
+    });
+
+    const [reply1Id, reply2Id, reply3Id] = await Promise.all([
+      caller.messages.send({
+        channelId: 1,
+        content: 'First reply',
+        files: [],
+        replyToMessageId: targetMessageId
+      }),
+      caller.messages.send({
+        channelId: 1,
+        content: 'Second reply',
+        files: [],
+        replyToMessageId: targetMessageId
+      }),
+      caller.messages.send({
+        channelId: 1,
+        content: 'Third reply',
+        files: [],
+        replyToMessageId: targetMessageId
+      })
+    ]);
+
+    await caller.messages.delete({ messageId: targetMessageId });
+
+    const [reply1, reply2, reply3] = await Promise.all([
+      caller.messages.getOne({ messageId: reply1Id! }),
+      caller.messages.getOne({ messageId: reply2Id! }),
+      caller.messages.getOne({ messageId: reply3Id! })
+    ]);
+
+    expect(reply1.replyToMessageId).toBeNull();
+    expect(reply2.replyToMessageId).toBeNull();
+    expect(reply3.replyToMessageId).toBeNull();
+    expect(reply1.replyTo).toBeNull();
+    expect(reply2.replyTo).toBeNull();
+    expect(reply3.replyTo).toBeNull();
+  });
+
+  test('should not affect messages with no reply reference when a message is deleted', async () => {
+    const { caller } = await initTest();
+
+    const targetMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Message to delete',
+      files: []
+    });
+
+    const unrelatedMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Unrelated message',
+      files: []
+    });
+
+    await caller.messages.delete({ messageId: targetMessageId });
+
+    const unrelated = await caller.messages.getOne({
+      messageId: unrelatedMessageId
+    });
+
+    expect(unrelated.replyToMessageId).toBeNull();
+    expect(unrelated.content).toBe('Unrelated message');
+  });
+
   test('should not include thread replies in channel messages', async () => {
     const { caller } = await initTest();
 

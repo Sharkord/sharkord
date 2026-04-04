@@ -12,12 +12,15 @@ import { format } from 'date-fns';
 import { memo } from 'react';
 import { useMessageAuthorName } from './hooks/use-message-author-name';
 import { Message } from './message';
+import { MessageReplyPreviewWrapper } from './message-reply-preview-wrapper';
 
 type TMessagesGroupProps = {
   group: TJoinedMessage[];
   disableActions?: boolean;
   disableFiles?: boolean;
   disableReactions?: boolean;
+  onReplyMessageSelect?: (message: TJoinedMessage) => void;
+  replyTargetMessageId?: number;
 };
 
 const MessagesGroup = memo(
@@ -25,7 +28,9 @@ const MessagesGroup = memo(
     group,
     disableActions,
     disableFiles,
-    disableReactions
+    disableReactions,
+    onReplyMessageSelect,
+    replyTargetMessageId
   }: TMessagesGroupProps) => {
     const firstMessage = group[0];
     const pluginMetadata = usePluginMetadata(firstMessage.pluginId);
@@ -36,7 +41,10 @@ const MessagesGroup = memo(
     const isDeletedUser = user?.name === DELETED_USER_IDENTITY_AND_NAME;
     const isPluginMessage = !!firstMessage.pluginId;
 
-    return (
+    const isReplyToMessage =
+      group.length === 1 && !!firstMessage.replyToMessageId;
+
+    const groupContent = (
       <div className="flex min-w-0 max-w-dvw gap-1 pl-2 pt-2 pr-2">
         {isPluginMessage ? (
           <PluginAvatar
@@ -82,11 +90,12 @@ const MessagesGroup = memo(
                 className="rounded-md transition-colors duration-1000"
               >
                 <Message
-                  key={message.id}
                   message={message}
                   disableActions={disableActions}
                   disableFiles={disableFiles}
                   disableReactions={disableReactions}
+                  onReplyMessageSelect={onReplyMessageSelect}
+                  isInlineReplyTarget={message.id === replyTargetMessageId}
                 />
               </div>
             ))}
@@ -94,6 +103,16 @@ const MessagesGroup = memo(
         </div>
       </div>
     );
+
+    if (isReplyToMessage) {
+      return (
+        <MessageReplyPreviewWrapper message={firstMessage}>
+          {groupContent}
+        </MessageReplyPreviewWrapper>
+      );
+    }
+
+    return groupContent;
   }
 );
 

@@ -29,6 +29,14 @@ const useGroupedMessages = (messages: TJoinedMessage[]) =>
 
       const lastMessage = last[last.length - 1];
 
+      const hasInlineReply =
+        !!message.replyToMessageId || !!lastMessage.replyToMessageId;
+
+      // if either the current or the last message is a reply, they should be in different groups to show the reply context clearly
+      if (hasInlineReply) {
+        return [...acc, [message]];
+      }
+
       const sameAuthor = message.pluginId
         ? lastMessage.pluginId === message.pluginId
         : lastMessage.userId === message.userId;

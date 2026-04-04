@@ -15,6 +15,7 @@ import {
   Pencil,
   Pin,
   PinOff,
+  Reply,
   Smile,
   Trash
 } from 'lucide-react';
@@ -28,6 +29,7 @@ type TMessageActionsProps = {
   messageId: number;
   channelId: number;
   onEdit: () => void;
+  onReply?: () => void;
   canManage: boolean;
   editable: boolean;
   isThreadReply?: boolean;
@@ -44,7 +46,8 @@ const MessageActions = memo(
     editable,
     isThreadReply,
     isPinned,
-    disablePin
+    disablePin,
+    onReply
   }: TMessageActionsProps) => {
     const { t } = useTranslation();
     const { recentEmojis } = useRecentEmojis();
@@ -111,6 +114,15 @@ const MessageActions = memo(
 
     return (
       <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-2 transition-all bg-background">
+        {onReply && (
+          <IconButton
+            size="sm"
+            variant="ghost"
+            icon={Reply}
+            onClick={onReply}
+            title={t('replyToMessage')}
+          />
+        )}
         {!isThreadReply && (
           <IconButton
             size="sm"
