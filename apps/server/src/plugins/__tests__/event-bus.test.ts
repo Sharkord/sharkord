@@ -141,7 +141,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test message'
+        content: 'test message',
+        textContent: 'test message'
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -150,7 +151,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test message'
+        content: 'test message',
+        textContent: 'test message'
       });
     });
 
@@ -166,7 +168,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test'
+        content: 'test',
+        textContent: 'test'
       });
 
       expect(handler1).toHaveBeenCalledTimes(1);
@@ -183,7 +186,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test'
+        content: 'test',
+        textContent: 'test'
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -195,7 +199,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test2'
+        content: 'test2',
+        textContent: 'test2'
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -223,7 +228,8 @@ describe('event-bus', () => {
           channelId: 2,
           userId: 3,
           pluginId: null,
-          content: 'test'
+          content: 'test',
+          textContent: 'test'
         })
       ).resolves.toBeUndefined();
     });
@@ -242,7 +248,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test'
+        content: 'test',
+        textContent: 'test'
       });
 
       expect(handler1).toHaveBeenCalledTimes(1);
@@ -261,7 +268,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test'
+        content: 'test',
+        textContent: 'test'
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -277,7 +285,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test'
+        content: 'test',
+        textContent: 'test'
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -289,7 +298,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test2'
+        content: 'test2',
+        textContent: 'test2'
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -332,7 +342,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test'
+        content: 'test',
+        textContent: 'test'
       });
 
       expect(handler1).toHaveBeenCalledTimes(1);
@@ -346,7 +357,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test2'
+        content: 'test2',
+        textContent: 'test2'
       });
 
       expect(handler1).toHaveBeenCalledTimes(1);
@@ -369,7 +381,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test'
+        content: 'test',
+        textContent: 'test'
       });
 
       expect(plugin1Handler1).toHaveBeenCalledTimes(1);
@@ -384,7 +397,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test2'
+        content: 'test2',
+        textContent: 'test2'
       });
 
       expect(plugin1Handler1).toHaveBeenCalledTimes(1);
@@ -407,7 +421,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test'
+        content: 'test',
+        textContent: 'test'
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -419,7 +434,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test2'
+        content: 'test2',
+        textContent: 'test2'
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -443,7 +459,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test'
+        content: 'test',
+        textContent: 'test'
       });
 
       expect(handler1).toHaveBeenCalledTimes(0);
@@ -478,7 +495,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test'
+        content: 'test',
+        textContent: 'test'
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -490,7 +508,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test2'
+        content: 'test2',
+        textContent: 'test2'
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -512,7 +531,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test'
+        content: 'test',
+        textContent: 'test'
       });
 
       expect(handler1).toHaveBeenCalledTimes(0);
@@ -554,7 +574,8 @@ describe('event-bus', () => {
         channelId: 2,
         userId: 3,
         pluginId: null,
-        content: 'test'
+        content: 'test',
+        textContent: 'test'
       });
 
       expect(handler1).toHaveBeenCalledTimes(0);

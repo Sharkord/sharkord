@@ -904,7 +904,8 @@ describe('plugin-manager', () => {
         channelId: 1,
         userId: 1,
         pluginId: null,
-        content: 'test message'
+        content: 'test message',
+        textContent: 'test message'
       });
 
       // the plugin-with-events tracks event counts via its get-counts command
@@ -927,7 +928,8 @@ describe('plugin-manager', () => {
         channelId: 1,
         userId: 1,
         pluginId: null,
-        content: 'test'
+        content: 'test',
+        textContent: 'test'
       });
 
       // get count
@@ -948,7 +950,8 @@ describe('plugin-manager', () => {
         channelId: 1,
         userId: 1,
         pluginId: null,
-        content: 'test2'
+        content: 'test2',
+        textContent: 'test2'
       });
 
       // since the plugin is unloaded, we can't query it, but we can verify

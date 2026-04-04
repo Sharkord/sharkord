@@ -74,6 +74,7 @@ export interface EventPayloads {
     userId: number | null;
     pluginId: string | null;
     content: string;
+    textContent: string;
   };
   'message:updated': {
     messageId: number;
@@ -81,6 +82,7 @@ export interface EventPayloads {
     userId: number | null;
     pluginId: string | null;
     content: string;
+    textContent: string;
   };
   'message:deleted': {
     messageId: number;

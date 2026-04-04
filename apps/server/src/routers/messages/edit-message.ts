@@ -1,4 +1,8 @@
-import { Permission, isEmptyMessage } from '@sharkord/shared';
+import {
+  Permission,
+  getPlainTextFromHtml,
+  isEmptyMessage
+} from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
@@ -88,7 +92,8 @@ const editMessageRoute = rateLimitedProcedure(protectedProcedure, {
       channelId: message.channelId,
       userId: message.userId,
       pluginId: message.pluginId,
-      content: sanitizedContent
+      content: sanitizedContent,
+      textContent: getPlainTextFromHtml(sanitizedContent)
     });
   });
 

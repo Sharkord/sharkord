@@ -1,4 +1,4 @@
-import { isEmptyMessage } from '@sharkord/shared';
+import { getPlainTextFromHtml, isEmptyMessage } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { pluginManager } from '..';
 import { db } from '../../db';
@@ -70,7 +70,8 @@ const editPluginMessage = async (
     channelId: message.channelId,
     userId: null,
     pluginId,
-    content: sanitizedContent
+    content: sanitizedContent,
+    textContent: getPlainTextFromHtml(sanitizedContent)
   });
 };
 

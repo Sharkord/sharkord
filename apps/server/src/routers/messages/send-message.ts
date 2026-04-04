@@ -143,10 +143,11 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
     let editable = true;
     let commandExecutor: ((messageId: number) => void) | undefined = undefined;
 
+    const plainText = getPlainTextFromHtml(input.content);
+
     if (enablePlugins) {
       // when plugins are enabled, need to check if the message is a command
       // this might be improved in the future with a more robust parser
-      const plainText = getPlainTextFromHtml(input.content);
       const { args, commandName } = parseCommandArgs(plainText);
       const foundCommand = pluginManager.getCommandByName(commandName);
 
@@ -281,7 +282,8 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       channelId: input.channelId,
       userId: ctx.userId,
       pluginId: null,
-      content: targetContent
+      content: targetContent,
+      textContent: plainText
     });
 
     return message.id;
