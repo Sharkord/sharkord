@@ -14,10 +14,23 @@ const onLoad = (ctx) => {
         name: 'content',
         type: 'string',
         required: true
+      },
+      {
+        name: 'parentMessageId',
+        type: 'number',
+        required: false
+      },
+      {
+        name: 'replyToMessageId',
+        type: 'number',
+        required: false
       }
     ],
     async execute(invokerCtx, args) {
-      return ctx.messages.send(args.channelId, args.content);
+      return ctx.messages.send(args.channelId, args.content, {
+        parentMessageId: args.parentMessageId,
+        replyToMessageId: args.replyToMessageId
+      });
     }
   });
 

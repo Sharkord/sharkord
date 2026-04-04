@@ -124,6 +124,7 @@ export interface PluginSettings<
 
 export interface PluginContext {
   path: string;
+  pluginId: string;
 
   logger: {
     log(...args: unknown[]): void;
@@ -160,7 +161,14 @@ export interface PluginContext {
   };
 
   messages: {
-    send(channelId: number, content: string): Promise<{ messageId: number }>;
+    send(
+      channelId: number,
+      content: string,
+      options?: {
+        parentMessageId?: number; // used for threads
+        replyToMessageId?: number; // used for inline replies
+      }
+    ): Promise<{ messageId: number }>;
     edit(messageId: number, content: string): Promise<void>;
     delete(messageId: number): Promise<void>;
   };

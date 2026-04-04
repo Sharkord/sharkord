@@ -438,6 +438,7 @@ class PluginManager {
     const scopedLogger = this.pluginLogger.createScopedLogger(pluginId);
 
     return {
+      pluginId,
       path: this.getPluginPath(pluginId),
       logger: scopedLogger,
       ...scopedLogger,
@@ -558,11 +559,20 @@ class PluginManager {
         getListenInfo: () => VoiceRuntime.getListenInfo()
       },
       messages: {
-        send: async (channelId: number, content: string) =>
+        send: async (
+          channelId: number,
+          content: string,
+          options?: {
+            parentMessageId?: number;
+            replyToMessageId?: number;
+          }
+        ) =>
           createPluginMessage({
             pluginId,
             channelId,
-            content
+            content,
+            parentMessageId: options?.parentMessageId,
+            replyToMessageId: options?.replyToMessageId
           }),
         edit: async (messageId: number, content: string) =>
           editPluginMessage({
