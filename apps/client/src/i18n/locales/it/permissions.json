@@ -1,0 +1,69 @@
+{
+  "noPermissions": "Nessun permesso",
+  "headers": {
+    "server": "Permessi",
+    "channel": "Permessi canale"
+  },
+  "server": {
+    "SEND_MESSAGES": "Inviare messaggi",
+    "REACT_TO_MESSAGES": "Reagire ai messaggi",
+    "PIN_MESSAGES": "Fissare messaggi",
+    "UPLOAD_FILES": "Caricare file",
+    "JOIN_VOICE_CHANNELS": "Entrare nei canali vocali",
+    "SHARE_SCREEN": "Condividere schermo",
+    "ENABLE_WEBCAM": "Abilitare webcam",
+    "MANAGE_CHANNELS": "Gestire canali",
+    "MANAGE_CHANNEL_PERMISSIONS": "Gestire permessi canale",
+    "MANAGE_CATEGORIES": "Gestire categorie",
+    "MANAGE_ROLES": "Gestire ruoli",
+    "MANAGE_EMOJIS": "Gestire emoji",
+    "MANAGE_SETTINGS": "Gestire impostazioni server",
+    "MANAGE_USERS": "Gestire utenti",
+    "MANAGE_MESSAGES": "Gestire messaggi",
+    "MANAGE_STORAGE": "Gestire archiviazione",
+    "MANAGE_INVITES": "Gestire inviti",
+    "MANAGE_UPDATES": "Gestire aggiornamenti",
+    "MANAGE_PLUGINS": "Gestire plugin",
+    "USE_PLUGINS": "Usare plugin",
+    "VIEW_USER_SENSITIVE_DATA": "Vedere dati sensibili utente"
+  },
+  "serverDescriptions": {
+    "SEND_MESSAGES": "Concede la possibilita di inviare messaggi nei canali.",
+    "REACT_TO_MESSAGES": "Concede la possibilita di reagire ai messaggi.",
+    "PIN_MESSAGES": "Concede la possibilita di fissare messaggi.",
+    "UPLOAD_FILES": "Concede la possibilita di caricare file nei canali.",
+    "JOIN_VOICE_CHANNELS": "Concede la possibilita di entrare nei canali vocali.",
+    "SHARE_SCREEN": "Concede la possibilita di condividere lo schermo.",
+    "ENABLE_WEBCAM": "Concede la possibilita di abilitare la webcam.",
+    "MANAGE_CHANNELS": "Concede la possibilita di creare, aggiornare ed eliminare canali.",
+    "MANAGE_CHANNEL_PERMISSIONS": "Concede la possibilita di gestire i permessi specifici del canale per ruoli e utenti.",
+    "MANAGE_CATEGORIES": "Concede la possibilita di creare, aggiornare ed eliminare categorie.",
+    "MANAGE_ROLES": "Concede la possibilita di creare, aggiornare ed eliminare ruoli.",
+    "MANAGE_EMOJIS": "Concede la possibilita di creare, aggiornare ed eliminare emoji.",
+    "MANAGE_SETTINGS": "Concede la possibilita di gestire le impostazioni del server.",
+    "MANAGE_USERS": "Concede la possibilita di gestire gli utenti.",
+    "MANAGE_MESSAGES": "Concede la possibilita di gestire i messaggi di tutti gli utenti modificandoli o eliminandoli.",
+    "MANAGE_STORAGE": "Concede la possibilita di gestire l'archiviazione, ad esempio abilitando o disabilitando gli upload.",
+    "MANAGE_INVITES": "Concede la possibilita di creare, modificare ed eliminare inviti al server.",
+    "MANAGE_UPDATES": "Concede la possibilita di eseguire aggiornamenti.",
+    "MANAGE_PLUGINS": "Concede la possibilita di gestire i plugin.",
+    "USE_PLUGINS": "Concede la possibilita di usare i plugin, ad esempio eseguendo comandi plugin o visualizzando elementi UI aggiunti dai plugin.",
+    "VIEW_USER_SENSITIVE_DATA": "Concede la possibilita di visualizzare dati sensibili utente come identita, indirizzo IP e posizione."
+  },
+  "channel": {
+    "VIEW_CHANNEL": "Visualizzare canale",
+    "SEND_MESSAGES": "Inviare messaggi",
+    "JOIN": "Entrare nel canale",
+    "SPEAK": "Parlare",
+    "SHARE_SCREEN": "Condividere schermo",
+    "WEBCAM": "Abilitare webcam"
+  },
+  "channelDescriptions": {
+    "VIEW_CHANNEL": "Consente all'utente di visualizzare il canale.",
+    "SEND_MESSAGES": "Consente all'utente di inviare messaggi.",
+    "JOIN": "Consente all'utente di entrare nel canale.",
+    "SPEAK": "Consente all'utente di parlare nei canali vocali.",
+    "SHARE_SCREEN": "Consente all'utente di condividere il proprio schermo.",
+    "WEBCAM": "Consente all'utente di abilitare la propria webcam."
+  }
+}
