@@ -75,13 +75,27 @@ const MessageReplyPreviewWrapper = memo(
 
     return (
       <div>
-        <div className="flex items-center pl-2 pt-0.5">
+        <div className="group flex items-center pl-2 pt-0.5">
           <div className="relative flex w-10 shrink-0 justify-end self-stretch overflow-visible">
             <span
               aria-hidden
-              className="pointer-events-none absolute right-0 top-0 w-1/2 rounded-tl-[6px] border-l-2 border-t-2 border-border/70"
-              style={{ height: 'calc(100% + 8px)' }}
-            />
+              className="pointer-events-none absolute -bottom-2 -right-3 top-[16%] w-8 text-foreground/20 transition-colors group-hover:text-foreground/30 group-focus-within:text-foreground/55"
+            >
+              <svg
+                className="block h-full w-full overflow-visible"
+                viewBox="0 0 24 24"
+                preserveAspectRatio="none"
+                fill="none"
+              >
+                <path
+                  d="M23 1H9C4.582 1 1 4.582 1 9V23"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
           </div>
           <button
             type="button"
