@@ -132,7 +132,10 @@ export const appSlice = createSlice({
     setBrowserNotificationsForDms: (state, action: PayloadAction<boolean>) => {
       state.browserNotificationsForDms = action.payload;
     },
-    setBrowserNotificationsForReplies: (state, action: PayloadAction<boolean>) => {
+    setBrowserNotificationsForReplies: (
+      state,
+      action: PayloadAction<boolean>
+    ) => {
       state.browserNotificationsForReplies = action.payload;
     },
     setMessageJumpTarget: (
