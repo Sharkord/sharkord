@@ -6,6 +6,8 @@ import { Headphones, Router, Video, ZoomIn, ZoomOut } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
+import { FullscreenButton } from './fullscreen-button';
+import { useFullscreen } from './hooks/use-fullscreen';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PinButton } from './pin-button';
@@ -111,6 +113,13 @@ const ExternalStreamCard = memo(
       resetZoom
     } = useScreenShareZoom();
 
+    const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
+
+    const handleToggleFullscreen = useCallback(() => {
+      resetZoom();
+      toggleFullscreen();
+    }, [resetZoom, toggleFullscreen]);
+
     const handlePinToggle = useCallback(() => {
       if (isPinned) {
         onUnpin?.();
@@ -138,10 +147,10 @@ const ExternalStreamCard = memo(
       <div
         ref={containerRef}
         className={cn(
-          'relative bg-card rounded-lg overflow-hidden group',
+          'relative bg-card group',
           'flex items-center justify-center',
           'w-full h-full',
-          'border border-border',
+          isFullscreen ? 'rounded-none border-none' : 'rounded-lg overflow-hidden border border-border',
           className
         )}
         onWheel={hasVideo ? handleWheel : undefined}
@@ -168,6 +177,15 @@ const ExternalStreamCard = memo(
           onVolumeChange={handleVolumeChange}
           onMuteToggle={handleMuteToggle}
         />
+
+        {hasVideo && (
+          <div className="absolute bottom-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+            <FullscreenButton
+              isFullscreen={isFullscreen}
+              handleToggleFullscreen={handleToggleFullscreen}
+            />
+          </div>
+        )}
 
         {hasVideo ? (
           <video

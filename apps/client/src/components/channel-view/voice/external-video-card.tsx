@@ -4,6 +4,8 @@ import { Video, ZoomIn, ZoomOut } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
+import { FullscreenButton } from './fullscreen-button';
+import { useFullscreen } from './hooks/use-fullscreen';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PinButton } from './pin-button';
@@ -80,6 +82,13 @@ const ExternalVideoCard = memo(
       resetZoom
     } = useScreenShareZoom();
 
+    const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
+
+    const handleToggleFullscreen = useCallback(() => {
+      resetZoom();
+      toggleFullscreen();
+    }, [resetZoom, toggleFullscreen]);
+
     const handlePinToggle = useCallback(() => {
       if (isPinned) {
         onUnpin?.();
@@ -95,10 +104,10 @@ const ExternalVideoCard = memo(
       <div
         ref={containerRef}
         className={cn(
-          'relative bg-card rounded-lg overflow-hidden group',
+          'relative bg-card group',
           'flex items-center justify-center',
           'w-full h-full',
-          'border border-border',
+          isFullscreen ? 'rounded-none border-none' : 'rounded-lg overflow-hidden border border-border',
           className
         )}
         onWheel={handleWheel}
@@ -119,6 +128,13 @@ const ExternalVideoCard = memo(
           handleToggleZoom={handleToggleZoom}
           showPinControls={showPinControls}
         />
+
+        <div className="absolute bottom-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+          <FullscreenButton
+            isFullscreen={isFullscreen}
+            handleToggleFullscreen={handleToggleFullscreen}
+          />
+        </div>
 
         <video
           ref={externalVideoRef}
