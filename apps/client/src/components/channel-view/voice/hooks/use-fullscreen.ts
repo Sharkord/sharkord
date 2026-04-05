@@ -13,7 +13,7 @@ export const useFullscreen = (containerRef: RefObject<HTMLElement | null>) => {
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, []);
+  }, [containerRef]);
 
   const toggleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;
