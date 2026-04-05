@@ -137,6 +137,8 @@
   "directMessagesEnabledDesc": "Allow users to send direct messages to each other. If disabled, users can only communicate in channels.",
   "searchEnabledLabel": "Search",
   "searchEnabledDesc": "Allow users to search for messages and files across the server.",
+  "showWelcomeDialogLabel": "Show Welcome Dialog",
+  "showWelcomeDialogDesc": "Show a profile setup dialog to users the first time they join the server.",
   "usersTitle": "Users",
   "usersDesc": "Manage server users and their permissions",
   "usersAvatarCol": "Avatar",

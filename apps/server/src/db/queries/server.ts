@@ -55,6 +55,7 @@ const getPublicSettings: () => Promise<TPublicServerSettings> = async () => {
     enablePlugins: settings.enablePlugins,
     webRtcMaxBitrate: config.webRtc.maxBitrate,
     enableSearch: settings.enableSearch,
+    showWelcomeDialog: settings.showWelcomeDialog,
     storageSignedUrlsEnabled: settings.storageSignedUrlsEnabled
   };
 
