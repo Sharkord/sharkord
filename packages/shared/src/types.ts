@@ -46,6 +46,7 @@ export type TPublicServerSettings = Pick<
   | 'storageOverflowAction'
   | 'enablePlugins'
   | 'enableSearch'
+  | 'showWelcomeDialog'
   | 'storageSignedUrlsEnabled'
 > & {
   webRtcMaxBitrate: number;

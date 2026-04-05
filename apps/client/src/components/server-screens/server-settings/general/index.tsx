@@ -113,6 +113,18 @@ const General = memo(() => {
           />
         </Group>
 
+        <Group
+          label={t('showWelcomeDialogLabel')}
+          description={t('showWelcomeDialogDesc')}
+        >
+          <Switch
+            checked={settings.showWelcomeDialog}
+            onCheckedChange={(checked) =>
+              onChange('showWelcomeDialog', checked)
+            }
+          />
+        </Group>
+
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
             {t('cancel')}

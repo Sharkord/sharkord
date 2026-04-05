@@ -80,7 +80,11 @@ export const connect = async () => {
     return;
   }
 
-  await joinServer(handshakeHash);
+  const { showWelcomeDialog } = await joinServer(handshakeHash);
+
+  if (showWelcomeDialog) {
+    openDialog(Dialog.WELCOME_PROFILE_SETUP);
+  }
 };
 
 export const joinServer = async (handshakeHash: string, password?: string) => {
@@ -100,6 +104,10 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
   );
 
   setPluginComponents(components);
+
+  return {
+    showWelcomeDialog: data.showWelcomeDialog
+  };
 };
 
 export const disconnectFromServer = () => {

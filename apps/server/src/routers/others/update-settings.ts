@@ -31,6 +31,7 @@ const updateSettingsRoute = protectedProcedure
       storageOverflowAction: z.enum(StorageOverflowAction).optional(),
       enablePlugins: z.boolean().optional(),
       enableSearch: z.boolean().optional(),
+      showWelcomeDialog: z.boolean().optional(),
       storageSignedUrlsEnabled: z.boolean().optional(),
       storageSignedUrlsTtlSeconds: z.number().int().min(0).optional()
     })
@@ -59,6 +60,7 @@ const updateSettingsRoute = protectedProcedure
       storageOverflowAction: input.storageOverflowAction,
       enablePlugins: input.enablePlugins,
       enableSearch: input.enableSearch,
+      showWelcomeDialog: input.showWelcomeDialog,
       storageSignedUrlsEnabled: input.storageSignedUrlsEnabled,
       storageSignedUrlsTtlSeconds: input.storageSignedUrlsTtlSeconds
     });

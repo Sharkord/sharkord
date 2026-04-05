@@ -8,6 +8,7 @@ import {
   getChannelsReadStatesForUser
 } from '../../db/queries/channels';
 import { getEmojis } from '../../db/queries/emojis';
+import { hasUserJoinedBefore } from '../../db/queries/logins';
 import { getRoles } from '../../db/queries/roles';
 import { getPublicSettings, getSettings } from '../../db/queries/server';
 import { getPublicUsers } from '../../db/queries/users';
@@ -36,6 +37,7 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
   .query(async ({ input, ctx }) => {
     const connectionInfo = ctx.getConnectionInfo();
     const settings = await getSettings();
+
     const shouldAskForPassword = await shouldAskServerPassword(ctx.user.id, {
       password: settings.password,
       onlyAskForPasswordOnFirstJoin: settings.onlyAskForPasswordOnFirstJoin
@@ -76,7 +78,8 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       channelPermissions,
       readStates,
       publicSettings,
-      pluginsMetadata
+      pluginsMetadata,
+      hasJoinedBefore
     ] = await Promise.all([
       db.select().from(categories),
       getChannelsForUser(ctx.user.id), // filter channels based on permissions and DM participation
@@ -86,8 +89,11 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       getAllChannelUserPermissions(ctx.user.id),
       getChannelsReadStatesForUser(ctx.user.id),
       getPublicSettings(),
-      pluginManager.getActivePluginMetadata()
+      pluginManager.getActivePluginMetadata(),
+      hasUserJoinedBefore(ctx.user.id)
     ]);
+
+    const showWelcomeDialog = settings.showWelcomeDialog && !hasJoinedBefore;
 
     const processedPublicUsers = publicUsers.map((u) => ({
       ...u,
@@ -151,7 +157,8 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       commands: pluginManager.getCommands(),
       pluginIdsWithComponents: pluginManager.getPluginIdsWithComponents(),
       pluginsMetadata,
-      externalStreamsMap
+      externalStreamsMap,
+      showWelcomeDialog
     };
   });
 

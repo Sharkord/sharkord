@@ -49,7 +49,8 @@ export const useAdminGeneral = () => {
     allowNewUsers: false,
     directMessagesEnabled: true,
     enablePlugins: false,
-    enableSearch: true
+    enableSearch: true,
+    showWelcomeDialog: true
   });
   const [logo, setLogo] = useState<TFile | null>(null);
 
@@ -68,7 +69,8 @@ export const useAdminGeneral = () => {
       allowNewUsers: settings.allowNewUsers ?? false,
       directMessagesEnabled: settings.directMessagesEnabled ?? true,
       enablePlugins: settings.enablePlugins ?? false,
-      enableSearch: settings.enableSearch ?? true
+      enableSearch: settings.enableSearch ?? true,
+      showWelcomeDialog: settings.showWelcomeDialog ?? true
     });
     setLoading(false);
     setLogo(settings.logo);
@@ -86,7 +88,8 @@ export const useAdminGeneral = () => {
         allowNewUsers: settings.allowNewUsers,
         directMessagesEnabled: settings.directMessagesEnabled,
         enablePlugins: settings.enablePlugins,
-        enableSearch: settings.enableSearch
+        enableSearch: settings.enableSearch,
+        showWelcomeDialog: settings.showWelcomeDialog
       });
       toast.success('Settings updated');
     } catch (error) {

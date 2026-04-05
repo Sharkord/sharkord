@@ -1,7 +1,7 @@
+import { openDialog } from '@/features/dialogs/actions';
 import { joinServer } from '@/features/server/actions';
 import { useForm } from '@/hooks/use-form';
 import { cleanup } from '@/lib/trpc';
-import {} from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +16,7 @@ import {
 } from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Dialog } from '../dialogs';
 import type { TDialogBaseProps } from '../types';
 
 type TServerPasswordDialogProps = TDialogBaseProps & {
@@ -33,9 +34,18 @@ const ServerPasswordDialog = memo(
     const onSubmit = useCallback(async () => {
       try {
         setLoading(true);
-        await joinServer(handshakeHash, values.password);
+        const { showWelcomeDialog } = await joinServer(
+          handshakeHash,
+          values.password
+        );
 
         close();
+
+        if (showWelcomeDialog) {
+          setTimeout(() => {
+            openDialog(Dialog.WELCOME_PROFILE_SETUP);
+          }, 175);
+        }
       } catch (error) {
         setTrpcErrors(error);
       } finally {
