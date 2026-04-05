@@ -102,7 +102,7 @@
   "welcomeProfileSetupDesc": "Configurons votre profil pour commencer.",
   "welcomeUsernamePlaceholder": "Nom d'utilisateur",
   "welcomeBioPlaceholder": "Parlez-nous de vous...",
-  "welcomeSkipBtn": "Passer pour l'instant",
+  "welcomeSkipBtn": "Passer",
   "welcomeSaveBtn": "Enregistrer et continuer",
   "welcomeUploadError": "Impossible de télécharger le fichier. Veuillez réessayer.",
   "welcomeUpdateAvatarError": "Échec de la mise à jour de l'avatar",

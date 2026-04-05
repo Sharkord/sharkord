@@ -102,7 +102,7 @@
   "welcomeProfileSetupDesc": "Let's set up your profile to get started.",
   "welcomeUsernamePlaceholder": "Username",
   "welcomeBioPlaceholder": "Tell us about yourself...",
-  "welcomeSkipBtn": "Skip for now",
+  "welcomeSkipBtn": "Skip",
   "welcomeSaveBtn": "Save and continue",
   "welcomeUploadError": "Could not upload file. Please try again.",
   "welcomeUpdateAvatarError": "Failed to update avatar",

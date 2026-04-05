@@ -102,7 +102,7 @@
   "welcomeProfileSetupDesc": "设置您的个人资料以开始使用",
   "welcomeUsernamePlaceholder": "用户名",
   "welcomeBioPlaceholder": "介绍一下自己...",
-  "welcomeSkipBtn": "暂时跳过",
+  "welcomeSkipBtn": "暂不设置",
   "welcomeSaveBtn": "保存并继续",
   "welcomeUploadError": "无法上传文件，请重试。",
   "welcomeUpdateAvatarError": "更新头像失败",
