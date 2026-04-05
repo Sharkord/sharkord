@@ -34,4 +34,3 @@ export const useFullscreen = (containerRef: RefObject<HTMLElement | null>) => {
     toggleFullscreen
   };
 };
-

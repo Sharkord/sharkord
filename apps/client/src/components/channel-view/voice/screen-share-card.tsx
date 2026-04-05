@@ -152,7 +152,9 @@ const ScreenShareCard = memo(
           'relative bg-card group',
           'flex items-center justify-center',
           'w-full h-full',
-          isFullscreen ? 'rounded-none border-none' : 'rounded-lg overflow-hidden border border-border',
+          isFullscreen
+            ? 'rounded-none border-none'
+            : 'rounded-lg overflow-hidden border border-border',
           className
         )}
         onWheel={handleWheel}

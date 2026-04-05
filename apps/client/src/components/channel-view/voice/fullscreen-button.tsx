@@ -24,4 +24,3 @@ const FullscreenButton = memo(
 FullscreenButton.displayName = 'FullscreenButton';
 
 export { FullscreenButton };
-
