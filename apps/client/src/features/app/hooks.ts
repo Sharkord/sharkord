@@ -5,6 +5,7 @@ import {
   autoJoinLastChannelSelector,
   browserNotificationsForDmsSelector,
   browserNotificationsForMentionsSelector,
+  browserNotificationsForRepliesSelector,
   browserNotificationsSelector,
   devicesSelector,
   isAutoConnectingSelector,
@@ -52,6 +53,9 @@ export const useBrowserNotificationsForDms = () =>
 
 export const useMessageJumpTarget = () =>
   useSelector(messageJumpTargetSelector);
+
+export const useBrowserNotificationsForReplies = () =>
+  useSelector(browserNotificationsForRepliesSelector);
 
 export const useVoiceChatSidebar = () =>
   useSelector(voiceChatSidebarDataSelector);

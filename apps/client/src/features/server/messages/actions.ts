@@ -1,6 +1,7 @@
 import {
   browserNotificationsForDmsSelector,
   browserNotificationsForMentionsSelector,
+  browserNotificationsForRepliesSelector,
   browserNotificationsSelector,
   selectedDmChannelIdSelector,
   threadSidebarDataSelector
@@ -158,6 +159,8 @@ export const addMessages = (
         const isDmChannel = !!channel?.isDm;
         const hasDmNotificationsEnabled =
           browserNotificationsForDmsSelector(state);
+        const hasRepliesNotificationsEnabled =
+          browserNotificationsForRepliesSelector(state);
 
         if (isDmChannel && hasDmNotificationsEnabled) {
           sendBrowserNotification(targetMessage, channelId, true);
@@ -172,6 +175,14 @@ export const addMessages = (
           }
         } else if (hasBrowserNotificationsEnabled) {
           sendBrowserNotification(targetMessage, channelId);
+        } else if (hasRepliesNotificationsEnabled) {
+          const isReplyToOwnMessage =
+            !!targetMessage.replyToMessageId &&
+            targetMessage.replyTo?.userId === ownUserId;
+
+          if (isReplyToOwnMessage) {
+            sendBrowserNotification(targetMessage, channelId);
+          }
         }
       }
     }

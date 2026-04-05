@@ -1,12 +1,14 @@
 import {
   setBrowserNotifications,
   setBrowserNotificationsForDms,
-  setBrowserNotificationsForMentions
+  setBrowserNotificationsForMentions,
+  setBrowserNotificationsForReplies
 } from '@/features/app/actions';
 import {
   useBrowserNotifications,
   useBrowserNotificationsForDms,
-  useBrowserNotificationsForMentions
+  useBrowserNotificationsForMentions,
+  useBrowserNotificationsForReplies
 } from '@/features/app/hooks';
 import {
   Card,
@@ -25,6 +27,7 @@ const Notifications = memo(() => {
   const browserNotifications = useBrowserNotifications();
   const browserNotificationsForMentions = useBrowserNotificationsForMentions();
   const browserNotificationsForDms = useBrowserNotificationsForDms();
+  const browserNotificationsForReplies = useBrowserNotificationsForReplies();
 
   return (
     <Card>
@@ -57,6 +60,17 @@ const Notifications = memo(() => {
           <Switch
             checked={browserNotificationsForDms}
             onCheckedChange={(value) => setBrowserNotificationsForDms(value)}
+          />
+        </Group>
+        <Group
+          label={t('repliesNotificationsLabel')}
+          description={t('repliesNotificationsDesc')}
+        >
+          <Switch
+            checked={browserNotificationsForReplies}
+            onCheckedChange={(value) =>
+              setBrowserNotificationsForReplies(value)
+            }
           />
         </Group>
       </CardContent>
