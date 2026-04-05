@@ -1,3 +1,4 @@
+import { assertNotificationsPermission } from '@/helpers/assert-notifications-permission';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
 import {
   LocalStorageKey,
@@ -144,21 +145,19 @@ export const setSelectedDmChannelId = (channelId: number | undefined) =>
   store.dispatch(appSliceActions.setSelectedDmChannelId(channelId));
 
 export const setBrowserNotifications = async (enabled: boolean) => {
-  if (enabled && 'Notification' in window) {
-    const permission = await Notification.requestPermission();
-
-    if (permission !== 'granted') {
-      toast.error('Notification permission was denied.');
-
-      return;
-    }
+  if (enabled) {
+    await assertNotificationsPermission();
   }
 
   store.dispatch(appSliceActions.setBrowserNotifications(enabled));
   setLocalStorageItemBool(LocalStorageKey.BROWSER_NOTIFICATIONS, enabled);
 };
 
-export const setBrowserNotificationsForMentions = (enabled: boolean) => {
+export const setBrowserNotificationsForMentions = async (enabled: boolean) => {
+  if (enabled) {
+    await assertNotificationsPermission();
+  }
+
   store.dispatch(appSliceActions.setBrowserNotificationsForMentions(enabled));
   setLocalStorageItemBool(
     LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_MENTIONS,
@@ -167,17 +166,25 @@ export const setBrowserNotificationsForMentions = (enabled: boolean) => {
 };
 
 export const setBrowserNotificationsForDms = async (enabled: boolean) => {
-  if (enabled && 'Notification' in window) {
-    const permission = await Notification.requestPermission();
-
-    if (permission !== 'granted') {
-      return;
-    }
+  if (enabled) {
+    await assertNotificationsPermission();
   }
 
   store.dispatch(appSliceActions.setBrowserNotificationsForDms(enabled));
   setLocalStorageItemBool(
     LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_DMS,
+    enabled
+  );
+};
+
+export const setBrowserNotificationsForReplies = async (enabled: boolean) => {
+  if (enabled) {
+    await assertNotificationsPermission();
+  }
+
+  store.dispatch(appSliceActions.setBrowserNotificationsForReplies(enabled));
+  setLocalStorageItemBool(
+    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_REPLIES,
     enabled
   );
 };
