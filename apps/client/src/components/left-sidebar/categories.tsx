@@ -5,6 +5,7 @@ import {
 } from '@/features/server/categories/hooks';
 import {
   useCan,
+  useCategoryUnreadData,
   useHasVisibleChannelsInCategory
 } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
@@ -31,6 +32,7 @@ import { toast } from 'sonner';
 import { CategoryContextMenu } from '../context-menus/category';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
+import { UnreadCount } from '../unread-count';
 import { Channels } from './channels';
 import { useCategoryExpanded } from './hooks';
 
@@ -45,6 +47,7 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
     useHasVisibleChannelsInCategory(categoryId);
   const { expanded, toggleExpanded } = useCategoryExpanded(categoryId);
   const category = useCategoryById(categoryId);
+  const { unreadCount, hasUnreadMentions } = useCategoryUnreadData(categoryId);
 
   const {
     attributes,
@@ -92,9 +95,16 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
             <span
               {...attributes}
               {...listeners}
-              className="cursor-grab active:cursor-grabbing flex-1"
+              className="cursor-grab active:cursor-grabbing flex min-w-0 flex-1 items-center gap-2"
             >
-              {category.name}
+              <span className="truncate">{category.name}</span>
+              {!expanded && unreadCount > 0 && (
+                <UnreadCount
+                  count={unreadCount}
+                  hasMention={hasUnreadMentions}
+                  className="ml-0"
+                />
+              )}
             </span>
           </CategoryContextMenu>
         </div>
