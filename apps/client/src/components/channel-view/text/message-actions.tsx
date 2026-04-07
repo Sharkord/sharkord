@@ -35,7 +35,7 @@ import { toast } from 'sonner';
 
 const MAX_QUICK_EMOJIS = 4;
 const TRASH2_RED: LucideIcon = forwardRef<SVGSVGElement, LucideProps>(
-  (props, ref) => <Trash2 ref={ref} {...props} color="red" />
+  (props, ref) => <Trash2 ref={ref} {...props} className={'text-destructive'} />
 );
 
 type TMessageActionsProps = {
