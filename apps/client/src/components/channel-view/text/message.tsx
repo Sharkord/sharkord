@@ -37,6 +37,8 @@ const Message = memo(
       useThreadSidebar();
     const ownUserId = useOwnUserId();
 
+    const [isHovered, setIsHovered] = useState(false);
+
     const canManage = useMemo(
       () => can(Permission.MANAGE_MESSAGES) || isFromOwnUser,
       [can, isFromOwnUser]
@@ -64,6 +66,8 @@ const Message = memo(
           isInlineReplyTarget && 'ring-1 ring-primary/50 bg-primary/10'
         )}
         data-message-id={message.id}
+        onMouseOver={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         {!isEditing ? (
           <>
@@ -93,6 +97,7 @@ const Message = memo(
                 disablePin={!!message.parentMessageId}
                 isThreadReply={isThreadReply}
                 onReply={() => onReplyMessageSelect?.(message)}
+                isHovered={isHovered}
               />
             )}
           </>

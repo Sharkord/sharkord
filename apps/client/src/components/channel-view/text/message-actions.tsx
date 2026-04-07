@@ -48,6 +48,7 @@ type TMessageActionsProps = {
   isThreadReply?: boolean;
   isPinned?: boolean;
   disablePin?: boolean;
+  isHovered?: boolean;
 };
 
 const MessageActions = memo(
@@ -60,7 +61,8 @@ const MessageActions = memo(
     isThreadReply,
     isPinned,
     disablePin,
-    onReply
+    onReply,
+    isHovered
   }: TMessageActionsProps) => {
     const { t } = useTranslation();
     const { recentEmojis } = useRecentEmojis();
@@ -72,12 +74,13 @@ const MessageActions = memo(
     const [isShiftDown, setIsShiftDown] = useState(false);
 
     useEffect(() => {
+      if (!isHovered) return;
+
       const onKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Shift') {
           setIsShiftDown(true);
         }
       };
-
       const onKeyUp = (e: KeyboardEvent) => {
         if (e.key === 'Shift') {
           setIsShiftDown(false);
@@ -91,7 +94,7 @@ const MessageActions = memo(
         document.removeEventListener('keydown', onKeyDown);
         document.removeEventListener('keyup', onKeyUp);
       };
-    }, []);
+    }, [isHovered]);
 
     const onDeleteClick = useCallback(async () => {
       if (!isShiftDown) {
