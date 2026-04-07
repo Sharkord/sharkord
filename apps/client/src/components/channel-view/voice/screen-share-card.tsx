@@ -21,8 +21,10 @@ import { VolumeButton } from './volume-button';
 
 type tScreenShareControlsProps = {
   isPinned: boolean;
+  isFullscreen: boolean;
   isZoomEnabled: boolean;
   handlePinToggle: () => void;
+  handleToggleFullscreen: () => void;
   handleToggleZoom: () => void;
   showPinControls: boolean;
   showAudioControl: boolean;
@@ -32,8 +34,10 @@ type tScreenShareControlsProps = {
 const ScreenShareControls = memo(
   ({
     isPinned,
+    isFullscreen,
     isZoomEnabled,
     handlePinToggle,
+    handleToggleFullscreen,
     handleToggleZoom,
     showPinControls,
     showAudioControl,
@@ -51,6 +55,10 @@ const ScreenShareControls = memo(
             size="sm"
           />
         )}
+        <FullscreenButton
+          isFullscreen={isFullscreen}
+          handleToggleFullscreen={handleToggleFullscreen}
+        />
         {showPinControls && (
           <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
         )}
@@ -127,7 +135,12 @@ const ScreenShareCard = memo(
       resetZoom
     } = useScreenShareZoom();
 
-    const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
+    const {
+      isFullscreen,
+      isOverlayVisible,
+      toggleFullscreen,
+      handleDoubleClick
+    } = useFullscreen(containerRef);
 
     const handleToggleFullscreen = useCallback(() => {
       resetZoom();
@@ -149,12 +162,13 @@ const ScreenShareCard = memo(
       <div
         ref={containerRef}
         className={cn(
-          'relative bg-card group',
+          'relative bg-card',
           'flex items-center justify-center',
           'w-full h-full',
           isFullscreen
             ? 'rounded-none border-none'
             : 'rounded-lg overflow-hidden border border-border',
+          (!isFullscreen || isOverlayVisible) && 'group',
           className
         )}
         onWheel={handleWheel}
@@ -162,28 +176,24 @@ const ScreenShareCard = memo(
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onDoubleClick={handleDoubleClick}
         style={{
-          cursor: getCursor()
+          cursor: isFullscreen && !isOverlayVisible ? 'none' : getCursor()
         }}
       >
         <CardGradient />
 
         <ScreenShareControls
           isPinned={isPinned}
+          isFullscreen={isFullscreen}
           isZoomEnabled={isZoomEnabled}
           handlePinToggle={handlePinToggle}
+          handleToggleFullscreen={handleToggleFullscreen}
           handleToggleZoom={handleToggleZoom}
           showPinControls={showPinControls}
           showAudioControl={!isOwnUser && hasScreenShareAudioStream}
           volumeKey={volumeKey}
         />
-
-        <div className="absolute bottom-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-          <FullscreenButton
-            isFullscreen={isFullscreen}
-            handleToggleFullscreen={handleToggleFullscreen}
-          />
-        </div>
 
         <video
           ref={screenShareRef}

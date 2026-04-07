@@ -15,8 +15,10 @@ import { StreamSettingsPopover } from './stream-settings-popover';
 
 type TExternalStreamControlsProps = {
   isPinned: boolean;
+  isFullscreen: boolean;
   isZoomEnabled: boolean;
   handlePinToggle: () => void;
+  handleToggleFullscreen: () => void;
   handleToggleZoom: () => void;
   showPinControls: boolean;
   hasVideo: boolean;
@@ -30,8 +32,10 @@ type TExternalStreamControlsProps = {
 const ExternalStreamControls = memo(
   ({
     isPinned,
+    isFullscreen,
     isZoomEnabled,
     handlePinToggle,
+    handleToggleFullscreen,
     handleToggleZoom,
     showPinControls,
     hasVideo,
@@ -58,6 +62,12 @@ const ExternalStreamControls = memo(
             onClick={handleToggleZoom}
             title={isZoomEnabled ? 'Disable Zoom' : 'Enable Zoom'}
             size="sm"
+          />
+        )}
+        {hasVideo && (
+          <FullscreenButton
+            isFullscreen={isFullscreen}
+            handleToggleFullscreen={handleToggleFullscreen}
           />
         )}
         {showPinControls && (
@@ -113,7 +123,12 @@ const ExternalStreamCard = memo(
       resetZoom
     } = useScreenShareZoom();
 
-    const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
+    const {
+      isFullscreen,
+      isOverlayVisible,
+      toggleFullscreen,
+      handleDoubleClick
+    } = useFullscreen(containerRef);
 
     const handleToggleFullscreen = useCallback(() => {
       resetZoom();
@@ -147,12 +162,13 @@ const ExternalStreamCard = memo(
       <div
         ref={containerRef}
         className={cn(
-          'relative bg-card group',
+          'relative bg-card',
           'flex items-center justify-center',
           'w-full h-full',
           isFullscreen
             ? 'rounded-none border-none'
             : 'rounded-lg overflow-hidden border border-border',
+          (!isFullscreen || isOverlayVisible) && 'group',
           className
         )}
         onWheel={hasVideo ? handleWheel : undefined}
@@ -160,16 +176,24 @@ const ExternalStreamCard = memo(
         onMouseMove={hasVideo ? handleMouseMove : undefined}
         onMouseUp={hasVideo ? handleMouseUp : undefined}
         onMouseLeave={hasVideo ? handleMouseUp : undefined}
+        onDoubleClick={hasVideo ? handleDoubleClick : undefined}
         style={{
-          cursor: hasVideo ? getCursor() : 'default'
+          cursor:
+            isFullscreen && !isOverlayVisible
+              ? 'none'
+              : hasVideo
+                ? getCursor()
+                : 'default'
         }}
       >
         <CardGradient />
 
         <ExternalStreamControls
           isPinned={isPinned}
+          isFullscreen={isFullscreen}
           isZoomEnabled={isZoomEnabled}
           handlePinToggle={handlePinToggle}
+          handleToggleFullscreen={handleToggleFullscreen}
           handleToggleZoom={handleToggleZoom}
           showPinControls={showPinControls}
           hasVideo={!!hasVideo}
@@ -179,15 +203,6 @@ const ExternalStreamCard = memo(
           onVolumeChange={handleVolumeChange}
           onMuteToggle={handleMuteToggle}
         />
-
-        {hasVideo && (
-          <div className="absolute bottom-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-            <FullscreenButton
-              isFullscreen={isFullscreen}
-              handleToggleFullscreen={handleToggleFullscreen}
-            />
-          </div>
-        )}
 
         {hasVideo ? (
           <video
