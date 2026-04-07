@@ -68,3 +68,11 @@ export const getFileCategory = (extension: string): FileCategory => {
 
   return FileCategory.OTHER;
 };
+
+export const isPreviewable = (file: File) => {
+  const parts = file.name.split('.');
+  const ext = parts.length > 1 ? `.${parts.pop()}` : '';
+  const category = getFileCategory(ext);
+
+  return category === FileCategory.IMAGE || category === FileCategory.VIDEO;
+};

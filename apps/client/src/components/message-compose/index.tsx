@@ -34,8 +34,8 @@ import {
   type Ref
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileCard } from '../channel-view/text/file-card';
 import { useMessageAuthorName } from '../channel-view/text/hooks/use-message-author-name';
+import { PreviewFile } from '../channel-view/text/preview-file';
 import { UsersTypingIndicator } from '../channel-view/text/users-typing';
 
 type TMessageComposeProps = {
@@ -109,10 +109,12 @@ const MessageCompose = memo(
 
     const {
       files,
+      displayItems,
       removeFile,
       clearFiles,
       uploading,
       uploadingSize,
+      uploadSpeed,
       openFileDialog,
       fileInputProps
     } = useUploadFiles(channelId, containerRef, !canSendMessages);
@@ -176,19 +178,21 @@ const MessageCompose = memo(
           <div className="flex items-center gap-2">
             <div className="text-xs text-muted-foreground mb-1">
               Uploading files ({filesize(uploadingSize)})
+              {uploadSpeed > 0 && ` - ${filesize(uploadSpeed)}/s`}
             </div>
             <Spinner size="xxs" />
           </div>
         )}
-        {files.length > 0 && (
+
+        {displayItems.length > 0 && (
           <div className="flex gap-1 flex-wrap">
-            {files.map((file) => (
-              <FileCard
-                key={file.id}
-                name={file.originalName}
-                extension={file.extension}
-                size={file.size}
-                onRemove={() => onRemoveFileClick(file.id)}
+            {displayItems.map((item) => (
+              <PreviewFile
+                key={item.id}
+                item={item}
+                onRemove={
+                  item.file ? () => onRemoveFileClick(item.file!.id) : undefined
+                }
               />
             ))}
           </div>
