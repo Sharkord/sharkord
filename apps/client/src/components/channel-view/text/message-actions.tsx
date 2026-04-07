@@ -22,14 +22,21 @@ import {
   type LucideIcon,
   type LucideProps
 } from 'lucide-react';
-import { forwardRef, memo, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 const MAX_QUICK_EMOJIS = 4;
-const TRASH2_RED: LucideIcon = forwardRef<SVGSVGElement, LucideProps>((props, ref) => (
-  <Trash2 ref={ref} {...props} color="red" />
-));
+const TRASH2_RED: LucideIcon = forwardRef<SVGSVGElement, LucideProps>(
+  (props, ref) => <Trash2 ref={ref} {...props} color="red" />
+);
 
 type TMessageActionsProps = {
   messageId: number;
@@ -105,7 +112,7 @@ const MessageActions = memo(
       } catch {
         toast.error(t('failedDeleteMessage'));
       }
-    }, [isShiftDown,messageId, t]);
+    }, [isShiftDown, messageId, t]);
 
     const onEmojiSelect = useCallback(
       async (emoji: TEmojiItem) => {
