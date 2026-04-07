@@ -76,6 +76,8 @@ const MessageActions = memo(
     useEffect(() => {
       if (!isHovered) return;
 
+      setIsShiftDown(false);
+
       const onKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Shift') {
           setIsShiftDown(true);
