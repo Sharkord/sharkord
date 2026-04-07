@@ -17,13 +17,19 @@ import {
   PinOff,
   Reply,
   Smile,
-  Trash
+  Trash,
+  Trash2,
+  type LucideIcon,
+  type LucideProps
 } from 'lucide-react';
-import { memo, useCallback, useMemo } from 'react';
+import { forwardRef, memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 const MAX_QUICK_EMOJIS = 4;
+const TRASH2_RED: LucideIcon = forwardRef<SVGSVGElement, LucideProps>((props, ref) => (
+  <Trash2 ref={ref} {...props} color="red" />
+));
 
 type TMessageActionsProps = {
   messageId: number;
@@ -56,25 +62,50 @@ const MessageActions = memo(
       [recentEmojis]
     );
 
-    const onDeleteClick = useCallback(async () => {
-      const choice = await requestConfirmation({
-        title: t('deleteMessageTitle'),
-        message: t('deleteMessageConfirm'),
-        confirmLabel: t('deleteLabel'),
-        cancelLabel: t('cancel')
-      });
+    const [isShiftDown, setIsShiftDown] = useState(false);
 
-      if (!choice) return;
+    useEffect(() => {
+      const onKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Shift') {
+          setIsShiftDown(true);
+        }
+      };
+
+      const onKeyUp = (e: KeyboardEvent) => {
+        if (e.key === 'Shift') {
+          setIsShiftDown(false);
+        }
+      };
+
+      document.addEventListener('keydown', onKeyDown);
+      document.addEventListener('keyup', onKeyUp);
+
+      return () => {
+        document.removeEventListener('keydown', onKeyDown);
+        document.removeEventListener('keyup', onKeyUp);
+      };
+    }, []);
+
+    const onDeleteClick = useCallback(async () => {
+      if (!isShiftDown) {
+        const choice = await requestConfirmation({
+          title: t('deleteMessageTitle'),
+          message: t('deleteMessageConfirm'),
+          confirmLabel: t('deleteLabel'),
+          cancelLabel: t('cancel')
+        });
+
+        if (!choice) return;
+      }
 
       const trpc = getTRPCClient();
-
       try {
         await trpc.messages.delete.mutate({ messageId });
         toast.success(t('messageDeleted'));
       } catch {
         toast.error(t('failedDeleteMessage'));
       }
-    }, [messageId, t]);
+    }, [isShiftDown,messageId, t]);
 
     const onEmojiSelect = useCallback(
       async (emoji: TEmojiItem) => {
@@ -146,7 +177,7 @@ const MessageActions = memo(
             <IconButton
               size="sm"
               variant="ghost"
-              icon={Trash}
+              icon={isShiftDown ? TRASH2_RED : Trash}
               onClick={onDeleteClick}
               title={t('deleteMessageTitle')}
             />
