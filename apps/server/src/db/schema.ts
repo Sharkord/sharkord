@@ -74,6 +74,9 @@ const settings = sqliteTable(
     storageOverflowAction: text('storage_overflow_action').notNull(),
     enablePlugins: integer('enable_plugins', { mode: 'boolean' }).notNull(),
     enableSearch: integer('enable_search', { mode: 'boolean' }).notNull(),
+    showWelcomeDialog: integer('show_welcome_dialog', {
+      mode: 'boolean'
+    }).notNull(),
     storageSignedUrlsEnabled: integer('storage_signed_urls_enabled', {
       mode: 'boolean'
     }).notNull(),

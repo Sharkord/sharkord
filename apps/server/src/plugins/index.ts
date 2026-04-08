@@ -21,6 +21,7 @@ import {
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
+import { pathToFileURL } from 'url';
 import { db } from '../db';
 import { getSettings } from '../db/queries/server';
 import { getPublicUserById, getPublicUsers } from '../db/queries/users';
@@ -200,6 +201,39 @@ class PluginManager {
     return { isValid: true };
   };
 
+  private getServerEntryPath = (pluginPath: string) => {
+    return path.join(pluginPath, SERVER_ENTRY_FILE);
+  };
+
+  private getPluginModuleSpecifier = async (
+    pluginPath: string,
+    version: string
+  ): Promise<string> => {
+    const serverEntryPath = this.getServerEntryPath(pluginPath);
+    const stat = await fs.stat(serverEntryPath);
+    const moduleUrl = pathToFileURL(serverEntryPath).href;
+
+    return `${moduleUrl}?version=${encodeURIComponent(version)}&mtime=${encodeURIComponent(stat.mtimeMs.toString())}&size=${stat.size}`;
+  };
+
+  private invalidateDynamicImportCache = (pluginPath: string) => {
+    const serverEntryPath = this.getServerEntryPath(pluginPath);
+
+    for (const cacheKey of Object.keys(require.cache ?? {})) {
+      const isPluginModule = cacheKey.startsWith(serverEntryPath);
+
+      if (isPluginModule) {
+        const hasCacheEntry = require.cache?.[cacheKey];
+
+        if (hasCacheEntry) {
+          logger.debug(`Deleting dynamic import cache for module: ${cacheKey}`);
+
+          delete require.cache[cacheKey];
+        }
+      }
+    }
+  };
+
   public getPluginInfo = async (pluginId: string): Promise<TPluginInfo> => {
     await this.stateStore.ensure(pluginId);
     const pluginPath = this.getPluginPath(pluginId);
@@ -343,7 +377,12 @@ class PluginManager {
 
     try {
       const ctx = this.createContext(pluginId);
-      const mod = await import(path.join(info.path, SERVER_ENTRY_FILE));
+      const moduleSpecifier = await this.getPluginModuleSpecifier(
+        info.path,
+        info.version
+      );
+
+      const mod = await import(moduleSpecifier);
 
       if (typeof mod.onLoad !== 'function') {
         throw new Error(
@@ -378,6 +417,7 @@ class PluginManager {
 
   public unload = async (pluginId: string) => {
     const pluginModule = this.loadedPlugins.get(pluginId);
+    const pluginPath = this.getPluginPath(pluginId);
 
     if (!pluginModule) {
       this.pluginLogger.log(
@@ -385,6 +425,7 @@ class PluginManager {
         'debug',
         `Plugin ${pluginId} is not loaded; nothing to unload.`
       );
+
       return;
     }
 
@@ -411,6 +452,7 @@ class PluginManager {
     this.uiState.delete(pluginId);
     this.loadedPlugins.delete(pluginId);
     this.loadErrors.delete(pluginId);
+    this.invalidateDynamicImportCache(pluginPath);
 
     logger.info(`Plugin unloaded: ${pluginId}`);
   };
@@ -499,6 +541,7 @@ class PluginManager {
             key: options.key,
             pluginId,
             avatarUrl: options.avatarUrl,
+            bannerUrl: options.bannerUrl,
             producers: options.producers
           });
 

@@ -1,11 +1,13 @@
 import { ChannelPermission, Permission } from '@sharkord/shared';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import type { IRootState } from '../store';
 import { useChannelById, useChannelPermissionsById } from './channels/hooks';
 import { channelReadStateByIdSelector } from './channels/selectors';
 import {
   activeFullscreenPluginIdSelector,
+  categoryHasUnreadMentionsSelector,
+  categoryUnreadMessagesCountSelector,
   connectedSelector,
   connectingSelector,
   disconnectInfoSelector,
@@ -125,6 +127,26 @@ export const useUnreadMessagesCount = (channelId: number) =>
   useSelector((state: IRootState) =>
     channelReadStateByIdSelector(state, channelId)
   );
+
+export const useCategoryUnreadMessagesCount = (categoryId: number) =>
+  useSelector((state: IRootState) =>
+    categoryUnreadMessagesCountSelector(state, categoryId)
+  );
+
+export const useCategoryHasUnreadMentions = (categoryId: number) =>
+  useSelector((state: IRootState) =>
+    categoryHasUnreadMentionsSelector(state, categoryId)
+  );
+
+export const useCategoryUnreadData = (categoryId: number) => {
+  const unreadCount = useCategoryUnreadMessagesCount(categoryId);
+  const hasUnreadMentions = useCategoryHasUnreadMentions(categoryId);
+
+  return useMemo(
+    () => ({ unreadCount, hasUnreadMentions }),
+    [unreadCount, hasUnreadMentions]
+  );
+};
 
 export const useHasSharingScreenUsers = (channelId: number) =>
   useSelector((state: IRootState) =>

@@ -6,8 +6,10 @@ import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
+  audioExtensions,
   imageExtensions,
   isEmojiOnlyMessage,
+  videoExtensions,
   type TJoinedMessage
 } from '@sharkord/shared';
 import { Tooltip } from '@sharkord/ui';
@@ -17,7 +19,9 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { FileCard } from '../file-card';
 import { MessageReactions } from '../message-reactions';
+import { AudioOverride } from '../overrides/audio';
 import { ImageOverride } from '../overrides/image';
+import { VideoOverride } from '../overrides/video';
 import { serializer } from './serializer';
 import type { TFoundMedia } from './types';
 
@@ -27,7 +31,7 @@ type TMessageRendererProps = {
   disableReactions?: boolean;
 };
 
-const ALLOWED_MEDIA_TYPES = ['image', 'video'];
+const ALLOWED_MEDIA_TYPES = ['image', 'video', 'audio'];
 
 const MessageRenderer = memo(
   ({ message, disableFiles, disableReactions }: TMessageRendererProps) => {
@@ -81,13 +85,33 @@ const MessageRenderer = memo(
 
     const allMedia = useMemo(() => {
       const mediaFromFiles: TFoundMedia[] = message.files
-        .filter((file) =>
-          imageExtensions.includes(file.extension.toLowerCase())
-        )
-        .map((file) => ({
-          type: 'image',
-          url: getFileUrl(file)
-        }));
+        .map((file) => {
+          const extension = file.extension.toLowerCase();
+
+          if (imageExtensions.includes(extension)) {
+            return {
+              type: 'image',
+              url: getFileUrl(file)
+            } as const;
+          }
+
+          if (videoExtensions.includes(extension)) {
+            return {
+              type: 'video',
+              url: getFileUrl(file)
+            } as const;
+          }
+
+          if (audioExtensions.includes(extension)) {
+            return {
+              type: 'audio',
+              url: getFileUrl(file)
+            } as const;
+          }
+
+          return undefined;
+        })
+        .filter((media) => !!media) as TFoundMedia[];
 
       const mediaFromMetadata: TFoundMedia[] = (message.metadata ?? [])
         .map((metadata) => {
@@ -147,6 +171,18 @@ const MessageRenderer = memo(
           if (media.type === 'image') {
             return (
               <ImageOverride src={media.url} key={`media-image-${index}`} />
+            );
+          }
+
+          if (media.type === 'video') {
+            return (
+              <VideoOverride src={media.url} key={`media-video-${index}`} />
+            );
+          }
+
+          if (media.type === 'audio') {
+            return (
+              <AudioOverride src={media.url} key={`media-audio-${index}`} />
             );
           }
 

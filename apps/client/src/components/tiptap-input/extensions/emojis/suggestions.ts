@@ -1,7 +1,7 @@
 import { computePosition } from '@floating-ui/dom';
 import type { Editor } from '@tiptap/core';
 import { ReactRenderer } from '@tiptap/react';
-import type { TEmojiItem } from '../helpers';
+import type { TEmojiItem } from '../../helpers';
 import { EmojiList, type EmojiListRef } from './emoji-list';
 
 interface EmojiStorage {
@@ -29,7 +29,7 @@ export const EmojiSuggestion = {
     return emojis
       .filter(
         (e) =>
-          e.shortcodes.some((shortcode) =>
+          e.shortcodes.some((shortcode: string) =>
             shortcode.toLowerCase().startsWith(query.toLowerCase())
           ) || e.name.toLowerCase().startsWith(query.toLowerCase())
       )

@@ -144,6 +144,56 @@ describe('plugin-manager', () => {
       expect(info.loadError).toBeDefined();
       expect(info.loadError).toContain('not compatible');
     });
+
+    test('should load updated plugin code after server entry changes', async () => {
+      const pluginServerEntryPath = path.join(
+        PLUGINS_PATH,
+        'plugin-a',
+        'server',
+        'index.js'
+      );
+
+      const originalSource = await fs.readFile(pluginServerEntryPath, 'utf-8');
+      const originalStat = await fs.stat(pluginServerEntryPath);
+
+      try {
+        await pluginManager.load('plugin-a');
+        await pluginManager.unload('plugin-a');
+
+        const updatedSource = `const onLoad = (ctx) => {
+  ctx.log('My Plugin loaded (updated)');
+
+  ctx.commands.register({
+    name: 'updated-command',
+    description: 'Command from updated plugin file',
+    execute: async () => ({ ok: true })
+  });
+};
+
+const onUnload = (ctx) => {
+  ctx.log('My Plugin unloaded (updated)');
+};
+
+export { onLoad, onUnload };
+`;
+
+        await Bun.sleep(100);
+        await fs.writeFile(pluginServerEntryPath, updatedSource);
+
+        const updatedStat = await fs.stat(pluginServerEntryPath);
+
+        expect(updatedStat.mtimeMs).toBeGreaterThan(originalStat.mtimeMs);
+
+        await pluginManager.load('plugin-a');
+
+        expect(pluginManager.hasCommand('plugin-a', 'updated-command')).toBe(
+          true
+        );
+      } finally {
+        await pluginManager.unload('plugin-a');
+        await fs.writeFile(pluginServerEntryPath, originalSource);
+      }
+    });
   });
 
   describe('unload', () => {
