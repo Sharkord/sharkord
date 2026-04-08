@@ -1,4 +1,5 @@
 import {
+  getLocalStorageItemAsJSON,
   getLocalStorageItemAsNumber,
   getLocalStorageItemBool,
   LocalStorageKey
@@ -26,6 +27,7 @@ export interface TAppState {
   voiceChatSidebarOpen: boolean;
   voiceChatChannelId: number | undefined;
   pluginSlotDebug: boolean;
+  hotkeyIsHeld: Record<string, boolean> | undefined;
 }
 
 const initialState: TAppState = {
@@ -70,6 +72,10 @@ const initialState: TAppState = {
   pluginSlotDebug: getLocalStorageItemBool(
     LocalStorageKey.PLUGIN_SLOT_DEBUG,
     false
+  ),
+  hotkeyIsHeld: getLocalStorageItemAsJSON<Record<string, boolean>>(
+    LocalStorageKey.HOTKEY_IS_HELD, 
+    {"Shift": false, "Control": false, "Alt": false}
   )
 };
 
@@ -156,6 +162,9 @@ export const appSlice = createSlice({
     },
     setPluginSlotDebug: (state, action: PayloadAction<boolean>) => {
       state.pluginSlotDebug = action.payload;
+    },
+    setHotkeyIsHeld: (state, action: PayloadAction<Record<string, boolean>>) => {
+      state.hotkeyIsHeld = action.payload;
     }
   }
 });

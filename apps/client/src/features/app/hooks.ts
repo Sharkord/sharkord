@@ -16,7 +16,10 @@ import {
   pluginSlotDebugSelector,
   selectedDmChannelIdSelector,
   threadSidebarDataSelector,
-  voiceChatSidebarDataSelector
+  voiceChatSidebarDataSelector,
+  isShiftHeldSelector,
+  isCtrlHeldSelector,
+  isAltHeldSelector
 } from './selectors';
 
 export const useIsAppLoading = () => useSelector(appLoadingSelector);
@@ -61,3 +64,9 @@ export const useVoiceChatSidebar = () =>
   useSelector(voiceChatSidebarDataSelector);
 
 export const usePluginSlotDebug = () => useSelector(pluginSlotDebugSelector);
+
+export const useIsShiftHeld = () => useSelector(isShiftHeldSelector);
+
+export const useIsCtrlHeld = () => useSelector(isCtrlHeldSelector);
+
+export const useIsAltHeld = () => useSelector(isAltHeldSelector);

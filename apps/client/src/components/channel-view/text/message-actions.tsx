@@ -6,6 +6,7 @@ import {
   type TEmojiItem
 } from '@/components/tiptap-input/helpers';
 import { openThreadSidebar } from '@/features/app/actions';
+import { useIsShiftHeld } from '@/features/app/hooks';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
@@ -26,9 +27,7 @@ import {
   forwardRef,
   memo,
   useCallback,
-  useEffect,
-  useMemo,
-  useState
+  useMemo
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -48,7 +47,6 @@ type TMessageActionsProps = {
   isThreadReply?: boolean;
   isPinned?: boolean;
   disablePin?: boolean;
-  isHovered?: boolean;
 };
 
 const MessageActions = memo(
@@ -61,8 +59,7 @@ const MessageActions = memo(
     isThreadReply,
     isPinned,
     disablePin,
-    onReply,
-    isHovered
+    onReply
   }: TMessageActionsProps) => {
     const { t } = useTranslation();
     const { recentEmojis } = useRecentEmojis();
@@ -71,35 +68,10 @@ const MessageActions = memo(
       [recentEmojis]
     );
 
-    const [isShiftDown, setIsShiftDown] = useState(false);
-
-    useEffect(() => {
-      if (!isHovered) return;
-
-      setIsShiftDown(false);
-
-      const onKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Shift') {
-          setIsShiftDown(true);
-        }
-      };
-      const onKeyUp = (e: KeyboardEvent) => {
-        if (e.key === 'Shift') {
-          setIsShiftDown(false);
-        }
-      };
-
-      document.addEventListener('keydown', onKeyDown);
-      document.addEventListener('keyup', onKeyUp);
-
-      return () => {
-        document.removeEventListener('keydown', onKeyDown);
-        document.removeEventListener('keyup', onKeyUp);
-      };
-    }, [isHovered]);
+    const isShiftHeld = useIsShiftHeld();
 
     const onDeleteClick = useCallback(async () => {
-      if (!isShiftDown) {
+      if (!isShiftHeld) {
         const choice = await requestConfirmation({
           title: t('deleteMessageTitle'),
           message: t('deleteMessageConfirm'),
@@ -117,7 +89,7 @@ const MessageActions = memo(
       } catch {
         toast.error(t('failedDeleteMessage'));
       }
-    }, [isShiftDown, messageId, t]);
+    }, [isShiftHeld, messageId, t]);
 
     const onEmojiSelect = useCallback(
       async (emoji: TEmojiItem) => {
@@ -189,7 +161,7 @@ const MessageActions = memo(
             <IconButton
               size="sm"
               variant="ghost"
-              icon={isShiftDown ? TRASH2_RED : Trash}
+              icon={isShiftHeld ? TRASH2_RED : Trash}
               onClick={onDeleteClick}
               title={t('deleteMessageTitle')}
             />
