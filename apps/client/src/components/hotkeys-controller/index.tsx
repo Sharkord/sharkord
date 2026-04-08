@@ -7,7 +7,7 @@ const HotkeysController = memo(() => {
       togglePluginSlotDebug();
     }
 
-    let hotkeyState: Record<string, boolean> = {};
+    const hotkeyState: Record<string, boolean> = {};
     hotkeyState['Shift'] = e.shiftKey;
     hotkeyState['Control'] = e.ctrlKey;
     if (e.key === 'Alt') {
@@ -18,7 +18,7 @@ const HotkeysController = memo(() => {
   }, []);
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
-    let hotkeyState: Record<string, boolean> = {};
+    const hotkeyState: Record<string, boolean> = {};
     hotkeyState['Shift'] = e.shiftKey;
     hotkeyState['Control'] = e.ctrlKey;
     hotkeyState['Alt'] = e.altKey;
