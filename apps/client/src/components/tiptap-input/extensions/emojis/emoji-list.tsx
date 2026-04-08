@@ -5,7 +5,7 @@ import {
   useImperativeHandle,
   useState
 } from 'react';
-import { shouldUseFallbackImage, type TEmojiItem } from '../helpers';
+import { shouldUseFallbackImage, type TEmojiItem } from '../../helpers';
 
 interface EmojiListProps {
   items: TEmojiItem[];
