@@ -145,7 +145,7 @@ describe('plugin-manager', () => {
       expect(info.loadError).toContain('not compatible');
     });
 
-    test.only('should load updated plugin code after server entry changes', async () => {
+    test('should load updated plugin code after server entry changes', async () => {
       const pluginServerEntryPath = path.join(
         PLUGINS_PATH,
         'plugin-a',
