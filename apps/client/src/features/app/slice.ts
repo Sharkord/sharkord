@@ -74,8 +74,8 @@ const initialState: TAppState = {
     false
   ),
   hotkeyIsHeld: getLocalStorageItemAsJSON<Record<string, boolean>>(
-    LocalStorageKey.HOTKEY_IS_HELD, 
-    {"Shift": false, "Control": false, "Alt": false}
+    LocalStorageKey.HOTKEY_IS_HELD,
+    { Shift: false, Control: false, Alt: false }
   )
 };
 
@@ -163,7 +163,10 @@ export const appSlice = createSlice({
     setPluginSlotDebug: (state, action: PayloadAction<boolean>) => {
       state.pluginSlotDebug = action.payload;
     },
-    setHotkeyIsHeld: (state, action: PayloadAction<Record<string, boolean>>) => {
+    setHotkeyIsHeld: (
+      state,
+      action: PayloadAction<Record<string, boolean>>
+    ) => {
       state.hotkeyIsHeld = action.payload;
     }
   }

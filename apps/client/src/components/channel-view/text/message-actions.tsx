@@ -23,12 +23,7 @@ import {
   type LucideIcon,
   type LucideProps
 } from 'lucide-react';
-import {
-  forwardRef,
-  memo,
-  useCallback,
-  useMemo
-} from 'react';
+import { forwardRef, memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 

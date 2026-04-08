@@ -8,7 +8,10 @@ import {
   browserNotificationsForRepliesSelector,
   browserNotificationsSelector,
   devicesSelector,
+  isAltHeldSelector,
   isAutoConnectingSelector,
+  isCtrlHeldSelector,
+  isShiftHeldSelector,
   loadingPluginsSelector,
   messageJumpTargetSelector,
   modViewOpenSelector,
@@ -16,10 +19,7 @@ import {
   pluginSlotDebugSelector,
   selectedDmChannelIdSelector,
   threadSidebarDataSelector,
-  voiceChatSidebarDataSelector,
-  isShiftHeldSelector,
-  isCtrlHeldSelector,
-  isAltHeldSelector
+  voiceChatSidebarDataSelector
 } from './selectors';
 
 export const useIsAppLoading = () => useSelector(appLoadingSelector);

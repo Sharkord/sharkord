@@ -257,4 +257,3 @@ export const setHotkeyIsHeld = (keysDown: Record<string, boolean>) => {
   store.dispatch(appSliceActions.setHotkeyIsHeld(keysDown));
   setLocalStorageItemAsJSON(LocalStorageKey.HOTKEY_IS_HELD, keysDown);
 };
-

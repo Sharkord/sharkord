@@ -36,7 +36,7 @@ const Message = memo(
     const { isOpen: isThreadOpen, parentMessageId: threadParentId } =
       useThreadSidebar();
     const ownUserId = useOwnUserId();
-    
+
     const canManage = useMemo(
       () => can(Permission.MANAGE_MESSAGES) || isFromOwnUser,
       [can, isFromOwnUser]
