@@ -25,15 +25,25 @@ const HotkeysController = memo(() => {
     setHotkeyIsHeld(hotkeyState);
   }, []);
 
+  const handleBlur = useCallback(() => {
+    setHotkeyIsHeld({
+      Shift: false,
+      Control: false,
+      Alt: false
+    });
+  }, []);
+
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
     };
-  }, [handleKeyDown, handleKeyUp]);
+  }, [handleKeyDown, handleKeyUp, handleBlur]);
   return null;
 });
 
