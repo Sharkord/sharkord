@@ -20,6 +20,7 @@ export type TCreateStreamOptions = {
   title: string;
   key: string;
   avatarUrl?: string;
+  bannerUrl?: string;
   producers: {
     audio?: Producer;
     video?: Producer;
@@ -32,6 +33,7 @@ export type TExternalStreamHandle = {
   update: (options: {
     title?: string;
     avatarUrl?: string;
+    bannerUrl?: string;
     producers?: {
       audio?: Producer;
       video?: Producer;

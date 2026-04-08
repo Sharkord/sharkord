@@ -35,13 +35,35 @@ export const SlashCommands = Extension.create<SlashCommandsOptions>({
         items: this.options.suggestion.items,
         render: this.options.suggestion.render,
         command: ({ editor, range, props }) => {
-          const commandText = `/${props.name} `;
+          const hasArgs = (props.args?.length ?? 0) > 0;
+
+          if (!hasArgs) {
+            const commandText = `/${props.name} `;
+
+            editor
+              .chain()
+              .focus()
+              .deleteRange(range)
+              .insertContent(commandText)
+              .run();
+
+            return;
+          }
 
           editor
             .chain()
             .focus()
             .deleteRange(range)
-            .insertContent(commandText)
+            .insertContent({
+              type: 'pluginCommand',
+              attrs: {
+                pluginId: props.pluginId,
+                commandName: props.name,
+                args: JSON.stringify(props.args ?? []),
+                values: '{}'
+              }
+            })
+            .insertContent(' ')
             .run();
         }
       })

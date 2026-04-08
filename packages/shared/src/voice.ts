@@ -18,6 +18,7 @@ export type TExternalStream = {
   key: string;
   pluginId: string;
   avatarUrl?: string;
+  bannerUrl?: string;
   tracks: TExternalStreamTracks;
 };
 

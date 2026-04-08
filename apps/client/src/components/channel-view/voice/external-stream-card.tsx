@@ -1,4 +1,5 @@
 import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
+import { useShowUserBannersInVoice } from '@/features/server/voice/hooks';
 import { cn } from '@/lib/utils';
 import type { TExternalStream } from '@sharkord/shared';
 import { Avatar, AvatarFallback, AvatarImage, IconButton } from '@sharkord/ui';
@@ -92,6 +93,7 @@ const ExternalStreamCard = memo(
     const { getVolume, setVolume, toggleMute, getExternalVolumeKey } =
       useVolumeControl();
 
+    const showUserBanners = useShowUserBannersInVoice();
     const volumeKey = getExternalVolumeKey(stream.pluginId, stream.key);
     const volume = getVolume(volumeKey);
     const isMuted = volume === 0;
@@ -153,7 +155,16 @@ const ExternalStreamCard = memo(
           cursor: hasVideo ? getCursor() : 'default'
         }}
       >
-        <CardGradient />
+        {stream.bannerUrl && showUserBanners ? (
+          <div
+            className="h-full w-full rounded-t-md bg-cover bg-center blur-sm brightness-50 bg-no-repeat absolute inset-0"
+            style={{
+              backgroundImage: `url("${stream.bannerUrl}")`
+            }}
+          />
+        ) : (
+          <CardGradient />
+        )}
 
         <ExternalStreamControls
           isPinned={isPinned}
