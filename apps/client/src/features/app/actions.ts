@@ -3,7 +3,6 @@ import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
 import {
   LocalStorageKey,
   setLocalStorageItem,
-  setLocalStorageItemAsJSON,
   setLocalStorageItemBool
 } from '@/helpers/storage';
 import type { TMessageJumpToTarget } from '@/types';
@@ -253,7 +252,6 @@ export const togglePluginSlotDebug = () => {
   setLocalStorageItemBool(LocalStorageKey.PLUGIN_SLOT_DEBUG, next);
 };
 
-export const setHotkeyIsHeld = (keysDown: Record<string, boolean>) => {
-  store.dispatch(appSliceActions.setHotkeyIsHeld(keysDown));
-  setLocalStorageItemAsJSON(LocalStorageKey.HOTKEY_IS_HELD, keysDown);
+export const setModifierKeysHeldMap = (keysDown: Record<string, boolean>) => {
+  store.dispatch(appSliceActions.setModifierKeysHeldMap(keysDown));
 };

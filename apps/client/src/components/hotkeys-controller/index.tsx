@@ -1,4 +1,7 @@
-import { setHotkeyIsHeld, togglePluginSlotDebug } from '@/features/app/actions';
+import {
+  setModifierKeysHeldMap,
+  togglePluginSlotDebug
+} from '@/features/app/actions';
 import { memo, useCallback, useEffect } from 'react';
 
 const HotkeysController = memo(() => {
@@ -14,7 +17,7 @@ const HotkeysController = memo(() => {
       e.preventDefault();
     }
     hotkeyState['Alt'] = e.altKey;
-    setHotkeyIsHeld(hotkeyState);
+    setModifierKeysHeldMap(hotkeyState);
   }, []);
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
@@ -22,11 +25,11 @@ const HotkeysController = memo(() => {
     hotkeyState['Shift'] = e.shiftKey;
     hotkeyState['Control'] = e.ctrlKey;
     hotkeyState['Alt'] = e.altKey;
-    setHotkeyIsHeld(hotkeyState);
+    setModifierKeysHeldMap(hotkeyState);
   }, []);
 
   const handleBlur = useCallback(() => {
-    setHotkeyIsHeld({
+    setModifierKeysHeldMap({
       Shift: false,
       Control: false,
       Alt: false

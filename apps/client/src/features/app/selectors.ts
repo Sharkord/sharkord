@@ -73,20 +73,11 @@ export const threadSidebarDataSelector = createSelector(
   })
 );
 
-export const isShiftHeldSelector = (state: IRootState) => {
-  if (state.app.hotkeyIsHeld) {
-    return state.app.hotkeyIsHeld['Shift'] || false;
-  }
-};
+export const isShiftHeldSelector = (state: IRootState) =>
+  state.app.modifierKeysHeldMap?.Shift ?? false;
 
-export const isCtrlHeldSelector = (state: IRootState) => {
-  if (state.app.hotkeyIsHeld) {
-    return state.app.hotkeyIsHeld['Control'] || false;
-  }
-};
+export const isCtrlHeldSelector = (state: IRootState) =>
+  state.app.modifierKeysHeldMap?.Control ?? false;
 
-export const isAltHeldSelector = (state: IRootState) => {
-  if (state.app.hotkeyIsHeld) {
-    return state.app.hotkeyIsHeld['Alt'] || false;
-  }
-};
+export const isAltHeldSelector = (state: IRootState) =>
+  state.app.modifierKeysHeldMap?.Alt ?? false;
