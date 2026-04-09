@@ -19,18 +19,13 @@ import {
   Reply,
   Smile,
   Trash,
-  Trash2,
-  type LucideIcon,
-  type LucideProps
+  Trash2
 } from 'lucide-react';
-import { forwardRef, memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 const MAX_QUICK_EMOJIS = 4;
-const TRASH2_RED: LucideIcon = forwardRef<SVGSVGElement, LucideProps>(
-  (props, ref) => <Trash2 ref={ref} {...props} className={'text-destructive'} />
-);
 
 type TMessageActionsProps = {
   messageId: number;
@@ -156,7 +151,8 @@ const MessageActions = memo(
             <IconButton
               size="sm"
               variant="ghost"
-              icon={isShiftHeld ? TRASH2_RED : Trash}
+              icon={isShiftHeld ? Trash2 : Trash}
+              className={isShiftHeld ? 'text-destructive' : ''}
               onClick={onDeleteClick}
               title={t('deleteMessageTitle')}
             />
