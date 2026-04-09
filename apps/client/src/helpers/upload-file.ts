@@ -21,8 +21,10 @@ const getSafeFileName = (name: string) => {
 const uploadImage = async (
   file: File
 ): Promise<[upload: TTempFile | undefined, errorMsg: string]> => {
+  if (!file) return [undefined, 'No file selected. Please try again.'];
+  
   if (!file.type.startsWith('image/')) {
-    return [undefined, 'Invalid file type. Please Try Again.'];
+    return [undefined, 'Invalid file type. Please try Again.'];
   }
 
   const tempFile = await uploadFile(file);
