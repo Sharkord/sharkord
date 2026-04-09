@@ -10,22 +10,22 @@ const HotkeysController = memo(() => {
       togglePluginSlotDebug();
     }
 
-    const hotkeyState: Record<string, boolean> = {};
-    hotkeyState['Shift'] = e.shiftKey;
-    hotkeyState['Control'] = e.ctrlKey;
     if (e.key === 'Alt') {
       e.preventDefault();
     }
-    hotkeyState['Alt'] = e.altKey;
-    setModifierKeysHeldMap(hotkeyState);
+    setModifierKeysHeldMap({
+      Shift: e.shiftKey,
+      Control: e.ctrlKey,
+      Alt: e.altKey
+    });
   }, []);
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
-    const hotkeyState: Record<string, boolean> = {};
-    hotkeyState['Shift'] = e.shiftKey;
-    hotkeyState['Control'] = e.ctrlKey;
-    hotkeyState['Alt'] = e.altKey;
-    setModifierKeysHeldMap(hotkeyState);
+    setModifierKeysHeldMap({
+      Shift: e.shiftKey,
+      Control: e.ctrlKey,
+      Alt: e.altKey
+    });
   }, []);
 
   const handleBlur = useCallback(() => {
