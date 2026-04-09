@@ -114,6 +114,13 @@ class PluginExecutableRegistry<
     }
 
     try {
+      this.pluginLogger.log(
+        pluginId,
+        'debug',
+        `Executing ${this.options.kind} '${definitionName}' with input:`,
+        input
+      );
+
       const executor = this.options.getExecutor(foundDefinition);
 
       if (!executor) {
