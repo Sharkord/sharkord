@@ -13,6 +13,26 @@ const getSafeFileName = (name: string) => {
   );
 };
 
+/**
+ * Uploads an image file to the server. Validates that the file is an image before uploading.
+ * @param file The image file to upload.
+ * @returns A tuple containing the uploaded file information and an error message, if any.
+ */
+const uploadImage = async (
+  file: File
+): Promise<[upload: TTempFile | undefined, errorMsg: string]> => {
+  if (!file.type.startsWith('image/')) {
+    return [undefined, 'Invalid file type. Please Try Again.'];
+  }
+
+  const tempFile = await uploadFile(file);
+  if (!tempFile) {
+    return [undefined, 'Upload failed. Please try again.'];
+  }
+
+  return [tempFile, ''];
+};
+
 type TUploadProgress = {
   loaded: number;
   total: number;
@@ -102,4 +122,4 @@ const uploadFiles = async (
   return uploadedFiles;
 };
 
-export { uploadFile, uploadFiles, type TUploadProgress };
+export { uploadFile, uploadFiles, uploadImage, type TUploadProgress };

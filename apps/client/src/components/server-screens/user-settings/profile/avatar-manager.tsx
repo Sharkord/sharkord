@@ -1,5 +1,5 @@
 import { UserAvatar } from '@/components/user-avatar';
-import { uploadFile } from '@/helpers/upload-file';
+import { uploadImage } from '@/helpers/upload-file';
 import { useFilePicker } from '@/hooks/use-file-picker';
 import { getTRPCClient } from '@/lib/trpc';
 import { getTrpcError, type TJoinedPublicUser } from '@sharkord/shared';
@@ -33,10 +33,10 @@ const AvatarManager = memo(({ user }: TAvatarManagerProps) => {
     try {
       const [file] = await openFilePicker('image/*');
 
-      const temporaryFile = await uploadFile(file);
+      const [temporaryFile, errorMsg] = await uploadImage(file);
 
       if (!temporaryFile) {
-        toast.error('Could not upload file. Please try again.');
+        toast.error(errorMsg);
         return;
       }
 
