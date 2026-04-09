@@ -16,7 +16,7 @@ const getSafeFileName = (name: string) => {
 /**
  * Uploads an image file to the server. Validates that the file is an image before uploading.
  * @param file The image file to upload.
- * @returns A tuple containing the uploaded file information and an error message, if any.
+ * @returns A TTempFile containing the uploaded file information, if successful.
  */
 const uploadImage = async (file: File): Promise<TTempFile | undefined> => {
   if (!file) {
