@@ -64,6 +64,18 @@ describe('/interface', () => {
       fs.mkdirSync(testDir, { recursive: true });
     }
 
+    const hashedJsPath = path.join(assetsDir, 'main-a1b2c3ef.js');
+
+    if (!fs.existsSync(hashedJsPath)) {
+      fs.writeFileSync(hashedJsPath, 'console.log("hashed");');
+    }
+
+    const hashedCssPath = path.join(assetsDir, 'style.d4e5f678.css');
+
+    if (!fs.existsSync(hashedCssPath)) {
+      fs.writeFileSync(hashedCssPath, 'body { color: red; }');
+    }
+
     const indexPath = path.join(testInterfacePath, 'index.html');
 
     if (!fs.existsSync(indexPath)) {
@@ -254,5 +266,116 @@ describe('/interface', () => {
     const response = await fetch(`${testsBaseUrl}/testdir/`);
 
     expect(response.status).toBe(404);
+  });
+
+  test('should include ETag and Last-Modified on normal responses', async () => {
+    const response = await fetch(`${testsBaseUrl}/index.html`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('ETag')).toBeDefined();
+    expect(response.headers.get('Last-Modified')).toBeDefined();
+  });
+
+  test('should use no-cache policy for non-hashed files', async () => {
+    const response = await fetch(`${testsBaseUrl}/index.html`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('no-cache');
+  });
+
+  test('should use immutable policy for hashed asset files', async () => {
+    const response = await fetch(`${testsBaseUrl}/assets/main-a1b2c3ef.js`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, max-age=31536000, immutable'
+    );
+  });
+
+  test('should use immutable policy for hashed CSS files', async () => {
+    const response = await fetch(`${testsBaseUrl}/assets/style.d4e5f678.css`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, max-age=31536000, immutable'
+    );
+  });
+
+  test('should use no-cache policy for non-hashed asset files', async () => {
+    const response = await fetch(`${testsBaseUrl}/assets/test.js`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('no-cache');
+  });
+
+  test('should return 304 when If-None-Match matches ETag', async () => {
+    const firstResponse = await fetch(`${testsBaseUrl}/index.html`);
+    const etag = firstResponse.headers.get('ETag');
+
+    expect(firstResponse.status).toBe(200);
+    expect(etag).toBeDefined();
+
+    const secondResponse = await fetch(`${testsBaseUrl}/index.html`, {
+      headers: { 'If-None-Match': etag! }
+    });
+
+    expect(secondResponse.status).toBe(304);
+    expect(secondResponse.headers.get('ETag')).toBe(etag);
+    expect(secondResponse.headers.get('Cache-Control')).toBe('no-cache');
+
+    const body = await secondResponse.text();
+
+    expect(body).toBe('');
+  });
+
+  test('should return 304 when If-Modified-Since matches Last-Modified', async () => {
+    const firstResponse = await fetch(`${testsBaseUrl}/index.html`);
+    const lastModified = firstResponse.headers.get('Last-Modified');
+
+    expect(firstResponse.status).toBe(200);
+    expect(lastModified).toBeDefined();
+
+    const secondResponse = await fetch(`${testsBaseUrl}/index.html`, {
+      headers: { 'If-Modified-Since': lastModified! }
+    });
+
+    expect(secondResponse.status).toBe(304);
+    expect(secondResponse.headers.get('Last-Modified')).toBe(lastModified);
+  });
+
+  test('should return 304 with immutable cache policy for hashed assets', async () => {
+    const firstResponse = await fetch(
+      `${testsBaseUrl}/assets/main-a1b2c3ef.js`
+    );
+    const etag = firstResponse.headers.get('ETag');
+
+    expect(firstResponse.status).toBe(200);
+    expect(etag).toBeDefined();
+
+    const secondResponse = await fetch(
+      `${testsBaseUrl}/assets/main-a1b2c3ef.js`,
+      { headers: { 'If-None-Match': etag! } }
+    );
+
+    expect(secondResponse.status).toBe(304);
+    expect(secondResponse.headers.get('Cache-Control')).toBe(
+      'public, max-age=31536000, immutable'
+    );
+  });
+
+  test('should return no-store on 404 responses', async () => {
+    const response = await fetch(`${testsBaseUrl}/non-existent-file.html`);
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+  });
+
+  test('should return no-store on 403 responses', async () => {
+    const response = await fetch(
+      `${testsBaseUrl}/${encodeURIComponent('../../../etc/passwd')}`
+    );
+
+    expect(response.status).toBe(403);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
   });
 });

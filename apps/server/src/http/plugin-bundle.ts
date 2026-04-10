@@ -5,6 +5,7 @@ import path from 'path';
 import { getSettings } from '../db/queries/server';
 import { PLUGINS_PATH } from '../helpers/paths';
 import { logger } from '../logger';
+import { buildEtag, sendJsonError, sendNotModified } from './helpers';
 
 const pluginBundleRouteHandler = async (
   req: http.IncomingMessage,
@@ -13,15 +14,13 @@ const pluginBundleRouteHandler = async (
   const { enablePlugins } = await getSettings();
 
   if (!enablePlugins) {
-    res.writeHead(403, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Plugins are disabled on this server' }));
+    sendJsonError(res, 403, 'Plugins are disabled on this server');
 
     return;
   }
 
   if (!req.url) {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Bad request' }));
+    sendJsonError(res, 400, 'Bad request');
 
     return;
   }
@@ -31,8 +30,7 @@ const pluginBundleRouteHandler = async (
   try {
     url = new URL(req.url, `http://${req.headers.host}`);
   } catch {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Bad request' }));
+    sendJsonError(res, 400, 'Bad request');
     return;
   }
 
@@ -41,8 +39,7 @@ const pluginBundleRouteHandler = async (
   try {
     decodedPathname = decodeURIComponent(url.pathname);
   } catch {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Invalid URL encoding' }));
+    sendJsonError(res, 400, 'Invalid URL encoding');
 
     return;
   }
@@ -50,19 +47,13 @@ const pluginBundleRouteHandler = async (
   const [, route, pluginId, ...filePathParts] = decodedPathname.split('/');
 
   if (route !== 'plugin-bundle') {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
+    sendJsonError(res, 404, 'Not found');
 
     return;
   }
 
   if (!pluginId || filePathParts.length === 0) {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(
-      JSON.stringify({
-        error: 'Plugin ID and file path are required in the URL'
-      })
-    );
+    sendJsonError(res, 400, 'Plugin ID and file path are required in the URL');
 
     return;
   }
@@ -72,15 +63,13 @@ const pluginBundleRouteHandler = async (
   const requestedPath = path.resolve(pluginPath, requestedSubPath);
 
   if (!pluginPath.startsWith(path.resolve(PLUGINS_PATH))) {
-    res.writeHead(403, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Forbidden' }));
+    sendJsonError(res, 403, 'Forbidden');
 
     return;
   }
 
   if (!requestedPath.startsWith(pluginPath)) {
-    res.writeHead(403, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Forbidden' }));
+    sendJsonError(res, 403, 'Forbidden');
 
     return;
   }
@@ -88,8 +77,7 @@ const pluginBundleRouteHandler = async (
   const fileName = path.basename(requestedPath);
 
   if (!fs.existsSync(requestedPath)) {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'File not found on disk' }));
+    sendJsonError(res, 404, 'File not found on disk');
 
     return;
   }
@@ -97,9 +85,23 @@ const pluginBundleRouteHandler = async (
   const stats = fs.statSync(requestedPath);
 
   if (stats.isDirectory()) {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'File not found on disk' }));
+    sendJsonError(res, 404, 'File not found on disk');
 
+    return;
+  }
+
+  const etag = buildEtag(null, stats);
+  const lastModified = stats.mtime.toUTCString();
+  const cacheControl = 'no-cache';
+
+  if (
+    sendNotModified(req, res, {
+      etag,
+      lastModified,
+      cacheControl,
+      mtimeMs: stats.mtimeMs
+    })
+  ) {
     return;
   }
 
@@ -109,7 +111,10 @@ const pluginBundleRouteHandler = async (
   res.writeHead(200, {
     'Content-Type': file.type || 'application/octet-stream',
     'Content-Length': file.size,
-    'Content-Disposition': `attachment; filename="${fileName}"`
+    'Content-Disposition': `attachment; filename="${fileName}"`,
+    ETag: etag,
+    'Last-Modified': lastModified,
+    'Cache-Control': cacheControl
   });
 
   fileStream.pipe(res);
@@ -118,8 +123,7 @@ const pluginBundleRouteHandler = async (
     logger.error('Error serving file: %s', getErrorMessage(err));
 
     if (!res.headersSent) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Internal server error' }));
+      sendJsonError(res, 500, 'Internal server error');
     }
   });
 

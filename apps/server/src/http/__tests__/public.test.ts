@@ -176,6 +176,7 @@ describe('/public', () => {
     const response = await fetch(`${testsBaseUrl}/public/nonexistent-file.txt`);
 
     expect(response.status).toBe(404);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
 
     const data = (await response.json()) as { error: string };
 
@@ -483,6 +484,77 @@ describe('/public', () => {
     expect(response.headers.get('Accept-Ranges')).toBe('bytes');
   });
 
+  test('should include cache validators and public cache policy on normal requests', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('ETag')).toBeDefined();
+    expect(response.headers.get('Last-Modified')).toBeDefined();
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, max-age=3600, must-revalidate'
+    );
+    expect(response.headers.get('Vary')).toBe('Range');
+  });
+
+  test('should return 304 when If-None-Match matches ETag', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    const firstResponse = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+    );
+    const etag = firstResponse.headers.get('ETag');
+
+    expect(firstResponse.status).toBe(200);
+    expect(etag).toBeDefined();
+
+    const secondResponse = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`,
+      {
+        headers: {
+          'If-None-Match': etag!
+        }
+      }
+    );
+
+    expect(secondResponse.status).toBe(304);
+    expect(secondResponse.headers.get('ETag')).toBe(etag);
+
+    const body = await secondResponse.text();
+
+    expect(body).toBe('');
+  });
+
+  test('should return 304 when If-Modified-Since is current Last-Modified value', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    const firstResponse = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+    );
+    const lastModified = firstResponse.headers.get('Last-Modified');
+
+    expect(firstResponse.status).toBe(200);
+    expect(lastModified).toBeDefined();
+
+    const secondResponse = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`,
+      {
+        headers: {
+          'If-Modified-Since': lastModified!
+        }
+      }
+    );
+
+    expect(secondResponse.status).toBe(304);
+    expect(secondResponse.headers.get('Last-Modified')).toBe(lastModified);
+  });
+
   test('should return 206 Partial Content for valid Range request', async () => {
     const file = filesToCreate[0];
     const dbFile = await getFileByMessageId(file!.messageId!);
@@ -507,6 +579,31 @@ describe('/public', () => {
 
     expect(body.length).toBe(5);
     expect(body).toBe(file!.content.slice(0, 5));
+  });
+
+  test('should prefer range response over 304 when Range and If-None-Match are both present', async () => {
+    const file = filesToCreate[0];
+    const dbFile = await getFileByMessageId(file!.messageId!);
+
+    const firstResponse = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+    );
+    const etag = firstResponse.headers.get('ETag');
+
+    expect(etag).toBeDefined();
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`,
+      {
+        headers: {
+          Range: 'bytes=0-4',
+          'If-None-Match': etag!
+        }
+      }
+    );
+
+    expect(response.status).toBe(206);
+    expect(response.headers.get('Content-Length')).toBe('5');
   });
 
   test('should return 206 for Range request with open end', async () => {
@@ -631,6 +728,7 @@ describe('/public', () => {
     );
 
     expect(response.status).toBe(403);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
 
     const data = (await response.json()) as { error: string };
 
@@ -691,6 +789,17 @@ describe('/public', () => {
     );
 
     expect(response.status).toBe(200);
+
+    const cacheControl = response.headers.get('Cache-Control');
+
+    expect(cacheControl).toBeDefined();
+    expect(cacheControl).toInclude('private');
+    expect(cacheControl).toInclude('must-revalidate');
+
+    const maxAgeMatch = cacheControl!.match(/max-age=(\d+)/);
+
+    expect(maxAgeMatch).toBeDefined();
+    expect(Number(maxAgeMatch![1]!)).toBeLessThanOrEqual(300);
 
     const responseText = await response.text();
 

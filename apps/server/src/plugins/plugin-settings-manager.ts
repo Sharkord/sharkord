@@ -184,6 +184,7 @@ class PluginSettingsManager {
     }
 
     const values = this.settingValues.get(pluginId) || {};
+
     values[key] = value;
     this.settingValues.set(pluginId, values);
 

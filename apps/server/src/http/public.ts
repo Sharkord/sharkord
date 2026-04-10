@@ -10,6 +10,22 @@ import { files } from '../db/schema';
 import { verifyFileToken } from '../helpers/files-crypto';
 import { PUBLIC_PATH } from '../helpers/paths';
 import { logger } from '../logger';
+import {
+  buildCacheControl,
+  buildEtag,
+  sendJsonError,
+  sendNotModified
+} from './helpers';
+
+const INLINE_ALLOW_LIST = [
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/avif',
+  'video/mp4',
+  'audio/mpeg'
+];
 
 const pipeFileStream = (
   filePath: string,
@@ -24,7 +40,10 @@ const pipeFileStream = (
     logger.error('Error serving file: %s', getErrorMessage(err));
 
     if (!res.headersSent) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.writeHead(500, {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store'
+      });
       res.end(JSON.stringify({ error: 'Internal server error' }));
     }
   });
@@ -43,8 +62,7 @@ const publicRouteHandler = async (
   res: http.ServerResponse
 ) => {
   if (!req.url) {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Bad request' }));
+    sendJsonError(res, 400, 'Bad request');
     return;
   }
 
@@ -58,31 +76,28 @@ const publicRouteHandler = async (
     .get();
 
   if (!dbFile) {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'File not found' }));
-
+    sendJsonError(res, 404, 'File not found');
     return;
   }
 
   const isOrphaned = await isFileOrphaned(dbFile.id);
 
   if (isOrphaned) {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'File not found' }));
-
+    sendJsonError(res, 404, 'File not found');
     return;
   }
 
   const { storageSignedUrlsEnabled, logoId } = await getSettings();
+  const isSignedUrlProtected = storageSignedUrlsEnabled && dbFile.id !== logoId;
+  let tokenExpiresAt: number | null = null;
 
   // server logo is the only exception to signed URLs
-  if (storageSignedUrlsEnabled && dbFile.id !== logoId) {
+  if (isSignedUrlProtected) {
     const accessTokenParam = url.searchParams.get('accessToken');
     const expiresParam = url.searchParams.get('expires');
 
     if (!accessTokenParam || !expiresParam) {
-      res.writeHead(403, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Forbidden' }));
+      sendJsonError(res, 403, 'Forbidden');
 
       return;
     }
@@ -90,11 +105,12 @@ const publicRouteHandler = async (
     const expiresAt = parseInt(expiresParam, 10);
 
     if (isNaN(expiresAt)) {
-      res.writeHead(403, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Forbidden' }));
+      sendJsonError(res, 403, 'Forbidden');
 
       return;
     }
+
+    tokenExpiresAt = expiresAt;
 
     const isValidToken = verifyFileToken(
       dbFile.id,
@@ -103,8 +119,7 @@ const publicRouteHandler = async (
     );
 
     if (!isValidToken) {
-      res.writeHead(403, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Forbidden' }));
+      sendJsonError(res, 403, 'Forbidden');
 
       return;
     }
@@ -113,8 +128,7 @@ const publicRouteHandler = async (
   const filePath = path.join(PUBLIC_PATH, dbFile.name);
 
   if (!fs.existsSync(filePath)) {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'File not found on disk' }));
+    sendJsonError(res, 404, 'File not found on disk');
 
     logger.error(
       'File %s exists in database but not on disk (%s)',
@@ -126,18 +140,11 @@ const publicRouteHandler = async (
   }
 
   const stat = fs.statSync(filePath);
+  const etag = buildEtag(dbFile.md5, stat);
+  const lastModified = stat.mtime.toUTCString();
+  const cacheControl = buildCacheControl(isSignedUrlProtected, tokenExpiresAt);
 
-  const inlineAllowlist = [
-    'image/png',
-    'image/jpeg',
-    'image/gif',
-    'image/webp',
-    'image/avif',
-    'video/mp4',
-    'audio/mpeg'
-  ];
-
-  const contentDisposition = inlineAllowlist.includes(dbFile.mimeType)
+  const contentDisposition = INLINE_ALLOW_LIST.includes(dbFile.mimeType)
     ? 'inline'
     : 'attachment';
 
@@ -154,14 +161,29 @@ const publicRouteHandler = async (
 
   const rangeHeader = req.headers.range;
 
+  if (
+    !rangeHeader &&
+    sendNotModified(req, res, {
+      etag,
+      lastModified,
+      cacheControl,
+      mtimeMs: stat.mtimeMs,
+      extraHeaders: { Vary: 'Range' }
+    })
+  ) {
+    return;
+  }
+
   if (rangeHeader) {
     const match = rangeHeader.match(/^bytes=(\d+)-(\d*)$/);
 
     if (!match) {
       res.writeHead(416, {
-        'Content-Range': `bytes */${stat.size}`
+        'Content-Range': `bytes */${stat.size}`,
+        'Cache-Control': 'no-store'
       });
       res.end();
+
       return;
     }
 
@@ -170,9 +192,11 @@ const publicRouteHandler = async (
 
     if (start >= stat.size || end >= stat.size || start > end) {
       res.writeHead(416, {
-        'Content-Range': `bytes */${stat.size}`
+        'Content-Range': `bytes */${stat.size}`,
+        'Cache-Control': 'no-store'
       });
       res.end();
+
       return;
     }
 
@@ -183,7 +207,11 @@ const publicRouteHandler = async (
       'Content-Length': contentLength,
       'Content-Range': `bytes ${start}-${end}/${stat.size}`,
       'Accept-Ranges': 'bytes',
-      'Content-Disposition': dispositionHeader
+      'Content-Disposition': dispositionHeader,
+      ETag: etag,
+      'Last-Modified': lastModified,
+      'Cache-Control': cacheControl,
+      Vary: 'Range'
     });
 
     pipeFileStream(filePath, res, { start, end });
@@ -192,7 +220,11 @@ const publicRouteHandler = async (
       'Content-Type': dbFile.mimeType,
       'Content-Length': stat.size,
       'Accept-Ranges': 'bytes',
-      'Content-Disposition': dispositionHeader
+      'Content-Disposition': dispositionHeader,
+      ETag: etag,
+      'Last-Modified': lastModified,
+      'Cache-Control': cacheControl,
+      Vary: 'Range'
     });
 
     pipeFileStream(filePath, res);
