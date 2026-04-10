@@ -21,6 +21,9 @@ type TMessagesGroupProps = {
   disableReactions?: boolean;
   onReplyMessageSelect?: (message: TJoinedMessage) => void;
   replyTargetMessageId?: number;
+  editingMessageId?: number;
+  onCancelEdit?: () => void;
+  onStartEdit?: (messageId: number) => void;
 };
 
 const MessagesGroup = memo(
@@ -30,7 +33,10 @@ const MessagesGroup = memo(
     disableFiles,
     disableReactions,
     onReplyMessageSelect,
-    replyTargetMessageId
+    replyTargetMessageId,
+    editingMessageId,
+    onCancelEdit,
+    onStartEdit
   }: TMessagesGroupProps) => {
     const firstMessage = group[0];
     const pluginMetadata = usePluginMetadata(firstMessage.pluginId);
@@ -96,6 +102,9 @@ const MessagesGroup = memo(
                   disableReactions={disableReactions}
                   onReplyMessageSelect={onReplyMessageSelect}
                   isInlineReplyTarget={message.id === replyTargetMessageId}
+                  editingMessageId={editingMessageId}
+                  onCancelEdit={onCancelEdit}
+                  onStartEdit={onStartEdit}
                 />
               </div>
             ))}

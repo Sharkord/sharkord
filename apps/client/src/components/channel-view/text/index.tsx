@@ -23,6 +23,7 @@ import { throttle } from 'lodash-es';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { useEditLastMessage } from './hooks/use-edit-last-message';
 import { useScrollController } from './hooks/use-scroll-controller';
 import { useScrollToJumpTarget } from './hooks/use-scroll-to-jump-target';
 import { MessagesGroup } from './messages-group';
@@ -63,6 +64,8 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
   >();
   const typingUsers = useTypingUsersByChannelId(channelId);
   const composeRef = useRef<TMessageComposeHandle>(null);
+  const { editingMessageId, onEditLastMessage, onCancelEdit, startEdit } =
+    useEditLastMessage(messages, composeRef);
 
   const replyTarget = useMemo<TReplyTarget | undefined>(() => {
     if (!replyingToMessage) {
@@ -183,6 +186,9 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
               group={group}
               onReplyMessageSelect={onReplyMessageSelect}
               replyTargetMessageId={replyingToMessage?.id}
+              editingMessageId={editingMessageId}
+              onCancelEdit={onCancelEdit}
+              onStartEdit={startEdit}
             />
           ))}
         </div>
@@ -198,6 +204,7 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
         typingUsers={typingUsers}
         showPluginSlot
         onCancelReply={() => setReplyingToMessage(undefined)}
+        onEditLastMessage={onEditLastMessage}
         replyTarget={replyTarget}
       />
     </>

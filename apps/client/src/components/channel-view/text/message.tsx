@@ -5,7 +5,7 @@ import { useIsOwnUser, useOwnUserId } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
 import { hasMention, Permission, type TJoinedMessage } from '@sharkord/shared';
 import { MessageSquareText } from 'lucide-react';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageActions } from './message-actions';
 import { MessageEditInline } from './message-edit-inline';
@@ -18,6 +18,9 @@ type TMessageProps = {
   disableReactions?: boolean;
   onReplyMessageSelect?: (message: TJoinedMessage) => void;
   isInlineReplyTarget?: boolean;
+  editingMessageId?: number;
+  onCancelEdit?: () => void;
+  onStartEdit?: (messageId: number) => void;
 };
 
 const Message = memo(
@@ -27,10 +30,13 @@ const Message = memo(
     disableFiles,
     disableReactions,
     onReplyMessageSelect,
-    isInlineReplyTarget
+    isInlineReplyTarget,
+    editingMessageId,
+    onCancelEdit,
+    onStartEdit
   }: TMessageProps) => {
     const { t } = useTranslation('common');
-    const [isEditing, setIsEditing] = useState(false);
+    const isEditing = editingMessageId === message.id;
     const isFromOwnUser = useIsOwnUser(message.userId);
     const can = useCan();
     const { isOpen: isThreadOpen, parentMessageId: threadParentId } =
@@ -84,7 +90,7 @@ const Message = memo(
             )}
             {!disableActions && (
               <MessageActions
-                onEdit={() => setIsEditing(true)}
+                onEdit={() => onStartEdit?.(message.id)}
                 canManage={canManage}
                 messageId={message.id}
                 channelId={message.channelId}
@@ -99,7 +105,7 @@ const Message = memo(
         ) : (
           <MessageEditInline
             message={message}
-            onBlur={() => setIsEditing(false)}
+            onBlur={() => onCancelEdit?.()}
           />
         )}
       </div>

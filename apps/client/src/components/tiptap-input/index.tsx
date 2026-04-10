@@ -40,6 +40,7 @@ type TTiptapInputProps = {
   onChange?: (html: string) => void;
   onSubmit?: () => void;
   onCancel?: () => void;
+  onArrowUp?: () => void;
   onTyping?: () => void;
   commands?: TCommandInfo[];
   ref?: Ref<TTiptapInputHandle>;
@@ -55,6 +56,7 @@ const TiptapInput = memo(
     onChange,
     onSubmit,
     onCancel,
+    onArrowUp,
     onTyping,
     disabled,
     readOnly,
@@ -167,6 +169,16 @@ const TiptapInput = memo(
           if (event.key === 'Escape') {
             event.preventDefault();
             onCancel?.();
+            return true;
+          }
+
+          if (
+            event.key === 'ArrowUp' &&
+            editor?.isEmpty &&
+            !hasSuggestions &&
+            onArrowUp
+          ) {
+            onArrowUp();
             return true;
           }
 

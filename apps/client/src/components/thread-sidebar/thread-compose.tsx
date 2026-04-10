@@ -1,4 +1,7 @@
-import { MessageCompose } from '@/components/message-compose';
+import {
+  MessageCompose,
+  type TMessageComposeHandle
+} from '@/components/message-compose';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { getTRPCClient } from '@/lib/trpc';
@@ -11,8 +14,20 @@ import {
   type TJoinedMessage
 } from '@sharkord/shared';
 import { throttle } from 'lodash-es';
-import { memo, useCallback, useMemo, useState } from 'react';
+import {
+  memo,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type Ref
+} from 'react';
 import { toast } from 'sonner';
+
+type TThreadComposeHandle = {
+  focus: () => void;
+};
 
 type TThreadComposeProps = {
   parentMessageId: number;
@@ -20,6 +35,8 @@ type TThreadComposeProps = {
   typingUsers: TJoinedPublicUser[];
   replyingToMessage?: TJoinedMessage;
   onCancelReply?: () => void;
+  onEditLastMessage?: () => void;
+  ref?: Ref<TThreadComposeHandle>;
 };
 
 const ThreadCompose = memo(
@@ -28,9 +45,18 @@ const ThreadCompose = memo(
     channelId,
     typingUsers,
     replyingToMessage,
-    onCancelReply
+    onCancelReply,
+    onEditLastMessage,
+    ref
   }: TThreadComposeProps) => {
     const [newMessage, setNewMessage] = useState('');
+    const composeRef = useRef<TMessageComposeHandle>(null);
+
+    useImperativeHandle(
+      ref,
+      () => ({ focus: () => composeRef.current?.focus() }),
+      []
+    );
 
     const replyTarget = useMemo<TReplyTarget | undefined>(() => {
       if (!replyingToMessage) {
@@ -97,6 +123,7 @@ const ThreadCompose = memo(
 
     return (
       <MessageCompose
+        ref={composeRef}
         channelId={channelId}
         message={newMessage}
         onMessageChange={setNewMessage}
@@ -105,9 +132,10 @@ const ThreadCompose = memo(
         typingUsers={typingUsers}
         replyTarget={replyTarget}
         onCancelReply={onCancelReply}
+        onEditLastMessage={onEditLastMessage}
       />
     );
   }
 );
 
-export { ThreadCompose };
+export { ThreadCompose, type TThreadComposeHandle };

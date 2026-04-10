@@ -3,12 +3,13 @@ import { useThreadMessages } from '@/features/server/messages/hooks';
 import type { TJoinedMessage } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
 import { MessageSquareText } from 'lucide-react';
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useEditLastMessage } from '../channel-view/text/hooks/use-edit-last-message';
 import { useScrollController } from '../channel-view/text/hooks/use-scroll-controller';
 import { MessagesGroup } from '../channel-view/text/messages-group';
 import { ParentMessagePreview } from './parent-message-preview';
-import { ThreadCompose } from './thread-compose';
+import { ThreadCompose, type TThreadComposeHandle } from './thread-compose';
 import { ThreadHeader } from './thread-header';
 
 type TThreadContentProps = {
@@ -26,6 +27,9 @@ const ThreadContent = memo(
     >();
 
     const typingUsers = useTypingUsersByThreadId(parentMessageId);
+    const composeRef = useRef<TThreadComposeHandle>(null);
+    const { editingMessageId, onEditLastMessage, onCancelEdit, startEdit } =
+      useEditLastMessage(messages, composeRef);
 
     const { containerRef, onScroll, onAsyncContentLoaded } =
       useScrollController({
@@ -78,6 +82,9 @@ const ThreadContent = memo(
                         group={group}
                         onReplyMessageSelect={onReplyMessageSelect}
                         replyTargetMessageId={replyingToMessage?.id}
+                        editingMessageId={editingMessageId}
+                        onCancelEdit={onCancelEdit}
+                        onStartEdit={startEdit}
                       />
                     ))}
                   </div>
@@ -87,11 +94,13 @@ const ThreadContent = memo(
           )}
 
           <ThreadCompose
+            ref={composeRef}
             parentMessageId={parentMessageId}
             channelId={channelId}
             typingUsers={typingUsers}
             replyingToMessage={replyingToMessage}
             onCancelReply={() => setReplyingToMessage(undefined)}
+            onEditLastMessage={onEditLastMessage}
           />
         </div>
       </div>
