@@ -13,6 +13,20 @@ const getSafeFileName = (name: string) => {
   );
 };
 
+const uploadImage = async (file: File): Promise<TTempFile | undefined> => {
+  if (!file) {
+    toast.error('No file selected. Please try again.');
+    return undefined;
+  }
+
+  if (!file.type.startsWith('image/')) {
+    toast.error('Invalid file type. Please try Again.');
+    return undefined;
+  }
+
+  return await uploadFile(file);
+};
+
 type TUploadProgress = {
   loaded: number;
   total: number;
@@ -102,4 +116,4 @@ const uploadFiles = async (
   return uploadedFiles;
 };
 
-export { uploadFile, uploadFiles, type TUploadProgress };
+export { uploadFile, uploadFiles, uploadImage, type TUploadProgress };

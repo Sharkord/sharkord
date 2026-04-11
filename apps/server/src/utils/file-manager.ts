@@ -72,6 +72,14 @@ class TemporaryFileManager {
     return !!this.temporaryFiles.find((file) => file.id === id);
   };
 
+  public temporaryFileHasMimeType = (
+    id: string,
+    mimeTypePrefix: string
+  ): boolean => {
+    const bunFile = Bun.file(this.getTemporaryFile(id)?.path || '');
+    return bunFile && bunFile.type.startsWith(mimeTypePrefix);
+  };
+
   public addTemporaryFile = async ({
     filePath,
     size,
@@ -152,6 +160,9 @@ class FileManager {
 
   public getTemporaryFile = this.tempFileManager.getTemporaryFile;
   public temporaryFileExists = this.tempFileManager.temporaryFileExists;
+
+  public temporaryFileHasMimeType =
+    this.tempFileManager.temporaryFileHasMimeType;
 
   private handleStorageLimits = async (tempFile: TTempFile) => {
     const [settings, userStorage, serverStorage] = await Promise.all([
