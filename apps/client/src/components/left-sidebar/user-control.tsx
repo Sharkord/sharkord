@@ -21,14 +21,23 @@ const UserControl = memo(() => {
   const { ownVoiceState, toggleMic, toggleSound } = useVoice();
   const channelCan = useChannelCan(currentVoiceChannelId);
 
+  const handleToggleMicShortcut = useCallback(() => {
+    if (!!currentVoiceChannelId && !channelCan(ChannelPermission.SPEAK)) return;
+    toggleMic();
+  }, [currentVoiceChannelId, toggleMic, channelCan]);
+
   useEffect(() => {
-    ShortcutRegistrar.register(['control', 'shift'], 'm', toggleMic);
+    ShortcutRegistrar.register(
+      ['control', 'shift'],
+      'm',
+      handleToggleMicShortcut
+    );
     ShortcutRegistrar.register(['control', 'shift'], 'd', toggleSound);
     return () => {
       ShortcutRegistrar.deregister(['control', 'shift'], 'm');
       ShortcutRegistrar.deregister(['control', 'shift'], 'd');
     };
-  });
+  }, [handleToggleMicShortcut, toggleSound]);
 
   const handleSettingsClick = useCallback(() => {
     openServerScreen(ServerScreen.USER_SETTINGS);

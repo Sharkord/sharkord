@@ -6,39 +6,39 @@ import { memo, useEffect } from 'react';
 import { ShortcutRegistrar } from '../shortcut-registrar';
 
 const HotkeysController = memo(() => {
-  const pressedKeys = new Set<string>();
-
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.repeat) return;
-    pressedKeys.add(e.key);
-    ShortcutRegistrar.submit(pressedKeys, e);
-
-    setModifierKeysHeldMap({
-      Shift: e.shiftKey,
-      Control: e.ctrlKey,
-      Alt: e.altKey
-    });
-  };
-
-  const handleKeyUp = (e: KeyboardEvent) => {
-    pressedKeys.delete(e.key);
-
-    setModifierKeysHeldMap({
-      Shift: e.shiftKey,
-      Control: e.ctrlKey,
-      Alt: e.altKey
-    });
-  };
-
-  const handleBlur = () => {
-    setModifierKeysHeldMap({
-      Shift: false,
-      Control: false,
-      Alt: false
-    });
-  };
-
   useEffect(() => {
+    const pressedKeys = new Set<string>();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat) return;
+      pressedKeys.add(e.key.toLowerCase());
+      ShortcutRegistrar.submit(pressedKeys, e);
+
+      setModifierKeysHeldMap({
+        Shift: e.shiftKey,
+        Control: e.ctrlKey,
+        Alt: e.altKey
+      });
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      pressedKeys.delete(e.key.toLowerCase());
+
+      setModifierKeysHeldMap({
+        Shift: e.shiftKey,
+        Control: e.ctrlKey,
+        Alt: e.altKey
+      });
+    };
+
+    const handleBlur = () => {
+      pressedKeys.clear();
+      setModifierKeysHeldMap({
+        Shift: false,
+        Control: false,
+        Alt: false
+      });
+    };
+
     ShortcutRegistrar.register([], 'F4', togglePluginSlotDebug);
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
@@ -50,7 +50,7 @@ const HotkeysController = memo(() => {
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('blur', handleBlur);
     };
-  });
+  }, []);
   return null;
 });
 

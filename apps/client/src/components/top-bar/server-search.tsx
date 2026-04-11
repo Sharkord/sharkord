@@ -1,6 +1,6 @@
 import { openDialog } from '@/features/dialogs/actions';
 import { Search } from 'lucide-react';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog } from '../dialogs/dialogs';
 import { ShortcutRegistrar } from '../shortcut-registrar';
@@ -11,7 +11,12 @@ const ServerSearch = memo(() => {
     openDialog(Dialog.SEARCH);
   }, []);
 
-  ShortcutRegistrar.register(['control'], 'k', openSearchDialog);
+  useEffect(() => {
+    ShortcutRegistrar.register(['control'], 'k', openSearchDialog);
+    return () => {
+      ShortcutRegistrar.deregister(['control'], 'k');
+    };
+  }, [openSearchDialog]);
 
   return (
     <button

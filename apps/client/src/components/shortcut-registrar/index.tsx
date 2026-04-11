@@ -8,23 +8,27 @@ const normalizeKey = (key: string) => replaceMetaWithControl(key.toLowerCase());
 const replaceMetaWithControl = (key: string) =>
   key === 'meta' ? 'control' : key;
 
+const getNormalizedShortcutHash = (keys: string[]) => {
+  const sortedKeys = [...new Set(keys.map(normalizeKey))].sort();
+  return sortedKeys.join('+');
+};
+
 const getShortcutHash = (modifiers: string[], key: string) => {
   const sortedKeys = [...modifiers, key].map(normalizeKey).sort();
-  return `${sortedKeys.join('+')}`;
+  return getNormalizedShortcutHash(sortedKeys);
 };
 
 const getShortcutHashFromSet = (keys: Set<string>) => {
   const sortedKeys = [...keys].map(normalizeKey).sort();
-  return `${sortedKeys.join('+')}`;
+  return getNormalizedShortcutHash(sortedKeys);
 };
 
 const getShortcutHashFromString = (shortcut: string) => {
   const splitShortcut = shortcut.split('+').map((part) => part.trim());
-  const normalizedShortcut = splitShortcut.map(normalizeKey).sort().join('+');
-  return normalizedShortcut;
+  return getNormalizedShortcutHash(splitShortcut);
 };
 
-class THotkeyShortcutRegistrar {
+class HotkeyShortcutRegistrar {
   private hotkeyShortcuts = new Map<string, TAction>();
 
   public has = (shortcutHash: string) => {
@@ -102,6 +106,6 @@ class THotkeyShortcutRegistrar {
   };
 }
 
-const ShortcutRegistrar = new THotkeyShortcutRegistrar();
+const ShortcutRegistrar = new HotkeyShortcutRegistrar();
 
 export { ShortcutRegistrar };
