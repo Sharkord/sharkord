@@ -16,6 +16,10 @@ const changeLogoRoute = protectedProcedure
   .mutation(async ({ ctx, input }) => {
     const settings = await getSettings();
 
+    if (input.fileId && !fileManager.temporaryFileHasMimeType(input.fileId, 'image/')) {
+      throw new Error('Invalid file type. Please try again.');
+    }
+
     if (settings.logoId) {
       await removeFile(settings.logoId);
       await updateSettings({ logoId: null });
