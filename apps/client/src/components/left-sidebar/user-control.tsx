@@ -10,9 +10,9 @@ import { HeadphoneOff, Headphones, Mic, MicOff, Settings } from 'lucide-react';
 import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ServerScreen } from '../server-screens/screens';
+import { ShortcutRegistrar } from '../shortcut-registrar';
 import { UserAvatar } from '../user-avatar';
 import { UserPopover } from '../user-popover';
-import { ShortcutRegistrar } from '../shortcut-registrar';
 
 const UserControl = memo(() => {
   const { t } = useTranslation('sidebar');
@@ -27,7 +27,7 @@ const UserControl = memo(() => {
     return () => {
       ShortcutRegistrar.deregister(['control', 'shift'], 'm');
       ShortcutRegistrar.deregister(['control', 'shift'], 'd');
-    }
+    };
   });
 
   const handleSettingsClick = useCallback(() => {

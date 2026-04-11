@@ -2,16 +2,16 @@ import {
   setModifierKeysHeldMap,
   togglePluginSlotDebug
 } from '@/features/app/actions';
-import { memo, useCallback, useEffect } from 'react';
+import { memo, useEffect } from 'react';
 import { ShortcutRegistrar } from '../shortcut-registrar';
 
 const HotkeysController = memo(() => {
   const pressedKeys = new Set<string>();
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (e.repeat) return;
     pressedKeys.add(e.key);
-    console.log('Pressed keys:', pressedKeys);    
+    console.log('Pressed keys:', pressedKeys);
     ShortcutRegistrar.submit(pressedKeys, e);
 
     setModifierKeysHeldMap({
@@ -19,25 +19,25 @@ const HotkeysController = memo(() => {
       Control: e.ctrlKey,
       Alt: e.altKey
     });
-  }, []);
+  };
 
-  const handleKeyUp = useCallback((e: KeyboardEvent) => {
-    pressedKeys.delete(e.key);    
-    
+  const handleKeyUp = (e: KeyboardEvent) => {
+    pressedKeys.delete(e.key);
+
     setModifierKeysHeldMap({
       Shift: e.shiftKey,
       Control: e.ctrlKey,
       Alt: e.altKey
     });
-  }, []);
+  };
 
-  const handleBlur = useCallback(() => {
+  const handleBlur = () => {
     setModifierKeysHeldMap({
       Shift: false,
       Control: false,
       Alt: false
     });
-  }, []);
+  };
 
   useEffect(() => {
     ShortcutRegistrar.register([], 'F4', togglePluginSlotDebug);
