@@ -1,0 +1,16 @@
+{
+  "identityLabel": "Identita",
+  "identityHelp": "Unikátní identifikátor pro váš účet na tomto serveru. Použijte cokoliv se vám líbí, ať už email nebo uživatelské jméno. Tento údaj nebude vidět veřejně.",
+  "passwordLabel": "Heslo",
+  "autoLoginLabel": "Přihlašovat automaticky",
+  "insecureTitle": "Nezabezpečené připojení",
+  "insecureDesc": "K tomuto serveru jste připojení nezabezpečeně pomocí HTTP. Prohlížeče ve výchozím nastavení blokují přístup k zařízením jako kamera a mikrofon, takže nebudete moci použít audio a video hovory. Pokud jste administrátor serveru, můžete HTTPS nastavit následováním instrukcí v dokumentaci.",
+  "connectBtn": "Připojit se",
+  "registrationDisabled": "Registrace nových uživatelů je v současné době vypnutá. Pokud ještě nemáte účet, musíte být pozváni existujícím uživatelem.",
+  "invitedTitle": "K připojení k tomuto serveru jste byli pozváni",
+  "inviteCode": "Kód pozvánky: {{code}}",
+  "connectError": "K serveru se připojit nepodařilo: {{message}}",
+  "loggingInAutomatically": "Automaticky se připojuji...",
+  "loadingApp": "Načítám Sharkord",
+  "loadingPlugins": "Načítám rozšíření"
+}

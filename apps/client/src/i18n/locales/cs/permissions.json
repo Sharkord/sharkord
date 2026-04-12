@@ -1,0 +1,69 @@
+{
+  "noPermissions": "Žádné oprávnění",
+  "headers": {
+    "server": "Oprávnění",
+    "channel": "Oprávnění kanálu"
+  },
+  "server": {
+    "SEND_MESSAGES": "Posílat zprávy",
+    "REACT_TO_MESSAGES": "Reagovat na zprávy",
+    "PIN_MESSAGES": "Připínat zprávy",
+    "UPLOAD_FILES": "Nahrávat soubory",
+    "JOIN_VOICE_CHANNELS": "Připojovat se k hovorům",
+    "SHARE_SCREEN": "Sdílet obrazovku",
+    "ENABLE_WEBCAM": "Zapnout webkameru",
+    "MANAGE_CHANNELS": "Spravovat kanály",
+    "MANAGE_CHANNEL_PERMISSIONS": "Spravovat oprávnění kanálů",
+    "MANAGE_CATEGORIES": "Spravovat kategorie",
+    "MANAGE_ROLES": "Spravovat role",
+    "MANAGE_EMOJIS": "Spravovat emoji",
+    "MANAGE_SETTINGS": "Spravovat nastavení serveru",
+    "MANAGE_USERS": "Spravovat uživatele",
+    "MANAGE_MESSAGES": "Spravovat zprávy",
+    "MANAGE_STORAGE": "Spravovat úložiště",
+    "MANAGE_INVITES": "Spravovat pozvánky",
+    "MANAGE_UPDATES": "Spravovat aktualizace",
+    "MANAGE_PLUGINS": "Spravovat rozšíření",
+    "USE_PLUGINS": "Používat rozšíření",
+    "VIEW_USER_SENSITIVE_DATA": "Zobrazit senzitivní data uživatelů"
+  },
+  "serverDescriptions": {
+    "SEND_MESSAGES": "Umožňuje posílat zprávy do kanálů.",
+    "REACT_TO_MESSAGES": "Umožňuje reagovat na zprávy.",
+    "PIN_MESSAGES": "Umožňuje připínat zprávy.",
+    "UPLOAD_FILES": "Umožňuje nahrávat soubory do kanálů.",
+    "JOIN_VOICE_CHANNELS": "Umožňuje připojování do hlasových kanálů.",
+    "SHARE_SCREEN": "Umožňuje sdílet obrazovku.",
+    "ENABLE_WEBCAM": "Umožňuje zapnout webkameru.",
+    "MANAGE_CHANNELS": "Umožňuje vytváření, úpravu a odstraňování kanálů.",
+    "MANAGE_CHANNEL_PERMISSIONS": "Umožňuje nastavovat oprávnění rolí a uživatelů v konkrétních kanálech.",
+    "MANAGE_CATEGORIES": "Umožňuje vytvářet, upravovat a odstraňovat kategorie.",
+    "MANAGE_ROLES": "Umožňuje vytvářet, upravovat a odstraňovat role.",
+    "MANAGE_EMOJIS": "Umožňuje vytvářet, upravovat a odstraňovat emoji.",
+    "MANAGE_SETTINGS": "Umožňuje upravovat nastavení serveru.",
+    "MANAGE_USERS": "Umožňuje spravovat uživatele.",
+    "MANAGE_MESSAGES": "Umožňuje upravovat a mazat zprávy všech uživatelů.",
+    "MANAGE_STORAGE": "Umožňuje spravovat úložiště, jako například povolení a zakázání nahrávání příloh.",
+    "MANAGE_INVITES": "Umožňuje vytvářet, upravovat a mazat pozvánky na server.",
+    "MANAGE_UPDATES": "Umožňuje spravovat aktualizace.",
+    "MANAGE_PLUGINS": "Umožňuje spravovat rozšíření.",
+    "USE_PLUGINS": "Umožňuje používat rozšíření, jako například spouštění příkazů a zobrazení grafických elementů přidaných rozšířeními.",
+    "VIEW_USER_SENSITIVE_DATA": "Umožňuje zobrazení senzitivních dat uživatelů, jako je identita, IP adresa a geografická lokace."
+  },
+  "channel": {
+    "VIEW_CHANNEL": "Zobrazit kanály",
+    "SEND_MESSAGES": "Posílat zprávy",
+    "JOIN": "Připojit se ke kanálu",
+    "SPEAK": "Sdílet mikrofon",
+    "SHARE_SCREEN": "Sdílet obrazovku",
+    "WEBCAM": "Sdílet webkameru"
+  },
+  "channelDescriptions": {
+    "VIEW_CHANNEL": "Umožňuje uživateli zobrazit kanál.",
+    "SEND_MESSAGES": "Umožňuje uživateli posílat zprávy.",
+    "JOIN": "Umožňuje uživateli připojit se ke kanálu.",
+    "SPEAK": "Umožňuje uživateli zapnout mikrofon.",
+    "SHARE_SCREEN": "Umožňuje uživateli sdílet obrazovku.",
+    "WEBCAM": "Umožňuje uživateli zapnout webkameru."
+  }
+}

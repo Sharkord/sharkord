@@ -1,0 +1,11 @@
+{
+  "kicked": "Byli jste vykopnuti",
+  "banned": "Byl vám zakázán přístup",
+  "connectionLost": "Spojení bylo ztraceno",
+  "noReasonProvided": "Nebyl udán důvod.",
+  "lostConnectionMessage": "Spojení bylo nečekaně ztraceno.",
+  "goToConnectScreen": "Přejít k úvodní obrazovce",
+  "details": "Detaily",
+  "code": "Kód: {{code}}",
+  "time": "Čas: {{time}}"
+}
