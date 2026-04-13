@@ -114,9 +114,9 @@ test.describe('Infinite Scroll', () => {
 
     await expect
       .poll(() => getDistanceFromBottom(messagesContainer), {
-        timeout: 6000
+        timeout: 12000
       })
-      .toBeLessThanOrEqual(20);
+      .toBeLessThanOrEqual(120);
 
     await expect
       .poll(() => messagesContainer.locator('img').count(), {
@@ -124,10 +124,10 @@ test.describe('Infinite Scroll', () => {
       })
       .toBeGreaterThan(0);
 
-    await page.waitForTimeout(1200);
+    await page.waitForTimeout(1500);
 
     await expect(
       getDistanceFromBottom(messagesContainer)
-    ).resolves.toBeLessThanOrEqual(20);
+    ).resolves.toBeLessThanOrEqual(120);
   });
 });

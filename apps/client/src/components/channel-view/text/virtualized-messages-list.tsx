@@ -59,6 +59,7 @@ const VirtualizedMessagesList = memo(
     );
     const [isAtBottom, setIsAtBottom] = useState(true);
     const previousFirstGroupKey = useRef<string | undefined>(undefined);
+    const didInitialBottomScroll = useRef(false);
 
     const onStartReached = useCallback(async () => {
       if (fetching || !hasMore) {
@@ -71,6 +72,7 @@ const VirtualizedMessagesList = memo(
     useEffect(() => {
       if (groups.length === 0) {
         previousFirstGroupKey.current = undefined;
+        didInitialBottomScroll.current = false;
         return;
       }
 
@@ -91,6 +93,41 @@ const VirtualizedMessagesList = memo(
     }, [groups]);
 
     const activeVirtuosoRef = virtuosoRef ?? localVirtuosoRef;
+
+    useEffect(() => {
+      if (
+        groups.length === 0 ||
+        fetching ||
+        didInitialBottomScroll.current ||
+        !activeVirtuosoRef.current
+      ) {
+        return;
+      }
+
+      const scrollToBottom = () => {
+        activeVirtuosoRef.current?.scrollToIndex({
+          index: groups.length - 1,
+          align: 'end',
+          behavior: 'auto'
+        });
+      };
+
+      scrollToBottom();
+
+      requestAnimationFrame(() => {
+        scrollToBottom();
+      });
+
+      const timeoutOne = setTimeout(scrollToBottom, 200);
+      const timeoutTwo = setTimeout(scrollToBottom, 900);
+
+      didInitialBottomScroll.current = true;
+
+      return () => {
+        clearTimeout(timeoutOne);
+        clearTimeout(timeoutTwo);
+      };
+    }, [activeVirtuosoRef, fetching, groups.length]);
 
     return (
       <Virtuoso
