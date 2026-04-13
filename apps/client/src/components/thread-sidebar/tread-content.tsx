@@ -5,8 +5,7 @@ import { Spinner } from '@sharkord/ui';
 import { MessageSquareText } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useScrollController } from '../channel-view/text/hooks/use-scroll-controller';
-import { MessagesGroup } from '../channel-view/text/messages-group';
+import { VirtualizedMessagesList } from '../channel-view/text/virtualized-messages-list';
 import { ParentMessagePreview } from './parent-message-preview';
 import { ThreadCompose } from './thread-compose';
 import { ThreadHeader } from './thread-header';
@@ -26,15 +25,6 @@ const ThreadContent = memo(
     >();
 
     const typingUsers = useTypingUsersByThreadId(parentMessageId);
-
-    const { containerRef, onScroll, onAsyncContentLoaded } =
-      useScrollController({
-        messages,
-        fetching,
-        hasMore,
-        loadMore,
-        hasTypingUsers: typingUsers.length > 0
-      });
 
     const onReplyMessageSelect = useCallback((message: TJoinedMessage) => {
       setReplyingToMessage(message);
@@ -58,31 +48,22 @@ const ThreadContent = memo(
                 </div>
               )}
 
-              <div
-                ref={containerRef}
-                onScroll={onScroll}
-                onLoadCapture={onAsyncContentLoaded}
-                className="flex-1 overflow-y-auto overflow-x-hidden p-2 animate-in fade-in duration-500"
-              >
-                {messages.length === 0 && !fetching ? (
-                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-sm">
-                    <MessageSquareText className="h-8 w-8 mb-2 opacity-50" />
-                    <p>{t('noRepliesYet')}</p>
-                    <p className="text-xs">{t('beFirstToReply')}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {groupedMessages.map((group, index) => (
-                      <MessagesGroup
-                        key={index}
-                        group={group}
-                        onReplyMessageSelect={onReplyMessageSelect}
-                        replyTargetMessageId={replyingToMessage?.id}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+              {messages.length === 0 && !fetching ? (
+                <div className="flex flex-1 flex-col items-center justify-center text-muted-foreground text-sm">
+                  <MessageSquareText className="h-8 w-8 mb-2 opacity-50" />
+                  <p>{t('noRepliesYet')}</p>
+                  <p className="text-xs">{t('beFirstToReply')}</p>
+                </div>
+              ) : (
+                <VirtualizedMessagesList
+                  groups={groupedMessages}
+                  hasMore={hasMore}
+                  fetching={fetching}
+                  loadMore={loadMore}
+                  onReplyMessageSelect={onReplyMessageSelect}
+                  replyTargetMessageId={replyingToMessage?.id}
+                />
+              )}
             </>
           )}
 

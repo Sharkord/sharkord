@@ -1,20 +1,44 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { TestId } from '@sharkord/shared';
 import { loginAs } from './fixtures';
+
+test.describe.configure({ mode: 'serial' });
 
 const getMessageNumbers = async (
   messageTexts: Promise<string[]>
 ): Promise<number[]> => {
-  return (await messageTexts).map((text) => {
-    const match = text.match(/Mock message (\d+)/);
+  const numbers = (await messageTexts)
+    .map((text) => {
+      const match = text.match(/Mock message (\d+)/);
 
-    if (!match) {
-      throw new Error(`Could not find mock message number in: ${text}`);
-    }
+      if (!match) {
+        return null;
+      }
 
-    return Number(match[1]);
-  });
+      return Number(match[1]);
+    })
+    .filter((value) => value !== null);
+
+  if (numbers.length === 0) {
+    throw new Error('No mock message numbers found in visible messages');
+  }
+
+  return numbers;
 };
+
+const getDistanceFromBottom = async (container: Locator) =>
+  container.evaluate((element) => {
+    const target = element as {
+      scrollHeight: number;
+      scrollTop: number;
+      clientHeight: number;
+    };
+
+    const distance =
+      target.scrollHeight - (target.scrollTop + target.clientHeight);
+
+    return Math.max(0, Math.floor(distance));
+  });
 
 test.describe('Infinite Scroll', () => {
   test('should fetch older messages on upward scroll and keep them ordered', async ({
@@ -30,25 +54,80 @@ test.describe('Infinite Scroll', () => {
     const messages = page.getByTestId(TestId.MESSAGE_ITEM);
     const messagesContainer = page.locator('[data-messages-container]');
 
-    await expect(messages).toHaveCount(100);
+    await expect(messages.first()).toBeVisible();
 
-    const initialNumbers = await getMessageNumbers(messages.allTextContents());
+    await expect
+      .poll(async () => {
+        const initialNumbers = await getMessageNumbers(
+          messages.allTextContents()
+        );
 
-    expect(initialNumbers).toEqual(
-      Array.from({ length: 100 }, (_, index) => index + 901)
-    );
+        return {
+          min: Math.min(...initialNumbers),
+          max: Math.max(...initialNumbers)
+        };
+      })
+      .toMatchObject({ max: 1000 });
+
+    await expect
+      .poll(async () => {
+        const initialNumbers = await getMessageNumbers(
+          messages.allTextContents()
+        );
+
+        return Math.min(...initialNumbers);
+      })
+      .toBeGreaterThanOrEqual(901);
 
     await messagesContainer.hover();
     await page.mouse.wheel(0, -10_000);
 
-    await expect(messages).toHaveCount(200);
+    await expect
+      .poll(async () => {
+        const numbers = await getMessageNumbers(messages.allTextContents());
+
+        return Math.min(...numbers);
+      })
+      .toBeLessThanOrEqual(900);
 
     const messagesAfterScroll = await getMessageNumbers(
       messages.allTextContents()
     );
-
-    expect(messagesAfterScroll).toEqual(
-      Array.from({ length: 200 }, (_, index) => index + 801)
+    const sortedMessagesAfterScroll = [...messagesAfterScroll].sort(
+      (a, b) => a - b
     );
+
+    expect(messagesAfterScroll).toEqual(sortedMessagesAfterScroll);
+  });
+
+  test('should open image-heavy channel at the bottom', async ({ page }) => {
+    await loginAs(page, 'testowner', 'password123');
+
+    await page
+      .getByTestId(TestId.CHANNEL_ITEM)
+      .filter({ hasText: 'Messages Render' })
+      .click();
+
+    const messagesContainer = page.locator('[data-messages-container]');
+
+    await expect(messagesContainer).toBeVisible();
+
+    await expect
+      .poll(() => getDistanceFromBottom(messagesContainer), {
+        timeout: 6000
+      })
+      .toBeLessThanOrEqual(20);
+
+    await expect
+      .poll(() => messagesContainer.locator('img').count(), {
+        timeout: 6000
+      })
+      .toBeGreaterThan(0);
+
+    await page.waitForTimeout(1200);
+
+    await expect(
+      getDistanceFromBottom(messagesContainer)
+    ).resolves.toBeLessThanOrEqual(20);
   });
 });

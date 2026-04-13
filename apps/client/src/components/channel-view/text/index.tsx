@@ -22,10 +22,9 @@ import { Spinner } from '@sharkord/ui';
 import { throttle } from 'lodash-es';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { type VirtuosoHandle } from 'react-virtuoso';
 import { toast } from 'sonner';
-import { useScrollController } from './hooks/use-scroll-controller';
 import { useScrollToJumpTarget } from './hooks/use-scroll-to-jump-target';
-import { MessagesGroup } from './messages-group';
 import { TextSkeleton } from './text-skeleton';
 import { TextTopbar } from './text-top-bar';
 import {
@@ -33,6 +32,7 @@ import {
   getDraftMessage,
   setDraftMessage
 } from './use-draft-messages';
+import { VirtualizedMessagesList } from './virtualized-messages-list';
 
 type TChannelProps = {
   channelId: number;
@@ -42,7 +42,6 @@ type TChannelProps = {
 const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
   const { t } = useTranslation();
   const {
-    messages,
     hasMore,
     loadMore,
     loading,
@@ -63,6 +62,7 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
   >();
   const typingUsers = useTypingUsersByChannelId(channelId);
   const composeRef = useRef<TMessageComposeHandle>(null);
+  const messagesListRef = useRef<VirtuosoHandle>(null);
 
   const replyTarget = useMemo<TReplyTarget | undefined>(() => {
     if (!replyingToMessage) {
@@ -75,14 +75,6 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
 
     return { userId: replyingToMessage.userId, pluginId: null };
   }, [replyingToMessage]);
-
-  const { containerRef, onScroll, onAsyncContentLoaded } = useScrollController({
-    messages,
-    fetching,
-    hasMore,
-    loadMore,
-    hasTypingUsers: typingUsers.length > 0
-  });
 
   const channelCan = useChannelCan(channelId);
 
@@ -169,24 +161,15 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
         onClose={onClose}
       />
 
-      <div
-        ref={containerRef}
-        onScroll={onScroll}
-        onLoadCapture={onAsyncContentLoaded}
-        data-messages-container
-        className="flex-1 overflow-y-auto overflow-x-hidden p-2 animate-in fade-in duration-500"
-      >
-        <div className="space-y-4">
-          {groupedMessages.map((group, index) => (
-            <MessagesGroup
-              key={index}
-              group={group}
-              onReplyMessageSelect={onReplyMessageSelect}
-              replyTargetMessageId={replyingToMessage?.id}
-            />
-          ))}
-        </div>
-      </div>
+      <VirtualizedMessagesList
+        virtuosoRef={messagesListRef}
+        groups={groupedMessages}
+        hasMore={hasMore}
+        fetching={fetching}
+        loadMore={loadMore}
+        onReplyMessageSelect={onReplyMessageSelect}
+        replyTargetMessageId={replyingToMessage?.id}
+      />
 
       <MessageCompose
         ref={composeRef}
