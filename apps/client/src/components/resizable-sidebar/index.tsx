@@ -12,6 +12,7 @@ type TResizableSidebarProps = {
   isOpen?: boolean;
   className?: string;
   children: ReactNode;
+  'data-testid'?: string;
 };
 
 const ResizableSidebar = memo(
@@ -23,7 +24,8 @@ const ResizableSidebar = memo(
     edge,
     isOpen = true,
     className,
-    children
+    children,
+    ...props
   }: TResizableSidebarProps) => {
     const { width, isResizing, sidebarRef, handleMouseDown } =
       useResizableSidebar({
@@ -49,6 +51,7 @@ const ResizableSidebar = memo(
         style={{
           width: isOpen ? `${width}px` : '0px'
         }}
+        {...props}
       >
         {isOpen && (
           <>

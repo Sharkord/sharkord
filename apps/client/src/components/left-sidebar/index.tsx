@@ -7,6 +7,7 @@ import {
 } from '@/features/server/hooks';
 import { LocalStorageKey } from '@/helpers/storage';
 import { cn } from '@/lib/utils';
+import { TestId } from '@sharkord/shared';
 import { memo } from 'react';
 import { Categories } from './categories';
 import { DirectMessages } from './direct-messages';
@@ -37,11 +38,13 @@ const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
       defaultWidth={DEFAULT_WIDTH}
       edge="right"
       className={cn('h-full', className)}
+      data-testid={TestId.LEFT_SIDEBAR}
     >
       <div className="flex w-full justify-between h-12 items-center border-b border-border px-4">
         <h2
           className="font-semibold text-foreground truncate cursor-pointer"
           onClick={() => setSelectedChannelId(undefined)}
+          data-testid={TestId.LEFT_SIDEBAR_SERVER_NAME}
         >
           {serverName}
         </h2>

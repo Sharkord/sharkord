@@ -113,9 +113,11 @@ const getMessagesRoute = protectedProcedure
         .limit(limit + 1);
 
       if (rows.length > limit) {
-        const next = rows.pop();
+        rows.pop();
 
-        nextCursor = next ? next.createdAt : null;
+        const lastReturnedMessage = rows.at(-1);
+
+        nextCursor = lastReturnedMessage ? lastReturnedMessage.createdAt : null;
       }
     }
 

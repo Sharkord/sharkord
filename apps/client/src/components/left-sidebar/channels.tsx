@@ -35,6 +35,7 @@ import {
   ChannelPermission,
   Permission,
   type TChannel,
+  TestId,
   getTrpcError
 } from '@sharkord/shared';
 import { Hash, Volume2 } from 'lucide-react';
@@ -175,6 +176,7 @@ const ItemWrapper = memo(
     return (
       <div
         {...dragHandleProps}
+        data-testid={TestId.CHANNEL_ITEM}
         style={style}
         className={cn(
           'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground select-none cursor-pointer',
