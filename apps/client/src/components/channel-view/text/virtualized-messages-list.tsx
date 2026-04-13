@@ -6,6 +6,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState
 } from 'react';
@@ -54,11 +55,9 @@ const VirtualizedMessagesList = memo(
     virtuosoRef
   }: TVirtualizedMessagesListProps) => {
     const localVirtuosoRef = useRef<VirtuosoHandle>(null);
-    const [firstItemIndex, setFirstItemIndex] = useState(
-      INITIAL_FIRST_ITEM_INDEX
-    );
     const [isAtBottom, setIsAtBottom] = useState(true);
-    const previousFirstGroupKey = useRef<string | undefined>(undefined);
+    const firstItemIndexRef = useRef(INITIAL_FIRST_ITEM_INDEX);
+    const previousFirstGroupKeyRef = useRef<string | undefined>(undefined);
     const didInitialBottomScroll = useRef(false);
 
     const onStartReached = useCallback(async () => {
@@ -69,15 +68,19 @@ const VirtualizedMessagesList = memo(
       await loadMore();
     }, [fetching, hasMore, loadMore]);
 
-    useEffect(() => {
+    // compute firstItemIndex synchronously during render so that
+    // react-virtuoso always receives a consistent data + firstItemIndex
+    // pair on the same render pass, avoiding a one-frame jump.
+    const firstItemIndex = useMemo(() => {
       if (groups.length === 0) {
-        previousFirstGroupKey.current = undefined;
+        previousFirstGroupKeyRef.current = undefined;
+        firstItemIndexRef.current = INITIAL_FIRST_ITEM_INDEX;
         didInitialBottomScroll.current = false;
-        return;
+        return INITIAL_FIRST_ITEM_INDEX;
       }
 
       const currentFirstKey = groups[0].key;
-      const previousFirstKey = previousFirstGroupKey.current;
+      const previousFirstKey = previousFirstGroupKeyRef.current;
 
       if (previousFirstKey) {
         const previousIndex = groups.findIndex(
@@ -85,11 +88,12 @@ const VirtualizedMessagesList = memo(
         );
 
         if (previousIndex > 0) {
-          setFirstItemIndex((value) => value - previousIndex);
+          firstItemIndexRef.current -= previousIndex;
         }
       }
 
-      previousFirstGroupKey.current = currentFirstKey;
+      previousFirstGroupKeyRef.current = currentFirstKey;
+      return firstItemIndexRef.current;
     }, [groups]);
 
     const activeVirtuosoRef = virtuosoRef ?? localVirtuosoRef;
