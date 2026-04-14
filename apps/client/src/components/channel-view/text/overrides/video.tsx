@@ -10,7 +10,7 @@ type TVideoOverrideProps = {
 const VideoOverride = memo(({ src }: TVideoOverrideProps) => {
   return (
     <OverrideLayout>
-      <VideoPlayer url={src} />
+      <VideoPlayer url={src} className="max-h-75" />
       <LinkOverride link={src} label="Open in new tab" />
     </OverrideLayout>
   );

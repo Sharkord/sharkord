@@ -65,12 +65,4 @@ const getYoutubeInfo = (
   return { isYoutube: false, videoId: undefined };
 };
 
-const getStableMediaKey = (counts: Map<string, number>, baseKey: string) => {
-  const nextCount = (counts.get(baseKey) ?? 0) + 1;
-
-  counts.set(baseKey, nextCount);
-
-  return nextCount === 1 ? baseKey : `${baseKey}-${nextCount}`;
-};
-
-export { getStableMediaKey, getTweetInfo, getYoutubeInfo, getYoutubeVideoId };
+export { getTweetInfo, getYoutubeInfo, getYoutubeVideoId };

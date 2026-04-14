@@ -5,15 +5,8 @@ import { getFileUrl } from '@/helpers/get-file-url';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
-import {
-  audioExtensions,
-  imageExtensions,
-  isEmojiOnlyMessage,
-  videoExtensions,
-  type TJoinedMessage
-} from '@sharkord/shared';
+import { type TJoinedMessage } from '@sharkord/shared';
 import { Tooltip } from '@sharkord/ui';
-import parse from 'html-react-parser';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -22,17 +15,14 @@ import { MessageReactions } from '../message-reactions';
 import { AudioOverride } from '../overrides/audio';
 import { ImageOverride } from '../overrides/image';
 import { VideoOverride } from '../overrides/video';
-import { getStableMediaKey } from './helpers';
-import { serializer } from './serializer';
-import type { TFoundMedia } from './types';
+import { getIsEmojiOnly, getParsedMessageHtml } from './content-cache';
+import { extractMessageMedia } from './media';
 
 type TMessageRendererProps = {
   message: TJoinedMessage;
   disableFiles?: boolean;
   disableReactions?: boolean;
 };
-
-const ALLOWED_MEDIA_TYPES = ['image', 'video', 'audio'];
 
 const MessageRenderer = memo(
   ({ message, disableFiles, disableReactions }: TMessageRendererProps) => {
@@ -44,18 +34,9 @@ const MessageRenderer = memo(
       [message.userId, ownUserId]
     );
 
-    const emojiOnly = useMemo(
-      () => isEmojiOnlyMessage(message.content),
-      [message.content]
-    );
+    const emojiOnly = useMemo(() => getIsEmojiOnly(message), [message]);
 
-    const messageHtml = useMemo(
-      () =>
-        parse(message.content ?? '', {
-          replace: (domNode) => serializer(domNode, message.id)
-        }),
-      [message.content, message.id]
-    );
+    const messageHtml = useMemo(() => getParsedMessageHtml(message), [message]);
 
     const onRemoveFileClick = useCallback(
       async (fileId: number) => {
@@ -84,63 +65,7 @@ const MessageRenderer = memo(
       [t]
     );
 
-    const allMedia = useMemo(() => {
-      const mediaKeyCounts = new Map<string, number>();
-      const mediaFromFiles: TFoundMedia[] = message.files
-        .map((file) => {
-          const extension = file.extension.toLowerCase();
-
-          if (imageExtensions.includes(extension)) {
-            return {
-              key: getStableMediaKey(mediaKeyCounts, `file:${file.id}`),
-              type: 'image',
-              url: getFileUrl(file)
-            } as const;
-          }
-
-          if (videoExtensions.includes(extension)) {
-            return {
-              key: getStableMediaKey(mediaKeyCounts, `file:${file.id}`),
-              type: 'video',
-              url: getFileUrl(file)
-            } as const;
-          }
-
-          if (audioExtensions.includes(extension)) {
-            return {
-              key: getStableMediaKey(mediaKeyCounts, `file:${file.id}`),
-              type: 'audio',
-              url: getFileUrl(file)
-            } as const;
-          }
-
-          return undefined;
-        })
-        .filter((media) => !!media) as TFoundMedia[];
-
-      const mediaFromMetadata: TFoundMedia[] = (message.metadata ?? [])
-        .map((metadata) => {
-          if (!metadata || !metadata.url) return undefined;
-
-          const isAllowedType = ALLOWED_MEDIA_TYPES.includes(
-            metadata.mediaType
-          );
-
-          if (!isAllowedType) return undefined;
-
-          return {
-            key: getStableMediaKey(
-              mediaKeyCounts,
-              `metadata:${metadata.mediaType}:${metadata.url}`
-            ),
-            type: metadata.mediaType,
-            url: metadata.url
-          };
-        })
-        .filter((media) => !!media) as TFoundMedia[];
-
-      return [...mediaFromFiles, ...mediaFromMetadata];
-    }, [message.files, message.metadata]);
+    const allMedia = useMemo(() => extractMessageMedia(message), [message]);
 
     return (
       <div className="flex flex-col gap-1">
