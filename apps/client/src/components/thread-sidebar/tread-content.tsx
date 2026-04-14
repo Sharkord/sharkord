@@ -72,10 +72,10 @@ const ThreadContent = memo(
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {groupedMessages.map((group, index) => (
+                    {groupedMessages.map((group) => (
                       <MessagesGroup
-                        key={index}
-                        group={group}
+                        key={group.key}
+                        group={group.messages}
                         onReplyMessageSelect={onReplyMessageSelect}
                         replyTargetMessageId={replyingToMessage?.id}
                       />

@@ -35,8 +35,8 @@ export default defineConfig({
       port: SERVER_PORT,
       reuseExistingServer: false,
       timeout: 30_000,
-      stdout: 'pipe',
-      stderr: 'pipe',
+      stdout: 'ignore',
+      stderr: 'ignore',
       env: {
         SHARKORD_DATA_PATH: e2eDataPath,
         IS_E2E: 'true'
@@ -46,8 +46,8 @@ export default defineConfig({
       command: 'bun dev',
       cwd: '../../apps/client',
       port: CLIENT_PORT,
-      stderr: 'pipe',
-      stdout: 'pipe',
+      stderr: 'ignore',
+      stdout: 'ignore',
       reuseExistingServer: false,
       timeout: 15_000
     }
