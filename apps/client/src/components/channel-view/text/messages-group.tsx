@@ -10,6 +10,7 @@ import {
 } from '@sharkord/shared';
 import { format } from 'date-fns';
 import { memo } from 'react';
+import { areGroupsEqual } from './helpers';
 import { useMessageAuthorName } from './hooks/use-message-author-name';
 import { Message } from './message';
 import { MessageReplyPreviewWrapper } from './message-reply-preview-wrapper';
@@ -113,7 +114,8 @@ const MessagesGroup = memo(
     }
 
     return groupContent;
-  }
+  },
+  areGroupsEqual
 );
 
 export { MessagesGroup };

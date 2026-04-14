@@ -60,7 +60,7 @@ test.describe('Connect Screen', () => {
     await expect(serverName).toHaveText('Test Server');
 
     const channelItems = page.getByTestId(TestId.CHANNEL_ITEM);
-    await expect(channelItems).toHaveCount(3);
+    await expect(channelItems).toHaveCount(4);
 
     const categoryItems = page.getByTestId(TestId.CATEGORY_ITEM);
     await expect(categoryItems).toHaveCount(3);

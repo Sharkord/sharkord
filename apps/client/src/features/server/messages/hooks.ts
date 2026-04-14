@@ -34,7 +34,7 @@ const useGroupedMessages = (messages: TJoinedMessage[]) =>
 
       if (!lastGroup) {
         grouped.push({
-          key: `${message.id}-${message.id}`,
+          key: `${message.id}`,
           messages: [message]
         });
 
@@ -49,7 +49,7 @@ const useGroupedMessages = (messages: TJoinedMessage[]) =>
       // if either the current or the last message is a reply, they should be in different groups to show the reply context clearly
       if (hasInlineReply) {
         grouped.push({
-          key: `${message.id}-${message.id}`,
+          key: `${message.id}`,
           messages: [message]
         });
 
@@ -62,7 +62,7 @@ const useGroupedMessages = (messages: TJoinedMessage[]) =>
 
       if (!sameAuthor) {
         grouped.push({
-          key: `${message.id}-${message.id}`,
+          key: `${message.id}`,
           messages: [message]
         });
 
@@ -75,13 +75,12 @@ const useGroupedMessages = (messages: TJoinedMessage[]) =>
 
       if (timeDifference < 1) {
         lastGroup.messages.push(message);
-        lastGroup.key = `${lastGroup.messages[0].id}-${message.id}`;
 
         continue;
       }
 
       grouped.push({
-        key: `${message.id}-${message.id}`,
+        key: `${message.id}`,
         messages: [message]
       });
     }
