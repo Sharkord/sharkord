@@ -22,6 +22,7 @@ import { MessageReactions } from '../message-reactions';
 import { AudioOverride } from '../overrides/audio';
 import { ImageOverride } from '../overrides/image';
 import { VideoOverride } from '../overrides/video';
+import { getStableMediaKey } from './helpers';
 import { serializer } from './serializer';
 import type { TFoundMedia } from './types';
 
@@ -84,12 +85,14 @@ const MessageRenderer = memo(
     );
 
     const allMedia = useMemo(() => {
+      const mediaKeyCounts = new Map<string, number>();
       const mediaFromFiles: TFoundMedia[] = message.files
         .map((file) => {
           const extension = file.extension.toLowerCase();
 
           if (imageExtensions.includes(extension)) {
             return {
+              key: getStableMediaKey(mediaKeyCounts, `file:${file.id}`),
               type: 'image',
               url: getFileUrl(file)
             } as const;
@@ -97,6 +100,7 @@ const MessageRenderer = memo(
 
           if (videoExtensions.includes(extension)) {
             return {
+              key: getStableMediaKey(mediaKeyCounts, `file:${file.id}`),
               type: 'video',
               url: getFileUrl(file)
             } as const;
@@ -104,6 +108,7 @@ const MessageRenderer = memo(
 
           if (audioExtensions.includes(extension)) {
             return {
+              key: getStableMediaKey(mediaKeyCounts, `file:${file.id}`),
               type: 'audio',
               url: getFileUrl(file)
             } as const;
@@ -124,6 +129,10 @@ const MessageRenderer = memo(
           if (!isAllowedType) return undefined;
 
           return {
+            key: getStableMediaKey(
+              mediaKeyCounts,
+              `metadata:${metadata.mediaType}:${metadata.url}`
+            ),
             type: metadata.mediaType,
             url: metadata.url
           };
@@ -167,23 +176,17 @@ const MessageRenderer = memo(
           )}
         </div>
 
-        {allMedia.map((media, index) => {
+        {allMedia.map((media) => {
           if (media.type === 'image') {
-            return (
-              <ImageOverride src={media.url} key={`media-image-${index}`} />
-            );
+            return <ImageOverride src={media.url} key={media.key} />;
           }
 
           if (media.type === 'video') {
-            return (
-              <VideoOverride src={media.url} key={`media-video-${index}`} />
-            );
+            return <VideoOverride src={media.url} key={media.key} />;
           }
 
           if (media.type === 'audio') {
-            return (
-              <AudioOverride src={media.url} key={`media-audio-${index}`} />
-            );
+            return <AudioOverride src={media.url} key={media.key} />;
           }
 
           return null;
