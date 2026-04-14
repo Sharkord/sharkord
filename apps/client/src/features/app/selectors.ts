@@ -69,7 +69,8 @@ export const threadSidebarDataSelector = createSelector(
   (isOpen, parentMessageId, channelId) => ({
     isOpen,
     parentMessageId,
-    channelId
+    channelId,
+    activeThreadMessageId: isOpen ? parentMessageId : undefined
   })
 );
 

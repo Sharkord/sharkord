@@ -7,6 +7,7 @@ type TMessagesGroupComparatorProps = {
   disableReactions?: boolean;
   onReplyMessageSelect?: (message: TJoinedMessage) => void;
   replyTargetMessageId?: number;
+  activeThreadMessageId?: number;
 };
 
 const groupContainsMessageId = (
@@ -43,21 +44,25 @@ const areGroupsEqual = (
     }
   }
 
-  if (prevProps.replyTargetMessageId === nextProps.replyTargetMessageId) {
+  const replyTargetUnchanged =
+    prevProps.replyTargetMessageId === nextProps.replyTargetMessageId;
+  const activeThreadUnchanged =
+    prevProps.activeThreadMessageId === nextProps.activeThreadMessageId;
+
+  if (replyTargetUnchanged && activeThreadUnchanged) {
     return true;
   }
 
-  const hadReplyTarget = groupContainsMessageId(
-    prevProps.group,
-    prevProps.replyTargetMessageId
-  );
+  const isReplyTargetChangeRelevant = !replyTargetUnchanged
+    ? groupContainsMessageId(prevProps.group, prevProps.replyTargetMessageId) ||
+      groupContainsMessageId(nextProps.group, nextProps.replyTargetMessageId)
+    : false;
+  const isActiveThreadChangeRelevant = !activeThreadUnchanged
+    ? groupContainsMessageId(prevProps.group, prevProps.activeThreadMessageId) ||
+      groupContainsMessageId(nextProps.group, nextProps.activeThreadMessageId)
+    : false;
 
-  const hasReplyTarget = groupContainsMessageId(
-    nextProps.group,
-    nextProps.replyTargetMessageId
-  );
-
-  return !hadReplyTarget && !hasReplyTarget;
+  return !isReplyTargetChangeRelevant && !isActiveThreadChangeRelevant;
 };
 
 export { areGroupsEqual, groupContainsMessageId };

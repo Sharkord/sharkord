@@ -22,6 +22,7 @@ type TMessagesGroupProps = {
   disableReactions?: boolean;
   onReplyMessageSelect?: (message: TJoinedMessage) => void;
   replyTargetMessageId?: number;
+  activeThreadMessageId?: number;
 };
 
 const MessagesGroup = memo(
@@ -31,7 +32,8 @@ const MessagesGroup = memo(
     disableFiles,
     disableReactions,
     onReplyMessageSelect,
-    replyTargetMessageId
+    replyTargetMessageId,
+    activeThreadMessageId
   }: TMessagesGroupProps) => {
     const firstMessage = group[0];
     const pluginMetadata = usePluginMetadata(firstMessage.pluginId);
@@ -97,6 +99,7 @@ const MessagesGroup = memo(
                   disableReactions={disableReactions}
                   onReplyMessageSelect={onReplyMessageSelect}
                   isInlineReplyTarget={message.id === replyTargetMessageId}
+                  isActiveThread={message.id === activeThreadMessageId}
                 />
               </div>
             ))}

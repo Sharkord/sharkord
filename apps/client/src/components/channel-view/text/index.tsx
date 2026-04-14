@@ -6,6 +6,7 @@ import {
   useChannelCan,
   useTypingUsersByChannelId
 } from '@/features/server/hooks';
+import { useThreadSidebar } from '@/features/app/hooks';
 import { useMessages } from '@/features/server/messages/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
@@ -63,6 +64,9 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
   >();
   const typingUsers = useTypingUsersByChannelId(channelId);
   const composeRef = useRef<TMessageComposeHandle>(null);
+  const { isOpen: isThreadOpen, parentMessageId: threadParentId } =
+    useThreadSidebar();
+  const activeThreadMessageId = isThreadOpen ? threadParentId : undefined;
 
   const replyTarget = useMemo<TReplyTarget | undefined>(() => {
     if (!replyingToMessage) {
@@ -183,6 +187,7 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
               group={group.messages}
               onReplyMessageSelect={onReplyMessageSelect}
               replyTargetMessageId={replyingToMessage?.id}
+              activeThreadMessageId={activeThreadMessageId}
             />
           ))}
         </div>
