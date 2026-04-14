@@ -7,6 +7,7 @@ export enum TestId {
   SERVER_VIEW = 'server-view',
   CHANNEL_ITEM = 'channel-item',
   MESSAGE_ITEM = 'message-item',
+  MESSAGE_COMPOSE_EDITOR = 'message-compose-editor',
   CATEGORY_ITEM = 'category-item',
 
   LEFT_SIDEBAR = 'left-sidebar',
