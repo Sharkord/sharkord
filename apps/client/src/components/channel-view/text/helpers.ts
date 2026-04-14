@@ -58,7 +58,10 @@ const areGroupsEqual = (
       groupContainsMessageId(nextProps.group, nextProps.replyTargetMessageId)
     : false;
   const isActiveThreadChangeRelevant = !activeThreadUnchanged
-    ? groupContainsMessageId(prevProps.group, prevProps.activeThreadMessageId) ||
+    ? groupContainsMessageId(
+        prevProps.group,
+        prevProps.activeThreadMessageId
+      ) ||
       groupContainsMessageId(nextProps.group, nextProps.activeThreadMessageId)
     : false;
 
