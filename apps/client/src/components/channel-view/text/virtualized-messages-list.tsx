@@ -1,16 +1,9 @@
 import type { TMessageGroup } from '@/features/server/messages/hooks';
 import { cn } from '@/lib/utils';
 import type { TJoinedMessage } from '@sharkord/shared';
-import {
-  forwardRef,
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState
-} from 'react';
+import { forwardRef, memo, useMemo, useRef } from 'react';
 import { Virtuoso, type Components, type VirtuosoHandle } from 'react-virtuoso';
+import { useVirtualizedScrollController } from './hooks/use-virtualized-scroll-controller';
 import { MessagesGroup } from './messages-group';
 
 type TVirtualizedMessagesListProps = {
@@ -22,9 +15,6 @@ type TVirtualizedMessagesListProps = {
   replyTargetMessageId?: number;
   virtuosoRef?: React.RefObject<VirtuosoHandle | null>;
 };
-
-// we start with a high number to leave room for prepending items without having to change the firstItemIndex immediately, which would cause a jump in the list
-const INITIAL_FIRST_ITEM_INDEX = 100000;
 
 const Scroller = memo(
   forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
@@ -55,100 +45,47 @@ const VirtualizedMessagesList = memo(
     virtuosoRef
   }: TVirtualizedMessagesListProps) => {
     const localVirtuosoRef = useRef<VirtuosoHandle>(null);
-    const [isAtBottom, setIsAtBottom] = useState(true);
-    const firstItemIndexRef = useRef(INITIAL_FIRST_ITEM_INDEX);
-    const previousFirstGroupKeyRef = useRef<string | undefined>(undefined);
-    const didInitialBottomScroll = useRef(false);
-
-    const onStartReached = useCallback(async () => {
-      if (fetching || !hasMore) {
-        return;
-      }
-
-      await loadMore();
-    }, [fetching, hasMore, loadMore]);
-
-    // compute firstItemIndex synchronously during render so that
-    // react-virtuoso always receives a consistent data + firstItemIndex
-    // pair on the same render pass, avoiding a one-frame jump.
-    const firstItemIndex = useMemo(() => {
-      if (groups.length === 0) {
-        previousFirstGroupKeyRef.current = undefined;
-        firstItemIndexRef.current = INITIAL_FIRST_ITEM_INDEX;
-        didInitialBottomScroll.current = false;
-        return INITIAL_FIRST_ITEM_INDEX;
-      }
-
-      const currentFirstKey = groups[0].key;
-      const previousFirstKey = previousFirstGroupKeyRef.current;
-
-      if (previousFirstKey) {
-        const previousIndex = groups.findIndex(
-          (group) => group.key === previousFirstKey
-        );
-
-        if (previousIndex > 0) {
-          firstItemIndexRef.current -= previousIndex;
-        }
-      }
-
-      previousFirstGroupKeyRef.current = currentFirstKey;
-      return firstItemIndexRef.current;
-    }, [groups]);
-
+    const initialTopMostItemIndexRef = useRef<
+      { index: number; align: 'end' } | undefined
+    >(undefined);
     const activeVirtuosoRef = virtuosoRef ?? localVirtuosoRef;
 
-    useEffect(() => {
-      if (
-        groups.length === 0 ||
-        fetching ||
-        didInitialBottomScroll.current ||
-        !activeVirtuosoRef.current
-      ) {
-        return;
-      }
-
-      const scrollToBottom = () => {
-        activeVirtuosoRef.current?.scrollToIndex({
-          index: groups.length - 1,
-          align: 'end',
-          behavior: 'auto'
-        });
+    if (!initialTopMostItemIndexRef.current && groups.length > 0) {
+      initialTopMostItemIndexRef.current = {
+        index: groups.length - 1,
+        align: 'end'
       };
+    }
 
-      scrollToBottom();
+    const {
+      firstItemIndex,
+      onStartReached,
+      onScrollerRefChange,
+      onAtBottomStateChange
+    } = useVirtualizedScrollController({
+      groups,
+      fetching,
+      hasMore,
+      loadMore,
+      virtuosoRef: activeVirtuosoRef
+    });
 
-      requestAnimationFrame(() => {
-        scrollToBottom();
-      });
-
-      const timeoutOne = setTimeout(scrollToBottom, 200);
-      const timeoutTwo = setTimeout(scrollToBottom, 900);
-
-      didInitialBottomScroll.current = true;
-
-      return () => {
-        clearTimeout(timeoutOne);
-        clearTimeout(timeoutTwo);
-      };
-    }, [activeVirtuosoRef, fetching, groups.length]);
+    const components = useMemo(() => ({ Scroller }), []);
 
     return (
       <Virtuoso
         ref={activeVirtuosoRef}
         data={groups}
         firstItemIndex={firstItemIndex}
-        initialTopMostItemIndex={{
-          index: Math.max(groups.length - 1, 0),
-          align: 'end'
-        }}
-        atBottomStateChange={setIsAtBottom}
-        followOutput={isAtBottom ? 'smooth' : false}
+        initialTopMostItemIndex={initialTopMostItemIndexRef.current}
+        scrollerRef={onScrollerRefChange}
+        atBottomThreshold={120}
+        atBottomStateChange={onAtBottomStateChange}
         computeItemKey={(_, group) => group.key}
         startReached={onStartReached}
         overscan={300}
         increaseViewportBy={{ top: 400, bottom: 800 }}
-        components={{ Scroller }}
+        components={components}
         itemContent={(_, group) => (
           <div className="py-2">
             <MessagesGroup
