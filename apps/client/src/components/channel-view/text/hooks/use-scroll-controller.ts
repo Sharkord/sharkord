@@ -15,6 +15,7 @@ type TUseScrollControllerReturn = {
   onScroll: () => void;
   scrollToBottom: () => void;
   onAsyncContentLoaded: () => void;
+  isAtBottom: () => boolean;
 };
 
 const SCROLL_THRESHOLD = 80;
@@ -159,11 +160,20 @@ const useScrollController = ({
     }
   }, [scrollToBottom]);
 
+  const isAtBottom = useCallback(() => {
+    const container = containerRef.current;
+
+    if (!container) return true;
+
+    return isNearBottom(container);
+  }, [isNearBottom]);
+
   return {
     containerRef,
     onScroll,
     scrollToBottom,
-    onAsyncContentLoaded
+    onAsyncContentLoaded,
+    isAtBottom
   };
 };
 

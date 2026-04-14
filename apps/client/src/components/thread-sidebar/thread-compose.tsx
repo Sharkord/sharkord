@@ -1,6 +1,7 @@
 import { MessageCompose } from '@/components/message-compose';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
+import type { LocalStorageKey } from '@/helpers/storage';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TReplyTarget } from '@/types';
 import type { TJoinedPublicUser } from '@sharkord/shared';
@@ -20,6 +21,10 @@ type TThreadComposeProps = {
   typingUsers: TJoinedPublicUser[];
   replyingToMessage?: TJoinedMessage;
   onCancelReply?: () => void;
+  composeContainerRef?: React.RefObject<HTMLDivElement | null>;
+  inputStorageKey?: LocalStorageKey;
+  inputDefaultMaxHeightVh?: number;
+  onResize?: () => void;
 };
 
 const ThreadCompose = memo(
@@ -28,7 +33,11 @@ const ThreadCompose = memo(
     channelId,
     typingUsers,
     replyingToMessage,
-    onCancelReply
+    onCancelReply,
+    composeContainerRef,
+    inputStorageKey,
+    inputDefaultMaxHeightVh,
+    onResize
   }: TThreadComposeProps) => {
     const [newMessage, setNewMessage] = useState('');
 
@@ -105,6 +114,10 @@ const ThreadCompose = memo(
         typingUsers={typingUsers}
         replyTarget={replyTarget}
         onCancelReply={onCancelReply}
+        composeContainerRef={composeContainerRef}
+        inputStorageKey={inputStorageKey}
+        inputDefaultMaxHeightVh={inputDefaultMaxHeightVh}
+        onResize={onResize}
       />
     );
   }
