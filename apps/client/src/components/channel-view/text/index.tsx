@@ -64,9 +64,7 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
   >();
   const typingUsers = useTypingUsersByChannelId(channelId);
   const composeRef = useRef<TMessageComposeHandle>(null);
-  const { isOpen: isThreadOpen, parentMessageId: threadParentId } =
-    useThreadSidebar();
-  const activeThreadMessageId = isThreadOpen ? threadParentId : undefined;
+  const { activeThreadMessageId } = useThreadSidebar();
 
   const replyTarget = useMemo<TReplyTarget | undefined>(() => {
     if (!replyingToMessage) {
