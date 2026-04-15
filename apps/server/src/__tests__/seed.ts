@@ -35,7 +35,7 @@ import {
   users
 } from '../db/schema';
 import { IS_E2E } from '../utils/env';
-import { seedE2E } from './seed-e2e';
+import { seedE2E } from './e2e-mocks/seed-e2e';
 
 const TEST_SECRET_TOKEN = 'test-secret-token-for-unit-tests';
 

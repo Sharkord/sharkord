@@ -383,3 +383,55 @@ body {
 .speaking-effect-high {
   animation: speaking-glow-high 0.8s ease-in-out infinite;
 }
+
+.media-masonry-grid {
+  --masonry-max-width: 56rem;
+  --masonry-gutter: 8px;
+  --masonry-gap: 8px;
+  --masonry-tile-max-height: 18rem;
+
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  margin-left: calc(var(--masonry-gutter) * -1);
+  max-width: min(100%, var(--masonry-max-width));
+  width: auto;
+}
+
+@media (max-width: 700px) {
+  .media-masonry-grid {
+    --masonry-gutter: 12px;
+    --masonry-gap: 12px;
+  }
+}
+
+.media-masonry-grid_column {
+  padding-left: var(--masonry-gutter);
+  background-clip: padding-box;
+}
+
+.media-masonry-grid_column > div {
+  margin-bottom: var(--masonry-gap);
+}
+
+.media-masonry-item {
+  overflow: hidden;
+}
+
+.media-masonry-asset {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+.media-masonry-image {
+  height: auto;
+  max-height: var(--masonry-tile-max-height);
+  object-fit: cover;
+  object-position: center;
+}
+
+.media-masonry-video {
+  width: 100% !important;
+  max-width: 100% !important;
+}

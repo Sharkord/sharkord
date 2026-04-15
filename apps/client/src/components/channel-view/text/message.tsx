@@ -1,5 +1,4 @@
 import { openThreadSidebar } from '@/features/app/actions';
-import { useThreadSidebar } from '@/features/app/hooks';
 import { useCan } from '@/features/server/hooks';
 import { useIsOwnUser, useOwnUserId } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
@@ -23,6 +22,7 @@ type TMessageProps = {
   disableReactions?: boolean;
   onReplyMessageSelect?: (message: TJoinedMessage) => void;
   isInlineReplyTarget?: boolean;
+  isActiveThread?: boolean;
 };
 
 const Message = memo(
@@ -32,14 +32,13 @@ const Message = memo(
     disableFiles,
     disableReactions,
     onReplyMessageSelect,
-    isInlineReplyTarget
+    isInlineReplyTarget,
+    isActiveThread
   }: TMessageProps) => {
     const { t } = useTranslation('common');
     const [isEditing, setIsEditing] = useState(false);
     const isFromOwnUser = useIsOwnUser(message.userId);
     const can = useCan();
-    const { isOpen: isThreadOpen, parentMessageId: threadParentId } =
-      useThreadSidebar();
     const ownUserId = useOwnUserId();
 
     const canManage = useMemo(
@@ -54,7 +53,6 @@ const Message = memo(
 
     const isThreadReply = !!message.parentMessageId;
     const replyCount = message.replyCount ?? 0;
-    const isActiveThread = isThreadOpen && threadParentId === message.id;
 
     const onThreadClick = useCallback(() => {
       openThreadSidebar(message.id, message.channelId);
