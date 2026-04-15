@@ -58,6 +58,7 @@ const extractMessageMedia = (message: TJoinedMessage): TFoundMedia[] => {
   }
 
   const mediaKeyCounts = new Map<string, number>();
+
   const mediaFromFiles: TFoundMedia[] = message.files
     .map((file) => {
       const extension = file.extension.toLowerCase();

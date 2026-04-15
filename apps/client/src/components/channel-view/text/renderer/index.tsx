@@ -12,11 +12,9 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { FileCard } from '../file-card';
 import { MessageReactions } from '../message-reactions';
-import { AudioOverride } from '../overrides/audio';
-import { ImageOverride } from '../overrides/image';
-import { VideoOverride } from '../overrides/video';
 import { getIsEmojiOnly, getParsedMessageHtml } from './content-cache';
-import { extractMessageMedia } from './media';
+import { Media } from './media';
+import { extractMessageMedia } from './media-cache';
 
 type TMessageRendererProps = {
   message: TJoinedMessage;
@@ -101,21 +99,7 @@ const MessageRenderer = memo(
           )}
         </div>
 
-        {allMedia.map((media) => {
-          if (media.type === 'image') {
-            return <ImageOverride src={media.url} key={media.key} />;
-          }
-
-          if (media.type === 'video') {
-            return <VideoOverride src={media.url} key={media.key} />;
-          }
-
-          if (media.type === 'audio') {
-            return <AudioOverride src={media.url} key={media.key} />;
-          }
-
-          return null;
-        })}
+        <Media media={allMedia} />
 
         {!disableReactions && (
           <MessageReactions
