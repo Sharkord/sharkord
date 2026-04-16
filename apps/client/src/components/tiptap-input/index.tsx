@@ -40,6 +40,7 @@ type TTiptapInputProps = {
   onChange?: (html: string) => void;
   onSubmit?: () => void;
   onCancel?: () => void;
+  onArrowUp?: () => void;
   onTyping?: () => void;
   commands?: TCommandInfo[];
   ref?: Ref<TTiptapInputHandle>;
@@ -55,6 +56,7 @@ const TiptapInput = memo(
     onChange,
     onSubmit,
     onCancel,
+    onArrowUp,
     onTyping,
     disabled,
     readOnly,
@@ -62,8 +64,14 @@ const TiptapInput = memo(
     ref
   }: TTiptapInputProps) => {
     const readOnlyRef = useRef(readOnly);
+    const onSubmitRef = useRef(onSubmit);
+    const onCancelRef = useRef(onCancel);
+    const onArrowUpRef = useRef(onArrowUp);
 
     readOnlyRef.current = readOnly;
+    onSubmitRef.current = onSubmit;
+    onCancelRef.current = onCancel;
+    onArrowUpRef.current = onArrowUp;
 
     const [isExpanded, setIsExpanded] = useState(false);
     const [hasOverflow, setHasOverflow] = useState(false);
@@ -163,13 +171,13 @@ const TiptapInput = memo(
             }
 
             event.preventDefault();
-            onSubmit?.();
+            onSubmitRef.current?.();
             return true;
           }
 
           if (event.key === 'Escape') {
             event.preventDefault();
-            onCancel?.();
+            onCancelRef.current?.();
             return true;
           }
 
@@ -191,6 +199,26 @@ const TiptapInput = memo(
         handleDrop: () => readOnlyRef.current
       }
     });
+
+    useEffect(() => {
+      if (!editor) return;
+
+      const dom = editor.view.dom;
+
+      const handleArrowUp = (e: KeyboardEvent) => {
+        if (e.defaultPrevented) return;
+        if (e.key !== 'ArrowUp') return;
+        if (readOnlyRef.current) return;
+        if (!editor.isEmpty) return;
+        if (!onArrowUpRef.current) return;
+
+        e.preventDefault();
+        onArrowUpRef.current();
+      };
+
+      dom.addEventListener('keydown', handleArrowUp);
+      return () => dom.removeEventListener('keydown', handleArrowUp);
+    }, [editor]);
 
     useImperativeHandle(
       ref,

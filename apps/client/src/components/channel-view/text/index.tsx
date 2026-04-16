@@ -1,7 +1,4 @@
-import {
-  MessageCompose,
-  type TMessageComposeHandle
-} from '@/components/message-compose';
+import { MessageCompose } from '@/components/message-compose';
 import { useThreadSidebar } from '@/features/app/hooks';
 import {
   useChannelCan,
@@ -21,9 +18,10 @@ import {
 } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
 import { throttle } from 'lodash-es';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { useArrowUpEdit } from './hooks/use-arrow-up-edit';
 import { useScrollController } from './hooks/use-scroll-controller';
 import { useScrollToJumpTarget } from './hooks/use-scroll-to-jump-target';
 import { MessagesGroup } from './messages-group';
@@ -63,8 +61,13 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
     TJoinedMessage | undefined
   >();
   const typingUsers = useTypingUsersByChannelId(channelId);
-  const composeRef = useRef<TMessageComposeHandle>(null);
   const { activeThreadMessageId } = useThreadSidebar();
+  const {
+    composeRef,
+    editingMessageId,
+    handleArrowUpEdit,
+    handleEditComplete
+  } = useArrowUpEdit(messages);
 
   const replyTarget = useMemo<TReplyTarget | undefined>(() => {
     if (!replyingToMessage) {
@@ -186,6 +189,8 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
               onReplyMessageSelect={onReplyMessageSelect}
               replyTargetMessageId={replyingToMessage?.id}
               activeThreadMessageId={activeThreadMessageId}
+              editingMessageId={editingMessageId}
+              onEditComplete={handleEditComplete}
             />
           ))}
         </div>
@@ -202,6 +207,7 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
         showPluginSlot
         onCancelReply={() => setReplyingToMessage(undefined)}
         replyTarget={replyTarget}
+        onArrowUp={handleArrowUpEdit}
       />
     </>
   );

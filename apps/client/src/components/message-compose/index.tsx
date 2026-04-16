@@ -48,11 +48,13 @@ type TMessageComposeProps = {
   showPluginSlot?: boolean;
   replyTarget?: TReplyTarget;
   onCancelReply?: () => void;
+  onArrowUp?: () => void;
   ref?: Ref<TMessageComposeHandle>;
 };
 
 type TMessageComposeHandle = {
   clearFiles: () => void;
+  focus: () => void;
 };
 
 const MessageCompose = memo(
@@ -66,6 +68,7 @@ const MessageCompose = memo(
     showPluginSlot = false,
     replyTarget,
     onCancelReply,
+    onArrowUp,
     ref
   }: TMessageComposeProps) => {
     const { t } = useTranslation('common');
@@ -119,7 +122,11 @@ const MessageCompose = memo(
       fileInputProps
     } = useUploadFiles(channelId, containerRef, !canSendMessages);
 
-    useImperativeHandle(ref, () => ({ clearFiles }), [clearFiles]);
+    useImperativeHandle(
+      ref,
+      () => ({ clearFiles, focus: () => inputRef.current?.focus() }),
+      [clearFiles]
+    );
 
     const handleSend = useCallback(async () => {
       if (
@@ -225,6 +232,7 @@ const MessageCompose = memo(
                 onChange={onMessageChange}
                 onSubmit={handleSend}
                 onTyping={onTyping}
+                onArrowUp={onArrowUp}
                 disabled={uploading || !canSendMessages}
                 readOnly={sending}
                 commands={pluginCommands}

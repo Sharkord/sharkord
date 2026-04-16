@@ -6,6 +6,7 @@ import { Spinner } from '@sharkord/ui';
 import { MessageSquareText } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useArrowUpEdit } from '../channel-view/text/hooks/use-arrow-up-edit';
 import { useScrollController } from '../channel-view/text/hooks/use-scroll-controller';
 import { MessagesGroup } from '../channel-view/text/messages-group';
 import { ParentMessagePreview } from './parent-message-preview';
@@ -26,6 +27,12 @@ const ThreadContent = memo(
       TJoinedMessage | undefined
     >();
     const { activeThreadMessageId } = useThreadSidebar();
+    const {
+      composeRef,
+      editingMessageId,
+      handleArrowUpEdit,
+      handleEditComplete
+    } = useArrowUpEdit(messages);
 
     const typingUsers = useTypingUsersByThreadId(parentMessageId);
 
@@ -81,6 +88,8 @@ const ThreadContent = memo(
                         onReplyMessageSelect={onReplyMessageSelect}
                         replyTargetMessageId={replyingToMessage?.id}
                         activeThreadMessageId={activeThreadMessageId}
+                        editingMessageId={editingMessageId}
+                        onEditComplete={handleEditComplete}
                       />
                     ))}
                   </div>
@@ -90,11 +99,13 @@ const ThreadContent = memo(
           )}
 
           <ThreadCompose
+            ref={composeRef}
             parentMessageId={parentMessageId}
             channelId={channelId}
             typingUsers={typingUsers}
             replyingToMessage={replyingToMessage}
             onCancelReply={() => setReplyingToMessage(undefined)}
+            onArrowUp={handleArrowUpEdit}
           />
         </div>
       </div>

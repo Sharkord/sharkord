@@ -9,7 +9,7 @@ import {
   type TJoinedMessage
 } from '@sharkord/shared';
 import { MessageSquareText } from 'lucide-react';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageActions } from './message-actions';
 import { MessageEditInline } from './message-edit-inline';
@@ -23,6 +23,8 @@ type TMessageProps = {
   onReplyMessageSelect?: (message: TJoinedMessage) => void;
   isInlineReplyTarget?: boolean;
   isActiveThread?: boolean;
+  editingMessageId?: number;
+  onEditComplete?: () => void;
 };
 
 const Message = memo(
@@ -33,7 +35,9 @@ const Message = memo(
     disableReactions,
     onReplyMessageSelect,
     isInlineReplyTarget,
-    isActiveThread
+    isActiveThread,
+    editingMessageId,
+    onEditComplete
   }: TMessageProps) => {
     const { t } = useTranslation('common');
     const [isEditing, setIsEditing] = useState(false);
@@ -57,6 +61,14 @@ const Message = memo(
     const onThreadClick = useCallback(() => {
       openThreadSidebar(message.id, message.channelId);
     }, [message.id, message.channelId]);
+
+    useEffect(() => {
+      if (editingMessageId === message.id) {
+        setIsEditing(true);
+      } else if (editingMessageId !== undefined) {
+        setIsEditing(false);
+      }
+    }, [editingMessageId, message.id]);
 
     return (
       <div
@@ -103,7 +115,12 @@ const Message = memo(
         ) : (
           <MessageEditInline
             message={message}
-            onBlur={() => setIsEditing(false)}
+            onBlur={() => {
+              setIsEditing(false);
+              if (editingMessageId === message.id) {
+                onEditComplete?.();
+              }
+            }}
           />
         )}
       </div>
