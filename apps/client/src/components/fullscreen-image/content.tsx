@@ -144,38 +144,40 @@ const FullScreenImage = memo(
       [props.src]
     );
 
-    const portalContainer = createPortal(
-      <>
-        <div
-          className={cn(
-            'fixed inset-0 flex justify-center items-center backdrop-blur-sm bg-black/30 z-50 transition-opacity duration-300',
-            visible ? 'opacity-100' : 'opacity-0',
-            open ? 'pointer-events-auto' : 'pointer-events-none'
-          )}
-          onClick={onClickOutside}
-        >
-          <Component
-            {...props}
-            ref={imgRef}
-            style={{
-              transform: `scale(${scaleRef.current}) translate(${posRef.current.x}px, ${posRef.current.y}px)`,
-              cursor: 'grab'
-            }}
-            className="p-4 max-w-full max-h-full object-contain"
-            onMouseDown={handleMouseDown}
-            draggable={false}
-            onClick={(e: React.MouseEvent<HTMLDivElement>) =>
-              e.stopPropagation()
-            }
-          />
-          <div className="flex gap-2 absolute top-2 right-2 z-50">
-            <IconButton icon={Link} variant="ghost" onClick={onCopyLink} />
-            <IconButton onClick={onCloseClick} icon={X} variant="ghost" />
-          </div>
-        </div>
-      </>,
-      portalRoot
-    );
+    const portalContainer = open
+      ? createPortal(
+          <>
+            <div
+              className={cn(
+                'fixed inset-0 flex justify-center items-center backdrop-blur-sm bg-black/30 z-50 transition-opacity duration-300',
+                visible ? 'opacity-100' : 'opacity-0',
+                open ? 'pointer-events-auto' : 'pointer-events-none'
+              )}
+              onClick={onClickOutside}
+            >
+              <Component
+                {...props}
+                ref={imgRef}
+                style={{
+                  transform: `scale(${scaleRef.current}) translate(${posRef.current.x}px, ${posRef.current.y}px)`,
+                  cursor: 'grab'
+                }}
+                className="p-4 max-w-full max-h-full object-contain"
+                onMouseDown={handleMouseDown}
+                draggable={false}
+                onClick={(e: React.MouseEvent<HTMLDivElement>) =>
+                  e.stopPropagation()
+                }
+              />
+              <div className="flex gap-2 absolute top-2 right-2 z-50">
+                <IconButton icon={Link} variant="ghost" onClick={onCopyLink} />
+                <IconButton onClick={onCloseClick} icon={X} variant="ghost" />
+              </div>
+            </div>
+          </>,
+          portalRoot
+        )
+      : null;
 
     return (
       <>

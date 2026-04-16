@@ -5,12 +5,11 @@ import { useChannelById } from '@/features/server/channels/hooks';
 import { usePluginMetadata } from '@/features/server/plugins/hooks';
 import { useUserById } from '@/features/server/users/hooks';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
-import { getPlainTextFromHtml, type TJoinedMessage } from '@sharkord/shared';
+import { type TJoinedMessage } from '@sharkord/shared';
 import { CornerUpLeft } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-
-const SNIPPET_MAX_LENGTH = 32;
+import { getReplyTargetSnippet } from './reply-preview-helpers';
 
 type TMessageReplyPreviewWrapperProps = {
   message: TJoinedMessage;
@@ -53,21 +52,10 @@ const MessageReplyPreviewWrapper = memo(
       return t('unknownUser');
     }, [replyTargetPlugin, replyTarget, replyTargetUser, t]);
 
-    const replyTargetSnippet = useMemo(() => {
-      if (!replyTarget) {
-        return t('originalMessageUnavailable');
-      }
-
-      const plainText = getPlainTextFromHtml(replyTarget.content ?? '').trim();
-
-      if (plainText) {
-        return plainText.length > SNIPPET_MAX_LENGTH
-          ? plainText.slice(0, SNIPPET_MAX_LENGTH) + '…'
-          : plainText;
-      }
-
-      return t('replyAttachmentFallback');
-    }, [replyTarget, t]);
+    const replyTargetSnippet = useMemo(
+      () => getReplyTargetSnippet(replyTarget, t),
+      [replyTarget, t]
+    );
 
     if (!message.replyToMessageId) {
       return null;

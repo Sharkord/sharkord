@@ -1,25 +1,18 @@
 import { ChannelType, type TIMessage } from '@sharkord/shared';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import { categories, channels, messages } from '../db/schema';
+import { channels, messages } from '../../db/schema';
 
-const createInfiniteScrollMockData = async (db: BunSQLiteDatabase) => {
-  const e2eChannelsCategory = await db
-    .insert(categories)
-    .values({
-      name: 'E2E Channels',
-      position: 2,
-      createdAt: Date.now()
-    })
-    .returning()
-    .get();
-
+const createInfiniteScrollMockData = async (
+  db: BunSQLiteDatabase,
+  e2eChannelsCategoryId: number
+) => {
   const scrollChannel = await db
     .insert(channels)
     .values({
       name: 'Infinite Scroll',
       type: ChannelType.TEXT,
       position: 1,
-      categoryId: e2eChannelsCategory!.id,
+      categoryId: e2eChannelsCategoryId,
       createdAt: Date.now()
     })
     .returning()
@@ -54,8 +47,4 @@ const createInfiniteScrollMockData = async (db: BunSQLiteDatabase) => {
   await db.insert(messages).values(mockMessages);
 };
 
-const seedE2E = async (db: BunSQLiteDatabase) => {
-  await createInfiniteScrollMockData(db);
-};
-
-export { seedE2E };
+export { createInfiniteScrollMockData };

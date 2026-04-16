@@ -1,7 +1,6 @@
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
-import type { TCommandInfo } from '@sharkord/shared';
-
+import { TestId, type TCommandInfo } from '@sharkord/shared';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import Link from '@tiptap/extension-link';
 import { EditorContent, useEditor } from '@tiptap/react';
@@ -129,6 +128,9 @@ const TiptapInput = memo(
         }
       },
       editorProps: {
+        attributes: {
+          'data-testid': TestId.MESSAGE_COMPOSE_EDITOR
+        },
         handleKeyDown: (_view, event) => {
           // block all input when readOnly
           if (readOnlyRef.current) {
