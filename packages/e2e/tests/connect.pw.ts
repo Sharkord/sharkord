@@ -33,8 +33,8 @@ test.describe('Connect Screen', () => {
     const passwordInput = page.getByTestId(TestId.CONNECT_PASSWORD_INPUT);
     const connectButton = page.getByTestId(TestId.CONNECT_BUTTON);
 
-    await identityInput.fill('testuser');
-    await passwordInput.fill('testpassword');
+    await identityInput.fill('testowner');
+    await passwordInput.fill('password123');
 
     await expect(connectButton).toBeEnabled();
   });
@@ -46,11 +46,23 @@ test.describe('Connect Screen', () => {
     const passwordInput = page.getByTestId(TestId.CONNECT_PASSWORD_INPUT);
     const connectButton = page.getByTestId(TestId.CONNECT_BUTTON);
 
-    await identityInput.fill('testuser');
-    await passwordInput.fill('testpassword');
+    await identityInput.fill('testowner');
+    await passwordInput.fill('password123');
     await connectButton.click();
 
     const mainAppElement = page.getByTestId(TestId.SERVER_VIEW);
     await expect(mainAppElement).toBeVisible();
+
+    const leftSidebar = page.getByTestId(TestId.LEFT_SIDEBAR);
+    await expect(leftSidebar).toBeVisible();
+
+    const serverName = page.getByTestId(TestId.LEFT_SIDEBAR_SERVER_NAME);
+    await expect(serverName).toHaveText('Test Server');
+
+    const channelItems = page.getByTestId(TestId.CHANNEL_ITEM);
+    await expect(channelItems).toHaveCount(4);
+
+    const categoryItems = page.getByTestId(TestId.CATEGORY_ITEM);
+    await expect(categoryItems).toHaveCount(3);
   });
 });

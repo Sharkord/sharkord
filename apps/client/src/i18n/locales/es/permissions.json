@@ -1,0 +1,69 @@
+{
+  "noPermissions": "Sin permisos",
+  "headers": {
+    "server": "Permisos",
+    "channel": "Permisos del canal"
+  },
+  "server": {
+    "SEND_MESSAGES": "Enviar mensajes",
+    "REACT_TO_MESSAGES": "Reaccionar a mensajes",
+    "PIN_MESSAGES": "Fijar mensajes",
+    "UPLOAD_FILES": "Subir archivos",
+    "JOIN_VOICE_CHANNELS": "Unirse a canales de voz",
+    "SHARE_SCREEN": "Compartir pantalla",
+    "ENABLE_WEBCAM": "Activar cámara web",
+    "MANAGE_CHANNELS": "Gestionar canales",
+    "MANAGE_CHANNEL_PERMISSIONS": "Gestionar permisos de canal",
+    "MANAGE_CATEGORIES": "Gestionar categorías",
+    "MANAGE_ROLES": "Gestionar roles",
+    "MANAGE_EMOJIS": "Gestionar emojis",
+    "MANAGE_SETTINGS": "Gestionar configuración del servidor",
+    "MANAGE_USERS": "Gestionar usuarios",
+    "MANAGE_MESSAGES": "Gestionar mensajes",
+    "MANAGE_STORAGE": "Gestionar almacenamiento",
+    "MANAGE_INVITES": "Gestionar invitaciones",
+    "MANAGE_UPDATES": "Gestionar actualizaciones",
+    "MANAGE_PLUGINS": "Gestionar plugins",
+    "USE_PLUGINS": "Usar plugins",
+    "VIEW_USER_SENSITIVE_DATA": "Ver datos sensibles de usuarios"
+  },
+  "serverDescriptions": {
+    "SEND_MESSAGES": "Permite enviar mensajes en los canales.",
+    "REACT_TO_MESSAGES": "Permite reaccionar a los mensajes.",
+    "PIN_MESSAGES": "Permite fijar mensajes.",
+    "UPLOAD_FILES": "Permite subir archivos en los canales.",
+    "JOIN_VOICE_CHANNELS": "Permite unirse a los canales de voz.",
+    "SHARE_SCREEN": "Permite compartir la pantalla.",
+    "ENABLE_WEBCAM": "Permite activar la cámara web.",
+    "MANAGE_CHANNELS": "Permite crear, actualizar y eliminar canales.",
+    "MANAGE_CHANNEL_PERMISSIONS": "Permite gestionar los permisos específicos de canal para roles y usuarios.",
+    "MANAGE_CATEGORIES": "Permite crear, actualizar y eliminar categorías.",
+    "MANAGE_ROLES": "Permite crear, actualizar y eliminar roles.",
+    "MANAGE_EMOJIS": "Permite crear, actualizar y eliminar emojis.",
+    "MANAGE_SETTINGS": "Permite gestionar la configuración del servidor.",
+    "MANAGE_USERS": "Permite gestionar los usuarios.",
+    "MANAGE_MESSAGES": "Permite gestionar los mensajes de todos los usuarios editándolos o eliminándolos.",
+    "MANAGE_STORAGE": "Permite gestionar el almacenamiento, como habilitar o deshabilitar las subidas.",
+    "MANAGE_INVITES": "Permite crear, editar y eliminar invitaciones del servidor.",
+    "MANAGE_UPDATES": "Permite realizar actualizaciones.",
+    "MANAGE_PLUGINS": "Permite gestionar los plugins.",
+    "USE_PLUGINS": "Permite usar plugins, como ejecutar comandos de plugins o ver elementos de interfaz añadidos por plugins.",
+    "VIEW_USER_SENSITIVE_DATA": "Permite ver datos sensibles de los usuarios como identidad, dirección IP y ubicación."
+  },
+  "channel": {
+    "VIEW_CHANNEL": "Ver canal",
+    "SEND_MESSAGES": "Enviar mensajes",
+    "JOIN": "Unirse al canal",
+    "SPEAK": "Hablar",
+    "SHARE_SCREEN": "Compartir pantalla",
+    "WEBCAM": "Activar cámara web"
+  },
+  "channelDescriptions": {
+    "VIEW_CHANNEL": "Permite al usuario ver el canal.",
+    "SEND_MESSAGES": "Permite al usuario enviar mensajes.",
+    "JOIN": "Permite al usuario unirse al canal.",
+    "SPEAK": "Permite al usuario hablar en los canales de voz.",
+    "SHARE_SCREEN": "Permite al usuario compartir su pantalla.",
+    "WEBCAM": "Permite al usuario activar su cámara web."
+  }
+}

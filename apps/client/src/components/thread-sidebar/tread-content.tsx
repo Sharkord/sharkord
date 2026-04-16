@@ -1,3 +1,4 @@
+import { useThreadSidebar } from '@/features/app/hooks';
 import { useTypingUsersByThreadId } from '@/features/server/hooks';
 import { useThreadMessages } from '@/features/server/messages/hooks';
 import type { TJoinedMessage } from '@sharkord/shared';
@@ -25,6 +26,7 @@ const ThreadContent = memo(
     const [replyingToMessage, setReplyingToMessage] = useState<
       TJoinedMessage | undefined
     >();
+    const { activeThreadMessageId } = useThreadSidebar();
 
     const typingUsers = useTypingUsersByThreadId(parentMessageId);
     const composeRef = useRef<TThreadComposeHandle>(null);
@@ -76,15 +78,16 @@ const ThreadContent = memo(
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {groupedMessages.map((group, index) => (
+                    {groupedMessages.map((group) => (
                       <MessagesGroup
-                        key={index}
-                        group={group}
+                        key={group.key}
+                        group={group.messages}
                         onReplyMessageSelect={onReplyMessageSelect}
                         replyTargetMessageId={replyingToMessage?.id}
                         editingMessageId={editingMessageId}
                         onCancelEdit={onCancelEdit}
                         onStartEdit={startEdit}
+                        activeThreadMessageId={activeThreadMessageId}
                       />
                     ))}
                   </div>

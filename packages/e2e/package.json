@@ -6,7 +6,9 @@
   "scripts": {
     "test:e2e": "bunx playwright test",
     "test:ui": "bunx playwright test --ui",
+    "test:mocked": "RUN_MOCK=true bunx playwright test mocked.pw.ts",
     "test:headed": "bunx playwright test --headed",
+    "test:flaky": "bunx playwright test --repeat-each=2 --retries=5",
     "format": "prettier --write \"**/*.*.ts*\" --config ./.prettierrc.json",
     "format:check": "prettier --check \"**/*.*.ts*\" --config ./.prettierrc.json",
     "lint": "eslint ./tests/**/*.ts --ext ts --report-unused-disable-directives",

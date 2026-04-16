@@ -10,6 +10,7 @@ import {
 } from '@sharkord/shared';
 import { format } from 'date-fns';
 import { memo } from 'react';
+import { areGroupsEqual } from './helpers';
 import { useMessageAuthorName } from './hooks/use-message-author-name';
 import { Message } from './message';
 import { MessageReplyPreviewWrapper } from './message-reply-preview-wrapper';
@@ -24,6 +25,7 @@ type TMessagesGroupProps = {
   editingMessageId?: number;
   onCancelEdit?: () => void;
   onStartEdit?: (messageId: number) => void;
+  activeThreadMessageId?: number;
 };
 
 const MessagesGroup = memo(
@@ -36,7 +38,8 @@ const MessagesGroup = memo(
     replyTargetMessageId,
     editingMessageId,
     onCancelEdit,
-    onStartEdit
+    onStartEdit,
+    activeThreadMessageId
   }: TMessagesGroupProps) => {
     const firstMessage = group[0];
     const pluginMetadata = usePluginMetadata(firstMessage.pluginId);
@@ -105,6 +108,7 @@ const MessagesGroup = memo(
                   editingMessageId={editingMessageId}
                   onCancelEdit={onCancelEdit}
                   onStartEdit={onStartEdit}
+                  isActiveThread={message.id === activeThreadMessageId}
                 />
               </div>
             ))}
@@ -122,7 +126,8 @@ const MessagesGroup = memo(
     }
 
     return groupContent;
-  }
+  },
+  areGroupsEqual
 );
 
 export { MessagesGroup };

@@ -49,6 +49,8 @@
   "deleteFileMsg": "Sei sicuro di voler eliminare questo file?",
   "fileDeleted": "File eliminato",
   "failedDeleteFile": "Impossibile eliminare il file",
+  "onlyImageFilesAllowed": "Sono consentiti solo file immagine",
+  "uploadFailed": "Caricamento non riuscito",
   "edited": "(modificato)",
   "reply_one": "{{count}} risposta",
   "reply_other": "{{count}} risposte",

@@ -2,6 +2,7 @@ import {
   MessageCompose,
   type TMessageComposeHandle
 } from '@/components/message-compose';
+import { useThreadSidebar } from '@/features/app/hooks';
 import {
   useChannelCan,
   useTypingUsersByChannelId
@@ -66,6 +67,7 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
   const composeRef = useRef<TMessageComposeHandle>(null);
   const { editingMessageId, onEditLastMessage, onCancelEdit, startEdit } =
     useEditLastMessage(messages, composeRef);
+  const { activeThreadMessageId } = useThreadSidebar();
 
   const replyTarget = useMemo<TReplyTarget | undefined>(() => {
     if (!replyingToMessage) {
@@ -180,15 +182,16 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
         className="flex-1 overflow-y-auto overflow-x-hidden p-2 animate-in fade-in duration-500"
       >
         <div className="space-y-4">
-          {groupedMessages.map((group, index) => (
+          {groupedMessages.map((group) => (
             <MessagesGroup
-              key={index}
-              group={group}
+              key={group.key}
+              group={group.messages}
               onReplyMessageSelect={onReplyMessageSelect}
               replyTargetMessageId={replyingToMessage?.id}
               editingMessageId={editingMessageId}
               onCancelEdit={onCancelEdit}
               onStartEdit={startEdit}
+              activeThreadMessageId={activeThreadMessageId}
             />
           ))}
         </div>
