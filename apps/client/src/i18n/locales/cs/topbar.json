@@ -1,0 +1,17 @@
+{
+  "closeVoiceChat": "Zavřít hlasový chat",
+  "openVoiceChat": "Otevřít hlasový chat",
+  "closeMembersSidebar": "Zavřít seznam členů",
+  "openMembersSidebar": "Otevřít seznam členů",
+  "searchContent": "Hledat obsah...",
+  "voiceOptions": "Možnosti hlasu",
+  "hideNonVideoParticipants": "Skrýt účastníky bez videa",
+  "displayUserBanners": "Zobrazit bannery uživatelů",
+  "hideOwnScreenShare": "Skrýt vlastní sdílení obrazovky",
+  "audioControls": "Ovládání zvuku",
+  "stream_one": "stream",
+  "stream_other": "streamy",
+  "noRemoteAudioStreams": "Nejsou k dispozici žádné vzdálené audio streamy.",
+  "volumeControls": "Ovládání hlasitosti",
+  "externalAudio": "Externí zvuk"
+}

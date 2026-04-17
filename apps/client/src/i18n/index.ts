@@ -1,11 +1,12 @@
 import { getLocalStorageItem, LocalStorageKey } from '@/helpers/storage';
 import type { Locale } from 'date-fns';
-import { enUS, es, fr, it, ru, zhCN } from 'date-fns/locale';
+import { cs, enUS, es, fr, it, ru, zhCN } from 'date-fns/locale';
 import i18n from 'i18next';
 import resourcesToBackend from 'i18next-resources-to-backend';
 import { initReactI18next } from 'react-i18next';
 
 export const SUPPORTED_LANGUAGES = [
+  { code: 'cs', label: 'Čeština', dateLocale: cs },
   { code: 'en', label: 'English', dateLocale: enUS },
   { code: 'es', label: 'Español', dateLocale: es },
   { code: 'fr', label: 'Français', dateLocale: fr },
