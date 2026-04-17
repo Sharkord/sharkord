@@ -6,8 +6,8 @@ import resourcesToBackend from 'i18next-resources-to-backend';
 import { initReactI18next } from 'react-i18next';
 
 export const SUPPORTED_LANGUAGES = [
+  { code: 'en', label: 'English', dateLocale: enUS }, // English should always be first
   { code: 'cs', label: 'Čeština', dateLocale: cs },
-  { code: 'en', label: 'English', dateLocale: enUS },
   { code: 'es', label: 'Español', dateLocale: es },
   { code: 'fr', label: 'Français', dateLocale: fr },
   { code: 'it', label: 'Italiano', dateLocale: it },
