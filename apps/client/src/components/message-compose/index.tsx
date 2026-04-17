@@ -2,10 +2,7 @@ import { EmojiPicker } from '@/components/emoji-picker';
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import type { TTiptapInputHandle } from '@/components/tiptap-input';
 import { TiptapInput } from '@/components/tiptap-input';
-import {
-  getLocalStorageItemAsNumber,
-  LocalStorageKey
-} from '@/helpers/storage';
+import { LocalStorageKey } from '@/helpers/storage';
 
 import { useChannelById } from '@/features/server/channels/hooks';
 import {
@@ -32,7 +29,6 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -40,10 +36,11 @@ import {
   type RefObject
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { measureMinHeight } from '../channel-view/text/chat-input-divider';
+import { DEFAULT_MAX_HEIGHT_VH } from '../channel-view/text/helpers';
 import { useMessageAuthorName } from '../channel-view/text/hooks/use-message-author-name';
 import { PreviewFile } from '../channel-view/text/preview-file';
 import { UsersTypingIndicator } from '../channel-view/text/users-typing';
+import { useFileAwareHeight } from './hooks';
 
 type TMessageComposeProps = {
   channelId: number;
@@ -61,8 +58,6 @@ type TMessageComposeProps = {
   onResize?: () => void;
   ref?: Ref<TMessageComposeHandle>;
 };
-
-export const DEFAULT_MAX_HEIGHT_VH = 35;
 
 type TMessageComposeHandle = {
   clearFiles: () => void;
@@ -137,45 +132,13 @@ const MessageCompose = memo(
       fileInputProps
     } = useUploadFiles(channelId, containerRef, !canSendMessages);
 
-    // on mount, restore the saved height or set the default max-height
-    useLayoutEffect(() => {
-      if (!composeContainerRef) return;
-      const el = composeContainerRef.current;
-      if (!el) return;
-      const savedVh =
-        getLocalStorageItemAsNumber(inputStorageKey, inputDefaultMaxHeightVh) ??
-        inputDefaultMaxHeightVh;
-      if (savedVh === inputDefaultMaxHeightVh) {
-        el.style.maxHeight = `${savedVh}vh`;
-      } else {
-        el.style.height = `${savedVh}vh`;
-      }
-    }, [composeContainerRef, inputStorageKey, inputDefaultMaxHeightVh]);
-
-    // when files are added, if we're pinned at an explicit height that is too
-    // small to show them, bump up; when files are all removed, restore
-    const userPinnedHeightRef = useRef<number | null>(null);
-    useEffect(() => {
-      const el = containerRef.current;
-      if (!el?.style.height) return;
-      const currentPx = el.getBoundingClientRect().height;
-      if (displayItems.length > 0) {
-        // measure the natural height with files present
-        const savedHeight = el.style.height;
-        el.style.height = '';
-        const naturalPx = el.getBoundingClientRect().height;
-        el.style.height = savedHeight;
-        if (naturalPx > currentPx) {
-          if (userPinnedHeightRef.current === null)
-            userPinnedHeightRef.current = currentPx;
-          el.style.height = `${naturalPx}px`;
-        }
-      } else if (userPinnedHeightRef.current !== null) {
-        const minPx = measureMinHeight(el);
-        el.style.height = `${Math.max(userPinnedHeightRef.current, minPx)}px`;
-        userPinnedHeightRef.current = null;
-      }
-    }, [displayItems, containerRef]);
+    useFileAwareHeight({
+      containerRef,
+      composeContainerRef,
+      displayItems,
+      inputStorageKey,
+      inputDefaultMaxHeightVh
+    });
 
     useImperativeHandle(ref, () => ({ clearFiles }), [clearFiles]);
 
@@ -202,11 +165,14 @@ const MessageCompose = memo(
 
       if (success) {
         clearFiles();
+
         // if we were pinned down to the min then unpin now
         const el = containerRef.current;
+
         if (el?.dataset.pendingUnpinOnSend) {
           el.style.height = '';
           el.style.maxHeight = `${inputDefaultMaxHeightVh}vh`;
+
           delete el.dataset.pendingUnpinOnSend;
         }
       }
@@ -243,13 +209,18 @@ const MessageCompose = memo(
       }
     }, [replyTarget]);
 
+    // TODO: check if this is really necessary
     useEffect(() => {
       if (!onResize) return;
+
       const el = containerRef.current;
+
       if (!el) return;
 
       const observer = new ResizeObserver(onResize);
+
       observer.observe(el);
+
       return () => observer.disconnect();
     }, [onResize, containerRef]);
 

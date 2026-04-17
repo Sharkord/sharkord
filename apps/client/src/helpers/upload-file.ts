@@ -42,7 +42,6 @@ const uploadFile = async (file: File, options?: TUploadFileOptions) => {
 
     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
     xhr.setRequestHeader(UploadHeaders.TYPE, file.type);
-    xhr.setRequestHeader(UploadHeaders.CONTENT_LENGTH, file.size.toString());
     xhr.setRequestHeader(
       UploadHeaders.ORIGINAL_NAME,
       getSafeFileName(file.name)

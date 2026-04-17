@@ -1,5 +1,4 @@
 import {
-  DEFAULT_MAX_HEIGHT_VH,
   MessageCompose,
   type TMessageComposeHandle
 } from '@/components/message-compose';
@@ -27,6 +26,7 @@ import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ChatInputDivider } from './chat-input-divider';
+import { DEFAULT_MAX_HEIGHT_VH } from './helpers';
 import { useScrollController } from './hooks/use-scroll-controller';
 import { useScrollToJumpTarget } from './hooks/use-scroll-to-jump-target';
 import { MessagesGroup } from './messages-group';

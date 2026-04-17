@@ -4,10 +4,12 @@ import {
   setLocalStorageItem
 } from '@/helpers/storage';
 import { useCallback } from 'react';
-
-const MAX_VH = 80;
-const MIN_PX = 56;
-const RESET_THRESHOLD_PX = 10;
+import {
+  getHeight,
+  MAX_VH,
+  measureMinHeight,
+  RESET_THRESHOLD_PX
+} from './helpers';
 
 type TChatInputDividerProps = {
   composeContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -17,36 +19,8 @@ type TChatInputDividerProps = {
   defaultMaxHeightVh: number;
 };
 
-// calculate the minimum acceptable chat input height
-export const measureMinHeight = (composeEl: HTMLDivElement): number => {
-  const proseMirror = composeEl.querySelector(
-    '.ProseMirror'
-  ) as HTMLElement | null;
-  if (!proseMirror) return MIN_PX;
-
-  // clamp to one line to measure empty state
-  const savedHeight = composeEl.style.height;
-  const savedMaxHeight = composeEl.style.maxHeight;
-  const scrollRow = composeEl.querySelector(
-    '.compose-scroll-row'
-  ) as HTMLElement | null;
-  const savedScrollTop = scrollRow?.scrollTop ?? 0;
-  proseMirror.classList.add('line-clamp-1');
-  composeEl.style.height = '';
-  composeEl.style.maxHeight = '';
-
-  // measure
-  const minHeight = composeEl.getBoundingClientRect().height;
-
-  // restore height and scroll position
-  composeEl.style.height = savedHeight;
-  composeEl.style.maxHeight = savedMaxHeight;
-  proseMirror.classList.remove('line-clamp-1');
-  if (scrollRow) scrollRow.scrollTop = savedScrollTop;
-
-  return Math.max(MIN_PX, minHeight);
-};
-
+// TODO: this should probably be included inside MessageCompose and not as a separate component
+// since it's tightly coupled to the compose container and its resizing behavior
 const ChatInputDivider = ({
   composeContainerRef,
   scrollToBottom,
@@ -63,16 +37,22 @@ const ChatInputDivider = ({
       if (!composeEl) return;
 
       const wasAtBottom = isAtBottom();
+
       const startY = e.clientY;
       const startHeight = composeEl.style.height;
       const startMaxHeight = composeEl.style.maxHeight;
-      const startHeightPx = composeEl.getBoundingClientRect().height;
+      const startHeightPx = getHeight(composeEl);
+
       const maxPx = (MAX_VH / 100) * window.innerHeight;
       const minPx = measureMinHeight(composeEl);
+
       composeEl.style.maxHeight = '';
       composeEl.style.height = `${startHeightPx}px`;
+
       if (wasAtBottom) scrollToBottom();
+
       const target = e.currentTarget;
+
       target.setPointerCapture(e.pointerId);
 
       const onPointerMove = (moveEvent: PointerEvent) => {
@@ -89,9 +69,9 @@ const ChatInputDivider = ({
         }
       };
 
-      const finish = (upEvent: PointerEvent) => {
+      const onPointerUp = (upEvent: PointerEvent) => {
         target.removeEventListener('pointermove', onPointerMove);
-        target.removeEventListener('pointerup', finish);
+        target.removeEventListener('pointerup', onPointerUp);
         target.removeEventListener('pointercancel', onPointerCancel);
 
         const deltaY = upEvent.clientY - startY;
@@ -103,9 +83,8 @@ const ChatInputDivider = ({
         composeEl.style.height = `${finalPx}px`;
 
         if (finalPx <= minPx + RESET_THRESHOLD_PX) {
-          const proseMirror = composeEl.querySelector(
-            '.ProseMirror'
-          ) as HTMLElement | null;
+          const proseMirror = composeEl.querySelector('.ProseMirror');
+
           if (
             proseMirror &&
             proseMirror.scrollHeight > minPx + RESET_THRESHOLD_PX
@@ -118,13 +97,18 @@ const ChatInputDivider = ({
             // single line or empty -- reset to auto-grow mode
             composeEl.style.height = '';
             composeEl.style.maxHeight = `${defaultMaxHeightVh}vh`;
+
             delete composeEl.dataset.pendingUnpinOnSend;
           }
+
           removeLocalStorageItem(storageKey);
         } else {
           composeEl.style.maxHeight = '';
+
           const finalVh = Math.round((finalPx / window.innerHeight) * 100);
+
           setLocalStorageItem(storageKey, String(finalVh));
+
           delete composeEl.dataset.pendingUnpinOnSend;
         }
 
@@ -135,7 +119,7 @@ const ChatInputDivider = ({
 
       const onPointerCancel = () => {
         target.removeEventListener('pointermove', onPointerMove);
-        target.removeEventListener('pointerup', finish);
+        target.removeEventListener('pointerup', onPointerUp);
         target.removeEventListener('pointercancel', onPointerCancel);
 
         composeEl.style.height = startHeight;
@@ -143,7 +127,7 @@ const ChatInputDivider = ({
       };
 
       target.addEventListener('pointermove', onPointerMove);
-      target.addEventListener('pointerup', finish);
+      target.addEventListener('pointerup', onPointerUp);
       target.addEventListener('pointercancel', onPointerCancel);
     },
     [

@@ -1,4 +1,3 @@
-import { DEFAULT_MAX_HEIGHT_VH } from '@/components/message-compose';
 import { useThreadSidebar } from '@/features/app/hooks';
 import { useTypingUsersByThreadId } from '@/features/server/hooks';
 import { useThreadMessages } from '@/features/server/messages/hooks';
@@ -9,6 +8,7 @@ import { MessageSquareText } from 'lucide-react';
 import { memo, useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChatInputDivider } from '../channel-view/text/chat-input-divider';
+import { DEFAULT_MAX_HEIGHT_VH } from '../channel-view/text/helpers';
 import { useScrollController } from '../channel-view/text/hooks/use-scroll-controller';
 import { MessagesGroup } from '../channel-view/text/messages-group';
 import { ParentMessagePreview } from './parent-message-preview';

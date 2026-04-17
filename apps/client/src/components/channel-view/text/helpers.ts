@@ -1,5 +1,11 @@
 import type { TJoinedMessage } from '@sharkord/shared';
 
+// static values for ChatInputDivider component
+const MAX_VH = 80;
+const MIN_PX = 56;
+const RESET_THRESHOLD_PX = 10;
+const DEFAULT_MAX_HEIGHT_VH = 35;
+
 type TMessagesGroupComparatorProps = {
   group: TJoinedMessage[];
   disableActions?: boolean;
@@ -68,4 +74,46 @@ const areGroupsEqual = (
   return !isReplyTargetChangeRelevant && !isActiveThreadChangeRelevant;
 };
 
-export { areGroupsEqual, groupContainsMessageId };
+// calculate the minimum acceptable chat input height
+const measureMinHeight = (composeEl: HTMLDivElement): number => {
+  const proseMirror = composeEl.querySelector('.ProseMirror');
+
+  if (!proseMirror) return MIN_PX;
+
+  // clamp to one line to measure empty state
+  const savedHeight = composeEl.style.height;
+  const savedMaxHeight = composeEl.style.maxHeight;
+  const scrollRow = composeEl.querySelector('.compose-scroll-row');
+
+  const savedScrollTop = scrollRow?.scrollTop ?? 0;
+
+  proseMirror.classList.add('line-clamp-1');
+
+  composeEl.style.height = '';
+  composeEl.style.maxHeight = '';
+
+  const minHeight = getHeight(composeEl);
+
+  // restore height and scroll position
+  composeEl.style.height = savedHeight;
+  composeEl.style.maxHeight = savedMaxHeight;
+
+  proseMirror.classList.remove('line-clamp-1');
+
+  if (scrollRow) scrollRow.scrollTop = savedScrollTop;
+
+  return Math.max(MIN_PX, minHeight);
+};
+
+const getHeight = (el: HTMLElement) => el.getBoundingClientRect().height;
+
+export {
+  areGroupsEqual,
+  DEFAULT_MAX_HEIGHT_VH,
+  getHeight,
+  groupContainsMessageId,
+  MAX_VH,
+  measureMinHeight,
+  MIN_PX,
+  RESET_THRESHOLD_PX
+};
