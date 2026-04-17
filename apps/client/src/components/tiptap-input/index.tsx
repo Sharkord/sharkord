@@ -181,6 +181,15 @@ const TiptapInput = memo(
             return true;
           }
 
+          if (event.key === 'ArrowUp') {
+            if (editor.isEmpty && onArrowUpRef.current) {
+              event.preventDefault();
+              onArrowUpRef.current();
+              return true;
+            }
+            return false;
+          }
+
           return false;
         },
         handleClickOn: (_view, _pos, _node, _nodePos, event) => {
@@ -199,26 +208,6 @@ const TiptapInput = memo(
         handleDrop: () => readOnlyRef.current
       }
     });
-
-    useEffect(() => {
-      if (!editor) return;
-
-      const dom = editor.view.dom;
-
-      const handleArrowUp = (e: KeyboardEvent) => {
-        if (e.defaultPrevented) return;
-        if (e.key !== 'ArrowUp') return;
-        if (readOnlyRef.current) return;
-        if (!editor.isEmpty) return;
-        if (!onArrowUpRef.current) return;
-
-        e.preventDefault();
-        onArrowUpRef.current();
-      };
-
-      dom.addEventListener('keydown', handleArrowUp);
-      return () => dom.removeEventListener('keydown', handleArrowUp);
-    }, [editor]);
 
     useImperativeHandle(
       ref,

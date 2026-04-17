@@ -9,7 +9,7 @@ import {
   type TJoinedMessage
 } from '@sharkord/shared';
 import { MessageSquareText } from 'lucide-react';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageActions } from './message-actions';
 import { MessageEditInline } from './message-edit-inline';
@@ -40,7 +40,8 @@ const Message = memo(
     onEditComplete
   }: TMessageProps) => {
     const { t } = useTranslation('common');
-    const [isEditing, setIsEditing] = useState(false);
+    const [isPencilEditing, setIsPencilEditing] = useState(false);
+    const isEditing = isPencilEditing || editingMessageId === message.id;
     const isFromOwnUser = useIsOwnUser(message.userId);
     const can = useCan();
     const ownUserId = useOwnUserId();
@@ -61,14 +62,6 @@ const Message = memo(
     const onThreadClick = useCallback(() => {
       openThreadSidebar(message.id, message.channelId);
     }, [message.id, message.channelId]);
-
-    useEffect(() => {
-      if (editingMessageId === message.id) {
-        setIsEditing(true);
-      } else if (editingMessageId !== undefined) {
-        setIsEditing(false);
-      }
-    }, [editingMessageId, message.id]);
 
     return (
       <div
@@ -100,7 +93,7 @@ const Message = memo(
             )}
             {!disableActions && (
               <MessageActions
-                onEdit={() => setIsEditing(true)}
+                onEdit={() => setIsPencilEditing(true)}
                 canManage={canManage}
                 messageId={message.id}
                 channelId={message.channelId}
@@ -116,7 +109,7 @@ const Message = memo(
           <MessageEditInline
             message={message}
             onBlur={() => {
-              setIsEditing(false);
+              setIsPencilEditing(false);
               if (editingMessageId === message.id) {
                 onEditComplete?.();
               }
