@@ -44,7 +44,7 @@ const ThreadCompose = memo(
     composeContainerRef,
     inputStorageKey,
     inputDefaultMaxHeightVh,
-    onResize,
+    onResize
   }: TThreadComposeProps) => {
     const [newMessage, setNewMessage] = useState('');
 
