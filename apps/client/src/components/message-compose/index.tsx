@@ -1,8 +1,9 @@
+import { EmojiPicker } from '@/components/emoji-picker';
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
-import {
-  TiptapInput,
-  type TTiptapInputHandle
-} from '@/components/tiptap-input';
+import type { TTiptapInputHandle } from '@/components/tiptap-input';
+import { TiptapInput } from '@/components/tiptap-input';
+import { LocalStorageKey } from '@/helpers/storage';
+
 import { useChannelById } from '@/features/server/channels/hooks';
 import {
   useCan,
@@ -16,13 +17,13 @@ import type { TReplyTarget } from '@/types';
 import type { TJoinedPublicUser, TTempFile } from '@sharkord/shared';
 import {
   ChannelPermission,
+  isEmptyMessage,
   Permission,
-  PluginSlot,
-  isEmptyMessage
+  PluginSlot
 } from '@sharkord/shared';
 import { Button, Spinner } from '@sharkord/ui';
 import { filesize } from 'filesize';
-import { Paperclip, Reply, Send, X } from 'lucide-react';
+import { Paperclip, Reply, Send, Smile, X } from 'lucide-react';
 import {
   memo,
   useCallback,
@@ -31,12 +32,15 @@ import {
   useMemo,
   useRef,
   useState,
-  type Ref
+  type Ref,
+  type RefObject
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DEFAULT_MAX_HEIGHT_VH } from '../channel-view/text/helpers';
 import { useMessageAuthorName } from '../channel-view/text/hooks/use-message-author-name';
 import { PreviewFile } from '../channel-view/text/preview-file';
 import { UsersTypingIndicator } from '../channel-view/text/users-typing';
+import { useFileAwareHeight } from './hooks';
 
 type TMessageComposeProps = {
   channelId: number;
@@ -46,9 +50,13 @@ type TMessageComposeProps = {
   onTyping: () => void;
   typingUsers: TJoinedPublicUser[];
   showPluginSlot?: boolean;
+  composeContainerRef?: RefObject<HTMLDivElement | null>;
+  inputStorageKey?: LocalStorageKey;
+  inputDefaultMaxHeightVh?: number;
   replyTarget?: TReplyTarget;
   onCancelReply?: () => void;
   onArrowUp?: () => void;
+  onResize?: () => void;
   ref?: Ref<TMessageComposeHandle>;
 };
 
@@ -66,15 +74,20 @@ const MessageCompose = memo(
     onTyping,
     typingUsers,
     showPluginSlot = false,
+    composeContainerRef,
+    inputStorageKey = LocalStorageKey.CHAT_INPUT_HEIGHT_VH,
+    inputDefaultMaxHeightVh = DEFAULT_MAX_HEIGHT_VH,
     replyTarget,
     onCancelReply,
     onArrowUp,
+    onResize,
     ref
   }: TMessageComposeProps) => {
     const { t } = useTranslation('common');
     const sendingRef = useRef(false);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<TTiptapInputHandle>(null);
+    const internalContainerRef = useRef<HTMLDivElement | null>(null);
+    const containerRef = composeContainerRef ?? internalContainerRef;
+    const tiptapRef = useRef<TTiptapInputHandle>(null);
     const [sending, setSending] = useState(false);
     const can = useCan();
     const channelCan = useChannelCan(channelId);
@@ -122,9 +135,17 @@ const MessageCompose = memo(
       fileInputProps
     } = useUploadFiles(channelId, containerRef, !canSendMessages);
 
+    useFileAwareHeight({
+      containerRef,
+      composeContainerRef,
+      displayItems,
+      inputStorageKey,
+      inputDefaultMaxHeightVh
+    });
+
     useImperativeHandle(
       ref,
-      () => ({ clearFiles, focus: () => inputRef.current?.focus() }),
+      () => ({ clearFiles, focus: () => tiptapRef.current?.focus() }),
       [clearFiles]
     );
 
@@ -151,8 +172,27 @@ const MessageCompose = memo(
 
       if (success) {
         clearFiles();
+
+        // if we were pinned down to the min then unpin now
+        const el = containerRef.current;
+
+        if (el?.dataset.pendingUnpinOnSend) {
+          el.style.height = '';
+          el.style.maxHeight = `${inputDefaultMaxHeightVh}vh`;
+
+          delete el.dataset.pendingUnpinOnSend;
+        }
       }
-    }, [message, files, canSendMessages, onSend, clearFiles, publicSettings]);
+    }, [
+      message,
+      files,
+      canSendMessages,
+      onSend,
+      clearFiles,
+      publicSettings,
+      containerRef,
+      inputDefaultMaxHeightVh
+    ]);
 
     const onRemoveFileClick = useCallback(
       async (fileId: string) => {
@@ -172,44 +212,43 @@ const MessageCompose = memo(
     useEffect(() => {
       // focus the input when user clicks on reply
       if (replyTarget) {
-        inputRef.current?.focus();
+        tiptapRef.current?.focus();
       }
     }, [replyTarget]);
+
+    // TODO: check if this is really necessary
+    useEffect(() => {
+      if (!onResize) return;
+
+      const el = containerRef.current;
+
+      if (!el) return;
+
+      const observer = new ResizeObserver(onResize);
+
+      observer.observe(el);
+
+      return () => observer.disconnect();
+    }, [onResize, containerRef]);
 
     return (
       <div
         ref={containerRef}
-        className="flex shrink-0 flex-col gap-2 p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]"
+        className="compose-container relative shrink-0 min-h-14 flex flex-col pb-[env(safe-area-inset-bottom)] bg-white/[0.03]"
       >
-        {uploading && (
-          <div className="flex items-center gap-2">
-            <div className="text-xs text-muted-foreground mb-1">
-              Uploading files ({filesize(uploadingSize)})
-              {uploadSpeed > 0 && ` - ${filesize(uploadSpeed)}/s`}
-            </div>
-            <Spinner size="xxs" />
-          </div>
-        )}
-
-        {displayItems.length > 0 && (
-          <div className="flex gap-1 flex-wrap">
-            {displayItems.map((item) => (
-              <PreviewFile
-                key={item.id}
-                item={item}
-                onRemove={
-                  item.file ? () => onRemoveFileClick(item.file!.id) : undefined
-                }
-              />
-            ))}
-          </div>
-        )}
-
         <UsersTypingIndicator typingUsers={typingUsers} />
-        <div className="flex items-center gap-2 rounded-lg">
-          <div className="flex flex-col gap-1 w-full justify-center">
+
+        <div
+          className={`compose-scroll-row flex items-start flex-1 overflow-y-auto cursor-text${uploading ? ' bg-muted' : ''}`}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              tiptapRef.current?.focus();
+            }
+          }}
+        >
+          <div className="flex flex-1 flex-col">
             {replyTarget && (
-              <div className="flex items-center justify-between rounded-md border border-border/60 bg-secondary/40 px-2 py-1 text-xs">
+              <div className="flex items-center justify-between rounded-md border border-border/60 bg-secondary/40 mx-2 mt-3 px-2 py-1 text-xs">
                 <div className="min-w-0 flex items-center gap-1.5 text-muted-foreground">
                   <Reply className="h-3.5 w-3.5 shrink-0" />
                   <span>{t('replyingTo', { username: replyAuthorName })}</span>
@@ -225,41 +264,78 @@ const MessageCompose = memo(
                 </Button>
               </div>
             )}
-            <div className="flex w-full gap-1 items-center">
-              <TiptapInput
-                ref={inputRef}
-                value={message}
-                onChange={onMessageChange}
-                onSubmit={handleSend}
-                onTyping={onTyping}
-                onArrowUp={onArrowUp}
+            {uploading && (
+              <div className="flex items-center gap-2 px-2 pt-2">
+                <div className="text-xs text-muted-foreground mb-1">
+                  Uploading files ({filesize(uploadingSize)})
+                  {uploadSpeed > 0 && ` - ${filesize(uploadSpeed)}/s`}
+                </div>
+                <Spinner size="xxs" />
+              </div>
+            )}
+            {displayItems.length > 0 && (
+              <div className="flex gap-1 flex-wrap px-4 pt-4">
+                {displayItems.map((item) => (
+                  <PreviewFile
+                    key={item.id}
+                    item={item}
+                    onRemove={
+                      item.file
+                        ? () => onRemoveFileClick(item.file!.id)
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+            )}
+            <TiptapInput
+              ref={tiptapRef}
+              value={message}
+              onChange={onMessageChange}
+              onSubmit={handleSend}
+              onTyping={onTyping}
+              onArrowUp={onArrowUp}
+              disabled={uploading || !canSendMessages}
+              readOnly={sending}
+              commands={pluginCommands}
+            />
+          </div>
+
+          {showPluginSlot && (
+            <PluginSlotRenderer slotId={PluginSlot.CHAT_ACTIONS} />
+          )}
+          <input {...fileInputProps} />
+          <div className="flex items-start gap-1 pr-4 shrink-0 sticky top-0">
+            <EmojiPicker
+              onEmojiSelect={(emoji) => tiptapRef.current?.insertEmoji(emoji)}
+            >
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 mt-3"
                 disabled={uploading || !canSendMessages}
-                readOnly={sending}
-                commands={pluginCommands}
-              />
-              {showPluginSlot && (
-                <PluginSlotRenderer slotId={PluginSlot.CHAT_ACTIONS} />
-              )}
-              <input {...fileInputProps} />
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8"
-                disabled={uploading || !canUploadFiles}
-                onClick={openFileDialog}
               >
-                <Paperclip className="h-4 w-4" />
+                <Smile className="h-4 w-4" />
               </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8"
-                onClick={handleSend}
-                disabled={uploading || sending || !canSendMessages}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
+            </EmojiPicker>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 mt-3"
+              disabled={uploading || !canUploadFiles}
+              onClick={openFileDialog}
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 mt-3"
+              onClick={handleSend}
+              disabled={uploading || sending || !canSendMessages}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>

@@ -1,21 +1,16 @@
-import { EmojiPicker } from '@/components/emoji-picker';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
 import { TestId, type TCommandInfo } from '@sharkord/shared';
-import { Button } from '@sharkord/ui';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import Link from '@tiptap/extension-link';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { ChevronDown, ChevronUp, Smile } from 'lucide-react';
 import {
   memo,
   useEffect,
   useImperativeHandle,
-  useLayoutEffect,
   useMemo,
   useRef,
-  useState,
   type Ref
 } from 'react';
 import {
@@ -33,6 +28,11 @@ import {
 } from './extensions/mentions/suggestion';
 import type { TEmojiItem } from './helpers';
 
+type TTiptapInputHandle = {
+  insertEmoji: (emoji: TEmojiItem) => void;
+  focus: () => void;
+};
+
 type TTiptapInputProps = {
   disabled?: boolean;
   readOnly?: boolean;
@@ -44,10 +44,6 @@ type TTiptapInputProps = {
   onTyping?: () => void;
   commands?: TCommandInfo[];
   ref?: Ref<TTiptapInputHandle>;
-};
-
-type TTiptapInputHandle = {
-  focus: () => void;
 };
 
 const TiptapInput = memo(
@@ -72,12 +68,6 @@ const TiptapInput = memo(
     onSubmitRef.current = onSubmit;
     onCancelRef.current = onCancel;
     onArrowUpRef.current = onArrowUp;
-
-    const [isExpanded, setIsExpanded] = useState(false);
-    const [hasOverflow, setHasOverflow] = useState(false);
-    const [isHovering, setIsHovering] = useState(false);
-    const [isFocused, setIsFocused] = useState(false);
-    const editorWrapperRef = useRef<HTMLDivElement>(null);
 
     const customEmojis = useCustomEmojis();
     const users = useFilteredUsers();
@@ -209,14 +199,6 @@ const TiptapInput = memo(
       }
     });
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        focus: () => editor?.chain().focus().run()
-      }),
-      [editor]
-    );
-
     const handleEmojiSelect = (emoji: TEmojiItem) => {
       if (disabled || readOnly) return;
 
@@ -224,6 +206,11 @@ const TiptapInput = memo(
         editor?.chain().focus().setEmoji(emoji.shortcodes[0]).run();
       }
     };
+
+    useImperativeHandle(ref, () => ({
+      insertEmoji: handleEmojiSelect,
+      focus: () => editor?.commands.focus()
+    }));
 
     // keep emoji storage in sync with custom emojis from the store
     // this ensures newly added emojis appear in autocomplete without refreshing the app
@@ -291,57 +278,21 @@ const TiptapInput = memo(
       }
     }, [editor, disabled]);
 
-    // Measure if content overflows (more than ~3 lines) when collapsed
-    useLayoutEffect(() => {
-      if (isExpanded) return;
-      const wrapper = editorWrapperRef.current;
-      const el = wrapper?.firstElementChild as HTMLElement | null;
-      if (el) {
-        setHasOverflow(el.scrollHeight > el.clientHeight);
-      }
-    }, [value, isExpanded]);
-
-    const showExpandButton = hasOverflow || isExpanded;
+    const isEmpty = !editor || editor.isEmpty;
 
     return (
-      <div className="flex flex-1 items-center gap-2 min-w-0">
-        <div
-          ref={editorWrapperRef}
-          className="relative flex min-w-0 flex-1"
-          onMouseEnter={() => setIsHovering(true)}
-          onMouseLeave={() => setIsHovering(false)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-        >
-          <EditorContent
-            editor={editor}
-            className={`border p-2 rounded w-full min-h-10 tiptap overflow-auto relative transition-colors focus-within:border-ring [&_.ProseMirror:focus]:outline-none ${
-              isExpanded ? 'max-h-80' : 'max-h-20'
-            } ${disabled ? 'opacity-50 cursor-not-allowed bg-muted' : ''}`}
-          />
-          {showExpandButton && (isHovering || isFocused) && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute -top-1 left-1/2 -translate-y-1/2 -translate-x-1/2 h-5 w-8 shrink-0 rounded border bg-background hover:bg-muted"
-              onClick={() => setIsExpanded((e) => !e)}
-              aria-label={isExpanded ? 'Collapse' : 'Expand'}
-            >
-              {isExpanded ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronUp className="h-4 w-4" />
-              )}
-            </Button>
-          )}
-        </div>
-
-        <EmojiPicker onEmojiSelect={handleEmojiSelect}>
-          <Button variant="ghost" size="icon" disabled={disabled}>
-            <Smile className="h-5 w-5" />
-          </Button>
-        </EmojiPicker>
+      <div className="relative flex min-w-0 flex-1">
+        <EditorContent
+          editor={editor}
+          className={`w-full tiptap relative transition-colors [&_.ProseMirror]:px-5 [&_.ProseMirror]:py-[14px] [&_.ProseMirror:focus]:outline-none ${
+            disabled ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+        />
+        {isEmpty && (
+          <div className="absolute top-0 left-0 px-5 py-[14px] text-muted-foreground/50 pointer-events-none select-none">
+            Type a message...
+          </div>
+        )}
       </div>
     );
   }
