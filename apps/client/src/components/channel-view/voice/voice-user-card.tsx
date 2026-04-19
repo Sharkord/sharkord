@@ -11,7 +11,6 @@ import { getFileUrl } from '@/helpers/get-file-url';
 import { cn } from '@/lib/utils';
 import { HeadphoneOff, MicOff, Monitor, Video } from 'lucide-react';
 import { memo, useCallback } from 'react';
-import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PinButton } from './pin-button';
@@ -56,9 +55,9 @@ const VoiceUserCard = memo(
     return (
       <div
         className={cn(
-          'relative bg-card rounded-lg overflow-hidden group',
+          'relative bg-card rounded overflow-hidden group',
           'flex items-center justify-center',
-          'w-full h-full',
+          'size-full',
           'border border-border',
           isActivelySpeaking && speakingEffectClass,
           className
@@ -74,13 +73,6 @@ const VoiceUserCard = memo(
         ) : (
           <CardGradient />
         )}
-
-        <CardControls>
-          {!isOwnUser && <VolumeButton volumeKey={volumeKey} />}
-          {showPinControls && (
-            <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
-          )}
-        </CardControls>
 
         {hasVideoStream && (
           <video
@@ -102,7 +94,53 @@ const VoiceUserCard = memo(
           />
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 p-2">
+        <div className="absolute bottom-0 left-0 p-4">
+          <div
+            className={cn(
+              'inline-flex min-h-4 gap-3 px-3 py-2 items-center bg-black/20 rounded overflow-hidden truncate',
+              !voiceUser.state.micMuted &&
+                !voiceUser.state.soundMuted &&
+                !voiceUser.state.webcamEnabled &&
+                !voiceUser.state.sharingScreen &&
+                'hidden group-hover/voice-stage:block'
+            )}
+          >
+            {voiceUser.state.micMuted && (
+              <MicOff className="size-4 text-red-400/80" />
+            )}
+            {voiceUser.state.soundMuted && (
+              <HeadphoneOff className="size-4 text-red-400/80" />
+            )}
+            {voiceUser.state.webcamEnabled && (
+              <Video className="size-4 text-blue-600/80" />
+            )}
+            {voiceUser.state.sharingScreen && (
+              <Monitor className="size-3.5 text-purple-500/80" />
+            )}
+            <p className="hidden group-hover/voice-stage:block text-sm leading-none">
+              {voiceUser.name}
+            </p>
+          </div>
+        </div>
+        <div className="absolute bottom-0 right-0 p-4">
+          <div className="inline-flex min-h-4 gap-3 items-center rounded">
+            {!isOwnUser && (
+              <VolumeButton
+                volumeKey={volumeKey}
+                className="bg-black/20 rounded px-3 py-2"
+              />
+            )}
+            {showPinControls && (
+              <PinButton
+                isPinned={isPinned}
+                handlePinToggle={handlePinToggle}
+                className="bg-black/20 rounded px-3 py-2"
+              />
+            )}
+          </div>
+        </div>
+
+        {/* <div className="absolute bottom-0 left-0 right-0 p-2">
           <div className="flex items-center justify-between">
             <span className="text-white font-medium text-xs truncate">
               {voiceUser.name}
@@ -126,7 +164,7 @@ const VoiceUserCard = memo(
               )}
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     );
   }

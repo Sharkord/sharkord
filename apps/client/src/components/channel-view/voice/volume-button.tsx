@@ -14,9 +14,10 @@ import { memo, useCallback } from 'react';
 
 type TVolumeButtonProps = {
   volumeKey: TVolumeKey;
+  className?: string;
 };
 
-const VolumeButton = memo(({ volumeKey }: TVolumeButtonProps) => {
+const VolumeButton = memo(({ volumeKey, className }: TVolumeButtonProps) => {
   const { getVolume, setVolume, toggleMute } = useVolumeControl();
   const volume = getVolume(volumeKey);
   const isMuted = volume === 0;
@@ -40,6 +41,7 @@ const VolumeButton = memo(({ volumeKey }: TVolumeButtonProps) => {
           icon={isMuted ? VolumeX : Volume2}
           title={isMuted ? 'Unmute' : 'Volume'}
           size="sm"
+          className={className}
         />
       </PopoverTrigger>
       <PopoverContent
