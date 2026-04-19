@@ -1,6 +1,7 @@
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
 import { htmlToEditorHtml } from '@/helpers/tiptap-markdown';
+import { splitBlock } from 'prosemirror-commands';
 import { TestId, type TCommandInfo } from '@sharkord/shared';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import { EditorContent, useEditor } from '@tiptap/react';
@@ -146,11 +147,7 @@ const TiptapInput = memo(
             if (event.shiftKey) {
               // shift is just "don't send" so insert a plain newline, not a hard break
               event.preventDefault();
-              _view.dispatch(
-                _view.state.tr.replaceSelectionWith(
-                  _view.state.schema.nodes.paragraph.create()
-                )
-              );
+              splitBlock(_view.state, _view.dispatch);
               return true;
             }
 

@@ -5,7 +5,7 @@ import type {
   TPluginStore,
   TPluginStoreState
 } from '@sharkord/shared';
-import { prepareMessageHtml } from '@sharkord/shared';
+import { prepareMessageHtml } from '@/helpers/prepare-message-html';
 import { setSelectedChannelId } from '../channels/actions';
 
 // I honestly can't tell if this is a genius or disgusting, I'm in shock

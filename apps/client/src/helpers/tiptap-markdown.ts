@@ -1,4 +1,4 @@
-import { MentionNode } from '@/components/tiptap-input/plugins/mentions/node';
+import { MentionNode } from '@/components/tiptap-input/extensions/mentions/node';
 import { generateHTML, generateJSON, type JSONContent } from '@tiptap/core';
 import { MarkdownManager } from '@tiptap/markdown';
 import StarterKit from '@tiptap/starter-kit';
@@ -36,8 +36,15 @@ const markdownToHtml = (markdown: string): string => {
   return generateHTML(decoded, EXTENSIONS);
 };
 
+// prosemirror's dom parser normalises whitespace in inline content, stripping
+// bare \n inside <pre> blocks -- replace them with <br> first so they survive
+const preservePreNewlines = (html: string): string =>
+  html.replace(/<pre[\s\S]*?<\/pre>/gi, (match) =>
+    match.replace(/\n/g, '<br>')
+  );
+
 const htmlToMarkdown = (html: string): string => {
-  const json = generateJSON(html, EXTENSIONS);
+  const json = generateJSON(preservePreNewlines(html), EXTENSIONS);
   const encoded = encodeHtmlEntitiesInJson(json);
   return getManager().serialize(encoded);
 };
