@@ -24,6 +24,7 @@ type TVoiceUserCardProps = {
   voiceUser: TVoiceUser;
   className?: string;
   isPinned?: boolean;
+  aCardIsPinned?: boolean;
 };
 
 const VoiceUserCard = memo(
@@ -34,7 +35,8 @@ const VoiceUserCard = memo(
     className,
     isPinned = false,
     showPinControls = true,
-    voiceUser
+    voiceUser,
+    aCardIsPinned = false
   }: TVoiceUserCardProps) => {
     const { videoRef, hasVideoStream } = useVoiceRefs(userId);
     const { volumeKey } = useStreamVolumeControl({ type: 'user', userId });
@@ -71,7 +73,7 @@ const VoiceUserCard = memo(
             }}
           />
         ) : (
-          <CardGradient />
+          <CardGradient bannerColor={voiceUser.bannerColor} />
         )}
 
         {hasVideoStream && (
@@ -89,82 +91,114 @@ const VoiceUserCard = memo(
         {!hasVideoStream && (
           <UserAvatar
             userId={userId}
-            className="w-12 h-12 md:w-16 md:h-16 lg:w-24 lg:h-24"
+            className={cn(
+              'pointer-events-none',
+              isPinned
+                ? 'w-16 h-16 md:w-20 md:h-20 lg:w-32 lg:h-32'
+                : aCardIsPinned
+                  ? 'w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14'
+                  : 'w-12 h-12 md:w-16 md:h-16 lg:w-24 lg:h-24'
+            )}
             showStatusBadge={false}
           />
         )}
 
-        <div className="absolute bottom-0 left-0 p-4">
+        <div
+          className={cn(
+            'absolute bottom-0 left-0 right-0 flex justify-between',
+            isPinned ? 'p-4 gap-3' : aCardIsPinned ? 'p-1 gap-1' : 'p-4 gap-3'
+          )}
+        >
           <div
             className={cn(
-              'inline-flex min-h-4 gap-3 px-3 py-2 items-center bg-black/20 rounded overflow-hidden truncate',
+              'inline-flex min-w-0 min-h-4 py-2 items-center bg-black/70 rounded overflow-hidden truncate',
+              isPinned
+                ? 'gap-3 px-3'
+                : aCardIsPinned
+                  ? 'gap-2 px-2'
+                  : 'gap-3 px-3',
               !voiceUser.state.micMuted &&
                 !voiceUser.state.soundMuted &&
                 !voiceUser.state.webcamEnabled &&
                 !voiceUser.state.sharingScreen &&
-                'hidden group-hover/voice-stage:block'
+                'hidden group-hover/voice-stage:inline-flex'
             )}
           >
-            {voiceUser.state.micMuted && (
-              <MicOff className="size-4 text-red-400/80" />
+            {voiceUser.state.micMuted && !voiceUser.state.soundMuted && (
+              <MicOff
+                className={cn(
+                  'text-red-400/80 shrink-0',
+                  isPinned ? 'size-4' : aCardIsPinned ? 'size-3' : 'size-4'
+                )}
+              />
             )}
             {voiceUser.state.soundMuted && (
-              <HeadphoneOff className="size-4 text-red-400/80" />
+              <HeadphoneOff
+                className={cn(
+                  'text-red-400/80 ',
+                  isPinned ? 'size-4' : aCardIsPinned ? 'size-3' : 'size-4'
+                )}
+              />
             )}
             {voiceUser.state.webcamEnabled && (
-              <Video className="size-4 text-blue-600/80" />
+              <Video
+                className={cn(
+                  ' text-blue-600/80',
+                  isPinned ? 'size-4' : aCardIsPinned ? 'size-3' : 'size-4'
+                )}
+              />
             )}
             {voiceUser.state.sharingScreen && (
-              <Monitor className="size-3.5 text-purple-500/80" />
+              <Monitor
+                className={cn(
+                  'text-purple-500/80',
+                  isPinned ? 'size-4' : aCardIsPinned ? 'size-3' : 'size-4'
+                )}
+              />
             )}
-            <p className="hidden group-hover/voice-stage:block text-sm leading-none">
+            <p
+              className={cn(
+                'hidden group-hover/voice-stage:block truncate',
+                isPinned ? 'text-sm' : aCardIsPinned ? 'text-xs' : 'text-sm',
+                'leading-none'
+              )}
+            >
               {voiceUser.name}
             </p>
           </div>
-        </div>
-        <div className="absolute bottom-0 right-0 p-4">
-          <div className="inline-flex min-h-4 gap-3 items-center rounded">
+
+          <div
+            className={cn(
+              'inline-flex min-h-4 gap-3 items-center rounded',
+              isPinned ? 'gap-3' : aCardIsPinned ? 'gap-1' : 'gap-3',
+              'hidden group-hover:inline-flex'
+            )}
+          >
             {!isOwnUser && (
               <VolumeButton
                 volumeKey={volumeKey}
-                className="bg-black/20 rounded px-3 py-2"
+                size={isPinned ? 'sm' : aCardIsPinned ? 'xs' : 'sm'}
+                className={cn(
+                  'bg-black/70 rounded px-3 py-2 shrink-0 hover:bg-black/80',
+                  isPinned ? 'px-3' : aCardIsPinned ? 'px-2' : 'px-3'
+                )}
               />
             )}
             {showPinControls && (
               <PinButton
                 isPinned={isPinned}
                 handlePinToggle={handlePinToggle}
-                className="bg-black/20 rounded px-3 py-2"
+                size={isPinned ? 'sm' : aCardIsPinned ? 'xs' : 'sm'}
+                className={cn(
+                  'bg-black/70 rounded px-3 py-2 shrink-0 hover:bg-black/80',
+                  isPinned ? 'px-3' : aCardIsPinned ? 'px-2' : 'px-3',
+                  isPinned &&
+                    'bg-zinc-300/80 text-zinc-800 hover:bg-zinc-400/90 hover:text-zinc-900'
+                )}
               />
             )}
           </div>
         </div>
-
-        {/* <div className="absolute bottom-0 left-0 right-0 p-2">
-          <div className="flex items-center justify-between">
-            <span className="text-white font-medium text-xs truncate">
-              {voiceUser.name}
-            </span>
-
-            <div className="flex items-center gap-1">
-              {voiceUser.state.micMuted && (
-                <MicOff className="size-3.5 text-red-500/80" />
-              )}
-
-              {voiceUser.state.soundMuted && (
-                <HeadphoneOff className="size-3.5 text-red-500/80" />
-              )}
-
-              {voiceUser.state.webcamEnabled && (
-                <Video className="size-3.5 text-blue-600/80" />
-              )}
-
-              {voiceUser.state.sharingScreen && (
-                <Monitor className="size-3.5 text-purple-500/80" />
-              )}
-            </div>
-          </div>
-        </div> */}
       </div>
     );
   }

@@ -112,8 +112,7 @@ const VoiceGrid = memo(
     if (pinnedCardId && pinnedCard) {
       return (
         <div className={cn('flex flex-col h-full', className)}>
-          <div className="flex-1 p-2 min-h-0">{pinnedCard}</div>
-
+          <div className="flex-1 p-3 min-h-0">{pinnedCard}</div>
           {regularCards.length > 0 && (
             <div className="shrink-0 border-t border-border bg-card/50">
               <div className="flex justify-center-safe gap-2 p-2 overflow-x-auto">
@@ -138,7 +137,7 @@ const VoiceGrid = memo(
     return (
       <div
         ref={containerRef}
-        className={cn('grid h-full w-full gap-2 p-2', className)}
+        className={cn('grid h-full gap-3 p-3 pb-30', className)}
         style={{
           gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
           gridTemplateRows: `repeat(${rows}, 1fr)`

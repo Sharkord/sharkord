@@ -27,6 +27,7 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
   const hideNonVideoParticipants = useHideNonVideoParticipants();
   const hideOwnScreenShare = useHideOwnScreenShare();
   const ownUserId = useOwnUserId();
+  const aCardIsPinned = pinnedCard !== undefined;
 
   const cards = useMemo(() => {
     const cards: React.ReactNode[] = [];
@@ -51,6 +52,7 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
             key={userCardId}
             userId={voiceUser.id}
             isPinned={isPinned(userCardId)}
+            aCardIsPinned={aCardIsPinned}
             onPin={() =>
               pinCard({
                 id: userCardId,
@@ -75,6 +77,7 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
             key={screenShareCardId}
             userId={voiceUser.id}
             isPinned={isPinned(screenShareCardId)}
+            aCardIsPinned={aCardIsPinned}
             onPin={() =>
               pinCard({
                 id: screenShareCardId,
@@ -124,7 +127,8 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
     unpinCard,
     hideNonVideoParticipants,
     hideOwnScreenShare,
-    ownUserId
+    ownUserId,
+    aCardIsPinned
   ]);
 
   if (voiceUsers.length === 0) {
@@ -147,7 +151,7 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
       <VoiceGrid pinnedCardId={pinnedCard?.id} className="h-full">
         {cards}
       </VoiceGrid>
-      <ControlsBar channelId={channelId} />
+      <ControlsBar pinnedCard={pinnedCard != undefined} channelId={channelId} />
     </div>
   );
 });
