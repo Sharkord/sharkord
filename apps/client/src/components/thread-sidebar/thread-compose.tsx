@@ -6,11 +6,7 @@ import type { LocalStorageKey } from '@/helpers/storage';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TReplyTarget } from '@/types';
 import type { TJoinedPublicUser } from '@sharkord/shared';
-import {
-  TYPING_MS,
-  getTrpcError,
-  type TJoinedMessage
-} from '@sharkord/shared';
+import { TYPING_MS, getTrpcError, type TJoinedMessage } from '@sharkord/shared';
 import { throttle } from 'lodash-es';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';

@@ -1,11 +1,11 @@
 import { store, type IRootState } from '@/features/store';
+import { prepareMessageHtml } from '@/helpers/prepare-message-html';
 import { getTRPCClient } from '@/lib/trpc';
 import type {
   TPluginActions,
   TPluginStore,
   TPluginStoreState
 } from '@sharkord/shared';
-import { prepareMessageHtml } from '@/helpers/prepare-message-html';
 import { setSelectedChannelId } from '../channels/actions';
 
 // I honestly can't tell if this is a genius or disgusting, I'm in shock

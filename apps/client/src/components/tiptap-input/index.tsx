@@ -1,11 +1,11 @@
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
 import { htmlToEditorHtml } from '@/helpers/tiptap-markdown';
-import { splitBlock } from 'prosemirror-commands';
 import { TestId, type TCommandInfo } from '@sharkord/shared';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { splitBlock } from 'prosemirror-commands';
 import {
   memo,
   useEffect,
@@ -14,7 +14,6 @@ import {
   useRef,
   type Ref
 } from 'react';
-import type { TEmojiItem } from './helpers';
 import {
   COMMANDS_STORAGE_KEY,
   CommandSuggestion
@@ -24,11 +23,12 @@ import { SlashCommands } from './extensions/commands/slash-commands-extension';
 import { EmojiSuggestion } from './extensions/emojis/suggestions';
 import { Mention } from './extensions/mentions';
 import { MentionNode } from './extensions/mentions/node';
-import { MarkSyntaxDecorations } from './plugins/mark-syntax-decorations';
 import {
   MENTION_STORAGE_KEY,
   MentionSuggestion
 } from './extensions/mentions/suggestion';
+import type { TEmojiItem } from './helpers';
+import { MarkSyntaxDecorations } from './plugins/mark-syntax-decorations';
 
 type TTiptapInputHandle = {
   insertEmoji: (emoji: TEmojiItem) => void;

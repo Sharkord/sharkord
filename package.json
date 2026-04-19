@@ -10,8 +10,8 @@
     "mediasoup"
   ],
   "resolutions": {
-    "@tiptap/core": "3.20.4",
-    "@tiptap/pm": "3.20.4"
+    "@tiptap/core": "3.22.2",
+    "@tiptap/pm": "3.22.2"
   },
   "scripts": {
     "test": "bun run --filter '*' test",
