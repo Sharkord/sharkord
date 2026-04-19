@@ -1,0 +1,8 @@
+{
+  "id": "plugin-invalid-sdk-version",
+  "name": "plugin-invalid-sdk-version",
+  "version": "1.0.0",
+  "sdkVersion": "invalid",
+  "author": "Test Author",
+  "description": "Plugin with invalid sdkVersion"
+}

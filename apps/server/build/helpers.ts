@@ -13,7 +13,22 @@ const rootCwd = path.resolve(serverCwd, '..', '..');
 const rootPckJson = path.join(rootCwd, 'package.json');
 const serverPckJson = path.join(rootCwd, 'apps', 'server', 'package.json');
 const clientPckJson = path.join(rootCwd, 'apps', 'client', 'package.json');
+
 const sharedPckJson = path.join(rootCwd, 'packages', 'shared', 'package.json');
+const e2ePckJson = path.join(rootCwd, 'packages', 'e2e', 'package.json');
+const pluginSdkPckJson = path.join(
+  rootCwd,
+  'packages',
+  'plugin-sdk',
+  'package.json'
+);
+const uiPckJson = path.join(rootCwd, 'packages', 'ui', 'package.json');
+const scriptsPckJson = path.join(
+  rootCwd,
+  'packages',
+  'scripts',
+  'package.json'
+);
 
 const unpack = async (tgzPath: string, outDir: string) => {
   const tarProc = Bun.spawn(['tar', '-xzf', tgzPath, '-C', outDir], {
@@ -98,7 +113,11 @@ const patchPackageJsons = async (newVersion: string) => {
     rootPckJson,
     serverPckJson,
     clientPckJson,
-    sharedPckJson
+    sharedPckJson,
+    e2ePckJson,
+    pluginSdkPckJson,
+    scriptsPckJson,
+    uiPckJson
   ];
 
   for (const pckPath of packageJsonPaths) {

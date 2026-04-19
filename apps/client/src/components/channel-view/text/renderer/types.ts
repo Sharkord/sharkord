@@ -1,4 +1,5 @@
 export type TFoundMedia = {
-  type: 'image' | 'video';
+  key: string;
+  type: 'image' | 'video' | 'audio';
   url: string;
 };

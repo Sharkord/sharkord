@@ -11,7 +11,7 @@ import { UserPopover } from '../user-popover';
 import { UserStatusBadge } from '../user-status';
 
 type TUserAvatarProps = {
-  userId: number;
+  userId: number | null;
   className?: string;
   showUserPopover?: boolean;
   showStatusBadge?: boolean;
@@ -47,7 +47,7 @@ const UserAvatar = memo(
       </div>
     );
 
-    if (!showUserPopover) return content;
+    if (!showUserPopover || userId === null) return content;
 
     return <UserPopover userId={userId}>{content}</UserPopover>;
   }

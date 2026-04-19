@@ -1,0 +1,7 @@
+{
+  "id": "plugin-no-sdk-version",
+  "name": "plugin-no-sdk-version",
+  "version": "1.0.0",
+  "author": "Test Author",
+  "description": "Plugin without sdkVersion"
+}

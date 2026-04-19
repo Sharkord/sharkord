@@ -17,6 +17,7 @@ const updateSettingsRoute = protectedProcedure
       name: z.string().min(2).max(24).optional(),
       description: z.string().max(128).optional(),
       password: z.string().min(1).max(32).optional().nullable().default(null),
+      onlyAskForPasswordOnFirstJoin: z.boolean().optional(),
       allowNewUsers: z.boolean().optional(),
       directMessagesEnabled: z.boolean().optional(),
       storageUploadEnabled: z.boolean().optional(),
@@ -30,6 +31,7 @@ const updateSettingsRoute = protectedProcedure
       storageOverflowAction: z.enum(StorageOverflowAction).optional(),
       enablePlugins: z.boolean().optional(),
       enableSearch: z.boolean().optional(),
+      showWelcomeDialog: z.boolean().optional(),
       storageSignedUrlsEnabled: z.boolean().optional(),
       storageSignedUrlsTtlSeconds: z.number().int().min(0).optional()
     })
@@ -43,6 +45,7 @@ const updateSettingsRoute = protectedProcedure
       name: input.name,
       description: input.description,
       password: input.password,
+      onlyAskForPasswordOnFirstJoin: input.onlyAskForPasswordOnFirstJoin,
       allowNewUsers: input.allowNewUsers,
       directMessagesEnabled: input.directMessagesEnabled,
       storageUploadEnabled: input.storageUploadEnabled,
@@ -57,6 +60,7 @@ const updateSettingsRoute = protectedProcedure
       storageOverflowAction: input.storageOverflowAction,
       enablePlugins: input.enablePlugins,
       enableSearch: input.enableSearch,
+      showWelcomeDialog: input.showWelcomeDialog,
       storageSignedUrlsEnabled: input.storageSignedUrlsEnabled,
       storageSignedUrlsTtlSeconds: input.storageSignedUrlsTtlSeconds
     });

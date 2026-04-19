@@ -8,10 +8,12 @@ import {
   getChannelsReadStatesForUser
 } from '../../db/queries/channels';
 import { getEmojis } from '../../db/queries/emojis';
+import { hasUserJoinedBefore } from '../../db/queries/logins';
 import { getRoles } from '../../db/queries/roles';
 import { getPublicSettings, getSettings } from '../../db/queries/server';
 import { getPublicUsers } from '../../db/queries/users';
 import { categories, users } from '../../db/schema';
+import { shouldAskServerPassword } from '../../helpers/should-ask-server-password';
 import { logger } from '../../logger';
 import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
@@ -35,7 +37,11 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
   .query(async ({ input, ctx }) => {
     const connectionInfo = ctx.getConnectionInfo();
     const settings = await getSettings();
-    const hasPassword = !!settings?.password;
+
+    const shouldAskForPassword = await shouldAskServerPassword(ctx.user.id, {
+      password: settings.password,
+      onlyAskForPasswordOnFirstJoin: settings.onlyAskForPasswordOnFirstJoin
+    });
 
     invariant(
       input.handshakeHash &&
@@ -47,10 +53,13 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       }
     );
 
-    invariant(hasPassword ? input.password === settings?.password : true, {
-      code: 'FORBIDDEN',
-      message: 'Invalid password'
-    });
+    invariant(
+      shouldAskForPassword ? input.password === settings.password : true,
+      {
+        code: 'FORBIDDEN',
+        message: 'Invalid password'
+      }
+    );
 
     invariant(ctx.user, {
       code: 'UNAUTHORIZED',
@@ -68,7 +77,9 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       emojis,
       channelPermissions,
       readStates,
-      publicSettings
+      publicSettings,
+      pluginsMetadata,
+      hasJoinedBefore
     ] = await Promise.all([
       db.select().from(categories),
       getChannelsForUser(ctx.user.id), // filter channels based on permissions and DM participation
@@ -77,8 +88,12 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       getEmojis(),
       getAllChannelUserPermissions(ctx.user.id),
       getChannelsReadStatesForUser(ctx.user.id),
-      getPublicSettings()
+      getPublicSettings(),
+      pluginManager.getActivePluginMetadata(),
+      hasUserJoinedBefore(ctx.user.id)
     ]);
+
+    const showWelcomeDialog = settings.showWelcomeDialog && !hasJoinedBefore;
 
     const processedPublicUsers = publicUsers.map((u) => ({
       ...u,
@@ -141,7 +156,9 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
       readStates,
       commands: pluginManager.getCommands(),
       pluginIdsWithComponents: pluginManager.getPluginIdsWithComponents(),
-      externalStreamsMap
+      pluginsMetadata,
+      externalStreamsMap,
+      showWelcomeDialog
     };
   });
 

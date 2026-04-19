@@ -11,6 +11,8 @@ import { Monitor, ZoomIn, ZoomOut } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
+import { FullscreenButton } from './fullscreen-button';
+import { useFullscreen } from './hooks/use-fullscreen';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useVideoStats } from './hooks/use-video-stats';
 import { useVoiceRefs } from './hooks/use-voice-refs';
@@ -19,8 +21,10 @@ import { VolumeButton } from './volume-button';
 
 type tScreenShareControlsProps = {
   isPinned: boolean;
+  isFullscreen: boolean;
   isZoomEnabled: boolean;
   handlePinToggle: () => void;
+  handleToggleFullscreen: () => void;
   handleToggleZoom: () => void;
   showPinControls: boolean;
   showAudioControl: boolean;
@@ -30,8 +34,10 @@ type tScreenShareControlsProps = {
 const ScreenShareControls = memo(
   ({
     isPinned,
+    isFullscreen,
     isZoomEnabled,
     handlePinToggle,
+    handleToggleFullscreen,
     handleToggleZoom,
     showPinControls,
     showAudioControl,
@@ -49,6 +55,10 @@ const ScreenShareControls = memo(
             size="sm"
           />
         )}
+        <FullscreenButton
+          isFullscreen={isFullscreen}
+          handleToggleFullscreen={handleToggleFullscreen}
+        />
         {showPinControls && (
           <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
         )}
@@ -125,6 +135,18 @@ const ScreenShareCard = memo(
       resetZoom
     } = useScreenShareZoom();
 
+    const {
+      isFullscreen,
+      isOverlayVisible,
+      toggleFullscreen,
+      handleDoubleClick
+    } = useFullscreen(containerRef);
+
+    const handleToggleFullscreen = useCallback(() => {
+      resetZoom();
+      toggleFullscreen();
+    }, [resetZoom, toggleFullscreen]);
+
     const handlePinToggle = useCallback(() => {
       if (isPinned) {
         onUnpin?.();
@@ -140,10 +162,13 @@ const ScreenShareCard = memo(
       <div
         ref={containerRef}
         className={cn(
-          'relative bg-card rounded-lg overflow-hidden group',
+          'relative bg-card',
           'flex items-center justify-center',
           'w-full h-full',
-          'border border-border',
+          isFullscreen
+            ? 'rounded-none border-none'
+            : 'rounded-lg overflow-hidden border border-border',
+          (!isFullscreen || isOverlayVisible) && 'group',
           className
         )}
         onWheel={handleWheel}
@@ -151,16 +176,19 @@ const ScreenShareCard = memo(
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onDoubleClick={handleDoubleClick}
         style={{
-          cursor: getCursor()
+          cursor: isFullscreen && !isOverlayVisible ? 'none' : getCursor()
         }}
       >
         <CardGradient />
 
         <ScreenShareControls
           isPinned={isPinned}
+          isFullscreen={isFullscreen}
           isZoomEnabled={isZoomEnabled}
           handlePinToggle={handlePinToggle}
+          handleToggleFullscreen={handleToggleFullscreen}
           handleToggleZoom={handleToggleZoom}
           showPinControls={showPinControls}
           showAudioControl={!isOwnUser && hasScreenShareAudioStream}

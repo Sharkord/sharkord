@@ -1,19 +1,17 @@
-import { prepareMessageHtml } from '@/helpers/prepare-message-html';
-import { getTRPCClient } from '@/lib/trpc';
-import {
-  ChannelPermission,
-  Permission,
-  type TPluginSlotContext
-} from '@sharkord/shared';
-import { useCallback, useMemo, useRef } from 'react';
+import { ChannelPermission, Permission } from '@sharkord/shared';
+import { useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import type { IRootState } from '../store';
 import { useChannelById, useChannelPermissionsById } from './channels/hooks';
 import { channelReadStateByIdSelector } from './channels/selectors';
 import {
+  activeFullscreenPluginIdSelector,
+  categoryHasUnreadMentionsSelector,
+  categoryUnreadMessagesCountSelector,
   connectedSelector,
   connectingSelector,
   disconnectInfoSelector,
+  dmsOpenSelector,
   hasSharingScreenUsersSelector,
   hasUnreadMentionsSelector,
   hasVisibleChannelsInCategorySelector,
@@ -21,7 +19,6 @@ import {
   isOwnUserOwnerSelector,
   ownUserRolesSelector,
   ownVoiceUserSelector,
-  pluginComponentContextSelector,
   pluginsEnabledSelector,
   publicServerSettingsSelector,
   serverNameSelector,
@@ -131,37 +128,37 @@ export const useUnreadMessagesCount = (channelId: number) =>
     channelReadStateByIdSelector(state, channelId)
   );
 
+export const useCategoryUnreadMessagesCount = (categoryId: number) =>
+  useSelector((state: IRootState) =>
+    categoryUnreadMessagesCountSelector(state, categoryId)
+  );
+
+export const useCategoryHasUnreadMentions = (categoryId: number) =>
+  useSelector((state: IRootState) =>
+    categoryHasUnreadMentionsSelector(state, categoryId)
+  );
+
+export const useCategoryUnreadData = (categoryId: number) => {
+  const unreadCount = useCategoryUnreadMessagesCount(categoryId);
+  const hasUnreadMentions = useCategoryHasUnreadMentions(categoryId);
+
+  return useMemo(
+    () => ({ unreadCount, hasUnreadMentions }),
+    [unreadCount, hasUnreadMentions]
+  );
+};
+
 export const useHasSharingScreenUsers = (channelId: number) =>
   useSelector((state: IRootState) =>
     hasSharingScreenUsersSelector(state, channelId)
   );
 
-export const usePluginComponentContext = (): TPluginSlotContext => {
-  const stateCtx = useSelector(pluginComponentContextSelector);
-  const controllerRef = useRef(
-    (() => ({
-      sendMessage: async (channelId: number, content: string) => {
-        const trpc = getTRPCClient();
-
-        await trpc.messages.send.mutate({
-          channelId,
-          content: prepareMessageHtml(`<p>${content}</p>`),
-          files: []
-        });
-      }
-    }))()
-  );
-
-  return useMemo<TPluginSlotContext>(
-    () => ({
-      ...stateCtx,
-      ...controllerRef.current
-    }),
-    [stateCtx]
-  );
-};
-
 export const useHasUnreadMentions = (channelId: number) =>
   useSelector((state: IRootState) =>
     hasUnreadMentionsSelector(state, channelId)
   );
+
+export const useActiveFullscreenPluginId = () =>
+  useSelector(activeFullscreenPluginIdSelector);
+
+export const useDmsOpen = () => useSelector(dmsOpenSelector);

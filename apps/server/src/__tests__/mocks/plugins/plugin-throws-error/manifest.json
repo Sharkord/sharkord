@@ -1,0 +1,8 @@
+{
+  "id": "plugin-throws-error",
+  "name": "plugin-throws-error",
+  "version": "1.0.0",
+  "sdkVersion": 1,
+  "author": "Test Author",
+  "description": "Plugin that throws error on load"
+}

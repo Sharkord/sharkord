@@ -1,15 +1,20 @@
 import { type TPluginInfo } from '@sharkord/shared';
-import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
+import fs from 'fs/promises';
+import path from 'path';
 import { initTest } from '../../__tests__/helpers';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { tdb } from '../../__tests__/setup';
 import { pluginData } from '../../db/schema';
+import { PLUGINS_PATH } from '../../helpers/paths';
 import { pluginManager } from '../../plugins';
 
 describe('plugins router', () => {
-  beforeAll(loadMockedPlugins);
-  beforeEach(resetPluginMocks);
+  beforeEach(async () => {
+    await loadMockedPlugins();
+    await resetPluginMocks();
+  });
 
   test('should throw when user lacks permissions', async () => {
     const { caller } = await initTest(2);
@@ -25,7 +30,7 @@ describe('plugins router', () => {
     const { plugins } = await caller.plugins.get();
 
     expect(plugins).toBeDefined();
-    expect(plugins.length).toBe(7);
+    expect(plugins.length).toBe(11);
   });
 
   test('should include plugin metadata', async () => {
@@ -43,7 +48,7 @@ describe('plugins router', () => {
     expect(pluginA!.description).toBeDefined();
   });
 
-  test('should filter out plugins with invalid package.json', async () => {
+  test('should filter out plugins with invalid manifest.json', async () => {
     const { caller } = await initTest();
 
     const result = await caller.plugins.get();
@@ -349,6 +354,47 @@ describe('plugins router', () => {
     expect((result as Record<string, number>).messageCreated).toBe(0);
   });
 
+  test('should throw when user lacks permissions for executeAction', async () => {
+    const { caller } = await initTest(2);
+
+    await expect(
+      caller.plugins.executeAction({
+        pluginId: 'plugin-b',
+        actionName: 'multiply',
+        payload: { a: 2, b: 3 }
+      })
+    ).rejects.toThrow('Insufficient permissions');
+  });
+
+  test('should execute action successfully', async () => {
+    const { caller } = await initTest();
+
+    await pluginManager.load('plugin-b');
+
+    const result = await caller.plugins.executeAction({
+      pluginId: 'plugin-b',
+      actionName: 'multiply',
+      payload: { a: 8, b: 5 }
+    });
+
+    expect(result).toBeDefined();
+    expect((result as Record<string, number>).result).toBe(40);
+  });
+
+  test('should throw when action does not exist', async () => {
+    const { caller } = await initTest();
+
+    await pluginManager.load('plugin-b');
+
+    await expect(
+      caller.plugins.executeAction({
+        pluginId: 'plugin-b',
+        actionName: 'nonexistent',
+        payload: {}
+      })
+    ).rejects.toThrow('not found');
+  });
+
   test('should throw when user lacks permissions', async () => {
     const { caller } = await initTest(2);
 
@@ -415,5 +461,407 @@ describe('plugins router', () => {
     expect(logs.length).toBeGreaterThan(0);
     const errorLog = logs.find((log) => log.type === 'error');
     expect(errorLog).toBeDefined();
+  });
+
+  describe('remove', () => {
+    test('should throw when user lacks permissions', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.plugins.remove({
+          pluginId: 'plugin-a'
+        })
+      ).rejects.toThrow('Insufficient permissions');
+    });
+
+    test('should remove plugin successfully', async () => {
+      const { caller } = await initTest();
+
+      const before = await caller.plugins.get();
+      const hadPlugin = before.plugins.some(
+        (p: TPluginInfo) => p.id === 'plugin-a'
+      );
+      expect(hadPlugin).toBe(true);
+
+      await caller.plugins.remove({ pluginId: 'plugin-a' });
+
+      const after = await caller.plugins.get();
+      const hasPlugin = after.plugins.some(
+        (p: TPluginInfo) => p.id === 'plugin-a'
+      );
+      expect(hasPlugin).toBe(false);
+    });
+
+    test('should remove plugin directory from filesystem', async () => {
+      const { caller } = await initTest();
+
+      const pluginPath = path.join(PLUGINS_PATH, 'plugin-a');
+      const existsBefore = await fs
+        .access(pluginPath)
+        .then(() => true)
+        .catch(() => false);
+      expect(existsBefore).toBe(true);
+
+      await caller.plugins.remove({ pluginId: 'plugin-a' });
+
+      const existsAfter = await fs
+        .access(pluginPath)
+        .then(() => true)
+        .catch(() => false);
+      expect(existsAfter).toBe(false);
+    });
+
+    test('should unload plugin before removing', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-b');
+
+      const before = await caller.plugins.get();
+      const pluginB = before.plugins.find(
+        (p: TPluginInfo) => p.id === 'plugin-b'
+      );
+      expect(pluginB!.enabled).toBe(true);
+
+      await caller.plugins.remove({ pluginId: 'plugin-b' });
+
+      const after = await caller.plugins.get();
+      const removed = after.plugins.find(
+        (p: TPluginInfo) => p.id === 'plugin-b'
+      );
+      expect(removed).toBeUndefined();
+    });
+  });
+
+  describe('getSettings', () => {
+    test('should throw when user lacks permissions', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.plugins.getSettings({
+          pluginId: 'plugin-with-settings'
+        })
+      ).rejects.toThrow('Insufficient permissions');
+    });
+
+    test('should return settings for plugin with settings', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-with-settings');
+
+      const result = await caller.plugins.getSettings({
+        pluginId: 'plugin-with-settings'
+      });
+
+      expect(result).toBeDefined();
+      expect(result.definitions).toBeDefined();
+      expect(result.definitions.length).toBe(3);
+      expect(result.values).toBeDefined();
+    });
+
+    test('should include setting definitions with correct metadata', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-with-settings');
+
+      const result = await caller.plugins.getSettings({
+        pluginId: 'plugin-with-settings'
+      });
+
+      const greetingSetting = result.definitions.find(
+        (d: { key: string }) => d.key === 'greeting'
+      );
+      expect(greetingSetting).toBeDefined();
+      expect(greetingSetting!.type).toBe('string');
+      expect(greetingSetting!.defaultValue).toBe('Hello!');
+    });
+
+    test('should return empty definitions for plugin without settings', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-a');
+
+      const result = await caller.plugins.getSettings({
+        pluginId: 'plugin-a'
+      });
+
+      expect(result).toBeDefined();
+      expect(result.definitions).toEqual([]);
+    });
+  });
+
+  describe('updateSetting', () => {
+    test('should throw when user lacks permissions', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.plugins.updateSetting({
+          pluginId: 'plugin-with-settings',
+          key: 'greeting',
+          value: 'Hi!'
+        })
+      ).rejects.toThrow('Insufficient permissions');
+    });
+
+    test('should update a setting value', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-with-settings');
+
+      await caller.plugins.updateSetting({
+        pluginId: 'plugin-with-settings',
+        key: 'greeting',
+        value: 'Hi there!'
+      });
+
+      const result = await caller.plugins.getSettings({
+        pluginId: 'plugin-with-settings'
+      });
+
+      expect(result.values.greeting).toBe('Hi there!');
+    });
+
+    test('should update numeric setting', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-with-settings');
+
+      await caller.plugins.updateSetting({
+        pluginId: 'plugin-with-settings',
+        key: 'maxRetries',
+        value: 10
+      });
+
+      const result = await caller.plugins.getSettings({
+        pluginId: 'plugin-with-settings'
+      });
+
+      expect(result.values.maxRetries).toBe(10);
+    });
+
+    test('should update boolean setting', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-with-settings');
+
+      await caller.plugins.updateSetting({
+        pluginId: 'plugin-with-settings',
+        key: 'enabled',
+        value: false
+      });
+
+      const result = await caller.plugins.getSettings({
+        pluginId: 'plugin-with-settings'
+      });
+
+      expect(result.values.enabled).toBe(false);
+    });
+
+    test('should throw when setting key does not exist', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-with-settings');
+
+      await expect(
+        caller.plugins.updateSetting({
+          pluginId: 'plugin-with-settings',
+          key: 'nonexistent-key',
+          value: 'test'
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should throw when plugin has no settings', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-a');
+
+      await expect(
+        caller.plugins.updateSetting({
+          pluginId: 'plugin-a',
+          key: 'some-key',
+          value: 'test'
+        })
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('install', () => {
+    test('should throw when user lacks permissions', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.plugins.install({
+          pluginId: 'plugin-example',
+          version: '0.0.1'
+        })
+      ).rejects.toThrow('Insufficient permissions');
+    });
+
+    test('should call downloadPlugin with fetched URL and checksum', async () => {
+      const { caller } = await initTest();
+      const mockDownload = mock(() => Promise.resolve());
+
+      mock.module('../../helpers/downloads', () => ({
+        downloadPlugin: mockDownload,
+        downloadFile: mock(() => Promise.resolve())
+      }));
+
+      mock.module('../../helpers/marketplace', () => ({
+        fetchMarketplaceVersion: mock(() =>
+          Promise.resolve({
+            version: '0.0.1',
+            downloadUrl: 'https://example.com/plugin.tar.gz',
+            checksum: 'deadbeef1234',
+            sdkVersion: 1,
+            size: 1000
+          })
+        )
+      }));
+
+      await caller.plugins.install({
+        pluginId: 'plugin-example',
+        version: '0.0.1'
+      });
+
+      expect(mockDownload).toHaveBeenCalledWith(
+        'https://example.com/plugin.tar.gz',
+        'deadbeef1234'
+      );
+    });
+
+    test('should reject empty pluginId', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.install({
+          pluginId: '',
+          version: '0.0.1'
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should reject missing version', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        // @ts-expect-error intentionally omitting required field
+        caller.plugins.install({
+          pluginId: 'plugin-example'
+        })
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('update', () => {
+    test('should call downloadPlugin with fetched URL and checksum', async () => {
+      const { caller } = await initTest();
+      const mockDownload = mock(() => Promise.resolve());
+
+      mock.module('../../helpers/downloads', () => ({
+        downloadPlugin: mockDownload,
+        downloadFile: mock(() => Promise.resolve())
+      }));
+
+      mock.module('../../helpers/marketplace', () => ({
+        fetchMarketplaceVersion: mock(() =>
+          Promise.resolve({
+            version: '2.0.0',
+            downloadUrl: 'https://example.com/plugin-a-v2.tar.gz',
+            checksum: 'cafebabe5678',
+            sdkVersion: 1,
+            size: 2000
+          })
+        )
+      }));
+
+      await caller.plugins.update({
+        pluginId: 'plugin-a',
+        version: '2.0.0'
+      });
+
+      expect(mockDownload).toHaveBeenCalledWith(
+        'https://example.com/plugin-a-v2.tar.gz',
+        'cafebabe5678'
+      );
+    });
+
+    test('should reject empty version', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.update({
+          pluginId: 'plugin-a',
+          version: ''
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should reject invalid plugin ID with uppercase', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.update({
+          pluginId: 'Plugin-A',
+          version: '1.0.0'
+        })
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('pluginId validation in routes', () => {
+    test('should reject uppercase pluginId in toggle', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.toggle({
+          pluginId: 'Plugin-A',
+          enabled: true
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should reject pluginId with underscores in executeCommand', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.executeCommand({
+          pluginId: 'plugin_a',
+          commandName: 'sum',
+          args: {}
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should reject pluginId with path traversal in getLogs', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.getLogs({
+          pluginId: '../../../etc'
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should reject pluginId with uppercase in executeAction', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.executeAction({
+          pluginId: 'Plugin-B',
+          actionName: 'multiply',
+          payload: {}
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should reject pluginId with underscores in remove', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.remove({
+          pluginId: 'plugin_a'
+        })
+      ).rejects.toThrow();
+    });
   });
 });

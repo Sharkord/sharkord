@@ -1,7 +1,6 @@
 import type { TDialogBaseProps } from '@/components/dialogs/types';
 import { PaginatedList } from '@/components/paginated-list';
 import { jumpToMessage } from '@/features/server/actions';
-import { useUsernames } from '@/features/server/users/hooks';
 import { useOnEsc } from '@/hooks/use-on-esc';
 import type { TMessageJumpToTarget } from '@/types';
 import {
@@ -27,8 +26,6 @@ type TSearchDialogProps = TDialogBaseProps;
 const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
   const { t } = useTranslation('dialogs');
   useOnEsc(close);
-
-  const usernames = useUsernames();
 
   const { query, setQuery, loading, canSearch, unifiedResults } =
     useSearch(isOpen);
@@ -94,9 +91,6 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
                       return (
                         <SearchResultMessageCard
                           message={entry.item}
-                          userName={
-                            usernames[entry.item.userId] ?? t('unknownUser')
-                          }
                           onJump={onJump}
                         />
                       );

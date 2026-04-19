@@ -3,7 +3,8 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   processPluginComponents,
   setPluginCommands,
-  setPluginComponents
+  setPluginComponents,
+  setPluginsMetadata
 } from './actions';
 
 const subscribeToPlugins = () => {
@@ -35,9 +36,22 @@ const subscribeToPlugins = () => {
     }
   );
 
+  const onMetadataChangeSub = trpc.plugins.onMetadataChange.subscribe(
+    undefined,
+    {
+      onData: (data) => {
+        logDebug('[EVENTS] plugins.onMetadataChange', { data });
+        setPluginsMetadata(data);
+      },
+      onError: (err) =>
+        console.error('onMetadataChange subscription error:', err)
+    }
+  );
+
   return () => {
     onCommandsChangeSub.unsubscribe();
     onComponentsChangeSub.unsubscribe();
+    onMetadataChangeSub.unsubscribe();
   };
 };
 

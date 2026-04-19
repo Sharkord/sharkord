@@ -1,5 +1,6 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
 import { store } from '@/features/store';
+import { logVoice } from '@/helpers/browser-logger';
 import {
   LocalStorageKey,
   setLocalStorageItem,
@@ -152,7 +153,7 @@ export const joinVoice = async (
 
   if (currentChannelId) {
     // is already in a voice channel, leave it first
-    await leaveVoice();
+    await leaveVoice({ reason: 'switch_channel' });
   }
 
   setCurrentVoiceChannelId(channelId);
@@ -174,14 +175,29 @@ export const joinVoice = async (
   return undefined;
 };
 
-export const leaveVoice = async (): Promise<void> => {
+export type TLeaveVoiceReason =
+  | 'user_disconnect_button'
+  | 'switch_channel'
+  | 'unknown';
+
+export const leaveVoice = async (options?: {
+  reason?: TLeaveVoiceReason;
+}): Promise<void> => {
   const state = store.getState();
   const currentChannelId = currentVoiceChannelIdSelector(state);
   const selectedChannelId = selectedChannelIdSelector(state);
+  const reason = options?.reason ?? 'unknown';
 
   if (!currentChannelId) {
+    logVoice('Leave voice requested without active channel', { reason });
     return;
   }
+
+  logVoice('Leave voice requested', {
+    reason,
+    channelId: currentChannelId,
+    selectedChannelId
+  });
 
   if (selectedChannelId === currentChannelId) {
     setSelectedChannelId(undefined);
@@ -226,6 +242,16 @@ export const setShowUserBannersInVoice = (value: boolean): void => {
       LocalStorageKey.VOICE_CHAT_SHOW_USER_BANNERS,
       value
     );
+  } catch (error) {
+    console.error('Failed to save voice options:', error);
+  }
+};
+
+export const setHideOwnScreenShare = (value: boolean): void => {
+  store.dispatch(serverSliceActions.setHideOwnScreenShare(value));
+
+  try {
+    setLocalStorageItemBool(LocalStorageKey.HIDE_OWN_SCREEN_SHARE, value);
   } catch (error) {
     console.error('Failed to save voice options:', error);
   }

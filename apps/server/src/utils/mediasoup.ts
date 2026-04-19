@@ -1,6 +1,6 @@
+import { getErrorMessage } from '@sharkord/shared';
 import mediasoup from 'mediasoup';
 import { config, SERVER_PUBLIC_IP } from '../config.js';
-import { getErrorMessage } from '../helpers/get-error-message.js';
 import { MEDIASOUP_BINARY_PATH } from '../helpers/paths.js';
 import { logger } from '../logger.js';
 import {

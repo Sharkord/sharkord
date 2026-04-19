@@ -9,8 +9,12 @@ import {
   getNoiseGateWorkletAvailabilitySnapshot,
   subscribeNoiseGateWorkletAvailability
 } from '@/helpers/audio-worklet/noise-gate-worklet';
+import {
+  getRestrictOwnAudioSupport,
+  getSuppressLocalAudioPlaybackSupport
+} from '@/helpers/get-display-media-support';
 import { useForm } from '@/hooks/use-form';
-import { Resolution, VideoCodec } from '@/types';
+import { NoiseSuppression, Resolution, VideoCodec } from '@/types';
 import { DEFAULT_BITRATE } from '@sharkord/shared';
 import {
   Alert,
@@ -46,11 +50,13 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { useAvailableDevices } from './hooks/use-available-devices';
 import { useMicrophoneTest } from './hooks/use-microphone-test';
 import { useWebcamTest } from './hooks/use-webcam-test';
 import { MicrophoneTestLevelBar } from './microphone-test-level-bar';
 import ResolutionFpsControl from './resolution-fps-control';
+import { RestrictOwnAudioAlert } from './restrict-own-audio-alert';
+import { SuppressLocalAudioPlaybackAlert } from './suppress-local-audio-playback-alert';
+import { SupressionHelp } from './supression-help';
 
 const DEFAULT_NAME = 'default';
 
@@ -60,20 +66,30 @@ const Devices = memo(() => {
   const settings = usePublicServerSettings();
   const ownVoiceState = useOwnVoiceState();
   const {
+    devices,
+    saveDevices,
+    loading: devicesLoading,
     inputDevices,
     playbackDevices,
     videoDevices,
-    loading: availableDevicesLoading,
     loadDevices
-  } = useAvailableDevices();
-  const { devices, saveDevices, loading: devicesLoading } = useDevices();
-  const { values, onChange } = useForm(devices);
+  } = useDevices();
+  const { values, onChange, setValues } = useForm(devices);
   const noiseGateWorkletAvailability = useSyncExternalStore(
     subscribeNoiseGateWorkletAvailability,
     getNoiseGateWorkletAvailabilitySnapshot,
     getNoiseGateWorkletAvailabilitySnapshot
   );
   const isNoiseGateAvailable = noiseGateWorkletAvailability.available;
+  const isRestrictOwnAudioSupported = useMemo(
+    () => getRestrictOwnAudioSupport(),
+    []
+  );
+  const isSuppressLocalAudioPlaybackSupported = useMemo(
+    () => getSuppressLocalAudioPlaybackSupport(),
+    []
+  );
+
   const {
     testAudioRef,
     permissionState,
@@ -88,7 +104,7 @@ const Devices = memo(() => {
     playbackId: values.playbackId,
     autoGainControl: !!values.autoGainControl,
     echoCancellation: !!values.echoCancellation,
-    noiseSuppression: !!values.noiseSuppression,
+    noiseSuppression: values.noiseSuppression,
     noiseGateEnabled: !!values.noiseGateEnabled,
     noiseGateThresholdDb:
       values.noiseGateThresholdDb ?? MICROPHONE_GATE_DEFAULT_THRESHOLD_DB
@@ -230,7 +246,11 @@ const Devices = memo(() => {
     [settings?.webRtcMaxBitrate]
   );
 
-  if (availableDevicesLoading || devicesLoading) {
+  useEffect(() => {
+    setValues(devices);
+  }, [devices, setValues]);
+
+  if (devicesLoading) {
     return <LoadingCard className="h-[600px]" />;
   }
 
@@ -252,6 +272,7 @@ const Devices = memo(() => {
             <Select
               onValueChange={(value) => onChange('playbackId', value)}
               value={values.playbackId}
+              disabled={playbackDevices.length === 0}
             >
               <SelectTrigger className="w-92">
                 <SelectValue placeholder={t('playbackPlaceholder')} />
@@ -280,6 +301,7 @@ const Devices = memo(() => {
             <Select
               onValueChange={(value) => onChange('microphoneId', value)}
               value={values.microphoneId}
+              disabled={inputDevices.length === 0}
             >
               <SelectTrigger className="w-92">
                 <SelectValue placeholder={t('microphonePlaceholder')} />
@@ -298,21 +320,45 @@ const Devices = memo(() => {
               </SelectContent>
             </Select>
 
+            <Group
+              label={t('noiseSuppressionLabel')}
+              className="my-4"
+              help={<SupressionHelp />}
+            >
+              <Select
+                value={values.noiseSuppression}
+                onValueChange={(value) =>
+                  onChange('noiseSuppression', value as NoiseSuppression)
+                }
+              >
+                <SelectTrigger className="w-92">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value={NoiseSuppression.NONE}>
+                      {t('noiseSuppressionNone')}
+                    </SelectItem>
+                    <SelectItem value={NoiseSuppression.STANDARD}>
+                      {t('standard')}
+                    </SelectItem>
+                    <SelectItem value={NoiseSuppression.RNNOISE}>
+                      RNNoise ({t('experimental')})
+                    </SelectItem>
+                    <SelectItem value={NoiseSuppression.DTLN}>
+                      DTLN ({t('experimental')})
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Group>
+
             <div className="flex items-center gap-4">
               <Group label={t('echoCancellationLabel')}>
                 <Switch
                   checked={!!values.echoCancellation}
                   onCheckedChange={(checked) =>
                     onChange('echoCancellation', checked)
-                  }
-                />
-              </Group>
-
-              <Group label={t('noiseSuppressionLabel')}>
-                <Switch
-                  checked={!!values.noiseSuppression}
-                  onCheckedChange={(checked) =>
-                    onChange('noiseSuppression', checked)
                   }
                 />
               </Group>
@@ -564,6 +610,44 @@ const Devices = memo(() => {
                     }
                   />
                 </div>
+
+                <Group
+                  label={t('restrictOwnAudioLabel')}
+                  description={t('restrictOwnAudioDesc')}
+                >
+                  {isRestrictOwnAudioSupported ? (
+                    <Switch
+                      checked={!!values.restrictOwnAudio}
+                      disabled={!isRestrictOwnAudioSupported}
+                      onCheckedChange={(checked) =>
+                        onChange('restrictOwnAudio', checked)
+                      }
+                    />
+                  ) : (
+                    <RestrictOwnAudioAlert
+                      isSupported={isRestrictOwnAudioSupported}
+                    />
+                  )}
+                </Group>
+
+                <Group
+                  label={t('suppressLocalAudioPlaybackLabel')}
+                  description={t('suppressLocalAudioPlaybackDesc')}
+                >
+                  {isSuppressLocalAudioPlaybackSupported ? (
+                    <Switch
+                      checked={!!values.suppressLocalAudioPlayback}
+                      disabled={!isSuppressLocalAudioPlaybackSupported}
+                      onCheckedChange={(checked) =>
+                        onChange('suppressLocalAudioPlayback', checked)
+                      }
+                    />
+                  ) : (
+                    <SuppressLocalAudioPlaybackAlert
+                      isSupported={isSuppressLocalAudioPlaybackSupported}
+                    />
+                  )}
+                </Group>
 
                 <span className="text-sm text-muted-foreground">
                   {t('screenSharingNote')}

@@ -95,7 +95,7 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
             'pointer-events-auto h-14 w-18 rounded-md text-white shadow-xl transition-all active:scale-95',
             'bg-[#ec4245] hover:bg-[#da373c]'
           )}
-          onClick={leaveVoice}
+          onClick={() => leaveVoice()}
           aria-label="Disconnect"
         >
           <PhoneOff size={24} fill="currentColor" />

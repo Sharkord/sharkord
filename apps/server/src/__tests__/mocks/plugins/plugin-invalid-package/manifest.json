@@ -1,0 +1,8 @@
+{
+  "id": "plugin-invalid-package",
+  "name": "plugin-invalid-package",
+  "version": "not-a-valid-version",
+  "sdkVersion": 1,
+  "author": "Test Author",
+  "description": "Invalid manifest.json"
+}

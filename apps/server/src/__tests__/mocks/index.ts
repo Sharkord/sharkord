@@ -32,11 +32,18 @@ const resetPluginMocks = async () => {
   await tdb.insert(pluginData).values([
     { pluginId: 'plugin-a', enabled: true },
     { pluginId: 'plugin-b', enabled: true },
+    { pluginId: 'plugin-before-file-save', enabled: true },
+    { pluginId: 'plugin-message-actions', enabled: true },
     { pluginId: 'plugin-with-events', enabled: true },
     { pluginId: 'plugin-with-settings', enabled: true },
     { pluginId: 'plugin-no-unload', enabled: true },
     { pluginId: 'plugin-no-onload', enabled: true },
-    { pluginId: 'plugin-throws-error', enabled: true }
+    { pluginId: 'plugin-throws-error', enabled: true },
+    { pluginId: 'plugin-no-sdk-version', enabled: true },
+    { pluginId: 'plugin-invalid-sdk-version', enabled: true },
+    { pluginId: 'plugin-incompatible-sdk-version', enabled: true },
+    { pluginId: 'plugin-mismatched-id', enabled: true },
+    { pluginId: 'plugin-slow-command', enabled: true }
   ]);
 
   // reload plugin states into memory

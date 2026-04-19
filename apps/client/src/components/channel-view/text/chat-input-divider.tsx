@@ -1,0 +1,156 @@
+import {
+  type LocalStorageKey,
+  removeLocalStorageItem,
+  setLocalStorageItem
+} from '@/helpers/storage';
+import { useCallback } from 'react';
+import {
+  getHeight,
+  MAX_VH,
+  measureMinHeight,
+  RESET_THRESHOLD_PX
+} from './helpers';
+
+type TChatInputDividerProps = {
+  composeContainerRef: React.RefObject<HTMLDivElement | null>;
+  scrollToBottom: () => void;
+  isAtBottom: () => boolean;
+  storageKey: LocalStorageKey;
+  defaultMaxHeightVh: number;
+};
+
+// TODO: this should probably be included inside MessageCompose and not as a separate component
+// since it's tightly coupled to the compose container and its resizing behavior
+const ChatInputDivider = ({
+  composeContainerRef,
+  scrollToBottom,
+  isAtBottom,
+  storageKey,
+  defaultMaxHeightVh
+}: TChatInputDividerProps) => {
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+
+      const composeEl = composeContainerRef.current;
+
+      if (!composeEl) return;
+
+      const wasAtBottom = isAtBottom();
+
+      const startY = e.clientY;
+      const startHeight = composeEl.style.height;
+      const startMaxHeight = composeEl.style.maxHeight;
+      const startHeightPx = getHeight(composeEl);
+
+      const maxPx = (MAX_VH / 100) * window.innerHeight;
+      const minPx = measureMinHeight(composeEl);
+
+      composeEl.style.maxHeight = '';
+      composeEl.style.height = `${startHeightPx}px`;
+
+      if (wasAtBottom) scrollToBottom();
+
+      const target = e.currentTarget;
+
+      target.setPointerCapture(e.pointerId);
+
+      const onPointerMove = (moveEvent: PointerEvent) => {
+        const deltaY = moveEvent.clientY - startY;
+        const newHeightPx = Math.max(
+          minPx,
+          Math.min(maxPx, startHeightPx - deltaY)
+        );
+
+        composeEl.style.height = `${newHeightPx}px`;
+
+        if (wasAtBottom) {
+          scrollToBottom();
+        }
+      };
+
+      const onPointerUp = (upEvent: PointerEvent) => {
+        target.removeEventListener('pointermove', onPointerMove);
+        target.removeEventListener('pointerup', onPointerUp);
+        target.removeEventListener('pointercancel', onPointerCancel);
+
+        const deltaY = upEvent.clientY - startY;
+        const finalPx = Math.max(
+          minPx,
+          Math.min(maxPx, startHeightPx - deltaY)
+        );
+
+        composeEl.style.height = `${finalPx}px`;
+
+        if (finalPx <= minPx + RESET_THRESHOLD_PX) {
+          const proseMirror = composeEl.querySelector('.ProseMirror');
+
+          if (
+            proseMirror &&
+            proseMirror.scrollHeight > minPx + RESET_THRESHOLD_PX
+          ) {
+            // multi-line content -- pin at min height
+            composeEl.style.height = `${minPx}px`;
+            composeEl.style.maxHeight = '';
+            composeEl.dataset.pendingUnpinOnSend = 'true';
+          } else {
+            // single line or empty -- reset to auto-grow mode
+            composeEl.style.height = '';
+            composeEl.style.maxHeight = `${defaultMaxHeightVh}vh`;
+
+            delete composeEl.dataset.pendingUnpinOnSend;
+          }
+
+          removeLocalStorageItem(storageKey);
+        } else {
+          composeEl.style.maxHeight = '';
+
+          const finalVh = Math.round((finalPx / window.innerHeight) * 100);
+
+          setLocalStorageItem(storageKey, String(finalVh));
+
+          delete composeEl.dataset.pendingUnpinOnSend;
+        }
+
+        if (wasAtBottom) {
+          scrollToBottom();
+        }
+      };
+
+      const onPointerCancel = () => {
+        target.removeEventListener('pointermove', onPointerMove);
+        target.removeEventListener('pointerup', onPointerUp);
+        target.removeEventListener('pointercancel', onPointerCancel);
+
+        composeEl.style.height = startHeight;
+        composeEl.style.maxHeight = startMaxHeight;
+      };
+
+      target.addEventListener('pointermove', onPointerMove);
+      target.addEventListener('pointerup', onPointerUp);
+      target.addEventListener('pointercancel', onPointerCancel);
+    },
+    [
+      composeContainerRef,
+      scrollToBottom,
+      isAtBottom,
+      storageKey,
+      defaultMaxHeightVh
+    ]
+  );
+
+  return (
+    <div
+      onPointerDown={onPointerDown}
+      className="group relative h-0 shrink-0 overflow-visible cursor-row-resize select-none z-10"
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label="Resize chat input"
+    >
+      <div className="absolute inset-x-0 top-0 h-px w-full bg-border transition-all origin-top group-hover:scale-y-[4] group-hover:bg-primary/50 group-active:scale-y-[4] group-active:bg-primary" />
+      <div className="absolute inset-x-0 -top-0.5 h-4" />
+    </div>
+  );
+};
+
+export { ChatInputDivider };

@@ -1,0 +1,17 @@
+{
+  "closeVoiceChat": "Закрыть голосовой чат",
+  "openVoiceChat": "Открыть голосовой чат",
+  "closeMembersSidebar": "Закрыть боковую панель участников",
+  "openMembersSidebar": "Открыть боковую панель участников",
+  "searchContent": "Поиск по содержимому...",
+  "voiceOptions": "Опции голосового управления",
+  "hideNonVideoParticipants": "Скрыть участников без видео",
+  "displayUserBanners": "Показывать баннеры пользователей",
+  "audioControls": "Управление аудио",
+  "stream_one": "стрим",
+  "stream_other": "стримы",
+  "noRemoteAudioStreams": "Нет доступных удаленных аудио-стримов.",
+  "volumeControls": "Управление громкостью",
+  "externalAudio": "Внешнее аудио",
+  "hideOwnScreenShare": "Скрыть свою демонстрацию экрана"
+}

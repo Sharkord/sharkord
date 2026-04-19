@@ -1,6 +1,6 @@
 import { ChannelPermission, Permission, ServerEvents } from '@sharkord/shared';
 import { z } from 'zod';
-import { getAffectedUserIdsForChannel } from '../../db/queries/channels';
+import { getAffectedOnlineUserIdsForChannel } from '../../db/queries/channels';
 import { assertDmChannel } from '../../db/queries/dms';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -19,7 +19,7 @@ const signalTypingRoute = protectedProcedure
         ChannelPermission.SEND_MESSAGES
       ),
       assertDmChannel(input.channelId, ctx.userId),
-      getAffectedUserIdsForChannel(input.channelId, {
+      getAffectedOnlineUserIdsForChannel(input.channelId, {
         permission: ChannelPermission.VIEW_CHANNEL
       })
     ]);

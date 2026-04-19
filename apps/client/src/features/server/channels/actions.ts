@@ -1,10 +1,8 @@
 import { assertVoiceChatClose } from '@/features/app/actions';
-import {
-  dmsOpenSelector,
-  selectedDmChannelIdSelector
-} from '@/features/app/selectors';
+import { selectedDmChannelIdSelector } from '@/features/app/selectors';
 import { store } from '@/features/store';
 import type { TChannel, TChannelUserPermissionsMap } from '@sharkord/shared';
+import { dmsOpenSelector } from '../selectors';
 import { serverSliceActions } from '../slice';
 import {
   channelByIdSelector,

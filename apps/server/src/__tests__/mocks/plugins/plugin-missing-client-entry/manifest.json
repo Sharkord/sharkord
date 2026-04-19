@@ -1,0 +1,8 @@
+{
+  "id": "plugin-missing-client-entry",
+  "name": "plugin-missing-client-entry",
+  "version": "1.0.0",
+  "sdkVersion": 1,
+  "author": "Test Author",
+  "description": "Plugin with missing client entry file"
+}

@@ -116,10 +116,16 @@ export type TJoinedMessageReaction = TMessageReaction & {
   file: TFile | null;
 };
 
+export type TMessageReplyPreview = Pick<
+  TMessage,
+  'id' | 'content' | 'userId' | 'pluginId'
+>;
+
 export type TJoinedMessage = TMessage & {
   files: TFile[];
   reactions: TJoinedMessageReaction[];
   replyCount?: number;
+  replyTo?: TMessageReplyPreview | null;
 };
 
 export type TJoinedEmoji = TEmoji & {

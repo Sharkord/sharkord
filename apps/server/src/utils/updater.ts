@@ -1,6 +1,6 @@
+import { getErrorMessage } from '@sharkord/shared';
 import { BunUpdater } from 'bun-sfe-autoupdater';
 import { config } from '../config';
-import { getErrorMessage } from '../helpers/get-error-message';
 import { logger } from '../logger';
 import { IS_DOCKER, IS_PRODUCTION, SERVER_VERSION } from './env';
 

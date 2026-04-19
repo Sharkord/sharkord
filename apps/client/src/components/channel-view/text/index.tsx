@@ -2,6 +2,7 @@ import {
   MessageCompose,
   type TMessageComposeHandle
 } from '@/components/message-compose';
+import { useThreadSidebar } from '@/features/app/hooks';
 import {
   useChannelCan,
   useTypingUsersByChannelId
@@ -10,13 +11,22 @@ import { useMessages } from '@/features/server/messages/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { prepareMessageHtml } from '@/helpers/prepare-message-html';
+import { LocalStorageKey } from '@/helpers/storage';
 import { getTRPCClient } from '@/lib/trpc';
-import { ChannelPermission, TYPING_MS, getTrpcError } from '@sharkord/shared';
+import type { TReplyTarget } from '@/types';
+import {
+  ChannelPermission,
+  TYPING_MS,
+  getTrpcError,
+  type TJoinedMessage
+} from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
 import { throttle } from 'lodash-es';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { ChatInputDivider } from './chat-input-divider';
+import { DEFAULT_MAX_HEIGHT_VH } from './helpers';
 import { useScrollController } from './hooks/use-scroll-controller';
 import { useScrollToJumpTarget } from './hooks/use-scroll-to-jump-target';
 import { MessagesGroup } from './messages-group';
@@ -52,16 +62,45 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
   const [newMessage, setNewMessage] = useState(
     getDraftMessage(draftChannelKey)
   );
+  const [replyingToMessage, setReplyingToMessage] = useState<
+    TJoinedMessage | undefined
+  >();
   const typingUsers = useTypingUsersByChannelId(channelId);
   const composeRef = useRef<TMessageComposeHandle>(null);
+  const composeContainerRef = useRef<HTMLDivElement>(null);
+  const { activeThreadMessageId } = useThreadSidebar();
 
-  const { containerRef, onScroll } = useScrollController({
+  const replyTarget = useMemo<TReplyTarget | undefined>(() => {
+    if (!replyingToMessage) {
+      return undefined;
+    }
+
+    if (replyingToMessage.pluginId) {
+      return { userId: null, pluginId: replyingToMessage.pluginId };
+    }
+
+    return { userId: replyingToMessage.userId, pluginId: null };
+  }, [replyingToMessage]);
+
+  const {
+    containerRef,
+    onScroll,
+    onAsyncContentLoaded,
+    scrollToBottom,
+    isAtBottom
+  } = useScrollController({
     messages,
     fetching,
     hasMore,
     loadMore,
     hasTypingUsers: typingUsers.length > 0
   });
+
+  const onComposeResize = useCallback(() => {
+    if (isAtBottom()) {
+      scrollToBottom();
+    }
+  }, [isAtBottom, scrollToBottom]);
 
   const channelCan = useChannelCan(channelId);
 
@@ -97,7 +136,8 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
         await trpc.messages.send.mutate({
           content: prepareMessageHtml(message),
           channelId,
-          files: files.map((f) => f.id)
+          files: files.map((f) => f.id),
+          replyToMessageId: replyingToMessage?.id
         });
 
         playSound(SoundType.MESSAGE_SENT);
@@ -107,11 +147,22 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
       }
 
       setNewMessageHandler('');
+      setReplyingToMessage(undefined);
 
       return true;
     },
-    [channelId, sendTypingSignal, setNewMessageHandler, t]
+    [
+      channelId,
+      sendTypingSignal,
+      setNewMessageHandler,
+      t,
+      replyingToMessage?.id
+    ]
   );
+
+  const onReplyMessageSelect = useCallback((message: TJoinedMessage) => {
+    setReplyingToMessage(message);
+  }, []);
 
   if (!channelCan(ChannelPermission.VIEW_CHANNEL) || loading) {
     return <TextSkeleton />;
@@ -139,18 +190,34 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
       <div
         ref={containerRef}
         onScroll={onScroll}
+        onLoadCapture={onAsyncContentLoaded}
         data-messages-container
-        className="flex-1 overflow-y-auto overflow-x-hidden p-2 animate-in fade-in duration-500"
+        className="flex-1 overflow-y-auto overflow-x-hidden px-2 pt-2 pb-7 animate-in fade-in duration-500"
       >
         <div className="space-y-4">
-          {groupedMessages.map((group, index) => (
-            <MessagesGroup key={index} group={group} />
+          {groupedMessages.map((group) => (
+            <MessagesGroup
+              key={group.key}
+              group={group.messages}
+              onReplyMessageSelect={onReplyMessageSelect}
+              replyTargetMessageId={replyingToMessage?.id}
+              activeThreadMessageId={activeThreadMessageId}
+            />
           ))}
         </div>
       </div>
 
+      <ChatInputDivider
+        composeContainerRef={composeContainerRef}
+        scrollToBottom={scrollToBottom}
+        isAtBottom={isAtBottom}
+        storageKey={LocalStorageKey.CHAT_INPUT_HEIGHT_VH}
+        defaultMaxHeightVh={DEFAULT_MAX_HEIGHT_VH}
+      />
+
       <MessageCompose
         ref={composeRef}
+        composeContainerRef={composeContainerRef}
         channelId={channelId}
         message={newMessage}
         onMessageChange={setNewMessageHandler}
@@ -158,6 +225,9 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
         onTyping={sendTypingSignal}
         typingUsers={typingUsers}
         showPluginSlot
+        onCancelReply={() => setReplyingToMessage(undefined)}
+        replyTarget={replyTarget}
+        onResize={onComposeResize}
       />
     </>
   );

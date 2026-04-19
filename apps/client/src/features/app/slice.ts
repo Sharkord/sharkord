@@ -17,14 +17,16 @@ export interface TAppState {
   threadParentMessageId: number | undefined;
   threadChannelId: number | undefined;
   autoJoinLastChannel: boolean;
-  dmsOpen: boolean;
   selectedDmChannelId: number | undefined;
   browserNotifications: boolean;
   browserNotificationsForMentions: boolean;
   browserNotificationsForDms: boolean;
+  browserNotificationsForReplies: boolean;
   messageJumpTarget: TMessageJumpToTarget | undefined;
   voiceChatSidebarOpen: boolean;
   voiceChatChannelId: number | undefined;
+  pluginSlotDebug: boolean;
+  modifierKeysHeldMap: Record<string, boolean>;
 }
 
 const initialState: TAppState = {
@@ -41,7 +43,6 @@ const initialState: TAppState = {
     LocalStorageKey.AUTO_JOIN_LAST_CHANNEL,
     false
   ),
-  dmsOpen: false,
   selectedDmChannelId: undefined,
   browserNotifications: getLocalStorageItemBool(
     LocalStorageKey.BROWSER_NOTIFICATIONS,
@@ -55,6 +56,10 @@ const initialState: TAppState = {
     LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_DMS,
     false
   ),
+  browserNotificationsForReplies: getLocalStorageItemBool(
+    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_REPLIES,
+    false
+  ),
   messageJumpTarget: undefined,
   voiceChatSidebarOpen: getLocalStorageItemBool(
     LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE,
@@ -62,7 +67,12 @@ const initialState: TAppState = {
   ),
   voiceChatChannelId: getLocalStorageItemAsNumber(
     LocalStorageKey.VOICE_CHAT_SIDEBAR_CHANNEL_ID
-  )
+  ),
+  pluginSlotDebug: getLocalStorageItemBool(
+    LocalStorageKey.PLUGIN_SLOT_DEBUG,
+    false
+  ),
+  modifierKeysHeldMap: { Shift: false, Control: false, Alt: false }
 };
 
 export const appSlice = createSlice({
@@ -106,9 +116,6 @@ export const appSlice = createSlice({
     setIsAutoConnecting: (state, action: PayloadAction<boolean>) => {
       state.isAutoConnecting = action.payload;
     },
-    setDmsOpen: (state, action: PayloadAction<boolean>) => {
-      state.dmsOpen = action.payload;
-    },
     setSelectedDmChannelId: (
       state,
       action: PayloadAction<number | undefined>
@@ -127,6 +134,12 @@ export const appSlice = createSlice({
     setBrowserNotificationsForDms: (state, action: PayloadAction<boolean>) => {
       state.browserNotificationsForDms = action.payload;
     },
+    setBrowserNotificationsForReplies: (
+      state,
+      action: PayloadAction<boolean>
+    ) => {
+      state.browserNotificationsForReplies = action.payload;
+    },
     setMessageJumpTarget: (
       state,
       action: PayloadAction<TMessageJumpToTarget | undefined>
@@ -142,6 +155,15 @@ export const appSlice = createSlice({
     ) => {
       state.voiceChatSidebarOpen = action.payload.open;
       state.voiceChatChannelId = action.payload.channelId;
+    },
+    setPluginSlotDebug: (state, action: PayloadAction<boolean>) => {
+      state.pluginSlotDebug = action.payload;
+    },
+    setModifierKeysHeldMap: (
+      state,
+      action: PayloadAction<Record<string, boolean>>
+    ) => {
+      state.modifierKeysHeldMap = action.payload;
     }
   }
 });

@@ -1,4 +1,5 @@
 import { UploadHeaders, type TTempFile } from '@sharkord/shared';
+import i18next from 'i18next';
 import { toast } from 'sonner';
 import { getUrlFromServer } from './get-file-url';
 import { getSessionStorageItem, SessionStorageKey } from './storage';
@@ -13,40 +14,93 @@ const getSafeFileName = (name: string) => {
   );
 };
 
-const uploadFile = async (file: File) => {
-  const url = getUrlFromServer();
-
-  const res = await fetch(`${url}/upload`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/octet-stream',
-      [UploadHeaders.TYPE]: file.type,
-      [UploadHeaders.CONTENT_LENGTH]: file.size.toString(),
-      [UploadHeaders.ORIGINAL_NAME]: getSafeFileName(file.name),
-      [UploadHeaders.TOKEN]:
-        getSessionStorageItem(SessionStorageKey.TOKEN) ?? ''
-    },
-    body: file
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json();
-
-    toast.error(errorData.error || res.statusText);
-
-    return undefined;
+const uploadImage = async (file: File): Promise<TTempFile | undefined> => {
+  if (!file.type.startsWith('image/')) {
+    throw new Error(i18next.t('onlyImageFilesAllowed', { ns: 'common' }));
   }
 
-  const tempFile: TTempFile = await res.json();
-
-  return tempFile;
+  return uploadFile(file);
 };
 
-const uploadFiles = async (files: File[]) => {
+type TUploadProgress = {
+  loaded: number;
+  total: number;
+  percent: number;
+};
+
+type TUploadFileOptions = {
+  onProgress?: (progress: TUploadProgress) => void;
+};
+
+const uploadFile = async (file: File, options?: TUploadFileOptions) => {
+  const url = getUrlFromServer();
+
+  return new Promise<TTempFile | undefined>((resolve) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.open('POST', `${url}/upload`);
+
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+    xhr.setRequestHeader(UploadHeaders.TYPE, file.type);
+    xhr.setRequestHeader(
+      UploadHeaders.ORIGINAL_NAME,
+      getSafeFileName(file.name)
+    );
+    xhr.setRequestHeader(
+      UploadHeaders.TOKEN,
+      getSessionStorageItem(SessionStorageKey.TOKEN) ?? ''
+    );
+
+    if (options?.onProgress) {
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          options.onProgress!({
+            loaded: e.loaded,
+            total: e.total,
+            percent: Math.round((e.loaded / e.total) * 100)
+          });
+        }
+      });
+    }
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const tempFile: TTempFile = JSON.parse(xhr.responseText);
+
+        resolve(tempFile);
+      } else {
+        try {
+          const errorData = JSON.parse(xhr.responseText);
+
+          toast.error(errorData.error || xhr.statusText);
+        } catch {
+          toast.error(xhr.statusText);
+        }
+
+        resolve(undefined);
+      }
+    });
+
+    xhr.addEventListener('error', () => {
+      toast.error(i18next.t('uploadFailed', { ns: 'common' }));
+
+      resolve(undefined);
+    });
+
+    xhr.send(file);
+  });
+};
+
+const uploadFiles = async (
+  files: File[],
+  onProgress?: (fileIndex: number, progress: TUploadProgress) => void
+) => {
   const uploadedFiles: TTempFile[] = [];
 
-  for (const file of files) {
-    const uploadedFile = await uploadFile(file);
+  for (let i = 0; i < files.length; i++) {
+    const uploadedFile = await uploadFile(files[i], {
+      onProgress: onProgress ? (progress) => onProgress(i, progress) : undefined
+    });
 
     if (!uploadedFile) continue;
 
@@ -56,4 +110,4 @@ const uploadFiles = async (files: File[]) => {
   return uploadedFiles;
 };
 
-export { uploadFile, uploadFiles };
+export { uploadFile, uploadFiles, uploadImage, type TUploadProgress };

@@ -50,9 +50,9 @@ export const ownUserSelector = createSelector(
 );
 
 export const userByIdSelector = createCachedSelector(
-  [usersSelector, (_: IRootState, userId: number) => userId],
+  [usersSelector, (_: IRootState, userId: number | null) => userId],
   (users, userId) => users.find((user) => user.id === userId)
-)((_, userId: number) => userId);
+)((_, userId: number | null) => userId);
 
 export const isOwnUserSelector = createCachedSelector(
   [ownUserIdSelector, (_: IRootState, userId: number) => userId],

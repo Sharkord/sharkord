@@ -5,29 +5,22 @@ import { getFileUrl } from '@/helpers/get-file-url';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
-import {
-  imageExtensions,
-  isEmojiOnlyMessage,
-  type TJoinedMessage
-} from '@sharkord/shared';
+import { type TJoinedMessage } from '@sharkord/shared';
 import { Tooltip } from '@sharkord/ui';
-import parse from 'html-react-parser';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { FileCard } from '../file-card';
 import { MessageReactions } from '../message-reactions';
-import { ImageOverride } from '../overrides/image';
-import { serializer } from './serializer';
-import type { TFoundMedia } from './types';
+import { getIsEmojiOnly, getParsedMessageHtml } from './content-cache';
+import { Media } from './media';
+import { extractMessageMedia } from './media-cache';
 
 type TMessageRendererProps = {
   message: TJoinedMessage;
   disableFiles?: boolean;
   disableReactions?: boolean;
 };
-
-const ALLOWED_MEDIA_TYPES = ['image', 'video'];
 
 const MessageRenderer = memo(
   ({ message, disableFiles, disableReactions }: TMessageRendererProps) => {
@@ -39,18 +32,9 @@ const MessageRenderer = memo(
       [message.userId, ownUserId]
     );
 
-    const emojiOnly = useMemo(
-      () => isEmojiOnlyMessage(message.content),
-      [message.content]
-    );
+    const emojiOnly = useMemo(() => getIsEmojiOnly(message), [message]);
 
-    const messageHtml = useMemo(
-      () =>
-        parse(message.content ?? '', {
-          replace: (domNode) => serializer(domNode, message.id)
-        }),
-      [message.content, message.id]
-    );
+    const messageHtml = useMemo(() => getParsedMessageHtml(message), [message]);
 
     const onRemoveFileClick = useCallback(
       async (fileId: number) => {
@@ -79,35 +63,7 @@ const MessageRenderer = memo(
       [t]
     );
 
-    const allMedia = useMemo(() => {
-      const mediaFromFiles: TFoundMedia[] = message.files
-        .filter((file) =>
-          imageExtensions.includes(file.extension.toLowerCase())
-        )
-        .map((file) => ({
-          type: 'image',
-          url: getFileUrl(file)
-        }));
-
-      const mediaFromMetadata: TFoundMedia[] = (message.metadata ?? [])
-        .map((metadata) => {
-          if (!metadata || !metadata.url) return undefined;
-
-          const isAllowedType = ALLOWED_MEDIA_TYPES.includes(
-            metadata.mediaType
-          );
-
-          if (!isAllowedType) return undefined;
-
-          return {
-            type: metadata.mediaType,
-            url: metadata.url
-          };
-        })
-        .filter((media) => !!media) as TFoundMedia[];
-
-      return [...mediaFromFiles, ...mediaFromMetadata];
-    }, [message.files, message.metadata]);
+    const allMedia = useMemo(() => extractMessageMedia(message), [message]);
 
     return (
       <div className="flex flex-col gap-1">
@@ -143,15 +99,7 @@ const MessageRenderer = memo(
           )}
         </div>
 
-        {allMedia.map((media, index) => {
-          if (media.type === 'image') {
-            return (
-              <ImageOverride src={media.url} key={`media-image-${index}`} />
-            );
-          }
-
-          return null;
-        })}
+        <Media media={allMedia} />
 
         {!disableReactions && (
           <MessageReactions

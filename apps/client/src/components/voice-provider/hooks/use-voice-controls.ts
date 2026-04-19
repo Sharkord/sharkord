@@ -5,7 +5,7 @@ import { updateOwnVoiceState } from '@/features/server/voice/actions';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { getTrpcError } from '@sharkord/shared';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 
 type TUseVoiceControlsParams = {
@@ -30,7 +30,14 @@ const useVoiceControls = ({
   const ownVoiceState = useOwnVoiceState();
   const currentVoiceChannelId = useCurrentVoiceChannelId();
 
+  const isTogglingMic = useRef(false);
+  const isTogglingSound = useRef(false);
+  const isTogglingWebcam = useRef(false);
+  const isTogglingScreenShare = useRef(false);
+
   const toggleMic = useCallback(async () => {
+    if (isTogglingMic.current) return;
+    isTogglingMic.current = true;
     const newState = !ownVoiceState.micMuted;
     const trpc = getTRPCClient();
 
@@ -39,7 +46,10 @@ const useVoiceControls = ({
       newState ? SoundType.OWN_USER_MUTED_MIC : SoundType.OWN_USER_UNMUTED_MIC
     );
 
-    if (!currentVoiceChannelId) return;
+    if (!currentVoiceChannelId) {
+      isTogglingMic.current = false;
+      return;
+    }
 
     try {
       await trpc.voice.updateState.mutate({
@@ -52,6 +62,8 @@ const useVoiceControls = ({
     } catch (error) {
       updateOwnVoiceState({ micMuted: !newState });
       toast.error(getTrpcError(error, 'Failed to update microphone state'));
+    } finally {
+      isTogglingMic.current = false;
     }
   }, [
     ownVoiceState.micMuted,
@@ -61,6 +73,9 @@ const useVoiceControls = ({
   ]);
 
   const toggleSound = useCallback(async () => {
+    if (isTogglingSound.current) return;
+    isTogglingSound.current = true;
+
     const newState = !ownVoiceState.soundMuted;
     const trpc = getTRPCClient();
 
@@ -71,7 +86,10 @@ const useVoiceControls = ({
         : SoundType.OWN_USER_UNMUTED_SOUND
     );
 
-    if (!currentVoiceChannelId) return;
+    if (!currentVoiceChannelId) {
+      isTogglingSound.current = false;
+      return;
+    }
 
     try {
       await trpc.voice.updateState.mutate({
@@ -79,11 +97,15 @@ const useVoiceControls = ({
       });
     } catch (error) {
       toast.error(getTrpcError(error, 'Failed to update sound state'));
+    } finally {
+      isTogglingSound.current = false;
     }
   }, [ownVoiceState.soundMuted, currentVoiceChannelId]);
 
   const toggleWebcam = useCallback(async () => {
     if (!currentVoiceChannelId) return;
+    if (isTogglingWebcam.current) return;
+    isTogglingWebcam.current = true;
 
     const newState = !ownVoiceState.webcamEnabled;
     const trpc = getTRPCClient();
@@ -116,6 +138,8 @@ const useVoiceControls = ({
       }
 
       toast.error(getTrpcError(error, 'Failed to update webcam state'));
+    } finally {
+      isTogglingWebcam.current = false;
     }
   }, [
     ownVoiceState.webcamEnabled,
@@ -125,6 +149,9 @@ const useVoiceControls = ({
   ]);
 
   const toggleScreenShare = useCallback(async () => {
+    if (isTogglingScreenShare.current) return;
+    isTogglingScreenShare.current = true;
+
     const newState = !ownVoiceState.sharingScreen;
     const trpc = getTRPCClient();
 
@@ -170,6 +197,8 @@ const useVoiceControls = ({
       }
 
       toast.error(getTrpcError(error, 'Failed to update screen share state'));
+    } finally {
+      isTogglingScreenShare.current = false;
     }
   }, [
     ownVoiceState.sharingScreen,

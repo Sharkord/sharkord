@@ -1,4 +1,5 @@
 import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
+import { useShowUserBannersInVoice } from '@/features/server/voice/hooks';
 import { cn } from '@/lib/utils';
 import type { TExternalStream } from '@sharkord/shared';
 import { Avatar, AvatarFallback, AvatarImage, IconButton } from '@sharkord/ui';
@@ -6,6 +7,8 @@ import { Headphones, Router, Video, ZoomIn, ZoomOut } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
+import { FullscreenButton } from './fullscreen-button';
+import { useFullscreen } from './hooks/use-fullscreen';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PinButton } from './pin-button';
@@ -13,8 +16,10 @@ import { StreamSettingsPopover } from './stream-settings-popover';
 
 type TExternalStreamControlsProps = {
   isPinned: boolean;
+  isFullscreen: boolean;
   isZoomEnabled: boolean;
   handlePinToggle: () => void;
+  handleToggleFullscreen: () => void;
   handleToggleZoom: () => void;
   showPinControls: boolean;
   hasVideo: boolean;
@@ -28,8 +33,10 @@ type TExternalStreamControlsProps = {
 const ExternalStreamControls = memo(
   ({
     isPinned,
+    isFullscreen,
     isZoomEnabled,
     handlePinToggle,
+    handleToggleFullscreen,
     handleToggleZoom,
     showPinControls,
     hasVideo,
@@ -56,6 +63,12 @@ const ExternalStreamControls = memo(
             onClick={handleToggleZoom}
             title={isZoomEnabled ? 'Disable Zoom' : 'Enable Zoom'}
             size="sm"
+          />
+        )}
+        {hasVideo && (
+          <FullscreenButton
+            isFullscreen={isFullscreen}
+            handleToggleFullscreen={handleToggleFullscreen}
           />
         )}
         {showPinControls && (
@@ -92,6 +105,7 @@ const ExternalStreamCard = memo(
     const { getVolume, setVolume, toggleMute, getExternalVolumeKey } =
       useVolumeControl();
 
+    const showUserBanners = useShowUserBannersInVoice();
     const volumeKey = getExternalVolumeKey(stream.pluginId, stream.key);
     const volume = getVolume(volumeKey);
     const isMuted = volume === 0;
@@ -110,6 +124,18 @@ const ExternalStreamCard = memo(
       getCursor,
       resetZoom
     } = useScreenShareZoom();
+
+    const {
+      isFullscreen,
+      isOverlayVisible,
+      toggleFullscreen,
+      handleDoubleClick
+    } = useFullscreen(containerRef);
+
+    const handleToggleFullscreen = useCallback(() => {
+      resetZoom();
+      toggleFullscreen();
+    }, [resetZoom, toggleFullscreen]);
 
     const handlePinToggle = useCallback(() => {
       if (isPinned) {
@@ -138,10 +164,13 @@ const ExternalStreamCard = memo(
       <div
         ref={containerRef}
         className={cn(
-          'relative bg-card rounded-lg overflow-hidden group',
+          'relative bg-card',
           'flex items-center justify-center',
           'w-full h-full',
-          'border border-border',
+          isFullscreen
+            ? 'rounded-none border-none'
+            : 'rounded-lg overflow-hidden border border-border',
+          (!isFullscreen || isOverlayVisible) && 'group',
           className
         )}
         onWheel={hasVideo ? handleWheel : undefined}
@@ -149,16 +178,33 @@ const ExternalStreamCard = memo(
         onMouseMove={hasVideo ? handleMouseMove : undefined}
         onMouseUp={hasVideo ? handleMouseUp : undefined}
         onMouseLeave={hasVideo ? handleMouseUp : undefined}
+        onDoubleClick={hasVideo ? handleDoubleClick : undefined}
         style={{
-          cursor: hasVideo ? getCursor() : 'default'
+          cursor:
+            isFullscreen && !isOverlayVisible
+              ? 'none'
+              : hasVideo
+                ? getCursor()
+                : 'default'
         }}
       >
-        <CardGradient />
+        {stream.bannerUrl && showUserBanners ? (
+          <div
+            className="h-full w-full rounded-t-md bg-cover bg-center blur-sm brightness-50 bg-no-repeat absolute inset-0"
+            style={{
+              backgroundImage: `url("${stream.bannerUrl}")`
+            }}
+          />
+        ) : (
+          <CardGradient />
+        )}
 
         <ExternalStreamControls
           isPinned={isPinned}
+          isFullscreen={isFullscreen}
           isZoomEnabled={isZoomEnabled}
           handlePinToggle={handlePinToggle}
+          handleToggleFullscreen={handleToggleFullscreen}
           handleToggleZoom={handleToggleZoom}
           showPinControls={showPinControls}
           hasVideo={!!hasVideo}

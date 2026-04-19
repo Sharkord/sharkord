@@ -60,6 +60,18 @@ const General = memo(() => {
           />
         </Group>
 
+        <Group
+          label={t('onlyAskForPasswordOnFirstJoinLabel')}
+          description={t('onlyAskForPasswordOnFirstJoinDesc')}
+        >
+          <Switch
+            checked={settings.onlyAskForPasswordOnFirstJoin}
+            onCheckedChange={(checked) =>
+              onChange('onlyAskForPasswordOnFirstJoin', checked)
+            }
+          />
+        </Group>
+
         <LogoManager logo={logo} refetch={refetch} />
 
         <Group
@@ -98,6 +110,18 @@ const General = memo(() => {
           <Switch
             checked={settings.enableSearch}
             onCheckedChange={(checked) => onChange('enableSearch', checked)}
+          />
+        </Group>
+
+        <Group
+          label={t('showWelcomeDialogLabel')}
+          description={t('showWelcomeDialogDesc')}
+        >
+          <Switch
+            checked={settings.showWelcomeDialog}
+            onCheckedChange={(checked) =>
+              onChange('showWelcomeDialog', checked)
+            }
           />
         </Group>
 

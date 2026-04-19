@@ -1,12 +1,4 @@
 {
   "name": "plugin-no-unload",
-  "version": "1.0.0",
-  "sharkord": {
-    "entry": {
-      "server": "index.js",
-      "client": "index.js"
-    },
-    "author": "Test Author",
-    "description": "Plugin without onUnload"
-  }
+  "version": "1.0.0"
 }

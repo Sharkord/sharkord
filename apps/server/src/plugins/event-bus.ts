@@ -1,6 +1,7 @@
 import type { EventPayloads, ServerEvent } from '@sharkord/plugin-sdk';
-import { getErrorMessage } from '../helpers/get-error-message';
+import { getErrorMessage } from '@sharkord/shared';
 import { logger } from '../logger';
+import { EVENT_HANDLER_TIMEOUT_MS, withTimeout } from './execution-timeout';
 
 type Handler<E extends ServerEvent> = (
   payload: EventPayloads[E]
@@ -42,6 +43,37 @@ class EventBus {
     }
 
     pluginEventHandlers.add(handler);
+
+    return () => {
+      this.unregister(pluginId, event, handler);
+    };
+  };
+
+  public unregister = <E extends ServerEvent>(
+    pluginId: string,
+    event: E,
+    handler: Handler<E>
+  ) => {
+    const pluginEvents = this.pluginHandlers.get(pluginId);
+    const pluginEventHandlers = pluginEvents?.get(event);
+
+    pluginEventHandlers?.delete(handler);
+
+    if (pluginEventHandlers && pluginEventHandlers.size === 0) {
+      pluginEvents?.delete(event);
+    }
+
+    if (pluginEvents && pluginEvents.size === 0) {
+      this.pluginHandlers.delete(pluginId);
+    }
+
+    const globalHandlers = this.listeners.get(event);
+
+    globalHandlers?.delete(handler);
+
+    if (globalHandlers && globalHandlers.size === 0) {
+      this.listeners.delete(event);
+    }
   };
 
   public unload = (pluginId: string) => {
@@ -78,6 +110,10 @@ class EventBus {
     }
 
     handlers.add(handler);
+
+    return () => {
+      this.off(event, handler);
+    };
   };
 
   public off = <E extends ServerEvent>(event: E, handler: Handler<E>) => {
@@ -92,13 +128,23 @@ class EventBus {
 
     if (!handlers) return;
 
-    for (const handler of handlers) {
-      try {
-        await handler(payload);
-      } catch (err) {
+    const handlersArray = Array.from(handlers);
+
+    const results = await Promise.allSettled(
+      handlersArray.map((handler) =>
+        withTimeout(
+          Promise.resolve().then(() => handler(payload)),
+          EVENT_HANDLER_TIMEOUT_MS,
+          `[eventBus] ${event} handler exceeded timeout of ${EVENT_HANDLER_TIMEOUT_MS}ms`
+        )
+      )
+    );
+
+    for (const result of results) {
+      if (result.status === 'rejected') {
         logger.error(
           `[eventBus] ${event} handler failed: %s`,
-          getErrorMessage(err)
+          getErrorMessage(result.reason)
         );
       }
     }

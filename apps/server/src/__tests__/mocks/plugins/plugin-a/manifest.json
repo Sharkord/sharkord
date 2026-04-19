@@ -1,0 +1,10 @@
+{
+  "id": "plugin-a",
+  "name": "plugin-a",
+  "version": "0.0.1",
+  "sdkVersion": 1,
+  "author": "My Name",
+  "homepage": "https://mocked.com",
+  "description": "This is a mocked plugin for testing purposes.",
+  "logo": "https://some-page.com/logo.png"
+}

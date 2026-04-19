@@ -5,14 +5,18 @@ import {
   autoJoinLastChannelSelector,
   browserNotificationsForDmsSelector,
   browserNotificationsForMentionsSelector,
+  browserNotificationsForRepliesSelector,
   browserNotificationsSelector,
   devicesSelector,
-  dmsOpenSelector,
+  isAltHeldSelector,
   isAutoConnectingSelector,
+  isCtrlHeldSelector,
+  isShiftHeldSelector,
   loadingPluginsSelector,
   messageJumpTargetSelector,
   modViewOpenSelector,
   modViewUserIdSelector,
+  pluginSlotDebugSelector,
   selectedDmChannelIdSelector,
   threadSidebarDataSelector,
   voiceChatSidebarDataSelector
@@ -38,8 +42,6 @@ export const useThreadSidebar = () => useSelector(threadSidebarDataSelector);
 export const useAutoJoinLastChannel = () =>
   useSelector(autoJoinLastChannelSelector);
 
-export const useDmsOpen = () => useSelector(dmsOpenSelector);
-
 export const useSelectedDmChannelId = () =>
   useSelector(selectedDmChannelIdSelector);
 
@@ -55,5 +57,16 @@ export const useBrowserNotificationsForDms = () =>
 export const useMessageJumpTarget = () =>
   useSelector(messageJumpTargetSelector);
 
+export const useBrowserNotificationsForReplies = () =>
+  useSelector(browserNotificationsForRepliesSelector);
+
 export const useVoiceChatSidebar = () =>
   useSelector(voiceChatSidebarDataSelector);
+
+export const usePluginSlotDebug = () => useSelector(pluginSlotDebugSelector);
+
+export const useIsShiftHeld = () => useSelector(isShiftHeldSelector);
+
+export const useIsCtrlHeld = () => useSelector(isCtrlHeldSelector);
+
+export const useIsAltHeld = () => useSelector(isAltHeldSelector);

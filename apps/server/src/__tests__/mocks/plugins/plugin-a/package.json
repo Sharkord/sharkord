@@ -2,16 +2,6 @@
   "name": "plugin-a",
   "version": "0.0.1",
   "module": "src/index.ts",
-  "sharkord": {
-    "entry": {
-      "server": "index.js",
-      "client": "index.js"
-    },
-    "author": "My Name",
-    "homepage": "https://mocked.com",
-    "description": "This is a mocked plugin for testing purposes.",
-    "logo": "https://some-page.com/logo.png"
-  },
   "type": "module",
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target bun --minify --format esm && cp package.json dist/"

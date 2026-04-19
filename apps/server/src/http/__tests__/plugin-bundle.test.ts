@@ -16,7 +16,7 @@ describe('/plugin-bundle', () => {
 
   test('should serve plugin bundle files', async () => {
     const response = await fetch(
-      `${testsBaseUrl}/plugin-bundle/plugin-b/index.js`
+      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`
     );
 
     expect(response.status).toBe(200);
@@ -33,7 +33,7 @@ describe('/plugin-bundle', () => {
     await tdb.update(settings).set({ enablePlugins: false });
 
     const response = await fetch(
-      `${testsBaseUrl}/plugin-bundle/plugin-b/index.js`
+      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`
     );
 
     expect(response.status).toBe(403);
@@ -45,7 +45,7 @@ describe('/plugin-bundle', () => {
 
   test('should serve bundle files with query params', async () => {
     const response = await fetch(
-      `${testsBaseUrl}/plugin-bundle/plugin-b/index.js?v=123&cache=false`
+      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js?v=123&cache=false`
     );
 
     expect(response.status).toBe(200);
@@ -98,7 +98,7 @@ describe('/plugin-bundle', () => {
 
   test('should prevent path traversal attacks in plugin id', async () => {
     const response = await fetch(
-      `${testsBaseUrl}/plugin-bundle/${encodeURIComponent('../outside')}/index.js`
+      `${testsBaseUrl}/plugin-bundle/${encodeURIComponent('../outside')}/server/index.js`
     );
 
     expect(response.status).toBe(403);
@@ -126,5 +126,77 @@ describe('/plugin-bundle', () => {
     );
 
     expect(response.status).toBe(404);
+  });
+
+  test('should include ETag, Last-Modified, and no-cache policy on success', async () => {
+    const response = await fetch(
+      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('ETag')).toBeDefined();
+    expect(response.headers.get('Last-Modified')).toBeDefined();
+    expect(response.headers.get('Cache-Control')).toBe('no-cache');
+  });
+
+  test('should return 304 when If-None-Match matches ETag', async () => {
+    const firstResponse = await fetch(
+      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`
+    );
+    const etag = firstResponse.headers.get('ETag');
+
+    expect(firstResponse.status).toBe(200);
+    expect(etag).toBeDefined();
+
+    const secondResponse = await fetch(
+      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`,
+      { headers: { 'If-None-Match': etag! } }
+    );
+
+    expect(secondResponse.status).toBe(304);
+    expect(secondResponse.headers.get('ETag')).toBe(etag);
+    expect(secondResponse.headers.get('Cache-Control')).toBe('no-cache');
+
+    const body = await secondResponse.text();
+
+    expect(body).toBe('');
+  });
+
+  test('should return 304 when If-Modified-Since matches Last-Modified', async () => {
+    const firstResponse = await fetch(
+      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`
+    );
+    const lastModified = firstResponse.headers.get('Last-Modified');
+
+    expect(firstResponse.status).toBe(200);
+    expect(lastModified).toBeDefined();
+
+    const secondResponse = await fetch(
+      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`,
+      { headers: { 'If-Modified-Since': lastModified! } }
+    );
+
+    expect(secondResponse.status).toBe(304);
+    expect(secondResponse.headers.get('Last-Modified')).toBe(lastModified);
+  });
+
+  test('should return no-store on error responses', async () => {
+    const response = await fetch(
+      `${testsBaseUrl}/plugin-bundle/plugin-b/missing-file.js`
+    );
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+  });
+
+  test('should return no-store when plugins are disabled', async () => {
+    await tdb.update(settings).set({ enablePlugins: false });
+
+    const response = await fetch(
+      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`
+    );
+
+    expect(response.status).toBe(403);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
   });
 });

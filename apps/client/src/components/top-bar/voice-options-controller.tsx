@@ -1,9 +1,11 @@
 import {
   setHideNonVideoParticipants,
+  setHideOwnScreenShare,
   setShowUserBannersInVoice
 } from '@/features/server/voice/actions';
 import {
   useHideNonVideoParticipants,
+  useHideOwnScreenShare,
   useShowUserBannersInVoice
 } from '@/features/server/voice/hooks';
 import {
@@ -22,6 +24,7 @@ const VoiceOptionsController = memo(() => {
   const { t } = useTranslation('topbar');
   const hideNonVideoParticipants = useHideNonVideoParticipants();
   const showUserBanners = useShowUserBannersInVoice();
+  const hideOwnScreenShare = useHideOwnScreenShare();
 
   const handleToggleHideNonVideo = useCallback((checked: boolean) => {
     setHideNonVideoParticipants(checked);
@@ -29,6 +32,10 @@ const VoiceOptionsController = memo(() => {
 
   const handleToggleShowUserBanners = useCallback((checked: boolean) => {
     setShowUserBannersInVoice(checked);
+  }, []);
+
+  const handleToggleHideOwnScreenShare = useCallback((checked: boolean) => {
+    setHideOwnScreenShare(checked);
   }, []);
 
   return (
@@ -63,8 +70,6 @@ const VoiceOptionsController = memo(() => {
               id="hide-non-video"
               checked={hideNonVideoParticipants}
               onCheckedChange={handleToggleHideNonVideo}
-              data-1p-ignore
-              data-lpignore="true"
             />
           </div>
 
@@ -79,8 +84,22 @@ const VoiceOptionsController = memo(() => {
               id="show-user-banners"
               checked={showUserBanners}
               onCheckedChange={handleToggleShowUserBanners}
-              data-1p-ignore
-              data-lpignore="true"
+            />
+          </div>
+
+          <div className="flex items-center justify-between space-x-3">
+            <span
+              onClick={() =>
+                handleToggleHideOwnScreenShare(!hideOwnScreenShare)
+              }
+              className="text-sm text-foreground cursor-pointer select-none flex-1"
+            >
+              {t('hideOwnScreenShare')}
+            </span>
+            <Switch
+              id="hide-own-screen-share"
+              checked={hideOwnScreenShare}
+              onCheckedChange={handleToggleHideOwnScreenShare}
             />
           </div>
         </div>

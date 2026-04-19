@@ -2,13 +2,18 @@ import { store } from '@/features/store';
 import { logDebug } from '@/helpers/browser-logger';
 import { getUrlFromServer } from '@/helpers/get-file-url';
 import {
+  CLIENT_ENTRY_FILE,
   PluginSlot,
   type TCommandInfo,
   type TCommandsMapByPlugin,
   type TPluginComponentsMap,
-  type TPluginComponentsMapBySlotId
+  type TPluginComponentsMapBySlotId,
+  type TPluginMetadata
 } from '@sharkord/shared';
 import { serverSliceActions } from '../slice';
+
+export const setPluginsMetadata = (pluginsMetadata: TPluginMetadata[]) =>
+  store.dispatch(serverSliceActions.setPluginsMetadata(pluginsMetadata));
 
 export const setPluginCommands = (commands: TCommandsMapByPlugin) =>
   store.dispatch(serverSliceActions.setPluginCommands(commands));
@@ -40,7 +45,12 @@ export const processPluginComponents = async (pluginIds: string[]) => {
     try {
       componentsMap[pluginId] = {};
 
-      const moduleUrl = `${getUrlFromServer()}/plugin-bundle/${pluginId}/client.js`;
+      const moduleUrl = `${getUrlFromServer()}/plugin-bundle/${pluginId}/${CLIENT_ENTRY_FILE}`;
+
+      logDebug(
+        `Dynamically importing plugin module for plugin ${pluginId} from URL:`,
+        moduleUrl
+      );
 
       // if you are developing, after making a change in the plugin you NEED to refresh the page to load the new version of the plugin, because of browser caching dynamic imports
       const mod = await import(/* @vite-ignore */ moduleUrl);

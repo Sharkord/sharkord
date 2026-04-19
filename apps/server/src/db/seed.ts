@@ -50,6 +50,7 @@ const seedDatabase = async () => {
     description:
       'This is the default Sharkord server description. Change me in the server settings!',
     password: '',
+    onlyAskForPasswordOnFirstJoin: false,
     serverId: Bun.randomUUIDv7(),
     secretToken: await sha256(originalToken),
     allowNewUsers: true,
@@ -65,6 +66,7 @@ const seedDatabase = async () => {
     storageOverflowAction: STORAGE_OVERFLOW_ACTION,
     enablePlugins: false,
     enableSearch: true,
+    showWelcomeDialog: true,
     storageSignedUrlsEnabled: false,
     storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS
   };

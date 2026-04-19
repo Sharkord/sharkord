@@ -1,0 +1,10 @@
+{
+  "id": "plugin-b",
+  "name": "plugin-b",
+  "version": "1.2.3",
+  "sdkVersion": 1,
+  "author": "Test Author",
+  "homepage": "https://example.com",
+  "description": "Plugin B with commands",
+  "logo": "https://example.com/logo.png"
+}

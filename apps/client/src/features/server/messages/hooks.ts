@@ -20,28 +20,70 @@ export const useMessagesByChannelId = (channelId: number) =>
     messagesByChannelIdSelector(state, channelId)
   );
 
+export type TMessageGroup = {
+  key: string;
+  messages: TJoinedMessage[];
+};
+
 const useGroupedMessages = (messages: TJoinedMessage[]) =>
   useMemo(() => {
-    const grouped = messages.reduce((acc, message) => {
-      const last = acc[acc.length - 1];
+    const grouped: TMessageGroup[] = [];
 
-      if (!last) return [[message]];
+    for (const message of messages) {
+      const lastGroup = grouped[grouped.length - 1];
 
-      const lastMessage = last[last.length - 1];
+      if (!lastGroup) {
+        grouped.push({
+          key: `${message.id}`,
+          messages: [message]
+        });
 
-      if (lastMessage.userId === message.userId) {
-        const lastDate = lastMessage.createdAt;
-        const currentDate = message.createdAt;
-        const timeDifference = Math.abs(currentDate - lastDate) / 1000 / 60;
-
-        if (timeDifference < 1) {
-          last.push(message);
-          return acc;
-        }
+        continue;
       }
 
-      return [...acc, [message]];
-    }, [] as TJoinedMessage[][]);
+      const lastMessage = lastGroup.messages[lastGroup.messages.length - 1];
+
+      const hasInlineReply =
+        !!message.replyToMessageId || !!lastMessage.replyToMessageId;
+
+      // if either the current or the last message is a reply, they should be in different groups to show the reply context clearly
+      if (hasInlineReply) {
+        grouped.push({
+          key: `${message.id}`,
+          messages: [message]
+        });
+
+        continue;
+      }
+
+      const sameAuthor = message.pluginId
+        ? lastMessage.pluginId === message.pluginId
+        : lastMessage.userId === message.userId;
+
+      if (!sameAuthor) {
+        grouped.push({
+          key: `${message.id}`,
+          messages: [message]
+        });
+
+        continue;
+      }
+
+      const lastDate = lastMessage.createdAt;
+      const currentDate = message.createdAt;
+      const timeDifference = Math.abs(currentDate - lastDate) / 1000 / 60;
+
+      if (timeDifference < 1) {
+        lastGroup.messages.push(message);
+
+        continue;
+      }
+
+      grouped.push({
+        key: `${message.id}`,
+        messages: [message]
+      });
+    }
 
     return grouped;
   }, [messages]);

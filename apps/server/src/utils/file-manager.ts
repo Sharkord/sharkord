@@ -1,5 +1,8 @@
 import {
+  FileSaveType,
+  getErrorMessage,
   StorageOverflowAction,
+  type TBeforeFileSaveResult,
   type TFile,
   type TTempFile
 } from '@sharkord/shared';
@@ -15,6 +18,7 @@ import { getSettings } from '../db/queries/server';
 import { getStorageUsageByUserId } from '../db/queries/users';
 import { files } from '../db/schema';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../helpers/paths';
+import { pluginManager } from '../plugins';
 
 /**
  * Files workflow:
@@ -66,6 +70,21 @@ class TemporaryFileManager {
 
   public temporaryFileExists = (id: string): boolean => {
     return !!this.temporaryFiles.find((file) => file.id === id);
+  };
+
+  public temporaryFileHasMimeType = (
+    id: string,
+    mimeTypePrefix: string
+  ): boolean => {
+    const temporaryFile = this.getTemporaryFile(id);
+
+    if (!temporaryFile) {
+      return false;
+    }
+
+    const bunFile = Bun.file(temporaryFile.path);
+
+    return bunFile.type.startsWith(mimeTypePrefix);
   };
 
   public addTemporaryFile = async ({
@@ -149,6 +168,9 @@ class FileManager {
   public getTemporaryFile = this.tempFileManager.getTemporaryFile;
   public temporaryFileExists = this.tempFileManager.temporaryFileExists;
 
+  public temporaryFileHasMimeType =
+    this.tempFileManager.temporaryFileHasMimeType;
+
   private handleStorageLimits = async (tempFile: TTempFile) => {
     const [settings, userStorage, serverStorage] = await Promise.all([
       getSettings(),
@@ -189,6 +211,35 @@ class FileManager {
     }
   };
 
+  private applyBeforeFileSaveResult = async (
+    tempFile: TTempFile,
+    newFilePath: TBeforeFileSaveResult
+  ) => {
+    try {
+      if (!newFilePath) return;
+
+      await fs.stat(newFilePath);
+
+      const previousPath = tempFile.path;
+
+      tempFile.path = newFilePath;
+      tempFile.size = (await fs.stat(newFilePath)).size;
+      tempFile.md5 = await md5File(newFilePath);
+
+      if (previousPath !== newFilePath) {
+        try {
+          await fs.unlink(previousPath);
+        } catch {
+          // ignore
+        }
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to apply file changes from beforeFileSave hook: ${getErrorMessage(error)}`
+      );
+    }
+  };
+
   private getUniqueName = async (originalName: string): Promise<string> => {
     const baseName = path.basename(originalName, path.extname(originalName));
     const extension = getNormalizedExtension(originalName);
@@ -215,7 +266,11 @@ class FileManager {
     return fileName;
   };
 
-  public async saveFile(tempFileId: string, userId: number): Promise<TFile> {
+  public async saveFile(
+    tempFileId: string,
+    userId: number,
+    type?: FileSaveType
+  ): Promise<TFile> {
     const tempFile = this.getTemporaryFile(tempFileId);
 
     if (!tempFile) {
@@ -224,6 +279,25 @@ class FileManager {
 
     if (tempFile.userId !== userId) {
       throw new Error("You don't have permission to access this file");
+    }
+
+    if (type) {
+      const hooks = pluginManager.getBeforeFileSaveHooks();
+
+      for (const { handlers } of hooks) {
+        for (const handler of handlers) {
+          // freeze file to prevent plugins from modifying it directly - they must return a new path if they want to change the file
+          const frozenFile = Object.freeze({ ...tempFile });
+
+          const result = await handler({
+            tempFile: frozenFile,
+            userId,
+            type
+          });
+
+          await this.applyBeforeFileSaveResult(tempFile, result);
+        }
+      }
     }
 
     await this.handleStorageLimits(tempFile);

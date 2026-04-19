@@ -51,3 +51,6 @@ export const hideNonVideoParticipantsSelector = (state: IRootState) =>
 
 export const showUserBannersInVoiceSelector = (state: IRootState) =>
   state.server.showUserBannersInVoice;
+
+export const hideOwnScreenShareSelector = (state: IRootState) =>
+  state.server.hideOwnScreenShare;

@@ -1,8 +1,5 @@
-import {
-  setDmsOpen,
-  setModViewOpen,
-  setSelectedDmChannelId
-} from '@/features/app/actions';
+import { setModViewOpen, setSelectedDmChannelId } from '@/features/app/actions';
+import { setDmsOpen } from '@/features/server/actions';
 import { usePublicServerSettings, useUserRoles } from '@/features/server/hooks';
 import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';

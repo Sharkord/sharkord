@@ -1,4 +1,4 @@
-import { ActivityLogType, Permission } from '@sharkord/shared';
+import { ActivityLogType, Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
 import { pluginManager } from '../../plugins';
@@ -9,13 +9,13 @@ import { protectedProcedure } from '../../utils/trpc';
 const executeCommandRoute = protectedProcedure
   .input(
     z.object({
-      pluginId: z.string(),
+      pluginId: zPluginId,
       commandName: z.string(),
       args: z.record(z.string(), z.any()).optional()
     })
   )
   .mutation(async ({ ctx, input }) => {
-    await ctx.needsPermission(Permission.EXECUTE_PLUGIN_COMMANDS);
+    await ctx.needsPermission(Permission.USE_PLUGINS);
 
     invariant(pluginManager.hasCommand(input.pluginId, input.commandName), {
       code: 'BAD_REQUEST',

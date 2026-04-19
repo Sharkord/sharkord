@@ -64,6 +64,41 @@
       "when": 1773427281204,
       "tag": "0008_stiff_killmonger",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1773685648905,
+      "tag": "0009_third_thunderbolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1774512000000,
+      "tag": "0010_rename_execute_plugin_commands",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1775219959496,
+      "tag": "0011_soft_quentin_quire",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1775222119919,
+      "tag": "0012_futuristic_skullbuster",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1775396737105,
+      "tag": "0013_amusing_stingray",
+      "breakpoints": true
     }
   ]
 }

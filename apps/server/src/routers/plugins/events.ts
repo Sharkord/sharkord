@@ -17,4 +17,15 @@ const onComponentsChangeRoute = protectedProcedure.subscription(
   }
 );
 
-export { onCommandsChangeRoute, onComponentsChangeRoute, onPluginLogRoute };
+const onMetadataChangeRoute = protectedProcedure.subscription(
+  async ({ ctx }) => {
+    return ctx.pubsub.subscribe(ServerEvents.PLUGIN_METADATA_CHANGE);
+  }
+);
+
+export {
+  onCommandsChangeRoute,
+  onComponentsChangeRoute,
+  onMetadataChangeRoute,
+  onPluginLogRoute
+};

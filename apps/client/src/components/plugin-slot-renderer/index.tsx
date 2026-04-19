@@ -1,45 +1,45 @@
-import { usePluginComponentContext } from '@/features/server/hooks';
+import { usePluginSlotDebug } from '@/features/app/hooks';
+import { useCan } from '@/features/server/hooks';
 import { usePluginComponentsBySlot } from '@/features/server/plugins/hooks';
-import { isDebug } from '@/helpers/is-debug';
-import type { PluginSlot, TPluginSlotContext } from '@sharkord/shared';
+import { Permission, type PluginSlot } from '@sharkord/shared';
 import { memo } from 'react';
 import { ErrorBoundary } from './error-boundary';
 import { PlugSlotDebugWrapper } from './plugin-slot-debug-wrapper';
 
-type TSlotContextProviderProps = {
-  children: (ctx: TPluginSlotContext) => React.ReactNode;
-};
-
-const SlotContextProvider = memo(({ children }: TSlotContextProviderProps) => {
-  const context = usePluginComponentContext();
-
-  return <>{children(context)}</>;
-});
-
 type TPluginSlotRendererProps = {
   slotId: PluginSlot;
-  debug?: boolean;
+  activeFullscreenPluginId?: string;
 };
 
 const PluginSlotRenderer = memo(
-  ({ slotId, debug = isDebug() }: TPluginSlotRendererProps) => {
+  ({ slotId, activeFullscreenPluginId }: TPluginSlotRendererProps) => {
+    const debug = usePluginSlotDebug();
     const pluginComponentsBySlot = usePluginComponentsBySlot(slotId);
+
+    const can = useCan();
+
+    if (!can(Permission.USE_PLUGINS)) {
+      return null;
+    }
 
     const content = Object.entries(pluginComponentsBySlot).map(
       ([pluginId, components]) =>
         components.map((Component, index) => {
-          const content = (
-            <SlotContextProvider>
-              {(ctx) => <Component {...ctx} />}
-            </SlotContextProvider>
-          );
+          if (
+            activeFullscreenPluginId &&
+            pluginId !== activeFullscreenPluginId
+          ) {
+            return null;
+          }
+
+          const rendered = <Component />;
 
           const wrappedContent = debug ? (
             <PlugSlotDebugWrapper pluginId={pluginId} slotId={slotId}>
-              {content}
+              {rendered}
             </PlugSlotDebugWrapper>
           ) : (
-            content
+            rendered
           );
 
           return (

@@ -64,6 +64,61 @@ describe('others router', () => {
     expect(hasPasswordAfter).toBe(true);
   });
 
+  test('should only ask for password on first join when setting is enabled', async () => {
+    const { caller } = await initTest(1);
+
+    await caller.others.updateSettings({
+      password: 'testpassword',
+      onlyAskForPasswordOnFirstJoin: true
+    });
+
+    const { hasPassword: ownerHasPassword } = await caller.others.handshake();
+
+    expect(ownerHasPassword).toBe(false);
+
+    const { caller: secondUserCaller } = await getCaller(2);
+    const { hasPassword: secondUserHasPassword } =
+      await secondUserCaller.others.handshake();
+
+    expect(secondUserHasPassword).toBe(true);
+  });
+
+  test('should require password for first join and skip it afterwards when setting is enabled', async () => {
+    const { caller } = await initTest(1);
+
+    await caller.others.updateSettings({
+      password: 'testpassword',
+      onlyAskForPasswordOnFirstJoin: true
+    });
+
+    const { caller: secondUserCaller } = await getCaller(2);
+    const { handshakeHash } = await secondUserCaller.others.handshake();
+
+    await expect(
+      secondUserCaller.others.joinServer({
+        handshakeHash
+      })
+    ).rejects.toThrow('Invalid password');
+
+    await secondUserCaller.others.joinServer({
+      handshakeHash,
+      password: 'testpassword'
+    });
+
+    const { hasPassword } = await secondUserCaller.others.handshake();
+
+    expect(hasPassword).toBe(false);
+
+    const { handshakeHash: secondHandshakeHash } =
+      await secondUserCaller.others.handshake();
+
+    await expect(
+      secondUserCaller.others.joinServer({
+        handshakeHash: secondHandshakeHash
+      })
+    ).resolves.toBeDefined();
+  });
+
   test('should update server settings', async () => {
     const { caller } = await initTest(1);
 

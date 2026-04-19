@@ -1,0 +1,16 @@
+{
+  "identityLabel": "Identita",
+  "identityHelp": "Un identificatore univoco per il tuo account su questo server. Puoi usare cio che preferisci, ad esempio un indirizzo email o un nome utente. Non verra condiviso pubblicamente.",
+  "passwordLabel": "Password",
+  "autoLoginLabel": "Accesso automatico",
+  "insecureTitle": "Connessione non sicura",
+  "insecureDesc": "Stai accedendo al server tramite una connessione non sicura (HTTP). Per impostazione predefinita, i browser bloccano l'accesso ai dispositivi multimediali come fotocamera e microfono su origini non sicure. Questo significa che non potrai usare le funzionalita video o vocali mentre sei connesso al server tramite HTTP. Se sei l'amministratore del server, puoi configurare HTTPS seguendo le istruzioni nella documentazione.",
+  "connectBtn": "Connetti",
+  "registrationDisabled": "Le nuove registrazioni utenti sono attualmente disabilitate. Se non hai ancora un account, devi essere invitato da un utente esistente per entrare in questo server.",
+  "invitedTitle": "Sei stato invitato a entrare in questo server",
+  "inviteCode": "Codice invito: {{code}}",
+  "connectError": "Impossibile connettersi: {{message}}",
+  "loggingInAutomatically": "Accesso automatico in corso...",
+  "loadingApp": "Caricamento di Sharkord",
+  "loadingPlugins": "Caricamento plugin"
+}

@@ -28,8 +28,6 @@ export const threadChannelIdSelector = (state: IRootState) =>
 export const autoJoinLastChannelSelector = (state: IRootState) =>
   state.app.autoJoinLastChannel;
 
-export const dmsOpenSelector = (state: IRootState) => state.app.dmsOpen;
-
 export const selectedDmChannelIdSelector = (state: IRootState) =>
   state.app.selectedDmChannelId;
 
@@ -42,6 +40,9 @@ export const browserNotificationsForMentionsSelector = (state: IRootState) =>
 export const browserNotificationsForDmsSelector = (state: IRootState) =>
   state.app.browserNotificationsForDms;
 
+export const browserNotificationsForRepliesSelector = (state: IRootState) =>
+  state.app.browserNotificationsForReplies;
+
 export const messageJumpTargetSelector = (state: IRootState) =>
   state.app.messageJumpTarget;
 
@@ -50,6 +51,9 @@ export const voiceChatSidebarOpenSelector = (state: IRootState) =>
 
 export const voiceChatChannelIdSelector = (state: IRootState) =>
   state.app.voiceChatChannelId;
+
+export const pluginSlotDebugSelector = (state: IRootState) =>
+  state.app.pluginSlotDebug;
 
 export const voiceChatSidebarDataSelector = createSelector(
   [voiceChatSidebarOpenSelector, voiceChatChannelIdSelector],
@@ -65,6 +69,16 @@ export const threadSidebarDataSelector = createSelector(
   (isOpen, parentMessageId, channelId) => ({
     isOpen,
     parentMessageId,
-    channelId
+    channelId,
+    activeThreadMessageId: isOpen ? parentMessageId : undefined
   })
 );
+
+export const isShiftHeldSelector = (state: IRootState) =>
+  state.app.modifierKeysHeldMap?.Shift ?? false;
+
+export const isCtrlHeldSelector = (state: IRootState) =>
+  state.app.modifierKeysHeldMap?.Control ?? false;
+
+export const isAltHeldSelector = (state: IRootState) =>
+  state.app.modifierKeysHeldMap?.Alt ?? false;

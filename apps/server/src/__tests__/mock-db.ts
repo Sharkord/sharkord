@@ -3,7 +3,7 @@ import { mock } from 'bun:test';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { DRIZZLE_PATH } from '../helpers/paths';
-import { seedDatabase } from './seed';
+import { seedTestDb } from './seed';
 
 /**
  * This file is preloaded FIRST (via bunfig.toml) to mock the db module
@@ -31,7 +31,7 @@ const initDb = async () => {
   tdb = drizzle({ client: sqlite });
 
   await migrate(tdb, { migrationsFolder: DRIZZLE_PATH });
-  await seedDatabase(tdb);
+  await seedTestDb(tdb);
 
   return tdb;
 };

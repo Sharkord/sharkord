@@ -1,0 +1,8 @@
+{
+  "id": "different-plugin-name",
+  "name": "Mismatched ID Plugin",
+  "version": "0.0.1",
+  "sdkVersion": 1,
+  "author": "Test Author",
+  "description": "Plugin whose manifest id does not match its directory name."
+}

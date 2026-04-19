@@ -41,6 +41,13 @@ export enum VideoCodec {
   AV1 = 'video/AV1'
 }
 
+export enum NoiseSuppression {
+  NONE = 'none',
+  STANDARD = 'standard',
+  RNNOISE = 'rnnoise',
+  DTLN = 'dtln'
+}
+
 export type TDeviceSettings = {
   microphoneId: string | undefined;
   playbackId: string | undefined;
@@ -48,11 +55,13 @@ export type TDeviceSettings = {
   webcamResolution: Resolution;
   webcamFramerate: number;
   echoCancellation: boolean;
-  noiseSuppression: boolean;
+  noiseSuppression: NoiseSuppression;
   autoGainControl: boolean;
   noiseGateEnabled: boolean;
   noiseGateThresholdDb: number;
   shareSystemAudio: boolean;
+  restrictOwnAudio: boolean;
+  suppressLocalAudioPlayback: boolean;
   mirrorOwnVideo: boolean;
   screenResolution: Resolution;
   screenFramerate: number;
@@ -79,4 +88,10 @@ export type TMessageJumpToTarget = {
   channelId: number;
   messageId: number;
   isDm: boolean;
+  highlightTime?: number;
+};
+
+export type TReplyTarget = {
+  userId: number | null;
+  pluginId: string | null;
 };

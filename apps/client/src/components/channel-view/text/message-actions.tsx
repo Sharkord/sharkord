@@ -6,6 +6,7 @@ import {
   type TEmojiItem
 } from '@/components/tiptap-input/helpers';
 import { openThreadSidebar } from '@/features/app/actions';
+import { useIsShiftHeld } from '@/features/app/hooks';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
 import { Permission } from '@sharkord/shared';
@@ -15,8 +16,10 @@ import {
   Pencil,
   Pin,
   PinOff,
+  Reply,
   Smile,
-  Trash
+  Trash,
+  Trash2
 } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +31,7 @@ type TMessageActionsProps = {
   messageId: number;
   channelId: number;
   onEdit: () => void;
+  onReply?: () => void;
   canManage: boolean;
   editable: boolean;
   isThreadReply?: boolean;
@@ -44,7 +48,8 @@ const MessageActions = memo(
     editable,
     isThreadReply,
     isPinned,
-    disablePin
+    disablePin,
+    onReply
   }: TMessageActionsProps) => {
     const { t } = useTranslation();
     const { recentEmojis } = useRecentEmojis();
@@ -53,25 +58,28 @@ const MessageActions = memo(
       [recentEmojis]
     );
 
-    const onDeleteClick = useCallback(async () => {
-      const choice = await requestConfirmation({
-        title: t('deleteMessageTitle'),
-        message: t('deleteMessageConfirm'),
-        confirmLabel: t('deleteLabel'),
-        cancelLabel: t('cancel')
-      });
+    const isShiftHeld = useIsShiftHeld();
 
-      if (!choice) return;
+    const onDeleteClick = useCallback(async () => {
+      if (!isShiftHeld) {
+        const choice = await requestConfirmation({
+          title: t('deleteMessageTitle'),
+          message: t('deleteMessageConfirm'),
+          confirmLabel: t('deleteLabel'),
+          cancelLabel: t('cancel')
+        });
+
+        if (!choice) return;
+      }
 
       const trpc = getTRPCClient();
-
       try {
         await trpc.messages.delete.mutate({ messageId });
         toast.success(t('messageDeleted'));
       } catch {
         toast.error(t('failedDeleteMessage'));
       }
-    }, [messageId, t]);
+    }, [isShiftHeld, messageId, t]);
 
     const onEmojiSelect = useCallback(
       async (emoji: TEmojiItem) => {
@@ -111,6 +119,15 @@ const MessageActions = memo(
 
     return (
       <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-2 transition-all bg-background">
+        {onReply && (
+          <IconButton
+            size="sm"
+            variant="ghost"
+            icon={Reply}
+            onClick={onReply}
+            title={t('replyToMessage')}
+          />
+        )}
         {!isThreadReply && (
           <IconButton
             size="sm"
@@ -134,7 +151,8 @@ const MessageActions = memo(
             <IconButton
               size="sm"
               variant="ghost"
-              icon={Trash}
+              icon={isShiftHeld ? Trash2 : Trash}
+              className={isShiftHeld ? 'text-destructive' : ''}
               onClick={onDeleteClick}
               title={t('deleteMessageTitle')}
             />

@@ -5,7 +5,10 @@ import {
   useSelectedChannelId,
   useSelectedChannelType
 } from '@/features/server/channels/hooks';
-import { useServerName } from '@/features/server/hooks';
+import {
+  useActiveFullscreenPluginId,
+  useServerName
+} from '@/features/server/hooks';
 import { ChannelType, PluginSlot } from '@sharkord/shared';
 import { Alert, AlertDescription } from '@sharkord/ui';
 import { AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -23,6 +26,20 @@ const ContentWrapper = memo(
     const selectedChannelId = useSelectedChannelId();
     const selectedChannelType = useSelectedChannelType();
     const serverName = useServerName();
+    const activeFullscreenPluginId = useActiveFullscreenPluginId();
+
+    if (activeFullscreenPluginId) {
+      return (
+        <main className="flex flex-1 flex-col bg-background relative min-w-0 min-h-0">
+          <div className="flex-col gap-2 h-full w-full flex overflow-auto relative bg-background">
+            <PluginSlotRenderer
+              slotId={PluginSlot.FULL_SCREEN}
+              activeFullscreenPluginId={activeFullscreenPluginId}
+            />
+          </div>
+        </main>
+      );
+    }
 
     let content;
 

@@ -51,7 +51,27 @@ const deleteMessageRoute = protectedProcedure
       await Promise.all(promises);
     }
 
+    // get messages that reference this one as an inline reply before deleting
+    const affectedReplies = await db
+      .select({ id: messages.id })
+      .from(messages)
+      .where(eq(messages.replyToMessageId, input.messageId));
+
     await db.delete(messages).where(eq(messages.id, input.messageId));
+
+    // remove the stale reply references now that the target is gone
+    if (affectedReplies.length > 0) {
+      await db
+        .update(messages)
+        .set({ replyToMessageId: null })
+        .where(eq(messages.replyToMessageId, input.messageId));
+
+      await Promise.all(
+        affectedReplies.map(({ id }) =>
+          publishMessage(id, targetMessage.channelId, 'update')
+        )
+      );
+    }
 
     publishMessage(input.messageId, targetMessage.channelId, 'delete');
 

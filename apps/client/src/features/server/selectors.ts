@@ -1,5 +1,5 @@
 import { createSelector } from '@reduxjs/toolkit';
-import { ChannelPermission, OWNER_ROLE_ID, hasMention } from '@sharkord/shared';
+import { ChannelPermission, OWNER_ROLE_ID } from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
 import type { IRootState } from '../store';
 import {
@@ -7,11 +7,13 @@ import {
   channelPermissionsSelector,
   channelReadStateByIdSelector,
   channelsByCategoryIdSelector,
-  currentVoiceChannelIdSelector,
-  selectedChannelIdSelector
+  channelsReadStatesSelector,
+  currentVoiceChannelIdSelector
 } from './channels/selectors';
+import { canViewChannel, hasUnreadMentionInMessages } from './helpers';
 import {
   messagesByChannelIdSelector,
+  messagesMapSelector,
   threadTypingMapSelector,
   typingMapSelector
 } from './messages/selectors';
@@ -47,6 +49,11 @@ export const pluginsEnabledSelector = (state: IRootState) =>
 
 export const infoSelector = (state: IRootState) => state.server.info;
 
+export const activeFullscreenPluginIdSelector = (state: IRootState) =>
+  state.server.activeFullscreenPluginId;
+
+export const dmsOpenSelector = (state: IRootState) => state.server.dmsOpen;
+
 export const ownUserRolesSelector = createSelector(
   [ownUserSelector, rolesSelector],
   (ownUser, roles) => {
@@ -80,6 +87,19 @@ export const hasVisibleChannelsInCategorySelector = createCachedSelector(
     }
     return false;
   }
+)((_, categoryId: number) => categoryId);
+
+export const visibleChannelsInCategorySelector = createCachedSelector(
+  [
+    (state: IRootState, categoryId: number) =>
+      channelsByCategoryIdSelector(state, categoryId),
+    channelPermissionsSelector,
+    isOwnUserOwnerSelector
+  ],
+  (channelsInCategory, channelPermissions, isOwner) =>
+    channelsInCategory.filter((channel) =>
+      canViewChannel(channel, channelPermissions, isOwner)
+    )
 )((_, categoryId: number) => categoryId);
 
 export const userRolesSelector = createSelector(
@@ -176,15 +196,6 @@ export const ownVoiceUserSelector = createSelector(
     voiceUsers?.find((voiceUser) => voiceUser.id === ownUserId)
 );
 
-export const pluginComponentContextSelector = createSelector(
-  [usersSelector, selectedChannelIdSelector, currentVoiceChannelIdSelector],
-  (users, selectedChannelId, currentVoiceChannelId) => ({
-    users,
-    selectedChannelId,
-    currentVoiceChannelId
-  })
-);
-
 // this approach has some limitations but it should work for most cases
 export const hasUnreadMentionsSelector = createCachedSelector(
   [
@@ -196,14 +207,33 @@ export const hasUnreadMentionsSelector = createCachedSelector(
   (readState, channel, messages, ownUserId) => {
     if (!channel || !messages) return false;
 
-    const unreadMessages = messages.slice(-readState);
-
-    return unreadMessages.some((message) => {
-      if (!message.content) return false;
-
-      const isUserMentioned = hasMention(message.content, ownUserId);
-
-      return isUserMentioned;
-    });
+    return hasUnreadMentionInMessages(readState, messages, ownUserId);
   }
 )((_, channelId: number) => channelId);
+
+export const categoryUnreadMessagesCountSelector = createCachedSelector(
+  [visibleChannelsInCategorySelector, channelsReadStatesSelector],
+  (channelsInCategory, readStatesMap) => {
+    return channelsInCategory.reduce((total, channel) => {
+      return total + (readStatesMap[channel.id] ?? 0);
+    }, 0);
+  }
+)((_, categoryId: number) => categoryId);
+
+export const categoryHasUnreadMentionsSelector = createCachedSelector(
+  [
+    visibleChannelsInCategorySelector,
+    channelsReadStatesSelector,
+    messagesMapSelector,
+    ownUserIdSelector
+  ],
+  (channelsInCategory, readStatesMap, messagesMap, ownUserId) => {
+    return channelsInCategory.some((channel) => {
+      return hasUnreadMentionInMessages(
+        readStatesMap[channel.id] ?? 0,
+        messagesMap[channel.id] ?? [],
+        ownUserId
+      );
+    });
+  }
+)((_, categoryId: number) => categoryId);
