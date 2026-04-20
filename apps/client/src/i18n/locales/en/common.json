@@ -71,5 +71,7 @@
   "customTab": "Custom",
   "searchResults": "Search results ({{count}})",
   "wasReactedBy": "was reacted by {{reacters}}.",
-  "andMore": "and {{count}} more"
+  "andMore": "and {{count}} more",
+  "typeAMessage": "Type a message...",
+  "messageChannel": "Message \"{{name}}\""
 }
