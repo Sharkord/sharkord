@@ -48,8 +48,9 @@ const createMockMessageArrayWithImages = async (
     const randomIndex = Math.floor(Math.random() * randomImages.length);
     const imageUrl = randomImages[randomIndex];
 
-    const metadata = [
+    const metadata: TIMessage['metadata'] = [
       {
+        kind: 'media',
         url: bigImageUrl,
         title: 'ZaGQvmT.jpeg',
         description: '',
@@ -59,6 +60,7 @@ const createMockMessageArrayWithImages = async (
 
     if (imageUrl) {
       metadata.push({
+        kind: 'media',
         url: imageUrl,
         title: `Random Image ${randomIndex}`,
         description: '',
@@ -94,6 +96,7 @@ const createMockMessageArrayWithVideo = (
       createdAt: baseCreatedAt + i * 60 * 1000,
       metadata: [
         {
+          kind: 'media',
           url: videoUrl,
           title: 'bigbuck_bunny_8bit_15000kbps_1080p_60.0fps_h264.mp4',
           description: '',

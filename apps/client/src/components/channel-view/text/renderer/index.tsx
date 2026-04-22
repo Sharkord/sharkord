@@ -13,8 +13,10 @@ import { toast } from 'sonner';
 import { FileCard } from '../file-card';
 import { MessageReactions } from '../message-reactions';
 import { getIsEmojiOnly, getParsedMessageHtml } from './content-cache';
+import { extractMessageOpenGraph } from './helpers';
 import { Media } from './media';
 import { extractMessageMedia } from './media-cache';
+import { OpenGraph } from './open-graph';
 
 type TMessageRendererProps = {
   message: TJoinedMessage;
@@ -64,6 +66,10 @@ const MessageRenderer = memo(
     );
 
     const allMedia = useMemo(() => extractMessageMedia(message), [message]);
+    const openGraphPreviews = useMemo(
+      () => extractMessageOpenGraph(message, allMedia),
+      [message, allMedia]
+    );
 
     return (
       <div className="flex flex-col gap-1">
@@ -100,6 +106,7 @@ const MessageRenderer = memo(
         </div>
 
         <Media media={allMedia} />
+        <OpenGraph previews={openGraphPreviews} />
 
         {!disableReactions && (
           <MessageReactions

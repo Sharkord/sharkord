@@ -3,14 +3,42 @@ import {
   audioExtensions,
   imageExtensions,
   videoExtensions,
-  type TJoinedMessage
+  type TJoinedMessage,
+  type TMessageMetadata
 } from '@sharkord/shared';
+import { normalizeComparableUrl } from './helpers';
 import type { TFoundMedia } from './types';
 
 const ALLOWED_MEDIA_TYPES = ['image', 'video', 'audio'];
 const MAX_CACHE_SIZE = 500;
 
 const mediaCache = new Map<string, TFoundMedia[]>();
+
+type TMessageMetadataLike = Partial<TMessageMetadata> & {
+  kind?: TMessageMetadata['kind'];
+  mediaType?: string;
+  url?: string;
+  title?: string;
+};
+
+const isMediaMetadata = (
+  metadata: TMessageMetadataLike | null | undefined
+): metadata is TMessageMetadataLike & {
+  mediaType: 'image' | 'video' | 'audio';
+  url: string;
+} => {
+  if (!metadata?.url) {
+    return false;
+  }
+
+  if (metadata.kind === 'open_graph') {
+    return false;
+  }
+
+  return (
+    !!metadata.mediaType && ALLOWED_MEDIA_TYPES.includes(metadata.mediaType)
+  );
+};
 
 const trimMediaCache = () => {
   if (mediaCache.size < MAX_CACHE_SIZE) {
@@ -42,7 +70,7 @@ const buildMediaSignature = (message: TJoinedMessage) => {
   const metadataSignature = (message.metadata ?? [])
     .map((metadata) =>
       metadata
-        ? `${metadata.mediaType}:${metadata.url}:${metadata.title ?? ''}`
+        ? `${metadata.kind ?? 'legacy'}:${metadata.mediaType}:${metadata.url}:${metadata.title ?? ''}`
         : 'null'
     )
     .join('|');
@@ -93,28 +121,38 @@ const extractMessageMedia = (message: TJoinedMessage): TFoundMedia[] => {
 
   const mediaFromMetadata: TFoundMedia[] = (message.metadata ?? [])
     .map((metadata) => {
-      if (!metadata?.url) {
-        return undefined;
-      }
+      const metadataEntry = metadata as TMessageMetadataLike | null | undefined;
 
-      if (!ALLOWED_MEDIA_TYPES.includes(metadata.mediaType)) {
+      if (!isMediaMetadata(metadataEntry)) {
         return undefined;
       }
 
       return {
         key: getStableMediaKey(
           mediaKeyCounts,
-          `metadata:${metadata.mediaType}:${metadata.url}`
+          `metadata:${metadataEntry.mediaType}:${metadataEntry.url}`
         ),
-        type: metadata.mediaType,
-        url: metadata.url
+        type: metadataEntry.mediaType,
+        url: metadataEntry.url
       };
     })
     .filter((media) => !!media) as TFoundMedia[];
 
   trimMediaCache();
 
-  const media = [...mediaFromFiles, ...mediaFromMetadata];
+  const seenMedia = new Set<string>();
+
+  const media = [...mediaFromFiles, ...mediaFromMetadata].filter((item) => {
+    const mediaId = `${item.type}:${normalizeComparableUrl(item.url)}`;
+
+    if (seenMedia.has(mediaId)) {
+      return false;
+    }
+
+    seenMedia.add(mediaId);
+
+    return true;
+  });
 
   mediaCache.set(mediaSignature, media);
 
