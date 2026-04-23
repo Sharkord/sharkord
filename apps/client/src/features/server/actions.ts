@@ -141,3 +141,7 @@ window.useToken = async (token: string) => {
     toast.error('Invalid access token');
   }
 };
+
+window.openSoundsModal = () => {
+  openDialog(Dialog.SOUNDS);
+};

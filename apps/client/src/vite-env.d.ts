@@ -5,6 +5,7 @@
 declare global {
   interface Window {
     useToken: (token: string) => Promise<void>;
+    openSoundsModal?: () => void;
     printVoiceStats?: () => void;
     DEBUG?: boolean;
 
