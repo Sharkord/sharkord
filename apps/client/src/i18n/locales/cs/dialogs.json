@@ -55,6 +55,8 @@
   "searchDesc": "Hledejte ve zprávách a souborech tohoto serveru.",
   "searchPlaceholder": "Hledejte zprávy a soubory...",
   "searchHint": "Napiště alespoň dva znaky pro hledání ve zprávách a souborech.",
+  "soundsTitle": "Test zvuku",
+  "playSound": "Přehrát",
   "noResults": "Žádné výsledky.",
   "unknownUser": "Neznámý uživatel",
   "pluginSettingsTitle": "Nastavení pro {{name}}",
