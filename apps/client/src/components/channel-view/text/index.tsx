@@ -7,6 +7,7 @@ import {
 import { useMessages } from '@/features/server/messages/hooks';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
+import { prepareMessageHtml } from '@/helpers/prepare-message-html';
 import { LocalStorageKey } from '@/helpers/storage';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TReplyTarget } from '@/types';
@@ -14,7 +15,6 @@ import {
   ChannelPermission,
   TYPING_MS,
   getTrpcError,
-  prepareMessageHtml,
   type TJoinedMessage
 } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
