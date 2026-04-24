@@ -44,7 +44,7 @@ const ChatInputDivider = ({
       const startHeightPx = getHeight(composeEl);
 
       const maxPx = (MAX_VH / 100) * window.innerHeight;
-      const minPx = measureMinHeight(composeEl);
+      const minPx = Math.min(measureMinHeight(composeEl), maxPx);
 
       composeEl.style.maxHeight = '';
       composeEl.style.height = `${startHeightPx}px`;
@@ -95,8 +95,17 @@ const ChatInputDivider = ({
             composeEl.dataset.pendingUnpinOnSend = 'true';
           } else {
             // single line or empty -- reset to auto-grow mode
+            const defaultMaxPx =
+              (defaultMaxHeightVh / 100) * window.innerHeight;
+
+            // take the larger of our measured height and default max, clamped to MAX_VH
+            const resetMaxPx = Math.min(Math.max(defaultMaxPx, minPx), maxPx);
+            const resetMaxVh = Math.round(
+              (resetMaxPx / window.innerHeight) * 100
+            );
+
             composeEl.style.height = '';
-            composeEl.style.maxHeight = `${defaultMaxHeightVh}vh`;
+            composeEl.style.maxHeight = `${resetMaxVh}vh`;
 
             delete composeEl.dataset.pendingUnpinOnSend;
           }

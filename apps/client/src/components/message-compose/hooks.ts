@@ -3,7 +3,11 @@ import {
   LocalStorageKey
 } from '@/helpers/storage';
 import { useEffect, useLayoutEffect, useRef } from 'react';
-import { getHeight, measureMinHeight } from '../channel-view/text/helpers';
+import {
+  getHeight,
+  MAX_VH,
+  measureMinHeight
+} from '../channel-view/text/helpers';
 
 type TUseFileAwareHeightParams = {
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -45,35 +49,46 @@ const useFileAwareHeight = ({
   useEffect(() => {
     const el = containerRef.current;
 
-    if (!el?.style.height) return;
+    if (!el) return;
 
     const currentPx = getHeight(el);
+    const maxPx = (MAX_VH / 100) * window.innerHeight;
 
     if (displayItems.length > 0) {
-      // measure the natural height with files present
+      // measure the natural height with files present -- clear both height and
+      // maxHeight so the default max doesn't artificially cap the measurement
       const savedHeight = el.style.height;
+      const savedMaxHeight = el.style.maxHeight;
 
       el.style.height = '';
+      el.style.maxHeight = '';
 
       const naturalPx = getHeight(el);
 
       el.style.height = savedHeight;
+      el.style.maxHeight = savedMaxHeight;
 
-      if (naturalPx > currentPx) {
-        if (userPinnedHeightRef.current === null) {
-          userPinnedHeightRef.current = currentPx;
-        }
-
-        el.style.height = `${naturalPx}px`;
+      const clampedNaturalPx = Math.min(naturalPx, maxPx);
+      if (el.style.height) {
+        userPinnedHeightRef.current ||= currentPx;
       }
-    } else if (userPinnedHeightRef.current !== null) {
+
+      if (clampedNaturalPx > currentPx) {
+        el.style.height = '';
+        el.style.maxHeight = `${clampedNaturalPx}px`;
+      }
+    } else {
       const minPx = measureMinHeight(el);
 
-      el.style.height = `${Math.max(userPinnedHeightRef.current, minPx)}px`;
+      if (userPinnedHeightRef.current) {
+        el.style.height = `${Math.max(userPinnedHeightRef.current, minPx)}px`;
+      } else {
+        el.style.maxHeight = `${inputDefaultMaxHeightVh}vh`;
+      }
 
       userPinnedHeightRef.current = null;
     }
-  }, [displayItems, containerRef]);
+  }, [displayItems, containerRef, inputDefaultMaxHeightVh]);
 };
 
 export { useFileAwareHeight };
