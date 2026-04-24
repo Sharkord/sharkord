@@ -8,7 +8,7 @@ import { createHttpServer } from '../http';
 import { loadMediasoup } from '../utils/mediasoup';
 import { clearRateLimitersForTests } from '../utils/rate-limiters/rate-limiter';
 import { DRIZZLE_PATH, setTestDb } from './mock-db';
-import { seedDatabase } from './seed';
+import { seedTestDb } from './seed';
 
 /**
  * Global test setup - creates a fresh isolated database before each test.
@@ -77,7 +77,7 @@ beforeEach(async () => {
 
   // apply migrations and seed data for this test
   await migrate(tdb, { migrationsFolder: DRIZZLE_PATH });
-  await seedDatabase(tdb);
+  await seedTestDb(tdb);
 });
 
 afterEach(() => {

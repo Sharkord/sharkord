@@ -2,6 +2,8 @@ import { resetApp } from '@/features/app/actions';
 import { resetDialogs } from '@/features/dialogs/actions';
 import { resetServerScreens } from '@/features/server-screens/actions';
 import { resetServerState, setDisconnectInfo } from '@/features/server/actions';
+import { playSound } from '@/features/server/sounds/actions';
+import { SoundType } from '@/features/server/types';
 import {
   getSessionStorageItem,
   LocalStorageKey,
@@ -39,6 +41,10 @@ const initializeTRPC = (host: string) => {
         wasClean: cause.wasClean,
         time: new Date()
       });
+
+      if (!cause.wasClean) {
+        playSound(SoundType.SERVER_DISCONNECTED);
+      }
     },
     connectionParams: async (): Promise<TConnectionParams> => {
       return {

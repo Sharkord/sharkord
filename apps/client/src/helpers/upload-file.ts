@@ -1,4 +1,5 @@
 import { UploadHeaders, type TTempFile } from '@sharkord/shared';
+import i18next from 'i18next';
 import { toast } from 'sonner';
 import { getUrlFromServer } from './get-file-url';
 import { getSessionStorageItem, SessionStorageKey } from './storage';
@@ -11,6 +12,14 @@ const getSafeFileName = (name: string) => {
       // eslint-disable-next-line no-control-regex
       .replace(/[^\x00-\x7F]/g, '_') // replaces non-ASCII chars with underscore
   );
+};
+
+const uploadImage = async (file: File): Promise<TTempFile | undefined> => {
+  if (!file.type.startsWith('image/')) {
+    throw new Error(i18next.t('onlyImageFilesAllowed', { ns: 'common' }));
+  }
+
+  return uploadFile(file);
 };
 
 type TUploadProgress = {
@@ -33,7 +42,6 @@ const uploadFile = async (file: File, options?: TUploadFileOptions) => {
 
     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
     xhr.setRequestHeader(UploadHeaders.TYPE, file.type);
-    xhr.setRequestHeader(UploadHeaders.CONTENT_LENGTH, file.size.toString());
     xhr.setRequestHeader(
       UploadHeaders.ORIGINAL_NAME,
       getSafeFileName(file.name)
@@ -74,7 +82,7 @@ const uploadFile = async (file: File, options?: TUploadFileOptions) => {
     });
 
     xhr.addEventListener('error', () => {
-      toast.error('Upload failed');
+      toast.error(i18next.t('uploadFailed', { ns: 'common' }));
 
       resolve(undefined);
     });
@@ -102,4 +110,4 @@ const uploadFiles = async (
   return uploadedFiles;
 };
 
-export { uploadFile, uploadFiles, type TUploadProgress };
+export { uploadFile, uploadFiles, uploadImage, type TUploadProgress };

@@ -14,6 +14,7 @@ import { PluginLogsDialog } from './plugin-logs';
 import { PluginSettingsDialog } from './plugin-settings';
 import { SearchDialog } from './search';
 import { ServerPasswordDialog } from './server-password';
+import { SoundsDialog } from './sounds';
 import { TextInputDialog } from './text-input';
 import { WelcomeProfileSetupDialog } from './welcome-profile-setup';
 
@@ -23,6 +24,7 @@ const DialogsMap: any = {
   [Dialog.CREATE_CHANNEL]: CreateChannelDialog,
   [Dialog.TEXT_INPUT]: TextInputDialog,
   [Dialog.SERVER_PASSWORD]: ServerPasswordDialog,
+  [Dialog.SOUNDS]: SoundsDialog,
   [Dialog.ASSIGN_ROLE]: AssignRoleDialog,
   [Dialog.CREATE_INVITE]: CreateInviteDialog,
   [Dialog.CREATE_CATEGORY]: CreateCategoryDialog,

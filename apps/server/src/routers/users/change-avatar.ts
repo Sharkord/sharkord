@@ -20,6 +20,13 @@ const changeAvatarRoute = protectedProcedure
   .mutation(async ({ ctx, input }) => {
     const user = await getUserById(ctx.userId);
 
+    if (
+      input.fileId &&
+      !fileManager.temporaryFileHasMimeType(input.fileId, 'image/')
+    ) {
+      throw new Error('Invalid file type. Please try again.');
+    }
+
     invariant(user, {
       code: 'NOT_FOUND',
       message: 'User not found'

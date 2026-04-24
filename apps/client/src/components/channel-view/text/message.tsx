@@ -1,9 +1,13 @@
 import { openThreadSidebar } from '@/features/app/actions';
-import { useThreadSidebar } from '@/features/app/hooks';
 import { useCan } from '@/features/server/hooks';
 import { useIsOwnUser, useOwnUserId } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
-import { hasMention, Permission, type TJoinedMessage } from '@sharkord/shared';
+import {
+  hasMention,
+  Permission,
+  TestId,
+  type TJoinedMessage
+} from '@sharkord/shared';
 import { MessageSquareText } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +22,9 @@ type TMessageProps = {
   disableReactions?: boolean;
   onReplyMessageSelect?: (message: TJoinedMessage) => void;
   isInlineReplyTarget?: boolean;
+  isActiveThread?: boolean;
+  editingMessageId?: number;
+  onEditComplete?: () => void;
 };
 
 const Message = memo(
@@ -27,14 +34,16 @@ const Message = memo(
     disableFiles,
     disableReactions,
     onReplyMessageSelect,
-    isInlineReplyTarget
+    isInlineReplyTarget,
+    isActiveThread,
+    editingMessageId,
+    onEditComplete
   }: TMessageProps) => {
     const { t } = useTranslation('common');
-    const [isEditing, setIsEditing] = useState(false);
+    const [isPencilEditing, setIsPencilEditing] = useState(false);
+    const isEditing = isPencilEditing || editingMessageId === message.id;
     const isFromOwnUser = useIsOwnUser(message.userId);
     const can = useCan();
-    const { isOpen: isThreadOpen, parentMessageId: threadParentId } =
-      useThreadSidebar();
     const ownUserId = useOwnUserId();
 
     const canManage = useMemo(
@@ -49,7 +58,6 @@ const Message = memo(
 
     const isThreadReply = !!message.parentMessageId;
     const replyCount = message.replyCount ?? 0;
-    const isActiveThread = isThreadOpen && threadParentId === message.id;
 
     const onThreadClick = useCallback(() => {
       openThreadSidebar(message.id, message.channelId);
@@ -63,6 +71,7 @@ const Message = memo(
           isMentioned && 'border-primary bg-primary/5',
           isInlineReplyTarget && 'ring-1 ring-primary/50 bg-primary/10'
         )}
+        data-testid={TestId.MESSAGE_ITEM}
         data-message-id={message.id}
       >
         {!isEditing ? (
@@ -84,7 +93,7 @@ const Message = memo(
             )}
             {!disableActions && (
               <MessageActions
-                onEdit={() => setIsEditing(true)}
+                onEdit={() => setIsPencilEditing(true)}
                 canManage={canManage}
                 messageId={message.id}
                 channelId={message.channelId}
@@ -99,7 +108,12 @@ const Message = memo(
         ) : (
           <MessageEditInline
             message={message}
-            onBlur={() => setIsEditing(false)}
+            onBlur={() => {
+              setIsPencilEditing(false);
+              if (editingMessageId === message.id) {
+                onEditComplete?.();
+              }
+            }}
           />
         )}
       </div>

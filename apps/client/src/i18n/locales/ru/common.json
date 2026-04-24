@@ -54,6 +54,8 @@
   "deleteFileMsg": "Вы уверены, что хотите удалить этот файл?",
   "fileDeleted": "Файл удален",
   "failedDeleteFile": "Не получилось удалить файл",
+  "onlyImageFilesAllowed": "Разрешены только файлы изображений",
+  "uploadFailed": "Не удалось загрузить файл",
   "edited": "(отредактировано)",
   "reply_one": "{{count}} ответ",
   "reply_other": "{{count}} ответа(ов)",

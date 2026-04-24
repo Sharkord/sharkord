@@ -22,6 +22,7 @@ import type {
   TVoiceMap,
   TVoiceUserState
 } from '@sharkord/shared';
+import { mergeMessagesChronologically } from './helpers';
 import type {
   TDisconnectInfo,
   TMessagesMap,
@@ -193,23 +194,16 @@ export const serverSlice = createSlice({
         opts?: { prepend?: boolean };
       }>
     ) => {
-      const { channelId, messages, opts } = action.payload;
+      const { channelId, messages } = action.payload;
       const existing = state.messagesMap[channelId] ?? [];
 
       // dedupe: only add new IDs
       const existingIds = new Set(existing.map((m) => m.id));
       const filtered = messages.filter((m) => !existingIds.has(m.id));
 
-      let merged: TJoinedMessage[];
-      if (opts?.prepend) {
-        merged = [...filtered, ...existing];
-      } else {
-        merged = [...existing, ...filtered];
-      }
-
-      // store in chronological asc order (oldest → newest)
-      state.messagesMap[channelId] = merged.sort(
-        (a, b) => a.createdAt - b.createdAt
+      state.messagesMap[channelId] = mergeMessagesChronologically(
+        existing,
+        filtered
       );
     },
     updateMessage: (
@@ -269,21 +263,15 @@ export const serverSlice = createSlice({
         opts?: { prepend?: boolean };
       }>
     ) => {
-      const { parentMessageId, messages, opts } = action.payload;
+      const { parentMessageId, messages } = action.payload;
       const existing = state.threadMessagesMap[parentMessageId] ?? [];
 
       const existingIds = new Set(existing.map((m) => m.id));
       const filtered = messages.filter((m) => !existingIds.has(m.id));
 
-      let merged: TJoinedMessage[];
-      if (opts?.prepend) {
-        merged = [...filtered, ...existing];
-      } else {
-        merged = [...existing, ...filtered];
-      }
-
-      state.threadMessagesMap[parentMessageId] = merged.sort(
-        (a, b) => a.createdAt - b.createdAt
+      state.threadMessagesMap[parentMessageId] = mergeMessagesChronologically(
+        existing,
+        filtered
       );
     },
     updateThreadMessage: (
@@ -586,9 +574,6 @@ export const serverSlice = createSlice({
       state.selectedChannelId = action.payload;
 
       if (action.payload) {
-        // reset unread count on select
-        // for now this is good enough
-        state.readStatesMap[action.payload] = 0;
         state.activeFullscreenPluginId = undefined;
       }
     },

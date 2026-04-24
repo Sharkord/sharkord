@@ -12,7 +12,7 @@ const serializer = (domNode: DOMNode, messageId: number) => {
       const href = domNode.attribs.href;
 
       if (!URL.canParse(href)) {
-        return null;
+        return undefined;
       }
 
       const { isTweet, tweetId } = getTweetInfo(href);
@@ -47,7 +47,7 @@ const serializer = (domNode: DOMNode, messageId: number) => {
     console.error(`Error parsing DOM node for message ID ${messageId}:`, error);
   }
 
-  return null;
+  return undefined;
 };
 
 export { serializer };

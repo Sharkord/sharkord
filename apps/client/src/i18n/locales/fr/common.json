@@ -54,6 +54,8 @@
   "deleteFileMsg": "Êtes-vous sûr de vouloir supprimer ce fichier ?",
   "fileDeleted": "Fichier supprimé",
   "failedDeleteFile": "Échec lors de la suppression du fichier",
+  "onlyImageFilesAllowed": "Seuls les fichiers image sont autorisés",
+  "uploadFailed": "Échec du téléversement",
   "edited": "(modifié)",
   "reply_one": "{{count}} réponse",
   "reply_other": "{{count}} réponses",

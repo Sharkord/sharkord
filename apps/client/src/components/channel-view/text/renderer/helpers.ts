@@ -1,4 +1,31 @@
+import type { TJoinedMessage } from '@sharkord/shared';
+import type {
+  TFoundMedia,
+  TFoundOpenGraph,
+  TMessageMetadataLike
+} from './types';
+
 const twitterRegex = /https:\/\/(twitter|x).com\/\w+\/status\/(\d+)/g;
+
+const normalizeComparableUrl = (href: string): string => {
+  try {
+    const url = new URL(href);
+
+    url.hash = '';
+
+    return url.toString();
+  } catch {
+    return href;
+  }
+};
+
+const getDisplayHostname = (href: string): string => {
+  try {
+    return new URL(href).hostname.replace(/^www\./, '');
+  } catch {
+    return href;
+  }
+};
 
 const getYoutubeVideoId = (url: URL) => {
   const hostname = url.hostname.replace(/^www\./, '');
@@ -65,4 +92,90 @@ const getYoutubeInfo = (
   return { isYoutube: false, videoId: undefined };
 };
 
-export { getTweetInfo, getYoutubeInfo, getYoutubeVideoId };
+const hasSpecializedLinkOverride = (href: string): boolean => {
+  const { isTweet } = getTweetInfo(href);
+
+  if (isTweet) {
+    return true;
+  }
+
+  const { isYoutube } = getYoutubeInfo(href);
+
+  return isYoutube;
+};
+
+const DIRECT_MEDIA_TYPES = new Set(['image', 'video', 'audio']);
+
+const isMediaMetadata = (metadata: TMessageMetadataLike | null | undefined) => {
+  return !!metadata?.mediaType && DIRECT_MEDIA_TYPES.has(metadata.mediaType);
+};
+
+const extractMessageOpenGraph = (
+  message: TJoinedMessage,
+  media: TFoundMedia[]
+): TFoundOpenGraph[] => {
+  const directMediaUrls = new Set(
+    media.map((item) => normalizeComparableUrl(item.url))
+  );
+  const seenPreviewUrls = new Set<string>();
+
+  return (message.metadata ?? [])
+    .map((metadata, index) => {
+      const metadataEntry = metadata as TMessageMetadataLike;
+
+      if (
+        !metadataEntry ||
+        metadataEntry.kind === 'media' ||
+        isMediaMetadata(metadataEntry)
+      ) {
+        return undefined;
+      }
+
+      if (!metadataEntry.url || hasSpecializedLinkOverride(metadataEntry.url)) {
+        return undefined;
+      }
+
+      const normalizedUrl = normalizeComparableUrl(metadataEntry.url);
+
+      if (seenPreviewUrls.has(normalizedUrl)) {
+        return undefined;
+      }
+
+      seenPreviewUrls.add(normalizedUrl);
+
+      const imageUrl = (metadataEntry.images ?? []).find((url) => {
+        return !directMediaUrls.has(normalizeComparableUrl(url));
+      });
+
+      const preview: TFoundOpenGraph = {
+        key: `open-graph:${normalizedUrl}:${index}`,
+        url: metadataEntry.url,
+        hostname: getDisplayHostname(metadataEntry.url),
+        title: metadataEntry.title,
+        siteName: metadataEntry.siteName,
+        description: metadataEntry.description,
+        imageUrl,
+        faviconUrl: metadataEntry.favicons?.[0]
+      };
+
+      const hasRenderableContent =
+        !!preview.title ||
+        !!preview.siteName ||
+        !!preview.description ||
+        !!preview.imageUrl ||
+        !!preview.faviconUrl;
+
+      return hasRenderableContent ? preview : undefined;
+    })
+    .filter((item): item is TFoundOpenGraph => !!item);
+};
+
+export {
+  extractMessageOpenGraph,
+  getDisplayHostname,
+  getTweetInfo,
+  getYoutubeInfo,
+  getYoutubeVideoId,
+  hasSpecializedLinkOverride,
+  normalizeComparableUrl
+};

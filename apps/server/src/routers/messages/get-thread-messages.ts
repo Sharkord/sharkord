@@ -79,9 +79,11 @@ const getThreadMessagesRoute = protectedProcedure
     let nextCursor: number | null = null;
 
     if (rows.length > limit) {
-      const next = rows.pop();
+      rows.pop();
 
-      nextCursor = next ? next.createdAt : null;
+      const lastReturnedMessage = rows.at(-1);
+
+      nextCursor = lastReturnedMessage ? lastReturnedMessage.createdAt : null;
     }
 
     if (rows.length === 0) {

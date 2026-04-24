@@ -35,6 +35,7 @@ import {
   ChannelPermission,
   Permission,
   type TChannel,
+  TestId,
   getTrpcError
 } from '@sharkord/shared';
 import { Hash, Volume2 } from 'lucide-react';
@@ -61,6 +62,7 @@ const Voice = memo(
     const users = useVoiceUsersByChannelId(channel.id);
     const externalStreams = useVoiceChannelExternalStreamsList(channel.id);
     const unreadCount = useUnreadMessagesCount(channel.id);
+    const hasUnreadMentions = useHasUnreadMentions(channel.id);
     const currentVoiceChannelId = useCurrentVoiceChannelId();
     const someoneIsSharingScreen = useHasSharingScreenUsers(channel.id);
 
@@ -91,8 +93,8 @@ const Voice = memo(
 
           <span className="flex-1 truncate">{channel.name}</span>
 
-          {!isVoiceActive && unreadCount > 0 && (
-            <UnreadCount count={unreadCount} />
+          {unreadCount > 0 && (
+            <UnreadCount count={unreadCount} hasMention={hasUnreadMentions} />
           )}
         </ItemWrapper>
         {channel.type === 'VOICE' && (
@@ -175,6 +177,7 @@ const ItemWrapper = memo(
     return (
       <div
         {...dragHandleProps}
+        data-testid={TestId.CHANNEL_ITEM}
         style={style}
         className={cn(
           'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground select-none cursor-pointer',

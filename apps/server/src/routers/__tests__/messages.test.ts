@@ -887,6 +887,13 @@ describe('messages router', () => {
     expect(firstPage.messages.length).toBe(5);
     expect(firstPage.nextCursor).toBeDefined();
     expect(firstPage.nextCursor).not.toBeNull();
+    expect(firstPage.messages.map((message) => message.content)).toEqual([
+      'Message 10',
+      'Message 9',
+      'Message 8',
+      'Message 7',
+      'Message 6'
+    ]);
 
     // get second page
     const secondPage = await caller.messages.get({
@@ -895,7 +902,13 @@ describe('messages router', () => {
       limit: 5
     });
 
-    expect(secondPage.messages.length).toBeGreaterThan(0);
+    expect(secondPage.messages.map((message) => message.content)).toEqual([
+      'Message 5',
+      'Message 4',
+      'Message 3',
+      'Message 2',
+      'Message 1'
+    ]);
 
     // ensure no overlap between pages
     const firstPageIds = firstPage.messages.map((m) => m.id);
@@ -1606,6 +1619,13 @@ describe('messages router', () => {
 
     expect(firstPage.messages.length).toBe(5);
     expect(firstPage.nextCursor).not.toBeNull();
+    expect(firstPage.messages.map((message) => message.content)).toEqual([
+      'Thread reply 1',
+      'Thread reply 2',
+      'Thread reply 3',
+      'Thread reply 4',
+      'Thread reply 5'
+    ]);
 
     const secondPage = await caller.messages.getThread({
       parentMessageId: parentId,
@@ -1613,7 +1633,13 @@ describe('messages router', () => {
       limit: 5
     });
 
-    expect(secondPage.messages.length).toBeGreaterThan(0);
+    expect(secondPage.messages.map((message) => message.content)).toEqual([
+      'Thread reply 6',
+      'Thread reply 7',
+      'Thread reply 8',
+      'Thread reply 9',
+      'Thread reply 10'
+    ]);
 
     // no overlap between pages
     const firstPageIds = firstPage.messages.map((m) => m.id);

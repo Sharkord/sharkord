@@ -1,12 +1,12 @@
 import { assertVoiceChatClose } from '@/features/app/actions';
-import { selectedDmChannelIdSelector } from '@/features/app/selectors';
 import { store } from '@/features/store';
 import type { TChannel, TChannelUserPermissionsMap } from '@sharkord/shared';
-import { dmsOpenSelector } from '../selectors';
+import { markChannelAsRead } from '../actions';
 import { serverSliceActions } from '../slice';
 import {
   channelByIdSelector,
   channelReadStateByIdSelector,
+  isChannelTextVisibleByIdSelector,
   selectedChannelIdSelector
 } from './selectors';
 
@@ -16,6 +16,22 @@ export const setChannels = (channels: TChannel[]) => {
 
 export const setSelectedChannelId = (channelId: number | undefined) => {
   store.dispatch(serverSliceActions.setSelectedChannelId(channelId));
+
+  if (!channelId) {
+    return;
+  }
+
+  const state = store.getState();
+  const unreadCount = channelReadStateByIdSelector(state, channelId);
+
+  if (
+    unreadCount === 0 ||
+    !isChannelTextVisibleByIdSelector(state, channelId)
+  ) {
+    return;
+  }
+
+  markChannelAsRead(channelId);
 };
 
 export const setCurrentVoiceChannelId = (channelId: number | undefined) =>
@@ -71,8 +87,6 @@ export const setChannelReadState = (
   }
 ) => {
   const state = store.getState();
-  const selectedChannel = selectedChannelIdSelector(state);
-  const selectedDmChannel = selectedDmChannelIdSelector(state);
   const currentCount = channelReadStateByIdSelector(state, channelId);
 
   let nextCount: number | undefined;
@@ -85,10 +99,7 @@ export const setChannelReadState = (
 
   let actualCount = nextCount;
 
-  const dmsOpen = dmsOpenSelector(state);
-  const shouldResetCount =
-    selectedChannel === channelId ||
-    (selectedDmChannel === channelId && dmsOpen);
+  const shouldResetCount = isChannelTextVisibleByIdSelector(state, channelId);
 
   // if the channel is currently selected, set the read count to 0
   if (shouldResetCount) {

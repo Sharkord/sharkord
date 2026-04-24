@@ -54,6 +54,8 @@
   "deleteFileMsg": "您确定要删除此文件吗？",
   "fileDeleted": "文件已删除",
   "failedDeleteFile": "删除文件失败",
+  "onlyImageFilesAllowed": "仅允许上传图片文件",
+  "uploadFailed": "上传失败",
   "edited": "（已编辑）",
   "reply_one": "{{count}} 条回复",
   "reply_other": "{{count}} 条回复",

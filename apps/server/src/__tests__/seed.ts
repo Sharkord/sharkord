@@ -26,6 +26,7 @@ import {
   categories,
   channels,
   directMessages,
+  logins,
   messages,
   rolePermissions,
   roles,
@@ -33,6 +34,8 @@ import {
   userRoles,
   users
 } from '../db/schema';
+import { IS_E2E } from '../utils/env';
+import { seedE2E } from './e2e-mocks/seed-e2e';
 
 const TEST_SECRET_TOKEN = 'test-secret-token-for-unit-tests';
 
@@ -55,7 +58,7 @@ const hashedPassword = await Bun.password.hash('password123');
  * - Hello User B (2) (in DM Channel, by User A)
  */
 
-const seedDatabase = async (db: BunSQLiteDatabase) => {
+const seedTestDb = async (db: BunSQLiteDatabase) => {
   const firstStart = Date.now();
 
   const initialSettings: TISettings = {
@@ -293,7 +296,27 @@ const seedDatabase = async (db: BunSQLiteDatabase) => {
 
   await db.insert(messages).values(dmMessage);
 
-  // TODO: check if this can be passed to the tests
+  if (IS_E2E) {
+    const allUsers = [
+      insertedOwner!,
+      insertedUser!,
+      insertedUserA!,
+      insertedUserB!
+    ];
+
+    // add logins for all users to test login history and last seen related features
+    const loginsData = allUsers.map((user) => ({
+      userId: user.id,
+      timestamp: Date.now(),
+      createdAt: Date.now()
+    }));
+
+    await db.insert(logins).values(loginsData);
+
+    // for e2e we seed additional data specific to e2e tests, to avoid polluting the unit test database with too much data that is only relevant for e2e tests
+    // but keeping the same base mocks that we also use in integration tests to ensure consistency between unit, integration and e2e tests
+    await seedE2E(db);
+  }
 
   return {
     settings: initialSettings,
@@ -310,4 +333,4 @@ const seedDatabase = async (db: BunSQLiteDatabase) => {
   };
 };
 
-export { seedDatabase, TEST_SECRET_TOKEN };
+export { seedTestDb, TEST_SECRET_TOKEN };
