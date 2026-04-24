@@ -62,6 +62,7 @@ const Voice = memo(
     const users = useVoiceUsersByChannelId(channel.id);
     const externalStreams = useVoiceChannelExternalStreamsList(channel.id);
     const unreadCount = useUnreadMessagesCount(channel.id);
+    const hasUnreadMentions = useHasUnreadMentions(channel.id);
     const currentVoiceChannelId = useCurrentVoiceChannelId();
     const someoneIsSharingScreen = useHasSharingScreenUsers(channel.id);
 
@@ -92,8 +93,8 @@ const Voice = memo(
 
           <span className="flex-1 truncate">{channel.name}</span>
 
-          {!isVoiceActive && unreadCount > 0 && (
-            <UnreadCount count={unreadCount} />
+          {unreadCount > 0 && (
+            <UnreadCount count={unreadCount} hasMention={hasUnreadMentions} />
           )}
         </ItemWrapper>
         {channel.type === 'VOICE' && (

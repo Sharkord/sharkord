@@ -5,10 +5,13 @@ import { cleanup, connectToTRPC, getTRPCClient } from '@/lib/trpc';
 import type { TMessageJumpToTarget } from '@/types';
 import { type TPublicServerSettings, type TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
-import { setMessageJumpTarget, setSelectedDmChannelId } from '../app/actions';
+import { appSliceActions } from '../app/slice';
 import { openDialog } from '../dialogs/actions';
 import { store } from '../store';
-import { setSelectedChannelId } from './channels/actions';
+import {
+  channelReadStateByIdSelector,
+  isChannelTextVisibleByIdSelector
+} from './channels/selectors';
 import {
   processPluginComponents,
   setPluginCommands,
@@ -16,7 +19,6 @@ import {
 } from './plugins/actions';
 import { infoSelector } from './selectors';
 import { serverSliceActions } from './slice';
-import { initSubscriptions } from './subscriptions';
 import { type TDisconnectInfo } from './types';
 
 let unsubscribeFromServer: (() => void) | null = null;
@@ -93,6 +95,8 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
 
   logDebug('joinServer', data);
 
+  const { initSubscriptions } = await import('./subscriptions');
+
   unsubscribeFromServer = initSubscriptions();
 
   store.dispatch(serverSliceActions.setInitialData(data));
@@ -116,18 +120,50 @@ export const disconnectFromServer = () => {
 };
 
 export const jumpToMessage = (target: TMessageJumpToTarget) => {
-  setMessageJumpTarget(target);
+  store.dispatch(appSliceActions.setMessageJumpTarget(target));
 
   if (target.isDm) {
     setDmsOpen(true);
-    setSelectedDmChannelId(target.channelId);
+    store.dispatch(appSliceActions.setSelectedDmChannelId(target.channelId));
 
     return;
   }
 
   setDmsOpen(false);
-  setSelectedDmChannelId(undefined);
-  setSelectedChannelId(target.channelId);
+  store.dispatch(appSliceActions.setSelectedDmChannelId(undefined));
+  store.dispatch(serverSliceActions.setSelectedChannelId(target.channelId));
+
+  const state = store.getState();
+
+  if (isChannelTextVisibleByIdSelector(state, target.channelId)) {
+    markChannelAsRead(target.channelId);
+  }
+};
+
+export const markChannelAsRead = (
+  channelId: number,
+  force: boolean = false
+) => {
+  const state = store.getState();
+  const unreadCount = channelReadStateByIdSelector(state, channelId);
+
+  if (!force && unreadCount === 0) {
+    return;
+  }
+
+  if (unreadCount > 0) {
+    store.dispatch(
+      serverSliceActions.setChannelReadState({ channelId, count: 0 })
+    );
+  }
+
+  const trpc = getTRPCClient();
+
+  try {
+    trpc.channels.markAsRead.mutate({ channelId });
+  } catch {
+    // ignore errors
+  }
 };
 
 window.useToken = async (token: string) => {
