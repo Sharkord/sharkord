@@ -301,18 +301,18 @@ const MessageCompose = memo(
             />
           </div>
 
-          {showPluginSlot && (
-            <PluginSlotRenderer slotId={PluginSlot.CHAT_ACTIONS} />
-          )}
           <input {...fileInputProps} />
-          <div className="flex items-start gap-1 pr-4 shrink-0 sticky top-0">
+          <div className="flex items-start pr-4 pt-2 shrink-0 sticky top-0">
+            {showPluginSlot && (
+              <PluginSlotRenderer slotId={PluginSlot.CHAT_ACTIONS} />
+            )}
+
             <EmojiPicker
               onEmojiSelect={(emoji) => tiptapRef.current?.insertEmoji(emoji)}
             >
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8 mt-3"
                 disabled={uploading || !canSendMessages}
               >
                 <Smile className="h-4 w-4" />
@@ -321,7 +321,6 @@ const MessageCompose = memo(
             <Button
               size="icon"
               variant="ghost"
-              className="h-8 w-8 mt-3"
               disabled={uploading || !canUploadFiles}
               onClick={openFileDialog}
             >
@@ -330,7 +329,6 @@ const MessageCompose = memo(
             <Button
               size="icon"
               variant="ghost"
-              className="h-8 w-8 mt-3"
               onClick={handleSend}
               disabled={uploading || sending || !canSendMessages}
             >
