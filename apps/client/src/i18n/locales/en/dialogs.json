@@ -55,6 +55,8 @@
   "searchDesc": "Find content in this server. Both messages and files are searchable.",
   "searchPlaceholder": "Search messages and files...",
   "searchHint": "Start typing to search messages and files. Type at least 2 characters.",
+  "soundsTitle": "Sound Test",
+  "playSound": "Play",
   "noResults": "No results.",
   "unknownUser": "Unknown User",
   "pluginSettingsTitle": "Settings for {{name}}",

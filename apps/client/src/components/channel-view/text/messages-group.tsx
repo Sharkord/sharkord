@@ -23,6 +23,8 @@ type TMessagesGroupProps = {
   onReplyMessageSelect?: (message: TJoinedMessage) => void;
   replyTargetMessageId?: number;
   activeThreadMessageId?: number;
+  editingMessageId?: number;
+  onEditComplete?: () => void;
 };
 
 const MessagesGroup = memo(
@@ -33,7 +35,9 @@ const MessagesGroup = memo(
     disableReactions,
     onReplyMessageSelect,
     replyTargetMessageId,
-    activeThreadMessageId
+    activeThreadMessageId,
+    editingMessageId,
+    onEditComplete
   }: TMessagesGroupProps) => {
     const firstMessage = group[0];
     const pluginMetadata = usePluginMetadata(firstMessage.pluginId);
@@ -100,6 +104,8 @@ const MessagesGroup = memo(
                   onReplyMessageSelect={onReplyMessageSelect}
                   isInlineReplyTarget={message.id === replyTargetMessageId}
                   isActiveThread={message.id === activeThreadMessageId}
+                  editingMessageId={editingMessageId}
+                  onEditComplete={onEditComplete}
                 />
               </div>
             ))}

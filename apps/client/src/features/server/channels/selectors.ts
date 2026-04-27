@@ -1,11 +1,17 @@
+import {
+  selectedDmChannelIdSelector,
+  voiceChatSidebarDataSelector
+} from '@/features/app/selectors';
 import type { IRootState } from '@/features/store';
 import { createSelector } from '@reduxjs/toolkit';
-import type { TChannel } from '@sharkord/shared';
+import { ChannelType, type TChannel } from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
 
 const DEFAULT_OBJECT = {};
 
 export const channelsSelector = (state: IRootState) => state.server.channels;
+
+const dmsOpenSelector = (state: IRootState) => state.server.dmsOpen;
 
 export const selectedChannelIdSelector = (state: IRootState) =>
   state.server.selectedChannelId;
@@ -55,6 +61,38 @@ export const isCurrentVoiceChannelSelectedSelector = createSelector(
     currentVoiceChannelId !== undefined &&
     selectedChannelId === currentVoiceChannelId
 );
+
+// this selector is not cached, do not use it outside actions
+export const isChannelTextVisibleByIdSelector = (
+  state: IRootState,
+  channelId: number
+) => {
+  const channel = channelByIdSelector(state, channelId);
+
+  if (!channel) {
+    return false;
+  }
+
+  if (channel.isDm) {
+    const dmsOpen = dmsOpenSelector(state);
+    const selectedDmChannelId = selectedDmChannelIdSelector(state);
+    const isSelected = selectedDmChannelId === channelId;
+
+    return dmsOpen && isSelected;
+  }
+
+  if (channel.type === ChannelType.VOICE) {
+    const voiceChatSidebar = voiceChatSidebarDataSelector(state);
+    const isVoiceChatSelected = voiceChatSidebar.channelId === channelId;
+
+    return voiceChatSidebar.isOpen && isVoiceChatSelected;
+  }
+
+  const selectedChannelId = selectedChannelIdSelector(state);
+  const isSelected = selectedChannelId === channelId;
+
+  return isSelected;
+};
 
 export const channelPermissionsByIdSelector = (
   state: IRootState,

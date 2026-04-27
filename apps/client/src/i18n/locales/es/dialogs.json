@@ -55,6 +55,8 @@
   "searchDesc": "Encuentra contenido en este servidor. Tanto los mensajes como los archivos son buscables.",
   "searchPlaceholder": "Buscar mensajes y archivos...",
   "searchHint": "Empieza a escribir para buscar mensajes y archivos. Escribe al menos 2 caracteres.",
+  "soundsTitle": "Prueba de sonido",
+  "playSound": "Reproducir",
   "noResults": "Sin resultados.",
   "unknownUser": "Usuario desconocido",
   "pluginSettingsTitle": "Configuración de {{name}}",

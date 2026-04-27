@@ -1,13 +1,4 @@
-import {
-  audioExtensions,
-  extractUrls,
-  imageExtensions,
-  removeCommandElements,
-  removeEmojiElements,
-  videoExtensions,
-  type TGenericObject,
-  type TMessageMetadata
-} from '@sharkord/shared';
+import { extractUrls, type TMessageMetadata } from '@sharkord/shared';
 import dns from 'dns';
 import { eq } from 'drizzle-orm';
 import { getLinkPreview } from 'link-preview-js';
@@ -15,58 +6,19 @@ import { isIP } from 'net';
 import { db } from '../../db';
 import { messages } from '../../db/schema';
 import { isPrivateIP } from '../../helpers/network';
+import {
+  createDirectMediaMetadata,
+  createOpenGraphMetadata,
+  getDirectMediaMetaFromUrl,
+  sanitizeContent
+} from './helpers';
 
-const metadataCache = new Map<string, TGenericObject>();
+const metadataCache = new Map<string, TMessageMetadata | undefined>();
 
 setInterval(
   () => metadataCache.clear(),
   1000 * 60 * 60 * 2 // clear cache every 2 hours
 );
-
-// if it ends in a known media extension, we just assume it's a direct media link and skip the DNS resolution and metadata fetching
-// there might be cases where this is not true, but it's a good heuristic to avoid unnecessary work
-const getDirectMediaMetaFromUrl = (
-  parsedUrl: URL
-): {
-  isDirectMediaLink: boolean;
-  mediaType: 'image' | 'video' | 'audio' | 'none';
-} => {
-  try {
-    const pathname = parsedUrl.pathname.toLowerCase();
-
-    const isImage = imageExtensions.some((ext) => pathname.endsWith(ext));
-
-    if (isImage) {
-      return { isDirectMediaLink: true, mediaType: 'image' };
-    }
-
-    const isAudio = audioExtensions.some((ext) => pathname.endsWith(ext));
-
-    if (isAudio) {
-      return { isDirectMediaLink: true, mediaType: 'audio' };
-    }
-
-    const isVideo = videoExtensions.some((ext) => pathname.endsWith(ext));
-
-    if (isVideo) {
-      return { isDirectMediaLink: true, mediaType: 'video' };
-    }
-  } catch {
-    // ignore
-  }
-
-  return { isDirectMediaLink: false, mediaType: 'none' };
-};
-
-const sanitizeContent = (content: string): string => {
-  let cleanContent = content;
-
-  // this will remove plugin commands AND emojis because they need to be ignored for metadata extraction
-  cleanContent = removeCommandElements(cleanContent);
-  cleanContent = removeEmojiElements(cleanContent);
-
-  return cleanContent;
-};
 
 const urlMetadataParser = async (
   content: string
@@ -107,13 +59,12 @@ const urlMetadataParser = async (
       const { isDirectMediaLink, mediaType } =
         getDirectMediaMetaFromUrl(parsed);
 
-      if (isDirectMediaLink) {
-        const directMetadata: TMessageMetadata = {
+      if (isDirectMediaLink && mediaType !== 'none') {
+        const directMetadata = createDirectMediaMetadata(
           url,
-          title: parsed.pathname.split('/').pop() || url,
-          description: '',
+          parsed,
           mediaType
-        };
+        );
 
         metadataCache.set(url, directMetadata);
 
@@ -164,18 +115,17 @@ const urlMetadataParser = async (
 
       if (!metadata) return;
 
-      metadataCache.set(url, metadata);
+      const normalizedMetadata = createOpenGraphMetadata(metadata, url);
 
-      return metadata;
+      metadataCache.set(url, normalizedMetadata);
+
+      return normalizedMetadata;
     });
 
-    const metadata = (await Promise.all(
-      promises
-    )) as (TMessageMetadata | null)[]; // TODO: fix these types
+    const metadata = await Promise.all(promises);
+    const validMetadata = (metadata ?? []).filter((item) => !!item);
 
-    const validMetadata = (metadata ?? []).filter((m) => !!m);
-
-    return validMetadata ?? [];
+    return validMetadata;
   } catch {
     // ignore
   }

@@ -137,6 +137,8 @@
   "directMessagesEnabledDesc": "Consenti agli utenti di inviarsi messaggi diretti. Se disabilitato, potranno comunicare solo nei canali.",
   "searchEnabledLabel": "Ricerca",
   "searchEnabledDesc": "Consenti agli utenti di cercare messaggi e file in tutto il server.",
+  "showWelcomeDialogLabel": "Mostra finestra di benvenuto",
+  "showWelcomeDialogDesc": "Mostra agli utenti una finestra di configurazione del profilo la prima volta che entrano nel server.",
   "usersTitle": "Utenti",
   "usersDesc": "Gestisci utenti del server e relativi permessi",
   "usersAvatarCol": "Avatar",

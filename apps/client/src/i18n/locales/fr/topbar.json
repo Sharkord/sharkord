@@ -7,6 +7,7 @@
   "voiceOptions": "Options vocales",
   "hideNonVideoParticipants": "Masquer les participants non-vidéo",
   "displayUserBanners": "Afficher les bannières des utilisateurs",
+  "hideOwnScreenShare": "Masquer son propre partage d'écran",
   "audioControls": "Contrôle Audio",
   "stream_one": "flux",
   "stream_other": "flux",

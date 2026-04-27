@@ -3,24 +3,22 @@ import {
   browserNotificationsForMentionsSelector,
   browserNotificationsForRepliesSelector,
   browserNotificationsSelector,
-  selectedDmChannelIdSelector,
   threadSidebarDataSelector
 } from '@/features/app/selectors';
 import { store } from '@/features/store';
 import { getFileUrl } from '@/helpers/get-file-url';
-import { getTRPCClient } from '@/lib/trpc';
 import {
   getPlainTextFromHtml,
   hasMention,
   TYPING_MS,
   type TJoinedMessage
 } from '@sharkord/shared';
+import { markChannelAsRead } from '../actions';
 import {
   channelByIdSelector,
-  selectedChannelIdSelector
+  isChannelTextVisibleByIdSelector
 } from '../channels/selectors';
 import { pluginMetadataByIdSelector } from '../plugins/selectors';
-import { dmsOpenSelector } from '../selectors';
 import { serverSliceActions } from '../slice';
 import { playSound } from '../sounds/actions';
 import { SoundType } from '../types';
@@ -71,10 +69,6 @@ export const addMessages = (
   opts: { prepend?: boolean } = {},
   isSubscriptionMessage = false
 ) => {
-  const state = store.getState();
-  const selectedChannelId = selectedChannelIdSelector(state);
-  const selectedDmChannelId = selectedDmChannelIdSelector(state);
-
   const rootMessages = messages.filter((m) => !m.parentMessageId);
   const threadReplies = messages.filter((m) => !!m.parentMessageId);
 
@@ -128,14 +122,14 @@ export const addMessages = (
     const hasBrowserNotificationsEnabled = browserNotificationsSelector(state);
     const notificationsForMentionsOnly =
       browserNotificationsForMentionsSelector(state);
-    const dmsOpen = dmsOpenSelector(state);
     const targetMessage = messages[0];
     const isFromOwnUser =
       targetMessage.userId && ownUserId === targetMessage.userId;
 
-    const isTextChannelSelected = selectedChannelId === channelId;
-    const isDmChannelSelected = selectedDmChannelId === channelId && dmsOpen; // only consider DM channel selected if DMs are open
-    const isChannelSelected = isTextChannelSelected || isDmChannelSelected;
+    const isChannelTextVisible = isChannelTextVisibleByIdSelector(
+      state,
+      channelId
+    );
 
     const isWindowHidden = document?.hidden;
 
@@ -154,7 +148,7 @@ export const addMessages = (
       }
 
       // only send browser notifications if the user is not currently viewing this channel
-      if (!isChannelSelected || isWindowHidden) {
+      if (!isChannelTextVisible || isWindowHidden) {
         const channel = channelByIdSelector(state, channelId);
         const isDmChannel = !!channel?.isDm;
         const hasDmNotificationsEnabled =
@@ -187,14 +181,8 @@ export const addMessages = (
       }
     }
 
-    if (isChannelSelected && !isFromOwnUser && rootMessages.length > 0) {
-      const trpc = getTRPCClient();
-
-      try {
-        trpc.channels.markAsRead.mutate({ channelId });
-      } catch {
-        // ignore errors
-      }
+    if (isChannelTextVisible && !isFromOwnUser && rootMessages.length > 0) {
+      markChannelAsRead(channelId, true);
     }
   }
 };

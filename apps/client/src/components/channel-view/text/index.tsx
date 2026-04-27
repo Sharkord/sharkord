@@ -1,7 +1,4 @@
-import {
-  MessageCompose,
-  type TMessageComposeHandle
-} from '@/components/message-compose';
+import { MessageCompose } from '@/components/message-compose';
 import { useThreadSidebar } from '@/features/app/hooks';
 import {
   useChannelCan,
@@ -27,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ChatInputDivider } from './chat-input-divider';
 import { DEFAULT_MAX_HEIGHT_VH } from './helpers';
+import { useArrowUpEdit } from './hooks/use-arrow-up-edit';
 import { useScrollController } from './hooks/use-scroll-controller';
 import { useScrollToJumpTarget } from './hooks/use-scroll-to-jump-target';
 import { MessagesGroup } from './messages-group';
@@ -66,9 +64,14 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
     TJoinedMessage | undefined
   >();
   const typingUsers = useTypingUsersByChannelId(channelId);
-  const composeRef = useRef<TMessageComposeHandle>(null);
   const composeContainerRef = useRef<HTMLDivElement>(null);
   const { activeThreadMessageId } = useThreadSidebar();
+  const {
+    composeRef,
+    editingMessageId,
+    handleArrowUpEdit,
+    handleEditComplete
+  } = useArrowUpEdit(messages);
 
   const replyTarget = useMemo<TReplyTarget | undefined>(() => {
     if (!replyingToMessage) {
@@ -202,6 +205,8 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
               onReplyMessageSelect={onReplyMessageSelect}
               replyTargetMessageId={replyingToMessage?.id}
               activeThreadMessageId={activeThreadMessageId}
+              editingMessageId={editingMessageId}
+              onEditComplete={handleEditComplete}
             />
           ))}
         </div>
@@ -227,6 +232,7 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
         showPluginSlot
         onCancelReply={() => setReplyingToMessage(undefined)}
         replyTarget={replyTarget}
+        onArrowUp={handleArrowUpEdit}
         onResize={onComposeResize}
       />
     </>

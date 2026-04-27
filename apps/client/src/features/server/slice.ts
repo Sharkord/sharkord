@@ -574,9 +574,6 @@ export const serverSlice = createSlice({
       state.selectedChannelId = action.payload;
 
       if (action.payload) {
-        // reset unread count on select
-        // for now this is good enough
-        state.readStatesMap[action.payload] = 0;
         state.activeFullscreenPluginId = undefined;
       }
     },

@@ -55,6 +55,8 @@
   "searchDesc": "Rechercher du contenu sur ce serveur. Les messages et les fichiers sont consultables.",
   "searchPlaceholder": "Rechercher des messages et des fichiers...",
   "searchHint": "Commencer à saisir du texte pour rechercher des messages et des fichiers. Saisissez au moins 2 caractères.",
+  "soundsTitle": "Test audio",
+  "playSound": "Lire",
   "noResults": "Aucun résultat.",
   "unknownUser": "Utilisateur inconnu",
   "pluginSettingsTitle": "Paramètres pour {{name}}",
@@ -112,5 +114,17 @@
   "welcomeProfileSaved": "Profil mis à jour",
   "inThread": "Dans le fil de discussion",
   "jumpToThreadMessage": "Aller au message original du fil de discussion",
-  "jumpToMessage": "Aller au message"
+  "jumpToMessage": "Aller au message",
+  "pluginInstallConfirmTitle": "Installer le plugin \"{{name}}\" ?",
+  "pluginInstallConfirmLead": "Les plugins sont un moyen tres puissant d'etendre les fonctionnalites de Sharkord, mais ils s'accompagnent aussi de risques de securite importants.",
+  "pluginInstallWarningLine1": "Les plugins peuvent lire, modifier ou supprimer",
+  "pluginInstallWarningHighlight1": "toutes les donnees du serveur",
+  "pluginInstallWarningLine2": "Les plugins peuvent executer",
+  "pluginInstallWarningHighlight2": "du code arbitraire",
+  "pluginInstallWarningLine3": "Des plugins malveillants peuvent compromettre",
+  "pluginInstallWarningHighlight3": "des comptes utilisateur, voler des donnees ou endommager votre serveur",
+  "pluginInstallUseDocker": "Nous recommandons fortement d'executer Sharkord dans un conteneur Docker pour l'isolation et la reduction des risques.",
+  "pluginInstallDocsNote": "Pour plus de details, consultez la documentation a l'adresse :",
+  "pluginInstallConfirmBtn": "Installer le plugin",
+  "pluginInstallConfirmCountdown": "Attendre ({{seconds}}s)"
 }

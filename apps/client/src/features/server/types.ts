@@ -7,6 +7,7 @@ import {
 export enum SoundType {
   MESSAGE_RECEIVED = 'message_received',
   MESSAGE_SENT = 'message_sent',
+  SERVER_DISCONNECTED = 'server_disconnected',
 
   OWN_USER_LEFT_VOICE_CHANNEL = 'own_user_left_voice_channel',
   OWN_USER_JOINED_VOICE_CHANNEL = 'own_user_joined_voice_channel',

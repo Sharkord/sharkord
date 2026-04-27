@@ -1,20 +1,16 @@
-import { toggleVoiceChatSidebar } from '@/features/app/actions';
-import { useVoiceChatSidebar } from '@/features/app/hooks';
 import {
   useCurrentVoiceChannelId,
   useIsCurrentVoiceChannelSelected
 } from '@/features/server/channels/hooks';
 import { usePublicServerSettings } from '@/features/server/hooks';
-import { cn } from '@/lib/utils';
 import { PluginSlot } from '@sharkord/shared';
 import { Button, Tooltip } from '@sharkord/ui';
-import { MessageSquare, PanelRight, PanelRightClose } from 'lucide-react';
-import { memo, useCallback } from 'react';
+import { PanelRight, PanelRightClose } from 'lucide-react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PluginSlotRenderer } from '../plugin-slot-renderer';
 import { ServerSearch } from './server-search';
-import { VoiceOptionsController } from './voice-options-controller';
-import { VolumeController } from './volume-controller';
+import { VoiceButtons } from './voice-buttons';
 
 type TTopBarProps = {
   onToggleRightSidebar: () => void;
@@ -26,17 +22,6 @@ const TopBar = memo(({ onToggleRightSidebar, isOpen }: TTopBarProps) => {
   const isCurrentVoiceChannelSelected = useIsCurrentVoiceChannelSelected();
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const settings = usePublicServerSettings();
-  const { isOpen: isAnyVoiceChatOpen, channelId: openVoiceChatChannelId } =
-    useVoiceChatSidebar();
-
-  const isVoiceChatOpen =
-    isAnyVoiceChatOpen && openVoiceChatChannelId === currentVoiceChannelId;
-
-  const handleToggleVoiceChat = useCallback(() => {
-    if (currentVoiceChannelId) {
-      toggleVoiceChatSidebar(currentVoiceChannelId);
-    }
-  }, [currentVoiceChannelId]);
 
   return (
     <div className="hidden lg:grid h-12 w-full grid-cols-[1fr_minmax(320px,1.4fr)_1fr] items-center border-b border-border bg-card px-4 transition-all duration-300 ease-in-out gap-2">
@@ -49,30 +34,7 @@ const TopBar = memo(({ onToggleRightSidebar, isOpen }: TTopBarProps) => {
       <div className="flex min-w-0 items-center justify-end gap-2">
         <PluginSlotRenderer slotId={PluginSlot.TOPBAR_RIGHT} />
         {isCurrentVoiceChannelSelected && currentVoiceChannelId && (
-          <>
-            <VoiceOptionsController />
-            <VolumeController channelId={currentVoiceChannelId} />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleToggleVoiceChat}
-              className="h-7 px-2 transition-all duration-200 ease-in-out"
-            >
-              <Tooltip
-                content={
-                  isVoiceChatOpen ? t('closeVoiceChat') : t('openVoiceChat')
-                }
-                asChild={false}
-              >
-                <MessageSquare
-                  className={cn(
-                    'w-4 h-4 transition-all duration-200 ease-in-out',
-                    isVoiceChatOpen && 'fill-current'
-                  )}
-                />
-              </Tooltip>
-            </Button>
-          </>
+          <VoiceButtons currentVoiceChannelId={currentVoiceChannelId} />
         )}
         <Button
           variant="ghost"

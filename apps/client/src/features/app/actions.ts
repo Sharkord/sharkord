@@ -8,7 +8,7 @@ import {
 import type { TMessageJumpToTarget } from '@/types';
 import type { TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
-import { setInfo } from '../server/actions';
+import { markChannelAsRead, setInfo } from '../server/actions';
 import { store } from '../store';
 import {
   pluginSlotDebugSelector,
@@ -198,6 +198,7 @@ export const openVoiceChatSidebar = (channelId: number) => {
     appSliceActions.setVoiceChatSidebar({ open: true, channelId })
   );
 
+  markChannelAsRead(channelId);
   setLocalStorageItem(
     LocalStorageKey.VOICE_CHAT_SIDEBAR_CHANNEL_ID,
     channelId.toString()

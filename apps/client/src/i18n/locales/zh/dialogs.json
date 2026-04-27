@@ -55,6 +55,8 @@
   "searchDesc": "在此服务器中查找内容。消息和文件均可搜索。",
   "searchPlaceholder": "搜索消息和文件...",
   "searchHint": "开始输入以搜索消息和文件，至少输入 2 个字符。",
+  "soundsTitle": "声音测试",
+  "playSound": "播放",
   "noResults": "无结果。",
   "unknownUser": "未知用户",
   "pluginSettingsTitle": "{{name}} 的设置",

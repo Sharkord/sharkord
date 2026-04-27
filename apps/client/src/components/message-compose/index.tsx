@@ -55,12 +55,14 @@ type TMessageComposeProps = {
   inputDefaultMaxHeightVh?: number;
   replyTarget?: TReplyTarget;
   onCancelReply?: () => void;
+  onArrowUp?: () => void;
   onResize?: () => void;
   ref?: Ref<TMessageComposeHandle>;
 };
 
 type TMessageComposeHandle = {
   clearFiles: () => void;
+  focus: () => void;
 };
 
 const MessageCompose = memo(
@@ -77,6 +79,7 @@ const MessageCompose = memo(
     inputDefaultMaxHeightVh = DEFAULT_MAX_HEIGHT_VH,
     replyTarget,
     onCancelReply,
+    onArrowUp,
     onResize,
     ref
   }: TMessageComposeProps) => {
@@ -140,7 +143,11 @@ const MessageCompose = memo(
       inputDefaultMaxHeightVh
     });
 
-    useImperativeHandle(ref, () => ({ clearFiles }), [clearFiles]);
+    useImperativeHandle(
+      ref,
+      () => ({ clearFiles, focus: () => tiptapRef.current?.focus() }),
+      [clearFiles]
+    );
 
     const handleSend = useCallback(async () => {
       if (
@@ -287,24 +294,25 @@ const MessageCompose = memo(
               onChange={onMessageChange}
               onSubmit={handleSend}
               onTyping={onTyping}
+              onArrowUp={onArrowUp}
               disabled={uploading || !canSendMessages}
               readOnly={sending}
               commands={pluginCommands}
             />
           </div>
 
-          {showPluginSlot && (
-            <PluginSlotRenderer slotId={PluginSlot.CHAT_ACTIONS} />
-          )}
           <input {...fileInputProps} />
-          <div className="flex items-start gap-1 pr-4 shrink-0 sticky top-0">
+          <div className="flex items-start pr-4 pt-2 shrink-0 sticky top-0">
+            {showPluginSlot && (
+              <PluginSlotRenderer slotId={PluginSlot.CHAT_ACTIONS} />
+            )}
+
             <EmojiPicker
               onEmojiSelect={(emoji) => tiptapRef.current?.insertEmoji(emoji)}
             >
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8 mt-3"
                 disabled={uploading || !canSendMessages}
               >
                 <Smile className="h-4 w-4" />
@@ -313,7 +321,6 @@ const MessageCompose = memo(
             <Button
               size="icon"
               variant="ghost"
-              className="h-8 w-8 mt-3"
               disabled={uploading || !canUploadFiles}
               onClick={openFileDialog}
             >
@@ -322,7 +329,6 @@ const MessageCompose = memo(
             <Button
               size="icon"
               variant="ghost"
-              className="h-8 w-8 mt-3"
               onClick={handleSend}
               disabled={uploading || sending || !canSendMessages}
             >

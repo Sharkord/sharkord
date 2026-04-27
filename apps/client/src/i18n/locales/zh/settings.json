@@ -137,6 +137,8 @@
   "directMessagesEnabledDesc": "允许用户互相发送私信。若禁用，用户只能在频道中通信。",
   "searchEnabledLabel": "搜索",
   "searchEnabledDesc": "允许用户在服务器中搜索消息和文件。",
+  "showWelcomeDialogLabel": "显示欢迎对话框",
+  "showWelcomeDialogDesc": "在用户首次加入服务器时向其显示个人资料设置对话框。",
   "usersTitle": "用户",
   "usersDesc": "管理服务器用户及其权限",
   "usersAvatarCol": "头像",

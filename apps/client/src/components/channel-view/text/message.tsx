@@ -23,6 +23,8 @@ type TMessageProps = {
   onReplyMessageSelect?: (message: TJoinedMessage) => void;
   isInlineReplyTarget?: boolean;
   isActiveThread?: boolean;
+  editingMessageId?: number;
+  onEditComplete?: () => void;
 };
 
 const Message = memo(
@@ -33,10 +35,13 @@ const Message = memo(
     disableReactions,
     onReplyMessageSelect,
     isInlineReplyTarget,
-    isActiveThread
+    isActiveThread,
+    editingMessageId,
+    onEditComplete
   }: TMessageProps) => {
     const { t } = useTranslation('common');
-    const [isEditing, setIsEditing] = useState(false);
+    const [isPencilEditing, setIsPencilEditing] = useState(false);
+    const isEditing = isPencilEditing || editingMessageId === message.id;
     const isFromOwnUser = useIsOwnUser(message.userId);
     const can = useCan();
     const ownUserId = useOwnUserId();
@@ -88,7 +93,7 @@ const Message = memo(
             )}
             {!disableActions && (
               <MessageActions
-                onEdit={() => setIsEditing(true)}
+                onEdit={() => setIsPencilEditing(true)}
                 canManage={canManage}
                 messageId={message.id}
                 channelId={message.channelId}
@@ -103,7 +108,12 @@ const Message = memo(
         ) : (
           <MessageEditInline
             message={message}
-            onBlur={() => setIsEditing(false)}
+            onBlur={() => {
+              setIsPencilEditing(false);
+              if (editingMessageId === message.id) {
+                onEditComplete?.();
+              }
+            }}
           />
         )}
       </div>

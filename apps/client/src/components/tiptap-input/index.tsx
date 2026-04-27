@@ -40,6 +40,7 @@ type TTiptapInputProps = {
   onChange?: (html: string) => void;
   onSubmit?: () => void;
   onCancel?: () => void;
+  onArrowUp?: () => void;
   onTyping?: () => void;
   commands?: TCommandInfo[];
   ref?: Ref<TTiptapInputHandle>;
@@ -51,6 +52,7 @@ const TiptapInput = memo(
     onChange,
     onSubmit,
     onCancel,
+    onArrowUp,
     onTyping,
     disabled,
     readOnly,
@@ -58,8 +60,14 @@ const TiptapInput = memo(
     ref
   }: TTiptapInputProps) => {
     const readOnlyRef = useRef(readOnly);
+    const onSubmitRef = useRef(onSubmit);
+    const onCancelRef = useRef(onCancel);
+    const onArrowUpRef = useRef(onArrowUp);
 
     readOnlyRef.current = readOnly;
+    onSubmitRef.current = onSubmit;
+    onCancelRef.current = onCancel;
+    onArrowUpRef.current = onArrowUp;
 
     const customEmojis = useCustomEmojis();
     const users = useFilteredUsers();
@@ -153,14 +161,23 @@ const TiptapInput = memo(
             }
 
             event.preventDefault();
-            onSubmit?.();
+            onSubmitRef.current?.();
             return true;
           }
 
           if (event.key === 'Escape') {
             event.preventDefault();
-            onCancel?.();
+            onCancelRef.current?.();
             return true;
+          }
+
+          if (event.key === 'ArrowUp') {
+            if (editor.isEmpty && onArrowUpRef.current) {
+              event.preventDefault();
+              onArrowUpRef.current();
+              return true;
+            }
+            return false;
           }
 
           return false;
