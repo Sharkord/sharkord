@@ -67,13 +67,20 @@ const VoiceUserCard = memo(
       >
         {voiceUser.banner && showUserBanners ? (
           <div
-            className="h-full w-full rounded-t-md bg-cover bg-center blur-sm brightness-50 bg-no-repeat absolute inset-0"
-            style={{
-              backgroundImage: `url("${getFileUrl(voiceUser.banner)}")`
-            }}
+            className="h-full w-full rounded bg-center bg-cover blur-sm brightness-50 bg-no-repeat absolute inset-0"
+            style={
+              hasVideoStream
+                ? { backgroundColor: '#000000' }
+                : {
+                    backgroundImage: `url("${getFileUrl(voiceUser.banner)}")`
+                  }
+            }
           />
         ) : (
-          <CardGradient bannerColor={voiceUser.bannerColor} />
+          <CardGradient
+            bannerColor={voiceUser.bannerColor}
+            hasVideoStream={hasVideoStream}
+          />
         )}
 
         {hasVideoStream && (
@@ -126,35 +133,21 @@ const VoiceUserCard = memo(
           >
             {voiceUser.state.micMuted && !voiceUser.state.soundMuted && (
               <MicOff
-                className={cn(
-                  'text-red-400/80 shrink-0',
-                  isPinned ? 'size-4' : aCardIsPinned ? 'size-3' : 'size-4'
-                )}
+                className="text-red-400/80 shrink-0 size-3"
+                fill="currentColor"
               />
             )}
             {voiceUser.state.soundMuted && (
               <HeadphoneOff
-                className={cn(
-                  'text-red-400/80 ',
-                  isPinned ? 'size-4' : aCardIsPinned ? 'size-3' : 'size-4'
-                )}
+                className="text-red-400/80 size-3"
+                fill="currentColor"
               />
             )}
             {voiceUser.state.webcamEnabled && (
-              <Video
-                className={cn(
-                  ' text-blue-600/80',
-                  isPinned ? 'size-4' : aCardIsPinned ? 'size-3' : 'size-4'
-                )}
-              />
+              <Video className="text-white/80 size-3" fill="currentColor" />
             )}
             {voiceUser.state.sharingScreen && (
-              <Monitor
-                className={cn(
-                  'text-purple-500/80',
-                  isPinned ? 'size-4' : aCardIsPinned ? 'size-3' : 'size-4'
-                )}
-              />
+              <Monitor className="text-white/80 size-3" />
             )}
             <p
               className={cn(
@@ -170,16 +163,16 @@ const VoiceUserCard = memo(
           <div
             className={cn(
               'inline-flex min-h-4 gap-3 items-center rounded',
-              isPinned ? 'gap-3' : aCardIsPinned ? 'gap-1' : 'gap-3',
+              isPinned ? 'gap-2' : aCardIsPinned ? 'gap-1' : 'gap-2',
               'hidden group-hover:inline-flex'
             )}
           >
             {!isOwnUser && (
               <VolumeButton
                 volumeKey={volumeKey}
-                size={isPinned ? 'sm' : aCardIsPinned ? 'xs' : 'sm'}
+                size={'xs'}
                 className={cn(
-                  'bg-black/70 rounded px-3 py-2 shrink-0 hover:bg-black/80',
+                  'bg-black/70 rounded py-2 shrink-0 hover:bg-black/80',
                   isPinned ? 'px-3' : aCardIsPinned ? 'px-2' : 'px-3'
                 )}
               />
@@ -188,9 +181,9 @@ const VoiceUserCard = memo(
               <PinButton
                 isPinned={isPinned}
                 handlePinToggle={handlePinToggle}
-                size={isPinned ? 'sm' : aCardIsPinned ? 'xs' : 'sm'}
+                size={'xs'}
                 className={cn(
-                  'bg-black/70 rounded px-3 py-2 shrink-0 hover:bg-black/80',
+                  'bg-black/70 rounded py-2 shrink-0 hover:bg-black/80',
                   isPinned ? 'px-3' : aCardIsPinned ? 'px-2' : 'px-3',
                   isPinned &&
                     'bg-zinc-300/80 text-zinc-800 hover:bg-zinc-400/90 hover:text-zinc-900'

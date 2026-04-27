@@ -112,7 +112,7 @@ const ScreenShareCard = memo(
       <div
         ref={containerRef}
         className={cn(
-          'relative bg-card group/screen-share-card',
+          'relative bg-black group/screen-share-card',
           'flex items-center justify-center',
           'size-full',
           isFullscreen
@@ -169,12 +169,7 @@ const ScreenShareCard = memo(
                   : 'gap-3 px-3'
             )}
           >
-            <Monitor
-              className={cn(
-                'text-purple-400 shrink-0',
-                isPinned ? 'size-4' : aCardIsPinned ? 'size-3' : 'size-4'
-              )}
-            />
+            <Monitor className="text-white shrink-0 size-3" />
             <p
               className={cn(
                 isPinned ? 'text-sm' : aCardIsPinned ? 'text-xs' : 'text-sm',
@@ -212,9 +207,9 @@ const ScreenShareCard = memo(
             {!isOwnUser && hasScreenShareAudioStream && (
               <VolumeButton
                 volumeKey={volumeKey}
-                size={isPinned ? 'sm' : aCardIsPinned ? 'xs' : 'sm'}
+                size={'xs'}
                 className={cn(
-                  'bg-black/70 rounded px-3 py-2 hover:bg-black/80',
+                  'bg-black/70 rounded py-2 hover:bg-black/80',
                   isPinned ? 'px-3' : aCardIsPinned ? 'px-2' : 'px-3'
                 )}
               />
@@ -225,9 +220,9 @@ const ScreenShareCard = memo(
                 icon={isZoomEnabled ? ZoomOut : ZoomIn}
                 onClick={handleToggleZoom}
                 title={isZoomEnabled ? 'Disable Zoom' : 'Enable Zoom'}
-                size={isPinned ? 'sm' : aCardIsPinned ? 'xs' : 'sm'}
+                size={'xs'}
                 className={cn(
-                  'bg-black/70 rounded px-3 py-2 hover:bg-black/80',
+                  'bg-black/70 rounded py-2 hover:bg-black/80',
                   isPinned ? 'px-3' : aCardIsPinned ? 'px-2' : 'px-3',
                   isZoomEnabled &&
                     'bg-zinc-300/80 text-zinc-800 hover:bg-zinc-400/90 hover:text-zinc-900'
@@ -237,9 +232,9 @@ const ScreenShareCard = memo(
             <FullscreenButton
               isFullscreen={isFullscreen}
               handleToggleFullscreen={handleToggleFullscreen}
-              size={isPinned ? 'sm' : aCardIsPinned ? 'xs' : 'sm'}
+              size={'xs'}
               className={cn(
-                'bg-black/70 rounded px-3 py-2 hover:bg-black/80',
+                'bg-black/70 rounded py-2 hover:bg-black/80',
                 isPinned ? 'px-3' : aCardIsPinned ? 'px-2' : 'px-3',
                 isFullscreen &&
                   'bg-zinc-300/80 text-zinc-800 hover:bg-zinc-400/90 hover:text-zinc-900'
@@ -249,9 +244,9 @@ const ScreenShareCard = memo(
               <PinButton
                 isPinned={isPinned}
                 handlePinToggle={handlePinToggle}
-                size={isPinned ? 'sm' : aCardIsPinned ? 'xs' : 'sm'}
+                size={'xs'}
                 className={cn(
-                  'bg-black/70 rounded px-3 py-2 hover:bg-black/80',
+                  'bg-black/70 rounded py-2 hover:bg-black/80',
                   isPinned ? 'px-3' : aCardIsPinned ? 'px-2' : 'px-3',
                   isPinned &&
                     'bg-zinc-300/80 text-zinc-800 hover:bg-zinc-400/90 hover:text-zinc-900'

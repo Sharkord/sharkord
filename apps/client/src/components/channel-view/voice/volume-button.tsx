@@ -47,9 +47,11 @@ const VolumeButton = memo(
           />
         </PopoverTrigger>
         <PopoverContent
+          usePortal={false}
           align="center"
           side="top"
           className="w-48 p-3"
+          sideOffset={-10}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center gap-2">

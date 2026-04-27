@@ -36,7 +36,7 @@ const ControlToggleButton = memo(
     const label = enabled ? enabledLabel : disabledLabel;
 
     return (
-      <Tooltip content={label}>
+      <Tooltip content={label} usePortal={false}>
         <Button
           variant="ghost"
           size="icon"

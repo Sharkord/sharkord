@@ -45,9 +45,10 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
   return (
     <div
       className={cn(
-        'flex justify-center items-center pointer-events-none relative -mt-3 p-6',
-        'transition-all duration-300 ease-in-out gap-2',
-        'opacity-0 translate-y-10 group-hover/voice-stage:opacity-100 group-hover/voice-stage:translate-y-0'
+        'flex justify-center items-center pointer-events-none relative -mt-3 gap-2',
+        'transition-all duration-300 ease-in-out',
+        'opacity-0 translate-y-10 group-hover/voice-stage:opacity-100 group-hover/voice-stage:translate-y-0',
+        'max-h-0 group-hover/voice-stage:max-h-full p-0 group-hover/voice-stage:p-3'
       )}
     >
       <div
@@ -104,11 +105,11 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
           />
         )}
       </div>
-      <Tooltip content="Disconnect">
+      <Tooltip content="Disconnect" sideOffset={-2} usePortal={false}>
         <Button
-          size="icon"
           className={cn(
-            'pointer-events-auto p-5.5 rounded text-white shadow-xl transition-all border border-border/50 backdrop-blur-md',
+            'inline-flex h-full min-w-11 items-center justify-center rounded px-3 border border-border',
+            'pointer-events-auto text-white shadow-xl transition-all',
             'bg-[#ec4245] hover:bg-[#da373c]'
           )}
           onClick={() => leaveVoice()}
