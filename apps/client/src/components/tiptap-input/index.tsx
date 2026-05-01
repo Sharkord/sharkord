@@ -37,6 +37,7 @@ type TTiptapInputProps = {
   disabled?: boolean;
   readOnly?: boolean;
   value?: string;
+  placeholder?: string;
   onChange?: (html: string) => void;
   onSubmit?: () => void;
   onCancel?: () => void;
@@ -49,6 +50,7 @@ type TTiptapInputProps = {
 const TiptapInput = memo(
   ({
     value,
+    placeholder,
     onChange,
     onSubmit,
     onCancel,
@@ -288,9 +290,9 @@ const TiptapInput = memo(
             disabled ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         />
-        {isEmpty && (
-          <div className="absolute top-0 left-0 px-5 py-[14px] text-muted-foreground/50 pointer-events-none select-none">
-            Type a message...
+        {isEmpty && placeholder && (
+          <div className="absolute inset-0 px-5 py-[14px] text-muted-foreground/50 pointer-events-none select-none truncate">
+            {placeholder}
           </div>
         )}
       </div>
