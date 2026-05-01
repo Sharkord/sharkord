@@ -65,5 +65,41 @@ export const MentionNode = Node.create({
       },
       `@${node.attrs.label ?? ''}`
     ];
+  },
+
+  parseMarkdown: (token, helpers) => {
+    const raw = token.raw || '';
+    const match = raw.match(/data-user-id="([^"]+)"/);
+    const userId = match ? match[1] : null;
+    const label = raw
+      .replace(/^<span[^>]*>/, '')
+      .replace(/<\/span>$/, '')
+      .replace(/^@/, '');
+
+    return helpers.createNode('mention', { userId, label });
+  },
+
+  renderMarkdown: (node) => {
+    const userId = (node.attrs as { userId?: string })?.userId ?? '';
+    const label = (node.attrs as { label?: string })?.label ?? '';
+    return `<span data-type="mention" data-user-id="${userId}" class="mention">@${label}</span>`;
+  },
+
+  markdownTokenizer: {
+    name: 'mention',
+    level: 'inline',
+    start: (src: string) => src.indexOf('<span data-type="mention"'),
+    tokenize: (src: string) => {
+      const match = src.match(
+        /^<span data-type="mention"[^>]*>[\s\S]*?<\/span>/
+      );
+      if (!match) return undefined;
+
+      return {
+        type: 'mention',
+        raw: match[0],
+        content: match[0]
+      };
+    }
   }
 });
