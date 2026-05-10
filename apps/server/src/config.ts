@@ -41,6 +41,34 @@ const zConfig = z.object({
     search: z.object({
       maxRequests: z.coerce.number().int().positive(),
       windowMs: z.coerce.number().int().positive()
+    }),
+    signalTyping: z.object({
+      maxRequests: z.coerce.number().int().positive(),
+      windowMs: z.coerce.number().int().positive()
+    }),
+    getMessages: z.object({
+      maxRequests: z.coerce.number().int().positive(),
+      windowMs: z.coerce.number().int().positive()
+    }),
+    markAsRead: z.object({
+      maxRequests: z.coerce.number().int().positive(),
+      windowMs: z.coerce.number().int().positive()
+    }),
+    toggleMessageReaction: z.object({
+      maxRequests: z.coerce.number().int().positive(),
+      windowMs: z.coerce.number().int().positive()
+    }),
+    addEmoji: z.object({
+      maxRequests: z.coerce.number().int().positive(),
+      windowMs: z.coerce.number().int().positive()
+    }),
+    openDirectMessage: z.object({
+      maxRequests: z.coerce.number().int().positive(),
+      windowMs: z.coerce.number().int().positive()
+    }),
+    handshake: z.object({
+      maxRequests: z.coerce.number().int().positive(),
+      windowMs: z.coerce.number().int().positive()
     })
   })
 });
@@ -73,6 +101,34 @@ const defaultConfig: TConfig = {
     },
     search: {
       maxRequests: 15,
+      windowMs: 60_000
+    },
+    signalTyping: {
+      maxRequests: 40,
+      windowMs: 5_000
+    },
+    getMessages: {
+      maxRequests: 60,
+      windowMs: 10_000
+    },
+    markAsRead: {
+      maxRequests: 60,
+      windowMs: 10_000
+    },
+    toggleMessageReaction: {
+      maxRequests: 60,
+      windowMs: 10_000
+    },
+    addEmoji: {
+      maxRequests: 10,
+      windowMs: 60_000
+    },
+    openDirectMessage: {
+      maxRequests: 10,
+      windowMs: 60_000
+    },
+    handshake: {
+      maxRequests: 10,
       windowMs: 60_000
     }
   }

@@ -1,6 +1,7 @@
 import { Permission } from '@sharkord/shared';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { config } from '../../config';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { assertDmChannel } from '../../db/queries/dms';
@@ -8,9 +9,13 @@ import { getEmojiFileIdByEmojiName } from '../../db/queries/emojis';
 import { getReaction } from '../../db/queries/messages';
 import { messageReactions, messages } from '../../db/schema';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const toggleMessageReactionRoute = protectedProcedure
+const toggleMessageReactionRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.toggleMessageReaction.maxRequests,
+  windowMs: config.rateLimiters.toggleMessageReaction.windowMs,
+  logLabel: 'toggleMessageReaction'
+})
   .input(
     z.object({
       messageId: z.number(),
