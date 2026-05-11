@@ -4,16 +4,12 @@ import {
 } from '@/components/message-compose';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
+import { prepareMessageHtml } from '@/helpers/prepare-message-html';
 import type { LocalStorageKey } from '@/helpers/storage';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TReplyTarget } from '@/types';
 import type { TJoinedPublicUser } from '@sharkord/shared';
-import {
-  TYPING_MS,
-  getTrpcError,
-  prepareMessageHtml,
-  type TJoinedMessage
-} from '@sharkord/shared';
+import { TYPING_MS, getTrpcError, type TJoinedMessage } from '@sharkord/shared';
 import { throttle } from 'lodash-es';
 import { memo, useCallback, useMemo, useState, type Ref } from 'react';
 import { toast } from 'sonner';

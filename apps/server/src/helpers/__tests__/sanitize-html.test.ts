@@ -64,11 +64,15 @@ describe('sanitize-html', () => {
     ).toBe('');
   });
 
-  test('should convert <h1>-<h6> tags to <p> to preserve block structure', () => {
-    expect(sanitizeMessageHtml('<h1>heading</h1>')).toBe('<p>heading</p>');
+  test('should limit headings to h1-h2, transform h3-h6 to h2', () => {
+    expect(sanitizeMessageHtml('<h1>heading</h1>')).toBe('<h1>heading</h1>');
+    expect(sanitizeMessageHtml('<h2>heading</h2>')).toBe('<h2>heading</h2>');
+    expect(sanitizeMessageHtml('<h3>heading</h3>')).toBe('<h2>heading</h2>');
     expect(sanitizeMessageHtml('<h4>heading</h4><p>body</p>')).toBe(
-      '<p>heading</p><p>body</p>'
+      '<h2>heading</h2><p>body</p>'
     );
+    expect(sanitizeMessageHtml('<h5>heading</h5>')).toBe('<h2>heading</h2>');
+    expect(sanitizeMessageHtml('<h6>heading</h6>')).toBe('<h2>heading</h2>');
   });
 
   test('should strip event handler attributes', () => {

@@ -30,6 +30,9 @@
     "@trpc/client": "^11.6.0"
   },
   "dependencies": {
+    "@tiptap/core": "^3.7.2",
+    "@tiptap/markdown": "3.7.2",
+    "@tiptap/starter-kit": "^3.7.2",
     "drizzle-orm": "^0.44.6",
     "js-sha256": "^0.11.1",
     "linkify-it": "^5.0.0",
