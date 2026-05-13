@@ -325,10 +325,10 @@
   "overflowDeleteOldFiles": "Supprimer les anciens fichiers",
   "overflowPreventUploads": "Empêcher les nouveaux téléversement",
 
-  "imageOptimizationLabel": "Enable image optimization",
-  "imageOptimizationDesc": "Converts supported image uploads to optimized WebP files.",
-  "imageQualityLabel": "Image quality",
-  "imageQualityDesc": "Controls the WebP quality used for optimized images. Higher values preserve detail but use more storage.",
+  "imageOptimizationLabel": "Activer l’optimisation des images",
+  "imageOptimizationDesc": "Convertit les images téléversées compatibles en fichiers WebP optimisés.",
+  "imageQualityLabel": "Qualité d’image",
+  "imageQualityDesc": "Contrôle la qualité WebP utilisée pour les images optimisées. Les valeurs élevées préservent plus de détails, mais utilisent plus d’espace de stockage.",
 
   "signedUrlsLabel": "URL signées",
   "signedUrlsDesc": "Lorsque cette option est activée, toutes les URL de fichiers nécessitent un token signé avec une durée de validité. Cela empêche l'accès non autorisé aux fichiers par devinette d'URL. Lorsque cette option est désactivée, les fichiers dans les salons publics sont accessibles par toute personne disposant de l'URL.",

@@ -288,10 +288,10 @@
   "overflowDeleteOldFiles": "Удалить старые файлы",
   "overflowPreventUploads": "Запретить загрузку новых файлов",
 
-  "imageOptimizationLabel": "Enable image optimization",
-  "imageOptimizationDesc": "Converts supported image uploads to optimized WebP files.",
-  "imageQualityLabel": "Image quality",
-  "imageQualityDesc": "Controls the WebP quality used for optimized images. Higher values preserve detail but use more storage.",
+  "imageOptimizationLabel": "Включить оптимизацию изображений",
+  "imageOptimizationDesc": "Преобразует поддерживаемые загруженные изображения в оптимизированные файлы WebP.",
+  "imageQualityLabel": "Качество изображения",
+  "imageQualityDesc": "Управляет качеством WebP для оптимизированных изображений. Более высокие значения сохраняют больше деталей, но используют больше места в хранилище.",
 
   "moderateUserAction": "Модерировать пользователя",
 
