@@ -1,6 +1,8 @@
 import {
   ActivityLogType,
   Permission,
+  STORAGE_MAX_IMAGE_OPTIMIZATION_QUALITY,
+  STORAGE_MIN_IMAGE_OPTIMIZATION_QUALITY,
   StorageOverflowAction
 } from '@sharkord/shared';
 import { z } from 'zod';
@@ -33,7 +35,14 @@ const updateSettingsRoute = protectedProcedure
       enableSearch: z.boolean().optional(),
       showWelcomeDialog: z.boolean().optional(),
       storageSignedUrlsEnabled: z.boolean().optional(),
-      storageSignedUrlsTtlSeconds: z.number().int().min(0).optional()
+      storageSignedUrlsTtlSeconds: z.number().int().min(0).optional(),
+      storageImageOptimizationEnabled: z.boolean().optional(),
+      storageImageOptimizationQuality: z
+        .number()
+        .int()
+        .min(STORAGE_MIN_IMAGE_OPTIMIZATION_QUALITY)
+        .max(STORAGE_MAX_IMAGE_OPTIMIZATION_QUALITY)
+        .optional()
     })
   )
   .mutation(async ({ input, ctx }) => {
@@ -62,7 +71,9 @@ const updateSettingsRoute = protectedProcedure
       enableSearch: input.enableSearch,
       showWelcomeDialog: input.showWelcomeDialog,
       storageSignedUrlsEnabled: input.storageSignedUrlsEnabled,
-      storageSignedUrlsTtlSeconds: input.storageSignedUrlsTtlSeconds
+      storageSignedUrlsTtlSeconds: input.storageSignedUrlsTtlSeconds,
+      storageImageOptimizationEnabled: input.storageImageOptimizationEnabled,
+      storageImageOptimizationQuality: input.storageImageOptimizationQuality
     });
 
     if (oldEnablePlugins !== input.enablePlugins) {

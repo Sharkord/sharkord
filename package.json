@@ -20,6 +20,10 @@
     "magic": "bun run format && bun run check-types && bun run lint"
   },
   "devDependencies": {
+    "@types/bun": "1.3.14",
     "knip": "^5.80.0"
+  },
+  "overrides": {
+    "@types/bun": "1.3.14"
   }
 }
