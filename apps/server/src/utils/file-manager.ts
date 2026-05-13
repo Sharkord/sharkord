@@ -1,9 +1,12 @@
 import {
   FileSaveType,
   getErrorMessage,
+  STORAGE_MAX_IMAGE_OPTIMIZATION_QUALITY,
+  STORAGE_MIN_IMAGE_OPTIMIZATION_QUALITY,
   StorageOverflowAction,
   type TBeforeFileSaveResult,
   type TFile,
+  type TJoinedSettings,
   type TTempFile
 } from '@sharkord/shared';
 import { randomUUIDv7 } from 'bun';
@@ -18,6 +21,7 @@ import { getSettings } from '../db/queries/server';
 import { getStorageUsageByUserId } from '../db/queries/users';
 import { files } from '../db/schema';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../helpers/paths';
+import { logger } from '../logger';
 import { pluginManager } from '../plugins';
 
 /**
@@ -30,6 +34,15 @@ import { pluginManager } from '../plugins';
  */
 
 const TEMP_FILE_TTL = 1000 * 60 * 1; // 1 minute
+const OPTIMIZABLE_IMAGE_EXTENSIONS = new Set([
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.heic',
+  '.heif',
+  '.avif'
+]);
 
 const md5File = async (path: string): Promise<string> => {
   const file = await fs.readFile(path);
@@ -171,9 +184,11 @@ class FileManager {
   public temporaryFileHasMimeType =
     this.tempFileManager.temporaryFileHasMimeType;
 
-  private handleStorageLimits = async (tempFile: TTempFile) => {
-    const [settings, userStorage, serverStorage] = await Promise.all([
-      getSettings(),
+  private handleStorageLimits = async (
+    tempFile: TTempFile,
+    settings: TJoinedSettings
+  ) => {
+    const [userStorage, serverStorage] = await Promise.all([
       getStorageUsageByUserId(tempFile.userId),
       getUsedFileQuota()
     ]);
@@ -208,6 +223,95 @@ class FileManager {
 
         await Promise.all(promises);
       }
+    }
+  };
+
+  private optimizeImageIfEnabled = async (
+    tempFile: TTempFile,
+    settings: TJoinedSettings
+  ) => {
+    if (
+      !settings.storageImageOptimizationEnabled ||
+      !OPTIMIZABLE_IMAGE_EXTENSIONS.has(tempFile.extension)
+    ) {
+      return;
+    }
+
+    const quality = Math.max(
+      STORAGE_MIN_IMAGE_OPTIMIZATION_QUALITY,
+      Math.min(
+        settings.storageImageOptimizationQuality,
+        STORAGE_MAX_IMAGE_OPTIMIZATION_QUALITY
+      )
+    );
+
+    const optimizedPath = path.join(TMP_PATH, `${tempFile.id}-optimized.webp`);
+
+    try {
+      await Bun.file(tempFile.path)
+        .image()
+        .webp({ quality })
+        .write(optimizedPath);
+
+      const [currentStats, optimizedStats] = await Promise.all([
+        fs.stat(tempFile.path),
+        fs.stat(optimizedPath)
+      ]);
+
+      if (optimizedStats.size >= currentStats.size) {
+        // this will probably never happen with quality settings below 100, but just in case - don't replace original if optimization doesn't reduce file size
+        await fs.unlink(optimizedPath);
+
+        return;
+      }
+
+      const previousPath = tempFile.path;
+      const originalBaseName = path.basename(
+        tempFile.originalName,
+        path.extname(tempFile.originalName)
+      );
+
+      tempFile.path = optimizedPath;
+      tempFile.size = optimizedStats.size;
+      tempFile.md5 = await md5File(optimizedPath);
+      tempFile.extension = '.webp';
+      tempFile.originalName = `${originalBaseName}.webp`;
+
+      await fs.unlink(previousPath);
+    } catch (error) {
+      logger.error(
+        `Image optimization failed for ${tempFile.originalName}: ${getErrorMessage(error)}`
+      );
+
+      try {
+        await fs.unlink(optimizedPath);
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  private validateFinalFileSize = (
+    tempFile: TTempFile,
+    type: FileSaveType | undefined,
+    settings: TJoinedSettings
+  ) => {
+    if (
+      type === FileSaveType.AVATAR &&
+      tempFile.size > settings.storageMaxAvatarSize
+    ) {
+      throw new Error(
+        `Avatar file exceeds the configured maximum size of ${settings.storageMaxAvatarSize / (1024 * 1024)} MB`
+      );
+    }
+
+    if (
+      type === FileSaveType.BANNER &&
+      tempFile.size > settings.storageMaxBannerSize
+    ) {
+      throw new Error(
+        `Banner file exceeds the configured maximum size of ${settings.storageMaxBannerSize / (1024 * 1024)} MB`
+      );
     }
   };
 
@@ -300,7 +404,14 @@ class FileManager {
       }
     }
 
-    await this.handleStorageLimits(tempFile);
+    const settings = await getSettings();
+
+    await this.optimizeImageIfEnabled(tempFile, settings);
+
+    // check for file size after optimization but before moving to final destination to prevent hitting storage limits with optimized files
+    this.validateFinalFileSize(tempFile, type, settings);
+
+    await this.handleStorageLimits(tempFile, settings);
 
     const fileName = await this.getUniqueName(tempFile.originalName);
     const destinationPath = path.join(PUBLIC_PATH, fileName);

@@ -76,13 +76,28 @@ const settings = sqliteTable(
     enableSearch: integer('enable_search', { mode: 'boolean' }).notNull(),
     showWelcomeDialog: integer('show_welcome_dialog', {
       mode: 'boolean'
-    }).notNull(),
+    })
+      .notNull()
+      .default(true),
     storageSignedUrlsEnabled: integer('storage_signed_urls_enabled', {
       mode: 'boolean'
     }).notNull(),
     storageSignedUrlsTtlSeconds: integer(
       'storage_signed_urls_ttl_seconds'
-    ).notNull()
+    ).notNull(),
+    storageImageOptimizationEnabled: integer(
+      'storage_image_optimization_enabled',
+      {
+        mode: 'boolean'
+      }
+    )
+      .notNull()
+      .default(false),
+    storageImageOptimizationQuality: integer(
+      'storage_image_optimization_quality'
+    )
+      .notNull()
+      .default(80)
   },
   (t) => [
     index('settings_server_idx').on(t.serverId),

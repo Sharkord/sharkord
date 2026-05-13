@@ -327,6 +327,11 @@
   "overflowDeleteOldFiles": "Smazat staré soubory",
   "overflowPreventUploads": "Zabránit nahrávání nových souborů",
 
+  "imageOptimizationLabel": "Povolit optimalizaci obrázků",
+  "imageOptimizationDesc": "Převádí podporované nahrané obrázky na optimalizované soubory WebP.",
+  "imageQualityLabel": "Kvalita obrázku",
+  "imageQualityDesc": "Určuje kvalitu WebP pro optimalizované obrázky. Vyšší hodnoty zachovají více detailů, ale použijí více úložiště.",
+
   "signedUrlsLabel": "Podepsané adresy URL",
   "signedUrlsDesc": "Pokud je tato možnost povolena, vyžadují všechny adresy URL souborů podepsaný token s dobou platnosti. Tím se zabrání neoprávněnému přístupu k souborům pomocí odhadování adresy URL. Pokud je tato možnost zakázána, jsou soubory ve veřejných kanálech přístupné komukoli, kdo zná adresu URL.",
   "signedUrlsTtlLabel": "Platnost podepsané adresy URL",

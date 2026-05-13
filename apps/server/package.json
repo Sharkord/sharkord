@@ -21,7 +21,6 @@
     "test:watch": "bun test --watch"
   },
   "devDependencies": {
-    "@types/bun": "1.3.12",
     "@types/ini": "^4.1.1",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/sanitize-html": "^2.16.0",

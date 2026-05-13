@@ -132,7 +132,9 @@ describe('others router', () => {
       storageQuota: 10 * 1024 * 1024 * 1024,
       storageMaxAvatarSize: 2 * 1024 * 1024,
       storageMaxBannerSize: 4 * 1024 * 1024,
-      storageMaxFilesPerMessage: 6
+      storageMaxFilesPerMessage: 6,
+      storageImageOptimizationEnabled: true,
+      storageImageOptimizationQuality: 72
     };
 
     await caller.others.updateSettings(newSettings);
@@ -161,6 +163,25 @@ describe('others router', () => {
     expect(settings.storageMaxFilesPerMessage).toBe(
       newSettings.storageMaxFilesPerMessage
     );
+    expect(settings.storageImageOptimizationEnabled).toBe(
+      newSettings.storageImageOptimizationEnabled
+    );
+    expect(settings.storageImageOptimizationQuality).toBe(
+      newSettings.storageImageOptimizationQuality
+    );
+  });
+
+  test('should not expose server secrets in get settings', async () => {
+    const { caller } = await initTest(1);
+
+    await caller.others.updateSettings({
+      password: 'testpassword'
+    });
+
+    const settings = await caller.others.getSettings();
+
+    expect(settings.password).toBe('');
+    expect(settings.secretToken).toBe('');
   });
 
   test('should throw when user lacks permissions (update settings)', async () => {
