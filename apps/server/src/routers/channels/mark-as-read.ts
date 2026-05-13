@@ -1,12 +1,17 @@
 import { type TMessage } from '@sharkord/shared';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
+import { config } from '../../config';
 import { db } from '../../db';
 import { assertDmChannel } from '../../db/queries/dms';
 import { channelReadStates, messages } from '../../db/schema';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const markAsReadRoute = protectedProcedure
+const markAsReadRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.markAsRead.maxRequests,
+  windowMs: config.rateLimiters.markAsRead.windowMs,
+  logLabel: 'markAsRead'
+})
   .input(
     z.object({
       channelId: z.number()
