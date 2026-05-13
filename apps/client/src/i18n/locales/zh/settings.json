@@ -303,6 +303,11 @@
   "overflowDeleteOldFiles": "删除旧文件",
   "overflowPreventUploads": "禁止新文件上传",
 
+  "imageOptimizationLabel": "Enable image optimization",
+  "imageOptimizationDesc": "Converts supported image uploads to optimized WebP files.",
+  "imageQualityLabel": "Image quality",
+  "imageQualityDesc": "Controls the WebP quality used for optimized images. Higher values preserve detail but use more storage.",
+
   "signedUrlsLabel": "签名 URL",
   "signedUrlsDesc": "启用后，所有文件 URL 都需要带有过期时间的签名令牌。这可以防止通过猜测 URL 未经授权访问文件。禁用时，公共频道中的文件可被任何拥有 URL 的人访问。",
   "signedUrlsTtlLabel": "签名 URL 过期时间",

@@ -288,6 +288,11 @@
   "overflowDeleteOldFiles": "Удалить старые файлы",
   "overflowPreventUploads": "Запретить загрузку новых файлов",
 
+  "imageOptimizationLabel": "Enable image optimization",
+  "imageOptimizationDesc": "Converts supported image uploads to optimized WebP files.",
+  "imageQualityLabel": "Image quality",
+  "imageQualityDesc": "Controls the WebP quality used for optimized images. Higher values preserve detail but use more storage.",
+
   "moderateUserAction": "Модерировать пользователя",
 
   "inviteCopied": "Пригласительный код скопирован в буфер обмена",

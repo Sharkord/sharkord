@@ -9,6 +9,11 @@ import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../../helpers/paths';
 import { pluginManager } from '../../plugins';
 import { fileManager } from '../file-manager';
 
+const UNCOMPRESSED_PNG_PATH = path.join(
+  __dirname,
+  '../../__tests__/mocks/uncompressed.png'
+);
+
 describe('file manager', () => {
   const tempFilesToCleanup: string[] = [];
   let testFilePath: string;
@@ -213,6 +218,123 @@ describe('file manager', () => {
     const publicPath = path.join(PUBLIC_PATH, savedFile.name);
     const savedContent = await fs.readFile(publicPath, 'utf-8');
     expect(savedContent).toBe(content);
+  });
+
+  test('should leave images unchanged when optimization is disabled', async () => {
+    const filePath = path.join(UPLOADS_PATH, `disabled-${Date.now()}.png`);
+
+    await fs.copyFile(UNCOMPRESSED_PNG_PATH, filePath);
+    const stats = await fs.stat(filePath);
+
+    const tempFile = await fileManager.addTemporaryFile({
+      filePath,
+      size: stats.size,
+      originalName: 'disabled.png',
+      userId: 1
+    });
+
+    const savedFile = await fileManager.saveFile(tempFile.id, 1);
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, savedFile.name));
+
+    expect(savedFile.name).toBe('disabled.png');
+    expect(savedFile.originalName).toBe('disabled.png');
+    expect(savedFile.extension).toBe('.png');
+    expect(savedFile.size).toBe(stats.size);
+  });
+
+  test('should convert supported images to optimized WebP when enabled', async () => {
+    await tdb
+      .update(settings)
+      .set({
+        storageImageOptimizationEnabled: true,
+        storageImageOptimizationQuality: 75
+      })
+      .execute();
+
+    const filePath = path.join(UPLOADS_PATH, `optimized-${Date.now()}.png`);
+
+    await fs.copyFile(UNCOMPRESSED_PNG_PATH, filePath);
+    const stats = await fs.stat(filePath);
+
+    const tempFile = await fileManager.addTemporaryFile({
+      filePath,
+      size: stats.size,
+      originalName: 'optimized.png',
+      userId: 1
+    });
+
+    const savedFile = await fileManager.saveFile(tempFile.id, 1);
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, savedFile.name));
+
+    expect(savedFile.name).toBe('optimized.webp');
+    expect(savedFile.originalName).toBe('optimized.webp');
+    expect(savedFile.extension).toBe('.webp');
+    expect(savedFile.mimeType).toBe('image/webp');
+    expect(savedFile.size).toBeLessThan(stats.size);
+  });
+
+  test('should leave non-images unchanged when optimization is enabled', async () => {
+    await tdb
+      .update(settings)
+      .set({ storageImageOptimizationEnabled: true })
+      .execute();
+
+    const content = 'not an image';
+    const filePath = path.join(UPLOADS_PATH, `not-image-${Date.now()}.txt`);
+
+    await fs.writeFile(filePath, content);
+    const stats = await fs.stat(filePath);
+
+    const tempFile = await fileManager.addTemporaryFile({
+      filePath,
+      size: stats.size,
+      originalName: 'not-image.txt',
+      userId: 1
+    });
+
+    const savedFile = await fileManager.saveFile(tempFile.id, 1);
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, savedFile.name));
+
+    expect(savedFile.name).toBe('not-image.txt');
+    expect(savedFile.extension).toBe('.txt');
+    expect(savedFile.size).toBe(stats.size);
+  });
+
+  test('should apply avatar size limit to optimized final size', async () => {
+    const filePath = path.join(UPLOADS_PATH, `avatar-${Date.now()}.png`);
+
+    await fs.copyFile(UNCOMPRESSED_PNG_PATH, filePath);
+    const stats = await fs.stat(filePath);
+
+    await tdb
+      .update(settings)
+      .set({
+        storageImageOptimizationEnabled: true,
+        storageImageOptimizationQuality: 75,
+        storageMaxAvatarSize: stats.size - 1
+      })
+      .execute();
+
+    const tempFile = await fileManager.addTemporaryFile({
+      filePath,
+      size: stats.size,
+      originalName: 'avatar.png',
+      userId: 1
+    });
+
+    const savedFile = await fileManager.saveFile(
+      tempFile.id,
+      1,
+      FileSaveType.AVATAR
+    );
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, savedFile.name));
+
+    expect(savedFile.extension).toBe('.webp');
+    expect(savedFile.size).toBeLessThan(stats.size - 1);
   });
 
   test('should insert file record in database', async () => {

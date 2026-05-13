@@ -327,6 +327,11 @@
   "overflowDeleteOldFiles": "Elimina file vecchi",
   "overflowPreventUploads": "Impedisci nuovi upload",
 
+  "imageOptimizationLabel": "Enable image optimization",
+  "imageOptimizationDesc": "Converts supported image uploads to optimized WebP files.",
+  "imageQualityLabel": "Image quality",
+  "imageQualityDesc": "Controls the WebP quality used for optimized images. Higher values preserve detail but use more storage.",
+
   "signedUrlsLabel": "URL firmati",
   "signedUrlsDesc": "Se abilitato, tutti gli URL file richiedono un token firmato con scadenza. Questo impedisce accessi non autorizzati tramite tentativi sugli URL. Se disabilitato, i file nei canali pubblici sono accessibili a chiunque abbia l'URL.",
   "signedUrlsTtlLabel": "Scadenza URL firmato",

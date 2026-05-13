@@ -4,6 +4,7 @@ import {
   OWNER_ROLE_ID,
   Permission,
   sha256,
+  STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY,
   STORAGE_DEFAULT_MAX_AVATAR_SIZE,
   STORAGE_DEFAULT_MAX_BANNER_SIZE,
   STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
@@ -68,7 +69,9 @@ const seedDatabase = async () => {
     enableSearch: true,
     showWelcomeDialog: true,
     storageSignedUrlsEnabled: false,
-    storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS
+    storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
+    storageImageOptimizationEnabled: false,
+    storageImageOptimizationQuality: STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY
   };
 
   await db.insert(settings).values(initialSettings);

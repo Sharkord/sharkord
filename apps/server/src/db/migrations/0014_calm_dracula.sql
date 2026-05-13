@@ -1,0 +1,2 @@
+ALTER TABLE `settings` ADD `storage_image_optimization_enabled` integer DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE `settings` ADD `storage_image_optimization_quality` integer DEFAULT 80 NOT NULL;

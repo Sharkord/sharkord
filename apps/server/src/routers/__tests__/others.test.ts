@@ -132,7 +132,9 @@ describe('others router', () => {
       storageQuota: 10 * 1024 * 1024 * 1024,
       storageMaxAvatarSize: 2 * 1024 * 1024,
       storageMaxBannerSize: 4 * 1024 * 1024,
-      storageMaxFilesPerMessage: 6
+      storageMaxFilesPerMessage: 6,
+      storageImageOptimizationEnabled: true,
+      storageImageOptimizationQuality: 72
     };
 
     await caller.others.updateSettings(newSettings);
@@ -160,6 +162,12 @@ describe('others router', () => {
     );
     expect(settings.storageMaxFilesPerMessage).toBe(
       newSettings.storageMaxFilesPerMessage
+    );
+    expect(settings.storageImageOptimizationEnabled).toBe(
+      newSettings.storageImageOptimizationEnabled
+    );
+    expect(settings.storageImageOptimizationQuality).toBe(
+      newSettings.storageImageOptimizationQuality
     );
   });
 
