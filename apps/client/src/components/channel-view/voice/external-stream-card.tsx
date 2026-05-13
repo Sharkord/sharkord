@@ -236,12 +236,12 @@ const ExternalStreamCard = memo(
                     src={stream.avatarUrl}
                     alt={stream.title || 'External Stream'}
                   />
-                  <AvatarFallback className="bg-gradient-to-br from-green-500/30 to-emerald-500/30">
+                  <AvatarFallback className="bg-linear-to-br from-green-500/30 to-emerald-500/30">
                     <Headphones className="size-10 text-green-400" />
                   </AvatarFallback>
                 </Avatar>
               ) : (
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-500/30 to-emerald-500/30 flex items-center justify-center border-2 border-green-500/50">
+                <div className="w-20 h-20 rounded-full bg-linear-to-br from-green-500/30 to-emerald-500/30 flex items-center justify-center border-2 border-green-500/50">
                   <Headphones className="size-10 text-green-400" />
                 </div>
               )}
@@ -258,10 +258,10 @@ const ExternalStreamCard = memo(
               <img
                 src={stream.avatarUrl}
                 alt={stream.title || 'External Stream'}
-                className="h-5 flex-shrink-0 rounded-full"
+                className="h-5 shrink-0 rounded-full"
               />
             ) : (
-              <Router className="size-3.5 text-purple-400 flex-shrink-0" />
+              <Router className="size-3.5 text-purple-400 shrink-0" />
             )}
             <span className="text-white font-medium text-xs truncate">
               {stream.title || 'External Stream'}
@@ -280,13 +280,13 @@ const ExternalStreamCard = memo(
             </div>
 
             {stream.pluginId && (
-              <span className="text-white/50 text-[10px] flex-shrink-0">
+              <span className="text-white/50 text-[10px] shrink-0">
                 via {stream.pluginId}
               </span>
             )}
 
             {isZoomEnabled && zoom > 1 && (
-              <span className="text-white/70 text-xs flex-shrink-0">
+              <span className="text-white/70 text-xs shrink-0">
                 {Math.round(zoom * 100)}%
               </span>
             )}
