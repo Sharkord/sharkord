@@ -14,6 +14,7 @@ import { memo, useCallback } from 'react';
 import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
 import { useVoiceRefs } from './hooks/use-voice-refs';
+import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { VolumeButton } from './volume-button';
 
@@ -77,6 +78,7 @@ const VoiceUserCard = memo(
 
         <CardControls>
           {!isOwnUser && <VolumeButton volumeKey={volumeKey} />}
+          {hasVideoStream && <PictureInPictureButton videoRef={videoRef} />}
           {showPinControls && (
             <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
           )}

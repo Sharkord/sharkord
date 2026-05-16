@@ -4,13 +4,14 @@ import { cn } from '@/lib/utils';
 import type { TExternalStream } from '@sharkord/shared';
 import { Avatar, AvatarFallback, AvatarImage, IconButton } from '@sharkord/ui';
 import { Headphones, Router, Video, ZoomIn, ZoomOut } from 'lucide-react';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, type RefObject } from 'react';
 import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
 import { FullscreenButton } from './fullscreen-button';
 import { useFullscreen } from './hooks/use-fullscreen';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useVoiceRefs } from './hooks/use-voice-refs';
+import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { StreamSettingsPopover } from './stream-settings-popover';
 
@@ -28,6 +29,7 @@ type TExternalStreamControlsProps = {
   isMuted: boolean;
   onVolumeChange: (volume: number) => void;
   onMuteToggle: () => void;
+  videoRef: RefObject<HTMLVideoElement | null>;
 };
 
 const ExternalStreamControls = memo(
@@ -44,7 +46,8 @@ const ExternalStreamControls = memo(
     volume,
     isMuted,
     onVolumeChange,
-    onMuteToggle
+    onMuteToggle,
+    videoRef
   }: TExternalStreamControlsProps) => {
     return (
       <CardControls>
@@ -65,6 +68,7 @@ const ExternalStreamControls = memo(
             size="sm"
           />
         )}
+        {hasVideo && <PictureInPictureButton videoRef={videoRef} />}
         {hasVideo && (
           <FullscreenButton
             isFullscreen={isFullscreen}
@@ -213,6 +217,7 @@ const ExternalStreamCard = memo(
           isMuted={isMuted}
           onVolumeChange={handleVolumeChange}
           onMuteToggle={handleMuteToggle}
+          videoRef={externalVideoRef}
         />
 
         {hasVideo ? (
