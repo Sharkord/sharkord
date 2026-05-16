@@ -163,6 +163,9 @@
   "ownerRoleInfo": "这是所有者角色，拥有全部权限，无法删除或修改其权限。",
   "roleNameLabel": "角色名称",
   "roleColorLabel": "角色颜色",
+  "roleStorageOverrideLabel": "启用存储覆盖",
+  "roleStorageOverrideDesc": "使用此角色的配额，而不是全局每用户配额。拥有多个覆盖角色的用户将使用最高配额。",
+  "roleStorageQuotaLabel": "存储配额",
   "roleDeleted": "角色已删除",
   "roleDeleteFailed": "删除角色失败",
   "roleUpdated": "角色已更新",
@@ -362,6 +365,12 @@
   "serverActivityMessages": "消息",
   "serverActivityLinks": "链接",
   "serverActivityFiles": "文件",
+
+  "modViewStorageTitle": "存储",
+  "modViewStorageUsed": "已用存储",
+  "modViewStorageQuota": "配额",
+  "modViewStorageFiles": "文件",
+  "modViewStorageUsage": "使用率",
 
   "detailsTitle": "详情",
   "userIdLabel": "用户 ID",

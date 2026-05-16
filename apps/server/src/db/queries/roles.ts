@@ -1,5 +1,5 @@
 import type { Permission, TJoinedRole, TRole } from '@sharkord/shared';
-import { eq, getTableColumns, sql } from 'drizzle-orm';
+import { and, eq, getTableColumns, sql } from 'drizzle-orm';
 import { db } from '..';
 import { rolePermissions, roles, userRoles } from '../schema';
 type TQueryResult = TRole & {
@@ -57,4 +57,36 @@ const getUserRoleIds = async (userId: number): Promise<number[]> => {
   return userRoleRecords.map((ur) => ur.roleId);
 };
 
-export { getDefaultRole, getRole, getRoles, getUserRoleIds };
+const getEffectiveStorageSpaceQuotaByUserId = async (
+  userId: number,
+  fallbackQuota: number
+): Promise<number> => {
+  const overrideRoles = await db
+    .select({ storageSpaceQuota: roles.storageSpaceQuota })
+    .from(userRoles)
+    .innerJoin(roles, eq(userRoles.roleId, roles.id))
+    .where(
+      and(
+        eq(userRoles.userId, userId),
+        eq(roles.storageQuotaOverrideEnabled, true)
+      )
+    );
+
+  if (overrideRoles.length === 0) {
+    return fallbackQuota;
+  }
+
+  if (overrideRoles.some((role) => role.storageSpaceQuota === 0)) {
+    return 0;
+  }
+
+  return Math.max(...overrideRoles.map((role) => role.storageSpaceQuota));
+};
+
+export {
+  getDefaultRole,
+  getEffectiveStorageSpaceQuotaByUserId,
+  getRole,
+  getRoles,
+  getUserRoleIds
+};

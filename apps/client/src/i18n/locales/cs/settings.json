@@ -163,6 +163,9 @@
   "ownerRoleInfo": "Toto je role vlastníka. Tato role má všechna oprávnění a nelze ji smazat ani měnit její oprávnění.",
   "roleNameLabel": "Název role",
   "roleColorLabel": "Barva role",
+  "roleStorageOverrideLabel": "Povolit přepsání úložiště",
+  "roleStorageOverrideDesc": "Použije kvótu této role místo globální kvóty na uživatele. Uživatelé s více rolemi s přepsáním dostanou nejvyšší kvótu.",
+  "roleStorageQuotaLabel": "Kvóta úložiště",
   "roleDeleted": "Role byla odstraněna",
   "roleDeleteFailed": "Roli se odstranit nepodařilo",
   "roleUpdated": "Role byla aktualizována",
@@ -386,6 +389,12 @@
   "serverActivityMessages": "Zprávy",
   "serverActivityLinks": "Odkazy",
   "serverActivityFiles": "Soubory",
+
+  "modViewStorageTitle": "Úložiště",
+  "modViewStorageUsed": "Využité úložiště",
+  "modViewStorageQuota": "Kvóta",
+  "modViewStorageFiles": "Soubory",
+  "modViewStorageUsage": "Využití",
 
   "detailsTitle": "Podrobnosti",
   "userIdLabel": "ID uživatele",

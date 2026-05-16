@@ -163,6 +163,9 @@
   "ownerRoleInfo": "Este es el rol de propietario. Este rol tiene todos los permisos y no puede ser eliminado ni se pueden cambiar sus permisos.",
   "roleNameLabel": "Nombre del rol",
   "roleColorLabel": "Color del rol",
+  "roleStorageOverrideLabel": "Habilitar anulación de almacenamiento",
+  "roleStorageOverrideDesc": "Usa la cuota de este rol en lugar de la cuota global por usuario. Los usuarios con varios roles de anulación obtienen la cuota más alta.",
+  "roleStorageQuotaLabel": "Cuota de almacenamiento",
   "roleDeleted": "Rol eliminado",
   "roleDeleteFailed": "Error al eliminar el rol",
   "roleUpdated": "Rol actualizado",
@@ -386,6 +389,12 @@
   "serverActivityMessages": "Mensajes",
   "serverActivityLinks": "Enlaces",
   "serverActivityFiles": "Archivos",
+
+  "modViewStorageTitle": "Almacenamiento",
+  "modViewStorageUsed": "Almacenamiento usado",
+  "modViewStorageQuota": "Cuota",
+  "modViewStorageFiles": "Archivos",
+  "modViewStorageUsage": "Uso",
 
   "detailsTitle": "Detalles",
   "userIdLabel": "ID de usuario",

@@ -130,6 +130,8 @@ const seedDatabase = async () => {
       color: '#FFFFFF',
       isDefault: false,
       isPersistent: true,
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0,
       createdAt: firstStart
     },
     {
@@ -137,6 +139,8 @@ const seedDatabase = async () => {
       color: '#FFFFFF',
       isPersistent: true,
       isDefault: true,
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0,
       createdAt: firstStart
     }
   ];

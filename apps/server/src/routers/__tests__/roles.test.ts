@@ -27,7 +27,9 @@ describe('roles router', () => {
         roleId: 2,
         name: 'Updated Role',
         color: '#ff0000',
-        permissions: [Permission.SEND_MESSAGES]
+        permissions: [Permission.SEND_MESSAGES],
+        storageQuotaOverrideEnabled: false,
+        storageSpaceQuota: 0
       })
     ).rejects.toThrow('Insufficient permissions');
   });
@@ -79,6 +81,8 @@ describe('roles router', () => {
     expect(newRole!.color).toBe('#ffffff');
     expect(newRole!.isDefault).toBe(false);
     expect(newRole!.isPersistent).toBe(false);
+    expect(newRole!.storageQuotaOverrideEnabled).toBe(false);
+    expect(newRole!.storageSpaceQuota).toBe(0);
   });
 
   test('should update existing role', async () => {
@@ -90,7 +94,9 @@ describe('roles router', () => {
       roleId,
       name: 'Updated Role Name',
       color: '#ff5500',
-      permissions: [Permission.SEND_MESSAGES, Permission.UPLOAD_FILES]
+      permissions: [Permission.SEND_MESSAGES, Permission.UPLOAD_FILES],
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0
     });
 
     const roles = await caller.roles.getAll();
@@ -102,6 +108,47 @@ describe('roles router', () => {
     expect(updatedRole!.permissions).toContain(Permission.SEND_MESSAGES);
     expect(updatedRole!.permissions).toContain(Permission.UPLOAD_FILES);
     expect(updatedRole!.permissions.length).toBe(2);
+    expect(updatedRole!.storageQuotaOverrideEnabled).toBe(false);
+    expect(updatedRole!.storageSpaceQuota).toBe(0);
+  });
+
+  test('should update role storage override settings', async () => {
+    const { caller } = await initTest();
+
+    const roleId = await caller.roles.add();
+
+    await caller.roles.update({
+      roleId,
+      name: 'Storage Role',
+      color: '#336699',
+      permissions: [Permission.UPLOAD_FILES],
+      storageQuotaOverrideEnabled: true,
+      storageSpaceQuota: 1024 * 1024 * 1024
+    });
+
+    const roles = await caller.roles.getAll();
+    const updatedRole = roles.find((r) => r.id === roleId);
+
+    expect(updatedRole).toBeDefined();
+    expect(updatedRole!.storageQuotaOverrideEnabled).toBe(true);
+    expect(updatedRole!.storageSpaceQuota).toBe(1024 * 1024 * 1024);
+  });
+
+  test('should reject invalid role storage quota', async () => {
+    const { caller } = await initTest();
+
+    const roleId = await caller.roles.add();
+
+    await expect(
+      caller.roles.update({
+        roleId,
+        name: 'Invalid Storage Role',
+        color: '#336699',
+        permissions: [Permission.UPLOAD_FILES],
+        storageQuotaOverrideEnabled: true,
+        storageSpaceQuota: -1
+      })
+    ).rejects.toThrow();
   });
 
   test('should not allow updating Owner role permissions', async () => {
@@ -111,7 +158,9 @@ describe('roles router', () => {
       roleId: 1,
       name: 'Owner',
       color: '#ff0000',
-      permissions: [Permission.SEND_MESSAGES]
+      permissions: [Permission.SEND_MESSAGES],
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0
     });
 
     const roles = await caller.roles.getAll();
@@ -217,7 +266,9 @@ describe('roles router', () => {
       roleId,
       name: 'No Permissions Role',
       color: '#000000',
-      permissions: []
+      permissions: [],
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0
     });
 
     const roles = await caller.roles.getAll();
@@ -243,7 +294,9 @@ describe('roles router', () => {
       roleId,
       name: 'Multi Permission Role',
       color: '#00ff00',
-      permissions
+      permissions,
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0
     });
 
     const roles = await caller.roles.getAll();
