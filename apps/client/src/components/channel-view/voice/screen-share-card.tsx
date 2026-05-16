@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { StreamKind } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
 import { Monitor, ZoomIn, ZoomOut } from 'lucide-react';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, type RefObject } from 'react';
 import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
 import { FullscreenButton } from './fullscreen-button';
@@ -16,6 +16,7 @@ import { useFullscreen } from './hooks/use-fullscreen';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useVideoStats } from './hooks/use-video-stats';
 import { useVoiceRefs } from './hooks/use-voice-refs';
+import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { VolumeButton } from './volume-button';
 
@@ -29,6 +30,7 @@ type tScreenShareControlsProps = {
   showPinControls: boolean;
   showAudioControl: boolean;
   volumeKey: TVolumeKey;
+  videoRef: RefObject<HTMLVideoElement | null>;
 };
 
 const ScreenShareControls = memo(
@@ -41,11 +43,13 @@ const ScreenShareControls = memo(
     handleToggleZoom,
     showPinControls,
     showAudioControl,
-    volumeKey
+    volumeKey,
+    videoRef
   }: tScreenShareControlsProps) => {
     return (
       <CardControls>
         {showAudioControl && <VolumeButton volumeKey={volumeKey} />}
+        <PictureInPictureButton videoRef={videoRef} />
         {showPinControls && isPinned && (
           <IconButton
             variant={isZoomEnabled ? 'default' : 'ghost'}
@@ -193,6 +197,7 @@ const ScreenShareCard = memo(
           showPinControls={showPinControls}
           showAudioControl={!isOwnUser && hasScreenShareAudioStream}
           volumeKey={volumeKey}
+          videoRef={screenShareRef}
         />
 
         <video
