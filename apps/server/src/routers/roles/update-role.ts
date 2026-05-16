@@ -1,4 +1,10 @@
-import { ActivityLogType, OWNER_ROLE_ID, Permission } from '@sharkord/shared';
+import {
+  ActivityLogType,
+  OWNER_ROLE_ID,
+  Permission,
+  STORAGE_MAX_QUOTA_PER_USER,
+  STORAGE_MIN_QUOTA_PER_USER
+} from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
@@ -16,7 +22,12 @@ const updateRoleRoute = protectedProcedure
       color: z
         .string()
         .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
-      permissions: z.enum(Permission).array()
+      permissions: z.enum(Permission).array(),
+      storageQuotaOverrideEnabled: z.boolean(),
+      storageSpaceQuota: z
+        .number()
+        .min(STORAGE_MIN_QUOTA_PER_USER)
+        .max(STORAGE_MAX_QUOTA_PER_USER)
     })
   )
   .mutation(async ({ ctx, input }) => {
@@ -26,7 +37,9 @@ const updateRoleRoute = protectedProcedure
       .update(roles)
       .set({
         name: input.name,
-        color: input.color
+        color: input.color,
+        storageQuotaOverrideEnabled: input.storageQuotaOverrideEnabled,
+        storageSpaceQuota: input.storageSpaceQuota
       })
       .where(eq(roles.id, input.roleId))
       .returning()

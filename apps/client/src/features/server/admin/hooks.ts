@@ -29,6 +29,7 @@ import {
   type TMessage,
   type TPluginInfo,
   type TRole,
+  type TStorageData,
   type TStorageSettings,
   type TTrpcErrors
 } from '@sharkord/shared';
@@ -613,20 +614,28 @@ export const useAdminUserInfo = (userId: number) => {
   const [logins, setLogins] = useState<TLogin[]>([]);
   const [files, setFiles] = useState<TFile[]>([]);
   const [messages, setMessages] = useState<TMessage[]>([]);
+  const [storage, setStorage] = useState<TStorageData & { quota: number }>({
+    userId,
+    fileCount: 0,
+    usedStorage: 0,
+    quota: 0
+  });
 
   const fetchUser = useCallback(async () => {
     setLoading(true);
 
     const trpc = getTRPCClient();
-    const { user, logins, files, messages } = await trpc.users.getInfo.query({
-      userId
-    });
+    const { user, logins, files, messages, storage } =
+      await trpc.users.getInfo.query({
+        userId
+      });
 
     setUser(user);
     setLoading(false);
     setLogins(logins);
     setFiles(files);
     setMessages(messages);
+    setStorage(storage);
   }, [userId]);
 
   useEffect(() => {
@@ -637,6 +646,7 @@ export const useAdminUserInfo = (userId: number) => {
     user,
     logins,
     files,
+    storage,
     refetch: fetchUser,
     loading,
     messages

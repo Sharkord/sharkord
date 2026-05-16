@@ -140,6 +140,9 @@
   "ownerRoleInfo": "Это роль владельца. Эта роль имеет все разрешения, и ее нельзя удалить или изменить ее разрешения.",
   "roleNameLabel": "Название роли",
   "roleColorLabel": "Цвет роли",
+  "roleStorageOverrideLabel": "Включить переопределение хранилища",
+  "roleStorageOverrideDesc": "Использует квоту этой роли вместо глобальной квоты на пользователя. Пользователи с несколькими ролями переопределения получают самую высокую квоту.",
+  "roleStorageQuotaLabel": "Квота хранилища",
   "roleDeleted": "Роль удалена",
   "roleDeleteFailed": "Не удалось удалить роль",
   "roleUpdated": "Роль обновлена",
@@ -341,6 +344,12 @@
   "serverActivityMessages": "Сообщения",
   "serverActivityLinks": "Ссылки",
   "serverActivityFiles": "Файлы",
+
+  "modViewStorageTitle": "Хранилище",
+  "modViewStorageUsed": "Использовано",
+  "modViewStorageQuota": "Квота",
+  "modViewStorageFiles": "Файлы",
+  "modViewStorageUsage": "Использование",
 
   "detailsTitle": "Подробнее",
   "userIdLabel": "Идентификатор пользователя",

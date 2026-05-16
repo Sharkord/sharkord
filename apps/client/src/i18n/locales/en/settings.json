@@ -163,6 +163,9 @@
   "ownerRoleInfo": "This is the owner role. This role has all permissions and cannot be deleted or have its permissions changed.",
   "roleNameLabel": "Role Name",
   "roleColorLabel": "Role Color",
+  "roleStorageOverrideLabel": "Enable storage override",
+  "roleStorageOverrideDesc": "Use this role's quota instead of the global quota per user. Users with multiple override roles get the highest quota.",
+  "roleStorageQuotaLabel": "Storage quota",
   "roleDeleted": "Role deleted",
   "roleDeleteFailed": "Failed to delete role",
   "roleUpdated": "Role updated",
@@ -386,6 +389,12 @@
   "serverActivityMessages": "Messages",
   "serverActivityLinks": "Links",
   "serverActivityFiles": "Files",
+
+  "modViewStorageTitle": "Storage",
+  "modViewStorageUsed": "Used storage",
+  "modViewStorageQuota": "Quota",
+  "modViewStorageFiles": "Files",
+  "modViewStorageUsage": "Usage",
 
   "detailsTitle": "Details",
   "userIdLabel": "User ID",

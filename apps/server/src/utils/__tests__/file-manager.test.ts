@@ -1,10 +1,15 @@
-import { FileSaveType, StorageOverflowAction } from '@sharkord/shared';
+import {
+  FileSaveType,
+  StorageOverflowAction,
+  type TTempFile
+} from '@sharkord/shared';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
+import { getMockedToken, uploadFile } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
-import { files, settings } from '../../db/schema';
+import { files, roles, settings, userRoles } from '../../db/schema';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../../helpers/paths';
 import { pluginManager } from '../../plugins';
 import { fileManager } from '../file-manager';
@@ -27,6 +32,20 @@ describe('file manager', () => {
 
     await fs.writeFile(testFilePath, content);
   });
+
+  const addTempFile = async (content: string, userId: number = 2) => {
+    const fileName = `quota-${Date.now()}-${Math.random()}.txt`;
+    const file = new File([content], fileName, { type: 'text/plain' });
+    const response = await uploadFile(file, await getMockedToken(userId));
+
+    expect(response.status).toBe(200);
+
+    const tempFile = (await response.json()) as TTempFile;
+
+    tempFilesToCleanup.push(tempFile.path);
+
+    return tempFile;
+  };
 
   afterEach(async () => {
     const toDelete = [...tempFilesToCleanup, testFilePath];
@@ -448,6 +467,116 @@ describe('file manager', () => {
     );
 
     await tdb.update(settings).set({ storageSpaceQuotaByUser: 0 }).execute();
+  });
+
+  test('should ignore disabled role storage quota override', async () => {
+    await tdb.update(settings).set({ storageSpaceQuotaByUser: 10 }).execute();
+    await tdb
+      .update(roles)
+      .set({
+        storageQuotaOverrideEnabled: false,
+        storageSpaceQuota: 1000
+      })
+      .where(eq(roles.id, 2))
+      .execute();
+
+    const tempFile = await addTempFile('content that exceeds limit');
+
+    await expect(fileManager.saveFile(tempFile.id, 2)).rejects.toThrow(
+      'User storage limit exceeded'
+    );
+  });
+
+  test('should use enabled role storage quota override', async () => {
+    await tdb.update(settings).set({ storageSpaceQuotaByUser: 10 }).execute();
+    await tdb
+      .update(roles)
+      .set({
+        storageQuotaOverrideEnabled: true,
+        storageSpaceQuota: 1000
+      })
+      .where(eq(roles.id, 2))
+      .execute();
+
+    const tempFile = await addTempFile('content that exceeds limit');
+    const savedFile = await fileManager.saveFile(tempFile.id, 2);
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, savedFile.name));
+    expect(savedFile).toBeDefined();
+  });
+
+  test('should block upload when role storage quota override is lower than global quota', async () => {
+    await tdb.update(settings).set({ storageSpaceQuotaByUser: 1000 }).execute();
+    await tdb
+      .update(roles)
+      .set({
+        storageQuotaOverrideEnabled: true,
+        storageSpaceQuota: 10
+      })
+      .where(eq(roles.id, 2))
+      .execute();
+
+    const tempFile = await addTempFile('content that exceeds limit');
+
+    await expect(fileManager.saveFile(tempFile.id, 2)).rejects.toThrow(
+      'User storage limit exceeded'
+    );
+  });
+
+  test('should use highest enabled role storage quota override', async () => {
+    await tdb.update(settings).set({ storageSpaceQuotaByUser: 10 }).execute();
+    await tdb
+      .update(roles)
+      .set({
+        storageQuotaOverrideEnabled: true,
+        storageSpaceQuota: 15
+      })
+      .where(eq(roles.id, 2))
+      .execute();
+
+    const higherRole = await tdb
+      .insert(roles)
+      .values({
+        name: 'Higher Quota',
+        color: '#ffffff',
+        isDefault: false,
+        isPersistent: false,
+        storageQuotaOverrideEnabled: true,
+        storageSpaceQuota: 1000,
+        createdAt: Date.now()
+      })
+      .returning()
+      .get();
+
+    await tdb.insert(userRoles).values({
+      userId: 2,
+      roleId: higherRole.id,
+      createdAt: Date.now()
+    });
+
+    const tempFile = await addTempFile('content that exceeds low role quota');
+    const savedFile = await fileManager.saveFile(tempFile.id, 2);
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, savedFile.name));
+    expect(savedFile).toBeDefined();
+  });
+
+  test('should treat role storage quota override of 0 as unlimited', async () => {
+    await tdb.update(settings).set({ storageSpaceQuotaByUser: 10 }).execute();
+    await tdb
+      .update(roles)
+      .set({
+        storageQuotaOverrideEnabled: true,
+        storageSpaceQuota: 0
+      })
+      .where(eq(roles.id, 2))
+      .execute();
+
+    const tempFile = await addTempFile('content that exceeds limit');
+    const savedFile = await fileManager.saveFile(tempFile.id, 2);
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, savedFile.name));
+    expect(savedFile).toBeDefined();
   });
 
   test('should throw error when server storage limit exceeded with PREVENT_UPLOADS', async () => {

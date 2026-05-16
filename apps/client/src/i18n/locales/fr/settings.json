@@ -161,6 +161,9 @@
   "ownerRoleInfo": "Il s'agit du rôle de propriétaire. Ce rôle dispose de toutes les permissions et ne peut être supprimé ni modifié.",
   "roleNameLabel": "Nom du rôle",
   "roleColorLabel": "Couleur du rôle",
+  "roleStorageOverrideLabel": "Activer le remplacement du stockage",
+  "roleStorageOverrideDesc": "Utilise le quota de ce rôle au lieu du quota global par utilisateur. Les utilisateurs avec plusieurs rôles de remplacement obtiennent le quota le plus élevé.",
+  "roleStorageQuotaLabel": "Quota de stockage",
   "roleDeleted": "Rôle supprimé",
   "roleDeleteFailed": "Échec de la suppression du rôle",
   "roleUpdated": "Rôle mis à jour",
@@ -384,6 +387,12 @@
   "serverActivityMessages": "Messages",
   "serverActivityLinks": "Liens",
   "serverActivityFiles": "Fichiers",
+
+  "modViewStorageTitle": "Stockage",
+  "modViewStorageUsed": "Stockage utilisé",
+  "modViewStorageQuota": "Quota",
+  "modViewStorageFiles": "Fichiers",
+  "modViewStorageUsage": "Utilisation",
 
   "detailsTitle": "Détails",
   "userIdLabel": "ID utilisateur",

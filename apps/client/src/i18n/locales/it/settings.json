@@ -163,6 +163,9 @@
   "ownerRoleInfo": "Questo e il ruolo proprietario. Ha tutti i permessi e non puo essere eliminato ne modificato nei permessi.",
   "roleNameLabel": "Nome ruolo",
   "roleColorLabel": "Colore ruolo",
+  "roleStorageOverrideLabel": "Abilita override archiviazione",
+  "roleStorageOverrideDesc": "Usa la quota di questo ruolo invece della quota globale per utente. Gli utenti con piu ruoli di override ottengono la quota piu alta.",
+  "roleStorageQuotaLabel": "Quota archiviazione",
   "roleDeleted": "Ruolo eliminato",
   "roleDeleteFailed": "Impossibile eliminare il ruolo",
   "roleUpdated": "Ruolo aggiornato",
@@ -386,6 +389,12 @@
   "serverActivityMessages": "Messaggi",
   "serverActivityLinks": "Link",
   "serverActivityFiles": "File",
+
+  "modViewStorageTitle": "Archiviazione",
+  "modViewStorageUsed": "Archiviazione usata",
+  "modViewStorageQuota": "Quota",
+  "modViewStorageFiles": "File",
+  "modViewStorageUsage": "Utilizzo",
 
   "detailsTitle": "Dettagli",
   "userIdLabel": "ID utente",
