@@ -647,6 +647,36 @@ describe('users router', () => {
     );
   });
 
+  test('should throw when non-owner user tries to remove owner role from someone else', async () => {
+    const { caller } = await initTest();
+    const newRoleId = await caller.roles.add();
+
+    await caller.roles.update({
+      roleId: newRoleId,
+      name: 'Test Role',
+      color: '#123456',
+      permissions: [Permission.MANAGE_USERS],
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0
+    });
+
+    await caller.users.addRole({
+      userId: 2,
+      roleId: newRoleId
+    });
+
+    const { caller: nonOwnerCaller } = await initTest(2);
+
+    await expect(
+      nonOwnerCaller.users.removeRole({
+        userId: 1,
+        roleId: OWNER_ROLE_ID
+      })
+    ).rejects.toThrow(
+      'Only users with the owner role can remove the owner role'
+    );
+  });
+
   test('should throw when removing non-existent role', async () => {
     const { caller } = await initTest();
 
