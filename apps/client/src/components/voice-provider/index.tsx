@@ -29,10 +29,12 @@ import {
   DEFAULT_BITRATE,
   StreamKind,
   type ConsumerType,
+  type TStreamQualityLayer,
   type TVoiceUserState
 } from '@sharkord/shared';
 import { Device } from 'mediasoup-client';
 import type {
+  ProducerOptions,
   RtpCapabilities,
   RtpCodecCapability
 } from 'mediasoup-client/types';
@@ -55,10 +57,13 @@ import {
   getRemoteConsumerTypeKey,
   getSimulcastCodec,
   getSimulcastEncodings,
+  getSimulcastQualityLayers,
   getStreamQualityStorageKey,
   loadStreamQualitiesFromStorage,
+  normalizeStreamQuality,
   saveStreamQualitiesToStorage,
   type TRemoteConsumerTypes,
+  type TRemoteQualityLayers,
   type TStreamQualitySettings
 } from './helpers';
 import { useLocalStreams } from './hooks/use-local-streams';
@@ -70,6 +75,7 @@ import {
 import { useTransports } from './hooks/use-transports';
 import { useVoiceControls } from './hooks/use-voice-controls';
 import { useVoiceEvents } from './hooks/use-voice-events';
+import { SIMULCAST_WEBCAM_MAX_BITRATE } from './statics';
 import { VolumeControlProvider } from './volume-control-context';
 
 type AudioVideoRefs = {
@@ -79,6 +85,11 @@ type AudioVideoRefs = {
   screenShareAudioRef: React.RefObject<HTMLAudioElement | null>;
   externalAudioRef: React.RefObject<HTMLAudioElement | null>;
   externalVideoRef: React.RefObject<HTMLVideoElement | null>;
+};
+
+type TVideoProducerAppData = {
+  kind: StreamKind;
+  qualityLayers?: TStreamQualityLayer[];
 };
 
 export type { AudioVideoRefs };
@@ -100,6 +111,10 @@ export type TVoiceProvider = {
   getOrCreateRefs: (remoteId: number) => AudioVideoRefs;
   getConsumerCodec: (remoteId: number, kind: StreamKind) => string | undefined;
   getStreamQuality: (remoteId: number, kind: StreamKind) => TStreamQuality;
+  getStreamQualityLayers: (
+    remoteId: number,
+    kind: StreamKind
+  ) => TStreamQualityLayer[];
   setStreamQuality: (
     remoteId: number,
     kind: StreamKind.VIDEO | StreamKind.SCREEN | StreamKind.EXTERNAL_VIDEO,
@@ -149,7 +164,8 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
     externalVideoRef: { current: null }
   }),
   getConsumerCodec: () => undefined,
-  getStreamQuality: () => 'auto',
+  getStreamQuality: () => ({ mode: 'auto' }),
+  getStreamQualityLayers: () => [],
   setStreamQuality: () => Promise.resolve(),
   isSimulcastConsumer: () => false,
   init: () => Promise.resolve(),
@@ -189,6 +205,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     useState<TStreamQualitySettings>(loadStreamQualitiesFromStorage);
   const [remoteConsumerTypes, setRemoteConsumerTypes] =
     useState<TRemoteConsumerTypes>({});
+  const [remoteQualityLayers, setRemoteQualityLayers] =
+    useState<TRemoteQualityLayers>({});
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const webRtcSimulcastEnabled = useWebRtcSimulcastEnabled();
   const ownVoiceState = useOwnVoiceState();
@@ -200,11 +218,58 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
   const getStreamQuality = useCallback(
     (remoteId: number, kind: StreamKind): TStreamQuality => {
+      const storageKey = getStreamQualityStorageKey(remoteId, kind);
+      const consumerKey = getRemoteConsumerTypeKey(remoteId, kind);
+      const layers = remoteQualityLayers[consumerKey] ?? [];
+
+      return normalizeStreamQuality(streamQualities[storageKey], layers);
+    },
+    [remoteQualityLayers, streamQualities]
+  );
+
+  const getStreamQualityLayers = useCallback(
+    (remoteId: number, kind: StreamKind): TStreamQualityLayer[] => {
+      const consumerKey = getRemoteConsumerTypeKey(remoteId, kind);
+
+      return remoteQualityLayers[consumerKey] ?? [];
+    },
+    [remoteQualityLayers]
+  );
+
+  const setRemoteStreamQualityLayers = useCallback(
+    (remoteId: number, kind: StreamKind, layers: TStreamQualityLayer[]) => {
+      const key = getRemoteConsumerTypeKey(remoteId, kind);
+
+      setRemoteQualityLayers((prev) => {
+        if (layers.length === 0) {
+          const next = { ...prev };
+
+          delete next[key];
+
+          return next;
+        }
+
+        return { ...prev, [key]: layers };
+      });
+    },
+    []
+  );
+
+  const clearRemoteConsumerMetadata = useCallback(() => {
+    setRemoteConsumerTypes({});
+    setRemoteQualityLayers({});
+  }, []);
+
+  const shouldShowQualityPicker = useCallback(
+    (remoteId: number, kind: StreamKind): boolean => {
+      const key = getRemoteConsumerTypeKey(remoteId, kind);
+
       return (
-        streamQualities[getStreamQualityStorageKey(remoteId, kind)] ?? 'auto'
+        remoteConsumerTypes[key] === 'simulcast' &&
+        (remoteQualityLayers[key]?.length ?? 0) > 0
       );
     },
-    [streamQualities]
+    [remoteConsumerTypes, remoteQualityLayers]
   );
 
   const setRemoteConsumerType = useCallback(
@@ -230,17 +295,11 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     []
   );
 
-  const clearRemoteConsumerTypes = useCallback(() => {
-    setRemoteConsumerTypes({});
-  }, []);
-
   const isSimulcastConsumer = useCallback(
     (remoteId: number, kind: StreamKind): boolean => {
-      const key = getRemoteConsumerTypeKey(remoteId, kind);
-
-      return remoteConsumerTypes[key] === 'simulcast';
+      return shouldShowQualityPicker(remoteId, kind);
     },
-    [remoteConsumerTypes]
+    [shouldShowQualityPicker]
   );
 
   const setStreamQuality = useCallback(
@@ -260,7 +319,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         return next;
       });
 
-      if (!isSimulcastConsumer(remoteId, kind)) return;
+      if (!shouldShowQualityPicker(remoteId, kind)) return;
 
       const client = getTRPCClient();
 
@@ -279,7 +338,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         });
       }
     },
-    [isSimulcastConsumer]
+    [shouldShowQualityPicker]
   );
 
   const getOrCreateRefs = useCallback((remoteId: number): AudioVideoRefs => {
@@ -340,7 +399,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     addRemoteUserStream,
     removeRemoteUserStream,
     setRemoteConsumerType,
-    clearRemoteConsumerTypes,
+    setRemoteStreamQualityLayers,
+    clearRemoteConsumerMetadata,
     getStreamQuality
   });
 
@@ -650,18 +710,29 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           ? getSimulcastCodec(routerRtpCapabilities.current)
           : undefined;
 
-        const webcamProducerOptions = {
+        const webcamProducerOptions: ProducerOptions<TVideoProducerAppData> = {
           track: videoTrack,
-          appData: { kind: StreamKind.VIDEO }
+          appData: {
+            kind: StreamKind.VIDEO
+          }
         };
+        let simulcastWebcamProducerOptions = webcamProducerOptions;
 
-        const simulcastWebcamProducerOptions = simulcastCodec
-          ? {
-              ...webcamProducerOptions,
-              codec: simulcastCodec,
-              encodings: getSimulcastEncodings(900_000)
-            }
-          : webcamProducerOptions;
+        if (simulcastCodec) {
+          const encodings = getSimulcastEncodings(SIMULCAST_WEBCAM_MAX_BITRATE);
+
+          const qualityLayers = getSimulcastQualityLayers(
+            videoTrack,
+            encodings
+          );
+
+          simulcastWebcamProducerOptions = {
+            ...webcamProducerOptions,
+            appData: { kind: StreamKind.VIDEO, qualityLayers },
+            codec: simulcastCodec,
+            encodings
+          };
+        }
 
         try {
           localVideoProducer.current = await producerTransport.current?.produce(
@@ -845,26 +916,38 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
             'VP8 is unavailable, creating screen share without simulcast'
           );
         }
-        const screenShareProducerOptions = {
-          track: videoTrack,
-          codec: screenCodec,
-          codecOptions: {
-            videoGoogleStartBitrate: Math.min(2000, maxBitrateKbps),
-            videoGoogleMaxBitrate: maxBitrateKbps,
-            videoGoogleMinBitrate: Math.min(200, maxBitrateKbps)
-          },
-          appData: { kind: StreamKind.SCREEN }
-        };
+        const screenShareProducerOptions: ProducerOptions<TVideoProducerAppData> =
+          {
+            track: videoTrack,
+            codec: screenCodec,
+            codecOptions: {
+              videoGoogleStartBitrate: Math.min(2000, maxBitrateKbps),
+              videoGoogleMaxBitrate: maxBitrateKbps,
+              videoGoogleMinBitrate: Math.min(200, maxBitrateKbps)
+            },
+            appData: {
+              kind: StreamKind.SCREEN
+            }
+          };
         const fallbackScreenShareProducerOptions = {
           ...screenShareProducerOptions,
           codec: preferredCodec
         };
-        const simulcastScreenShareProducerOptions = simulcastCodec
-          ? {
-              ...screenShareProducerOptions,
-              encodings: getSimulcastEncodings(maxBitrateKbps * 1000)
-            }
-          : screenShareProducerOptions;
+        let simulcastScreenShareProducerOptions = screenShareProducerOptions;
+
+        if (simulcastCodec) {
+          const encodings = getSimulcastEncodings(maxBitrateKbps * 1000);
+          const qualityLayers = getSimulcastQualityLayers(
+            videoTrack,
+            encodings
+          );
+
+          simulcastScreenShareProducerOptions = {
+            ...screenShareProducerOptions,
+            appData: { kind: StreamKind.SCREEN, qualityLayers },
+            encodings
+          };
+        }
 
         try {
           localScreenShareProducer.current =
@@ -1129,6 +1212,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       getOrCreateRefs,
       getConsumerCodec,
       getStreamQuality,
+      getStreamQualityLayers,
       setStreamQuality,
       isSimulcastConsumer,
       init,
@@ -1155,6 +1239,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       getOrCreateRefs,
       getConsumerCodec,
       getStreamQuality,
+      getStreamQualityLayers,
       setStreamQuality,
       isSimulcastConsumer,
       init,

@@ -47,8 +47,12 @@ const VoiceUserCard = memo(
     const { volumeKey } = useStreamVolumeControl({ type: 'user', userId });
     const { devices } = useDevices();
     const isOwnUser = useIsOwnUser(userId);
-    const { getConsumerCodec, getStreamQuality, isSimulcastConsumer } =
-      useVoice();
+    const {
+      getConsumerCodec,
+      getStreamQuality,
+      getStreamQualityLayers,
+      isSimulcastConsumer
+    } = useVoice();
     const videoStats = useVideoStats(videoRef, hasVideoStream);
     const showUserBanners = useShowUserBannersInVoice();
     const { isActivelySpeaking, speakingEffectClass } =
@@ -68,10 +72,11 @@ const VoiceUserCard = memo(
       return parts.length > 1 ? parts[1] : mimeType;
     }, [getConsumerCodec, isOwnUser, userId]);
 
+    const qualityLayers = getStreamQualityLayers(userId, StreamKind.VIDEO);
+    const streamQuality = getStreamQuality(userId, StreamKind.VIDEO);
+
     const qualityLabel = isSimulcastVideoConsumer
-      ? getStreamQualityMetadataLabel(
-          getStreamQuality(userId, StreamKind.VIDEO)
-        )
+      ? getStreamQualityMetadataLabel(streamQuality, qualityLayers)
       : null;
 
     const handlePinToggle = useCallback(() => {

@@ -1,29 +1,23 @@
-import type { TStreamQuality } from '@/types';
+import type { TStreamQuality, TStreamQualityLayer } from '@sharkord/shared';
 
-type TQualityOption = {
-  value: TStreamQuality;
-  label: string;
+const getStreamQualityLabel = (
+  quality: TStreamQuality,
+  layers: TStreamQualityLayer[]
+) => {
+  if (quality.mode === 'auto') return 'Auto';
+
+  return layers.find((layer) => layer.spatialLayer === quality.spatialLayer)
+    ?.label;
 };
 
-const qualityOptions: TQualityOption[] = [
-  { value: 'auto', label: 'Auto' },
-  { value: 'high', label: 'High' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'low', label: 'Low' }
-];
+const getStreamQualityMetadataLabel = (
+  quality: TStreamQuality,
+  layers: TStreamQualityLayer[]
+) => {
+  if (quality.mode === 'auto') return 'auto';
 
-const getStreamQualityMetadataLabel = (quality: TStreamQuality) => {
-  return (
-    qualityOptions
-      .find((option) => option.value === quality)
-      ?.value.toLowerCase() ?? quality
-  );
+  return layers.find((layer) => layer.spatialLayer === quality.spatialLayer)
+    ?.label;
 };
 
-const getStreamQualityLabel = (quality: TStreamQuality) => {
-  return (
-    qualityOptions.find((option) => option.value === quality)?.label ?? quality
-  );
-};
-
-export { getStreamQualityLabel, getStreamQualityMetadataLabel, qualityOptions };
+export { getStreamQualityLabel, getStreamQualityMetadataLabel };

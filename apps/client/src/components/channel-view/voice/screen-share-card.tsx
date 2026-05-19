@@ -115,6 +115,7 @@ const ScreenShareCard = memo(
       transportStats,
       getConsumerCodec,
       getStreamQuality,
+      getStreamQualityLayers,
       isSimulcastConsumer
     } = useVoice();
 
@@ -145,9 +146,10 @@ const ScreenShareCard = memo(
     ]);
 
     const streamQuality = getStreamQuality(userId, StreamKind.SCREEN);
+    const qualityLayers = getStreamQualityLayers(userId, StreamKind.SCREEN);
 
     const qualityLabel = isSimulcastScreenConsumer
-      ? getStreamQualityMetadataLabel(streamQuality)
+      ? getStreamQualityMetadataLabel(streamQuality, qualityLayers)
       : null;
 
     const {

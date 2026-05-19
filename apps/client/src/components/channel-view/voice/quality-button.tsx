@@ -1,5 +1,8 @@
+import {
+  getStreamQualityDropdownValue,
+  parseStreamQualityDropdownValue
+} from '@/components/voice-provider/helpers';
 import { useVoice } from '@/features/server/voice/hooks';
-import type { TStreamQuality } from '@/types';
 import { StreamKind } from '@sharkord/shared';
 import {
   DropdownMenu,
@@ -11,7 +14,7 @@ import {
 } from '@sharkord/ui';
 import { Gauge } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
-import { qualityOptions } from './quality-options';
+import { getStreamQualityLabel } from './quality-options';
 
 type TQualityButtonProps = {
   streamId: number;
@@ -19,16 +22,26 @@ type TQualityButtonProps = {
 };
 
 const QualityButton = memo(({ streamId, kind }: TQualityButtonProps) => {
-  const { getStreamQuality, setStreamQuality } = useVoice();
+  const { getStreamQuality, getStreamQualityLayers, setStreamQuality } =
+    useVoice();
   const [isPending, setIsPending] = useState(false);
   const quality = getStreamQuality(streamId, kind);
+  const layers = getStreamQualityLayers(streamId, kind);
+  const orderedLayers = [...layers].sort(
+    (a, b) => b.spatialLayer - a.spatialLayer
+  );
+  const qualityLabel = getStreamQualityLabel(quality, layers);
 
   const handleQualityChange = useCallback(
     async (nextQuality: string) => {
       setIsPending(true);
 
       try {
-        await setStreamQuality(streamId, kind, nextQuality as TStreamQuality);
+        await setStreamQuality(
+          streamId,
+          kind,
+          parseStreamQualityDropdownValue(nextQuality)
+        );
       } finally {
         setIsPending(false);
       }
@@ -40,9 +53,9 @@ const QualityButton = memo(({ streamId, kind }: TQualityButtonProps) => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <IconButton
-          variant={quality === 'auto' ? 'ghost' : 'primary'}
+          variant={quality.mode === 'auto' ? 'ghost' : 'primary'}
           icon={Gauge}
-          title={`Quality: ${quality}`}
+          title={`Quality: ${qualityLabel ?? 'Auto'}`}
           size="sm"
           disabled={isPending}
         />
@@ -54,18 +67,21 @@ const QualityButton = memo(({ streamId, kind }: TQualityButtonProps) => {
         onClick={(e) => e.stopPropagation()}
       >
         <DropdownMenuRadioGroup
-          value={quality}
+          value={getStreamQualityDropdownValue(quality)}
           onValueChange={handleQualityChange}
         >
-          {qualityOptions.map((option) => (
+          {orderedLayers.map((layer) => (
             <DropdownMenuRadioItem
-              key={option.value}
-              value={option.value}
+              key={layer.spatialLayer}
+              value={`layer-${layer.spatialLayer}`}
               disabled={isPending}
             >
-              {option.label}
+              {layer.label}
             </DropdownMenuRadioItem>
           ))}
+          <DropdownMenuRadioItem value="auto" disabled={isPending}>
+            Auto
+          </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>

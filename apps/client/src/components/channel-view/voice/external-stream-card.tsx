@@ -17,6 +17,7 @@ import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { QualityButton } from './quality-button';
+import { getStreamQualityMetadataLabel } from './quality-options';
 import { StreamSettingsPopover } from './stream-settings-popover';
 
 type TExternalStreamControlsProps = {
@@ -121,7 +122,8 @@ const ExternalStreamCard = memo(
       useVolumeControl();
 
     const showUserBanners = useShowUserBannersInVoice();
-    const { isSimulcastConsumer } = useVoice();
+    const { getStreamQuality, getStreamQualityLayers, isSimulcastConsumer } =
+      useVoice();
     const volumeKey = getExternalVolumeKey(stream.pluginId, stream.key);
     const volume = getVolume(volumeKey);
     const isMuted = volume === 0;
@@ -180,6 +182,17 @@ const ExternalStreamCard = memo(
       streamId,
       StreamKind.EXTERNAL_VIDEO
     );
+
+    const qualityLayers = getStreamQualityLayers(
+      streamId,
+      StreamKind.EXTERNAL_VIDEO
+    );
+
+    const streamQuality = getStreamQuality(streamId, StreamKind.EXTERNAL_VIDEO);
+
+    const qualityLabel = isSimulcastExternalVideoConsumer
+      ? getStreamQualityMetadataLabel(streamQuality, qualityLayers)
+      : null;
 
     return (
       <div
@@ -290,6 +303,11 @@ const ExternalStreamCard = memo(
             <span className="text-white font-medium text-xs truncate">
               {stream.title || 'External Stream'}
             </span>
+            {qualityLabel && (
+              <span className="text-white/50 text-xs shrink-0">
+                ({qualityLabel})
+              </span>
+            )}
 
             <div className="flex items-center gap-1 ml-auto">
               {hasVideo && <Video className="size-3 text-blue-400" />}

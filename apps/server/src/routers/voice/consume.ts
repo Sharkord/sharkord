@@ -79,7 +79,11 @@ const consumeRoute = protectedProcedure
       consumerId: consumer.id,
       consumerKind: input.kind,
       consumerRtpParameters: consumer.rtpParameters,
-      consumerType: consumer.type
+      consumerType: consumer.type,
+      qualityLayers: runtime.getProducerQualityLayers(
+        input.remoteId,
+        input.kind
+      )
     };
   });
 

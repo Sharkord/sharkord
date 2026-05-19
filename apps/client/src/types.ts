@@ -1,4 +1,4 @@
-import type { StreamKind } from '@sharkord/shared';
+import type { StreamKind, TStreamQuality } from '@sharkord/shared';
 
 export type TDevices = {
   input: {
@@ -97,4 +97,4 @@ export type TReplyTarget = {
   pluginId: string | null;
 };
 
-export type TStreamQuality = 'auto' | 'low' | 'medium' | 'high';
+export type { TStreamQuality };

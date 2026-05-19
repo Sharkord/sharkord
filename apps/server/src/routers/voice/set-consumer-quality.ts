@@ -5,13 +5,6 @@ import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
-const qualityToSpatialLayerMap = {
-  auto: 2,
-  low: 0,
-  medium: 1,
-  high: 2
-};
-
 const setConsumerQualityRoute = protectedProcedure
   .input(
     z.object({
@@ -21,7 +14,13 @@ const setConsumerQualityRoute = protectedProcedure
         StreamKind.SCREEN,
         StreamKind.EXTERNAL_VIDEO
       ]),
-      quality: z.enum(['auto', 'low', 'medium', 'high'])
+      quality: z.discriminatedUnion('mode', [
+        z.object({ mode: z.literal('auto') }),
+        z.object({
+          mode: z.literal('layer'),
+          spatialLayer: z.number().int().nonnegative()
+        })
+      ])
     })
   )
   .mutation(async ({ input, ctx }) => {
@@ -59,8 +58,31 @@ const setConsumerQualityRoute = protectedProcedure
 
     if (consumer.type !== 'simulcast') return;
 
+    const qualityLayers = runtime.getProducerQualityLayers(
+      input.remoteId,
+      input.kind
+    );
+
+    invariant(qualityLayers.length > 0, {
+      code: 'BAD_REQUEST',
+      message: 'Consumer quality layers are not available'
+    });
+
+    const spatialLayer =
+      input.quality.mode === 'auto'
+        ? qualityLayers[qualityLayers.length - 1]!.spatialLayer
+        : input.quality.spatialLayer;
+
+    invariant(
+      qualityLayers.some((layer) => layer.spatialLayer === spatialLayer),
+      {
+        code: 'BAD_REQUEST',
+        message: 'Invalid consumer quality layer'
+      }
+    );
+
     await consumer.setPreferredLayers({
-      spatialLayer: qualityToSpatialLayerMap[input.quality]
+      spatialLayer
     });
   });
 

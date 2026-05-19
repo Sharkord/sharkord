@@ -4,7 +4,9 @@ import type { TRemoteUserStreamKinds } from '@/types';
 import {
   type ConsumerType,
   getMediasoupKind,
-  StreamKind
+  StreamKind,
+  type TStreamQuality,
+  type TStreamQualityLayer
 } from '@sharkord/shared';
 import { TRPCClientError } from '@trpc/client';
 import {
@@ -15,8 +17,6 @@ import {
   type Transport
 } from 'mediasoup-client/types';
 import { useCallback, useRef } from 'react';
-
-type TStreamQuality = 'auto' | 'low' | 'medium' | 'high';
 
 type TUseTransportParams = {
   addRemoteUserStream: (
@@ -42,7 +42,12 @@ type TUseTransportParams = {
     kind: StreamKind,
     consumerType: ConsumerType | undefined
   ) => void;
-  clearRemoteConsumerTypes: () => void;
+  setRemoteStreamQualityLayers: (
+    remoteId: number,
+    kind: StreamKind,
+    layers: TStreamQualityLayer[]
+  ) => void;
+  clearRemoteConsumerMetadata: () => void;
   getStreamQuality: (remoteId: number, kind: StreamKind) => TStreamQuality;
 };
 
@@ -52,7 +57,8 @@ const useTransports = ({
   addExternalStreamTrack,
   removeExternalStreamTrack,
   setRemoteConsumerType,
-  clearRemoteConsumerTypes,
+  setRemoteStreamQualityLayers,
+  clearRemoteConsumerMetadata,
   getStreamQuality
 }: TUseTransportParams) => {
   const producerTransport = useRef<Transport<AppData> | undefined>(undefined);
@@ -116,7 +122,10 @@ const useTransports = ({
         async ({ rtpParameters, appData }, callback, errback) => {
           logVoice('Producing new track', { rtpParameters, appData });
 
-          const { kind } = appData as { kind: StreamKind };
+          const { kind, qualityLayers } = appData as {
+            kind: StreamKind;
+            qualityLayers?: TStreamQualityLayer[];
+          };
 
           if (!producerTransport.current) return;
 
@@ -124,7 +133,8 @@ const useTransports = ({
             const producerId = await trpc.voice.produce.mutate({
               transportId: producerTransport.current.id,
               kind,
-              rtpParameters
+              rtpParameters,
+              qualityLayers
             });
 
             callback({ id: producerId });
@@ -244,7 +254,8 @@ const useTransports = ({
           consumerId,
           consumerKind,
           consumerRtpParameters,
-          consumerType
+          consumerType,
+          qualityLayers
         } = await trpc.voice.consume.mutate({
           kind,
           remoteId,
@@ -256,6 +267,7 @@ const useTransports = ({
           consumerId,
           consumerKind,
           consumerType,
+          qualityLayers,
           consumerRtpParameters
         });
 
@@ -312,12 +324,14 @@ const useTransports = ({
             consumerCodecs.current.delete(`${remoteId}-${kind}`);
 
             setRemoteConsumerType(remoteId, kind, undefined);
+            setRemoteStreamQualityLayers(remoteId, kind, []);
           });
         });
 
         consumers.current[remoteId][consumerKind] = newConsumer;
 
         setRemoteConsumerType(remoteId, kind, consumerType);
+        setRemoteStreamQualityLayers(remoteId, kind, qualityLayers);
 
         const codecKey = `${remoteId}-${kind}`;
 
@@ -336,7 +350,7 @@ const useTransports = ({
         ) {
           const quality = getStreamQuality(remoteId, kind);
 
-          if (quality !== 'auto') {
+          if (quality.mode === 'layer') {
             await trpc.voice.setConsumerQuality.mutate({
               remoteId,
               kind,
@@ -369,6 +383,7 @@ const useTransports = ({
       addExternalStreamTrack,
       removeExternalStreamTrack,
       setRemoteConsumerType,
+      setRemoteStreamQualityLayers,
       getStreamQuality
     ]
   );
@@ -454,7 +469,7 @@ const useTransports = ({
     consumers.current = {};
     consumerCodecs.current.clear();
 
-    clearRemoteConsumerTypes();
+    clearRemoteConsumerMetadata();
 
     consumeOperationsInProgress.current.clear();
 
@@ -471,7 +486,7 @@ const useTransports = ({
     consumerTransport.current = undefined;
 
     logVoice('Transports cleanup complete');
-  }, [clearRemoteConsumerTypes]);
+  }, [clearRemoteConsumerMetadata]);
 
   return {
     producerTransport,
