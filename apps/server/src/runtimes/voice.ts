@@ -111,7 +111,7 @@ type TProducerMap = {
 
 type TConsumerMap = {
   [userId: number]: {
-    [remoteId: number]: Consumer<AppData>;
+    [streamKey: string]: Consumer<AppData>;
   };
 };
 
@@ -199,6 +199,10 @@ class VoiceRuntime {
     });
 
     return map;
+  };
+
+  private getConsumerKey = (remoteId: number, kind: StreamKind) => {
+    return `${remoteId}-${kind}`;
   };
 
   public init = async (): Promise<void> => {
@@ -330,12 +334,33 @@ class VoiceRuntime {
     Object.keys(this.consumers).forEach((consumerUserIdStr) => {
       const consumerId = parseInt(consumerUserIdStr);
 
-      if (consumerId !== userId && this.consumers[consumerId]?.[userId]) {
-        this.consumers[consumerId][userId].close();
+      if (consumerId === userId) return;
 
-        delete this.consumers[consumerId][userId];
-      }
+      const userConsumers = this.consumers[consumerId];
+
+      Object.keys(userConsumers ?? {}).forEach((streamKey) => {
+        if (!userConsumers) return;
+        if (!streamKey.startsWith(`${userId}-`)) return;
+
+        userConsumers[streamKey]?.close();
+
+        delete userConsumers[streamKey];
+      });
     });
+  };
+
+  public getConsumer = (userId: number, remoteId: number, kind: StreamKind) => {
+    return this.consumers[userId]?.[this.getConsumerKey(remoteId, kind)];
+  };
+
+  public getConsumerById = (userId: number, consumerId: string) => {
+    const userConsumers = this.consumers[userId];
+
+    if (!userConsumers) return undefined;
+
+    return Object.values(userConsumers).find(
+      (consumer) => consumer.id === consumerId
+    );
   };
 
   public updateUserState = (
@@ -547,16 +572,19 @@ class VoiceRuntime {
   public addConsumer = (
     userId: number,
     remoteId: number,
+    kind: StreamKind,
     consumer: Consumer<AppData>
   ) => {
     if (!this.consumers[userId]) {
       this.consumers[userId] = {};
     }
 
-    this.consumers[userId][remoteId] = consumer;
+    const streamKey = this.getConsumerKey(remoteId, kind);
+
+    this.consumers[userId][streamKey] = consumer;
 
     consumer.observer.on('close', () => {
-      delete this.consumers[userId]?.[remoteId];
+      delete this.consumers[userId]?.[streamKey];
     });
   };
 

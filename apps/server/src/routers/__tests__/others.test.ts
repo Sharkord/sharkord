@@ -133,6 +133,7 @@ describe('others router', () => {
       storageMaxAvatarSize: 2 * 1024 * 1024,
       storageMaxBannerSize: 4 * 1024 * 1024,
       storageMaxFilesPerMessage: 6,
+      webRtcSimulcastEnabled: true,
       storageImageOptimizationEnabled: true,
       storageImageOptimizationQuality: 72
     };
@@ -162,6 +163,9 @@ describe('others router', () => {
     );
     expect(settings.storageMaxFilesPerMessage).toBe(
       newSettings.storageMaxFilesPerMessage
+    );
+    expect(settings.webRtcSimulcastEnabled).toBe(
+      newSettings.webRtcSimulcastEnabled
     );
     expect(settings.storageImageOptimizationEnabled).toBe(
       newSettings.storageImageOptimizationEnabled

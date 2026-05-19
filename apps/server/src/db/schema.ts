@@ -74,6 +74,11 @@ const settings = sqliteTable(
     storageOverflowAction: text('storage_overflow_action').notNull(),
     enablePlugins: integer('enable_plugins', { mode: 'boolean' }).notNull(),
     enableSearch: integer('enable_search', { mode: 'boolean' }).notNull(),
+    webRtcSimulcastEnabled: integer('web_rtc_simulcast_enabled', {
+      mode: 'boolean'
+    })
+      .notNull()
+      .default(false),
     showWelcomeDialog: integer('show_welcome_dialog', {
       mode: 'boolean'
     })

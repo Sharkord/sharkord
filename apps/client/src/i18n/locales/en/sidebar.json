@@ -34,6 +34,8 @@
   "resolution": "Resolution: {{width}}x{{height}}",
   "frameRate": "Frame Rate: {{fps}} fps",
   "bitrate": "Bitrate: {{bitrate}}/s",
+  "simulcastLayers": "Simulcast Layers: {{count}}",
+  "simulcastLayer": "Layer {{layer}}",
   "framesEncoded": "Frames Encoded: {{frames}}",
   "qualityLimited": "Quality Limited: {{reason}}",
   "sessionTotals": "Session Totals",

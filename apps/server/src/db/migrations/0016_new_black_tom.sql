@@ -1,0 +1,1 @@
+ALTER TABLE `settings` ADD `web_rtc_simulcast_enabled` integer DEFAULT false NOT NULL;
