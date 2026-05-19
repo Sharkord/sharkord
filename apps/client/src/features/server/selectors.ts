@@ -47,6 +47,9 @@ export const publicServerSettingsSelector = (state: IRootState) =>
 export const pluginsEnabledSelector = (state: IRootState) =>
   !!state.server.publicSettings?.enablePlugins;
 
+export const webRtcSimulcastEnabledSelector = (state: IRootState) =>
+  !!state.server.publicSettings?.webRtcSimulcastEnabled;
+
 export const infoSelector = (state: IRootState) => state.server.info;
 
 export const activeFullscreenPluginIdSelector = (state: IRootState) =>

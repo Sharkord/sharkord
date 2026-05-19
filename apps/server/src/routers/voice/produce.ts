@@ -15,7 +15,15 @@ const produceRoute = protectedProcedure
     z.object({
       transportId: z.string(),
       kind: z.enum(StreamKind),
-      rtpParameters: z.any()
+      rtpParameters: z.any(),
+      qualityLayers: z
+        .array(
+          z.object({
+            spatialLayer: z.number().int().nonnegative(),
+            label: z.string().trim().min(1)
+          })
+        )
+        .optional()
     })
   )
   .mutation(async ({ input, ctx }) => {
@@ -63,7 +71,7 @@ const produceRoute = protectedProcedure
       appData: { kind: input.kind, userId: ctx.user.id }
     });
 
-    runtime.addProducer(ctx.user.id, input.kind, producer);
+    runtime.addProducer(ctx.user.id, input.kind, producer, input.qualityLayers);
 
     ctx.pubsub.publishForChannel(
       ctx.currentVoiceChannelId,

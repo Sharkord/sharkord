@@ -1,4 +1,4 @@
-import type { StreamKind } from '@sharkord/shared';
+import type { StreamKind, TStreamQuality } from '@sharkord/shared';
 
 export type TDevices = {
   input: {
@@ -63,6 +63,7 @@ export type TDeviceSettings = {
   restrictOwnAudio: boolean;
   suppressLocalAudioPlayback: boolean;
   mirrorOwnVideo: boolean;
+  simulcastEnabled: boolean;
   screenResolution: Resolution;
   screenFramerate: number;
   screenCodec: VideoCodec;
@@ -95,3 +96,5 @@ export type TReplyTarget = {
   userId: number | null;
   pluginId: string | null;
 };
+
+export type { TStreamQuality };

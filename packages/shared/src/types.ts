@@ -21,6 +21,15 @@ export type TExternalStreamTracks = {
   video?: boolean;
 };
 
+export type TStreamQualityLayer = {
+  spatialLayer: number;
+  label: string;
+};
+
+export type TStreamQuality =
+  | { mode: 'auto' }
+  | { mode: 'layer'; spatialLayer: number };
+
 export type TRemoteProducerIds = {
   remoteVideoIds: number[];
   remoteAudioIds: number[];
@@ -45,6 +54,7 @@ export type TPublicServerSettings = Pick<
   | 'storageSpaceQuotaByUser'
   | 'storageOverflowAction'
   | 'enablePlugins'
+  | 'webRtcSimulcastEnabled'
   | 'enableSearch'
   | 'showWelcomeDialog'
   | 'storageSignedUrlsEnabled'

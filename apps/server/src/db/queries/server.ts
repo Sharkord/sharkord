@@ -53,6 +53,7 @@ const getPublicSettings: () => Promise<TPublicServerSettings> = async () => {
     storageSpaceQuotaByUser: settings.storageSpaceQuotaByUser,
     storageOverflowAction: settings.storageOverflowAction,
     enablePlugins: settings.enablePlugins,
+    webRtcSimulcastEnabled: settings.webRtcSimulcastEnabled,
     webRtcMaxBitrate: config.webRtc.maxBitrate,
     enableSearch: settings.enableSearch,
     showWelcomeDialog: settings.showWelcomeDialog,

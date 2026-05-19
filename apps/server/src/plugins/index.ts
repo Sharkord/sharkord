@@ -542,7 +542,8 @@ class PluginManager {
             pluginId,
             avatarUrl: options.avatarUrl,
             bannerUrl: options.bannerUrl,
-            producers: options.producers
+            producers: options.producers,
+            videoLayers: options.videoLayers
           });
 
           const stream = channel.getState().externalStreams[streamId]!;

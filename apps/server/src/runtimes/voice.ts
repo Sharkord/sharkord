@@ -4,6 +4,7 @@ import {
   type TChannelState,
   type TExternalStreamsMap,
   type TRemoteProducerIds,
+  type TStreamQualityLayer,
   type TTransportParams,
   type TVoiceMap,
   type TVoiceUserState
@@ -111,8 +112,12 @@ type TProducerMap = {
 
 type TConsumerMap = {
   [userId: number]: {
-    [remoteId: number]: Consumer<AppData>;
+    [streamKey: string]: Consumer<AppData>;
   };
+};
+
+type TProducerQualityLayerMap = {
+  [producerKey: string]: TStreamQualityLayer[];
 };
 
 type TExternalStreamProducers = {
@@ -140,6 +145,7 @@ class VoiceRuntime {
   private screenProducers: TProducerMap = {};
   private screenAudioProducers: TProducerMap = {};
   private consumers: TConsumerMap = {};
+  private producerQualityLayers: TProducerQualityLayerMap = {};
 
   private externalCounter = 0;
   private externalStreamsInternal: {
@@ -199,6 +205,100 @@ class VoiceRuntime {
     });
 
     return map;
+  };
+
+  private getConsumerKey = (remoteId: number, kind: StreamKind) => {
+    return `${remoteId}-${kind}`;
+  };
+
+  private getProducerKey = (remoteId: number, kind: StreamKind) => {
+    return `${remoteId}-${kind}`;
+  };
+
+  private validateProducerQualityLayers = (
+    producer: Producer<AppData> | undefined,
+    qualityLayers?: TStreamQualityLayer[]
+  ): TStreamQualityLayer[] => {
+    if (!producer || producer.kind !== 'video') {
+      if (qualityLayers !== undefined) {
+        throw new Error('Quality layers can only be set for video producers');
+      }
+
+      return [];
+    }
+
+    if (producer.type !== 'simulcast') {
+      if (qualityLayers !== undefined) {
+        throw new Error(
+          'Quality layers can only be set for simulcast producers'
+        );
+      }
+
+      return [];
+    }
+
+    const expectedLayerCount = producer.rtpParameters.encodings?.length ?? 0;
+
+    if (!qualityLayers?.length) {
+      throw new Error('Simulcast video producers require quality layer labels');
+    }
+
+    if (qualityLayers.length !== expectedLayerCount) {
+      throw new Error(
+        'Quality layer count must match simulcast encoding count'
+      );
+    }
+
+    const seenLayers = new Set<number>();
+    const normalizedLayers = qualityLayers.map((layer) => {
+      const label = layer.label.trim();
+
+      if (!label) {
+        throw new Error('Quality layer labels cannot be empty');
+      }
+
+      if (!Number.isInteger(layer.spatialLayer) || layer.spatialLayer < 0) {
+        throw new Error(
+          'Quality layer spatialLayer must be a non-negative integer'
+        );
+      }
+
+      if (seenLayers.has(layer.spatialLayer)) {
+        throw new Error('Quality layer spatialLayer values must be unique');
+      }
+
+      seenLayers.add(layer.spatialLayer);
+
+      return {
+        spatialLayer: layer.spatialLayer,
+        label
+      };
+    });
+
+    for (let layer = 0; layer < expectedLayerCount; layer++) {
+      if (!seenLayers.has(layer)) {
+        throw new Error(
+          'Quality layer spatialLayer values must match encoding indexes'
+        );
+      }
+    }
+
+    return normalizedLayers.sort((a, b) => a.spatialLayer - b.spatialLayer);
+  };
+
+  private setProducerQualityLayers = (
+    remoteId: number,
+    kind: StreamKind,
+    layers: TStreamQualityLayer[]
+  ) => {
+    const producerKey = this.getProducerKey(remoteId, kind);
+
+    if (layers.length === 0) {
+      delete this.producerQualityLayers[producerKey];
+      return;
+    }
+
+    this.producerQualityLayers[producerKey] = layers;
   };
 
   public init = async (): Promise<void> => {
@@ -330,12 +430,33 @@ class VoiceRuntime {
     Object.keys(this.consumers).forEach((consumerUserIdStr) => {
       const consumerId = parseInt(consumerUserIdStr);
 
-      if (consumerId !== userId && this.consumers[consumerId]?.[userId]) {
-        this.consumers[consumerId][userId].close();
+      if (consumerId === userId) return;
 
-        delete this.consumers[consumerId][userId];
-      }
+      const userConsumers = this.consumers[consumerId];
+
+      Object.keys(userConsumers ?? {}).forEach((streamKey) => {
+        if (!userConsumers) return;
+        if (!streamKey.startsWith(`${userId}-`)) return;
+
+        userConsumers[streamKey]?.close();
+
+        delete userConsumers[streamKey];
+      });
     });
+  };
+
+  public getConsumer = (userId: number, remoteId: number, kind: StreamKind) => {
+    return this.consumers[userId]?.[this.getConsumerKey(remoteId, kind)];
+  };
+
+  public getConsumerById = (userId: number, consumerId: string) => {
+    const userConsumers = this.consumers[userId];
+
+    if (!userConsumers) return undefined;
+
+    return Object.values(userConsumers).find(
+      (consumer) => consumer.id === consumerId
+    );
   };
 
   public updateUserState = (
@@ -484,8 +605,14 @@ class VoiceRuntime {
   public addProducer = (
     userId: number,
     type: StreamKind,
-    producer: Producer
+    producer: Producer,
+    qualityLayers?: TStreamQualityLayer[]
   ) => {
+    const validatedQualityLayers = this.validateProducerQualityLayers(
+      producer,
+      qualityLayers
+    );
+
     if (type === StreamKind.VIDEO) {
       this.videoProducers[userId] = producer;
     } else if (type === StreamKind.AUDIO) {
@@ -495,6 +622,8 @@ class VoiceRuntime {
     } else if (type === StreamKind.SCREEN_AUDIO) {
       this.screenAudioProducers[userId] = producer;
     }
+
+    this.setProducerQualityLayers(userId, type, validatedQualityLayers);
 
     producer.observer.on('close', () => {
       if (type === StreamKind.VIDEO) {
@@ -506,6 +635,8 @@ class VoiceRuntime {
       } else if (type === StreamKind.SCREEN_AUDIO) {
         delete this.screenAudioProducers[userId];
       }
+
+      this.setProducerQualityLayers(userId, type, []);
     });
   };
 
@@ -542,21 +673,32 @@ class VoiceRuntime {
     } else if (type === StreamKind.SCREEN_AUDIO) {
       delete this.screenAudioProducers[userId];
     }
+
+    this.setProducerQualityLayers(userId, type, []);
   }
+
+  public getProducerQualityLayers = (remoteId: number, kind: StreamKind) => {
+    return (
+      this.producerQualityLayers[this.getProducerKey(remoteId, kind)] ?? []
+    );
+  };
 
   public addConsumer = (
     userId: number,
     remoteId: number,
+    kind: StreamKind,
     consumer: Consumer<AppData>
   ) => {
     if (!this.consumers[userId]) {
       this.consumers[userId] = {};
     }
 
-    this.consumers[userId][remoteId] = consumer;
+    const streamKey = this.getConsumerKey(remoteId, kind);
+
+    this.consumers[userId][streamKey] = consumer;
 
     consumer.observer.on('close', () => {
-      delete this.consumers[userId]?.[remoteId];
+      delete this.consumers[userId]?.[streamKey];
     });
   };
 
@@ -570,10 +712,16 @@ class VoiceRuntime {
       audio?: Producer;
       video?: Producer;
     };
+    videoLayers?: TStreamQualityLayer[];
   }) => {
     const streamId = this.externalCounter++;
 
     const { title, key, pluginId, avatarUrl, bannerUrl, producers } = options;
+
+    const validatedVideoLayers = this.validateProducerQualityLayers(
+      producers.video,
+      options.videoLayers
+    );
 
     this.externalStreamsInternal[streamId] = {
       title,
@@ -596,6 +744,11 @@ class VoiceRuntime {
     }
 
     if (producers.video) {
+      this.setProducerQualityLayers(
+        streamId,
+        StreamKind.EXTERNAL_VIDEO,
+        validatedVideoLayers
+      );
       this.setupExternalProducerCloseHandler(
         streamId,
         'video',
@@ -632,6 +785,7 @@ class VoiceRuntime {
         delete internal.producers.audioProducer;
       } else {
         delete internal.producers.videoProducer;
+        this.setProducerQualityLayers(streamId, StreamKind.EXTERNAL_VIDEO, []);
       }
 
       const hasProducers =
@@ -676,6 +830,8 @@ class VoiceRuntime {
       internal.producers.videoProducer.close();
     }
 
+    this.setProducerQualityLayers(streamId, StreamKind.EXTERNAL_VIDEO, []);
+
     delete this.externalStreamsInternal[streamId];
     delete this.state.externalStreams[streamId];
 
@@ -695,6 +851,7 @@ class VoiceRuntime {
         audio?: Producer;
         video?: Producer;
       };
+      videoLayers?: TStreamQualityLayer[];
     }
   ) => {
     const internal = this.externalStreamsInternal[streamId];
@@ -748,6 +905,11 @@ class VoiceRuntime {
       }
 
       if (options.producers.video !== undefined) {
+        const validatedVideoLayers = this.validateProducerQualityLayers(
+          options.producers.video,
+          options.videoLayers
+        );
+
         if (
           internal.producers.videoProducer &&
           !internal.producers.videoProducer.closed
@@ -757,6 +919,11 @@ class VoiceRuntime {
 
         if (options.producers.video) {
           internal.producers.videoProducer = options.producers.video;
+          this.setProducerQualityLayers(
+            streamId,
+            StreamKind.EXTERNAL_VIDEO,
+            validatedVideoLayers
+          );
           this.setupExternalProducerCloseHandler(
             streamId,
             'video',
@@ -770,6 +937,11 @@ class VoiceRuntime {
           });
         } else {
           delete internal.producers.videoProducer;
+          this.setProducerQualityLayers(
+            streamId,
+            StreamKind.EXTERNAL_VIDEO,
+            []
+          );
         }
       }
 
@@ -777,6 +949,19 @@ class VoiceRuntime {
         audio: !!internal.producers.audioProducer,
         video: !!internal.producers.videoProducer
       };
+    }
+
+    if (options.videoLayers !== undefined && !options.producers?.video) {
+      const validatedVideoLayers = this.validateProducerQualityLayers(
+        internal.producers.videoProducer,
+        options.videoLayers
+      );
+
+      this.setProducerQualityLayers(
+        streamId,
+        StreamKind.EXTERNAL_VIDEO,
+        validatedVideoLayers
+      );
     }
 
     pubsub.publish(ServerEvents.VOICE_UPDATE_EXTERNAL_STREAM, {

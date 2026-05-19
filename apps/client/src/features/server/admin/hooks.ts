@@ -51,6 +51,7 @@ export const useAdminGeneral = () => {
     allowNewUsers: false,
     directMessagesEnabled: true,
     enablePlugins: false,
+    webRtcSimulcastEnabled: false,
     enableSearch: true,
     showWelcomeDialog: true
   });
@@ -71,6 +72,7 @@ export const useAdminGeneral = () => {
       allowNewUsers: settings.allowNewUsers ?? false,
       directMessagesEnabled: settings.directMessagesEnabled ?? true,
       enablePlugins: settings.enablePlugins ?? false,
+      webRtcSimulcastEnabled: settings.webRtcSimulcastEnabled ?? false,
       enableSearch: settings.enableSearch ?? true,
       showWelcomeDialog: settings.showWelcomeDialog ?? true
     });
@@ -90,6 +92,7 @@ export const useAdminGeneral = () => {
         allowNewUsers: settings.allowNewUsers,
         directMessagesEnabled: settings.directMessagesEnabled,
         enablePlugins: settings.enablePlugins,
+        webRtcSimulcastEnabled: settings.webRtcSimulcastEnabled,
         enableSearch: settings.enableSearch,
         showWelcomeDialog: settings.showWelcomeDialog
       });

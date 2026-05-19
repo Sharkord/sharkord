@@ -5,17 +5,22 @@ import type { TVoiceUser } from '@/features/server/types';
 import { useIsOwnUser } from '@/features/server/users/hooks';
 import {
   useShowUserBannersInVoice,
-  useSpeakingState
+  useSpeakingState,
+  useVoice
 } from '@/features/server/voice/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { cn } from '@/lib/utils';
+import { StreamKind } from '@sharkord/shared';
 import { HeadphoneOff, MicOff, Monitor, Video } from 'lucide-react';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
+import { useVideoStats } from './hooks/use-video-stats';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
+import { QualityButton } from './quality-button';
+import { getStreamQualityMetadataLabel } from './quality-options';
 import { VolumeButton } from './volume-button';
 
 type TVoiceUserCardProps = {
@@ -42,9 +47,37 @@ const VoiceUserCard = memo(
     const { volumeKey } = useStreamVolumeControl({ type: 'user', userId });
     const { devices } = useDevices();
     const isOwnUser = useIsOwnUser(userId);
+    const {
+      getConsumerCodec,
+      getStreamQuality,
+      getStreamQualityLayers,
+      isSimulcastConsumer
+    } = useVoice();
+    const videoStats = useVideoStats(videoRef, hasVideoStream);
     const showUserBanners = useShowUserBannersInVoice();
     const { isActivelySpeaking, speakingEffectClass } =
       useSpeakingState(userId);
+    const isSimulcastVideoConsumer =
+      !isOwnUser && isSimulcastConsumer(userId, StreamKind.VIDEO);
+
+    const codec = useMemo(() => {
+      if (isOwnUser) return null;
+
+      const mimeType = getConsumerCodec(userId, StreamKind.VIDEO);
+
+      if (!mimeType) return null;
+
+      const parts = mimeType.split('/');
+
+      return parts.length > 1 ? parts[1] : mimeType;
+    }, [getConsumerCodec, isOwnUser, userId]);
+
+    const qualityLayers = getStreamQualityLayers(userId, StreamKind.VIDEO);
+    const streamQuality = getStreamQuality(userId, StreamKind.VIDEO);
+
+    const qualityLabel = isSimulcastVideoConsumer
+      ? getStreamQualityMetadataLabel(streamQuality, qualityLayers)
+      : null;
 
     const handlePinToggle = useCallback(() => {
       if (isPinned) {
@@ -78,6 +111,9 @@ const VoiceUserCard = memo(
 
         <CardControls>
           {!isOwnUser && <VolumeButton volumeKey={volumeKey} />}
+          {isSimulcastVideoConsumer && hasVideoStream && (
+            <QualityButton streamId={userId} kind={StreamKind.VIDEO} />
+          )}
           {hasVideoStream && <PictureInPictureButton videoRef={videoRef} />}
           {showPinControls && (
             <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
@@ -106,9 +142,26 @@ const VoiceUserCard = memo(
 
         <div className="absolute bottom-0 left-0 right-0 p-2">
           <div className="flex items-center justify-between">
-            <span className="text-white font-medium text-xs truncate">
-              {voiceUser.name}
-            </span>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-white font-medium text-xs truncate">
+                {voiceUser.name}
+              </span>
+              {(videoStats || codec || qualityLabel) && (
+                <span className="text-white/50 text-xs shrink-0">
+                  {codec}
+                  {codec && videoStats && ' '}
+                  {videoStats && (
+                    <>
+                      {videoStats.width}x{videoStats.height}
+                      {videoStats.frameRate > 0 &&
+                        ` ${videoStats.frameRate}fps`}
+                    </>
+                  )}
+                  {(codec || videoStats) && qualityLabel && ' '}
+                  {qualityLabel && `(${qualityLabel})`}
+                </span>
+              )}
+            </div>
 
             <div className="flex items-center gap-1">
               {voiceUser.state.micMuted && (

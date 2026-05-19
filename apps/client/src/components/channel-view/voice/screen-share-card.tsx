@@ -18,9 +18,11 @@ import { useVideoStats } from './hooks/use-video-stats';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
+import { QualityButton } from './quality-button';
+import { getStreamQualityMetadataLabel } from './quality-options';
 import { VolumeButton } from './volume-button';
 
-type tScreenShareControlsProps = {
+type TScreenShareControlsProps = {
   isPinned: boolean;
   isFullscreen: boolean;
   isZoomEnabled: boolean;
@@ -29,8 +31,10 @@ type tScreenShareControlsProps = {
   handleToggleZoom: () => void;
   showPinControls: boolean;
   showAudioControl: boolean;
+  showQualityControl: boolean;
   volumeKey: TVolumeKey;
   videoRef: RefObject<HTMLVideoElement | null>;
+  userId: number;
 };
 
 const ScreenShareControls = memo(
@@ -43,12 +47,17 @@ const ScreenShareControls = memo(
     handleToggleZoom,
     showPinControls,
     showAudioControl,
+    showQualityControl,
     volumeKey,
-    videoRef
-  }: tScreenShareControlsProps) => {
+    videoRef,
+    userId
+  }: TScreenShareControlsProps) => {
     return (
       <CardControls>
         {showAudioControl && <VolumeButton volumeKey={volumeKey} />}
+        {showQualityControl && (
+          <QualityButton streamId={userId} kind={StreamKind.SCREEN} />
+        )}
         <PictureInPictureButton videoRef={videoRef} />
         {showPinControls && isPinned && (
           <IconButton
@@ -94,14 +103,26 @@ const ScreenShareCard = memo(
     const { getUserScreenVolumeKey } = useVolumeControl();
     const isOwnUser = ownUserId === userId;
     const volumeKey = getUserScreenVolumeKey(userId);
+
     const {
       screenShareRef,
       screenShareAudioRef,
       hasScreenShareStream,
       hasScreenShareAudioStream
     } = useVoiceRefs(userId);
-    const { transportStats, getConsumerCodec } = useVoice();
+
+    const {
+      transportStats,
+      getConsumerCodec,
+      getStreamQuality,
+      getStreamQualityLayers,
+      isSimulcastConsumer
+    } = useVoice();
+
     const videoStats = useVideoStats(screenShareRef, hasScreenShareStream);
+
+    const isSimulcastScreenConsumer =
+      !isOwnUser && isSimulcastConsumer(userId, StreamKind.SCREEN);
 
     const codec = useMemo(() => {
       let mimeType: string | undefined;
@@ -123,6 +144,13 @@ const ScreenShareCard = memo(
       getConsumerCodec,
       userId
     ]);
+
+    const streamQuality = getStreamQuality(userId, StreamKind.SCREEN);
+    const qualityLayers = getStreamQualityLayers(userId, StreamKind.SCREEN);
+
+    const qualityLabel = isSimulcastScreenConsumer
+      ? getStreamQualityMetadataLabel(streamQuality, qualityLayers)
+      : null;
 
     const {
       containerRef,
@@ -196,8 +224,10 @@ const ScreenShareCard = memo(
           handleToggleZoom={handleToggleZoom}
           showPinControls={showPinControls}
           showAudioControl={!isOwnUser && hasScreenShareAudioStream}
+          showQualityControl={isSimulcastScreenConsumer}
           volumeKey={volumeKey}
           videoRef={screenShareRef}
+          userId={userId}
         />
 
         <video
@@ -225,7 +255,7 @@ const ScreenShareCard = memo(
             <span className="text-white font-medium text-xs truncate">
               {user.name}'s screen
             </span>
-            {(videoStats || codec) && (
+            {(videoStats || codec || qualityLabel) && (
               <span className="text-white/50 text-xs shrink-0">
                 {codec}
                 {codec && videoStats && ' '}
@@ -235,6 +265,8 @@ const ScreenShareCard = memo(
                     {videoStats.frameRate > 0 && ` ${videoStats.frameRate}fps`}
                   </>
                 )}
+                {(codec || videoStats) && qualityLabel && ' '}
+                {qualityLabel && `(${qualityLabel})`}
               </span>
             )}
             {isZoomEnabled && zoom > 1 && (
