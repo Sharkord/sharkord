@@ -107,7 +107,7 @@ const VoiceUserCard = memo(
         <CardControls>
           {!isOwnUser && <VolumeButton volumeKey={volumeKey} />}
           {isSimulcastVideoConsumer && hasVideoStream && (
-            <QualityButton userId={userId} kind={StreamKind.VIDEO} />
+            <QualityButton streamId={userId} kind={StreamKind.VIDEO} />
           )}
           {hasVideoStream && <PictureInPictureButton videoRef={videoRef} />}
           {showPinControls && (

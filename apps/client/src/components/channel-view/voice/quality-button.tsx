@@ -14,26 +14,26 @@ import { memo, useCallback, useState } from 'react';
 import { qualityOptions } from './quality-options';
 
 type TQualityButtonProps = {
-  userId: number;
+  streamId: number;
   kind: StreamKind.VIDEO | StreamKind.SCREEN | StreamKind.EXTERNAL_VIDEO;
 };
 
-const QualityButton = memo(({ userId, kind }: TQualityButtonProps) => {
+const QualityButton = memo(({ streamId, kind }: TQualityButtonProps) => {
   const { getStreamQuality, setStreamQuality } = useVoice();
   const [isPending, setIsPending] = useState(false);
-  const quality = getStreamQuality(userId, kind);
+  const quality = getStreamQuality(streamId, kind);
 
   const handleQualityChange = useCallback(
     async (nextQuality: string) => {
       setIsPending(true);
 
       try {
-        await setStreamQuality(userId, kind, nextQuality as TStreamQuality);
+        await setStreamQuality(streamId, kind, nextQuality as TStreamQuality);
       } finally {
         setIsPending(false);
       }
     },
-    [kind, setStreamQuality, userId]
+    [kind, setStreamQuality, streamId]
   );
 
   return (

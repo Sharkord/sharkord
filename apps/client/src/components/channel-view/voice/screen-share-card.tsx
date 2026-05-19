@@ -56,7 +56,7 @@ const ScreenShareControls = memo(
       <CardControls>
         {showAudioControl && <VolumeButton volumeKey={volumeKey} />}
         {showQualityControl && (
-          <QualityButton userId={userId} kind={StreamKind.SCREEN} />
+          <QualityButton streamId={userId} kind={StreamKind.SCREEN} />
         )}
         <PictureInPictureButton videoRef={videoRef} />
         {showPinControls && isPinned && (

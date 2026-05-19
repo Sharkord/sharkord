@@ -77,7 +77,7 @@ const ExternalStreamControls = memo(
           />
         )}
         {showQualityControl && (
-          <QualityButton userId={streamId} kind={StreamKind.EXTERNAL_VIDEO} />
+          <QualityButton streamId={streamId} kind={StreamKind.EXTERNAL_VIDEO} />
         )}
         {hasVideo && <PictureInPictureButton videoRef={videoRef} />}
         {hasVideo && (
