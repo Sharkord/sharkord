@@ -4,10 +4,10 @@ import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
-import { assertDmChannel } from '../../db/queries/dms';
 import { getEmojiFileIdByEmojiName } from '../../db/queries/emojis';
 import { getReaction } from '../../db/queries/messages';
 import { messageReactions, messages } from '../../db/schema';
+import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
@@ -36,7 +36,7 @@ const toggleMessageReactionRoute = rateLimitedProcedure(protectedProcedure, {
       message: 'Message not found'
     });
 
-    await assertDmChannel(message.channelId, ctx.userId);
+    await assertChannelAccess(ctx, message.channelId);
 
     const reaction = await getReaction(
       input.messageId,

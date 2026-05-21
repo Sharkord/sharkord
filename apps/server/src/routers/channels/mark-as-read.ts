@@ -3,8 +3,8 @@ import { and, desc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
-import { assertDmChannel } from '../../db/queries/dms';
 import { channelReadStates, messages } from '../../db/schema';
+import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
 const markAsReadRoute = rateLimitedProcedure(protectedProcedure, {
@@ -18,7 +18,7 @@ const markAsReadRoute = rateLimitedProcedure(protectedProcedure, {
     })
   )
   .mutation(async ({ ctx, input }) => {
-    await assertDmChannel(input.channelId, ctx.userId);
+    await assertChannelAccess(ctx, input.channelId);
 
     const { channelId } = input;
 
