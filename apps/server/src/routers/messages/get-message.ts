@@ -1,7 +1,6 @@
-import { ChannelPermission } from '@sharkord/shared';
 import { z } from 'zod';
-import { assertDmChannel } from '../../db/queries/dms';
 import { getMessage } from '../../db/queries/messages';
+import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -19,12 +18,7 @@ const getMessageRoute = protectedProcedure
       message: 'Message not found'
     });
 
-    await assertDmChannel(message.channelId, ctx.userId);
-
-    await ctx.needsChannelPermission(
-      message.channelId,
-      ChannelPermission.VIEW_CHANNEL
-    );
+    await assertChannelAccess(ctx, message.channelId);
 
     return message;
   });

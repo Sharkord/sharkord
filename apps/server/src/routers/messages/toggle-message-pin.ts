@@ -3,8 +3,8 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
-import { assertDmChannel } from '../../db/queries/dms';
 import { messages } from '../../db/schema';
+import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
@@ -29,7 +29,7 @@ const toggleMessagePinRoute = protectedProcedure
       message: 'Message not found'
     });
 
-    await assertDmChannel(message.channelId, ctx.userId);
+    await assertChannelAccess(ctx, message.channelId);
 
     invariant(!message.parentMessageId, {
       code: 'BAD_REQUEST',
