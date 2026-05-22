@@ -8,6 +8,7 @@ import { DebugInfo } from './components/debug-info/index.tsx';
 import { StoreDebug } from './components/debug/store-debug.tsx';
 import { DevicesProvider } from './components/devices-provider/index.tsx';
 import { DialogsProvider } from './components/dialogs/index.tsx';
+import { GlobalErrorBoundary } from './components/error-boundary/global-error-boundary.tsx';
 import { HotkeysController } from './components/hotkeys-controller/index.tsx';
 import { PluginsController } from './components/plugins-controller/index.tsx';
 import { AutoLoginController } from './components/routing/auto-login-controller.tsx';
@@ -32,19 +33,21 @@ createRoot(document.getElementById('root')!).render(
       defaultTheme="dark"
       storageKey={LocalStorageKey.VITE_UI_THEME}
     >
-      <DebugInfo />
-      <Toaster />
-      <Provider store={store}>
-        <StoreDebug />
-        <HotkeysController />
-        <DevicesProvider>
-          <PluginsController />
-          <DialogsProvider />
-          <ServerScreensProvider />
-          <AutoLoginController />
-          <Routing />
-        </DevicesProvider>
-      </Provider>
+      <GlobalErrorBoundary>
+        <DebugInfo />
+        <Toaster />
+        <Provider store={store}>
+          <StoreDebug />
+          <HotkeysController />
+          <DevicesProvider>
+            <PluginsController />
+            <DialogsProvider />
+            <ServerScreensProvider />
+            <AutoLoginController />
+            <Routing />
+          </DevicesProvider>
+        </Provider>
+      </GlobalErrorBoundary>
     </ThemeProvider>
   </StrictMode>
 );

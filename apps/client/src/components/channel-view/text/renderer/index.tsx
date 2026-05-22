@@ -1,3 +1,4 @@
+import { ErrorBoundary } from '@/components/error-boundary';
 import { RelativeTime } from '@/components/relative-time';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
@@ -16,6 +17,7 @@ import { getIsEmojiOnly, getParsedMessageHtml } from './content-cache';
 import { extractMessageOpenGraph } from './helpers';
 import { Media } from './media';
 import { extractMessageMedia } from './media-cache';
+import { MessageRenderFallback } from './message-render-fallback';
 import { OpenGraph } from './open-graph';
 
 type TMessageRendererProps = {
@@ -80,7 +82,13 @@ const MessageRenderer = memo(
             message.editedAt && 'msg-edited'
           )}
         >
-          {messageHtml}
+          <ErrorBoundary
+            fallback={(error, reset) => (
+              <MessageRenderFallback error={error} reset={reset} />
+            )}
+          >
+            {messageHtml}
+          </ErrorBoundary>
           {message.editedAt && (
             <Tooltip
               content={

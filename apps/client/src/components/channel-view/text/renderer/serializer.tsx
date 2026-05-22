@@ -2,9 +2,8 @@ import { parseDomCommand } from '@sharkord/shared';
 import { Element, type DOMNode } from 'html-react-parser';
 import { CommandOverride } from '../overrides/command';
 import { MentionOverride } from '../overrides/mention';
-import { TwitterOverride } from '../overrides/twitter';
 import { YoutubeOverride } from '../overrides/youtube';
-import { getTweetInfo, getYoutubeInfo } from './helpers';
+import { getYoutubeInfo } from './helpers';
 
 const serializer = (domNode: DOMNode, messageId: number) => {
   try {
@@ -15,17 +14,10 @@ const serializer = (domNode: DOMNode, messageId: number) => {
         return undefined;
       }
 
-      const { isTweet, tweetId } = getTweetInfo(href);
-      const { isYoutube, videoId } = getYoutubeInfo(href);
+      const { videoId } = getYoutubeInfo(href);
 
-      if (isTweet) {
-        if (tweetId) {
-          return <TwitterOverride tweetId={tweetId} />;
-        }
-      } else if (isYoutube) {
-        if (videoId) {
-          return <YoutubeOverride videoId={videoId} />;
-        }
+      if (videoId) {
+        return <YoutubeOverride videoId={videoId} />;
       }
     } else if (domNode instanceof Element && domNode.name === 'command') {
       const command = parseDomCommand(domNode);
