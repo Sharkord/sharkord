@@ -2,6 +2,7 @@ import {
   useVolumeControl,
   type TVolumeKey
 } from '@/components/voice-provider/volume-control-context';
+import { useWebRtcSimulcastEnabled } from '@/features/server/hooks';
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { useVoice } from '@/features/server/voice/hooks';
 import { useStreamQualityData } from '@/hooks/use-stream-quality-data';
@@ -32,6 +33,7 @@ type TScreenShareControlsProps = {
   showPinControls: boolean;
   showAudioControl: boolean;
   showQualityControl: boolean;
+  disableQualityControl: boolean;
   volumeKey: TVolumeKey;
   videoRef: RefObject<HTMLVideoElement | null>;
   userId: number;
@@ -48,6 +50,7 @@ const ScreenShareControls = memo(
     showPinControls,
     showAudioControl,
     showQualityControl,
+    disableQualityControl,
     volumeKey,
     videoRef,
     userId
@@ -56,7 +59,11 @@ const ScreenShareControls = memo(
       <CardControls>
         {showAudioControl && <VolumeButton volumeKey={volumeKey} />}
         {showQualityControl && (
-          <QualityButton streamId={userId} kind={StreamKind.SCREEN} />
+          <QualityButton
+            streamId={userId}
+            kind={StreamKind.SCREEN}
+            disabled={disableQualityControl}
+          />
         )}
         <PictureInPictureButton videoRef={videoRef} />
         {showPinControls && isPinned && (
@@ -102,6 +109,7 @@ const ScreenShareCard = memo(
     const ownUserId = useOwnUserId();
     const { getUserScreenVolumeKey } = useVolumeControl();
     const isOwnUser = ownUserId === userId;
+    const webRtcSimulcastEnabled = useWebRtcSimulcastEnabled();
     const volumeKey = getUserScreenVolumeKey(userId);
 
     const {
@@ -213,7 +221,8 @@ const ScreenShareCard = memo(
           handleToggleZoom={handleToggleZoom}
           showPinControls={showPinControls}
           showAudioControl={!isOwnUser && hasScreenShareAudioStream}
-          showQualityControl={isSimulcastScreenConsumer}
+          showQualityControl={!isOwnUser && webRtcSimulcastEnabled}
+          disableQualityControl={!isSimulcastScreenConsumer}
           volumeKey={volumeKey}
           videoRef={screenShareRef}
           userId={userId}

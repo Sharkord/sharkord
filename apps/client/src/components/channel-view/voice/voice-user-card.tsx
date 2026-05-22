@@ -1,6 +1,7 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { UserAvatar } from '@/components/user-avatar';
 import { useStreamVolumeControl } from '@/components/voice-provider/hooks/use-stream-volume-control';
+import { useWebRtcSimulcastEnabled } from '@/features/server/hooks';
 import type { TVoiceUser } from '@/features/server/types';
 import { useIsOwnUser } from '@/features/server/users/hooks';
 import {
@@ -9,14 +10,12 @@ import {
   useVoice
 } from '@/features/server/voice/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
-import { useStreamQualityData } from '@/hooks/use-stream-quality-data';
 import { cn } from '@/lib/utils';
 import { StreamKind } from '@sharkord/shared';
 import { HeadphoneOff, MicOff, Monitor, Video } from 'lucide-react';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback } from 'react';
 import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
-import { useVideoStats } from './hooks/use-video-stats';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
@@ -47,27 +46,15 @@ const VoiceUserCard = memo(
     const { volumeKey } = useStreamVolumeControl({ type: 'user', userId });
     const { devices } = useDevices();
     const isOwnUser = useIsOwnUser(userId);
-    const { getConsumerCodec, isSimulcastConsumer } = useVoice();
-    const videoStats = useVideoStats(videoRef, hasVideoStream);
+    const webRtcSimulcastEnabled = useWebRtcSimulcastEnabled();
+    const { isSimulcastConsumer } = useVoice();
     const showUserBanners = useShowUserBannersInVoice();
     const { isActivelySpeaking, speakingEffectClass } =
       useSpeakingState(userId);
     const isSimulcastVideoConsumer =
       !isOwnUser && isSimulcastConsumer(userId, StreamKind.VIDEO);
-
-    const codec = useMemo(() => {
-      if (isOwnUser) return null;
-
-      const mimeType = getConsumerCodec(userId, StreamKind.VIDEO);
-
-      if (!mimeType) return null;
-
-      const parts = mimeType.split('/');
-
-      return parts.length > 1 ? parts[1] : mimeType;
-    }, [getConsumerCodec, isOwnUser, userId]);
-
-    const { qualityLabel } = useStreamQualityData(userId, StreamKind.SCREEN);
+    const showQualityControl =
+      !isOwnUser && webRtcSimulcastEnabled && hasVideoStream;
 
     const handlePinToggle = useCallback(() => {
       if (isPinned) {
@@ -101,8 +88,12 @@ const VoiceUserCard = memo(
 
         <CardControls>
           {!isOwnUser && <VolumeButton volumeKey={volumeKey} />}
-          {isSimulcastVideoConsumer && hasVideoStream && (
-            <QualityButton streamId={userId} kind={StreamKind.VIDEO} />
+          {showQualityControl && (
+            <QualityButton
+              streamId={userId}
+              kind={StreamKind.VIDEO}
+              disabled={!isSimulcastVideoConsumer}
+            />
           )}
           {hasVideoStream && <PictureInPictureButton videoRef={videoRef} />}
           {showPinControls && (
@@ -136,21 +127,6 @@ const VoiceUserCard = memo(
               <span className="text-white font-medium text-xs truncate">
                 {voiceUser.name}
               </span>
-              {(videoStats || codec || qualityLabel) && (
-                <span className="text-white/50 text-xs shrink-0">
-                  {codec}
-                  {codec && videoStats && ' '}
-                  {videoStats && (
-                    <>
-                      {videoStats.width}x{videoStats.height}
-                      {videoStats.frameRate > 0 &&
-                        ` ${videoStats.frameRate}fps`}
-                    </>
-                  )}
-                  {(codec || videoStats) && qualityLabel && ' '}
-                  {qualityLabel && `(${qualityLabel})`}
-                </span>
-              )}
             </div>
 
             <div className="flex items-center gap-1">
