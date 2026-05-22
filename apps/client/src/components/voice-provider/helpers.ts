@@ -17,16 +17,16 @@ import {
   SIMULCAST_HIGH_LAYER_SCALE,
   SIMULCAST_LOW_LAYER_BITRATE_RATIO,
   SIMULCAST_LOW_LAYER_MAX_BITRATE,
+  SIMULCAST_LOW_LAYER_MAX_FRAMERATE,
   SIMULCAST_LOW_LAYER_SCALE,
   SIMULCAST_MID_LAYER_BITRATE_RATIO,
   SIMULCAST_MID_LAYER_MAX_BITRATE,
+  SIMULCAST_MID_LAYER_MAX_FRAMERATE,
   SIMULCAST_MID_LAYER_SCALE,
   SIMULCAST_MIN_MAX_BITRATE
 } from './statics';
 
-type TLegacyStreamQuality = 'auto' | 'low' | 'medium' | 'high';
-type TStoredStreamQuality = TStreamQuality | TLegacyStreamQuality;
-type TStreamQualitySettings = Record<string, TStoredStreamQuality>;
+type TStreamQualitySettings = Record<string, TStreamQuality>;
 type TRemoteConsumerTypes = Record<string, ConsumerType | undefined>;
 type TRemoteQualityLayers = Record<string, TStreamQualityLayer[] | undefined>;
 
@@ -71,32 +71,20 @@ const getRemoteConsumerTypeKey = (remoteId: number, kind: StreamKind) => {
 };
 
 const normalizeStreamQuality = (
-  quality: TStoredStreamQuality | undefined,
+  quality: TStreamQuality | undefined,
   layers: TStreamQualityLayer[]
 ): TStreamQuality => {
   if (!quality) return { mode: 'auto' };
 
-  if (typeof quality !== 'string') {
-    if (
-      quality.mode === 'layer' &&
-      layers.length > 0 &&
-      !layers.some((layer) => layer.spatialLayer === quality.spatialLayer)
-    ) {
-      return { mode: 'auto' };
-    }
-
-    return quality;
+  if (
+    quality.mode === 'layer' &&
+    layers.length > 0 &&
+    !layers.some((layer) => layer.spatialLayer === quality.spatialLayer)
+  ) {
+    return { mode: 'auto' };
   }
 
-  if (quality === 'auto') return { mode: 'auto' };
-
-  if (quality === 'low') return { mode: 'layer', spatialLayer: 0 };
-  if (quality === 'medium') return { mode: 'layer', spatialLayer: 1 };
-
-  return {
-    mode: 'layer',
-    spatialLayer: layers[layers.length - 1]?.spatialLayer ?? 2
-  };
+  return quality;
 };
 
 const getStreamQualityDropdownValue = (quality: TStreamQuality) => {
@@ -123,6 +111,7 @@ const getSimulcastEncodings = (
         SIMULCAST_LOW_LAYER_MAX_BITRATE,
         Math.round(safeMaxBitrate * SIMULCAST_LOW_LAYER_BITRATE_RATIO)
       ),
+      maxFramerate: SIMULCAST_LOW_LAYER_MAX_FRAMERATE,
       scaleResolutionDownBy: SIMULCAST_LOW_LAYER_SCALE
     },
     {
@@ -130,6 +119,7 @@ const getSimulcastEncodings = (
         SIMULCAST_MID_LAYER_MAX_BITRATE,
         Math.round(safeMaxBitrate * SIMULCAST_MID_LAYER_BITRATE_RATIO)
       ),
+      maxFramerate: SIMULCAST_MID_LAYER_MAX_FRAMERATE,
       scaleResolutionDownBy: SIMULCAST_MID_LAYER_SCALE
     },
     {

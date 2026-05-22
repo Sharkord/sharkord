@@ -107,7 +107,7 @@
   "startingCamera": "Iniciando cámara...",
   "mirrorOwnVideoLabel": "Reflejar tu propio vídeo",
   "simulcastUserLabel": "Simulcast",
-  "simulcastUserDesc": "Envía capas separadas de baja, media y alta calidad para tu cámara web y pantalla compartida. Usa más ancho de banda y CPU, pero ayuda a que quienes tienen conexiones más lentas reciban una transmisión más fluida.",
+  "simulcastUserDesc": "Envía capas separadas de baja, media y alta calidad para tu cámara web y pantalla compartida. Usa más ancho de banda y CPU, pero ayuda a que quienes tienen conexiones más lentas reciban una transmisión más fluida. Forces the use of VP8 when enabled.",
   "simulcastDisabledByServerDesc": "Simulcast está desactivado en este servidor.",
   "screenSharingLabel": "Compartir pantalla",
   "restrictOwnAudioLabel": "Restringir audio propio",

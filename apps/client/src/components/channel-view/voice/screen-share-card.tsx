@@ -4,6 +4,7 @@ import {
 } from '@/components/voice-provider/volume-control-context';
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { useVoice } from '@/features/server/voice/hooks';
+import { useStreamQualityData } from '@/hooks/use-stream-quality-data';
 import { cn } from '@/lib/utils';
 import { StreamKind } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
@@ -19,7 +20,6 @@ import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { QualityButton } from './quality-button';
-import { getStreamQualityMetadataLabel } from './quality-options';
 import { VolumeButton } from './volume-button';
 
 type TScreenShareControlsProps = {
@@ -111,18 +111,9 @@ const ScreenShareCard = memo(
       hasScreenShareAudioStream
     } = useVoiceRefs(userId);
 
-    const {
-      transportStats,
-      getConsumerCodec,
-      getStreamQuality,
-      getStreamQualityLayers,
-      isSimulcastConsumer
-    } = useVoice();
+    const { transportStats, getConsumerCodec } = useVoice();
 
     const videoStats = useVideoStats(screenShareRef, hasScreenShareStream);
-
-    const isSimulcastScreenConsumer =
-      !isOwnUser && isSimulcastConsumer(userId, StreamKind.SCREEN);
 
     const codec = useMemo(() => {
       let mimeType: string | undefined;
@@ -145,12 +136,10 @@ const ScreenShareCard = memo(
       userId
     ]);
 
-    const streamQuality = getStreamQuality(userId, StreamKind.SCREEN);
-    const qualityLayers = getStreamQualityLayers(userId, StreamKind.SCREEN);
-
-    const qualityLabel = isSimulcastScreenConsumer
-      ? getStreamQualityMetadataLabel(streamQuality, qualityLayers)
-      : null;
+    const { isSimulcastScreenConsumer, qualityLabel } = useStreamQualityData(
+      userId,
+      StreamKind.SCREEN
+    );
 
     const {
       containerRef,

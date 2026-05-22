@@ -3,6 +3,7 @@ import {
   parseStreamQualityDropdownValue
 } from '@/components/voice-provider/helpers';
 import { useVoice } from '@/features/server/voice/hooks';
+import { useStreamQualityData } from '@/hooks/use-stream-quality-data';
 import { StreamKind } from '@sharkord/shared';
 import {
   DropdownMenu,
@@ -14,7 +15,6 @@ import {
 } from '@sharkord/ui';
 import { Gauge } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
-import { getStreamQualityLabel } from './quality-options';
 
 type TQualityButtonProps = {
   streamId: number;
@@ -22,15 +22,13 @@ type TQualityButtonProps = {
 };
 
 const QualityButton = memo(({ streamId, kind }: TQualityButtonProps) => {
-  const { getStreamQuality, getStreamQualityLayers, setStreamQuality } =
-    useVoice();
+  const { setStreamQuality } = useVoice();
   const [isPending, setIsPending] = useState(false);
-  const quality = getStreamQuality(streamId, kind);
-  const layers = getStreamQualityLayers(streamId, kind);
-  const orderedLayers = [...layers].sort(
-    (a, b) => b.spatialLayer - a.spatialLayer
+
+  const { qualityLabel, quality, orderedLayers } = useStreamQualityData(
+    streamId,
+    kind
   );
-  const qualityLabel = getStreamQualityLabel(quality, layers);
 
   const handleQualityChange = useCallback(
     async (nextQuality: string) => {

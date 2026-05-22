@@ -107,7 +107,7 @@
   "startingCamera": "Démarrage de la caméra...",
   "mirrorOwnVideoLabel": "Miroir de ma vidéo",
   "simulcastUserLabel": "Simulcast",
-  "simulcastUserDesc": "Envoyez des couches séparées en basse, moyenne et haute qualité pour votre webcam et votre partage d'écran. Cela utilise plus de bande passante et de CPU, mais aide les spectateurs avec une connexion plus lente à recevoir un flux plus fluide.",
+  "simulcastUserDesc": "Envoyez des couches séparées en basse, moyenne et haute qualité pour votre webcam et votre partage d'écran. Cela utilise plus de bande passante et de CPU, mais aide les spectateurs avec une connexion plus lente à recevoir un flux plus fluide. Forces the use of VP8 when enabled.",
   "simulcastDisabledByServerDesc": "Le simulcast est désactivé sur ce serveur.",
   "screenSharingLabel": "Partage d'écran",
   "restrictOwnAudioLabel": "Restreindre mon propre audio",

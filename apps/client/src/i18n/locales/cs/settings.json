@@ -107,7 +107,7 @@
   "startingCamera": "Zapínám webkameru...",
   "mirrorOwnVideoLabel": "Zrcadlit vlastní video",
   "simulcastUserLabel": "Simulcast",
-  "simulcastUserDesc": "Odesílat samostatné vrstvy nízké, střední a vysoké kvality pro webkameru a sdílení obrazovky. Zvýší se tím využití sítě a CPU, ale divákům s pomalejším připojením to může zajistit plynulejší stream.",
+  "simulcastUserDesc": "Odesílat samostatné vrstvy nízké, střední a vysoké kvality pro webkameru a sdílení obrazovky. Zvýší se tím využití sítě a CPU, ale divákům s pomalejším připojením to může zajistit plynulejší stream. Forces the use of VP8 when enabled.",
   "simulcastDisabledByServerDesc": "Simulcast je na tomto serveru vypnutý.",
   "screenSharingLabel": "Sdílení obrazovky",
   "restrictOwnAudioLabel": "Omezit vlastní zvuky",

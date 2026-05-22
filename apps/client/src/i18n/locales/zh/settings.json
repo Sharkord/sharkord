@@ -107,7 +107,7 @@
   "startingCamera": "正在启动摄像头...",
   "mirrorOwnVideoLabel": "镜像自己的视频",
   "simulcastUserLabel": "Simulcast",
-  "simulcastUserDesc": "为摄像头和屏幕共享分别发送低、中、高质量的视频层。这会增加带宽和 CPU 使用量，但能帮助网络较慢的观看者获得更流畅的画面。",
+  "simulcastUserDesc": "为摄像头和屏幕共享分别发送低、中、高质量的视频层。这会增加带宽和 CPU 使用量，但能帮助网络较慢的观看者获得更流畅的画面。 Forces the use of VP8 when enabled.",
   "simulcastDisabledByServerDesc": "此服务器已禁用 Simulcast。",
   "screenSharingLabel": "屏幕共享",
   "restrictOwnAudioLabel": "限制自己的音频",

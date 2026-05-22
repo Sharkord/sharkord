@@ -9,6 +9,7 @@ import {
   useVoice
 } from '@/features/server/voice/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
+import { useStreamQualityData } from '@/hooks/use-stream-quality-data';
 import { cn } from '@/lib/utils';
 import { StreamKind } from '@sharkord/shared';
 import { HeadphoneOff, MicOff, Monitor, Video } from 'lucide-react';
@@ -20,7 +21,6 @@ import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { QualityButton } from './quality-button';
-import { getStreamQualityMetadataLabel } from './quality-options';
 import { VolumeButton } from './volume-button';
 
 type TVoiceUserCardProps = {
@@ -47,12 +47,7 @@ const VoiceUserCard = memo(
     const { volumeKey } = useStreamVolumeControl({ type: 'user', userId });
     const { devices } = useDevices();
     const isOwnUser = useIsOwnUser(userId);
-    const {
-      getConsumerCodec,
-      getStreamQuality,
-      getStreamQualityLayers,
-      isSimulcastConsumer
-    } = useVoice();
+    const { getConsumerCodec, isSimulcastConsumer } = useVoice();
     const videoStats = useVideoStats(videoRef, hasVideoStream);
     const showUserBanners = useShowUserBannersInVoice();
     const { isActivelySpeaking, speakingEffectClass } =
@@ -72,12 +67,7 @@ const VoiceUserCard = memo(
       return parts.length > 1 ? parts[1] : mimeType;
     }, [getConsumerCodec, isOwnUser, userId]);
 
-    const qualityLayers = getStreamQualityLayers(userId, StreamKind.VIDEO);
-    const streamQuality = getStreamQuality(userId, StreamKind.VIDEO);
-
-    const qualityLabel = isSimulcastVideoConsumer
-      ? getStreamQualityMetadataLabel(streamQuality, qualityLayers)
-      : null;
+    const { qualityLabel } = useStreamQualityData(userId, StreamKind.SCREEN);
 
     const handlePinToggle = useCallback(() => {
       if (isPinned) {
