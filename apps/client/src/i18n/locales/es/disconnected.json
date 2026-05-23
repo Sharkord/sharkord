@@ -1,6 +1,6 @@
 {
   "kicked": "Has sido expulsado",
-  "banned": "Has sido baneado",
+  "banned": "Has sido vetado",
   "connectionLost": "Conexión perdida",
   "noReasonProvided": "No se proporcionó un motivo.",
   "lostConnectionMessage": "Se perdió la conexión con el servidor inesperadamente.",
