@@ -7,8 +7,9 @@ import {
 import { joinVoice } from '@/features/server/voice/actions';
 import { useVoice } from '@/features/server/voice/hooks';
 import { getLocalStorageItemAsJSON, LocalStorageKey } from '@/helpers/storage';
+import { getTRPCClient } from '@/lib/trpc';
 import { ChannelType } from '@sharkord/shared';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 const loadExpandedValue = (categoryId: number): boolean => {
@@ -123,4 +124,29 @@ const useSelectChannel = () => {
   return selectChannel;
 };
 
-export { useCategoryExpanded, useSelectChannel };
+const useReceiveVoiceMove = () => {
+  const selectChannel = useSelectChannel();
+  const currentVoiceChannelId = useCurrentVoiceChannelId();
+  const selectChannelRef = useRef(selectChannel);
+  const currentVoiceChannelIdRef = useRef(currentVoiceChannelId);
+
+  selectChannelRef.current = selectChannel;
+  currentVoiceChannelIdRef.current = currentVoiceChannelId;
+
+  useEffect(() => {
+    const trpc = getTRPCClient();
+
+    const sub = trpc.voice.onMoved.subscribe(undefined, {
+      onData: ({ channelId, fromChannelId }) => {
+        if (currentVoiceChannelIdRef.current !== fromChannelId) return;
+
+        selectChannelRef.current(channelId);
+      },
+      onError: (err) => console.error('onMoved subscription error:', err)
+    });
+
+    return () => sub.unsubscribe();
+  }, []);
+};
+
+export { useCategoryExpanded, useReceiveVoiceMove, useSelectChannel };

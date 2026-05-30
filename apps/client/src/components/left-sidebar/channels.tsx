@@ -14,6 +14,10 @@ import {
   useUnreadMessagesCount,
   useVoiceUsersByChannelId
 } from '@/features/server/hooks';
+import {
+  VOICE_USER_DND_MIME,
+  moveUserToVoiceChannel
+} from '@/features/server/voice/actions';
 import { useVoiceChannelExternalStreamsList } from '@/features/server/voice/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -39,7 +43,7 @@ import {
   getTrpcError
 } from '@sharkord/shared';
 import { Hash, Volume2 } from 'lucide-react';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ChannelContextMenu } from '../context-menus/channel';
@@ -66,14 +70,44 @@ const Voice = memo(
     const currentVoiceChannelId = useCurrentVoiceChannelId();
     const someoneIsSharingScreen = useHasSharingScreenUsers(channel.id);
 
+    const [isDragOver, setIsDragOver] = useState(false);
+
     const isVoiceActive = users.length > 0 || externalStreams.length > 0;
     const isOwnChannel = currentVoiceChannelId === channel.id;
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+      if (!e.dataTransfer.types.includes(VOICE_USER_DND_MIME)) return;
+
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+
+      if (!isDragOver) setIsDragOver(true);
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+      setIsDragOver(false);
+
+      const raw = e.dataTransfer.getData(VOICE_USER_DND_MIME);
+
+      if (!raw) return;
+
+      e.preventDefault();
+
+      const userId = Number(raw);
+
+      if (!userId || users.some((user) => user.id === userId)) return;
+
+      moveUserToVoiceChannel(userId, channel.id);
+    };
 
     return (
       <>
         <ItemWrapper
           {...props}
           isSelected={isSelected}
+          onDragOver={handleDragOver}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={handleDrop}
           className={cn(props.className, {
             'text-blue-500':
               someoneIsSharingScreen && (isOwnChannel || isSelected),
@@ -82,7 +116,8 @@ const Voice = memo(
               (isSelected &&
                 !someoneIsSharingScreen &&
                 !isOwnChannel &&
-                isVoiceActive)
+                isVoiceActive),
+            'ring-1 ring-primary bg-accent/40': isDragOver
           })}
         >
           {isVoiceActive ? (
@@ -162,6 +197,9 @@ type TItemWrapperProps = {
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   style?: React.CSSProperties;
   disabled?: boolean;
+  onDragOver?: React.DragEventHandler<HTMLDivElement>;
+  onDragLeave?: React.DragEventHandler<HTMLDivElement>;
+  onDrop?: React.DragEventHandler<HTMLDivElement>;
 };
 
 const ItemWrapper = memo(
@@ -172,13 +210,19 @@ const ItemWrapper = memo(
     className,
     dragHandleProps,
     style,
-    disabled = false
+    disabled = false,
+    onDragOver,
+    onDragLeave,
+    onDrop
   }: TItemWrapperProps) => {
     return (
       <div
         {...dragHandleProps}
         data-testid={TestId.CHANNEL_ITEM}
         style={style}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
         className={cn(
           'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground select-none cursor-pointer',
           {

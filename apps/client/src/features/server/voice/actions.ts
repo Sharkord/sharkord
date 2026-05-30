@@ -175,6 +175,21 @@ export const joinVoice = async (
   return undefined;
 };
 
+export const VOICE_USER_DND_MIME = 'application/x-sharkord-user-id';
+
+export const moveUserToVoiceChannel = async (
+  userId: number,
+  channelId: number
+): Promise<void> => {
+  const client = getTRPCClient();
+
+  try {
+    await client.voice.moveUser.mutate({ userId, channelId });
+  } catch (error) {
+    toast.error(getTrpcError(error, 'Failed to move user'));
+  }
+};
+
 export type TLeaveVoiceReason =
   | 'user_disconnect_button'
   | 'switch_channel'
