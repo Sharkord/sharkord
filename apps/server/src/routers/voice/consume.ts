@@ -58,7 +58,7 @@ const consumeRoute = protectedProcedure
       paused: false
     });
 
-    runtime.addConsumer(ctx.user.id, input.remoteId, consumer);
+    runtime.addConsumer(ctx.user.id, input.remoteId, input.kind, consumer);
 
     consumer.on('producerclose', () => {
       if (!ctx.currentVoiceChannelId) return;
@@ -79,7 +79,11 @@ const consumeRoute = protectedProcedure
       consumerId: consumer.id,
       consumerKind: input.kind,
       consumerRtpParameters: consumer.rtpParameters,
-      consumerType: consumer.type
+      consumerType: consumer.type,
+      qualityLayers: runtime.getProducerQualityLayers(
+        input.remoteId,
+        input.kind
+      )
     };
   });
 

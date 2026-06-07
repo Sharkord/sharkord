@@ -546,116 +546,130 @@ const Devices = memo(() => {
                   }
                 />
               </Group>
-
-              <Group label={t('screenSharingLabel')}>
-                <div className="flex">
-                  <ResolutionFpsControl
-                    framerate={values.screenFramerate}
-                    resolution={values.screenResolution}
-                    onFramerateChange={(value) =>
-                      onChange('screenFramerate', value)
-                    }
-                    onResolutionChange={(value) =>
-                      onChange('screenResolution', value as Resolution)
-                    }
-                  />
-
-                  <div className="ml-2">
-                    <Select
-                      value={values.screenCodec ?? VideoCodec.AUTO}
-                      onValueChange={(value) =>
-                        onChange('screenCodec', value as VideoCodec)
-                      }
-                    >
-                      <SelectTrigger className="w-40">
-                        <SelectValue
-                          placeholder={t('selectCodecPlaceholder')}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectItem value={VideoCodec.AUTO}>Auto</SelectItem>
-                          <SelectItem value={VideoCodec.VP8}>VP8</SelectItem>
-                          <SelectItem value={VideoCodec.VP9}>VP9</SelectItem>
-                          <SelectItem value={VideoCodec.H264}>H264</SelectItem>
-                          <SelectItem value={VideoCodec.AV1}>AV1</SelectItem>
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <Label>{t('maxBitrateLabel')}</Label>
-
-                  <Slider
-                    className="max-w-96"
-                    min={200}
-                    max={maxBitrate}
-                    step={100}
-                    value={[values.screenBitrate ?? DEFAULT_BITRATE]}
-                    onValueChange={([value]) =>
-                      onChange('screenBitrate', value)
-                    }
-                    rightSlot={
-                      <span className="text-sm text-muted-foreground w-20 text-right">
-                        {filesize(
-                          (values.screenBitrate ?? DEFAULT_BITRATE) * 125,
-                          {
-                            bits: true
-                          }
-                        )}
-                        /s
-                      </span>
-                    }
-                  />
-                </div>
-
-                <Group
-                  label={t('restrictOwnAudioLabel')}
-                  description={t('restrictOwnAudioDesc')}
-                >
-                  {isRestrictOwnAudioSupported ? (
-                    <Switch
-                      checked={!!values.restrictOwnAudio}
-                      disabled={!isRestrictOwnAudioSupported}
-                      onCheckedChange={(checked) =>
-                        onChange('restrictOwnAudio', checked)
-                      }
-                    />
-                  ) : (
-                    <RestrictOwnAudioAlert
-                      isSupported={isRestrictOwnAudioSupported}
-                    />
-                  )}
-                </Group>
-
-                <Group
-                  label={t('suppressLocalAudioPlaybackLabel')}
-                  description={t('suppressLocalAudioPlaybackDesc')}
-                >
-                  {isSuppressLocalAudioPlaybackSupported ? (
-                    <Switch
-                      checked={!!values.suppressLocalAudioPlayback}
-                      disabled={!isSuppressLocalAudioPlaybackSupported}
-                      onCheckedChange={(checked) =>
-                        onChange('suppressLocalAudioPlayback', checked)
-                      }
-                    />
-                  ) : (
-                    <SuppressLocalAudioPlaybackAlert
-                      isSupported={isSuppressLocalAudioPlaybackSupported}
-                    />
-                  )}
-                </Group>
-
-                <span className="text-sm text-muted-foreground">
-                  {t('screenSharingNote')}
-                </span>
-              </Group>
             </div>
           </Group>
         </div>
+
+        <Separator />
+
+        <div className="space-y-6">
+          <Group
+            label={t('simulcastUserLabel')}
+            description={
+              settings?.webRtcSimulcastEnabled
+                ? t('simulcastUserDesc')
+                : t('simulcastDisabledByServerDesc')
+            }
+          >
+            <Switch
+              checked={!!values.simulcastEnabled}
+              disabled={!settings?.webRtcSimulcastEnabled}
+              onCheckedChange={(checked) =>
+                onChange('simulcastEnabled', checked)
+              }
+            />
+          </Group>
+          <Group label={t('screenSharingLabel')}>
+            <div className="flex">
+              <ResolutionFpsControl
+                framerate={values.screenFramerate}
+                resolution={values.screenResolution}
+                onFramerateChange={(value) =>
+                  onChange('screenFramerate', value)
+                }
+                onResolutionChange={(value) =>
+                  onChange('screenResolution', value as Resolution)
+                }
+              />
+
+              <div className="ml-2">
+                <Select
+                  value={values.screenCodec ?? VideoCodec.AUTO}
+                  onValueChange={(value) =>
+                    onChange('screenCodec', value as VideoCodec)
+                  }
+                >
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder={t('selectCodecPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value={VideoCodec.AUTO}>Auto</SelectItem>
+                      <SelectItem value={VideoCodec.VP8}>VP8</SelectItem>
+                      <SelectItem value={VideoCodec.VP9}>VP9</SelectItem>
+                      <SelectItem value={VideoCodec.H264}>H264</SelectItem>
+                      <SelectItem value={VideoCodec.AV1}>AV1</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label>{t('maxBitrateLabel')}</Label>
+
+              <Slider
+                className="max-w-96"
+                min={200}
+                max={maxBitrate}
+                step={100}
+                value={[values.screenBitrate ?? DEFAULT_BITRATE]}
+                onValueChange={([value]) => onChange('screenBitrate', value)}
+                rightSlot={
+                  <span className="text-sm text-muted-foreground w-20 text-right">
+                    {filesize((values.screenBitrate ?? DEFAULT_BITRATE) * 125, {
+                      bits: true
+                    })}
+                    /s
+                  </span>
+                }
+              />
+            </div>
+
+            <Group
+              label={t('restrictOwnAudioLabel')}
+              description={t('restrictOwnAudioDesc')}
+            >
+              {isRestrictOwnAudioSupported ? (
+                <Switch
+                  checked={!!values.restrictOwnAudio}
+                  disabled={!isRestrictOwnAudioSupported}
+                  onCheckedChange={(checked) =>
+                    onChange('restrictOwnAudio', checked)
+                  }
+                />
+              ) : (
+                <RestrictOwnAudioAlert
+                  isSupported={isRestrictOwnAudioSupported}
+                />
+              )}
+            </Group>
+
+            <Group
+              label={t('suppressLocalAudioPlaybackLabel')}
+              description={t('suppressLocalAudioPlaybackDesc')}
+            >
+              {isSuppressLocalAudioPlaybackSupported ? (
+                <Switch
+                  checked={!!values.suppressLocalAudioPlayback}
+                  disabled={!isSuppressLocalAudioPlaybackSupported}
+                  onCheckedChange={(checked) =>
+                    onChange('suppressLocalAudioPlayback', checked)
+                  }
+                />
+              ) : (
+                <SuppressLocalAudioPlaybackAlert
+                  isSupported={isSuppressLocalAudioPlaybackSupported}
+                />
+              )}
+            </Group>
+
+            <span className="text-sm text-muted-foreground">
+              {t('screenSharingNote')}
+            </span>
+          </Group>
+        </div>
+
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
             {t('cancel')}

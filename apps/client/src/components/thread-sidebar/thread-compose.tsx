@@ -127,6 +127,7 @@ const ThreadCompose = memo(
         inputStorageKey={inputStorageKey}
         inputDefaultMaxHeightVh={inputDefaultMaxHeightVh}
         onResize={onResize}
+        isThread={true}
       />
     );
   }

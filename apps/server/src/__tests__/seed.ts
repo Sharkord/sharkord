@@ -4,6 +4,7 @@ import {
   OWNER_ROLE_ID,
   Permission,
   sha256,
+  STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY,
   STORAGE_DEFAULT_MAX_AVATAR_SIZE,
   STORAGE_DEFAULT_MAX_BANNER_SIZE,
   STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
@@ -81,9 +82,12 @@ const seedTestDb = async (db: BunSQLiteDatabase) => {
     storageOverflowAction: STORAGE_OVERFLOW_ACTION,
     enablePlugins: false,
     enableSearch: true,
+    webRtcSimulcastEnabled: false,
     showWelcomeDialog: true,
     storageSignedUrlsEnabled: false,
-    storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS
+    storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
+    storageImageOptimizationEnabled: false,
+    storageImageOptimizationQuality: STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY
   };
 
   await db.insert(settings).values(initialSettings);
@@ -130,6 +134,8 @@ const seedTestDb = async (db: BunSQLiteDatabase) => {
     color: '#ff0000',
     isPersistent: true,
     isDefault: false,
+    storageQuotaOverrideEnabled: false,
+    storageSpaceQuota: 0,
     createdAt: firstStart
   };
 
@@ -148,6 +154,8 @@ const seedTestDb = async (db: BunSQLiteDatabase) => {
     color: '#99aab5',
     isPersistent: true,
     isDefault: true,
+    storageQuotaOverrideEnabled: false,
+    storageSpaceQuota: 0,
     createdAt: firstStart
   };
 
@@ -169,6 +177,8 @@ const seedTestDb = async (db: BunSQLiteDatabase) => {
     color: '#95a5a6',
     isPersistent: false,
     isDefault: false,
+    storageQuotaOverrideEnabled: false,
+    storageSpaceQuota: 0,
     createdAt: firstStart
   };
 

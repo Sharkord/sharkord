@@ -1,14 +1,10 @@
-import {
-  ChannelPermission,
-  DEFAULT_MESSAGES_LIMIT,
-  type TMessage
-} from '@sharkord/shared';
+import { DEFAULT_MESSAGES_LIMIT, type TMessage } from '@sharkord/shared';
 import { and, asc, eq, gt } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
-import { assertDmChannel } from '../../db/queries/dms';
 import { joinMessagesWithRelations } from '../../db/queries/messages';
 import { channels, messages } from '../../db/schema';
+import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -41,13 +37,7 @@ const getThreadMessagesRoute = protectedProcedure
       message: 'Cannot get thread for a reply message'
     });
 
-    await Promise.all([
-      assertDmChannel(parentMessage.channelId, ctx.userId),
-      ctx.needsChannelPermission(
-        parentMessage.channelId,
-        ChannelPermission.VIEW_CHANNEL
-      )
-    ]);
+    await assertChannelAccess(ctx, parentMessage.channelId);
 
     const channel = await db
       .select({

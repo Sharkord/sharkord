@@ -5,11 +5,13 @@ import {
   STORAGE_MAX_BANNER_SIZE,
   STORAGE_MAX_FILES_PER_MESSAGE,
   STORAGE_MAX_FILE_SIZE,
+  STORAGE_MAX_IMAGE_OPTIMIZATION_QUALITY,
   STORAGE_MAX_QUOTA,
   STORAGE_MAX_QUOTA_PER_USER,
   STORAGE_MAX_SIGNED_URLS_TTL_SECONDS,
   STORAGE_MIN_FILES_PER_MESSAGE,
   STORAGE_MIN_FILE_SIZE,
+  STORAGE_MIN_IMAGE_OPTIMIZATION_QUALITY,
   STORAGE_MIN_QUOTA,
   STORAGE_MIN_QUOTA_PER_USER,
   STORAGE_MIN_SIGNED_URLS_TTL_SECONDS,
@@ -31,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
   Separator,
+  Slider,
   Switch
 } from '@sharkord/ui';
 import { memo } from 'react';
@@ -271,6 +274,85 @@ const Storage = memo(() => {
               </SelectItem>
             </SelectContent>
           </Select>
+        </Group>
+
+        <Separator />
+
+        <Group
+          label={t('imageOptimizationLabel')}
+          description={t('imageOptimizationDesc')}
+        >
+          <Switch
+            checked={!!values.storageImageOptimizationEnabled}
+            onCheckedChange={(checked) =>
+              onChange('storageImageOptimizationEnabled', checked)
+            }
+            disabled={!values.storageUploadEnabled}
+          />
+        </Group>
+
+        <Group
+          label={t('imageQualityLabel')}
+          description={t('imageQualityDesc')}
+        >
+          <div className="max-w-150 space-y-2">
+            <Slider
+              value={[Number(values.storageImageOptimizationQuality)]}
+              max={STORAGE_MAX_IMAGE_OPTIMIZATION_QUALITY}
+              min={STORAGE_MIN_IMAGE_OPTIMIZATION_QUALITY}
+              step={1}
+              disabled={
+                !values.storageUploadEnabled ||
+                !values.storageImageOptimizationEnabled
+              }
+              onValueChange={(sliderValues) =>
+                onChange(
+                  'storageImageOptimizationQuality',
+                  clamp(
+                    Math.round(sliderValues[0]),
+                    STORAGE_MIN_IMAGE_OPTIMIZATION_QUALITY,
+                    STORAGE_MAX_IMAGE_OPTIMIZATION_QUALITY
+                  )
+                )
+              }
+              rightSlot={
+                <span className="text-sm">
+                  {values.storageImageOptimizationQuality}%
+                </span>
+              }
+            />
+
+            <div className="flex w-36 items-center gap-2">
+              <Input
+                type="number"
+                min={STORAGE_MIN_IMAGE_OPTIMIZATION_QUALITY}
+                max={STORAGE_MAX_IMAGE_OPTIMIZATION_QUALITY}
+                step={1}
+                value={Number(values.storageImageOptimizationQuality)}
+                disabled={
+                  !values.storageUploadEnabled ||
+                  !values.storageImageOptimizationEnabled
+                }
+                onChange={(e) => {
+                  const nextValue = Number(e.target.value);
+
+                  if (!Number.isFinite(nextValue)) {
+                    return;
+                  }
+
+                  onChange(
+                    'storageImageOptimizationQuality',
+                    clamp(
+                      Math.round(nextValue),
+                      STORAGE_MIN_IMAGE_OPTIMIZATION_QUALITY,
+                      STORAGE_MAX_IMAGE_OPTIMIZATION_QUALITY
+                    )
+                  );
+                }}
+              />
+              <span className="text-xs text-muted-foreground">%</span>
+            </div>
+          </div>
         </Group>
 
         <Separator />

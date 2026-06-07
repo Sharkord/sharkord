@@ -57,6 +57,7 @@ type TMessageComposeProps = {
   onCancelReply?: () => void;
   onArrowUp?: () => void;
   onResize?: () => void;
+  isThread?: boolean;
   ref?: Ref<TMessageComposeHandle>;
 };
 
@@ -81,6 +82,7 @@ const MessageCompose = memo(
     onCancelReply,
     onArrowUp,
     onResize,
+    isThread = false,
     ref
   }: TMessageComposeProps) => {
     const { t } = useTranslation('common');
@@ -117,6 +119,13 @@ const MessageCompose = memo(
         canShareFilesInDm
       );
     }, [can, channelCan, channel, publicSettings]);
+
+    const placeholder = useMemo(() => {
+      if (channel && !isThread && !channel.isDm) {
+        return t('messageChannel', { name: channel.name });
+      }
+      return t('typeAMessage');
+    }, [channel, isThread, t]);
 
     const pluginCommands = useMemo(
       () => (can(Permission.USE_PLUGINS) ? allPluginCommands : undefined),
@@ -291,6 +300,7 @@ const MessageCompose = memo(
             <TiptapInput
               ref={tiptapRef}
               value={message}
+              placeholder={placeholder}
               onChange={onMessageChange}
               onSubmit={handleSend}
               onTyping={onTyping}

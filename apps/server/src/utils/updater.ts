@@ -55,7 +55,6 @@ class Updater {
 
   private setupAutoUpdater = async (): Promise<void> => {
     if (!config.server.autoupdate) {
-      logger.info('Auto-updater disabled: check config to enable');
       return;
     }
 

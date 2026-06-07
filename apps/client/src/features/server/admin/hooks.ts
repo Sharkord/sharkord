@@ -5,6 +5,7 @@ import {
   DELETED_USER_IDENTITY_AND_NAME,
   parseTrpcErrors,
   Permission,
+  STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY,
   STORAGE_DEFAULT_MAX_AVATAR_SIZE,
   STORAGE_DEFAULT_MAX_BANNER_SIZE,
   STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
@@ -28,6 +29,7 @@ import {
   type TMessage,
   type TPluginInfo,
   type TRole,
+  type TStorageData,
   type TStorageSettings,
   type TTrpcErrors
 } from '@sharkord/shared';
@@ -49,6 +51,7 @@ export const useAdminGeneral = () => {
     allowNewUsers: false,
     directMessagesEnabled: true,
     enablePlugins: false,
+    webRtcSimulcastEnabled: false,
     enableSearch: true,
     showWelcomeDialog: true
   });
@@ -69,6 +72,7 @@ export const useAdminGeneral = () => {
       allowNewUsers: settings.allowNewUsers ?? false,
       directMessagesEnabled: settings.directMessagesEnabled ?? true,
       enablePlugins: settings.enablePlugins ?? false,
+      webRtcSimulcastEnabled: settings.webRtcSimulcastEnabled ?? false,
       enableSearch: settings.enableSearch ?? true,
       showWelcomeDialog: settings.showWelcomeDialog ?? true
     });
@@ -88,6 +92,7 @@ export const useAdminGeneral = () => {
         allowNewUsers: settings.allowNewUsers,
         directMessagesEnabled: settings.directMessagesEnabled,
         enablePlugins: settings.enablePlugins,
+        webRtcSimulcastEnabled: settings.webRtcSimulcastEnabled,
         enableSearch: settings.enableSearch,
         showWelcomeDialog: settings.showWelcomeDialog
       });
@@ -448,7 +453,10 @@ export const useAdminStorage = () => {
       storageMaxFilesPerMessage: STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
       storageQuota: STORAGE_QUOTA,
       storageSignedUrlsEnabled: false,
-      storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS
+      storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
+      storageImageOptimizationEnabled: false,
+      storageImageOptimizationQuality:
+        STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY
     });
   const [diskMetrics, setDiskMetrics] = useState<TDiskMetrics | undefined>(
     undefined
@@ -483,7 +491,9 @@ export const useAdminStorage = () => {
         storageOverflowAction:
           values.storageOverflowAction as StorageOverflowAction,
         storageSignedUrlsEnabled: values.storageSignedUrlsEnabled,
-        storageSignedUrlsTtlSeconds: values.storageSignedUrlsTtlSeconds
+        storageSignedUrlsTtlSeconds: values.storageSignedUrlsTtlSeconds,
+        storageImageOptimizationEnabled: values.storageImageOptimizationEnabled,
+        storageImageOptimizationQuality: values.storageImageOptimizationQuality
       });
       toast.success('Storage settings updated');
     } catch (error) {
@@ -607,20 +617,28 @@ export const useAdminUserInfo = (userId: number) => {
   const [logins, setLogins] = useState<TLogin[]>([]);
   const [files, setFiles] = useState<TFile[]>([]);
   const [messages, setMessages] = useState<TMessage[]>([]);
+  const [storage, setStorage] = useState<TStorageData & { quota: number }>({
+    userId,
+    fileCount: 0,
+    usedStorage: 0,
+    quota: 0
+  });
 
   const fetchUser = useCallback(async () => {
     setLoading(true);
 
     const trpc = getTRPCClient();
-    const { user, logins, files, messages } = await trpc.users.getInfo.query({
-      userId
-    });
+    const { user, logins, files, messages, storage } =
+      await trpc.users.getInfo.query({
+        userId
+      });
 
     setUser(user);
     setLoading(false);
     setLogins(logins);
     setFiles(files);
     setMessages(messages);
+    setStorage(storage);
   }, [userId]);
 
   useEffect(() => {
@@ -631,6 +649,7 @@ export const useAdminUserInfo = (userId: number) => {
     user,
     logins,
     files,
+    storage,
     refetch: fetchUser,
     loading,
     messages

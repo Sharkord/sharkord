@@ -1,6 +1,7 @@
 import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { useVoice } from '@/features/server/voice/hooks';
+import { useStreamQualityData } from '@/hooks/use-stream-quality-data';
 import { cn } from '@/lib/utils';
 import { StreamKind } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
@@ -12,6 +13,7 @@ import { useFullscreen } from './hooks/use-fullscreen';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useVideoStats } from './hooks/use-video-stats';
 import { useVoiceRefs } from './hooks/use-voice-refs';
+import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { VolumeButton } from './volume-button';
 
@@ -39,14 +41,19 @@ const ScreenShareCard = memo(
     const ownUserId = useOwnUserId();
     const { getUserScreenVolumeKey } = useVolumeControl();
     const isOwnUser = ownUserId === userId;
+    // Will be updated when controls change for from multiple to 1 options button that opens a menu with everything.
+    /* const webRtcSimulcastEnabled = useWebRtcSimulcastEnabled(); */
     const volumeKey = getUserScreenVolumeKey(userId);
+
     const {
       screenShareRef,
       screenShareAudioRef,
       hasScreenShareStream,
       hasScreenShareAudioStream
     } = useVoiceRefs(userId);
+
     const { transportStats, getConsumerCodec } = useVoice();
+
     const videoStats = useVideoStats(screenShareRef, hasScreenShareStream);
 
     const codec = useMemo(() => {
@@ -69,6 +76,8 @@ const ScreenShareCard = memo(
       getConsumerCodec,
       userId
     ]);
+
+    const { qualityLabel } = useStreamQualityData(userId, StreamKind.SCREEN);
 
     const {
       containerRef,
@@ -188,6 +197,8 @@ const ScreenShareCard = memo(
                         ` ${videoStats.frameRate}fps`}
                     </>
                   )}
+                  {(codec || videoStats) && qualityLabel && ' '}
+                  {qualityLabel && `(${qualityLabel})`}
                 </span>
               )}
               {isZoomEnabled && zoom > 1 && (
@@ -204,6 +215,7 @@ const ScreenShareCard = memo(
               isPinned ? 'gap-2' : aCardIsPinned ? 'gap-1' : 'gap-2'
             )}
           >
+            <PictureInPictureButton videoRef={screenShareRef} />
             {!isOwnUser && hasScreenShareAudioStream && (
               <VolumeButton
                 volumeKey={volumeKey}

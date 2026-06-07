@@ -1,14 +1,19 @@
 import { ActivityLogType, FileSaveType, Permission } from '@sharkord/shared';
 import { z } from 'zod';
+import { config } from '../../config';
 import { db } from '../../db';
 import { publishEmoji } from '../../db/publishers';
 import { getUniqueEmojiName } from '../../db/queries/emojis';
 import { emojis } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { fileManager } from '../../utils/file-manager';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const addEmojiRoute = protectedProcedure
+const addEmojiRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.addEmoji.maxRequests,
+  windowMs: config.rateLimiters.addEmoji.windowMs,
+  logLabel: 'addEmoji'
+})
   .input(
     z.array(
       z.object({

@@ -10,7 +10,8 @@ import type {
   TPluginComponentsMapBySlotId,
   TPluginSettingDefinition,
   TPluginStore,
-  TPluginStoreState
+  TPluginStoreState,
+  TStreamQualityLayer
 } from '@sharkord/shared';
 import { FileSaveType, PLUGIN_SDK_VERSION, PluginSlot } from '@sharkord/shared';
 import type { AppData, Producer, Router } from 'mediasoup/types';
@@ -25,6 +26,7 @@ export type TCreateStreamOptions = {
     audio?: Producer;
     video?: Producer;
   };
+  videoLayers?: TStreamQualityLayer[];
 };
 
 export type TExternalStreamHandle = {
@@ -38,6 +40,7 @@ export type TExternalStreamHandle = {
       audio?: Producer;
       video?: Producer;
     };
+    videoLayers?: TStreamQualityLayer[];
   }) => void;
 };
 

@@ -7,6 +7,7 @@ import { publishMessage } from '../../db/publishers';
 import { getFilesByMessageId } from '../../db/queries/files';
 import { getMessageByFileId } from '../../db/queries/messages';
 import { messages } from '../../db/schema';
+import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { eventBus } from '../../plugins/event-bus';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
@@ -20,6 +21,8 @@ const deleteFileRoute = protectedProcedure
       code: 'NOT_FOUND',
       message: 'Message not found'
     });
+
+    await assertChannelAccess(ctx, message.channelId);
 
     invariant(
       message.userId === ctx.user.id ||

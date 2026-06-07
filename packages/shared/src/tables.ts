@@ -87,6 +87,8 @@ export type TStorageSettings = Pick<
   | 'storageOverflowAction'
   | 'storageSignedUrlsEnabled'
   | 'storageSignedUrlsTtlSeconds'
+  | 'storageImageOptimizationEnabled'
+  | 'storageImageOptimizationQuality'
 >;
 
 // joined types

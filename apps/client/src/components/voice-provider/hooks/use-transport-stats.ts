@@ -25,7 +25,28 @@ export type ScreenShareStats = {
   keyFramesEncoded: number;
   framesEncoded: number;
   qualityLimitationReason: string;
+  simulcast: boolean;
+  layers: ScreenShareLayerStats[];
   timestamp: number;
+};
+
+export type ScreenShareLayerStats = {
+  id: string;
+  rid: string;
+  codec: string;
+  width: number;
+  height: number;
+  frameRate: number;
+  bitrate: number;
+  packetsSent: number;
+  bytesSent: number;
+  keyFramesEncoded: number;
+  framesEncoded: number;
+  qualityLimitationReason: string;
+};
+
+type ParsedScreenShareStats = Omit<ScreenShareStats, 'bitrate' | 'layers'> & {
+  layers: Omit<ScreenShareLayerStats, 'bitrate'>[];
 };
 
 export type TransportStatsData = {
@@ -68,8 +89,9 @@ const useTransportStats = () => {
     producer: null,
     consumer: null
   });
-  const previousScreenShareBytesRef = useRef<{
+  const previousScreenShareStatsRef = useRef<{
     bytesSent: number;
+    layerBytesSent: Map<string, number>;
     timestamp: number;
   } | null>(null);
 
@@ -122,7 +144,7 @@ const useTransportStats = () => {
   );
 
   const parseScreenShareStats = useCallback(
-    (statsReport: RTCStatsReport): Omit<ScreenShareStats, 'bitrate'> | null => {
+    (statsReport: RTCStatsReport): ParsedScreenShareStats | null => {
       let codec = '';
       let encoderImplementation = '';
       let width = 0;
@@ -135,6 +157,7 @@ const useTransportStats = () => {
       let qualityLimitationReason = 'none';
 
       const codecMap = new Map<string, string>();
+      const layers: Omit<ScreenShareLayerStats, 'bitrate'>[] = [];
 
       for (const stat of statsReport.values()) {
         if (stat.type === 'codec') {
@@ -144,19 +167,53 @@ const useTransportStats = () => {
 
       for (const stat of statsReport.values()) {
         if (stat.type === 'outbound-rtp' && stat.kind === 'video') {
-          bytesSent = stat.bytesSent || 0;
-          packetsSent = stat.packetsSent || 0;
-          frameRate = stat.framesPerSecond || 0;
-          width = stat.frameWidth || 0;
-          height = stat.frameHeight || 0;
-          keyFramesEncoded = stat.keyFramesEncoded || 0;
-          framesEncoded = stat.framesEncoded || 0;
-          qualityLimitationReason = stat.qualityLimitationReason || 'none';
-          encoderImplementation = stat.encoderImplementation || '';
+          const layerBytesSent = stat.bytesSent || 0;
+          const layerPacketsSent = stat.packetsSent || 0;
+          const layerFrameRate = stat.framesPerSecond || 0;
+          const layerWidth = stat.frameWidth || 0;
+          const layerHeight = stat.frameHeight || 0;
+          const layerKeyFramesEncoded = stat.keyFramesEncoded || 0;
+          const layerFramesEncoded = stat.framesEncoded || 0;
+          const layerQualityLimitationReason =
+            stat.qualityLimitationReason || 'none';
+          const layerCodec =
+            stat.codecId && codecMap.has(stat.codecId)
+              ? codecMap.get(stat.codecId)!
+              : '';
+
+          bytesSent += layerBytesSent;
+          packetsSent += layerPacketsSent;
+          frameRate = Math.max(frameRate, layerFrameRate);
+          width = Math.max(width, layerWidth);
+          height = Math.max(height, layerHeight);
+          keyFramesEncoded += layerKeyFramesEncoded;
+          framesEncoded += layerFramesEncoded;
+
+          if (layerQualityLimitationReason !== 'none') {
+            qualityLimitationReason = layerQualityLimitationReason;
+          }
+
+          if (!encoderImplementation && stat.encoderImplementation) {
+            encoderImplementation = stat.encoderImplementation;
+          }
 
           if (stat.codecId && codecMap.has(stat.codecId)) {
             codec = codecMap.get(stat.codecId)!;
           }
+
+          layers.push({
+            id: stat.id,
+            rid: stat.rid || stat.id,
+            codec: layerCodec,
+            width: layerWidth,
+            height: layerHeight,
+            frameRate: layerFrameRate,
+            packetsSent: layerPacketsSent,
+            bytesSent: layerBytesSent,
+            keyFramesEncoded: layerKeyFramesEncoded,
+            framesEncoded: layerFramesEncoded,
+            qualityLimitationReason: layerQualityLimitationReason
+          });
         }
       }
 
@@ -175,6 +232,8 @@ const useTransportStats = () => {
         keyFramesEncoded,
         framesEncoded,
         qualityLimitationReason,
+        simulcast: layers.length > 1,
+        layers,
         timestamp: Date.now()
       };
     },
@@ -237,7 +296,7 @@ const useTransportStats = () => {
 
           if (parsed) {
             let screenShareBitrate = 0;
-            const prev = previousScreenShareBytesRef.current;
+            const prev = previousScreenShareStatsRef.current;
 
             if (prev && parsed.bytesSent > prev.bytesSent) {
               const timeDelta = (parsed.timestamp - prev.timestamp) / 1000;
@@ -248,22 +307,50 @@ const useTransportStats = () => {
               }
             }
 
-            previousScreenShareBytesRef.current = {
+            const layerBytesSent = new Map<string, number>();
+            const layers = parsed.layers.map((layer) => {
+              let layerBitrate = 0;
+
+              if (prev) {
+                const previousBytesSent = prev.layerBytesSent.get(layer.id);
+                const timeDelta = (parsed.timestamp - prev.timestamp) / 1000;
+
+                if (
+                  previousBytesSent !== undefined &&
+                  layer.bytesSent > previousBytesSent &&
+                  timeDelta > 0
+                ) {
+                  layerBitrate =
+                    (layer.bytesSent - previousBytesSent) / timeDelta;
+                }
+              }
+
+              layerBytesSent.set(layer.id, layer.bytesSent);
+
+              return {
+                ...layer,
+                bitrate: layerBitrate
+              };
+            });
+
+            previousScreenShareStatsRef.current = {
               bytesSent: parsed.bytesSent,
+              layerBytesSent,
               timestamp: parsed.timestamp
             };
 
             screenShareStatsResult = {
               ...parsed,
+              layers,
               bitrate: screenShareBitrate
             };
           }
         } catch {
           screenShareProducerRef.current = null;
-          previousScreenShareBytesRef.current = null;
+          previousScreenShareStatsRef.current = null;
         }
       } else {
-        previousScreenShareBytesRef.current = null;
+        previousScreenShareStatsRef.current = null;
       }
 
       if (!producerTransportRef.current && !consumerTransportRef.current) {
@@ -392,7 +479,7 @@ const useTransportStats = () => {
       screenShareProducerRef.current = producer || null;
 
       if (!producer) {
-        previousScreenShareBytesRef.current = null;
+        previousScreenShareStatsRef.current = null;
 
         setStats((prev) => ({
           ...prev,
@@ -440,7 +527,7 @@ const useTransportStats = () => {
       consumer: null
     };
 
-    previousScreenShareBytesRef.current = null;
+    previousScreenShareStatsRef.current = null;
     bitrateSentHistoryRef.current = [];
     bitrateReceivedHistoryRef.current = [];
 

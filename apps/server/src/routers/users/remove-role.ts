@@ -6,6 +6,7 @@ import { publishUser } from '../../db/publishers';
 import { userRoles } from '../../db/schema';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
+import { assertCanModifyOwnerRole } from './assert-can-modify-owner-role';
 
 const removeRoleRoute = protectedProcedure
   .input(
@@ -16,6 +17,8 @@ const removeRoleRoute = protectedProcedure
   )
   .mutation(async ({ ctx, input }) => {
     await ctx.needsPermission(Permission.MANAGE_USERS);
+
+    await assertCanModifyOwnerRole(ctx.userId, input.roleId, 'remove');
 
     const existing = await db
       .select()

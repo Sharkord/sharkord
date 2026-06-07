@@ -1,15 +1,20 @@
 import { ChannelType, ServerEvents } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { config } from '../../config';
 import { db } from '../../db';
 import { publishChannelPermissions } from '../../db/publishers';
 import { getDirectMessageChannel, normalizePair } from '../../db/queries/dms';
 import { getSettings } from '../../db/queries/server';
 import { channels, directMessages, users } from '../../db/schema';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const openDirectMessageRoute = protectedProcedure
+const openDirectMessageRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.openDirectMessage.maxRequests,
+  windowMs: config.rateLimiters.openDirectMessage.windowMs,
+  logLabel: 'openDirectMessage'
+})
   .input(
     z.object({
       userId: z.number()

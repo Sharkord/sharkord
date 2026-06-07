@@ -133,6 +133,86 @@ describe('users router', () => {
     expect(info.user.id).toBe(2);
   });
 
+  test('should include user storage info', async () => {
+    const { caller } = await initTest();
+    const now = Date.now();
+
+    await tdb.insert(files).values([
+      {
+        name: `storage-a-${now}.txt`,
+        originalName: 'storage-a.txt',
+        md5: 'storage-a',
+        userId: 2,
+        size: 12,
+        mimeType: 'text/plain',
+        extension: '.txt',
+        createdAt: now
+      },
+      {
+        name: `storage-b-${now}.txt`,
+        originalName: 'storage-b.txt',
+        md5: 'storage-b',
+        userId: 2,
+        size: 34,
+        mimeType: 'text/plain',
+        extension: '.txt',
+        createdAt: now
+      }
+    ]);
+
+    const info = await caller.users.getInfo({ userId: 2 });
+
+    expect(info.storage.userId).toBe(2);
+    expect(info.storage.fileCount).toBe(2);
+    expect(info.storage.usedStorage).toBe(46);
+  });
+
+  test('should include global storage quota when user has no role override', async () => {
+    const { caller } = await initTest();
+
+    await tdb.update(settings).set({ storageSpaceQuotaByUser: 123 }).execute();
+
+    const info = await caller.users.getInfo({ userId: 2 });
+
+    expect(info.storage.quota).toBe(123);
+  });
+
+  test('should include effective role storage quota override', async () => {
+    const { caller } = await initTest();
+
+    await tdb.update(settings).set({ storageSpaceQuotaByUser: 123 }).execute();
+    await tdb
+      .update(roles)
+      .set({
+        storageQuotaOverrideEnabled: true,
+        storageSpaceQuota: 456
+      })
+      .where(eq(roles.id, 2))
+      .execute();
+
+    const info = await caller.users.getInfo({ userId: 2 });
+
+    expect(info.storage.quota).toBe(456);
+  });
+
+  test('should include unlimited role storage quota override', async () => {
+    const { caller } = await initTest();
+
+    await tdb.update(settings).set({ storageSpaceQuotaByUser: 123 }).execute();
+    await tdb
+      .update(roles)
+      .set({
+        storageQuotaOverrideEnabled: true,
+        storageSpaceQuota: 0
+      })
+      .where(eq(roles.id, 2))
+      .execute();
+
+    const info = await caller.users.getInfo({ userId: 2 });
+
+    expect(info.storage.quota).toBe(0);
+  });
+
   test('should hide sensitive data when user has MANAGE_USERS but not VIEW_USER_SENSITIVE_DATA', async () => {
     // create a custom role with MANAGE_USERS but without VIEW_USER_SENSITIVE_DATA
     const [customRole] = await tdb
@@ -530,7 +610,9 @@ describe('users router', () => {
       roleId: newRoleId,
       name: 'Test Role',
       color: '#123456',
-      permissions: [Permission.MANAGE_USERS]
+      permissions: [Permission.MANAGE_USERS],
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0
     });
 
     await caller.users.addRole({
@@ -562,6 +644,36 @@ describe('users router', () => {
       })
     ).rejects.toThrow(
       'Only users with the owner role can assign the owner role'
+    );
+  });
+
+  test('should throw when non-owner user tries to remove owner role from someone else', async () => {
+    const { caller } = await initTest();
+    const newRoleId = await caller.roles.add();
+
+    await caller.roles.update({
+      roleId: newRoleId,
+      name: 'Test Role',
+      color: '#123456',
+      permissions: [Permission.MANAGE_USERS],
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0
+    });
+
+    await caller.users.addRole({
+      userId: 2,
+      roleId: newRoleId
+    });
+
+    const { caller: nonOwnerCaller } = await initTest(2);
+
+    await expect(
+      nonOwnerCaller.users.removeRole({
+        userId: 1,
+        roleId: OWNER_ROLE_ID
+      })
+    ).rejects.toThrow(
+      'Only users with the owner role can remove the owner role'
     );
   });
 

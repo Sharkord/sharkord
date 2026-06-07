@@ -134,7 +134,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     let targetContent = sanitizeMessageHtml(input.content);
 
-    invariant(!isEmptyMessage(input.content) || limitedFiles.length != 0, {
+    invariant(!isEmptyMessage(targetContent) || limitedFiles.length != 0, {
       code: 'BAD_REQUEST',
       message:
         'Your message only contained unsupported or removed content, so there was nothing to send.'

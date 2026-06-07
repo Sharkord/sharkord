@@ -91,6 +91,15 @@ const General = memo(() => {
           />
         </Group>
 
+        <Group label={t('simulcastLabel')} description={t('simulcastDesc')}>
+          <Switch
+            checked={settings.webRtcSimulcastEnabled}
+            onCheckedChange={(checked) =>
+              onChange('webRtcSimulcastEnabled', checked)
+            }
+          />
+        </Group>
+
         <Group
           label={t('directMessagesEnabledLabel')}
           description={t('directMessagesEnabledDesc')}

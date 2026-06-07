@@ -4,7 +4,6 @@ import z from 'zod';
 import { db } from '../../db';
 import { removeFile } from '../../db/mutations/files';
 import { publishUser } from '../../db/publishers';
-import { getSettings } from '../../db/queries/server';
 import { getUserById } from '../../db/queries/users';
 import { users } from '../../db/schema';
 import { fileManager } from '../../utils/file-manager';
@@ -48,13 +47,6 @@ const changeAvatarRoute = protectedProcedure
       invariant(tempFile, {
         code: 'NOT_FOUND',
         message: 'Temporary file not found'
-      });
-
-      const settings = await getSettings();
-
-      invariant(tempFile.size <= settings.storageMaxAvatarSize, {
-        code: 'BAD_REQUEST',
-        message: `Avatar file exceeds the configured maximum size of ${settings.storageMaxAvatarSize / (1024 * 1024)} MB`
       });
 
       const newFile = await fileManager.saveFile(

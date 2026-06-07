@@ -25,7 +25,8 @@ import {
   typingUsersByChannelIdSelector,
   typingUsersByThreadIdSelector,
   userRolesSelector,
-  voiceUsersByChannelIdSelector
+  voiceUsersByChannelIdSelector,
+  webRtcSimulcastEnabledSelector
 } from './selectors';
 
 export const useIsConnected = () => useSelector(connectedSelector);
@@ -38,6 +39,9 @@ export const useServerName = () => useSelector(serverNameSelector);
 
 export const usePublicServerSettings = () =>
   useSelector(publicServerSettingsSelector);
+
+export const useWebRtcSimulcastEnabled = () =>
+  useSelector(webRtcSimulcastEnabledSelector);
 
 export const useOwnUserRoles = () => useSelector(ownUserRolesSelector);
 

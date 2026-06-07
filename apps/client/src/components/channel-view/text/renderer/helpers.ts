@@ -5,8 +5,6 @@ import type {
   TMessageMetadataLike
 } from './types';
 
-const twitterRegex = /https:\/\/(twitter|x).com\/\w+\/status\/(\d+)/g;
-
 const normalizeComparableUrl = (href: string): string => {
   try {
     const url = new URL(href);
@@ -51,29 +49,6 @@ const getYoutubeVideoId = (url: URL) => {
   return undefined;
 };
 
-const getTweetInfo = (
-  href: string
-): {
-  isTweet: boolean;
-  tweetId: string | undefined;
-} => {
-  try {
-    const url = new URL(href);
-    const isTweet =
-      url.hostname.match(/(twitter|x).com/) && href.match(twitterRegex);
-
-    const tweetId = isTweet
-      ? href.match(twitterRegex)?.[0].split('/').pop()
-      : undefined;
-
-    return { isTweet: !!isTweet, tweetId };
-  } catch {
-    // ignore
-  }
-
-  return { isTweet: false, tweetId: undefined };
-};
-
 const getYoutubeInfo = (
   href: string
 ): {
@@ -93,12 +68,6 @@ const getYoutubeInfo = (
 };
 
 const hasSpecializedLinkOverride = (href: string): boolean => {
-  const { isTweet } = getTweetInfo(href);
-
-  if (isTweet) {
-    return true;
-  }
-
   const { isYoutube } = getYoutubeInfo(href);
 
   return isYoutube;
@@ -173,7 +142,6 @@ const extractMessageOpenGraph = (
 export {
   extractMessageOpenGraph,
   getDisplayHostname,
-  getTweetInfo,
   getYoutubeInfo,
   getYoutubeVideoId,
   hasSpecializedLinkOverride,

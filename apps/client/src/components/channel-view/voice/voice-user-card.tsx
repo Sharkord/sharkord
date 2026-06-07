@@ -45,6 +45,12 @@ const VoiceUserCard = memo(
     const showUserBanners = useShowUserBannersInVoice();
     const { isActivelySpeaking, speakingEffectClass } =
       useSpeakingState(userId);
+    /*  // To be looked at in terms of more controls for webcam.
+    const webRtcSimulcastEnabled = useWebRtcSimulcastEnabled();
+    const { isSimulcastConsumer } = useVoice(); 
+    const isSimulcastVideoConsumer = !isOwnUser && isSimulcastConsumer(userId, StreamKind.VIDEO);
+    const showQualityControl = !isOwnUser && webRtcSimulcastEnabled && hasVideoStream; 
+    */
 
     const handlePinToggle = useCallback(() => {
       if (isPinned) {
@@ -82,6 +88,21 @@ const VoiceUserCard = memo(
             hasVideoStream={hasVideoStream}
           />
         )}
+
+        {/* <CardControls>
+          {!isOwnUser && <VolumeButton volumeKey={volumeKey} />}
+          {showQualityControl && (
+            <QualityButton
+              streamId={userId}
+              kind={StreamKind.VIDEO}
+              disabled={!isSimulcastVideoConsumer}
+            />
+          )}
+          {hasVideoStream && <PictureInPictureButton videoRef={videoRef} />}
+          {showPinControls && (
+            <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
+          )}
+        </CardControls> */}
 
         {hasVideoStream && (
           <video

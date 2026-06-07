@@ -4,9 +4,9 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { removeFile } from '../../db/mutations/files';
 import { publishMessage, publishReplyCount } from '../../db/publishers';
-import { assertDmChannel } from '../../db/queries/dms';
 import { getFilesByMessageId } from '../../db/queries/files';
 import { messages } from '../../db/schema';
+import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { eventBus } from '../../plugins/event-bus';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
@@ -30,7 +30,7 @@ const deleteMessageRoute = protectedProcedure
       message: 'Message not found'
     });
 
-    await assertDmChannel(targetMessage.channelId, ctx.userId);
+    await assertChannelAccess(ctx, targetMessage.channelId);
 
     invariant(
       targetMessage.userId === ctx.user.id ||

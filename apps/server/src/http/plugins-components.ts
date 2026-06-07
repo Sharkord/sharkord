@@ -8,14 +8,9 @@ const pluginsComponentsRouteHandler = async (
 ) => {
   const { enablePlugins } = await getSettings();
 
-  if (!enablePlugins) {
-    res.writeHead(403, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Plugins are disabled on this server' }));
-
-    return;
-  }
-
-  const pluginIds = pluginManager.getPluginIdsWithComponents();
+  const pluginIds = enablePlugins
+    ? pluginManager.getPluginIdsWithComponents()
+    : [];
 
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(pluginIds));

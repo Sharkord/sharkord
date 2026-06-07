@@ -74,15 +74,35 @@ const settings = sqliteTable(
     storageOverflowAction: text('storage_overflow_action').notNull(),
     enablePlugins: integer('enable_plugins', { mode: 'boolean' }).notNull(),
     enableSearch: integer('enable_search', { mode: 'boolean' }).notNull(),
+    webRtcSimulcastEnabled: integer('web_rtc_simulcast_enabled', {
+      mode: 'boolean'
+    })
+      .notNull()
+      .default(false),
     showWelcomeDialog: integer('show_welcome_dialog', {
       mode: 'boolean'
-    }).notNull(),
+    })
+      .notNull()
+      .default(true),
     storageSignedUrlsEnabled: integer('storage_signed_urls_enabled', {
       mode: 'boolean'
     }).notNull(),
     storageSignedUrlsTtlSeconds: integer(
       'storage_signed_urls_ttl_seconds'
-    ).notNull()
+    ).notNull(),
+    storageImageOptimizationEnabled: integer(
+      'storage_image_optimization_enabled',
+      {
+        mode: 'boolean'
+      }
+    )
+      .notNull()
+      .default(false),
+    storageImageOptimizationQuality: integer(
+      'storage_image_optimization_quality'
+    )
+      .notNull()
+      .default(80)
   },
   (t) => [
     index('settings_server_idx').on(t.serverId),
@@ -98,6 +118,12 @@ const roles = sqliteTable(
     color: text('color').notNull().default('#ffffff'),
     isPersistent: integer('is_persistent', { mode: 'boolean' }).notNull(),
     isDefault: integer('is_default', { mode: 'boolean' }).notNull(),
+    storageQuotaOverrideEnabled: integer('storage_quota_override_enabled', {
+      mode: 'boolean'
+    })
+      .notNull()
+      .default(false),
+    storageSpaceQuota: integer('storage_space_quota').notNull().default(0),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },

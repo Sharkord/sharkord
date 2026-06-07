@@ -1,17 +1,23 @@
 import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
-import { useShowUserBannersInVoice } from '@/features/server/voice/hooks';
+import {
+  useShowUserBannersInVoice,
+  useVoice
+} from '@/features/server/voice/hooks';
 import { cn } from '@/lib/utils';
-import type { TExternalStream } from '@sharkord/shared';
+import { StreamKind, type TExternalStream } from '@sharkord/shared';
 import { Avatar, AvatarFallback, AvatarImage, IconButton } from '@sharkord/ui';
 import { Headphones, Router, Video, ZoomIn, ZoomOut } from 'lucide-react';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, type RefObject } from 'react';
 import { CardControls } from './card-controls';
 import { CardGradient } from './card-gradient';
 import { FullscreenButton } from './fullscreen-button';
 import { useFullscreen } from './hooks/use-fullscreen';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useVoiceRefs } from './hooks/use-voice-refs';
+import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
+import { QualityButton } from './quality-button';
+import { getStreamQualityMetadataLabel } from './quality-options';
 import { StreamSettingsPopover } from './stream-settings-popover';
 
 type TExternalStreamControlsProps = {
@@ -24,10 +30,13 @@ type TExternalStreamControlsProps = {
   showPinControls: boolean;
   hasVideo: boolean;
   hasAudio: boolean;
+  showQualityControl: boolean;
   volume: number;
   isMuted: boolean;
   onVolumeChange: (volume: number) => void;
   onMuteToggle: () => void;
+  videoRef: RefObject<HTMLVideoElement | null>;
+  streamId: number;
 };
 
 const ExternalStreamControls = memo(
@@ -41,10 +50,13 @@ const ExternalStreamControls = memo(
     showPinControls,
     hasVideo,
     hasAudio,
+    showQualityControl,
     volume,
     isMuted,
     onVolumeChange,
-    onMuteToggle
+    onMuteToggle,
+    videoRef,
+    streamId
   }: TExternalStreamControlsProps) => {
     return (
       <CardControls>
@@ -65,6 +77,10 @@ const ExternalStreamControls = memo(
             size="sm"
           />
         )}
+        {showQualityControl && (
+          <QualityButton streamId={streamId} kind={StreamKind.EXTERNAL_VIDEO} />
+        )}
+        {hasVideo && <PictureInPictureButton videoRef={videoRef} />}
         {hasVideo && (
           <FullscreenButton
             isFullscreen={isFullscreen}
@@ -106,6 +122,8 @@ const ExternalStreamCard = memo(
       useVolumeControl();
 
     const showUserBanners = useShowUserBannersInVoice();
+    const { getStreamQuality, getStreamQualityLayers, isSimulcastConsumer } =
+      useVoice();
     const volumeKey = getExternalVolumeKey(stream.pluginId, stream.key);
     const volume = getVolume(volumeKey);
     const isMuted = volume === 0;
@@ -160,6 +178,22 @@ const ExternalStreamCard = memo(
     const hasVideo = stream.tracks?.video && hasExternalVideoStream;
     const hasAudio = stream.tracks?.audio && hasExternalAudioStream;
 
+    const isSimulcastExternalVideoConsumer = isSimulcastConsumer(
+      streamId,
+      StreamKind.EXTERNAL_VIDEO
+    );
+
+    const qualityLayers = getStreamQualityLayers(
+      streamId,
+      StreamKind.EXTERNAL_VIDEO
+    );
+
+    const streamQuality = getStreamQuality(streamId, StreamKind.EXTERNAL_VIDEO);
+
+    const qualityLabel = isSimulcastExternalVideoConsumer
+      ? getStreamQualityMetadataLabel(streamQuality, qualityLayers)
+      : null;
+
     return (
       <div
         ref={containerRef}
@@ -209,10 +243,13 @@ const ExternalStreamCard = memo(
           showPinControls={showPinControls}
           hasVideo={!!hasVideo}
           hasAudio={!!hasAudio}
+          showQualityControl={!!hasVideo && isSimulcastExternalVideoConsumer}
           volume={volume}
           isMuted={isMuted}
           onVolumeChange={handleVolumeChange}
           onMuteToggle={handleMuteToggle}
+          videoRef={externalVideoRef}
+          streamId={streamId}
         />
 
         {hasVideo ? (
@@ -266,6 +303,11 @@ const ExternalStreamCard = memo(
             <span className="text-white font-medium text-xs truncate">
               {stream.title || 'External Stream'}
             </span>
+            {qualityLabel && (
+              <span className="text-white/50 text-xs shrink-0">
+                ({qualityLabel})
+              </span>
+            )}
 
             <div className="flex items-center gap-1 ml-auto">
               {hasVideo && <Video className="size-3 text-blue-400" />}

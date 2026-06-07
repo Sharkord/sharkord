@@ -83,6 +83,9 @@
   "stopVideoPreviewBtn": "Остановить предпросмотр видео",
   "startingCamera": "Запуск камеры...",
   "mirrorOwnVideoLabel": "Отразить собственное видео",
+  "simulcastUserLabel": "Simulcast",
+  "simulcastUserDesc": "Отправлять отдельные слои низкого, среднего и высокого качества для веб-камеры и демонстрации экрана. Это увеличивает расход трафика и нагрузку на CPU, но помогает зрителям с медленным соединением получать более плавный поток. Forces the use of VP8 when enabled.",
+  "simulcastDisabledByServerDesc": "Simulcast отключен на этом сервере.",
   "screenSharingLabel": "Демонстрация экрана",
   "restrictOwnAudioLabel": "Ограничить собственное аудио",
   "restrictOwnAudioDesc": "Исключать звук Sharkord из аудио, захватываемого при демонстрации экрана.",
@@ -140,6 +143,9 @@
   "ownerRoleInfo": "Это роль владельца. Эта роль имеет все разрешения, и ее нельзя удалить или изменить ее разрешения.",
   "roleNameLabel": "Название роли",
   "roleColorLabel": "Цвет роли",
+  "roleStorageOverrideLabel": "Включить переопределение хранилища",
+  "roleStorageOverrideDesc": "Использует квоту этой роли вместо глобальной квоты на пользователя. Пользователи с несколькими ролями переопределения получают самую высокую квоту.",
+  "roleStorageQuotaLabel": "Квота хранилища",
   "roleDeleted": "Роль удалена",
   "roleDeleteFailed": "Не удалось удалить роль",
   "roleUpdated": "Роль обновлена",
@@ -288,6 +294,11 @@
   "overflowDeleteOldFiles": "Удалить старые файлы",
   "overflowPreventUploads": "Запретить загрузку новых файлов",
 
+  "imageOptimizationLabel": "Включить оптимизацию изображений",
+  "imageOptimizationDesc": "Преобразует поддерживаемые загруженные изображения в оптимизированные файлы WebP.",
+  "imageQualityLabel": "Качество изображения",
+  "imageQualityDesc": "Управляет качеством WebP для оптимизированных изображений. Более высокие значения сохраняют больше деталей, но используют больше места в хранилище.",
+
   "moderateUserAction": "Модерировать пользователя",
 
   "inviteCopied": "Пригласительный код скопирован в буфер обмена",
@@ -336,6 +347,12 @@
   "serverActivityMessages": "Сообщения",
   "serverActivityLinks": "Ссылки",
   "serverActivityFiles": "Файлы",
+
+  "modViewStorageTitle": "Хранилище",
+  "modViewStorageUsed": "Использовано",
+  "modViewStorageQuota": "Квота",
+  "modViewStorageFiles": "Файлы",
+  "modViewStorageUsage": "Использование",
 
   "detailsTitle": "Подробнее",
   "userIdLabel": "Идентификатор пользователя",

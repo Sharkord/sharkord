@@ -15,6 +15,8 @@ const addRoleRoute = protectedProcedure.mutation(async ({ ctx }) => {
       color: '#ffffff',
       isDefault: false,
       isPersistent: false,
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0,
       createdAt: Date.now()
     })
     .returning()

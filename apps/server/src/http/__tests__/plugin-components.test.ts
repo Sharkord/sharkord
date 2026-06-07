@@ -31,11 +31,11 @@ describe('/plugin-components', () => {
 
     const response = await fetch(`${testsBaseUrl}/plugin-components`);
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(200);
 
-    const data = (await response.json()) as { error: string };
+    const data = (await response.json()) as string[];
 
-    expect(data).toHaveProperty('error', 'Plugins are disabled on this server');
+    expect(data).toEqual([]);
   });
 
   test('should not match lookalike route prefixes', async () => {

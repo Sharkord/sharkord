@@ -11,7 +11,7 @@ type TEvents = {
   consume: (
     remoteId: number,
     kind: StreamKind,
-    routerRtpCapabilities: RtpCapabilities
+    rtpCapabilities: RtpCapabilities
   ) => Promise<void>;
   removeRemoteUserStream: (
     userId: number,

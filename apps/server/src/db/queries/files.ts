@@ -6,10 +6,10 @@ import { files, messageFiles } from '../schema';
 import { getSettings } from './server';
 
 const getExceedingOldFiles = async (newFileSize: number) => {
-  const { storageUploadMaxFileSize } = await getSettings();
+  const { storageQuota, storageUploadMaxFileSize } = await getSettings();
 
   if (newFileSize > storageUploadMaxFileSize) {
-    throw new Error('File size exceeds total server storage quota');
+    throw new Error('File size exceeds the maximum allowed file size');
   }
 
   const currentUsage = await db
@@ -20,8 +20,7 @@ const getExceedingOldFiles = async (newFileSize: number) => {
     .get();
 
   const currentTotalSize = Number(currentUsage?.totalSize ?? 0);
-  const wouldExceedBy =
-    currentTotalSize + newFileSize - storageUploadMaxFileSize;
+  const wouldExceedBy = currentTotalSize + newFileSize - storageQuota;
 
   if (wouldExceedBy <= 0) {
     return [];

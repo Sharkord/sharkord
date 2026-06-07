@@ -12,6 +12,7 @@ export enum LocalStorageKey {
   VOICE_CHAT_SIDEBAR_WIDTH = 'sharkord-voice-chat-sidebar-width',
   VOICE_CHAT_SHOW_USER_BANNERS = 'sharkord-voice-chat-show-user-banners',
   VOLUME_SETTINGS = 'sharkord-volume-settings',
+  STREAM_QUALITY_SETTINGS = 'sharkord-stream-quality-settings',
   RECENT_EMOJIS = 'sharkord-recent-emojis',
   DEBUG = 'sharkord-debug',
   DRAFT_MESSAGES = 'sharkord-draft-messages',
