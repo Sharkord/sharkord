@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage, IconButton } from '@sharkord/ui';
 import { Headphones, Router, Video, ZoomIn, ZoomOut } from 'lucide-react';
 import { memo, useCallback, type RefObject } from 'react';
 import { CardControls } from './card-controls';
-import { CardGradient } from './card-gradient';
+import { CardTheme } from './card-theme';
 import { FullscreenButton } from './fullscreen-button';
 import { useFullscreen } from './hooks/use-fullscreen';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
@@ -230,7 +230,7 @@ const ExternalStreamCard = memo(
             }}
           />
         ) : (
-          <CardGradient />
+          <CardTheme />
         )}
 
         <ExternalStreamControls

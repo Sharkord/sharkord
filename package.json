@@ -20,7 +20,7 @@
     "magic": "bun run format && bun run check-types && bun run lint",
     "dev:client": "bun run --filter './apps/client' dev",
     "dev:server": "bun run --filter './apps/server' dev",
-    "dev:platform": "concurrently -n server,client -c blue,green \"bun run dev:server\" \"bun run dev:client\""
+    "dev:platform": "concurrently -k -n server,client -c blue,green \"bun run dev:client\" \"bun run dev:server\""
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

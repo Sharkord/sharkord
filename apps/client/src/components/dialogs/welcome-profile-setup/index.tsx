@@ -109,7 +109,9 @@ const WelcomeProfileSetupDialog = memo(
       try {
         await trpc.users.update.mutate({
           name: values.name.trim(),
-          bannerColor: ownPublicUser.bannerColor ?? '#FFFFFF',
+          profileTheme: ownPublicUser.profileTheme ?? {
+            banner: { type: 'solid', colors: ['#262626'] }
+          },
           bio: trimmedBio || undefined
         });
 
@@ -157,7 +159,8 @@ const WelcomeProfileSetupDialog = memo(
                   <div
                     className="w-full h-28 border-b border-border transition-opacity group-hover:opacity-70"
                     style={{
-                      background: ownPublicUser.bannerColor || '#5865f2'
+                      background:
+                        ownPublicUser.profileTheme.banner.colors[0] || '#5865f2'
                     }}
                   />
                 )}

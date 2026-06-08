@@ -25,7 +25,12 @@ const Profile = memo(() => {
   const ownPublicUser = useOwnPublicUser();
   const { setTrpcErrors, r, rr, values } = useForm({
     name: ownPublicUser?.name ?? '',
-    bannerColor: ownPublicUser?.bannerColor ?? '#FFFFFF',
+    profileTheme: {
+      banner: {
+        type: 'solid',
+        colors: [ownPublicUser?.profileTheme?.banner?.colors?.[0] ?? '#262626']
+      }
+    },
     bio: ownPublicUser?.bio ?? ''
   });
 
@@ -60,7 +65,16 @@ const Profile = memo(() => {
         </Group>
 
         <Group label={t('bannerColorLabel')}>
-          <Color {...rr('bannerColor')} defaultValue="#FFFFFF" />
+          <Color
+            value={values.profileTheme.banner.colors[0]}
+            onChange={(color) =>
+              rr('profileTheme').onChange({
+                ...values.profileTheme,
+                banner: { ...values.profileTheme.banner, colors: [color] }
+              })
+            }
+            defaultValue="#262626"
+          />
         </Group>
 
         <BannerManager user={ownPublicUser} />

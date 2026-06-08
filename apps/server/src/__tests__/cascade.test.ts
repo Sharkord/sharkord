@@ -1,3 +1,4 @@
+import type { ProfileTheme } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import {
@@ -21,6 +22,13 @@ import {
   users
 } from '../db/schema';
 import { tdb } from './setup';
+
+const profileTheme: ProfileTheme = {
+  banner: {
+    type: 'solid',
+    colors: ['#262626']
+  }
+};
 
 describe('database cascades', async () => {
   test('initial data is seeded correctly', async () => {
@@ -526,7 +534,7 @@ describe('database cascades', async () => {
           avatarId: null,
           bannerId: null,
           bio: null,
-          bannerColor: null,
+          profileTheme: profileTheme,
           createdAt: Date.now()
         })
         .returning();
@@ -543,7 +551,7 @@ describe('database cascades', async () => {
           avatarId: null,
           bannerId: null,
           bio: null,
-          bannerColor: null,
+          profileTheme: profileTheme,
           createdAt: Date.now()
         })
         .returning();
@@ -608,7 +616,7 @@ describe('database cascades', async () => {
         avatarId: null,
         bannerId: null,
         bio: null,
-        bannerColor: null,
+        profileTheme: profileTheme,
         createdAt: Date.now()
       })
       .returning();
@@ -622,7 +630,7 @@ describe('database cascades', async () => {
         avatarId: null,
         bannerId: null,
         bio: null,
-        bannerColor: null,
+        profileTheme: profileTheme,
         createdAt: Date.now()
       })
       .returning();
@@ -685,7 +693,7 @@ describe('database cascades', async () => {
         avatarId: null,
         bannerId: null,
         bio: null,
-        bannerColor: null,
+        profileTheme: profileTheme,
         createdAt: Date.now()
       })
       .returning();
@@ -699,7 +707,7 @@ describe('database cascades', async () => {
         avatarId: null,
         bannerId: null,
         bio: null,
-        bannerColor: null,
+        profileTheme: profileTheme,
         createdAt: Date.now()
       })
       .returning();

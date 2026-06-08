@@ -7,7 +7,7 @@ import { StreamKind } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
 import { Monitor, ZoomIn, ZoomOut } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
-import { CardGradient } from './card-gradient';
+import { CardTheme } from './card-theme';
 import { FullscreenButton } from './fullscreen-button';
 import { useFullscreen } from './hooks/use-fullscreen';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
@@ -139,7 +139,7 @@ const ScreenShareCard = memo(
           cursor: isFullscreen && !isOverlayVisible ? 'none' : getCursor()
         }}
       >
-        <CardGradient />
+        <CardTheme />
 
         <video
           ref={screenShareRef}

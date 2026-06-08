@@ -183,3 +183,23 @@ export type TDirectMessageConversation = {
   unreadCount: number;
   lastMessageAt: number;
 };
+
+export type ProfileTheme = {
+  banner: {
+    type: 'solid' | 'gradient' | 'radial';
+    colors: string[];
+    angle?: number;
+    position?:
+      | 'center'
+      | 'top'
+      | 'bottom'
+      | 'left'
+      | 'right'
+      | 'top left'
+      | 'top right'
+      | 'bottom left'
+      | 'bottom right'
+      | `${number}% ${number}%`
+      | `${number}px ${number}px`;
+  };
+};

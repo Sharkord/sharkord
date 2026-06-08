@@ -11,7 +11,7 @@ import { getFileUrl } from '@/helpers/get-file-url';
 import { cn } from '@/lib/utils';
 import { HeadphoneOff, MicOff, Monitor, Video } from 'lucide-react';
 import { memo, useCallback } from 'react';
-import { CardGradient } from './card-gradient';
+import { CardTheme } from './card-theme';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PinButton } from './pin-button';
 import { VolumeButton } from './volume-button';
@@ -83,8 +83,8 @@ const VoiceUserCard = memo(
             }
           />
         ) : (
-          <CardGradient
-            bannerColor={voiceUser.bannerColor}
+          <CardTheme
+            profileTheme={voiceUser.profileTheme}
             hasVideoStream={hasVideoStream}
           />
         )}
