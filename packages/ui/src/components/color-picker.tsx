@@ -1,3 +1,4 @@
+import { PencilIcon } from 'lucide-react';
 import { HexColorPicker } from 'react-colorful';
 import { cn } from '../lib/utils';
 import { Button, buttonVariants } from './button';
@@ -11,7 +12,7 @@ type TColorProps = {
   defaultValue?: string;
 };
 
-const Color = ({
+const ColorPicker = ({
   value,
   onChange,
   defaultValue = '#FFFFFF',
@@ -24,13 +25,15 @@ const Color = ({
           <div
             style={{ backgroundColor: value }}
             className={cn(
-              'w-10 cursor-pointer',
+              'w-12 h-4 cursor-pointer relative',
               buttonVariants({ variant: 'outline' }),
-              error && '!border-red-500'
+              error && 'border-red-500!'
             )}
-          />
+          >
+            <PencilIcon className="size-3 absolute top-2 right-2" fill="#fff" />
+          </div>
         </PopoverTrigger>
-        <PopoverContent className="flex flex-col gap-2 w-fit h-fit p-2">
+        <PopoverContent className="flex flex-col gap-2 w-fit h-fit p-2 rounded-2xl">
           <HexColorPicker color={value} onChange={onChange} />
           <Input value={value} onChange={(e) => onChange?.(e.target.value)} />
           <Button
@@ -47,4 +50,4 @@ const Color = ({
   );
 };
 
-export { Color };
+export { ColorPicker };
