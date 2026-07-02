@@ -10,6 +10,7 @@ import {
   currentVoiceChannelIdSelector,
   directMessagesUnreadCountSelector,
   isCurrentVoiceChannelSelectedSelector,
+  referenceableChannelsSelector,
   selectedChannelIdSelector,
   selectedChannelSelector,
   selectedChannelTypeSelector
@@ -51,3 +52,6 @@ export const useChannelIds = () => useSelector(channelIdsSelector);
 
 export const useDirectMessagesUnreadCount = () =>
   useSelector(directMessagesUnreadCountSelector);
+
+export const useReferenceableChannels = () =>
+  useSelector(referenceableChannelsSelector);

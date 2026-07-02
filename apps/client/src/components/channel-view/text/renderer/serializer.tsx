@@ -1,5 +1,6 @@
 import { parseDomCommand } from '@sharkord/shared';
 import { Element, type DOMNode } from 'html-react-parser';
+import { ChannelReferenceOverride } from '../overrides/channel-reference';
 import { CommandOverride } from '../overrides/command';
 import { MentionOverride } from '../overrides/mention';
 import { YoutubeOverride } from '../overrides/youtube';
@@ -33,6 +34,17 @@ const serializer = (domNode: DOMNode, messageId: number) => {
 
       if (!Number.isNaN(userId)) {
         return <MentionOverride userId={userId} />;
+      }
+    } else if (
+      domNode instanceof Element &&
+      domNode.name === 'span' &&
+      domNode.attribs['data-type'] === 'channel-reference' &&
+      domNode.attribs['data-channel-id']
+    ) {
+      const channelId = parseInt(domNode.attribs['data-channel-id'], 10);
+
+      if (!Number.isNaN(channelId)) {
+        return <ChannelReferenceOverride channelId={channelId} />;
       }
     }
   } catch (error) {

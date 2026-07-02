@@ -116,6 +116,14 @@ export const channelIdsSelector = createSelector(channelsSelector, (channels) =>
   channels.map((channel) => channel.id)
 );
 
+export const referenceableChannelsSelector = createSelector(
+  channelsSelector,
+  (channels) =>
+    channels
+      .filter((c) => !c.isDm)
+      .sort((a, b) => a.position - b.position)
+);
+
 export const directMessagesUnreadCountSelector = createSelector(
   [channelsSelector, channelsReadStatesSelector],
   (channels, readStates) => {
