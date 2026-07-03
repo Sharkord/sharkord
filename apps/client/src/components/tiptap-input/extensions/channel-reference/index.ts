@@ -3,8 +3,8 @@ import { Extension } from '@tiptap/core';
 import { PluginKey } from '@tiptap/pm/state';
 import Suggestion from '@tiptap/suggestion';
 import {
-  ChannelReferenceSuggestion,
-  CHANNEL_REF_STORAGE_KEY
+  CHANNEL_REF_STORAGE_KEY,
+  ChannelReferenceSuggestion
 } from './suggestion';
 
 export const ChannelReferencePluginKey = new PluginKey('channelReference');

@@ -125,20 +125,11 @@ type TSuggestionProps = {
 };
 
 const ChannelReferenceSuggestion = {
-  items: ({
-    editor,
-    query
-  }: {
-    editor: Editor;
-    query: string;
-  }): TChannel[] => {
+  items: ({ editor, query }: { editor: Editor; query: string }): TChannel[] => {
     const channels: TChannel[] =
-      (
-        editor.storage as unknown as Record<
-          string,
-          { channels?: TChannel[] }
-        >
-      )[CHANNEL_REF_STORAGE_KEY]?.channels ?? [];
+      (editor.storage as unknown as Record<string, { channels?: TChannel[] }>)[
+        CHANNEL_REF_STORAGE_KEY
+      ]?.channels ?? [];
 
     if (!query) return channels.slice(0, 10);
 

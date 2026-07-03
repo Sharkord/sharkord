@@ -122,7 +122,10 @@ export const referenceableChannelsSelector = createSelector(
   (channels, permissions) =>
     channels
       .filter((c) => !c.isDm)
-      .filter((c) => !c.private || permissions[c.id]?.permissions?.VIEW_CHANNEL === true)
+      .filter(
+        (c) =>
+          !c.private || permissions[c.id]?.permissions?.VIEW_CHANNEL === true
+      )
       .sort((a, b) => a.position - b.position)
 );
 

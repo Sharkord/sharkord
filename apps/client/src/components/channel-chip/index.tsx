@@ -1,5 +1,8 @@
-import { useChannelById, useSelectedChannelId } from '@/features/server/channels/hooks';
 import { setSelectedChannelId } from '@/features/server/channels/actions';
+import {
+  useChannelById,
+  useSelectedChannelId
+} from '@/features/server/channels/hooks';
 import { cn } from '@/lib/utils';
 import { memo, useCallback } from 'react';
 

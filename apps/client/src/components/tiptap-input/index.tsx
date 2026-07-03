@@ -1,3 +1,4 @@
+import { useReferenceableChannels } from '@/features/server/channels/hooks';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
 import { TestId, type TCommandInfo } from '@sharkord/shared';
@@ -13,15 +14,11 @@ import {
   useRef,
   type Ref
 } from 'react';
+import { ChannelReference } from './extensions/channel-reference';
+import { ChannelReferenceNode } from './extensions/channel-reference/node';
 import {
-  ChannelReference
-} from './extensions/channel-reference';
-import {
-  ChannelReferenceNode
-} from './extensions/channel-reference/node';
-import {
-  ChannelReferenceSuggestion,
-  CHANNEL_REF_STORAGE_KEY
+  CHANNEL_REF_STORAGE_KEY,
+  ChannelReferenceSuggestion
 } from './extensions/channel-reference/suggestion';
 import {
   COMMANDS_STORAGE_KEY,
@@ -36,7 +33,6 @@ import {
   MENTION_STORAGE_KEY,
   MentionSuggestion
 } from './extensions/mentions/suggestion';
-import { useReferenceableChannels } from '@/features/server/channels/hooks';
 import type { TEmojiItem } from './helpers';
 
 type TTiptapInputHandle = {
@@ -86,7 +82,7 @@ const TiptapInput = memo(
     const users = useFilteredUsers();
     const channels = useReferenceableChannels();
 
-    const extensions = useMemo(() => {  
+    const extensions = useMemo(() => {
       const exts = [
         StarterKit.configure({
           hardBreak: {

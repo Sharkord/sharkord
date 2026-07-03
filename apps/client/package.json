@@ -9,8 +9,8 @@
     "lint": "eslint ./src --ext ts,tsx",
     "lint:fix": "eslint ./src --ext ts,tsx --report-unused-disable-directives --fix",
     "check-types": "tsc --noEmit --project tsconfig.app.json",
-    "format": "prettier --write \"**/*.ts*\" --config ./.prettierrc.json",
-    "format:check": "prettier --check \"**/*.ts*\" --config ./.prettierrc.json",
+    "format": "npx prettier --write \"**/*.ts*\" --config ./.prettierrc.json",
+    "format:check": "npx prettier --check \"**/*.ts*\" --config ./.prettierrc.json",
     "magic": "bun --bun run lint:fix && bun --bun run format && bun --bun run check-types"
   },
   "dependencies": {
