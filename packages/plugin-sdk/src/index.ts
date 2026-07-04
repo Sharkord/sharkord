@@ -14,6 +14,7 @@ import type {
   TStreamQualityLayer
 } from '@sharkord/shared';
 import { FileSaveType, PLUGIN_SDK_VERSION, PluginSlot } from '@sharkord/shared';
+import type { IncomingMessage, ServerResponse } from 'http';
 import type { AppData, Producer, Router } from 'mediasoup/types';
 
 export type TCreateStreamOptions = {
@@ -43,6 +44,13 @@ export type TExternalStreamHandle = {
     videoLayers?: TStreamQualityLayer[];
   }) => void;
 };
+
+export type TPluginHttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'OPTIONS';
+
+export type TPluginHttpRouteHandler = (
+  req: IncomingMessage,
+  res: ServerResponse
+) => Promise<unknown> | unknown;
 
 export type ServerEvent =
   | 'user:joined'
@@ -192,6 +200,19 @@ export interface PluginContext {
 
   hooks: {
     onBeforeFileSave(handler: TBeforeFileSaveHook): void;
+  };
+
+  http: {
+    register(
+      method: TPluginHttpMethod,
+      path: string,
+      handler: TPluginHttpRouteHandler
+    ): void;
+    get(path: string, handler: TPluginHttpRouteHandler): void;
+    post(path: string, handler: TPluginHttpRouteHandler): void;
+    patch(path: string, handler: TPluginHttpRouteHandler): void;
+    delete(path: string, handler: TPluginHttpRouteHandler): void;
+    options(path: string, handler: TPluginHttpRouteHandler): void;
   };
 
   data: {

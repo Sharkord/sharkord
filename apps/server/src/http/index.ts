@@ -5,6 +5,11 @@ import z from 'zod';
 import { config } from '../config';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
+import { pluginManager } from '../plugins';
+import {
+  isPluginHttpMethod,
+  supportedHttpMethods
+} from '../plugins/http-route-registry';
 import { healthRouteHandler } from './healthz';
 import {
   getRequestPathname,
@@ -25,7 +30,26 @@ type RouteContext = {
   info: ReturnType<typeof getWsInfo>;
 };
 
-type SupportedMethod = 'GET' | 'POST';
+type SupportedMethod = (typeof supportedHttpMethods)[number];
+
+const getPluginRoute = (pathname: string) => {
+  if (!hasPrefixPathSegment(pathname, '/plugins')) {
+    return undefined;
+  }
+
+  const [, , pluginId, ...routePathSegments] = pathname.split('/');
+
+  if (!pluginId) {
+    return undefined;
+  }
+
+  return {
+    pluginId,
+    routePath: routePathSegments.length
+      ? `/${routePathSegments.join('/')}`
+      : '/'
+  };
+};
 
 const routeHandlers: Partial<
   Record<
@@ -65,7 +89,10 @@ const createHttpServer = async (port: number = config.server.port) => {
     const server = http.createServer(
       async (req: http.IncomingMessage, res: http.ServerResponse) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader(
+          'Access-Control-Allow-Methods',
+          supportedHttpMethods.join(', ')
+        );
         res.setHeader('Access-Control-Allow-Headers', '*');
 
         const info = getWsInfo(undefined, req);
@@ -73,12 +100,6 @@ const createHttpServer = async (port: number = config.server.port) => {
         logger.debug(
           `${chalk.dim('[HTTP]')} ${req.method} ${req.url} - ${info?.ip}`
         );
-
-        if (req.method === 'OPTIONS') {
-          res.writeHead(204);
-          res.end();
-          return;
-        }
 
         const pathname = getRequestPathname(req);
 
@@ -89,7 +110,10 @@ const createHttpServer = async (port: number = config.server.port) => {
         }
 
         try {
-          const method = req.method as SupportedMethod | undefined;
+          const method =
+            req.method && isPluginHttpMethod(req.method)
+              ? req.method
+              : undefined;
 
           if (method) {
             const methodHandlers = routeHandlers[method];
@@ -109,6 +133,34 @@ const createHttpServer = async (port: number = config.server.port) => {
                 }
               }
             }
+
+            const pluginRoute = getPluginRoute(pathname);
+
+            if (pluginRoute) {
+              const pluginRouteHandler = pluginManager.getHttpRouteHandler(
+                pluginRoute.pluginId,
+                method,
+                pluginRoute.routePath
+              );
+
+              if (pluginRouteHandler) {
+                return await pluginRouteHandler(req, res);
+              }
+
+              if (method !== 'OPTIONS') {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Not found' }));
+
+                return;
+              }
+            }
+          }
+
+          if (method === 'OPTIONS') {
+            res.writeHead(204);
+            res.end();
+
+            return;
           }
 
           // fallback to interface route handler for GET requests

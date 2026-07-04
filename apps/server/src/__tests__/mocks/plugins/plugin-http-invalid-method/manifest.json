@@ -1,0 +1,10 @@
+{
+  "id": "plugin-http-invalid-method",
+  "name": "plugin-http-invalid-method",
+  "version": "1.0.0",
+  "sdkVersion": 1,
+  "author": "Test Author",
+  "homepage": "https://example.com",
+  "description": "Plugin that registers an invalid HTTP method",
+  "logo": "https://example.com/logo.png"
+}

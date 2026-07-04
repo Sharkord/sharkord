@@ -2,6 +2,7 @@ import type {
   PluginContext,
   TCreateStreamOptions,
   TExternalStreamHandle,
+  TPluginHttpMethod,
   UnloadPluginContext
 } from '@sharkord/plugin-sdk';
 import {
@@ -37,6 +38,7 @@ import { editPluginMessage } from './actions/edit-plugin-message';
 import { CommandRegistry } from './command-registry';
 import { eventBus } from './event-bus';
 import { HooksManager } from './hooks-manager';
+import { PluginHttpRouteRegistry } from './http-route-registry';
 import { PluginLogger } from './plugin-logger';
 import { PluginSettingsManager } from './plugin-settings-manager';
 import { PluginStateStore } from './plugin-state-store';
@@ -54,6 +56,9 @@ class PluginManager {
   private readonly stateStore = new PluginStateStore();
   private readonly pluginLogger = new PluginLogger();
   private readonly hooksManager = new HooksManager();
+  private readonly httpRouteRegistry = new PluginHttpRouteRegistry(
+    this.pluginLogger
+  );
 
   private readonly settingsManager = new PluginSettingsManager(
     this.pluginLogger,
@@ -122,6 +127,22 @@ class PluginManager {
 
   public getBeforeFileSaveHooks = () =>
     this.hooksManager.getBeforeFileSaveHooks();
+
+  public getHttpRouteHandler = (
+    pluginId: string,
+    method: TPluginHttpMethod,
+    routePath: string
+  ) => {
+    if (!this.loadedPlugins.has(pluginId)) {
+      return undefined;
+    }
+
+    if (!this.stateStore.isEnabled(pluginId)) {
+      return undefined;
+    }
+
+    return this.httpRouteRegistry.get(pluginId, method, routePath);
+  };
 
   public getPluginsFromPath = async (): Promise<string[]> => {
     const files = await fs.readdir(PLUGINS_PATH);
@@ -411,8 +432,20 @@ class PluginManager {
         `Failed to load plugin ${pluginId}: ${errorMessage}`
       );
 
-      await this.unload(pluginId);
+      this.cleanupPluginRegistrations(pluginId);
+      this.uiState.delete(pluginId);
+      this.loadedPlugins.delete(pluginId);
+      this.invalidateDynamicImportCache(info.path);
     }
+  };
+
+  private cleanupPluginRegistrations = (pluginId: string) => {
+    eventBus.unload(pluginId);
+    this.commandRegistry.unload(pluginId);
+    this.actionRegistry.unload(pluginId);
+    this.settingsManager.unload(pluginId);
+    this.hooksManager.unload(pluginId);
+    this.httpRouteRegistry.unload(pluginId);
   };
 
   public unload = async (pluginId: string) => {
@@ -444,11 +477,7 @@ class PluginManager {
       }
     }
 
-    eventBus.unload(pluginId);
-    this.commandRegistry.unload(pluginId);
-    this.actionRegistry.unload(pluginId);
-    this.settingsManager.unload(pluginId);
-    this.hooksManager.unload(pluginId);
+    this.cleanupPluginRegistrations(pluginId);
     this.uiState.delete(pluginId);
     this.loadedPlugins.delete(pluginId);
     this.loadErrors.delete(pluginId);
@@ -646,6 +675,41 @@ class PluginManager {
       hooks: {
         onBeforeFileSave: (handler) => {
           this.hooksManager.registerBeforeFileSave(pluginId, handler);
+        }
+      },
+      http: {
+        register: (method, routePath, handler) => {
+          this.httpRouteRegistry.register(pluginId, method, routePath, handler);
+        },
+        get: (routePath, handler) => {
+          this.httpRouteRegistry.register(pluginId, 'GET', routePath, handler);
+        },
+        post: (routePath, handler) => {
+          this.httpRouteRegistry.register(pluginId, 'POST', routePath, handler);
+        },
+        patch: (routePath, handler) => {
+          this.httpRouteRegistry.register(
+            pluginId,
+            'PATCH',
+            routePath,
+            handler
+          );
+        },
+        delete: (routePath, handler) => {
+          this.httpRouteRegistry.register(
+            pluginId,
+            'DELETE',
+            routePath,
+            handler
+          );
+        },
+        options: (routePath, handler) => {
+          this.httpRouteRegistry.register(
+            pluginId,
+            'OPTIONS',
+            routePath,
+            handler
+          );
         }
       },
       data: {
