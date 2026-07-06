@@ -23,7 +23,7 @@ type TEvents = {
   ) => void;
   removeExternalStream: (streamId: number) => void;
   clearRemoteUserStreamsForUser: (userId: number) => void;
-  rtpCapabilities: RtpCapabilities;
+  rtpCapabilities: RtpCapabilities | null | undefined;
 };
 
 const useVoiceEvents = ({
@@ -40,6 +40,11 @@ const useVoiceEvents = ({
   useEffect(() => {
     if (!currentVoiceChannelId) {
       logVoice('Voice events not initialized - missing channelId');
+      return;
+    }
+
+    if (!rtpCapabilities) {
+      logVoice('Voice events not initialized - missing RTP capabilities');
       return;
     }
 
