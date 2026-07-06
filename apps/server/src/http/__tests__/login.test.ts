@@ -32,7 +32,7 @@ describe('/login', () => {
     expect(decoded).toHaveProperty('userId');
   });
 
-  test('should fail login with invalid password', async () => {
+  test('should fail login with invalid password using a generic error to prevent enumeration', async () => {
     const response = await login('testowner', 'wrongpassword');
 
     expect(response.status).toBe(400);
@@ -40,7 +40,21 @@ describe('/login', () => {
     const data: any = await response.json();
 
     expect(data).toHaveProperty('errors');
-    expect(data.errors).toHaveProperty('password', 'Invalid password');
+    expect(data.errors).toHaveProperty('identity', 'Invalid credentials');
+    expect(data.errors).not.toHaveProperty('password');
+  });
+
+  test('should return the same generic error for an unknown identity when registration is closed', async () => {
+    await tdb.update(settings).set({ allowNewUsers: false });
+
+    const response = await login('definitelynotaregistereduser', 'whatever');
+
+    expect(response.status).toBe(400);
+
+    const data: any = await response.json();
+
+    expect(data).toHaveProperty('errors');
+    expect(data.errors).toHaveProperty('identity', 'Invalid credentials');
   });
 
   test('should auto-register new user when allowNewUsers is true', async () => {
@@ -126,7 +140,7 @@ describe('/login', () => {
     const data: any = await response.json();
 
     expect(data).toHaveProperty('errors');
-    expect(data.errors).toHaveProperty('identity', 'Invalid invite code');
+    expect(data.errors).toHaveProperty('identity', 'Invalid credentials');
   });
 
   test('should allow registration with valid invite when allowNewUsers is false', async () => {
@@ -229,7 +243,7 @@ describe('/login', () => {
     expect(data.errors).toHaveProperty('identity');
   });
 
-  test('should fail login for banned user', async () => {
+  test('should expose ban reason to a banned user that authenticates with the right password', async () => {
     await tdb
       .update(users)
       .set({
@@ -247,6 +261,28 @@ describe('/login', () => {
     expect(data).toHaveProperty('errors');
     expect(data.errors).toHaveProperty('identity');
     expect(data.errors.identity).toContain('banned');
+    expect(data.errors.identity).toContain('Test ban reason');
+  });
+
+  test('should hide ban status from a banned user that supplies the wrong password', async () => {
+    await tdb
+      .update(users)
+      .set({
+        banned: true,
+        banReason: 'Test ban reason'
+      })
+      .where(eq(users.identity, 'testuser'));
+
+    const response = await login('testuser', 'wrongpassword');
+
+    expect(response.status).toBe(400);
+
+    const data: any = await response.json();
+
+    expect(data).toHaveProperty('errors');
+    expect(data.errors).toHaveProperty('identity', 'Invalid credentials');
+    expect(data.errors.identity).not.toContain('banned');
+    expect(data.errors.identity).not.toContain('Test ban reason');
   });
 
   test('should fail with missing identity', async () => {
