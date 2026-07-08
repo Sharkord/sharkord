@@ -29,7 +29,7 @@ const getDefaultDeviceSettings = (): TDeviceSettings => ({
   webcamResolution: Resolution['720p'],
   webcamFramerate: 30,
   echoCancellation: false,
-  noiseSuppression: NoiseSuppression.NONE,
+  noiseSuppression: NoiseSuppression.RNNOISE,
   autoGainControl: true,
   noiseGateEnabled: false,
   noiseGateThresholdDb: MICROPHONE_GATE_DEFAULT_THRESHOLD_DB,

@@ -1,6 +1,5 @@
 const RNNOISE_WORKLET_URL = '/rnnoise/rnnoise-bundle.js';
 const RNNOISE_WORKLET_NAME = 'RnnoiseProcessor';
-const RNNOISE_SAMPLE_RATE = 48000;
 const RNNOISE_READY_TIMEOUT_MS = 10000;
 const RNNOISE_CACHE_NAME = 'rnnoise-worklet-v1';
 
@@ -93,16 +92,7 @@ const createRnnoiseChain = async (
     throw new Error('AudioWorklet is not supported in this browser');
   }
 
-  const nativeSampleRate =
-    inputStream.getAudioTracks()[0]?.getSettings().sampleRate ?? 48000;
-
-  if (nativeSampleRate !== RNNOISE_SAMPLE_RATE) {
-    throw new Error(
-      `RNNoise requires a 48kHz audio context (got ${nativeSampleRate}Hz)`
-    );
-  }
-
-  const ctx = new AudioContext({ sampleRate: nativeSampleRate });
+  const ctx = new AudioContext({ sampleRate: 48000 });
   await ensureWorkletLoaded(ctx);
 
   // outputChannelCount: [2] allocates a second output channel buffer so the
