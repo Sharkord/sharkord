@@ -4,8 +4,10 @@ import {
   useChannelsMap,
   useCurrentVoiceChannelId
 } from '@/features/server/channels/hooks';
+import { channelByIdSelector } from '@/features/server/channels/selectors';
 import { joinVoice } from '@/features/server/voice/actions';
 import { useVoice } from '@/features/server/voice/hooks';
+import { store } from '@/features/store';
 import { getLocalStorageItemAsJSON, LocalStorageKey } from '@/helpers/storage';
 import { getTRPCClient } from '@/lib/trpc';
 import { ChannelType } from '@sharkord/shared';
@@ -65,7 +67,7 @@ const useSelectChannel = () => {
 
   const selectChannel = useCallback(
     async (channelId: number) => {
-      const channel = channelsMap[channelId];
+      const channel = channelByIdSelector(store.getState(), channelId);
 
       if (!channel) return;
 
@@ -101,7 +103,7 @@ const useSelectChannel = () => {
         }
       }
     },
-    [channelsMap, currentVoiceChannelId, init]
+    [currentVoiceChannelId, init]
   );
 
   useEffect(() => {

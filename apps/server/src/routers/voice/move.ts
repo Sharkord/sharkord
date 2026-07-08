@@ -8,9 +8,10 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
-import { channelUserCan } from '../../db/queries/channels';
+import { publishHiddenChannelToUser } from '../../db/publishers';
 import { userCan } from '../../db/queries/roles';
 import { channels } from '../../db/schema';
+import { grantVoiceMove } from '../../helpers/voice-move-grants';
 import { logger } from '../../logger';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
@@ -46,19 +47,16 @@ const moveUserRoute = rateLimitedProcedure(protectedProcedure, {
       message: 'Channel is not a voice channel'
     });
 
-    const [canView, canJoin, canUseVoice] = await Promise.all([
-      channelUserCan(
-        input.channelId,
-        input.userId,
-        ChannelPermission.VIEW_CHANNEL
-      ),
-      channelUserCan(input.channelId, input.userId, ChannelPermission.JOIN),
-      userCan(input.userId, Permission.JOIN_VOICE_CHANNELS)
-    ]);
+    await ctx.needsChannelPermission(input.channelId, ChannelPermission.JOIN);
 
-    invariant(canView && canJoin && canUseVoice, {
+    const canUseVoice = await userCan(
+      input.userId,
+      Permission.JOIN_VOICE_CHANNELS
+    );
+
+    invariant(canUseVoice, {
       code: 'FORBIDDEN',
-      message: 'Target user cannot join the destination channel'
+      message: 'Target user is not allowed to use voice channels'
     });
 
     const currentRuntime = VoiceRuntime.findRuntimeByUserId(input.userId);
@@ -72,6 +70,10 @@ const moveUserRoute = rateLimitedProcedure(protectedProcedure, {
       code: 'BAD_REQUEST',
       message: 'User is already in that channel'
     });
+
+    grantVoiceMove(input.userId, input.channelId);
+
+    await publishHiddenChannelToUser(input.userId, input.channelId);
 
     ctx.pubsub.publishFor(input.userId, ServerEvents.USER_VOICE_MOVED, {
       channelId: input.channelId,

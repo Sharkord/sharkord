@@ -250,6 +250,9 @@ const Channel = memo(({ channelId, isSelected, onClick }: TChannelProps) => {
   const channel = useChannelById(channelId);
   const channelCan = useChannelCan(channelId);
   const can = useCan();
+  const currentVoiceChannelId = useCurrentVoiceChannelId();
+
+  const isConnectedVoiceChannel = currentVoiceChannelId === channelId;
 
   const {
     attributes,
@@ -265,6 +268,7 @@ const Channel = memo(({ channelId, isSelected, onClick }: TChannelProps) => {
   }
 
   if (
+    !isConnectedVoiceChannel &&
     !channelCan(ChannelPermission.VIEW_CHANNEL) &&
     !can(Permission.MANAGE_CHANNELS)
   ) {
@@ -297,8 +301,9 @@ const Channel = memo(({ channelId, isSelected, onClick }: TChannelProps) => {
               onClick={onClick}
               dragHandleProps={{ ...attributes, ...listeners }}
               disabled={
-                !channelCan(ChannelPermission.JOIN) ||
-                !can(Permission.JOIN_VOICE_CHANNELS)
+                !isConnectedVoiceChannel &&
+                (!channelCan(ChannelPermission.JOIN) ||
+                  !can(Permission.JOIN_VOICE_CHANNELS))
               }
             />
           )}

@@ -1,5 +1,5 @@
 import { createSelector } from '@reduxjs/toolkit';
-import { ChannelPermission, OWNER_ROLE_ID } from '@sharkord/shared';
+import { OWNER_ROLE_ID } from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
 import type { IRootState } from '../store';
 import {
@@ -75,20 +75,21 @@ export const hasVisibleChannelsInCategorySelector = createCachedSelector(
     (state: IRootState, categoryId: number) =>
       channelsByCategoryIdSelector(state, categoryId),
     channelPermissionsSelector,
-    isOwnUserOwnerSelector
+    isOwnUserOwnerSelector,
+    currentVoiceChannelIdSelector
   ],
-  (channelsInCategory, channelPermissions, isOwner) => {
+  (channelsInCategory, channelPermissions, isOwner, currentVoiceChannelId) => {
     if (isOwner) return true;
     if (channelsInCategory.length === 0) return false;
 
-    for (const channel of channelsInCategory) {
-      if (!channel.private) return true;
-      const permissions =
-        channelPermissions[channel.id]?.permissions ??
-        ({} as Record<string, boolean>);
-      if (permissions[ChannelPermission.VIEW_CHANNEL] === true) return true;
-    }
-    return false;
+    return channelsInCategory.some((channel) =>
+      canViewChannel(
+        channel,
+        channelPermissions,
+        isOwner,
+        currentVoiceChannelId
+      )
+    );
   }
 )((_, categoryId: number) => categoryId);
 
@@ -97,11 +98,17 @@ export const visibleChannelsInCategorySelector = createCachedSelector(
     (state: IRootState, categoryId: number) =>
       channelsByCategoryIdSelector(state, categoryId),
     channelPermissionsSelector,
-    isOwnUserOwnerSelector
+    isOwnUserOwnerSelector,
+    currentVoiceChannelIdSelector
   ],
-  (channelsInCategory, channelPermissions, isOwner) =>
+  (channelsInCategory, channelPermissions, isOwner, currentVoiceChannelId) =>
     channelsInCategory.filter((channel) =>
-      canViewChannel(channel, channelPermissions, isOwner)
+      canViewChannel(
+        channel,
+        channelPermissions,
+        isOwner,
+        currentVoiceChannelId
+      )
     )
 )((_, categoryId: number) => categoryId);
 
