@@ -23,7 +23,13 @@ import {
   SIMULCAST_MID_LAYER_MAX_BITRATE,
   SIMULCAST_MID_LAYER_MAX_FRAMERATE,
   SIMULCAST_MID_LAYER_SCALE,
-  SIMULCAST_MIN_MAX_BITRATE
+  SIMULCAST_MIN_MAX_BITRATE,
+  SIMULCAST_SCREEN_LOW_LAYER_BITRATE_RATIO,
+  SIMULCAST_SCREEN_LOW_LAYER_MAX_BITRATE,
+  SIMULCAST_SCREEN_LOW_LAYER_MAX_FRAMERATE,
+  SIMULCAST_SCREEN_MID_LAYER_BITRATE_RATIO,
+  SIMULCAST_SCREEN_MID_LAYER_MAX_BITRATE,
+  SIMULCAST_SCREEN_MID_LAYER_MAX_FRAMERATE
 } from './statics';
 
 type TStreamQualitySettings = Record<string, TStreamQuality>;
@@ -100,6 +106,19 @@ const parseStreamQualityDropdownValue = (value: string): TStreamQuality => {
   };
 };
 
+const getStoredStreamQuality = (
+  remoteId: number,
+  kind: StreamKind,
+  layers: TStreamQualityLayer[]
+): TStreamQuality => {
+  const qualities = loadStreamQualitiesFromStorage();
+
+  return normalizeStreamQuality(
+    qualities[getStreamQualityStorageKey(remoteId, kind)],
+    layers
+  );
+};
+
 const getSimulcastEncodings = (
   maxBitrate: number
 ): RTCRtpEncodingParameters[] => {
@@ -129,24 +148,43 @@ const getSimulcastEncodings = (
   ];
 };
 
+const getScreenShareSimulcastEncodings = (
+  maxBitrate: number
+): RTCRtpEncodingParameters[] => {
+  const safeMaxBitrate = Math.max(SIMULCAST_MIN_MAX_BITRATE, maxBitrate);
+
+  return [
+    {
+      maxBitrate: Math.min(
+        SIMULCAST_SCREEN_LOW_LAYER_MAX_BITRATE,
+        Math.round(safeMaxBitrate * SIMULCAST_SCREEN_LOW_LAYER_BITRATE_RATIO)
+      ),
+      maxFramerate: SIMULCAST_SCREEN_LOW_LAYER_MAX_FRAMERATE,
+      scaleResolutionDownBy: SIMULCAST_LOW_LAYER_SCALE
+    },
+    {
+      maxBitrate: Math.min(
+        SIMULCAST_SCREEN_MID_LAYER_MAX_BITRATE,
+        Math.round(safeMaxBitrate * SIMULCAST_SCREEN_MID_LAYER_BITRATE_RATIO)
+      ),
+      maxFramerate: SIMULCAST_SCREEN_MID_LAYER_MAX_FRAMERATE,
+      scaleResolutionDownBy: SIMULCAST_MID_LAYER_SCALE
+    },
+    {
+      maxBitrate: safeMaxBitrate,
+      scaleResolutionDownBy: SIMULCAST_HIGH_LAYER_SCALE
+    }
+  ];
+};
+
 const getSimulcastQualityLayers = (
-  track: MediaStreamTrack,
   encodings: RTCRtpEncodingParameters[]
 ): TStreamQualityLayer[] => {
-  const settings = track.getSettings();
-  const sourceHeight = settings.height;
-
-  if (!sourceHeight) {
-    throw new Error('Unable to determine video height for simulcast labels');
-  }
-
-  return encodings.map((encoding, index) => {
-    const scale = encoding.scaleResolutionDownBy ?? 1;
-    const height = Math.max(1, Math.round(sourceHeight / scale));
-
+  return encodings.map((_, index) => {
     return {
       spatialLayer: index,
-      label: `${height}p`
+      label:
+        index === 0 ? 'Low' : index === encodings.length - 1 ? 'High' : 'Medium'
     };
   });
 };
@@ -160,9 +198,11 @@ const getSimulcastCodec = (
 
 export {
   getRemoteConsumerTypeKey,
+  getScreenShareSimulcastEncodings,
   getSimulcastCodec,
   getSimulcastEncodings,
   getSimulcastQualityLayers,
+  getStoredStreamQuality,
   getStreamQualityDropdownValue,
   getStreamQualityStorageKey,
   loadStreamQualitiesFromStorage,

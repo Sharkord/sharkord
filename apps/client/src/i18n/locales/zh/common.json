@@ -10,6 +10,7 @@
   "moderationView": "管理视图",
   "couldNotOpenDM": "无法打开私信",
   "unknownUser": "未知用户",
+  "unknownChannel": "未知频道",
 
   "selectDmPrompt": "选择一条私信，或开始新的对话。",
   "welcomeToServer": "欢迎来到 {{name}}。",

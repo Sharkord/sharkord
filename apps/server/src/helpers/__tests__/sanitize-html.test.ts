@@ -156,4 +156,20 @@ describe('sanitize-html', () => {
 
     expect(sanitizeMessageHtml(input)).toBe(input);
   });
+
+  test('should preserve channel reference <span> with data-channel-id attribute', () => {
+    const input =
+      '<span data-type="channel-reference" data-channel-id="42" class="channel-reference"></span>';
+
+    expect(sanitizeMessageHtml(input)).toBe(input);
+  });
+
+  test('should strip event handlers from a channel reference <span>', () => {
+    const input =
+      '<span data-type="channel-reference" data-channel-id="42" onclick="alert(1)"></span>';
+
+    expect(sanitizeMessageHtml(input)).toBe(
+      '<span data-type="channel-reference" data-channel-id="42"></span>'
+    );
+  });
 });

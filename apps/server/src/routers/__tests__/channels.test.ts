@@ -103,7 +103,7 @@ describe('channels router', () => {
     });
 
     const channel = await caller.channels.get({
-      channelId: 4
+      channelId: 5
     });
 
     expect(channel).toBeDefined();
@@ -122,7 +122,7 @@ describe('channels router', () => {
     });
 
     const channel = await caller.channels.get({
-      channelId: 4
+      channelId: 5
     });
 
     expect(channel).toBeDefined();
@@ -800,7 +800,7 @@ describe('channels router', () => {
       categoryId: 1
     });
 
-    const firstChannel = await caller.channels.get({ channelId: 3 });
+    const firstChannel = await caller.channels.get({ channelId: 5 });
 
     await caller.channels.add({
       type: ChannelType.TEXT,
@@ -808,7 +808,7 @@ describe('channels router', () => {
       categoryId: 1
     });
 
-    const secondChannel = await caller.channels.get({ channelId: 4 });
+    const secondChannel = await caller.channels.get({ channelId: 6 });
 
     expect(secondChannel.position).toBeGreaterThan(firstChannel.position);
   });
@@ -882,8 +882,8 @@ describe('channels router', () => {
       categoryId: 2
     });
 
-    const channel1 = await caller.channels.get({ channelId: 4 });
-    const channel2 = await caller.channels.get({ channelId: 5 });
+    const channel1 = await caller.channels.get({ channelId: 5 });
+    const channel2 = await caller.channels.get({ channelId: 6 });
 
     expect(channel1.categoryId).toBe(1);
     expect(channel2.categoryId).toBe(2);

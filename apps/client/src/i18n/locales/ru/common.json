@@ -10,6 +10,7 @@
   "moderationView": "Режим модерации",
   "couldNotOpenDM": "Не удалось открыть личные сообщения",
   "unknownUser": "Неизвестный пользователь",
+  "unknownChannel": "Неизвестный канал",
 
   "selectDmPrompt": "Перейти в личные сообщения или начать чат.",
   "welcomeToServer": "Добро пожаловать, {{name}}.",

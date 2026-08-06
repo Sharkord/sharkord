@@ -10,6 +10,7 @@
   "moderationView": "Moderation View",
   "couldNotOpenDM": "Could not open direct message",
   "unknownUser": "Unknown User",
+  "unknownChannel": "Unknown Channel",
 
   "selectDmPrompt": "Select a direct message or start a new one.",
   "welcomeToServer": "Welcome to {{name}}.",

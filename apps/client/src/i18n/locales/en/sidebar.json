@@ -44,6 +44,7 @@
   "createChannel": "Create channel",
   "failedReorderChannels": "Failed to reorder channels",
   "failedReorderCategories": "Failed to reorder categories",
+  "failedMoveUser": "Failed to move user",
   "directMessages": "Direct Messages",
   "failedLoadDMs": "Failed to load direct messages",
   "couldNotOpenDM": "Could not open direct message",

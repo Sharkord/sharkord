@@ -418,6 +418,7 @@ class VoiceRuntime {
     this.removeProducer(userId, StreamKind.AUDIO);
     this.removeProducer(userId, StreamKind.VIDEO);
     this.removeProducer(userId, StreamKind.SCREEN);
+    this.removeProducer(userId, StreamKind.SCREEN_AUDIO);
 
     if (this.consumers[userId]) {
       Object.values(this.consumers[userId]).forEach((consumer) => {
@@ -560,6 +561,7 @@ class VoiceRuntime {
       this.removeProducer(userId, StreamKind.AUDIO);
       this.removeProducer(userId, StreamKind.VIDEO);
       this.removeProducer(userId, StreamKind.SCREEN);
+      this.removeProducer(userId, StreamKind.SCREEN_AUDIO);
     });
 
     transport.on('dtlsstatechange', (state) => {
@@ -994,9 +996,9 @@ class VoiceRuntime {
       remoteScreenIds: Object.keys(this.screenProducers)
         .filter((id) => +id !== userId)
         .map((id) => +id),
-      remoteScreenAudioIds: Object.keys(this.screenAudioProducers).map(
-        (id) => +id
-      ),
+      remoteScreenAudioIds: Object.keys(this.screenAudioProducers)
+        .filter((id) => +id !== userId)
+        .map((id) => +id),
       remoteExternalStreamIds: Object.keys(this.externalStreamsInternal).map(
         (id) => +id
       )

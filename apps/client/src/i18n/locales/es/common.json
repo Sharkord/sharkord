@@ -10,6 +10,7 @@
   "moderationView": "Vista de moderación",
   "couldNotOpenDM": "No se pudo abrir el mensaje directo",
   "unknownUser": "Usuario desconocido",
+  "unknownChannel": "Canal desconocido",
 
   "selectDmPrompt": "Selecciona un mensaje directo o inicia uno nuevo.",
   "welcomeToServer": "Bienvenido a {{name}}.",

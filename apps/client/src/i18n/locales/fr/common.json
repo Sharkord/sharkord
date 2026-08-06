@@ -10,6 +10,7 @@
   "moderationView": "Fenêtre de moderation",
   "couldNotOpenDM": "Impossible d'ouvrir le message privé",
   "unknownUser": "Utilisateur Inconnu",
+  "unknownChannel": "Salon inconnu",
 
   "selectDmPrompt": "Sélectionnez un message privé ou créez-en un nouveau.",
   "welcomeToServer": "Bienvenu à {{name}}.",

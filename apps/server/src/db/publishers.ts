@@ -8,6 +8,7 @@ import { db } from '.';
 import { pluginManager } from '../plugins';
 import { pubsub } from '../utils/pubsub';
 import {
+  channelUserCan,
   getAffectedOnlineUserIdsForChannel,
   getAllChannelUserPermissions
 } from './queries/channels';
@@ -192,6 +193,44 @@ const publishChannel = async (
   }
 };
 
+const publishHiddenChannelToUser = async (
+  userId: number,
+  channelId: number
+) => {
+  const canView = await channelUserCan(
+    channelId,
+    userId,
+    ChannelPermission.VIEW_CHANNEL
+  );
+
+  if (canView) return;
+
+  const channel = await db
+    .select()
+    .from(channels)
+    .where(eq(channels.id, channelId))
+    .get();
+
+  if (!channel) return;
+
+  pubsub.publishFor(userId, ServerEvents.CHANNEL_CREATE, channel);
+};
+
+const unpublishHiddenChannelFromUser = async (
+  userId: number,
+  channelId: number
+) => {
+  const canView = await channelUserCan(
+    channelId,
+    userId,
+    ChannelPermission.VIEW_CHANNEL
+  );
+
+  if (canView) return;
+
+  pubsub.publishFor(userId, ServerEvents.CHANNEL_DELETE, channelId);
+};
+
 const publishSettings = async () => {
   const settings = await getPublicSettings();
 
@@ -284,10 +323,12 @@ export {
   publishChannel,
   publishChannelPermissions,
   publishEmoji,
+  publishHiddenChannelToUser,
   publishMessage,
   publishPlugins,
   publishReplyCount,
   publishRole,
   publishSettings,
-  publishUser
+  publishUser,
+  unpublishHiddenChannelFromUser
 };

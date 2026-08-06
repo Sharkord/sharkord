@@ -42,6 +42,7 @@
   "createChannel": "Créer un canal",
   "failedReorderChannels": "Échec du réordonnancement des canaux",
   "failedReorderCategories": "Échec du réordonnancement des catégories",
+  "failedMoveUser": "Échec du déplacement de l'utilisateur",
   "directMessages": "Messages privés",
   "failedLoadDMs": "Échec du chargement des messages privés",
   "couldNotOpenDM": "Impossible d'ouvrir le message privé",

@@ -62,6 +62,7 @@ const profileTheme: ProfileTheme = {
  * - General (1)
  * - Voice (2)
  * - DM Channel (3) (between User A and User B)
+ * - Private Voice (4) (private, nobody has channel permissions on it)
  * Messages:
  * - Test message (1) (in General, by Test Owner)
  * - Hello User B (2) (in DM Channel, by User A)
@@ -314,6 +315,22 @@ const seedTestDb = async (db: BunSQLiteDatabase) => {
 
   await db.insert(messages).values(dmMessage);
 
+  // seeded after the dm channel so the ids above stay stable for existing tests
+  const privateVoiceChannel: TIChannel = {
+    type: ChannelType.VOICE,
+    name: 'Private Voice',
+    position: 2,
+    private: true,
+    categoryId: 2,
+    topic: null,
+    createdAt: firstStart
+  };
+
+  const [insertedPrivateVoiceChannel] = await db
+    .insert(channels)
+    .values(privateVoiceChannel)
+    .returning();
+
   if (IS_E2E) {
     const allUsers = [
       insertedOwner!,
@@ -341,6 +358,7 @@ const seedTestDb = async (db: BunSQLiteDatabase) => {
     owner: insertedOwner!,
     user: insertedUser!,
     dmChannel: insertedDmChannel!,
+    privateVoiceChannel: insertedPrivateVoiceChannel!,
     userA: insertedUserA!,
     userB: insertedUserB!,
     ownerRole,

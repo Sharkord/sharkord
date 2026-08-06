@@ -1,3 +1,4 @@
+import { ChannelChip } from '@/components/channel-chip';
 import { parseDomCommand } from '@sharkord/shared';
 import { Element, type DOMNode } from 'html-react-parser';
 import { CommandOverride } from '../overrides/command';
@@ -33,6 +34,17 @@ const serializer = (domNode: DOMNode, messageId: number) => {
 
       if (!Number.isNaN(userId)) {
         return <MentionOverride userId={userId} />;
+      }
+    } else if (
+      domNode instanceof Element &&
+      domNode.name === 'span' &&
+      domNode.attribs['data-type'] === 'channel-reference' &&
+      domNode.attribs['data-channel-id']
+    ) {
+      const channelId = parseInt(domNode.attribs['data-channel-id'], 10);
+
+      if (!Number.isNaN(channelId)) {
+        return <ChannelChip channelId={channelId} />;
       }
     }
   } catch (error) {

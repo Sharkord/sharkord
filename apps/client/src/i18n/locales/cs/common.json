@@ -10,6 +10,7 @@
   "moderationView": "Moderační možnosti",
   "couldNotOpenDM": "Přímou zprávu se otevřít nepodařilo",
   "unknownUser": "Neznámý uživatel",
+  "unknownChannel": "Neznámý kanál",
 
   "selectDmPrompt": "Vyberte přímou zprávu nebo napište novou.",
   "welcomeToServer": "Vítejte v {{name}}.",

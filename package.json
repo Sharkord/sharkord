@@ -1,6 +1,6 @@
 {
   "name": "sharkord",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -17,13 +17,9 @@
     "lint": "bun run --filter '*' lint",
     "knip": "knip",
     "knip:production": "knip --production",
-    "magic": "bun run format && bun run check-types && bun run lint",
-    "dev:client": "bun run --filter './apps/client' dev",
-    "dev:server": "bun run --filter './apps/server' dev",
-    "dev:platform": "concurrently -k -n server,client -c blue,green \"bun run dev:client\" \"bun run dev:server\""
+    "magic": "bun run format && bun run check-types && bun run lint"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1",
     "@types/bun": "1.3.14",
     "knip": "^5.80.0"
   },

@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  getPlainTextFromHtml,
   isEmojiOnlyMessage,
   isEmptyMessage,
+  removeChannelReferenceElements,
   removeCommandElements,
   removeEmojiElements
 } from '../message-sanitizer';
@@ -320,5 +322,77 @@ describe('removeCommandElements', () => {
   test('should return unchanged string with no command elements', () => {
     const html = '<p>Just some text</p>';
     expect(removeCommandElements(html)).toBe(html);
+  });
+});
+
+describe('removeChannelReferenceElements', () => {
+  test('should remove a channel reference that carries no name', () => {
+    const html =
+      '<p>see <span data-type="channel-reference" data-channel-id="42" class="channel-reference"></span> for details</p>';
+
+    expect(removeChannelReferenceElements(html)).toBe(
+      '<p>see  for details</p>'
+    );
+  });
+
+  // messages sent before the name was dropped from the markup still carry it,
+  // so it has to be stripped on read or it leaks to readers without access
+  test('should remove a legacy channel reference along with its baked in name', () => {
+    const html =
+      '<p>see <span data-type="channel-reference" data-channel-id="42" class="channel-reference">#secret-project</span></p>';
+
+    const result = removeChannelReferenceElements(html);
+
+    expect(result).toBe('<p>see </p>');
+    expect(result).not.toContain('secret-project');
+  });
+
+  test('should remove multiple channel references', () => {
+    const html =
+      '<span data-type="channel-reference" data-channel-id="1">#a</span><p>text</p><span data-type="channel-reference" data-channel-id="2"></span>';
+
+    expect(removeChannelReferenceElements(html)).toBe('<p>text</p>');
+  });
+
+  test('should not affect mention elements', () => {
+    const html =
+      '<span data-type="mention" data-user-id="123" class="mention">@Username</span>';
+
+    expect(removeChannelReferenceElements(html)).toBe(html);
+  });
+
+  test('should return unchanged string with no channel references', () => {
+    const html = '<p>Just some text</p>';
+
+    expect(removeChannelReferenceElements(html)).toBe(html);
+  });
+});
+
+describe('channel references in message helpers', () => {
+  const reference =
+    '<span data-type="channel-reference" data-channel-id="42" class="channel-reference"></span>';
+
+  test('isEmptyMessage should not treat a channel reference only message as empty', () => {
+    expect(isEmptyMessage(`<p>${reference}</p>`)).toBe(false);
+  });
+
+  test('isEmptyMessage should still treat an empty span as empty', () => {
+    expect(isEmptyMessage('<p><span></span></p>')).toBe(true);
+  });
+
+  test('getPlainTextFromHtml should not expose the channel name', () => {
+    const legacy =
+      '<p>go to <span data-type="channel-reference" data-channel-id="42">#secret-project</span> now</p>';
+
+    const result = getPlainTextFromHtml(legacy);
+
+    expect(result).not.toContain('secret-project');
+    expect(result).toBe('go to  now');
+  });
+
+  test('isEmojiOnlyMessage should be false when a channel reference is present', () => {
+    const html = `<p><span data-type="emoji" data-name="smile" class="emoji-image">😄</span>${reference}</p>`;
+
+    expect(isEmojiOnlyMessage(html)).toBe(false);
   });
 });
