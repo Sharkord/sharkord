@@ -154,8 +154,12 @@ const seedDatabase = async () => {
       password: 'sharkord',
       bannerId: null,
       bio: 'Hey, I am Sharkord!',
-      bannerColor:
-        'linear-gradient(90deg, rgba(67,49,215,1) 30%, rgba(182,1,116,1) 100%)',
+      profileTheme: {
+        banner: {
+          type: 'solid',
+          colors: ['#262626']
+        }
+      },
       createdAt: firstStart
     }
   ];

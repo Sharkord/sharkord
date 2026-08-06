@@ -11,6 +11,27 @@ import {
   uniqueIndex
 } from 'drizzle-orm/sqlite-core';
 
+// banner image always have prio, this only renders in back.
+type ProfileTheme = {
+  banner: {
+    type: 'solid' | 'gradient' | 'radial';
+    colors: string[];
+    angle?: number;
+    position?:
+      | 'center'
+      | 'top'
+      | 'bottom'
+      | 'left'
+      | 'right'
+      | 'top left'
+      | 'top right'
+      | 'bottom left'
+      | 'bottom right'
+      | `${number}% ${number}%`
+      | `${number}px ${number}px`;
+  };
+};
+
 const files = sqliteTable(
   'files',
   {
@@ -188,7 +209,15 @@ const users = sqliteTable(
     banned: integer('banned', { mode: 'boolean' }).notNull().default(false),
     banReason: text('ban_reason'),
     bannedAt: integer('banned_at'),
-    bannerColor: text('banner_color'),
+    profileTheme: text('profile_theme', { mode: 'json' })
+      .$type<ProfileTheme>()
+      .notNull()
+      .default({
+        banner: {
+          type: 'solid',
+          colors: ['#262626']
+        }
+      }),
     lastLoginAt: integer('last_login_at')
       .notNull()
       .$defaultFn(() => Date.now()),

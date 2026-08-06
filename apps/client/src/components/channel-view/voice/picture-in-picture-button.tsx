@@ -6,10 +6,17 @@ import { usePictureInPicture } from './hooks/use-picture-in-picture';
 type TPictureInPictureButtonProps = {
   videoRef: RefObject<HTMLVideoElement | null>;
   enabled?: boolean;
+  className?: string;
+  size?: 'default' | 'xs' | 'sm' | 'lg' | 'xl';
 };
 
 const PictureInPictureButton = memo(
-  ({ videoRef, enabled = true }: TPictureInPictureButtonProps) => {
+  ({
+    videoRef,
+    enabled = true,
+    className,
+    size = 'default'
+  }: TPictureInPictureButtonProps) => {
     const { isSupported, isActive, togglePictureInPicture } =
       usePictureInPicture(videoRef, enabled);
 
@@ -22,7 +29,8 @@ const PictureInPictureButton = memo(
         icon={PictureInPicture2}
         onClick={togglePictureInPicture}
         title={isActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture'}
-        size="sm"
+        size={size}
+        className={className}
       />
     );
   }

@@ -287,7 +287,7 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Updated Name',
-      bannerColor: '#ff0000',
+      profileTheme: { banner: { type: 'solid', colors: ['#ff0000'] } },
       bio: 'This is my new bio'
     });
 
@@ -296,7 +296,7 @@ describe('users router', () => {
 
     expect(updatedUser).toBeDefined();
     expect(updatedUser!.name).toBe('Updated Name');
-    expect(updatedUser!.bannerColor).toBe('#ff0000');
+    expect(updatedUser!.profileTheme.banner.colors[0]).toBe('#ff0000');
     expect(updatedUser!.bio).toBe('This is my new bio');
   });
 
@@ -305,7 +305,7 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Test User',
-      bannerColor: '#00ff00'
+      profileTheme: { banner: { type: 'solid', colors: ['#00ff00'] } }
     });
 
     const users = await caller.users.getAll();
@@ -313,7 +313,7 @@ describe('users router', () => {
 
     expect(updatedUser).toBeDefined();
     expect(updatedUser!.name).toBe('Test User');
-    expect(updatedUser!.bannerColor).toBe('#00ff00');
+    expect(updatedUser!.profileTheme.banner.colors[0]).toBe('#00ff00');
   });
 
   test('should update password successfully', async () => {
@@ -629,7 +629,7 @@ describe('users router', () => {
         password: 'password',
         bannerId: null,
         bio: null,
-        bannerColor: null,
+        profileTheme: { banner: { type: 'solid', colors: ['#262626'] } },
         createdAt: Date.now()
       })
       .returning({ id: users.id })
@@ -1123,21 +1123,21 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Test',
-      bannerColor: '#abc123'
+      profileTheme: { banner: { type: 'solid', colors: ['#abc123'] } }
     });
 
     let info = await caller.users.getInfo({ userId: 1 });
 
-    expect(info.user.bannerColor).toBe('#abc123');
+    expect(info.user.profileTheme.banner.colors[0]).toBe('#abc123');
 
     await caller.users.update({
       name: 'Test',
-      bannerColor: '#f0f'
+      profileTheme: { banner: { type: 'solid', colors: ['#f0f'] } }
     });
 
     info = await caller.users.getInfo({ userId: 1 });
 
-    expect(info.user.bannerColor).toBe('#f0f');
+    expect(info.user.profileTheme.banner.colors[0]).toBe('#f0f');
   });
 
   test('should handle bio with special characters', async () => {
@@ -1147,7 +1147,7 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Test User',
-      bannerColor: '#000000',
+      profileTheme: { banner: { type: 'solid', colors: ['#000000'] } },
       bio: specialBio
     });
 
@@ -1161,26 +1161,26 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Name 1',
-      bannerColor: '#111111',
+      profileTheme: { banner: { type: 'solid', colors: ['#111111'] } },
       bio: 'Bio 1'
     });
 
     await caller.users.update({
       name: 'Name 2',
-      bannerColor: '#222222',
+      profileTheme: { banner: { type: 'solid', colors: ['#222222'] } },
       bio: 'Bio 2'
     });
 
     await caller.users.update({
       name: 'Final Name',
-      bannerColor: '#333333',
+      profileTheme: { banner: { type: 'solid', colors: ['#333333'] } },
       bio: 'Final Bio'
     });
 
     const info = await caller.users.getInfo({ userId: 1 });
 
     expect(info.user.name).toBe('Final Name');
-    expect(info.user.bannerColor).toBe('#333333');
+    expect(info.user.profileTheme.banner.colors[0]).toBe('#333333');
     expect(info.user.bio).toBe('Final Bio');
   });
 

@@ -5,3 +5,6 @@
 /DockerCenas
 /experiments
 .direnv/
+
+.nx/cache
+.nx/workspace-data

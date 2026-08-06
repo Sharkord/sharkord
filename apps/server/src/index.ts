@@ -45,3 +45,36 @@ printDebug();
 enqueueActivityLog({
   type: ActivityLogType.SERVER_STARTED
 });
+
+/**
+ * STOP SERVER SECTION
+ */
+let shuttingDown = false;
+async function shutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+
+  console.log(`\nReceived ${signal}, shutting down...`);
+
+  try {
+    enqueueActivityLog({
+      type: ActivityLogType.SERVER_STOPPED
+    });
+
+    process.stdout.write('Shutdown complete.');
+    process.exit(0);
+  } catch (err) {
+    process.stdout.write(
+      `Error during shutdown: ${err instanceof Error ? err.stack : String(err)}\n`
+    );
+    process.exit(1);
+  }
+}
+
+process.once('SIGINT', () => {
+  void shutdown('SIGINT');
+});
+
+process.once('SIGTERM', () => {
+  void shutdown('SIGTERM');
+});

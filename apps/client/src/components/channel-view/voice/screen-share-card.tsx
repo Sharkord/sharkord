@@ -1,8 +1,4 @@
-import {
-  useVolumeControl,
-  type TVolumeKey
-} from '@/components/voice-provider/volume-control-context';
-import { useWebRtcSimulcastEnabled } from '@/features/server/hooks';
+import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { useVoice } from '@/features/server/voice/hooks';
 import { useStreamQualityData } from '@/hooks/use-stream-quality-data';
@@ -10,9 +6,8 @@ import { cn } from '@/lib/utils';
 import { StreamKind } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
 import { Monitor, ZoomIn, ZoomOut } from 'lucide-react';
-import { memo, useCallback, useMemo, type RefObject } from 'react';
-import { CardControls } from './card-controls';
-import { CardGradient } from './card-gradient';
+import { memo, useCallback, useMemo } from 'react';
+import { CardTheme } from './card-theme';
 import { FullscreenButton } from './fullscreen-button';
 import { useFullscreen } from './hooks/use-fullscreen';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
@@ -20,72 +15,7 @@ import { useVideoStats } from './hooks/use-video-stats';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
-import { QualityButton } from './quality-button';
 import { VolumeButton } from './volume-button';
-
-type TScreenShareControlsProps = {
-  isPinned: boolean;
-  isFullscreen: boolean;
-  isZoomEnabled: boolean;
-  handlePinToggle: () => void;
-  handleToggleFullscreen: () => void;
-  handleToggleZoom: () => void;
-  showPinControls: boolean;
-  showAudioControl: boolean;
-  showQualityControl: boolean;
-  disableQualityControl: boolean;
-  volumeKey: TVolumeKey;
-  videoRef: RefObject<HTMLVideoElement | null>;
-  userId: number;
-};
-
-const ScreenShareControls = memo(
-  ({
-    isPinned,
-    isFullscreen,
-    isZoomEnabled,
-    handlePinToggle,
-    handleToggleFullscreen,
-    handleToggleZoom,
-    showPinControls,
-    showAudioControl,
-    showQualityControl,
-    disableQualityControl,
-    volumeKey,
-    videoRef,
-    userId
-  }: TScreenShareControlsProps) => {
-    return (
-      <CardControls>
-        {showAudioControl && <VolumeButton volumeKey={volumeKey} />}
-        {showQualityControl && (
-          <QualityButton
-            streamId={userId}
-            kind={StreamKind.SCREEN}
-            disabled={disableQualityControl}
-          />
-        )}
-        <PictureInPictureButton videoRef={videoRef} />
-        {showPinControls && isPinned && (
-          <IconButton
-            variant={isZoomEnabled ? 'default' : 'ghost'}
-            icon={isZoomEnabled ? ZoomOut : ZoomIn}
-            onClick={handleToggleZoom}
-            title={isZoomEnabled ? 'Disable Zoom' : 'Enable Zoom'}
-            size="sm"
-          />
-        )}
-        <FullscreenButton
-          isFullscreen={isFullscreen}
-          handleToggleFullscreen={handleToggleFullscreen}
-        />
-        {showPinControls && (
-          <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
-        )}
-      </CardControls>
-    );
-  }
-);
 
 type TScreenShareCardProps = {
   userId: number;
@@ -94,6 +24,7 @@ type TScreenShareCardProps = {
   onUnpin: () => void;
   className?: string;
   showPinControls: boolean;
+  aCardIsPinned?: boolean;
 };
 
 const ScreenShareCard = memo(
@@ -103,13 +34,15 @@ const ScreenShareCard = memo(
     onPin,
     onUnpin,
     className,
-    showPinControls = true
+    showPinControls = true,
+    aCardIsPinned = false
   }: TScreenShareCardProps) => {
     const user = useUserById(userId);
     const ownUserId = useOwnUserId();
     const { getUserScreenVolumeKey } = useVolumeControl();
     const isOwnUser = ownUserId === userId;
-    const webRtcSimulcastEnabled = useWebRtcSimulcastEnabled();
+    // Will be updated when controls change for from multiple to 1 options button that opens a menu with everything.
+    /* const webRtcSimulcastEnabled = useWebRtcSimulcastEnabled(); */
     const volumeKey = getUserScreenVolumeKey(userId);
 
     const {
@@ -144,10 +77,7 @@ const ScreenShareCard = memo(
       userId
     ]);
 
-    const { isSimulcastScreenConsumer, qualityLabel } = useStreamQualityData(
-      userId,
-      StreamKind.SCREEN
-    );
+    const { qualityLabel } = useStreamQualityData(userId, StreamKind.SCREEN);
 
     const {
       containerRef,
@@ -191,13 +121,12 @@ const ScreenShareCard = memo(
       <div
         ref={containerRef}
         className={cn(
-          'relative bg-card',
+          'relative bg-black group/screen-share-card',
           'flex items-center justify-center',
-          'w-full h-full',
+          'size-full',
           isFullscreen
             ? 'rounded-none border-none'
-            : 'rounded-lg overflow-hidden border border-border',
-          (!isFullscreen || isOverlayVisible) && 'group',
+            : 'rounded overflow-hidden border border-border',
           className
         )}
         onWheel={handleWheel}
@@ -210,23 +139,7 @@ const ScreenShareCard = memo(
           cursor: isFullscreen && !isOverlayVisible ? 'none' : getCursor()
         }}
       >
-        <CardGradient />
-
-        <ScreenShareControls
-          isPinned={isPinned}
-          isFullscreen={isFullscreen}
-          isZoomEnabled={isZoomEnabled}
-          handlePinToggle={handlePinToggle}
-          handleToggleFullscreen={handleToggleFullscreen}
-          handleToggleZoom={handleToggleZoom}
-          showPinControls={showPinControls}
-          showAudioControl={!isOwnUser && hasScreenShareAudioStream}
-          showQualityControl={!isOwnUser && webRtcSimulcastEnabled}
-          disableQualityControl={!isSimulcastScreenConsumer}
-          volumeKey={volumeKey}
-          videoRef={screenShareRef}
-          userId={userId}
-        />
+        <CardTheme />
 
         <video
           ref={screenShareRef}
@@ -247,30 +160,110 @@ const ScreenShareCard = memo(
           playsInline
         />
 
-        <div className="absolute bottom-0 left-0 right-0 p-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="flex items-center gap-2 min-w-0">
-            <Monitor className="size-3.5 text-purple-400 shrink-0" />
-            <span className="text-white font-medium text-xs truncate">
-              {user.name}'s screen
-            </span>
-            {(videoStats || codec || qualityLabel) && (
-              <span className="text-white/50 text-xs shrink-0">
-                {codec}
-                {codec && videoStats && ' '}
-                {videoStats && (
-                  <>
-                    {videoStats.width}x{videoStats.height}
-                    {videoStats.frameRate > 0 && ` ${videoStats.frameRate}fps`}
-                  </>
-                )}
-                {(codec || videoStats) && qualityLabel && ' '}
-                {qualityLabel && `(${qualityLabel})`}
-              </span>
+        <div
+          className={cn(
+            'absolute bottom-0 left-0 right-0 flex justify-between',
+            isPinned ? 'p-4 gap-3' : aCardIsPinned ? 'p-1 gap-1' : 'p-4 gap-3',
+            'hidden group-hover/screen-share-card:flex',
+            'transition-[visibility] duration-200 ease-out'
+          )}
+        >
+          <div
+            className={cn(
+              'inline-flex min-w-0 min-h-4 py-2 items-center bg-black/70 rounded overflow-hidden truncate',
+              isPinned
+                ? 'gap-3 px-3'
+                : aCardIsPinned
+                  ? 'gap-2 px-2'
+                  : 'gap-3 px-3'
             )}
-            {isZoomEnabled && zoom > 1 && (
-              <span className="text-white/70 text-xs ml-auto shrink-0">
-                {Math.round(zoom * 100)}%
-              </span>
+          >
+            <Monitor className="text-white shrink-0 size-3" />
+            <p
+              className={cn(
+                isPinned ? 'text-sm' : aCardIsPinned ? 'text-xs' : 'text-sm',
+                'leading-none truncate'
+              )}
+            >
+              {user.name}'s screen
+              {(videoStats || codec) && (
+                <span className="text-muted-foreground text-xs ml-2 leading-none">
+                  {codec}
+                  {codec && videoStats && ' '}
+                  {videoStats && (
+                    <>
+                      {videoStats.width}x{videoStats.height}
+                      {videoStats.frameRate > 0 &&
+                        ` ${videoStats.frameRate}fps`}
+                    </>
+                  )}
+                  {(codec || videoStats) && qualityLabel && ' '}
+                  {qualityLabel && `(${qualityLabel})`}
+                </span>
+              )}
+              {isZoomEnabled && zoom > 1 && (
+                <span className="text-white/70 text-xs ml-2 leading-none">
+                  {Math.round(zoom * 100)}%
+                </span>
+              )}
+            </p>
+          </div>
+
+          <div
+            className={cn(
+              'inline-flex min-h-4 gap-3 items-center rounded',
+              isPinned ? 'gap-2' : aCardIsPinned ? 'gap-1' : 'gap-2'
+            )}
+          >
+            <PictureInPictureButton videoRef={screenShareRef} />
+            {!isOwnUser && hasScreenShareAudioStream && (
+              <VolumeButton
+                volumeKey={volumeKey}
+                size={'xs'}
+                className={cn(
+                  'bg-black/70 rounded py-2 hover:bg-black/80',
+                  isPinned ? 'px-3' : aCardIsPinned ? 'px-2' : 'px-3'
+                )}
+              />
+            )}
+            {showPinControls && isPinned && (
+              <IconButton
+                variant={isZoomEnabled ? 'default' : 'ghost'}
+                icon={isZoomEnabled ? ZoomOut : ZoomIn}
+                onClick={handleToggleZoom}
+                title={isZoomEnabled ? 'Disable Zoom' : 'Enable Zoom'}
+                size={'xs'}
+                className={cn(
+                  'bg-black/70 rounded py-2 hover:bg-black/80',
+                  isPinned ? 'px-3' : aCardIsPinned ? 'px-2' : 'px-3',
+                  isZoomEnabled &&
+                    'bg-zinc-300/80 text-zinc-800 hover:bg-zinc-400/90 hover:text-zinc-900'
+                )}
+              />
+            )}
+            <FullscreenButton
+              isFullscreen={isFullscreen}
+              handleToggleFullscreen={handleToggleFullscreen}
+              size={'xs'}
+              className={cn(
+                'bg-black/70 rounded py-2 hover:bg-black/80',
+                isPinned ? 'px-3' : aCardIsPinned ? 'px-2' : 'px-3',
+                isFullscreen &&
+                  'bg-zinc-300/80 text-zinc-800 hover:bg-zinc-400/90 hover:text-zinc-900'
+              )}
+            />
+            {showPinControls && (
+              <PinButton
+                isPinned={isPinned}
+                handlePinToggle={handlePinToggle}
+                size={'xs'}
+                className={cn(
+                  'bg-black/70 rounded py-2 hover:bg-black/80',
+                  isPinned ? 'px-3' : aCardIsPinned ? 'px-2' : 'px-3',
+                  isPinned &&
+                    'bg-zinc-300/80 text-zinc-800 hover:bg-zinc-400/90 hover:text-zinc-900'
+                )}
+              />
             )}
           </div>
         </div>
