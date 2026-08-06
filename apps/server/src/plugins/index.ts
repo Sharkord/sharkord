@@ -3,6 +3,7 @@ import type {
   TCreateStreamOptions,
   TExternalStreamHandle,
   TPluginHttpMethod,
+  TPluginHttpRouteHandler,
   UnloadPluginContext
 } from '@sharkord/plugin-sdk';
 import {
@@ -508,6 +509,17 @@ class PluginManager {
   private createContext = (pluginId: string): PluginContext => {
     const scopedLogger = this.pluginLogger.createScopedLogger(pluginId);
 
+    const registerHttpRoute = (
+      method: TPluginHttpMethod,
+      routePath: string,
+      handler: TPluginHttpRouteHandler
+    ) => this.httpRouteRegistry.register(pluginId, method, routePath, handler);
+
+    const bindHttpMethod =
+      (method: TPluginHttpMethod) =>
+      (routePath: string, handler: TPluginHttpRouteHandler) =>
+        registerHttpRoute(method, routePath, handler);
+
     return {
       pluginId,
       path: this.getPluginPath(pluginId),
@@ -678,39 +690,12 @@ class PluginManager {
         }
       },
       http: {
-        register: (method, routePath, handler) => {
-          this.httpRouteRegistry.register(pluginId, method, routePath, handler);
-        },
-        get: (routePath, handler) => {
-          this.httpRouteRegistry.register(pluginId, 'GET', routePath, handler);
-        },
-        post: (routePath, handler) => {
-          this.httpRouteRegistry.register(pluginId, 'POST', routePath, handler);
-        },
-        patch: (routePath, handler) => {
-          this.httpRouteRegistry.register(
-            pluginId,
-            'PATCH',
-            routePath,
-            handler
-          );
-        },
-        delete: (routePath, handler) => {
-          this.httpRouteRegistry.register(
-            pluginId,
-            'DELETE',
-            routePath,
-            handler
-          );
-        },
-        options: (routePath, handler) => {
-          this.httpRouteRegistry.register(
-            pluginId,
-            'OPTIONS',
-            routePath,
-            handler
-          );
-        }
+        register: registerHttpRoute,
+        get: bindHttpMethod('GET'),
+        post: bindHttpMethod('POST'),
+        patch: bindHttpMethod('PATCH'),
+        delete: bindHttpMethod('DELETE'),
+        options: bindHttpMethod('OPTIONS')
       },
       data: {
         getUser: async (userId: number) => {

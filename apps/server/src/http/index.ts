@@ -6,15 +6,14 @@ import { config } from '../config';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
 import { pluginManager } from '../plugins';
-import {
-  isPluginHttpMethod,
-  supportedHttpMethods
-} from '../plugins/http-route-registry';
 import { healthRouteHandler } from './healthz';
 import {
   getRequestPathname,
   hasPrefixPathSegment,
-  type HttpRouteHandler
+  isSupportedHttpMethod,
+  supportedHttpMethods,
+  type HttpRouteHandler,
+  type TSupportedHttpMethod
 } from './helpers';
 import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
@@ -30,8 +29,8 @@ type RouteContext = {
   info: ReturnType<typeof getWsInfo>;
 };
 
-type SupportedMethod = (typeof supportedHttpMethods)[number];
-
+// plugin routes are registered with decoded paths, so decode per segment to keep
+// an encoded '/' inside a segment from splitting into two
 const getPluginRoute = (pathname: string) => {
   if (!hasPrefixPathSegment(pathname, '/plugins')) {
     return undefined;
@@ -43,17 +42,21 @@ const getPluginRoute = (pathname: string) => {
     return undefined;
   }
 
-  return {
-    pluginId,
-    routePath: routePathSegments.length
-      ? `/${routePathSegments.join('/')}`
-      : '/'
-  };
+  try {
+    return {
+      pluginId: decodeURIComponent(pluginId),
+      routePath: `/${routePathSegments
+        .map((segment) => decodeURIComponent(segment))
+        .join('/')}`
+    };
+  } catch {
+    return undefined;
+  }
 };
 
 const routeHandlers: Partial<
   Record<
-    SupportedMethod,
+    TSupportedHttpMethod,
     {
       exact: Record<string, HttpRouteHandler<RouteContext>>;
       prefix: Record<string, HttpRouteHandler<RouteContext>>;
@@ -111,7 +114,7 @@ const createHttpServer = async (port: number = config.server.port) => {
 
         try {
           const method =
-            req.method && isPluginHttpMethod(req.method)
+            req.method && isSupportedHttpMethod(req.method)
               ? req.method
               : undefined;
 
@@ -168,6 +171,18 @@ const createHttpServer = async (port: number = config.server.port) => {
             return await interfaceRouteHandler(req, res);
           }
         } catch (error) {
+          // a handler that already started writing cannot be turned into an error
+          // response, so drop the connection instead of throwing on writeHead
+          if (res.headersSent) {
+            logger.error(
+              'HTTP route error after the response started: %s',
+              getErrorMessage(error)
+            );
+
+            res.destroy();
+            return;
+          }
+
           const errorsMap: Record<string, string> = {};
 
           if (error instanceof z.ZodError) {

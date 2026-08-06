@@ -43,7 +43,9 @@ const resetPluginMocks = async () => {
     { pluginId: 'plugin-invalid-sdk-version', enabled: true },
     { pluginId: 'plugin-incompatible-sdk-version', enabled: true },
     { pluginId: 'plugin-mismatched-id', enabled: true },
-    { pluginId: 'plugin-slow-command', enabled: true }
+    { pluginId: 'plugin-slow-command', enabled: true },
+    { pluginId: 'plugin-http-routes', enabled: true },
+    { pluginId: 'plugin-http-fails-load', enabled: true }
   ]);
 
   // reload plugin states into memory

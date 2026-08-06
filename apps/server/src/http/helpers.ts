@@ -1,3 +1,4 @@
+import type { TPluginHttpMethod } from '@sharkord/plugin-sdk';
 import fs from 'fs';
 import http from 'http';
 import path from 'path';
@@ -7,6 +8,22 @@ type HttpRouteHandler<TContext = undefined> = (
   res: http.ServerResponse,
   ctx: TContext
 ) => Promise<unknown> | unknown;
+
+const supportedHttpMethods = [
+  'GET',
+  'POST',
+  'PATCH',
+  'DELETE',
+  'OPTIONS'
+] as const satisfies readonly TPluginHttpMethod[];
+
+type TSupportedHttpMethod = (typeof supportedHttpMethods)[number];
+
+const isSupportedHttpMethod = (
+  method: string
+): method is TSupportedHttpMethod => {
+  return supportedHttpMethods.includes(method as TSupportedHttpMethod);
+};
 
 const getJsonBody = async <T = any>(req: http.IncomingMessage): Promise<T> => {
   return new Promise((resolve, reject) => {
@@ -173,8 +190,10 @@ export {
   getJsonBody,
   getRequestPathname,
   hasPrefixPathSegment,
+  isSupportedHttpMethod,
   sanitizeFileName,
   sendJsonError,
-  sendNotModified
+  sendNotModified,
+  supportedHttpMethods
 };
-export type { HttpRouteHandler };
+export type { HttpRouteHandler, TSupportedHttpMethod };
