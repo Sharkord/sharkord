@@ -68,15 +68,6 @@ const ExternalStreamControls = memo(
             onMuteToggle={onMuteToggle}
           />
         )}
-        {showPinControls && hasVideo && isPinned && (
-          <IconButton
-            variant={isZoomEnabled ? 'default' : 'ghost'}
-            icon={isZoomEnabled ? ZoomOut : ZoomIn}
-            onClick={handleToggleZoom}
-            title={isZoomEnabled ? 'Disable Zoom' : 'Enable Zoom'}
-            size="sm"
-          />
-        )}
         {showQualityControl && (
           <QualityButton streamId={streamId} kind={StreamKind.EXTERNAL_VIDEO} />
         )}
@@ -85,6 +76,15 @@ const ExternalStreamControls = memo(
           <FullscreenButton
             isFullscreen={isFullscreen}
             handleToggleFullscreen={handleToggleFullscreen}
+          />
+        )}
+        {showPinControls && hasVideo && isPinned && (
+          <IconButton
+            variant={isZoomEnabled ? 'default' : 'ghost'}
+            icon={isZoomEnabled ? ZoomOut : ZoomIn}
+            onClick={handleToggleZoom}
+            title={isZoomEnabled ? 'Disable Zoom' : 'Enable Zoom'}
+            size="sm"
           />
         )}
         {showPinControls && (

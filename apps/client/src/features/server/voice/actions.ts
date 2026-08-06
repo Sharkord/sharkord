@@ -256,3 +256,13 @@ export const setHideOwnScreenShare = (value: boolean): void => {
     console.error('Failed to save voice options:', error);
   }
 };
+
+export const setAlwaysShowVoiceControls = (value: boolean): void => {
+  store.dispatch(serverSliceActions.setAlwaysShowVoiceControls(value));
+
+  try {
+    setLocalStorageItemBool(LocalStorageKey.ALWAYS_SHOW_VOICE_CONTROLS, value);
+  } catch (error) {
+    console.error('Failed to save voice options:', error);
+  }
+};

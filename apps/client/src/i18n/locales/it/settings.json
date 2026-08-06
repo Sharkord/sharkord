@@ -26,7 +26,7 @@
   "usernamePlaceholder": "Nome utente",
   "bioLabel": "Bio",
   "bioPlaceholder": "Raccontaci qualcosa di te...",
-  "bannerColorLabel": "Colore banner",
+  "profileColorLabel": "Colore del profilo",
   "profileUpdated": "Profilo aggiornato",
   "passwordTitle": "Password",
   "passwordDesc": "In questa sezione puoi aggiornare la tua password.",
@@ -301,7 +301,6 @@
   "categoryInfoDesc": "Gestisci le informazioni di base della categoria",
   "categoryNameLabel": "Nome",
   "categoryNamePlaceholder": "Inserisci nome categoria",
-
   "emojiTitle": "Emoji",
   "searchEmojisPlaceholder": "Cerca emoji...",
   "noEmojisFound": "Nessuna emoji trovata",
@@ -322,30 +321,24 @@
   "uploadEmojiTitle": "Carica emoji personalizzate",
   "uploadEmojiDesc": "Seleziona un'emoji da modificare o caricane di nuove per personalizzare il server",
   "uploadEmojiBtn": "Carica emoji",
-
   "diskTotalSpace": "Spazio disco totale",
   "diskAvailableSpace": "Spazio disponibile",
   "diskSystemUsed": "Usato dal sistema",
   "diskSharkordUsed": "Usato da Sharkord",
   "diskUsage": "Utilizzo disco",
   "diskUsedPercent": "{{percent}}% usato",
-
   "overflowDeleteOldFiles": "Elimina file vecchi",
   "overflowPreventUploads": "Impedisci nuovi upload",
-
   "imageOptimizationLabel": "Abilita ottimizzazione immagini",
   "imageOptimizationDesc": "Converte i caricamenti di immagini supportati in file WebP ottimizzati.",
   "imageQualityLabel": "Qualità immagine",
   "imageQualityDesc": "Controlla la qualità WebP usata per le immagini ottimizzate. Valori più alti preservano più dettagli, ma usano più spazio di archiviazione.",
-
   "signedUrlsLabel": "URL firmati",
   "signedUrlsDesc": "Se abilitato, tutti gli URL file richiedono un token firmato con scadenza. Questo impedisce accessi non autorizzati tramite tentativi sugli URL. Se disabilitato, i file nei canali pubblici sono accessibili a chiunque abbia l'URL.",
   "signedUrlsTtlLabel": "Scadenza URL firmato",
   "signedUrlsTtlDesc": "Per quanto tempo un URL firmato rimane valido prima di scadere. Durate piu brevi migliorano la sicurezza ma possono essere meno comode per gli utenti che accedono ai file.",
   "signedUrlsTtlUnit": "minuti",
-
   "moderateUserAction": "Modera utente",
-
   "inviteCopied": "Codice invito copiato negli appunti",
   "inviteNever": "Mai",
   "inviteExpired": "Scaduto",
@@ -357,7 +350,6 @@
   "inviteDeletedSuccess": "Invito eliminato",
   "failedDeleteInvite": "Impossibile eliminare invito",
   "inviteDefault": "Predefinito",
-
   "modViewLoading": "Caricamento...",
   "modViewTitle": "Pannello moderazione utente",
   "goBack": "Torna indietro",
@@ -387,18 +379,15 @@
   "failedUnban": "Impossibile sbannare utente",
   "deleteBtn": "Elimina",
   "modViewAssignRoleBtn": "Assegna ruolo",
-
   "serverActivityTitle": "Attivita server",
   "serverActivityMessages": "Messaggi",
   "serverActivityLinks": "Link",
   "serverActivityFiles": "File",
-
   "modViewStorageTitle": "Archiviazione",
   "modViewStorageUsed": "Archiviazione usata",
   "modViewStorageQuota": "Quota",
   "modViewStorageFiles": "File",
   "modViewStorageUsage": "Utilizzo",
-
   "detailsTitle": "Dettagli",
   "userIdLabel": "ID utente",
   "identityDetailLabel": "Identita",
@@ -413,7 +402,6 @@
   "unknownValue": "Sconosciuto",
   "naValue": "N/D",
   "noReasonProvidedDetail": "Nessun motivo fornito",
-
   "searchMessagesPlaceholder": "Cerca nei messaggi...",
   "noMessagesFound": "Nessun messaggio trovato.",
   "searchFilesPlaceholder": "Cerca file...",
@@ -424,7 +412,6 @@
   "deleteFileMsg": "Sei sicuro di voler eliminare questo file?",
   "fileDeletedSuccess": "File eliminato con successo",
   "failedDeleteFile": "Impossibile eliminare file",
-
   "standard": "Standard",
   "experimental": "sperimentale"
 }

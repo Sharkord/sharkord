@@ -154,12 +154,6 @@ const seedDatabase = async () => {
       password: 'sharkord',
       bannerId: null,
       bio: 'Hey, I am Sharkord!',
-      profileTheme: {
-        banner: {
-          type: 'solid',
-          colors: ['#262626']
-        }
-      },
       createdAt: firstStart
     }
   ];

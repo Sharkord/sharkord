@@ -1,4 +1,4 @@
-import { IconButton } from '@sharkord/ui';
+import { IconButton, type TIconButtonSize } from '@sharkord/ui';
 import { Maximize, Minimize } from 'lucide-react';
 import { memo } from 'react';
 
@@ -6,7 +6,7 @@ type TFullscreenButtonProps = {
   isFullscreen: boolean;
   handleToggleFullscreen: () => void;
   className?: string;
-  size?: 'default' | 'xs' | 'sm' | 'lg' | 'xl';
+  size?: TIconButtonSize;
 };
 
 const FullscreenButton = memo(

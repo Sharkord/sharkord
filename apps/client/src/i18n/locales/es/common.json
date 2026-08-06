@@ -11,13 +11,11 @@
   "couldNotOpenDM": "No se pudo abrir el mensaje directo",
   "unknownUser": "Usuario desconocido",
   "unknownChannel": "Canal desconocido",
-
   "selectDmPrompt": "Selecciona un mensaje directo o inicia uno nuevo.",
   "welcomeToServer": "Bienvenido a {{name}}.",
   "mobileNotOptimized": "Sharkord aún no está optimizado para dispositivos móviles. La experiencia no será ideal.",
   "swipeRightForChannels": "Desliza a la derecha para abrir la lista de canales",
   "swipeLeftForUsers": "Desliza a la izquierda para abrir la lista de usuarios",
-
   "deleteMessageTitle": "Eliminar mensaje",
   "deleteMessageConfirm": "¿Estás seguro de que quieres eliminar este mensaje? Esta acción es irreversible.",
   "deleteLabel": "Eliminar",
@@ -37,13 +35,11 @@
   "unpinMessage": "Desfijar mensaje",
   "pinMessage": "Fijar mensaje",
   "addReaction": "Añadir reacción",
-
   "messageCannotBeEmpty": "El mensaje no puede estar vacío",
   "messageEdited": "Mensaje editado",
   "failedEditMessage": "Error al editar el mensaje",
   "pressEnterToSave": "Pulsa Enter para guardar, Esc para cancelar",
   "failedSendMessage": "Error al enviar el mensaje",
-
   "pinnedBy": "Fijado por {{name}}",
   "unknownTime": "Hora desconocida",
   "scrollToMessage": "Ir al mensaje",
@@ -66,7 +62,6 @@
   "copyDetails": "Copiar detalles",
   "copied": "Copiado",
   "errorDetailsCopied": "Los detalles del error se copiaron al portapapeles",
-
   "deleteFileTitle": "Eliminar archivo",
   "deleteFileMsg": "¿Estás seguro de que quieres eliminar este archivo?",
   "fileDeleted": "Archivo eliminado",
@@ -88,5 +83,6 @@
   "customTab": "Personalizado",
   "searchResults": "Resultados de búsqueda ({{count}})",
   "wasReactedBy": "ha sido reaccionado por {{reacters}}.",
-  "andMore": "y {{count}} más"
+  "andMore": "y {{count}} más",
+  "toggleParticipants": "Mostrar/ocultar participantes"
 }

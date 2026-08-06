@@ -4,12 +4,14 @@ import { ChevronDown, Users } from 'lucide-react';
 import {
   isValidElement,
   memo,
+  useCallback,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode
 } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type TVoiceGridProps = {
   children: ReactNode[];
@@ -26,7 +28,12 @@ const VoiceGrid = memo(
       width: number;
       height: number;
     } | null>(null);
-    const [hideParticipents, setHideParticipents] = useState<boolean>(false);
+    const [hideParticipants, setHideParticipants] = useState(false);
+    const { t } = useTranslation();
+
+    const handleToggleParticipants = useCallback(() => {
+      setHideParticipants((hidden) => !hidden);
+    }, []);
 
     useLayoutEffect(() => {
       const element = containerRef.current;
@@ -118,7 +125,7 @@ const VoiceGrid = memo(
           <div className="flex-1 p-3 min-h-0 relative">
             {pinnedCard}
             <div className="flex w-full justify-center absolute bottom-0 left-0 right-0 mb-5 pointer-events-none">
-              <Tooltip content="Show/hide Participants" usePortal={false}>
+              <Tooltip content={t('toggleParticipants')}>
                 <button
                   className={cn(
                     'inline-flex items-center justify-center rounded px-3 py-2 gap-1',
@@ -126,16 +133,14 @@ const VoiceGrid = memo(
                     'bg-black/70 hover:bg-black/80',
                     'hidden group-hover/voice-stage:inline-flex'
                   )}
-                  onClick={() => {
-                    setHideParticipents(!hideParticipents);
-                  }}
-                  aria-label="Show/hide Participants"
+                  onClick={handleToggleParticipants}
+                  aria-label={t('toggleParticipants')}
                 >
                   <Users className="size-3" />
                   <ChevronDown
                     className={cn(
                       'size-3 transition-transform duration-300 ease-in-out -mr-0.5',
-                      hideParticipents && 'rotate-180'
+                      hideParticipants && 'rotate-180'
                     )}
                   />
                 </button>
@@ -147,9 +152,9 @@ const VoiceGrid = memo(
               className={cn(
                 'flex shrink-0 justify-center-safe gap-2 p-3 overflow-x-auto',
                 'transition-all duration-300 ease-in-out',
-                !hideParticipents
-                  ? 'max-h-full p-3 -mt-3 opacity-100'
-                  : 'max-h-0 p-0 mt-0 opacity-0'
+                hideParticipants
+                  ? 'max-h-0 p-0 mt-0 opacity-0'
+                  : 'max-h-full p-3 -mt-3 opacity-100'
               )}
             >
               {regularCards.map((card, index) => (

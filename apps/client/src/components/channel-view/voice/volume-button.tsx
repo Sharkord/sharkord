@@ -7,7 +7,8 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Slider
+  Slider,
+  type TIconButtonSize
 } from '@sharkord/ui';
 import { Volume2, VolumeX } from 'lucide-react';
 import { memo, useCallback } from 'react';
@@ -15,7 +16,7 @@ import { memo, useCallback } from 'react';
 type TVolumeButtonProps = {
   volumeKey: TVolumeKey;
   className?: string;
-  size?: 'default' | 'xs' | 'sm' | 'lg' | 'xl';
+  size?: TIconButtonSize;
 };
 
 const VolumeButton = memo(
@@ -47,11 +48,9 @@ const VolumeButton = memo(
           />
         </PopoverTrigger>
         <PopoverContent
-          usePortal={false}
           align="center"
           side="top"
           className="w-48 p-3"
-          sideOffset={-10}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center gap-2">

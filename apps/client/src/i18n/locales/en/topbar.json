@@ -7,6 +7,7 @@
   "voiceOptions": "Voice Options",
   "hideNonVideoParticipants": "Hide non-video participants",
   "displayUserBanners": "Display user banners",
+  "alwaysShowVoiceControls": "Always show voice controls",
   "hideOwnScreenShare": "Hide own screen share",
   "audioControls": "Audio Controls",
   "stream_one": "stream",

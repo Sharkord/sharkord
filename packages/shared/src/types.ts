@@ -184,22 +184,6 @@ export type TDirectMessageConversation = {
   lastMessageAt: number;
 };
 
-export type ProfileTheme = {
-  banner: {
-    type: 'solid' | 'gradient' | 'radial';
-    colors: string[];
-    angle?: number;
-    position?:
-      | 'center'
-      | 'top'
-      | 'bottom'
-      | 'left'
-      | 'right'
-      | 'top left'
-      | 'top right'
-      | 'bottom left'
-      | 'bottom right'
-      | `${number}% ${number}%`
-      | `${number}px ${number}px`;
-  };
-};
+export const DEFAULT_PROFILE_COLOR = '#262626';
+
+export const HEX_COLOR_REGEX = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;

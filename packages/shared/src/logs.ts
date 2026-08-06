@@ -4,7 +4,6 @@ import type { ChannelType } from './types';
 
 export enum ActivityLogType {
   SERVER_STARTED = 'SERVER_STARTED',
-  SERVER_STOPPED = 'SERVER_STOPPED',
   EDIT_SERVER_SETTINGS = 'EDIT_SERVER_SETTINGS',
   // -------------------- USERS --------------------
   USER_CREATED = 'USER_CREATED',
@@ -48,7 +47,6 @@ export enum ActivityLogType {
 
 export type TActivityLogDetailsMap = {
   [ActivityLogType.SERVER_STARTED]: {};
-  [ActivityLogType.SERVER_STOPPED]: {};
   [ActivityLogType.EDIT_SERVER_SETTINGS]: {
     values: Partial<{
       [K in keyof TSettings]: any;

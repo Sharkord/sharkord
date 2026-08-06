@@ -27,7 +27,7 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
   const hideNonVideoParticipants = useHideNonVideoParticipants();
   const hideOwnScreenShare = useHideOwnScreenShare();
   const ownUserId = useOwnUserId();
-  const aCardIsPinned = pinnedCard !== undefined;
+  const isAnyCardPinned = pinnedCard !== undefined;
 
   const cards = useMemo(() => {
     const cards: React.ReactNode[] = [];
@@ -52,7 +52,7 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
             key={userCardId}
             userId={voiceUser.id}
             isPinned={isPinned(userCardId)}
-            aCardIsPinned={aCardIsPinned}
+            isAnyCardPinned={isAnyCardPinned}
             onPin={() =>
               pinCard({
                 id: userCardId,
@@ -77,7 +77,7 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
             key={screenShareCardId}
             userId={voiceUser.id}
             isPinned={isPinned(screenShareCardId)}
-            aCardIsPinned={aCardIsPinned}
+            isAnyCardPinned={isAnyCardPinned}
             onPin={() =>
               pinCard({
                 id: screenShareCardId,
@@ -128,7 +128,7 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
     hideNonVideoParticipants,
     hideOwnScreenShare,
     ownUserId,
-    aCardIsPinned
+    isAnyCardPinned
   ]);
 
   if (voiceUsers.length === 0) {

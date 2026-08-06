@@ -13,7 +13,6 @@ import {
   STORAGE_MIN_QUOTA_PER_USER,
   STORAGE_OVERFLOW_ACTION,
   STORAGE_QUOTA,
-  type ProfileTheme,
   type TDirectMessage,
   type TICategory,
   type TIChannel,
@@ -42,13 +41,6 @@ import { seedE2E } from './e2e-mocks/seed-e2e';
 const TEST_SECRET_TOKEN = 'test-secret-token-for-unit-tests';
 
 const hashedPassword = await Bun.password.hash('password123');
-
-const profileTheme: ProfileTheme = {
-  banner: {
-    type: 'solid',
-    colors: ['#262626']
-  }
-};
 
 /**
  * Current mocked data in the database after seeding (not complete, just a summary):
@@ -200,7 +192,6 @@ const seedTestDb = async (db: BunSQLiteDatabase) => {
     avatarId: null,
     bannerId: null,
     bio: null,
-    profileTheme: profileTheme,
     createdAt: firstStart
   };
 
@@ -219,7 +210,6 @@ const seedTestDb = async (db: BunSQLiteDatabase) => {
     avatarId: null,
     bannerId: null,
     bio: null,
-    profileTheme: profileTheme,
     createdAt: firstStart
   };
 
@@ -249,7 +239,6 @@ const seedTestDb = async (db: BunSQLiteDatabase) => {
     avatarId: null,
     bannerId: null,
     bio: null,
-    profileTheme: profileTheme,
     createdAt: firstStart
   };
 
@@ -260,7 +249,6 @@ const seedTestDb = async (db: BunSQLiteDatabase) => {
     avatarId: null,
     bannerId: null,
     bio: null,
-    profileTheme: profileTheme,
     createdAt: firstStart
   };
 

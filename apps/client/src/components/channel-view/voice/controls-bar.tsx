@@ -1,6 +1,10 @@
 import { useChannelCan } from '@/features/server/hooks';
 import { leaveVoice } from '@/features/server/voice/actions';
-import { useOwnVoiceState, useVoice } from '@/features/server/voice/hooks';
+import {
+  useAlwaysShowVoiceControls,
+  useOwnVoiceState,
+  useVoice
+} from '@/features/server/voice/hooks';
 import { cn } from '@/lib/utils';
 import { ChannelPermission } from '@sharkord/shared';
 import { Button, Tooltip } from '@sharkord/ui';
@@ -32,6 +36,7 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
   } = useVoice();
   const ownVoiceState = useOwnVoiceState();
   const channelCan = useChannelCan(channelId);
+  const alwaysShowControls = useAlwaysShowVoiceControls();
 
   const permissions = useMemo(
     () => ({
@@ -42,13 +47,15 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
     [channelCan]
   );
 
+  const barClass = alwaysShowControls
+    ? 'relative -mt-3'
+    : 'absolute bottom-0 left-0 right-0 transition-all duration-300 ease-in-out invisible opacity-0 translate-y-4 group-hover/voice-stage:visible group-hover/voice-stage:opacity-100 group-hover/voice-stage:translate-y-0';
+
   return (
     <div
       className={cn(
-        'flex justify-center items-center pointer-events-none relative -mt-3 gap-2',
-        'transition-all duration-300 ease-in-out',
-        'opacity-0 translate-y-10 group-hover/voice-stage:opacity-100 group-hover/voice-stage:translate-y-0',
-        'max-h-0 group-hover/voice-stage:max-h-full p-0 group-hover/voice-stage:p-3'
+        'flex justify-center items-center pointer-events-none gap-2 p-3',
+        barClass
       )}
     >
       <div
@@ -71,7 +78,7 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
 
         <ControlToggleButton
           enabled={ownVoiceState.soundMuted}
-          enabledLabel="UnDeafen"
+          enabledLabel="Undeafen"
           disabledLabel="Deafen"
           enabledIcon={HeadphoneOff}
           disabledIcon={Headphones}
@@ -105,7 +112,7 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
           />
         )}
       </div>
-      <Tooltip content="Disconnect" sideOffset={-2} usePortal={false}>
+      <Tooltip content="Disconnect">
         <Button
           className={cn(
             'inline-flex h-full min-w-11 items-center justify-center rounded px-3 border border-border',

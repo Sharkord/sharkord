@@ -97,7 +97,7 @@ type TPublicUser = Pick<
   TJoinedUser,
   | 'id'
   | 'name'
-  | 'profileTheme'
+  | 'profileColor'
   | 'bio'
   | 'avatar'
   | 'avatarId'

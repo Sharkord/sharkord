@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "94d300a4-65cf-4e02-9c94-979f0f3648ce",
+  "id": "12fdc1ff-40ae-4fb4-b162-326953068abd",
   "prevId": "b689c902-0560-431c-af58-ff3904a7cf17",
   "tables": {
     "activity_log": {
@@ -2280,13 +2280,13 @@
           "notNull": false,
           "autoincrement": false
         },
-        "profile_theme": {
-          "name": "profile_theme",
+        "profile_color": {
+          "name": "profile_color",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'{\"banner\":{\"type\":\"solid\",\"colors\":[\"#4f46e5\"]}}'"
+          "default": "'#262626'"
         },
         "last_login_at": {
           "name": "last_login_at",

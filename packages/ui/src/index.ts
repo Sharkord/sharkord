@@ -13,7 +13,7 @@ export * from './components/dropdown-menu';
 export * from './components/group';
 export * from './components/icon';
 export * from './components/icon-button';
-export * from './components/image-swatch-extract-select';
+export * from './components/image-swatch-picker';
 export * from './components/input';
 export * from './components/label';
 export * from './components/loading-card';
@@ -29,4 +29,5 @@ export * from './components/switch';
 export * from './components/tabs';
 export * from './components/textarea';
 export * from './components/tooltip';
+
 export * from './lib/utils';

@@ -1,19 +1,25 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { UserAvatar } from '@/components/user-avatar';
 import { useStreamVolumeControl } from '@/components/voice-provider/hooks/use-stream-volume-control';
+import { useWebRtcSimulcastEnabled } from '@/features/server/hooks';
 import type { TVoiceUser } from '@/features/server/types';
 import { useIsOwnUser } from '@/features/server/users/hooks';
 import {
   useShowUserBannersInVoice,
-  useSpeakingState
+  useSpeakingState,
+  useVoice
 } from '@/features/server/voice/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { cn } from '@/lib/utils';
+import { StreamKind } from '@sharkord/shared';
 import { HeadphoneOff, MicOff, Monitor, Video } from 'lucide-react';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { CardTheme } from './card-theme';
+import { cardControlClass, cardDensity } from './helpers';
 import { useVoiceRefs } from './hooks/use-voice-refs';
+import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
+import { QualityButton } from './quality-button';
 import { VolumeButton } from './volume-button';
 
 type TVoiceUserCardProps = {
@@ -24,7 +30,7 @@ type TVoiceUserCardProps = {
   voiceUser: TVoiceUser;
   className?: string;
   isPinned?: boolean;
-  aCardIsPinned?: boolean;
+  isAnyCardPinned?: boolean;
 };
 
 const VoiceUserCard = memo(
@@ -36,21 +42,22 @@ const VoiceUserCard = memo(
     isPinned = false,
     showPinControls = true,
     voiceUser,
-    aCardIsPinned = false
+    isAnyCardPinned = false
   }: TVoiceUserCardProps) => {
     const { videoRef, hasVideoStream } = useVoiceRefs(userId);
     const { volumeKey } = useStreamVolumeControl({ type: 'user', userId });
     const { devices } = useDevices();
     const isOwnUser = useIsOwnUser(userId);
     const showUserBanners = useShowUserBannersInVoice();
+    const webRtcSimulcastEnabled = useWebRtcSimulcastEnabled();
+    const { isSimulcastConsumer } = useVoice();
     const { isActivelySpeaking, speakingEffectClass } =
       useSpeakingState(userId);
-    /*  // To be looked at in terms of more controls for webcam.
-    const webRtcSimulcastEnabled = useWebRtcSimulcastEnabled();
-    const { isSimulcastConsumer } = useVoice(); 
-    const isSimulcastVideoConsumer = !isOwnUser && isSimulcastConsumer(userId, StreamKind.VIDEO);
-    const showQualityControl = !isOwnUser && webRtcSimulcastEnabled && hasVideoStream; 
-    */
+
+    const isCompact = isAnyCardPinned && !isPinned;
+    const density = cardDensity(isCompact);
+    const showQualityControl =
+      !isOwnUser && webRtcSimulcastEnabled && hasVideoStream;
 
     const handlePinToggle = useCallback(() => {
       if (isPinned) {
@@ -60,10 +67,18 @@ const VoiceUserCard = memo(
       }
     }, [isPinned, onPin, onUnpin]);
 
+    const backgroundStyle = useMemo(
+      () =>
+        hasVideoStream
+          ? { backgroundColor: '#000000' }
+          : { backgroundImage: `url("${getFileUrl(voiceUser.banner)}")` },
+      [hasVideoStream, voiceUser.banner]
+    );
+
     return (
       <div
         className={cn(
-          'relative bg-card rounded overflow-hidden group',
+          'relative bg-card rounded overflow-hidden group/voice-user-card',
           'flex items-center justify-center',
           'size-full',
           'border border-border',
@@ -74,35 +89,14 @@ const VoiceUserCard = memo(
         {voiceUser.banner && showUserBanners ? (
           <div
             className="h-full w-full rounded bg-center bg-cover blur-sm brightness-50 bg-no-repeat absolute inset-0"
-            style={
-              hasVideoStream
-                ? { backgroundColor: '#000000' }
-                : {
-                    backgroundImage: `url("${getFileUrl(voiceUser.banner)}")`
-                  }
-            }
+            style={backgroundStyle}
           />
         ) : (
           <CardTheme
-            profileTheme={voiceUser.profileTheme}
+            profileColor={voiceUser.profileColor}
             hasVideoStream={hasVideoStream}
           />
         )}
-
-        {/* <CardControls>
-          {!isOwnUser && <VolumeButton volumeKey={volumeKey} />}
-          {showQualityControl && (
-            <QualityButton
-              streamId={userId}
-              kind={StreamKind.VIDEO}
-              disabled={!isSimulcastVideoConsumer}
-            />
-          )}
-          {hasVideoStream && <PictureInPictureButton videoRef={videoRef} />}
-          {showPinControls && (
-            <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
-          )}
-        </CardControls> */}
 
         {hasVideoStream && (
           <video
@@ -123,7 +117,7 @@ const VoiceUserCard = memo(
               'pointer-events-none',
               isPinned
                 ? 'w-16 h-16 md:w-20 md:h-20 lg:w-32 lg:h-32'
-                : aCardIsPinned
+                : isCompact
                   ? 'w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14'
                   : 'w-12 h-12 md:w-16 md:h-16 lg:w-24 lg:h-24'
             )}
@@ -133,18 +127,53 @@ const VoiceUserCard = memo(
 
         <div
           className={cn(
-            'absolute bottom-0 left-0 right-0 flex justify-between',
-            isPinned ? 'p-4 gap-3' : aCardIsPinned ? 'p-1 gap-1' : 'p-4 gap-3'
+            'absolute top-0 right-0 z-10 min-h-4 items-center',
+            density.inset,
+            density.controls,
+            'hidden group-hover/voice-user-card:inline-flex',
+            'has-[[data-state=open]]:inline-flex'
           )}
+        >
+          {!isOwnUser && (
+            <VolumeButton
+              volumeKey={volumeKey}
+              size={density.icon}
+              className={cardControlClass(isCompact)}
+            />
+          )}
+          {showQualityControl && (
+            <QualityButton
+              streamId={userId}
+              kind={StreamKind.VIDEO}
+              disabled={!isSimulcastConsumer(userId, StreamKind.VIDEO)}
+              size={density.icon}
+              className={cardControlClass(isCompact)}
+            />
+          )}
+          {hasVideoStream && (
+            <PictureInPictureButton
+              videoRef={videoRef}
+              size={density.icon}
+              className={cardControlClass(isCompact)}
+            />
+          )}
+          {showPinControls && (
+            <PinButton
+              isPinned={isPinned}
+              handlePinToggle={handlePinToggle}
+              size={density.icon}
+              className={cardControlClass(isCompact, isPinned)}
+            />
+          )}
+        </div>
+
+        <div
+          className={cn('absolute bottom-0 left-0 right-0 flex', density.inset)}
         >
           <div
             className={cn(
               'inline-flex min-w-0 min-h-4 py-2 items-center bg-black/70 rounded overflow-hidden truncate',
-              isPinned
-                ? 'gap-3 px-3'
-                : aCardIsPinned
-                  ? 'gap-2 px-2'
-                  : 'gap-3 px-3',
+              density.badge,
               !voiceUser.state.micMuted &&
                 !voiceUser.state.soundMuted &&
                 !voiceUser.state.webcamEnabled &&
@@ -172,45 +201,12 @@ const VoiceUserCard = memo(
             )}
             <p
               className={cn(
-                'hidden group-hover/voice-stage:block truncate',
-                isPinned ? 'text-sm' : aCardIsPinned ? 'text-xs' : 'text-sm',
-                'leading-none'
+                'hidden group-hover/voice-stage:block truncate leading-none',
+                density.label
               )}
             >
               {voiceUser.name}
             </p>
-          </div>
-
-          <div
-            className={cn(
-              'inline-flex min-h-4 gap-3 items-center rounded',
-              isPinned ? 'gap-2' : aCardIsPinned ? 'gap-1' : 'gap-2',
-              'hidden group-hover:inline-flex'
-            )}
-          >
-            {!isOwnUser && (
-              <VolumeButton
-                volumeKey={volumeKey}
-                size={'xs'}
-                className={cn(
-                  'bg-black/70 rounded py-2 shrink-0 hover:bg-black/80',
-                  isPinned ? 'px-3' : aCardIsPinned ? 'px-2' : 'px-3'
-                )}
-              />
-            )}
-            {showPinControls && (
-              <PinButton
-                isPinned={isPinned}
-                handlePinToggle={handlePinToggle}
-                size={'xs'}
-                className={cn(
-                  'bg-black/70 rounded py-2 shrink-0 hover:bg-black/80',
-                  isPinned ? 'px-3' : aCardIsPinned ? 'px-2' : 'px-3',
-                  isPinned &&
-                    'bg-zinc-300/80 text-zinc-800 hover:bg-zinc-400/90 hover:text-zinc-900'
-                )}
-              />
-            )}
           </div>
         </div>
       </div>

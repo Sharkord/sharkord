@@ -1,4 +1,4 @@
-import { IconButton } from '@sharkord/ui';
+import { IconButton, type TIconButtonSize } from '@sharkord/ui';
 import { PictureInPicture2 } from 'lucide-react';
 import { memo, type RefObject } from 'react';
 import { usePictureInPicture } from './hooks/use-picture-in-picture';
@@ -7,7 +7,7 @@ type TPictureInPictureButtonProps = {
   videoRef: RefObject<HTMLVideoElement | null>;
   enabled?: boolean;
   className?: string;
-  size?: 'default' | 'xs' | 'sm' | 'lg' | 'xl';
+  size?: TIconButtonSize;
 };
 
 const PictureInPictureButton = memo(

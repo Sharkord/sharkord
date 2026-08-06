@@ -44,7 +44,7 @@ const getInvites = async (): Promise<TJoinedInvite[]> => {
       creator: {
         id: users.id,
         name: users.name,
-        profileTheme: users.profileTheme,
+        profileColor: users.profileColor,
         bio: users.bio,
         banned: users.banned,
         createdAt: users.createdAt,

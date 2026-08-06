@@ -143,8 +143,14 @@ bun run db:gen
    `_journal.json`.
 
 Data migrations (backfills, normalization) are hand-written SQL added the same way —
-separate statements split with `-->statement-breakpoint`, filename renamed to describe the
-intent (see `0005_normalize_user_identities.sql`).
+separate statements split with `--> statement-breakpoint`, filename renamed to describe the
+intent (see `0006_lowercase_remaining_identities.sql`).
+
+The separator must be written exactly as `--> statement-breakpoint`, **with the space**.
+Drizzle splits migration files on that literal string and hands each piece to
+`prepare()`, which compiles only the first statement of whatever it is given. Get the
+separator wrong and every statement after the first is silently skipped — no error, the
+migration is still recorded as applied.
 
 Rules: never edit a migration that's already been committed — add a new one. Never
 hand-edit `meta/` or `_journal.json`. `bun run db:check` verifies consistency. Local dev

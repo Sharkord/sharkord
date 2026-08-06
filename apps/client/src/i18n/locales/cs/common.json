@@ -11,13 +11,11 @@
   "couldNotOpenDM": "Přímou zprávu se otevřít nepodařilo",
   "unknownUser": "Neznámý uživatel",
   "unknownChannel": "Neznámý kanál",
-
   "selectDmPrompt": "Vyberte přímou zprávu nebo napište novou.",
   "welcomeToServer": "Vítejte v {{name}}.",
   "mobileNotOptimized": "Sharkord ještě není optimalizovaný pro telefony, ne všechno bude fungovat elegantně.",
   "swipeRightForChannels": "Přejetím doprava otevřete seznam kanálů",
   "swipeLeftForUsers": "Přejetím doleva otevřete seznam uživatelů",
-
   "deleteMessageTitle": "Odstranit zprávu",
   "deleteMessageConfirm": "Opravdu chcete tuto zprávu odstranit? Tato akce je nevratná.",
   "deleteLabel": "Odstranit",
@@ -37,13 +35,11 @@
   "unpinMessage": "Odepnout zprávu",
   "pinMessage": "Připnout zprávu",
   "addReaction": "Přidat reakci",
-
   "messageCannotBeEmpty": "Zpráva nemůže být prázdná",
   "messageEdited": "Zpráva byla aktualizována",
   "failedEditMessage": "Zprávu se upravit nepodařilo",
   "pressEnterToSave": "Stiskněte Enter pro uložení, Esc pro zrušení",
   "failedSendMessage": "Zprávu se poslat nepodařilo",
-
   "pinnedBy": "Připnuto uživatelem {{name}}",
   "unknownTime": "Neznámý čas",
   "scrollToMessage": "Přejít ke zprávě",
@@ -66,7 +62,6 @@
   "copyDetails": "Kopírovat podrobnosti",
   "copied": "Zkopírováno",
   "errorDetailsCopied": "Podrobnosti chyby byly zkopírovány do schránky",
-
   "deleteFileTitle": "Odstranit soubor",
   "deleteFileMsg": "Opravdu chcete tento soubor odstranit?",
   "fileDeleted": "Soubor byl odstraněn",
@@ -88,5 +83,6 @@
   "customTab": "Vlastní",
   "searchResults": "Výsledky hledání ({{count}})",
   "wasReactedBy": "reagovali {{reacters}}.",
-  "andMore": "a dalších {{count}}"
+  "andMore": "a dalších {{count}}",
+  "toggleParticipants": "Zobrazit/skrýt účastníky"
 }

@@ -3,8 +3,7 @@ import {
   DELETED_USER_IDENTITY_AND_NAME,
   DisconnectCode,
   Permission,
-  ServerEvents,
-  type ProfileTheme
+  ServerEvents
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import z from 'zod';
@@ -22,13 +21,6 @@ import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
 import { pubsub } from '../../utils/pubsub';
 import { protectedProcedure } from '../../utils/trpc';
-
-const profileTheme: ProfileTheme = {
-  banner: {
-    type: 'solid',
-    colors: ['#262626']
-  }
-};
 
 const ensureDeletedUser = async (): Promise<number> => {
   const existingDeletedUser = await getUserByIdentity(
@@ -48,7 +40,6 @@ const ensureDeletedUser = async (): Promise<number> => {
       avatarId: null,
       bannerId: null,
       bio: null,
-      profileTheme: profileTheme,
       createdAt: Date.now()
     })
     .returning({ id: users.id })
