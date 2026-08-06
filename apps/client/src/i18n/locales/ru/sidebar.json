@@ -42,6 +42,7 @@
   "createChannel": "Создать канал",
   "failedReorderChannels": "Не удалось изменить порядок каналов",
   "failedReorderCategories": "Не удалось изменить порядок категорий",
+  "failedMoveUser": "Не удалось переместить пользователя",
   "directMessages": "Личные сообщения",
   "failedLoadDMs": "Не удалось загрузить личные сообщения",
   "couldNotOpenDM": "Не удалось открыть личные сообщения",

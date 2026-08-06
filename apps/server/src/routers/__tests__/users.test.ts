@@ -287,7 +287,7 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Updated Name',
-      bannerColor: '#ff0000',
+      profileColor: '#ff0000',
       bio: 'This is my new bio'
     });
 
@@ -296,7 +296,7 @@ describe('users router', () => {
 
     expect(updatedUser).toBeDefined();
     expect(updatedUser!.name).toBe('Updated Name');
-    expect(updatedUser!.bannerColor).toBe('#ff0000');
+    expect(updatedUser!.profileColor).toBe('#ff0000');
     expect(updatedUser!.bio).toBe('This is my new bio');
   });
 
@@ -305,7 +305,7 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Test User',
-      bannerColor: '#00ff00'
+      profileColor: '#00ff00'
     });
 
     const users = await caller.users.getAll();
@@ -313,7 +313,63 @@ describe('users router', () => {
 
     expect(updatedUser).toBeDefined();
     expect(updatedUser!.name).toBe('Test User');
-    expect(updatedUser!.bannerColor).toBe('#00ff00');
+    expect(updatedUser!.profileColor).toBe('#00ff00');
+  });
+
+  test('should accept a shorthand hex profile color', async () => {
+    const { caller } = await initTest();
+
+    await caller.users.update({
+      name: 'Test User',
+      profileColor: '#f0f'
+    });
+
+    const info = await caller.users.getInfo({ userId: 1 });
+
+    expect(info.user.profileColor).toBe('#f0f');
+  });
+
+  test('should reject a profile color that is not a hex value', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.update({
+        name: 'Test User',
+        // a pre-migration bannerColor could hold a full css gradient
+        profileColor: 'linear-gradient(90deg, red, blue)'
+      })
+    ).rejects.toThrow('Invalid hex color');
+  });
+
+  test('should reject a hex value of the wrong length', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.update({
+        name: 'Test User',
+        profileColor: '#12345'
+      })
+    ).rejects.toThrow('Invalid hex color');
+  });
+
+  test('should leave the stored profile color untouched when validation fails', async () => {
+    const { caller } = await initTest();
+
+    await caller.users.update({
+      name: 'Test User',
+      profileColor: '#123456'
+    });
+
+    await expect(
+      caller.users.update({
+        name: 'Test User',
+        profileColor: 'nope'
+      })
+    ).rejects.toThrow('Invalid hex color');
+
+    const info = await caller.users.getInfo({ userId: 1 });
+
+    expect(info.user.profileColor).toBe('#123456');
   });
 
   test('should update password successfully', async () => {
@@ -629,7 +685,7 @@ describe('users router', () => {
         password: 'password',
         bannerId: null,
         bio: null,
-        bannerColor: null,
+        profileColor: '#262626',
         createdAt: Date.now()
       })
       .returning({ id: users.id })
@@ -1123,21 +1179,21 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Test',
-      bannerColor: '#abc123'
+      profileColor: '#abc123'
     });
 
     let info = await caller.users.getInfo({ userId: 1 });
 
-    expect(info.user.bannerColor).toBe('#abc123');
+    expect(info.user.profileColor).toBe('#abc123');
 
     await caller.users.update({
       name: 'Test',
-      bannerColor: '#f0f'
+      profileColor: '#f0f'
     });
 
     info = await caller.users.getInfo({ userId: 1 });
 
-    expect(info.user.bannerColor).toBe('#f0f');
+    expect(info.user.profileColor).toBe('#f0f');
   });
 
   test('should handle bio with special characters', async () => {
@@ -1147,7 +1203,7 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Test User',
-      bannerColor: '#000000',
+      profileColor: '#000000',
       bio: specialBio
     });
 
@@ -1161,26 +1217,26 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Name 1',
-      bannerColor: '#111111',
+      profileColor: '#111111',
       bio: 'Bio 1'
     });
 
     await caller.users.update({
       name: 'Name 2',
-      bannerColor: '#222222',
+      profileColor: '#222222',
       bio: 'Bio 2'
     });
 
     await caller.users.update({
       name: 'Final Name',
-      bannerColor: '#333333',
+      profileColor: '#333333',
       bio: 'Final Bio'
     });
 
     const info = await caller.users.getInfo({ userId: 1 });
 
     expect(info.user.name).toBe('Final Name');
-    expect(info.user.bannerColor).toBe('#333333');
+    expect(info.user.profileColor).toBe('#333333');
     expect(info.user.bio).toBe('Final Bio');
   });
 

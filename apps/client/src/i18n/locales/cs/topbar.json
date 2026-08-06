@@ -7,6 +7,7 @@
   "voiceOptions": "Možnosti hlasu",
   "hideNonVideoParticipants": "Skrýt účastníky bez videa",
   "displayUserBanners": "Zobrazit bannery uživatelů",
+  "alwaysShowVoiceControls": "Vždy zobrazovat ovládání hlasu",
   "hideOwnScreenShare": "Skrýt vlastní sdílení obrazovky",
   "audioControls": "Ovládání zvuku",
   "stream_one": "stream",

@@ -5,7 +5,6 @@ import {
   type ConsumerType,
   getMediasoupKind,
   StreamKind,
-  type TStreamQuality,
   type TStreamQualityLayer
 } from '@sharkord/shared';
 import { TRPCClientError } from '@trpc/client';
@@ -17,6 +16,7 @@ import {
   type Transport
 } from 'mediasoup-client/types';
 import { useCallback, useRef } from 'react';
+import { getStoredStreamQuality } from '../helpers';
 
 type TUseTransportParams = {
   addRemoteUserStream: (
@@ -48,7 +48,6 @@ type TUseTransportParams = {
     layers: TStreamQualityLayer[]
   ) => void;
   clearRemoteConsumerMetadata: () => void;
-  getStreamQuality: (remoteId: number, kind: StreamKind) => TStreamQuality;
 };
 
 const useTransports = ({
@@ -58,8 +57,7 @@ const useTransports = ({
   removeExternalStreamTrack,
   setRemoteConsumerType,
   setRemoteStreamQualityLayers,
-  clearRemoteConsumerMetadata,
-  getStreamQuality
+  clearRemoteConsumerMetadata
 }: TUseTransportParams) => {
   const producerTransport = useRef<Transport<AppData> | undefined>(undefined);
   const consumerTransport = useRef<Transport<AppData> | undefined>(undefined);
@@ -348,7 +346,7 @@ const useTransports = ({
             kind === StreamKind.SCREEN ||
             kind === StreamKind.EXTERNAL_VIDEO)
         ) {
-          const quality = getStreamQuality(remoteId, kind);
+          const quality = getStoredStreamQuality(remoteId, kind, qualityLayers);
 
           if (quality.mode === 'layer') {
             await trpc.voice.setConsumerQuality.mutate({
@@ -383,8 +381,7 @@ const useTransports = ({
       addExternalStreamTrack,
       removeExternalStreamTrack,
       setRemoteConsumerType,
-      setRemoteStreamQualityLayers,
-      getStreamQuality
+      setRemoteStreamQualityLayers
     ]
   );
 

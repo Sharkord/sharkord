@@ -13,9 +13,9 @@ import { getFileUrl } from '@/helpers/get-file-url';
 import { cn } from '@/lib/utils';
 import { StreamKind } from '@sharkord/shared';
 import { HeadphoneOff, MicOff, Monitor, Video } from 'lucide-react';
-import { memo, useCallback } from 'react';
-import { CardControls } from './card-controls';
-import { CardGradient } from './card-gradient';
+import { memo, useCallback, useMemo } from 'react';
+import { CardTheme } from './card-theme';
+import { cardControlClass, cardDensity } from './helpers';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
@@ -30,6 +30,7 @@ type TVoiceUserCardProps = {
   voiceUser: TVoiceUser;
   className?: string;
   isPinned?: boolean;
+  isAnyCardPinned?: boolean;
 };
 
 const VoiceUserCard = memo(
@@ -40,19 +41,21 @@ const VoiceUserCard = memo(
     className,
     isPinned = false,
     showPinControls = true,
-    voiceUser
+    voiceUser,
+    isAnyCardPinned = false
   }: TVoiceUserCardProps) => {
     const { videoRef, hasVideoStream } = useVoiceRefs(userId);
     const { volumeKey } = useStreamVolumeControl({ type: 'user', userId });
     const { devices } = useDevices();
     const isOwnUser = useIsOwnUser(userId);
+    const showUserBanners = useShowUserBannersInVoice();
     const webRtcSimulcastEnabled = useWebRtcSimulcastEnabled();
     const { isSimulcastConsumer } = useVoice();
-    const showUserBanners = useShowUserBannersInVoice();
     const { isActivelySpeaking, speakingEffectClass } =
       useSpeakingState(userId);
-    const isSimulcastVideoConsumer =
-      !isOwnUser && isSimulcastConsumer(userId, StreamKind.VIDEO);
+
+    const isCompact = isAnyCardPinned && !isPinned;
+    const density = cardDensity(isCompact);
     const showQualityControl =
       !isOwnUser && webRtcSimulcastEnabled && hasVideoStream;
 
@@ -64,12 +67,20 @@ const VoiceUserCard = memo(
       }
     }, [isPinned, onPin, onUnpin]);
 
+    const backgroundStyle = useMemo(
+      () =>
+        hasVideoStream
+          ? { backgroundColor: '#000000' }
+          : { backgroundImage: `url("${getFileUrl(voiceUser.banner)}")` },
+      [hasVideoStream, voiceUser.banner]
+    );
+
     return (
       <div
         className={cn(
-          'relative bg-card rounded-lg overflow-hidden group',
+          'relative bg-card rounded overflow-hidden group/voice-user-card',
           'flex items-center justify-center',
-          'w-full h-full',
+          'size-full',
           'border border-border',
           isActivelySpeaking && speakingEffectClass,
           className
@@ -77,29 +88,15 @@ const VoiceUserCard = memo(
       >
         {voiceUser.banner && showUserBanners ? (
           <div
-            className="h-full w-full rounded-t-md bg-cover bg-center blur-sm brightness-50 bg-no-repeat absolute inset-0"
-            style={{
-              backgroundImage: `url("${getFileUrl(voiceUser.banner)}")`
-            }}
+            className="h-full w-full rounded bg-center bg-cover blur-sm brightness-50 bg-no-repeat absolute inset-0"
+            style={backgroundStyle}
           />
         ) : (
-          <CardGradient />
+          <CardTheme
+            profileColor={voiceUser.profileColor}
+            hasVideoStream={hasVideoStream}
+          />
         )}
-
-        <CardControls>
-          {!isOwnUser && <VolumeButton volumeKey={volumeKey} />}
-          {showQualityControl && (
-            <QualityButton
-              streamId={userId}
-              kind={StreamKind.VIDEO}
-              disabled={!isSimulcastVideoConsumer}
-            />
-          )}
-          {hasVideoStream && <PictureInPictureButton videoRef={videoRef} />}
-          {showPinControls && (
-            <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
-          )}
-        </CardControls>
 
         {hasVideoStream && (
           <video
@@ -116,36 +113,100 @@ const VoiceUserCard = memo(
         {!hasVideoStream && (
           <UserAvatar
             userId={userId}
-            className="w-12 h-12 md:w-16 md:h-16 lg:w-24 lg:h-24"
+            className={cn(
+              'pointer-events-none',
+              isPinned
+                ? 'w-16 h-16 md:w-20 md:h-20 lg:w-32 lg:h-32'
+                : isCompact
+                  ? 'w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14'
+                  : 'w-12 h-12 md:w-16 md:h-16 lg:w-24 lg:h-24'
+            )}
             showStatusBadge={false}
           />
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 p-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-white font-medium text-xs truncate">
-                {voiceUser.name}
-              </span>
-            </div>
+        <div
+          className={cn(
+            'absolute top-0 right-0 z-10 min-h-4 items-center',
+            density.inset,
+            density.controls,
+            'hidden group-hover/voice-user-card:inline-flex',
+            'has-[[data-state=open]]:inline-flex'
+          )}
+        >
+          {!isOwnUser && (
+            <VolumeButton
+              volumeKey={volumeKey}
+              size={density.icon}
+              className={cardControlClass(isCompact)}
+            />
+          )}
+          {showQualityControl && (
+            <QualityButton
+              streamId={userId}
+              kind={StreamKind.VIDEO}
+              disabled={!isSimulcastConsumer(userId, StreamKind.VIDEO)}
+              size={density.icon}
+              className={cardControlClass(isCompact)}
+            />
+          )}
+          {hasVideoStream && (
+            <PictureInPictureButton
+              videoRef={videoRef}
+              size={density.icon}
+              className={cardControlClass(isCompact)}
+            />
+          )}
+          {showPinControls && (
+            <PinButton
+              isPinned={isPinned}
+              handlePinToggle={handlePinToggle}
+              size={density.icon}
+              className={cardControlClass(isCompact, isPinned)}
+            />
+          )}
+        </div>
 
-            <div className="flex items-center gap-1">
-              {voiceUser.state.micMuted && (
-                <MicOff className="size-3.5 text-red-500/80" />
+        <div
+          className={cn('absolute bottom-0 left-0 right-0 flex', density.inset)}
+        >
+          <div
+            className={cn(
+              'inline-flex min-w-0 min-h-4 py-2 items-center bg-black/70 rounded overflow-hidden truncate',
+              density.badge,
+              !voiceUser.state.micMuted &&
+                !voiceUser.state.soundMuted &&
+                !voiceUser.state.webcamEnabled &&
+                !voiceUser.state.sharingScreen &&
+                'hidden group-hover/voice-stage:inline-flex'
+            )}
+          >
+            {voiceUser.state.micMuted && !voiceUser.state.soundMuted && (
+              <MicOff
+                className="text-red-400/80 shrink-0 size-3"
+                fill="currentColor"
+              />
+            )}
+            {voiceUser.state.soundMuted && (
+              <HeadphoneOff
+                className="text-red-400/80 size-3"
+                fill="currentColor"
+              />
+            )}
+            {voiceUser.state.webcamEnabled && (
+              <Video className="text-white/80 size-3" fill="currentColor" />
+            )}
+            {voiceUser.state.sharingScreen && (
+              <Monitor className="text-white/80 size-3" />
+            )}
+            <p
+              className={cn(
+                'hidden group-hover/voice-stage:block truncate leading-none',
+                density.label
               )}
-
-              {voiceUser.state.soundMuted && (
-                <HeadphoneOff className="size-3.5 text-red-500/80" />
-              )}
-
-              {voiceUser.state.webcamEnabled && (
-                <Video className="size-3.5 text-blue-600/80" />
-              )}
-
-              {voiceUser.state.sharingScreen && (
-                <Monitor className="size-3.5 text-purple-500/80" />
-              )}
-            </div>
+            >
+              {voiceUser.name}
+            </p>
           </div>
         </div>
       </div>

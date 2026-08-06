@@ -4,6 +4,7 @@ import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import fs from 'fs/promises';
 import { DATA_PATH } from '../helpers/paths';
+import { clearVoiceMoveGrantsForTests } from '../helpers/voice-move-grants';
 import { createHttpServer } from '../http';
 import { loadMediasoup } from '../utils/mediasoup';
 import { clearRateLimitersForTests } from '../utils/rate-limiters/rate-limiter';
@@ -58,6 +59,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   clearRateLimitersForTests();
+  clearVoiceMoveGrantsForTests();
 
   if (sqlite) {
     try {

@@ -18,6 +18,7 @@ export enum ServerEvents {
   USER_JOIN_VOICE = 'userJoinVoice',
   USER_LEAVE_VOICE = 'userLeaveVoice',
   USER_VOICE_STATE_UPDATE = 'userVoiceStateUpdate',
+  USER_VOICE_MOVED = 'userVoiceMoved',
 
   VOICE_ADD_EXTERNAL_STREAM = 'voiceAddExternalStream',
   VOICE_UPDATE_EXTERNAL_STREAM = 'voiceUpdateExternalStream',

@@ -10,13 +10,12 @@
   "moderationView": "Режим модерации",
   "couldNotOpenDM": "Не удалось открыть личные сообщения",
   "unknownUser": "Неизвестный пользователь",
-
+  "unknownChannel": "Неизвестный канал",
   "selectDmPrompt": "Перейти в личные сообщения или начать чат.",
   "welcomeToServer": "Добро пожаловать, {{name}}.",
   "mobileNotOptimized": "Sharkord пока еще не оптимизирован под мобильные устройства. Пользовательский опыт может быть неудовлетворительным.",
   "swipeRightForChannels": "Проведите вправо для открытия списка каналов",
   "swipeLeftForUsers": "Проведите влево для открытия списка пользователей",
-
   "deleteMessageTitle": "Удалить сообщение",
   "deleteMessageConfirm": "Вы уверены, что хотите удалить это сообщение? Это действие необратимо.",
   "deleteLabel": "Удалить",
@@ -36,13 +35,11 @@
   "unpinMessage": "Открепить сообщение",
   "pinMessage": "Прикрепить сообщение",
   "addReaction": "Добавить реакцию",
-
   "messageCannotBeEmpty": "Сообщение не может быть пустым",
   "messageEdited": "Сообщение отредактировано",
   "failedEditMessage": "Не удалось отредактировать сообщение",
   "pressEnterToSave": "Нажмите Enter чтобы сохранить, Esc чтобы отменить",
   "failedSendMessage": "Не удалось отправить сообщение",
-
   "pinnedBy": "Закреплено: {{name}}",
   "unknownTime": "Время неизвестно",
   "scrollToMessage": "Прокрутить до сообщения",
@@ -65,7 +62,6 @@
   "copyDetails": "Копировать сведения",
   "copied": "Скопировано",
   "errorDetailsCopied": "Сведения об ошибке скопированы в буфер обмена",
-
   "deleteFileTitle": "Удалить файл",
   "deleteFileMsg": "Вы уверены, что хотите удалить этот файл?",
   "fileDeleted": "Файл удален",
@@ -87,5 +83,6 @@
   "customTab": "Кастомные",
   "searchResults": "Результаты поиска ({{count}})",
   "wasReactedBy": "на это отреагировали {{reacters}}.",
-  "andMore": "и еще {{count}}"
+  "andMore": "и еще {{count}}",
+  "toggleParticipants": "Показать/скрыть участников"
 }

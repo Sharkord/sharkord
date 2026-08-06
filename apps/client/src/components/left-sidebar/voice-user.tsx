@@ -1,8 +1,10 @@
 import { UserAvatar } from '@/components/user-avatar';
 import { useStreamVolumeControl } from '@/components/voice-provider/hooks/use-stream-volume-control';
+import { useCan } from '@/features/server/hooks';
 import type { TVoiceUser } from '@/features/server/types';
 import { useIsOwnUser } from '@/features/server/users/hooks';
 import { useSpeakingState } from '@/features/server/voice/hooks';
+import { Permission } from '@sharkord/shared';
 import { cn } from '@sharkord/ui';
 import {
   HeadphoneOff,
@@ -13,8 +15,9 @@ import {
   Video,
   VolumeX
 } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { UserPopover } from '../user-popover';
+import { VOICE_USER_DND_MIME } from './helpers';
 import { StreamContextMenu } from './stream-context-menu';
 
 type TVoiceUserProps = {
@@ -27,10 +30,27 @@ const VoiceUser = memo(({ user, isOwnChannel = false }: TVoiceUserProps) => {
   const isOwnUser = useIsOwnUser(user.id);
   const { isMuted } = useStreamVolumeControl({ type: 'user', userId: user.id });
   const { isActivelySpeaking, speakingEffectClass } = useSpeakingState(user.id);
+  const can = useCan();
   const shouldShowMuteIndicator = isOwnChannel && !isOwnUser && isMuted;
+  const canMove = !isOwnUser && can(Permission.MOVE_MEMBERS);
+
+  const handleDragStart = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.dataTransfer.setData(VOICE_USER_DND_MIME, String(user.id));
+      e.dataTransfer.effectAllowed = 'move';
+    },
+    [user.id]
+  );
 
   const userRow = (
-    <div className="flex items-center gap-2 px-2 py-1 rounded hover:bg-accent/30 text-sm">
+    <div
+      draggable={canMove}
+      onDragStart={canMove ? handleDragStart : undefined}
+      className={cn(
+        'flex items-center gap-2 px-2 py-1 rounded hover:bg-accent/30 text-sm',
+        canMove && 'cursor-grab active:cursor-grabbing'
+      )}
+    >
       <UserAvatar
         userId={user.id}
         className={cn('h-5 w-5', isActivelySpeaking && speakingEffectClass)}

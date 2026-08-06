@@ -26,7 +26,7 @@
   "usernamePlaceholder": "用户名",
   "bioLabel": "个人简介",
   "bioPlaceholder": "介绍一下自己...",
-  "bannerColorLabel": "横幅颜色",
+  "profileColorLabel": "个人资料颜色",
   "profileUpdated": "个人资料已更新",
   "passwordTitle": "密码",
   "passwordDesc": "在此部分，您可以更新您的密码。",
@@ -277,7 +277,6 @@
   "categoryInfoDesc": "管理您分类的基本信息",
   "categoryNameLabel": "名称",
   "categoryNamePlaceholder": "输入分类名称",
-
   "emojiTitle": "表情",
   "searchEmojisPlaceholder": "搜索表情...",
   "noEmojisFound": "未找到表情",
@@ -298,30 +297,24 @@
   "uploadEmojiTitle": "上传自定义表情",
   "uploadEmojiDesc": "选择一个表情进行编辑，或上传新表情来自定义您的服务器",
   "uploadEmojiBtn": "上传表情",
-
   "diskTotalSpace": "总磁盘空间",
   "diskAvailableSpace": "可用空间",
   "diskSystemUsed": "系统占用",
   "diskSharkordUsed": "Sharkord 占用",
   "diskUsage": "磁盘使用情况",
   "diskUsedPercent": "已使用 {{percent}}%",
-
   "overflowDeleteOldFiles": "删除旧文件",
   "overflowPreventUploads": "禁止新文件上传",
-
   "imageOptimizationLabel": "启用图像优化",
   "imageOptimizationDesc": "将支持的上传图像转换为优化后的 WebP 文件。",
   "imageQualityLabel": "图像质量",
   "imageQualityDesc": "控制优化图像使用的 WebP 质量。数值越高保留的细节越多，但会占用更多存储空间。",
-
   "signedUrlsLabel": "签名 URL",
   "signedUrlsDesc": "启用后，所有文件 URL 都需要带有过期时间的签名令牌。这可以防止通过猜测 URL 未经授权访问文件。禁用时，公共频道中的文件可被任何拥有 URL 的人访问。",
   "signedUrlsTtlLabel": "签名 URL 过期时间",
   "signedUrlsTtlDesc": "签名 URL 在过期前保持有效的时间。较短的持续时间可以增强安全性，但可能会给访问文件的用户带来不便。",
   "signedUrlsTtlUnit": "分钟",
-
   "moderateUserAction": "管理用户",
-
   "inviteCopied": "邀请链接已复制到剪贴板",
   "inviteNever": "永不",
   "inviteExpired": "已过期",
@@ -333,7 +326,6 @@
   "inviteDeletedSuccess": "邀请已删除",
   "failedDeleteInvite": "删除邀请失败",
   "inviteDefault": "默认",
-
   "modViewLoading": "加载中...",
   "modViewTitle": "用户管理面板",
   "goBack": "返回",
@@ -363,18 +355,15 @@
   "failedUnban": "解封用户失败",
   "deleteBtn": "删除",
   "modViewAssignRoleBtn": "分配角色",
-
   "serverActivityTitle": "服务器活动",
   "serverActivityMessages": "消息",
   "serverActivityLinks": "链接",
   "serverActivityFiles": "文件",
-
   "modViewStorageTitle": "存储",
   "modViewStorageUsed": "已用存储",
   "modViewStorageQuota": "配额",
   "modViewStorageFiles": "文件",
   "modViewStorageUsage": "使用率",
-
   "detailsTitle": "详情",
   "userIdLabel": "用户 ID",
   "identityDetailLabel": "身份标识",
@@ -389,7 +378,6 @@
   "unknownValue": "未知",
   "naValue": "N/A",
   "noReasonProvidedDetail": "未提供原因",
-
   "searchMessagesPlaceholder": "搜索消息...",
   "noMessagesFound": "未找到消息。",
   "searchFilesPlaceholder": "搜索文件...",
@@ -400,7 +388,6 @@
   "deleteFileMsg": "您确定要删除此文件吗？",
   "fileDeletedSuccess": "文件已成功删除",
   "failedDeleteFile": "删除文件失败",
-
   "removeBtn": "移除",
   "pluginRemoved": "插件已成功移除",
   "failedRemovePlugin": "移除插件失败",
@@ -425,7 +412,6 @@
   "marketplaceSdkIncompatible": "不兼容",
   "marketplaceVerifiedTooltip": "此插件已通过 Sharkord 验证。",
   "marketplaceInstallSuccess": "\"{{name}}\" 已成功安装。您需要手动启用它才能开始使用。",
-
   "standard": "标准",
   "experimental": "实验性"
 }

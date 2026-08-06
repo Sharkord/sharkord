@@ -10,13 +10,12 @@
   "moderationView": "Moderation View",
   "couldNotOpenDM": "Could not open direct message",
   "unknownUser": "Unknown User",
-
+  "unknownChannel": "Unknown Channel",
   "selectDmPrompt": "Select a direct message or start a new one.",
   "welcomeToServer": "Welcome to {{name}}.",
   "mobileNotOptimized": "Sharkord is not optimized for mobile devices yet. The experience will not be ideal.",
   "swipeRightForChannels": "Swipe right to open the channel list",
   "swipeLeftForUsers": "Swipe left to open the user list",
-
   "deleteMessageTitle": "Delete Message",
   "deleteMessageConfirm": "Are you sure you want to delete this message? This action is irreversible.",
   "deleteLabel": "Delete",
@@ -36,13 +35,11 @@
   "unpinMessage": "Unpin Message",
   "pinMessage": "Pin Message",
   "addReaction": "Add Reaction",
-
   "messageCannotBeEmpty": "Message cannot be empty",
   "messageEdited": "Message edited",
   "failedEditMessage": "Failed to edit message",
   "pressEnterToSave": "Press Enter to save, Esc to cancel",
   "failedSendMessage": "Failed to send message",
-
   "pinnedBy": "Pinned by {{name}}",
   "unknownTime": "Unknown time",
   "scrollToMessage": "Scroll to message",
@@ -65,7 +62,6 @@
   "copyDetails": "Copy details",
   "copied": "Copied",
   "errorDetailsCopied": "Error details copied to clipboard",
-
   "deleteFileTitle": "Delete file",
   "deleteFileMsg": "Are you sure you want to delete this file?",
   "fileDeleted": "File deleted",
@@ -89,5 +85,6 @@
   "wasReactedBy": "was reacted by {{reacters}}.",
   "andMore": "and {{count}} more",
   "typeAMessage": "Type a message...",
-  "messageChannel": "Message \"{{name}}\""
+  "messageChannel": "Message \"{{name}}\"",
+  "toggleParticipants": "Show/hide participants"
 }

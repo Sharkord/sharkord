@@ -66,6 +66,7 @@ export interface IServerState {
   hideNonVideoParticipants: boolean;
   showUserBannersInVoice: boolean;
   hideOwnScreenShare: boolean;
+  alwaysShowVoiceControls: boolean;
   pluginComponents: TPluginComponentsMap;
   activeFullscreenPluginId: string | undefined;
   dmsOpen: boolean;
@@ -110,6 +111,10 @@ const initialState: IServerState = {
   ),
   showUserBannersInVoice: getLocalStorageItemBool(
     LocalStorageKey.VOICE_CHAT_SHOW_USER_BANNERS,
+    true
+  ),
+  alwaysShowVoiceControls: getLocalStorageItemBool(
+    LocalStorageKey.ALWAYS_SHOW_VOICE_CONTROLS,
     true
   ),
   pluginComponents: {},
@@ -730,6 +735,9 @@ export const serverSlice = createSlice({
     },
     setHideOwnScreenShare: (state, action: PayloadAction<boolean>) => {
       state.hideOwnScreenShare = action.payload;
+    },
+    setAlwaysShowVoiceControls: (state, action: PayloadAction<boolean>) => {
+      state.alwaysShowVoiceControls = action.payload;
     },
     addExternalStreamToChannel: (
       state,

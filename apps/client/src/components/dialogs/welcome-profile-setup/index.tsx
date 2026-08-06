@@ -7,7 +7,7 @@ import { useFilePicker } from '@/hooks/use-file-picker';
 import { useForm } from '@/hooks/use-form';
 import { getTRPCClient } from '@/lib/trpc';
 import { AvatarImage } from '@radix-ui/react-avatar';
-import { getTrpcError } from '@sharkord/shared';
+import { DEFAULT_PROFILE_COLOR, getTrpcError } from '@sharkord/shared';
 import {
   Avatar,
   AvatarFallback,
@@ -109,7 +109,7 @@ const WelcomeProfileSetupDialog = memo(
       try {
         await trpc.users.update.mutate({
           name: values.name.trim(),
-          bannerColor: ownPublicUser.bannerColor ?? '#FFFFFF',
+          profileColor: ownPublicUser.profileColor ?? DEFAULT_PROFILE_COLOR,
           bio: trimmedBio || undefined
         });
 
@@ -157,7 +157,7 @@ const WelcomeProfileSetupDialog = memo(
                   <div
                     className="w-full h-28 border-b border-border transition-opacity group-hover:opacity-70"
                     style={{
-                      background: ownPublicUser.bannerColor || '#5865f2'
+                      background: ownPublicUser.profileColor || '#5865f2'
                     }}
                   />
                 )}

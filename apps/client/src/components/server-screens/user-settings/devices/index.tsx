@@ -53,7 +53,7 @@ import { toast } from 'sonner';
 import { useMicrophoneTest } from './hooks/use-microphone-test';
 import { useWebcamTest } from './hooks/use-webcam-test';
 import { MicrophoneTestLevelBar } from './microphone-test-level-bar';
-import ResolutionFpsControl from './resolution-fps-control';
+import { ResolutionFpsControl } from './resolution-fps-control';
 import { RestrictOwnAudioAlert } from './restrict-own-audio-alert';
 import { SuppressLocalAudioPlaybackAlert } from './suppress-local-audio-playback-alert';
 import { SupressionHelp } from './supression-help';

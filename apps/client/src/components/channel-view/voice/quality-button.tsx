@@ -11,7 +11,8 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-  IconButton
+  IconButton,
+  type TIconButtonSize
 } from '@sharkord/ui';
 import { Gauge } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
@@ -20,10 +21,18 @@ type TQualityButtonProps = {
   streamId: number;
   kind: StreamKind.VIDEO | StreamKind.SCREEN | StreamKind.EXTERNAL_VIDEO;
   disabled?: boolean;
+  className?: string;
+  size?: TIconButtonSize;
 };
 
 const QualityButton = memo(
-  ({ streamId, kind, disabled = false }: TQualityButtonProps) => {
+  ({
+    streamId,
+    kind,
+    disabled = false,
+    className,
+    size = 'sm'
+  }: TQualityButtonProps) => {
     const { setStreamQuality } = useVoice();
     const [isPending, setIsPending] = useState(false);
 
@@ -64,7 +73,8 @@ const QualityButton = memo(
                 ? 'Quality selection unavailable'
                 : `Quality: ${qualityLabel ?? 'Auto'}`
             }
-            size="sm"
+            size={size}
+            className={className}
             disabled={isDisabled}
           />
         </DropdownMenuTrigger>

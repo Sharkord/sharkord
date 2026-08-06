@@ -42,6 +42,7 @@
   "createChannel": "创建频道",
   "failedReorderChannels": "重新排序频道失败",
   "failedReorderCategories": "重新排序分类失败",
+  "failedMoveUser": "移动用户失败",
   "directMessages": "私信",
   "failedLoadDMs": "加载私信失败",
   "couldNotOpenDM": "无法打开私信",

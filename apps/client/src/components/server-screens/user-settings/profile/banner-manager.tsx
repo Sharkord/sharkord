@@ -52,20 +52,20 @@ const BannerManager = memo(({ user }: TBannerManagerProps) => {
     <Group label="Banner">
       <div className="space-y-2">
         <div
-          className="relative group cursor-pointer w-80 h-24"
+          className="relative group cursor-pointer w-80 h-32"
           onClick={onBannerClick}
         >
           {user.banner ? (
             <img
               src={getFileUrl(user.banner)}
               alt="User Banner"
-              className="w-80 h-24 object-cover rounded-md transition-opacity group-hover:opacity-70"
+              className="w-80 h-32 object-cover rounded-md transition-opacity group-hover:opacity-70"
             />
           ) : (
             <div
               className={cn(
                 buttonVariants({ variant: 'outline' }),
-                'w-80 h-24 cursor-pointer transition-opacity group-hover:opacity-70'
+                'w-80 h-32 cursor-pointer transition-opacity group-hover:opacity-70'
               )}
             />
           )}

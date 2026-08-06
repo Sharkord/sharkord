@@ -14,11 +14,10 @@ const useStreamQualityData = (streamId: number, kind: StreamKind) => {
       !isOwnUser && isSimulcastConsumer(streamId, kind);
 
     const quality = getStreamQuality(streamId, kind);
-    const qualityLayers = getStreamQualityLayers(streamId, kind);
     const layers = getStreamQualityLayers(streamId, kind);
 
     const qualityLabel = isSimulcastScreenConsumer
-      ? getStreamQualityMetadataLabel(quality, qualityLayers)
+      ? getStreamQualityMetadataLabel(quality, layers)
       : null;
 
     const orderedLayers = [...layers].sort(

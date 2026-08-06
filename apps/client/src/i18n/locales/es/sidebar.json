@@ -42,6 +42,7 @@
   "createChannel": "Crear canal",
   "failedReorderChannels": "Error al reordenar los canales",
   "failedReorderCategories": "Error al reordenar las categorías",
+  "failedMoveUser": "Error al mover al usuario",
   "directMessages": "Mensajes directos",
   "failedLoadDMs": "Error al cargar los mensajes directos",
   "couldNotOpenDM": "No se pudo abrir el mensaje directo",

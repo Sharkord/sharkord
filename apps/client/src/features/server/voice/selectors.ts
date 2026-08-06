@@ -54,3 +54,6 @@ export const showUserBannersInVoiceSelector = (state: IRootState) =>
 
 export const hideOwnScreenShareSelector = (state: IRootState) =>
   state.server.hideOwnScreenShare;
+
+export const alwaysShowVoiceControlsSelector = (state: IRootState) =>
+  state.server.alwaysShowVoiceControls;

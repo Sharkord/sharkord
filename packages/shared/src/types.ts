@@ -183,3 +183,7 @@ export type TDirectMessageConversation = {
   unreadCount: number;
   lastMessageAt: number;
 };
+
+export const DEFAULT_PROFILE_COLOR = '#262626';
+
+export const HEX_COLOR_REGEX = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;

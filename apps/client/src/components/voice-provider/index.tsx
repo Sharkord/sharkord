@@ -55,6 +55,7 @@ import {
 import { FloatingPinnedCard } from './floating-pinned-card';
 import {
   getRemoteConsumerTypeKey,
+  getScreenShareSimulcastEncodings,
   getSimulcastCodec,
   getSimulcastEncodings,
   getSimulcastQualityLayers,
@@ -381,6 +382,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     setLocalAudioStream,
     setLocalVideoStream,
     setLocalScreenShare,
+    setLocalScreenShareAudio,
     clearLocalStreams
   } = useLocalStreams();
 
@@ -400,8 +402,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     removeRemoteUserStream,
     setRemoteConsumerType,
     setRemoteStreamQualityLayers,
-    clearRemoteConsumerMetadata,
-    getStreamQuality
+    clearRemoteConsumerMetadata
   });
 
   const {
@@ -721,10 +722,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         if (simulcastCodec) {
           const encodings = getSimulcastEncodings(SIMULCAST_WEBCAM_MAX_BITRATE);
 
-          const qualityLayers = getSimulcastQualityLayers(
-            videoTrack,
-            encodings
-          );
+          const qualityLayers = getSimulcastQualityLayers(encodings);
 
           simulcastWebcamProducerOptions = {
             ...webcamProducerOptions,
@@ -826,12 +824,18 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     localScreenShareProducer.current?.close();
     localScreenShareProducer.current = undefined;
 
+    localScreenShareAudioProducer.current?.close();
+    localScreenShareAudioProducer.current = undefined;
+
     setScreenShareProducer(null);
     setLocalScreenShare(undefined);
+    setLocalScreenShareAudio(undefined);
   }, [
     localScreenShareStream,
     setLocalScreenShare,
+    setLocalScreenShareAudio,
     localScreenShareProducer,
+    localScreenShareAudioProducer,
     setScreenShareProducer
   ]);
 
@@ -880,6 +884,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
       if (videoTrack) {
         logVoice('Obtained video track', { videoTrack });
+
+        videoTrack.contentHint = 'detail';
 
         let preferredCodec: RtpCodecCapability | undefined;
 
@@ -936,11 +942,10 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         let simulcastScreenShareProducerOptions = screenShareProducerOptions;
 
         if (simulcastCodec) {
-          const encodings = getSimulcastEncodings(maxBitrateKbps * 1000);
-          const qualityLayers = getSimulcastQualityLayers(
-            videoTrack,
-            encodings
+          const encodings = getScreenShareSimulcastEncodings(
+            maxBitrateKbps * 1000
           );
+          const qualityLayers = getSimulcastQualityLayers(encodings);
 
           simulcastScreenShareProducerOptions = {
             ...screenShareProducerOptions,
@@ -987,13 +992,17 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         videoTrack.onended = () => {
           logVoice('Screen share track ended, cleaning up screen share');
 
-          localScreenShareStream?.getTracks().forEach((track) => {
+          stream.getTracks().forEach((track) => {
             track.stop();
           });
           localScreenShareProducer.current?.close();
+          localScreenShareProducer.current = undefined;
+          localScreenShareAudioProducer.current?.close();
+          localScreenShareAudioProducer.current = undefined;
 
           setScreenShareProducer(null);
           setLocalScreenShare(undefined);
+          setLocalScreenShareAudio(undefined);
         };
 
         if (audioTrack) {
@@ -1012,9 +1021,26 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
               appData: { kind: StreamKind.SCREEN_AUDIO }
             });
 
+          setLocalScreenShareAudio(new MediaStream([audioTrack]));
+
+          localScreenShareAudioProducer.current?.on('@close', async () => {
+            logVoice('Screen share audio producer closed');
+
+            const trpc = getTRPCClient();
+
+            try {
+              await trpc.voice.closeProducer.mutate({
+                kind: StreamKind.SCREEN_AUDIO
+              });
+            } catch (error) {
+              logVoice('Error closing screen share audio producer', { error });
+            }
+          });
+
           audioTrack.onended = () => {
             localScreenShareAudioProducer.current?.close();
             localScreenShareAudioProducer.current = undefined;
+            setLocalScreenShareAudio(undefined);
           };
         }
 
@@ -1023,15 +1049,22 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         throw new Error('No video track obtained for screen share');
       }
     } catch (error) {
+      localScreenShareAudioProducer.current?.close();
+      localScreenShareAudioProducer.current = undefined;
+      localScreenShareProducer.current?.close();
+      localScreenShareProducer.current = undefined;
+
+      setLocalScreenShare(undefined);
+      setLocalScreenShareAudio(undefined);
       logVoice('Error starting screen share stream', { error });
       throw error;
     }
   }, [
     setLocalScreenShare,
+    setLocalScreenShareAudio,
     localScreenShareProducer,
     localScreenShareAudioProducer,
     producerTransport,
-    localScreenShareStream,
     setScreenShareProducer,
     devices.screenResolution,
     devices.screenFramerate,
@@ -1176,8 +1209,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     removeExternalStreamTrack,
     removeExternalStream,
     clearRemoteUserStreamsForUser,
-    rtpCapabilities:
-      deviceRtpCapabilities.current ?? routerRtpCapabilities.current!
+    rtpCapabilities: deviceRtpCapabilities.current
   });
 
   useEffect(() => {

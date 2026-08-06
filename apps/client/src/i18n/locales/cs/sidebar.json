@@ -42,6 +42,7 @@
   "createChannel": "Vytvořit kanál",
   "failedReorderChannels": "Nepodařilo se změnit pořadí kanálů",
   "failedReorderCategories": "Nepodařilo se změnit pořadí kategorií",
+  "failedMoveUser": "Nepodařilo se přesunout uživatele",
   "directMessages": "Přímé zprávy",
   "failedLoadDMs": "Nepodařilo se načíst přímé zprávy",
   "couldNotOpenDM": "Nepodařilo se otevřít přímou zprávu",

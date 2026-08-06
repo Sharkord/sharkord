@@ -88,7 +88,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
             <div
               className="h-24 w-full rounded-t-md"
               style={{
-                background: user.bannerColor || '#5865f2'
+                background: user.profileColor || '#5865f2'
               }}
             />
           )}

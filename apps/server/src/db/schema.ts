@@ -1,4 +1,5 @@
 import {
+  DEFAULT_PROFILE_COLOR,
   type TActivityLogDetailsMap,
   type TMessageMetadata
 } from '@sharkord/shared';
@@ -188,7 +189,10 @@ const users = sqliteTable(
     banned: integer('banned', { mode: 'boolean' }).notNull().default(false),
     banReason: text('ban_reason'),
     bannedAt: integer('banned_at'),
-    bannerColor: text('banner_color'),
+    // a banner image, when set, always renders on top of this
+    profileColor: text('profile_color')
+      .notNull()
+      .default(DEFAULT_PROFILE_COLOR),
     lastLoginAt: integer('last_login_at')
       .notNull()
       .$defaultFn(() => Date.now()),

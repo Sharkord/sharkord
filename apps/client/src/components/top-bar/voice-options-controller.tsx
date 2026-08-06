@@ -1,9 +1,11 @@
 import {
+  setAlwaysShowVoiceControls,
   setHideNonVideoParticipants,
   setHideOwnScreenShare,
   setShowUserBannersInVoice
 } from '@/features/server/voice/actions';
 import {
+  useAlwaysShowVoiceControls,
   useHideNonVideoParticipants,
   useHideOwnScreenShare,
   useShowUserBannersInVoice
@@ -25,6 +27,7 @@ const VoiceOptionsController = memo(() => {
   const hideNonVideoParticipants = useHideNonVideoParticipants();
   const showUserBanners = useShowUserBannersInVoice();
   const hideOwnScreenShare = useHideOwnScreenShare();
+  const alwaysShowVoiceControls = useAlwaysShowVoiceControls();
 
   const handleToggleHideNonVideo = useCallback((checked: boolean) => {
     setHideNonVideoParticipants(checked);
@@ -37,6 +40,13 @@ const VoiceOptionsController = memo(() => {
   const handleToggleHideOwnScreenShare = useCallback((checked: boolean) => {
     setHideOwnScreenShare(checked);
   }, []);
+
+  const handleToggleAlwaysShowVoiceControls = useCallback(
+    (checked: boolean) => {
+      setAlwaysShowVoiceControls(checked);
+    },
+    []
+  );
 
   return (
     <Popover>
@@ -84,6 +94,22 @@ const VoiceOptionsController = memo(() => {
               id="show-user-banners"
               checked={showUserBanners}
               onCheckedChange={handleToggleShowUserBanners}
+            />
+          </div>
+
+          <div className="flex items-center justify-between space-x-3">
+            <span
+              onClick={() =>
+                handleToggleAlwaysShowVoiceControls(!alwaysShowVoiceControls)
+              }
+              className="text-sm text-foreground cursor-pointer select-none flex-1"
+            >
+              {t('alwaysShowVoiceControls')}
+            </span>
+            <Switch
+              id="always-show-voice-controls"
+              checked={alwaysShowVoiceControls}
+              onCheckedChange={handleToggleAlwaysShowVoiceControls}
             />
           </div>
 

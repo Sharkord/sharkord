@@ -120,6 +120,13 @@
       "when": 1778933632644,
       "tag": "0016_new_black_tom",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1786049599269,
+      "tag": "0017_banner_color_to_profile_color",
+      "breakpoints": true
     }
   ]
 }

@@ -526,7 +526,6 @@ describe('database cascades', async () => {
           avatarId: null,
           bannerId: null,
           bio: null,
-          bannerColor: null,
           createdAt: Date.now()
         })
         .returning();
@@ -543,7 +542,6 @@ describe('database cascades', async () => {
           avatarId: null,
           bannerId: null,
           bio: null,
-          bannerColor: null,
           createdAt: Date.now()
         })
         .returning();
@@ -608,7 +606,6 @@ describe('database cascades', async () => {
         avatarId: null,
         bannerId: null,
         bio: null,
-        bannerColor: null,
         createdAt: Date.now()
       })
       .returning();
@@ -622,7 +619,6 @@ describe('database cascades', async () => {
         avatarId: null,
         bannerId: null,
         bio: null,
-        bannerColor: null,
         createdAt: Date.now()
       })
       .returning();
@@ -685,7 +681,6 @@ describe('database cascades', async () => {
         avatarId: null,
         bannerId: null,
         bio: null,
-        bannerColor: null,
         createdAt: Date.now()
       })
       .returning();
@@ -699,7 +694,6 @@ describe('database cascades', async () => {
         avatarId: null,
         bannerId: null,
         bio: null,
-        bannerColor: null,
         createdAt: Date.now()
       })
       .returning();

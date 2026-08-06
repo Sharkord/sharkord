@@ -30,6 +30,10 @@ const iconButtonVariants = cva(
   }
 );
 
+type TIconButtonSize = NonNullable<
+  VariantProps<typeof iconButtonVariants>['size']
+>;
+
 type IconButtonProps = React.ComponentProps<'button'> &
   VariantProps<typeof iconButtonVariants> & {
     icon: LucideIcon;
@@ -52,4 +56,4 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
 
 IconButton.displayName = 'IconButton';
 
-export { IconButton, iconButtonVariants };
+export { IconButton, iconButtonVariants, type TIconButtonSize };

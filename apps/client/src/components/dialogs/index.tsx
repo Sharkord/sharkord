@@ -2,7 +2,7 @@ import { closeDialogs } from '@/features/dialogs/actions';
 import { useDialogInfo } from '@/features/dialogs/hooks';
 import { createElement, memo } from 'react';
 import { AssignRoleDialog } from './assign-role';
-import ConfirmActionDialog from './confirm-action';
+import { ConfirmActionDialog } from './confirm-action';
 import { CreateCategoryDialog } from './create-category';
 import { CreateChannelDialog } from './create-channel';
 import { CreateInviteDialog } from './create-invite-dialog';

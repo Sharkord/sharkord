@@ -54,6 +54,21 @@ const loginRateLimiter = createRateLimiter({
   windowMs: config.rateLimiters.joinServer.windowMs
 });
 
+const GENERIC_LOGIN_ERROR = 'Invalid credentials';
+
+let dummyArgon2HashPromise: Promise<string> | null = null;
+const getDummyArgon2Hash = (): Promise<string> => {
+  if (!dummyArgon2HashPromise) {
+    dummyArgon2HashPromise = Bun.password
+      .hash('sharkord-dummy-password-for-timing')
+      .catch((error) => {
+        dummyArgon2HashPromise = null;
+        throw error;
+      });
+  }
+  return dummyArgon2HashPromise;
+};
+
 const registerUser = async (
   identity: string,
   password: string,
@@ -164,7 +179,13 @@ const loginRouteHandler = async (
     const result = await isInviteValid(data.invite);
 
     if (!settings.allowNewUsers && result.error) {
-      throw new HttpValidationError('identity', result.error);
+      await Bun.password.verify('dummy', await getDummyArgon2Hash());
+
+      logger.info(
+        `${chalk.dim('[Auth]')} Login attempt for unknown identity blocked. (reason: ${result.error}, IP: ${connectionInfo?.ip || 'unknown'})`
+      );
+
+      throw new HttpValidationError('identity', GENERIC_LOGIN_ERROR);
     }
 
     if (result.invite) {
@@ -213,13 +234,6 @@ const loginRouteHandler = async (
     }
   }
 
-  if (existingUser.banned) {
-    throw new HttpValidationError(
-      'identity',
-      `Identity banned: ${existingUser.banReason || 'No reason provided'}`
-    );
-  }
-
   // temporary logic to migrate old SHA256 password hashes to argon2 on login
   const isPasswordArgon = existingUser.password.startsWith('$argon2');
 
@@ -256,7 +270,14 @@ const loginRouteHandler = async (
       `${chalk.dim('[Auth]')} Failed login attempt for user "${existingUser.identity}" due to invalid password. (IP: ${connectionInfo?.ip || 'unknown'})`
     );
 
-    throw new HttpValidationError('password', 'Invalid password');
+    throw new HttpValidationError('identity', GENERIC_LOGIN_ERROR);
+  }
+
+  if (existingUser.banned) {
+    throw new HttpValidationError(
+      'identity',
+      `Identity banned: ${existingUser.banReason || 'No reason provided'}`
+    );
   }
 
   const token = jwt.sign({ userId: existingUser.id }, await getServerToken(), {

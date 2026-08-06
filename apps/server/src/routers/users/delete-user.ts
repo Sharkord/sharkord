@@ -40,7 +40,6 @@ const ensureDeletedUser = async (): Promise<number> => {
       avatarId: null,
       bannerId: null,
       bio: null,
-      bannerColor: null,
       createdAt: Date.now()
     })
     .returning({ id: users.id })

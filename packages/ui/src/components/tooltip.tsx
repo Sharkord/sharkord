@@ -69,12 +69,10 @@ const Tooltip = ({
   sideOffset = 4,
   asChild = true
 }: TTooltipProps) => (
-  <TooltipProvider>
-    <TooltipRoot delayDuration={200}>
-      <TooltipTrigger asChild={asChild}>{children}</TooltipTrigger>
-      <TooltipContent sideOffset={sideOffset}>{content}</TooltipContent>
-    </TooltipRoot>
-  </TooltipProvider>
+  <TooltipRoot delayDuration={200}>
+    <TooltipTrigger asChild={asChild}>{children}</TooltipTrigger>
+    <TooltipContent sideOffset={sideOffset}>{content}</TooltipContent>
+  </TooltipRoot>
 );
 
 export {

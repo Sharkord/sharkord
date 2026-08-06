@@ -21,6 +21,7 @@ import {
   ownVoiceUserSelector,
   pluginsEnabledSelector,
   publicServerSettingsSelector,
+  referenceableChannelsSelector,
   serverNameSelector,
   typingUsersByChannelIdSelector,
   typingUsersByThreadIdSelector,
@@ -48,6 +49,9 @@ export const useOwnUserRoles = () => useSelector(ownUserRolesSelector);
 export const useInfo = () => useSelector(infoSelector);
 
 export const useIsOwnUserOwner = () => useSelector(isOwnUserOwnerSelector);
+
+export const useReferenceableChannels = () =>
+  useSelector(referenceableChannelsSelector);
 
 export const usePluginsEnabled = () => useSelector(pluginsEnabledSelector);
 
