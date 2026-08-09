@@ -1,7 +1,8 @@
-import { ChannelPermission, ChannelType } from '@sharkord/shared';
+import { ChannelPermission, ChannelType, ServerEvents } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { initTest } from '../../__tests__/helpers';
 import { getChannelsReadStatesForUser } from '../../db/queries/channels';
+import { pubsub } from '../../utils/pubsub';
 
 describe('channels router', () => {
   test('should throw when user lacks permissions (add)', async () => {
@@ -159,6 +160,51 @@ describe('channels router', () => {
     expect(channel.name).toBe('updated-channel');
     expect(channel.topic).toBe('This is a test topic');
     expect(channel.private).toBe(true);
+  });
+
+  test('should throw when adding a channel to a non-existing category', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.channels.add({
+        type: ChannelType.TEXT,
+        name: 'orphan-channel',
+        categoryId: 9999
+      })
+    ).rejects.toThrow('Category not found');
+  });
+
+  test('should throw when updating permissions for a non-existing role', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.channels.updatePermissions({
+        channelId: 1,
+        roleId: 9999,
+        permissions: []
+      })
+    ).rejects.toThrow('Role not found');
+  });
+
+  test('should throw when updating a non-existing channel', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.channels.update({
+        channelId: 9999,
+        name: 'ghost-channel'
+      })
+    ).rejects.toThrow('Channel not found');
+  });
+
+  test('should throw when updating a channel with no values', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.channels.update({
+        channelId: 1
+      })
+    ).rejects.toThrow('Nothing to update');
   });
 
   test('should update channel topic to null', async () => {
@@ -466,6 +512,72 @@ describe('channels router', () => {
     // after marking as read, there should be 0 unread messages
     expect(afterReadStates[2]).toBeDefined();
     expect(afterReadStates[2]).toBe(0);
+  });
+
+  test('should not mark a channel as read just by fetching its messages', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    await caller1.messages.send({
+      channelId: 2,
+      content: 'Unread for user two',
+      files: []
+    });
+
+    // reading a page used to upsert the read state to the newest message, so
+    // scrolling back through history silently marked everything read
+    await caller2.messages.get({ channelId: 2, cursor: null, limit: 50 });
+
+    const readStates = await getChannelsReadStatesForUser(2, 2);
+
+    expect(readStates[2]).toBe(1);
+  });
+
+  test('should mark channel as read twice without conflicting', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    await caller1.messages.send({
+      channelId: 2,
+      content: 'Test message',
+      files: []
+    });
+
+    await Promise.all([
+      caller2.channels.markAsRead({ channelId: 2 }),
+      caller2.channels.markAsRead({ channelId: 2 })
+    ]);
+
+    const readStates = await getChannelsReadStatesForUser(2, 2);
+
+    expect(readStates[2]).toBe(0);
+  });
+
+  test('should publish a read state update when marking as read', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    await caller1.messages.send({
+      channelId: 2,
+      content: 'Test message',
+      files: []
+    });
+
+    const events: { channelId: number; count: number }[] = [];
+
+    const subscription = pubsub
+      .subscribeFor(2, ServerEvents.CHANNEL_READ_STATES_UPDATE)
+      .subscribe({
+        next: (event) => {
+          events.push(event);
+        }
+      });
+
+    await caller2.channels.markAsRead({ channelId: 2 });
+
+    subscription.unsubscribe();
+
+    expect(events).toEqual([{ channelId: 2, count: 0 }]);
   });
 
   test('should mark channel as read with no messages', async () => {

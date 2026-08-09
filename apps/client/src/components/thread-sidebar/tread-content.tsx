@@ -64,6 +64,12 @@ const ThreadContent = memo(
       setReplyingToMessage(message);
     }, []);
 
+    const handleCancelReply = useCallback(
+      () => setReplyingToMessage(undefined),
+
+      [setReplyingToMessage]
+    );
+
     return (
       <div className="flex flex-col h-full w-full">
         <ThreadHeader />
@@ -127,7 +133,7 @@ const ThreadContent = memo(
             channelId={channelId}
             typingUsers={typingUsers}
             replyingToMessage={replyingToMessage}
-            onCancelReply={() => setReplyingToMessage(undefined)}
+            onCancelReply={handleCancelReply}
             onArrowUp={handleArrowUpEdit}
             composeContainerRef={composeContainerRef}
             inputStorageKey={LocalStorageKey.THREAD_INPUT_HEIGHT_VH}

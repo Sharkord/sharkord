@@ -6,8 +6,15 @@ import {
 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
-import { initTest, uploadFile } from '../../__tests__/helpers';
+import jwt from 'jsonwebtoken';
+import {
+  getCaller,
+  getMockedToken,
+  initTest,
+  uploadFile
+} from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
+import { getUserByToken } from '../../db/queries/users';
 import {
   channels,
   emojis,
@@ -405,6 +412,58 @@ describe('users router', () => {
     expect(isValid).toBe(true);
   });
 
+  test('should invalidate tokens issued before a password change', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    expect(await getUserByToken(mockedToken)).toBeDefined();
+
+    await caller.users.updatePassword({
+      currentPassword: 'password123',
+      newPassword: 'newpassword456',
+      confirmNewPassword: 'newpassword456'
+    });
+
+    const row = await tdb
+      .select({ tokenVersion: users.tokenVersion })
+      .from(users)
+      .where(eq(users.id, 1))
+      .get();
+
+    expect(row?.tokenVersion).toBe(1);
+
+    // the old token still verifies cryptographically, it is the tokensValidAfter check
+    // that has to refuse it
+    expect(jwt.decode(mockedToken)).toBeTruthy();
+    expect(await getUserByToken(mockedToken)).toBeUndefined();
+  });
+
+  test('should accept a token carrying the new version', async () => {
+    const { caller } = await initTest();
+
+    await caller.users.updatePassword({
+      currentPassword: 'password123',
+      newPassword: 'newpassword456',
+      confirmNewPassword: 'newpassword456'
+    });
+
+    const freshToken = await getMockedToken(1, 1);
+
+    expect(await getUserByToken(freshToken)).toBeDefined();
+  });
+
+  test('should leave other users tokens alone on a password change', async () => {
+    const { caller } = await initTest();
+    const otherToken = await getMockedToken(2);
+
+    await caller.users.updatePassword({
+      currentPassword: 'password123',
+      newPassword: 'newpassword456',
+      confirmNewPassword: 'newpassword456'
+    });
+
+    expect(await getUserByToken(otherToken)).toBeDefined();
+  });
+
   test('should throw when current password is incorrect', async () => {
     const { caller } = await initTest();
 
@@ -612,6 +671,61 @@ describe('users router', () => {
     expect(secondInfo.user.avatarId).not.toBe(firstAvatarId);
   });
 
+  test('should keep the previous avatar when the new one is rejected', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    const file = new File(['first avatar'], 'avatar1.png', {
+      type: 'image/png'
+    });
+
+    const uploadResponse = await uploadFile(file, mockedToken);
+    const uploadData = (await uploadResponse.json()) as TTempFile;
+
+    await caller.users.changeAvatar({
+      fileId: uploadData.id
+    });
+
+    const before = await caller.users.getInfo({ userId: 1 });
+
+    expect(before.user.avatarId).toBeDefined();
+
+    await tdb
+      .update(settings)
+      .set({
+        storageMaxAvatarSize: 10
+      })
+      .execute();
+
+    const rejectedFile = new File(
+      ['second avatar, bigger than ten bytes'],
+      'avatar2.png',
+      {
+        type: 'image/png'
+      }
+    );
+
+    const rejectedUpload = await uploadFile(rejectedFile, mockedToken);
+    const rejectedData = (await rejectedUpload.json()) as TTempFile;
+
+    await expect(
+      caller.users.changeAvatar({
+        fileId: rejectedData.id
+      })
+    ).rejects.toThrow('Avatar file exceeds the configured maximum size');
+
+    const after = await caller.users.getInfo({ userId: 1 });
+
+    expect(after.user.avatarId).toBe(before.user.avatarId);
+
+    const avatarFile = await tdb
+      .select({ id: files.id })
+      .from(files)
+      .where(eq(files.id, before.user.avatarId!))
+      .get();
+
+    expect(avatarFile).toBeDefined();
+  });
+
   test('should add role to user', async () => {
     const { caller } = await initTest();
 
@@ -759,6 +873,18 @@ describe('users router', () => {
     expect(info.user.banned).toBe(true);
     expect(info.user.banReason).toBe('Violated community guidelines');
     expect(info.user.bannedAt).toBeDefined();
+  });
+
+  test('should refuse a new session for a banned user', async () => {
+    const { caller } = await initTest();
+
+    await caller.users.ban({
+      userId: 2,
+      reason: 'Violated community guidelines'
+    });
+
+    // the token stays cryptographically valid, the ban has to be what stops it
+    await expect(getCaller(2)).rejects.toThrow('Invalid authentication token');
   });
 
   test('should ban user without reason', async () => {
@@ -951,6 +1077,56 @@ describe('users router', () => {
 
     expect(reactionAfterDelete).toBeDefined();
     expect(reactionAfterDelete!.userId).toBe(deletedPlaceholderUser!.id);
+  });
+
+  test('should delete a second user who shared a reaction with the first', async () => {
+    const { caller } = await initTest();
+
+    const now = Date.now();
+
+    await tdb.insert(messageReactions).values([
+      {
+        messageId: 1,
+        userId: 2,
+        emoji: '👍',
+        fileId: null,
+        createdAt: now
+      },
+      {
+        messageId: 1,
+        userId: 3,
+        emoji: '👍',
+        fileId: null,
+        createdAt: now
+      }
+    ]);
+
+    await caller.users.delete({ userId: 2, wipe: false });
+    await caller.users.delete({ userId: 3, wipe: false });
+
+    const remainingUsers = await tdb
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, 3));
+
+    expect(remainingUsers.length).toBe(0);
+
+    const placeholder = await tdb
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.identity, DELETED_USER_IDENTITY_AND_NAME))
+      .get();
+
+    // the two reactions collapse into the one row the placeholder can hold
+    const reactions = await tdb
+      .select({ userId: messageReactions.userId })
+      .from(messageReactions)
+      .where(
+        and(eq(messageReactions.messageId, 1), eq(messageReactions.emoji, '👍'))
+      );
+
+    expect(reactions.length).toBe(1);
+    expect(reactions[0]!.userId).toBe(placeholder!.id);
   });
 
   test('should wipe all linked data when deleting user with wipe', async () => {
@@ -1238,6 +1414,168 @@ describe('users router', () => {
     expect(info.user.name).toBe('Final Name');
     expect(info.user.profileColor).toBe('#333333');
     expect(info.user.bio).toBe('Final Bio');
+  });
+
+  test('should throw when banning a non-existing user', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.ban({
+        userId: 9999
+      })
+    ).rejects.toThrow('User not found');
+  });
+
+  test('should throw when unbanning a non-existing user', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.unban({
+        userId: 9999
+      })
+    ).rejects.toThrow('User not found');
+  });
+
+  test('should reject a new password equal to the current one', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.updatePassword({
+        currentPassword: 'password123',
+        newPassword: 'password123',
+        confirmNewPassword: 'password123'
+      })
+    ).rejects.toThrow('New password must be different from the current one');
+  });
+
+  test('should not let a moderator assign a role holding permissions they lack', async () => {
+    const { caller: owner } = await initTest();
+    const roleId = await owner.roles.add();
+
+    await owner.roles.update({
+      roleId,
+      name: 'Higher Role',
+      color: '#00ff00',
+      permissions: [Permission.MANAGE_SETTINGS],
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0
+    });
+
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.users.addRole({
+        userId: 5,
+        roleId
+      })
+    ).rejects.toThrow(
+      'You cannot assign a role with permissions that you do not have'
+    );
+
+    const assigned = await tdb
+      .select()
+      .from(userRoles)
+      .where(and(eq(userRoles.userId, 5), eq(userRoles.roleId, roleId)));
+
+    expect(assigned.length).toBe(0);
+  });
+
+  test('should throw when adding a non-existing role to a user', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.addRole({
+        userId: 2,
+        roleId: 9999
+      })
+    ).rejects.toThrow('Role not found');
+  });
+
+  test('should not let a moderator ban the owner', async () => {
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.users.ban({
+        userId: 1
+      })
+    ).rejects.toThrow('Only users with the owner role can act on the server');
+
+    const [owner] = await tdb.select().from(users).where(eq(users.id, 1));
+
+    expect(owner!.banned).toBeFalsy();
+  });
+
+  test('should not let a moderator kick the owner', async () => {
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.users.kick({
+        userId: 1
+      })
+    ).rejects.toThrow('Only users with the owner role can act on the server');
+  });
+
+  test('should not let a moderator delete the owner', async () => {
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.users.delete({
+        userId: 1,
+        wipe: true
+      })
+    ).rejects.toThrow('Only users with the owner role can act on the server');
+
+    const [owner] = await tdb.select().from(users).where(eq(users.id, 1));
+
+    expect(owner).toBeDefined();
+  });
+
+  test('should not let a moderator change the owner roles', async () => {
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.users.addRole({
+        userId: 1,
+        roleId: 3
+      })
+    ).rejects.toThrow('Only users with the owner role can act on the server');
+
+    await expect(
+      caller.users.removeRole({
+        userId: 1,
+        roleId: OWNER_ROLE_ID
+      })
+    ).rejects.toThrow('Only users with the owner role can');
+  });
+
+  test('should let a moderator ban a regular user', async () => {
+    const { caller } = await initTest(5);
+
+    await caller.users.ban({
+      userId: 2
+    });
+
+    const [target] = await tdb.select().from(users).where(eq(users.id, 2));
+
+    expect(target!.banned).toBe(true);
+  });
+
+  test('should let the owner act on another owner-role holder', async () => {
+    await tdb.insert(userRoles).values({
+      userId: 2,
+      roleId: OWNER_ROLE_ID,
+      createdAt: Date.now()
+    });
+
+    const { caller } = await initTest();
+
+    await caller.users.ban({
+      userId: 2
+    });
+
+    const [target] = await tdb.select().from(users).where(eq(users.id, 2));
+
+    expect(target!.banned).toBe(true);
   });
 
   test('should not return dm messages in user info', async () => {

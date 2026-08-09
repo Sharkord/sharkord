@@ -1,4 +1,8 @@
-import { Permission } from '@sharkord/shared';
+import {
+  EMOJI_CHARACTER_REGEX,
+  Permission,
+  REACTION_EMOJI_MAX_LENGTH
+} from '@sharkord/shared';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
@@ -19,7 +23,7 @@ const toggleMessageReactionRoute = rateLimitedProcedure(protectedProcedure, {
   .input(
     z.object({
       messageId: z.number(),
-      emoji: z.string()
+      emoji: z.string().min(1).max(REACTION_EMOJI_MAX_LENGTH)
     })
   )
   .mutation(async ({ input, ctx }) => {
@@ -46,6 +50,14 @@ const toggleMessageReactionRoute = rateLimitedProcedure(protectedProcedure, {
 
     if (!reaction) {
       const emojiFileId = await getEmojiFileIdByEmojiName(input.emoji);
+
+      invariant(
+        emojiFileId !== null || EMOJI_CHARACTER_REGEX.test(input.emoji),
+        {
+          code: 'BAD_REQUEST',
+          message: 'Unknown emoji'
+        }
+      );
 
       await db.insert(messageReactions).values({
         messageId: input.messageId,

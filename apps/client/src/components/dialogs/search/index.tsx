@@ -1,5 +1,4 @@
 import type { TDialogBaseProps } from '@/components/dialogs/types';
-import { PaginatedList } from '@/components/paginated-list';
 import { jumpToMessage } from '@/features/server/actions';
 import { useOnEsc } from '@/hooks/use-on-esc';
 import type { TMessageJumpToTarget } from '@/types';
@@ -10,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   Input,
+  PaginatedList,
   Spinner
 } from '@sharkord/ui';
 import { memo, useCallback } from 'react';

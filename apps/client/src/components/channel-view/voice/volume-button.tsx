@@ -11,6 +11,7 @@ import {
   type TIconButtonSize
 } from '@sharkord/ui';
 import { Volume2, VolumeX } from 'lucide-react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { memo, useCallback } from 'react';
 
 type TVolumeButtonProps = {
@@ -36,6 +37,10 @@ const VolumeButton = memo(
       toggleMute(volumeKey);
     }, [volumeKey, toggleMute]);
 
+    const stopPropagation = useCallback((event: ReactMouseEvent) => {
+      event.stopPropagation();
+    }, []);
+
     return (
       <Popover>
         <PopoverTrigger asChild>
@@ -51,7 +56,7 @@ const VolumeButton = memo(
           align="center"
           side="top"
           className="w-48 p-3"
-          onClick={(e) => e.stopPropagation()}
+          onClick={stopPropagation}
         >
           <div className="flex items-center gap-2">
             <IconButton

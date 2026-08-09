@@ -1,16 +1,16 @@
 import { test } from '@playwright/test';
 import { loginAs } from './fixtures';
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+import { sleep } from './helpers';
 
 // run this with bun test:mocked
 // use this to navigate freely in the server from the browser and inspect the behavior with mocked data, without worrying about the test timing out
 
 test.describe('Mocked', () => {
   test('wait', async ({ page }) => {
-    if (!process.env.RUN_MOCK) {
-      return;
-    }
+    test.skip(
+      !process.env.RUN_MOCK,
+      'exploration harness, set RUN_MOCK to use it'
+    );
 
     await loginAs(page, 'testowner', 'password123');
 

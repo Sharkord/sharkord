@@ -15,6 +15,7 @@ import {
   type TIconButtonSize
 } from '@sharkord/ui';
 import { Gauge } from 'lucide-react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { memo, useCallback, useState } from 'react';
 
 type TQualityButtonProps = {
@@ -62,6 +63,10 @@ const QualityButton = memo(
 
     const isDisabled = disabled || isPending;
 
+    const stopPropagation = useCallback((event: ReactMouseEvent) => {
+      event.stopPropagation();
+    }, []);
+
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -82,7 +87,7 @@ const QualityButton = memo(
           align="center"
           side="top"
           className="w-32"
-          onClick={(e) => e.stopPropagation()}
+          onClick={stopPropagation}
         >
           <DropdownMenuRadioGroup
             value={getStreamQualityDropdownValue(quality)}

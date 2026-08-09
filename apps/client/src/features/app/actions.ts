@@ -5,6 +5,7 @@ import {
   setLocalStorageItem,
   setLocalStorageItemBool
 } from '@/helpers/storage';
+import { i18n } from '@/i18n';
 import type { TMessageJumpToTarget } from '@/types';
 import type { TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
@@ -84,7 +85,7 @@ export const loadApp = async () => {
 
   if (!info) {
     console.error('Failed to load server info during app load');
-    toast.error('Failed to load server info');
+    toast.error(i18n.t('common:failedLoadServerInfo'));
     return;
   }
 

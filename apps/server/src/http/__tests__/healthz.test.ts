@@ -13,3 +13,25 @@ describe('/healthz', () => {
     expect(data).toHaveProperty('timestamp');
   });
 });
+
+describe('security and cors headers', () => {
+  test('sets nosniff on every response', async () => {
+    const response = await fetch(`${testsBaseUrl}/healthz`);
+
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+  });
+
+  test('sets nosniff on served files too', async () => {
+    const response = await fetch(`${testsBaseUrl}/public/does-not-exist.txt`);
+
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+  });
+
+  test('allows any origin with the default config', async () => {
+    const response = await fetch(`${testsBaseUrl}/healthz`, {
+      headers: { Origin: 'https://somewhere.example' }
+    });
+
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+  });
+});

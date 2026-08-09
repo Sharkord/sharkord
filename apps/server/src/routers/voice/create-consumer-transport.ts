@@ -1,28 +1,31 @@
 import { Permission } from '@sharkord/shared';
+import { config } from '../../config';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const createConsumerTransportRoute = protectedProcedure.mutation(
-  async ({ ctx }) => {
-    await ctx.needsPermission(Permission.JOIN_VOICE_CHANNELS);
+const createConsumerTransportRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.voiceTransport.maxRequests,
+  windowMs: config.rateLimiters.voiceTransport.windowMs,
+  logLabel: 'createConsumerTransport'
+}).mutation(async ({ ctx }) => {
+  await ctx.needsPermission(Permission.JOIN_VOICE_CHANNELS);
 
-    invariant(ctx.currentVoiceChannelId, {
-      code: 'BAD_REQUEST',
-      message: 'User is not in a voice channel'
-    });
+  invariant(ctx.currentVoiceChannelId, {
+    code: 'BAD_REQUEST',
+    message: 'User is not in a voice channel'
+  });
 
-    const runtime = VoiceRuntime.findById(ctx.currentVoiceChannelId);
+  const runtime = VoiceRuntime.findById(ctx.currentVoiceChannelId);
 
-    invariant(runtime, {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'Voice runtime not found for this channel'
-    });
+  invariant(runtime, {
+    code: 'INTERNAL_SERVER_ERROR',
+    message: 'Voice runtime not found for this channel'
+  });
 
-    const params = await runtime.createConsumerTransport(ctx.user.id);
+  const params = await runtime.createConsumerTransport(ctx.user.id);
 
-    return params;
-  }
-);
+  return params;
+});
 
 export { createConsumerTransportRoute };

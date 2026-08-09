@@ -3,13 +3,15 @@ import {
   type TActivityLogDetailsMap,
   type TMessageMetadata
 } from '@sharkord/shared';
+import { sql } from 'drizzle-orm';
 import {
   index,
   integer,
   primaryKey,
   sqliteTable,
   text,
-  uniqueIndex
+  uniqueIndex,
+  type AnySQLiteColumn
 } from 'drizzle-orm/sqlite-core';
 
 const files = sqliteTable(
@@ -107,7 +109,8 @@ const settings = sqliteTable(
   },
   (t) => [
     index('settings_server_idx').on(t.serverId),
-    uniqueIndex('settings_server_unique_idx').on(t.serverId)
+    uniqueIndex('settings_server_unique_idx').on(t.serverId),
+    uniqueIndex('settings_single_row_idx').on(sql`(1)`)
   ]
 );
 
@@ -189,7 +192,7 @@ const users = sqliteTable(
     banned: integer('banned', { mode: 'boolean' }).notNull().default(false),
     banReason: text('ban_reason'),
     bannedAt: integer('banned_at'),
-    // a banner image, when set, always renders on top of this
+    tokenVersion: integer('token_version').notNull().default(0),
     profileColor: text('profile_color')
       .notNull()
       .default(DEFAULT_PROFILE_COLOR),
@@ -267,8 +270,14 @@ const messages = sqliteTable(
     channelId: integer('channel_id')
       .notNull()
       .references(() => channels.id, { onDelete: 'cascade' }),
-    parentMessageId: integer('parent_message_id'),
-    replyToMessageId: integer('reply_to_message_id'),
+    parentMessageId: integer('parent_message_id').references(
+      (): AnySQLiteColumn => messages.id,
+      { onDelete: 'cascade' }
+    ),
+    replyToMessageId: integer('reply_to_message_id').references(
+      (): AnySQLiteColumn => messages.id,
+      { onDelete: 'set null' }
+    ),
     editable: integer('editable', { mode: 'boolean' }).default(true),
     metadata: text('metadata', { mode: 'json' }).$type<TMessageMetadata[]>(),
     createdAt: integer('created_at').notNull(),
@@ -288,8 +297,18 @@ const messages = sqliteTable(
     index('messages_channel_idx').on(t.channelId),
     index('messages_created_idx').on(t.createdAt),
     index('messages_channel_created_idx').on(t.channelId, t.createdAt),
+    index('messages_channel_parent_created_idx').on(
+      t.channelId,
+      t.parentMessageId,
+      t.createdAt
+    ),
     index('messages_parent_idx').on(t.parentMessageId),
-    index('messages_reply_to_idx').on(t.replyToMessageId)
+    index('messages_reply_to_idx').on(t.replyToMessageId),
+    index('messages_parent_channel_id_idx').on(
+      t.parentMessageId,
+      t.channelId,
+      t.id
+    )
   ]
 );
 
@@ -402,9 +421,9 @@ const activityLog = sqliteTable(
   'activity_log',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    userId: integer('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+    userId: integer('user_id').references(() => users.id, {
+      onDelete: 'cascade'
+    }),
     type: text('type').notNull(),
     details: text('details', { mode: 'json' }).$type<
       TActivityLogDetailsMap[keyof TActivityLogDetailsMap]

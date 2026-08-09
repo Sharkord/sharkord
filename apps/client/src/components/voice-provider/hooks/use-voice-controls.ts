@@ -1,11 +1,12 @@
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
-import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { updateOwnVoiceState } from '@/features/server/voice/actions';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
+import { playSound } from '@/helpers/sounds';
 import { getTRPCClient } from '@/lib/trpc';
 import { getTrpcError } from '@sharkord/shared';
 import { useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TPendingMicRestoreState = {
@@ -39,6 +40,7 @@ const useVoiceControls = ({
   startScreenShareStream,
   stopScreenShareStream
 }: TUseVoiceControlsParams) => {
+  const { t } = useTranslation('common');
   const ownVoiceState = useOwnVoiceState();
   const currentVoiceChannelId = useCurrentVoiceChannelId();
 
@@ -92,11 +94,12 @@ const useVoiceControls = ({
       pendingMicRestoreStateRef.current = previousPendingMicRestoreState;
 
       updateOwnVoiceState({ micMuted: !nextMicMuted });
-      toast.error(getTrpcError(error, 'Failed to update microphone state'));
+      toast.error(getTrpcError(error, t('common:failedUpdateMicrophoneState')));
     } finally {
       isTogglingMic.current = false;
     }
   }, [
+    t,
     ownVoiceState.micMuted,
     ownVoiceState.soundMuted,
     startMicStream,
@@ -165,11 +168,12 @@ const useVoiceControls = ({
     } catch (error) {
       pendingMicRestoreStateRef.current = previousPendingMicRestoreState;
       updateOwnVoiceState(rollbackVoiceState);
-      toast.error(getTrpcError(error, 'Failed to update sound state'));
+      toast.error(getTrpcError(error, t('common:failedUpdateSoundState')));
     } finally {
       isTogglingSound.current = false;
     }
   }, [
+    t,
     ownVoiceState.soundMuted,
     ownVoiceState.micMuted,
     currentVoiceChannelId,
@@ -212,11 +216,12 @@ const useVoiceControls = ({
         // ignore
       }
 
-      toast.error(getTrpcError(error, 'Failed to update webcam state'));
+      toast.error(getTrpcError(error, t('common:failedUpdateWebcamState')));
     } finally {
       isTogglingWebcam.current = false;
     }
   }, [
+    t,
     ownVoiceState.webcamEnabled,
     currentVoiceChannelId,
     startWebcamStream,
@@ -271,11 +276,14 @@ const useVoiceControls = ({
         // ignore
       }
 
-      toast.error(getTrpcError(error, 'Failed to update screen share state'));
+      toast.error(
+        getTrpcError(error, t('common:failedUpdateScreenShareState'))
+      );
     } finally {
       isTogglingScreenShare.current = false;
     }
   }, [
+    t,
     ownVoiceState.sharingScreen,
     startScreenShareStream,
     stopScreenShareStream

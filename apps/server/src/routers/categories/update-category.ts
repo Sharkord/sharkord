@@ -19,7 +19,7 @@ const updateCategoryRoute = protectedProcedure
     await ctx.needsPermission(Permission.MANAGE_CATEGORIES);
 
     const existingCategory = await db
-      .select()
+      .select({ id: categories.id })
       .from(categories)
       .where(eq(categories.id, input.categoryId))
       .limit(1)

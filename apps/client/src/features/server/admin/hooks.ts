@@ -4,7 +4,6 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
   parseTrpcErrors,
-  Permission,
   STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY,
   STORAGE_DEFAULT_MAX_AVATAR_SIZE,
   STORAGE_DEFAULT_MAX_BANNER_SIZE,
@@ -35,12 +34,13 @@ import {
 } from '@sharkord/shared';
 import { filesize } from 'filesize';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { useCan } from '../hooks';
 
 // TODO: review this whole file for optimizations and improvements
 
 export const useAdminGeneral = () => {
+  const { t } = useTranslation('common');
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<TTrpcErrors>({});
   const [settings, setSettings] = useState({
@@ -96,12 +96,12 @@ export const useAdminGeneral = () => {
         enableSearch: settings.enableSearch,
         showWelcomeDialog: settings.showWelcomeDialog
       });
-      toast.success('Settings updated');
+      toast.success(t('common:settingsUpdated'));
     } catch (error) {
       console.error('Error updating settings:', error);
       setErrors(parseTrpcErrors(error));
     }
-  }, [settings]);
+  }, [settings, t]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onChange = useCallback((field: keyof typeof settings, value: any) => {
@@ -125,6 +125,7 @@ export const useAdminGeneral = () => {
 };
 
 export const useAdminUpdates = () => {
+  const { t } = useTranslation('common');
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<TTrpcErrors>({});
   const [hasUpdate, setHasUpdate] = useState(false);
@@ -169,12 +170,12 @@ export const useAdminUpdates = () => {
     try {
       trpc.others.updateServer.mutate();
 
-      toast.success('Server update initiated');
+      toast.success(t('common:serverUpdateInitiated'));
     } catch (error) {
       console.error('Error updating server:', error);
       setErrors(parseTrpcErrors(error));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchUpdate();
@@ -228,32 +229,8 @@ export const useAdminPlugins = () => {
   };
 };
 
-export const useHasUpdates = () => {
-  const can = useCan();
-  const [hasUpdates, setHasUpdates] = useState(false);
-
-  const fetchHasUpdates = useCallback(async () => {
-    if (!can(Permission.MANAGE_UPDATES)) return;
-
-    const trpc = getTRPCClient();
-
-    try {
-      const { hasUpdate } = await trpc.others.getUpdate.query();
-
-      setHasUpdates(hasUpdate);
-    } catch (error) {
-      console.error('Error fetching update status:', error);
-    }
-  }, [can]);
-
-  useEffect(() => {
-    fetchHasUpdates();
-  }, [fetchHasUpdates]);
-
-  return hasUpdates;
-};
-
 export const useAdminChannelGeneral = (channelId: number) => {
+  const { t } = useTranslation('common');
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<TTrpcErrors>({});
   const [channel, setChannel] = useState<TChannel | undefined>(undefined);
@@ -279,12 +256,12 @@ export const useAdminChannelGeneral = (channelId: number) => {
         private: channel?.private ?? false
       });
 
-      toast.success('Channel updated');
+      toast.success(t('common:channelUpdated'));
     } catch (error) {
       console.error('Error updating channel:', error);
       setErrors(parseTrpcErrors(error));
     }
-  }, [channel, channelId]);
+  }, [channel, channelId, t]);
 
   const onChange = useCallback(
     (field: keyof TChannel, value: string | null | boolean) => {
@@ -310,6 +287,7 @@ export const useAdminChannelGeneral = (channelId: number) => {
 };
 
 export const useAdminCategoryGeneral = (categoryId: number) => {
+  const { t } = useTranslation('common');
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<TTrpcErrors>({});
   const [category, setCategory] = useState<TCategory | undefined>(undefined);
@@ -333,12 +311,12 @@ export const useAdminCategoryGeneral = (categoryId: number) => {
         name: category?.name ?? ''
       });
 
-      toast.success('Category updated');
+      toast.success(t('common:categoryUpdated'));
     } catch (error) {
       console.error('Error updating category:', error);
       setErrors(parseTrpcErrors(error));
     }
-  }, [category, categoryId]);
+  }, [category, categoryId, t]);
 
   const onChange = useCallback(
     (field: keyof TCategory, value: string | null) => {
@@ -440,6 +418,7 @@ export const useAdminRoles = () => {
 };
 
 export const useAdminStorage = () => {
+  const { t } = useTranslation('common');
   const [loading, setLoading] = useState(true);
   const { values, setValues, setTrpcErrors, r, onChange } =
     useForm<TStorageSettings>({
@@ -495,12 +474,12 @@ export const useAdminStorage = () => {
         storageImageOptimizationEnabled: values.storageImageOptimizationEnabled,
         storageImageOptimizationQuality: values.storageImageOptimizationQuality
       });
-      toast.success('Storage settings updated');
+      toast.success(t('common:storageSettingsUpdated'));
     } catch (error) {
       console.error('Error updating storage settings:', error);
       setTrpcErrors(error);
     }
-  }, [values, setTrpcErrors]);
+  }, [values, setTrpcErrors, t]);
 
   const labels = useMemo(() => {
     return {
@@ -592,7 +571,7 @@ export const useAdminChannelPermissions = (channelId: number) => {
 
     const trpc = getTRPCClient();
     const { rolePermissions, userPermissions } =
-      await trpc.channels.getPermissions.mutate({ channelId });
+      await trpc.channels.getPermissions.query({ channelId });
 
     setRolePermissions(rolePermissions);
     setUserPermissions(userPermissions);

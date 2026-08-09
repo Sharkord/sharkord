@@ -7,11 +7,14 @@ import { store } from '@/features/store';
 import { LocalStorageKey } from '@/helpers/storage';
 import { ChannelType } from '@sharkord/shared';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 // the single entry point for navigating to a channel, it also joins voice and
 // remembers the last text channel, so never dispatch setSelectedChannelId directly
 const useSelectChannel = () => {
+  const { t } = useTranslation('common');
+
   const { init } = useVoice();
   const currentVoiceChannelId = useCurrentVoiceChannelId();
 
@@ -40,7 +43,7 @@ const useSelectChannel = () => {
         if (!response) {
           // joining voice failed
           setSelectedChannelId(undefined);
-          toast.error('Failed to join voice channel');
+          toast.error(t('common:failedJoinVoiceChannel'));
 
           return;
         }
@@ -49,11 +52,11 @@ const useSelectChannel = () => {
           await init(response, channel.id);
         } catch {
           setSelectedChannelId(undefined);
-          toast.error('Failed to initialize voice connection');
+          toast.error(t('common:failedInitVoiceConnection'));
         }
       }
     },
-    [currentVoiceChannelId, init]
+    [currentVoiceChannelId, init, t]
   );
 };
 

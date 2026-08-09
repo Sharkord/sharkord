@@ -207,6 +207,27 @@ describe('invites router', () => {
     expect(inviteWithRole!.role!.color).toBeDefined();
   });
 
+  test('should reject an invite code that is not url safe', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.invites.add({
+        code: 'bad/code with spaces'
+      })
+    ).rejects.toThrow('Invalid invite code');
+  });
+
+  test('should reject an expiration date in the past', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.invites.add({
+        code: 'expired-invite',
+        expiresAt: Date.now() - 1000
+      })
+    ).rejects.toThrow('The expiration date must be in the future');
+  });
+
   test('should return null role for invite without roleId', async () => {
     const { caller } = await initTest();
 

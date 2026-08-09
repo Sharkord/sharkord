@@ -33,6 +33,12 @@ await ensureDir(LOGS_PATH);
 
 const level = config.server.debug ? 'debug' : 'info';
 
+const ROTATION = {
+  maxsize: 10 * 1024 * 1024,
+  maxFiles: 5,
+  tailable: true
+};
+
 const logger = createLogger({
   level,
   transports: [
@@ -42,12 +48,14 @@ const logger = createLogger({
     new transports.File({
       filename: combinedLog,
       format: fileFormat,
-      level
+      level,
+      ...ROTATION
     }),
     new transports.File({
       filename: errorLog,
       format: fileFormat,
-      level: 'error'
+      level: 'error',
+      ...ROTATION
     })
   ]
 });

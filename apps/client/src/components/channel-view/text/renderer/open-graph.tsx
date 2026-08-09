@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { ExternalLink, Globe } from 'lucide-react';
-import { memo } from 'react';
+import type { SyntheticEvent } from 'react';
+import { memo, useCallback } from 'react';
 import { OverrideLayout } from '../overrides/layout';
 import type { TFoundOpenGraph } from './types';
 
@@ -9,6 +10,13 @@ type TOpenGraphProps = {
 };
 
 const OpenGraph = memo(({ previews }: TOpenGraphProps) => {
+  const hideBrokenFavicon = useCallback(
+    (event: SyntheticEvent<HTMLImageElement>) => {
+      event.currentTarget.style.display = 'none';
+    },
+    []
+  );
+
   return previews.map((preview) => (
     <OverrideLayout key={preview.key}>
       <a
@@ -39,9 +47,7 @@ const OpenGraph = memo(({ previews }: TOpenGraphProps) => {
                 alt=""
                 className="h-3.5 w-3.5 shrink-0 rounded-full object-cover"
                 loading="lazy"
-                onError={(event) => {
-                  event.currentTarget.style.display = 'none';
-                }}
+                onError={hideBrokenFavicon}
               />
             ) : (
               <Globe className="h-3.5 w-3.5 shrink-0 rounded-full" />

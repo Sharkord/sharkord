@@ -182,7 +182,8 @@ const getMessage = async (
 };
 
 const getNonDirectMessagesFromUserId = async (
-  userId: number
+  userId: number,
+  limit: number
 ): Promise<TMessage[]> =>
   db
     .select()
@@ -198,7 +199,8 @@ const getNonDirectMessagesFromUserId = async (
         )
       )
     )
-    .orderBy(desc(messages.createdAt));
+    .orderBy(desc(messages.createdAt))
+    .limit(limit);
 
 const getReaction = async (
   messageId: number,

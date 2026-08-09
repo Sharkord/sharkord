@@ -1,11 +1,8 @@
 import { ImagePicker } from '@/components/image-picker';
-import { uploadImage } from '@/helpers/upload-file';
-import { useFilePicker } from '@/hooks/use-file-picker';
-import { getTRPCClient } from '@/lib/trpc';
+import { useImageManager } from '@/hooks/use-image-manager';
 import type { TFile } from '@sharkord/shared';
 import { Group } from '@sharkord/ui';
-import { memo, useCallback } from 'react';
-import { toast } from 'sonner';
+import { memo } from 'react';
 
 type TLogoManagerProps = {
   logo: TFile | null;
@@ -13,42 +10,7 @@ type TLogoManagerProps = {
 };
 
 const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
-  const openFilePicker = useFilePicker();
-
-  const removeLogo = useCallback(async () => {
-    const trpc = getTRPCClient();
-
-    try {
-      await trpc.others.changeLogo.mutate({ fileId: undefined });
-      await refetch();
-
-      toast.success('Logo removed successfully!');
-    } catch (error) {
-      console.error(error);
-      toast.error('Could not remove logo. Please try again.');
-    }
-  }, [refetch]);
-
-  const onLogoClick = useCallback(async () => {
-    const trpc = getTRPCClient();
-
-    try {
-      const [file] = await openFilePicker('image/*');
-
-      const temporaryFile = await uploadImage(file);
-
-      if (!temporaryFile) {
-        return;
-      }
-
-      await trpc.others.changeLogo.mutate({ fileId: temporaryFile.id });
-      await refetch();
-
-      toast.success('Logo updated successfully!');
-    } catch {
-      toast.error('Could not update logo. Please try again.');
-    }
-  }, [openFilePicker, refetch]);
+  const { onPick, onRemove } = useImageManager('logo', refetch);
 
   return (
     <Group
@@ -57,8 +19,8 @@ const LogoManager = memo(({ logo, refetch }: TLogoManagerProps) => {
     >
       <ImagePicker
         image={logo}
-        onImageClick={onLogoClick}
-        onRemoveImageClick={removeLogo}
+        onImageClick={onPick}
+        onRemoveImageClick={onRemove}
         className="object-scale-down"
       />
     </Group>

@@ -6,7 +6,8 @@ import {
   Slider
 } from '@sharkord/ui';
 import { Settings, Volume2, VolumeX } from 'lucide-react';
-import { memo } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
+import { memo, useCallback } from 'react';
 
 type TStreamSettingsPopoverProps = {
   volume: number;
@@ -22,6 +23,15 @@ const StreamSettingsPopover = memo(
     onVolumeChange,
     onMuteToggle
   }: TStreamSettingsPopoverProps) => {
+    const stopPropagation = useCallback((event: ReactMouseEvent) => {
+      event.stopPropagation();
+    }, []);
+
+    const handleVolumeChange = useCallback(
+      ([value]: number[]) => onVolumeChange(value ?? 0),
+      [onVolumeChange]
+    );
+
     return (
       <Popover>
         <PopoverTrigger asChild>
@@ -36,7 +46,7 @@ const StreamSettingsPopover = memo(
           align="end"
           side="bottom"
           className="w-56 p-3"
-          onClick={(e) => e.stopPropagation()}
+          onClick={stopPropagation}
         >
           <div className="space-y-3">
             <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -53,7 +63,7 @@ const StreamSettingsPopover = memo(
               />
               <Slider
                 value={[volume]}
-                onValueChange={([value]) => onVolumeChange(value)}
+                onValueChange={handleVolumeChange}
                 min={0}
                 max={100}
                 step={1}

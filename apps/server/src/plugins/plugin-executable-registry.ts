@@ -12,6 +12,8 @@ type TRegistryOptions<TDefinition, TRegistered> = {
   ) => ((ctx: TInvokerContext, input: unknown) => Promise<unknown>) | undefined;
 };
 
+const MAX_REGISTRATIONS_PER_PLUGIN = 100;
+
 class PluginExecutableRegistry<
   TDefinition extends { name: string; description?: string },
   TRegistered extends { pluginId: string; name: string; description?: string }
@@ -40,6 +42,13 @@ class PluginExecutableRegistry<
     }
 
     const pluginEntries = this.entries.get(pluginId)!;
+
+    if (pluginEntries.length >= MAX_REGISTRATIONS_PER_PLUGIN) {
+      throw new Error(
+        `Plugin '${pluginId}' exceeded the maximum of ${MAX_REGISTRATIONS_PER_PLUGIN} ${this.options.kind} registrations.`
+      );
+    }
+
     const existingIndex = pluginEntries.findIndex(
       (d) => d.name === definition.name
     );

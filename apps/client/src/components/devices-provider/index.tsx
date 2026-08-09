@@ -21,6 +21,8 @@ import {
   useRef,
   useState
 } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 const getDefaultDeviceSettings = (): TDeviceSettings => ({
   microphoneId: undefined,
@@ -135,6 +137,8 @@ const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
   const devicesRef = useRef(devices);
   devicesRef.current = devices;
 
+  const { t } = useTranslation();
+
   const loadDevices = useCallback(async () => {
     if (!navigator.mediaDevices?.enumerateDevices) {
       setDevicesEnumerated(true);
@@ -165,10 +169,13 @@ const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
           'videoinput'
         )
       );
+    } catch (error) {
+      toast.error(t('failedLoadDevices'));
+      console.error('Failed to enumerate media devices:', error);
     } finally {
       setDevicesEnumerated(true);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadDevices();

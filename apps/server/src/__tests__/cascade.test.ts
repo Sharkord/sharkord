@@ -326,6 +326,126 @@ describe('database cascades', async () => {
     expect(channelUserPermsAfter.length).toBe(0);
   });
 
+  test('deleting a message cascades to its thread replies', async () => {
+    const [channel] = await tdb.select().from(channels);
+    const [user] = await tdb.select().from(users);
+
+    const [parent] = await tdb
+      .insert(messages)
+      .values({
+        channelId: channel!.id,
+        userId: user!.id,
+        content: 'parent',
+        createdAt: Date.now()
+      })
+      .returning();
+
+    await tdb.insert(messages).values([
+      {
+        channelId: channel!.id,
+        userId: user!.id,
+        content: 'reply one',
+        parentMessageId: parent!.id,
+        createdAt: Date.now()
+      },
+      {
+        channelId: channel!.id,
+        userId: user!.id,
+        content: 'reply two',
+        parentMessageId: parent!.id,
+        createdAt: Date.now()
+      }
+    ]);
+
+    await tdb.delete(messages).where(eq(messages.id, parent!.id));
+
+    const orphans = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.parentMessageId, parent!.id));
+
+    expect(orphans.length).toBe(0);
+  });
+
+  test('deleting a message nulls inline replies pointing at it', async () => {
+    const [channel] = await tdb.select().from(channels);
+    const [user] = await tdb.select().from(users);
+
+    const [target] = await tdb
+      .insert(messages)
+      .values({
+        channelId: channel!.id,
+        userId: user!.id,
+        content: 'target',
+        createdAt: Date.now()
+      })
+      .returning();
+
+    const [replier] = await tdb
+      .insert(messages)
+      .values({
+        channelId: channel!.id,
+        userId: user!.id,
+        content: 'replying to it',
+        replyToMessageId: target!.id,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    await tdb.delete(messages).where(eq(messages.id, target!.id));
+
+    const reloaded = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.id, replier!.id))
+      .get();
+
+    // the replying message survives, it just loses the dangling pointer
+    expect(reloaded).toBeDefined();
+    expect(reloaded?.replyToMessageId).toBeNull();
+  });
+
+  test('deleting a channel removes thread replies with their parents', async () => {
+    const [user] = await tdb.select().from(users);
+
+    const [channel] = await tdb
+      .insert(channels)
+      .values({
+        name: 'thread-cascade',
+        type: 'TEXT',
+        position: 99,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    const [parent] = await tdb
+      .insert(messages)
+      .values({
+        channelId: channel!.id,
+        userId: user!.id,
+        content: 'parent',
+        createdAt: Date.now()
+      })
+      .returning();
+
+    await tdb.insert(messages).values({
+      channelId: channel!.id,
+      userId: user!.id,
+      content: 'reply',
+      parentMessageId: parent!.id,
+      createdAt: Date.now()
+    });
+
+    await tdb.delete(channels).where(eq(channels.id, channel!.id));
+
+    const remaining = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.channelId, channel!.id));
+
+    expect(remaining.length).toBe(0);
+  });
+
   test('deleting a message cascades to message_files and message_reactions', async () => {
     const messagesBefore = await tdb.select().from(messages);
     const usersBefore = await tdb.select().from(users);

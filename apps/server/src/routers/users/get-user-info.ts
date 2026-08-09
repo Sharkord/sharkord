@@ -29,8 +29,8 @@ const getUserInfoRoute = protectedProcedure
     const [logins, files, messages, storageUsage, settings] = await Promise.all(
       [
         getLastLogins(user.id, 6),
-        getFilesByUserId(user.id),
-        getNonDirectMessagesFromUserId(user.id),
+        getFilesByUserId(user.id, -1),
+        getNonDirectMessagesFromUserId(user.id, -1),
         getStorageUsageByUserId(user.id),
         getSettings()
       ]

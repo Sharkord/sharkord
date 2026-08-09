@@ -47,12 +47,12 @@ const onLoad = async (ctx) => {
     }
   });
 
-  ctx.log('Plugin with settings loaded');
+  ctx.logger.log('Plugin with settings loaded');
 };
 
 const onUnload = (ctx) => {
   pluginSettings = null;
-  ctx.log('Plugin with settings unloaded');
+  ctx.logger.log('Plugin with settings unloaded');
 };
 
 export { onLoad, onUnload };

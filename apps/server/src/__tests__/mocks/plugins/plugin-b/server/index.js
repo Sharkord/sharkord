@@ -1,4 +1,6 @@
 const onLoad = (ctx) => {
+  // deliberately the deprecated flat form, so removing ctx.log fails a test
+  // instead of silently breaking existing plugins
   ctx.log('Plugin B loaded');
 
   ctx.ui.enable();
@@ -15,7 +17,7 @@ const onLoad = (ctx) => {
       }
     ],
     async execute(invokerCtx, args) {
-      ctx.log('Executing test-command with:', args);
+      ctx.logger.log('Executing test-command with:', args);
       return { success: true, message: args.message };
     }
   });
@@ -111,7 +113,7 @@ const onLoad = (ctx) => {
 };
 
 const onUnload = (ctx) => {
-  ctx.log('Plugin B unloaded');
+  ctx.logger.log('Plugin B unloaded');
 };
 
 export { onLoad, onUnload };

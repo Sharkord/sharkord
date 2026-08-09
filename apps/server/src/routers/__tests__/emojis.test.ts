@@ -296,4 +296,21 @@ describe('emojis router', () => {
 
     expect(updatedEmoji!.fileId).toBe(originalFileId);
   });
+
+  test('should reject an oversized batch of emojis', async () => {
+    const { caller } = await initTest();
+
+    const batch = Array.from({ length: 21 }, (_, index) => ({
+      fileId: `temp-${index}`,
+      name: `emoji_${index}`
+    }));
+
+    await expect(caller.emojis.add(batch)).rejects.toThrow();
+  });
+
+  test('should reject an empty batch of emojis', async () => {
+    const { caller } = await initTest();
+
+    await expect(caller.emojis.add([])).rejects.toThrow();
+  });
 });

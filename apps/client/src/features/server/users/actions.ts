@@ -3,10 +3,6 @@ import { UserStatus, type TJoinedPublicUser } from '@sharkord/shared';
 import { serverSliceActions } from '../slice';
 import { userByIdSelector } from './selectors';
 
-export const setUsers = (users: TJoinedPublicUser[]) => {
-  store.dispatch(serverSliceActions.setUsers(users));
-};
-
 export const addUser = (user: TJoinedPublicUser) => {
   store.dispatch(serverSliceActions.addUser(user));
 };

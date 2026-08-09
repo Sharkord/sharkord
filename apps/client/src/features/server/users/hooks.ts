@@ -5,7 +5,6 @@ import {
   isOwnUserSelector,
   ownPublicUserSelector,
   ownUserIdSelector,
-  ownUserSelector,
   userByIdSelector,
   usernamesSelector,
   usersSelector,
@@ -13,8 +12,6 @@ import {
 } from './selectors';
 
 export const useUsers = () => useSelector(usersSelector);
-
-export const useOwnUser = () => useSelector(ownUserSelector);
 
 export const useOwnUserId = () => useSelector(ownUserIdSelector);
 

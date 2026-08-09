@@ -1,3 +1,4 @@
+import { useVoiceStats } from '@/components/voice-provider/stats-context';
 import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
 import { useWebRtcSimulcastEnabled } from '@/features/server/hooks';
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
@@ -12,6 +13,10 @@ import { CardTheme } from './card-theme';
 import { FullscreenButton } from './fullscreen-button';
 import { cardControlClass, cardDensity } from './helpers';
 import { useFullscreen } from './hooks/use-fullscreen';
+import {
+  PinnedCardType,
+  type TPinnedCard
+} from './hooks/use-pin-card-controller';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useVideoStats } from './hooks/use-video-stats';
 import { useVoiceRefs } from './hooks/use-voice-refs';
@@ -23,7 +28,8 @@ import { VolumeButton } from './volume-button';
 type TScreenShareCardProps = {
   userId: number;
   isPinned?: boolean;
-  onPin: () => void;
+  cardId: string;
+  onPin: (card: TPinnedCard) => void;
   onUnpin: () => void;
   className?: string;
   showPinControls: boolean;
@@ -34,6 +40,7 @@ const ScreenShareCard = memo(
   ({
     userId,
     isPinned = false,
+    cardId,
     onPin,
     onUnpin,
     className,
@@ -57,7 +64,8 @@ const ScreenShareCard = memo(
       hasScreenShareAudioStream
     } = useVoiceRefs(userId);
 
-    const { transportStats, getConsumerCodec } = useVoice();
+    const { getConsumerCodec } = useVoice();
+    const transportStats = useVoiceStats();
 
     const videoStats = useVideoStats(screenShareRef, hasScreenShareStream);
 
@@ -119,9 +127,13 @@ const ScreenShareCard = memo(
         onUnpin?.();
         resetZoom();
       } else {
-        onPin?.();
+        onPin({
+          id: cardId,
+          type: PinnedCardType.SCREEN_SHARE,
+          userId: userId
+        });
       }
-    }, [isPinned, onPin, onUnpin, resetZoom]);
+    }, [isPinned, onPin, onUnpin, cardId, userId, resetZoom]);
 
     if (!user || !hasScreenShareStream) return null;
 

@@ -10,7 +10,24 @@ const DEFAULT_ICONS: TWebAppManifest['icons'] = [
   { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }
 ];
 
-const getImageSize = async (filePath: string) => {
+const imageSizeCache = new Map<
+  string,
+  { width: number; height: number } | undefined
+>();
+
+const getImageSize = async (filePath: string, cacheKey: string) => {
+  if (imageSizeCache.has(cacheKey)) {
+    return imageSizeCache.get(cacheKey);
+  }
+
+  const size = await readImageSize(filePath);
+
+  imageSizeCache.set(cacheKey, size);
+
+  return size;
+};
+
+const readImageSize = async (filePath: string) => {
   try {
     const size = await imageSizeFromFile(filePath);
 
@@ -47,7 +64,7 @@ const getIcons = async (settings: TJoinedSettings) => {
     ];
   }
 
-  const logoSize = await getImageSize(logoPath);
+  const logoSize = await getImageSize(logoPath, settings.logo.name);
   const isSquare = logoSize && logoSize.width === logoSize.height;
 
   if (!isSquare) {

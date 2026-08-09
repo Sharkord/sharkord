@@ -13,19 +13,15 @@ import {
   applyWSSHandler,
   type CreateWSSContextFnOptions
 } from '@trpc/server/adapters/ws';
-import { eq } from 'drizzle-orm';
 import http from 'http';
 import { WebSocket, WebSocketServer } from 'ws';
-import { db } from '../db';
-import { getAllChannelUserPermissions } from '../db/queries/channels';
-import { isUserDmParticipant } from '../db/queries/dms';
+import { channelUserCan } from '../db/queries/channels';
+import { getUserRoles } from '../db/queries/roles';
 import { getUserById, getUserByToken } from '../db/queries/users';
-import { channels } from '../db/schema';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { appRouter } from '../routers';
-import { getUserRoles } from '../routers/users/get-user-roles';
 import { VoiceRuntime } from '../runtimes/voice';
 import { invariant } from './invariant';
 import { pubsub } from './pubsub';
@@ -35,27 +31,35 @@ let wss: WebSocketServer | undefined;
 
 const usersIpMap = new Map<number, string>();
 
+const userSockets = new Map<number, Set<WebSocket>>();
+
+const trackUserSocket = (userId: number, ws: WebSocket) => {
+  const sockets = userSockets.get(userId) ?? new Set<WebSocket>();
+
+  sockets.add(ws);
+  userSockets.set(userId, sockets);
+};
+
+const untrackUserSocket = (userId: number, ws: WebSocket) => {
+  const sockets = userSockets.get(userId);
+
+  if (!sockets) return;
+
+  sockets.delete(ws);
+
+  if (sockets.size === 0) userSockets.delete(userId);
+};
+
 const getUserIp = (userId: number): string | undefined => {
   return usersIpMap.get(userId);
 };
 
-const getOnlineUserIds = (): number[] => {
-  if (!wss) return [];
-
-  const userIdSet = new Set<number>();
-
-  wss.clients.forEach((client) => {
-    if (client.userId) {
-      userIdSet.add(client.userId);
-    }
-  });
-
-  return Array.from(userIdSet);
-};
+const getOnlineUserIds = (): number[] => Array.from(userSockets.keys());
 
 const createContext = async ({
   info,
-  req
+  req,
+  res: ws
 }: CreateWSSContextFnOptions): Promise<Context> => {
   const { token } = info.connectionParams as TConnectionParams;
 
@@ -64,11 +68,6 @@ const createContext = async ({
   invariant(decodedUser, {
     code: 'UNAUTHORIZED',
     message: 'Invalid authentication token'
-  });
-
-  invariant(!decodedUser.banned, {
-    code: 'FORBIDDEN',
-    message: 'User is banned'
   });
 
   const hasPermission = async (targetPermission: Permission | Permission[]) => {
@@ -100,91 +99,27 @@ const createContext = async ({
   const hasChannelPermission = async (
     channelId: number,
     targetPermission: ChannelPermission
-  ) => {
-    const channel = await db
-      .select({
-        private: channels.private,
-        isDm: channels.isDm
-      })
-      .from(channels)
-      .where(eq(channels.id, channelId))
-      .limit(1)
-      .get();
+  ) => channelUserCan(channelId, decodedUser.id, targetPermission);
 
-    if (!channel) return false;
-
-    if (channel.isDm) {
-      const isParticipant = await isUserDmParticipant(
-        channelId,
-        decodedUser.id
-      );
-
-      if (isParticipant) return true;
-    }
-
-    if (!channel.private) return true;
-
-    const user = await getUserById(decodedUser.id);
-
-    if (!user) return false;
-
-    const roles = await getUserRoles(user.id);
-
-    const hasOwnerRole = roles.some((r) => r.id === OWNER_ROLE_ID);
-
-    if (hasOwnerRole) return true; // owner always has all permissions
-
-    const userChannelPermissions = await getAllChannelUserPermissions(
-      decodedUser.id
-    );
-
-    const channelInfo = userChannelPermissions[channelId];
-
-    if (!channelInfo) return false;
-    if (!channelInfo.permissions[ChannelPermission.VIEW_CHANNEL]) return false;
-
-    return channelInfo.permissions[targetPermission] === true;
-  };
-
-  const getOwnWs = () => {
-    if (!wss) return undefined;
-    return Array.from(wss.clients).find((client) => client.token === token);
-  };
+  const getOwnWs = () => ws;
 
   const getUserWs = (userId: number) => {
-    if (!wss) return undefined;
-    return Array.from(wss.clients).find((client) => client.userId === userId);
+    if (!wss) return [];
+
+    return Array.from(wss.clients).filter((client) => client.userId === userId);
   };
 
-  const getStatusById = (userId: number) => {
-    if (!wss) return UserStatus.OFFLINE;
-
-    const isConnected = Array.from(wss.clients).some(
-      (ws) => ws.userId === userId
-    );
-
-    return isConnected ? UserStatus.ONLINE : UserStatus.OFFLINE;
-  };
+  const getStatusById = (userId: number) =>
+    userSockets.has(userId) ? UserStatus.ONLINE : UserStatus.OFFLINE;
 
   const setWsUserId = (userId: number) => {
-    if (!wss) return;
+    if (!ws) return;
 
-    const ws = Array.from(wss.clients).find((client) => client.token === token);
-
-    if (ws) {
-      ws.userId = userId;
-    }
+    ws.userId = userId;
+    trackUserSocket(userId, ws);
   };
 
-  const getConnectionInfo = () => {
-    if (!wss) return getWsInfo(undefined, req);
-
-    const ws = Array.from(wss.clients).find((client) => client.token === token);
-
-    if (!ws) return undefined;
-
-    return getWsInfo(ws, req);
-  };
+  const getConnectionInfo = () => getWsInfo(ws, req);
 
   const needsPermission = async (
     targetPermission: Permission | Permission[]
@@ -252,21 +187,6 @@ const createWsServer = async (server: http.Server) => {
     wss.on('connection', (ws) => {
       try {
         ws.userId = undefined;
-        ws.token = '';
-
-        ws.once('message', async (message) => {
-          try {
-            const parsed = JSON.parse(message.toString());
-            const { token } = parsed.data as TConnectionParams;
-
-            ws.token = token;
-          } catch (error) {
-            logger.error(
-              'Failed to parse initial WebSocket message: %s',
-              getErrorMessage(error)
-            );
-          }
-        });
 
         ws.on('close', async () => {
           try {
@@ -277,15 +197,10 @@ const createWsServer = async (server: http.Server) => {
               return;
             }
 
-            // only mark as offline when there are no other active sessions
-            const hasOtherSessions = Array.from(wss?.clients ?? []).some(
-              (client) =>
-                client !== ws &&
-                client.userId === userId &&
-                client.readyState === WebSocket.OPEN
-            );
+            untrackUserSocket(userId, ws);
 
-            if (hasOtherSessions) {
+            // only mark as offline when there are no other active sessions
+            if (userSockets.has(userId)) {
               return;
             }
 

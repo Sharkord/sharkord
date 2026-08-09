@@ -10,7 +10,7 @@ import {
   Spinner
 } from '@sharkord/ui';
 import { Plus, Search } from 'lucide-react';
-import { memo, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Emoji } from './emoji';
 
@@ -21,6 +21,31 @@ type TEmojiListProps = {
   uploadEmoji: () => void;
   isUploading: boolean;
 };
+
+type TEmojiOptionProps = {
+  emoji: TJoinedEmoji;
+  isSelected: boolean;
+  onSelect: (emojiId: number) => void;
+};
+
+const EmojiOption = memo(
+  ({ emoji, isSelected, onSelect }: TEmojiOptionProps) => {
+    const onClick = useCallback(() => onSelect(emoji.id), [onSelect, emoji.id]);
+
+    return (
+      <Emoji
+        src={getFileUrl(emoji.file)}
+        name={emoji.name}
+        onClick={onClick}
+        className={
+          isSelected
+            ? 'bg-accent ring-2 ring-primary h-full w-full'
+            : 'h-full w-full'
+        }
+      />
+    );
+  }
+);
 
 const EmojiList = memo(
   ({
@@ -80,16 +105,11 @@ const EmojiList = memo(
             ) : (
               <div className="grid grid-cols-6 gap-2">
                 {filteredEmojis.map((emoji) => (
-                  <Emoji
+                  <EmojiOption
                     key={emoji.id}
-                    src={getFileUrl(emoji.file)}
-                    name={emoji.name}
-                    onClick={() => setSelectedEmojiId(emoji.id)}
-                    className={
-                      selectedEmojiId === emoji.id
-                        ? 'bg-accent ring-2 ring-primary h-full w-full'
-                        : 'h-full w-full'
-                    }
+                    emoji={emoji}
+                    isSelected={selectedEmojiId === emoji.id}
+                    onSelect={setSelectedEmojiId}
                   />
                 ))}
               </div>

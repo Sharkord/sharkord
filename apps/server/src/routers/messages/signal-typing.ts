@@ -17,13 +17,14 @@ const signalTypingRoute = rateLimitedProcedure(protectedProcedure, {
     })
   )
   .mutation(async ({ input, ctx }) => {
-    const [, , , affectedUserIds] = await Promise.all([
+    await assertDmChannel(input.channelId, ctx.userId);
+
+    const [, , affectedUserIds] = await Promise.all([
       ctx.needsPermission(Permission.SEND_MESSAGES),
       ctx.needsChannelPermission(
         input.channelId,
         ChannelPermission.SEND_MESSAGES
       ),
-      assertDmChannel(input.channelId, ctx.userId),
       getAffectedOnlineUserIdsForChannel(input.channelId, {
         permission: ChannelPermission.VIEW_CHANNEL
       })

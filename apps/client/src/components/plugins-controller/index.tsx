@@ -6,10 +6,6 @@ import {
 import { getUrlFromServer } from '@/helpers/get-file-url';
 import { memo, useCallback, useEffect } from 'react';
 
-export type TPluginsController = {
-  loading: boolean;
-};
-
 const PluginsController = memo(() => {
   const fetchPlugins = useCallback(async () => {
     try {

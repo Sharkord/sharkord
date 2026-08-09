@@ -240,5 +240,18 @@ describe('voice router', () => {
         await dmRuntime.destroy();
       }
     });
+
+    test('should refuse joining a dm channel as a voice channel', async () => {
+      const { caller } = await initTest(3);
+
+      await expect(
+        caller.voice.join({
+          channelId: DM_CHANNEL_ID,
+          state: { micMuted: false, soundMuted: false }
+        })
+      ).rejects.toThrow(
+        'Cannot join a direct message channel as a voice channel'
+      );
+    });
   });
 });

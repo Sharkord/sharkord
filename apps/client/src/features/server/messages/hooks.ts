@@ -1,6 +1,10 @@
 import type { IRootState } from '@/features/store';
 import { getTRPCClient } from '@/lib/trpc';
-import { DEFAULT_MESSAGES_LIMIT, type TJoinedMessage } from '@sharkord/shared';
+import {
+  DEFAULT_MESSAGES_LIMIT,
+  type TJoinedMessage,
+  type TMessagesCursor
+} from '@sharkord/shared';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { addMessages, addThreadMessages, clearThreadMessages } from './actions';
@@ -89,13 +93,13 @@ const useGroupedMessages = (messages: TJoinedMessage[]) =>
   }, [messages]);
 
 type TFetchPage = (
-  cursor: number | null
-) => Promise<{ nextCursor: number | null }>;
+  cursor: TMessagesCursor | null
+) => Promise<{ nextCursor: TMessagesCursor | null }>;
 
 // fetch a page of channel messages from the server
 const fetchChannelMessagesPage = async (input: {
   channelId: number;
-  cursor: number | null;
+  cursor: TMessagesCursor | null;
   limit: number;
   targetMessageId?: number;
 }) => {
@@ -124,11 +128,11 @@ const usePaginatedMessages = (
   const [loading, setLoading] = useState(
     options?.initialLoading ?? messages.length === 0
   );
-  const [cursor, setCursor] = useState<number | null>(null);
+  const [cursor, setCursor] = useState<TMessagesCursor | null>(null);
   const [hasMore, setHasMore] = useState(true);
 
   const fetchMessages = useCallback(
-    async (cursorToFetch: number | null) => {
+    async (cursorToFetch: TMessagesCursor | null) => {
       setFetching(true);
 
       try {
@@ -182,7 +186,7 @@ export const useMessages = (channelId: number) => {
   const inited = useRef(false);
 
   const fetchPage = useCallback(
-    async (cursorToFetch: number | null) => {
+    async (cursorToFetch: TMessagesCursor | null) => {
       const { messages: rawPage, nextCursor } = await fetchChannelMessagesPage({
         channelId,
         cursor: cursorToFetch,
@@ -249,7 +253,7 @@ export const useThreadMessages = (parentMessageId: number) => {
   const messages = useThreadMessagesByParentId(parentMessageId);
 
   const fetchPage = useCallback(
-    async (cursorToFetch: number | null) => {
+    async (cursorToFetch: TMessagesCursor | null) => {
       const trpcClient = getTRPCClient();
 
       const { messages: page, nextCursor } =

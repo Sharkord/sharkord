@@ -1,4 +1,5 @@
 import {
+  MESSAGE_MAX_LENGTH,
   Permission,
   getPlainTextFromHtml,
   isEmptyMessage
@@ -24,7 +25,7 @@ const editMessageRoute = rateLimitedProcedure(protectedProcedure, {
   .input(
     z.object({
       messageId: z.number(),
-      content: z.string()
+      content: z.string().max(MESSAGE_MAX_LENGTH)
     })
   )
   .mutation(async ({ input, ctx }) => {

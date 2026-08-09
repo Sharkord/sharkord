@@ -109,18 +109,60 @@ const downloadPlugin = async (
   }
 };
 
+const MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024; // 20 MB
+const DOWNLOAD_TIMEOUT_MS = 30_000; // 30 seconds
+
 const downloadFile = async (url: string, outputPath: string): Promise<void> => {
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
 
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS)
+  });
 
   if (!res.ok) {
     throw new Error(`Failed to download file: ${res.status} ${res.statusText}`);
   }
 
-  const file = Bun.file(outputPath);
+  const declaredSize = Number(res.headers.get('content-length'));
 
-  await Bun.write(file, res);
+  if (declaredSize > MAX_DOWNLOAD_BYTES) {
+    throw new Error('Download exceeds the maximum allowed size');
+  }
+
+  if (!res.body) {
+    throw new Error('Download response has no body');
+  }
+
+  const writer = Bun.file(outputPath).writer();
+
+  let written = 0;
+
+  const reader = res.body.getReader();
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+
+      written += value.byteLength;
+
+      if (written > MAX_DOWNLOAD_BYTES) {
+        await reader.cancel();
+
+        throw new Error('Download exceeds the maximum allowed size');
+      }
+
+      writer.write(value);
+    }
+
+    await writer.end();
+  } catch (error) {
+    await writer.end();
+    await fs.rm(outputPath, { force: true });
+
+    throw error;
+  }
 };
 
 export { downloadFile, downloadPlugin };

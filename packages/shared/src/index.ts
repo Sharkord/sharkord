@@ -1,5 +1,3 @@
-export const A = 123;
-
 export * from './events';
 export * from './extensions';
 export * from './helpers';

@@ -17,7 +17,7 @@ import { getMessage } from './queries/messages';
 import { getRole } from './queries/roles';
 import { getPublicSettings } from './queries/server';
 import { getAllUserIds, getPublicUserById } from './queries/users';
-import { categories, channels, messages, users } from './schema';
+import { categories, channels, messages } from './schema';
 
 const publishMessage = async (
   messageId: number,
@@ -162,8 +162,8 @@ const publishChannel = async (
   pubsub.publishFor(affectedUserIds, targetEvent, channel);
 
   if (ensureUsersAccess) {
-    const allUsers = await db.select().from(users).all();
-    const allUserIds = allUsers.map((u) => u.id);
+    const allUserIds = await getAllUserIds();
+    const affectedUserIdSet = new Set(affectedUserIds);
 
     // ensureUsersAccess is set to true when the private setting changed
     // was public -> private: we need to publish delete events to users who lost access
@@ -172,9 +172,9 @@ const publishChannel = async (
     if (type === 'update') {
       if (channel.private) {
         // channel is now private, so send delete events to users who lost access to it
-        const lostAccessUserIds = allUsers
-          .map((u) => u.id)
-          .filter((id) => !affectedUserIds.includes(id));
+        const lostAccessUserIds = allUserIds.filter(
+          (id) => !affectedUserIdSet.has(id)
+        );
 
         if (lostAccessUserIds.length > 0) {
           pubsub.publishFor(

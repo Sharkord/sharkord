@@ -2,11 +2,18 @@ import { getErrorMessage, UploadHeaders } from '@sharkord/shared';
 import fs from 'fs';
 import http from 'http';
 import z from 'zod';
+import { config } from '../config';
 import { getSettings } from '../db/queries/server';
 import { getUserByToken } from '../db/queries/users';
+import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
 import { fileManager } from '../utils/file-manager';
-import { sanitizeFileName } from './helpers';
+import { createRateLimiter } from '../utils/rate-limiters/rate-limiter';
+import {
+  enforceHttpRateLimit,
+  sanitizeFileName,
+  sendJsonError
+} from './helpers';
 
 const zHeaders = z.object({
   [UploadHeaders.TOKEN]: z.string(),
@@ -14,10 +21,31 @@ const zHeaders = z.object({
   [UploadHeaders.CONTENT_LENGTH]: z.string().transform((val) => Number(val))
 });
 
+const uploadRateLimiter = createRateLimiter({
+  maxRequests: config.rateLimiters.upload.maxRequests,
+  windowMs: config.rateLimiters.upload.windowMs
+});
+
 const uploadFileRouteHandler = async (
   req: http.IncomingMessage,
   res: http.ServerResponse
 ) => {
+  const allowed = enforceHttpRateLimit(
+    res,
+    uploadRateLimiter,
+    getWsInfo(undefined, req)?.ip,
+    {
+      route: '/upload',
+      message: 'Too many uploads. Please try again shortly.'
+    }
+  );
+
+  if (!allowed) {
+    req.resume();
+
+    return;
+  }
+
   const parsedHeaders = zHeaders.parse(req.headers);
 
   const [token, rawOriginalName, contentLength] = [
@@ -30,8 +58,7 @@ const uploadFileRouteHandler = async (
 
   if (!originalName) {
     req.resume();
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Invalid file name' }));
+    sendJsonError(res, 400, 'Invalid file name');
     return;
   }
 
@@ -39,8 +66,7 @@ const uploadFileRouteHandler = async (
 
   if (!user) {
     req.resume();
-    res.writeHead(401, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Unauthorized' }));
+    sendJsonError(res, 401, 'Unauthorized');
     return;
   }
 
@@ -49,11 +75,10 @@ const uploadFileRouteHandler = async (
   if (contentLength > settings.storageUploadMaxFileSize) {
     req.resume();
     req.on('end', () => {
-      res.writeHead(413, { 'Content-Type': 'application/json' });
-      res.end(
-        JSON.stringify({
-          error: `File ${originalName} exceeds the maximum allowed size`
-        })
+      sendJsonError(
+        res,
+        413,
+        `File ${originalName} exceeds the maximum allowed size`
       );
     });
 
@@ -63,10 +88,7 @@ const uploadFileRouteHandler = async (
   if (!settings.storageUploadEnabled) {
     req.resume();
     req.on('end', () => {
-      res.writeHead(403, { 'Content-Type': 'application/json' });
-      res.end(
-        JSON.stringify({ error: 'File uploads are disabled on this server' })
-      );
+      sendJsonError(res, 403, 'File uploads are disabled on this server');
     });
 
     return;
@@ -93,17 +115,15 @@ const uploadFileRouteHandler = async (
         'Error processing uploaded file: %s',
         getErrorMessage(error)
       );
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'File processing failed' }));
+      sendJsonError(res, 500, 'File processing failed');
     }
   });
 
   fileStream.on('error', (err) => {
     logger.error('Error uploading file: %s', getErrorMessage(err));
 
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'File upload failed' }));
+    sendJsonError(res, 500, 'File upload failed');
   });
 };
 
-export { sanitizeFileName, uploadFileRouteHandler };
+export { uploadFileRouteHandler };

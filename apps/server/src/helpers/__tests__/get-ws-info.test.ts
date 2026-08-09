@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import type http from 'http';
-import { getWsInfo } from '../get-ws-info';
+import {
+  getForwardedIp,
+  getWsInfo,
+  isTrustedProxyAddress
+} from '../get-ws-info';
 
 const createRequest = ({
   headers = {},
@@ -16,8 +20,12 @@ const createRequest = ({
   } as unknown as http.IncomingMessage;
 };
 
+// forwarded headers are only read when the connection comes from a configured
+// trusted proxy, so the parsing cases below exercise getForwardedIp directly
+// and fall through to the real resolution when no header is present. the trust
+// gate itself is covered by the 'trusted proxy gate' block at the bottom
 const ipOf = (ws: any, req: http.IncomingMessage): string | undefined =>
-  getWsInfo(ws, req)?.ip;
+  getForwardedIp(req?.headers ?? {}) ?? getWsInfo(ws, req)?.ip;
 
 describe('getWsInfo - ip resolution', () => {
   describe('header priority', () => {
@@ -441,10 +449,10 @@ describe('getWsInfo - return value', () => {
   test('returns all fields when ip and user-agent are present', () => {
     const req = createRequest({
       headers: {
-        'cf-connecting-ip': '203.0.113.1',
         'user-agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
+      },
+      remoteAddress: '203.0.113.1'
     });
 
     const result = getWsInfo(undefined, req);
@@ -468,5 +476,76 @@ describe('getWsInfo - return value', () => {
     const keys = Object.keys(result!).sort();
 
     expect(keys).toEqual(['device', 'ip', 'os', 'userAgent']);
+  });
+});
+
+describe('getWsInfo - trusted proxy gate', () => {
+  // config.server.trustedProxies is empty by default, so a direct connection
+  // must never be able to pick its own ip through headers
+  test('ignores forwarded headers when the socket is not a trusted proxy', () => {
+    const req = createRequest({
+      headers: {
+        'x-real-ip': '1.2.3.4',
+        'x-forwarded-for': '5.6.7.8',
+        'cf-connecting-ip': '9.10.11.12'
+      },
+      remoteAddress: '198.51.100.7'
+    });
+
+    expect(getWsInfo(undefined, req)?.ip).toBe('198.51.100.7');
+  });
+
+  test('ignores forwarded headers when there is no socket address', () => {
+    const req = createRequest({ headers: { 'x-real-ip': '1.2.3.4' } });
+
+    expect(getWsInfo(undefined, req)?.ip).toBeUndefined();
+  });
+
+  describe('isTrustedProxyAddress', () => {
+    test('returns false when no proxies are configured', () => {
+      expect(isTrustedProxyAddress('10.0.0.1', [])).toBe(false);
+    });
+
+    test('returns false for an undefined address', () => {
+      expect(isTrustedProxyAddress(undefined, ['10.0.0.1'])).toBe(false);
+    });
+
+    test('matches an exact ipv4 entry', () => {
+      expect(isTrustedProxyAddress('10.0.0.1', ['10.0.0.1'])).toBe(true);
+      expect(isTrustedProxyAddress('10.0.0.2', ['10.0.0.1'])).toBe(false);
+    });
+
+    test('matches an ipv4 cidr range', () => {
+      expect(isTrustedProxyAddress('10.0.3.9', ['10.0.0.0/16'])).toBe(true);
+      expect(isTrustedProxyAddress('10.1.0.1', ['10.0.0.0/16'])).toBe(false);
+    });
+
+    test('matches an ipv6 cidr range', () => {
+      expect(isTrustedProxyAddress('2001:db8::5', ['2001:db8::/32'])).toBe(
+        true
+      );
+      expect(isTrustedProxyAddress('2001:db9::5', ['2001:db8::/32'])).toBe(
+        false
+      );
+    });
+
+    test('does not match an ipv4 address against an ipv6 range', () => {
+      expect(isTrustedProxyAddress('10.0.0.1', ['2001:db8::/32'])).toBe(false);
+    });
+
+    test('matches loopback for a local reverse proxy', () => {
+      expect(isTrustedProxyAddress('127.0.0.1', ['127.0.0.1'])).toBe(true);
+    });
+
+    test('ignores malformed entries instead of throwing', () => {
+      expect(isTrustedProxyAddress('10.0.0.1', ['not-an-ip', '10.0.0.1'])).toBe(
+        true
+      );
+      expect(isTrustedProxyAddress('10.0.0.1', ['10.0.0.0/999'])).toBe(false);
+    });
+
+    test('matches any address when the range covers everything', () => {
+      expect(isTrustedProxyAddress('203.0.113.9', ['0.0.0.0/0'])).toBe(true);
+    });
   });
 });

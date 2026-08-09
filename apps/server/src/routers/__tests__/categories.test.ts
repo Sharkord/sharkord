@@ -1,5 +1,10 @@
+import { ServerEvents } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
+import { eq } from 'drizzle-orm';
 import { initTest } from '../../__tests__/helpers';
+import { tdb } from '../../__tests__/setup';
+import { channels } from '../../db/schema';
+import { pubsub } from '../../utils/pubsub';
 
 describe('categories router', () => {
   test('should throw when user lacks permissions (get)', async () => {
@@ -149,6 +154,45 @@ describe('categories router', () => {
         categoryId: 1
       })
     ).rejects.toThrow('Category not found');
+  });
+
+  test('should announce the channels a deleted category takes with it', async () => {
+    const { caller } = await initTest();
+
+    const channelsBefore = await tdb
+      .select({ id: channels.id })
+      .from(channels)
+      .where(eq(channels.categoryId, 2));
+
+    expect(channelsBefore.length).toBeGreaterThan(0);
+
+    const announcedIds: number[] = [];
+
+    const subscription = pubsub
+      .subscribeFor(1, ServerEvents.CHANNEL_DELETE)
+      .subscribe({
+        next: (channelId) => {
+          announcedIds.push(channelId);
+        }
+      });
+
+    await caller.categories.delete({
+      categoryId: 2
+    });
+
+    // publishChannel resolves its recipients asynchronously and the route
+    // does not await it, so the event lands a tick later
+    await Bun.sleep(10);
+
+    subscription.unsubscribe();
+
+    const channelsAfter = await tdb
+      .select({ id: channels.id })
+      .from(channels)
+      .where(eq(channels.categoryId, 2));
+
+    expect(channelsAfter.length).toBe(0);
+    expect(announcedIds.sort()).toEqual(channelsBefore.map((c) => c.id).sort());
   });
 
   test('should throw error when deleting non-existing category', async () => {

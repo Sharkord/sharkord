@@ -1,5 +1,6 @@
-import type { TTempFile } from '@sharkord/shared';
+import { ActivityLogType, type TTempFile } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
+import { eq } from 'drizzle-orm';
 import {
   getCaller,
   initTest,
@@ -7,6 +8,9 @@ import {
   uploadFile
 } from '../../__tests__/helpers';
 import { TEST_SECRET_TOKEN } from '../../__tests__/seed';
+import { tdb } from '../../__tests__/setup';
+import { activityLog } from '../../db/schema';
+import { pluginManager } from '../../plugins';
 
 describe('others router', () => {
   test('should throw when user tries to join with no handshake', async () => {
@@ -175,6 +179,64 @@ describe('others router', () => {
     );
   });
 
+  test('should keep the server password when saving unrelated settings', async () => {
+    const { caller } = await initTest(1);
+
+    await caller.others.updateSettings({
+      password: 'testpassword'
+    });
+
+    // the storage settings form sends exactly this shape, with no password
+    await caller.others.updateSettings({
+      storageUploadEnabled: false
+    });
+
+    const { caller: secondUserCaller } = await getCaller(2);
+    const { hasPassword } = await secondUserCaller.others.handshake();
+
+    expect(hasPassword).toBe(true);
+  });
+
+  test('should not touch plugins when saving unrelated settings', async () => {
+    const { caller } = await initTest(1);
+
+    let unloadCalls = 0;
+    const originalUnload = pluginManager.unloadPlugins;
+
+    pluginManager.unloadPlugins = async () => {
+      unloadCalls++;
+    };
+
+    try {
+      await caller.others.updateSettings({
+        storageUploadEnabled: false
+      });
+    } finally {
+      pluginManager.unloadPlugins = originalUnload;
+    }
+
+    expect(unloadCalls).toBe(0);
+  });
+
+  test('should not log the server password', async () => {
+    const { caller } = await initTest(1);
+
+    await caller.others.updateSettings({
+      name: 'Logged Server',
+      password: 'testpassword'
+    });
+
+    await Bun.sleep(20);
+
+    const entries = await tdb
+      .select({ details: activityLog.details })
+      .from(activityLog)
+      .where(eq(activityLog.type, ActivityLogType.EDIT_SERVER_SETTINGS));
+
+    expect(entries.length).toBeGreaterThan(0);
+    expect(JSON.stringify(entries)).not.toContain('testpassword');
+  });
+
   test('should not expose server secrets in get settings', async () => {
     const { caller } = await initTest(1);
 
@@ -216,6 +278,46 @@ describe('others router', () => {
 
     expect(updatedUser).toBeDefined();
     expect(updatedUser?.roleIds).toContain(1);
+  });
+
+  test('should reject a second ownership claim instead of crashing', async () => {
+    const { caller } = await initTest(2);
+
+    await caller.others.useSecretToken({ token: TEST_SECRET_TOKEN });
+
+    await expect(
+      caller.others.useSecretToken({ token: TEST_SECRET_TOKEN })
+    ).rejects.toThrow('You already have the owner role');
+  });
+
+  test('should log an ownership claim', async () => {
+    const { caller } = await initTest(2);
+
+    await caller.others.useSecretToken({ token: TEST_SECRET_TOKEN });
+
+    await Bun.sleep(20);
+
+    const entries = await tdb
+      .select({ userId: activityLog.userId })
+      .from(activityLog)
+      .where(eq(activityLog.type, ActivityLogType.USER_CLAIMED_OWNERSHIP));
+
+    expect(entries.length).toBe(1);
+    expect(entries[0]!.userId).toBe(2);
+  });
+
+  test('should rate limit repeated secret token attempts', async () => {
+    const { caller } = await initTest(2);
+
+    for (let i = 0; i < 5; i++) {
+      await expect(
+        caller.others.useSecretToken({ token: 'invalid-token' })
+      ).rejects.toThrow('Invalid secret token');
+    }
+
+    await expect(
+      caller.others.useSecretToken({ token: 'invalid-token' })
+    ).rejects.toThrow('Too many requests. Please try again shortly.');
   });
 
   test('should change logo', async () => {

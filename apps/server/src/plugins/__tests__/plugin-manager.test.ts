@@ -108,13 +108,19 @@ describe('plugin-manager', () => {
       ).rejects.toThrow('Plugin client entry file not found');
     });
 
-    test('should load plugin without onUnload', async () => {
+    test('should fail to load plugin without onUnload', async () => {
       await pluginManager.togglePlugin('plugin-no-unload', true);
+
+      // required, because unloading cannot free the module: only the plugin can
+      // stop what it started outside the registries
       await pluginManager.load('plugin-no-unload');
 
       const info = await pluginManager.getPluginInfo('plugin-no-unload');
 
-      expect(info.loadError).toBeUndefined();
+      expect(info.loadError).toBeDefined();
+      expect(info.loadError).toContain(
+        "does not export an 'onUnload' function"
+      );
     });
 
     test('should fail to load plugin missing sdk version', async () => {
@@ -161,7 +167,7 @@ describe('plugin-manager', () => {
         await pluginManager.unload('plugin-a');
 
         const updatedSource = `const onLoad = (ctx) => {
-  ctx.log('My Plugin loaded (updated)');
+  ctx.logger.log('My Plugin loaded (updated)');
 
   ctx.commands.register({
     name: 'updated-command',
@@ -171,7 +177,7 @@ describe('plugin-manager', () => {
 };
 
 const onUnload = (ctx) => {
-  ctx.log('My Plugin unloaded (updated)');
+  ctx.logger.log('My Plugin unloaded (updated)');
 };
 
 export { onLoad, onUnload };

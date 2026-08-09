@@ -1,6 +1,7 @@
 import { logDebug } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TCategory } from '@sharkord/shared';
+import { handleSubscriptionError } from '../subscription-error';
 import { addCategory, removeCategory, updateCategory } from './actions';
 
 const subscribeToCategories = () => {
@@ -11,7 +12,7 @@ const subscribeToCategories = () => {
       logDebug('[EVENTS] categories.onCreate', { category });
       addCategory(category);
     },
-    onError: (err) => console.error('onCategoryCreate subscription error:', err)
+    onError: handleSubscriptionError('onCategoryCreate')
   });
 
   const onCategoryDeleteSub = trpc.categories.onDelete.subscribe(undefined, {
@@ -19,7 +20,7 @@ const subscribeToCategories = () => {
       logDebug('[EVENTS] categories.onDelete', { categoryId });
       removeCategory(categoryId);
     },
-    onError: (err) => console.error('onCategoryDelete subscription error:', err)
+    onError: handleSubscriptionError('onCategoryDelete')
   });
 
   const onCategoryUpdateSub = trpc.categories.onUpdate.subscribe(undefined, {
@@ -27,7 +28,7 @@ const subscribeToCategories = () => {
       logDebug('[EVENTS] categories.onUpdate', { category });
       updateCategory(category.id, category);
     },
-    onError: (err) => console.error('onCategoryUpdate subscription error:', err)
+    onError: handleSubscriptionError('onCategoryUpdate')
   });
 
   return () => {

@@ -252,10 +252,12 @@ const ItemWrapper = memo(
 type TChannelProps = {
   channelId: number;
   isSelected: boolean;
-  onClick: () => void;
+  onSelect: (channelId: number) => void;
 };
 
-const Channel = memo(({ channelId, isSelected, onClick }: TChannelProps) => {
+const Channel = memo(({ channelId, isSelected, onSelect }: TChannelProps) => {
+  const onClick = useCallback(() => onSelect(channelId), [onSelect, channelId]);
+
   const channel = useChannelById(channelId);
   const channelCan = useChannelCan(channelId);
   const can = useCan();
@@ -397,7 +399,7 @@ const Channels = memo(({ categoryId }: TChannelsProps) => {
               key={channel.id}
               channelId={channel.id}
               isSelected={selectedChannelId === channel.id}
-              onClick={() => onChannelClick(channel.id)}
+              onSelect={onChannelClick}
             />
           ))}
         </SortableContext>

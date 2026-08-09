@@ -1,6 +1,10 @@
 import type { IRootState } from '@/features/store';
 import { createSelector } from '@reduxjs/toolkit';
-import { DELETED_USER_IDENTITY_AND_NAME, UserStatus } from '@sharkord/shared';
+import {
+  DELETED_USER_IDENTITY_AND_NAME,
+  UserStatus,
+  type TJoinedPublicUser
+} from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
 
 const STATUS_ORDER: Record<string, number> = {
@@ -64,10 +68,22 @@ export const ownPublicUserSelector = createSelector(
   (ownUserId, users) => users.find((user) => user.id === ownUserId)
 );
 
-export const userStatusSelector = createSelector(
-  [userByIdSelector],
+export const userStatusSelector = createCachedSelector(
+  [userByIdSelector, (_: IRootState, userId: number | null) => userId],
   (user) => user?.status ?? UserStatus.OFFLINE
-);
+)((_, userId: number | null) => userId);
+
+// users are stored as an array, so every by-id lookup was a find. The typing
+// and voice selectors did that inside a map, which is O(users x participants)
+export const usersMapSelector = createSelector([usersSelector], (users) => {
+  const map: Record<number, TJoinedPublicUser> = {};
+
+  users.forEach((user) => {
+    map[user.id] = user;
+  });
+
+  return map;
+});
 
 export const usernamesSelector = createSelector([usersSelector], (users) => {
   const map: Record<number, string> = {};

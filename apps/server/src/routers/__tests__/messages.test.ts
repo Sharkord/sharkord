@@ -1,11 +1,20 @@
-import { ChannelPermission, Permission } from '@sharkord/shared';
+import {
+  ChannelPermission,
+  DEFAULT_MESSAGES_LIMIT,
+  MESSAGE_MAX_LENGTH,
+  Permission,
+  REACTION_EMOJI_MAX_LENGTH
+} from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
 import { initTest, uploadFile } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
+import { config } from '../../config';
 import {
   files,
   messageFiles,
+  messageReactions,
+  messages,
   rolePermissions,
   settings
 } from '../../db/schema';
@@ -639,6 +648,169 @@ describe('messages router', () => {
     ).toBeUndefined();
   });
 
+  test('should not create a message when saving its files fails', async () => {
+    const { caller } = await initTest();
+
+    const before = await tdb.select().from(messages);
+
+    // no temp file with this id exists, so saveFile rejects
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'this should not survive',
+        files: ['missing-temp-file-id']
+      })
+    ).rejects.toThrow();
+
+    const after = await tdb.select().from(messages);
+
+    expect(after.length).toBe(before.length);
+    expect(after.some((m) => m.content?.includes('should not survive'))).toBe(
+      false
+    );
+  });
+
+  test('should not skip messages that share a millisecond across a page boundary', async () => {
+    const { caller } = await initTest();
+
+    const now = Date.now();
+    const inserted = await tdb
+      .insert(messages)
+      .values(
+        Array.from({ length: 6 }, (_, i) => ({
+          channelId: 1,
+          userId: 1,
+          content: `same millisecond ${i}`,
+          // identical createdAt, so the cursor cannot separate them on time
+          createdAt: now
+        }))
+      )
+      .returning();
+
+    const seen = new Set<number>();
+    let cursor = null as { createdAt: number; id: number } | null;
+
+    // two pages of two, straight through the identical timestamps
+    for (let page = 0; page < 3; page++) {
+      const result = await caller.messages.get({
+        channelId: 1,
+        cursor,
+        limit: 2
+      });
+
+      result.messages.forEach((m) => seen.add(m.id));
+
+      cursor = result.nextCursor;
+
+      if (!cursor) break;
+    }
+
+    const missed = inserted.filter((m) => !seen.has(m.id));
+
+    expect(missed.length).toBe(0);
+  });
+
+  test('should rate limit excessive thread fetches', async () => {
+    const { caller } = await initTest();
+    const { maxRequests } = config.rateLimiters.getMessages;
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Thread parent',
+      files: []
+    });
+
+    for (let i = 0; i < maxRequests; i++) {
+      await caller.messages.getThread({ parentMessageId: parentId });
+    }
+
+    await expect(
+      caller.messages.getThread({ parentMessageId: parentId })
+    ).rejects.toThrow('Too many requests');
+  });
+
+  test('should reject a negative page limit', async () => {
+    const { caller } = await initTest();
+
+    // sqlite reads a negative LIMIT as no limit at all, so this used to return
+    // the whole channel
+    await expect(
+      caller.messages.get({ channelId: 1, limit: -2 })
+    ).rejects.toThrow();
+
+    await expect(
+      caller.messages.getThread({ parentMessageId: 1, limit: -2 })
+    ).rejects.toThrow();
+  });
+
+  test('should reject a page limit above the maximum', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.messages.get({ channelId: 1, limit: 1_000_000 })
+    ).rejects.toThrow();
+  });
+
+  test('should reject a non-integer page limit', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.messages.get({ channelId: 1, limit: 10.5 })
+    ).rejects.toThrow();
+  });
+
+  test('should accept a page limit at the maximum', async () => {
+    const { caller } = await initTest();
+
+    const result = await caller.messages.get({
+      channelId: 1,
+      limit: DEFAULT_MESSAGES_LIMIT
+    });
+
+    expect(result.messages).toBeDefined();
+  });
+
+  test('should reject a message longer than the maximum', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'a'.repeat(MESSAGE_MAX_LENGTH + 1),
+        files: []
+      })
+    ).rejects.toThrow();
+  });
+
+  test('should accept a message exactly at the maximum', async () => {
+    const { caller } = await initTest();
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'a'.repeat(MESSAGE_MAX_LENGTH),
+      files: []
+    });
+
+    expect(messageId).toBeDefined();
+  });
+
+  test('should reject an edit longer than the maximum', async () => {
+    const { caller } = await initTest();
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'short enough',
+      files: []
+    });
+
+    await expect(
+      caller.messages.edit({
+        messageId,
+        content: 'a'.repeat(MESSAGE_MAX_LENGTH + 1)
+      })
+    ).rejects.toThrow();
+  });
+
   test('should throw when editing non-existing message', async () => {
     const { caller } = await initTest();
 
@@ -713,6 +885,65 @@ describe('messages router', () => {
     );
 
     expect(messageWithoutReaction!.reactions.length).toBe(0);
+  });
+
+  test('should reject an oversized reaction emoji', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.messages.toggleReaction({
+        messageId: 1,
+        emoji: 'a'.repeat(REACTION_EMOJI_MAX_LENGTH + 1)
+      })
+    ).rejects.toThrow();
+  });
+
+  test('should reject an arbitrary string as a reaction', async () => {
+    const { caller } = await initTest();
+
+    // not pictographic and not a known custom emoji, it would have rendered
+    // as raw text for everyone in the channel
+    await expect(
+      caller.messages.toggleReaction({ messageId: 1, emoji: 'lol' })
+    ).rejects.toThrow('Unknown emoji');
+  });
+
+  test('should accept a multi codepoint unicode emoji', async () => {
+    const { caller } = await initTest();
+
+    await caller.messages.toggleReaction({
+      messageId: 1,
+      emoji: '👨‍👩‍👧‍👦'
+    });
+
+    const message = await caller.messages.getOne({ messageId: 1 });
+
+    expect(message.reactions.some((r) => r.emoji === '👨‍👩‍👧‍👦')).toBe(true);
+  });
+
+  test('should still allow removing a reaction whose emoji is unknown', async () => {
+    const { caller } = await initTest();
+
+    await tdb.insert(messageReactions).values({
+      messageId: 1,
+      userId: 1,
+      emoji: 'deleted-custom-emoji',
+      fileId: null,
+      createdAt: Date.now()
+    });
+
+    // the existence check only applies when adding, so a reaction survives its
+    // custom emoji being deleted and can still be toggled off
+    await caller.messages.toggleReaction({
+      messageId: 1,
+      emoji: 'deleted-custom-emoji'
+    });
+
+    const message = await caller.messages.getOne({ messageId: 1 });
+
+    expect(
+      message.reactions.some((r) => r.emoji === 'deleted-custom-emoji')
+    ).toBe(false);
   });
 
   test('should allow multiple users to react to the same message', async () => {
@@ -1043,7 +1274,7 @@ describe('messages router', () => {
     expect(sentMessage!.files.length).toBe(0);
   });
 
-  test('should trim attached files to configured max files per message', async () => {
+  test('should reject a message with more files than the configured maximum', async () => {
     const { caller, mockedToken } = await initTest();
 
     await tdb
@@ -1065,65 +1296,67 @@ describe('messages router', () => {
     const temp2 = (await response2.json()) as { id: string };
     const temp3 = (await response3.json()) as { id: string };
 
-    const messageId = await caller.messages.send({
-      channelId: 1,
-      content: 'Message with limited attachments',
-      files: [temp1.id, temp2.id, temp3.id]
-    });
-
-    const messages = await caller.messages.get({
-      channelId: 1,
-      cursor: null,
-      limit: 50
-    });
-
-    const sentMessage = messages.messages.find((m) => m.id === messageId);
-
-    expect(sentMessage).toBeDefined();
-    expect(sentMessage!.files.length).toBe(2);
-
-    const names = sentMessage!.files.map((f) => f.originalName);
-
-    expect(names).toContain('one.txt');
-    expect(names).toContain('two.txt');
-    expect(names).not.toContain('three.txt');
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'Message with too many attachments',
+        files: [temp1.id, temp2.id, temp3.id]
+      })
+    ).rejects.toThrow('You can attach at most 2 file(s) per message.');
   });
 
-  test('should discard all attached files when max files per message is 0', async () => {
+  test('should accept a message with exactly the configured maximum files', async () => {
     const { caller, mockedToken } = await initTest();
 
-    await tdb
-      .update(settings)
-      .set({
-        storageMaxFilesPerMessage: 0
-      })
-      .execute();
+    await tdb.update(settings).set({ storageMaxFilesPerMessage: 2 }).execute();
 
-    const file1 = new File(['file one'], 'one.txt', { type: 'text/plain' });
-    const file2 = new File(['file two'], 'two.txt', { type: 'text/plain' });
-
-    const response1 = await uploadFile(file1, mockedToken);
-    const response2 = await uploadFile(file2, mockedToken);
+    const response1 = await uploadFile(
+      new File(['file one'], 'one.txt', { type: 'text/plain' }),
+      mockedToken
+    );
+    const response2 = await uploadFile(
+      new File(['file two'], 'two.txt', { type: 'text/plain' }),
+      mockedToken
+    );
 
     const temp1 = (await response1.json()) as { id: string };
     const temp2 = (await response2.json()) as { id: string };
 
     const messageId = await caller.messages.send({
       channelId: 1,
-      content: 'Message with files while limit is zero',
+      content: 'Message at the attachment limit',
       files: [temp1.id, temp2.id]
     });
 
-    const messages = await caller.messages.get({
+    const page = await caller.messages.get({
       channelId: 1,
       cursor: null,
       limit: 50
     });
 
-    const sentMessage = messages.messages.find((m) => m.id === messageId);
+    const sentMessage = page.messages.find((m) => m.id === messageId);
 
-    expect(sentMessage).toBeDefined();
-    expect(sentMessage!.files.length).toBe(0);
+    expect(sentMessage!.files.length).toBe(2);
+  });
+
+  test('should reject any attachment when max files per message is 0', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    await tdb.update(settings).set({ storageMaxFilesPerMessage: 0 }).execute();
+
+    const response = await uploadFile(
+      new File(['file one'], 'one.txt', { type: 'text/plain' }),
+      mockedToken
+    );
+    const temp = (await response.json()) as { id: string };
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'Message with attachments disabled',
+        files: [temp.id]
+      })
+    ).rejects.toThrow('You can attach at most 0 file(s) per message.');
   });
 
   test('should update message updatedAt timestamp on edit', async () => {

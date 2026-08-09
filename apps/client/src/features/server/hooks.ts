@@ -9,7 +9,6 @@ import {
   categoryHasUnreadMentionsSelector,
   categoryUnreadMessagesCountSelector,
   connectedSelector,
-  connectingSelector,
   disconnectInfoSelector,
   dmsOpenSelector,
   hasSharingScreenUsersSelector,
@@ -21,6 +20,7 @@ import {
   ownVoiceUserSelector,
   pluginsEnabledSelector,
   publicServerSettingsSelector,
+  reconnectingSelector,
   referenceableChannelsSelector,
   serverNameSelector,
   typingUsersByChannelIdSelector,
@@ -32,7 +32,7 @@ import {
 
 export const useIsConnected = () => useSelector(connectedSelector);
 
-export const useIsConnecting = () => useSelector(connectingSelector);
+export const useIsReconnecting = () => useSelector(reconnectingSelector);
 
 export const useDisconnectInfo = () => useSelector(disconnectInfoSelector);
 

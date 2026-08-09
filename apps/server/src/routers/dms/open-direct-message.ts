@@ -58,8 +58,8 @@ const openDirectMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     const now = Date.now();
 
-    const channel = await db.transaction(async (tx) => {
-      const newChannel = await tx
+    const channel = db.transaction((tx) => {
+      const newChannel = tx
         .insert(channels)
         .values({
           type: ChannelType.VOICE, // use voice to allow private calls in the future
@@ -74,12 +74,14 @@ const openDirectMessageRoute = rateLimitedProcedure(protectedProcedure, {
         .returning()
         .get();
 
-      await tx.insert(directMessages).values({
-        channelId: newChannel.id,
-        userOneId,
-        userTwoId,
-        createdAt: now
-      });
+      tx.insert(directMessages)
+        .values({
+          channelId: newChannel.id,
+          userOneId,
+          userTwoId,
+          createdAt: now
+        })
+        .run();
 
       return newChannel;
     });

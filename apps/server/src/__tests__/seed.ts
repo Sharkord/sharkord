@@ -50,6 +50,12 @@ const hashedPassword = await Bun.password.hash('password123');
  * - Test User (member) (2)
  * - User A (member) (3)
  * - User B (member) (4)
+ * - Test Moderator (moderator) (5) (MANAGE_USERS + MANAGE_ROLES, no owner role)
+ * Roles:
+ * - Owner (1)
+ * - Member (2) (default)
+ * - Guest (3)
+ * - Moderator (4) (MANAGE_USERS + MANAGE_ROLES only)
  * Channels:
  * - General (1)
  * - Voice (2)
@@ -319,6 +325,57 @@ const seedTestDb = async (db: BunSQLiteDatabase) => {
     .values(privateVoiceChannel)
     .returning();
 
+  // an actor holding an admin permission without the owner role, for the
+  // privilege checks that need someone between the owner and a plain member
+  const moderatorRole: TIRole = {
+    name: 'Moderator',
+    color: '#00ff00',
+    isPersistent: false,
+    isDefault: false,
+    storageQuotaOverrideEnabled: false,
+    storageSpaceQuota: 0,
+    createdAt: firstStart
+  };
+
+  const [insertedModeratorRole] = await db
+    .insert(roles)
+    .values(moderatorRole)
+    .returning();
+
+  await db.insert(rolePermissions).values([
+    {
+      roleId: insertedModeratorRole!.id,
+      permission: Permission.MANAGE_USERS,
+      createdAt: firstStart
+    },
+    {
+      roleId: insertedModeratorRole!.id,
+      permission: Permission.MANAGE_ROLES,
+      createdAt: firstStart
+    }
+  ]);
+
+  const moderatorUser: TIUser = {
+    name: 'Test Moderator',
+    identity: 'testmoderator',
+    password: hashedPassword,
+    avatarId: null,
+    bannerId: null,
+    bio: null,
+    createdAt: firstStart
+  };
+
+  const [insertedModerator] = await db
+    .insert(users)
+    .values(moderatorUser)
+    .returning();
+
+  await db.insert(userRoles).values({
+    userId: insertedModerator!.id,
+    roleId: insertedModeratorRole!.id,
+    createdAt: firstStart
+  });
+
   if (IS_E2E) {
     const allUsers = [
       insertedOwner!,
@@ -349,8 +406,10 @@ const seedTestDb = async (db: BunSQLiteDatabase) => {
     privateVoiceChannel: insertedPrivateVoiceChannel!,
     userA: insertedUserA!,
     userB: insertedUserB!,
+    moderator: insertedModerator!,
     ownerRole,
     defaultRole: insertedDefaultRole!,
+    moderatorRole: insertedModeratorRole!,
     categories: initialCategories,
     channels: initialChannels,
     originalToken: TEST_SECRET_TOKEN

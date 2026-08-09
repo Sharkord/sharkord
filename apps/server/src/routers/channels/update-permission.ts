@@ -11,7 +11,10 @@ import { getAffectedOnlineUserIdsForChannel } from '../../db/queries/channels';
 import { isDirectMessageChannel } from '../../db/queries/dms';
 import {
   channelRolePermissions,
-  channelUserPermissions
+  channels,
+  channelUserPermissions,
+  roles,
+  users
 } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
@@ -46,18 +49,51 @@ const updatePermissionsRoute = protectedProcedure
       message: 'Cannot update DM channel permissions'
     });
 
+    const [channel, target] = await Promise.all([
+      db
+        .select({ id: channels.id })
+        .from(channels)
+        .where(eq(channels.id, input.channelId))
+        .limit(1)
+        .get(),
+
+      input.userId
+        ? db
+            .select({ id: users.id })
+            .from(users)
+            .where(eq(users.id, input.userId))
+            .limit(1)
+            .get()
+        : db
+            .select({ id: roles.id })
+            .from(roles)
+            .where(eq(roles.id, input.roleId!))
+            .limit(1)
+            .get()
+    ]);
+
+    invariant(channel, {
+      code: 'NOT_FOUND',
+      message: 'Channel not found'
+    });
+
+    invariant(target, {
+      code: 'NOT_FOUND',
+      message: input.userId ? 'User not found' : 'Role not found'
+    });
+
     const permissions = input.isCreate ? [] : input.permissions;
 
-    await db.transaction(async (tx) => {
+    db.transaction((tx) => {
       if (input.userId) {
-        await tx
-          .delete(channelUserPermissions)
+        tx.delete(channelUserPermissions)
           .where(
             and(
               eq(channelUserPermissions.channelId, input.channelId),
               eq(channelUserPermissions.userId, input.userId)
             )
-          );
+          )
+          .run();
 
         const values = allPermissions.map((perm) => ({
           channelId: input.channelId,
@@ -67,16 +103,16 @@ const updatePermissionsRoute = protectedProcedure
           createdAt: Date.now()
         }));
 
-        await tx.insert(channelUserPermissions).values(values);
+        tx.insert(channelUserPermissions).values(values).run();
       } else if (input.roleId) {
-        await tx
-          .delete(channelRolePermissions)
+        tx.delete(channelRolePermissions)
           .where(
             and(
               eq(channelRolePermissions.channelId, input.channelId),
               eq(channelRolePermissions.roleId, input.roleId)
             )
-          );
+          )
+          .run();
 
         const values = allPermissions.map((perm) => ({
           channelId: input.channelId,
@@ -86,7 +122,7 @@ const updatePermissionsRoute = protectedProcedure
           createdAt: Date.now()
         }));
 
-        await tx.insert(channelRolePermissions).values(values);
+        tx.insert(channelRolePermissions).values(values).run();
       }
     });
 

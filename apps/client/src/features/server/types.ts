@@ -34,10 +34,6 @@ export type TThreadMessagesMap = {
   [parentMessageId: number]: TJoinedMessage[];
 };
 
-export type TMessagesPagination = {
-  cursor: number | null;
-};
-
 export type TDisconnectInfo = {
   code: number;
   reason: string;

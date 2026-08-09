@@ -7,4 +7,6 @@ const onLoad = (ctx) => {
   throw new Error('Intentional HTTP route load failure');
 };
 
-export { onLoad };
+const onUnload = () => {};
+
+export { onLoad, onUnload };

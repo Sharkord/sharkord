@@ -1,15 +1,11 @@
 'use client';
 
-import {
-  Button,
-  Calendar,
-  Input,
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@sharkord/ui';
 import { CalendarIcon } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { Button } from './button';
+import { Calendar } from './calendar';
+import { Input } from './input';
+import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 type TDatePickerProps = {
   value: number | undefined;

@@ -38,10 +38,10 @@ describe('sanitize-html', () => {
 
   test('should preserve emoji <img> with allowed attributes', () => {
     const input =
-      '<img src="https://cdn.example.com/emoji.png" alt="smile" class="emoji-image">';
+      '<img src="https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f600.png" alt="smile" class="emoji-image">';
 
     expect(sanitizeMessageHtml(input)).toContain(
-      'src="https://cdn.example.com/emoji.png"'
+      'src="https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f600.png"'
     );
     expect(sanitizeMessageHtml(input)).toContain('alt="smile"');
   });
@@ -162,6 +162,57 @@ describe('sanitize-html', () => {
       '<span data-type="channel-reference" data-channel-id="42" class="channel-reference"></span>';
 
     expect(sanitizeMessageHtml(input)).toBe(input);
+  });
+
+  test('should strip arbitrary css classes from a <span>', () => {
+    // the client bundle ships the whole tailwind utility set, so an unfiltered
+    // class turns any message into a full screen overlay for every viewer
+    const input = '<span class="fixed inset-0 z-50 bg-black">gotcha</span>';
+
+    expect(sanitizeMessageHtml(input)).toBe('<span>gotcha</span>');
+  });
+
+  test('should keep only the known classes when they are mixed', () => {
+    const input = '<span class="emoji-image fixed inset-0">mixed</span>';
+
+    expect(sanitizeMessageHtml(input)).toBe(
+      '<span class="emoji-image">mixed</span>'
+    );
+  });
+
+  test('should preserve the classes the editor produces', () => {
+    const cases = [
+      '<span class="mention" data-type="mention" data-user-id="1">@bob</span>',
+      '<img class="emoji-image" src="/public/e.png" alt="e" />',
+      '<br class="hard-break" />'
+    ];
+
+    cases.forEach((input) => {
+      expect(sanitizeMessageHtml(input)).toBe(input);
+    });
+  });
+
+  test('should strip an off origin image src', () => {
+    // every viewer would otherwise fetch a url the sender chose, which reports
+    // their ip and the fact that they opened the channel
+    const input = '<img src="https://tracker.example/pixel.png" alt="x" />';
+
+    expect(sanitizeMessageHtml(input)).toBe('<img alt="x" />');
+  });
+
+  test('should keep images served from this server', () => {
+    const input =
+      '<img src="https://my-server.test/public/emoji.png" alt="e" />';
+
+    expect(sanitizeMessageHtml(input)).toBe(input);
+  });
+
+  test('should force rel on links opened in a new tab', () => {
+    const input = '<a href="https://example.test" target="_blank">l</a>';
+
+    expect(sanitizeMessageHtml(input)).toBe(
+      '<a href="https://example.test" target="_blank" rel="noopener noreferrer">l</a>'
+    );
   });
 
   test('should strip event handlers from a channel reference <span>', () => {

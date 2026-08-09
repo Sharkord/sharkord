@@ -1,12 +1,17 @@
 import { ActivityLogType, Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
+import { config } from '../../config';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
 import { pluginManager } from '../../plugins';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const executeActionRoute = protectedProcedure
+const executeActionRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.pluginExecute.maxRequests,
+  windowMs: config.rateLimiters.pluginExecute.windowMs,
+  logLabel: 'executeAction'
+})
   .input(
     z.object({
       pluginId: zPluginId,
@@ -22,24 +27,26 @@ const executeActionRoute = protectedProcedure
       message: `Action "${input.actionName}" not found for plugin "${input.pluginId}"`
     });
 
-    enqueueActivityLog({
-      type: ActivityLogType.EXECUTED_PLUGIN_ACTION,
-      userId: ctx.user.id,
-      details: {
-        pluginId: input.pluginId,
-        actionName: input.actionName,
-        payload: input.payload
-      }
-    });
+    try {
+      const response = await pluginManager.executeAction(
+        input.pluginId,
+        input.actionName,
+        getInvokerCtxFromTrpcCtx(ctx),
+        input.payload
+      );
 
-    const response = await pluginManager.executeAction(
-      input.pluginId,
-      input.actionName,
-      getInvokerCtxFromTrpcCtx(ctx),
-      input.payload
-    );
-
-    return response;
+      return response;
+    } finally {
+      enqueueActivityLog({
+        type: ActivityLogType.EXECUTED_PLUGIN_ACTION,
+        userId: ctx.user.id,
+        details: {
+          pluginId: input.pluginId,
+          actionName: input.actionName,
+          payload: input.payload
+        }
+      });
+    }
   });
 
 export { executeActionRoute };

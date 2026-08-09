@@ -23,10 +23,6 @@ export const zPluginManifest = z.object({
 
 export type TPluginManifest = z.infer<typeof zPluginManifest>;
 
-export const zPluginPackageJson = zPluginManifest;
-
-export type TPluginPackageJson = TPluginManifest;
-
 export type TPluginInfo = {
   id: string;
   enabled: boolean;

@@ -1,4 +1,4 @@
-import { SoundType } from '../types';
+import { SoundType } from '@/features/server/types';
 
 let audioCtx: AudioContext;
 let hasAudioContext = false;

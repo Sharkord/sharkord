@@ -10,7 +10,9 @@ const printDebug = () => {
     chalk.dim('────────────────────────────────────────────────────'),
     `${chalk.blue('Bun version:')} ${chalk.bold(String(Bun.version_with_sha))}`,
     `${chalk.blue('Local address:')} ${chalk.bold(String(SERVER_PRIVATE_IP))}`,
-    `${chalk.blue('Public address:')} ${chalk.bold(String(SERVER_PUBLIC_IP))}`,
+    `${chalk.blue('Public address:')} ${chalk.bold(
+      String(config.webRtc.announcedAddress || SERVER_PUBLIC_IP)
+    )}`,
     `${chalk.blue('Server paths:')} ${chalk.bold(
       String(
         Object.entries(serverPaths)

@@ -8,14 +8,14 @@ import {
 import { getAppDataPath } from './fs';
 
 const getDataPath = (): string => {
+  if (IS_TEST) {
+    return path.resolve(process.cwd(), './data-test');
+  }
+
   const INJECTED_DATA_PATH = process.env.SHARKORD_DATA_PATH;
 
   if (INJECTED_DATA_PATH) {
     return path.resolve(INJECTED_DATA_PATH);
-  }
-
-  if (IS_TEST) {
-    return path.resolve(process.cwd(), './data-test');
   }
 
   if (IS_DEVELOPMENT) {
@@ -51,12 +51,20 @@ const CONFIG_INI_PATH = path.resolve(DATA_PATH, 'config.ini');
 const PLUGINS_PATH = path.join(DATA_PATH, 'plugins');
 const SRC_MIGRATIONS_PATH = path.join(process.cwd(), 'src', 'db', 'migrations');
 
+const isPathInside = (basePath: string, targetPath: string): boolean => {
+  const base = path.resolve(basePath);
+  const target = path.resolve(targetPath);
+
+  return target === base || target.startsWith(base + path.sep);
+};
+
 export {
   CONFIG_INI_PATH,
   DATA_PATH,
   DB_PATH,
   DRIZZLE_PATH,
   INTERFACE_PATH,
+  isPathInside,
   LOGS_PATH,
   MEDIASOUP_BINARY_PATH,
   MEDIASOUP_PATH,

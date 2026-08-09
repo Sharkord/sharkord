@@ -16,7 +16,7 @@ const getPermissionsRoute = protectedProcedure
       channelId: z.number()
     })
   )
-  .mutation(async ({ input, ctx }) => {
+  .query(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_CHANNEL_PERMISSIONS);
 
     const isDmChannel = await isDirectMessageChannel(input.channelId);

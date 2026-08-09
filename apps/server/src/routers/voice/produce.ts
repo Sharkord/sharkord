@@ -6,11 +6,16 @@ import {
   StreamKind
 } from '@sharkord/shared';
 import { z } from 'zod';
+import { config } from '../../config';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const produceRoute = protectedProcedure
+const produceRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.voiceStream.maxRequests,
+  windowMs: config.rateLimiters.voiceStream.windowMs,
+  logLabel: 'produce'
+})
   .input(
     z.object({
       transportId: z.string(),

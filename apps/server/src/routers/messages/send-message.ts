@@ -4,7 +4,9 @@ import {
   FileSaveType,
   getPlainTextFromHtml,
   isEmptyMessage,
+  MESSAGE_MAX_LENGTH,
   Permission,
+  STORAGE_MAX_FILES_PER_MESSAGE,
   toDomCommand
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
@@ -12,7 +14,7 @@ import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
 import { publishMessage, publishReplyCount } from '../../db/publishers';
-import { assertDmChannel, isDirectMessageChannel } from '../../db/queries/dms';
+import { assertDmChannel } from '../../db/queries/dms';
 import { getSettings } from '../../db/queries/server';
 import { messageFiles, messages } from '../../db/schema';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
@@ -33,9 +35,9 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
 })
   .input(
     z.object({
-      content: z.string(),
+      content: z.string().max(MESSAGE_MAX_LENGTH),
       channelId: z.number(),
-      files: z.array(z.string()).default([]),
+      files: z.array(z.string()).max(STORAGE_MAX_FILES_PER_MESSAGE).default([]),
       parentMessageId: z.number().optional(),
       replyToMessageId: z.number().optional()
     })
@@ -100,18 +102,21 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       });
     }
 
+    // assertDmChannel already had to resolve whether this is a DM, so it hands
+    // the answer back rather than the route asking for the same row again
     const [settings, isDmChannel] = await Promise.all([
       getSettings(),
-      isDirectMessageChannel(input.channelId),
       assertDmChannel(input.channelId, ctx.userId)
     ]);
 
     const { storageMaxFilesPerMessage, enablePlugins } = settings;
 
-    const limitedFiles = input.files.slice(
-      0,
-      Math.max(0, storageMaxFilesPerMessage)
-    );
+    invariant(input.files.length <= Math.max(0, storageMaxFilesPerMessage), {
+      code: 'BAD_REQUEST',
+      message: `You can attach at most ${storageMaxFilesPerMessage} file(s) per message.`
+    });
+
+    const limitedFiles = input.files;
 
     if (limitedFiles.length > 0) {
       invariant(settings.storageUploadEnabled, {
@@ -143,7 +148,10 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
     let editable = true;
     let commandExecutor: ((messageId: number) => void) | undefined = undefined;
 
-    const plainText = getPlainTextFromHtml(input.content);
+    // derived from the sanitized html, not the raw input: otherwise the command
+    // that runs, and the text plugins receive, can differ from what is stored
+    // and shown to everyone else
+    const plainText = getPlainTextFromHtml(targetContent);
 
     if (enablePlugins) {
       // when plugins are enabled, need to check if the message is a command
@@ -183,7 +191,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
           // do not await, let it run in background
           commandExecutor = (messageId: number) => {
-            const updateCommandStatus = (
+            const updateCommandStatus = async (
               status: 'completed' | 'failed',
               response?: unknown
             ) => {
@@ -197,10 +205,12 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
                 args
               );
 
-              db.update(messages)
+              // awaited before publishing, otherwise clients are told to
+              // refetch a message whose new content has not been written yet
+              await db
+                .update(messages)
                 .set({ content: updatedContent })
-                .where(eq(messages.id, messageId))
-                .execute();
+                .where(eq(messages.id, messageId));
 
               publishMessage(messageId, input.channelId, 'update');
             };
@@ -212,15 +222,10 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
                 getInvokerCtxFromTrpcCtx(ctx),
                 argsObject
               )
-              .then((response) => {
-                updateCommandStatus('completed', response);
-              })
-              .catch((error) => {
-                updateCommandStatus(
-                  'failed',
-                  error?.message || 'Unknown error'
-                );
-              })
+              .then((response) => updateCommandStatus('completed', response))
+              .catch((error) =>
+                updateCommandStatus('failed', error?.message || 'Unknown error')
+              )
               .finally(() => {
                 enqueueActivityLog({
                   type: ActivityLogType.EXECUTED_PLUGIN_COMMAND,
@@ -237,37 +242,49 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       }
     }
 
-    const message = await db
-      .insert(messages)
-      .values({
-        channelId: input.channelId,
-        userId: ctx.userId,
-        content: targetContent,
-        editable,
-        parentMessageId: input.parentMessageId ?? null,
-        replyToMessageId: input.replyToMessageId ?? null,
-        createdAt: Date.now()
-      })
-      .returning()
-      .get();
+    const savedFileIds: number[] = [];
+
+    for (const tempFileId of limitedFiles) {
+      const newFile = await fileManager.saveFile(
+        tempFileId,
+        ctx.userId,
+        FileSaveType.MESSAGE
+      );
+
+      savedFileIds.push(newFile.id);
+    }
+
+    const message = db.transaction((tx) => {
+      const createdMessage = tx
+        .insert(messages)
+        .values({
+          channelId: input.channelId,
+          userId: ctx.userId,
+          content: targetContent,
+          editable,
+          parentMessageId: input.parentMessageId ?? null,
+          replyToMessageId: input.replyToMessageId ?? null,
+          createdAt: Date.now()
+        })
+        .returning()
+        .get();
+
+      if (savedFileIds.length > 0) {
+        tx.insert(messageFiles)
+          .values(
+            savedFileIds.map((fileId) => ({
+              messageId: createdMessage.id,
+              fileId,
+              createdAt: Date.now()
+            }))
+          )
+          .run();
+      }
+
+      return createdMessage;
+    });
 
     commandExecutor?.(message.id);
-
-    if (limitedFiles.length > 0) {
-      for (const tempFileId of limitedFiles) {
-        const newFile = await fileManager.saveFile(
-          tempFileId,
-          ctx.userId,
-          FileSaveType.MESSAGE
-        );
-
-        await db.insert(messageFiles).values({
-          messageId: message.id,
-          fileId: newFile.id,
-          createdAt: Date.now()
-        });
-      }
-    }
 
     publishMessage(message.id, input.channelId, 'create');
 

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { ChannelPermission, type TFile, type TSettings, type TUser } from '.';
 
 export enum ChannelType {
@@ -124,7 +125,7 @@ export type TServerInfo = Pick<
   'serverId' | 'name' | 'description' | 'allowNewUsers'
 > & {
   logo: TFile | null;
-  version: string;
+  version?: string;
 };
 
 export type TWebAppManifest = {
@@ -184,6 +185,24 @@ export type TDirectMessageConversation = {
   lastMessageAt: number;
 };
 
+// createdAt alone is not unique, two messages sent in the same millisecond
+// would straddle a page boundary and the second would never be returned
+export type TMessagesCursor = {
+  createdAt: number;
+  id: number;
+};
+
+export const zMessagesCursor = z.object({
+  createdAt: z.number(),
+  id: z.number()
+});
+
 export const DEFAULT_PROFILE_COLOR = '#262626';
 
 export const HEX_COLOR_REGEX = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+
+export const INVITE_CODE_REGEX = /^[A-Za-z0-9_-]+$/;
+
+// true for anything containing a pictographic character, which is how a unicode
+// emoji is told apart from a custom emoji name without an exhaustive table
+export const EMOJI_CHARACTER_REGEX = /\p{Extended_Pictographic}/u;

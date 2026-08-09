@@ -1,4 +1,4 @@
-import { useVoice } from '@/features/server/voice/hooks';
+import { useVoiceStats } from '@/components/voice-provider/stats-context';
 import { formatBigNumber } from '@/helpers/format-big-number';
 import { Popover, PopoverContent, PopoverTrigger } from '@sharkord/ui';
 import { filesize } from 'filesize';
@@ -67,7 +67,7 @@ StatsLabelValue.displayName = 'StatsLabelValue';
 
 const StatsPopover = memo(({ children }: StatsPopoverProps) => {
   const { t } = useTranslation('sidebar');
-  const { transportStats } = useVoice();
+  const transportStats = useVoiceStats();
   const [showSimulcastLayers, setShowSimulcastLayers] = useState(false);
 
   const {

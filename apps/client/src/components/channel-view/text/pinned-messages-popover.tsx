@@ -23,6 +23,22 @@ type TPinnedMessageGroupWrapperProps = {
   onScrollToMessage: (messageId: number) => void;
 };
 
+type TScrollToMessageButtonProps = {
+  messageId: number;
+  onScrollToMessage: (messageId: number) => void;
+};
+
+const ScrollToMessageButton = memo(
+  ({ messageId, onScrollToMessage }: TScrollToMessageButtonProps) => {
+    const handleClick = useCallback(
+      () => onScrollToMessage(messageId),
+      [onScrollToMessage, messageId]
+    );
+
+    return <IconButton icon={ArrowRight} size="xs" onClick={handleClick} />;
+  }
+);
+
 const PinnedMessageGroupWrapper = memo(
   ({ message, onScrollToMessage }: TPinnedMessageGroupWrapperProps) => {
     const { t } = useTranslation();
@@ -57,10 +73,9 @@ const PinnedMessageGroupWrapper = memo(
               </span>
             )}
             <Tooltip content={t('scrollToMessage')}>
-              <IconButton
-                icon={ArrowRight}
-                size="xs"
-                onClick={() => onScrollToMessage(message.id)}
+              <ScrollToMessageButton
+                messageId={message.id}
+                onScrollToMessage={onScrollToMessage}
               />
             </Tooltip>
           </div>

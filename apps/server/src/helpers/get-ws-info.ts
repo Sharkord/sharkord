@@ -1,10 +1,9 @@
 import type http from 'http';
 import ipaddr from 'ipaddr.js';
 import { UAParser } from 'ua-parser-js';
+import { config } from '../config';
 import type { TConnectionInfo } from '../types';
-
-// have no fucking idea what's going on in this file
-// 100% trusting AI on this one
+import { isPublicIp } from './network';
 
 const MAX_IP_CANDIDATES = 20;
 const MAX_HEADER_LENGTH = 2048;
@@ -93,14 +92,6 @@ const normalizeIp = (value: string): string | undefined => {
   }
 };
 
-const isPublicIp = (ip: string): boolean => {
-  try {
-    return toCanonical(ipaddr.parse(ip)).range() === 'unicast';
-  } catch {
-    return false;
-  }
-};
-
 const pickBestIp = (candidates: string[]): string | undefined => {
   const normalized = candidates
     .slice(0, MAX_IP_CANDIDATES)
@@ -124,12 +115,12 @@ const extractForwardedCandidates = (value: string): string[] =>
     )
     .slice(0, MAX_IP_CANDIDATES);
 
-const getWsIp = (
-  ws: any | undefined,
-  req: http.IncomingMessage | undefined
+// resolves the client ip a proxy claims to be forwarding. never call this
+// without first proving the connection came from a trusted proxy: every header
+// read here is attacker controlled on a direct connection
+const getForwardedIp = (
+  headers: http.IncomingHttpHeaders
 ): string | undefined => {
-  const headers = req?.headers ?? {};
-
   // 1. high-trust CDN / proxy headers (single-value, most trustworthy)
   for (const header of DIRECT_HEADERS) {
     const value = getHeaderValue(headers, header);
@@ -153,7 +144,43 @@ const getWsIp = (
     if (ip) return ip;
   }
 
-  // 4. fallback to raw socket remote address
+  return undefined;
+};
+
+const matchesProxyEntry = (address: string, entry: string): boolean => {
+  try {
+    const parsed = ipaddr.parse(address);
+
+    if (entry.includes('/')) {
+      const cidr = ipaddr.parseCIDR(entry);
+
+      // ipaddr throws when the kinds differ, so check before matching
+      if (parsed.kind() !== cidr[0].kind()) return false;
+
+      return parsed.match(cidr);
+    }
+
+    const normalizedEntry = normalizeIp(entry);
+
+    return !!normalizedEntry && normalizedEntry === address;
+  } catch {
+    return false;
+  }
+};
+
+const isTrustedProxyAddress = (
+  address: string | undefined,
+  trustedProxies: string[]
+): boolean => {
+  if (!address) return false;
+
+  return trustedProxies.some((entry) => matchesProxyEntry(address, entry));
+};
+
+const getSocketIp = (
+  ws: any | undefined,
+  req: http.IncomingMessage | undefined
+): string | undefined => {
   const socketCandidates = [
     ws?._socket?.remoteAddress,
     ws?.socket?.remoteAddress,
@@ -161,6 +188,19 @@ const getWsIp = (
   ].filter((v): v is string => typeof v === 'string' && v.length > 0);
 
   return pickBestIp(socketCandidates);
+};
+
+const getWsIp = (
+  ws: any | undefined,
+  req: http.IncomingMessage | undefined
+): string | undefined => {
+  const socketIp = getSocketIp(ws, req);
+
+  if (!isTrustedProxyAddress(socketIp, config.server.trustedProxies)) {
+    return socketIp;
+  }
+
+  return getForwardedIp(req?.headers ?? {}) ?? socketIp;
 };
 
 const getWsInfo = (
@@ -199,4 +239,4 @@ const getWsInfo = (
   return { ip, os, device, userAgent };
 };
 
-export { getWsInfo };
+export { getForwardedIp, getWsInfo, isTrustedProxyAddress };

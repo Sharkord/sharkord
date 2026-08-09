@@ -1,17 +1,19 @@
 import { Permission } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { config } from '../../config';
 import { db } from '../../db';
-import { removeFile } from '../../db/mutations/files';
-import { publishMessage, publishReplyCount } from '../../db/publishers';
-import { getFilesByMessageId } from '../../db/queries/files';
+import { deleteMessage } from '../../db/mutations/messages';
 import { messages } from '../../db/schema';
 import { assertChannelAccess } from '../../helpers/assert-channel-access';
-import { eventBus } from '../../plugins/event-bus';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const deleteMessageRoute = protectedProcedure
+const deleteMessageRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.sendAndEditMessage.maxRequests,
+  windowMs: config.rateLimiters.sendAndEditMessage.windowMs,
+  logLabel: 'deleteMessage'
+})
   .input(z.object({ messageId: z.number() }))
   .mutation(async ({ input, ctx }) => {
     const targetMessage = await db
@@ -41,47 +43,10 @@ const deleteMessageRoute = protectedProcedure
       }
     );
 
-    const files = await getFilesByMessageId(input.messageId);
-
-    if (files.length > 0) {
-      const promises = files.map(async (file) => {
-        await removeFile(file.id);
-      });
-
-      await Promise.all(promises);
-    }
-
-    // get messages that reference this one as an inline reply before deleting
-    const affectedReplies = await db
-      .select({ id: messages.id })
-      .from(messages)
-      .where(eq(messages.replyToMessageId, input.messageId));
-
-    await db.delete(messages).where(eq(messages.id, input.messageId));
-
-    // remove the stale reply references now that the target is gone
-    if (affectedReplies.length > 0) {
-      await db
-        .update(messages)
-        .set({ replyToMessageId: null })
-        .where(eq(messages.replyToMessageId, input.messageId));
-
-      await Promise.all(
-        affectedReplies.map(({ id }) =>
-          publishMessage(id, targetMessage.channelId, 'update')
-        )
-      );
-    }
-
-    publishMessage(input.messageId, targetMessage.channelId, 'delete');
-
-    if (targetMessage.parentMessageId) {
-      publishReplyCount(targetMessage.parentMessageId, targetMessage.channelId);
-    }
-
-    eventBus.emit('message:deleted', {
+    await deleteMessage({
+      id: input.messageId,
       channelId: targetMessage.channelId,
-      messageId: input.messageId
+      parentMessageId: targetMessage.parentMessageId
     });
   });
 

@@ -74,33 +74,34 @@ const useScrollController = ({
     if (!containerRef.current) return;
     if (fetching || messages.length === 0) return;
 
-    if (!hasInitialScroll.current) {
-      // try multiple methods to ensure scroll happens after all content is rendered
-      const performScroll = () => {
-        scrollToBottom();
-        hasInitialScroll.current = true;
-        shouldStickToBottom.current = true;
-      };
+    if (hasInitialScroll.current) return;
 
-      // 1: immediate attempt
-      performScroll();
+    // content keeps growing after the first paint (images, embeds), so the
+    // position is re-applied until the container stops resizing
+    const performScroll = () => {
+      scrollToBottom();
+      hasInitialScroll.current = true;
+      shouldStickToBottom.current = true;
+    };
 
-      // 2: wait for next frame
-      requestAnimationFrame(() => {
-        performScroll();
-      });
+    performScroll();
 
-      // 3: short timeout for any async content
-      setTimeout(() => {
-        performScroll();
-      }, 50);
+    const container = containerRef.current;
+    const observer = new ResizeObserver(() => {
+      if (!shouldStickToBottom.current) return;
 
-      // 4: longer timeout for images and other media
-      setTimeout(() => {
-        performScroll();
-      }, 200);
-    }
-  }, [fetching, messages.length, scrollToBottom]);
+      scrollToBottom();
+    });
+
+    observer.observe(container);
+
+    const stopObservingTimer = setTimeout(() => observer.disconnect(), 1000);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(stopObservingTimer);
+    };
+  }, [fetching, messages.length, scrollToBottom, containerRef]);
 
   // if user is already at the top when fetching completes
   // trigger another page load without requiring an extra scroll event
@@ -122,12 +123,13 @@ const useScrollController = ({
     if (!container || !hasInitialScroll.current || messages.length === 0)
       return;
 
-    if (shouldStickToBottom.current) {
-      // scroll after a short delay to allow content to render
-      setTimeout(() => {
-        scrollToBottom();
-      }, 10);
-    }
+    if (!shouldStickToBottom.current) return;
+
+    const timer = setTimeout(() => {
+      scrollToBottom();
+    }, 10);
+
+    return () => clearTimeout(timer);
   }, [messages, hasTypingUsers, scrollToBottom]);
 
   // keep bottom lock on container resize (input/footer height changes)

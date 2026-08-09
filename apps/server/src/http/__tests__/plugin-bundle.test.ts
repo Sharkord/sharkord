@@ -1,3 +1,4 @@
+import { CLIENT_ENTRY_FILE } from '@sharkord/shared';
 import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import fs from 'fs/promises';
 import path from 'path';
@@ -5,6 +6,7 @@ import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
 import { settings } from '../../db/schema';
 import { PLUGINS_PATH } from '../../helpers/paths';
+import { pluginManager } from '../../plugins';
 
 describe('/plugin-bundle', () => {
   beforeAll(async () => {
@@ -14,9 +16,9 @@ describe('/plugin-bundle', () => {
 
   beforeEach(resetPluginMocks);
 
-  test('should serve plugin bundle files', async () => {
+  test('should serve the client entry file', async () => {
     const response = await fetch(
-      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`
+      `${testsBaseUrl}/plugin-bundle/plugin-b/${CLIENT_ENTRY_FILE}`
     );
 
     expect(response.status).toBe(200);
@@ -26,14 +28,53 @@ describe('/plugin-bundle', () => {
 
     const text = await response.text();
 
-    expect(text).toContain('const onLoad');
+    expect(text).toContain('export {}');
+  });
+
+  test('should not serve the server entry file', async () => {
+    const response = await fetch(
+      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`
+    );
+
+    expect(response.status).toBe(404);
+  });
+
+  test('should not serve any other file in the plugin directory', async () => {
+    await fs.writeFile(
+      path.join(PLUGINS_PATH, 'plugin-b', 'secrets.env'),
+      'API_KEY=hunter2'
+    );
+
+    const response = await fetch(
+      `${testsBaseUrl}/plugin-bundle/plugin-b/secrets.env`
+    );
+
+    expect(response.status).toBe(404);
+  });
+
+  test('should not serve the manifest', async () => {
+    const response = await fetch(
+      `${testsBaseUrl}/plugin-bundle/plugin-b/manifest.json`
+    );
+
+    expect(response.status).toBe(404);
+  });
+
+  test('should not serve a disabled plugin', async () => {
+    await pluginManager.togglePlugin('plugin-b', false);
+
+    const response = await fetch(
+      `${testsBaseUrl}/plugin-bundle/plugin-b/${CLIENT_ENTRY_FILE}`
+    );
+
+    expect(response.status).toBe(404);
   });
 
   test('should return 403 when plugins are disabled', async () => {
     await tdb.update(settings).set({ enablePlugins: false });
 
     const response = await fetch(
-      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`
+      `${testsBaseUrl}/plugin-bundle/plugin-b/${CLIENT_ENTRY_FILE}`
     );
 
     expect(response.status).toBe(403);
@@ -45,14 +86,14 @@ describe('/plugin-bundle', () => {
 
   test('should serve bundle files with query params', async () => {
     const response = await fetch(
-      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js?v=123&cache=false`
+      `${testsBaseUrl}/plugin-bundle/plugin-b/${CLIENT_ENTRY_FILE}?v=123&cache=false`
     );
 
     expect(response.status).toBe(200);
 
     const text = await response.text();
 
-    expect(text).toContain('const onLoad');
+    expect(text).toContain('export {}');
   });
 
   test('should return 400 when plugin id or file path is missing', async () => {
@@ -78,10 +119,6 @@ describe('/plugin-bundle', () => {
     );
 
     expect(response.status).toBe(404);
-
-    const data = (await response.json()) as { error: string };
-
-    expect(data).toHaveProperty('error', 'File not found on disk');
   });
 
   test('should prevent path traversal attacks in file path', async () => {
@@ -89,23 +126,16 @@ describe('/plugin-bundle', () => {
       `${testsBaseUrl}/plugin-bundle/plugin-b/..%2F..%2F..%2Fetc/passwd`
     );
 
-    expect(response.status).toBe(403);
-
-    const data = (await response.json()) as { error: string };
-
-    expect(data).toHaveProperty('error', 'Forbidden');
+    expect(response.status).toBe(404);
   });
 
   test('should prevent path traversal attacks in plugin id', async () => {
     const response = await fetch(
-      `${testsBaseUrl}/plugin-bundle/${encodeURIComponent('../outside')}/server/index.js`
+      `${testsBaseUrl}/plugin-bundle/${encodeURIComponent('../outside')}/${CLIENT_ENTRY_FILE}`
     );
 
-    expect(response.status).toBe(403);
-
-    const data = (await response.json()) as { error: string };
-
-    expect(data).toHaveProperty('error', 'Forbidden');
+    // an unknown plugin id is not enabled, so it never reaches the path check
+    expect(response.status).toBe(404);
   });
 
   test('should return 404 when file does not exist', async () => {
@@ -114,10 +144,6 @@ describe('/plugin-bundle', () => {
     );
 
     expect(response.status).toBe(404);
-
-    const data = (await response.json()) as { error: string };
-
-    expect(data).toHaveProperty('error', 'File not found on disk');
   });
 
   test('should not match lookalike route prefixes', async () => {
@@ -130,7 +156,7 @@ describe('/plugin-bundle', () => {
 
   test('should include ETag, Last-Modified, and no-cache policy on success', async () => {
     const response = await fetch(
-      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`
+      `${testsBaseUrl}/plugin-bundle/plugin-b/${CLIENT_ENTRY_FILE}`
     );
 
     expect(response.status).toBe(200);
@@ -141,7 +167,7 @@ describe('/plugin-bundle', () => {
 
   test('should return 304 when If-None-Match matches ETag', async () => {
     const firstResponse = await fetch(
-      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`
+      `${testsBaseUrl}/plugin-bundle/plugin-b/${CLIENT_ENTRY_FILE}`
     );
     const etag = firstResponse.headers.get('ETag');
 
@@ -149,7 +175,7 @@ describe('/plugin-bundle', () => {
     expect(etag).toBeDefined();
 
     const secondResponse = await fetch(
-      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`,
+      `${testsBaseUrl}/plugin-bundle/plugin-b/${CLIENT_ENTRY_FILE}`,
       { headers: { 'If-None-Match': etag! } }
     );
 
@@ -164,7 +190,7 @@ describe('/plugin-bundle', () => {
 
   test('should return 304 when If-Modified-Since matches Last-Modified', async () => {
     const firstResponse = await fetch(
-      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`
+      `${testsBaseUrl}/plugin-bundle/plugin-b/${CLIENT_ENTRY_FILE}`
     );
     const lastModified = firstResponse.headers.get('Last-Modified');
 
@@ -172,7 +198,7 @@ describe('/plugin-bundle', () => {
     expect(lastModified).toBeDefined();
 
     const secondResponse = await fetch(
-      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`,
+      `${testsBaseUrl}/plugin-bundle/plugin-b/${CLIENT_ENTRY_FILE}`,
       { headers: { 'If-Modified-Since': lastModified! } }
     );
 
@@ -193,7 +219,7 @@ describe('/plugin-bundle', () => {
     await tdb.update(settings).set({ enablePlugins: false });
 
     const response = await fetch(
-      `${testsBaseUrl}/plugin-bundle/plugin-b/server/index.js`
+      `${testsBaseUrl}/plugin-bundle/plugin-b/${CLIENT_ENTRY_FILE}`
     );
 
     expect(response.status).toBe(403);

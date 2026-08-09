@@ -1,10 +1,12 @@
 import { UploadHeaders, type TTempFile } from '@sharkord/shared';
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
+import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
 import { login, uploadFile } from '../../__tests__/helpers';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
-import { settings } from '../../db/schema';
+import { config } from '../../config';
+import { settings, users } from '../../db/schema';
 import { TMP_PATH } from '../../helpers/paths';
 import { sanitizeFileName } from '../helpers';
 
@@ -74,6 +76,36 @@ describe('/upload', () => {
     expect(data).toHaveProperty('errors');
     expect(data.errors[UploadHeaders.TOKEN]).toBeDefined();
     expect(data.errors[UploadHeaders.ORIGINAL_NAME]).toBeDefined();
+  });
+
+  test('should reject uploads from a banned user', async () => {
+    const response = await login('testuser', 'password123');
+    const data: any = await response.json();
+
+    await tdb
+      .update(users)
+      .set({ banned: true, banReason: 'spam', bannedAt: Date.now() })
+      .where(eq(users.identity, 'testuser'));
+
+    const file = getMockFile('banned users should not be able to upload');
+    const uploadResponse = await uploadFile(file, data.token);
+
+    expect(uploadResponse.status).toBe(401);
+  });
+
+  test('should rate limit excessive upload attempts', async () => {
+    const { maxRequests } = config.rateLimiters.upload;
+    const statuses: number[] = [];
+
+    for (let i = 0; i < maxRequests + 1; i++) {
+      const file = getMockFile(`rate limit probe ${i}`);
+      const response = await uploadFile(file, token);
+
+      statuses.push(response.status);
+    }
+
+    expect(statuses.slice(0, maxRequests).every((s) => s === 200)).toBe(true);
+    expect(statuses.at(-1)).toBe(429);
   });
 
   test('should throw when upload token is invalid', async () => {
@@ -475,5 +507,26 @@ describe('sanitizeFileName', () => {
 
   test('should handle filenames with multiple extensions', () => {
     expect(sanitizeFileName('file.backup.old.txt')).toBe('file.backup.old.txt');
+  });
+
+  test('should decode the percent-encoded names the client sends', () => {
+    expect(sanitizeFileName('caf%C3%A9.png')).toBe('café.png');
+    expect(sanitizeFileName('%E6%96%87%E6%9B%B8.png')).toBe('文書.png');
+    expect(sanitizeFileName('%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82.txt')).toBe(
+      'привет.txt'
+    );
+    expect(sanitizeFileName('my%20report.pdf')).toBe('my report.pdf');
+  });
+
+  test('should strip traversal and null bytes hidden behind percent-encoding', () => {
+    expect(sanitizeFileName('..%2F..%2Fetc%2Fpasswd')).toBe('passwd');
+    expect(sanitizeFileName('%2E%2E%2F%2E%2E%2Fshadow')).toBe('shadow');
+    expect(sanitizeFileName('%2E%2E')).toBeNull();
+    expect(sanitizeFileName('evil%00.txt')).toBeNull();
+  });
+
+  test('should keep names a malformed escape makes undecodable', () => {
+    expect(sanitizeFileName('100%.txt')).toBe('100%.txt');
+    expect(sanitizeFileName('50%off%.png')).toBe('50%off%.png');
   });
 });

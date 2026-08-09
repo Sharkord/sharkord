@@ -92,15 +92,23 @@ type TReactionProps = {
   emoji: string;
   count: number;
   isUserReacted: boolean;
-  onClick: () => void;
+  onSelect: (emoji: string) => void;
   file: TFile | null;
   userIds: number[];
 };
 
 const Reaction = memo(
-  ({ emoji, count, isUserReacted, onClick, file, userIds }: TReactionProps) => {
+  ({
+    emoji,
+    count,
+    isUserReacted,
+    onSelect,
+    file,
+    userIds
+  }: TReactionProps) => {
     const { t } = useTranslation('common');
     const usernames = useUsernames();
+    const handleClick = useCallback(() => onSelect(emoji), [onSelect, emoji]);
     const tooltipContent = useMemo(() => {
       const names = userIds
         .slice(0, MAX_REACTORS_PREVIEW)
@@ -135,7 +143,7 @@ const Reaction = memo(
         <Button
           size="sm"
           variant="outline"
-          onClick={onClick}
+          onClick={handleClick}
           className={cn(
             'flex items-center gap-1 h-9',
             isUserReacted ? 'border-border' : 'border-none'
@@ -228,7 +236,7 @@ const MessageReactions = memo(
             count={reaction.count}
             userIds={reaction.userIds}
             isUserReacted={reaction.isUserReacted}
-            onClick={() => handleReactionClick(reaction.emoji)}
+            onSelect={handleReactionClick}
             file={reaction.file}
           />
         ))}

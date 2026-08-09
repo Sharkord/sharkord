@@ -5,7 +5,8 @@ import {
   Permission,
   ServerEvents
 } from '@sharkord/shared';
-import { eq } from 'drizzle-orm';
+import { and, eq, exists, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/sqlite-core';
 import z from 'zod';
 import { db } from '../../db';
 import { publishUser } from '../../db/publishers';
@@ -17,10 +18,13 @@ import {
   messages,
   users
 } from '../../db/schema';
+import { assertCanActOnUser } from '../../helpers/assert-can-act-on-user';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
 import { pubsub } from '../../utils/pubsub';
 import { protectedProcedure } from '../../utils/trpc';
+
+const placeholderReactions = alias(messageReactions, 'placeholder_reactions');
 
 const ensureDeletedUser = async (): Promise<number> => {
   const existingDeletedUser = await getUserByIdentity(
@@ -90,42 +94,70 @@ const deleteUserRoute = protectedProcedure
       message: 'Cannot delete the deleted user placeholder.'
     });
 
-    const userWs = ctx.getUserWs(input.userId);
+    await assertCanActOnUser(ctx.userId, input.userId);
 
-    if (userWs) {
-      userWs.close(DisconnectCode.KICKED, 'Your account has been deleted');
-    }
+    ctx
+      .getUserWs(input.userId)
+      .forEach((socket) =>
+        socket.close(DisconnectCode.KICKED, 'Your account has been deleted')
+      );
 
     const deletedUserId = await ensureDeletedUser();
 
-    await db.transaction(async (tx) => {
+    db.transaction((tx) => {
       if (!input.wipe) {
         // Reassign everything to deleted user placeholder
 
-        await tx
-          .update(messages)
+        tx.update(messages)
           .set({ userId: deletedUserId })
-          .where(eq(messages.userId, input.userId));
+          .where(eq(messages.userId, input.userId))
+          .run();
 
-        await tx
-          .update(emojis)
+        tx.update(emojis)
           .set({ userId: deletedUserId })
-          .where(eq(emojis.userId, input.userId));
+          .where(eq(emojis.userId, input.userId))
+          .run();
 
-        await tx
-          .update(messageReactions)
-          .set({ userId: deletedUserId })
-          .where(eq(messageReactions.userId, input.userId));
+        // the reactions primary key is (messageId, userId, emoji), so a
+        // reaction the placeholder already holds cannot be reassigned onto it
+        // and has to go instead, or the whole delete fails on the constraint
+        tx.delete(messageReactions)
+          .where(
+            and(
+              eq(messageReactions.userId, input.userId),
+              exists(
+                tx
+                  .select({ one: sql`1` })
+                  .from(placeholderReactions)
+                  .where(
+                    and(
+                      eq(placeholderReactions.userId, deletedUserId),
+                      eq(
+                        placeholderReactions.messageId,
+                        messageReactions.messageId
+                      ),
+                      eq(placeholderReactions.emoji, messageReactions.emoji)
+                    )
+                  )
+              )
+            )
+          )
+          .run();
 
-        await tx
-          .update(files)
+        tx.update(messageReactions)
           .set({ userId: deletedUserId })
-          .where(eq(files.userId, input.userId));
+          .where(eq(messageReactions.userId, input.userId))
+          .run();
+
+        tx.update(files)
+          .set({ userId: deletedUserId })
+          .where(eq(files.userId, input.userId))
+          .run();
       } else {
         // cascade will handle deleting all related data
       }
 
-      await tx.delete(users).where(eq(users.id, input.userId));
+      tx.delete(users).where(eq(users.id, input.userId)).run();
     });
 
     pubsub.publish(ServerEvents.USER_DELETE, {

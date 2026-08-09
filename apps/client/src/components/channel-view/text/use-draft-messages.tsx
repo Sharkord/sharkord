@@ -48,14 +48,6 @@ const setDraftMessage = (draftKey: TDraftMessageKey, message: string) => {
   saveDraftsToStorage(drafts);
 };
 
-const clearDraftMessage = (draftKey: TDraftMessageKey) => {
-  const drafts = loadDraftsFromStorage();
-
-  delete drafts[draftKey];
-
-  saveDraftsToStorage(drafts);
-};
-
 const getChannelDraftKey = (channelId: number): TDraftMessageKey => {
   const state = store.getState();
   const ownUserId = ownUserIdSelector(state);
@@ -64,7 +56,6 @@ const getChannelDraftKey = (channelId: number): TDraftMessageKey => {
 };
 
 export {
-  clearDraftMessage,
   getChannelDraftKey,
   getDraftMessage,
   loadDraftsFromStorage,

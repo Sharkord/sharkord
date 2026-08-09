@@ -14,6 +14,7 @@ export enum ActivityLogType {
   USER_UNBANNED = 'USER_UNBANNED',
   USER_DELETED = 'USER_DELETED',
   USER_UPDATED_PASSWORD = 'USER_UPDATED_PASSWORD',
+  USER_CLAIMED_OWNERSHIP = 'USER_CLAIMED_OWNERSHIP',
   // -------------------- ROLES --------------------
   CREATED_ROLE = 'CREATED_ROLE',
   DELETED_ROLE = 'DELETED_ROLE',
@@ -23,6 +24,7 @@ export enum ActivityLogType {
   CREATED_CHANNEL = 'CREATED_CHANNEL',
   DELETED_CHANNEL = 'DELETED_CHANNEL',
   UPDATED_CHANNEL = 'UPDATED_CHANNEL',
+  REORDERED_CHANNELS = 'REORDERED_CHANNELS',
   UPDATED_CHANNEL_PERMISSIONS = 'UPDATED_CHANNEL_PERMISSIONS',
   DELETED_CHANNEL_PERMISSIONS = 'DELETED_CHANNEL_PERMISSIONS',
   // -------------------- INVITES --------------------
@@ -37,6 +39,7 @@ export enum ActivityLogType {
   CREATED_CATEGORY = 'CREATED_CATEGORY',
   DELETED_CATEGORY = 'DELETED_CATEGORY',
   UPDATED_CATEGORY = 'UPDATED_CATEGORY',
+  REORDERED_CATEGORIES = 'REORDERED_CATEGORIES',
   // -------------------- PLUGINS --------------------
   EXECUTED_PLUGIN_COMMAND = 'EXECUTED_PLUGIN_COMMAND',
   EXECUTED_PLUGIN_ACTION = 'EXECUTED_PLUGIN_ACTION',
@@ -77,6 +80,7 @@ export type TActivityLogDetailsMap = {
   };
   [ActivityLogType.USER_LEFT]: {};
   [ActivityLogType.USER_UPDATED_PASSWORD]: {};
+  [ActivityLogType.USER_CLAIMED_OWNERSHIP]: {};
   // -------------------- ROLES --------------------
   [ActivityLogType.CREATED_ROLE]: {
     roleId: number;
@@ -110,6 +114,10 @@ export type TActivityLogDetailsMap = {
   [ActivityLogType.UPDATED_CHANNEL]: {
     channelId: number;
     values: Partial<TChannel>;
+  };
+  [ActivityLogType.REORDERED_CHANNELS]: {
+    categoryId: number;
+    channelIds: number[];
   };
   [ActivityLogType.UPDATED_CHANNEL_PERMISSIONS]: {
     channelId: number;
@@ -156,6 +164,7 @@ export type TActivityLogDetailsMap = {
   [ActivityLogType.DELETED_CATEGORY]: {
     categoryId: number;
     categoryName: string;
+    channelIds: number[];
   };
   [ActivityLogType.UPDATED_CATEGORY]: {
     categoryId: number;
@@ -163,6 +172,9 @@ export type TActivityLogDetailsMap = {
       name: string;
       position: number;
     }>;
+  };
+  [ActivityLogType.REORDERED_CATEGORIES]: {
+    categoryIds: number[];
   };
   // -------------------- PLUGINS --------------------
   [ActivityLogType.EXECUTED_PLUGIN_COMMAND]: {

@@ -1,14 +1,11 @@
 import { isEmptyMessage, Permission } from '@sharkord/shared';
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { db } from '../../db';
 import { removeFile } from '../../db/mutations/files';
+import { deleteMessage } from '../../db/mutations/messages';
 import { publishMessage } from '../../db/publishers';
 import { getFilesByMessageId } from '../../db/queries/files';
 import { getMessageByFileId } from '../../db/queries/messages';
-import { messages } from '../../db/schema';
 import { assertChannelAccess } from '../../helpers/assert-channel-access';
-import { eventBus } from '../../plugins/event-bus';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -40,13 +37,10 @@ const deleteFileRoute = protectedProcedure
     const files = await getFilesByMessageId(message.id);
 
     if (isEmptyMessage(message.content) && files.length == 0) {
-      await db.delete(messages).where(eq(messages.id, message.id));
-
-      publishMessage(message.id, message.channelId, 'delete');
-
-      eventBus.emit('message:deleted', {
+      await deleteMessage({
+        id: message.id,
         channelId: message.channelId,
-        messageId: message.id
+        parentMessageId: message.parentMessageId
       });
     }
   });

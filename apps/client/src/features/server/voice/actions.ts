@@ -1,11 +1,13 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
 import { store } from '@/features/store';
 import { logVoice } from '@/helpers/browser-logger';
+import { playSound } from '@/helpers/sounds';
 import {
   LocalStorageKey,
   setLocalStorageItem,
   setLocalStorageItemBool
 } from '@/helpers/storage';
+import { i18n } from '@/i18n';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   getTrpcError,
@@ -23,7 +25,6 @@ import {
   selectedChannelIdSelector
 } from '../channels/selectors';
 import { serverSliceActions } from '../slice';
-import { playSound } from '../sounds/actions';
 import { SoundType } from '../types';
 import { ownUserIdSelector } from '../users/selectors';
 import { ownVoiceStateSelector } from './selectors';
@@ -169,7 +170,7 @@ export const joinVoice = async (
 
     return routerRtpCapabilities;
   } catch (error) {
-    toast.error(getTrpcError(error, 'Failed to join voice channel'));
+    toast.error(getTrpcError(error, i18n.t('common:failedJoinVoiceChannel')));
   }
 
   return undefined;
@@ -213,7 +214,7 @@ export const leaveVoice = async (options?: {
     await client.voice.leave.mutate();
     playSound(SoundType.OWN_USER_LEFT_VOICE_CHANNEL);
   } catch (error) {
-    toast.error(getTrpcError(error, 'Failed to leave voice channel'));
+    toast.error(getTrpcError(error, i18n.t('common:failedLeaveVoiceChannel')));
   }
 };
 

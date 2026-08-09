@@ -1,5 +1,6 @@
 import { logDebug } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
+import { handleSubscriptionError } from '../subscription-error';
 import {
   addChannel,
   removeChannel,
@@ -16,7 +17,7 @@ const subscribeToChannels = () => {
       logDebug('[EVENTS] channels.onCreate', { channel });
       addChannel(channel);
     },
-    onError: (err) => console.error('onChannelCreate subscription error:', err)
+    onError: handleSubscriptionError('onChannelCreate')
   });
 
   const onChannelDeleteSub = trpc.channels.onDelete.subscribe(undefined, {
@@ -24,7 +25,7 @@ const subscribeToChannels = () => {
       logDebug('[EVENTS] channels.onDelete', { channelId });
       removeChannel(channelId);
     },
-    onError: (err) => console.error('onChannelDelete subscription error:', err)
+    onError: handleSubscriptionError('onChannelDelete')
   });
 
   const onChannelUpdateSub = trpc.channels.onUpdate.subscribe(undefined, {
@@ -32,7 +33,7 @@ const subscribeToChannels = () => {
       logDebug('[EVENTS] channels.onUpdate', { channel });
       updateChannel(channel.id, channel);
     },
-    onError: (err) => console.error('onChannelUpdate subscription error:', err)
+    onError: handleSubscriptionError('onChannelUpdate')
   });
 
   const onChannelPermissionsUpdateSub =
@@ -41,8 +42,7 @@ const subscribeToChannels = () => {
         logDebug('[EVENTS] channels.onPermissionsUpdate', { data });
         setChannelPermissions(data);
       },
-      onError: (err) =>
-        console.error('onChannelPermissionsUpdate subscription error:', err)
+      onError: handleSubscriptionError('onChannelPermissionsUpdate')
     });
 
   const onChannelReadStatesUpdateSub =
@@ -51,8 +51,7 @@ const subscribeToChannels = () => {
         logDebug('[EVENTS] channels.onReadStateUpdate', { data });
         setChannelReadState(data.channelId, data);
       },
-      onError: (err) =>
-        console.error('onChannelReadStatesUpdate subscription error:', err)
+      onError: handleSubscriptionError('onChannelReadStatesUpdate')
     });
 
   const onChannelReadStatesDeltaSub = trpc.channels.onReadStateDelta.subscribe(
@@ -62,8 +61,7 @@ const subscribeToChannels = () => {
         logDebug('[EVENTS] channels.onReadStateDelta', { data });
         setChannelReadState(data.channelId, data);
       },
-      onError: (err) =>
-        console.error('onChannelReadStatesDelta subscription error:', err)
+      onError: handleSubscriptionError('onChannelReadStatesDelta')
     }
   );
 

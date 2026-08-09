@@ -6,12 +6,15 @@ import { config } from '../config';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
 import { pluginManager } from '../plugins';
+import { HttpValidationError, PayloadTooLargeError } from './errors';
 import { healthRouteHandler } from './healthz';
 import {
-  getRequestPathname,
+  applyCorsHeaders,
+  getRequestUrl,
   hasPrefixPathSegment,
   isSupportedHttpMethod,
-  supportedHttpMethods,
+  sendJsonError,
+  sendJsonFieldErrors,
   type HttpRouteHandler,
   type TSupportedHttpMethod
 } from './helpers';
@@ -23,10 +26,13 @@ import { pluginBundleRouteHandler } from './plugin-bundle';
 import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
 import { uploadFileRouteHandler } from './upload';
-import { HttpValidationError } from './utils';
 
+// parsed once per request and handed to every handler, so nothing below re-parses the url
+// or re-resolves the client ip
 type RouteContext = {
   info: ReturnType<typeof getWsInfo>;
+  pathname: string;
+  url: URL;
 };
 
 // plugin routes are registered with decoded paths, so decode per segment to keep
@@ -65,21 +71,20 @@ const routeHandlers: Partial<
 > = {
   GET: {
     exact: {
-      '/healthz': (req, res) => healthRouteHandler(req, res),
-      '/info': (req, res) => infoRouteHandler(req, res),
-      '/manifest.json': (req, res) => manifestRouteHandler(req, res)
+      '/healthz': healthRouteHandler,
+      '/info': infoRouteHandler,
+      '/manifest.json': manifestRouteHandler
     },
     prefix: {
-      '/public': (req, res) => publicRouteHandler(req, res),
-      '/plugin-components': (req, res) =>
-        pluginsComponentsRouteHandler(req, res),
-      '/plugin-bundle': (req, res) => pluginBundleRouteHandler(req, res)
+      '/public': publicRouteHandler,
+      '/plugin-components': pluginsComponentsRouteHandler,
+      '/plugin-bundle': pluginBundleRouteHandler
     }
   },
   POST: {
     exact: {
-      '/upload': (req, res) => uploadFileRouteHandler(req, res),
-      '/login': (req, res) => loginRouteHandler(req, res)
+      '/upload': uploadFileRouteHandler,
+      '/login': loginRouteHandler
     },
     prefix: {}
   }
@@ -91,26 +96,24 @@ const createHttpServer = async (port: number = config.server.port) => {
   return new Promise<http.Server>((resolve) => {
     const server = http.createServer(
       async (req: http.IncomingMessage, res: http.ServerResponse) => {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader(
-          'Access-Control-Allow-Methods',
-          supportedHttpMethods.join(', ')
-        );
-        res.setHeader('Access-Control-Allow-Headers', '*');
+        applyCorsHeaders(req, res);
+
+        res.setHeader('X-Content-Type-Options', 'nosniff');
 
         const info = getWsInfo(undefined, req);
+        const url = getRequestUrl(req);
 
         logger.debug(
-          `${chalk.dim('[HTTP]')} ${req.method} ${req.url} - ${info?.ip}`
+          `${chalk.dim('[HTTP]')} ${req.method} ${url?.pathname} - ${info?.ip}`
         );
 
-        const pathname = getRequestPathname(req);
-
-        if (!pathname) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Bad request' }));
+        if (!url) {
+          sendJsonError(res, 400, 'Bad request');
           return;
         }
+
+        const pathname = url.pathname;
+        const ctx: RouteContext = { info, pathname, url };
 
         try {
           const method =
@@ -125,14 +128,14 @@ const createHttpServer = async (port: number = config.server.port) => {
               const exactHandler = methodHandlers.exact[pathname];
 
               if (exactHandler) {
-                return await exactHandler(req, res, { info });
+                return await exactHandler(req, res, ctx);
               }
 
               for (const [prefix, prefixHandler] of Object.entries(
                 methodHandlers.prefix
               )) {
                 if (hasPrefixPathSegment(pathname, prefix)) {
-                  return await prefixHandler(req, res, { info });
+                  return await prefixHandler(req, res, ctx);
                 }
               }
             }
@@ -151,8 +154,7 @@ const createHttpServer = async (port: number = config.server.port) => {
               }
 
               if (method !== 'OPTIONS') {
-                res.writeHead(404, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Not found' }));
+                sendJsonError(res, 404, 'Not found');
 
                 return;
               }
@@ -168,7 +170,7 @@ const createHttpServer = async (port: number = config.server.port) => {
 
           // fallback to interface route handler for GET requests
           if (method === 'GET') {
-            return await interfaceRouteHandler(req, res);
+            return await interfaceRouteHandler(req, res, ctx);
           }
         } catch (error) {
           // a handler that already started writing cannot be turned into an error
@@ -185,6 +187,11 @@ const createHttpServer = async (port: number = config.server.port) => {
 
           const errorsMap: Record<string, string> = {};
 
+          if (error instanceof PayloadTooLargeError) {
+            sendJsonError(res, 413, error.message);
+            return;
+          }
+
           if (error instanceof z.ZodError) {
             for (const issue of error.issues) {
               const field = issue.path[0];
@@ -194,26 +201,22 @@ const createHttpServer = async (port: number = config.server.port) => {
               }
             }
 
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ errors: errorsMap }));
+            sendJsonFieldErrors(res, 400, errorsMap);
             return;
           } else if (error instanceof HttpValidationError) {
             errorsMap[error.field] = error.message;
 
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ errors: errorsMap }));
+            sendJsonFieldErrors(res, 400, errorsMap);
             return;
           }
 
           logger.error('HTTP route error: %s', getErrorMessage(error));
 
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Internal server error' }));
+          sendJsonError(res, 500, 'Internal server error');
           return;
         }
 
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Not found' }));
+        sendJsonError(res, 404, 'Not found');
       }
     );
 
@@ -224,7 +227,6 @@ const createHttpServer = async (port: number = config.server.port) => {
 
     server.on('close', () => {
       logger.debug('HTTP server closed');
-      process.exit(0);
     });
 
     server.listen(port);

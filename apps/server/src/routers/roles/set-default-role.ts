@@ -34,16 +34,16 @@ const setDefaultRoleRoute = protectedProcedure
       message: 'Role not found'
     });
 
-    await db.transaction(async (tx) => {
-      await tx
-        .update(roles)
+    db.transaction((tx) => {
+      tx.update(roles)
         .set({ isDefault: false })
-        .where(eq(roles.id, defaultRole.id));
+        .where(eq(roles.id, defaultRole.id))
+        .run();
 
-      await tx
-        .update(roles)
+      tx.update(roles)
         .set({ isDefault: true })
-        .where(eq(roles.id, input.roleId));
+        .where(eq(roles.id, input.roleId))
+        .run();
     });
 
     await Promise.all([

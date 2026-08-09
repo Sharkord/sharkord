@@ -656,6 +656,28 @@ describe('plugins router', () => {
       expect(result.values.enabled).toBe(false);
     });
 
+    test('should throw when a setting value has the wrong type', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-with-settings');
+
+      await expect(
+        caller.plugins.updateSetting({
+          pluginId: 'plugin-with-settings',
+          key: 'maxRetries',
+          value: 'ten'
+        })
+      ).rejects.toThrow(
+        "Setting 'maxRetries' expects a number, received string"
+      );
+
+      const result = await caller.plugins.getSettings({
+        pluginId: 'plugin-with-settings'
+      });
+
+      expect(result.values.maxRetries).toBe(3);
+    });
+
     test('should throw when setting key does not exist', async () => {
       const { caller } = await initTest();
 
@@ -863,5 +885,27 @@ describe('plugins router', () => {
         })
       ).rejects.toThrow();
     });
+  });
+});
+
+describe('plugin commands in messages', () => {
+  beforeEach(resetPluginMocks);
+
+  test('parses the command from the sanitized content, not the raw input', async () => {
+    const { caller } = await initTest();
+
+    await pluginManager.loadPlugins();
+
+    // the <script> is stripped by sanitizeMessageHtml, so a parser reading the
+    // raw input would see different text than what gets stored and displayed
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: '<p>/test-command hello<script>ignored</script></p>',
+      files: []
+    });
+
+    const message = await caller.messages.getOne({ messageId });
+
+    expect(message.content).not.toContain('script');
   });
 });

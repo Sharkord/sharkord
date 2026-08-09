@@ -7,6 +7,7 @@ import {
 } from '@/features/app/selectors';
 import { store } from '@/features/store';
 import { getFileUrl } from '@/helpers/get-file-url';
+import { playSound } from '@/helpers/sounds';
 import {
   getPlainTextFromHtml,
   hasMention,
@@ -20,7 +21,6 @@ import {
 } from '../channels/selectors';
 import { pluginMetadataByIdSelector } from '../plugins/selectors';
 import { serverSliceActions } from '../slice';
-import { playSound } from '../sounds/actions';
 import { SoundType } from '../types';
 import { ownUserIdSelector, userByIdSelector } from '../users/selectors';
 import { threadMessagesMapSelector } from './selectors';

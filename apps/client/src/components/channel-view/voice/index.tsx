@@ -8,10 +8,7 @@ import {
 import { memo, useMemo } from 'react';
 import { ControlsBar } from './controls-bar';
 import { ExternalStreamCard } from './external-stream-card';
-import {
-  PinnedCardType,
-  usePinCardController
-} from './hooks/use-pin-card-controller';
+import { usePinCardController } from './hooks/use-pin-card-controller';
 import { ScreenShareCard } from './screen-share-card';
 import { VoiceGrid } from './voice-grid';
 import { VoiceUserCard } from './voice-user-card';
@@ -53,13 +50,8 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
             userId={voiceUser.id}
             isPinned={isPinned(userCardId)}
             isAnyCardPinned={isAnyCardPinned}
-            onPin={() =>
-              pinCard({
-                id: userCardId,
-                type: PinnedCardType.USER,
-                userId: voiceUser.id
-              })
-            }
+            cardId={userCardId}
+            onPin={pinCard}
             onUnpin={unpinCard}
             voiceUser={voiceUser}
           />
@@ -78,13 +70,8 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
             userId={voiceUser.id}
             isPinned={isPinned(screenShareCardId)}
             isAnyCardPinned={isAnyCardPinned}
-            onPin={() =>
-              pinCard({
-                id: screenShareCardId,
-                type: PinnedCardType.SCREEN_SHARE,
-                userId: voiceUser.id
-              })
-            }
+            cardId={screenShareCardId}
+            onPin={pinCard}
             onUnpin={unpinCard}
             showPinControls
           />
@@ -104,13 +91,8 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
             streamId={stream.streamId}
             stream={stream}
             isPinned={isPinned(externalStreamCardId)}
-            onPin={() =>
-              pinCard({
-                id: externalStreamCardId,
-                type: PinnedCardType.EXTERNAL_STREAM,
-                userId: stream.streamId
-              })
-            }
+            cardId={externalStreamCardId}
+            onPin={pinCard}
             onUnpin={unpinCard}
             showPinControls
           />

@@ -5,20 +5,19 @@ import {
   useTypingUsersByChannelId
 } from '@/features/server/hooks';
 import { useMessages } from '@/features/server/messages/hooks';
-import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
+import { playSound } from '@/helpers/sounds';
 import { LocalStorageKey } from '@/helpers/storage';
+import { useTypingSignal } from '@/hooks/use-typing-signal';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TReplyTarget } from '@/types';
 import {
   ChannelPermission,
-  TYPING_MS,
   getTrpcError,
   prepareMessageHtml,
   type TJoinedMessage
 } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
-import { throttle } from 'lodash-es';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -107,19 +106,7 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
 
   const channelCan = useChannelCan(channelId);
 
-  const sendTypingSignal = useMemo(
-    () =>
-      throttle(async () => {
-        const trpc = getTRPCClient();
-
-        try {
-          await trpc.messages.signalTyping.mutate({ channelId });
-        } catch {
-          // ignore
-        }
-      }, TYPING_MS),
-    [channelId]
-  );
+  const sendTypingSignal = useTypingSignal(channelId);
 
   const setNewMessageHandler = useCallback(
     (value: string) => {
@@ -166,6 +153,11 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
   const onReplyMessageSelect = useCallback((message: TJoinedMessage) => {
     setReplyingToMessage(message);
   }, []);
+
+  const handleCancelReply = useCallback(
+    () => setReplyingToMessage(undefined),
+    [setReplyingToMessage]
+  );
 
   if (!channelCan(ChannelPermission.VIEW_CHANNEL) || loading) {
     return <TextSkeleton />;
@@ -230,7 +222,7 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
         onTyping={sendTypingSignal}
         typingUsers={typingUsers}
         showPluginSlot
-        onCancelReply={() => setReplyingToMessage(undefined)}
+        onCancelReply={handleCancelReply}
         replyTarget={replyTarget}
         onArrowUp={handleArrowUpEdit}
         onResize={onComposeResize}

@@ -11,6 +11,7 @@ import { publishSettings } from '../../db/publishers';
 import { getSettings } from '../../db/queries/server';
 import { pluginManager } from '../../plugins';
 import { enqueueActivityLog } from '../../queues/activity-log';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const updateSettingsRoute = protectedProcedure
@@ -18,7 +19,7 @@ const updateSettingsRoute = protectedProcedure
     z.object({
       name: z.string().min(2).max(24).optional(),
       description: z.string().max(128).optional(),
-      password: z.string().min(1).max(32).optional().nullable().default(null),
+      password: z.string().min(1).max(32).optional().nullable(),
       onlyAskForPasswordOnFirstJoin: z.boolean().optional(),
       allowNewUsers: z.boolean().optional(),
       directMessagesEnabled: z.boolean().optional(),
@@ -49,36 +50,19 @@ const updateSettingsRoute = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_SETTINGS);
 
-    const { enablePlugins: oldEnablePlugins } = await getSettings();
-
-    await updateSettings({
-      name: input.name,
-      description: input.description,
-      password: input.password,
-      onlyAskForPasswordOnFirstJoin: input.onlyAskForPasswordOnFirstJoin,
-      allowNewUsers: input.allowNewUsers,
-      directMessagesEnabled: input.directMessagesEnabled,
-      storageUploadEnabled: input.storageUploadEnabled,
-      storageFileSharingInDirectMessages:
-        input.storageFileSharingInDirectMessages,
-      storageQuota: input.storageQuota,
-      storageUploadMaxFileSize: input.storageUploadMaxFileSize,
-      storageMaxAvatarSize: input.storageMaxAvatarSize,
-      storageMaxBannerSize: input.storageMaxBannerSize,
-      storageMaxFilesPerMessage: input.storageMaxFilesPerMessage,
-      storageSpaceQuotaByUser: input.storageSpaceQuotaByUser,
-      storageOverflowAction: input.storageOverflowAction,
-      enablePlugins: input.enablePlugins,
-      webRtcSimulcastEnabled: input.webRtcSimulcastEnabled,
-      enableSearch: input.enableSearch,
-      showWelcomeDialog: input.showWelcomeDialog,
-      storageSignedUrlsEnabled: input.storageSignedUrlsEnabled,
-      storageSignedUrlsTtlSeconds: input.storageSignedUrlsTtlSeconds,
-      storageImageOptimizationEnabled: input.storageImageOptimizationEnabled,
-      storageImageOptimizationQuality: input.storageImageOptimizationQuality
+    invariant(Object.keys(input).length > 0, {
+      code: 'BAD_REQUEST',
+      message: 'Nothing to update.'
     });
 
-    if (oldEnablePlugins !== input.enablePlugins) {
+    const { enablePlugins: oldEnablePlugins } = await getSettings();
+
+    await updateSettings(input);
+
+    if (
+      input.enablePlugins !== undefined &&
+      input.enablePlugins !== oldEnablePlugins
+    ) {
       if (input.enablePlugins) {
         await pluginManager.loadPlugins();
       } else {
@@ -88,10 +72,13 @@ const updateSettingsRoute = protectedProcedure
 
     publishSettings();
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...loggedValues } = input;
+
     enqueueActivityLog({
       type: ActivityLogType.EDIT_SERVER_SETTINGS,
       userId: ctx.userId,
-      details: { values: input }
+      details: { values: loggedValues }
     });
   });
 

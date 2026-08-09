@@ -1,6 +1,7 @@
 import { getTRPCClient } from '@/lib/trpc';
 import { getTrpcError } from '@sharkord/shared';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { TSearchResults, TUnifiedSearchResult } from './types';
 
@@ -9,6 +10,8 @@ const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 300;
 
 export const useSearch = (isOpen: boolean) => {
+  const { t } = useTranslation('common');
+
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<TSearchResults>(EMPTY_RESULTS);
@@ -46,7 +49,7 @@ export const useSearch = (isOpen: boolean) => {
           setResults(next);
         }
       } catch (error) {
-        toast.error(getTrpcError(error, 'Could not load search results.'));
+        toast.error(getTrpcError(error, t('common:failedLoadSearchResults')));
 
         setResults(EMPTY_RESULTS);
       } finally {
@@ -62,7 +65,7 @@ export const useSearch = (isOpen: boolean) => {
       clearTimeout(timer);
       cancelled = true;
     };
-  }, [query, isOpen]);
+  }, [query, isOpen, t]);
 
   const canSearch = query.trim().length >= MIN_QUERY_LENGTH;
   const totalResults = results.messages.length + results.files.length;

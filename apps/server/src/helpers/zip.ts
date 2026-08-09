@@ -33,45 +33,6 @@ const zipDirectory = (srcDir: string, outPath: string): Promise<void> => {
   });
 };
 
-const unzipToDirectory = (zipPath: string, outDir: string): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    yauzl.open(zipPath, { lazyEntries: true }, (err, zipfile) => {
-      if (err || !zipfile) return reject(err);
-
-      zipfile.readEntry();
-
-      zipfile.on('entry', (entry) => {
-        const entryPath = path.join(outDir, entry.fileName);
-
-        // Prevent ZipSlip vulnerability
-        if (!entryPath.startsWith(path.resolve(outDir))) {
-          return reject(
-            new Error('Illegal file path in zip: ' + entry.fileName)
-          );
-        }
-
-        if (/\/$/.test(entry.fileName)) {
-          fs.mkdirSync(entryPath, { recursive: true });
-          zipfile.readEntry();
-        } else {
-          fs.mkdirSync(path.dirname(entryPath), { recursive: true });
-          zipfile.openReadStream(entry, (err, readStream) => {
-            if (err || !readStream) return reject(err);
-
-            const writeStream = fs.createWriteStream(entryPath);
-            readStream.pipe(writeStream);
-
-            writeStream.on('close', () => zipfile.readEntry());
-          });
-        }
-      });
-
-      zipfile.on('end', resolve);
-      zipfile.on('error', reject);
-    });
-  });
-};
-
 const unzipBlobToDirectory = async (
   zipBlob: Blob | Buffer | Uint8Array,
   outDir: string
@@ -122,4 +83,4 @@ const unzipBlobToDirectory = async (
   });
 };
 
-export { unzipBlobToDirectory, unzipToDirectory, zipDirectory };
+export { unzipBlobToDirectory, zipDirectory };

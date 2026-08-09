@@ -1,3 +1,4 @@
+import { ReconnectingBanner } from '@/components/reconnecting-banner';
 import {
   useIsAppLoading,
   useIsAutoConnecting,
@@ -6,6 +7,7 @@ import {
 import {
   useDisconnectInfo,
   useIsConnected,
+  useIsReconnecting,
   useServerName
 } from '@/features/server/hooks';
 import { Connect } from '@/screens/connect';
@@ -24,6 +26,7 @@ const Routing = memo(() => {
   const disconnectInfo = useDisconnectInfo();
   const serverName = useServerName();
   const isAutoConnecting = useIsAutoConnecting();
+  const isReconnecting = useIsReconnecting();
 
   useEffect(() => {
     if (isConnected && serverName) {
@@ -40,7 +43,7 @@ const Routing = memo(() => {
     );
   }
 
-  if (!isConnected) {
+  if (!isConnected && !isReconnecting) {
     if (isAutoConnecting) {
       return <LoadingApp text={t('loggingInAutomatically')} />;
     }
@@ -49,7 +52,8 @@ const Routing = memo(() => {
       disconnectInfo &&
       (!disconnectInfo.wasClean ||
         disconnectInfo.code === DisconnectCode.KICKED ||
-        disconnectInfo.code === DisconnectCode.BANNED)
+        disconnectInfo.code === DisconnectCode.BANNED ||
+        disconnectInfo.code === DisconnectCode.SERVER_SHUTDOWN)
     ) {
       return <Disconnected info={disconnectInfo} />;
     }
@@ -57,7 +61,12 @@ const Routing = memo(() => {
     return <Connect />;
   }
 
-  return <ServerView />;
+  return (
+    <>
+      {isReconnecting && <ReconnectingBanner />}
+      <ServerView />
+    </>
+  );
 });
 
 export { Routing };

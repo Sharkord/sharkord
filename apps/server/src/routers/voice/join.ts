@@ -57,6 +57,11 @@ const joinVoiceRoute = rateLimitedProcedure(protectedProcedure, {
       message: 'Channel is not a voice channel'
     });
 
+    invariant(!channel.isDm, {
+      code: 'BAD_REQUEST',
+      message: 'Cannot join a direct message channel as a voice channel'
+    });
+
     const userAlreadyInVoiceChannel = VoiceRuntime.findRuntimeByUserId(
       ctx.user.id
     );

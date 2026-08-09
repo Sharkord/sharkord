@@ -5,6 +5,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import type { TRemoteUserStreamKinds } from '@/types';
 import { StreamKind } from '@sharkord/shared';
 import type { RtpCapabilities } from 'mediasoup-client/types';
+import type { RefObject } from 'react';
 import { useEffect } from 'react';
 
 type TEvents = {
@@ -23,7 +24,7 @@ type TEvents = {
   ) => void;
   removeExternalStream: (streamId: number) => void;
   clearRemoteUserStreamsForUser: (userId: number) => void;
-  rtpCapabilities: RtpCapabilities | null | undefined;
+  rtpCapabilitiesRef: RefObject<RtpCapabilities | null | undefined>;
 };
 
 const useVoiceEvents = ({
@@ -32,7 +33,7 @@ const useVoiceEvents = ({
   removeExternalStreamTrack,
   removeExternalStream,
   clearRemoteUserStreamsForUser,
-  rtpCapabilities
+  rtpCapabilitiesRef
 }: TEvents) => {
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const ownUserId = useOwnUserId();
@@ -43,7 +44,7 @@ const useVoiceEvents = ({
       return;
     }
 
-    if (!rtpCapabilities) {
+    if (!rtpCapabilitiesRef.current) {
       logVoice('Voice events not initialized - missing RTP capabilities');
       return;
     }
@@ -74,6 +75,10 @@ const useVoiceEvents = ({
             kind,
             channelId
           });
+
+          const rtpCapabilities = rtpCapabilitiesRef.current;
+
+          if (!rtpCapabilities) return;
 
           try {
             consume(remoteId, kind, rtpCapabilities);
@@ -188,7 +193,7 @@ const useVoiceEvents = ({
     removeExternalStreamTrack,
     removeExternalStream,
     clearRemoteUserStreamsForUser,
-    rtpCapabilities
+    rtpCapabilitiesRef
   ]);
 };
 

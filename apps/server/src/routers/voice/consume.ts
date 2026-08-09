@@ -1,10 +1,15 @@
 import { Permission, ServerEvents, StreamKind } from '@sharkord/shared';
 import { z } from 'zod';
+import { config } from '../../config';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const consumeRoute = protectedProcedure
+const consumeRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.voiceStream.maxRequests,
+  windowMs: config.rateLimiters.voiceStream.windowMs,
+  logLabel: 'consume'
+})
   .input(
     z.object({
       kind: z.enum(StreamKind),

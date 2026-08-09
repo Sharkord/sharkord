@@ -1,6 +1,7 @@
 import { ActivityLogType, ServerEvents, UserStatus } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { config } from '../../config';
 import { db } from '../../db';
 import {
   getAllChannelUserPermissions,
@@ -21,11 +22,11 @@ import { enqueueActivityLog } from '../../queues/activity-log';
 import { enqueueLogin } from '../../queues/logins';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
-import { rateLimitedProcedure, t } from '../../utils/trpc';
+import { publicProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const joinServerRoute = rateLimitedProcedure(t.procedure, {
-  maxRequests: 5,
-  windowMs: 60_000,
+const joinServerRoute = rateLimitedProcedure(publicProcedure, {
+  maxRequests: config.rateLimiters.joinServer.maxRequests,
+  windowMs: config.rateLimiters.joinServer.windowMs,
   logLabel: 'joinServer'
 })
   .input(
@@ -35,6 +36,11 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
     })
   )
   .query(async ({ input, ctx }) => {
+    invariant(ctx.user, {
+      code: 'UNAUTHORIZED',
+      message: 'User not authenticated'
+    });
+
     const connectionInfo = ctx.getConnectionInfo();
     const settings = await getSettings();
 
@@ -60,11 +66,6 @@ const joinServerRoute = rateLimitedProcedure(t.procedure, {
         message: 'Invalid password'
       }
     );
-
-    invariant(ctx.user, {
-      code: 'UNAUTHORIZED',
-      message: 'User not authenticated'
-    });
 
     ctx.authenticated = true;
     ctx.setWsUserId(ctx.user.id);

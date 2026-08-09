@@ -49,12 +49,6 @@ export const channelsByCategoryIdSelector = createCachedSelector(
       .sort((a, b) => a.position - b.position || a.id - b.id)
 )((_, categoryId: number) => categoryId);
 
-export const selectedChannelSelector = createSelector(
-  [channelsSelector, selectedChannelIdSelector],
-  (channels, selectedChannelId) =>
-    channels.find((channel) => channel.id === selectedChannelId)
-);
-
 export const isCurrentVoiceChannelSelectedSelector = createSelector(
   [selectedChannelIdSelector, currentVoiceChannelIdSelector],
   (selectedChannelId, currentVoiceChannelId) =>
@@ -110,10 +104,6 @@ export const channelsMapSelector = createSelector(
 
     return map;
   }
-);
-
-export const channelIdsSelector = createSelector(channelsSelector, (channels) =>
-  channels.map((channel) => channel.id)
 );
 
 export const directMessagesUnreadCountSelector = createSelector(

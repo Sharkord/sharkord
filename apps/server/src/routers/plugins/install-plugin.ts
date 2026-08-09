@@ -26,10 +26,15 @@ const installRoute = protectedProcedure
       await pluginManager.unload(input.pluginId);
     }
 
-    await downloadPlugin(versionData.downloadUrl, versionData.checksum);
-
-    if (wasEnabled) {
-      await pluginManager.load(input.pluginId);
+    try {
+      await downloadPlugin(versionData.downloadUrl, versionData.checksum);
+    } finally {
+      // a failed download (network, checksum) would otherwise leave the plugin
+      // unloaded in the process while still enabled in the database, dead until
+      // the next restart
+      if (wasEnabled) {
+        await pluginManager.load(input.pluginId);
+      }
     }
   });
 

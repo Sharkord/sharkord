@@ -17,14 +17,14 @@ activityLogQueue.autostart = true;
 type TEnqueueActivityLog<T extends ActivityLogType = ActivityLogType> = {
   type: T;
   details?: TActivityLogDetailsMap[T];
-  userId?: number;
+  userId?: number | null;
   ip?: string;
 };
 
 const enqueueActivityLog = <T extends ActivityLogType>({
   type,
   details = {} as TActivityLogDetailsMap[T],
-  userId = 1,
+  userId = null,
   ip
 }: TEnqueueActivityLog<T>) => {
   const date = Date.now();
@@ -36,7 +36,7 @@ const enqueueActivityLog = <T extends ActivityLogType>({
       userId,
       type: type,
       details,
-      ip: ip || getUserIp(userId) || null,
+      ip: ip || (userId ? getUserIp(userId) : undefined) || null,
       createdAt: date
     });
 

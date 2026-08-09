@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, mock } from 'bun:test';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import fs from 'fs/promises';
+import path from 'path';
 import { DATA_PATH } from '../helpers/paths';
 import { clearVoiceMoveGrantsForTests } from '../helpers/voice-move-grants';
 import { createHttpServer } from '../http';
@@ -26,6 +27,21 @@ import { seedTestDb } from './seed';
 const DISABLE_CONSOLE = true;
 const CLEANUP_AFTER_FINISH = true;
 
+type TTestLogEntry = {
+  level: 'info' | 'warn' | 'error' | 'debug' | 'trace' | 'fatal';
+  message: string;
+};
+
+// the suite silences the logger, which used to make "caught the error, logged it and carried
+// on" indistinguishable from success. entries are collected here so a test can assert that a
+// path really did fail quietly. cleared before every test by the beforeEach below
+const testLogs: TTestLogEntry[] = [];
+
+const findTestLog = (level: TTestLogEntry['level'], substring: string) =>
+  testLogs.find(
+    (entry) => entry.level === level && entry.message.includes(substring)
+  );
+
 if (DISABLE_CONSOLE) {
   const noop = () => {};
 
@@ -34,14 +50,20 @@ if (DISABLE_CONSOLE) {
   global.console.warn = noop;
   global.console.debug = noop;
 
+  const record =
+    (level: TTestLogEntry['level']) =>
+    (...args: unknown[]) => {
+      testLogs.push({ level, message: args.map(String).join(' ') });
+    };
+
   mock.module('../logger', () => ({
     logger: {
-      info: noop,
-      warn: noop,
-      error: noop,
-      debug: noop,
-      trace: noop,
-      fatal: noop
+      info: record('info'),
+      warn: record('warn'),
+      error: record('error'),
+      debug: record('debug'),
+      trace: record('trace'),
+      fatal: record('fatal')
     }
   }));
 }
@@ -51,13 +73,21 @@ let sqlite: Database | null = null;
 let testsBaseUrl: string;
 
 beforeAll(async () => {
-  await createHttpServer(9999);
+  const server = await createHttpServer(0);
+  const address = server.address();
+
+  if (!address || typeof address === 'string') {
+    throw new Error('Test HTTP server did not bind to a TCP port');
+  }
+
   await loadMediasoup();
 
-  testsBaseUrl = 'http://localhost:9999';
+  testsBaseUrl = `http://localhost:${address.port}`;
 });
 
 beforeEach(async () => {
+  testLogs.length = 0;
+
   clearRateLimitersForTests();
   clearVoiceMoveGrantsForTests();
 
@@ -96,6 +126,10 @@ afterEach(() => {
 afterAll(async () => {
   if (!CLEANUP_AFTER_FINISH) return;
 
+  const expectedTestPath = path.resolve(process.cwd(), './data-test');
+
+  if (path.resolve(DATA_PATH) !== expectedTestPath) return;
+
   try {
     await fs.rm(DATA_PATH, { recursive: true });
   } catch {
@@ -103,4 +137,4 @@ afterAll(async () => {
   }
 });
 
-export { tdb, testsBaseUrl };
+export { findTestLog, tdb, testLogs, testsBaseUrl };

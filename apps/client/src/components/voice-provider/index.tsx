@@ -1,6 +1,5 @@
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { useWebRtcSimulcastEnabled } from '@/features/server/hooks';
-import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
 import {
@@ -15,6 +14,7 @@ import {
   postNoiseGateWorkletConfig
 } from '@/helpers/audio-worklet/noise-gate-worklet';
 import { createNsChain } from '@/helpers/audio-worklet/ns-worklet';
+import { playSound } from '@/helpers/sounds';
 
 import { logVoice } from '@/helpers/browser-logger';
 import {
@@ -69,14 +69,12 @@ import {
 } from './helpers';
 import { useLocalStreams } from './hooks/use-local-streams';
 import { useRemoteStreams } from './hooks/use-remote-streams';
-import {
-  useTransportStats,
-  type TransportStatsData
-} from './hooks/use-transport-stats';
+import { useTransportStats } from './hooks/use-transport-stats';
 import { useTransports } from './hooks/use-transports';
 import { useVoiceControls } from './hooks/use-voice-controls';
 import { useVoiceEvents } from './hooks/use-voice-events';
 import { SIMULCAST_WEBCAM_MAX_BITRATE } from './statics';
+import { VoiceStatsContext } from './stats-context';
 import { VolumeControlProvider } from './volume-control-context';
 
 type AudioVideoRefs = {
@@ -105,7 +103,6 @@ enum ConnectionStatus {
 export type TVoiceProvider = {
   loading: boolean;
   connectionStatus: ConnectionStatus;
-  transportStats: TransportStatsData;
   audioVideoRefsMap: Map<number, AudioVideoRefs>;
   ownVoiceState: TVoiceUserState;
   isScreenShareSupported: boolean;
@@ -142,18 +139,6 @@ export type TVoiceProvider = {
 const VoiceProviderContext = createContext<TVoiceProvider>({
   loading: false,
   connectionStatus: ConnectionStatus.DISCONNECTED,
-  transportStats: {
-    producer: null,
-    consumer: null,
-    screenShare: null,
-    totalBytesReceived: 0,
-    totalBytesSent: 0,
-    isMonitoring: false,
-    currentBitrateReceived: 0,
-    currentBitrateSent: 0,
-    averageBitrateReceived: 0,
-    averageBitrateSent: 0
-  },
   audioVideoRefsMap: new Map(),
   isScreenShareSupported: false,
   getOrCreateRefs: () => ({
@@ -407,6 +392,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
   const {
     stats: transportStats,
+    subscribe: subscribeToStats,
     startMonitoring,
     stopMonitoring,
     resetStats,
@@ -519,6 +505,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
       logVoice('Microphone stream obtained', { stream: rawStream });
 
+      rawMicrophoneStreamRef.current = rawStream;
+
       const rawAudioTrack = rawStream.getAudioTracks()[0];
 
       if (rawAudioTrack) {
@@ -552,7 +540,6 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
             const processedTrack = destination.stream.getAudioTracks()[0];
 
             if (processedTrack) {
-              rawMicrophoneStreamRef.current = rawStream;
               microphoneNoiseGateAudioContextRef.current = audioContext;
               microphoneNoiseGateWorkletNodeRef.current = noiseGateNode;
               transmitTrack = processedTrack;
@@ -613,7 +600,11 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
         logVoice('Obtained audio track', { audioTrack: rawAudioTrack });
 
-        localAudioProducer.current = await producerTransport.current?.produce({
+        if (!producerTransport.current) {
+          throw new Error('Producer transport is not available');
+        }
+
+        localAudioProducer.current = await producerTransport.current.produce({
           track: transmitTrack,
           codecOptions: {
             opusStereo: false,
@@ -629,7 +620,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           producer: localAudioProducer.current
         });
 
-        localAudioProducer.current?.on('@close', async () => {
+        localAudioProducer.current?.observer.on('close', async () => {
           logVoice('Audio producer closed');
 
           const trpc = getTRPCClient();
@@ -753,7 +744,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           producer: localVideoProducer.current
         });
 
-        localVideoProducer.current?.on('@close', async () => {
+        localVideoProducer.current?.observer.on('close', async () => {
           logVoice('Video producer closed');
 
           const trpc = getTRPCClient();
@@ -975,7 +966,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
         setScreenShareProducer(localScreenShareProducer.current);
 
-        localScreenShareProducer.current?.on('@close', async () => {
+        localScreenShareProducer.current?.observer.on('close', async () => {
           logVoice('Screen share producer closed');
 
           const trpc = getTRPCClient();
@@ -1023,19 +1014,24 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
           setLocalScreenShareAudio(new MediaStream([audioTrack]));
 
-          localScreenShareAudioProducer.current?.on('@close', async () => {
-            logVoice('Screen share audio producer closed');
+          localScreenShareAudioProducer.current?.observer.on(
+            'close',
+            async () => {
+              logVoice('Screen share audio producer closed');
 
-            const trpc = getTRPCClient();
+              const trpc = getTRPCClient();
 
-            try {
-              await trpc.voice.closeProducer.mutate({
-                kind: StreamKind.SCREEN_AUDIO
-              });
-            } catch (error) {
-              logVoice('Error closing screen share audio producer', { error });
+              try {
+                await trpc.voice.closeProducer.mutate({
+                  kind: StreamKind.SCREEN_AUDIO
+                });
+              } catch (error) {
+                logVoice('Error closing screen share audio producer', {
+                  error
+                });
+              }
             }
-          });
+          );
 
           audioTrack.onended = () => {
             localScreenShareAudioProducer.current?.close();
@@ -1147,6 +1143,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         playSound(SoundType.OWN_USER_JOINED_VOICE_CHANNEL);
       } catch (error) {
         logVoice('Error initializing voice provider', { error });
+        cleanup();
 
         setConnectionStatus(ConnectionStatus.FAILED);
         setLoading(false);
@@ -1209,7 +1206,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     removeExternalStreamTrack,
     removeExternalStream,
     clearRemoteUserStreamsForUser,
-    rtpCapabilities: deviceRtpCapabilities.current
+    rtpCapabilitiesRef: deviceRtpCapabilities
   });
 
   useEffect(() => {
@@ -1238,7 +1235,6 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     () => ({
       loading,
       connectionStatus,
-      transportStats,
       audioVideoRefsMap: audioVideoRefsMap.current,
       isScreenShareSupported,
       getOrCreateRefs,
@@ -1266,7 +1262,6 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     [
       loading,
       connectionStatus,
-      transportStats,
       isScreenShareSupported,
       getOrCreateRefs,
       getConsumerCodec,
@@ -1291,19 +1286,26 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     ]
   );
 
+  const statsContextValue = useMemo(
+    () => ({ stats: transportStats, subscribe: subscribeToStats }),
+    [transportStats, subscribeToStats]
+  );
+
   return (
     <VoiceProviderContext.Provider value={contextValue}>
-      <VolumeControlProvider>
-        <div className="relative">
-          <FloatingPinnedCard
-            remoteUserStreams={remoteUserStreams}
-            externalStreams={externalStreams}
-            localScreenShareStream={localScreenShareStream}
-            localVideoStream={localVideoStream}
-          />
-          {children}
-        </div>
-      </VolumeControlProvider>
+      <VoiceStatsContext.Provider value={statsContextValue}>
+        <VolumeControlProvider>
+          <div className="relative">
+            <FloatingPinnedCard
+              remoteUserStreams={remoteUserStreams}
+              externalStreams={externalStreams}
+              localScreenShareStream={localScreenShareStream}
+              localVideoStream={localVideoStream}
+            />
+            {children}
+          </div>
+        </VolumeControlProvider>
+      </VoiceStatsContext.Provider>
     </VoiceProviderContext.Provider>
   );
 });

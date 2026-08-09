@@ -3,10 +3,16 @@ import type { CreateWSSContextFnOptions } from '@trpc/server/adapters/ws';
 import type { IncomingMessage } from 'http';
 import { createContext } from '../utils/wss';
 
-const createMockContextOptions = async (opts?: {
+type TMockContextOptions = {
   customToken?: string;
-}): Promise<CreateWSSContextFnOptions> => {
-  const { customToken } = opts ?? {};
+  headers?: IncomingMessage['headers'];
+  remoteAddress?: string;
+};
+
+const createMockContextOptions = async (
+  opts?: TMockContextOptions
+): Promise<CreateWSSContextFnOptions> => {
+  const { customToken, headers, remoteAddress } = opts ?? {};
 
   const token = customToken;
 
@@ -23,9 +29,9 @@ const createMockContextOptions = async (opts?: {
       url: new URL('ws://localhost:3000')
     },
     req: {
-      headers: {},
+      headers: headers ?? {},
       socket: {
-        remoteAddress: '127.0.0.1'
+        remoteAddress: remoteAddress ?? '127.0.0.1'
       }
     } as IncomingMessage,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -33,11 +39,11 @@ const createMockContextOptions = async (opts?: {
   };
 };
 
-const createMockContext = async (opts?: { customToken?: string }) => {
+const createMockContext = async (opts?: TMockContextOptions) => {
   const contextOpts = await createMockContextOptions(opts);
   const ctx = await createContext(contextOpts);
 
   return ctx;
 };
 
-export { createMockContext };
+export { createMockContext, type TMockContextOptions };

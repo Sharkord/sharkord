@@ -359,6 +359,22 @@ class VoiceRuntime {
       });
     });
 
+    const remainingUsers = this.state.users;
+
+    this.state.users = [];
+
+    remainingUsers.forEach(({ userId }) => {
+      pubsub.publish(ServerEvents.USER_LEAVE_VOICE, {
+        channelId: this.id,
+        userId
+      });
+
+      eventBus.emit('user:left_voice', {
+        userId,
+        channelId: this.id
+      });
+    });
+
     voiceRuntimes.delete(this.id);
 
     eventBus.emit('voice:runtime_closed', {
@@ -515,9 +531,12 @@ class VoiceRuntime {
   public createConsumerTransport = async (userId: number) => {
     const { transport, params } = await this.createTransport();
 
+    this.consumerTransports[userId]?.close();
     this.consumerTransports[userId] = transport;
 
     transport.observer.on('close', () => {
+      if (this.consumerTransports[userId] !== transport) return;
+
       delete this.consumerTransports[userId];
 
       if (this.consumers[userId]) {
@@ -553,9 +572,12 @@ class VoiceRuntime {
   public createProducerTransport = async (userId: number) => {
     const { params, transport } = await this.createTransport();
 
+    this.producerTransports[userId]?.close();
     this.producerTransports[userId] = transport;
 
     transport.observer.on('close', () => {
+      if (this.producerTransports[userId] !== transport) return;
+
       delete this.producerTransports[userId];
 
       this.removeProducer(userId, StreamKind.AUDIO);
@@ -614,6 +636,8 @@ class VoiceRuntime {
       producer,
       qualityLayers
     );
+
+    this.removeProducer(userId, type);
 
     if (type === StreamKind.VIDEO) {
       this.videoProducers[userId] = producer;
@@ -697,9 +721,12 @@ class VoiceRuntime {
 
     const streamKey = this.getConsumerKey(remoteId, kind);
 
+    this.consumers[userId][streamKey]?.close();
     this.consumers[userId][streamKey] = consumer;
 
     consumer.observer.on('close', () => {
+      if (this.consumers[userId]?.[streamKey] !== consumer) return;
+
       delete this.consumers[userId]?.[streamKey];
     });
   };

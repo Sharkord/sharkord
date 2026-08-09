@@ -75,3 +75,5 @@ export const i18nReady = i18n
 i18n.on('languageChanged', (lng) => {
   localStorage.setItem(LocalStorageKey.LANGUAGE, lng);
 });
+
+export { i18n };

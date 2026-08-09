@@ -1,13 +1,5 @@
-import { FileSaveType } from '@sharkord/shared';
-import { eq } from 'drizzle-orm';
 import z from 'zod';
-import { db } from '../../db';
-import { removeFile } from '../../db/mutations/files';
-import { publishUser } from '../../db/publishers';
-import { getUserById } from '../../db/queries/users';
-import { users } from '../../db/schema';
-import { fileManager } from '../../utils/file-manager';
-import { invariant } from '../../utils/invariant';
+import { changeUserImage } from '../../helpers/change-user-image';
 import { protectedProcedure } from '../../utils/trpc';
 
 const changeAvatarRoute = protectedProcedure
@@ -17,52 +9,7 @@ const changeAvatarRoute = protectedProcedure
     })
   )
   .mutation(async ({ ctx, input }) => {
-    const user = await getUserById(ctx.userId);
-
-    if (
-      input.fileId &&
-      !fileManager.temporaryFileHasMimeType(input.fileId, 'image/')
-    ) {
-      throw new Error('Invalid file type. Please try again.');
-    }
-
-    invariant(user, {
-      code: 'NOT_FOUND',
-      message: 'User not found'
-    });
-
-    if (user.avatarId) {
-      await removeFile(user.avatarId);
-
-      await db
-        .update(users)
-        .set({ avatarId: null })
-        .where(eq(users.id, ctx.userId))
-        .run();
-    }
-
-    if (input.fileId) {
-      const tempFile = await fileManager.getTemporaryFile(input.fileId);
-
-      invariant(tempFile, {
-        code: 'NOT_FOUND',
-        message: 'Temporary file not found'
-      });
-
-      const newFile = await fileManager.saveFile(
-        input.fileId,
-        ctx.userId,
-        FileSaveType.AVATAR
-      );
-
-      await db
-        .update(users)
-        .set({ avatarId: newFile.id })
-        .where(eq(users.id, ctx.userId))
-        .run();
-    }
-
-    publishUser(ctx.userId, 'update');
+    await changeUserImage(ctx.userId, 'avatar', input.fileId);
   });
 
 export { changeAvatarRoute };
