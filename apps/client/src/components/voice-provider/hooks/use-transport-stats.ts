@@ -572,10 +572,13 @@ const useTransportStats = () => {
   }, [stats]);
 
   useEffect(() => {
-    window.printVoiceStats = printStats;
+    window.sharkordDebug = {
+      ...window.sharkordDebug,
+      printVoiceStats: printStats
+    };
 
     return () => {
-      delete window.printVoiceStats;
+      delete window.sharkordDebug?.printVoiceStats;
     };
   }, [printStats]);
 

@@ -135,7 +135,13 @@ const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
   const [devicesEnumerated, setDevicesEnumerated] = useState(false);
   const initializedRef = useRef(false);
   const devicesRef = useRef(devices);
-  devicesRef.current = devices;
+
+  // written in an effect rather than during render: a render that is never committed would
+  // otherwise leave the ref holding a value no one else can see. only read from callbacks,
+  // which always run after commit
+  useEffect(() => {
+    devicesRef.current = devices;
+  }, [devices]);
 
   const { t } = useTranslation();
 

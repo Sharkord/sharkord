@@ -486,6 +486,8 @@ Format: what to do, then what should happen.
 | M43 | 12.1 | While connected, get kicked and then banned from another session. Separately, hit Disconnect in the UI, and refresh the page (Firefox especially) | Kick and ban still end the session immediately and show their own screens, with no reconnect attempts. Disconnect still logs out. A refresh still auto-logs-in, meaning the token was not cleared |
 | M49 | 1.17 | Log in on two browsers, then change your password on one | The other is disconnected immediately and cannot reconnect with its old session. The one you changed it on stays connected. Log in again with the new password and confirm it works right away |
 | M50 | 1.15 | On a server with real history, register a new account and time the login | It returns promptly, and the new user's channels all show zero unread. Post a message afterwards and confirm it shows as unread for them |
+| M66 | 9.12 | Open devtools and run `sharkordDebug.printVoiceStats()` while in a call, and `sharkordDebug.openSoundsModal()`. Then confirm `useToken('...')` still works unchanged | The two debug helpers now live under `sharkordDebug`; the ownership command is untouched, which matters because it is documented online |
+| M67 | 9.14 | Join a call with the noise gate on, change its threshold in settings, and watch the console | The gate responds to the change and the console stays quiet. A warning from `[noise-gate]` or `[audio-meter]` means the message contract between the .ts and .js sides has drifted |
 | M64 | 8.12 | Scroll far up in a busy channel to load several pages, then jump to an old message from search | Messages stay in the right order in both cases. This removed an ordering option that two call sites were passing and that the reducer had always ignored |
 | M65 | 8.13 | Open channels, switch between them, and open a DM | Channel lookups still resolve. This changed the selector that resolves a channel by id, and got the declaration order wrong first |
 | M62 | 7.12 | Open the admin users list and search by name, then open a user's moderation panel both as the owner and as an admin without VIEW_USER_SENSITIVE_DATA | Name search works. The identity row shows the identity for the permitted user and is blank for the other. **Searching by identity no longer appears to work, because it never did** |
@@ -519,7 +521,7 @@ Format: what to do, then what should happen.
 | 6   | [Plugin subsystem](#6-plugin-subsystem)                            | `src/plugins/`, `packages/plugin-sdk`                                                        | audited |
 | 7   | [Server leftovers](#7-server-leftovers)                            | `helpers/`, remaining `utils/`, `queues/`, `crons/`, `index.ts`, `logger.ts`                 | fixed |
 | 8   | [Client state](#8-client-state)                                    | `client/src/features/`                                                                       | fixed |
-| 9   | [Client voice](#9-client-voice)                                    | `voice-provider/`, `devices-provider/`, `audio-worklets/`                                    | audited |
+| 9   | [Client voice](#9-client-voice)                                    | `voice-provider/`, `devices-provider/`, `audio-worklets/`                                    | fixed (9.4, 9.15 in T4) |
 | 10  | [Client channel view & editor](#10-client-channel-view--editor)    | `channel-view/`, `tiptap-input/`, `message-compose/`, `thread-sidebar/`                      | audited |
 | 11  | [Client screens & chrome](#11-client-screens--chrome)              | `server-screens/`, `dialogs/`, `left-sidebar/`, `top-bar/`, `screens/`, remaining components | audited |
 | 12  | [Shared & UI packages](#12-shared--ui-packages)                    | `packages/shared`, `packages/ui`, `client/hooks/`, `client/helpers/`, `client/lib/`          | mostly fixed |
@@ -554,10 +556,10 @@ Chunk 11 is **mostly fixed**: 11.1 on the read side, and the MED batch 11.2, 11.
 flagged as F8) and 11.7. 11.6 is deferred to T5. LOW 11.8 is open.
 Chunk 10 is **mostly fixed**: the MED batch (10.3 to 10.7) is done, on top of 10.1 (fixed
 with 2.2) and 10.2 (corrected to LOW during the audit). LOW 10.8 and 10.9 are open.
-Chunk 9 is **mostly fixed**: HIGH (9.1 to 9.3) and MED (9.5 to 9.11) are done, two of them
-with corrections to the finding (9.1 on who consumes the stats, 9.11 on which mediasoup event
-is actually equivalent). 9.4 is deferred to T4 by decision. LOW 9.12 to 9.15 are open, and
-9.15 is now part of T4.
+Chunk 9 is **fixed**: HIGH (9.1 to 9.3), MED (9.5 to 9.11) and LOW 9.12 to 9.14 are done,
+three of them with corrections to the finding (9.1 on who consumes the stats, 9.11 on which
+mediasoup event is actually equivalent, 9.12 on the fact that one of the three globals cannot
+be namespaced or stripped). 9.4 and 9.15 are deferred to T4 by decision.
 Chunk 8 is **fixed**: 8.1 (with a correction that also rewrote the guide's selector
 section), the MED batch 8.2 to 8.10, and the LOW batch 8.11 to 8.14. 8.2 is partly fixed and
 8.4 fixed as documentation, both by decision, and 8.6 left as is. 8.15 was closed with 8.4.
@@ -3975,27 +3977,58 @@ it, so a rename there is a no-op rather than a bug.
 
 ### LOW
 
-**9.12 — `use-transport-stats.ts:541` adds `window.printVoiceStats`.** Third debug global
+**9.12 [FIXED] — `use-transport-stats.ts:541` adds `window.printVoiceStats`.** Third debug global
 on `window` after `window.useToken` and `window.openSoundsModal` (8.6). At least this one
 is removed on unmount. Worth collecting all three behind one namespaced debug object that
 is stripped from production builds.
 
-**9.13 — `devices-provider/index.tsx:137` assigns a ref during render**
+**9.13 [FIXED] — `devices-provider/index.tsx:137` assigns a ref during render**
 (`devicesRef.current = devices`). Common pattern, technically a render-phase side effect,
 and it can retain a value from a render that was never committed under concurrent
 rendering.
 
-**9.14 — `src/audio-worklets/*.js` are plain JavaScript outside the type-checked
+**9.14 [FIXED] — `src/audio-worklets/*.js` are plain JavaScript outside the type-checked
 build.** They are loaded by URL (`?url` imports) so they cannot be bundled as TS, which is
 a legitimate constraint, but it means the two processors that run on every microphone
 frame have no type checking and no lint coverage, and the message-protocol contract
 between `noise-gate-processor.js` and `noise-gate-worklet.ts` is maintained by hand on
 both sides.
 
-**9.15 — `startMicStream` is a ~200-line `useCallback` with 11 dependencies.** Any change
+**9.15 — [DEFERRED to T4, by decision] `startMicStream` is a ~200-line `useCallback` with 11 dependencies.** Any change
 to a device setting re-creates it, which re-creates `init` (which depends on it), which
 re-creates `contextValue`. Part of 9.4, listed separately because it is the specific
 callback worth extracting first.
+
+**Fix records for the LOW batch.**
+
+**9.12 cannot be done as written, and the reason is worth recording.** It asks for all three
+globals behind one namespaced debug object "stripped from production builds". `window.useToken`
+is how an operator claims ownership on a live server and it is documented online, so it must
+exist in production and cannot move without breaking published instructions.
+
+Split instead, by decision: `printVoiceStats` and `openSoundsModal` moved under
+`window.sharkordDebug`, `useToken` stays a bare global. That draws the line where it actually
+falls, between a debug aid and a production affordance, and leaves 8.6's decision intact.
+
+*9.13* `devicesRef.current = devices` moved into an effect. It is only read from callbacks,
+which always run after commit, so nothing depends on the render-phase write.
+
+*9.14* the `?url` loading constraint is real and unchanged. What was fixable is the silent
+half: both processors ignored anything they did not recognise, so a renamed config field
+between `noise-gate-worklet.ts` and `noise-gate-processor.js` would have quietly stopped the
+gate applying with no error anywhere. They now warn on a non-object message, an unknown
+message type, and unknown config fields.
+
+The worklets also have lint coverage now, which took two attempts worth recording. Adding
+`js` to `--ext` in `package.json` did **nothing**: ESLint 9 uses flat config and ignores
+`--ext` entirely, so the change looked right and changed nothing. The real fix is a config
+block in `eslint.config.js` matching `src/audio-worklets/*.js`, with the AudioWorklet globals
+declared since `globals.browser` does not carry them. Verified by appending a deliberate
+`no-undef` and confirming lint fails, then removing it.
+
+*9.15* left to T4 by decision, which is where it was already listed. T4's stated reason
+stands: extracting a 200-line callback with 11 dependencies out of an untested 1300-line
+provider is exactly where a voice regression hides, and the client still has no test setup.
 
 ### Missing tests
 

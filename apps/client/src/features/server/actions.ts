@@ -255,6 +255,7 @@ window.useToken = async (token: string) => {
   }
 };
 
-window.openSoundsModal = () => {
-  openDialog(Dialog.SOUNDS);
+window.sharkordDebug = {
+  ...window.sharkordDebug,
+  openSoundsModal: () => openDialog(Dialog.SOUNDS)
 };
