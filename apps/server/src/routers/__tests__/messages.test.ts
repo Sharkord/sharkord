@@ -71,6 +71,49 @@ describe('messages router', () => {
     ).rejects.toThrow('You do not have permission to delete this message');
   });
 
+  test('should clear pin metadata when unpinning', async () => {
+    const { caller } = await initTest();
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'pin me'
+    });
+
+    await caller.messages.togglePin({ messageId });
+
+    const pinned = await tdb
+      .select({
+        pinned: messages.pinned,
+        pinnedAt: messages.pinnedAt,
+        pinnedBy: messages.pinnedBy
+      })
+      .from(messages)
+      .where(eq(messages.id, messageId))
+      .get();
+
+    expect(pinned?.pinned).toBe(true);
+    expect(pinned?.pinnedAt).toBeGreaterThan(0);
+    expect(pinned?.pinnedBy).toBe(1);
+
+    await caller.messages.togglePin({ messageId });
+
+    const unpinned = await tdb
+      .select({
+        pinned: messages.pinned,
+        pinnedAt: messages.pinnedAt,
+        pinnedBy: messages.pinnedBy
+      })
+      .from(messages)
+      .where(eq(messages.id, messageId))
+      .get();
+
+    // an unpinned message must not record who unpinned it in the field that means
+    // "who pinned it"
+    expect(unpinned?.pinned).toBe(false);
+    expect(unpinned?.pinnedAt).toBeNull();
+    expect(unpinned?.pinnedBy).toBeNull();
+  });
+
   test('should throw when user lacks permissions (toggleReaction)', async () => {
     const { caller: caller1 } = await initTest(1);
     const { caller: caller2 } = await initTest(2);

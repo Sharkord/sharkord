@@ -5,7 +5,7 @@ import {
   SERVER_VERSION,
   SHARKORD_MEDIASOUP_BIN_NAME
 } from '../utils/env';
-import { getAppDataPath } from './fs';
+import { getAppDataPath } from '../utils/fs';
 
 const getDataPath = (): string => {
   if (IS_TEST) {

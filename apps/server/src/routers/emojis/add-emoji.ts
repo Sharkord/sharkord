@@ -5,8 +5,8 @@ import { db } from '../../db';
 import { publishEmoji } from '../../db/publishers';
 import { getUniqueEmojiName } from '../../db/queries/emojis';
 import { emojis } from '../../db/schema';
+import { fileManager } from '../../helpers/file-manager';
 import { enqueueActivityLog } from '../../queues/activity-log';
-import { fileManager } from '../../utils/file-manager';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
 const MAX_EMOJIS_PER_CALL = 20;

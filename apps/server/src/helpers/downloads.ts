@@ -7,9 +7,9 @@ import { randomUUIDv7 } from 'bun';
 import fs from 'fs/promises';
 import path from 'path';
 import { logger } from '../logger';
-import { ensureDir } from './fs';
+import { ensureDir } from '../utils/fs';
+import { sha256File } from '../utils/sha-256-file';
 import { PLUGINS_PATH, TMP_PATH } from './paths';
-import { sha256File } from './sha-256-file';
 
 const downloadsPath = path.join(TMP_PATH, 'downloads');
 

@@ -2,11 +2,12 @@ import { Dialog } from '@/components/dialogs/dialogs';
 import { UserAvatar } from '@/components/user-avatar';
 import { setModViewOpen } from '@/features/app/actions';
 import { openDialog } from '@/features/dialogs/actions';
+import type { TAdminUser } from '@/features/server/admin/hooks';
 import { useUserRoles } from '@/features/server/hooks';
 import { useOwnUserId, useUserStatus } from '@/features/server/users/hooks';
 import { useDateLocale } from '@/hooks/use-date-locale';
 import { cn } from '@/lib/utils';
-import { UserStatus, type TJoinedUser } from '@sharkord/shared';
+import { UserStatus } from '@sharkord/shared';
 import {
   Button,
   DropdownMenu,
@@ -21,7 +22,7 @@ import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 type TTableUserProps = {
-  user: TJoinedUser;
+  user: TAdminUser;
   refetch?: () => void;
 };
 

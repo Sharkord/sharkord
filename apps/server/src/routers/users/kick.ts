@@ -1,5 +1,8 @@
 import { ActivityLogType, DisconnectCode, Permission } from '@sharkord/shared';
+import { eq, sql } from 'drizzle-orm';
 import z from 'zod';
+import { db } from '../../db';
+import { users } from '../../db/schema';
 import { assertCanActOnUser } from '../../helpers/assert-can-act-on-user';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
@@ -23,6 +26,12 @@ const kickRoute = protectedProcedure
       code: 'NOT_FOUND',
       message: 'User is not connected'
     });
+
+    await db
+      .update(users)
+      .set({ tokenVersion: sql`${users.tokenVersion} + 1` })
+      .where(eq(users.id, input.userId))
+      .run();
 
     userSockets.forEach((socket) =>
       socket.close(DisconnectCode.KICKED, input.reason)

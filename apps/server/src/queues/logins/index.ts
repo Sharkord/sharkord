@@ -1,9 +1,9 @@
 import Queue from 'queue';
 import { db } from '../../db';
 import { logins } from '../../db/schema';
+import { getIpInfo } from '../../helpers/logins';
 import { logger } from '../../logger';
 import type { TConnectionInfo } from '../../types';
-import { getIpInfo } from '../../utils/logins';
 
 const loginsQueue = new Queue({
   concurrency: 1,

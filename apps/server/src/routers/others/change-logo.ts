@@ -4,7 +4,7 @@ import { removeFile } from '../../db/mutations/files';
 import { updateSettings } from '../../db/mutations/server';
 import { publishSettings } from '../../db/publishers';
 import { getSettings } from '../../db/queries/server';
-import { fileManager } from '../../utils/file-manager';
+import { saveReplacementImage } from '../../helpers/change-user-image';
 import { protectedProcedure } from '../../utils/trpc';
 
 const changeLogoRoute = protectedProcedure
@@ -15,27 +15,18 @@ const changeLogoRoute = protectedProcedure
   )
   .mutation(async ({ ctx, input }) => {
     const settings = await getSettings();
+    const previousLogoId = settings.logoId;
 
-    if (
-      input.fileId &&
-      !fileManager.temporaryFileHasMimeType(input.fileId, 'image/')
-    ) {
-      throw new Error('Invalid file type. Please try again.');
-    }
+    const nextLogoId = await saveReplacementImage(
+      ctx.userId,
+      FileSaveType.SERVER_LOGO,
+      input.fileId
+    );
 
-    if (settings.logoId) {
-      await removeFile(settings.logoId);
-      await updateSettings({ logoId: null });
-    }
+    await updateSettings({ logoId: nextLogoId });
 
-    if (input.fileId) {
-      const newFile = await fileManager.saveFile(
-        input.fileId,
-        ctx.userId,
-        FileSaveType.SERVER_LOGO
-      );
-
-      await updateSettings({ logoId: newFile.id });
+    if (previousLogoId) {
+      await removeFile(previousLogoId);
     }
 
     publishSettings();

@@ -58,33 +58,46 @@ const openDirectMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     const now = Date.now();
 
-    const channel = db.transaction((tx) => {
-      const newChannel = tx
-        .insert(channels)
-        .values({
-          type: ChannelType.VOICE, // use voice to allow private calls in the future
-          name: `DM - ${ctx.user.id}:${input.userId}`,
-          topic: null,
-          private: true,
-          isDm: true,
-          position: 0,
-          categoryId: null,
-          createdAt: now
-        })
-        .returning()
-        .get();
+    const createDmChannel = () =>
+      db.transaction((tx) => {
+        const newChannel = tx
+          .insert(channels)
+          .values({
+            type: ChannelType.VOICE, // use voice to allow private calls in the future
+            name: `DM - ${ctx.user.id}:${input.userId}`,
+            topic: null,
+            private: true,
+            isDm: true,
+            position: 0,
+            categoryId: null,
+            createdAt: now
+          })
+          .returning()
+          .get();
 
-      tx.insert(directMessages)
-        .values({
-          channelId: newChannel.id,
-          userOneId,
-          userTwoId,
-          createdAt: now
-        })
-        .run();
+        tx.insert(directMessages)
+          .values({
+            channelId: newChannel.id,
+            userOneId,
+            userTwoId,
+            createdAt: now
+          })
+          .run();
 
-      return newChannel;
-    });
+        return newChannel;
+      });
+
+    let channel;
+
+    try {
+      channel = createDmChannel();
+    } catch (error) {
+      const raced = await getDirectMessageChannel(userOneId, userTwoId);
+
+      if (!raced) throw error;
+
+      return { channelId: raced.channelId };
+    }
 
     const participants = [userOneId, userTwoId];
 

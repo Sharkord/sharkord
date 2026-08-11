@@ -9,9 +9,9 @@ import {
   MEDIASOUP_PATH,
   SRC_MIGRATIONS_PATH
 } from '../helpers/paths';
-import { unzipBlobToDirectory } from '../helpers/zip';
 import { logger } from '../logger';
 import { IS_DEVELOPMENT, IS_TEST } from '../utils/env';
+import { unzipBlobToDirectory } from '../utils/zip';
 
 const findEmbedFile = (fileName: string) => {
   const extension = path.extname(fileName);
@@ -33,7 +33,10 @@ const loadEmbeds = async () => {
     // files are only embedded in production
     logger.debug('Development mode, skipping embedded files extraction');
 
-    // copy migrations from src/db/migrations to DRIZZLE_PATH to allow running migrations in development
+    // copy migrations from src/db/migrations to DRIZZLE_PATH to allow running migrations in development.
+    // removed first because fs.cp never prunes: a migration deleted or renamed in src would
+    // otherwise linger here and keep being applied locally
+    await fs.rm(DRIZZLE_PATH, { recursive: true, force: true });
     await fs.cp(SRC_MIGRATIONS_PATH, DRIZZLE_PATH, { recursive: true });
 
     return;

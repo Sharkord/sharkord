@@ -121,10 +121,11 @@ describe('users router', () => {
     expect(Array.isArray(users)).toBe(true);
     expect(users.length).toBeGreaterThan(0);
 
-    // verify sensitive fields are cleared
+    // verify sensitive fields are removed rather than blanked
     users.forEach((user) => {
-      expect(user.password).toBeEmpty();
-      expect(user.identity).toBeEmpty();
+      expect('password' in user).toBe(false);
+      expect('identity' in user).toBe(false);
+      expect('tokenVersion' in user).toBe(false);
     });
   });
 
@@ -270,7 +271,9 @@ describe('users router', () => {
     expect(info.user).toBeDefined();
     expect(info.user.id).toBe(1);
 
-    expect(info.user.identity).toBeEmpty();
+    // identity stays present but null without VIEW_USER_SENSITIVE_DATA
+    expect(info.user.identity).toBeNull();
+    expect('password' in info.user).toBe(false);
     expect(info.logins.length).toBeGreaterThan(0);
 
     info.logins.forEach((login) => {
@@ -1307,6 +1310,11 @@ describe('users router', () => {
     expect(info.user.banReason).toBeNull();
   });
 
+  // users.kick's happy path is unreachable here: it requires a live WebSocket for the target
+  // and the harness builds contexts with no socket, so getUserWs is always empty. What the
+  // route does once it gets past that check (bump tokenVersion, then close the sockets) is
+  // covered indirectly by the token-version tests above, which prove a bumped version
+  // refuses the old token. The wiring itself is M58.
   test('should throw when kicking non-connected user', async () => {
     const { caller } = await initTest();
 

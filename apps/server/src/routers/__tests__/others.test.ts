@@ -87,6 +87,38 @@ describe('others router', () => {
     expect(secondUserHasPassword).toBe(true);
   });
 
+  test('should reject a wrong server password of either length', async () => {
+    const { caller } = await initTest(1);
+
+    await caller.others.updateSettings({
+      password: 'testpassword',
+      onlyAskForPasswordOnFirstJoin: false
+    });
+
+    const { caller: secondUserCaller } = await getCaller(2);
+    const { handshakeHash } = await secondUserCaller.others.handshake();
+
+    // safeCompare returns early on a length mismatch and runs timingSafeEqual otherwise,
+    // so both shapes are worth covering
+    await expect(
+      secondUserCaller.others.joinServer({ handshakeHash, password: 'short' })
+    ).rejects.toThrow('Invalid password');
+
+    await expect(
+      secondUserCaller.others.joinServer({
+        handshakeHash,
+        password: 'testpasswerd'
+      })
+    ).rejects.toThrow('Invalid password');
+
+    const joined = await secondUserCaller.others.joinServer({
+      handshakeHash,
+      password: 'testpassword'
+    });
+
+    expect(joined.ownUserId).toBe(2);
+  });
+
   test('should require password for first join and skip it afterwards when setting is enabled', async () => {
     const { caller } = await initTest(1);
 
@@ -246,8 +278,10 @@ describe('others router', () => {
 
     const settings = await caller.others.getSettings();
 
-    expect(settings.password).toBe('');
-    expect(settings.secretToken).toBe('');
+    // redacted fields are absent now, not blanked, so nothing downstream can read a
+    // placeholder and mistake it for a real value
+    expect('password' in settings).toBe(false);
+    expect('secretToken' in settings).toBe(false);
   });
 
   test('should throw when user lacks permissions (update settings)', async () => {
@@ -352,6 +386,30 @@ describe('others router', () => {
     const settingsAfterRemoval = await caller.others.getSettings();
 
     expect(settingsAfterRemoval.logo).toBeNull();
+  });
+
+  test('should keep the existing logo when a replacement cannot be saved', async () => {
+    const { caller, mockedToken: token } = await initTest();
+
+    const logoFile = new File(['a logo'], 'keep-me.png', { type: 'image/png' });
+    const uploadResponse = await uploadFile(logoFile, token);
+    const tempFile = (await uploadResponse.json()) as TTempFile;
+
+    await caller.others.changeLogo({ fileId: tempFile.id });
+
+    const before = await caller.others.getSettings();
+
+    expect(before.logo?.originalName).toBe('keep-me.png');
+
+    // the route used to delete first and save second, so a rejected save left the server
+    // with no logo at all
+    await expect(
+      caller.others.changeLogo({ fileId: 'does-not-exist' })
+    ).rejects.toThrow();
+
+    const after = await caller.others.getSettings();
+
+    expect(after.logo?.originalName).toBe('keep-me.png');
   });
 
   test('should rate limit excessive join attempts', async () => {

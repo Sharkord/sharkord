@@ -1,44 +1,40 @@
-const getDefaultValue = (value: unknown): unknown => {
-  if (typeof value === 'string') return '';
-  if (typeof value === 'number') return -1;
-  if (typeof value === 'boolean') return false;
-  if (Array.isArray(value)) return [];
-  if (value !== null && typeof value === 'object') return {};
-
-  return null;
-};
-
-interface IClearFields {
-  <T extends Record<string, unknown>>(obj: T[], fields: (keyof T)[]): T[];
-  <T extends Record<string, unknown>>(obj: T, fields: (keyof T)[]): T;
+// removes the named fields rather than blanking them. it used to substitute a same-typed
+// placeholder ('', -1, false, {}), which meant a redacted field still appeared in the
+// response and in the inferred client type: callers could read it, get a plausible value and
+// never know it was redacted. the numeric case was the sharp one, since -1 reads as an id
+interface IOmitFields {
+  <T extends Record<string, unknown>, K extends keyof T>(
+    obj: T[],
+    fields: K[]
+  ): Omit<T, K>[];
+  <T extends Record<string, unknown>, K extends keyof T>(
+    obj: T,
+    fields: K[]
+  ): Omit<T, K>;
 }
 
-const clearFields: IClearFields = <T extends Record<string, unknown>>(
-  obj: T | T[],
-  fields: (keyof T)[]
-): T | T[] => {
-  if (Array.isArray(obj)) {
-    return obj.map((item) => {
-      if (item !== null && typeof item === 'object' && !Array.isArray(item)) {
-        const newObj = { ...item };
-
-        fields.forEach((field) => {
-          newObj[field] = getDefaultValue(item[field]) as T[keyof T];
-        });
-
-        return newObj;
-      }
-      return item;
-    });
-  }
-
-  const newObj = { ...obj };
+const omitField = <T extends Record<string, unknown>, K extends keyof T>(
+  item: T,
+  fields: K[]
+): Omit<T, K> => {
+  const result = { ...item };
 
   fields.forEach((field) => {
-    newObj[field] = getDefaultValue(obj[field]) as T[keyof T];
+    delete result[field];
   });
 
-  return newObj;
+  return result;
 };
+
+const clearFields = (<T extends Record<string, unknown>, K extends keyof T>(
+  obj: T | T[],
+  fields: K[]
+) => {
+  if (Array.isArray(obj)) {
+    return obj.map((item) => omitField(item, fields));
+  }
+
+  return omitField(obj, fields);
+}) as IOmitFields;
 
 export { clearFields };

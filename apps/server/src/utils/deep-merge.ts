@@ -1,6 +1,8 @@
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 const deepMerge = <T extends Record<string, unknown>>(
   target: T,
   source: Partial<T>
@@ -8,6 +10,8 @@ const deepMerge = <T extends Record<string, unknown>>(
   const result = { ...target };
 
   for (const key in source) {
+    if (FORBIDDEN_KEYS.has(key)) continue;
+
     const sourceValue = source[key];
     const targetValue = target[key];
 

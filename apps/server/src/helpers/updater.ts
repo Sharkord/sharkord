@@ -2,13 +2,17 @@ import { getErrorMessage } from '@sharkord/shared';
 import { BunUpdater } from 'bun-sfe-autoupdater';
 import { config } from '../config';
 import { logger } from '../logger';
-import { IS_DOCKER, IS_PRODUCTION, SERVER_VERSION } from './env';
+import { IS_DOCKER, IS_PRODUCTION, SERVER_VERSION } from '../utils/env';
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+
+const CONSECUTIVE_FAILURES_BEFORE_ALARM = 3;
 
 class Updater {
   private bunUpdater: BunUpdater;
   private isUpdating: boolean = false;
+  private consecutiveFailures: number = 0;
+  private checkTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     this.bunUpdater = new BunUpdater({
@@ -46,11 +50,40 @@ class Updater {
       // if an update is available, it will be downloaded automatically
       // the app will restart to apply the update
       await this.bunUpdater.checkForUpdates();
+
+      if (this.consecutiveFailures > 0) {
+        logger.info(
+          'Update check recovered after %d consecutive failures',
+          this.consecutiveFailures
+        );
+      }
+
+      this.consecutiveFailures = 0;
     } catch (error) {
-      logger.error('Failed to check for updates: %s', getErrorMessage(error));
+      this.consecutiveFailures += 1;
+
+      logger.error(
+        'Failed to check for updates (%d consecutive): %s',
+        this.consecutiveFailures,
+        getErrorMessage(error)
+      );
+
+      if (this.consecutiveFailures === CONSECUTIVE_FAILURES_BEFORE_ALARM) {
+        logger.error(
+          'Auto-update has failed %d times in a row and this server is not updating itself. Check network access to GitHub, or disable server.autoupdate.',
+          this.consecutiveFailures
+        );
+      }
     } finally {
       this.isUpdating = false;
     }
+  };
+
+  public stop = (): void => {
+    if (!this.checkTimer) return;
+
+    clearInterval(this.checkTimer);
+    this.checkTimer = null;
   };
 
   private setupAutoUpdater = async (): Promise<void> => {
@@ -64,7 +97,7 @@ class Updater {
 
     await this.update();
 
-    setInterval(this.update, UPDATE_CHECK_INTERVAL_MS);
+    this.checkTimer = setInterval(this.update, UPDATE_CHECK_INTERVAL_MS);
   };
 }
 

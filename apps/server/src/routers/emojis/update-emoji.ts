@@ -26,7 +26,7 @@ const updateEmojiRoute = protectedProcedure
       message: 'Emoji not found'
     });
 
-    const exists = await emojiExists(input.name);
+    const exists = await emojiExists(input.name, existingEmoji.id);
 
     if (exists) {
       ctx.throwValidationError(

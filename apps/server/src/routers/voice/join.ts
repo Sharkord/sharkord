@@ -42,7 +42,12 @@ const joinVoiceRoute = rateLimitedProcedure(protectedProcedure, {
     }
 
     const channel = await db
-      .select()
+      .select({
+        id: channels.id,
+        name: channels.name,
+        type: channels.type,
+        isDm: channels.isDm
+      })
       .from(channels)
       .where(eq(channels.id, input.channelId))
       .get();

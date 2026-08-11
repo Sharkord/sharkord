@@ -5,9 +5,9 @@ import z from 'zod';
 import { config } from '../config';
 import { getSettings } from '../db/queries/server';
 import { getUserByToken } from '../db/queries/users';
+import { fileManager } from '../helpers/file-manager';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
-import { fileManager } from '../utils/file-manager';
 import { createRateLimiter } from '../utils/rate-limiters/rate-limiter';
 import {
   enforceHttpRateLimit,

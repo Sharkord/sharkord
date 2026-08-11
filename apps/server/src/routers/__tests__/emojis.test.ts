@@ -181,6 +181,30 @@ describe('emojis router', () => {
     ).toBeUndefined();
   });
 
+  test('should allow renaming an emoji to the name it already has', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    const file = new File(['noop rename'], 'noop.png', { type: 'image/png' });
+    const upload = await uploadFile(file, mockedToken);
+    const data = (await upload.json()) as TTempFile;
+
+    await caller.emojis.add([{ fileId: data.id, name: 'same_name' }]);
+
+    const emoji = (await caller.emojis.getAll()).find(
+      (e) => e.name === 'same_name'
+    );
+
+    // the uniqueness check used to match the row being edited, so a no-op rename
+    // reported that the name was already taken by itself
+    await caller.emojis.update({ emojiId: emoji!.id, name: 'same_name' });
+
+    const after = (await caller.emojis.getAll()).find(
+      (e) => e.id === emoji!.id
+    );
+
+    expect(after!.name).toBe('same_name');
+  });
+
   test('should throw when updating emoji to existing name', async () => {
     const { caller, mockedToken } = await initTest();
 

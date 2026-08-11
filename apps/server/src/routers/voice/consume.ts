@@ -1,7 +1,7 @@
-import { Permission, ServerEvents, StreamKind } from '@sharkord/shared';
+import { ServerEvents, StreamKind } from '@sharkord/shared';
 import { z } from 'zod';
 import { config } from '../../config';
-import { VoiceRuntime } from '../../runtimes/voice';
+import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
@@ -18,19 +18,7 @@ const consumeRoute = rateLimitedProcedure(protectedProcedure, {
     })
   )
   .mutation(async ({ input, ctx }) => {
-    await ctx.needsPermission(Permission.JOIN_VOICE_CHANNELS);
-
-    invariant(ctx.currentVoiceChannelId, {
-      code: 'BAD_REQUEST',
-      message: 'User is not in a voice channel'
-    });
-
-    const runtime = VoiceRuntime.findById(ctx.currentVoiceChannelId);
-
-    invariant(runtime, {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'Voice runtime not found for this channel'
-    });
+    const { runtime, channelId } = await getCurrentVoiceRuntime(ctx);
 
     const producer = runtime.getProducer(input.kind, input.remoteId);
 
@@ -66,13 +54,13 @@ const consumeRoute = rateLimitedProcedure(protectedProcedure, {
     runtime.addConsumer(ctx.user.id, input.remoteId, input.kind, consumer);
 
     consumer.on('producerclose', () => {
-      if (!ctx.currentVoiceChannelId) return;
+      if (!channelId) return;
 
       ctx.pubsub.publishForChannel(
-        ctx.currentVoiceChannelId,
+        channelId,
         ServerEvents.VOICE_PRODUCER_CLOSED,
         {
-          channelId: ctx.currentVoiceChannelId,
+          channelId: channelId,
           remoteId: input.remoteId,
           kind: input.kind
         }

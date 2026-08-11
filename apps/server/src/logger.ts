@@ -1,8 +1,8 @@
 import path from 'path';
 import { createLogger, format, transports } from 'winston';
 import { config } from './config';
-import { ensureDir } from './helpers/fs';
 import { LOGS_PATH } from './helpers/paths';
+import { ensureDir } from './utils/fs';
 
 const { combine, colorize, printf, errors, splat, timestamp, uncolorize } =
   format;

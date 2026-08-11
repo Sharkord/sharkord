@@ -1,23 +1,19 @@
 import { PaginatedTable } from '@/components/paginated-table';
-import type { TJoinedUser } from '@sharkord/shared';
+import type { TAdminUser } from '@/features/server/admin/hooks';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TableUser } from './table-user';
 
 type TUsersTableProps = {
-  users: TJoinedUser[];
+  users: TAdminUser[];
   refetch?: () => void;
 };
 
 const UsersTable = memo(({ users, refetch }: TUsersTableProps) => {
   const { t } = useTranslation('settings');
-  const searchFilter = useCallback((user: TJoinedUser, searchTerm: string) => {
-    const query = searchTerm.toLowerCase();
 
-    return (
-      user.name.toLowerCase().includes(query) ||
-      user.identity?.toLowerCase().includes(query)
-    );
+  const searchFilter = useCallback((user: TAdminUser, searchTerm: string) => {
+    return user.name.toLowerCase().includes(searchTerm.toLowerCase());
   }, []);
 
   return (

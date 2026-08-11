@@ -126,5 +126,6 @@
   "pluginInstallUseDocker": "Recomendamos encarecidamente ejecutar Sharkord en un contenedor Docker para mayor aislamiento y menor riesgo.",
   "pluginInstallDocsNote": "Para más detalles, lee la documentación en:",
   "pluginInstallConfirmBtn": "Instalar plugin",
-  "pluginInstallConfirmCountdown": "Espera ({{seconds}}s)"
+  "pluginInstallConfirmCountdown": "Espera ({{seconds}}s)",
+  "searchTruncated": "Mostrando solo las coincidencias más recientes. Afina tu búsqueda para acotarla."
 }

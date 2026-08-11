@@ -10,8 +10,8 @@ import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { getEmojiFileIdByEmojiName } from '../../db/queries/emojis';
 import { getReaction } from '../../db/queries/messages';
-import { messageReactions, messages } from '../../db/schema';
-import { assertChannelAccess } from '../../helpers/assert-channel-access';
+import { messageReactions } from '../../db/schema';
+import { loadMessageForWrite } from '../../helpers/load-message-for-write';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
@@ -29,18 +29,7 @@ const toggleMessageReactionRoute = rateLimitedProcedure(protectedProcedure, {
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.REACT_TO_MESSAGES);
 
-    const message = await db
-      .select()
-      .from(messages)
-      .where(eq(messages.id, input.messageId))
-      .get();
-
-    invariant(message, {
-      code: 'NOT_FOUND',
-      message: 'Message not found'
-    });
-
-    await assertChannelAccess(ctx, message.channelId);
+    const message = await loadMessageForWrite(ctx, input.messageId);
 
     const reaction = await getReaction(
       input.messageId,

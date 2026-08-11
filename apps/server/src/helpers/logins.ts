@@ -1,5 +1,5 @@
 import type { TIpInfo } from '@sharkord/shared';
-import { ipCache } from './ip-cache';
+import { ipCache } from '../utils/ip-cache';
 
 const getIpInfo = async (ip: string) => {
   const isLocalIp =

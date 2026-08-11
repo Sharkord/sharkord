@@ -84,7 +84,7 @@ pagination test actually fails with the old strict `lt` predicate. It passes wit
 but I never saw it fail without it, so it is unproven as a regression test. Worth
 re-running that check properly (copy the file aside, revert the predicate, run, restore).
 
-### F3 — 3.14, kick is cosmetic, needs a product decision
+### F3 — [RESOLVED] 3.14, kick is cosmetic, needs a product decision
 
 `users/kick.ts` closes the WebSocket and nothing else. The token stays valid, so a client
 reconnects immediately. Every other finding in chunk 3 had a clear right answer; this one
@@ -103,7 +103,13 @@ invalidate a token before its seven-day expiry. Whatever mechanism gets built th
 (a token version column, a revocation list) is what 3.14's second option would reuse, so
 these four are worth deciding together rather than one at a time.
 
-### F4 — 3.16, the channel permission matrix storage shape
+**Resolved.** The mechanism was built for 1.17 as `users.token_version`, and all four are now
+closed: 1.17 (password change), 3.13 (ban, closed by 1.4's `banned` check), 3.15 (password
+change) and 3.14. Kick was decided as a **removal without a rejoin block**: it bumps the
+token version so the session ends, and nothing stops an immediate fresh login. No
+`kickedUntil` column was added.
+
+### F4 — [RESOLVED, accepted as is] 3.16, the channel permission matrix storage shape
 
 `channels.updatePermissions` writes one row per channel per target per permission on every
 save, `allow: false` included, so the table grows as (channels x targets x permissions).
@@ -111,6 +117,12 @@ Storing only the overrides that differ would fix it, but that changes what an **
 row means, which the read path in `channelUserCan` and the client's permission editor both
 depend on. I fixed the missing existence validation and left the shape alone: it needs a
 migration, a matching read-path change, and a decision on the default semantics.
+
+**Decided: keep the shape.** `ChannelPermission` has 6 members, so this is 6 rows per target
+per channel, roughly 30k rows at 50 channels and 100 targets, which SQLite does not notice.
+The change would touch a migration, `channelUserCan`, the client's permission editor and the
+meaning of an absent row, all against a cost nobody is paying. Revisit only if a real server
+makes the row count matter.
 
 ### F5 — two tests in `others.test.ts` only pass because of a queue race
 
@@ -474,6 +486,15 @@ Format: what to do, then what should happen.
 | M43 | 12.1 | While connected, get kicked and then banned from another session. Separately, hit Disconnect in the UI, and refresh the page (Firefox especially) | Kick and ban still end the session immediately and show their own screens, with no reconnect attempts. Disconnect still logs out. A refresh still auto-logs-in, meaning the token was not cleared |
 | M49 | 1.17 | Log in on two browsers, then change your password on one | The other is disconnected immediately and cannot reconnect with its old session. The one you changed it on stays connected. Log in again with the new password and confirm it works right away |
 | M50 | 1.15 | On a server with real history, register a new account and time the login | It returns promptly, and the new user's channels all show zero unread. Post a message afterwards and confirm it shows as unread for them |
+| M62 | 7.12 | Open the admin users list and search by name, then open a user's moderation panel both as the owner and as an admin without VIEW_USER_SENSITIVE_DATA | Name search works. The identity row shows the identity for the permitted user and is blank for the other. **Searching by identity no longer appears to work, because it never did** |
+| M63 | 7.18 | Start the server, upload a file, install a plugin, and check the logs directory | Everything works. This moved eight files between helpers/ and utils/, so a missed import shows up as a boot failure |
+| M59 | 4.16 | Join a voice channel, speak, enable video, change stream quality, then leave | All of it still works. This rewrote the opening guard of ten voice routes, so a mistake shows up as a route refusing to work rather than as a subtle bug |
+| M60 | 4.17 | Set a server logo, replace it, then remove it. Then try replacing it with an oversized file | The logo changes and clears correctly, and a failed replacement leaves the previous logo in place rather than none |
+| M61 | 4.20 | Install a plugin, change one of its settings, then remove it, and open the activity log | All three appear in the log. The setting entry names the key but **not** the value |
+| M58 | 3.14 | Log in on two browsers as the same user, then have an admin kick that user | Both sessions end and neither can resume. Logging in again immediately works, which is the intended behaviour: kick ends the session, it does not bar re-entry. **This path has no automated coverage** because kick requires a live socket the harness cannot provide |
+| M55 | 2.21 | Search for a term that matches far more than 25 messages | The results list ends with a line saying only the most recent matches are shown. Search with a narrow term and confirm the line is absent |
+| M56 | 2.20 | Pin a message, check the pin list, then unpin it | Pinning and unpinning both work and the pin list updates. Anything showing who pinned a message should be blank after unpinning, not name whoever unpinned it |
+| M57 | 2.23 | Edit and delete your own message, then someone else's as an admin, and delete a file from a message | All five paths work and the refusals still name the specific action ("edit this message", "delete this file") |
 | M51 | 1.24 | Paste a link whose host resolves into 100.64.0.0/10 or another reserved range, and a normal public link | The reserved one gets no preview, the public one still does. SSRF blocking is stricter than before |
 | M52 | 1.25 | Seek around in a large uploaded video or audio file, in Chrome and Safari | Seeking works in both. Safari leans on suffix ranges (`bytes=-N`), which the server previously answered 416 to |
 | M53 | 1.25 | As two users behind the same network, have one spam a rate-limited action | Only the spammer is limited. Previously both shared a bucket |
@@ -490,11 +511,11 @@ Format: what to do, then what should happen.
 | --- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | ------- |
 | 1   | [Edge & auth](#1-edge--auth)                                       | `http/`, `utils/trpc.ts`, `utils/rate-limiters/`, `config.ts`                                | fixed (CSP open) |
 | 2   | [Routers: messages, dms, files](#2-routers-messages-dms-files)     | `routers/messages/`, `routers/dms/`, `routers/files/`                                        | mostly fixed |
-| 3   | [Routers: users & access](#3-routers-users--access)                | `routers/users/`, `roles/`, `invites/`, `categories/`, `channels/`                           | mostly fixed |
+| 3   | [Routers: users & access](#3-routers-users--access)                | `routers/users/`, `roles/`, `invites/`, `categories/`, `channels/`                           | fixed |
 | 4   | [Routers: voice & plugins](#4-routers-voice--plugins)              | `routers/voice/`, `plugins/`, `emojis/`, `others/`, `runtimes/`                              | audited |
 | 5   | [DB layer](#5-db-layer)                                            | `db/schema.ts`, `db/queries/`, `db/mutations/`, `db/publishers.ts`, `db/migrations/`         | audited |
 | 6   | [Plugin subsystem](#6-plugin-subsystem)                            | `src/plugins/`, `packages/plugin-sdk`                                                        | audited |
-| 7   | [Server leftovers](#7-server-leftovers)                            | `helpers/`, remaining `utils/`, `queues/`, `crons/`, `index.ts`, `logger.ts`                 | audited |
+| 7   | [Server leftovers](#7-server-leftovers)                            | `helpers/`, remaining `utils/`, `queues/`, `crons/`, `index.ts`, `logger.ts`                 | fixed |
 | 8   | [Client state](#8-client-state)                                    | `client/src/features/`                                                                       | audited |
 | 9   | [Client voice](#9-client-voice)                                    | `voice-provider/`, `devices-provider/`, `audio-worklets/`                                    | audited |
 | 10  | [Client channel view & editor](#10-client-channel-view--editor)    | `channel-view/`, `tiptap-input/`, `message-compose/`, `thread-sidebar/`                      | audited |
@@ -540,9 +561,10 @@ section), and the MED batch 8.2 to 8.10. 8.2 is partly fixed and 8.4 fixed as do
 both by decision, and 8.6 left as is. The LOW batch 8.11 to 8.14 is still open, and 8.15 was
 closed with 8.4. Everything here is unverified by tests, since the client has none: the
 selector behaviour was checked by running the real modules against a synthetic store.
-Chunk 7 is **mostly fixed**: HIGH (7.1 to 7.3) and MED (7.4, 7.6, 7.7, 7.9 to 7.11) are
-done. 7.5 was ignored and 7.8 left as is, both by decision. The LOW batch, 7.12 to 7.19,
-is still open.
+Chunk 7 is **fixed**: HIGH (7.1 to 7.3), MED (7.4, 7.6, 7.7, 7.9 to 7.11) and the whole LOW
+batch are done. 7.5 was ignored and 7.8 left as is, both by decision. 7.12 was the one with
+consequences beyond tidiness: it exposed that admin user search by identity had never
+worked.
 Chunk 6 is **mostly fixed**: 6.5, 6.6, 6.8, 6.9, 6.11 to 6.14 are done, and 6.2 came with a
 correction that reversed the finding. 6.1 and 6.4 were dismissed as intended, 6.3 flagged as
 F7, 6.7 and 6.15 put out of scope, and 6.10 was already fixed as 4.11. Nothing is left open
@@ -550,10 +572,17 @@ in this chunk except what was deliberately deferred.
 Chunk 5 is **mostly fixed**: 5.0 and 5.10 were already done in earlier chunks, 5.1 was
 dismissed as intended, and the HIGH (5.2 to 5.4) and MED (5.5 to 5.9, 5.11 to 5.14) batches
 are done, 5.13 partly and deliberately. Still open: the LOW batch, 5.15 to 5.20.
-Chunk 4 is **in progress**: 4.2 through 4.6 and 4.8's logging half, 4.9 through 4.15 and
-4.19 are fixed. 4.1 was dismissed by decision, 4.7 deferred to T2. Still open: the LOW batch
-(4.16 through 4.22, minus 4.19) and the storage half of 4.8.
-Chunk 3 is **mostly fixed**: 3.1 through 3.12, 3.14 aside, and every LOW (3.17 through
+Chunk 4 is **mostly fixed**: 4.2 through 4.6, 4.9 through 4.15, and the whole LOW batch are
+done. 4.1 was dismissed by decision, 4.7 deferred to T2, 4.5's single-use half is not
+implementable (F6), and 4.22 turned out to be superseded by 4.12's transaction. 4.8's comparison is now constant time. **Still open: only the plaintext
+join-password column**, which needs a migration and a decision about existing servers.
+Chunk 3 is **fixed**: every finding is closed. 3.8 and 3.16 are closed as scope and shape
+decisions rather than code changes, 3.13 and 3.15 turned out to have been completed by fixes
+in other chunks (1.4 and 1.17) and were re-marked after verifying the coverage already
+existed, and 3.14 was decided as a removal without a rejoin block. F3 and F4 are both
+resolved. Original notes below.
+
+Chunk 3 was previously **mostly fixed**: 3.1 through 3.12, 3.14 aside, and every LOW (3.17 through
 3.27) are done. Three are deliberately partial and are noted in place: 3.13 and 3.15 fixed
 everything except token revocation, which belongs with 1.17; 3.8 capped `get-user-info` and
 left the server-bounded admin lists unpaginated; 3.16 added the missing existence
@@ -1275,7 +1304,7 @@ jump-to-message and new-message arrival, so nothing depended on the query's side
 Two tests: fetching a page no longer marks a channel read, and two concurrent
 `markAsRead` calls settle without conflicting.
 
-**2.12 — `get-messages.ts:108` / `get-thread-messages.ts:60` — cursor pagination on a
+**2.12 [FIXED] — `get-messages.ts:108` / `get-thread-messages.ts:60` — cursor pagination on a
 non-unique column drops messages.** The cursor is `createdAt` (milliseconds) and the
 predicate is a strict `lt` / `gt`. Two messages with the same `createdAt` straddling a
 page boundary means the second one is never returned by any page. Bulk inserts, plugin
@@ -1362,23 +1391,23 @@ files from disk and publishes). One test walks `getThread` to a 429.
 
 ### LOW
 
-**2.18 — the same dead query in two files.** `get-pinned.ts:19-31` and
+**2.18 [FIXED] — the same dead query in two files.** `get-pinned.ts:19-31` and
 `get-thread-messages.ts:41-53` both select `channels.private` and then never read it;
 `assertChannelAccess` above them already proved access, and a missing channel already
 fails there. Two extra queries per request for nothing, copy-pasted.
 
-**2.19 — `db.select()` where two to four columns are used.** `toggle-message-pin.ts:22`
+**2.19 [FIXED] — `db.select()` where two to four columns are used.** `toggle-message-pin.ts:22`
 and `toggle-message-reaction.ts:29` fetch the whole message row (including `content` and
 `metadata`) to read `channelId`/`pinned`; `get-thread-messages.ts:24` fetches the whole
 parent to read `parentMessageId` and `channelId`; `get-messages.ts:158` fetches the whole
 latest message to read `id`. `send-message.ts` and `delete-message.ts` do this correctly,
 so the pattern to copy is already in the folder.
 
-**2.20 — `toggle-message-pin.ts:41-46` — unpinning writes pin metadata.** `pinnedAt: now`
+**2.20 [FIXED] — `toggle-message-pin.ts:41-46` — unpinning writes pin metadata.** `pinnedAt: now`
 and `pinnedBy: ctx.user.id` are set on both branches, so an unpinned message records who
 unpinned it in the field meaning "who pinned it". Set them to `null` when unpinning.
 
-**2.21 — `search.ts` nits.**
+**2.21 [FIXED] — `search.ts` nits.**
 
 - line 156: `const messageFiles = ...` shadows the imported `messageFiles` table in the
   same file. It works today, and it is a trap for the next edit.
@@ -1391,10 +1420,10 @@ unpinned it in the field meaning "who pinned it". Set them to `null` when unpinn
   the user is not the real count. The header comment acknowledges the design, it just is
   not acknowledged to the user.
 
-**2.22 — `files/delete-temporary-file.ts:2-4` — `.js` import extensions.** The only file
+**2.22 [FIXED] — `files/delete-temporary-file.ts:2-4` — `.js` import extensions.** The only file
 in the server that writes `'../../utils/trpc.js'`. Every other file omits the extension.
 
-**2.23 — the load-and-authorize preamble is written six times.** `edit-message.ts:31-62`,
+**2.23 [FIXED] — the load-and-authorize preamble is written six times.** `edit-message.ts:31-62`,
 `delete-message.ts:17-42`, `toggle-message-pin.ts:21-38`,
 `toggle-message-reaction.ts:28-40`, `get-message.ts:14-21`, `files/delete-file.ts:19-33`
 all do: select the message → `invariant(NOT_FOUND)` → `assertChannelAccess` → (four of
@@ -1403,7 +1432,7 @@ check in particular is four verbatim copies with four separately worded messages
 two-copy rule.
 Fix: one `loadMessageForWrite(ctx, messageId, { requireOwnerOr })` helper in `helpers/`.
 
-**2.24 — `dms/open-direct-message.ts` nits.** Two users opening the same DM
+**2.24 [FIXED] — `dms/open-direct-message.ts` nits.** Two users opening the same DM
 simultaneously both miss the `getDirectMessageChannel` read and both insert; the unique
 index (`direct_messages_pair_unique_idx`) turns the loser into an unhandled constraint
 error rather than a returned channel id, so catch it and re-read. The channel name
@@ -1411,23 +1440,83 @@ error rather than a returned channel id, so catch it and re-read. The channel na
 for text DMs with a comment explaining the future intent, which will be a confusing
 default for anything that switches on channel type in the meantime.
 
-**2.25 — `signal-typing.ts:21-31` — work runs alongside the permission checks.**
+**2.25 [FIXED] — `signal-typing.ts:21-31` — work runs alongside the permission checks.**
 `getAffectedOnlineUserIdsForChannel` is in the same `Promise.all` as
 `needsPermission` / `needsChannelPermission` / `assertDmChannel`, so the query runs for
 callers who are about to be rejected. AGENTS.md's rule is that independent checks may
 share a `Promise.all`, not that work may share it with the checks. Also
 `const [, , , affectedUserIds]` is three holes deep.
 
-**2.26 — `edit-message.ts:79-84,93` — `updatedAt` and `editedAt` are two `Date.now()`
+**2.26 [FIXED] — `edit-message.ts:79-84,93` — `updatedAt` and `editedAt` are two `Date.now()`
 calls for the same edit (they can differ by a millisecond, and it is not clear what the
 two columns mean separately); `message:updated` reports `userId: message.userId`, the
 original author, while `editedBy` records the actual editor, so plugins cannot tell who
 edited.
 
-**2.27 — `files/delete-file.ts:22` — "Message not found" for a file that exists.**
+**2.27 [FIXED] — `files/delete-file.ts:22` — "Message not found" for a file that exists.**
 Deleting an avatar, banner or emoji file id through this route reports that a *message* is
 missing. Correct in effect (only message files are deletable here), misleading as a
 user-facing string.
+
+**Fix records for the LOW batch.**
+
+*2.12* was already fixed and only the marker was missing: `get-messages.ts:126-129` carries
+the composite `(createdAt, id)` cursor and `messages.test.ts:683` covers the same-millisecond
+case. F2's separate point still stands, that test was never run against the old strict `lt`.
+
+*2.18* both dead `channels.private` queries are gone, along with the now-unused imports.
+
+*2.19* was **three sites, not the four listed**. `get-messages.ts:158` had already been
+reshaped by 2.11's fix and no longer reads a whole row. The `select()` calls that feed
+`joinMessagesWithRelations` are correct as they are and were left alone: that function needs
+the full row. `toggle-message-pin`, `toggle-message-reaction` and `get-thread-messages`'s
+parent lookup now name their columns, and the loader from 2.23 keeps that property for all of
+them.
+
+*2.20* unpinning writes `pinnedAt: null, pinnedBy: null`. Covered by a test that pins, asserts
+the metadata, unpins and asserts it is cleared.
+
+*2.21* three of the four nits are mechanical: the `FORBIDDEN` code on the search-disabled gate,
+the two unused `channelPrivate` selections, and the shadowed `messageFiles`.
+
+**The shadowing was not hypothetical.** Renaming the local to `attachedFiles` immediately broke
+line 159, which called `messageFiles.map(...)` and had been silently reading the shadowed local
+all along. Rename the local and that same expression starts referring to the imported drizzle
+table. That is exactly the trap the finding predicted, sprung by the fix for it.
+
+The fourth nit was a decision: search now returns `truncated`, set when the SQL prefilter hit
+its cap or the result set hit its limit, and the dialog renders a line saying only the most
+recent matches are shown. The fast design is kept, it just stops presenting a partial count as
+a complete one. New i18n key in all seven locales.
+
+*2.22* the three `.js` import extensions are gone.
+
+*2.23* `helpers/load-message-for-write.ts` holds two functions rather than the one the finding
+proposed, because the six sites do not all load the same way: `get-message` loads through
+`getMessage` and `files/delete-file` through `getMessageByFileId`, so a single loader could
+not serve them. `loadMessageForWrite` (select the write columns, `NOT_FOUND`,
+`assertChannelAccess`, optional owner check) covers four sites, and `assertCanModifyMessage`
+covers the owner-or-manage check on its own for `delete-file`. The action is a parameter so
+the four user-facing strings stay distinct while the logic exists once. The loader never
+selects `content` or `metadata`, which also closes 2.19 for those paths.
+
+*2.24* the race is fixed: the insert is wrapped, and a constraint failure re-reads the pair and
+returns the winner's channel. **The name and `ChannelType.VOICE` were left alone by decision** —
+both are deliberate, the type carries a comment about future private calls and the name is not
+what the client renders. Covered by a test that opens the same pair concurrently from both
+users; verified to fail with the guard removed, so it exercises the race rather than
+serialising past it.
+
+*2.25* the recipient query moved out of the permission `Promise.all` and runs only after the
+checks pass.
+
+*2.26* one `Date.now()` for both columns. The event gained `editedBy` rather than changing what
+`userId` means: repointing `userId` at the editor would silently change the payload for any
+plugin already reading it, and the finding's complaint was that plugins *cannot tell* who
+edited, which an added field answers. `plugin-sdk`'s event map and the plugin edit path were
+updated to match.
+
+*2.27* the message is now "File not found".
 
 ### Missing tests
 
@@ -1435,20 +1524,19 @@ user-facing string.
 threads, inline replies, pagination and search leakage well. The gaps line up exactly with
 the findings above:
 
-- no test for message content length (2.2) because no limit exists.
-- no test for `limit: -2` or a huge `limit` on `messages.get` / `messages.getThread`
-  (2.3), nor for the size of the `targetMessageId` response (2.4).
-- no test that deleting a message's last file cleans up inline replies and thread replies
-  the way `messages.delete` does (2.5) — this one is a real bug with no coverage on either
-  side.
-- no test that deleting a thread parent removes or reassigns its replies (2.6).
-- no test that a failing `saveFile` does not leave a message row behind (2.7).
-- no test for two messages with an identical `createdAt` across a page boundary (2.12).
-- no test for an oversized or non-emoji reaction string (2.10).
-- `messages.test.ts:1046` asserts the silent file truncation (2.9); it encodes the bug.
-- nothing covers `signal-typing`'s recipient list (only that it does not throw), so the
-  `VIEW_CHANNEL` filter in `getAffectedOnlineUserIdsForChannel` is unverified.
-- `dms.test.ts` has no test for concurrent `dms.open` on the same pair (2.24).
+**Rechecked at the end of the chunk; this list was almost entirely stale.** Closed by the
+HIGH and MED fixes: content length (`messages.test.ts:779`), the `limit` bounds, the file
+delete cleanup, the thread-parent cascade (`cascade.test.ts:370,408`), the `saveFile` rollback
+(`messages.test.ts:656`), the identical-`createdAt` page boundary (`:683`) and the oversized
+reaction (`:896`). The claim that `messages.test.ts:1046` encodes 2.9's truncation bug is also
+stale, that line is now an ordinary multi-message test.
+
+Added with the LOW batch: concurrent `dms.open` on the same pair (2.24), and pin metadata
+being cleared on unpin (2.20).
+
+**Still open, the only one left:** nothing covers `signal-typing`'s recipient list, only that
+it does not throw, so the `VIEW_CHANNEL` filter in `getAffectedOnlineUserIdsForChannel` is
+unverified. Worth doing with the chunk's remaining partials rather than on its own.
 
 ## 3. Routers: users & access
 
@@ -1639,7 +1727,7 @@ both counts.
 Fix: one `markChannelRead(userId, channelId)` in `db/mutations/`, called by both. Ties
 into 2.11.
 
-**3.8 — [PARTLY FIXED] unbounded reads across the admin surface.** `users/get-users.ts` returns every
+**3.8 — [FIXED, scope decided] unbounded reads across the admin surface.** `users/get-users.ts` returns every
 user with avatars and banners joined; `users/get-user-info.ts:33` calls
 `getNonDirectMessagesFromUserId` and `getFilesByUserId` with no limit, so opening one
 user's info panel loads every message they have ever sent into a single response;
@@ -1651,9 +1739,11 @@ Fixed for `get-user-info` only: `getFilesByUserId` and `getNonDirectMessagesFrom
 now take a limit, are ordered newest first, and the route passes 100. The panel shows a
 recent history rather than an archive, and the storage totals it displays come from
 `getStorageUsageByUserId`, which is a separate aggregate and is unaffected by the cap.
-`users.getAll`, `invites.getAll` and `roles.getAll` are left unpaginated: they are bounded
-by the size of the server rather than by activity, and paginating them means changing the
-admin UI too.
+`users.getAll`, `invites.getAll` and `roles.getAll` are left unpaginated **by decision**:
+they are bounded by the size of the server rather than by activity, and paginating them means
+changing the admin UI too. Re-marked from partly fixed to fixed on that basis, with the
+caveat recorded rather than left as an open task. T2 tracks the same argument for the join
+payload, so if that gets revisited these come with it.
 
 **3.9 — [FIXED] `channels/reorder-channels.ts:44-57` and `categories/reorder-categories.ts:45-58`
 are the same forty lines twice, and both do a write per row in a loop.** Same algorithm,
@@ -1704,7 +1794,7 @@ Fixed: the route is now wrapped in `rateLimitedProcedure` and refuses past 250 r
 enough that the existing tests, which create ~33 roles and invites in one run against the
 same limiter key, still pass, while still bounding abuse.
 
-**3.13 — [PARTLY FIXED] `users/ban.ts` and `users/unban.ts` — no existence check, and the ban does not
+**3.13 — [FIXED] `users/ban.ts` and `users/unban.ts` — no existence check, and the ban does not
 revoke the token.** Both issue an `UPDATE` against an arbitrary id: banning user 99999
 succeeds silently and writes an activity-log entry for a user that does not exist.
 `unban.ts` has no self-check either. More importantly, banning closes the socket and
@@ -1713,24 +1803,51 @@ check `banned` (chunk 1, finding 1.4), so a banned user retains `/upload` access
 seven days.
 
 Fixed the existence half: both routes load the target and return `NOT_FOUND` first, and
-`unban` gained the self-check `ban` already had. The token half is **not** fixed here, it is
-the same revocation problem as 1.17 and 3.15 and needs one mechanism for all three.
+`unban` gained the self-check `ban` already had.
 
-**3.14 — `users/kick.ts` — kick is cosmetic.** It closes the WebSocket and nothing else.
+**The token half is now closed too**, by 1.4's fix rather than by anything in this chunk:
+`getUserByToken` (`db/queries/users.ts:351`) refuses a banned user, and `/upload` resolves its
+caller through exactly that function (`http/upload.ts:65`). Verified rather than assumed, and
+it turned out the coverage already existed: `upload.test.ts:81` logs in for a real token, bans
+the user, uploads with that token and asserts a 401, which is the precise scenario this
+finding described. Re-marked from partly fixed to fixed.
+
+**3.14 — [FIXED] `users/kick.ts` — kick is cosmetic.** It closes the WebSocket and nothing else.
 The token remains valid, so a client reconnects immediately. If that is the intent
 (a "nudge"), the name and the activity-log entry oversell it; if not, it needs a
 short-lived rejoin block.
 
-**3.15 — [PARTLY FIXED] `users/update-password.ts` — no rate limit, and other sessions survive.**
+Decided: kick is a **removal without a rejoin block**. It now bumps `users.token_version`
+(the mechanism built for 1.17) before closing the sockets, so the kicked session genuinely
+ends and the client must log in again, while nothing prevents an immediate fresh login. The
+name and the activity-log entry are accurate as they stand, so no wording change was needed.
+
+Order matters and is commented in place: the bump happens **before** the sockets close.
+Closing first leaves a window where the client reconnects with its still-valid token and the
+kick is the no-op it used to be.
+
+Not covered by a test, and the reason is architectural rather than laziness: the route
+requires a live WebSocket for the target (`getUserWs(...).length > 0`) and the harness builds
+contexts with no socket, which the existing "should throw when kicking non-connected user"
+test demonstrates. A comment in `users.test.ts` names this. What happens after that gate is
+covered indirectly by the token-version tests, which prove a bumped version refuses the old
+token. See M58.
+
+**3.15 — [FIXED] `users/update-password.ts` — no rate limit, and other sessions survive.**
 An auth endpoint that verifies a password with argon2 on every call, with no
 `rateLimitedProcedure` (AGENTS.md step 2 names auth explicitly), and changing the password
 does not invalidate tokens issued earlier, so a stolen token outlives the password change
 by up to seven days. See 1.17 for the fix.
 
-Fixed the rate limit half: `config.rateLimiters.updatePassword` at 5/min. Token
-invalidation is still open and still belongs with 1.17.
+Fixed the rate limit half: `config.rateLimiters.updatePassword` at 5/min.
 
-**3.16 — [PARTLY FIXED] `channels/update-permission.ts:62-70,81-89` — the whole permission matrix is
+**Token invalidation is now closed too**, with 1.17: the route bumps `users.token_version`
+and additionally closes the user's other sockets, keeping the caller's own. Covered by
+`users.test.ts` ("should invalidate tokens issued before a password change", plus the
+same-version and other-user cases). The socket-closing half is unreachable in the harness for
+the same reason as 3.14. Re-marked from partly fixed to fixed.
+
+**3.16 — [FIXED, shape accepted] `channels/update-permission.ts:62-70,81-89` — the whole permission matrix is
 written for every save.** Each call deletes and reinserts one row per `ChannelPermission`
 per target, with `allow: false` for everything not granted, rather than storing only the
 overrides that differ. The table grows as (channels x targets x permissions), and the
@@ -1739,11 +1856,15 @@ channels, whose rows will never be read (see the corrected 2.1), and validates n
 `channelId`, `userId` nor `roleId` existence.
 
 Fixed: the route now validates that the channel exists and that the target user or role
-exists, in one `Promise.all`, before writing anything. **Not fixed:** the write
-amplification. Storing only the overrides that differ is a storage-shape change with a
-migration and a matching read-path change in `channelUserCan`, and it needs a decision on
-what an absent row means before it can be written. Left open deliberately, with the
-`isCreate` flag and the all-false set still in place.
+exists, in one `Promise.all`, before writing anything.
+
+**The write amplification is left as it is, by decision.** `ChannelPermission` has 6 members,
+so a save writes 6 rows per target per channel: at 50 channels and 100 targets that is 30k
+rows, which SQLite does not notice. Changing the shape means a migration, a matching read-path
+change in `channelUserCan`, an updated permission editor on the client, and a decision on what
+an absent row means, which is real risk against a cost that is not being paid. Re-marked from
+partly fixed to fixed with the shape recorded as accepted. Revisit if a server appears where
+the row count actually matters.
 
 ### LOW
 
@@ -1846,10 +1967,12 @@ existing harness with users 1 and 2:
   delete and get equivalents are covered.~~ added with 3.3 and 3.6.
 - ~~no test that `channels.markAsRead` publishes a read-state event (3.7)~~ added; the
   concurrent-call case was already covered by an existing test.
-- no test that `channels.updatePermissions` rejects (or is meaningless on) a public
-  channel (3.16 / 2.1). Still open: the route now validates that the channel, user and role
-  exist (covered), but whether a public channel should be refused outright is part of the
-  3.16 storage decision that was left open.
+- ~~no test that `channels.updatePermissions` rejects (or is meaningless on) a public
+  channel (3.16 / 2.1)~~ closed with the F4 decision: the storage shape is accepted as is, so
+  there is no behaviour change to test. The existence validation the route did gain is
+  covered.
+
+**Chunk 3's missing-tests list is now empty.**
 
 ## 4. Routers: voice & plugins
 
@@ -2042,7 +2165,7 @@ Deferred, see **T2**. Bounding this is a design task spanning both sides, not a 
 change, and every one of the ten lists has a client consumer that assumes it arrives
 complete.
 
-**4.8 — [PARTLY FIXED: logging done, storage and compare open] the server join password is stored and compared in plaintext, and then logged.**
+**4.8 — [PARTLY FIXED: logging and compare done, storage open] the server join password is stored and compared in plaintext, and then logged.**
 `schema.ts:41` stores it as `text('password')` (user passwords are argon2);
 `others/join.ts:57` compares with `input.password === settings.password`, not constant
 time; and `update-settings.ts:94` writes `details: { values: input }` into the activity
@@ -2050,8 +2173,22 @@ log, so the plaintext password lands in the audit trail whenever it is set. Hash
 minimum compare with `safeCompare` and redact it from the log payload.
 
 The logging half is fixed with 4.2: `password` is destructured out of the activity-log
-payload. The plaintext column and the non-constant-time comparison in `others/join.ts:57`
-are **still open**.
+payload.
+
+The comparison is fixed too: `others/join.ts` now uses `safeCompare`, the same helper
+`http/login.ts:254` already used for exactly this, guarded so a null stored password or a
+missing supplied one cannot pass. Behaviour is unchanged in every case, only the timing is.
+There was only ever one comparison site. A new test covers a wrong password at both a
+different and an identical length, since `safeCompare` returns early on a length mismatch and
+only reaches `timingSafeEqual` when the lengths match; the existing tests only covered a
+missing password.
+
+**The plaintext column is still open.** `schema.ts:41` stores the join password as
+`text('password')` while user passwords are argon2. Hashing it needs a migration and a
+decision about existing servers, whose current value would have to be either hashed in place
+or invalidated. Worth noting the exposure is narrower than a user password: it is a shared
+secret the operator hands out, not a per-user credential, and it no longer reaches the
+activity log.
 
 **4.9 — [FIXED, behaviour kept by decision] `voice/move.ts:88-95` — `MOVE_MEMBERS` can pull a user into a channel they cannot
 see.** `grantVoiceMove` bypasses the `JOIN` channel permission at `voice/join.ts:40`, and
@@ -2139,7 +2276,7 @@ dereferenced.
 
 ### LOW
 
-**4.16 — eight voice routes open with the same ten-line preamble.**
+**4.16 [FIXED] — eight voice routes open with the same ten-line preamble.**
 `leave.ts:14-40`, `produce.ts:32-59`, `consume.ts:18-28`, `update-state.ts:19-58`,
 `create-consumer-transport.ts:10-20`, `create-producer-transport.ts`,
 `connect-consumer-transport.ts:44-54`, `connect-producer-transport.ts`,
@@ -2149,14 +2286,14 @@ dereferenced.
 guard. A `getCurrentVoiceRuntime(ctx)` helper returning the runtime removes ~80 lines and
 gives the "runtime missing" case one definition.
 
-**4.17 — `others/change-logo.ts:26-38` is the third copy of the avatar/banner pattern.**
+**4.17 [FIXED] — `others/change-logo.ts:26-38` is the third copy of the avatar/banner pattern.**
 Same delete-then-save ordering bug as 3.5 (a failing `saveFile` leaves the server with no
 logo), same `throw new Error('Invalid file type. Please try again.')` producing a 500
 instead of `invariant`, same `temporaryFileHasMimeType` check. With
 `change-avatar.ts` and `change-banner.ts` that is three copies of one operation, so it is
 past the two-copy rule twice over.
 
-**4.18 — `db.select()` for full channel rows** in `voice/join.ts:44`, `voice/leave.ts:19`
+**4.18 [FIXED] — `db.select()` for full channel rows** in `voice/join.ts:44`, `voice/leave.ts:19`
 and `voice/move.ts:34`, each to read `type` and `name`. `move.ts:69` does it right for the
 origin channel.
 
@@ -2164,18 +2301,64 @@ origin channel.
 `updateSettings(...)`. The mapping is the identity function; `updateSettings(input)` is
 the same code. This is also what hides 4.2 and 4.3 in the noise.
 
-**4.20 — plugin routes log inconsistently.** `toggle-plugin` writes an activity log;
+**4.20 [FIXED] — plugin routes log inconsistently.** `toggle-plugin` writes an activity log;
 `install-plugin`, `remove-plugin` and `update-setting` do not, although installing and
 removing plugins are the most security-relevant actions in the folder.
 
-**4.21 — `emojis/update-emoji.ts:31` — renaming an emoji to its current name fails.**
+**4.21 [FIXED] — `emojis/update-emoji.ts:31` — renaming an emoji to its current name fails.**
 `emojiExists(input.name)` matches the row being edited, so a no-op rename returns "An
 emoji with this name already exists." Exclude the current id.
 
-**4.22 — `emojis/add-emoji.ts:36` — `db.insert(...).returning().get()` without `await`,**
+**4.22 [NO LONGER APPLIES] — `emojis/add-emoji.ts:36` — `db.insert(...).returning().get()` without `await`,**
 unlike every other insert in the codebase. It works because the bun-sqlite driver's
 `.get()` is synchronous, which is exactly why the inconsistency is worth removing: the
 next person to add an `await` here will not know whether it mattered.
+
+**Fix records for the LOW batch.**
+
+*4.16* `helpers/get-current-voice-runtime.ts` replaces the preamble in ten routes:
+**157 lines removed, 38 added.** `close-producer.ts` deliberately keeps its own guard, since
+it returns silently rather than throwing when the user has already left voice, which is a
+different contract from the other nine.
+
+Worth noting how the extraction went, because the type checker did the hard part. The routes
+relied on `invariant(ctx.currentVoiceChannelId)` narrowing the context property inline; moving
+that into a helper loses the narrowing, so `tsc` flagged all 15 sites that consumed it. That is
+why the helper returns `channelId` alongside the runtime. One of those sites was
+`leave.ts`'s `ctx.currentVoiceChannelId = undefined`, which a blanket rename would have turned
+into an assignment to a local, silently leaving the user marked as still in voice. The
+compiler caught that too.
+
+*4.17* the third copy is gone. `saveReplacementImage` in `helpers/change-user-image.ts` now
+holds the part that carries the bug: validate the mime type, resolve the temporary file, save
+it, and only then hand back an id for the caller to swap in. `change-logo.ts` went from 25
+lines to 12, lost its `throw new Error` (a 500 where the other two produce a `BAD_REQUEST`),
+and no longer deletes the old logo before knowing the new one saved.
+
+The table-specific parts stay at each call site rather than being parameterised, which keeps
+the helper from becoming three callbacks in a trenchcoat: avatars and banners write to `users`
+and publish a user, the logo writes to `settings` and publishes settings.
+
+Covered by a test that sets a logo, attempts a replacement that cannot be saved, and asserts
+the original survives. Verified against the old ordering, where it fails.
+
+*4.18* the three `select()` calls name their columns. `join` needs four, `leave` three,
+`move` two.
+
+*4.20* `PLUGIN_INSTALLED`, `PLUGIN_REMOVED` and `PLUGIN_SETTING_UPDATED` added to
+`ActivityLogType`, and the four unlogged routes now log. The setting value is deliberately
+left out of the payload: a plugin setting can hold an api key, and 4.8 is in this same chunk
+because a password reached the audit trail exactly that way.
+
+*4.21* `emojiExists` takes an optional `excludeId` and `update-emoji` passes the row's own id,
+so renaming an emoji to the name it already has no longer reports that the name is taken by
+itself. It also stopped selecting the whole row to answer a boolean. New test.
+
+**4.22 no longer applies.** The finding describes an insert without `await`, "unlike every
+other insert in the codebase". 4.12's fix has since wrapped that insert in
+`db.transaction((tx) => ...)`, where a synchronous callback ending in `.all()` is exactly what
+AGENTS.md mandates: adding the `await` the finding asks for would break the transaction.
+Marked as superseded rather than fixed.
 
 ### Missing tests
 
@@ -3165,39 +3348,39 @@ are accepted for diagnostic data. No behaviour changed.
 
 ### LOW
 
-**7.12 — `helpers/clear-fields.ts` redacts by substitution, not removal.**
+**7.12 [FIXED] — `helpers/clear-fields.ts` redacts by substitution, not removal.**
 `getDefaultValue` replaces a cleared field with `''`, `-1`, `false` or `{}` depending on
 its type, so `users.getAll` returns `identity: ''` and `password: ''` rather than omitting
 them, and every client type still declares the field. The `-1` case is the sharp edge: a
 redacted numeric field becomes a plausible-looking id that downstream code will treat as
 real. The function is also named for removal, which is not what it does.
 
-**7.13 — three test hooks live in production modules.**
+**7.13 [FIXED] — three test hooks live in production modules.**
 `utils/rate-limiters/rate-limiter.ts:23` (`clearRateLimitersForTests`),
 `helpers/voice-move-grants.ts:27` (`clearVoiceMoveGrantsForTests`) and
 `utils/rate-limiters/index.ts:38` (`globalThis.disableRateLimiting`). Individually
 harmless, collectively a pattern worth a decision: either accept it and name it
 consistently, or move the reset behind the test harness.
 
-**7.14 — `crons/index.ts:135` hardcodes `'Europe/Lisbon'`.** Harmless for a 15-minute
+**7.14 [FIXED] — `crons/index.ts:135` hardcodes `'Europe/Lisbon'`.** Harmless for a 15-minute
 interval, and wrong for any cron that ever needs to run at a specific local hour. It is
 the maintainer's timezone baked into a self-hosted product.
 
-**7.15 — `helpers/deep-merge.ts:114` iterates keys from a parsed config file with no key
+**7.15 [FIXED] — `helpers/deep-merge.ts:114` iterates keys from a parsed config file with no key
 guard.** `config.ts` feeds it the output of `ini.parse()` on an operator-editable file.
 The blast radius is small (the file is admin-owned, and `zConfig.parse` runs after), but
 `__proto__` and `constructor` deserve an explicit skip in a generic merge helper.
 
-**7.16 — `utils/updater.ts:118` — `setInterval` is never cleared and every failure is
+**7.16 [FIXED] — `utils/updater.ts:118` — `setInterval` is never cleared and every failure is
 swallowed into one log line.** An operator who enables `server.autoupdate` and whose
 update checks start failing gets a server that silently never updates.
 
-**7.17 — `utils/embeds.ts:37` — the development branch copies migrations without
+**7.17 [FIXED] — `utils/embeds.ts:37` — the development branch copies migrations without
 pruning.** `fs.cp(SRC_MIGRATIONS_PATH, DRIZZLE_PATH, { recursive: true })` never removes
 files, so a migration deleted or renamed in `src` lingers in the working directory and
 keeps being applied locally.
 
-**7.18 — the `helpers/` versus `utils/` boundary has drifted.** AGENTS.md defines
+**7.18 [FIXED] — the `helpers/` versus `utils/` boundary has drifted.** AGENTS.md defines
 `helpers/` as domain-aware and `utils/` as infrastructure with no domain knowledge. In
 `utils/` today: `file-manager.ts` (storage quotas, per-user limits, plugin hooks),
 `logins.ts` (login records), `embeds.ts` (knows about interface, migrations and mediasoup
@@ -3205,7 +3388,59 @@ paths), `updater.ts`. Meanwhile `helpers/` holds `zip.ts`, `fs.ts`, `deep-merge.
 `sha-256-file.ts`, which are pure infrastructure. The two folders are roughly swapped at
 the edges.
 
-**7.19 — `helpers/__tests__/pasre-command-args.test.ts` is misspelled** ("pasre").
+**7.19 [FIXED] — `helpers/__tests__/pasre-command-args.test.ts` is misspelled** ("pasre").
+
+**Fix records for the LOW batch.**
+
+*7.12* `clearFields` now returns `Omit<T, K>` and deletes the keys. The value was never in
+doubt, but the size of it was: **switching to deletion surfaced eleven call sites**, and one
+of them was a live bug. `users.getAll` redacts `identity`, and
+`users-table.tsx` filtered on `user.identity?.toLowerCase()`, so **admin user search by
+identity has never matched anything** and could not, because every value was the empty string
+the helper substituted. The dead clause is gone and the filter now says what it does.
+
+The rest of what surfaced: four test assertions that asserted the substitution itself (so they
+encoded the old behaviour), the settings form prefilling `password` from a blanked field, and
+three client types declaring fields the server does not send.
+
+`get-user-info` is the one place that kept a value rather than dropping the key: `identity` is
+now explicitly `null` without `VIEW_USER_SENSITIVE_DATA`. Redacting it by omission would give
+the route two different response shapes depending on the caller's permissions, which is worse
+for a client than one shape with a documented null. Omission by a generic helper that guesses
+a placeholder from the runtime type is the thing 7.12 objects to, and that is gone.
+
+One addition came out of this: `lib/trpc.ts` now exports `TRouterOutputs`, so the client
+derives what a route returns instead of re-declaring it from the table the route reads. That
+is what made the redaction visible to the type checker at all. It lives in the client rather
+than `packages/shared` because only the client needs it and shared has no `@trpc/server`
+dependency, which chunk 14 would rather it did not gain.
+
+*7.13* accepted and documented, by decision. The two `*ForTests` exports reset module-level
+state that only those modules own, so an export is the honest seam; both now carry a comment
+saying so and naming the convention. 1.25 had already removed the sharp part by gating
+`globalThis.disableRateLimiting` behind `IS_TEST`.
+
+*7.14* the cron runs on `'UTC'` rather than `'Europe/Lisbon'`, with a comment noting the zone
+only matters if a cron is ever added that must fire at a specific local hour, and that it
+should then come from config rather than from the maintainer's location.
+
+*7.15* `deep-merge` skips `__proto__`, `constructor` and `prototype`.
+
+*7.16* the updater keeps its interval handle and gained a `stop()`, counts consecutive
+failures, and after three in a row logs an error naming the consequence and what to check.
+Previously an operator whose update checks started failing got one info line an hour and a
+server that silently never updated.
+
+*7.17* `embeds.ts` removes `DRIZZLE_PATH` before copying, since `fs.cp` never prunes and a
+renamed migration would otherwise linger locally and keep being applied.
+
+*7.18* eight files moved so the folders match AGENTS.md's own definition: `file-manager`,
+`logins`, `embeds` and `updater` into `helpers/` (they carry domain knowledge), and `zip`,
+`fs`, `deep-merge` and `sha-256-file` into `utils/` (they carry none). 16 importing files
+rewritten, plus 8 same-folder `./x` specifiers that broke because the sibling moved with them,
+which the type checker caught.
+
+*7.19* `pasre-command-args.test.ts` is now `parse-command-args.test.ts`.
 
 ### Missing tests
 

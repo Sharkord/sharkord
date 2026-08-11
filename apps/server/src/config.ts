@@ -3,10 +3,10 @@ import fs from 'fs/promises';
 import { parse, stringify } from 'ini';
 import z from 'zod';
 import { applyEnvOverrides } from './helpers/apply-env-overrides';
-import { deepMerge } from './helpers/deep-merge';
 import { ensureServerDirs } from './helpers/ensure-server-dirs';
 import { getPrivateIp, getPublicIp } from './helpers/network';
 import { CONFIG_INI_PATH } from './helpers/paths';
+import { deepMerge } from './utils/deep-merge';
 import { IS_DEVELOPMENT, IS_TEST } from './utils/env';
 
 const deepFreeze = <T>(value: T): T => {

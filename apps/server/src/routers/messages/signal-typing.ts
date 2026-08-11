@@ -19,16 +19,18 @@ const signalTypingRoute = rateLimitedProcedure(protectedProcedure, {
   .mutation(async ({ input, ctx }) => {
     await assertDmChannel(input.channelId, ctx.userId);
 
-    const [, , affectedUserIds] = await Promise.all([
+    await Promise.all([
       ctx.needsPermission(Permission.SEND_MESSAGES),
       ctx.needsChannelPermission(
         input.channelId,
         ChannelPermission.SEND_MESSAGES
-      ),
-      getAffectedOnlineUserIdsForChannel(input.channelId, {
-        permission: ChannelPermission.VIEW_CHANNEL
-      })
+      )
     ]);
+
+    const affectedUserIds = await getAffectedOnlineUserIdsForChannel(
+      input.channelId,
+      { permission: ChannelPermission.VIEW_CHANNEL }
+    );
 
     ctx.pubsub.publishFor(affectedUserIds, ServerEvents.MESSAGE_TYPING, {
       channelId: input.channelId,

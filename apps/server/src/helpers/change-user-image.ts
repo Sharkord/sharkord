@@ -5,10 +5,34 @@ import { removeFile } from '../db/mutations/files';
 import { publishUser } from '../db/publishers';
 import { getUserById } from '../db/queries/users';
 import { users } from '../db/schema';
-import { fileManager } from '../utils/file-manager';
+import { fileManager } from '../helpers/file-manager';
 import { invariant } from '../utils/invariant';
 
 type TUserImageTarget = 'avatar' | 'banner';
+
+const saveReplacementImage = async (
+  userId: number,
+  saveType: FileSaveType,
+  fileId?: string
+): Promise<number | null> => {
+  invariant(!fileId || fileManager.temporaryFileHasMimeType(fileId, 'image/'), {
+    code: 'BAD_REQUEST',
+    message: 'Invalid file type. Please try again.'
+  });
+
+  if (!fileId) return null;
+
+  const tempFile = await fileManager.getTemporaryFile(fileId);
+
+  invariant(tempFile, {
+    code: 'NOT_FOUND',
+    message: 'Temporary file not found'
+  });
+
+  const newFile = await fileManager.saveFile(fileId, userId, saveType);
+
+  return newFile.id;
+};
 
 const changeUserImage = async (
   userId: number,
@@ -16,11 +40,6 @@ const changeUserImage = async (
   fileId?: string
 ) => {
   const isAvatar = target === 'avatar';
-
-  invariant(!fileId || fileManager.temporaryFileHasMimeType(fileId, 'image/'), {
-    code: 'BAD_REQUEST',
-    message: 'Invalid file type. Please try again.'
-  });
 
   const user = await getUserById(userId);
 
@@ -30,26 +49,12 @@ const changeUserImage = async (
   });
 
   const previousFileId = isAvatar ? user.avatarId : user.bannerId;
-  let nextFileId: number | null = null;
 
-  if (fileId) {
-    const tempFile = await fileManager.getTemporaryFile(fileId);
-
-    invariant(tempFile, {
-      code: 'NOT_FOUND',
-      message: 'Temporary file not found'
-    });
-
-    // saved before anything is destroyed: a rejected save (quota, size limit,
-    // plugin hook) must not leave the user with no image at all
-    const newFile = await fileManager.saveFile(
-      fileId,
-      userId,
-      isAvatar ? FileSaveType.AVATAR : FileSaveType.BANNER
-    );
-
-    nextFileId = newFile.id;
-  }
+  const nextFileId = await saveReplacementImage(
+    userId,
+    isAvatar ? FileSaveType.AVATAR : FileSaveType.BANNER,
+    fileId
+  );
 
   await db
     .update(users)
@@ -64,4 +69,4 @@ const changeUserImage = async (
   publishUser(userId, 'update');
 };
 
-export { changeUserImage, type TUserImageTarget };
+export { changeUserImage, saveReplacementImage, type TUserImageTarget };

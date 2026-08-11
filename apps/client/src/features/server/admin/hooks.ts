@@ -1,6 +1,6 @@
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { useForm } from '@/hooks/use-form';
-import { getTRPCClient } from '@/lib/trpc';
+import { getTRPCClient, type TRouterOutputs } from '@/lib/trpc';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
   parseTrpcErrors,
@@ -23,7 +23,6 @@ import {
   type TJoinedEmoji,
   type TJoinedInvite,
   type TJoinedRole,
-  type TJoinedUser,
   type TLogin,
   type TMessage,
   type TPluginInfo,
@@ -36,6 +35,9 @@ import { filesize } from 'filesize';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+
+export type TAdminUser = TRouterOutputs['users']['getAll'][number];
+export type TAdminUserInfo = TRouterOutputs['users']['getInfo']['user'];
 
 // TODO: review this whole file for optimizations and improvements
 
@@ -66,7 +68,8 @@ export const useAdminGeneral = () => {
     setSettings({
       name: settings.name,
       description: settings.description ?? '',
-      password: settings.password ?? '',
+
+      password: '',
       onlyAskForPasswordOnFirstJoin:
         settings.onlyAskForPasswordOnFirstJoin ?? false,
       allowNewUsers: settings.allowNewUsers ?? false,
@@ -530,7 +533,7 @@ export const useAdminStorage = () => {
 
 export const useAdminUsers = () => {
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<TJoinedUser[]>([]);
+  const [users, setUsers] = useState<TAdminUser[]>([]);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -592,7 +595,7 @@ export const useAdminChannelPermissions = (channelId: number) => {
 
 export const useAdminUserInfo = (userId: number) => {
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<TJoinedUser | null>(null);
+  const [user, setUser] = useState<TAdminUserInfo | null>(null);
   const [logins, setLogins] = useState<TLogin[]>([]);
   const [files, setFiles] = useState<TFile[]>([]);
   const [messages, setMessages] = useState<TMessage[]>([]);

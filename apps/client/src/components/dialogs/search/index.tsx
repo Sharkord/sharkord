@@ -27,7 +27,7 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
   const { t } = useTranslation('dialogs');
   useOnEsc(close);
 
-  const { query, setQuery, loading, canSearch, unifiedResults } =
+  const { query, setQuery, loading, canSearch, unifiedResults, truncated } =
     useSearch(isOpen);
 
   const onJump = useCallback(
@@ -109,6 +109,12 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
                   alwaysShow
                   className="flex shrink-0 items-center justify-center gap-1 border-t border-border pt-3"
                 />
+
+                {truncated && (
+                  <div className="shrink-0 pt-2 text-center text-xs text-muted-foreground">
+                    {t('searchTruncated')}
+                  </div>
+                )}
               </PaginatedList>
             )}
           </div>

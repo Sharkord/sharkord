@@ -33,7 +33,10 @@ const moveUserRoute = rateLimitedProcedure(protectedProcedure, {
     await ctx.needsPermission(Permission.MOVE_MEMBERS);
 
     const channel = await db
-      .select()
+      .select({
+        name: channels.name,
+        type: channels.type
+      })
       .from(channels)
       .where(eq(channels.id, input.channelId))
       .get();

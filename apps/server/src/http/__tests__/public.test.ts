@@ -14,9 +14,9 @@ import {
   messages,
   settings
 } from '../../db/schema';
+import { fileManager } from '../../helpers/file-manager';
 import { generateFileToken } from '../../helpers/files-crypto';
 import { PUBLIC_PATH } from '../../helpers/paths';
-import { fileManager } from '../../utils/file-manager';
 
 const upload = async (file: File, token: string) => {
   const uploadResponse = await uploadFile(file, token);

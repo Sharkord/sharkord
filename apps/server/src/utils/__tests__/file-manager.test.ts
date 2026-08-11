@@ -17,9 +17,9 @@ import {
   userRoles,
   users
 } from '../../db/schema';
+import { fileManager } from '../../helpers/file-manager';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../../helpers/paths';
 import { pluginManager } from '../../plugins';
-import { fileManager } from '../file-manager';
 
 const UNCOMPRESSED_PNG_PATH = path.join(
   __dirname,

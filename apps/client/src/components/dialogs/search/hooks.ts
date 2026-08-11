@@ -5,7 +5,11 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { TSearchResults, TUnifiedSearchResult } from './types';
 
-const EMPTY_RESULTS: TSearchResults = { messages: [], files: [] };
+const EMPTY_RESULTS: TSearchResults = {
+  messages: [],
+  files: [],
+  truncated: false
+};
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 300;
 
@@ -69,6 +73,7 @@ export const useSearch = (isOpen: boolean) => {
 
   const canSearch = query.trim().length >= MIN_QUERY_LENGTH;
   const totalResults = results.messages.length + results.files.length;
+  const truncated = results.truncated;
 
   // combine messages and files into a single list
   const unifiedResults: TUnifiedSearchResult[] = useMemo(
@@ -96,6 +101,7 @@ export const useSearch = (isOpen: boolean) => {
     loading,
     canSearch,
     totalResults,
+    truncated,
     unifiedResults
   };
 };

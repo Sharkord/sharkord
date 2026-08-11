@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
 import { joinMessagesWithRelations } from '../../db/queries/messages';
-import { channels, messages } from '../../db/schema';
+import { messages } from '../../db/schema';
 import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
@@ -36,7 +36,11 @@ const getThreadMessagesRoute = rateLimitedProcedure(protectedProcedure, {
     const { parentMessageId, cursor, limit } = input;
 
     const parentMessage = await db
-      .select()
+      .select({
+        id: messages.id,
+        channelId: messages.channelId,
+        parentMessageId: messages.parentMessageId
+      })
       .from(messages)
       .where(eq(messages.id, parentMessageId))
       .limit(1)
@@ -53,19 +57,6 @@ const getThreadMessagesRoute = rateLimitedProcedure(protectedProcedure, {
     });
 
     await assertChannelAccess(ctx, parentMessage.channelId);
-
-    const channel = await db
-      .select({
-        private: channels.private
-      })
-      .from(channels)
-      .where(eq(channels.id, parentMessage.channelId))
-      .get();
-
-    invariant(channel, {
-      code: 'NOT_FOUND',
-      message: 'Channel not found'
-    });
 
     const rows: TMessage[] = await db
       .select()

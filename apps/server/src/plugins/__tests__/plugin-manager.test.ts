@@ -7,8 +7,8 @@ import { pluginManager } from '..';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { tdb } from '../../__tests__/setup';
 import { messages, pluginData, settings } from '../../db/schema';
+import { fileManager } from '../../helpers/file-manager';
 import { PLUGINS_PATH, PUBLIC_PATH, UPLOADS_PATH } from '../../helpers/paths';
-import { fileManager } from '../../utils/file-manager';
 import { eventBus } from '../event-bus';
 import { withTimeout } from '../execution-timeout';
 

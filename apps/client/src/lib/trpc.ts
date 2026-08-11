@@ -23,6 +23,7 @@ import {
   type TConnectionParams
 } from '@sharkord/shared';
 import { createTRPCProxyClient, createWSClient, wsLink } from '@trpc/client';
+import type { inferRouterOutputs } from '@trpc/server';
 
 let wsClient: ReturnType<typeof createWSClient> | null = null;
 let trpc: ReturnType<typeof createTRPCProxyClient<AppRouter>> | null = null;
@@ -145,5 +146,7 @@ const cleanup = () => {
     isCleaningUp = false;
   }, 100);
 };
+
+export type TRouterOutputs = inferRouterOutputs<AppRouter>;
 
 export { cleanup, connectToTRPC, getTRPCClient, type AppRouter };

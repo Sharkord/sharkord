@@ -1,13 +1,12 @@
 import {
   ChannelPermission,
   getMediasoupKind,
-  Permission,
   ServerEvents,
   StreamKind
 } from '@sharkord/shared';
 import { z } from 'zod';
 import { config } from '../../config';
-import { VoiceRuntime } from '../../runtimes/voice';
+import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
@@ -32,36 +31,18 @@ const produceRoute = rateLimitedProcedure(protectedProcedure, {
     })
   )
   .mutation(async ({ input, ctx }) => {
-    await ctx.needsPermission(Permission.JOIN_VOICE_CHANNELS);
-
-    invariant(ctx.currentVoiceChannelId, {
-      code: 'BAD_REQUEST',
-      message: 'User is not in a voice channel'
-    });
+    const { runtime, channelId } = await getCurrentVoiceRuntime(ctx);
 
     if (input.kind === StreamKind.AUDIO) {
-      await ctx.needsChannelPermission(
-        ctx.currentVoiceChannelId,
-        ChannelPermission.SPEAK
-      );
+      await ctx.needsChannelPermission(channelId, ChannelPermission.SPEAK);
     } else if (input.kind === StreamKind.VIDEO) {
-      await ctx.needsChannelPermission(
-        ctx.currentVoiceChannelId,
-        ChannelPermission.WEBCAM
-      );
+      await ctx.needsChannelPermission(channelId, ChannelPermission.WEBCAM);
     } else if (input.kind === StreamKind.SCREEN) {
       await ctx.needsChannelPermission(
-        ctx.currentVoiceChannelId,
+        channelId,
         ChannelPermission.SHARE_SCREEN
       );
     }
-
-    const runtime = VoiceRuntime.findById(ctx.currentVoiceChannelId);
-
-    invariant(runtime, {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'Voice runtime not found for this channel'
-    });
 
     const producerTransport = runtime.getProducerTransport(ctx.user.id);
 
@@ -78,15 +59,11 @@ const produceRoute = rateLimitedProcedure(protectedProcedure, {
 
     runtime.addProducer(ctx.user.id, input.kind, producer, input.qualityLayers);
 
-    ctx.pubsub.publishForChannel(
-      ctx.currentVoiceChannelId,
-      ServerEvents.VOICE_NEW_PRODUCER,
-      {
-        channelId: ctx.currentVoiceChannelId,
-        remoteId: ctx.user.id,
-        kind: input.kind
-      }
-    );
+    ctx.pubsub.publishForChannel(channelId, ServerEvents.VOICE_NEW_PRODUCER, {
+      channelId: channelId,
+      remoteId: ctx.user.id,
+      kind: input.kind
+    });
 
     return producer.id;
   });

@@ -17,6 +17,7 @@ import { publishMessage, publishReplyCount } from '../../db/publishers';
 import { assertDmChannel } from '../../db/queries/dms';
 import { getSettings } from '../../db/queries/server';
 import { messageFiles, messages } from '../../db/schema';
+import { fileManager } from '../../helpers/file-manager';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
 import { parseCommandArgs } from '../../helpers/parse-command-args';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
@@ -24,7 +25,6 @@ import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
-import { fileManager } from '../../utils/file-manager';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 

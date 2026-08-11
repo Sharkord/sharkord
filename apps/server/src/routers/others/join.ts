@@ -14,6 +14,7 @@ import { getRoles } from '../../db/queries/roles';
 import { getPublicSettings, getSettings } from '../../db/queries/server';
 import { getPublicUsers } from '../../db/queries/users';
 import { categories, users } from '../../db/schema';
+import { safeCompare } from '../../helpers/safe-compare';
 import { shouldAskServerPassword } from '../../helpers/should-ask-server-password';
 import { logger } from '../../logger';
 import { pluginManager } from '../../plugins';
@@ -59,13 +60,17 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
       }
     );
 
-    invariant(
-      shouldAskForPassword ? input.password === settings.password : true,
-      {
-        code: 'FORBIDDEN',
-        message: 'Invalid password'
-      }
-    );
+    // constant time, so the response cannot be used to learn the password a character at a
+    // time. the column is still plaintext, which is the open half of 4.8
+    const passwordMatches =
+      !!settings.password &&
+      !!input.password &&
+      safeCompare(input.password, settings.password);
+
+    invariant(shouldAskForPassword ? passwordMatches : true, {
+      code: 'FORBIDDEN',
+      message: 'Invalid password'
+    });
 
     ctx.authenticated = true;
     ctx.setWsUserId(ctx.user.id);

@@ -95,6 +95,7 @@ export interface EventPayloads {
     messageId: number;
     channelId: number;
     userId: number | null;
+    editedBy: number | null;
     pluginId: string | null;
     content: string;
     textContent: string;

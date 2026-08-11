@@ -2,7 +2,7 @@ import type { TTempFile } from '@sharkord/shared';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import fs from 'fs/promises';
 import { initTest, login, uploadFile } from '../../__tests__/helpers';
-import { fileManager } from '../../utils/file-manager';
+import { fileManager } from '../../helpers/file-manager';
 
 describe('files router', () => {
   let tempFile: TTempFile;

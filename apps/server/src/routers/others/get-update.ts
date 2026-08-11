@@ -1,7 +1,7 @@
 import { Permission } from '@sharkord/shared';
+import { updater } from '../../helpers/updater';
 import { SERVER_VERSION } from '../../utils/env';
 import { protectedProcedure } from '../../utils/trpc';
-import { updater } from '../../utils/updater';
 
 const getLatestVersion = async () => {
   try {

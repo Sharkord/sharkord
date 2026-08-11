@@ -3,7 +3,7 @@
 import { ensureServerDirs } from './helpers/ensure-server-dirs';
 await ensureServerDirs();
 // ----------------------------------------
-import { loadEmbeds } from './utils/embeds';
+import { loadEmbeds } from './helpers/embeds';
 await loadEmbeds();
 // ----------------------------------------
 import { IS_PRODUCTION, SERVER_VERSION } from './utils/env';
@@ -13,13 +13,13 @@ import chalk from 'chalk';
 import { config, SERVER_PRIVATE_IP } from './config';
 import { loadCrons } from './crons';
 import { loadDb } from './db';
+import './helpers/updater';
 import { pluginManager } from './plugins';
 import { enqueueActivityLog } from './queues/activity-log';
 import { initVoiceRuntimes } from './runtimes';
 import { createServers } from './utils/create-servers';
 import { loadMediasoup } from './utils/mediasoup';
 import { printDebug } from './utils/print-debug';
-import './utils/updater';
 
 await loadDb();
 await pluginManager.loadPlugins();
