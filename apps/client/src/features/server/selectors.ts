@@ -154,7 +154,7 @@ export const typingUsersByThreadIdSelector = createTypingUsersSelector(
 );
 
 export const hasSharingScreenUsersSelector = createCachedSelector(
-  [voiceChannelStateSelector, (_: IRootState, channelId: number) => channelId],
+  [voiceChannelStateSelector],
   (voiceState) => {
     if (!voiceState) return false;
 

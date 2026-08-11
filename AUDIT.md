@@ -486,6 +486,8 @@ Format: what to do, then what should happen.
 | M43 | 12.1 | While connected, get kicked and then banned from another session. Separately, hit Disconnect in the UI, and refresh the page (Firefox especially) | Kick and ban still end the session immediately and show their own screens, with no reconnect attempts. Disconnect still logs out. A refresh still auto-logs-in, meaning the token was not cleared |
 | M49 | 1.17 | Log in on two browsers, then change your password on one | The other is disconnected immediately and cannot reconnect with its old session. The one you changed it on stays connected. Log in again with the new password and confirm it works right away |
 | M50 | 1.15 | On a server with real history, register a new account and time the login | It returns promptly, and the new user's channels all show zero unread. Post a message afterwards and confirm it shows as unread for them |
+| M64 | 8.12 | Scroll far up in a busy channel to load several pages, then jump to an old message from search | Messages stay in the right order in both cases. This removed an ordering option that two call sites were passing and that the reducer had always ignored |
+| M65 | 8.13 | Open channels, switch between them, and open a DM | Channel lookups still resolve. This changed the selector that resolves a channel by id, and got the declaration order wrong first |
 | M62 | 7.12 | Open the admin users list and search by name, then open a user's moderation panel both as the owner and as an admin without VIEW_USER_SENSITIVE_DATA | Name search works. The identity row shows the identity for the permitted user and is blank for the other. **Searching by identity no longer appears to work, because it never did** |
 | M63 | 7.18 | Start the server, upload a file, install a plugin, and check the logs directory | Everything works. This moved eight files between helpers/ and utils/, so a missed import shows up as a boot failure |
 | M59 | 4.16 | Join a voice channel, speak, enable video, change stream quality, then leave | All of it still works. This rewrote the opening guard of ten voice routes, so a mistake shows up as a route refusing to work rather than as a subtle bug |
@@ -516,7 +518,7 @@ Format: what to do, then what should happen.
 | 5   | [DB layer](#5-db-layer)                                            | `db/schema.ts`, `db/queries/`, `db/mutations/`, `db/publishers.ts`, `db/migrations/`         | audited |
 | 6   | [Plugin subsystem](#6-plugin-subsystem)                            | `src/plugins/`, `packages/plugin-sdk`                                                        | audited |
 | 7   | [Server leftovers](#7-server-leftovers)                            | `helpers/`, remaining `utils/`, `queues/`, `crons/`, `index.ts`, `logger.ts`                 | fixed |
-| 8   | [Client state](#8-client-state)                                    | `client/src/features/`                                                                       | audited |
+| 8   | [Client state](#8-client-state)                                    | `client/src/features/`                                                                       | fixed |
 | 9   | [Client voice](#9-client-voice)                                    | `voice-provider/`, `devices-provider/`, `audio-worklets/`                                    | audited |
 | 10  | [Client channel view & editor](#10-client-channel-view--editor)    | `channel-view/`, `tiptap-input/`, `message-compose/`, `thread-sidebar/`                      | audited |
 | 11  | [Client screens & chrome](#11-client-screens--chrome)              | `server-screens/`, `dialogs/`, `left-sidebar/`, `top-bar/`, `screens/`, remaining components | audited |
@@ -556,10 +558,11 @@ Chunk 9 is **mostly fixed**: HIGH (9.1 to 9.3) and MED (9.5 to 9.11) are done, t
 with corrections to the finding (9.1 on who consumes the stats, 9.11 on which mediasoup event
 is actually equivalent). 9.4 is deferred to T4 by decision. LOW 9.12 to 9.15 are open, and
 9.15 is now part of T4.
-Chunk 8 is **mostly fixed**: 8.1 (with a correction that also rewrote the guide's selector
-section), and the MED batch 8.2 to 8.10. 8.2 is partly fixed and 8.4 fixed as documentation,
-both by decision, and 8.6 left as is. The LOW batch 8.11 to 8.14 is still open, and 8.15 was
-closed with 8.4. Everything here is unverified by tests, since the client has none: the
+Chunk 8 is **fixed**: 8.1 (with a correction that also rewrote the guide's selector
+section), the MED batch 8.2 to 8.10, and the LOW batch 8.11 to 8.14. 8.2 is partly fixed and
+8.4 fixed as documentation, both by decision, and 8.6 left as is. 8.15 was closed with 8.4.
+8.12 turned out to be a live bug rather than dead weight: two call sites were passing an
+ordering option the reducer had never read. Everything here is unverified by tests, since the client has none: the
 selector behaviour was checked by running the real modules against a synthetic store.
 Chunk 7 is **fixed**: HIGH (7.1 to 7.3), MED (7.4, 7.6, 7.7, 7.9 to 7.11) and the whole LOW
 batch are done. 7.5 was ignored and 7.8 left as is, both by decision. 7.12 was the one with
@@ -3681,19 +3684,19 @@ back.
 
 ### LOW
 
-**8.11 — `ownUserSelector` (`users/selectors.ts:47`) and `ownPublicUserSelector`
+**8.11 [FIXED] — `ownUserSelector` (`users/selectors.ts:47`) and `ownPublicUserSelector`
 (line 62) are identical.** Same inputs, same body, two exported names, both used.
 
-**8.12 — `slice.ts:198` — `addMessages` declares `opts?: { prepend?: boolean }` and never
+**8.12 [FIXED] — `slice.ts:198` — `addMessages` declares `opts?: { prepend?: boolean }` and never
 reads it.** The payload type advertises an ordering option the reducer does not implement;
 `mergeMessagesChronologically` always decides. Callers pass `{}` (see
 `messages/subscriptions.ts:18`).
 
-**8.13 — `channelByIdSelector` re-scans instead of composing.**
+**8.13 [FIXED] — `channelByIdSelector` re-scans instead of composing.**
 `channels/selectors.ts:119` does `channels.find(...)` while `channelsMapSelector` (line
 182) already builds the id map. AGENTS.md: compose selectors, do not re-derive.
 
-**8.14 — `server/selectors.ts:165` — `hasSharingScreenUsersSelector` takes a `channelId`
+**8.14 [FIXED] — `server/selectors.ts:165` — `hasSharingScreenUsersSelector` takes a `channelId`
 its result function ignores.** The parameter only feeds the cache key; the actual
 channel scoping happens inside `voiceChannelStateSelector`. It works, and it reads as a
 bug every time someone opens the file.
@@ -3703,6 +3706,47 @@ domains have one, they are consistent and well-shaped, and AGENTS.md's "same fou
 rule does not account for them. Documentation drift, same root as 8.4.
 
 Fixed with 8.4: `subscriptions.ts` is now named in the guide as part of a domain folder.
+
+**Fix records for the LOW batch.**
+
+*8.11* `ownPublicUserSelector` is deleted and its one consumer uses `ownUserSelector`.
+
+**8.12 was worse than the finding says.** It describes an option the reducer ignores, with
+callers passing `{}`. In fact `prepend: true` **is** passed, at `hooks.ts:197` and `:233`, and
+has always been ignored: `mergeMessagesChronologically` sorts regardless. So two call sites
+believed they were controlling page ordering and were not, which is exactly the trap a
+declared-but-unread option sets. The whole chain is gone: both reducer payloads, both action
+signatures, `storeChannelMessages`, and all four call sites.
+
+*8.13* `channelByIdSelector` composes `channelsMapSelector` instead of re-scanning the array.
+
+This one nearly shipped a runtime failure. `channelsMapSelector` was declared 56 lines
+**below** `channelByIdSelector`, and these are consts evaluated at module load, not hoisted
+functions, so referencing it from the input array would have thrown a temporal-dead-zone
+error the moment the module was imported. The definition moved above its consumer.
+
+*8.14* the redundant second input selector is gone. What was removed is the
+`(_, channelId) => channelId` entry in the inputs array, whose computed value the result
+function ignored.
+
+The finding's wording ("the parameter only feeds the cache key") is **not accurate**, and I
+repeated it in a comment before catching it. reselect forwards every argument to each input
+selector, so `channelId` reaches `voiceChannelStateSelector` and that is what scopes the
+result to one channel. It does two jobs, not one. Verified against the real libraries: the
+selector still returns `true` for a sharing channel and `false` for another, and interleaved
+ids do not evict each other.
+
+`createSelector` would also work here, since reselect 5 memoizes per input combination, and
+that was considered. Kept as `createCachedSelector` because AGENTS.md prefers it for
+parameterized selectors "for explicit keying that does not depend on a library default", which
+is the rule rewritten in T3 after measuring exactly that default.
+
+**One thing the file move in 7.18 broke and this chunk's knip run caught:**
+`apps/server/build/build.ts` imports `zipDirectory` from `../src/helpers/zip`, and my rewrite
+only covered `apps/server/src` and `packages`. `knip.json` ignores `**/build/**`, so the
+importer was invisible and `zipDirectory` surfaced as an unused export rather than as a broken
+import. Typecheck did not catch it either, since the build script is outside the checked
+project. Fixed, and worth remembering that `build/` is a blind spot for both tools.
 
 ### Missing tests
 

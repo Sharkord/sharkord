@@ -63,11 +63,6 @@ export const isOwnUserSelector = createCachedSelector(
   (ownUserId, userId) => ownUserId === userId
 )((_, userId: number) => userId);
 
-export const ownPublicUserSelector = createSelector(
-  [ownUserIdSelector, usersSelector],
-  (ownUserId, users) => users.find((user) => user.id === ownUserId)
-);
-
 export const userStatusSelector = createCachedSelector(
   [userByIdSelector, (_: IRootState, userId: number | null) => userId],
   (user) => user?.status ?? UserStatus.OFFLINE

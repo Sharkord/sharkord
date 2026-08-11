@@ -66,7 +66,6 @@ const getTypingKey = (channelId: number, userId: number) =>
 export const addMessages = (
   channelId: number,
   messages: TJoinedMessage[],
-  opts: { prepend?: boolean } = {},
   isSubscriptionMessage = false
 ) => {
   const rootMessages = messages.filter((m) => !m.parentMessageId);
@@ -76,8 +75,7 @@ export const addMessages = (
     store.dispatch(
       serverSliceActions.addMessages({
         channelId,
-        messages: rootMessages,
-        opts
+        messages: rootMessages
       })
     );
   }
@@ -98,8 +96,7 @@ export const addMessages = (
     store.dispatch(
       serverSliceActions.addThreadMessages({
         parentMessageId,
-        messages: replies,
-        opts
+        messages: replies
       })
     );
   }
@@ -225,14 +222,12 @@ export const deleteMessage = (channelId: number, messageId: number) => {
 
 export const addThreadMessages = (
   parentMessageId: number,
-  messages: TJoinedMessage[],
-  opts: { prepend?: boolean } = {}
+  messages: TJoinedMessage[]
 ) => {
   store.dispatch(
     serverSliceActions.addThreadMessages({
       parentMessageId,
-      messages,
-      opts
+      messages
     })
   );
 };

@@ -109,14 +109,12 @@ const fetchChannelMessagesPage = async (input: {
 };
 
 // reverse (newest-first -> oldest-first) and store messages
-const storeChannelMessages = (
-  channelId: number,
-  rawPage: TJoinedMessage[],
-  opts?: { prepend?: boolean }
-) => {
+// messages are merged chronologically by the reducer regardless of which end a page came
+// from, so there is no ordering option to pass here
+const storeChannelMessages = (channelId: number, rawPage: TJoinedMessage[]) => {
   const page = [...rawPage].reverse();
 
-  addMessages(channelId, page, opts);
+  addMessages(channelId, page);
 };
 
 const usePaginatedMessages = (
@@ -193,9 +191,7 @@ export const useMessages = (channelId: number) => {
         limit: DEFAULT_MESSAGES_LIMIT
       });
 
-      storeChannelMessages(channelId, rawPage, {
-        prepend: cursorToFetch !== null
-      });
+      storeChannelMessages(channelId, rawPage);
 
       return { nextCursor };
     },
@@ -230,7 +226,7 @@ export const useMessages = (channelId: number) => {
         targetMessageId: messageId
       });
 
-      storeChannelMessages(channelId, rawPage, { prepend: true });
+      storeChannelMessages(channelId, rawPage);
 
       const element = await waitForMessageElement(messageId);
 

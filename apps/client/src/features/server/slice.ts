@@ -194,7 +194,6 @@ export const serverSlice = createSlice({
       action: PayloadAction<{
         channelId: number;
         messages: TJoinedMessage[];
-        opts?: { prepend?: boolean };
       }>
     ) => {
       const { channelId, messages } = action.payload;
@@ -284,7 +283,6 @@ export const serverSlice = createSlice({
       action: PayloadAction<{
         parentMessageId: number;
         messages: TJoinedMessage[];
-        opts?: { prepend?: boolean };
       }>
     ) => {
       const { parentMessageId, messages } = action.payload;

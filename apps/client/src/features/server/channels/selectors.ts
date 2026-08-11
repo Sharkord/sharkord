@@ -36,9 +36,22 @@ export const channelReadStateByIdSelector = (
   channelId: number
 ) => state.server.readStatesMap[channelId] ?? 0;
 
+export const channelsMapSelector = createSelector(
+  channelsSelector,
+  (channels) => {
+    const map: Record<number, TChannel> = {};
+
+    channels.forEach((channel) => {
+      map[channel.id] = channel;
+    });
+
+    return map;
+  }
+);
+
 export const channelByIdSelector = createCachedSelector(
-  [channelsSelector, (_: IRootState, channelId: number) => channelId],
-  (channels, channelId) => channels.find((channel) => channel.id === channelId)
+  [channelsMapSelector, (_: IRootState, channelId: number) => channelId],
+  (channelsMap, channelId) => channelsMap[channelId]
 )((_, channelId: number) => channelId);
 
 export const channelsByCategoryIdSelector = createCachedSelector(
@@ -92,19 +105,6 @@ export const channelPermissionsByIdSelector = (
   state: IRootState,
   channelId: number
 ) => state.server.channelPermissions[channelId] || DEFAULT_OBJECT;
-
-export const channelsMapSelector = createSelector(
-  channelsSelector,
-  (channels) => {
-    const map: Record<number, TChannel> = {};
-
-    channels.forEach((channel) => {
-      map[channel.id] = channel;
-    });
-
-    return map;
-  }
-);
 
 export const directMessagesUnreadCountSelector = createSelector(
   [channelsSelector, channelsReadStatesSelector],
