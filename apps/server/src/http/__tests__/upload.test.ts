@@ -2,6 +2,7 @@ import { UploadHeaders, type TTempFile } from '@sharkord/shared';
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
+import net from 'net';
 import path from 'path';
 import { login, uploadFile } from '../../__tests__/helpers';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
@@ -307,6 +308,73 @@ describe('/upload', () => {
     expect(data.extension).toBe('.png');
     expect(data.size).toBe(8);
     expect(await fs.exists(data.path)).toBe(true);
+  });
+
+  test('should refuse a body longer than the declared content-length', async () => {
+    // fetch computes content-length from the body, so lying about
+    // it needs a raw socket. the corrected finding claims the write stream cannot be fed past
+    // the declared length: the parser frames the body at 5 bytes and answers the trailing
+    // bytes as a malformed follow-on request rather than appending them to the upload
+    const { port } = new URL(testsBaseUrl);
+
+    const raw = await new Promise<string>((resolve, reject) => {
+      const socket = net.connect(Number(port), 'localhost');
+      let response = '';
+
+      socket.on('data', (chunk) => {
+        response += chunk.toString();
+      });
+      socket.on('error', reject);
+      socket.on('close', () => resolve(response));
+
+      socket.write(
+        [
+          'POST /upload HTTP/1.1',
+          'Host: localhost',
+          'Connection: close',
+          'Content-Type: application/octet-stream',
+          'Content-Length: 5',
+          `${UploadHeaders.ORIGINAL_NAME}: overflow.txt`,
+          `${UploadHeaders.TOKEN}: ${token}`,
+          '',
+          'hello, and then a lot more bytes that were never declared'
+        ].join('\r\n')
+      );
+    });
+
+    expect(raw).toContain('400 Bad Request');
+  });
+
+  test('should reject a non-numeric content-length', async () => {
+    // NaN is not greater than storageUploadMaxFileSize, so a garbage header used to pass the
+    // size check and land in the file row as the recorded size
+    const { port } = new URL(testsBaseUrl);
+
+    const raw = await new Promise<string>((resolve, reject) => {
+      const socket = net.connect(Number(port), 'localhost');
+      let response = '';
+
+      socket.on('data', (chunk) => {
+        response += chunk.toString();
+      });
+      socket.on('error', reject);
+      socket.on('close', () => resolve(response));
+
+      socket.write(
+        [
+          'POST /upload HTTP/1.1',
+          'Host: localhost',
+          'Connection: close',
+          'Content-Length: not-a-number',
+          `${UploadHeaders.ORIGINAL_NAME}: bogus.txt`,
+          `${UploadHeaders.TOKEN}: ${token}`,
+          '',
+          ''
+        ].join('\r\n')
+      );
+    });
+
+    expect(raw).not.toContain('200 OK');
   });
 
   test('should reject filenames with path traversal (../)', async () => {

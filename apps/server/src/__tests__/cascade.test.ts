@@ -863,4 +863,46 @@ describe('database cascades', async () => {
 
     expect(dmsAfter.length).toBe(0);
   });
+
+  test('should remove message_files rows when the file is deleted', async () => {
+    const [file] = await tdb
+      .insert(files)
+      .values({
+        name: 'cascade-file.bin',
+        originalName: 'cascade-file.bin',
+        md5: 'cascade-md5',
+        userId: 1,
+        size: 1,
+        mimeType: 'application/octet-stream',
+        extension: '.bin',
+        createdAt: Date.now()
+      })
+      .returning();
+
+    await tdb.insert(messageFiles).values({
+      messageId: 1,
+      fileId: file!.id,
+      createdAt: Date.now()
+    });
+
+    expect(
+      (
+        await tdb
+          .select()
+          .from(messageFiles)
+          .where(eq(messageFiles.fileId, file!.id))
+      ).length
+    ).toBe(1);
+
+    await tdb.delete(files).where(eq(files.id, file!.id));
+
+    expect(
+      (
+        await tdb
+          .select()
+          .from(messageFiles)
+          .where(eq(messageFiles.fileId, file!.id))
+      ).length
+    ).toBe(0);
+  });
 });

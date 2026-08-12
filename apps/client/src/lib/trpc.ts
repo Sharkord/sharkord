@@ -5,7 +5,6 @@ import {
   cancelReconnect,
   reconnectToServer,
   resetServerState,
-  setConnected,
   setDisconnectInfo
 } from '@/features/server/actions';
 import { SoundType } from '@/features/server/types';
@@ -68,7 +67,6 @@ const initializeTRPC = (host: string) => {
       }
 
       closeClient();
-      setConnected(false);
       reconnectToServer(info);
     },
     connectionParams: async (): Promise<TConnectionParams> => {

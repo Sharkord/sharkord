@@ -67,8 +67,7 @@ const Connect = memo(() => {
         body: JSON.stringify({
           identity: values.identity,
           password: values.password,
-          invite: inviteCode,
-          autoLogin: values.autoLogin || undefined
+          invite: inviteCode
         })
       });
 

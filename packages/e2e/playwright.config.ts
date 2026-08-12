@@ -7,7 +7,6 @@ const CLIENT_PORT = 5173;
 export default defineConfig({
   testDir: './tests',
   testMatch: '**/*.pw.ts',
-  globalSetup: './tests/setup/global.setup.ts',
   globalTeardown: './tests/setup/global.teardown.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -38,8 +37,7 @@ export default defineConfig({
       stdout: 'ignore',
       stderr: 'ignore',
       env: {
-        SHARKORD_DATA_PATH: e2eDataPath,
-        IS_E2E: 'true'
+        SHARKORD_DATA_PATH: e2eDataPath
       }
     },
     {

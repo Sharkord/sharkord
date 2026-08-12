@@ -134,7 +134,7 @@ const sendMessage = async (page: Page, content: string) => {
   await expect(composeEditor).toContainText(content);
   await composeEditor.press('Enter');
   await expect(composeEditor).not.toContainText(content);
-  await sleep(500);
+  await expect(getMessageItemsByText(page, content)).toHaveCount(1);
 };
 
 const getScrollHeight = async (container: Locator) =>
@@ -388,5 +388,58 @@ test.describe.skip('Infinite Scroll', () => {
     } finally {
       await closeContextSafe(userBContext);
     }
+  });
+});
+
+// if this ever fails, skip the test
+test.describe('Channel message retention', () => {
+  test('should trim a channel back to the newest page when it is left', async ({
+    page
+  }) => {
+    await loginAs(page, 'testowner', 'password123');
+
+    await openInfiniteScrollChannel(page);
+
+    const messages = page.getByTestId(TestId.MESSAGE_ITEM);
+    const messagesContainer = page.locator('[data-messages-container]');
+
+    await expect(messages.first()).toBeVisible();
+
+    const oldestBefore = await expect
+      .poll(async () => {
+        await scrollToTop(messagesContainer);
+
+        const numbers = await getMessageNumbers(messages.allTextContents());
+
+        return numbers.length > 0 ? Math.min(...numbers) : 1001;
+      })
+      .toBeLessThan(900)
+      .then(async () =>
+        Math.min(...(await getMessageNumbers(messages.allTextContents())))
+      );
+
+    await page
+      .getByTestId(TestId.CHANNEL_ITEM)
+      .filter({ hasText: 'General' })
+      .first()
+      .click({ force: true });
+
+    await expect(page.locator('[data-messages-container]')).toBeVisible();
+
+    await openInfiniteScrollChannel(page);
+    await expect(messages.first()).toBeVisible();
+
+    await expect
+      .poll(async () => {
+        const numbers = await getMessageNumbers(messages.allTextContents());
+
+        return numbers.length > 0 ? Math.min(...numbers) : null;
+      })
+      .toBeGreaterThan(oldestBefore);
+
+    const afterReturn = await getMessageNumbers(messages.allTextContents());
+
+    expect(afterReturn).toEqual([...afterReturn].sort((a, b) => a - b));
+    expect(Math.max(...afterReturn)).toBe(1000);
   });
 });

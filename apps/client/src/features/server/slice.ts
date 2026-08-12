@@ -20,6 +20,7 @@ import type {
   TVoiceMap,
   TVoiceUserState
 } from '@sharkord/shared';
+import { DEFAULT_MESSAGES_LIMIT } from '@sharkord/shared';
 import { mergeMessagesChronologically } from './helpers';
 import type {
   TDisconnectInfo,
@@ -330,6 +331,16 @@ export const serverSlice = createSlice({
         (m) => m.id !== action.payload.messageId
       );
     },
+    trimChannelMessages: (state, action: PayloadAction<number>) => {
+      const messages = state.messagesMap[action.payload];
+
+      if (!messages || messages.length <= DEFAULT_MESSAGES_LIMIT) return;
+
+      state.messagesMap[action.payload] = messages.slice(
+        -DEFAULT_MESSAGES_LIMIT
+      );
+    },
+
     clearThreadMessages: (state, action: PayloadAction<number>) => {
       delete state.threadMessagesMap[action.payload];
     },

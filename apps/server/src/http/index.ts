@@ -99,6 +99,8 @@ const createHttpServer = async (port: number = config.server.port) => {
         applyCorsHeaders(req, res);
 
         res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
         const info = getWsInfo(undefined, req);
         const url = getRequestUrl(req);

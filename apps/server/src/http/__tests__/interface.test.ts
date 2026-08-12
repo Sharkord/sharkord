@@ -378,4 +378,23 @@ describe('/interface', () => {
     expect(response.status).toBe(403);
     expect(response.headers.get('Cache-Control')).toBe('no-store');
   });
+
+  test('should send the csp report-only and never the enforcing header', async () => {
+    const response = await fetch(`${testsBaseUrl}/`);
+    const policy = response.headers.get('Content-Security-Policy-Report-Only');
+
+    expect(response.headers.get('Content-Security-Policy')).toBeNull();
+    expect(policy).toContain("default-src 'self'");
+    expect(policy).toContain("script-src 'self' blob:");
+    expect(policy).toContain('https://raw.githubusercontent.com');
+  });
+
+  test('should send the framing and referrer headers on every response', async () => {
+    const response = await fetch(`${testsBaseUrl}/non-existent-file.html`);
+
+    expect(response.headers.get('X-Frame-Options')).toBe('DENY');
+    expect(response.headers.get('Referrer-Policy')).toBe(
+      'strict-origin-when-cross-origin'
+    );
+  });
 });

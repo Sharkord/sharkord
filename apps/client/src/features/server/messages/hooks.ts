@@ -7,7 +7,12 @@ import {
 } from '@sharkord/shared';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { addMessages, addThreadMessages, clearThreadMessages } from './actions';
+import {
+  addMessages,
+  addThreadMessages,
+  clearThreadMessages,
+  trimChannelMessages
+} from './actions';
 import {
   findMessageElement,
   highlightMessageElement,
@@ -207,6 +212,8 @@ export const useMessages = (channelId: number) => {
 
     inited.current = true;
   }, [paginated]);
+
+  useEffect(() => () => trimChannelMessages(channelId), [channelId]);
 
   const scrollToMessage = useCallback(
     async (messageId: number, highlightTime = 4000) => {

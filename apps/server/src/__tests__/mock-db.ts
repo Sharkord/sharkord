@@ -1,7 +1,7 @@
 import { Database } from 'bun:sqlite';
 import { mock } from 'bun:test';
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import { DRIZZLE_PATH } from '../helpers/paths';
 import { seedTestDb } from './seed';
 

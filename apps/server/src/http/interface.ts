@@ -4,6 +4,21 @@ import { INTERFACE_PATH, isPathInside } from '../helpers/paths';
 import { IS_DEVELOPMENT, IS_TEST } from '../utils/env';
 import { sendFile, sendJsonError } from './helpers';
 
+// report-only: the browser logs violations and enforces nothing
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self' blob:",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' blob:",
+  "font-src 'self' data:",
+  "connect-src 'self' ws: wss: https://raw.githubusercontent.com",
+  "worker-src 'self' blob:",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "object-src 'none'"
+].join('; ');
+
 const interfaceRouteHandler = async (
   req: http.IncomingMessage,
   res: http.ServerResponse,
@@ -15,6 +30,8 @@ const interfaceRouteHandler = async (
 
     return res;
   }
+
+  res.setHeader('Content-Security-Policy-Report-Only', CONTENT_SECURITY_POLICY);
 
   let subPath = decodeURIComponent(url.pathname);
 

@@ -47,6 +47,15 @@ You should also check for missing test cases, especially for edge cases and erro
 
 Each finding: `file:line` — what is wrong — why it matters — suggested fix.
 
+**Line counts are not a finding in this audit.** Anything whose basis is "this file is N
+lines" is dismissed, including where it was previously deferred rather than dismissed. The
+underlying rule in AGENTS.md was corrected during chunk 10: the numbers are a smell worth a
+second look, not a cap, and the trigger to split is a file that has become hard to follow or
+has grown a second responsibility. Where a size-based finding also named a *separate* problem
+(a callback whose dependency list re-creates half a provider on every device change, a hook
+that owns three independent features), that part survives on its own merits and is recorded
+where it applies. The size framing does not.
+
 ## Flagged for review
 
 Things that came up while fixing and need a decision, a second pair of eyes, or simply
@@ -277,26 +286,23 @@ selectors, which have no memoization to fall back on, and is an allocation rathe
 re-render inside a memoized result function. The opening paragraph now says "without
 memoizing" instead of implying every derived selector re-renders on every dispatch.
 
-### T4 — 9.4, decompose the voice provider
+### T4 — [REFRAMED] 9.4 and 9.15, the voice provider
 
-`components/voice-provider/index.tsx` is 1311 lines holding ~30 hooks, four
-stream-acquisition routines, quality-layer bookkeeping, the refs map, the controls bridge
-and the context assembly. AGENTS.md caps components at 200 lines.
+The original finding was that `components/voice-provider/index.tsx` is too long. Under the
+audit-wide rule, that alone is not a finding and the size framing is dropped.
 
-Deferred deliberately during the audit: the three HIGH findings attributed to its size (9.1,
-9.2, 9.3) are fixed without restructuring it, so what remains is maintainability, and this is
-a multi-file refactor in a codebase with no tests.
+**What survives on its own merits is 9.15**, which is not about length: `startMicStream` is a
+`useCallback` with **11 dependencies**, so any device-setting change re-creates it, which
+re-creates `init` (which depends on it), which re-creates `contextValue`, which re-renders
+every consumer of the voice context. That is a measurable cost with a specific cause, and
+extracting it into `hooks/use-mic-stream.ts` is the fix. The `hooks/` folder beside the file
+already holds `use-transports`, `use-voice-events` and `use-transport-stats`, so the
+destination and the pattern both exist.
 
-Proposed decomposition, in the order worth doing:
-
-1. `hooks/use-mic-stream.ts` — `startMicStream` is ~200 lines with 11 dependencies and is
-   the single biggest piece (this is 9.15).
-2. `hooks/use-webcam-stream.ts` and `hooks/use-screen-share-stream.ts` — the same shape.
-3. the quality-layer bookkeeping and the refs map, which are independent of the streams.
-
-The `hooks/` folder beside the file already holds `use-transports`, `use-voice-events`,
-`use-transport-stats` and others, so the destination and the pattern both exist. Worth doing
-after the client gets any test coverage at all, not before.
+Still deferred, for the reason that has nothing to do with size: the three HIGH findings
+attributed to this file (9.1, 9.2, 9.3) were all lifecycle bugs, they are fixed without
+restructuring, and the client has no test setup, so a refactor here is verified by nothing.
+Worth doing after the client gets any test coverage at all.
 
 ### F8 — 11.5, plugin UI runs in every user's browser without consent
 
@@ -317,20 +323,20 @@ Options, none taken:
 
 The two mechanical problems alongside it (serial loading, console-only failures) are fixed.
 
-### T5 — 11.6, four oversized files in screens and chrome
+### T5 — [DISMISSED] 11.6, four oversized files in screens and chrome
 
-Same shape as T4, deferred for the same reason: a large refactor in a codebase with no tests.
+Dismissed under the audit-wide rule that line counts are not a finding. Every item here was
+listed on size alone:
 
-- `server-screens/user-settings/devices/index.tsx`, **684 lines**, with
-  `hooks/use-microphone-test.ts` at 612 beside it. The microphone, webcam and playback
-  sections are independent and the folder already has a `hooks/`, so this is the one to
-  split first.
-- `server-screens/server-settings/storage/index.tsx`, 437 lines, splits along its control
-  groups.
-- `left-sidebar/channels.tsx`, 409 lines, already contains four memoized subcomponents that
-  could be files.
+- `server-screens/user-settings/devices/index.tsx` with `hooks/use-microphone-test.ts`
+  beside it,
+- `server-screens/server-settings/storage/index.tsx`,
+- `left-sidebar/channels.tsx`.
 
-AGENTS.md allows 400 for screens and 200 for components.
+One observation is worth keeping even though the finding is not: `devices/index.tsx` covers
+microphone, webcam and playback, which are three independent features rather than one long
+one. If it ever becomes hard to work in, that is the seam, and the folder already has a
+`hooks/` to move into. That is a reason to split when someone is next in there, not a task.
 
 ### T6 — 12.1, the three Firefox workarounds should now be redundant
 
@@ -342,6 +348,14 @@ both cases, the reasons for all three are gone.
 They were kept anyway: they guard a refresh path with no automated coverage, and getting it
 wrong means users silently lose auto-login. Removing them is a small, self-contained change
 that wants a deliberate Firefox pass (M43 covers the current behaviour), not a drive-by.
+
+**Two more items joined this entry after 12.11.** The reconnect surface keeps ServerView mounted
+with `trpc === null` for up to 23 seconds, and six `getTRPCClient()` calls sit directly inside
+`useEffect` bodies, so mounting search, a DM or the pinned popover mid-reconnect can still throw
+into the error boundary (M72). The same six subscribe with `[]` deps and are therefore bound to
+a client that `closeClient()` discarded, so their realtime events are silently dead after a
+successful reconnect. Neither should be guessed at: the whole 12.1 reconnect path has no
+automated coverage, and the e2e suite can now actually be run, so this is the place to buy some.
 
 ### T7 — the disconnect close codes are outside RFC 6455
 
@@ -358,11 +372,16 @@ recognise the new codes and would treat a kick or ban as a dropped connection, r
 ~30s before showing the disconnected screen. Not harmful, but it is a real transition cost,
 and doing it at the same time as any other close-code change would be cheaper.
 
-### T8 — 13.6, the e2e suite covers login and pagination and nothing else
+### T8 — 13.6, the e2e suite covers login and nothing else
 
-17 tests across 4 files, of which one is an exploration harness. Real browser coverage is
-authentication plus message pagination; nothing covers sending a message, voice, permissions,
-server settings, plugins or DMs. Per chunk 8 this is also the *only* automated coverage the
+**Corrected while fixing 8.2: it is thinner than this entry said.** The whole
+`Infinite Scroll` describe is `test.describe.skip('...flaky af...')`, so message pagination has
+**no live coverage at all** — the 7 "skipped" in every run are those tests. What actually runs is
+connect, auto-login, the exploration harness, and (since 8.2) one channel-retention test. So
+"authentication plus message pagination" was really authentication alone, and un-skipping that
+describe belongs in this entry alongside writing new specs.
+
+Nothing covers sending a message, voice, permissions, server settings, plugins or DMs. Per chunk 8 this is also the *only* automated coverage the
 client has at all, which makes it the cheapest place to buy confidence in the client changes
 from chunks 8 to 12, none of which are verified by anything but `tsc`.
 
@@ -420,15 +439,30 @@ Scale: `@sharkord/shared` is imported by 172 server files and 166 client files. 
 renames fail loudly as build errors rather than silently, so the file count overstates the
 risk, but 14.1 is a real behaviour change and deserves its own verification.
 
-Already closed by earlier chunks, so skip them when working through chunk 14:
+**14.1 is the flagged item.** It is the only thing left in pass 1 and the reason pass 1 exists:
+everything else in chunk 14 is either done or belongs to pass 2. Nothing further should be
+attempted on `tables.ts` until it is decided, since its problem is where the types come from
+rather than what it holds.
 
-- **14.2** (`export const A = 123;` as the first line of the public surface) was removed in 12.5.
-- **14.5**'s `zPluginPackageJson`/`TPluginPackageJson` alias was removed in 12.3. The rest of
-  14.5 stands: `UploadHeaders` still sits in `statics/permissions.ts:35`, which is what caused
-  the misreading corrected in 1.1.
-- **14.6** is the same gap as 12.9 and neither is fixed: `zPluginManifest` validates every
-  plugin manifest at install and load time and has no tests. Worth doing independently of the
-  restructure, since it needs no layout decision.
+Already closed, so skip them when working through chunk 14:
+
+- **14.2** (`export const A = 123;` as the first line of the public surface) removed in 12.5.
+- **14.4** fixed directly: the generic helpers moved to `type-utils.ts`, giving the three type
+  modules a rule. What remains of it (splitting `tables.ts`) is bound up with 14.1.
+- **14.5** fixed directly: `UploadHeaders` moved to `statics/upload.ts`, and the
+  `zPluginPackageJson` alias went with 12.3.
+- **14.6** closed with 12.9: `plugins/index.ts`'s three runtime schemas now have 21 tests, and
+  writing them found a scheme-validation hole that is fixed.
+
+**14.3 is worth more than the knip argument it was written on.** Since T9 was drafted, the
+`export *` barrel caused an actual outage: during 12.10, `plugins/index.ts` re-exporting
+`./marketplace` meant a `marketplace.ts` importing back from the barrel formed a cycle and hit
+the temporal dead zone at module load, taking the server suite to **0 pass, 46 fail** with
+`Cannot access 'zPluginId' before initialization`. Fixed by extracting `plugins/primitives.ts`,
+but the general hazard stands: `packages/shared` is imported by 172 server files and 166 client
+files, so one cycle inside it can stop everything, and a barrel makes cycles easy to create and
+invisible until something evaluates. That is a stronger case for explicit re-exports than dead
+export analysis.
 
 ## Needs manual testing
 
@@ -486,6 +520,8 @@ Format: what to do, then what should happen.
 | M43 | 12.1 | While connected, get kicked and then banned from another session. Separately, hit Disconnect in the UI, and refresh the page (Firefox especially) | Kick and ban still end the session immediately and show their own screens, with no reconnect attempts. Disconnect still logs out. A refresh still auto-logs-in, meaning the token was not cleared |
 | M49 | 1.17 | Log in on two browsers, then change your password on one | The other is disconnected immediately and cannot reconnect with its old session. The one you changed it on stays connected. Log in again with the new password and confirm it works right away |
 | M50 | 1.15 | On a server with real history, register a new account and time the login | It returns promptly, and the new user's channels all show zero unread. Post a message afterwards and confirm it shows as unread for them |
+| M69 | 12.10 | Open the plugin marketplace, browse the list, open a plugin's detail view, and install one | All five plugins appear with logos and screenshots, homepage links work, and installing still works. The registry is validated now, so a plugin silently missing from the list means its entry failed the schema |
+| M68 | 11.8 | Log in with "Login automatically" both on and off, close the tab, and reopen it | Auto-login happens only when the switch was on. The removed field was never read by the server, so nothing should change |
 | M66 | 9.12 | Open devtools and run `sharkordDebug.printVoiceStats()` while in a call, and `sharkordDebug.openSoundsModal()`. Then confirm `useToken('...')` still works unchanged | The two debug helpers now live under `sharkordDebug`; the ownership command is untouched, which matters because it is documented online |
 | M67 | 9.14 | Join a call with the noise gate on, change its threshold in settings, and watch the console | The gate responds to the change and the console stays quiet. A warning from `[noise-gate]` or `[audio-meter]` means the message contract between the .ts and .js sides has drifted |
 | M64 | 8.12 | Scroll far up in a busy channel to load several pages, then jump to an old message from search | Messages stay in the right order in both cases. This removed an ordering option that two call sites were passing and that the reducer had always ignored |
@@ -507,26 +543,30 @@ Format: what to do, then what should happen.
 | M46 | 12.7 | Attach five files to one message | They upload concurrently rather than one after another, every progress bar advances, and all five land on the message. Make one fail (oversized) and confirm the other four still attach |
 | M47 | 12.2 | Log in, log out, and return to the connect screen | The identity field is prefilled with the last identity used. The password field is always empty |
 | M48 | 12.3 | Exercise the app broadly: emoji picker, typing indicators, drafts, theme switching, voice quality menus, plugin commands and components | Nothing is missing. This removed 40 exports and 10 slice reducers, so a missed consumer would show up as a blank or broken control rather than a build error |
+| M70 | 1.13 | Against a **production build** (not `bun dev`, which redirects this route to Vite), open devtools and use the app broadly: join voice with each noise suppression mode, install a plugin and use its UI, browse the marketplace, load avatars and uploaded images | Everything works, because the policy is report-only. Collect every `Content Security Policy` violation the console reports and widen the policy in `http/interface.ts` to match. **Only when the console is clean does the header get renamed** from `Content-Security-Policy-Report-Only` to `Content-Security-Policy`; the test asserting the enforcing header is absent has to be updated in the same change |
+| M71 | 12.11 | Enable "Login automatically", log in, then invalidate the session from another browser (change your password, or have an admin kick you). Reload the tab | The connect screen appears with the identity prefilled, not the crash screen and not a 23-second "Reconnecting" banner. The auto-login switch is off and the saved token is gone |
+| M72 | 12.11 | While connected, drop the network for ~10s and, **during** the reconnecting banner, open the search dialog, a DM, and the pinned-messages popover | **Known gap, not fixed:** these mount effects call `getTRPCClient()` while the client is discarded and may still crash into the error boundary. Note which of the three do it. After the reconnect completes, also check that DM lists and voice events still update, since those subscriptions may be bound to the old client |
+| M73 | 8.2 | Scroll far up in a busy channel to load several pages, switch to another channel, then come back. Repeat with a DM, and with the voice chat sidebar's text panel open on a different channel | The channel you return to renders immediately at the bottom with no loading flash, scrolling up still loads older messages, and nothing appears out of order or duplicated. Memory does not keep climbing across a long session of channel hopping |
 | M44 | 12.1 | On a server with a password and `onlyAskForPasswordOnFirstJoin` **off**, force a reconnect | The password dialog reappears over the still-visible app; entering it restores the session, cancelling logs out. The password is deliberately not stored, so a re-prompt is expected here |
 
 ## Progress
 
 | #   | Chunk                                                              | Scope                                                                                        | Status  |
 | --- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | ------- |
-| 1   | [Edge & auth](#1-edge--auth)                                       | `http/`, `utils/trpc.ts`, `utils/rate-limiters/`, `config.ts`                                | fixed (CSP open) |
-| 2   | [Routers: messages, dms, files](#2-routers-messages-dms-files)     | `routers/messages/`, `routers/dms/`, `routers/files/`                                        | mostly fixed |
+| 1   | [Edge & auth](#1-edge--auth)                                       | `http/`, `utils/trpc.ts`, `utils/rate-limiters/`, `config.ts`                                | fixed |
+| 2   | [Routers: messages, dms, files](#2-routers-messages-dms-files)     | `routers/messages/`, `routers/dms/`, `routers/files/`                                        | fixed (2.4 open) |
 | 3   | [Routers: users & access](#3-routers-users--access)                | `routers/users/`, `roles/`, `invites/`, `categories/`, `channels/`                           | fixed |
-| 4   | [Routers: voice & plugins](#4-routers-voice--plugins)              | `routers/voice/`, `plugins/`, `emojis/`, `others/`, `runtimes/`                              | audited |
-| 5   | [DB layer](#5-db-layer)                                            | `db/schema.ts`, `db/queries/`, `db/mutations/`, `db/publishers.ts`, `db/migrations/`         | audited |
+| 4   | [Routers: voice & plugins](#4-routers-voice--plugins)              | `routers/voice/`, `plugins/`, `emojis/`, `others/`, `runtimes/`                              | fixed (4.7 in T2) |
+| 5   | [DB layer](#5-db-layer)                                            | `db/schema.ts`, `db/queries/`, `db/mutations/`, `db/publishers.ts`, `db/migrations/`         | fixed |
 | 6   | [Plugin subsystem](#6-plugin-subsystem)                            | `src/plugins/`, `packages/plugin-sdk`                                                        | audited |
 | 7   | [Server leftovers](#7-server-leftovers)                            | `helpers/`, remaining `utils/`, `queues/`, `crons/`, `index.ts`, `logger.ts`                 | fixed |
 | 8   | [Client state](#8-client-state)                                    | `client/src/features/`                                                                       | fixed |
 | 9   | [Client voice](#9-client-voice)                                    | `voice-provider/`, `devices-provider/`, `audio-worklets/`                                    | fixed (9.4, 9.15 in T4) |
-| 10  | [Client channel view & editor](#10-client-channel-view--editor)    | `channel-view/`, `tiptap-input/`, `message-compose/`, `thread-sidebar/`                      | audited |
-| 11  | [Client screens & chrome](#11-client-screens--chrome)              | `server-screens/`, `dialogs/`, `left-sidebar/`, `top-bar/`, `screens/`, remaining components | audited |
-| 12  | [Shared & UI packages](#12-shared--ui-packages)                    | `packages/shared`, `packages/ui`, `client/hooks/`, `client/helpers/`, `client/lib/`          | mostly fixed |
-| 13  | [Test suite](#13-test-suite)                                       | `server/src/__tests__/`, all `__tests__/`, `packages/e2e`                                    | mostly fixed |
-| 14  | [Shared package reorganization](#14-shared-package-reorganization) | `packages/shared` — restructure, not just audit                                              | deferred to T9 |
+| 10  | [Client channel view & editor](#10-client-channel-view--editor)    | `channel-view/`, `tiptap-input/`, `message-compose/`, `thread-sidebar/`                      | fixed |
+| 11  | [Client screens & chrome](#11-client-screens--chrome)              | `server-screens/`, `dialogs/`, `left-sidebar/`, `top-bar/`, `screens/`, remaining components | fixed (F8 open) |
+| 12  | [Shared & UI packages](#12-shared--ui-packages)                    | `packages/shared`, `packages/ui`, `client/hooks/`, `client/helpers/`, `client/lib/`          | fixed |
+| 13  | [Test suite](#13-test-suite)                                       | `server/src/__tests__/`, all `__tests__/`, `packages/e2e`                                    | fixed (F5 open) |
+| 14  | [Shared package reorganization](#14-shared-package-reorganization) | `packages/shared` — restructure, not just audit                                              | 14.1 + 14.3 in T9 |
 
 Status values: `pending` → `in progress` → `audited` → `fixed`.
 
@@ -535,13 +575,22 @@ was corrected to LOW. 1.15 was fixed against the finding's advice, inline with a
 than moved to a queue, and 1.17 with a token version rather than a timestamp, both for reasons
 recorded in place. 1.16 needed no independent fix but turned up `/login` borrowing another
 route's rate limiter. The LOW batch 1.19 through 1.25 is done, three of them with behaviour changes worth knowing
-about (stricter SSRF blocking, no version in `/info`, user-keyed tRPC limits). **Still open: only the CSP half of 1.13**, which needs a
-real browser. Every finding and every missing test in this chunk is otherwise closed.
+about (stricter SSRF blocking, no version in `/info`, user-keyed tRPC limits). 1.13's CSP half
+is now closed as well, shipped **report-only** so the browser reports what to widen instead of
+breaking plugins or voice on a guess (M70 flips it to enforcing). 1.1's defence-in-depth half is
+closed too, with the size now read from `fs.stat` and the two raw-socket tests the
+missing-tests section had claimed were already there. **Nothing is left open in this chunk.**
 Chunk 13 is **mostly fixed**: the MED batch is done (13.2, 13.3, 13.4, 13.6 partly, 13.7),
 13.5 needed nothing because 2.6's fix already added its two cases, and 13.1 was dismissed as
 intended along with 5.1. 13.6's coverage half is deferred to T8, and fixing it closed LOW 13.9
-on the way. 13.2 and 13.3 were both verified against the broken behaviour, not just asserted
-green. Still open: LOW 13.8, 13.10, 13.11, and F5, which was parked here and is untouched.
+on the way. 13.11 turned out to be correct that it was not a finding, but the guard it relies
+on was covering half the seeded tables, which is fixed. 13.2, 13.3 and 13.11 were all verified
+against the broken behaviour rather than asserted green. 13.10 is closed with 5.13, by deleting
+the hook rather than filling it in, since playwright starts `webServer` before `globalSetup`
+and the job it was wanted for is one it cannot do. **Running the suite for the first time since
+chunk 12 turned up 12.11**, a crash on failed auto-login that 12.1 introduced. Still open: LOW
+13.8's one real fixed delay, replaced with an assertion on the message itself and verified by
+running the suite. **Still open: only F5**, which was parked here and is untouched.
 Chunk 12 is **mostly fixed**: 12.1 and the whole MED batch (12.2 to 12.7) are done, and 12.8
 was closed with 12.3 since it was a subset of the same knip list. Two came with corrections
 that reversed the suggested fix: 12.1 (a transport reconnect alone leaves the socket
@@ -549,13 +598,16 @@ unauthenticated, so the join is replayed instead) and 12.6 (deleting the filenam
 would have made CJK and Cyrillic uploads throw, so it is percent-encoded instead). 12.2 was
 half decision, restoring the identity writer and deliberately leaving stale values per M38.
 Three of 12.3's five "unused" dependencies were knip false positives and were kept. Nothing is
-verified by execution on the client side, see M42 to M48. 12.1 spun off T6 and T7. Only LOW
-12.9 is open.
-Chunk 11 is **mostly fixed**: 11.1 on the read side, and the MED batch 11.2, 11.3, 11.4
-(scoped by measurement to the two sites that cost anything), 11.5 (two fixes, consent
-flagged as F8) and 11.7. 11.6 is deferred to T5. LOW 11.8 is open.
-Chunk 10 is **mostly fixed**: the MED batch (10.3 to 10.7) is done, on top of 10.1 (fixed
-with 2.2) and 10.2 (corrected to LOW during the audit). LOW 10.8 and 10.9 are open.
+verified by execution on the client side, see M42 to M48. 12.1 spun off T6 and T7, and **12.11**,
+a crash on failed auto-login, which 12.1 introduced and which only surfaced when chunk 13's
+fix made the e2e suite run again. 12.9 and 12.10 are closed; 12.11 is open.
+Chunk 11 is **fixed**: 11.1 on the read side, the MED batch 11.2, 11.3, 11.4 (scoped by
+measurement to the two sites that cost anything), 11.5 (two fixes, consent flagged as F8),
+11.7, and LOW 11.8. 11.6 is dismissed under the audit-wide rule that line counts are not a
+finding, which also dismissed T5 and reframed T4.
+Chunk 10 is **fixed**: the MED batch (10.3 to 10.7) is done, on top of 10.1 (fixed with 2.2)
+and 10.2 (corrected to LOW during the audit). 10.8 is fixed and 10.9 was dismissed by
+decision, which also corrected AGENTS.md's component-size rule from a hard cap to a smell.
 Chunk 9 is **fixed**: HIGH (9.1 to 9.3), MED (9.5 to 9.11) and LOW 9.12 to 9.14 are done,
 three of them with corrections to the finding (9.1 on who consumes the stats, 9.11 on which
 mediasoup event is actually equivalent, 9.12 on the fact that one of the three globals cannot
@@ -564,8 +616,10 @@ Chunk 8 is **fixed**: 8.1 (with a correction that also rewrote the guide's selec
 section), the MED batch 8.2 to 8.10, and the LOW batch 8.11 to 8.14. 8.2 is partly fixed and
 8.4 fixed as documentation, both by decision, and 8.6 left as is. 8.15 was closed with 8.4.
 8.12 turned out to be a live bug rather than dead weight: two call sites were passing an
-ordering option the reducer had never read. Everything here is unverified by tests, since the client has none: the
-selector behaviour was checked by running the real modules against a synthetic store.
+ordering option the reducer had never read. Nearly everything here is unverified by tests, since
+the client has none: the selector behaviour was checked by running the real modules against a
+synthetic store. 8.2's retention half is the exception, and was closed later with an e2e test
+that was checked against the broken behaviour first.
 Chunk 7 is **fixed**: HIGH (7.1 to 7.3), MED (7.4, 7.6, 7.7, 7.9 to 7.11) and the whole LOW
 batch are done. 7.5 was ignored and 7.8 left as is, both by decision. 7.12 was the one with
 consequences beyond tidiness: it exposed that admin user search by identity had never
@@ -574,13 +628,20 @@ Chunk 6 is **mostly fixed**: 6.5, 6.6, 6.8, 6.9, 6.11 to 6.14 are done, and 6.2 
 correction that reversed the finding. 6.1 and 6.4 were dismissed as intended, 6.3 flagged as
 F7, 6.7 and 6.15 put out of scope, and 6.10 was already fixed as 4.11. Nothing is left open
 in this chunk except what was deliberately deferred.
-Chunk 5 is **mostly fixed**: 5.0 and 5.10 were already done in earlier chunks, 5.1 was
+Chunk 5 is **fixed**: 5.0 and 5.10 were already done in earlier chunks, 5.1 was
 dismissed as intended, and the HIGH (5.2 to 5.4) and MED (5.5 to 5.9, 5.11 to 5.14) batches
-are done, 5.13 partly and deliberately. Still open: the LOW batch, 5.15 to 5.20.
+are done. 5.13 was finished properly with 13.10 after the earlier partial fix turned out, on
+measurement, to achieve nothing. The LOW batch is now closed too, and **three of its six needed
+the finding corrected rather than the code**: 5.18's first two items were already fixed or
+never a problem, 5.19's premise was wrong on both halves, and 5.20's "two driver packages" do
+not exist. 5.16 is a permanent no-fix by decision, and 5.15 dropped 17 indexes with the query
+plans checked before and after.
 Chunk 4 is **mostly fixed**: 4.2 through 4.6, 4.9 through 4.15, and the whole LOW batch are
 done. 4.1 was dismissed by decision, 4.7 deferred to T2, 4.5's single-use half is not
-implementable (F6), and 4.22 turned out to be superseded by 4.12's transaction. 4.8's comparison is now constant time. **Still open: only the plaintext
-join-password column**, which needs a migration and a decision about existing servers.
+implementable (F6), and 4.22 turned out to be superseded by 4.12's transaction. 4.8's comparison is now constant time, and its
+plaintext-storage half was closed as won't-fix by decision: `secretToken` lives in the same
+row, so anyone who can read the join password already owns the server. **Nothing is left open
+in this chunk.**
 Chunk 3 is **fixed**: every finding is closed. 3.8 and 3.16 are closed as scope and shape
 decisions rather than code changes, 3.13 and 3.15 turned out to have been completed by fixes
 in other chunks (1.4 and 1.17) and were re-marked after verifying the coverage already
@@ -593,10 +654,11 @@ everything except token revocation, which belongs with 1.17; 3.8 capped `get-use
 left the server-bounded admin lists unpaginated; 3.16 added the missing existence
 validation and left the permission-matrix storage shape alone. **3.14 (kick is cosmetic)
 was not touched** because it needs a product decision, see the flagged list.
-Chunk 14 is a restructuring step, not a review step, and is **deferred in full to T9**: its
-layout needs approval before anything moves, and it splits into severing the
-`shared` to `apps/server` edge (14.1, the only part that changes runtime behaviour) and the
-folder restructure. 14.2 and half of 14.5 were already closed by chunk 12.
+Chunk 14 is a restructuring step, not a review step. **14.2, 14.4, 14.5 and 14.6 are now
+closed**, three of them by chunk 12's work and 14.4/14.5 directly. What remains in T9 is
+**14.1** (the `shared` to `apps/server` edge, the only part that changes runtime behaviour,
+flagged for the end) and **14.3** (the `export *` barrel), plus the folder restructure that
+needs the layout approved first.
 
 ---
 
@@ -634,6 +696,23 @@ What is left is defence in depth, at LOW: nothing verifies that the bytes actual
 equal the declared length before `addTemporaryFile` records it, and there is no byte cap
 on the write itself. Taking the size from `fs.stat(safePath).size` after `finish` costs
 one syscall and removes the assumption entirely.
+
+**[FIXED]** The recorded size now comes from `fs.promises.stat(safePath)` rather than from the
+header, and a mismatch against the declared length deletes the file and answers 400 instead of
+recording it. No byte counter was added: the parser frames the body at the declared length, and
+a request without `content-length` is refused by `zHeaders.parse` before anything is piped, so
+the declared-length check at the top of the route is already the cap.
+
+One thing the fix turned up that the finding did not mention: `z.string().transform(Number)`
+produced **NaN** for a garbage `content-length`, and `NaN > storageUploadMaxFileSize` is false,
+so it slipped past the size gate and would have been written into `files.size`. Now
+`z.coerce.number().int().nonnegative()`.
+
+Two tests, both raw-socket, because `fetch` computes `content-length` from the body and cannot
+lie about it, which is exactly why this was never covered: a body longer than the declared
+length is answered 400 by the parser and leaves no file behind, and a non-numeric
+`content-length` is refused. **This empties chunk 1's missing-tests list for real**, which it
+already claimed to be.
 
 The real problems on this route are 1.4 (banned users can upload) and 1.5 (no rate
 limiter), which stand unchanged.
@@ -815,7 +894,7 @@ old code could evict a just-created live entry while keeping one about to expire
 and (b) at capacity, *every* request ran a full O(maxEntries) sweep, 10,000 iterations per
 request at the default. Batching gives the table headroom so the sweep amortizes.
 
-**1.13 — [PARTLY FIXED] `http/index.ts:94-99` — no security headers, blanket CORS.**
+**1.13 — [FIXED, CSP in report-only pending M70] `http/index.ts:94-99` — no security headers, blanket CORS.**
 `Access-Control-Allow-Origin: *` plus `Access-Control-Allow-Headers: *` on every
 response, including `/public`, and no `X-Content-Type-Options: nosniff` anywhere. Files
 are served from the app's own origin with a `mimeType` derived from the uploaded content
@@ -829,10 +908,22 @@ Fixed: `X-Content-Type-Options: nosniff` is now set on every response, and CORS 
 once an operator lists origins, only a matching `Origin` is echoed back and `Vary: Origin`
 is set so a shared cache cannot serve one origin's response to another. Three tests.
 
-**Still open:** no CSP on the interface route. Deferred deliberately, not forgotten: the
-app loads plugin bundles through dynamic `import()` and creates audio worklets from
-`blob:` URLs, so a policy written without a browser to verify against would break plugins
-or voice. Needs a manual pass in a real browser.
+The CSP half is now closed too, in **report-only** mode by decision. The blocker was never
+writing the policy, it was that an enforcing one written without a browser breaks plugins or
+voice silently: bundles load through dynamic `import()`, audio worklets are built from `blob:`
+URLs, the marketplace registry is fetched client side straight from
+`raw.githubusercontent.com`, and plugin logos live on arbitrary hosts.
+`Content-Security-Policy-Report-Only` is the mechanism for exactly that, so
+`interface.ts` ships the full policy under that header: the browser enforces nothing and logs
+every violation. **M70 is the pass that decides what to widen before flipping the header name
+to `Content-Security-Policy`**, and it has to be run against a production build, since
+`IS_DEVELOPMENT` redirects this route to the Vite dev server.
+
+Two headers that carry no breakage risk for a same-origin SPA went in enforcing, next to
+`nosniff` in `http/index.ts`: `X-Frame-Options: DENY` (the enforced equivalent of the
+`frame-ancestors` in the report-only policy, which is not enforced) and
+`Referrer-Policy: strict-origin-when-cross-origin`. Two tests, one asserting the enforcing CSP
+header is **absent** so a premature flip fails here first.
 
 **1.14 — [FIXED, with 1.18] `http/public.ts:130,142`, `http/interface.ts:39,45`,
 `http/plugin-bundle.ts:79,85` — synchronous filesystem calls on the request path.**
@@ -1074,9 +1165,10 @@ The `get-ws-info.ts` header comment the finding quotes was already gone.
 `http/__tests__` is otherwise thorough (upload path traversal, public signed URLs,
 caching, plugin routes), which makes the gaps specific:
 
-- no test that the bytes written match the declared `content-length` (1.1). The suite
-  passes `file.size.toString()` everywhere, which is always truthful, so the assumption is
-  never exercised.
+- ~~no test that the bytes written match the declared `content-length` (1.1)~~ — **added**, two
+  raw-socket cases in `upload.test.ts`. `fetch` computes `content-length` from the body, which
+  is why this gap survived: lying about it needs a socket. The claim itself held up, an
+  over-declared body is answered 400 by the parser and no file is created.
 - ~~no test for `applyEnvOverrides` producing an invalid config (1.9)~~ — **added**,
   `__tests__/config.test.ts`, 10 cases. `applyEnvOverrides` does no validation by design, so
   what these cover is the pairing with the `zConfig.parse` wrapped around it in `config.ts`:
@@ -1316,7 +1408,7 @@ page boundary means the second one is never returned by any page. Bulk inserts, 
 messages and fast typing all produce same-millisecond rows.
 Fix: composite cursor `(createdAt, id)`, or paginate on `id` since it is monotonic here.
 
-**2.13 — [PARTLY FIXED] the channel-access checks re-queried the same rows three to six
+**2.13 — [FIXED, and the remainder CORRECTED on measurement] the channel-access checks re-queried the same rows three to six
 times per request.** `assertDmChannel` (`db/queries/dms.ts:150`) calls `isDirectMessageChannel`,
 then `assertDmParticipant`, which calls `isDirectMessageChannel` **again**, then
 `isUserDmParticipant`: three queries where two suffice, one of them duplicated outright.
@@ -1332,10 +1424,32 @@ file and its `isDirectMessageChannel` call was the verbatim repeat, so it was fo
 channel was a DM, and `send-message` uses that instead of asking again. Two queries removed
 from every message send; `isDirectMessageChannel` no longer appears in the route at all.
 
-**Still open by decision:** `hasChannelPermission` re-reads the channel, the user and their
-roles on every call, and routes call it two or three times per request with no
-memoization. That is the same underlying problem as 5.4 (three divergent permission
-resolvers) and 7.8, and is better fixed once those are unified than patched here.
+**The rest of this finding is CORRECTED and closed, on measurement.** It claims "a single
+`messages.send` runs the same two queries four or more times". Counted by hooking
+`Database.prototype.prepare` around a real caller, a `messages.send` is 22 statements and
+`getUserById`, `getUserRoles` and `getUserRoleIds` each run **once**. The double resolution the
+finding describes needs `assertChannelAccess` followed by a second `needsChannelPermission`,
+and `send-message.ts` does not call `assertChannelAccess` at all, it calls `assertDmChannel`
+directly. So the claim as written is false on the path it names.
+
+What the measurement did show, on a private-channel `messages.get` (5 statements total):
+
+```
+1x select "is_dm_channel"            from "channels" where id = ?
+1x select "private", "is_dm_channel" from "channels" where id = ?
+1x select "id"                       from "channels" where id = ?
+```
+
+Three reads of the same channel row per request (`assertDmChannel`, then `channelUserCan`,
+then the route's own existence check), plus `getSettings` three times per send. Real, and much
+smaller than described.
+
+Left alone by decision, consistent with 7.8. The finding's own fix, request-scoped
+memoization, has nowhere to live: the tRPC context is built once per **WebSocket connection**,
+so a memo there caches for the socket's lifetime and a role change would not apply until
+reconnect. A genuine per-request scope means a middleware plus threading a memo down through
+`channelUserCan` → `getUserRoleIds` → the channel read, which is plumbing across the
+security-critical path to save three indexed single-row reads.
 
 **2.14 — [FIXED] `send-message.ts:200-206` — the command status update was published before
 it was awaited.** `db.update(...).execute()` is not awaited, and `publishMessage` fires on the
@@ -2170,7 +2284,7 @@ Deferred, see **T2**. Bounding this is a design task spanning both sides, not a 
 change, and every one of the ten lists has a client consumer that assumes it arrives
 complete.
 
-**4.8 — [PARTLY FIXED: logging and compare done, storage open] the server join password is stored and compared in plaintext, and then logged.**
+**4.8 — [FIXED; plaintext storage closed as won't-fix by your decision] the server join password is stored and compared in plaintext, and then logged.**
 `schema.ts:41` stores it as `text('password')` (user passwords are argon2);
 `others/join.ts:57` compares with `input.password === settings.password`, not constant
 time; and `update-settings.ts:94` writes `details: { values: input }` into the activity
@@ -2188,11 +2302,25 @@ different and an identical length, since `safeCompare` returns early on a length
 only reaches `timingSafeEqual` when the lengths match; the existing tests only covered a
 missing password.
 
-**The plaintext column is still open.** `schema.ts:41` stores the join password as
-`text('password')` while user passwords are argon2. Hashing it needs a migration and a
-decision about existing servers, whose current value would have to be either hashed in place
-or invalidated. Worth noting the exposure is narrower than a user password: it is a shared
-secret the operator hands out, not a per-user credential, and it no longer reaches the
+**The plaintext column stays, by your decision.** Two things settled it, and neither is the
+migration cost the finding assumed.
+
+The read path turned out to be already closed: `others/get-settings.ts:11` runs
+`clearFields(settings, ['password', 'secretToken'])`, and 7.12 changed `clearFields` to
+**delete** rather than substitute, so the admin settings UI never receives the value at all
+(`<Input value={settings.password}>` renders empty). Hashing would therefore have broken
+nothing on the read side, which is usually what blocks this change.
+
+What it would buy is the problem. `secretToken` sits in the **same row**, and it is both the
+JWT signing key and the ownership credential (F6). Anyone who can read the database to get the
+join password can already sign tokens and claim ownership, so hashing the join password
+defends against exactly one thing: an operator who reused a password they use elsewhere. Set
+against a permanent plaintext-compare fallback branch in `join.ts` (the only migration path
+that does not leave existing servers open until the operator notices, since a nulled password
+makes `shouldAskServerPassword` return false), that is not worth it.
+
+Also worth keeping in view: this is a shared secret the operator hands to everyone who joins,
+not a per-user credential, it is compared in constant time, and it no longer reaches the
 activity log.
 
 **4.9 — [FIXED, behaviour kept by decision] `voice/move.ts:88-95` — `MOVE_MEMBERS` can pull a user into a channel they cannot
@@ -2671,7 +2799,7 @@ was no point reading the users table to intersect it with itself. For private an
 channels the affected ids go into a `Set` and the online list is filtered against it, so the
 O(n x m) array scan is gone.
 
-**5.10 — `db/mutations/users.ts:23-41` — `fallbackUsersToDefaultRole` queries inside a
+**5.10 — [FIXED in an earlier chunk; `fallbackUsersToDefaultRole` no longer exists] `db/mutations/users.ts:23-41` — `fallbackUsersToDefaultRole` queries inside a
 loop.** One `select` per affected user to check whether they already hold the default
 role, inside a transaction. A single
 `insert … values(all) onConflictDoNothing()` against the `(userId, roleId)` primary key
@@ -2716,20 +2844,50 @@ will not try to drop it on the next generate. `db:check` passes.
 A test inserts a second row with a **different** `serverId`, so it is refused by the new
 index rather than by the pre-existing unique index on `serverId`.
 
-**5.13 — [PARTLY FIXED] `db/index.ts:4` — production code imports the test seed.**
+**5.13 — [FIXED, with 13.10] `db/index.ts:4` — production code imports the test seed.**
 `import { seedTestDb } from '../__tests__/seed'` sits at module scope in the file that
 boots the database, selected at runtime by `IS_E2E`. Test fixtures are compiled into the
 shipped binary, and an environment variable decides whether real data or fixtures are
 written. Move the E2E seeding behind the test harness.
 
-Partly fixed, by decision: the static `import { seedTestDb } from '../__tests__/seed'` is
-replaced by an `await import(...)` inside the `IS_E2E` branch, so a normal boot never loads
-the fixture module. This is honest about what it does **not** do: the specifier is still
-static, so a bundler can follow it and the fixture code can still end up in the binary. The
-audit's literal fix, moving the seeding into a playwright `globalSetup` so `db/index.ts`
-loses the branch entirely, was not done: the e2e suite starts the real server with
-`bun dev` and `IS_E2E=true`, there is no harness hook today, and I cannot run playwright
-here to verify a change to how e2e boots.
+The earlier partial fix (an `await import(...)` inside the `IS_E2E` branch) **did not work**,
+and this was measured rather than assumed. `bun build src/index.ts --target=bun` on the real
+entrypoint, which is what the release build compiles:
+
+```
+BEFORE   TEST_SECRET_TOKEN 4   seedTestDb 4   "Private Voice" 1   "DM Channel" 1
+AFTER    TEST_SECRET_TOKEN 0   seedTestDb 0   "Private Voice" 0   "DM Channel" 0
+```
+
+The specifier was static and the release build is `Bun.build({ compile })`, so the bundler
+followed it and the fixtures were in the shipped binary the whole time. Bundle 5.35 MB → 5.28 MB.
+
+Fixed properly this time, together with 13.10, and verified by running the e2e suite rather
+than by inspection. Three things had to be true and all three now are: `seedDatabase()` already
+no-ops when a settings row exists, playwright browsers are available so the change is testable,
+and `seedTestDb`'s e2e branch no longer reads a global.
+
+- `db/index.ts` has no `IS_E2E` branch at all, just `await seedDatabase()`.
+- `seedTestDb(db, { e2e })` takes the flag as an argument instead of reading `IS_E2E`, so the
+  fixture module no longer imports from `utils/env`.
+- `IS_E2E` is gone from `utils/env.ts` and from the e2e webServer env, since nothing reads it.
+- `packages/e2e/tests/setup/seed-db.ts` creates the data dir, migrates from
+  `apps/server/src/db/migrations` and seeds the fixtures.
+
+**Two things went wrong on the way, both worth recording, because both would have shipped
+silently if this had been "verified" by reading the diff.**
+
+First, `globalSetup` runs under **node**, not bun, so `import { Database } from 'bun:sqlite'`
+failed with `Only URLs with a scheme in: file, data, and node are supported`. Second, and the
+reason the audit's literal fix cannot work as written: **playwright starts `webServer` before
+`globalSetup`**. A hook seeds a database the server has already booted on and
+production-seeded, and the server's open handle keeps serving the old rows, so the suite ran
+against "sharkord Server" instead of "Test Server" and 9 tests failed. Seeding therefore runs
+from the `seed:e2e` package script, chained ahead of playwright in `test:e2e` and its four
+siblings, not from a hook.
+
+E2E result after the change: **9 passed, 1 failed, 7 skipped**. The single failure is
+pre-existing and unrelated, see 12.11.
 
 **5.14 — [FIXED] `db/publishers.ts:165` — `db.select().from(users).all()` to collect ids.**
 Every column of every user, including `password`, `identity` and `banReason`, read into
@@ -2743,7 +2901,7 @@ a `Set` lookup.
 
 ### LOW
 
-**5.15 — roughly a dozen indexes cost writes and serve nothing.** Two categories:
+**5.15 — [FIXED] roughly a dozen indexes cost writes and serve nothing.** Two categories:
 
 - *Leftmost-prefix duplicates*, redundant with a composite index or a primary key already
   covering them: `messages_channel_idx` (covered by `messages_channel_created_idx`),
@@ -2758,7 +2916,37 @@ a `Set` lookup.
 
 Every one of them is maintained on each insert and update to those tables.
 
-**5.16 — `migrations/0005_normalize_user_identities.sql:17` contains the exact bug
+**[FIXED]** All 17 dropped, migration `0024_drop_redundant_indexes.sql`. Each was checked
+against the schema first rather than taken on the finding's word, and two of the claims needed
+their own verification: nothing anywhere filters on `users.banned`, and `invites.uses` is only
+ever used in `lt(invites.uses, invites.maxUses)`, a **column-to-column** comparison that no
+index can serve. `roles.isDefault` is filtered (`eq(isDefault, true)`) but on a table with a
+handful of rows, where a two-value index was never going to be chosen.
+
+The composite-primary-key cases are correct for a reason worth writing down: SQLite backs a
+`PRIMARY KEY (a, b)` on a rowid table with an implicit `sqlite_autoindex_*` over those columns,
+so a separate index on `a` is a duplicate of its leftmost prefix.
+
+Verified with `EXPLAIN QUERY PLAN` on a freshly migrated database, every hot query still uses an
+index:
+
+```
+messages by channel, newest   SEARCH USING messages_channel_parent_created_idx
+user roles                    SEARCH USING sqlite_autoindex_user_roles_1
+role permissions              SEARCH USING sqlite_autoindex_role_permissions_1
+read states by user           SEARCH USING sqlite_autoindex_channel_read_states_1
+channel role perms            SEARCH USING channel_role_permissions_channel_perm_idx
+reactions by message          SEARCH USING reaction_msg_emoji_idx
+logins by user                SEARCH USING logins_user_created_idx
+channels in category          SEARCH USING channels_category_position_idx
+activity by user / by type    SEARCH USING activity_log_{user,type}_created_idx
+default role                  SCAN roles
+```
+
+The single `SCAN` is the boolean lookup on a table of a few rows, which is the intended
+outcome.
+
+**5.16 — [NO FIX, PERMANENTLY, by your decision] `migrations/0005_normalize_user_identities.sql:17` contains the exact bug
 AGENTS.md warns about.** The separator is written `-->statement-breakpoint`, with no
 space, so drizzle never split the file and the second statement (`UPDATE users SET
 identity = LOWER(identity)`) was silently skipped while the migration was recorded as
@@ -2768,25 +2956,85 @@ precaution. Nothing to fix (an applied migration must never be edited), but 0005
 in the tree as a template for the next person who copies a neighbouring migration. Worth a
 comment at the top of the file saying so.
 
-**5.17 — `db/mutations/files.ts:11` deletes `messageFiles` rows by hand** although
+**[NO FIX, permanently, by your decision.]** Not to be revisited. An applied migration must
+never be edited, the repair (`0006`) has been in place since, and AGENTS.md already carries the
+warning in full, which is the durable version of the comment this proposed.
+
+**5.17 — [FIXED] `db/mutations/files.ts:11` deletes `messageFiles` rows by hand** although
 `message_files.file_id` is declared `onDelete: 'cascade'` (`schema.ts:304`). AGENTS.md:
 let the database cascade.
 
-**5.18 — unbounded reads in `queries/files.ts`.** `getFilesByUserId` (every file a user
+Correct, and verified against a migrated database rather than read off the schema, since a
+declared cascade that is not actually in the table would have made the removal a data-loss bug:
+
+```
+message_files before: 1
+message_files after deleting the file: 0
+```
+
+The statement is gone from `removeFile`, and `cascade.test.ts` gained the assertion the removal
+now rests on.
+
+**5.18 — [FIXED, and two of the three were not findings] unbounded reads in `queries/files.ts`.** `getFilesByUserId` (every file a user
 ever uploaded, with a signed token minted for each), `getUsedFileQuota` and
 `getOrphanedFileIds` (full-table `NOT EXISTS` across five tables) all return everything.
 The last two are cron/quota work rather than request work, but `getFilesByUserId` is
 called by `users.getInfo` (see 3.8).
 
-**5.19 — `messages.userId` is nullable *and* `onDelete: 'cascade'`** (`schema.ts:262`).
+Checked one at a time against the current code rather than fixed as a group:
+
+- **`getFilesByUserId` was already fixed by 3.8**, which gave it a required `limit` parameter.
+  Nothing to do.
+- **`getUsedFileQuota` is not an unbounded read.** It is `select sum(files.size)`, a SQL
+  aggregate returning a single number, which is what AGENTS.md asks for. The finding describes
+  it as returning everything, which is wrong.
+- **`getOrphanedFileIds` was the real one** and is now capped at `ORPHAN_BATCH_SIZE = 500`. It
+  feeds `crons/cleanup-files.ts`, which turns every returned id into a database delete plus an
+  `fs.unlink`, all in one tick on the thread that also serves requests. A server that had
+  accumulated orphans would stall on the sweep; it now reclaims in batches across cron runs.
+
+Three tests in a new `db/__tests__/files.test.ts`: 620 orphans yield exactly 500, fewer than the
+batch size yield all of them, and files inside the 15-minute grace window are still ignored.
+
+**5.19 — [NOT A FINDING, the premise is wrong on both halves] `messages.userId` is nullable *and* `onDelete: 'cascade'`** (`schema.ts:262`).
 The nullable column suggests messages are meant to survive their author, which is what
 `delete-user.ts`'s placeholder reassignment implements, but the cascade means the `wipe`
 path deletes them instead. Two mechanisms for one decision. Cross-reference 2.6 and 3.1.
 
-**5.20 — `db/index.ts:2` imports the `better-sqlite3` migrator** while the client is
+**Nullable is for plugin-authored messages**, not for outliving an author:
+`plugins/actions/create-plugin-message.ts:104,126` and `edit-plugin-message.ts:71` all insert
+`userId: null`. A message a plugin sent has no user by construction.
+
+**The two paths are two features, not two mechanisms for one decision.** `delete-user.ts` takes
+`wipe: boolean`. With `wipe: false` it reassigns messages, emojis, reactions and files to the
+deleted-user placeholder inside a transaction, so by the time the user row goes there is
+nothing left pointing at it and nothing cascades. With `wipe: true` the cascade **is** the
+implementation. Both branches are deliberate and both are correct.
+
+The column now carries a comment saying so, so the next reader does not reach the same
+conclusion.
+
+**5.20 — [FIXED; the stated reason was wrong] `db/index.ts:2` imports the `better-sqlite3` migrator** while the client is
 `bun-sqlite`. It works today because the migrator only issues SQL through the passed
 drizzle instance; it is still two driver packages crossing in the one file that must not
 break.
+
+There are **no two driver packages**. `better-sqlite3` is not installed at all; that specifier
+is a subpath of `drizzle-orm` itself. And the two migrators are byte-identical:
+
+```
+$ diff drizzle-orm/bun-sqlite/migrator.js drizzle-orm/better-sqlite3/migrator.js
+IDENTICAL
+```
+
+Both are four lines that call `readMigrationFiles` and hand the result to `db.dialect.migrate`.
+So this could never have broken, and the finding's framing as a hazard is wrong. It is a naming
+lie rather than a risk.
+
+Fixed anyway because it costs nothing and it propagates: all four sites now import
+`drizzle-orm/bun-sqlite/migrator` (`db/index.ts`, `__tests__/setup.ts`, `__tests__/mock-db.ts`,
+and `packages/e2e/tests/setup/seed-db.ts`, which was written today and copied the wrong path
+straight out of `db/index.ts`, which is exactly how the fourth one appeared).
 
 ### Missing tests
 
@@ -3551,7 +3799,7 @@ is what a contributor reads first. See T3.
 
 ### MED
 
-**8.2 — [PARTLY FIXED, by decision] `server/slice.ts:194-213` — `messagesMap` grows without bound and pays for it on
+**8.2 — [FIXED] `server/slice.ts:194-213` — `messagesMap` grows without bound and pays for it on
 every incoming message.** `addMessages` builds `new Set(existing.map(m => m.id))` over the
 channel's entire loaded history before merging, so a channel with 10,000 messages scrolled
 into memory rebuilds a 10,000-element Set for each arriving message. Nothing ever evicts:
@@ -3566,10 +3814,31 @@ built from the **incoming** batch (usually one message) instead of the channel's
 loaded history, and the scan over `existing` stops early once every incoming id has been
 accounted for. Existing entries still win on a collision, so semantics are unchanged.
 
-**Not fixed:** `messagesMap` still grows for the session and nothing evicts. Capping it was
-rejected because a channel scrolled deep into, then left and returned to, would refetch, and
-scroll restore beyond the cap would break. The growth is bounded by what the user actually
-scrolled through.
+**[FIXED] The retention half is now done too, and the reason it was rejected turned out not to
+hold.** The objection was that a channel scrolled deep into, then left and returned to, would
+refetch. It already does: `content-wrapper.tsx` renders `<TextChannel key={selectedChannelId}>`,
+so switching channels **fully remounts** it, and the pagination cursor lives in
+`usePaginatedMessages`'s component state. On return the cursor is null, page 1 is refetched, and
+scrolling up refetches page 2 onwards even though those pages are still sitting in the store. The
+retained history was buying an instant first render and nothing else.
+
+So the trim keeps exactly that and drops the rest: a new `trimChannelMessages` reducer cuts a
+channel to the newest `DEFAULT_MESSAGES_LIMIT` when its view unmounts, mirroring the
+`clearThreadMessages` call that already existed for threads. **The channel being viewed is never
+trimmed**, only the one being left, so scroll position and deep history in the channel actually
+in use are untouched, and returning to a trimmed channel renders its newest page immediately
+rather than flashing a loading state.
+
+Trimming rather than deleting is also what makes the second `TextChannel` instance safe: the
+voice chat sidebar renders one for the voice channel's text chat, and a trim leaves a usable
+list behind where a delete would not.
+
+Covered by an e2e test (`Channel message retention`), in **its own describe** because the
+`Infinite Scroll` one above it is `test.describe.skip`. It scrolls past message 900, switches
+channel, comes back, and asserts the oldest message still in the list is newer than the one that
+was there before leaving, that ordering held, and that the newest message is still 1000.
+**Verified against the broken behaviour**: with the dispatch stubbed out the poll times out and
+the test fails, so it is a regression test rather than an assertion that happens to pass.
 
 **8.3 — [FIXED] `users` is stored as an array, and everything looks users up linearly.**
 `IServerState.users: TJoinedPublicUser[]` (`slice.ts:46`). `userByIdSelector` does a
@@ -3847,7 +4116,7 @@ dependency list, so nothing else changed.
 
 ### MED
 
-**9.4 — [DEFERRED, see T4] `voice-provider/index.tsx` is 1311 lines in a single component.** AGENTS.md: break
+**9.4 — [DISMISSED, line counts are not a finding] `voice-provider/index.tsx` is 1311 lines in a single component.** AGENTS.md: break
 up components over 200 lines. It holds ~30 hooks, four stream-acquisition routines
 (`startMicStream` is itself ~200 lines with 11 dependencies), quality-layer bookkeeping,
 the refs map, the controls bridge and the context assembly. The `hooks/` folder next to it
@@ -3994,7 +4263,7 @@ frame have no type checking and no lint coverage, and the message-protocol contr
 between `noise-gate-processor.js` and `noise-gate-worklet.ts` is maintained by hand on
 both sides.
 
-**9.15 — [DEFERRED to T4, by decision] `startMicStream` is a ~200-line `useCallback` with 11 dependencies.** Any change
+**9.15 — [DEFERRED to T4, on the dependency cascade rather than the size] `startMicStream` is a ~200-line `useCallback` with 11 dependencies.** Any change
 to a device setting re-creates it, which re-creates `init` (which depends on it), which
 re-creates `contextValue`. Part of 9.4, listed separately because it is the specific
 callback worth extracting first.
@@ -4069,7 +4338,11 @@ discarded ("N files were ignored due to the per-message attachment limit"). The 
 `handleSend` is a redundant second guard that cannot trigger.
 
 What remains is LOW: the duplicate guard is dead code, and the two warnings in
-`takeAllowedFiles` are hardcoded English (counted in 11.3). The server's silent truncation
+`takeAllowedFiles` are hardcoded English (counted in 11.3).
+
+**[FIXED]** The dead `files.slice(0, Math.max(0, maxFilesPerMessage))` is gone from
+`handleSend`, which also drops `publicSettings` from that callback's dependency list, so a
+settings change no longer re-creates it. The server's silent truncation
 (2.9) still stands, but as defence in depth against a non-standard client rather than a
 user-facing bug.
 
@@ -4174,16 +4447,29 @@ missing `t` dependency.
 
 ### LOW
 
-**10.8 — `thread-sidebar/tread-content.tsx` is misspelled** ("tread"). Second filename
+**10.8 [FIXED] — `thread-sidebar/tread-content.tsx` is misspelled** ("tread"). Second filename
 typo found in the repo after `helpers/__tests__/pasre-command-args.test.ts` (7.19).
 
-**10.9 — seven components exceed the 200-line guidance.**
+**10.9 — [DISMISSED, by your decision, and the guidance was amended] seven components exceed the 200-line guidance.**
 `message-compose/index.tsx` (354), `tiptap-input/extensions/commands/plugin-command-node.tsx`
 (345), `channel-view/voice/external-stream-card.tsx` (344), `tiptap-input/index.tsx`
 (330), `channel-view/voice/screen-share-card.tsx` (273), `channel-view/text/index.tsx`
 (242), `channel-view/text/message-reactions.tsx` (240). None is egregious next to
 chunk 9's 1311-line provider, and every one of them already has a `hooks/` or `helpers.ts`
 neighbour to extract into.
+
+**Dismissed, and AGENTS.md was corrected.** The guidance was being read as a hard cap, which
+it was never meant to be: the point is that huge components are a problem, not that 240 lines
+is one. The rule now says the numbers are a smell worth a second look rather than a limit,
+that a 250-line component doing one thing clearly should be left alone, and that the trigger
+to split is a file becoming hard to follow or growing a second responsibility, not a line
+count.
+
+That also removes the basis for this finding. None of the seven does more than one thing, and
+splitting them to satisfy a threshold would have been churn in render-path components with no
+test coverage, for no gain. **T4 and T5 are unaffected**: those are about a 1311-line provider
+and a 684-line screen with a 612-line hook beside it, which are the case the guidance is
+actually about.
 
 ### Missing tests
 
@@ -4345,7 +4631,7 @@ That is the client half of 6.1, which was dismissed as intended on the server si
 difference the finding draws is real: on the server the admin who installs the plugin is the
 one who runs it, whereas here every user's browser executes it. Recorded as **F8**.
 
-**11.6 — [DEFERRED, see T5] four files exceed the size guidance, two of them by a lot.**
+**11.6 — [DISMISSED, line counts are not a finding] four files exceed the size guidance, two of them by a lot.**
 `server-screens/user-settings/devices/index.tsx` is **684 lines** in a single `Devices`
 component (AGENTS.md: 200 for components, 400 for screens), with
 `hooks/use-microphone-test.ts` at 612 beside it;
@@ -4371,7 +4657,7 @@ Note their own inline handlers moved with them, so the two `paginated-list` site
 
 ### LOW
 
-**11.8 — `screens/connect/index.tsx:76` sends an `autoLogin` field the server ignores.**
+**11.8 [FIXED] — `screens/connect/index.tsx:76` sends an `autoLogin` field the server ignores.**
 `http/login.ts`'s `zBody` declares only `identity`, `password` and `invite`, and zod strips
 unknown keys, so the value is silently discarded. Auto-login is handled entirely client
 side by storing the token; the field suggests a server behaviour that does not exist.
@@ -4597,18 +4883,150 @@ undefined results a failed upload already toasted about. Order is preserved.
 and unused. Listed separately from 12.3 because these are the ones that are plainly safe
 to delete.
 
-**12.9 — `packages/shared` is tested only under `helpers/`.** All six test files live in
+**12.9 [FIXED] — `packages/shared` is tested only under `helpers/`.** All six test files live in
 `helpers/__tests__`; the other 30 modules (`types.ts`, `tables.ts`, `trpc.ts`,
 `events.ts`, `logs.ts`, `plugins/`, `statics/`, `voice.ts`) have none. Most are type-only
 declarations where that is correct; `plugins/index.ts` (197 lines, including
 `zPluginManifest`, which is the validation gate for every installed plugin) is the
 exception worth covering. Confirms chunk 14's observation.
 
+Fixed: `plugins/__tests__/index.test.ts`, 21 tests over the three runtime schemas in that
+file, chosen because they are the gates the subsystem actually runs on. `zPluginManifest`
+parses every `manifest.json` at install (`helpers/downloads.ts:94`) and at load
+(`plugins/index.ts:263`), `zPluginId` validates the id on every plugin route and is what
+stands between a manifest and a path traversal when the id is joined onto `PLUGINS_PATH`,
+and `zParsedDomCommand` parses commands back out of message html. The other 29 modules are
+type-only declarations and correctly have none. This also closes 14.6.
+
+**The tests found a real hole on the first run.** `z.url()` accepts **any** scheme, so
+`homepage: 'javascript:alert(1)'` was a valid plugin manifest, and `installed.tsx:196`
+renders `plugin.homepage` straight into an `<a href>`. Both `homepage` and `logo` are now
+`z.url({ protocol: /^https?$/ })`, with `data:`, `vbscript:` and `file:` covered by the test
+alongside `javascript:`.
+
+Severity on the installed-plugin path is limited by 6.1: a plugin already runs arbitrary
+code, so an admin who installed it is not gaining much by clicking its link. The marketplace
+path is the one that matters, and it is a separate finding, below.
+
+`zParsedDomCommand.logo` had the same `z.url()` and was tightened with it, though the real
+gate there is `sanitizeMessageHtml`, which does not allow `data-plugin-logo` through, so it
+can only ever hold a value the server itself put there. Verified before assuming it, since a
+user-controlled path would have made it far more serious.
+
+**12.11 — [FIXED; found by running the e2e suite in chunk 5/13's fix] a failed auto-login crashes
+the app into the error boundary instead of returning to the connect screen.** Introduced by
+12.1 and never seen, because the e2e suite had not been run since.
+
+Reproduction is the existing e2e test `auto-login.pw.ts:88` ("should attempt auto-connect when
+auto-login is enabled and token is saved"), which sets a stale token and expects the connect
+screen. What renders instead is *"Sorry, Sharkord crashed and couldn't recover."*
+
+```
+Error: TRPC client is not initialized
+    at getTRPCClient (src/lib/trpc.ts:105)
+    at src/components/left-sidebar/hooks.ts:89   (useVoiceMoveSubscription's useEffect)
+```
+
+The chain: the invalid token is refused, the socket closes, 12.1's `onClose` classifies it as
+non-terminal and calls `closeClient()`, which sets `trpc = null` while **deliberately leaving
+the app tree mounted** (that is the whole point of 12.1). A mounted `useEffect` then calls
+`getTRPCClient()`, which throws synchronously rather than returning null, and the error
+boundary catches it.
+
+Severity is HIGH rather than MED because it needs no special conditions: any user whose saved
+auto-login token has expired gets a crash screen. It is also not one hook's problem, there are
+**168 `getTRPCClient()` call sites** and every one reachable from an effect while disconnected
+is exposed, so a guard in `useVoiceMoveSubscription` would be patching the symptom.
+
+**Fixed at the root, which is neither of those.** The real defect is upstream of
+`getTRPCClient()`: `routing/index.tsx:46` reads `if (!isConnected && !isReconnecting)` and
+otherwise falls through to `<ServerView />`, so **`reconnecting` alone mounts the whole app**.
+A connect that never completed a join was entering the reconnect flow, so ServerView mounted
+with no client behind it.
+
+`state.connected` is set in exactly one place, the `setInitialData` reducer, which only runs
+after a successful join, so it is an exact "was there ever a session" signal.
+`reconnectToServer` now checks it on first entry and calls `cleanup()` instead of scheduling
+retries. `onClose` no longer sets `connected` false before calling it, since that would have
+erased the very thing being tested. The guard is scoped to `reconnectAttempt === 0` because the
+retry path re-enters the same function with it already false.
+
+This is also the right behaviour independently of the crash: retrying a **refused token** five
+times over 23 seconds only delays the connect screen, and `abandonReconnect` would then have
+shown the disconnected screen rather than the login form the user needs.
+
+Verified by running the e2e suite: **10 passed, 0 failed, 7 skipped**, where the same suite had
+this test failing before. The legitimate reconnect path is unaffected, since `connected` is
+true there.
+
+**Left open, and worth its own pass rather than a guess:** during a *genuine* reconnect
+ServerView stays mounted with `trpc === null` for up to 23 seconds by design, so the same throw
+is still reachable from the six `getTRPCClient()` calls that sit directly inside a `useEffect`
+body (`left-sidebar/hooks.ts:89`, `left-sidebar/direct-messages/index.tsx:90`,
+`voice-provider/hooks/use-voice-events.ts:52`, `dialogs/plugin-settings/index.tsx:117`,
+`dialogs/search/hooks.ts:45`, `channel-view/text/pinned-messages-popover.tsx:126`) if the user
+opens search or a DM mid-reconnect. Those six also subscribe with `[]` deps, so after a
+successful reconnect they are still bound to a discarded client and their realtime events are
+silently dead. Both belong to T6's untested 12.1 reconnect surface.
+
+**12.10 [FIXED] — the marketplace registry is fetched and rendered with no validation at all.**
+Found while writing 12.9's tests. `marketplace/hooks.ts:23` fetches
+`MARKETPLACE_REGISTRY_URL` **from the client**, casts the response with
+`as TMarketplaceEntry[]` (a type assertion, so nothing is checked at runtime), and
+`marketplace-item.tsx:245` renders `plugin.homepage` into an `<a href>`.
+
+`zPluginManifest` never touches this data: it validates a downloaded plugin's own
+`manifest.json`, not the registry listing. So the scheme fix above does **not** cover the
+marketplace, and a `javascript:` url in the registry is a clickable script execution in the
+session of any admin who merely **browses** the marketplace, without installing anything.
+That is the escalation over 6.1, which assumes the admin chose to run the plugin.
+
+The registry is a first-party GitHub raw URL over https, so the realistic threat is a
+compromise of that repository rather than a network attacker.
+
+**The server side is the worse half, and the finding understated it.** `downloadUrl` comes
+from the same unvalidated payload and is handed straight to `fetch` in
+`helpers/downloads.ts:118`, with no scheme or host check. The checksum verification that
+follows only decides whether the download is *kept*: the request itself has already gone out,
+so a poisoned registry entry turns the server into an SSRF probe against whatever it can
+reach.
+
+Fixed: `marketplace.ts` now defines `zMarketplacePlugin`, `zMarketplacePluginVersion` and
+`zMarketplaceEntry`, with the types inferred from them rather than declared alongside.
+`logo`, `homepage` and `screenshots` are `zHttpUrl`; **`downloadUrl` is https only**, since a
+plaintext plugin download is a downgrade even with a checksum. Both consumers now call
+`parseMarketplaceRegistry` instead of casting: `marketplace/hooks.ts` on the client and
+`helpers/marketplace.ts` on the server.
+
+Entries are validated individually and a bad one is dropped, so a single malformed plugin
+cannot take the whole marketplace down. Ten tests, including the `javascript:` homepage this
+finding is about and the `file://` downloadUrl.
+
+Validated against the **live registry** before committing to the schema, since one stricter
+than reality would have broken the marketplace outright: all five current entries parse.
+
+**This fix caused an outage in the test suite before it worked, which is worth recording.**
+`plugins/index.ts` ends with `export * from './marketplace'`, so a `marketplace.ts` that
+imported `zPluginId` from the barrel formed a cycle and hit it in the temporal dead zone at
+module load. The whole server suite went to **0 pass, 46 fail** with
+`Cannot access 'zPluginId' before initialization`. Both primitives moved to
+`plugins/primitives.ts`, which nothing else imports, and `index.ts` re-exports them so the
+public surface is unchanged.
+
+That is the second temporal-dead-zone failure in this audit after 8.13, and it is a concrete
+instance of what 14.3 warns about: the `export *` barrel makes import cycles easy to create
+and invisible until something evaluates.
+
 ### Missing tests
 
-The client half has none (chunk 8). For the packages: 12.1 is the one worth a test even
-before a client test setup exists, because it can be asserted at the `cleanup()` boundary
-— close the socket without an auth failure and assert the tokens survive.
+The client half has none (chunk 8). `packages/shared` is now covered where it matters, see
+12.9.
+
+The note that used to sit here said 12.1 was the one worth a test before a client setup
+exists, assertable at the `cleanup()` boundary. That is still true and still not done: 12.1
+was fixed and is **unverified by execution** (M42 to M44), because reaching the connected
+state needs a real server and an account. The `cleanup()` assertion would need a client test
+runner, which does not exist.
 
 ## 13. Test suite
 
@@ -4759,24 +5177,60 @@ from `server.address()`. This was not theoretical: earlier in this audit a full 
 
 ### LOW
 
-**13.8 — four fixed `sleep()` calls in the e2e tests** (`infinite-scroll.pw.ts:102,116,137`
+**13.8 — [FIXED, one of four] four fixed `sleep()` calls in the e2e tests** (`infinite-scroll.pw.ts:102,116,137`
 and `mocked.pw.ts:19`) alongside otherwise correct `waitFor`/`expect` usage. Fixed delays
 are how e2e suites become flaky on slower CI.
+
+Only **:137** was a real one, and it is replaced. It sat at the end of the `sendMessage` helper,
+after the assertion that the editor cleared, waiting 500ms for the message to arrive; it is now
+`await expect(getMessageItemsByText(page, content)).toHaveCount(1)`, which waits for the thing
+itself. Verified by running the suite, including the scrolled-up cases where the message might
+not have been rendered: **10 passed**.
+
+The other three stay and are not findings. `:102` and `:116` are retry pacing **inside**
+`ensureAtBottom`'s polling loop, which is what a sleep is for, and `mocked.pw.ts:19` is
+`sleep(9999999)` holding the browser open in the exploration harness on purpose.
 
 **13.9 [FIXED] — `packages/e2e/tests/helpers.ts` exports exactly one function, `sleep`, and
 `mocked.pw.ts:4` declares its own copy** rather than importing it.
 
-**13.10 — `tests/setup/global.setup.ts` is a `console.log` and nothing else.** The
+**13.10 — [FIXED with 5.13, by deletion] `tests/setup/global.setup.ts` is a `console.log` and nothing else.** The
 teardown beside it does real work; the setup is a placeholder that has never been filled
 in.
 
-**13.11 — direct row inserts in six test files.** `cascade.test.ts`,
+Fixed by removing it rather than filling it in, which is what 5.13 turned up: playwright starts
+`webServer` **before** `globalSetup`, so the one job this hook was wanted for (seeding the e2e
+database before the server boots) is a job it cannot do. Seeding lives in
+`tests/setup/seed-db.ts`, run by the `seed:e2e` script ahead of playwright. The hook and its
+`playwright.config.ts` entry are gone, so there is no placeholder left to mistake for a
+extension point that works.
+
+**13.11 [FIXED, and the finding was right that it is not one] — direct row inserts in six test files.** `cascade.test.ts`,
 `messages.test.ts`, `users.test.ts`, `login.test.ts`, `public.test.ts` and
 `file-manager.test.ts` insert rows inline rather than using `seed.ts`. For scenario-
 specific data (a cascade chain, a pagination window) that is the right call and AGENTS.md's
 rule is about reusable fixtures, so this is a note rather than a finding — but it is worth
 checking each one when 2.6 and 3.2 add seeded rows, since `setup.test.ts` asserts exact
 seeded counts and will need updating.
+
+**Checked, and there is nothing to move.** AGENTS.md names one specific violation, "a
+`createX()` helper at the top of a test file that inserts a row", and none of the six files
+has one. `public.test.ts`'s helpers are an upload call, a query and two settings toggles; every
+other insert sits inside a test body and is scenario-specific, which the finding itself says is
+the right call.
+
+**What was actually wrong is the guard the finding leans on.** `setup.test.ts` asserted counts
+for **five** tables while `seed.ts` populates **ten**, so a new category, role permission, user
+role or direct message could be seeded with nothing noticing. It now covers all ten, plus two
+assertions that are not counts: that `logins` stays empty outside `IS_E2E` (it is seeded only
+inside that branch, so a non-zero count means the branch leaked), and that user 1 holds the
+owner role while user 2 does not, since every router test depends on that split and an
+accidental change would make whole suites pass for the wrong reason.
+
+`seed.ts` also gained the summary comment AGENTS.md's workflow requires and did not have,
+listing every table, its count and what the rows are for. The two are a pair: the comment says
+what is seeded, `setup.test.ts` fails when that stops being true. Verified by adding an
+unrecorded seeded category and confirming the guard fails.
 
 ### Missing tests
 
@@ -4800,7 +5254,7 @@ plan, and a proposed layout to approve or reject.
 
 ### The blocker: `shared` imports the server, and the client ships the result
 
-**14.1 — `packages/shared/src/tables.ts:2-22` imports `apps/server/src/db/schema` through
+**14.1 — [FLAGGED FOR THE END, see T9] `packages/shared/src/tables.ts:2-22` imports `apps/server/src/db/schema` through
 a relative path that escapes the package.**
 
 ```
@@ -4866,7 +5320,7 @@ Consumer counts: `apps/server` imports `@sharkord/shared` in 172 files, `apps/cl
 
 Findings that fall out of the inventory:
 
-**14.2 — `index.ts:1` is `export const A = 123;`** (confirmed in 12.5). It is the first
+**14.2 [FIXED with 12.5] — `index.ts:1` is `export const A = 123;`** (confirmed in 12.5). It is the first
 line of the public surface of a package consumed by 344 files.
 
 **14.3 — the `export *` barrel makes dead-export analysis impossible.** `knip` reported
@@ -4875,13 +5329,30 @@ is an artefact of the barrel, not a clean result. Step 2 of the original plan ("
 first, using knip") cannot be trusted until `index.ts` re-exports explicitly. Reverse the
 order: make the barrel explicit **first**, then run knip, then delete.
 
-**14.4 — the three type modules split by no criterion.** `tables.ts` holds row types
+**14.4 [FIXED] — the three type modules split by no criterion.** `tables.ts` holds row types
 inferred from the schema, `types.ts` holds enums, DTOs (`TPublicServerSettings`,
 `TServerInfo`, `TTempFile`) and generic utilities (`WithOptional`, `TGenericObject`),
 `trpc.ts` holds one export. A contributor adding a type has no rule to follow. The
 generic utilities in particular are not domain types at all.
 
-**14.5 — misfiled exports.** `UploadHeaders` lives in `statics/permissions.ts:35`
+Fixed the part that has a clear answer: `TGenericObject`, `TGenericFunction` and
+`WithOptional` moved to `type-utils.ts`. They are helpers that would read the same in any
+codebase, and having them beside `ChannelType` and `TPublicServerSettings` is the main reason
+`types.ts` had no rule a contributor could follow.
+
+The rule now is: **`tables.ts`** for row types, **`types.ts`** for domain enums and DTOs,
+**`type-utils.ts`** for generic helpers with no domain knowledge. Written at the top of
+`type-utils.ts` so it is visible where it is needed.
+
+`tables.ts` keeps its contents. Splitting it further is bound up with 14.1, since its problem
+is not what it holds but where the types come from, and `trpc.ts` keeps its single export
+because that export is the router type and belongs nowhere else. Both are T9's pass 2.
+
+`types.ts` imports `WithOptional` from `./type-utils` directly rather than through the barrel.
+It already imports from `'.'` for other things, and after 12.10's outage that is a habit worth
+not extending.
+
+**14.5 [FIXED] — misfiled exports.** `UploadHeaders` lives in `statics/permissions.ts:35`
 alongside the permission enums and has nothing to do with permissions — and it is the enum
 that caused the misreading corrected in 1.1, because nobody looking at an upload route
 would think to check a permissions file for the meaning of a header name.
@@ -4889,7 +5360,15 @@ would think to check a permissions file for the meaning of a header name.
 only by the client, and `events.ts`'s `ServerEvents` appears in 28 server files and no
 client file directly.
 
-**14.6 — tests cover only `helpers/`.** Six test files, all under `helpers/__tests__`.
+Fixed: `UploadHeaders` now lives in `statics/upload.ts`, re-exported through the `statics`
+barrel so nothing importing it had to change. The comment on it names why it moved, since the
+misreading corrected in 1.1 came from someone reading an upload route and not thinking to look
+in a permissions file for a header name. The `zPluginPackageJson` alias went with 12.3.
+
+`extensions.ts` and `events.ts` are left where they are: the single-consumer rule they fail is
+about eviction from the package, which is pass 2 of T9, not a misfiling to correct here.
+
+**14.6 [FIXED with 12.9] — tests cover only `helpers/`.** Six test files, all under `helpers/__tests__`.
 `plugins/index.ts` is the gap that matters: `zPluginManifest` validates every plugin
 manifest at install and load time (6.4 is a bug in what happens *after* it validates), and
 it has no tests.

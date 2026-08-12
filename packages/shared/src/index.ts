@@ -7,5 +7,6 @@ export * from './statics';
 export * from './tables';
 export * from './test-ids';
 export * from './trpc';
+export * from './type-utils';
 export * from './types';
 export * from './voice';

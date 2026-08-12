@@ -180,11 +180,7 @@ const MessageCompose = memo(
       setSending(true);
       sendingRef.current = true;
 
-      const maxFilesPerMessage =
-        publicSettings?.storageMaxFilesPerMessage ?? Number.MAX_SAFE_INTEGER;
-      const filesToSend = files.slice(0, Math.max(0, maxFilesPerMessage));
-
-      const success = await onSend(message, filesToSend);
+      const success = await onSend(message, files);
 
       sendingRef.current = false;
       setSending(false);
@@ -208,7 +204,6 @@ const MessageCompose = memo(
       canSendMessages,
       onSend,
       clearFiles,
-      publicSettings,
       containerRef,
       inputDefaultMaxHeightVh,
       t

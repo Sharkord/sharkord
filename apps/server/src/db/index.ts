@@ -1,8 +1,7 @@
 import { Database } from 'bun:sqlite';
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { BunSQLiteDatabase, drizzle } from 'drizzle-orm/bun-sqlite';
+import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import { DB_PATH, DRIZZLE_PATH } from '../helpers/paths';
-import { IS_E2E } from '../utils/env';
 import { seedDatabase } from './seed';
 
 let db: BunSQLiteDatabase;
@@ -18,16 +17,7 @@ const loadDb = async () => {
   db = drizzle({ client: sqlite });
 
   await migrate(db, { migrationsFolder: DRIZZLE_PATH });
-
-  if (!IS_E2E) {
-    await seedDatabase();
-  } else {
-    // imported here rather than at module scope so a normal boot never loads
-    // the test fixtures
-    const { seedTestDb } = await import('../__tests__/seed');
-
-    await seedTestDb(db);
-  }
+  await seedDatabase();
 };
 
 export { db, loadDb };

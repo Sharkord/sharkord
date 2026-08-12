@@ -1,6 +1,7 @@
 export * from './metrics';
 export * from './permissions';
 export * from './storage';
+export * from './upload';
 
 export const DEFAULT_MESSAGES_LIMIT = 100;
 export const MESSAGE_MAX_LENGTH = 10_000;

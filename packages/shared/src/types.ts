@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ChannelPermission, type TFile, type TSettings, type TUser } from '.';
+import type { WithOptional } from './type-utils';
 
 export enum ChannelType {
   TEXT = 'TEXT',
@@ -63,14 +64,6 @@ export type TPublicServerSettings = Pick<
   webRtcMaxBitrate: number;
 };
 
-export type TGenericObject = {
-  [key: string]: any;
-};
-
-export type TGenericFunction = {
-  (...args: any[]): any;
-};
-
 export type TMessageMediaMetadata = {
   kind: 'media';
   url: string;
@@ -94,9 +87,6 @@ export type TMessageOpenGraphMetadata = {
 export type TMessageMetadata =
   | TMessageMediaMetadata
   | TMessageOpenGraphMetadata;
-
-export type WithOptional<T, K extends keyof T> = Omit<T, K> &
-  Partial<Pick<T, K>>;
 
 export enum UserStatus {
   ONLINE = 'online',

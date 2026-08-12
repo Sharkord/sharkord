@@ -133,6 +133,7 @@
         "@sharkord/shared": "workspace:*",
         "@types/bun": "latest",
         "@types/react": "^19",
+        "drizzle-orm": "^0.44.5",
       },
       "peerDependencies": {
         "@typescript-eslint/eslint-plugin": "^8.46.1",

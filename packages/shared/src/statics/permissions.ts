@@ -32,13 +32,6 @@ export const DEFAULT_ROLE_PERMISSIONS = [
   Permission.ENABLE_WEBCAM
 ];
 
-export enum UploadHeaders {
-  ORIGINAL_NAME = 'x-file-name',
-  TYPE = 'x-file-type',
-  CONTENT_LENGTH = 'content-length',
-  TOKEN = 'x-token'
-}
-
 export enum ChannelPermission {
   VIEW_CHANNEL = 'VIEW_CHANNEL',
   SEND_MESSAGES = 'SEND_MESSAGES',

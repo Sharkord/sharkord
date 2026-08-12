@@ -63,6 +63,10 @@ const typingTimeouts: { [key: string]: NodeJS.Timeout } = {};
 const getTypingKey = (channelId: number, userId: number) =>
   `${channelId}-${userId}`;
 
+export const trimChannelMessages = (channelId: number) => {
+  store.dispatch(serverSliceActions.trimChannelMessages(channelId));
+};
+
 export const addMessages = (
   channelId: number,
   messages: TJoinedMessage[],

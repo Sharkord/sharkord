@@ -18,7 +18,7 @@ import {
 const zHeaders = z.object({
   [UploadHeaders.TOKEN]: z.string(),
   [UploadHeaders.ORIGINAL_NAME]: z.string(),
-  [UploadHeaders.CONTENT_LENGTH]: z.string().transform((val) => Number(val))
+  [UploadHeaders.CONTENT_LENGTH]: z.coerce.number().int().nonnegative()
 });
 
 const uploadRateLimiter = createRateLimiter({
@@ -101,10 +101,19 @@ const uploadFileRouteHandler = async (
 
   fileStream.on('finish', async () => {
     try {
+      const { size } = await fs.promises.stat(safePath);
+
+      if (size !== contentLength) {
+        await fs.promises.rm(safePath, { force: true });
+        sendJsonError(res, 400, 'Upload did not match the declared size');
+
+        return;
+      }
+
       const tempFile = await fileManager.addTemporaryFile({
         originalName,
         filePath: safePath,
-        size: contentLength,
+        size,
         userId: user.id
       });
 

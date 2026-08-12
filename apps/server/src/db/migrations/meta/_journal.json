@@ -169,6 +169,13 @@
       "when": 1786316205977,
       "tag": "0023_users_token_version",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1786569272511,
+      "tag": "0024_drop_redundant_indexes",
+      "breakpoints": true
     }
   ]
 }

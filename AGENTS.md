@@ -278,7 +278,12 @@ reason — extend `seed.ts` or `helpers.ts` instead.
   handler inline in JSX (`onDrop={(e) => ...}`, `onClick={() => setX(false)}`) — a new
   function identity on every render defeats the `React.memo` on the child receiving it.
   Extract it to a named `useCallback` above the return.
-- Components should be small and focused; if a component is >200 lines, break it up. If a screen is >400 lines, break it up.
+- Components should be small and focused. Roughly 200 lines for a component and 400 for a
+  screen is where one usually stops being either, so treat those numbers as a **smell worth a
+  second look, not a hard cap**. A 250-line component that does one thing clearly is fine and
+  should be left alone; a 900-line one that does five things is the problem the guidance is
+  actually about. Split when the file has become hard to follow or has grown a second
+  responsibility, not because it crossed a line count.
 
 Server calls go inline where they are used, wrapped in `try`/`catch` with a toast, the way
 `handleDragEnd` in `left-sidebar/channels.tsx` does it. Do not add a function to

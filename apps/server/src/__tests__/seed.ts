@@ -1,3 +1,30 @@
+/**
+ * The fixture every test runs against. A fresh in-memory database is created, migrated and
+ * seeded before each test (see setup.ts), so tests reference these by id rather than
+ * inserting their own copies.
+ *
+ * AGENTS.md: extend this file rather than adding a createX() fixture helper to a test file,
+ * append new rows **after** the existing ones so the ids already asserted on do not shift,
+ * and update the counts in setup.test.ts, which guards this summary against drift.
+ *
+ * Seeded for unit and integration tests:
+ *
+ *   settings          1    server name "Test Server", secret token TEST_SECRET_TOKEN
+ *   users             5    1 testowner (owner), 2 testuser (low permissions, used for
+ *                          every "lacks permission" case), usera, userb, testmoderator
+ *   roles             4    Owner (id 1), Member, Guest, Moderator
+ *   userRoles         5    one per user, plus the moderator's extra role
+ *   rolePermissions  29    the default permission sets for the roles above
+ *   categories        2    Text Channels, Voice Channels
+ *   channels          4    1 General (text), Voice, DM Channel, Private Voice
+ *   messages          2    both in channel 1
+ *   directMessages    1    the DM pair backing "DM Channel"
+ *   logins            0    seeded only when seedTestDb is called with { e2e: true },
+ *                          which only packages/e2e's global.setup.ts does
+ *
+ * User 1 is the admin used for happy paths and user 2 the low-permission user used for
+ * rejections, which is the convention the router tests follow.
+ */
 import {
   ChannelType,
   DEFAULT_ROLE_PERMISSIONS,
@@ -35,7 +62,6 @@ import {
   userRoles,
   users
 } from '../db/schema';
-import { IS_E2E } from '../utils/env';
 import { seedE2E } from './e2e-mocks/seed-e2e';
 
 const TEST_SECRET_TOKEN = 'test-secret-token-for-unit-tests';
@@ -66,7 +92,10 @@ const hashedPassword = await Bun.password.hash('password123');
  * - Hello User B (2) (in DM Channel, by User A)
  */
 
-const seedTestDb = async (db: BunSQLiteDatabase) => {
+const seedTestDb = async (
+  db: BunSQLiteDatabase,
+  { e2e = false }: { e2e?: boolean } = {}
+) => {
   const firstStart = Date.now();
 
   const initialSettings: TISettings = {
@@ -376,7 +405,7 @@ const seedTestDb = async (db: BunSQLiteDatabase) => {
     createdAt: firstStart
   });
 
-  if (IS_E2E) {
+  if (e2e) {
     const allUsers = [
       insertedOwner!,
       insertedUser!,

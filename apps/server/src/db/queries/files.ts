@@ -116,6 +116,7 @@ const getUsedFileQuota = async (): Promise<number> => {
 };
 
 const ORPHAN_GRACE_MS = 15 * 60 * 1000; // 15 minutes
+const ORPHAN_BATCH_SIZE = 500;
 
 const getOrphanedFileIds = async (): Promise<number[]> => {
   const orphanedFileIds = await db.all<{ id: number }>(sql`
@@ -137,6 +138,7 @@ const getOrphanedFileIds = async (): Promise<number[]> => {
     AND NOT EXISTS (
       SELECT 1 FROM settings s WHERE s.logo_id = f.id
     )
+    LIMIT ${ORPHAN_BATCH_SIZE}
   `);
 
   return orphanedFileIds.map(({ id }) => id);

@@ -20,7 +20,7 @@ import {
   setPluginCommands,
   setPluginComponents
 } from './plugins/actions';
-import { infoSelector } from './selectors';
+import { connectedSelector, infoSelector } from './selectors';
 import { serverSliceActions } from './slice';
 import { SoundType, type TDisconnectInfo } from './types';
 
@@ -149,6 +149,17 @@ const abandonReconnect = () => {
 // dropped connection means replaying the whole join, not just reopening the transport.
 export const reconnectToServer = (info: TDisconnectInfo) => {
   if (reconnectTimer) return;
+
+  const state = store.getState();
+
+  if (reconnectAttempt === 0 && !connectedSelector(state)) {
+    setConnected(false);
+    cleanup();
+
+    return;
+  }
+
+  setConnected(false);
 
   reconnectDisconnectInfo = info;
 
