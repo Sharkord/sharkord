@@ -2,6 +2,7 @@ import type { TDialogBaseProps } from '@/components/dialogs/types';
 import { jumpToMessage } from '@/features/server/actions';
 import { useOnEsc } from '@/hooks/use-on-esc';
 import type { TMessageJumpToTarget } from '@/types';
+import { TestId } from '@sharkord/shared';
 import {
   Dialog,
   DialogContent,
@@ -54,6 +55,7 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={t('searchPlaceholder')}
+                data-testid={TestId.SEARCH_INPUT}
                 autoFocus
                 className="h-10"
               />

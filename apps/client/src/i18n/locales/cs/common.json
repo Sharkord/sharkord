@@ -123,5 +123,6 @@
   "wasReactedBy": "reagovali {{reacters}}.",
   "andMore": "a dalších {{count}}",
   "toggleParticipants": "Zobrazit/skrýt účastníky",
-  "reconnecting": "Znovu se připojuji…"
+  "reconnecting": "Znovu se připojuji…",
+  "viewingOlderMessages": "Zobrazují se starší zprávy, přejít na nejnovější"
 }

@@ -6,6 +6,7 @@ import {
 } from '@sharkord/shared';
 import {
   and,
+  asc,
   count,
   desc,
   eq,
@@ -24,6 +25,8 @@ import { channels, messages } from '../../db/schema';
 import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+
+const JUMP_CONTEXT_LIMIT = 20;
 
 const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
   maxRequests: config.rateLimiters.getMessages.maxRequests,
@@ -69,6 +72,9 @@ const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
 
     let rows: TMessage[];
     let nextCursor: TMessagesCursor | null = null;
+    // true when a jump window stops short of the newest message, so the client knows its list
+    // is not contiguous with the present and must offer a way back
+    let hasNewer = false;
 
     if (targetMessageId) {
       // fetch all messages from newest down to (and including) the target
@@ -97,22 +103,54 @@ const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
         message: 'Target message must be a root message'
       });
 
-      // fetch everything from newest down to the target, plus 20 older messages
-      // for context around the target
-      const olderMessages = await db
-        .select()
-        .from(messages)
-        .where(and(baseWhere, lt(messages.createdAt, targetMessage.createdAt)))
-        .orderBy(desc(messages.createdAt))
-        .limit(20);
+      // a window around the target rather than everything since it: linking to a message from
+      // a year ago used to load a year of history, joined with files, reactions and reply
+      // previews, in one response
+      const [olderMessages, newerMessages] = await Promise.all([
+        db
+          .select()
+          .from(messages)
+          .where(
+            and(baseWhere, lt(messages.createdAt, targetMessage.createdAt))
+          )
+          .orderBy(desc(messages.createdAt), desc(messages.id))
+          .limit(JUMP_CONTEXT_LIMIT + 1),
+        // ascending, so the window is anchored at the target and grows towards the present.
+        // ordering this half descending takes the newest messages in the channel instead,
+        // which leaves the target outside its own window once the limit bites
+        db
+          .select()
+          .from(messages)
+          .where(
+            and(baseWhere, gte(messages.createdAt, targetMessage.createdAt))
+          )
+          .orderBy(asc(messages.createdAt), asc(messages.id))
+          .limit(limit + 1)
+      ]);
 
-      const newerMessages = await db
-        .select()
-        .from(messages)
-        .where(and(baseWhere, gte(messages.createdAt, targetMessage.createdAt)))
-        .orderBy(desc(messages.createdAt));
+      hasNewer = newerMessages.length > limit;
+
+      if (hasNewer) newerMessages.pop();
+
+      newerMessages.reverse();
+
+      const hasOlder = olderMessages.length > JUMP_CONTEXT_LIMIT;
+
+      if (hasOlder) olderMessages.pop();
 
       rows = [...newerMessages, ...olderMessages];
+
+      const oldestReturnedMessage = rows.at(-1);
+
+      // the window paginates upward from its own oldest row, so the client does not have to
+      // keep the channel's page-1 cursor, which points somewhere else entirely
+      nextCursor =
+        hasOlder && oldestReturnedMessage
+          ? {
+              createdAt: oldestReturnedMessage.createdAt,
+              id: oldestReturnedMessage.id
+            }
+          : null;
     } else {
       // standard cursor-based pagination
       rows = await db
@@ -150,7 +188,7 @@ const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
     }
 
     if (rows.length === 0) {
-      return { messages: [], nextCursor };
+      return { messages: [], nextCursor, hasNewer };
     }
 
     const messagesWithRelations = await joinMessagesWithRelations(rows);
@@ -182,7 +220,7 @@ const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
       replyCount: replyCountByMessage[msg.id] ?? 0
     }));
 
-    return { messages: messagesWithReplyCounts, nextCursor };
+    return { messages: messagesWithReplyCounts, nextCursor, hasNewer };
   });
 
 export { getMessagesRoute };

@@ -9,6 +9,9 @@ export enum TestId {
   MESSAGE_ITEM = 'message-item',
   MESSAGE_COMPOSE_EDITOR = 'message-compose-editor',
   CATEGORY_ITEM = 'category-item',
+  SEARCH_INPUT = 'search-input',
+  SEARCH_RESULT_JUMP = 'search-result-jump',
+  RETURN_TO_PRESENT = 'return-to-present',
 
   LEFT_SIDEBAR = 'left-sidebar',
   LEFT_SIDEBAR_SERVER_NAME = 'left-sidebar-server-name'

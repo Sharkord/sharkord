@@ -123,5 +123,6 @@
   "wasReactedBy": "на это отреагировали {{reacters}}.",
   "andMore": "и еще {{count}}",
   "toggleParticipants": "Показать/скрыть участников",
-  "reconnecting": "Переподключение…"
+  "reconnecting": "Переподключение…",
+  "viewingOlderMessages": "Показаны старые сообщения, перейти к последним"
 }

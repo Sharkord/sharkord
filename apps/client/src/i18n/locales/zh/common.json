@@ -123,5 +123,6 @@
   "wasReactedBy": "{{reacters}} 做出了反应。",
   "andMore": "以及其他 {{count}} 人",
   "toggleParticipants": "显示/隐藏参与者",
-  "reconnecting": "正在重新连接…"
+  "reconnecting": "正在重新连接…",
+  "viewingOlderMessages": "正在查看较早的消息，跳转到最新"
 }

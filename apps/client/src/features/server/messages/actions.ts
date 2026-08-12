@@ -63,6 +63,16 @@ const typingTimeouts: { [key: string]: NodeJS.Timeout } = {};
 const getTypingKey = (channelId: number, userId: number) =>
   `${channelId}-${userId}`;
 
+export const setChannelMessages = (
+  channelId: number,
+  messages: TJoinedMessage[],
+  detached: boolean
+) => {
+  store.dispatch(
+    serverSliceActions.setChannelMessages({ channelId, messages, detached })
+  );
+};
+
 export const trimChannelMessages = (channelId: number) => {
   store.dispatch(serverSliceActions.trimChannelMessages(channelId));
 };
@@ -79,7 +89,8 @@ export const addMessages = (
     store.dispatch(
       serverSliceActions.addMessages({
         channelId,
-        messages: rootMessages
+        messages: rootMessages,
+        isLive: isSubscriptionMessage
       })
     );
   }

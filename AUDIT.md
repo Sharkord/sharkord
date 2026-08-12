@@ -374,12 +374,16 @@ and doing it at the same time as any other close-code change would be cheaper.
 
 ### T8 — 13.6, the e2e suite covers login and nothing else
 
-**Corrected while fixing 8.2: it is thinner than this entry said.** The whole
+**Corrected while fixing 8.2: it is thinner than this entry said, though 2.4 has since added the
+first search coverage.** The whole
 `Infinite Scroll` describe is `test.describe.skip('...flaky af...')`, so message pagination has
 **no live coverage at all** — the 7 "skipped" in every run are those tests. What actually runs is
 connect, auto-login, the exploration harness, and (since 8.2) one channel-retention test. So
 "authentication plus message pagination" was really authentication alone, and un-skipping that
 describe belongs in this entry alongside writing new specs.
+
+2.4 then added `SEARCH_INPUT`, `SEARCH_RESULT_JUMP` and `RETURN_TO_PRESENT` test ids and one
+spec that drives search end to end, so search is no longer on the uncovered list.
 
 Nothing covers sending a message, voice, permissions, server settings, plugins or DMs. Per chunk 8 this is also the *only* automated coverage the
 client has at all, which makes it the cheapest place to buy confidence in the client changes
@@ -546,6 +550,7 @@ Format: what to do, then what should happen.
 | M70 | 1.13 | Against a **production build** (not `bun dev`, which redirects this route to Vite), open devtools and use the app broadly: join voice with each noise suppression mode, install a plugin and use its UI, browse the marketplace, load avatars and uploaded images | Everything works, because the policy is report-only. Collect every `Content Security Policy` violation the console reports and widen the policy in `http/interface.ts` to match. **Only when the console is clean does the header get renamed** from `Content-Security-Policy-Report-Only` to `Content-Security-Policy`; the test asserting the enforcing header is absent has to be updated in the same change |
 | M71 | 12.11 | Enable "Login automatically", log in, then invalidate the session from another browser (change your password, or have an admin kick you). Reload the tab | The connect screen appears with the identity prefilled, not the crash screen and not a 23-second "Reconnecting" banner. The auto-login switch is off and the saved token is gone |
 | M72 | 12.11 | While connected, drop the network for ~10s and, **during** the reconnecting banner, open the search dialog, a DM, and the pinned-messages popover | **Known gap, not fixed:** these mount effects call `getTRPCClient()` while the client is discarded and may still crash into the error boundary. Note which of the three do it. After the reconnect completes, also check that DM lists and voice events still update, since those subscriptions may be bound to the old client |
+| M74 | 2.4 | Search for a message far back in a busy channel and jump to it. Check the banner, scroll up from the window, click the banner, and repeat in a channel that is actively receiving messages | The window opens around the target with a "Viewing older messages" banner; scrolling up loads older messages continuously; the banner returns you to the newest message and disappears. **Messages arriving while the banner is up are deliberately withheld** and appear when you return. Jumping to a recent message shows no banner at all |
 | M73 | 8.2 | Scroll far up in a busy channel to load several pages, switch to another channel, then come back. Repeat with a DM, and with the voice chat sidebar's text panel open on a different channel | The channel you return to renders immediately at the bottom with no loading flash, scrolling up still loads older messages, and nothing appears out of order or duplicated. Memory does not keep climbing across a long session of channel hopping |
 | M44 | 12.1 | On a server with a password and `onlyAskForPasswordOnFirstJoin` **off**, force a reconnect | The password dialog reappears over the still-visible app; entering it restores the session, cancelling logs out. The password is deliberately not stored, so a re-prompt is expected here |
 
@@ -554,7 +559,7 @@ Format: what to do, then what should happen.
 | #   | Chunk                                                              | Scope                                                                                        | Status  |
 | --- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | ------- |
 | 1   | [Edge & auth](#1-edge--auth)                                       | `http/`, `utils/trpc.ts`, `utils/rate-limiters/`, `config.ts`                                | fixed |
-| 2   | [Routers: messages, dms, files](#2-routers-messages-dms-files)     | `routers/messages/`, `routers/dms/`, `routers/files/`                                        | fixed (2.4 open) |
+| 2   | [Routers: messages, dms, files](#2-routers-messages-dms-files)     | `routers/messages/`, `routers/dms/`, `routers/files/`                                        | fixed |
 | 3   | [Routers: users & access](#3-routers-users--access)                | `routers/users/`, `roles/`, `invites/`, `categories/`, `channels/`                           | fixed |
 | 4   | [Routers: voice & plugins](#4-routers-voice--plugins)              | `routers/voice/`, `plugins/`, `emojis/`, `others/`, `runtimes/`                              | fixed (4.7 in T2) |
 | 5   | [DB layer](#5-db-layer)                                            | `db/schema.ts`, `db/queries/`, `db/mutations/`, `db/publishers.ts`, `db/migrations/`         | fixed |
@@ -1248,7 +1253,7 @@ on both routes, so the ceiling is the existing constant rather than a second num
 tests: negative limit rejected on both routes, above-maximum rejected, non-integer
 rejected, exactly at the maximum accepted.
 
-**2.4 — [DEFERRED, constraint recorded] `get-messages.ts:95-99` — the jump-to-message
+**2.4 — [FIXED] `get-messages.ts:95-99` — the jump-to-message
 branch is unbounded by construction.** `newerMessages` selects every root message with
 `createdAt >= target.createdAt`, no limit, deliberately. Linking to a message from a year
 ago loads a year of history into memory, joins files/reactions/reply-previews for all of
@@ -1269,8 +1274,40 @@ the channel list on jump instead of merging, and a path back to the present. Tha
 this route, `features/server/messages` (chunk 8) and the scroll controller (10.3, which
 has its own uncleaned-timer bug), so it belongs with those rather than here.
 
-Until then this is a known scaling limit: jumping to an old message loads everything since
-it. 2.3's ceiling does not apply to this branch.
+**Fixed as all three parts, which is what the analysis above said it would take.**
+
+**Server.** The newer half is `limit + 1` and the older half `JUMP_CONTEXT_LIMIT + 1`, so the
+route returns a window instead of everything since the target, and reports `hasNewer` when the
+window stops short of the newest message. It also returns a `nextCursor` built from the window's
+own oldest row, which it previously never did: a jump left the client paginating from the
+channel's page-1 cursor, somewhere else entirely.
+
+**A bug in the first cut of this, caught by its own test.** Ordering the newer half `desc` and
+limiting it takes the newest messages *in the channel*, not the ones adjacent to the target, so
+once the limit bit, the target fell outside its own window. The newer half is now `asc` from the
+target and reversed afterwards, so the window is anchored where the user is looking.
+
+**Client.** When `hasNewer` is true the jump **replaces** the channel list instead of merging
+(new `setChannelMessages` reducer) and applies the window's cursor, so scrolling up continues
+from the window. A "Viewing older messages" control returns to the present. When `hasNewer` is
+false the window already reaches the newest message, so the old merge is kept and no control
+appears, which leaves the common case untouched.
+
+**The part that was not in the original analysis and would have reopened the hole.** A live
+message arriving over the subscription still merged into the list, appending it after the
+window's newest and putting the gap right back. The detached flag therefore lives in the store,
+not in component state, so `addMessages` can drop live messages for a detached channel; they
+arrive with the rest on return. For the same reason `trimChannelMessages` **deletes** a detached
+channel instead of trimming it (8.2), since keeping its newest page would leave old history for
+the next mount's page-1 fetch to merge into.
+
+Three server tests (window shape, the cap plus `hasNewer`, paging upward from the window's own
+cursor) and one e2e test driving the real path: search, jump, assert the window is bounded and
+ordered and does not contain message 1000, then the control brings it back. **Verified against
+the broken behaviour** by forcing `hasNewer = false`, which fails it.
+
+Three test ids were added for that (`SEARCH_INPUT`, `SEARCH_RESULT_JUMP`, `RETURN_TO_PRESENT`),
+which also makes search drivable from e2e for the first time, see T8.
 
 **2.5 — [FIXED] `files/delete-file.ts:39-50` — the second message-deletion path skipped
 all of the first one's cleanup.** When the last file of a file-only message is removed, the route

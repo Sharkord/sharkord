@@ -125,5 +125,6 @@
   "typeAMessage": "Type a message...",
   "messageChannel": "Message \"{{name}}\"",
   "toggleParticipants": "Show/hide participants",
-  "reconnecting": "Reconnecting…"
+  "reconnecting": "Reconnecting…",
+  "viewingOlderMessages": "Viewing older messages, jump to the latest"
 }

@@ -41,6 +41,8 @@ export interface IServerState {
   selectedChannelId: number | undefined;
   currentVoiceChannelId: number | undefined;
   messagesMap: TMessagesMap;
+  // channels whose list is a bounded jump window rather than history ending at the present
+  detachedChannels: Record<number, boolean>;
   threadMessagesMap: TThreadMessagesMap;
   users: TJoinedPublicUser[];
   roles: TJoinedRole[];
@@ -85,6 +87,7 @@ const initialState: IServerState = {
   selectedChannelId: undefined,
   currentVoiceChannelId: undefined,
   messagesMap: {},
+  detachedChannels: {},
   threadMessagesMap: {},
   users: [],
   roles: [],
@@ -195,9 +198,16 @@ export const serverSlice = createSlice({
       action: PayloadAction<{
         channelId: number;
         messages: TJoinedMessage[];
+        isLive?: boolean;
       }>
     ) => {
-      const { channelId, messages } = action.payload;
+      const { channelId, messages, isLive } = action.payload;
+
+      // a detached channel shows a window that stops short of the present, so appending a live
+      // message would put the very gap this window exists to avoid back into the list. it
+      // arrives with the rest when the user returns to the present
+      if (isLive && state.detachedChannels[channelId]) return;
+
       const existing = state.messagesMap[channelId] ?? [];
 
       // dedupe against the incoming batch rather than the loaded history: the
@@ -331,7 +341,39 @@ export const serverSlice = createSlice({
         (m) => m.id !== action.payload.messageId
       );
     },
+    // used by the jump-to-message path when the window it fetched does not reach the newest
+    // message. merging a bounded window into what the channel already holds would leave a gap
+    // in the middle of the rendered list with nothing telling the user
+    setChannelMessages: (
+      state,
+      action: PayloadAction<{
+        channelId: number;
+        messages: TJoinedMessage[];
+        detached: boolean;
+      }>
+    ) => {
+      const { channelId, messages, detached } = action.payload;
+
+      state.messagesMap[channelId] = messages;
+
+      if (detached) {
+        state.detachedChannels[channelId] = true;
+      } else {
+        delete state.detachedChannels[channelId];
+      }
+    },
+
     trimChannelMessages: (state, action: PayloadAction<number>) => {
+      // a detached window is dropped outright rather than trimmed: keeping its newest page
+      // would leave the channel holding a slice of old history that the next mount's page-1
+      // fetch would merge into, reopening the gap
+      if (state.detachedChannels[action.payload]) {
+        delete state.messagesMap[action.payload];
+        delete state.detachedChannels[action.payload];
+
+        return;
+      }
+
       const messages = state.messagesMap[action.payload];
 
       if (!messages || messages.length <= DEFAULT_MESSAGES_LIMIT) return;

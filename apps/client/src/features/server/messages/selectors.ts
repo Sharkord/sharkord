@@ -33,3 +33,8 @@ export const parentMessageByIdSelector = createCachedSelector(
   ],
   (messages, messageId) => messages.find((m) => m.id === messageId)
 )((_, messageId: number) => messageId);
+
+export const isChannelDetachedSelector = (
+  state: IRootState,
+  channelId: number
+) => !!state.server.detachedChannels[channelId];

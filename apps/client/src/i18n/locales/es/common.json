@@ -123,5 +123,6 @@
   "wasReactedBy": "ha sido reaccionado por {{reacters}}.",
   "andMore": "y {{count}} más",
   "toggleParticipants": "Mostrar/ocultar participantes",
-  "reconnecting": "Reconectando…"
+  "reconnecting": "Reconectando…",
+  "viewingOlderMessages": "Viendo mensajes antiguos, ir a los más recientes"
 }

@@ -1195,7 +1195,7 @@ describe('messages router', () => {
     expect(intersection.length).toBe(0);
   });
 
-  test('should fetch all messages until targetMessageId plus 20 older', async () => {
+  test('should return a window around targetMessageId, not everything since it', async () => {
     globalThis.disableRateLimiting = true;
 
     const { caller } = await initTest();
@@ -1203,61 +1203,117 @@ describe('messages router', () => {
     const sentMessageIds: number[] = [];
 
     for (let i = 0; i < 10; i++) {
-      const messageId = await caller.messages.send({
-        channelId: 2,
-        content: `Message ${i + 1}`,
-        files: []
-      });
-
-      sentMessageIds.push(messageId);
+      sentMessageIds.push(
+        await caller.messages.send({
+          channelId: 2,
+          content: `Message ${i + 1}`,
+          files: []
+        })
+      );
     }
 
-    // target the newest message — should return all 10 + up to 20 older (0 exist)
-    const newestId = sentMessageIds[9]!;
+    // target the newest: nothing newer than it, so the window reaches the present
+    const newestResult = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      targetMessageId: sentMessageIds[9]!,
+      limit: 50
+    });
+
+    expect(newestResult.messages.length).toBe(10);
+    expect(newestResult.hasNewer).toBe(false);
+    expect(newestResult.nextCursor).toBeNull();
+
+    // target the third: 7 newer + target + 2 older, all inside the limit
+    const middleResult = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      targetMessageId: sentMessageIds[2]!,
+      limit: 50
+    });
+
+    expect(middleResult.messages.length).toBe(10);
+    expect(middleResult.hasNewer).toBe(false);
+    expect(middleResult.messages.some((m) => m.id === sentMessageIds[2]!)).toBe(
+      true
+    );
+
+    globalThis.disableRateLimiting = false;
+  });
+
+  test('should cap the newer half of a jump window at the requested limit', async () => {
+    // this is 2.4. the newer half had no limit at all, so jumping to an old message returned
+    // every root message since, joined with files, reactions and reply previews
+    globalThis.disableRateLimiting = true;
+
+    const { caller } = await initTest();
+
+    const sentMessageIds: number[] = [];
+
+    for (let i = 0; i < 30; i++) {
+      sentMessageIds.push(
+        await caller.messages.send({
+          channelId: 2,
+          content: `Message ${i + 1}`,
+          files: []
+        })
+      );
+    }
+
+    const target = sentMessageIds[0]!;
 
     const result = await caller.messages.get({
       channelId: 2,
       cursor: null,
-      targetMessageId: newestId,
-      limit: 1
+      targetMessageId: target,
+      limit: 5
     });
 
-    // only the target itself + 0 newer + 9 older (capped by available)
-    expect(result.messages.length).toBe(10);
-    expect(result.nextCursor).toBeNull();
-    expect(result.messages.some((message) => message.id === newestId)).toBe(
-      true
-    );
+    // 5 newer at most, plus the target itself, and no older exist below it
+    expect(result.messages.length).toBeLessThanOrEqual(6);
+    expect(result.hasNewer).toBe(true);
+    expect(result.messages.some((m) => m.id === target)).toBe(true);
 
-    // target the 3rd message (index 2) — 7 newer + target + 2 older = 10
-    const middleId = sentMessageIds[2]!;
+    globalThis.disableRateLimiting = false;
+  });
 
-    const result2 = await caller.messages.get({
+  test('should page upward from a jump window using its own cursor', async () => {
+    globalThis.disableRateLimiting = true;
+
+    const { caller } = await initTest();
+
+    const sentMessageIds: number[] = [];
+
+    for (let i = 0; i < 40; i++) {
+      sentMessageIds.push(
+        await caller.messages.send({
+          channelId: 2,
+          content: `Message ${i + 1}`,
+          files: []
+        })
+      );
+    }
+
+    // target near the top so more than the 20 context messages sit below it
+    const result = await caller.messages.get({
       channelId: 2,
       cursor: null,
-      targetMessageId: middleId,
-      limit: 1
+      targetMessageId: sentMessageIds[35]!,
+      limit: 50
     });
 
-    expect(result2.messages.length).toBe(10);
-    expect(result2.messages.some((message) => message.id === middleId)).toBe(
-      true
-    );
+    expect(result.nextCursor).not.toBeNull();
 
-    // target the oldest — 9 newer + target + 0 older = 10
-    const oldestId = sentMessageIds[0]!;
-
-    const result3 = await caller.messages.get({
+    const olderPage = await caller.messages.get({
       channelId: 2,
-      cursor: null,
-      targetMessageId: oldestId,
-      limit: 1
+      cursor: result.nextCursor,
+      limit: 50
     });
 
-    expect(result3.messages.length).toBe(10);
-    expect(result3.messages.some((message) => message.id === oldestId)).toBe(
-      true
-    );
+    const windowIds = new Set(result.messages.map((m) => m.id));
+
+    expect(olderPage.messages.length).toBeGreaterThan(0);
+    expect(olderPage.messages.every((m) => !windowIds.has(m.id))).toBe(true);
 
     globalThis.disableRateLimiting = false;
   });

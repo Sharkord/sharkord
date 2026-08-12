@@ -11,6 +11,7 @@ import {
   addMessages,
   addThreadMessages,
   clearThreadMessages,
+  setChannelMessages,
   trimChannelMessages
 } from './actions';
 import {
@@ -19,6 +20,7 @@ import {
   waitForMessageElement
 } from './helpers';
 import {
+  isChannelDetachedSelector,
   messagesByChannelIdSelector,
   parentMessageByIdSelector,
   threadMessagesByParentIdSelector
@@ -170,6 +172,11 @@ const usePaginatedMessages = (
     setLoading(true);
   }, []);
 
+  const applyCursor = useCallback((nextCursor: TMessagesCursor | null) => {
+    setCursor(nextCursor);
+    setHasMore(nextCursor !== null);
+  }, []);
+
   return {
     fetching,
     loading,
@@ -180,6 +187,7 @@ const usePaginatedMessages = (
     groupedMessages,
     isEmpty,
     fetchMessages,
+    applyCursor,
     reset
   };
 };
@@ -187,6 +195,9 @@ const usePaginatedMessages = (
 export const useMessages = (channelId: number) => {
   const messages = useMessagesByChannelId(channelId);
   const inited = useRef(false);
+  const detachedFromPresent = useSelector((state: IRootState) =>
+    isChannelDetachedSelector(state, channelId)
+  );
 
   const fetchPage = useCallback(
     async (cursorToFetch: TMessagesCursor | null) => {
@@ -215,6 +226,8 @@ export const useMessages = (channelId: number) => {
 
   useEffect(() => () => trimChannelMessages(channelId), [channelId]);
 
+  const { applyCursor } = paginated;
+
   const scrollToMessage = useCallback(
     async (messageId: number, highlightTime = 4000) => {
       // check if the message is already rendered in the messages container
@@ -226,14 +239,26 @@ export const useMessages = (channelId: number) => {
         return;
       }
 
-      const { messages: rawPage } = await fetchChannelMessagesPage({
+      const {
+        messages: rawPage,
+        nextCursor,
+        hasNewer
+      } = await fetchChannelMessagesPage({
         channelId,
         cursor: null,
         limit: DEFAULT_MESSAGES_LIMIT,
         targetMessageId: messageId
       });
 
-      storeChannelMessages(channelId, rawPage);
+      if (hasNewer) {
+        // the window stops short of the newest message, so merging it into the channel's
+        // existing list would put a gap in the middle of what is rendered. replace instead and
+        // let the banner offer the way back to the present
+        setChannelMessages(channelId, [...rawPage].reverse(), true);
+        applyCursor(nextCursor);
+      } else {
+        storeChannelMessages(channelId, rawPage);
+      }
 
       const element = await waitForMessageElement(messageId);
 
@@ -241,10 +266,26 @@ export const useMessages = (channelId: number) => {
         highlightMessageElement(element, highlightTime);
       }
     },
-    [channelId]
+    [channelId, applyCursor]
   );
 
-  return { ...paginated, scrollToMessage };
+  const returnToPresent = useCallback(async () => {
+    const { messages: rawPage, nextCursor } = await fetchChannelMessagesPage({
+      channelId,
+      cursor: null,
+      limit: DEFAULT_MESSAGES_LIMIT
+    });
+
+    setChannelMessages(channelId, [...rawPage].reverse(), false);
+    applyCursor(nextCursor);
+  }, [channelId, applyCursor]);
+
+  return {
+    ...paginated,
+    scrollToMessage,
+    detachedFromPresent,
+    returnToPresent
+  };
 };
 
 export const useThreadMessagesByParentId = (parentMessageId: number) =>

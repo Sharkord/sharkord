@@ -15,9 +15,11 @@ import {
   ChannelPermission,
   getTrpcError,
   prepareMessageHtml,
+  TestId,
   type TJoinedMessage
 } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
+import { ArrowDown } from 'lucide-react';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -49,7 +51,9 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
     loading,
     fetching,
     groupedMessages,
-    scrollToMessage
+    scrollToMessage,
+    detachedFromPresent,
+    returnToPresent
   } = useMessages(channelId);
 
   useScrollToJumpTarget(channelId, scrollToMessage);
@@ -154,6 +158,10 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
     setReplyingToMessage(message);
   }, []);
 
+  const handleReturnToPresent = useCallback(() => {
+    void returnToPresent();
+  }, [returnToPresent]);
+
   const handleCancelReply = useCallback(
     () => setReplyingToMessage(undefined),
     [setReplyingToMessage]
@@ -203,6 +211,18 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
           ))}
         </div>
       </div>
+
+      {detachedFromPresent && (
+        <button
+          type="button"
+          onClick={handleReturnToPresent}
+          data-testid={TestId.RETURN_TO_PRESENT}
+          className="mx-2 mb-1 flex items-center justify-center gap-2 rounded-md bg-muted px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted/80 cursor-pointer"
+        >
+          <ArrowDown className="size-3.5" />
+          {t('viewingOlderMessages')}
+        </button>
+      )}
 
       <ChatInputDivider
         composeContainerRef={composeContainerRef}

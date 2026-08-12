@@ -443,3 +443,64 @@ test.describe('Channel message retention', () => {
     expect(Math.max(...afterReturn)).toBe(1000);
   });
 });
+
+test.describe('Jump to message', () => {
+  test('should show a bounded window and a way back to the present', async ({
+    page
+  }) => {
+    await loginAs(page, 'testowner', 'password123');
+
+    await openInfiniteScrollChannel(page);
+
+    const messages = page.getByTestId(TestId.MESSAGE_ITEM);
+
+    await expect(messages.first()).toBeVisible();
+    await expect
+      .poll(async () => {
+        const numbers = await getMessageNumbers(messages.allTextContents());
+
+        return numbers.length > 0 ? Math.max(...numbers) : null;
+      })
+      .toBe(1000);
+
+    await page.keyboard.press('Control+k');
+
+    const searchInput = page.getByTestId(TestId.SEARCH_INPUT);
+
+    await expect(searchInput).toBeVisible();
+    await searchInput.fill('Mock message 150');
+
+    const jumpButton = page.getByTestId(TestId.SEARCH_RESULT_JUMP).first();
+
+    await expect(jumpButton).toBeVisible();
+    await jumpButton.click();
+
+    // the window is anchored at the target and stops well short of message 1000
+    await expect
+      .poll(async () => {
+        const numbers = await getMessageNumbers(messages.allTextContents());
+
+        return numbers.includes(150);
+      })
+      .toBe(true);
+
+    const windowNumbers = await getMessageNumbers(messages.allTextContents());
+
+    expect(windowNumbers).toEqual([...windowNumbers].sort((a, b) => a - b));
+    expect(Math.max(...windowNumbers)).toBeLessThan(1000);
+
+    const returnToPresent = page.getByTestId(TestId.RETURN_TO_PRESENT);
+
+    await expect(returnToPresent).toBeVisible();
+    await returnToPresent.click();
+
+    await expect(returnToPresent).toBeHidden();
+    await expect
+      .poll(async () => {
+        const numbers = await getMessageNumbers(messages.allTextContents());
+
+        return numbers.length > 0 ? Math.max(...numbers) : null;
+      })
+      .toBe(1000);
+  });
+});
