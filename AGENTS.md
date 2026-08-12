@@ -250,17 +250,11 @@ reason — extend `seed.ts` or `helpers.ts` instead.
 
 `apps/client/src`:
 
-- `features/` — Redux Toolkit state. Components read state through the hooks/selectors,
-  never by reaching into the store shape. Two shapes exist:
-  - top level slices (`app`, `dialogs`, `server-screens`, `server`) each own a `slice.ts`.
-  - the `server/*` domains (messages, users, channels, roles, categories, emojis, voice,
-    plugins) have **no `slice.ts` of their own**: their reducers all live in the single
-    `features/server/slice.ts`, and the domain folder holds `actions.ts`, `selectors.ts`,
-    `hooks.ts` and `subscriptions.ts` (the realtime handlers for that domain).
-
-  So a new server-side domain field means editing `features/server/slice.ts`, and the rest
-  goes in the domain folder. Only put runtime services in `features/` if they own state:
-  a service that holds none belongs in `helpers/` or `lib/`.
+- `features/` — Redux Toolkit state, read through hooks/selectors, never by reaching into the
+  store shape. Top level slices (`app`, `dialogs`, `server-screens`, `server`) own a `slice.ts`;
+  the `server/*` domains have **none**, their reducers all live in `features/server/slice.ts`
+  and the domain folder holds `actions.ts`, `selectors.ts`, `hooks.ts` and `subscriptions.ts`.
+  A service that owns no state belongs in `helpers/` or `lib/`, not here.
 - `components/` — app components, one folder per component with `index.tsx` plus its local
   parts, `helpers.ts` and `hooks/`. Keep component-local logic in that folder.
 - `screens/` — top-level routes. `hooks/` — generic reusable hooks (`use-*.ts`).
@@ -278,12 +272,8 @@ reason — extend `seed.ts` or `helpers.ts` instead.
   handler inline in JSX (`onDrop={(e) => ...}`, `onClick={() => setX(false)}`) — a new
   function identity on every render defeats the `React.memo` on the child receiving it.
   Extract it to a named `useCallback` above the return.
-- Components should be small and focused. Roughly 200 lines for a component and 400 for a
-  screen is where one usually stops being either, so treat those numbers as a **smell worth a
-  second look, not a hard cap**. A 250-line component that does one thing clearly is fine and
-  should be left alone; a 900-line one that does five things is the problem the guidance is
-  actually about. Split when the file has become hard to follow or has grown a second
-  responsibility, not because it crossed a line count.
+- Components should be small and focused. Split when a file has become hard to follow or has
+  grown a second responsibility, **never because it crossed a line count**.
 
 Server calls go inline where they are used, wrapped in `try`/`catch` with a toast, the way
 `handleDragEnd` in `left-sidebar/channels.tsx` does it. Do not add a function to
@@ -314,28 +304,19 @@ time and re-renders its component on **unrelated** state changes. Pick the right
   by that parameter: `createCachedSelector([inputs, (_, id) => id], fn)((_, id) => id)`.
   `channelByIdSelector`, `userByIdSelector`.
 
-Know what the library already does, so you optimize against the real behaviour:
-`reselect` 5 (which `@reduxjs/toolkit` 2 brings) memoizes with `weakMapMemoize` by
-default, **per combination of inputs**, not in a single slot. Two components asking for
-different ids do not evict each other, and a result stays referentially stable across
-dispatches as long as its inputs do. The single-slot behaviour that made a plain
-`createSelector` thrash on a parameterized input was reselect 4, and advice written for it
-no longer applies.
+Installed `reselect` 5 memoizes per combination of inputs, not in a single slot, so
+parameterized selectors do not evict each other. Rules:
 
-Rules that follow from that:
-
-- **Prefer `createCachedSelector` for parameterized selectors anyway**, for explicit
-  keying that does not depend on a library default, and because the per-key instance makes
-  the cache boundary obvious. This is a consistency rule now, not a performance one, so do
-  not rewrite a working plain `createSelector` on performance grounds alone.
+- **Prefer `createCachedSelector` for parameterized selectors**, for explicit keying and an
+  obvious cache boundary. This is a **consistency** rule, not a performance one: do not
+  rewrite a working plain `createSelector` on performance grounds.
 - **Return a stable empty value.** A `?? {}` or `?? []` fallback in a **plain** selector
-  allocates on every call, and a plain selector has no memoization to save you, so the new
-  reference re-renders the component on every dispatch. Use the module-level
-  `DEFAULT_OBJECT` / `DEFAULT_ARRAY` constant the domain already declares. The same applies
-  inside a memoized result function, where it is an allocation rather than a re-render.
+  allocates on every call and re-renders the component on every dispatch, since there is no
+  memoization to save you. Use the module-level `DEFAULT_OBJECT` / `DEFAULT_ARRAY` the domain
+  already declares.
 - **Compose selectors, don't re-derive.** Pass existing selectors as inputs rather than
-  reaching into `state` again inside the result function, so the memoization actually has
-  something to compare.
+  reaching into `state` again inside the result function, so the memoization has something to
+  compare.
 - **A selector that must stay uncached** (because it reads several slices imperatively)
   belongs in actions only, and says so in a comment above it, the way
   `isChannelTextVisibleByIdSelector` does.
@@ -351,12 +332,6 @@ Rules that follow from that:
 
 `bun run magic` applies here too.
 
-## Before writing new code
-
-Make sure you understand the existing patterns and helpers. If you find yourself writing a lot of new code, check if it can be done with existing helpers or patterns first. Avoid introducing unneeded abstractions or dependencies for a single use case unless absolutely necessary.
-
-Never use dashes (—) when writing code, comments, UI strings, or commit messages.
-
 ## After the feature/fix is done
 
 ### Translations
@@ -371,20 +346,15 @@ This command will output a list of missing translations, including the language,
 
 ### Tests
 
-Make sure all tests pass and that you have added tests for any new functionality. Run the following command to run all tests:
+Every new behaviour needs tests and the whole suite must pass, see [Testing](#testing).
 
-```bash
-bun run test
-```
+## Style
 
-
-## Extra notes
-
-Always start comments with lowercase
-NEVER comment in the middle of a react component's JSX
-NEVER comment in a type definition
-NEVER nest ternaries. One `a ? b : c` is fine; a ternary inside another one's branches is
-not, in code or in JSX. Use an early return, a lookup object, or an `if`/`else` and assign
-to a `let`. If the branches are what a component renders, split it into two components or
-pull the choice into a variable above the return.
-Do not make useless comments like "this is a function that does X" or "this is a type definition for Y". Comments are useful for edge cases, explaining why something is done a certain way, or providing context that isn't obvious from the code itself.
+- Never use dashes (—) in code, comments, UI strings or commit messages.
+- Always start comments with lowercase.
+- Comment edge cases, non-obvious context and **why**. Never restate what the code says.
+- NEVER comment in the middle of a react component's JSX, or inside a type definition.
+- NEVER nest ternaries. One `a ? b : c` is fine; a ternary inside another one's branches is
+  not, in code or in JSX. Use an early return, a lookup object, or an `if`/`else` assigned to a
+  `let`. If the branches are what a component renders, split it into two components or pull the
+  choice into a variable above the return.

@@ -6,6 +6,30 @@ section of the chunk they belong to. Fixes are applied later, also chunk by chun
 Lens per chunk, in priority order: **security → correctness → performance → duplication &
 code placement → over-engineering → [AGENTS.md](AGENTS.md) conformance**.
 
+## AGENTS.md
+
+The guide was edited during the audit (7.14's cron note, 5.0's transaction rule, 8.4's
+`features/` description, 10.9's component-size correction, 11.3's i18n rule, T3's selector
+rewrite) and then **simplified once at the end**, by decision, from 389 to 359 lines with no
+rule removed:
+
+- three blocks were pure duplication. `## Before writing new code` restated the intro's
+  no-over-engineering paragraph almost verbatim 350 lines later, and was a third copy of
+  `### Don't repeat, and put code where it belongs`. A trailing `### Tests` duplicated
+  `## Testing` and was the worse copy, since it omitted "plain `bun test` at the root will
+  fail". Both are gone.
+- the scattered comment and formatting rules (`## Extra notes`, plus a "never use dashes" line
+  orphaned under an unrelated heading) are one `## Style` list.
+- the audit's own additions were compressed where they had grown into essays: the selector
+  section lost its reselect 4 history to T3, the component-size bullet went from six hedging
+  lines to two, and 8.4's `features/` description from eleven lines to five.
+
+**What was deliberately not touched**: the reasons behind rules that a real failure proved.
+The `--> statement-breakpoint` explanation (5.16 showed it silently skips every statement after
+the first) and the synchronous-transaction-callback rule (5.0 showed the async form gave no
+atomicity anywhere) stay at full length. A rule whose reason is deleted is a rule the next agent
+argues its way out of.
+
 ## Duplication & code placement (check in every chunk)
 
 Run this check on every chunk, not only the ones that look messy:
@@ -285,6 +309,11 @@ stable-empty-value rule was sharpened rather than dropped: it matters most in **
 selectors, which have no memoization to fall back on, and is an allocation rather than a
 re-render inside a memoized result function. The opening paragraph now says "without
 memoizing" instead of implying every derived selector re-renders on every dispatch.
+
+**Trimmed again later, by decision, when AGENTS.md was simplified.** The guide now states the
+reselect 5 behaviour in one sentence and keeps the rules; the reasoning, the reselect 4
+comparison and the measurement live here and in 8.1 instead. A style guide should carry the
+rule and the reason a rule exists, not the history of the advice it replaced.
 
 ### T4 — [REFRAMED] 9.4 and 9.15, the voice provider
 
