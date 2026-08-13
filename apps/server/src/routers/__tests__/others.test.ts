@@ -1,4 +1,8 @@
-import { ActivityLogType, type TTempFile } from '@sharkord/shared';
+import {
+  ActivityLogType,
+  STORAGE_MAX_FILES_PER_MESSAGE,
+  type TTempFile
+} from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import {
@@ -208,6 +212,28 @@ describe('others router', () => {
     );
     expect(settings.storageImageOptimizationQuality).toBe(
       newSettings.storageImageOptimizationQuality
+    );
+  });
+
+  test('should refuse a per-message file cap send-message could never honour', async () => {
+    const { caller } = await initTest(1);
+
+    // send-message rejects at STORAGE_MAX_FILES_PER_MESSAGE in zod before it reads this
+    // setting, so anything above it is a limit the server would never apply
+    await expect(
+      caller.others.updateSettings({
+        storageMaxFilesPerMessage: STORAGE_MAX_FILES_PER_MESSAGE + 1
+      })
+    ).rejects.toThrow();
+
+    await caller.others.updateSettings({
+      storageMaxFilesPerMessage: STORAGE_MAX_FILES_PER_MESSAGE
+    });
+
+    const settings = await caller.others.getSettings();
+
+    expect(settings.storageMaxFilesPerMessage).toBe(
+      STORAGE_MAX_FILES_PER_MESSAGE
     );
   });
 

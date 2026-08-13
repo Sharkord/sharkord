@@ -1,6 +1,7 @@
 import {
   ActivityLogType,
   Permission,
+  STORAGE_MAX_FILES_PER_MESSAGE,
   STORAGE_MAX_IMAGE_OPTIMIZATION_QUALITY,
   STORAGE_MIN_IMAGE_OPTIMIZATION_QUALITY,
   StorageOverflowAction
@@ -29,7 +30,12 @@ const updateSettingsRoute = protectedProcedure
       storageUploadMaxFileSize: z.number().min(0).optional(),
       storageMaxAvatarSize: z.number().min(0).optional(),
       storageMaxBannerSize: z.number().min(0).optional(),
-      storageMaxFilesPerMessage: z.number().int().min(0).optional(),
+      storageMaxFilesPerMessage: z
+        .number()
+        .int()
+        .min(0)
+        .max(STORAGE_MAX_FILES_PER_MESSAGE)
+        .optional(),
       storageSpaceQuotaByUser: z.number().min(0).optional(),
       storageOverflowAction: z.enum(StorageOverflowAction).optional(),
       enablePlugins: z.boolean().optional(),

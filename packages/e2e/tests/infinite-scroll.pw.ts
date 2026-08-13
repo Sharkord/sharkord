@@ -503,4 +503,56 @@ test.describe('Jump to message', () => {
       })
       .toBe(1000);
   });
+
+  test('should reattach when a second jump lands within reach of the present', async ({
+    page
+  }) => {
+    await loginAs(page, 'testowner', 'password123');
+
+    await openInfiniteScrollChannel(page);
+
+    const messages = page.getByTestId(TestId.MESSAGE_ITEM);
+
+    await expect(messages.first()).toBeVisible();
+
+    const jumpTo = async (target: number) => {
+      await page.keyboard.press('Control+k');
+
+      const searchInput = page.getByTestId(TestId.SEARCH_INPUT);
+
+      await expect(searchInput).toBeVisible();
+      await searchInput.fill(`Mock message ${target}`);
+
+      const jumpButton = page.getByTestId(TestId.SEARCH_RESULT_JUMP).first();
+
+      await expect(jumpButton).toBeVisible();
+      await jumpButton.click();
+
+      await expect
+        .poll(async () => {
+          const numbers = await getMessageNumbers(messages.allTextContents());
+
+          return numbers.includes(target);
+        })
+        .toBe(true);
+    };
+
+    const returnToPresent = page.getByTestId(TestId.RETURN_TO_PRESENT);
+
+    // far enough back that the window cannot reach the newest message
+    await jumpTo(150);
+    await expect(returnToPresent).toBeVisible();
+
+    // within one page of the present, so this window does reach it. merging it into the
+    // detached window above would splice two disjoint stretches of history together
+    await jumpTo(950);
+    await expect(returnToPresent).toBeHidden();
+
+    const numbers = await getMessageNumbers(messages.allTextContents());
+
+    expect(Math.max(...numbers)).toBe(1000);
+    expect(Math.max(...numbers) - Math.min(...numbers) + 1).toBe(
+      numbers.length
+    );
+  });
 });

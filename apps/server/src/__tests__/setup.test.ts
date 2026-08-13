@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import {
   categories,
+  channelRolePermissions,
   channels,
+  channelUserPermissions,
   directMessages,
   logins,
   messages,
@@ -35,7 +37,7 @@ describe('tests setup', () => {
 
     expect(settingsResults.length).toBe(1);
     expect(usersResults.length).toBe(5);
-    expect(channelsResults.length).toBe(4);
+    expect(channelsResults.length).toBe(5);
     expect(rolesResults.length).toBe(4);
     expect(messagesResults.length).toBe(2);
   });
@@ -48,6 +50,18 @@ describe('tests setup', () => {
 
     expect(userRolesResults.length).toBe(5);
     expect(rolePermissionsResults.length).toBe(29);
+  });
+
+  test('should seed the channel permission rows that disagree with each other', async () => {
+    const [rolePermissionResults, userPermissionResults] = await Promise.all([
+      tdb.select().from(channelRolePermissions),
+      tdb.select().from(channelUserPermissions)
+    ]);
+
+    expect(rolePermissionResults.length).toBe(1);
+    expect(userPermissionResults.length).toBe(1);
+    expect(rolePermissionResults[0]!.allow).toBe(true);
+    expect(userPermissionResults[0]!.allow).toBe(false);
   });
 
   test('should seed categories and the direct message pair', async () => {

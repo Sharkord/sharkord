@@ -26,6 +26,10 @@ describe('/plugin-bundle', () => {
       'attachment; filename="index.js"'
     );
 
+    // the client loads this with a native import(), and a module script served as anything
+    // but a javascript type is refused by the browser before it ever runs
+    expect(response.headers.get('Content-Type')).toContain('javascript');
+
     const text = await response.text();
 
     expect(text).toContain('export {}');

@@ -256,6 +256,12 @@ export const useMessages = (channelId: number) => {
         // let the banner offer the way back to the present
         setChannelMessages(channelId, [...rawPage].reverse(), true);
         applyCursor(nextCursor);
+      } else if (detachedFromPresent) {
+        // this window does reach the present, but the list it would merge into is an older
+        // detached window, so merging splices two disjoint stretches of history together and
+        // leaves the channel detached with no way back. replace and reattach instead
+        setChannelMessages(channelId, [...rawPage].reverse(), false);
+        applyCursor(nextCursor);
       } else {
         storeChannelMessages(channelId, rawPage);
       }
@@ -266,7 +272,7 @@ export const useMessages = (channelId: number) => {
         highlightMessageElement(element, highlightTime);
       }
     },
-    [channelId, applyCursor]
+    [channelId, applyCursor, detachedFromPresent]
   );
 
   const returnToPresent = useCallback(async () => {

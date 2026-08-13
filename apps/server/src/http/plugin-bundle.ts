@@ -74,7 +74,6 @@ const pluginBundleRouteHandler = async (
 
   await sendFile(req, res, requestedPath, {
     cacheControl: 'no-cache',
-    contentType: 'application/octet-stream',
     contentDisposition: `attachment; filename="${fileName}"`,
     notFoundMessage: 'File not found on disk'
   });

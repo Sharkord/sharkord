@@ -16,16 +16,22 @@
  *   userRoles         5    one per user, plus the moderator's extra role
  *   rolePermissions  29    the default permission sets for the roles above
  *   categories        2    Text Channels, Voice Channels
- *   channels          4    1 General (text), Voice, DM Channel, Private Voice
+ *   channels          5    1 General (text), Voice, DM Channel, Private Voice,
+ *                          Restricted Text
  *   messages          2    both in channel 1
  *   directMessages    1    the DM pair backing "DM Channel"
+ *   channelRolePermissions
+ *                     1    the default role may view channel 5
+ *   channelUserPermissions
+ *                     1    user 2 is denied viewing channel 5, overriding that grant
  *   logins            0    seeded only when seedTestDb is called with { e2e: true },
- *                          which only packages/e2e's global.setup.ts does
+ *                          which only packages/e2e's seed-db.ts does
  *
  * User 1 is the admin used for happy paths and user 2 the low-permission user used for
  * rejections, which is the convention the router tests follow.
  */
 import {
+  ChannelPermission,
   ChannelType,
   DEFAULT_ROLE_PERMISSIONS,
   OWNER_ROLE_ID,
@@ -52,7 +58,9 @@ import { randomUUIDv7 } from 'bun';
 import { type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import {
   categories,
+  channelRolePermissions,
   channels,
+  channelUserPermissions,
   directMessages,
   logins,
   messages,
@@ -405,6 +413,42 @@ const seedTestDb = async (
     createdAt: firstStart
   });
 
+  // a private channel the default role can view, with user 2 denied on top of that grant.
+  // the one shape where the user level row and the role grant disagree, which is what
+  // channelUserCan and getAffectedUserIdsForChannel have to resolve the same way
+  // categoryId null like the dm channel, so it stays out of every category ordering and the
+  // reorder tests keep asserting the positions they were written against
+  const restrictedChannel: TIChannel = {
+    type: ChannelType.TEXT,
+    name: 'Restricted Text',
+    position: 0,
+    private: true,
+    categoryId: null,
+    topic: null,
+    createdAt: firstStart
+  };
+
+  const [insertedRestrictedChannel] = await db
+    .insert(channels)
+    .values(restrictedChannel)
+    .returning();
+
+  await db.insert(channelRolePermissions).values({
+    channelId: insertedRestrictedChannel!.id,
+    roleId: insertedDefaultRole!.id,
+    permission: ChannelPermission.VIEW_CHANNEL,
+    allow: true,
+    createdAt: firstStart
+  });
+
+  await db.insert(channelUserPermissions).values({
+    channelId: insertedRestrictedChannel!.id,
+    userId: insertedUser!.id,
+    permission: ChannelPermission.VIEW_CHANNEL,
+    allow: false,
+    createdAt: firstStart
+  });
+
   if (e2e) {
     const allUsers = [
       insertedOwner!,
@@ -433,6 +477,7 @@ const seedTestDb = async (
     user: insertedUser!,
     dmChannel: insertedDmChannel!,
     privateVoiceChannel: insertedPrivateVoiceChannel!,
+    restrictedChannel: insertedRestrictedChannel!,
     userA: insertedUserA!,
     userB: insertedUserB!,
     moderator: insertedModerator!,

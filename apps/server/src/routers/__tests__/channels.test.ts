@@ -97,15 +97,13 @@ describe('channels router', () => {
   test('should create a new text channel', async () => {
     const { caller } = await initTest();
 
-    await caller.channels.add({
+    const channelId = await caller.channels.add({
       type: ChannelType.TEXT,
       name: 'test-channel',
       categoryId: 1
     });
 
-    const channel = await caller.channels.get({
-      channelId: 5
-    });
+    const channel = await caller.channels.get({ channelId });
 
     expect(channel).toBeDefined();
     expect(channel.name).toBe('test-channel');
@@ -116,15 +114,13 @@ describe('channels router', () => {
   test('should create a new voice channel', async () => {
     const { caller } = await initTest();
 
-    await caller.channels.add({
+    const channelId = await caller.channels.add({
       type: ChannelType.VOICE,
       name: 'voice-lounge',
       categoryId: 1
     });
 
-    const channel = await caller.channels.get({
-      channelId: 5
-    });
+    const channel = await caller.channels.get({ channelId });
 
     expect(channel).toBeDefined();
     expect(channel.name).toBe('voice-lounge');
@@ -906,21 +902,25 @@ describe('channels router', () => {
   test('should create channel with incrementing position', async () => {
     const { caller } = await initTest();
 
-    await caller.channels.add({
+    const firstChannelId = await caller.channels.add({
       type: ChannelType.TEXT,
       name: 'first-channel',
       categoryId: 1
     });
 
-    const firstChannel = await caller.channels.get({ channelId: 5 });
+    const firstChannel = await caller.channels.get({
+      channelId: firstChannelId
+    });
 
-    await caller.channels.add({
+    const secondChannelId = await caller.channels.add({
       type: ChannelType.TEXT,
       name: 'second-channel',
       categoryId: 1
     });
 
-    const secondChannel = await caller.channels.get({ channelId: 6 });
+    const secondChannel = await caller.channels.get({
+      channelId: secondChannelId
+    });
 
     expect(secondChannel.position).toBeGreaterThan(firstChannel.position);
   });
@@ -982,20 +982,20 @@ describe('channels router', () => {
   test('should create channels in different categories', async () => {
     const { caller } = await initTest();
 
-    await caller.channels.add({
+    const catOneChannelId = await caller.channels.add({
       type: ChannelType.TEXT,
       name: 'cat-1-channel',
       categoryId: 1
     });
 
-    await caller.channels.add({
+    const catTwoChannelId = await caller.channels.add({
       type: ChannelType.TEXT,
       name: 'cat-2-channel',
       categoryId: 2
     });
 
-    const channel1 = await caller.channels.get({ channelId: 5 });
-    const channel2 = await caller.channels.get({ channelId: 6 });
+    const channel1 = await caller.channels.get({ channelId: catOneChannelId });
+    const channel2 = await caller.channels.get({ channelId: catTwoChannelId });
 
     expect(channel1.categoryId).toBe(1);
     expect(channel2.categoryId).toBe(2);

@@ -100,9 +100,11 @@ const resolvePermission = (
   return rolePermissionMap.get(channelId) ?? false;
 };
 
-// the single answer to "may this user do X in this channel". The ws context
-// (and therefore every route) and the publishers both go through here, so an
-// event cannot be delivered to someone a route would have refused
+// the single answer to "may this user do X in this channel", used by the ws context and
+// therefore by every route. the publishers cannot call it, since they resolve a whole
+// audience rather than one user, so getAffectedUserIdsForChannel below reproduces this
+// precedence instead: owner role, then the user level row, then the role grant. the two
+// have to agree or an event reaches someone a route would have refused
 const channelUserCan = async (
   channelId: number,
   userId: number,
@@ -161,7 +163,16 @@ const getChannelsForUser = async (userId: number): Promise<TChannel[]> => {
   const roleIds = await getUserRoleIds(userId);
 
   if (roleIds.includes(OWNER_ROLE_ID)) {
-    return await db.select().from(channels);
+    const [ownerChannels, ownerDmChannelIds] = await Promise.all([
+      db.select().from(channels),
+      getDirectMessageChannelIdsForUser(userId)
+    ]);
+
+    const ownerDmChannelIdSet = new Set(ownerDmChannelIds);
+
+    return ownerChannels.filter(
+      (channel) => !channel.isDm || ownerDmChannelIdSet.has(channel.id)
+    );
   }
 
   const [allChannels, { userPermissionMap, rolePermissionMap }, dmChannelIds] =
@@ -334,18 +345,26 @@ const getAffectedUserIdsForChannel = async (
   // if a specific permission is required, filter by it
   const permission = options?.permission;
 
-  const usersWithDirectPerms = await db
-    .select({ userId: channelUserPermissions.userId })
+  // both sides of the user level rows, not just the grants: a deny has to beat a role grant
+  // here exactly as resolvePermission makes it beat one in channelUserCan
+  const userPermissionRows = await db
+    .select({
+      userId: channelUserPermissions.userId,
+      allow: channelUserPermissions.allow
+    })
     .from(channelUserPermissions)
     .where(
       and(
         eq(channelUserPermissions.channelId, channelId),
         permission
           ? eq(channelUserPermissions.permission, permission)
-          : undefined,
-        permission ? eq(channelUserPermissions.allow, true) : undefined
+          : undefined
       )
     );
+
+  const deniedUserIds = new Set(
+    userPermissionRows.filter((row) => !row.allow).map((row) => row.userId)
+  );
 
   const rolesWithPerms = await db
     .select({ roleId: channelRolePermissions.roleId })
@@ -379,8 +398,14 @@ const getAffectedUserIdsForChannel = async (
 
   const userIdSet = new Set<number>();
 
-  usersWithDirectPerms.forEach((u) => userIdSet.add(u.userId));
-  usersWithRoles.forEach((u) => userIdSet.add(u.userId));
+  userPermissionRows
+    .filter((row) => row.allow)
+    .forEach((row) => userIdSet.add(row.userId));
+
+  usersWithRoles.forEach((u) => {
+    if (!deniedUserIds.has(u.userId)) userIdSet.add(u.userId);
+  });
+
   owners.forEach((u) => userIdSet.add(u.userId));
 
   return Array.from(userIdSet);
