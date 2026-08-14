@@ -14,5 +14,15 @@ export enum TestId {
   RETURN_TO_PRESENT = 'return-to-present',
 
   LEFT_SIDEBAR = 'left-sidebar',
-  LEFT_SIDEBAR_SERVER_NAME = 'left-sidebar-server-name'
+  LEFT_SIDEBAR_SERVER_NAME = 'left-sidebar-server-name',
+
+  MEMBER_ITEM = 'member-item',
+  USER_POPOVER_MODERATE = 'user-popover-moderate',
+  MOD_VIEW_KICK = 'mod-view-kick',
+  USER_STATUS = 'user-status',
+
+  SERVER_MENU_TRIGGER = 'server-menu-trigger',
+  SERVER_MENU_ADD_CATEGORY = 'server-menu-add-category',
+  CATEGORY_ADD_CHANNEL = 'category-add-channel',
+  CATEGORY_MENU_DELETE = 'category-menu-delete'
 }

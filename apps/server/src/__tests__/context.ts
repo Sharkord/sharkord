@@ -1,18 +1,20 @@
 import { type TConnectionParams } from '@sharkord/shared';
 import type { CreateWSSContextFnOptions } from '@trpc/server/adapters/ws';
 import type { IncomingMessage } from 'http';
+import type WebSocket from 'ws';
 import { createContext } from '../utils/wss';
 
 type TMockContextOptions = {
   customToken?: string;
   headers?: IncomingMessage['headers'];
   remoteAddress?: string;
+  socket?: WebSocket;
 };
 
 const createMockContextOptions = async (
   opts?: TMockContextOptions
 ): Promise<CreateWSSContextFnOptions> => {
-  const { customToken, headers, remoteAddress } = opts ?? {};
+  const { customToken, headers, remoteAddress, socket } = opts ?? {};
 
   const token = customToken;
 
@@ -35,7 +37,7 @@ const createMockContextOptions = async (
       }
     } as IncomingMessage,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    res: undefined as any
+    res: socket as any
   };
 };
 

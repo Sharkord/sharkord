@@ -11,6 +11,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
   getTrpcError,
+  TestId,
   UserStatus
 } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
@@ -158,6 +159,7 @@ const Header = memo(() => {
 
       <div className="flex flex-wrap gap-1.5">
         <Button
+          data-testid={TestId.MOD_VIEW_KICK}
           variant="outline"
           size="sm"
           onClick={onKick}

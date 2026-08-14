@@ -11,8 +11,8 @@ the row rather than leaving it unticked with no trace, and add a finding to AUDI
 
 **M numbers are stable** and referenced from AUDIT.md. Do not renumber them.
 
-Progress: **32 / 80 run, 31 passed, 1 failed** (M13, recorded as R4 in [AUDIT.md](AUDIT.md)).
-**3 retired from the manual pass:** M16 and M53 moved to unit tests, M17 ignored by decision, leaving **45** to run.
+Progress: **37 / 80 run, 36 passed, 1 failed** (M13, recorded as R4 in [AUDIT.md](AUDIT.md)).
+**3 retired from the manual pass:** M16 and M53 moved to unit tests, M17 ignored by decision, leaving **40** to run.
 
 ## Production build required
 
@@ -108,18 +108,18 @@ The biggest behaviour change in the audit. M42 first.
 | --- | --- | --- | --- | --- |
 | [ ] | M45 | 12.6 | Upload files named `café.png`, `文書.png`, `привет.txt` and `100%.txt`, then check how they appear in the channel and on disk | All four keep their real names. The CJK and Cyrillic ones are the important cases: before this change they were mangled to underscores, and a naive fix would have made them fail to upload at all |
 | [ ] | M46 | 12.7 | Attach five files to one message | They upload concurrently rather than one after another, every progress bar advances, and all five land on the message. Make one fail (oversized) and confirm the other four still attach |
-| [ ] | M52 | 1.25 | Seek around in a large uploaded video or audio file, in Chrome and Safari | Seeking works in both. Safari leans on suffix ranges (`bytes=-N`), which the server previously answered 416 to |
+| [x] | M52 | 1.25 | Seek around in a large uploaded video or audio file, in Chrome and Safari | Seeking works in both. Safari leans on suffix ranges (`bytes=-N`), which the server previously answered 416 to | **Passed**
 | [ ] | M15 | 5.2 | Fill the server past its storage quota with `DELETE_OLD_FILES` set, then check avatars, emojis and the logo | Old message attachments are reclaimed; avatars, custom emojis and the server logo are all still there |
-| [ ] | M39 | 11.2 | Change and remove an avatar, a banner and the server logo, including a failing case such as an oversized file | All six actions work, and a failure now shows the server's actual reason for all three, not just the avatar |
-| [ ] | M4 | 3.5 | Set an avatar, then set `storageMaxAvatarSize` very low and try to change it | Error toast, and the previous avatar is still displayed after a reload |
-| [ ] | M60 | 4.17 | Set a server logo, replace it, then remove it. Then try replacing it with an oversized file | The logo changes and clears correctly, and a failed replacement leaves the previous logo in place rather than none |
+| [x] | M39 | 11.2 | Change and remove an avatar, a banner and the server logo, including a failing case such as an oversized file | All six actions work, and a failure now shows the server's actual reason for all three, not just the avatar | **Passed**
+| [x] | M4 | 3.5 | Set an avatar, then set `storageMaxAvatarSize` very low and try to change it | Error toast, and the previous avatar is still displayed after a reload | **Passed**
+| [x] | M60 | 4.17 | Set a server logo, replace it, then remove it. Then try replacing it with an oversized file | The logo changes and clears correctly, and a failed replacement leaves the previous logo in place rather than none | **Passed**
 | [ ] | M54 | 1.25 | Change the server logo, then reload the PWA install prompt / manifest | The new logo and its dimensions are picked up. Dimensions are cached by file name now, so a changed logo must still refresh |
 
 ## Admin and permissions
 
 | ✓ | # | Finding | What to do | Expected |
 | --- | --- | --- | --- | --- |
-| [ ] | M1 | 3.1 | As a non-owner admin holding `MANAGE_USERS`, try to ban, kick and delete the owner from the admin panel | Each is refused with "Only users with the owner role can act on the server owner." Banning a regular user still works |
+| [x] | M1 | 3.1 | As a non-owner admin holding `MANAGE_USERS`, try to ban, kick and delete the owner from the admin panel | Each is refused with "Only users with the owner role can act on the server owner." Banning a regular user still works | **Passed**
 | [ ] | M2 | 3.3 | As a non-owner holding `MANAGE_ROLES`, edit a role and try to grant a permission you do not have; then rename a role that already holds one | The grant is refused, the rename succeeds |
 | [ ] | M7 | 3.21 | Open the channel permissions dialog in the admin panel | Permissions load as before, this route changed from a mutation to a query |
 | [ ] | M11 | 4.5 | Claim ownership with the secret token on a fresh server, then try the same token again | First succeeds, second is refused with "You already have the owner role." Existing sessions and image/file URLs keep working afterwards |

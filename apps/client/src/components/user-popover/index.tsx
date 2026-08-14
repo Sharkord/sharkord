@@ -9,6 +9,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
   Permission,
+  TestId,
   UserStatus,
   getTrpcError
 } from '@sharkord/shared';
@@ -157,6 +158,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
               {
                 <Protect permission={Permission.MANAGE_USERS}>
                   <IconButton
+                    data-testid={TestId.USER_POPOVER_MODERATE}
                     icon={UserCog}
                     variant="ghost"
                     size="sm"

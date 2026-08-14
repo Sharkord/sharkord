@@ -1,5 +1,6 @@
 import {
   DELETED_USER_IDENTITY_AND_NAME,
+  DisconnectCode,
   OWNER_ROLE_ID,
   Permission,
   type TTempFile
@@ -8,9 +9,11 @@ import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import {
+  createFakeSocket,
   getCaller,
   getMockedToken,
   initTest,
+  login,
   uploadFile
 } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
@@ -465,6 +468,50 @@ describe('users router', () => {
     });
 
     expect(await getUserByToken(otherToken)).toBeDefined();
+  });
+
+  test('should close every other session of its own user on a password change', async () => {
+    const ownSocket = createFakeSocket();
+    const otherSocket = createFakeSocket();
+
+    const { caller } = await initTest(1, undefined, {
+      getOwnWs: () => ownSocket,
+      getUserWs: () => [ownSocket, otherSocket]
+    });
+
+    await caller.users.updatePassword({
+      currentPassword: 'password123',
+      newPassword: 'newpassword456',
+      confirmNewPassword: 'newpassword456'
+    });
+
+    expect(otherSocket.closes).toEqual([
+      { code: DisconnectCode.KICKED, reason: 'Your password was changed' }
+    ]);
+
+    // the session that changed the password keeps running, it already has the new credentials
+    expect(ownSocket.closes).toEqual([]);
+  });
+
+  test('should not close any session when the password change is refused', async () => {
+    const ownSocket = createFakeSocket();
+    const otherSocket = createFakeSocket();
+
+    const { caller } = await initTest(1, undefined, {
+      getOwnWs: () => ownSocket,
+      getUserWs: () => [ownSocket, otherSocket]
+    });
+
+    await expect(
+      caller.users.updatePassword({
+        currentPassword: 'wrongpassword',
+        newPassword: 'newpassword456',
+        confirmNewPassword: 'newpassword456'
+      })
+    ).rejects.toThrow('Current password is incorrect');
+
+    expect(otherSocket.closes).toEqual([]);
+    expect(ownSocket.closes).toEqual([]);
   });
 
   test('should throw when current password is incorrect', async () => {
@@ -1310,11 +1357,104 @@ describe('users router', () => {
     expect(info.user.banReason).toBeNull();
   });
 
-  // users.kick's happy path is unreachable here: it requires a live WebSocket for the target
-  // and the harness builds contexts with no socket, so getUserWs is always empty. What the
-  // route does once it gets past that check (bump tokenVersion, then close the sockets) is
-  // covered indirectly by the token-version tests above, which prove a bumped version
-  // refuses the old token. The wiring itself is M58.
+  test('should kick every session of a connected user', async () => {
+    const firstTab = createFakeSocket();
+    const secondTab = createFakeSocket();
+
+    const { caller } = await initTest(1, undefined, {
+      getUserWs: (userId) => (userId === 2 ? [firstTab, secondTab] : [])
+    });
+
+    await caller.users.kick({ userId: 2, reason: 'Take a break' });
+
+    const closed = { code: DisconnectCode.KICKED, reason: 'Take a break' };
+
+    expect(firstTab.closes).toEqual([closed]);
+    expect(secondTab.closes).toEqual([closed]);
+
+    const row = await tdb
+      .select({ tokenVersion: users.tokenVersion })
+      .from(users)
+      .where(eq(users.id, 2))
+      .get();
+
+    expect(row?.tokenVersion).toBe(1);
+  });
+
+  test('should refuse the token a kicked session was holding', async () => {
+    const socket = createFakeSocket();
+
+    const { caller } = await initTest(1, undefined, {
+      getUserWs: (userId) => (userId === 2 ? [socket] : [])
+    });
+
+    await caller.users.kick({ userId: 2 });
+
+    // the token stays cryptographically valid, the bumped version has to be what stops it
+    await expect(getCaller(2)).rejects.toThrow('Invalid authentication token');
+  });
+
+  test('should let a kicked user open a new session right away', async () => {
+    const socket = createFakeSocket();
+
+    const { caller } = await initTest(1, undefined, {
+      getUserWs: (userId) => (userId === 2 ? [socket] : [])
+    });
+
+    await caller.users.kick({ userId: 2 });
+
+    const response = await login('testuser', 'password123');
+
+    expect(response.status).toBe(200);
+
+    const { token } = (await response.json()) as { token: string };
+
+    // a kick ends the session without barring re-entry, so the fresh token has to carry the
+    // bumped version. minting it from a stale read would lock the user out until the next kick
+    expect(await getUserByToken(token)).toBeDefined();
+  });
+
+  test('should close every session of a banned user', async () => {
+    const firstTab = createFakeSocket();
+    const secondTab = createFakeSocket();
+
+    const { caller } = await initTest(1, undefined, {
+      getUserWs: (userId) => (userId === 2 ? [firstTab, secondTab] : [])
+    });
+
+    await caller.users.ban({
+      userId: 2,
+      reason: 'Violated community guidelines'
+    });
+
+    const closed = {
+      code: DisconnectCode.BANNED,
+      reason: 'Violated community guidelines'
+    };
+
+    expect(firstTab.closes).toEqual([closed]);
+    expect(secondTab.closes).toEqual([closed]);
+  });
+
+  test('should close every session of a deleted user', async () => {
+    const firstTab = createFakeSocket();
+    const secondTab = createFakeSocket();
+
+    const { caller } = await initTest(1, undefined, {
+      getUserWs: (userId) => (userId === 2 ? [firstTab, secondTab] : [])
+    });
+
+    await caller.users.delete({ userId: 2 });
+
+    const closed = {
+      code: DisconnectCode.KICKED,
+      reason: 'Your account has been deleted'
+    };
+
+    expect(firstTab.closes).toEqual([closed]);
+    expect(secondTab.closes).toEqual([closed]);
+  });
+
   test('should throw when kicking non-connected user', async () => {
     const { caller } = await initTest();
 

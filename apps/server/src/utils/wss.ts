@@ -180,6 +180,53 @@ const createContext = async ({
   };
 };
 
+const handleSocketClose = async (ws: WebSocket) => {
+  try {
+    const userId = ws.userId;
+
+    // ignore connections that never authenticated through joinServer
+    if (!userId) {
+      return;
+    }
+
+    untrackUserSocket(userId, ws);
+
+    // only mark as offline when there are no other active sessions
+    if (userSockets.has(userId)) {
+      return;
+    }
+
+    const user = await getUserById(userId);
+
+    if (!user) return;
+
+    const voiceRuntime = VoiceRuntime.findRuntimeByUserId(user.id);
+
+    if (voiceRuntime) {
+      voiceRuntime.removeUser(user.id);
+
+      pubsub.publish(ServerEvents.USER_LEAVE_VOICE, {
+        channelId: voiceRuntime.id,
+        userId: user.id
+      });
+    }
+
+    usersIpMap.delete(user.id);
+    pubsub.publish(ServerEvents.USER_LEAVE, user.id);
+
+    logger.info('%s left the server', user.name);
+
+    enqueueActivityLog({
+      type: ActivityLogType.USER_LEFT,
+      userId: user.id
+    });
+  } catch (error) {
+    logger.error(
+      `Error occurred while handling WebSocket close: ${getErrorMessage(error)}`
+    );
+  }
+};
+
 const createWsServer = async (server: http.Server) => {
   return new Promise<WebSocketServer>((resolve) => {
     wss = new WebSocketServer({ server });
@@ -188,52 +235,7 @@ const createWsServer = async (server: http.Server) => {
       try {
         ws.userId = undefined;
 
-        ws.on('close', async () => {
-          try {
-            const userId = ws.userId;
-
-            // ignore connections that never authenticated through joinServer
-            if (!userId) {
-              return;
-            }
-
-            untrackUserSocket(userId, ws);
-
-            // only mark as offline when there are no other active sessions
-            if (userSockets.has(userId)) {
-              return;
-            }
-
-            const user = await getUserById(userId);
-
-            if (!user) return;
-
-            const voiceRuntime = VoiceRuntime.findRuntimeByUserId(user.id);
-
-            if (voiceRuntime) {
-              voiceRuntime.removeUser(user.id);
-
-              pubsub.publish(ServerEvents.USER_LEAVE_VOICE, {
-                channelId: voiceRuntime.id,
-                userId: user.id
-              });
-            }
-
-            usersIpMap.delete(user.id);
-            pubsub.publish(ServerEvents.USER_LEAVE, user.id);
-
-            logger.info('%s left the server', user.name);
-
-            enqueueActivityLog({
-              type: ActivityLogType.USER_LEFT,
-              userId: user.id
-            });
-          } catch (error) {
-            logger.error(
-              `Error occurred while handling WebSocket close: ${getErrorMessage(error)}`
-            );
-          }
-        });
+        ws.on('close', () => handleSocketClose(ws));
 
         ws.on('error', (err) => {
           logger.error('WebSocket client error:', err);
@@ -268,4 +270,10 @@ const createWsServer = async (server: http.Server) => {
   });
 };
 
-export { createContext, createWsServer, getOnlineUserIds, getUserIp };
+export {
+  createContext,
+  createWsServer,
+  getOnlineUserIds,
+  getUserIp,
+  handleSocketClose
+};

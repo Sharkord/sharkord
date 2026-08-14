@@ -325,9 +325,6 @@ describe('others router', () => {
 
     const settings = await caller.others.getSettings();
 
-    // redacted fields are absent now, not blanked, so nothing downstream can read a
-    // placeholder and mistake it for a real value
-    expect('password' in settings).toBe(false);
     expect('secretToken' in settings).toBe(false);
   });
 

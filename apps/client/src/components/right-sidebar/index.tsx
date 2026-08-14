@@ -3,7 +3,7 @@ import { UserAvatar } from '@/components/user-avatar';
 import { useUsers } from '@/features/server/users/hooks';
 import { LocalStorageKey } from '@/helpers/storage';
 import { cn } from '@/lib/utils';
-import { DELETED_USER_IDENTITY_AND_NAME } from '@sharkord/shared';
+import { DELETED_USER_IDENTITY_AND_NAME, TestId } from '@sharkord/shared';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UserPopover } from '../user-popover';
@@ -22,7 +22,10 @@ type TUserProps = {
 const User = memo(({ userId, name, banned }: TUserProps) => {
   return (
     <UserPopover userId={userId}>
-      <div className="flex items-center gap-3 rounded px-2 py-1.5 hover:bg-accent select-none min-w-0">
+      <div
+        data-testid={TestId.MEMBER_ITEM}
+        className="flex items-center gap-3 rounded px-2 py-1.5 hover:bg-accent select-none min-w-0"
+      >
         <UserAvatar userId={userId} className="h-8 w-8 shrink-0" />
         <span
           className={cn(

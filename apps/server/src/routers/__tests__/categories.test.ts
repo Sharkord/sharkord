@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { initTest } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
 import { channels } from '../../db/schema';
+import { VoiceRuntime } from '../../runtimes/voice';
 import { pubsub } from '../../utils/pubsub';
 
 describe('categories router', () => {
@@ -193,6 +194,34 @@ describe('categories router', () => {
 
     expect(channelsAfter.length).toBe(0);
     expect(announcedIds.sort()).toEqual(channelsBefore.map((c) => c.id).sort());
+  });
+
+  // a runtime with no transports needs no mediasoup, so the part of the teardown that matters
+  // here is reachable: the call is dropped and everyone still in it is told. the transports
+  // and the mediasoup router closing with it are not, and stay manual
+  test('should end the call in a voice channel whose category is deleted', async () => {
+    const { caller } = await initTest();
+
+    const runtime = new VoiceRuntime(2);
+
+    runtime.addUser(2, { micMuted: false, soundMuted: false });
+
+    const departures: { channelId: number; userId: number }[] = [];
+
+    const subscription = pubsub
+      .subscribe(ServerEvents.USER_LEAVE_VOICE)
+      .subscribe({
+        next: (departure) => {
+          departures.push(departure);
+        }
+      });
+
+    await caller.categories.delete({ categoryId: 2 });
+
+    subscription.unsubscribe();
+
+    expect(VoiceRuntime.findById(2)).toBeUndefined();
+    expect(departures).toEqual([{ channelId: 2, userId: 2 }]);
   });
 
   test('should throw error when deleting non-existing category', async () => {
