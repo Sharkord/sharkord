@@ -123,6 +123,14 @@
   "wasReactedBy": "{{reacters}} a réagi.",
   "andMore": "et {{count}} autres",
   "toggleParticipants": "Afficher/masquer les participants",
-  "reconnecting": "Reconnexion…",
-  "viewingOlderMessages": "Affichage d’anciens messages, aller aux plus récents"
+  "viewingOlderMessages": "Affichage d’anciens messages, aller aux plus récents",
+  "noChannelAccessTitle": "Aucun accès à ce salon",
+  "noChannelAccessDescription": "Vous êtes dans ce salon vocal, mais vous n'avez pas la permission d'en lire les messages.",
+  "reconnectingTitle": "Connexion perdue",
+  "reconnectingNow": "Reconnexion…",
+  "reconnectingIn_one": "Nouvel essai dans {{count}} seconde",
+  "reconnectingIn_other": "Nouvel essai dans {{count}} secondes",
+  "reconnectingAttempt": "Tentative {{attempt}} sur {{total}}",
+  "reconnectingHint": "Votre session est conservée. L'application reprendra d'elle-même dès que le serveur répondra.",
+  "reconnectingAbort": "Arrêter la reconnexion"
 }

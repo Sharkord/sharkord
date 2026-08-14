@@ -29,6 +29,7 @@ import { useArrowUpEdit } from './hooks/use-arrow-up-edit';
 import { useScrollController } from './hooks/use-scroll-controller';
 import { useScrollToJumpTarget } from './hooks/use-scroll-to-jump-target';
 import { MessagesGroup } from './messages-group';
+import { TextNoAccess } from './text-no-access';
 import { TextSkeleton } from './text-skeleton';
 import { TextTopbar } from './text-top-bar';
 import {
@@ -167,7 +168,11 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
     [setReplyingToMessage]
   );
 
-  if (!channelCan(ChannelPermission.VIEW_CHANNEL) || loading) {
+  if (!channelCan(ChannelPermission.VIEW_CHANNEL)) {
+    return <TextNoAccess />;
+  }
+
+  if (loading) {
     return <TextSkeleton />;
   }
 

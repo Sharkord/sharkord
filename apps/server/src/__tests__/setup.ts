@@ -1,9 +1,9 @@
 import { Database } from 'bun:sqlite';
 import { afterAll, afterEach, beforeAll, beforeEach, mock } from 'bun:test';
 import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import fs from 'fs/promises';
 import path from 'path';
+import { migrateDatabase } from '../db/migrate';
 import { DATA_PATH } from '../helpers/paths';
 import { clearVoiceMoveGrantsForTests } from '../helpers/voice-move-grants';
 import { createHttpServer } from '../http';
@@ -100,15 +100,13 @@ beforeEach(async () => {
   }
 
   sqlite = new Database(':memory:', { create: true, strict: true });
-  sqlite.run('PRAGMA foreign_keys = ON;');
 
   tdb = drizzle({ client: sqlite });
 
   // updates the mocked db to use this new test database
   setTestDb(tdb);
 
-  // apply migrations and seed data for this test
-  await migrate(tdb, { migrationsFolder: DRIZZLE_PATH });
+  await migrateDatabase(sqlite, tdb, DRIZZLE_PATH);
   await seedTestDb(tdb);
 });
 

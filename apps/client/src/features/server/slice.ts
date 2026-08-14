@@ -25,13 +25,14 @@ import { mergeMessagesChronologically } from './helpers';
 import type {
   TDisconnectInfo,
   TMessagesMap,
+  TReconnectState,
   TThreadMessagesMap
 } from './types';
 
 export interface IServerState {
   connected: boolean;
   connecting: boolean;
-  reconnecting: boolean;
+  reconnect: TReconnectState | null;
   disconnectInfo?: TDisconnectInfo;
   serverId?: string;
   categories: TCategory[];
@@ -77,7 +78,7 @@ export interface IServerState {
 const initialState: IServerState = {
   connected: false,
   connecting: false,
-  reconnecting: false,
+  reconnect: null,
   disconnectInfo: undefined,
   serverId: undefined,
   ownUserId: undefined,
@@ -144,8 +145,8 @@ export const serverSlice = createSlice({
       state.connected = action.payload;
       state.connecting = false;
     },
-    setReconnecting: (state, action: PayloadAction<boolean>) => {
-      state.reconnecting = action.payload;
+    setReconnect: (state, action: PayloadAction<TReconnectState | null>) => {
+      state.reconnect = action.payload;
     },
     setInfo: (state, action: PayloadAction<TServerInfo | undefined>) => {
       state.info = action.payload;
@@ -178,7 +179,7 @@ export const serverSlice = createSlice({
       }>
     ) => {
       state.connected = true;
-      state.reconnecting = false;
+      state.reconnect = null;
       state.categories = action.payload.categories;
       state.channels = action.payload.channels;
       state.emojis = action.payload.emojis;

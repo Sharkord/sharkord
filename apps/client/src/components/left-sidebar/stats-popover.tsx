@@ -1,5 +1,7 @@
+import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { useVoiceStats } from '@/components/voice-provider/stats-context';
 import { formatBigNumber } from '@/helpers/format-big-number';
+import { NoiseSuppression } from '@/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@sharkord/ui';
 import { filesize } from 'filesize';
 import { memo, useMemo, useState } from 'react';
@@ -21,6 +23,13 @@ const hardwareEncoders = [
 ];
 
 const softwareEncoders = ['libvpx', 'openh264', 'libaom', 'software'];
+
+const NOISE_SUPPRESSION_LABEL_KEYS: Record<NoiseSuppression, string> = {
+  [NoiseSuppression.NONE]: 'settings:noiseSuppressionNone',
+  [NoiseSuppression.STANDARD]: 'settings:noiseSuppressionStandardName',
+  [NoiseSuppression.RNNOISE]: 'settings:noiseSuppressionRnnoiseName',
+  [NoiseSuppression.DTLN]: 'settings:noiseSuppressionDtlnName'
+};
 
 const getCodecLabel = (codec: string) => {
   const parts = codec.split('/');
@@ -68,6 +77,7 @@ StatsLabelValue.displayName = 'StatsLabelValue';
 const StatsPopover = memo(({ children }: StatsPopoverProps) => {
   const { t } = useTranslation('sidebar');
   const transportStats = useVoiceStats();
+  const { devices } = useDevices();
   const [showSimulcastLayers, setShowSimulcastLayers] = useState(false);
 
   const {
@@ -106,6 +116,13 @@ const StatsPopover = memo(({ children }: StatsPopoverProps) => {
       isHardware: null
     };
   }, [screenShare?.encoderImplementation, t]);
+
+  const hasNoiseSuppression =
+    devices.noiseSuppression !== NoiseSuppression.NONE;
+
+  const noiseSuppressionLabel = t(
+    NOISE_SUPPRESSION_LABEL_KEYS[devices.noiseSuppression]
+  );
 
   const codec = useMemo(() => {
     return screenShare?.codec ? getCodecLabel(screenShare.codec) : undefined;
@@ -187,6 +204,20 @@ const StatsPopover = memo(({ children }: StatsPopoverProps) => {
               )}
             </div>
           </div>
+
+          {hasNoiseSuppression && (
+            <div className="border-t border-border/50 pt-2 mb-3">
+              <h4 className="font-medium text-purple-400 mb-1">
+                {t('microphone')}
+              </h4>
+              <div>
+                <StatsLabelValue
+                  label={t('noiseSuppression')}
+                  value={noiseSuppressionLabel}
+                />
+              </div>
+            </div>
+          )}
 
           {screenShare && (
             <div className="border-t border-border/50 pt-2 mb-3">

@@ -123,6 +123,14 @@
   "wasReactedBy": "ha ricevuto una reazione da {{reacters}}.",
   "andMore": "e altri {{count}}",
   "toggleParticipants": "Mostra/nascondi partecipanti",
-  "reconnecting": "Riconnessione…",
-  "viewingOlderMessages": "Stai vedendo messaggi vecchi, vai ai più recenti"
+  "viewingOlderMessages": "Stai vedendo messaggi vecchi, vai ai più recenti",
+  "noChannelAccessTitle": "Nessun accesso a questa chat",
+  "noChannelAccessDescription": "Sei in questo canale vocale, ma non hai il permesso di leggerne i messaggi.",
+  "reconnectingTitle": "Connessione persa",
+  "reconnectingNow": "Riconnessione…",
+  "reconnectingIn_one": "Nuovo tentativo tra {{count}} secondo",
+  "reconnectingIn_other": "Nuovo tentativo tra {{count}} secondi",
+  "reconnectingAttempt": "Tentativo {{attempt}} di {{total}}",
+  "reconnectingHint": "La tua sessione è mantenuta. L'app riprenderà da sola appena il server risponde.",
+  "reconnectingAbort": "Interrompi la riconnessione"
 }

@@ -172,10 +172,24 @@ export const reconnectToServer = (info: TDisconnectInfo) => {
 
   reconnectAttempt += 1;
 
-  store.dispatch(serverSliceActions.setReconnecting(true));
+  store.dispatch(
+    serverSliceActions.setReconnect({
+      attempt: reconnectAttempt,
+      maxAttempts: RECONNECT_DELAYS_MS.length,
+      nextAttemptAt: Date.now() + delay
+    })
+  );
 
   reconnectTimer = setTimeout(async () => {
     reconnectTimer = null;
+
+    store.dispatch(
+      serverSliceActions.setReconnect({
+        attempt: reconnectAttempt,
+        maxAttempts: RECONNECT_DELAYS_MS.length,
+        nextAttemptAt: null
+      })
+    );
 
     try {
       // connect() opens the password dialog instead of joining when the server asks for one,

@@ -193,6 +193,30 @@ describe('voice router', () => {
       }
     });
 
+    test('should refuse a dm call as the destination', async () => {
+      // dm channels are created with the voice type, so the type check alone lets one
+      // through. join refuses it later, but only after the move has already revealed a
+      // conversation between two other people to the user being moved
+      const defaultRole = await tdb
+        .select({ id: roles.id })
+        .from(roles)
+        .where(eq(roles.isDefault, true))
+        .get();
+
+      await tdb.insert(rolePermissions).values({
+        roleId: defaultRole!.id,
+        permission: Permission.MOVE_MEMBERS,
+        createdAt: Date.now()
+      });
+
+      // user 3 is a participant in the seeded dm, so every other gate on the route passes
+      const { caller } = await initTest(3);
+
+      await expect(
+        caller.voice.moveUser({ userId: 4, channelId: DM_CHANNEL_ID })
+      ).rejects.toThrow('Cannot move a user into a direct message call');
+    });
+
     test('should reject when the target user lacks the global voice permission', async () => {
       const { caller } = await initTest(1);
 

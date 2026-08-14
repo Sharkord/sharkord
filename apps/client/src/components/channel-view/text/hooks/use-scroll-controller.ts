@@ -30,6 +30,7 @@ const useScrollController = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const hasInitialScroll = useRef(false);
   const shouldStickToBottom = useRef(true);
+  const isProgrammaticScroll = useRef(false);
 
   const isNearBottom = useCallback((container: HTMLDivElement) => {
     const distanceFromBottom =
@@ -43,7 +44,12 @@ const useScrollController = ({
     const container = containerRef.current;
     if (!container) return;
 
+    isProgrammaticScroll.current = true;
     container.scrollTop = container.scrollHeight;
+
+    requestAnimationFrame(() => {
+      isProgrammaticScroll.current = false;
+    });
   }, []);
 
   // detect scroll-to-top and load more messages
@@ -52,18 +58,18 @@ const useScrollController = ({
 
     if (!container) return;
 
+    if (isProgrammaticScroll.current) return;
+
     shouldStickToBottom.current = isNearBottom(container);
 
     if (fetching) return;
 
     if (container.scrollTop <= SCROLL_THRESHOLD && hasMore) {
-      const prevScrollHeight = container.scrollHeight;
+      const previousDistanceFromEnd =
+        container.scrollHeight - container.scrollTop;
 
       loadMore().then(() => {
-        const newScrollHeight = container.scrollHeight;
-
-        container.scrollTop =
-          newScrollHeight - prevScrollHeight + container.scrollTop;
+        container.scrollTop = container.scrollHeight - previousDistanceFromEnd;
         shouldStickToBottom.current = isNearBottom(container);
       });
     }
@@ -93,7 +99,9 @@ const useScrollController = ({
       scrollToBottom();
     });
 
-    observer.observe(container);
+    const content = container.firstElementChild;
+
+    if (content) observer.observe(content);
 
     const stopObservingTimer = setTimeout(() => observer.disconnect(), 1000);
 

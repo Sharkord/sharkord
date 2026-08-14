@@ -196,3 +196,7 @@ export const INVITE_CODE_REGEX = /^[A-Za-z0-9_-]+$/;
 // true for anything containing a pictographic character, which is how a unicode
 // emoji is told apart from a custom emoji name without an exhaustive table
 export const EMOJI_CHARACTER_REGEX = /\p{Extended_Pictographic}/u;
+
+// standard emoji reactions are stored as the github shortcode the picker hands over ('fox'),
+// not as the character, so the character test alone rejects every one of them
+export const EMOJI_SHORTCODE_REGEX = /^[a-z0-9_+-]+$/;

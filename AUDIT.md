@@ -208,6 +208,205 @@ both purposes.
 Related to the token-revocation cluster in F3 (1.17 / 3.13 / 3.15): both are about not
 being able to invalidate a credential once issued.
 
+## Regressions reported after the audit branch went live
+
+Symptoms noticed after running the audit branch against a real server. Each was checked
+against `development` before anything was changed.
+
+### R1 — [CAUSED BY THE AUDIT, DATA LOSS] a table rebuild migration cascaded its children away
+
+**This one destroys data and it is ours.** `0018_message_parent_reply_foreign_keys` is new on
+this branch and rebuilds `messages` the way drizzle always does: create `__new_messages`,
+copy, `DROP TABLE messages`, rename. The file opens with `PRAGMA foreign_keys=OFF`, which
+does nothing: **sqlite makes that pragma a no-op inside a transaction**, and the migrator
+wraps every migration in one. Foreign keys stayed enforced, so the `DROP TABLE` fired every
+child action on the way out.
+
+Proven, not inferred, by replaying the exact sequence: inside a transaction the pragma still
+reports `1`, `ON DELETE SET NULL` children come back NULL and `ON DELETE CASCADE` children are
+deleted outright.
+
+On the reporting server, whose production copy running `development` is unaffected:
+
+| table | after migrating | cause |
+| ---------------------------- | --- | --------------------------- |
+| `message_files`              | 0   | CASCADE from `messages`     |
+| `message_reactions`          | 0   | CASCADE from `messages`     |
+| messages with `reply_to_message_id` | 0 | SET NULL from `messages` |
+| thread replies               | 0   | CASCADE from `messages`     |
+| `channel_read_states` markers| 128,232 of 128,233 NULL | SET NULL from `messages` |
+
+The all-unread symptom that started this investigation is the last row: a NULL marker means
+"has read nothing", which every version of the unread query reports as fully unread. The
+badge was the visible tip; the attachments, reactions, replies and threads went with it.
+
+**My first diagnosis of this was wrong and is worth recording.** I dated the NULL markers from
+`last_read_at` and concluded they predated the branch. `last_read_at` records when the user
+last read, and a foreign key nulling `last_read_message_id` updates only that column, so the
+timestamps say nothing about when the markers were erased. Dating a side effect by a column
+the side effect does not touch is how a genuine regression got written off as pre-existing
+data rot.
+
+**Fixed** by moving `PRAGMA foreign_keys` off the migration files and onto the connection:
+off before `migrate()`, on after, which is the only place it can take effect. That order now
+lives in `db/migrate.ts` as `migrateDatabase`, and it is the only thing in the repo that calls
+drizzle's `migrate()`: the boot path, the two test harnesses and the e2e seed script all go
+through it, so the pragma order cannot be got right in one place and wrong in another.
+
+`db/__tests__/migrations.test.ts` migrates to the state just before 0018, inserts a message
+with a file, a reaction, a reply and a read marker, runs the rest of the chain through the
+helper and asserts all four survive. Verified twice against the broken behaviour: once with
+the old inline order, once by flipping the pragma inside the helper. Both drop `message_files`
+to 0.
+
+**Already-damaged databases are not repaired by this.** The fix prevents it happening again;
+it cannot bring back rows that are gone. Any server that has already booted this branch needs
+restoring from a backup taken before it.
+
+### R2 — opening a direct message never clears its badge
+
+**Not caused by the audit**, byte-identical in `development`. It surfaced together with R1,
+whose nulled read markers are what made direct messages show a badge at all. `setSelectedDmChannelId` in
+`features/app/actions.ts` only dispatched, where `setSelectedChannelId` and
+`openVoiceChatSidebar` both call `markChannelAsRead`. A DM could only ever be marked read by
+a message arriving while it was already on screen, which is why it went unnoticed until R1
+made DMs show a badge at all.
+
+**Fixed** by marking the channel read when a DM is opened. Not covered by a test: the client
+has no test harness, and the e2e seed's DM pair does not include either of the users the e2e
+suite logs in as.
+
+### R3 — the view jumps to the bottom when paging up
+
+**Not caused by the audit**: `onScroll` is byte-identical to `development`. The restore after
+loading an older page was `newScrollHeight - prevScrollHeight + container.scrollTop`, which
+assumes `scrollTop` did not move across the load. Chrome's scroll anchoring has usually
+already compensated for the prepended content, so the two corrections stack and the view
+lands at the bottom. Anchoring is suppressed at exactly `scrollTop` 0, which is why it only
+bites when the wheel stops just short of the top, and why every test written against it
+passed: they all drove to exactly 0.
+
+Caught by instrumenting the live page, hooking the `scrollTop` setter to capture a stack
+trace per programmatic write. One write did it: `6244 -> 12425`, matching
+`13732 - 7551 + 6244` exactly.
+
+**Fixed** by restoring the distance to the end of the content, which a prepend cannot change
+and which is correct whether or not the browser already anchored. Covered by
+`packages/e2e/tests/scroll-position.pw.ts`, which triggers at `scrollTop` 40 rather than 0
+and asserts that it is non-zero so the test cannot silently regress into the useless form.
+
+A second, unrelated defect in the same file **was** an audit regression and is fixed with it:
+replacing the initial-scroll retries with a `ResizeObserver` meant a media-heavy channel never
+settled at the bottom (`fromBottom` 276 against `development`'s 0). `scrollToBottom` fires the
+scroll handler itself, and mid-settle that position was read back as "the user left the
+bottom", clearing the lock that every later correction depends on. Programmatic scrolls are
+now marked and ignored by the handler.
+
+### R4 — [OPEN] deleting a voice channel leaves the caller reading "Voice connected"
+
+Found by M13. Deleting a voice channel while two people are in a call in it does tear the call
+down: the audio stops and the channel stops rendering for both clients, with no reload. What
+does not happen is the local voice state being cleared, so the sidebar keeps showing "Voice
+connected" for a call that no longer exists.
+
+`removeChannel` in `features/server/channels/actions.ts` handles the delete event with
+`assertVoiceChatClose(channelId)`, which closes the **voice chat sidebar** and nothing else.
+The call state lives elsewhere: `leaveVoice` in `features/server/voice/actions.ts` is what
+resets `connectionStatus` and clears `currentVoiceChannelId`, and the delete path never
+reaches it. The indicator in `left-sidebar/voice-control.tsx` reads `connectionStatus`, which
+is therefore still `connected`.
+
+Not caused by the audit: `removeChannel` and `assertVoiceChatClose` are both unchanged from
+`development`. It is a real bug regardless, and the fix is for the delete handler to run the
+same local teardown as leaving, when the deleted channel is the one being spoken in. Worth
+checking the same question for a channel the caller loses access to rather than one that is
+deleted, since that arrives as a different event.
+
+
+### R5 — [FIXED] a dm call could be used as a move destination
+
+Found while reviewing the M12 flow. `routers/voice/move.ts` guarded the **origin** against dm
+channels but not the destination, and dm channels are created with `type: ChannelType.VOICE`
+(see the comment in `open-direct-message.ts`), so the type check let one through. A dm
+participant holding `MOVE_MEMBERS` cleared every remaining gate: `assertChannelAccess` passes
+on membership and `channelUserCan` returns membership for dms.
+
+`join` refuses `isDm` later, so nobody was actually pulled into the call. But
+`publishHiddenChannelToUser` had already fired `CHANNEL_CREATE` with the full dm channel row
+to a third party, whose client added it to the sidebar: a conversation between two other
+people, revealed until they reloaded.
+
+Two smaller faults in the same flow, both fixed with it:
+
+- `consumeVoiceMoveGrant` deleted the grant before checking which channel it was for, so a
+  moved user who joined anywhere else inside the 30s window burned it and the move they were
+  actually sent on then failed its permission check.
+- nothing removed expired grants. They were only deleted by being used, so a user who was
+  moved and never joined stayed in the map for the life of the process. `grantVoiceMove` now
+  sweeps aged-out entries, on the one path that can grow the map rather than on a timer.
+
+Covered by `routers/__tests__/voice.test.ts` and a new
+`helpers/__tests__/voice-move-grants.test.ts`, all three verified against the broken
+behaviour first.
+
+The UX half is M80: a user moved into a channel they cannot read now gets an explanation
+instead of a loading skeleton that never resolves. The chat stays inaccessible by decision.
+
+**Still open in this flow:** `publishHiddenChannelToUser` reveals the channel to the client,
+but `getChannelsForUser` filters it out on reload, so someone moved into a private channel
+loses it from their sidebar on F5 while still in the call.
+
+
+### R6 — [FIXED] the reconnect overlay swallowed the password dialog
+
+Found by M44. On a password-protected server with `onlyAskForPasswordOnFirstJoin` off, a
+reconnect calls `connect()`, which opens the password dialog rather than joining and then
+waits on the answer. The overlay added for R3 was `fixed inset-0 z-50`, the same z-index radix
+gives dialog content, so it painted over the dialog and ate every click meant for it. The
+reconnect could then never complete, because the thing it was waiting on was unreachable.
+
+Caused by the overlay, not by anything in the audit proper, and **nothing about dialogs was
+changed**: they were correct before and are untouched.
+
+**Fixed** by putting the overlay at `z-40`, under the layer dialogs live at. The first attempt
+was worse than the bug: it had the overlay read dialog state and hide itself for
+`Dialog.SERVER_PASSWORD`, which coupled a connection-status component to the dialog system to
+work around a stacking problem. A z-index is the whole fix, and it holds for every dialog
+rather than the one that was noticed.
+
+Worth noting for M72: the overlay plus `inert` on `ServerView` is what keeps the app
+unreachable during a reconnect, so the mount effects that crash there can no longer be
+triggered by clicking. A global hotkey still reaches them, so M72 is not closed by this.
+
+
+### R7 — [CAUSED BY THE AUDIT, FIXED] the reaction picker was deleted during a refactor
+
+Found while running M23, not by the sweep meant to catch it. 10.7's pass over
+`channel-view/text/message-actions.tsx` extracted the quick reaction row into a
+`QuickReactionButton` child, and in the same edit dropped the control next to it:
+
+```
+-            <EmojiPicker onEmojiSelect={onEmojiSelect}>
+-              <IconButton variant="ghost" icon={Smile} title={t('addReaction')} />
+-            </EmojiPicker>
+```
+
+So a message could still be reacted to with one of the few recent emoji, but there was no way
+to reach the full picker and choose anything else. Nothing failed: `addReaction` stayed in all
+seven locales, the imports for `EmojiPicker` and `Smile` were tidied away with the markup, and
+both typecheck and lint stayed clean, because deleted jsx leaves nothing behind to complain.
+
+**Fixed** by restoring the picker after the quick reaction buttons.
+
+The lesson is about the shape of the risk rather than this one control. 10.7 touched 25
+handlers and extracted four components, and the audit's own note on M36 says a miss there
+"shows up as something missing or blank rather than as an error". That is exactly what
+happened, and it was found by someone reacting to a message rather than by the sweep. M36 is
+worth running deliberately, and the other extract-a-child refactors in chunks 10 and 11 are
+worth the same look: a control that stops being rendered is invisible to every automated
+check this repo has.
+
+
 ## To do at the end
 
 Work that is not a finding in any one chunk, to be picked up once the chunks are done.

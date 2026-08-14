@@ -1,4 +1,4 @@
-import { ReconnectingBanner } from '@/components/reconnecting-banner';
+import { ReconnectingOverlay } from '@/components/reconnecting-overlay';
 import {
   useIsAppLoading,
   useIsAutoConnecting,
@@ -63,8 +63,11 @@ const Routing = memo(() => {
 
   return (
     <>
-      {isReconnecting && <ReconnectingBanner />}
-      <ServerView />
+      {isReconnecting && <ReconnectingOverlay />}
+
+      <div className="contents" inert={isReconnecting}>
+        <ServerView />
+      </div>
     </>
   );
 });

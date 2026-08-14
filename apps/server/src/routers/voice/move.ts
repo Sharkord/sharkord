@@ -35,7 +35,8 @@ const moveUserRoute = rateLimitedProcedure(protectedProcedure, {
     const channel = await db
       .select({
         name: channels.name,
-        type: channels.type
+        type: channels.type,
+        isDm: channels.isDm
       })
       .from(channels)
       .where(eq(channels.id, input.channelId))
@@ -49,6 +50,11 @@ const moveUserRoute = rateLimitedProcedure(protectedProcedure, {
     invariant(channel.type === ChannelType.VOICE, {
       code: 'BAD_REQUEST',
       message: 'Channel is not a voice channel'
+    });
+
+    invariant(!channel.isDm, {
+      code: 'BAD_REQUEST',
+      message: 'Cannot move a user into a direct message call'
     });
 
     // the mover must be able to see the destination themselves, not only hold

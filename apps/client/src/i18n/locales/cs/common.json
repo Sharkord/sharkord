@@ -123,6 +123,14 @@
   "wasReactedBy": "reagovali {{reacters}}.",
   "andMore": "a dalších {{count}}",
   "toggleParticipants": "Zobrazit/skrýt účastníky",
-  "reconnecting": "Znovu se připojuji…",
-  "viewingOlderMessages": "Zobrazují se starší zprávy, přejít na nejnovější"
+  "viewingOlderMessages": "Zobrazují se starší zprávy, přejít na nejnovější",
+  "noChannelAccessTitle": "Bez přístupu k tomuto chatu",
+  "noChannelAccessDescription": "Jsi v tomto hlasovém kanálu, ale nemáš oprávnění číst jeho zprávy.",
+  "reconnectingTitle": "Spojení ztraceno",
+  "reconnectingNow": "Připojování…",
+  "reconnectingIn_one": "Další pokus za {{count}} sekundu",
+  "reconnectingIn_other": "Další pokus za {{count}} sekund",
+  "reconnectingAttempt": "Pokus {{attempt}} z {{total}}",
+  "reconnectingHint": "Tvoje relace zůstává zachována. Aplikace se sama obnoví, jakmile server odpoví.",
+  "reconnectingAbort": "Přestat se připojovat"
 }

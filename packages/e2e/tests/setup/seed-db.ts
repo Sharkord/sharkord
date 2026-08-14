@@ -1,9 +1,9 @@
 import { Database } from 'bun:sqlite';
-import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import fs from 'fs/promises';
 import path from 'path';
 import { seedTestDb } from '../../../../apps/server/src/__tests__/seed';
+import { migrateDatabase } from '../../../../apps/server/src/db/migrate';
 import { e2eDataPath } from '../statics';
 
 // run by the `seed:e2e` script before playwright starts, not from a globalSetup hook:
@@ -27,11 +27,9 @@ const sqlite = new Database(path.join(e2eDataPath, 'db.sqlite'), {
   strict: true
 });
 
-sqlite.run('PRAGMA foreign_keys = ON;');
-
 const db = drizzle({ client: sqlite });
 
-await migrate(db, { migrationsFolder: MIGRATIONS_PATH });
+await migrateDatabase(sqlite, db, MIGRATIONS_PATH);
 await seedTestDb(db, { e2e: true });
 
 sqlite.close();

@@ -125,6 +125,14 @@
   "typeAMessage": "Type a message...",
   "messageChannel": "Message \"{{name}}\"",
   "toggleParticipants": "Show/hide participants",
-  "reconnecting": "Reconnecting…",
-  "viewingOlderMessages": "Viewing older messages, jump to the latest"
+  "viewingOlderMessages": "Viewing older messages, jump to the latest",
+  "noChannelAccessTitle": "No access to this chat",
+  "noChannelAccessDescription": "You are in this voice channel, but you do not have permission to read its messages.",
+  "reconnectingTitle": "Connection lost",
+  "reconnectingNow": "Reconnecting…",
+  "reconnectingIn_one": "Retrying in {{count}} second",
+  "reconnectingIn_other": "Retrying in {{count}} seconds",
+  "reconnectingAttempt": "Attempt {{attempt}} of {{total}}",
+  "reconnectingHint": "Your session is kept. The app resumes on its own once the server answers.",
+  "reconnectingAbort": "Stop trying to reconnect"
 }

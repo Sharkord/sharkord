@@ -69,7 +69,7 @@ export const useAdminGeneral = () => {
       name: settings.name,
       description: settings.description ?? '',
 
-      password: '',
+      password: settings.password ?? '',
       onlyAskForPasswordOnFirstJoin:
         settings.onlyAskForPasswordOnFirstJoin ?? false,
       allowNewUsers: settings.allowNewUsers ?? false,
@@ -90,7 +90,7 @@ export const useAdminGeneral = () => {
       await trpc.others.updateSettings.mutate({
         name: settings.name,
         description: settings.description,
-        password: settings.password || undefined,
+        password: settings.password || null,
         onlyAskForPasswordOnFirstJoin: settings.onlyAskForPasswordOnFirstJoin,
         allowNewUsers: settings.allowNewUsers,
         directMessagesEnabled: settings.directMessagesEnabled,

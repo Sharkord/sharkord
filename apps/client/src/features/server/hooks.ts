@@ -21,6 +21,7 @@ import {
   pluginsEnabledSelector,
   publicServerSettingsSelector,
   reconnectingSelector,
+  reconnectSelector,
   referenceableChannelsSelector,
   serverNameSelector,
   typingUsersByChannelIdSelector,
@@ -33,6 +34,8 @@ import {
 export const useIsConnected = () => useSelector(connectedSelector);
 
 export const useIsReconnecting = () => useSelector(reconnectingSelector);
+
+export const useReconnectState = () => useSelector(reconnectSelector);
 
 export const useDisconnectInfo = () => useSelector(disconnectInfoSelector);
 

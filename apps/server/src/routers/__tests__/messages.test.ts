@@ -941,14 +941,25 @@ describe('messages router', () => {
     ).rejects.toThrow();
   });
 
-  test('should reject an arbitrary string as a reaction', async () => {
+  test('should accept the shortcode the picker actually sends', async () => {
     const { caller } = await initTest();
 
-    // not pictographic and not a known custom emoji, it would have rendered
-    // as raw text for everyone in the channel
     await expect(
-      caller.messages.toggleReaction({ messageId: 1, emoji: 'lol' })
-    ).rejects.toThrow('Unknown emoji');
+      caller.messages.toggleReaction({ messageId: 1, emoji: 'fox' })
+    ).resolves.toBeUndefined();
+  });
+
+  test('should reject a reaction that is neither an emoji nor a shortcode', async () => {
+    const { caller } = await initTest();
+
+    // anything that could not have come from the picker: spaces, markup, punctuation. an
+    // unknown but well-shaped shortcode is allowed through and renders as ':code:', which is
+    // the price of not shipping the whole emoji table to the server
+    for (const emoji of ['not an emoji', '<b>x</b>', 'Lol!', '../etc']) {
+      await expect(
+        caller.messages.toggleReaction({ messageId: 1, emoji })
+      ).rejects.toThrow('Unknown emoji');
+    }
   });
 
   test('should accept a multi codepoint unicode emoji', async () => {

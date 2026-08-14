@@ -485,16 +485,12 @@ const channelReadStates = sqliteTable(
     channelId: integer('channel_id')
       .notNull()
       .references(() => channels.id, { onDelete: 'cascade' }),
-    lastReadMessageId: integer('last_read_message_id').references(
-      () => messages.id,
-      { onDelete: 'set null' }
-    ),
+    lastReadMessageId: integer('last_read_message_id'),
     lastReadAt: integer('last_read_at').notNull()
   },
   (t) => [
     primaryKey({ columns: [t.userId, t.channelId] }),
-    index('channel_read_states_channel_idx').on(t.channelId),
-    index('channel_read_states_last_read_idx').on(t.lastReadMessageId)
+    index('channel_read_states_channel_idx').on(t.channelId)
   ]
 );
 

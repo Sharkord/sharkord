@@ -70,5 +70,7 @@
   "deleteCategoryMsg": "Sei sicuro di voler eliminare questa categoria? Questo ELIMINERA tutti i canali all'interno della categoria. Questa azione non puo essere annullata.",
   "categoryDeleted": "Categoria eliminata",
   "failedDeleteCategory": "Impossibile eliminare la categoria",
-  "userVolume": "Volume utente"
+  "userVolume": "Volume utente",
+  "microphone": "Microfono",
+  "noiseSuppression": "Soppressione del rumore"
 }

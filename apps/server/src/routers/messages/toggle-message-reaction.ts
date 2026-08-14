@@ -1,5 +1,6 @@
 import {
   EMOJI_CHARACTER_REGEX,
+  EMOJI_SHORTCODE_REGEX,
   Permission,
   REACTION_EMOJI_MAX_LENGTH
 } from '@sharkord/shared';
@@ -41,7 +42,9 @@ const toggleMessageReactionRoute = rateLimitedProcedure(protectedProcedure, {
       const emojiFileId = await getEmojiFileIdByEmojiName(input.emoji);
 
       invariant(
-        emojiFileId !== null || EMOJI_CHARACTER_REGEX.test(input.emoji),
+        emojiFileId !== null ||
+          EMOJI_CHARACTER_REGEX.test(input.emoji) ||
+          EMOJI_SHORTCODE_REGEX.test(input.emoji),
         {
           code: 'BAD_REQUEST',
           message: 'Unknown emoji'

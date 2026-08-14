@@ -123,6 +123,14 @@
   "wasReactedBy": "на это отреагировали {{reacters}}.",
   "andMore": "и еще {{count}}",
   "toggleParticipants": "Показать/скрыть участников",
-  "reconnecting": "Переподключение…",
-  "viewingOlderMessages": "Показаны старые сообщения, перейти к последним"
+  "viewingOlderMessages": "Показаны старые сообщения, перейти к последним",
+  "noChannelAccessTitle": "Нет доступа к этому чату",
+  "noChannelAccessDescription": "Вы находитесь в этом голосовом канале, но у вас нет прав на чтение его сообщений.",
+  "reconnectingTitle": "Соединение потеряно",
+  "reconnectingNow": "Переподключение…",
+  "reconnectingIn_one": "Повтор через {{count}} секунду",
+  "reconnectingIn_other": "Повтор через {{count}} секунд",
+  "reconnectingAttempt": "Попытка {{attempt}} из {{total}}",
+  "reconnectingHint": "Сессия сохранена. Приложение продолжит работу само, как только сервер ответит.",
+  "reconnectingAbort": "Прекратить переподключение"
 }

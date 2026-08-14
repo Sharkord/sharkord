@@ -70,5 +70,7 @@
   "deleteCategoryMsg": "Êtes-vous sûr de vouloir supprimer cette catégorie ? Cela SUPPRIMERA tous les canaux contenus dans cette catégorie. Cette action est irréversible.",
   "categoryDeleted": "Catégorie supprimée",
   "failedDeleteCategory": "Échec de la suppression de la catégorie",
-  "userVolume": "Volume de l'utilisateur"
+  "userVolume": "Volume de l'utilisateur",
+  "microphone": "Microphone",
+  "noiseSuppression": "Suppression du bruit"
 }

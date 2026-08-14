@@ -33,8 +33,10 @@ export const connectedSelector = (state: IRootState) => state.server.connected;
 export const disconnectInfoSelector = (state: IRootState) =>
   state.server.disconnectInfo;
 
+export const reconnectSelector = (state: IRootState) => state.server.reconnect;
+
 export const reconnectingSelector = (state: IRootState) =>
-  state.server.reconnecting;
+  !!state.server.reconnect;
 
 export const serverNameSelector = (state: IRootState) =>
   state.server.publicSettings?.name;

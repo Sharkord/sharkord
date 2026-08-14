@@ -237,6 +237,27 @@ describe('others router', () => {
     );
   });
 
+  test('should let an admin read the join password back and clear it', async () => {
+    const { caller } = await initTest(1);
+
+    await caller.others.updateSettings({ password: 'testpassword' });
+
+    const settings = await caller.others.getSettings();
+
+    // the form shows what is actually set, which is what makes emptying it meaningful
+    expect(settings.password).toBe('testpassword');
+
+    // the ownership credential is a different thing and stays hidden
+    expect('secretToken' in settings).toBe(false);
+
+    await caller.others.updateSettings({ password: null });
+
+    const { caller: joiner } = await getCaller(2);
+    const { hasPassword } = await joiner.others.handshake();
+
+    expect(hasPassword).toBe(false);
+  });
+
   test('should keep the server password when saving unrelated settings', async () => {
     const { caller } = await initTest(1);
 

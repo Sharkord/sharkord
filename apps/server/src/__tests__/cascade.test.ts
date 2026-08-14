@@ -278,6 +278,53 @@ describe('database cascades', async () => {
     expect(readStatesAfter.length).toBe(0);
   });
 
+  test('deleting a message leaves every other reader caught up', async () => {
+    // the marker used to be a foreign key with onDelete 'set null', so deleting the one
+    // message a channel's readers all pointed at reset it to unread for every one of them.
+    // ids are monotonic, so the marker stays meaningful once the message is gone
+    const [readerOne, readerTwo] = await tdb.select().from(users);
+    const channelId = 1;
+
+    const newestMessage = await tdb
+      .insert(messages)
+      .values({
+        userId: readerOne!.id,
+        channelId,
+        content: 'the message every marker points at',
+        metadata: null,
+        createdAt: Date.now()
+      })
+      .returning()
+      .get();
+
+    await tdb.insert(channelReadStates).values([
+      {
+        channelId,
+        userId: readerOne!.id,
+        lastReadMessageId: newestMessage.id,
+        lastReadAt: Date.now()
+      },
+      {
+        channelId,
+        userId: readerTwo!.id,
+        lastReadMessageId: newestMessage.id,
+        lastReadAt: Date.now()
+      }
+    ]);
+
+    await tdb.delete(messages).where(eq(messages.id, newestMessage.id));
+
+    const markersAfter = await tdb
+      .select()
+      .from(channelReadStates)
+      .where(eq(channelReadStates.channelId, channelId));
+
+    expect(markersAfter.length).toBe(2);
+    markersAfter.forEach((marker) =>
+      expect(marker.lastReadMessageId).toBe(newestMessage.id)
+    );
+  });
+
   test('deleting a user cascades to channel_read_states and channel_user_permissions', async () => {
     const usersBefore = await tdb.select().from(users);
     const channelsBefore = await tdb.select().from(channels);

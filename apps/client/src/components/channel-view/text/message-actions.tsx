@@ -1,3 +1,4 @@
+import { EmojiPicker } from '@/components/emoji-picker';
 import { useRecentEmojis } from '@/components/emoji-picker/use-recent-emojis';
 import { Protect } from '@/components/protect';
 import {
@@ -16,6 +17,7 @@ import {
   Pin,
   PinOff,
   Reply,
+  Smile,
   Trash,
   Trash2
 } from 'lucide-react';
@@ -209,6 +211,14 @@ const MessageActions = memo(
                 onSelect={onEmojiSelect}
               />
             ))}
+
+            <EmojiPicker onEmojiSelect={onEmojiSelect}>
+              <IconButton
+                variant="ghost"
+                icon={Smile}
+                title={t('addReaction')}
+              />
+            </EmojiPicker>
           </div>
         </Protect>
       </div>
