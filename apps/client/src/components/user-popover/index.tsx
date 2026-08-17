@@ -147,6 +147,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
             <div className="flex gap-2 items-center">
               {showDmButton && (
                 <IconButton
+                  data-testid={TestId.USER_POPOVER_DM}
                   icon={MessageSquare}
                   variant="ghost"
                   size="sm"

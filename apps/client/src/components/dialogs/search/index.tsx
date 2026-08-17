@@ -113,7 +113,10 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
                 />
 
                 {truncated && (
-                  <div className="shrink-0 pt-2 text-center text-xs text-muted-foreground">
+                  <div
+                    data-testid={TestId.SEARCH_TRUNCATED_NOTICE}
+                    className="shrink-0 pt-2 text-center text-xs text-muted-foreground"
+                  >
                     {t('searchTruncated')}
                   </div>
                 )}

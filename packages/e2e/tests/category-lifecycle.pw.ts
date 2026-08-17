@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { TestId } from '@sharkord/shared';
 import { expect, loginAs, test } from './fixtures';
+import { confirmDialog } from './helpers/dialogs';
 
 // the spec builds and removes its own category, so it touches nothing the rest of the suite
 // reads and survives a retry. a seeded one would be gone on the second attempt
@@ -14,13 +15,23 @@ const categoryItem = (page: Page, name: string) =>
   page.getByTestId(TestId.CATEGORY_ITEM).filter({ hasText: name });
 
 const submitDialog = async (page: Page, value: string) => {
-  await page.getByRole('dialog').getByRole('textbox').fill(value);
+  // waiting for the dialog rather than for its textbox: a dropdown item clicked mid animation
+  // can be missed entirely, and then the failure points at the input instead of the click
+  const dialog = page.getByRole('dialog');
+
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('textbox').fill(value);
   await page.keyboard.press('Enter');
+  await expect(dialog).toBeHidden();
 };
 
 const createCategoryWithChannel = async (page: Page) => {
   await page.getByTestId(TestId.SERVER_MENU_TRIGGER).click();
-  await page.getByTestId(TestId.SERVER_MENU_ADD_CATEGORY).click();
+
+  const addCategory = page.getByTestId(TestId.SERVER_MENU_ADD_CATEGORY);
+
+  await expect(addCategory).toBeVisible();
+  await addCategory.click();
   await submitDialog(page, CATEGORY);
 
   await expect(categoryItem(page, CATEGORY)).toBeVisible();
@@ -40,9 +51,7 @@ const deleteCategory = async (page: Page, name: string) => {
   // are outside the trigger
   await categoryItem(page, name).getByText(name).click({ button: 'right' });
   await page.getByTestId(TestId.CATEGORY_MENU_DELETE).click();
-
-  // the confirmation's confirm button is autofocused
-  await page.keyboard.press('Enter');
+  await confirmDialog(page);
 };
 
 // categories.test.ts covers the server side: the channels are announced and any call in them
@@ -63,14 +72,20 @@ test('deleting a category removes it and its channels from every client', async 
 
     await createCategoryWithChannel(owner);
 
-    await expect(categoryItem(watcher, CATEGORY)).toBeVisible();
-    await expect(watcher.getByText(CHANNEL)).toBeVisible();
+    // the watcher learns about both through a subscription, which under a full parallel run
+    // can take longer than the default expect timeout allows
+    await expect(categoryItem(watcher, CATEGORY)).toBeVisible({
+      timeout: 15_000
+    });
+    await expect(watcher.getByText(CHANNEL)).toBeVisible({ timeout: 15_000 });
 
     await deleteCategory(owner, CATEGORY);
 
     for (const page of [owner, watcher]) {
-      await expect(categoryItem(page, CATEGORY)).toHaveCount(0);
-      await expect(page.getByText(CHANNEL)).toHaveCount(0);
+      await expect(categoryItem(page, CATEGORY)).toHaveCount(0, {
+        timeout: 15_000
+      });
+      await expect(page.getByText(CHANNEL)).toHaveCount(0, { timeout: 15_000 });
     }
   } finally {
     await ownerContext.close().catch(() => {});

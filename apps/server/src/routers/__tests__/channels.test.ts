@@ -2,6 +2,7 @@ import { ChannelPermission, ChannelType, ServerEvents } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { initTest } from '../../__tests__/helpers';
 import { getChannelsReadStatesForUser } from '../../db/queries/channels';
+import { VoiceRuntime } from '../../runtimes/voice';
 import { pubsub } from '../../utils/pubsub';
 
 describe('channels router', () => {
@@ -238,6 +239,33 @@ describe('channels router', () => {
         channelId: newChannelId
       })
     ).rejects.toThrow('Channel not found');
+  });
+
+  // the client cannot clear a call it was never told ended: this is the event R4's fix hangs
+  // off, so a delete that quietly leaves the runtime standing puts the bug straight back
+  test('should end the call in a voice channel that is deleted', async () => {
+    const { caller } = await initTest();
+
+    const runtime = new VoiceRuntime(2);
+
+    runtime.addUser(2, { micMuted: false, soundMuted: false });
+
+    const departures: { channelId: number; userId: number }[] = [];
+
+    const subscription = pubsub
+      .subscribe(ServerEvents.USER_LEAVE_VOICE)
+      .subscribe({
+        next: (departure) => {
+          departures.push(departure);
+        }
+      });
+
+    await caller.channels.delete({ channelId: 2 });
+
+    subscription.unsubscribe();
+
+    expect(VoiceRuntime.findById(2)).toBeUndefined();
+    expect(departures).toEqual([{ channelId: 2, userId: 2 }]);
   });
 
   test('should throw when deleting non-existing channel', async () => {

@@ -52,11 +52,20 @@ const sendMessage = async (page: Page, content: string) => {
   await editor.press('Backspace');
   await editor.pressSequentially(content);
   await expect(editor).toContainText(content);
-  await editor.press('Enter');
+
+  // the compose reads its content from react state, not from the dom, so an enter that lands
+  // before that state catches up is dropped with no error and no newline. pressing until the
+  // editor clears is what makes a freshly mounted view (a dm just opened) deterministic
+  await expect
+    .poll(async () => {
+      await editor.press('Enter');
+
+      return (await editor.innerText()).includes(content);
+    })
+    .toBe(false);
 
   // the editor clearing is the send being accepted, the message appearing is the server
   // having taken it. waiting for both keeps the caller off a fixed delay
-  await expect(editor).not.toContainText(content);
   await expect(messageByText(page, content)).toHaveCount(1);
 };
 

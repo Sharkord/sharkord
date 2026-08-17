@@ -51,6 +51,21 @@ export const addUserToVoiceChannel = (
   }
 };
 
+const clearLocalVoiceSession = (): void => {
+  const state = store.getState();
+
+  const selectedChannelId = selectedChannelIdSelector(state);
+  const currentVoiceChannelId = currentVoiceChannelIdSelector(state);
+
+  if (selectedChannelId === currentVoiceChannelId) {
+    setSelectedChannelId(undefined);
+  }
+
+  setCurrentVoiceChannelId(undefined);
+  updateOwnVoiceState({ webcamEnabled: false, sharingScreen: false });
+  setPinnedCard(undefined);
+};
+
 export const removeUserFromVoiceChannel = (
   userId: number,
   channelId: number
@@ -63,9 +78,18 @@ export const removeUserFromVoiceChannel = (
     serverSliceActions.removeUserFromVoiceChannel({ userId, channelId })
   );
 
-  if (userId !== ownUserId && channelId === currentChannelId) {
-    playSound(SoundType.REMOTE_USER_LEFT_VOICE_CHANNEL);
+  if (channelId !== currentChannelId) return;
+
+  // the server took us out of this call rather than the other way round: the channel was
+  // deleted, its category was, or the runtime was destroyed. without this the call ends but
+  // the app goes on showing the user as connected to a channel that no longer exists
+  if (userId === ownUserId) {
+    clearLocalVoiceSession();
+
+    return;
   }
+
+  playSound(SoundType.REMOTE_USER_LEFT_VOICE_CHANNEL);
 };
 
 export const addExternalStreamToVoiceChannel = (
@@ -200,13 +224,7 @@ export const leaveVoice = async (options?: {
     selectedChannelId
   });
 
-  if (selectedChannelId === currentChannelId) {
-    setSelectedChannelId(undefined);
-  }
-
-  setCurrentVoiceChannelId(undefined);
-  updateOwnVoiceState({ webcamEnabled: false, sharingScreen: false });
-  setPinnedCard(undefined);
+  clearLocalVoiceSession();
 
   const client = getTRPCClient();
 

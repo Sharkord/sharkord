@@ -169,6 +169,7 @@ const Header = memo(() => {
           {t('kickBtn')}
         </Button>
         <Button
+          data-testid={TestId.MOD_VIEW_BAN}
           variant="outline"
           size="sm"
           onClick={() => (user.banned ? onUnban() : onBan())}

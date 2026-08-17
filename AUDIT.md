@@ -302,7 +302,7 @@ scroll handler itself, and mid-settle that position was read back as "the user l
 bottom", clearing the lock that every later correction depends on. Programmatic scrolls are
 now marked and ignored by the handler.
 
-### R4 — [OPEN] deleting a voice channel leaves the caller reading "Voice connected"
+### R4 — [FIXED] deleting a voice channel leaves the caller reading "Voice connected"
 
 Found by M13. Deleting a voice channel while two people are in a call in it does tear the call
 down: the audio stops and the channel stops rendering for both clients, with no reload. What
@@ -317,10 +317,29 @@ reaches it. The indicator in `left-sidebar/voice-control.tsx` reads `connectionS
 is therefore still `connected`.
 
 Not caused by the audit: `removeChannel` and `assertVoiceChatClose` are both unchanged from
-`development`. It is a real bug regardless, and the fix is for the delete handler to run the
-same local teardown as leaving, when the deleted channel is the one being spoken in. Worth
-checking the same question for a channel the caller loses access to rather than one that is
-deleted, since that arrives as a different event.
+`development`.
+
+**Fixed** one layer below where the report pointed. Patching the delete handler would have
+left every other way the server drops a caller still broken, and there are several: a deleted
+category takes its voice channels with it, and `VoiceRuntime.destroy()` ends a call on its
+own. All of them arrive at the client as the same thing, `USER_LEAVE_VOICE` naming the caller,
+and that event is broadcast to everyone including the user leaving. `removeUserFromVoiceChannel`
+in `features/server/voice/actions.ts` was the choke point: it dropped the user from the voice
+map and, for the own user, did nothing else.
+
+It now runs the local teardown when the server takes the own user out of the channel they are
+in. The teardown is `clearLocalVoiceSession`, extracted from `leaveVoice` and shared with it,
+so the two paths cannot drift; the difference is that this one does not ask the server to end
+a session it has already ended. `voice-control.tsx` renders nothing without a
+`currentVoiceChannelId`, so clearing it takes the indicator with it.
+
+`removeChannel` still calls `assertVoiceChatClose`, which closes the voice chat sidebar. That
+was never the wrong thing to do, only an incomplete one.
+
+The server side is pinned by `should end the call in a voice channel that is deleted` in
+`routers/__tests__/channels.test.ts`, which fails if the delete stops destroying the runtime.
+The client half has no test runner to sit in, so **M13 has to be run by hand again** to
+confirm it.
 
 
 ### R5 — [FIXED] a dm call could be used as a move destination

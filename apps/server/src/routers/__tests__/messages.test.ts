@@ -480,6 +480,107 @@ describe('messages router', () => {
     ).toBe(false);
   });
 
+  // the flag is what tells the user their results were cut off. it is set by three separate
+  // conditions and a wrong one is silent: the list just ends, with no sign there was more
+  test('should not flag a narrow search as truncated', async () => {
+    const { caller } = await initTest(1);
+
+    await caller.messages.send({
+      channelId: 1,
+      content: 'a distinctive needle in the haystack'
+    });
+
+    const result = await caller.messages.search({ query: 'needle' });
+
+    expect(result.messages.length).toBe(1);
+    expect(result.truncated).toBe(false);
+  });
+
+  test('should flag a search that fills the message limit as truncated', async () => {
+    const { caller } = await initTest(1);
+
+    const now = Date.now();
+
+    // inserted rather than sent: filling the limit through the route trips its rate limiter
+    await tdb.insert(messages).values(
+      Array.from({ length: 25 }).map((_, index) => ({
+        channelId: 1,
+        userId: 1,
+        content: `repeated haystack line ${index}`,
+        metadata: null,
+        createdAt: now + index
+      }))
+    );
+
+    const result = await caller.messages.search({ query: 'haystack' });
+
+    expect(result.messages.length).toBe(25);
+    expect(result.truncated).toBe(true);
+  });
+
+  // the sql filter matches raw html and the js filter matches the rendered text, so a term
+  // living only in a link target fills the fetch limit and survives none of it. the flag is
+  // the only thing telling the user that empty list is not the whole story
+  test('should flag a search that fetched its limit but matched nothing', async () => {
+    const { caller } = await initTest(1);
+
+    const now = Date.now();
+
+    await tdb.insert(messages).values(
+      Array.from({ length: 100 }).map((_, index) => ({
+        channelId: 1,
+        userId: 1,
+        content: `<a href="https://example.com/hiddenterm">link ${index}</a>`,
+        metadata: null,
+        createdAt: now + index
+      }))
+    );
+
+    const result = await caller.messages.search({ query: 'hiddenterm' });
+
+    expect(result.messages.length).toBe(0);
+    expect(result.truncated).toBe(true);
+  });
+
+  test('should flag a search that fills the file limit as truncated', async () => {
+    const { caller } = await initTest(1);
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'nothing here matches the term'
+    });
+
+    const now = Date.now();
+
+    // one message carrying the whole file limit, so the flag can only come from the file
+    // condition and not from either of the message ones
+    for (let i = 0; i < 25; i++) {
+      const [file] = await tdb
+        .insert(files)
+        .values({
+          name: `bundle-${now}-${i}.zip`,
+          originalName: `manylimitfile-${i}.zip`,
+          md5: `bundle-md5-${now}-${i}`,
+          userId: 1,
+          size: 16,
+          mimeType: 'application/zip',
+          extension: 'zip',
+          createdAt: now
+        })
+        .returning();
+
+      await tdb
+        .insert(messageFiles)
+        .values({ messageId, fileId: file!.id, createdAt: now });
+    }
+
+    const result = await caller.messages.search({ query: 'manylimitfile' });
+
+    expect(result.messages.length).toBe(0);
+    expect(result.files.length).toBe(25);
+    expect(result.truncated).toBe(true);
+  });
+
   test('should throw when search is disabled on server', async () => {
     const { caller } = await initTest(1);
 

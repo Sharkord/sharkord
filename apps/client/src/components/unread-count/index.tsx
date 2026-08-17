@@ -1,3 +1,4 @@
+import { TestId } from '@sharkord/shared';
 import { cn } from '@sharkord/ui';
 import { memo } from 'react';
 
@@ -13,6 +14,7 @@ const UnreadCount = memo(
 
     return (
       <div
+        data-testid={TestId.UNREAD_COUNT}
         className={cn(
           'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground',
           hasMention && 'bg-red-500 text-white',

@@ -329,6 +329,24 @@ parameterized selectors do not evict each other. Rules:
 - Domain rules used by more than one selector go in `features/server/helpers.ts`
   (`canViewChannel`), never re-implemented inline. Re-implementing one is how the owner
   branch gets dropped.
+- **Name selector results before comparing them.** When reading the store imperatively, assign
+  each call to a `const` and compare the names, never the calls:
+
+  ```ts
+  // no
+  if (selectedChannelIdSelector(state) === currentVoiceChannelIdSelector(state)) {
+
+  // yes
+  const selectedChannelId = selectedChannelIdSelector(state);
+  const currentVoiceChannelId = currentVoiceChannelIdSelector(state);
+
+  if (selectedChannelId === currentVoiceChannelId) {
+  ```
+
+  The names are what say which two things are being compared, the call sites do not. It also
+  keeps the reads together at the top of the function, where a stale `state` is obvious. A
+  single boolean guard whose selector already reads as the condition is fine as it stands
+  (`if (isCurrentVoiceChannelSelectedSelector(state)) return;`).
 
 `bun run magic` applies here too.
 

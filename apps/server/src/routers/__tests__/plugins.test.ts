@@ -1,4 +1,4 @@
-import { type TPluginInfo } from '@sharkord/shared';
+import { ActivityLogType, type TPluginInfo } from '@sharkord/shared';
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
@@ -6,7 +6,7 @@ import path from 'path';
 import { initTest } from '../../__tests__/helpers';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { tdb } from '../../__tests__/setup';
-import { pluginData } from '../../db/schema';
+import { activityLog, pluginData } from '../../db/schema';
 import { PLUGINS_PATH } from '../../helpers/paths';
 import { pluginManager } from '../../plugins';
 
@@ -884,6 +884,94 @@ describe('plugins router', () => {
           pluginId: 'plugin_a'
         })
       ).rejects.toThrow();
+    });
+  });
+
+  // the audit added these three entries. the setting one is the reason this is worth a test:
+  // plugin settings hold api keys and tokens, so the log has to record that a key changed
+  // without recording what it changed to
+  describe('activity log', () => {
+    const logsOfType = async (type: ActivityLogType) => {
+      // the log is queued off the request path, so the row lands a tick after the call returns
+      await Bun.sleep(20);
+
+      return tdb
+        .select({ userId: activityLog.userId, details: activityLog.details })
+        .from(activityLog)
+        .where(eq(activityLog.type, type));
+    };
+
+    test('should log a plugin install with its version', async () => {
+      const { caller } = await initTest();
+
+      mock.module('../../helpers/downloads', () => ({
+        downloadPlugin: mock(() => Promise.resolve()),
+        downloadFile: mock(() => Promise.resolve())
+      }));
+
+      mock.module('../../helpers/marketplace', () => ({
+        fetchMarketplaceVersion: mock(() =>
+          Promise.resolve({
+            version: '0.0.1',
+            downloadUrl: 'https://example.com/plugin.tar.gz',
+            checksum: 'deadbeef1234',
+            sdkVersion: 1,
+            size: 1000
+          })
+        )
+      }));
+
+      await caller.plugins.install({
+        pluginId: 'plugin-example',
+        version: '0.0.1'
+      });
+
+      const entries = await logsOfType(ActivityLogType.PLUGIN_INSTALLED);
+
+      expect(entries.length).toBe(1);
+      expect(entries[0]!.userId).toBe(1);
+      expect(entries[0]!.details).toMatchObject({
+        pluginId: 'plugin-example',
+        version: '0.0.1'
+      });
+    });
+
+    test('should log a setting update by key without recording the value', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-with-settings');
+
+      const secret = 'sk-live-do-not-log-me';
+
+      await caller.plugins.updateSetting({
+        pluginId: 'plugin-with-settings',
+        key: 'greeting',
+        value: secret
+      });
+
+      const entries = await logsOfType(ActivityLogType.PLUGIN_SETTING_UPDATED);
+
+      expect(entries.length).toBe(1);
+      expect(entries[0]!.details).toMatchObject({
+        pluginId: 'plugin-with-settings',
+        key: 'greeting'
+      });
+
+      // serialized rather than field by field: a value leaking under any other name, or
+      // nested inside one, has to fail this too
+      expect(JSON.stringify(entries[0]!.details)).not.toContain(secret);
+    });
+
+    test('should log a plugin removal', async () => {
+      const { caller } = await initTest();
+
+      await caller.plugins.remove({ pluginId: 'plugin-a' });
+
+      const entries = await logsOfType(ActivityLogType.PLUGIN_REMOVED);
+
+      expect(entries.length).toBe(1);
+      expect(entries[0]!.userId).toBe(1);
+      expect(entries[0]!.details).toMatchObject({ pluginId: 'plugin-a' });
     });
   });
 });

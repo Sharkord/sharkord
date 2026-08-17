@@ -1,8 +1,11 @@
+import { ServerEvents } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import { initTest } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
+import { getChannelsReadStatesForUser } from '../../db/queries/channels';
 import { directMessages, settings } from '../../db/schema';
+import { pubsub } from '../../utils/pubsub';
 
 describe('dms router', () => {
   test('should create a direct message channel and allow messaging', async () => {
@@ -106,6 +109,80 @@ describe('dms router', () => {
       .where(eq(directMessages.channelId, first.channelId));
 
     expect(rows.length).toBe(1);
+  });
+
+  // the refusal below covers a non participant marking a dm read. the participant doing it is
+  // what the badge depends on, and it is the half that broke in R2
+  test('should clear the unread count when a participant reads a dm', async () => {
+    const dmChannelId = 3;
+
+    const { caller: sender } = await initTest(3);
+    const { caller: reader } = await initTest(4);
+
+    // the seed already leaves user 4 one unread message in this conversation
+    const seeded = await getChannelsReadStatesForUser(4, dmChannelId);
+
+    expect(seeded[dmChannelId]).toBe(1);
+
+    await sender.messages.send({
+      channelId: dmChannelId,
+      content: 'unread on purpose'
+    });
+
+    const beforeRead = await getChannelsReadStatesForUser(4, dmChannelId);
+
+    expect(beforeRead[dmChannelId]).toBe(2);
+
+    const readStateUpdates: { channelId: number; count: number }[] = [];
+
+    const subscription = pubsub
+      .subscribeFor(4, ServerEvents.CHANNEL_READ_STATES_UPDATE)
+      .subscribe({
+        next: (update) => {
+          readStateUpdates.push(update);
+        }
+      });
+
+    await reader.channels.markAsRead({ channelId: dmChannelId });
+
+    subscription.unsubscribe();
+
+    const afterRead = await getChannelsReadStatesForUser(4, dmChannelId);
+
+    expect(afterRead[dmChannelId]).toBe(0);
+
+    // the reader's other tabs drop the badge off this event, not off a refetch
+    expect(readStateUpdates).toEqual([{ channelId: dmChannelId, count: 0 }]);
+  });
+
+  test('should keep a dm read once its newest message has been read', async () => {
+    const dmChannelId = 3;
+
+    const { caller: sender } = await initTest(3);
+    const { caller: reader } = await initTest(4);
+
+    await sender.messages.send({
+      channelId: dmChannelId,
+      content: 'first'
+    });
+
+    await reader.channels.markAsRead({ channelId: dmChannelId });
+
+    // reopening the same conversation must not resurrect the badge
+    await reader.channels.markAsRead({ channelId: dmChannelId });
+
+    const afterSecondRead = await getChannelsReadStatesForUser(4, dmChannelId);
+
+    expect(afterSecondRead[dmChannelId]).toBe(0);
+
+    await sender.messages.send({
+      channelId: dmChannelId,
+      content: 'second'
+    });
+
+    const afterNewMessage = await getChannelsReadStatesForUser(4, dmChannelId);
+
+    expect(afterNewMessage[dmChannelId]).toBe(1);
   });
 
   test('should refuse a non participant every way into a dm, including the owner', async () => {
