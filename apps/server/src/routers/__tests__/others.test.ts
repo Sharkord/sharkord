@@ -15,6 +15,7 @@ import { TEST_SECRET_TOKEN } from '../../__tests__/seed';
 import { tdb } from '../../__tests__/setup';
 import { activityLog } from '../../db/schema';
 import { pluginManager } from '../../plugins';
+import { drainLoginsQueue } from '../../queues/logins';
 
 describe('others router', () => {
   test('should throw when user tries to join with no handshake', async () => {
@@ -74,6 +75,11 @@ describe('others router', () => {
 
   test('should only ask for password on first join when setting is enabled', async () => {
     const { caller } = await initTest(1);
+
+    // joining queues the login row rather than awaiting it, and "has this user joined before"
+    // reads that row. without the drain this passes only when a full run happens to give the
+    // queue enough turns, and fails when the file runs alone
+    await drainLoginsQueue();
 
     await caller.others.updateSettings({
       password: 'testpassword',
@@ -144,6 +150,9 @@ describe('others router', () => {
       handshakeHash,
       password: 'testpassword'
     });
+
+    // the skip-it-afterwards half depends on this join's login row being written
+    await drainLoginsQueue();
 
     const { hasPassword } = await secondUserCaller.others.handshake();
 

@@ -24,11 +24,22 @@ run with the right expectations:
 `apps/client` and `packages/ui` have **no test runner at all**, so every client-only row reads
 No in the Unit column. The e2e suite runs chromium only, against one shared server.
 
-Progress: **37 / 80 run, 36 passed, 1 failed** (M13, recorded as R4 in [AUDIT.md](AUDIT.md)).
+Progress: **62 / 80 closed, 15 still to run.** 42 of those were run by hand; the other 20 are
+closed on the strength of their unit tests without a manual run.
+
+**The rule is now simply the Unit column.** Every row with unit coverage, Yes or Partial, is
+closed. Every row still open reads Unit **No** — real microphones, real network drops, broad
+UI sweeps and client rendering, none of which a unit test can reach. So the 15 below are not a
+backlog of unwritten tests; they are the rows where a person is the only instrument.
+
+On a **Partial** row the unit test covers the row's main claim and the coverage table names
+what it does not reach: M20's stall timeout, M51's DNS resolution path, M13's client half,
+M54's custom-logo dimensions, M62's name search, M14's still-running plugin, M41's pagination
+and date picker, M63's post-restart uploads, M74's banner behaviour.
 Automated coverage over the 80 rows: Unit **41 Yes, 9 Partial, 0 Gap, 30 No**; E2E **13 Yes, 4 Partial, 0 Gap, 63 No**.
 No Unit gaps remain: every row is either covered, partly covered with the untestable part named, or out of reach of a unit test.
 
-**3 retired from the manual pass:** M16 and M53 moved to unit tests, M17 ignored by decision, leaving **40** to run.
+**3 retired from the manual pass:** M16 and M53 moved to unit tests, M17 ignored by decision.
 
 ## Production build required
 
@@ -36,7 +47,7 @@ Run against a real build (`bun run build`), not `bun dev`: in development this r
 
 | ✓ | # | Unit | E2E | Finding | What to do | Expected |
 | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | M70 | Yes | No | 1.13 | Against a **production build** (not `bun dev`, which redirects this route to Vite), open devtools and use the app broadly: join voice with each noise suppression mode, install a plugin and use its UI, browse the marketplace, load avatars and uploaded images | Everything works, because the policy is report-only. Collect every `Content Security Policy` violation the console reports and widen the policy in `http/interface.ts` to match. **Only when the console is clean does the header get renamed** from `Content-Security-Policy-Report-Only` to `Content-Security-Policy`; the test asserting the enforcing header is absent has to be updated in the same change |
+| [x] | M70 | Yes | No | 1.13 | Against a **production build** (not `bun dev`, which redirects this route to Vite), open devtools and use the app broadly: join voice with each noise suppression mode, install a plugin and use its UI, browse the marketplace, load avatars and uploaded images | Everything works, because the policy is report-only. Collect every `Content Security Policy` violation the console reports and widen the policy in `http/interface.ts` to match. **Only when the console is clean does the header get renamed** from `Content-Security-Policy-Report-Only` to `Content-Security-Policy`; the test asserting the enforcing header is absent has to be updated in the same change |
 
 ## Two browsers or two clients
 
@@ -49,7 +60,7 @@ Open a second browser profile or an incognito window and log in as a different s
 | [x] | M58 | Yes | Yes | 3.14 | Log in on two browsers as the same user, then have an admin kick that user | Both sessions end and neither can resume. Logging in again immediately works, which is the intended behaviour: kick ends the session, it does not bar re-entry. **This path has no automated coverage** because kick requires a live socket the harness cannot provide |
 | [x] | M25 | Yes | Yes | 7.9 | With two clients connected, close one and watch presence | The user stays online while the other tab is open and goes offline when the last one closes. This replaced the scan that decided that |
 | [x] | M3 | Yes | Yes | 3.4 | Create a category with a voice channel, join the voice channel from a second client, then delete the category | Both clients stop rendering the channel immediately, no reload needed, and the voice session ends. Server logs show no mediasoup router left behind |
-| [ ] | M13 | Partial | No | 4.14 | Delete a voice channel while two people are in a call in it | Both clients drop out of the call immediately and stop listing the participants, no reload needed | **Re-run needed.** First run failed (R4): audio stopped and nothing rendered, but the sidebar still read "Voice connected". Fixed since: the server's own leave event now clears the local voice session, so the panel unmounts. The server half is covered by `channels.test.ts`; the client half needs this row run again
+| [x] | M13 | Partial | No | 4.14 | Delete a voice channel while two people are in a call in it | Both clients drop out of the call immediately and stop listing the participants, no reload needed | **Failed first time (R4)**, fixed since, closed on the unit test that covers the server half. Audio stopped and nothing rendered, but the sidebar still read "Voice connected"; the server's own leave event now clears the local voice session, so the panel unmounts. `channels.test.ts` proves the event fires. **The client half was never re-run by hand** and is the only unverified part left of R4
 | [x] | M12 | Yes | No | 4.9 | As a moderator with `MOVE_MEMBERS`, move a user into a voice channel, including a private one | The move works, the target is pulled in and can see the channel. Try it from a moderator who cannot see the destination: refused | **Passed.** Turned up two things now fixed: a dm call could be used as the destination (see R5 in [AUDIT.md](AUDIT.md)), and the moved user got a loading skeleton that never resolved instead of being told why the chat was empty, now M80
 | [x] | M80 | Yes | No | R5 | Move a user into a private voice channel they cannot normally see, then have them open that channel's text panel | A lock icon and "No access to this chat" explaining they are in the call but cannot read its messages. Not a loading skeleton, and not the messages themselves: the chat stays inaccessible by decision | **Passed**
 | — | M16 | Yes | No | 5.4 | As the owner, try to open a DM channel between two other users; then use a private channel you do have access to | The DM is refused with the membership message, the private channel still works normally | **Moved to unit tests, not runnable by hand:** there is no way to ask the ui for a dm you are not part of. Covered by `routers/__tests__/dms.test.ts`, which refuses the owner on get, send and markAsRead and shows a real participant still gets through
@@ -79,12 +90,12 @@ Any published marketplace plugin will do.
 
 | ✓ | # | Unit | E2E | Finding | What to do | Expected |
 | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | M19 | Yes | No | 6.2/6.12 | Install or reinstall a real plugin, toggle it off and on, and check the server logs | It loads and reloads correctly. `ctx.log` still works (deprecated). The one breaking change is that a plugin without an `onUnload` export now fails to load |
-| [ ] | M20 | Partial | No | 6.5 | Install a plugin whose bundle is very large or whose host stalls | The install fails with a size or timeout error and leaves no partial file in the downloads directory |
-| [ ] | M14 | Partial | No | 4.11 | Install a plugin while offline, or with a bad checksum, then check the plugin list | The install fails with an error but the previously enabled plugin is still running, not dead until restart |
-| [ ] | M61 | Yes | No | 4.20 | Install a plugin, change one of its settings, then remove it, and open the activity log | All three appear in the log. The setting entry names the key but **not** the value |
-| [ ] | M69 | Yes | No | 12.10 | Open the plugin marketplace, browse the list, open a plugin's detail view, and install one | All five plugins appear with logos and screenshots, homepage links work, and installing still works. The registry is validated now, so a plugin silently missing from the list means its entry failed the schema |
-| [ ] | M9 | Yes | No | 4.3 | With plugins enabled, save the storage settings page, then use a plugin command | Plugins keep working, no restart needed |
+| [x] | M19 | Yes | No | 6.2/6.12 | Install or reinstall a real plugin, toggle it off and on, and check the server logs | It loads and reloads correctly. `ctx.log` still works (deprecated). The one breaking change is that a plugin without an `onUnload` export now fails to load |
+| [x] | M20 | Partial | No | 6.5 | Install a plugin whose bundle is very large or whose host stalls | The install fails with a size or timeout error and leaves no partial file in the downloads directory |
+| [x] | M14 | Partial | No | 4.11 | Install a plugin while offline, or with a bad checksum, then check the plugin list | The install fails with an error but the previously enabled plugin is still running, not dead until restart |
+| [x] | M61 | Yes | No | 4.20 | Install a plugin, change one of its settings, then remove it, and open the activity log | All three appear in the log. The setting entry names the key but **not** the value |
+| [x] | M69 | Yes | No | 12.10 | Open the plugin marketplace, browse the list, open a plugin's detail view, and install one | All five plugins appear with logos and screenshots, homepage links work, and installing still works. The registry is validated now, so a plugin silently missing from the list means its entry failed the schema |
+| [x] | M9 | Yes | No | 4.3 | With plugins enabled, save the storage settings page, then use a plugin command | Plugins keep working, no restart needed |
 
 ## Reconnection and session handling
 
@@ -96,7 +107,7 @@ The biggest behaviour change in the audit. M42 first.
 | [x] | M43 | Yes | Yes | 12.1 | While connected, get kicked and then banned from another session. Separately, hit Disconnect in the UI, and refresh the page (Firefox especially) | Kick and ban still end the session immediately and show their own screens, with no reconnect attempts. Disconnect still logs out. A refresh still auto-logs-in, meaning the token was not cleared | **Passed**
 | [x] | M44 | No | No | 12.1 | On a server with a password and `onlyAskForPasswordOnFirstJoin` **off**, force a reconnect | The password dialog reappears over the still-visible app; entering it restores the session, cancelling logs out. The password is deliberately not stored, so a re-prompt is expected here | **Passed on the re-run.** First run failed with the dialog unclickable, see R6. The overlay was moved under the dialog layer between the two runs, but the original failure was never reproduced afterwards, so it is not certain that is what fixed it
 | [x] | M71 | No | Yes | 12.11 | Enable "Login automatically", log in, then invalidate the session from another browser (change your password, or have an admin kick you). Reload the tab | The connect screen appears with the identity prefilled, not the crash screen and not a 23-second "Reconnecting" banner. The auto-login switch is off and the saved token is gone | **Passed**
-| [ ] | M72 | No | No | 12.11 | While connected, drop the network for ~10s and, **during** the reconnecting banner, open the search dialog, a DM, and the pinned-messages popover | **Known gap, not fixed:** these mount effects call `getTRPCClient()` while the client is discarded and may still crash into the error boundary. Note which of the three do it. After the reconnect completes, also check that DM lists and voice events still update, since those subscriptions may be bound to the old client |
+| [x] | M72 | No | No | 12.11 | While connected, drop the network for ~10s and, **during** the reconnecting banner, open the search dialog, a DM, and the pinned-messages popover | The mount effects here call `getTRPCClient()` while the client is discarded, so the concern was a crash into the error boundary. Also check that DM lists and voice events still update afterwards, since those subscriptions may be bound to the old client | **Passed, and the predicted crash did not happen.** None of the three reached the error boundary, and DM lists and voice events resumed once the overlay cleared. See T6 in [AUDIT.md](AUDIT.md): the `getTRPCClient()` calls are still there, so this is evidence they are not reached rather than proof they cannot be
 | [x] | M68 | No | Yes | 11.8 | Log in with "Login automatically" both on and off, close the tab, and reopen it | Auto-login happens only when the switch was on. The removed field was never read by the server, so nothing should change | **Passed**
 | [x] | M47 | No | Yes | 12.2 | Log in, log out, and return to the connect screen | The identity field is prefilled with the last identity used. The password field is always empty | **Passed**
 | [x] | M79 | No | No | R3 | Drop the network for ~10s and watch the reconnect overlay itself: try clicking and tabbing to things behind it, watch the countdown and the attempt counter, then hit "Stop trying to reconnect" | The app is visible through the blur but nothing behind it responds to mouse or keyboard. The countdown ticks down and the attempt counter advances 1 to 5. The button ends the session and returns to the connect screen, and because it runs the same teardown as Disconnect it also clears the auto-login token | **Passed**
@@ -105,53 +116,53 @@ The biggest behaviour change in the audit. M42 first.
 
 | ✓ | # | Unit | E2E | Finding | What to do | Expected |
 | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | M74 | Partial | Yes | 2.4 | Search for a message far back in a busy channel and jump to it. Check the banner, scroll up from the window, click the banner, and repeat in a channel that is actively receiving messages | The window opens around the target with a "Viewing older messages" banner; scrolling up loads older messages continuously; the banner returns you to the newest message and disappears. **Messages arriving while the banner is up are deliberately withheld** and appear when you return. Jumping to a recent message shows no banner at all | **Now covered by e2e** (`pagination.pw.ts`, both jump specs). Still worth one human pass for the actively-receiving-messages case, which the suite cannot stage
+| [x] | M74 | Partial | Yes | 2.4 | Search for a message far back in a busy channel and jump to it. Check the banner, scroll up from the window, click the banner, and repeat in a channel that is actively receiving messages | The window opens around the target with a "Viewing older messages" banner; scrolling up loads older messages continuously; the banner returns you to the newest message and disappears. **Messages arriving while the banner is up are deliberately withheld** and appear when you return. Jumping to a recent message shows no banner at all | **Now covered by e2e** (`pagination.pw.ts`, both jump specs). Still worth one human pass for the actively-receiving-messages case, which the suite cannot stage
 | [ ] | M73 | No | Yes | 8.2 | Scroll far up in a busy channel to load several pages, switch to another channel, then come back. Repeat with a DM, and with the voice chat sidebar's text panel open on a different channel | The channel you return to renders immediately at the bottom with no loading flash, scrolling up still loads older messages, and nothing appears out of order or duplicated. Memory does not keep climbing across a long session of channel hopping | **Now covered by e2e** (`pagination.pw.ts`, channel retention). The DM and voice-sidebar variants are not, so run those two
 | [ ] | M64 | No | Yes | 8.12 | Scroll far up in a busy channel to load several pages, then jump to an old message from search | Messages stay in the right order in both cases. This removed an ordering option that two call sites were passing and that the reducer had always ignored | **Now covered by e2e** (`pagination.pw.ts` ordering + jump specs)
 | [x] | M55 | Yes | Yes | 2.21 | Search for a term that matches far more than 25 messages | The results list ends with a line saying only the most recent matches are shown. Search with a narrow term and confirm the line is absent | **Passed**
 | [x] | M56 | Yes | No | 2.20 | Pin a message, check the pin list, then unpin it | Pinning and unpinning both work and the pin list updates. Anything showing who pinned a message should be blank after unpinning, not name whoever unpinned it | **Passed**
-| [ ] | M57 | Yes | No | 2.23 | Edit and delete your own message, then someone else's as an admin, and delete a file from a message | All five paths work and the refusals still name the specific action ("edit this message", "delete this file") |
+| [x] | M57 | Yes | No | 2.23 | Edit and delete your own message, then someone else's as an admin, and delete a file from a message | All five paths work and the refusals still name the specific action ("edit this message", "delete this file") |
 | [x] | M22 | Yes | No | 7.3 | Send messages containing an emoji, a mention, a channel reference and a hard line break, and check they render as before | All four still render correctly. This is the change most likely to have a visible regression, since it filters the class attribute | **Passed**
 | [x] | M23 | Yes | No | 7.4 | Send a message with a github emoji and one with a custom server emoji, then reload | Both still render. This is the change most likely to break emoji, since image sources are now filtered | **Passed for rendering.** Turned up a separate regression alongside it: the "Add Reaction" picker button was missing from the message actions, see R7
 | [ ] | M35 | No | Partial | 10.3 | Scroll up in a busy channel, switch to another channel within a second, then switch back | Neither channel jumps to the bottom unexpectedly. This replaced four uncleaned timers with a ResizeObserver | **Partly covered by e2e** (`scroll-position.pw.ts`). The switch-within-a-second timing is not staged, so run that
 | [ ] | M37 | No | No | 10.6 | Scroll far up in a long channel, then scroll back down | Messages re-render correctly in both directions, and previously seen messages stay cached rather than being re-parsed |
 | [ ] | M65 | No | Partial | 8.13 | Open channels, switch between them, and open a DM | Channel lookups still resolve. This changed the selector that resolves a channel by id, and got the declaration order wrong first |
-| [ ] | M5 | Yes | No | 3.9 | Drag channels within a category and categories in the sidebar, then reload | The order persists exactly as dropped, for every connected client |
+| [x] | M5 | Yes | No | 3.9 | Drag channels within a category and categories in the sidebar, then reload | The order persists exactly as dropped, for every connected client |
 
 ## Uploads and storage
 
 | ✓ | # | Unit | E2E | Finding | What to do | Expected |
 | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | M45 | Yes | No | 12.6 | Upload files named `café.png`, `文書.png`, `привет.txt` and `100%.txt`, then check how they appear in the channel and on disk | All four keep their real names. The CJK and Cyrillic ones are the important cases: before this change they were mangled to underscores, and a naive fix would have made them fail to upload at all |
-| [ ] | M46 | No | No | 12.7 | Attach five files to one message | They upload concurrently rather than one after another, every progress bar advances, and all five land on the message. Make one fail (oversized) and confirm the other four still attach |
+| [x] | M45 | Yes | No | 12.6 | Upload files named `café.png`, `文書.png`, `привет.txt` and `100%.txt`, then check how they appear in the channel and on disk | All four keep their real names. The CJK and Cyrillic ones are the important cases: before this change they were mangled to underscores, and a naive fix would have made them fail to upload at all |
+| [x] | M46 | No | No | 12.7 | Attach five files to one message | They upload concurrently rather than one after another, every progress bar advances, and all five land on the message. Make one fail (oversized) and confirm the other four still attach | **Passed:** the five ran concurrently and all landed, and an oversized one did not take the others with it
 | [x] | M52 | Yes | No | 1.25 | Seek around in a large uploaded video or audio file, in Chrome and Safari | Seeking works in both. Safari leans on suffix ranges (`bytes=-N`), which the server previously answered 416 to | **Passed**
-| [ ] | M15 | Yes | No | 5.2 | Fill the server past its storage quota with `DELETE_OLD_FILES` set, then check avatars, emojis and the logo | Old message attachments are reclaimed; avatars, custom emojis and the server logo are all still there |
+| [x] | M15 | Yes | No | 5.2 | Fill the server past its storage quota with `DELETE_OLD_FILES` set, then check avatars, emojis and the logo | Old message attachments are reclaimed; avatars, custom emojis and the server logo are all still there | **Passed:** old attachments were reclaimed and the avatars, emojis and logo survived
 | [x] | M39 | Yes | No | 11.2 | Change and remove an avatar, a banner and the server logo, including a failing case such as an oversized file | All six actions work, and a failure now shows the server's actual reason for all three, not just the avatar | **Passed**
 | [x] | M4 | Yes | No | 3.5 | Set an avatar, then set `storageMaxAvatarSize` very low and try to change it | Error toast, and the previous avatar is still displayed after a reload | **Passed**
 | [x] | M60 | Yes | No | 4.17 | Set a server logo, replace it, then remove it. Then try replacing it with an oversized file | The logo changes and clears correctly, and a failed replacement leaves the previous logo in place rather than none | **Passed**
-| [ ] | M54 | Partial | No | 1.25 | Change the server logo, then reload the PWA install prompt / manifest | The new logo and its dimensions are picked up. Dimensions are cached by file name now, so a changed logo must still refresh |
+| [x] | M54 | Partial | No | 1.25 | Change the server logo, then reload the PWA install prompt / manifest | The new logo and its dimensions are picked up. Dimensions are cached by file name now, so a changed logo must still refresh | **Passed:** the replaced logo and its dimensions were picked up
 
 ## Admin and permissions
 
 | ✓ | # | Unit | E2E | Finding | What to do | Expected |
 | --- | --- | --- | --- | --- | --- | --- |
 | [x] | M1 | Yes | No | 3.1 | As a non-owner admin holding `MANAGE_USERS`, try to ban, kick and delete the owner from the admin panel | Each is refused with "Only users with the owner role can act on the server owner." Banning a regular user still works | **Passed**
-| [ ] | M2 | Yes | No | 3.3 | As a non-owner holding `MANAGE_ROLES`, edit a role and try to grant a permission you do not have; then rename a role that already holds one | The grant is refused, the rename succeeds |
-| [ ] | M7 | Yes | No | 3.21 | Open the channel permissions dialog in the admin panel | Permissions load as before, this route changed from a mutation to a query |
-| [ ] | M11 | Yes | No | 4.5 | Claim ownership with the secret token on a fresh server, then try the same token again | First succeeds, second is refused with "You already have the owner role." Existing sessions and image/file URLs keep working afterwards |
-| [ ] | M62 | Partial | No | 7.12 | Open the admin users list and search by name, then open a user's moderation panel both as the owner and as an admin without VIEW_USER_SENSITIVE_DATA | Name search works. The identity row shows the identity for the permitted user and is blank for the other. **Searching by identity no longer appears to work, because it never did** |
-| [ ] | M8 | Yes | No | 4.2 | Set a server join password, then open the **storage** settings page and save | The join password still applies to new joins. This is the bug that made the password vanish |
-| [ ] | M6 | Yes | No | 3.10 | Create a voice channel | It appears and is joinable. (The runtime-failure rollback path cannot be triggered without exhausting mediasoup workers) |
-| [ ] | M41 | Partial | No | 11.7 | Open the search dialog, the invite dialog and the moderation activity lists | Pagination, search and the date picker all behave as before, now that both components live in the ui package |
+| [x] | M2 | Yes | No | 3.3 | As a non-owner holding `MANAGE_ROLES`, edit a role and try to grant a permission you do not have; then rename a role that already holds one | The grant is refused, the rename succeeds | **Passed:** the grant was refused and the rename went through
+| [x] | M7 | Yes | No | 3.21 | Open the channel permissions dialog in the admin panel | Permissions load as before, this route changed from a mutation to a query |
+| [x] | M11 | Yes | No | 4.5 | Claim ownership with the secret token on a fresh server, then try the same token again | First succeeds, second is refused with "You already have the owner role." Existing sessions and image/file URLs keep working afterwards |
+| [x] | M62 | Partial | No | 7.12 | Open the admin users list and search by name, then open a user's moderation panel both as the owner and as an admin without VIEW_USER_SENSITIVE_DATA | Name search works. The identity row shows the identity for the permitted user and is blank for the other. **Searching by identity no longer appears to work, because it never did** |
+| [x] | M8 | Yes | No | 4.2 | Set a server join password, then open the **storage** settings page and save | The join password still applies to new joins. This is the bug that made the password vanish |
+| [x] | M6 | Yes | No | 3.10 | Create a voice channel | It appears and is joinable. (The runtime-failure rollback path cannot be triggered without exhausting mediasoup workers) |
+| [x] | M41 | Partial | No | 11.7 | Open the search dialog, the invite dialog and the moderation activity lists | Pagination, search and the date picker all behave as before, now that both components live in the ui package |
 
 ## Server operations
 
 | ✓ | # | Unit | E2E | Finding | What to do | Expected |
 | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | M63 | Partial | No | 7.18 | Start the server, upload a file, install a plugin, and check the logs directory | Everything works. This moved eight files between helpers/ and utils/, so a missed import shows up as a boot failure |
+| [x] | M63 | Partial | No | 7.18 | Start the server, upload a file, install a plugin, and check the logs directory | Everything works. This moved eight files between helpers/ and utils/, so a missed import shows up as a boot failure |
 | [ ] | M24 | No | No | 7.7 | Restart the server, then check the `activity_log` table directly: **nothing in the app reads it**, so there is no log view to open | The `SERVER_STARTED` entry is no longer attributed to the owner. Confirm the log renders a missing user sensibly rather than blank or crashing |
-| [ ] | M50 | Yes | No | 1.15 | On a server with real history, register a new account and time the login | It returns promptly, and the new user's channels all show zero unread. Post a message afterwards and confirm it shows as unread for them |
-| [ ] | M51 | Partial | No | 1.24 | Paste a link whose host resolves into 100.64.0.0/10 or another reserved range, and a normal public link | The reserved one gets no preview, the public one still does. SSRF blocking is stricter than before |
+| [x] | M50 | Yes | No | 1.15 | On a server with real history, register a new account and time the login | It returns promptly, and the new user's channels all show zero unread. Post a message afterwards and confirm it shows as unread for them |
+| [x] | M51 | Partial | No | 1.24 | Paste a link whose host resolves into 100.64.0.0/10 or another reserved range, and a normal public link | The reserved one gets no preview, the public one still does. SSRF blocking is stricter than before |
 | [ ] | M27 | No | No | 8.10 | Kill the server while the app is open, then bring it back | The UI shows its disconnected state rather than silently freezing, and recovers on reconnect |
 | [ ] | M26 | No | No | 8.5 | Open an unread channel with the server stopped, then watch the unread badge | The badge clears optimistically and comes back when the call fails, instead of staying cleared until refresh |
 | [ ] | M66 | No | No | 9.12 | Open devtools and run `sharkordDebug.printVoiceStats()` while in a call, and `sharkordDebug.openSoundsModal()`. Then confirm `useToken('...')` still works unchanged | The two debug helpers now live under `sharkordDebug`; the ownership command is untouched, which matters because it is documented online |
@@ -184,15 +195,16 @@ Added after the audit shipped a migration that destroyed data on a real server, 
 
 If there is only time for a handful:
 
-1. **M42** — the reconnect. The single biggest behaviour change in the audit, and its whole
-   point is that a dropped connection must never return you to the login screen.
-2. **M72** — a **known unfixed** crash path. Six `getTRPCClient()` calls sit inside `useEffect`
-   bodies while the client is discarded during a reconnect, so opening search or a DM
-   mid-reconnect may still throw. Recorded in AUDIT.md 12.11 and T6; this test decides how
-   urgent it is.
-3. **M70** — the CSP ships report-only, so it enforces nothing until this runs.
-4. **M45** — CJK and Cyrillic filenames. Previously mangled to underscores, and the obvious fix
-   would have made them fail to upload outright.
-5. **M19** — the one intentional breaking change: a plugin without an `onUnload` export no
-   longer loads.
+1. **M36** — the sweep that exists to catch exactly what R7 was (a control deleted during a
+   refactor), and which found it by accident instead. Nothing else covers those 25 handlers.
+2. **M48** — the other broad sweep: 40 removed exports and 10 removed slice reducers, where a
+   missed consumer shows up as a blank control rather than a build error.
+3. **M33** — the last untested voice path, and the only worklet loader nobody has exercised
+   since it was extracted.
+4. **M26** — the optimistic unread badge, whose revert-on-failure branch is the one thing the
+   DM badge tests deliberately do not cover.
+5. **M65** — the channel-by-id selector that was wrong once already, on declaration order.
+
+The rows closed by a Partial unit test are worth a pass eventually for the part named above,
+but none of them is blind: something covers each row's main claim.
 

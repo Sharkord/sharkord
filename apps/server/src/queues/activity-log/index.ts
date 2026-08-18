@@ -5,6 +5,7 @@ import { db } from '../../db';
 import { activityLog } from '../../db/schema';
 import { logger } from '../../logger';
 import { getUserIp } from '../../utils/wss';
+import { drainQueue } from '../drain';
 
 const activityLogQueue = new Queue({
   concurrency: 2,
@@ -48,4 +49,6 @@ const enqueueActivityLog = <T extends ActivityLogType>({
   });
 };
 
-export { enqueueActivityLog };
+const drainActivityLogQueue = () => drainQueue(activityLogQueue);
+
+export { drainActivityLogQueue, enqueueActivityLog };

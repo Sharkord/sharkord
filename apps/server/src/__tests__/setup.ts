@@ -7,6 +7,8 @@ import { migrateDatabase } from '../db/migrate';
 import { DATA_PATH } from '../helpers/paths';
 import { clearVoiceMoveGrantsForTests } from '../helpers/voice-move-grants';
 import { createHttpServer } from '../http';
+import { drainActivityLogQueue } from '../queues/activity-log';
+import { drainLoginsQueue } from '../queues/logins';
 import { loadMediasoup } from '../utils/mediasoup';
 import { clearRateLimitersForTests } from '../utils/rate-limiters/rate-limiter';
 import { DRIZZLE_PATH, setTestDb } from './mock-db';
@@ -110,7 +112,13 @@ beforeEach(async () => {
   await seedTestDb(tdb);
 });
 
-afterEach(() => {
+afterEach(async () => {
+  // the queues outlive the test, so a job still in flight here would land in whichever database
+  // the next test creates, or throw against a closed one. draining first is what keeps a queued
+  // side effect inside the test that caused it
+  await drainLoginsQueue();
+  await drainActivityLogQueue();
+
   if (sqlite) {
     try {
       sqlite.close();

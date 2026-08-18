@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
+    "test": "bun test",
     "lint": "eslint ./src --ext ts,tsx",
     "lint:fix": "eslint ./src --ext ts,tsx --report-unused-disable-directives --fix",
     "check-types": "tsc --noEmit --project tsconfig.app.json",

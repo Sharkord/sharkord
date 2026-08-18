@@ -4,6 +4,7 @@ import { logins } from '../../db/schema';
 import { getIpInfo } from '../../helpers/logins';
 import { logger } from '../../logger';
 import type { TConnectionInfo } from '../../types';
+import { drainQueue } from '../drain';
 
 const loginsQueue = new Queue({
   concurrency: 1,
@@ -39,4 +40,6 @@ const enqueueLogin = (userId: number, info: TConnectionInfo | undefined) => {
   });
 };
 
-export { enqueueLogin };
+const drainLoginsQueue = () => drainQueue(loginsQueue);
+
+export { drainLoginsQueue, enqueueLogin };

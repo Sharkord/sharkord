@@ -110,12 +110,21 @@ deliberate schema change you still want. If it was, it is waiting and unapplied.
 I should not have reached for `git stash` at all; copying the file aside would have done
 the same job without touching your stash list.
 
-### F2 — 2.12's test was never verified against the old behaviour
+### F2 — [RESOLVED] 2.12's test was never verified against the old behaviour
 
 The point of the aborted experiment above was to confirm the new same-millisecond
 pagination test actually fails with the old strict `lt` predicate. It passes with the fix,
 but I never saw it fail without it, so it is unproven as a regression test. Worth
 re-running that check properly (copy the file aside, revert the predicate, run, restore).
+
+**Done, and it fails as it should.** With the `or(...)` in `get-messages.ts` replaced by the
+bare `lt(messages.createdAt, cursor.createdAt)` it was before 2.12, `should not skip messages
+that share a millisecond across a page boundary` reports `Expected: 0, Received: 4`: four of
+the six identically stamped messages are skipped across the page boundary. Predicate restored,
+suite green. The test is now a regression test rather than a test that happens to pass.
+
+Worth keeping in mind generally: a full suite passing says nothing about whether a regression
+test guards what it claims. Only reverting the fix does.
 
 ### F3 — [RESOLVED] 3.14, kick is cosmetic, needs a product decision
 
@@ -157,7 +166,7 @@ The change would touch a migration, `channelUserCan`, the client's permission ed
 meaning of an absent row, all against a cost nobody is paying. Revisit only if a real server
 makes the row count matter.
 
-### F5 — two tests in `others.test.ts` only pass because of a queue race
+### F5 — [RESOLVED] two tests in `others.test.ts` only pass because of a queue race
 
 `others.test.ts` passes in a full `bun run test` and **fails when the file is run alone**:
 
@@ -181,6 +190,23 @@ written into the next test's database, so this leaks across tests in both direct
 
 Belongs to chunk 13 (test suite). The fix is either draining the queues in `afterEach` or
 exposing a way to await them, not changing the two tests. Left untouched.
+
+**Fixed as both, since the two halves are different problems.** `queues/drain.ts` waits on the
+queue's `end` event, after a synchronous `length === 0` check so an `end` that already fired is
+not missed (`length` counts pending *and* in-flight jobs). Both queues export a binding:
+`drainLoginsQueue` and `drainActivityLogQueue`.
+
+- **The leak** is fixed in `setup.ts`, whose `afterEach` now drains both queues **before**
+  closing the per-test database, so a queued side effect stays inside the test that caused it.
+- **The two tests** await `drainLoginsQueue()` after the join whose login row the following
+  handshake reads. Their assertions are untouched; what changed is that they wait on a real
+  primitive instead of on the event loop being generous.
+
+`bun test src/routers/__tests__/others.test.ts` alone now passes, 22 of 22, which is the
+reproduction this entry was written from.
+
+The same primitive retires the `Bun.sleep(20)` that activity-log assertions use elsewhere,
+which is the same race in a different queue. Not converted yet, since those tests pass.
 
 ### F6 — the secret token is both the ownership credential and the JWT signing key
 
@@ -551,6 +577,11 @@ attributed to this file (9.1, 9.2, 9.3) were all lifecycle bugs, they are fixed 
 restructuring, and the client has no test setup, so a refactor here is verified by nothing.
 Worth doing after the client gets any test coverage at all.
 
+**Half of that reason has since expired.** `apps/client` now has a test runner (a `test` script
+and three suites, 28 tests, no DOM needed) added while closing M37, M64 and M65. It does not
+reach a provider full of hooks, which still needs a DOM and a render library, but "the client
+has no test setup" is no longer the blocker: standing one up is now a preload away.
+
 ### F8 — 11.5, plugin UI runs in every user's browser without consent
 
 Plugin client bundles are dynamically imported from the server and executed on the app's own
@@ -604,6 +635,21 @@ a client that `closeClient()` discarded, so their realtime events are silently d
 successful reconnect. Neither should be guessed at: the whole 12.1 reconnect path has no
 automated coverage, and the e2e suite can now actually be run, so this is the place to buy some.
 
+**M72 has since been run, and neither predicted failure happened.** Search, a dm and the pinned
+popover all opened during the reconnecting overlay without reaching the error boundary, and dm
+lists and voice events resumed once it cleared. That is worth recording but it is not the same
+as being safe: the six `getTRPCClient()` calls are still inside those `useEffect` bodies, and the
+run shows they are not reached rather than that they cannot be. The likely reason is the overlay
+itself, which is `inert` over the whole app, so the dialogs that would call them cannot be opened
+by a user in the first place. If that is the real guard then it is load-bearing and undocumented,
+and the entry stands: either the calls move behind a null check, or the overlay's `inert` gets a
+comment saying it is what keeps them unreachable.
+
+Also note that a real drop could not be staged in the e2e suite at all: `context.setOffline(true)`
+leaves an established WebSocket up, and 50 seconds of it produced no reconnect on the client. The
+only trigger that works is the server closing the socket, which the shared `webServer` makes
+unsafe for one spec to do. Automating this needs a second server instance on its own port.
+
 ### T7 — the disconnect close codes are outside RFC 6455
 
 `DisconnectCode.KICKED = 40000`, `BANNED = 40001` and `SERVER_SHUTDOWN = 40002` are outside
@@ -638,6 +684,14 @@ from chunks 8 to 12, none of which are verified by anything but `tsc`.
 
 Deferred by decision during chunk 13: the mechanical half is fixed, but writing the specs is a
 project, and new ones could not be run to green during the audit.
+
+**Largely overtaken by events, and this entry is now the stale part.** The suite runs **31
+specs**, all green, across pagination, scroll position, sessions, DMs, search and category
+lifecycle. The skipped `Infinite Scroll` describe is gone, rewritten from scratch. Of the three
+items in the proposed order below, sending a message and DMs are covered, and permissions are
+covered from the server side rather than the browser. What is still uncovered by a browser test:
+voice (real media, as this entry already says) and the reconnect path, which cannot be staged at
+all because `context.setOffline(true)` leaves an established WebSocket up. See T6.
 
 Proposed order, highest value first:
 
