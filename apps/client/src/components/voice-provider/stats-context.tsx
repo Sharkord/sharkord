@@ -8,10 +8,7 @@ const DEFAULT_STATS: TransportStatsData = {
   totalBytesReceived: 0,
   totalBytesSent: 0,
   currentBitrateSent: 0,
-  currentBitrateReceived: 0,
-  averageBitrateSent: 0,
-  averageBitrateReceived: 0,
-  isMonitoring: false
+  currentBitrateReceived: 0
 };
 
 type TVoiceStatsContext = {
@@ -34,4 +31,4 @@ const useVoiceStats = () => {
   return stats;
 };
 
-export { DEFAULT_STATS, useVoiceStats, VoiceStatsContext };
+export { useVoiceStats, VoiceStatsContext };

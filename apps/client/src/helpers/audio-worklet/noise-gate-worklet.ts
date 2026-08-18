@@ -27,8 +27,6 @@ const notifyAvailabilitySubscribers = () => {
   availabilitySubscribers.forEach((listener) => listener());
 };
 
-const isNoiseGateWorkletSupported = isAudioWorkletSupported;
-
 const subscribeNoiseGateWorkletAvailability = (listener: () => void) => {
   availabilitySubscribers.add(listener);
 
@@ -40,7 +38,7 @@ const subscribeNoiseGateWorkletAvailability = (listener: () => void) => {
 const getNoiseGateWorkletAvailabilitySnapshot =
   (): TNoiseGateWorkletAvailability => {
     const nextSnapshot: TNoiseGateWorkletAvailability =
-      !isNoiseGateWorkletSupported()
+      !isAudioWorkletSupported()
         ? {
             available: false,
             reason: 'This browser does not support AudioWorklet.'
@@ -111,7 +109,6 @@ const createNoiseGateWorkletNode = async (
 export {
   createNoiseGateWorkletNode,
   getNoiseGateWorkletAvailabilitySnapshot,
-  isNoiseGateWorkletSupported,
   markNoiseGateWorkletUnavailable,
   postNoiseGateWorkletConfig,
   subscribeNoiseGateWorkletAvailability

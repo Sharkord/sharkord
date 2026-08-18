@@ -2,7 +2,8 @@ import { Permission } from '@sharkord/shared';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
-import { publishUser } from '../../db/publishers';
+import { publishChannelListChange, publishUser } from '../../db/publishers';
+import { getChannelsForUser } from '../../db/queries/channels';
 import { getRole } from '../../db/queries/roles';
 import { userRoles } from '../../db/schema';
 import { assertCanActOnUser } from '../../helpers/assert-can-act-on-user';
@@ -52,6 +53,8 @@ const addRoleRoute = protectedProcedure
 
     await assertCanActOnUser(ctx.userId, input.userId);
 
+    const channelsBefore = await getChannelsForUser(input.userId);
+
     await db.insert(userRoles).values({
       userId: input.userId,
       roleId: input.roleId,
@@ -59,6 +62,11 @@ const addRoleRoute = protectedProcedure
     });
 
     publishUser(input.userId, 'update');
+
+    await publishChannelListChange(
+      input.userId,
+      channelsBefore.map((channel) => channel.id)
+    );
   });
 
 export { addRoleRoute };

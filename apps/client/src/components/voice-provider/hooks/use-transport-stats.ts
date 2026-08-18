@@ -57,12 +57,7 @@ export type TransportStatsData = {
   totalBytesSent: number;
   currentBitrateSent: number;
   currentBitrateReceived: number;
-  averageBitrateSent: number;
-  averageBitrateReceived: number;
-  isMonitoring: boolean;
 };
-
-const SMOOTHING_WINDOW = 5; // Number of samples for moving average
 
 const useTransportStats = () => {
   const [stats, setStats] = useState<TransportStatsData>({
@@ -72,10 +67,7 @@ const useTransportStats = () => {
     totalBytesReceived: 0,
     totalBytesSent: 0,
     currentBitrateSent: 0,
-    currentBitrateReceived: 0,
-    averageBitrateSent: 0,
-    averageBitrateReceived: 0,
-    isMonitoring: false
+    currentBitrateReceived: 0
   });
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -96,10 +88,6 @@ const useTransportStats = () => {
     layerBytesSent: Map<string, number>;
     timestamp: number;
   } | null>(null);
-
-  // Rolling windows for smoothing bitrate
-  const bitrateSentHistoryRef = useRef<number[]>([]);
-  const bitrateReceivedHistoryRef = useRef<number[]>([]);
 
   const parseTransportStats = useCallback(
     (
@@ -249,11 +237,6 @@ const useTransportStats = () => {
         intervalRef.current = null;
       }
 
-      setStats((prev) => ({
-        ...prev,
-        isMonitoring: false
-      }));
-
       logVoice('Stopped transport stats monitoring (transports closed)');
       return;
     }
@@ -361,11 +344,6 @@ const useTransportStats = () => {
           intervalRef.current = null;
         }
 
-        setStats((prev) => ({
-          ...prev,
-          isMonitoring: false
-        }));
-
         logVoice('Stopped transport stats monitoring (all transports closed)');
         return;
       }
@@ -404,35 +382,6 @@ const useTransportStats = () => {
         }
       }
 
-      if (currentBitrateSent > 0) {
-        bitrateSentHistoryRef.current.push(currentBitrateSent);
-
-        if (bitrateSentHistoryRef.current.length > SMOOTHING_WINDOW) {
-          bitrateSentHistoryRef.current.shift();
-        }
-      }
-
-      if (currentBitrateReceived > 0) {
-        bitrateReceivedHistoryRef.current.push(currentBitrateReceived);
-
-        if (bitrateReceivedHistoryRef.current.length > SMOOTHING_WINDOW) {
-          bitrateReceivedHistoryRef.current.shift();
-        }
-      }
-
-      // Calculate moving averages
-      const averageBitrateSent =
-        bitrateSentHistoryRef.current.length > 0
-          ? bitrateSentHistoryRef.current.reduce((a, b) => a + b, 0) /
-            bitrateSentHistoryRef.current.length
-          : 0;
-
-      const averageBitrateReceived =
-        bitrateReceivedHistoryRef.current.length > 0
-          ? bitrateReceivedHistoryRef.current.reduce((a, b) => a + b, 0) /
-            bitrateReceivedHistoryRef.current.length
-          : 0;
-
       setStats((prev) => ({
         producer: producerStats,
         consumer: consumerStats,
@@ -440,10 +389,7 @@ const useTransportStats = () => {
         totalBytesReceived: prev.totalBytesReceived + bytesReceivedDelta,
         totalBytesSent: prev.totalBytesSent + bytesSentDelta,
         currentBitrateSent,
-        currentBitrateReceived,
-        averageBitrateSent,
-        averageBitrateReceived,
-        isMonitoring: true
+        currentBitrateReceived
       }));
 
       previousStatsRef.current = {
@@ -533,11 +479,6 @@ const useTransportStats = () => {
     consumerTransportRef.current = null;
     screenShareProducerRef.current = null;
 
-    setStats((prev) => ({
-      ...prev,
-      isMonitoring: false
-    }));
-
     logVoice('Stopped transport stats monitoring');
   }, []);
 
@@ -549,10 +490,7 @@ const useTransportStats = () => {
       totalBytesReceived: 0,
       totalBytesSent: 0,
       currentBitrateSent: 0,
-      currentBitrateReceived: 0,
-      averageBitrateSent: 0,
-      averageBitrateReceived: 0,
-      isMonitoring: false
+      currentBitrateReceived: 0
     });
 
     previousStatsRef.current = {
@@ -561,8 +499,6 @@ const useTransportStats = () => {
     };
 
     previousScreenShareStatsRef.current = null;
-    bitrateSentHistoryRef.current = [];
-    bitrateReceivedHistoryRef.current = [];
 
     logVoice('Transport stats reset');
   }, []);

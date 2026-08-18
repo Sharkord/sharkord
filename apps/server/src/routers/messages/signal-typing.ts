@@ -29,7 +29,7 @@ const signalTypingRoute = rateLimitedProcedure(protectedProcedure, {
 
     const affectedUserIds = await getAffectedOnlineUserIdsForChannel(
       input.channelId,
-      { permission: ChannelPermission.VIEW_CHANNEL }
+      ChannelPermission.VIEW_CHANNEL
     );
 
     ctx.pubsub.publishFor(affectedUserIds, ServerEvents.MESSAGE_TYPING, {

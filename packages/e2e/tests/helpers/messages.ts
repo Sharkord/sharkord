@@ -70,7 +70,6 @@ const sendMessage = async (page: Page, content: string) => {
 };
 
 export {
-  composeEditor,
   getMockMessageNumbers,
   messageByText,
   messageItems,

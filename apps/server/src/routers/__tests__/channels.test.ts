@@ -1,6 +1,6 @@
 import { ChannelPermission, ChannelType, ServerEvents } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
-import { initTest } from '../../__tests__/helpers';
+import { createFakeSocket, initTest } from '../../__tests__/helpers';
 import { getChannelsReadStatesForUser } from '../../db/queries/channels';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { pubsub } from '../../utils/pubsub';
@@ -266,6 +266,82 @@ describe('channels router', () => {
 
     expect(VoiceRuntime.findById(2)).toBeUndefined();
     expect(departures).toEqual([{ channelId: 2, userId: 2 }]);
+  });
+
+  // channel 5 is private, the default role may view it and user 2 is denied. the client can
+  // only drop a channel it is told about, and the audience is read after the write, so the
+  // person who just lost access is the one at risk of never hearing
+  describe('channel access events', () => {
+    const RESTRICTED_CHANNEL_ID = 5;
+
+    const collectFor = (userId: number) => {
+      const created: number[] = [];
+      const deleted: number[] = [];
+
+      const subscriptions = [
+        pubsub.subscribeFor(userId, ServerEvents.CHANNEL_CREATE).subscribe({
+          next: (channel) => {
+            created.push(channel.id);
+          }
+        }),
+        pubsub.subscribeFor(userId, ServerEvents.CHANNEL_DELETE).subscribe({
+          next: (channelId) => {
+            deleted.push(channelId);
+          }
+        })
+      ];
+
+      return {
+        created,
+        deleted,
+        stop: () => subscriptions.forEach((s) => s.unsubscribe())
+      };
+    };
+
+    test('should tell a user who just lost access that the channel is gone', async () => {
+      const { caller } = await initTest();
+
+      // the audience is online users only, so the watcher has to hold a socket to be in it
+      await initTest(3, { socket: createFakeSocket() });
+
+      // user 3 can see it through the default role, so they are in the audience beforehand
+      const events = collectFor(3);
+
+      try {
+        await caller.channels.updatePermissions({
+          channelId: RESTRICTED_CHANNEL_ID,
+          userId: 3,
+          permissions: []
+        });
+
+        expect(events.deleted).toEqual([RESTRICTED_CHANNEL_ID]);
+        expect(events.created).toEqual([]);
+      } finally {
+        events.stop();
+      }
+    });
+
+    test('should send the channel to a user who just gained access', async () => {
+      const { caller } = await initTest();
+
+      await initTest(2, { socket: createFakeSocket() });
+
+      // user 2 is denied, so their client has never been sent this channel
+      const events = collectFor(2);
+
+      try {
+        await caller.channels.updatePermissions({
+          channelId: RESTRICTED_CHANNEL_ID,
+          userId: 2,
+          permissions: [ChannelPermission.VIEW_CHANNEL]
+        });
+
+        expect(events.created).toEqual([RESTRICTED_CHANNEL_ID]);
+        expect(events.deleted).toEqual([]);
+      } finally {
+        events.stop();
+      }
+    });
   });
 
   test('should throw when deleting non-existing channel', async () => {

@@ -2,7 +2,8 @@ import { Permission } from '@sharkord/shared';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
-import { publishUser } from '../../db/publishers';
+import { publishChannelListChange, publishUser } from '../../db/publishers';
+import { getChannelsForUser } from '../../db/queries/channels';
 import { userRoles } from '../../db/schema';
 import { assertCanActOnUser } from '../../helpers/assert-can-act-on-user';
 import { invariant } from '../../utils/invariant';
@@ -38,6 +39,8 @@ const removeRoleRoute = protectedProcedure
       message: 'User does not have this role'
     });
 
+    const channelsBefore = await getChannelsForUser(input.userId);
+
     await db
       .delete(userRoles)
       .where(
@@ -48,6 +51,11 @@ const removeRoleRoute = protectedProcedure
       );
 
     publishUser(input.userId, 'update');
+
+    await publishChannelListChange(
+      input.userId,
+      channelsBefore.map((channel) => channel.id)
+    );
   });
 
 export { removeRoleRoute };

@@ -317,10 +317,7 @@ const getAllChannelUserPermissions = async (
 
 const getAffectedUserIdsForChannel = async (
   channelId: number,
-  options?: {
-    forceAllUsers?: boolean;
-    permission?: ChannelPermission;
-  }
+  permission: ChannelPermission
 ): Promise<number[]> => {
   const [channel] = await db
     .select()
@@ -338,12 +335,9 @@ const getAffectedUserIdsForChannel = async (
   }
 
   // if channel is public, return all user IDs
-  if (!channel.private || options?.forceAllUsers) {
+  if (!channel.private) {
     return getAllUserIds();
   }
-
-  // if a specific permission is required, filter by it
-  const permission = options?.permission;
 
   // both sides of the user level rows, not just the grants: a deny has to beat a role grant
   // here exactly as resolvePermission makes it beat one in channelUserCan
@@ -356,9 +350,7 @@ const getAffectedUserIdsForChannel = async (
     .where(
       and(
         eq(channelUserPermissions.channelId, channelId),
-        permission
-          ? eq(channelUserPermissions.permission, permission)
-          : undefined
+        eq(channelUserPermissions.permission, permission)
       )
     );
 
@@ -372,10 +364,8 @@ const getAffectedUserIdsForChannel = async (
     .where(
       and(
         eq(channelRolePermissions.channelId, channelId),
-        permission
-          ? eq(channelRolePermissions.permission, permission)
-          : undefined,
-        permission ? eq(channelRolePermissions.allow, true) : undefined
+        eq(channelRolePermissions.permission, permission),
+        eq(channelRolePermissions.allow, true)
       )
     );
 
@@ -413,10 +403,7 @@ const getAffectedUserIdsForChannel = async (
 
 const getAffectedOnlineUserIdsForChannel = async (
   channelId: number,
-  options?: {
-    forceAllUsers?: boolean;
-    permission?: ChannelPermission;
-  }
+  permission: ChannelPermission
 ): Promise<number[]> => {
   const onlineUserIds = getOnlineUserIds();
 
@@ -433,12 +420,12 @@ const getAffectedOnlineUserIdsForChannel = async (
 
   // every online user is affected by definition, so there is no point reading
   // the users table to intersect it with itself
-  if ((!channel.private && !channel.isDm) || options?.forceAllUsers) {
+  if (!channel.private && !channel.isDm) {
     return onlineUserIds;
   }
 
   const affectedUserIds = new Set(
-    await getAffectedUserIdsForChannel(channelId, options)
+    await getAffectedUserIdsForChannel(channelId, permission)
   );
 
   return onlineUserIds.filter((userId) => affectedUserIds.has(userId));

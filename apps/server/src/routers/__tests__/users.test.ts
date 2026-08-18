@@ -3,6 +3,7 @@ import {
   DisconnectCode,
   OWNER_ROLE_ID,
   Permission,
+  ServerEvents,
   type TTempFile
 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
@@ -31,6 +32,7 @@ import {
   userRoles,
   users
 } from '../../db/schema';
+import { pubsub } from '../../utils/pubsub';
 
 describe('users router', () => {
   test('should throw when user lacks permissions (getAll)', async () => {
@@ -789,6 +791,49 @@ describe('users router', () => {
     });
 
     expect(info.user.roleIds).toContain(1);
+  });
+
+  // a role can carry view permissions on private channels, so granting or removing one moves
+  // the set of channels the user's client should be holding
+  test('should send and withdraw role granted channels as roles change', async () => {
+    const { caller } = await initTest();
+
+    // user 2 is denied channel 5 at the user level, so use the moderator role's holder
+    // instead: user 5 holds no granting role until we give them the default one
+    await tdb
+      .delete(userRoles)
+      .where(and(eq(userRoles.userId, 5), eq(userRoles.roleId, 2)));
+
+    await initTest(5, { socket: createFakeSocket() });
+
+    const created: number[] = [];
+    const deleted: number[] = [];
+
+    const subscriptions = [
+      pubsub.subscribeFor(5, ServerEvents.CHANNEL_CREATE).subscribe({
+        next: (channel) => {
+          created.push(channel.id);
+        }
+      }),
+      pubsub.subscribeFor(5, ServerEvents.CHANNEL_DELETE).subscribe({
+        next: (channelId) => {
+          deleted.push(channelId);
+        }
+      })
+    ];
+
+    try {
+      await caller.users.addRole({ userId: 5, roleId: 2 });
+
+      expect(created).toContain(5);
+      expect(deleted).toEqual([]);
+
+      await caller.users.removeRole({ userId: 5, roleId: 2 });
+
+      expect(deleted).toContain(5);
+    } finally {
+      subscriptions.forEach((subscription) => subscription.unsubscribe());
+    }
   });
 
   test('should throw when adding duplicate role', async () => {

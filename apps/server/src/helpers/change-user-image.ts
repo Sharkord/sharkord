@@ -69,4 +69,4 @@ const changeUserImage = async (
   publishUser(userId, 'update');
 };
 
-export { changeUserImage, saveReplacementImage, type TUserImageTarget };
+export { changeUserImage, saveReplacementImage };

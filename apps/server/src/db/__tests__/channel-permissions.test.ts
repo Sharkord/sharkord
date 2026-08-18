@@ -1,10 +1,13 @@
 import { ChannelPermission } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
+import { eq } from 'drizzle-orm';
+import { tdb } from '../../__tests__/setup';
 import {
   channelUserCan,
   getAffectedUserIdsForChannel,
   getChannelsForUser
 } from '../queries/channels';
+import { channelUserPermissions } from '../schema';
 
 describe('channelUserCan', () => {
   test('should grant everything in a public channel', async () => {
@@ -77,19 +80,48 @@ describe('getChannelsForUser', () => {
 
 describe('getAffectedUserIdsForChannel', () => {
   test('should not publish to a user the role grants but the channel denies', async () => {
-    const affected = await getAffectedUserIdsForChannel(5, {
-      permission: ChannelPermission.VIEW_CHANNEL
-    });
+    const affected = await getAffectedUserIdsForChannel(
+      5,
+      ChannelPermission.VIEW_CHANNEL
+    );
 
     // user 3 holds the same granting role and is not denied, so the grant itself works
     expect(affected).toContain(3);
     expect(affected).not.toContain(2);
   });
 
-  test('should keep the owner regardless of a deny', async () => {
-    const affected = await getAffectedUserIdsForChannel(5, {
-      permission: ChannelPermission.VIEW_CHANNEL
+  // the audience and channelUserCan have to answer the same question. a user level row for
+  // some other permission is not an answer to "can this user see the channel", and treating
+  // it as one dropped people from their own permission updates
+  test('should keep a user whose only deny is for another permission', async () => {
+    await tdb
+      .delete(channelUserPermissions)
+      .where(eq(channelUserPermissions.userId, 2));
+
+    await tdb.insert(channelUserPermissions).values({
+      channelId: 5,
+      userId: 2,
+      permission: ChannelPermission.SEND_MESSAGES,
+      allow: false,
+      createdAt: Date.now()
     });
+
+    const affected = await getAffectedUserIdsForChannel(
+      5,
+      ChannelPermission.VIEW_CHANNEL
+    );
+
+    expect(await channelUserCan(5, 2, ChannelPermission.VIEW_CHANNEL)).toBe(
+      true
+    );
+    expect(affected).toContain(2);
+  });
+
+  test('should keep the owner regardless of a deny', async () => {
+    const affected = await getAffectedUserIdsForChannel(
+      5,
+      ChannelPermission.VIEW_CHANNEL
+    );
 
     expect(affected).toContain(1);
   });

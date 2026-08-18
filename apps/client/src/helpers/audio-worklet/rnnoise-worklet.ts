@@ -9,8 +9,6 @@ const RNNOISE_SAMPLE_RATE = 48000;
 const RNNOISE_READY_TIMEOUT_MS = 10000;
 const RNNOISE_CACHE_NAME = 'rnnoise-worklet-v1';
 
-const isRnnoiseWorkletSupported = isAudioWorkletSupported;
-
 const { ensureLoaded: ensureWorkletLoaded } = createWorkletLoader({
   url: RNNOISE_WORKLET_URL,
   cacheName: RNNOISE_CACHE_NAME,
@@ -46,7 +44,7 @@ type TRnnoiseChain = {
 const createRnnoiseChain = async (
   inputStream: MediaStream
 ): Promise<TRnnoiseChain> => {
-  if (!isRnnoiseWorkletSupported()) {
+  if (!isAudioWorkletSupported()) {
     throw new Error('AudioWorklet is not supported in this browser');
   }
 
@@ -89,4 +87,4 @@ const createRnnoiseChain = async (
   return { outputTrack, contexts: [ctx] };
 };
 
-export { createRnnoiseChain, isRnnoiseWorkletSupported };
+export { createRnnoiseChain };

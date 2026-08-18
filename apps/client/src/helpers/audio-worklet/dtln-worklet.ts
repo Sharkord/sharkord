@@ -8,8 +8,6 @@ const DTLN_WORKLET_NAME = 'DtlnProcessor';
 
 const DTLN_READY_TIMEOUT_MS = 10000;
 
-const isDtlnWorkletSupported = isAudioWorkletSupported;
-
 const DTLN_CACHE_NAME = 'dtln-worklet-v3';
 
 const { ensureLoaded: ensureWorkletLoaded } = createWorkletLoader({
@@ -45,7 +43,7 @@ type TDtlnChain = {
 const createDtlnChain = async (
   inputStream: MediaStream
 ): Promise<TDtlnChain> => {
-  if (!isDtlnWorkletSupported()) {
+  if (!isAudioWorkletSupported()) {
     throw new Error('AudioWorklet is not supported in this browser');
   }
 
@@ -74,4 +72,4 @@ const createDtlnChain = async (
   return { outputTrack, contexts: [ctx] };
 };
 
-export { createDtlnChain, isDtlnWorkletSupported };
+export { createDtlnChain };

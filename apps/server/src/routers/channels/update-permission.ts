@@ -6,7 +6,7 @@ import {
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
-import { publishChannelPermissions } from '../../db/publishers';
+import { publishChannelAccessChange } from '../../db/publishers';
 import { getAffectedOnlineUserIdsForChannel } from '../../db/queries/channels';
 import { isDirectMessageChannel } from '../../db/queries/dms';
 import {
@@ -84,6 +84,11 @@ const updatePermissionsRoute = protectedProcedure
 
     const permissions = input.isCreate ? [] : input.permissions;
 
+    const audienceBefore = await getAffectedOnlineUserIdsForChannel(
+      input.channelId,
+      ChannelPermission.VIEW_CHANNEL
+    );
+
     db.transaction((tx) => {
       if (input.userId) {
         tx.delete(channelUserPermissions)
@@ -126,11 +131,7 @@ const updatePermissionsRoute = protectedProcedure
       }
     });
 
-    const affectedUserIds = await getAffectedOnlineUserIdsForChannel(
-      input.channelId
-    );
-
-    publishChannelPermissions(affectedUserIds);
+    await publishChannelAccessChange(input.channelId, audienceBefore);
     enqueueActivityLog({
       type: ActivityLogType.UPDATED_CHANNEL_PERMISSIONS,
       userId: ctx.user.id,

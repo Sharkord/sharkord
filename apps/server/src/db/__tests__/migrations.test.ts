@@ -58,6 +58,52 @@ afterAll(() => {
 });
 
 describe('migrations', () => {
+  // the pragma is turned off for the whole migration run, so the only thing that turns it
+  // back on is the finally. a failed migration that left it off would give the process a
+  // connection with no cascades and no constraint enforcement at all
+  test('should turn foreign keys back on when a migration fails', async () => {
+    fs.mkdirSync(workDir, { recursive: true });
+
+    const dbPath = path.join(workDir, `fk-fail-${Date.now()}.sqlite`);
+    const sqlite = new Database(dbPath, { create: true, strict: true });
+    const db = drizzle({ client: sqlite });
+
+    const brokenFolder = path.join(workDir, 'broken');
+
+    fs.rmSync(brokenFolder, { recursive: true, force: true });
+    fs.mkdirSync(path.join(brokenFolder, 'meta'), { recursive: true });
+    fs.writeFileSync(
+      path.join(brokenFolder, 'meta', '_journal.json'),
+      JSON.stringify({
+        version: '7',
+        dialect: 'sqlite',
+        entries: [
+          {
+            idx: 0,
+            version: '6',
+            when: 1,
+            tag: '0000_broken',
+            breakpoints: true
+          }
+        ]
+      })
+    );
+    fs.writeFileSync(
+      path.join(brokenFolder, '0000_broken.sql'),
+      'THIS IS NOT SQL;'
+    );
+
+    const foreignKeysOn = () =>
+      (sqlite.query('PRAGMA foreign_keys').get() as { foreign_keys: number })
+        .foreign_keys === 1;
+
+    await expect(migrateDatabase(sqlite, db, brokenFolder)).rejects.toThrow();
+
+    expect(foreignKeysOn()).toBe(true);
+
+    sqlite.close();
+  });
+
   test('should not cascade away message relations when rebuilding a table', async () => {
     fs.mkdirSync(workDir, { recursive: true });
 

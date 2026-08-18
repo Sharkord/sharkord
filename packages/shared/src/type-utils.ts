@@ -3,9 +3,5 @@ export type TGenericObject = {
   [key: string]: any;
 };
 
-export type TGenericFunction = {
-  (...args: any[]): any;
-};
-
 export type WithOptional<T, K extends keyof T> = Omit<T, K> &
   Partial<Pick<T, K>>;

@@ -78,4 +78,4 @@ const useImageManager = (kind: TImageKind, onChanged?: () => Promise<void>) => {
   return { onPick, onRemove };
 };
 
-export { useImageManager, type TImageKind };
+export { useImageManager };

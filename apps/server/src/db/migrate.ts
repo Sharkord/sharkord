@@ -17,9 +17,13 @@ const migrateDatabase = async (
 ): Promise<void> => {
   sqlite.run('PRAGMA foreign_keys = OFF;');
 
-  await migrate(db, { migrationsFolder });
-
-  sqlite.run('PRAGMA foreign_keys = ON;');
+  // finally, not a trailing statement: a migration that throws would otherwise leave the
+  // connection with foreign keys off, and every cascade in the schema depends on them
+  try {
+    await migrate(db, { migrationsFolder });
+  } finally {
+    sqlite.run('PRAGMA foreign_keys = ON;');
+  }
 };
 
 export { migrateDatabase };

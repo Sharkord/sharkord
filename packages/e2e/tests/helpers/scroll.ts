@@ -37,11 +37,7 @@ const readScroll = (container: Locator): Promise<TScrollState> =>
 // real wheel input. writing scrollTop instead would work, but it also skips the event
 // cadence the scroll handler actually sees, and hand-dispatching a 'scroll' event on top of
 // the one the browser already fires makes the handler run twice per scroll
-const wheelUp = async (page: Page, steps = 1) => {
-  for (let step = 0; step < steps; step++) {
-    await page.mouse.wheel(0, -WHEEL_STEP);
-  }
-};
+const wheelUp = (page: Page) => page.mouse.wheel(0, -WHEEL_STEP);
 
 // the channel scrolls itself to the bottom on open and keeps re-applying that while late
 // content settles. waiting for the position to stop moving means a test never starts
@@ -113,7 +109,6 @@ export {
   readScroll,
   scrollWellAwayFromBottom,
   waitForStableScroll,
-  wheelUp,
   wheelUpUntil,
   type TScrollState
 };

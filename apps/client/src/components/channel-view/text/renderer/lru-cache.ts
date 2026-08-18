@@ -25,4 +25,4 @@ const writeToCache = <T>(cache: Map<string, T>, key: string, value: T) => {
   cache.set(key, value);
 };
 
-export { MAX_CACHE_SIZE, readFromCache, writeToCache };
+export { readFromCache, writeToCache };

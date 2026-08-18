@@ -67,7 +67,7 @@ const createWorkletLoader = ({
     await loadPromise;
   };
 
-  return { ensureLoaded, isSupported: isAudioWorkletSupported };
+  return { ensureLoaded };
 };
 
 export { createWorkletLoader, isAudioWorkletSupported };

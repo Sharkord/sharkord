@@ -33,8 +33,7 @@ const assertCanModifyMessage = async (
 
 const loadMessageForWrite = async (
   ctx: Context,
-  messageId: number,
-  options?: { requireOwnerOr?: string }
+  messageId: number
 ): Promise<TMessageForWrite> => {
   const message = await db
     .select({
@@ -57,10 +56,6 @@ const loadMessageForWrite = async (
   });
 
   await assertChannelAccess(ctx, message.channelId);
-
-  if (options?.requireOwnerOr) {
-    await assertCanModifyMessage(ctx, message, options.requireOwnerOr);
-  }
 
   return message;
 };
