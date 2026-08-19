@@ -16,6 +16,7 @@ import {
   removeSessionStorageItem,
   SessionStorageKey
 } from '@/helpers/storage';
+import { pushVoiceDebugEvent } from '@/helpers/voice-debug';
 import {
   DisconnectCode,
   type AppRouter,
@@ -44,16 +45,30 @@ const initializeTRPC = (host: string) => {
 
   wsClient = createWSClient({
     url: `${protocol}://${host}`,
+    onOpen: () => {
+      pushVoiceDebugEvent('ws', 'websocket open', { host });
+    },
+    onError: (event) => {
+      pushVoiceDebugEvent('error', 'websocket error', { type: event?.type });
+    },
     // @ts-expect-error - the onclose type is not correct in trpc
     onClose: (cause?: CloseEvent) => {
-      if (isNavigatingAway || isCleaningUp) return;
-
       const info = {
         code: cause?.code ?? DisconnectCode.UNEXPECTED,
         reason: cause?.reason ?? '',
         wasClean: cause?.wasClean ?? false,
         time: new Date()
       };
+
+      // recorded before the early return: a close during teardown or navigation is still
+      // the thing that ended an active call
+      pushVoiceDebugEvent('ws', 'websocket closed', {
+        ...info,
+        isNavigatingAway,
+        isCleaningUp
+      });
+
+      if (isNavigatingAway || isCleaningUp) return;
 
       if (isTerminalClose(info.code)) {
         cleanup();

@@ -1,6 +1,6 @@
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { useOwnUserId } from '@/features/server/users/hooks';
-import { logVoice } from '@/helpers/browser-logger';
+import { logVoice, logVoiceError } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TRemoteUserStreamKinds } from '@/types';
 import { StreamKind } from '@sharkord/shared';
@@ -40,12 +40,12 @@ const useVoiceEvents = ({
 
   useEffect(() => {
     if (!currentVoiceChannelId) {
-      logVoice('Voice events not initialized - missing channelId');
+      logVoice('events: not subscribed, no voice channel');
       return;
     }
 
     if (!rtpCapabilitiesRef.current) {
-      logVoice('Voice events not initialized - missing RTP capabilities');
+      logVoice('events: not subscribed, no rtp capabilities');
       return;
     }
 
@@ -60,21 +60,12 @@ const useVoiceEvents = ({
           if (currentVoiceChannelId !== channelId || isCleaningUp) return;
 
           if (remoteId === ownUserId) {
-            logVoice('Ignoring own producer event', {
-              remoteId,
-              ownUserId,
-              kind,
-              channelId
-            });
+            logVoice('events: ignoring own new producer', { kind, channelId });
 
             return;
           }
 
-          logVoice('New producer event received', {
-            remoteId,
-            kind,
-            channelId
-          });
+          logVoice('events: new producer', { remoteId, kind, channelId });
 
           const rtpCapabilities = rtpCapabilitiesRef.current;
 
@@ -83,8 +74,7 @@ const useVoiceEvents = ({
           try {
             consume(remoteId, kind, rtpCapabilities);
           } catch (error) {
-            logVoice('Error consuming new producer', {
-              error,
+            logVoiceError('events: consuming new producer failed', error, {
               remoteId,
               kind,
               channelId
@@ -92,7 +82,7 @@ const useVoiceEvents = ({
           }
         },
         onError: (error) => {
-          logVoice('onVoiceNewProducer subscription error', { error });
+          logVoiceError('events: new producer subscription error', error);
         }
       }
     );
@@ -103,11 +93,7 @@ const useVoiceEvents = ({
         onData: ({ channelId, remoteId, kind }) => {
           if (currentVoiceChannelId !== channelId || isCleaningUp) return;
 
-          logVoice('Producer closed event received', {
-            remoteId,
-            kind,
-            channelId
-          });
+          logVoice('events: producer closed', { remoteId, kind, channelId });
 
           try {
             if (
@@ -119,16 +105,15 @@ const useVoiceEvents = ({
               removeRemoteUserStream(remoteId, kind);
             }
           } catch (error) {
-            logVoice('Error removing remote stream for closed producer', {
+            logVoiceError(
+              'events: removing stream for closed producer failed',
               error,
-              remoteId,
-              kind,
-              channelId
-            });
+              { remoteId, kind, channelId }
+            );
           }
         },
         onError: (error) => {
-          logVoice('onVoiceProducerClosed subscription error', { error });
+          logVoiceError('events: producer closed subscription error', error);
         }
       }
     );
@@ -137,16 +122,18 @@ const useVoiceEvents = ({
       onData: ({ channelId, userId }) => {
         if (currentVoiceChannelId !== channelId || isCleaningUp) return;
 
-        logVoice('User leave event received', { userId, channelId });
+        logVoice('events: user left voice', { userId, channelId });
 
         try {
           clearRemoteUserStreamsForUser(userId);
         } catch (error) {
-          logVoice('Error clearing remote streams for user', { error });
+          logVoiceError('events: clearing streams for user failed', error, {
+            userId
+          });
         }
       },
       onError: (error) => {
-        logVoice('onVoiceUserLeave subscription error', { error });
+        logVoiceError('events: user leave subscription error', error);
       }
     });
 
@@ -155,7 +142,7 @@ const useVoiceEvents = ({
         onData: ({ channelId, streamId }) => {
           if (currentVoiceChannelId !== channelId || isCleaningUp) return;
 
-          logVoice('External stream removed event received', {
+          logVoice('events: external stream removed', {
             streamId,
             channelId
           });
@@ -163,20 +150,19 @@ const useVoiceEvents = ({
           try {
             removeExternalStream(streamId);
           } catch (error) {
-            logVoice('Error removing external stream', {
-              error,
+            logVoiceError('events: removing external stream failed', error, {
               streamId,
               channelId
             });
           }
         },
         onError: (error) => {
-          logVoice('onVoiceRemoveExternalStream subscription error', { error });
+          logVoiceError('events: external stream subscription error', error);
         }
       });
 
     return () => {
-      logVoice('Cleaning up voice events');
+      logVoice('events: unsubscribing');
 
       isCleaningUp = true;
 

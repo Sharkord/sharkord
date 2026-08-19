@@ -1,4 +1,5 @@
 import { MICROPHONE_GATE_DEFAULT_THRESHOLD_DB } from '@/helpers/audio-gate';
+import { logVoice, logVoiceError } from '@/helpers/browser-logger';
 import { getRestrictOwnAudioSupport } from '@/helpers/get-display-media-support';
 import {
   getLocalStorageItemAsJSON,
@@ -155,6 +156,12 @@ const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
     try {
       const allDevices = await navigator.mediaDevices.enumerateDevices();
 
+      logVoice('devices: enumerated', {
+        audioInputs: allDevices.filter((d) => d.kind === 'audioinput').length,
+        audioOutputs: allDevices.filter((d) => d.kind === 'audiooutput').length,
+        videoInputs: allDevices.filter((d) => d.kind === 'videoinput').length
+      });
+
       setInputDevices(
         normalizeDevices(
           allDevices.filter((d) => d.kind === 'audioinput'),
@@ -177,7 +184,7 @@ const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
       );
     } catch (error) {
       toast.error(t('failedLoadDevices'));
-      console.error('Failed to enumerate media devices:', error);
+      logVoiceError('devices: enumeration failed', error);
     } finally {
       setDevicesEnumerated(true);
     }
@@ -189,6 +196,7 @@ const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
     if (!navigator.mediaDevices?.addEventListener) return;
 
     const onDeviceChange = () => {
+      logVoice('devices: device list changed');
       loadDevices();
     };
 

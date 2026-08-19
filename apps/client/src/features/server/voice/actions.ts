@@ -1,6 +1,6 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
 import { store } from '@/features/store';
-import { logVoice } from '@/helpers/browser-logger';
+import { logVoice, logVoiceError } from '@/helpers/browser-logger';
 import { playSound } from '@/helpers/sounds';
 import {
   LocalStorageKey,
@@ -84,6 +84,8 @@ export const removeUserFromVoiceChannel = (
   // deleted, its category was, or the runtime was destroyed. without this the call ends but
   // the app goes on showing the user as connected to a channel that no longer exists
   if (userId === ownUserId) {
+    logVoice('session: removed from voice by the server', { channelId });
+
     clearLocalVoiceSession();
 
     return;
@@ -186,14 +188,19 @@ export const joinVoice = async (
   const { micMuted, soundMuted } = ownVoiceStateSelector(state);
   const client = getTRPCClient();
 
+  logVoice('session: join requested', { channelId, micMuted, soundMuted });
+
   try {
     const { routerRtpCapabilities } = await client.voice.join.mutate({
       channelId,
       state: { micMuted, soundMuted }
     });
 
+    logVoice('session: joined', { channelId });
+
     return routerRtpCapabilities;
   } catch (error) {
+    logVoiceError('session: join failed', error, { channelId });
     toast.error(getTrpcError(error, i18n.t('common:failedJoinVoiceChannel')));
   }
 
@@ -214,11 +221,11 @@ export const leaveVoice = async (options?: {
   const reason = options?.reason ?? 'unknown';
 
   if (!currentChannelId) {
-    logVoice('Leave voice requested without active channel', { reason });
+    logVoice('session: leave requested with no active channel', { reason });
     return;
   }
 
-  logVoice('Leave voice requested', {
+  logVoice('session: leave requested', {
     reason,
     channelId: currentChannelId,
     selectedChannelId
@@ -232,6 +239,9 @@ export const leaveVoice = async (options?: {
     await client.voice.leave.mutate();
     playSound(SoundType.OWN_USER_LEFT_VOICE_CHANNEL);
   } catch (error) {
+    logVoiceError('session: leave failed', error, {
+      channelId: currentChannelId
+    });
     toast.error(getTrpcError(error, i18n.t('common:failedLeaveVoiceChannel')));
   }
 };

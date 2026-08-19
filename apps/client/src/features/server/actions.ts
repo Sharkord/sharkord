@@ -2,6 +2,7 @@ import { Dialog } from '@/components/dialogs/dialogs';
 import { logDebug } from '@/helpers/browser-logger';
 import { getHostFromServer } from '@/helpers/get-file-url';
 import { playSound } from '@/helpers/sounds';
+import { pushVoiceDebugEvent } from '@/helpers/voice-debug';
 import { i18n } from '@/i18n';
 import { cleanup, connectToTRPC, getTRPCClient } from '@/lib/trpc';
 import type { TMessageJumpToTarget } from '@/types';
@@ -13,6 +14,7 @@ import { openDialog } from '../dialogs/actions';
 import { store } from '../store';
 import {
   channelReadStateByIdSelector,
+  currentVoiceChannelIdSelector,
   isChannelTextVisibleByIdSelector
 } from './channels/selectors';
 import {
@@ -172,6 +174,13 @@ export const reconnectToServer = (info: TDisconnectInfo) => {
 
   reconnectAttempt += 1;
 
+  pushVoiceDebugEvent('ws', 'reconnect scheduled', {
+    attempt: reconnectAttempt,
+    delay,
+    code: info.code,
+    reason: info.reason
+  });
+
   store.dispatch(
     serverSliceActions.setReconnect({
       attempt: reconnectAttempt,
@@ -196,8 +205,16 @@ export const reconnectToServer = (info: TDisconnectInfo) => {
       // so reconnecting stays true until setInitialData clears it
       await connect();
       cancelReconnect();
+
+      pushVoiceDebugEvent('ws', 'reconnected', {
+        voiceChannelId: currentVoiceChannelIdSelector(store.getState())
+      });
     } catch (error) {
       logDebug('reconnect attempt failed', error);
+
+      pushVoiceDebugEvent('error', 'reconnect attempt failed', {
+        error: String(error)
+      });
 
       const isAuthFailure =
         error instanceof TRPCClientError &&
