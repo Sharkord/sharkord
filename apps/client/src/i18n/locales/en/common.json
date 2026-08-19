@@ -86,5 +86,6 @@
   "andMore": "and {{count}} more",
   "typeAMessage": "Type a message...",
   "messageChannel": "Message \"{{name}}\"",
-  "toggleParticipants": "Show/hide participants"
+  "toggleParticipants": "Show/hide participants",
+  "reconnecting": "Reconnecting to the server..."
 }

@@ -21,6 +21,7 @@ import {
   ownVoiceUserSelector,
   pluginsEnabledSelector,
   publicServerSettingsSelector,
+  reconnectingSelector,
   referenceableChannelsSelector,
   serverNameSelector,
   typingUsersByChannelIdSelector,
@@ -31,6 +32,8 @@ import {
 } from './selectors';
 
 export const useIsConnected = () => useSelector(connectedSelector);
+
+export const useIsReconnecting = () => useSelector(reconnectingSelector);
 
 export const useIsConnecting = () => useSelector(connectingSelector);
 

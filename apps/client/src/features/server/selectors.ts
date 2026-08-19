@@ -30,6 +30,9 @@ import { voiceChannelStateSelector } from './voice/selectors';
 
 export const connectedSelector = (state: IRootState) => state.server.connected;
 
+export const reconnectingSelector = (state: IRootState) =>
+  state.server.reconnecting;
+
 export const disconnectInfoSelector = (state: IRootState) =>
   state.server.disconnectInfo;
 

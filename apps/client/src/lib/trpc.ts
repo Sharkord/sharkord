@@ -1,7 +1,13 @@
 import { resetApp } from '@/features/app/actions';
 import { resetDialogs } from '@/features/dialogs/actions';
 import { resetServerScreens } from '@/features/server-screens/actions';
-import { resetServerState, setDisconnectInfo } from '@/features/server/actions';
+import {
+  cancelReconnect,
+  reconnectToServer,
+  resetServerState,
+  setConnected,
+  setDisconnectInfo
+} from '@/features/server/actions';
 import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import {
@@ -11,7 +17,11 @@ import {
   removeSessionStorageItem,
   SessionStorageKey
 } from '@/helpers/storage';
-import { type AppRouter, type TConnectionParams } from '@sharkord/shared';
+import {
+  DisconnectCode,
+  type AppRouter,
+  type TConnectionParams
+} from '@sharkord/shared';
 import { createTRPCProxyClient, createWSClient, wsLink } from '@trpc/client';
 
 let wsClient: ReturnType<typeof createWSClient> | null = null;
@@ -32,19 +42,33 @@ const initializeTRPC = (host: string) => {
   wsClient = createWSClient({
     url: `${protocol}://${host}`,
     // @ts-expect-error - the onclose type is not correct in trpc
-    onClose: (cause: CloseEvent) => {
-      cleanup();
+    onClose: (cause?: CloseEvent) => {
+      if (isNavigatingAway || isCleaningUp) return;
 
-      setDisconnectInfo({
-        code: cause.code,
-        reason: cause.reason,
-        wasClean: cause.wasClean,
+      const info = {
+        code: cause?.code ?? DisconnectCode.UNEXPECTED,
+        reason: cause?.reason ?? '',
+        wasClean: cause?.wasClean ?? false,
         time: new Date()
-      });
+      };
 
-      if (!cause.wasClean) {
-        playSound(SoundType.SERVER_DISCONNECTED);
+      if (
+        info.code === DisconnectCode.KICKED ||
+        info.code === DisconnectCode.BANNED
+      ) {
+        cleanup();
+        setDisconnectInfo(info);
+
+        if (!info.wasClean) {
+          playSound(SoundType.SERVER_DISCONNECTED);
+        }
+
+        return;
       }
+
+      closeClient();
+      setConnected(false);
+      reconnectToServer(info);
     },
     connectionParams: async (): Promise<TConnectionParams> => {
       return {
@@ -83,13 +107,7 @@ const getTRPCClient = () => {
   return trpc;
 };
 
-const cleanup = () => {
-  if (isCleaningUp) {
-    return;
-  }
-
-  isCleaningUp = true;
-
+const closeClient = () => {
   if (wsClient) {
     wsClient.close();
     wsClient = null;
@@ -97,6 +115,17 @@ const cleanup = () => {
 
   trpc = null;
   currentHost = null;
+};
+
+const cleanup = () => {
+  if (isCleaningUp) {
+    return;
+  }
+
+  isCleaningUp = true;
+
+  cancelReconnect();
+  closeClient();
 
   // cleanup can be called due to various reasons (manual disconnect, connection error, auto-login failure, etc).
   // so we remove any persisted auto-login token to prevent auto-login loops.

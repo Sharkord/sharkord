@@ -84,5 +84,6 @@
   "searchResults": "Результаты поиска ({{count}})",
   "wasReactedBy": "на это отреагировали {{reacters}}.",
   "andMore": "и еще {{count}}",
-  "toggleParticipants": "Показать/скрыть участников"
+  "toggleParticipants": "Показать/скрыть участников",
+  "reconnecting": "Повторное подключение к серверу..."
 }

@@ -32,6 +32,7 @@ import type {
 export interface IServerState {
   connected: boolean;
   connecting: boolean;
+  reconnecting: boolean;
   disconnectInfo?: TDisconnectInfo;
   serverId?: string;
   categories: TCategory[];
@@ -75,6 +76,7 @@ export interface IServerState {
 const initialState: IServerState = {
   connected: false,
   connecting: false,
+  reconnecting: false,
   disconnectInfo: undefined,
   serverId: undefined,
   ownUserId: undefined,
@@ -146,6 +148,9 @@ export const serverSlice = createSlice({
     setServerId: (state, action: PayloadAction<string | undefined>) => {
       state.serverId = action.payload;
     },
+    setReconnecting: (state, action: PayloadAction<boolean>) => {
+      state.reconnecting = action.payload;
+    },
     setInfo: (state, action: PayloadAction<TServerInfo | undefined>) => {
       state.info = action.payload;
     },
@@ -177,6 +182,7 @@ export const serverSlice = createSlice({
       }>
     ) => {
       state.connected = true;
+      state.reconnecting = false;
       state.categories = action.payload.categories;
       state.channels = action.payload.channels;
       state.emojis = action.payload.emojis;

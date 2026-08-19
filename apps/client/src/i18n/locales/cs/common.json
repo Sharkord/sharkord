@@ -84,5 +84,6 @@
   "searchResults": "Výsledky hledání ({{count}})",
   "wasReactedBy": "reagovali {{reacters}}.",
   "andMore": "a dalších {{count}}",
-  "toggleParticipants": "Zobrazit/skrýt účastníky"
+  "toggleParticipants": "Zobrazit/skrýt účastníky",
+  "reconnecting": "Opětovné připojování k serveru..."
 }

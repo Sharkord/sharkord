@@ -38,14 +38,10 @@ const Connect = memo(() => {
   const { values, r, setErrors, onChange } = useForm<{
     identity: string;
     password: string;
-    rememberCredentials: boolean;
     autoLogin: boolean;
   }>({
     identity: getLocalStorageItem(LocalStorageKey.IDENTITY) || '',
-    password: getLocalStorageItem(LocalStorageKey.USER_PASSWORD) || '',
-    rememberCredentials: !!getLocalStorageItem(
-      LocalStorageKey.REMEMBER_CREDENTIALS
-    ),
+    password: '',
     autoLogin: getLocalStorageItemBool(LocalStorageKey.AUTO_LOGIN)
   });
 
@@ -86,6 +82,7 @@ const Connect = memo(() => {
       const data = (await response.json()) as { token: string };
 
       setSessionStorageItem(SessionStorageKey.TOKEN, data.token);
+      setLocalStorageItem(LocalStorageKey.IDENTITY, values.identity);
       setLocalStorageItemBool(LocalStorageKey.AUTO_LOGIN, values.autoLogin);
 
       if (values.autoLogin) {

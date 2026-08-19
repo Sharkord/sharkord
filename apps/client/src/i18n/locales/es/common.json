@@ -84,5 +84,6 @@
   "searchResults": "Resultados de búsqueda ({{count}})",
   "wasReactedBy": "ha sido reaccionado por {{reacters}}.",
   "andMore": "y {{count}} más",
-  "toggleParticipants": "Mostrar/ocultar participantes"
+  "toggleParticipants": "Mostrar/ocultar participantes",
+  "reconnecting": "Volviendo a conectar con el servidor..."
 }

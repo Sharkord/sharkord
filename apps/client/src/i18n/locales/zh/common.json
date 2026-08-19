@@ -84,5 +84,6 @@
   "searchResults": "搜索结果（{{count}}）",
   "wasReactedBy": "{{reacters}} 做出了反应。",
   "andMore": "以及其他 {{count}} 人",
-  "toggleParticipants": "显示/隐藏参与者"
+  "toggleParticipants": "显示/隐藏参与者",
+  "reconnecting": "正在重新连接服务器..."
 }

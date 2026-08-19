@@ -11,6 +11,7 @@ import {
   setLocalStorageItemBool,
   setSessionStorageItem
 } from '@/helpers/storage';
+import { cleanup } from '@/lib/trpc';
 import { memo, useEffect, useRef } from 'react';
 
 const AutoLoginController = memo(() => {
@@ -50,6 +51,8 @@ const AutoLoginController = memo(() => {
 
     connect()
       .catch(() => {
+        cleanup();
+
         // token expired or invalid clear auto-login state so the user
         // sees the connect screen and can log in manually
         removeLocalStorageItem(LocalStorageKey.AUTO_LOGIN_TOKEN);

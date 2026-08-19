@@ -4,6 +4,7 @@ import { getHostFromServer } from '@/helpers/get-file-url';
 import { cleanup, connectToTRPC, getTRPCClient } from '@/lib/trpc';
 import type { TMessageJumpToTarget } from '@/types';
 import { type TPublicServerSettings, type TServerInfo } from '@sharkord/shared';
+import { TRPCClientError } from '@trpc/client';
 import { toast } from 'sonner';
 import { appSliceActions } from '../app/slice';
 import { openDialog } from '../dialogs/actions';
@@ -57,6 +58,65 @@ export const setInfo = (info: TServerInfo | undefined) => {
   store.dispatch(serverSliceActions.setInfo(info));
 };
 
+const RECONNECT_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 8_000];
+
+let reconnectAttempt = 0;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let reconnectDisconnectInfo: TDisconnectInfo | undefined;
+
+export const cancelReconnect = () => {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+
+  reconnectAttempt = 0;
+  reconnectDisconnectInfo = undefined;
+};
+
+const abandonReconnect = () => {
+  const info = reconnectDisconnectInfo;
+
+  cleanup();
+  setDisconnectInfo(info);
+};
+
+export const reconnectToServer = (info: TDisconnectInfo) => {
+  if (reconnectTimer) return;
+
+  reconnectDisconnectInfo = info;
+
+  const delay = RECONNECT_DELAYS_MS[reconnectAttempt];
+
+  if (delay === undefined) {
+    abandonReconnect();
+    return;
+  }
+
+  reconnectAttempt += 1;
+  store.dispatch(serverSliceActions.setReconnecting(true));
+
+  reconnectTimer = setTimeout(async () => {
+    reconnectTimer = null;
+
+    try {
+      await connect();
+      cancelReconnect();
+    } catch (error) {
+      if (
+        error instanceof TRPCClientError &&
+        (error.data?.code === 'UNAUTHORIZED' ||
+          error.data?.code === 'FORBIDDEN')
+      ) {
+        abandonReconnect();
+        return;
+      }
+
+      reconnectToServer(info);
+    }
+  }, delay);
+};
+
 export const setActiveFullscreenPluginId = (pluginId: string | undefined) => {
   store.dispatch(serverSliceActions.setActiveFullscreenPluginId(pluginId));
 };
@@ -97,9 +157,11 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
 
   const { initSubscriptions } = await import('./subscriptions');
 
+  unsubscribeFromServer?.();
   unsubscribeFromServer = initSubscriptions();
 
   store.dispatch(serverSliceActions.setInitialData(data));
+  setDisconnectInfo(undefined);
 
   setPluginCommands(data.commands);
 
