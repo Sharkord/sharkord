@@ -9,7 +9,10 @@ import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
 import { channels } from '../../db/schema';
-import { consumeVoiceMoveGrant } from '../../helpers/voice-move-grants';
+import {
+  consumeVoiceMoveGrant,
+  hasVoiceMoveGrant
+} from '../../helpers/voice-move-grants';
 import { logger } from '../../logger';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
@@ -32,10 +35,7 @@ const joinVoiceRoute = rateLimitedProcedure(protectedProcedure, {
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.JOIN_VOICE_CHANNELS);
 
-    const movedByModerator = consumeVoiceMoveGrant(
-      ctx.user.id,
-      input.channelId
-    );
+    const movedByModerator = hasVoiceMoveGrant(ctx.user.id, input.channelId);
 
     if (!movedByModerator) {
       await ctx.needsChannelPermission(input.channelId, ChannelPermission.JOIN);
@@ -84,6 +84,8 @@ const joinVoiceRoute = rateLimitedProcedure(protectedProcedure, {
     });
 
     runtime.addUser(ctx.user.id, input.state);
+
+    if (movedByModerator) consumeVoiceMoveGrant(ctx.user.id);
 
     const state = runtime.getUserState(ctx.user.id);
 

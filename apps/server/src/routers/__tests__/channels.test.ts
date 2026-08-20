@@ -614,6 +614,45 @@ describe('channels router', () => {
     expect(afterReadStates[2]).toBe(0);
   });
 
+  // the unread count compares ids, so the marker has to be the highest id in the channel.
+  // picking the newest timestamp instead leaves anything stamped earlier but inserted later
+  // unread forever, and marking as read again keeps choosing the same wrong row. a clock
+  // that steps backwards between two messages is enough to produce it
+  test('should mark as read up to the highest message id, not the newest timestamp', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    await caller1.messages.send({
+      channelId: 2,
+      content: 'Sent first, stamped later',
+      files: []
+    });
+
+    const realNow = Date.now;
+
+    Date.now = () => realNow() - 60_000;
+
+    try {
+      await caller1.messages.send({
+        channelId: 2,
+        content: 'Sent second, stamped earlier',
+        files: []
+      });
+    } finally {
+      Date.now = realNow;
+    }
+
+    const beforeReadStates = await getChannelsReadStatesForUser(2, 2);
+
+    expect(beforeReadStates[2]).toBe(2);
+
+    await caller2.channels.markAsRead({ channelId: 2 });
+
+    const afterReadStates = await getChannelsReadStatesForUser(2, 2);
+
+    expect(afterReadStates[2]).toBe(0);
+  });
+
   test('should not mark a channel as read just by fetching its messages', async () => {
     const { caller: caller1 } = await initTest(1);
     const { caller: caller2 } = await initTest(2);

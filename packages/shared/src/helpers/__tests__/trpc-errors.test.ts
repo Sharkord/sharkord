@@ -34,9 +34,9 @@ describe('parseTrpcErrors', () => {
   // every one of these used to come back as an error map with no readable field, so the
   // form that called setTrpcErrors rendered nothing and the user saw no rejection at all
   test('should report a plain error rather than returning it as the error map', () => {
-    expect(parseTrpcErrors(new Error('TRPC client is not initialized'))).toEqual(
-      { _general: 'TRPC client is not initialized' }
-    );
+    expect(
+      parseTrpcErrors(new Error('TRPC client is not initialized'))
+    ).toEqual({ _general: 'TRPC client is not initialized' });
   });
 
   test('should report null', () => {

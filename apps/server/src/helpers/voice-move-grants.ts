@@ -20,20 +20,33 @@ const grantVoiceMove = (userId: number, channelId: number): void => {
   });
 };
 
-const consumeVoiceMoveGrant = (userId: number, channelId: number): boolean => {
+const hasVoiceMoveGrant = (userId: number, channelId: number): boolean => {
   const grant = voiceMoveGrants.get(userId);
 
   if (!grant) return false;
 
   if (grant.channelId !== channelId) return false;
 
-  voiceMoveGrants.delete(userId);
+  if (grant.expiresAt <= Date.now()) {
+    voiceMoveGrants.delete(userId);
 
-  return grant.expiresAt > Date.now();
+    return false;
+  }
+
+  return true;
+};
+
+const consumeVoiceMoveGrant = (userId: number): void => {
+  voiceMoveGrants.delete(userId);
 };
 
 const clearVoiceMoveGrantsForTests = (): void => {
   voiceMoveGrants.clear();
 };
 
-export { clearVoiceMoveGrantsForTests, consumeVoiceMoveGrant, grantVoiceMove };
+export {
+  clearVoiceMoveGrantsForTests,
+  consumeVoiceMoveGrant,
+  grantVoiceMove,
+  hasVoiceMoveGrant
+};

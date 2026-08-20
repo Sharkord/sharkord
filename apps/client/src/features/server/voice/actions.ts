@@ -51,7 +51,7 @@ export const addUserToVoiceChannel = (
   }
 };
 
-export const clearLocalVoiceSession = (): void => {
+const clearLocalVoiceSession = (): void => {
   const state = store.getState();
 
   const selectedChannelId = selectedChannelIdSelector(state);
@@ -191,11 +191,12 @@ export const joinVoice = async (
   setCurrentVoiceChannelId(channelId);
 
   const { micMuted, soundMuted } = ownVoiceStateSelector(state);
-  const client = getTRPCClient();
 
   logVoice('session: join requested', { channelId, micMuted, soundMuted });
 
   try {
+    const client = getTRPCClient();
+
     const { routerRtpCapabilities } = await client.voice.join.mutate({
       channelId,
       state: { micMuted, soundMuted }
@@ -217,6 +218,7 @@ export const joinVoice = async (
 export type TLeaveVoiceReason =
   | 'user_disconnect_button'
   | 'switch_channel'
+  | 'init_failed'
   | 'unknown';
 
 export const leaveVoice = async (options?: {
@@ -240,9 +242,9 @@ export const leaveVoice = async (options?: {
 
   clearLocalVoiceSession();
 
-  const client = getTRPCClient();
-
   try {
+    const client = getTRPCClient();
+
     await client.voice.leave.mutate();
     playSound(SoundType.OWN_USER_LEFT_VOICE_CHANNEL);
   } catch (error) {

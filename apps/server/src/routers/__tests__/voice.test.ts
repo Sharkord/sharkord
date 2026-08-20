@@ -201,6 +201,45 @@ describe('voice router', () => {
       }
     });
 
+    test('should keep the grant when the join is refused after it is checked', async () => {
+      const { caller: ownerCaller } = await initTest(1);
+      const { caller: movedCaller } = await initTest(4);
+
+      const originRuntime = new VoiceRuntime(2);
+      const destinationRuntime = new VoiceRuntime(PRIVATE_VOICE_CHANNEL_ID);
+
+      await destinationRuntime.init();
+
+      originRuntime.addUser(4, { micMuted: false, soundMuted: false });
+
+      const joinInput = {
+        channelId: PRIVATE_VOICE_CHANNEL_ID,
+        state: { micMuted: false, soundMuted: false }
+      };
+
+      try {
+        await ownerCaller.voice.moveUser({
+          userId: 4,
+          channelId: PRIVATE_VOICE_CHANNEL_ID
+        });
+
+        // joining before leaving the origin call is refused, and must not spend the grant:
+        // the move the user was sent on is the retry that follows
+        await expect(movedCaller.voice.join(joinInput)).rejects.toThrow(
+          'User already in a voice channel'
+        );
+
+        originRuntime.removeUser(4);
+
+        const result = await movedCaller.voice.join(joinInput);
+
+        expect(result.routerRtpCapabilities).toBeDefined();
+      } finally {
+        await originRuntime.destroy();
+        await destinationRuntime.destroy();
+      }
+    });
+
     test('should refuse a dm call as the destination', async () => {
       // dm channels are created with the voice type, so the type check alone lets one
       // through. join refuses it later, but only after the move has already revealed a

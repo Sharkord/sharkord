@@ -269,10 +269,11 @@ export const markChannelAsRead = async (
     );
   }
 
-  const trpc = getTRPCClient();
-
   try {
-    await trpc.channels.markAsRead.mutate({ channelId });
+    // inside the try: getTRPCClient throws while a reconnect holds no client, and every
+    // caller here dispatches rather than awaits, so it surfaces as an unhandled rejection
+    // with the optimistic zero left behind
+    await getTRPCClient().channels.markAsRead.mutate({ channelId });
   } catch {
     if (unreadCount > 0) {
       store.dispatch(

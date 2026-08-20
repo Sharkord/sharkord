@@ -29,7 +29,7 @@ const markAsReadRoute = rateLimitedProcedure(protectedProcedure, {
       .where(
         and(eq(messages.channelId, channelId), isNull(messages.parentMessageId))
       )
-      .orderBy(desc(messages.createdAt))
+      .orderBy(desc(messages.id))
       .limit(1)
       .get();
 

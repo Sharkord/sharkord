@@ -1,10 +1,7 @@
 import { setSelectedChannelId } from '@/features/server/channels/actions';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { channelByIdSelector } from '@/features/server/channels/selectors';
-import {
-  clearLocalVoiceSession,
-  joinVoice
-} from '@/features/server/voice/actions';
+import { joinVoice, leaveVoice } from '@/features/server/voice/actions';
 import { useVoice } from '@/features/server/voice/hooks';
 import { store } from '@/features/store';
 import { LocalStorageKey } from '@/helpers/storage';
@@ -48,7 +45,8 @@ const useSelectChannel = () => {
         try {
           await init(response, channel.id);
         } catch {
-          clearLocalVoiceSession();
+          await leaveVoice({ reason: 'init_failed' });
+
           toast.error(t('common:failedInitVoiceConnection'));
         }
       }
