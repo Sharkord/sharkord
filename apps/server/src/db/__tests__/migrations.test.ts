@@ -3,6 +3,7 @@ import { afterAll, describe, expect, test } from 'bun:test';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import fs from 'fs';
 import path from 'path';
+import { findTestLog } from '../../__tests__/setup';
 import { SRC_MIGRATIONS_PATH, TMP_PATH } from '../../helpers/paths';
 import { migrateDatabase } from '../migrate';
 
@@ -100,6 +101,40 @@ describe('migrations', () => {
     await expect(migrateDatabase(sqlite, db, brokenFolder)).rejects.toThrow();
 
     expect(foreignKeysOn()).toBe(true);
+
+    sqlite.close();
+  });
+
+  // migrations run with foreign keys off, and sqlite never revalidates existing rows when
+  // the pragma comes back on, so a dangling reference a migration leaves behind is silent
+  test('should report rows left pointing at rows that do not exist', async () => {
+    fs.mkdirSync(workDir, { recursive: true });
+
+    const dbPath = path.join(workDir, `fk-check-${Date.now()}.sqlite`);
+    const sqlite = new Database(dbPath, { create: true, strict: true });
+    const db = drizzle({ client: sqlite });
+
+    await migrateDatabase(sqlite, db, SRC_MIGRATIONS_PATH);
+
+    expect(findTestLog('error', 'rows that do not exist')).toBeUndefined();
+
+    sqlite.run('PRAGMA foreign_keys = OFF;');
+    sqlite.run(
+      `INSERT INTO channels (id, type, name, private, is_dm_channel, position, created_at)
+       VALUES (1, 'TEXT', 'general', 0, 0, 0, 1)`
+    );
+    sqlite.run(
+      `INSERT INTO messages (id, content, user_id, channel_id, created_at)
+       VALUES (1, 'orphan', 999, 1, 1)`
+    );
+    sqlite.run('PRAGMA foreign_keys = ON;');
+
+    await migrateDatabase(sqlite, db, SRC_MIGRATIONS_PATH);
+
+    const reported = findTestLog('error', 'rows that do not exist');
+
+    expect(reported).toBeDefined();
+    expect(reported!.message).toContain('messages');
 
     sqlite.close();
   });

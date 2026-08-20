@@ -867,6 +867,33 @@ describe('users router', () => {
     expect(info.user.roleIds).not.toContain(1);
   });
 
+  // user 5 is the seeded moderator: MANAGE_USERS and MANAGE_ROLES, nothing else. role 2 is
+  // the default role, which grants sending messages and voice. taking it away is a change to
+  // what its holder can do, so the same gate addRole applies has to apply here
+  test('should throw when removing a role with permissions the caller lacks', async () => {
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.users.removeRole({
+        userId: 3,
+        roleId: 2
+      })
+    ).rejects.toThrow(
+      'You cannot remove a role with permissions that you do not have.'
+    );
+  });
+
+  test('should throw when removing a role that does not exist', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.removeRole({
+        userId: 2,
+        roleId: 9999
+      })
+    ).rejects.toThrow('Role not found');
+  });
+
   test('should throw when non-owner user tries to assign owner role to someone else', async () => {
     const { caller } = await initTest();
     const newRoleId = await caller.roles.add();

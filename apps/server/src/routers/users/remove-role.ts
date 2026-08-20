@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { publishChannelListChange, publishUser } from '../../db/publishers';
 import { getChannelsForUser } from '../../db/queries/channels';
+import { getRole } from '../../db/queries/roles';
 import { userRoles } from '../../db/schema';
 import { assertCanActOnUser } from '../../helpers/assert-can-act-on-user';
 import { invariant } from '../../utils/invariant';
@@ -20,7 +21,20 @@ const removeRoleRoute = protectedProcedure
   .mutation(async ({ ctx, input }) => {
     await ctx.needsPermission(Permission.MANAGE_USERS);
 
+    const role = await getRole(input.roleId);
+
+    invariant(role, {
+      code: 'NOT_FOUND',
+      message: 'Role not found'
+    });
+
     await assertCanModifyOwnerRole(ctx.userId, input.roleId, 'remove');
+
+    invariant(await ctx.hasPermission(role.permissions), {
+      code: 'FORBIDDEN',
+      message: 'You cannot remove a role with permissions that you do not have.'
+    });
+
     await assertCanActOnUser(ctx.userId, input.userId);
 
     const existing = await db
