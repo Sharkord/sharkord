@@ -126,3 +126,42 @@ describe('VoiceRuntime producer and consumer maps', () => {
     );
   });
 });
+
+describe('VoiceRuntime external streams', () => {
+  // ids come from a counter that starts at zero, so the second stream in a channel is id 1,
+  // which is also the first user id. the client cannot decide "this producer is mine" from
+  // the id alone, see isOwnProducerEvent
+  test('should hand out ids from zero, colliding with user ids', () => {
+    const runtime = createRuntime();
+
+    const first = runtime.createExternalStream({
+      title: 'First',
+      key: 'first',
+      pluginId: 'music-bot',
+      producers: { audio: createProducerStub() as unknown as Producer }
+    });
+
+    const second = runtime.createExternalStream({
+      title: 'Second',
+      key: 'second',
+      pluginId: 'music-bot',
+      producers: { audio: createProducerStub() as unknown as Producer }
+    });
+
+    expect(first).toBe(0);
+    expect(second).toBe(1);
+  });
+
+  test('should expose a new stream to the joining snapshot', () => {
+    const runtime = createRuntime();
+
+    const streamId = runtime.createExternalStream({
+      title: 'Music',
+      key: 'music',
+      pluginId: 'music-bot',
+      producers: { audio: createProducerStub() as unknown as Producer }
+    });
+
+    expect(runtime.getRemoteIds(1).remoteExternalStreamIds).toEqual([streamId]);
+  });
+});

@@ -1,12 +1,17 @@
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { useOwnUserId } from '@/features/server/users/hooks';
-import { logVoice, logVoiceError } from '@/helpers/browser-logger';
+import {
+  logVoice,
+  logVoiceError,
+  logVoiceWarn
+} from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TRemoteUserStreamKinds } from '@/types';
 import { StreamKind } from '@sharkord/shared';
 import type { RtpCapabilities } from 'mediasoup-client/types';
 import type { RefObject } from 'react';
 import { useEffect } from 'react';
+import { isOwnProducerEvent } from '../helpers';
 
 type TEvents = {
   consume: (
@@ -25,6 +30,7 @@ type TEvents = {
   removeExternalStream: (streamId: number) => void;
   clearRemoteUserStreamsForUser: (userId: number) => void;
   rtpCapabilitiesRef: RefObject<RtpCapabilities | null | undefined>;
+  isVoiceSessionActive: boolean;
 };
 
 const useVoiceEvents = ({
@@ -33,7 +39,8 @@ const useVoiceEvents = ({
   removeExternalStreamTrack,
   removeExternalStream,
   clearRemoteUserStreamsForUser,
-  rtpCapabilitiesRef
+  rtpCapabilitiesRef,
+  isVoiceSessionActive
 }: TEvents) => {
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const ownUserId = useOwnUserId();
@@ -44,8 +51,8 @@ const useVoiceEvents = ({
       return;
     }
 
-    if (!rtpCapabilitiesRef.current) {
-      logVoice('events: not subscribed, no rtp capabilities');
+    if (!isVoiceSessionActive) {
+      logVoice('events: not subscribed, voice session not established yet');
       return;
     }
 
@@ -59,7 +66,7 @@ const useVoiceEvents = ({
         onData: ({ remoteId, kind, channelId }) => {
           if (currentVoiceChannelId !== channelId || isCleaningUp) return;
 
-          if (remoteId === ownUserId) {
+          if (isOwnProducerEvent(remoteId, ownUserId, kind)) {
             logVoice('events: ignoring own new producer', { kind, channelId });
 
             return;
@@ -69,7 +76,16 @@ const useVoiceEvents = ({
 
           const rtpCapabilities = rtpCapabilitiesRef.current;
 
-          if (!rtpCapabilities) return;
+          // init sets the ref before it consumes the existing producers, so anything that
+          // lands in the gap is picked up by that pass instead
+          if (!rtpCapabilities) {
+            logVoiceWarn('events: new producer ignored, no rtp capabilities', {
+              remoteId,
+              kind
+            });
+
+            return;
+          }
 
           try {
             consume(remoteId, kind, rtpCapabilities);
@@ -179,7 +195,8 @@ const useVoiceEvents = ({
     removeExternalStreamTrack,
     removeExternalStream,
     clearRemoteUserStreamsForUser,
-    rtpCapabilitiesRef
+    rtpCapabilitiesRef,
+    isVoiceSessionActive
   ]);
 };
 

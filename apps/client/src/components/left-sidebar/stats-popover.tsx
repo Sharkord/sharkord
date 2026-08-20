@@ -1,10 +1,18 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
+import { Dialog } from '@/components/dialogs/dialogs';
 import { useVoiceStats } from '@/components/voice-provider/stats-context';
+import { openDialog } from '@/features/dialogs/actions';
 import { formatBigNumber } from '@/helpers/format-big-number';
 import { NoiseSuppression } from '@/types';
-import { Popover, PopoverContent, PopoverTrigger } from '@sharkord/ui';
+import {
+  IconButton,
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@sharkord/ui';
 import { filesize } from 'filesize';
-import { memo, useMemo, useState } from 'react';
+import { Stethoscope } from 'lucide-react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 type StatsPopoverProps = {
@@ -128,14 +136,29 @@ const StatsPopover = memo(({ children }: StatsPopoverProps) => {
     return screenShare?.codec ? getCodecLabel(screenShare.codec) : undefined;
   }, [screenShare?.codec]);
 
+  const handleOpenDiagnostics = useCallback(() => {
+    openDialog(Dialog.VOICE_DEBUG);
+  }, []);
+
   return (
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent side="top" align="start" className="p-0">
         <div className="w-72 p-3 text-xs">
-          <h3 className="font-semibold text-sm mb-2 text-foreground">
-            {t('transportStats')}
-          </h3>
+          <div className="mb-2 flex items-center gap-2">
+            <h3 className="font-semibold text-sm text-foreground">
+              {t('transportStats')}
+            </h3>
+            <IconButton
+              className="ml-auto"
+              variant="ghost"
+              size="sm"
+              icon={Stethoscope}
+              title={t('voiceDiagnostics')}
+              aria-label={t('voiceDiagnostics')}
+              onClick={handleOpenDiagnostics}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4 mb-3">
             <div>
               <h4 className="font-medium text-green-400 mb-1">

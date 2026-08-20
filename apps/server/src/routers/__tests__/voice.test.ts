@@ -609,3 +609,67 @@ describe('voice router', () => {
     });
   });
 });
+
+// the client subscribes to these through a caller exactly like this, and the route binds
+// ctx.currentVoiceChannelId at subscribe time. subscribing before voice.join has set it
+// hands back an observable bound to no channel, which stays silent for the rest of the
+// session and leaves a member hearing nothing until they rejoin
+describe('voice producer subscriptions', () => {
+  const VOICE_CHANNEL_ID = 2;
+
+  const collect = async (caller: TVoiceCaller) => {
+    const received: { remoteId: number; kind: StreamKind }[] = [];
+
+    const observable = await caller.voice.onNewProducer();
+
+    const subscription = observable.subscribe({
+      next: ({ remoteId, kind }) => received.push({ remoteId, kind })
+    });
+
+    return { received, subscription };
+  };
+
+  const announceExternalAudio = () => {
+    pubsub.publishForChannel(
+      VOICE_CHANNEL_ID,
+      ServerEvents.VOICE_NEW_PRODUCER,
+      {
+        channelId: VOICE_CHANNEL_ID,
+        remoteId: 0,
+        kind: StreamKind.EXTERNAL_AUDIO
+      }
+    );
+  };
+
+  test('should deliver a producer to a subscriber already in the channel', async () => {
+    const { caller } = await initTest(1, undefined, {
+      currentVoiceChannelId: VOICE_CHANNEL_ID
+    });
+
+    const { received, subscription } = await collect(caller);
+
+    try {
+      announceExternalAudio();
+
+      expect(received).toEqual([
+        { remoteId: 0, kind: StreamKind.EXTERNAL_AUDIO }
+      ]);
+    } finally {
+      subscription.unsubscribe();
+    }
+  });
+
+  test('should stay silent forever when subscribed before the channel is set', async () => {
+    const { caller } = await initTest(1);
+
+    const { received, subscription } = await collect(caller);
+
+    try {
+      announceExternalAudio();
+
+      expect(received).toEqual([]);
+    } finally {
+      subscription.unsubscribe();
+    }
+  });
+});

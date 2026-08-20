@@ -1257,7 +1257,10 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     removeExternalStreamTrack,
     removeExternalStream,
     clearRemoteUserStreamsForUser,
-    rtpCapabilitiesRef: deviceRtpCapabilities
+    rtpCapabilitiesRef: deviceRtpCapabilities,
+    isVoiceSessionActive:
+      connectionStatus === ConnectionStatus.CONNECTING ||
+      connectionStatus === ConnectionStatus.CONNECTED
   });
 
   const previousConnectionStatus = useRef(connectionStatus);
