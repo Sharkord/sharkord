@@ -1174,6 +1174,36 @@ describe('users router', () => {
     expect(reactionAfterDelete!.userId).toBe(deletedPlaceholderUser!.id);
   });
 
+  test('should keep a message edited by the deleted user', async () => {
+    const { caller } = await initTest();
+
+    const messageBefore = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.id, 1))
+      .get();
+
+    expect(messageBefore).toBeDefined();
+    expect(messageBefore!.userId).not.toBe(2);
+
+    await tdb
+      .update(messages)
+      .set({ editedBy: 2, editedAt: Date.now() })
+      .where(eq(messages.id, 1));
+
+    await caller.users.delete({ userId: 2, wipe: false });
+
+    const messageAfter = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.id, 1))
+      .get();
+
+    expect(messageAfter).toBeDefined();
+    expect(messageAfter!.userId).toBe(messageBefore!.userId);
+    expect(messageAfter!.editedBy).toBeNull();
+  });
+
   test('should delete a second user who shared a reaction with the first', async () => {
     const { caller } = await initTest();
 

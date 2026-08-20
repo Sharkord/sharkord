@@ -1,7 +1,10 @@
 import { setSelectedChannelId } from '@/features/server/channels/actions';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { channelByIdSelector } from '@/features/server/channels/selectors';
-import { joinVoice } from '@/features/server/voice/actions';
+import {
+  clearLocalVoiceSession,
+  joinVoice
+} from '@/features/server/voice/actions';
 import { useVoice } from '@/features/server/voice/hooks';
 import { store } from '@/features/store';
 import { LocalStorageKey } from '@/helpers/storage';
@@ -40,18 +43,12 @@ const useSelectChannel = () => {
       ) {
         const response = await joinVoice(channel.id);
 
-        if (!response) {
-          // joining voice failed
-          setSelectedChannelId(undefined);
-          toast.error(t('common:failedJoinVoiceChannel'));
-
-          return;
-        }
+        if (!response) return;
 
         try {
           await init(response, channel.id);
         } catch {
-          setSelectedChannelId(undefined);
+          clearLocalVoiceSession();
           toast.error(t('common:failedInitVoiceConnection'));
         }
       }

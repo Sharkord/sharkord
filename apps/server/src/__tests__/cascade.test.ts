@@ -113,6 +113,29 @@ describe('database cascades', async () => {
     expect(messagesAfter.length).toBe(1); // only the DM message from setup should remain
   });
 
+  test('deleting a user nulls edited_by instead of deleting the message', async () => {
+    const messageRows = await tdb.select().from(messages);
+    const target = messageRows.find((message) => message.userId !== 2);
+
+    expect(target).toBeDefined();
+
+    await tdb
+      .update(messages)
+      .set({ editedBy: 2, editedAt: Date.now() })
+      .where(eq(messages.id, target!.id));
+
+    await tdb.delete(users).where(eq(users.id, 2));
+
+    const after = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.id, target!.id))
+      .get();
+
+    expect(after).toBeDefined();
+    expect(after!.editedBy).toBeNull();
+  });
+
   test('deleting a user cascades to user_roles', async () => {
     const usersBefore = await tdb.select().from(users);
     const userId = usersBefore[0]!.id;

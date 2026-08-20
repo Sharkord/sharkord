@@ -281,7 +281,7 @@ const messages = sqliteTable(
     }),
     editedAt: integer('edited_at'),
     editedBy: integer('edited_by').references(() => users.id, {
-      onDelete: 'cascade'
+      onDelete: 'set null'
     })
   },
   (t) => [

@@ -183,6 +183,13 @@
       "when": 1786614139014,
       "tag": "0025_read_state_marker_not_a_foreign_key",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1787252858420,
+      "tag": "0026_edited_by_not_a_cascade",
+      "breakpoints": true
     }
   ]
 }

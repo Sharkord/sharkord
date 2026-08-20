@@ -59,15 +59,46 @@ describe('connection info through createContext', () => {
     expect(ctx.getConnectionInfo()?.ip).toBe('1.2.3.4');
   });
 
-  test('should take the first public address from a forwarded chain', async () => {
+  test('should take the right-most address the proxy chain did not add', async () => {
+    config.server.trustedProxies = [PROXY_ADDRESS, '10.0.0.0/8'];
+
+    const ctx = await createConnection({
+      remoteAddress: PROXY_ADDRESS,
+      headers: { 'x-forwarded-for': `${CLIENT_ADDRESS}, 10.0.0.1` }
+    });
+
+    expect(ctx.getConnectionInfo()?.ip).toBe(CLIENT_ADDRESS);
+  });
+
+  // nginx's standard `$proxy_add_x_forwarded_for` keeps whatever the client sent and
+  // appends the address it connected from, so the left half of the chain is caller
+  // controlled. reading it is how a caller gets a fresh rate limit bucket per request
+  test('should ignore an address the client prepended to the chain', async () => {
     config.server.trustedProxies = [PROXY_ADDRESS];
 
     const ctx = await createConnection({
       remoteAddress: PROXY_ADDRESS,
-      headers: { 'x-forwarded-for': '10.0.0.1, 1.2.3.4, 192.168.1.1' }
+      headers: { 'x-forwarded-for': `1.2.3.4, ${CLIENT_ADDRESS}` }
     });
 
-    expect(ctx.getConnectionInfo()?.ip).toBe('1.2.3.4');
+    expect(ctx.getConnectionInfo()?.ip).toBe(CLIENT_ADDRESS);
+  });
+
+  // a proxy that does not overwrite them passes these straight through, and nothing in
+  // the value says whether the proxy or the caller wrote it
+  test('should ignore single-value vendor headers from a trusted proxy', async () => {
+    config.server.trustedProxies = [PROXY_ADDRESS];
+
+    const ctx = await createConnection({
+      remoteAddress: PROXY_ADDRESS,
+      headers: {
+        'cf-connecting-ip': '1.2.3.4',
+        'x-real-ip': '1.2.3.4',
+        'x-forwarded-for': CLIENT_ADDRESS
+      }
+    });
+
+    expect(ctx.getConnectionInfo()?.ip).toBe(CLIENT_ADDRESS);
   });
 
   test('should parse the user agent end to end', async () => {

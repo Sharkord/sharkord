@@ -51,11 +51,16 @@ export const addUserToVoiceChannel = (
   }
 };
 
-const clearLocalVoiceSession = (): void => {
+export const clearLocalVoiceSession = (): void => {
   const state = store.getState();
 
   const selectedChannelId = selectedChannelIdSelector(state);
   const currentVoiceChannelId = currentVoiceChannelIdSelector(state);
+
+  logVoice('session: clearing local voice session', {
+    selectedChannelId,
+    currentVoiceChannelId
+  });
 
   if (selectedChannelId === currentVoiceChannelId) {
     setSelectedChannelId(undefined);
@@ -201,6 +206,8 @@ export const joinVoice = async (
     return routerRtpCapabilities;
   } catch (error) {
     logVoiceError('session: join failed', error, { channelId });
+    clearLocalVoiceSession();
+
     toast.error(getTrpcError(error, i18n.t('common:failedJoinVoiceChannel')));
   }
 

@@ -24,31 +24,36 @@ const createRequest = ({
 // trusted proxy, so the parsing cases below exercise getForwardedIp directly
 // and fall through to the real resolution when no header is present. the trust
 // gate itself is covered by the 'trusted proxy gate' block at the bottom
-const ipOf = (ws: any, req: http.IncomingMessage): string | undefined =>
-  getForwardedIp(req?.headers ?? {}) ?? getWsInfo(ws, req)?.ip;
+const ipOf = (
+  ws: any,
+  req: http.IncomingMessage,
+  trustedProxies: string[] = []
+): string | undefined =>
+  getForwardedIp(req?.headers ?? {}, trustedProxies) ?? getWsInfo(ws, req)?.ip;
 
 describe('getWsInfo - ip resolution', () => {
   describe('header priority', () => {
-    test('prefers CDN client ip headers over x-forwarded-for', () => {
+    test('ignores single-value vendor headers in favour of the chain', () => {
       const req = createRequest({
         headers: {
           'cf-connecting-ip': '203.0.113.14',
-          'x-forwarded-for': '198.51.100.1, 10.0.0.2'
-        }
-      });
-
-      expect(ipOf(undefined, req)).toBe('203.0.113.14');
-    });
-
-    test('prefers true-client-ip when cf-connecting-ip is absent', () => {
-      const req = createRequest({
-        headers: {
-          'true-client-ip': '198.51.100.50',
           'x-forwarded-for': '198.51.100.1'
         }
       });
 
-      expect(ipOf(undefined, req)).toBe('198.51.100.50');
+      expect(ipOf(undefined, req)).toBe('198.51.100.1');
+    });
+
+    test('falls back to the socket when only a vendor header is present', () => {
+      const req = createRequest({
+        headers: {
+          'cf-connecting-ip': '203.0.113.14',
+          'true-client-ip': '198.51.100.50'
+        },
+        remoteAddress: '127.0.0.1'
+      });
+
+      expect(ipOf(undefined, req)).toBe('127.0.0.1');
     });
 
     test('prefers x-forwarded-for over RFC 7239 Forwarded', () => {
@@ -92,7 +97,7 @@ describe('getWsInfo - ip resolution', () => {
   });
 
   describe('x-forwarded-for', () => {
-    test('selects first public ip, skipping private addresses', () => {
+    test('takes the right-most entry when no proxies are trusted', () => {
       const req = createRequest({
         headers: {
           'x-forwarded-for': '10.0.0.4, 172.19.4.2, 93.184.216.34'
@@ -102,14 +107,44 @@ describe('getWsInfo - ip resolution', () => {
       expect(ipOf(undefined, req)).toBe('93.184.216.34');
     });
 
-    test('returns private ip when no public ip is present', () => {
+    // the shape nginx produces with the standard `$proxy_add_x_forwarded_for`:
+    // whatever the client sent, then the address it connected from
+    test('ignores an entry the client prepended itself', () => {
+      const req = createRequest({
+        headers: { 'x-forwarded-for': '1.2.3.4, 198.51.100.7' }
+      });
+
+      expect(ipOf(undefined, req)).toBe('198.51.100.7');
+    });
+
+    test('walks past our own proxies from the right', () => {
+      const req = createRequest({
+        headers: {
+          'x-forwarded-for': '93.184.216.34, 10.0.0.4, 172.19.4.2'
+        }
+      });
+
+      expect(ipOf(undefined, req, ['10.0.0.0/8', '172.16.0.0/12'])).toBe(
+        '93.184.216.34'
+      );
+    });
+
+    test('returns the left-most entry when the whole chain is trusted', () => {
+      const req = createRequest({
+        headers: { 'x-forwarded-for': '10.0.0.4, 10.0.0.5' }
+      });
+
+      expect(ipOf(undefined, req, ['10.0.0.0/8'])).toBe('10.0.0.4');
+    });
+
+    test('returns a private address when the chain has no public one', () => {
       const req = createRequest({
         headers: {
           'x-forwarded-for': '10.0.0.4, 192.168.1.1'
         }
       });
 
-      expect(ipOf(undefined, req)).toBe('10.0.0.4');
+      expect(ipOf(undefined, req)).toBe('192.168.1.1');
     });
 
     test('handles single ip value', () => {
@@ -156,7 +191,7 @@ describe('getWsInfo - ip resolution', () => {
         }
       });
 
-      // 10.0.0.1 is private; 93.184.216.34 is unicast picks public IP
+      // the right-most entry, same rule as x-forwarded-for
       expect(ipOf(undefined, req)).toBe('93.184.216.34');
     });
 
@@ -187,7 +222,7 @@ describe('getWsInfo - ip resolution', () => {
 
     test('strips port from IPv4 address', () => {
       const req = createRequest({
-        headers: { 'x-real-ip': '198.51.100.5:8080' }
+        headers: { 'x-forwarded-for': '198.51.100.5:8080' }
       });
 
       expect(ipOf(undefined, req)).toBe('198.51.100.5');
@@ -211,7 +246,7 @@ describe('getWsInfo - ip resolution', () => {
 
     test('preserves valid plain IPv6 address', () => {
       const req = createRequest({
-        headers: { 'cf-connecting-ip': '2001:db8::1' }
+        headers: { 'x-forwarded-for': '2001:db8::1' }
       });
 
       expect(ipOf(undefined, req)).toBe('2001:db8::1');
@@ -219,7 +254,7 @@ describe('getWsInfo - ip resolution', () => {
 
     test('does not mangle IPv6 addresses with embedded dots (mixed notation mapped)', () => {
       const req = createRequest({
-        headers: { 'cf-connecting-ip': '::ffff:192.0.2.1' }
+        headers: { 'x-forwarded-for': '::ffff:192.0.2.1' }
       });
 
       expect(ipOf(undefined, req)).toBe('192.0.2.1');
@@ -229,7 +264,7 @@ describe('getWsInfo - ip resolution', () => {
   describe('array-valued headers', () => {
     test('joins array values into comma-separated list', () => {
       const req = createRequest({
-        headers: { 'x-real-ip': ['198.51.100.77'] }
+        headers: { 'x-forwarded-for': ['198.51.100.77'] }
       });
 
       expect(ipOf(undefined, req)).toBe('198.51.100.77');
@@ -309,7 +344,7 @@ describe('getWsInfo - ip resolution', () => {
 
     test('handles invalid IP strings gracefully', () => {
       const req = createRequest({
-        headers: { 'cf-connecting-ip': 'not-an-ip-at-all' },
+        headers: { 'x-forwarded-for': 'not-an-ip-at-all' },
         remoteAddress: '127.0.0.1'
       });
 
@@ -327,7 +362,7 @@ describe('getWsInfo - ip resolution', () => {
 
     test('handles header with empty array', () => {
       const req = createRequest({
-        headers: { 'x-real-ip': [] as unknown as string[] },
+        headers: { 'x-forwarded-for': [] as unknown as string[] },
         remoteAddress: '198.51.100.1'
       });
 
@@ -344,9 +379,9 @@ describe('getWsInfo - ip resolution', () => {
       });
 
       const result = ipOf(undefined, req);
-      // MAX_IP_CANDIDATES is 20, so index 24 is beyond the limit.
-      // should get first private IP instead
-      expect(result).toBe('10.0.0.0');
+      // MAX_IP_CANDIDATES is 20, so index 24 is beyond the limit and the
+      // right-most entry that survives the truncation is index 19
+      expect(result).toBe('10.0.0.19');
     });
   });
 });
@@ -466,10 +501,8 @@ describe('getWsInfo - return value', () => {
 
   test('result shape has only expected keys', () => {
     const req = createRequest({
-      headers: {
-        'cf-connecting-ip': '203.0.113.1',
-        'user-agent': 'TestBot/1.0'
-      }
+      headers: { 'user-agent': 'TestBot/1.0' },
+      remoteAddress: '203.0.113.1'
     });
 
     const result = getWsInfo(undefined, req);
