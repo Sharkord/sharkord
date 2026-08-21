@@ -4,6 +4,7 @@ import { drizzle } from 'drizzle-orm/bun-sqlite';
 import fs from 'fs';
 import path from 'path';
 import { findTestLog } from '../../__tests__/setup';
+import { config } from '../../config';
 import { SRC_MIGRATIONS_PATH, TMP_PATH } from '../../helpers/paths';
 import { migrateDatabase } from '../migrate';
 
@@ -114,29 +115,36 @@ describe('migrations', () => {
     const sqlite = new Database(dbPath, { create: true, strict: true });
     const db = drizzle({ client: sqlite });
 
-    await migrateDatabase(sqlite, db, SRC_MIGRATIONS_PATH);
+    const originalDebug = config.server.debug;
 
-    expect(findTestLog('error', 'rows that do not exist')).toBeUndefined();
+    config.server.debug = true;
 
-    sqlite.run('PRAGMA foreign_keys = OFF;');
-    sqlite.run(
-      `INSERT INTO channels (id, type, name, private, is_dm_channel, position, created_at)
-       VALUES (1, 'TEXT', 'general', 0, 0, 0, 1)`
-    );
-    sqlite.run(
-      `INSERT INTO messages (id, content, user_id, channel_id, created_at)
-       VALUES (1, 'orphan', 999, 1, 1)`
-    );
-    sqlite.run('PRAGMA foreign_keys = ON;');
+    try {
+      await migrateDatabase(sqlite, db, SRC_MIGRATIONS_PATH);
 
-    await migrateDatabase(sqlite, db, SRC_MIGRATIONS_PATH);
+      expect(findTestLog('error', 'rows that do not exist')).toBeUndefined();
 
-    const reported = findTestLog('error', 'rows that do not exist');
+      sqlite.run('PRAGMA foreign_keys = OFF;');
+      sqlite.run(
+        `INSERT INTO channels (id, type, name, private, is_dm_channel, position, created_at)
+         VALUES (1, 'TEXT', 'general', 0, 0, 0, 1)`
+      );
+      sqlite.run(
+        `INSERT INTO messages (id, content, user_id, channel_id, created_at)
+         VALUES (1, 'orphan', 999, 1, 1)`
+      );
+      sqlite.run('PRAGMA foreign_keys = ON;');
 
-    expect(reported).toBeDefined();
-    expect(reported!.message).toContain('messages');
+      await migrateDatabase(sqlite, db, SRC_MIGRATIONS_PATH);
 
-    sqlite.close();
+      const reported = findTestLog('error', 'rows that do not exist');
+
+      expect(reported).toBeDefined();
+      expect(reported!.message).toContain('messages');
+    } finally {
+      config.server.debug = originalDebug;
+      sqlite.close();
+    }
   });
 
   test('should not cascade away message relations when rebuilding a table', async () => {
