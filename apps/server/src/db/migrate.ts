@@ -1,11 +1,17 @@
 import type { Database } from 'bun:sqlite';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
+import fs from 'fs/promises';
+import path from 'path';
 import { config } from '../config';
 import { logger } from '../logger';
 
 type TForeignKeyViolation = {
   table: string;
+};
+
+type TJournal = {
+  entries: { when: number; tag: string }[];
 };
 
 // foreign keys are off for the whole run below, so a migration can leave a dangling
@@ -42,6 +48,47 @@ const reportForeignKeyViolations = (sqlite: Database) => {
   }
 };
 
+// drizzle's migrate() takes no logger and no callback, so the only way to name what it ran
+// is to apply its own rule first: it runs every journal entry stamped later than the newest
+// row in its migrations table (sqlite-core/dialect.js). read before the run rather than
+// after, so a migration that throws still names the candidates it died among
+const getPendingMigrationTags = async (
+  sqlite: Database,
+  migrationsFolder: string
+): Promise<string[]> => {
+  let journal: TJournal;
+
+  try {
+    journal = JSON.parse(
+      await fs.readFile(
+        path.join(migrationsFolder, 'meta', '_journal.json'),
+        'utf-8'
+      )
+    ) as TJournal;
+  } catch {
+    // migrate() is about to fail on the same file and say so properly
+    return [];
+  }
+
+  let appliedThrough = 0;
+
+  try {
+    const lastApplied = sqlite
+      .query(
+        'SELECT created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 1'
+      )
+      .get() as { created_at: number } | null;
+
+    appliedThrough = Number(lastApplied?.created_at ?? 0);
+  } catch {
+    // the table does not exist until the first run creates it, so everything is pending
+  }
+
+  return journal.entries
+    .filter((entry) => entry.when > appliedThrough)
+    .map((entry) => entry.tag);
+};
+
 // the only way migrations may be applied, because the pragma order is not optional.
 //
 // a rebuild migration (create __new_x, copy rows, drop x, rename) fires every child foreign
@@ -55,6 +102,8 @@ const migrateDatabase = async (
   db: BunSQLiteDatabase,
   migrationsFolder: string
 ): Promise<void> => {
+  const pendingTags = await getPendingMigrationTags(sqlite, migrationsFolder);
+
   sqlite.run('PRAGMA foreign_keys = OFF;');
 
   // finally, not a trailing statement: a migration that throws would otherwise leave the
@@ -63,6 +112,16 @@ const migrateDatabase = async (
     await migrate(db, { migrationsFolder });
   } finally {
     sqlite.run('PRAGMA foreign_keys = ON;');
+  }
+
+  // after the migrator returns, because it runs the whole batch in one transaction: a
+  // rollback means none of these ran, and saying so beforehand would be a lie
+  if (pendingTags.length === 0) {
+    logger.debug('No migrations to run');
+  }
+
+  for (const tag of pendingTags) {
+    logger.info(`Migration ${tag} ran`);
   }
 
   if (config.server.debug) {

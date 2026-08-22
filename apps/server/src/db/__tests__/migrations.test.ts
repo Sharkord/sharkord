@@ -3,7 +3,7 @@ import { afterAll, describe, expect, test } from 'bun:test';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import fs from 'fs';
 import path from 'path';
-import { findTestLog } from '../../__tests__/setup';
+import { findTestLog, testLogs } from '../../__tests__/setup';
 import { config } from '../../config';
 import { SRC_MIGRATIONS_PATH, TMP_PATH } from '../../helpers/paths';
 import { migrateDatabase } from '../migrate';
@@ -108,6 +108,48 @@ describe('migrations', () => {
 
   // migrations run with foreign keys off, and sqlite never revalidates existing rows when
   // the pragma comes back on, so a dangling reference a migration leaves behind is silent
+  test('should name each migration it applies, once', async () => {
+    fs.mkdirSync(workDir, { recursive: true });
+
+    const dbPath = path.join(workDir, `log-${Date.now()}.sqlite`);
+    const sqlite = new Database(dbPath, { create: true, strict: true });
+    const db = drizzle({ client: sqlite });
+
+    // setup.ts migrates a fresh database before every test, so the buffer already holds a
+    // full chain's worth of these lines. cleared before each run rather than once at the top
+    testLogs.length = 0;
+
+    // stop short of the rebuild, so the rest of the chain is left to report on a second run
+    await migrateDatabase(
+      sqlite,
+      db,
+      buildPartialMigrationsFolder(REBUILD_MIGRATION)
+    );
+
+    expect(findTestLog('info', 'Migration 0000')).toBeDefined();
+    expect(
+      findTestLog('info', `Migration ${REBUILD_MIGRATION} ran`)
+    ).toBeUndefined();
+
+    testLogs.length = 0;
+
+    await migrateDatabase(sqlite, db, SRC_MIGRATIONS_PATH);
+
+    expect(
+      findTestLog('info', `Migration ${REBUILD_MIGRATION} ran`)
+    ).toBeDefined();
+
+    // nothing is pending now, so a third run must name nothing at all
+    testLogs.length = 0;
+
+    await migrateDatabase(sqlite, db, SRC_MIGRATIONS_PATH);
+
+    expect(findTestLog('info', 'Migration')).toBeUndefined();
+    expect(findTestLog('debug', 'No migrations to run')).toBeDefined();
+
+    sqlite.close();
+  });
+
   test('should report rows left pointing at rows that do not exist', async () => {
     fs.mkdirSync(workDir, { recursive: true });
 
