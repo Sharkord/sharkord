@@ -376,3 +376,7 @@ Every new behaviour needs tests and the whole suite must pass, see [Testing](#te
   not, in code or in JSX. Use an early return, a lookup object, or an `if`/`else` assigned to a
   `let`. If the branches are what a component renders, split it into two components or pull the
   choice into a variable above the return.
+- NEVER prefix a call with `void`. Write `returnToPresent();`, not `void returnToPresent();`.
+  It reads as a type, adds nothing at runtime, and marks the one thing worth looking at (a
+  promise nobody awaits) as deliberate instead of leaving it visible. If the promise genuinely
+  cannot be awaited, either handle its failure with a `.catch()` or say why in a comment.

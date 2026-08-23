@@ -160,7 +160,7 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
   }, []);
 
   const handleReturnToPresent = useCallback(() => {
-    void returnToPresent();
+    returnToPresent();
   }, [returnToPresent]);
 
   const handleCancelReply = useCallback(
