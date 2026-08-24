@@ -6,6 +6,7 @@ import { config } from '../config';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
 import { pluginManager } from '../plugins';
+import { SERVER_VERSION } from '../utils/env';
 import { HttpValidationError, PayloadTooLargeError } from './errors';
 import { healthRouteHandler } from './healthz';
 import {
@@ -101,6 +102,7 @@ const createHttpServer = async (port: number = config.server.port) => {
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('X-Frame-Options', 'DENY');
         res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        res.setHeader('X-Sharkord-Version', SERVER_VERSION);
 
         const info = getWsInfo(undefined, req);
         const url = getRequestUrl(req);
