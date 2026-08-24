@@ -1,14 +1,36 @@
 import {
   ChannelPermission,
   getMediasoupKind,
+  Permission,
+  PRODUCIBLE_STREAM_KINDS,
   ServerEvents,
-  StreamKind
+  StreamKind,
+  type TProducibleStreamKind
 } from '@sharkord/shared';
 import { z } from 'zod';
 import { config } from '../../config';
 import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+
+const KIND_PERMISSIONS: Record<
+  TProducibleStreamKind,
+  { channel: ChannelPermission; server?: Permission }
+> = {
+  [StreamKind.AUDIO]: { channel: ChannelPermission.SPEAK },
+  [StreamKind.VIDEO]: {
+    channel: ChannelPermission.WEBCAM,
+    server: Permission.ENABLE_WEBCAM
+  },
+  [StreamKind.SCREEN]: {
+    channel: ChannelPermission.SHARE_SCREEN,
+    server: Permission.SHARE_SCREEN
+  },
+  [StreamKind.SCREEN_AUDIO]: {
+    channel: ChannelPermission.SHARE_SCREEN,
+    server: Permission.SHARE_SCREEN
+  }
+};
 
 const produceRoute = rateLimitedProcedure(protectedProcedure, {
   maxRequests: config.rateLimiters.voiceStream.maxRequests,
@@ -18,7 +40,7 @@ const produceRoute = rateLimitedProcedure(protectedProcedure, {
   .input(
     z.object({
       transportId: z.string(),
-      kind: z.enum(StreamKind),
+      kind: z.enum(PRODUCIBLE_STREAM_KINDS),
       rtpParameters: z.any(),
       qualityLayers: z
         .array(
@@ -33,15 +55,12 @@ const produceRoute = rateLimitedProcedure(protectedProcedure, {
   .mutation(async ({ input, ctx }) => {
     const { runtime, channelId } = await getCurrentVoiceRuntime(ctx);
 
-    if (input.kind === StreamKind.AUDIO) {
-      await ctx.needsChannelPermission(channelId, ChannelPermission.SPEAK);
-    } else if (input.kind === StreamKind.VIDEO) {
-      await ctx.needsChannelPermission(channelId, ChannelPermission.WEBCAM);
-    } else if (input.kind === StreamKind.SCREEN) {
-      await ctx.needsChannelPermission(
-        channelId,
-        ChannelPermission.SHARE_SCREEN
-      );
+    const { channel, server } = KIND_PERMISSIONS[input.kind];
+
+    await ctx.needsChannelPermission(channelId, channel);
+
+    if (server) {
+      await ctx.needsPermission(server);
     }
 
     const producerTransport = runtime.getProducerTransport(ctx.user.id);

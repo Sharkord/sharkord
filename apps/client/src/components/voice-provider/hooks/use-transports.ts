@@ -9,6 +9,7 @@ import {
   type ConsumerType,
   getMediasoupKind,
   StreamKind,
+  type TProducibleStreamKind,
   type TStreamQualityLayer
 } from '@sharkord/shared';
 import { TRPCClientError } from '@trpc/client';
@@ -142,7 +143,7 @@ const useTransports = ({
           });
 
           const { kind, qualityLayers } = appData as {
-            kind: StreamKind;
+            kind: TProducibleStreamKind;
             qualityLayers?: TStreamQualityLayer[];
           };
 

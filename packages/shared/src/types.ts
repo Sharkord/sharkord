@@ -16,6 +16,15 @@ export enum StreamKind {
   EXTERNAL_AUDIO = 'external_audio'
 }
 
+export const PRODUCIBLE_STREAM_KINDS = [
+  StreamKind.AUDIO,
+  StreamKind.VIDEO,
+  StreamKind.SCREEN,
+  StreamKind.SCREEN_AUDIO
+] as const;
+
+export type TProducibleStreamKind = (typeof PRODUCIBLE_STREAM_KINDS)[number];
+
 export type TExternalStreamTrackKind = 'audio' | 'video';
 
 export type TExternalStreamTracks = {

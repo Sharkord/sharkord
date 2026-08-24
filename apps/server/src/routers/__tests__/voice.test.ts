@@ -573,6 +573,115 @@ describe('voice router', () => {
     });
   });
 
+  describe('produce', () => {
+    const joinChannelTwo = async (userId: number) => {
+      const runtime = new VoiceRuntime(2);
+
+      runtime.addUser(userId, { micMuted: false, soundMuted: false });
+
+      const { caller } = await initTest(userId, undefined, {
+        currentVoiceChannelId: 2
+      });
+
+      return { runtime, caller };
+    };
+
+    const revokeFromDefaultRole = async (permission: Permission) =>
+      tdb
+        .delete(rolePermissions)
+        .where(
+          and(
+            eq(rolePermissions.roleId, 2),
+            eq(rolePermissions.permission, permission)
+          )
+        );
+
+    test('should refuse a screen share without SHARE_SCREEN', async () => {
+      await revokeFromDefaultRole(Permission.SHARE_SCREEN);
+
+      const { runtime, caller } = await joinChannelTwo(2);
+
+      try {
+        await expect(
+          caller.voice.produce({
+            transportId: 'transport',
+            kind: StreamKind.SCREEN,
+            rtpParameters: {}
+          })
+        ).rejects.toThrow('Insufficient permissions');
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should refuse screen audio without SHARE_SCREEN', async () => {
+      await revokeFromDefaultRole(Permission.SHARE_SCREEN);
+
+      const { runtime, caller } = await joinChannelTwo(2);
+
+      try {
+        await expect(
+          caller.voice.produce({
+            transportId: 'transport',
+            kind: StreamKind.SCREEN_AUDIO,
+            rtpParameters: {}
+          })
+        ).rejects.toThrow('Insufficient permissions');
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should refuse a webcam stream without ENABLE_WEBCAM', async () => {
+      await revokeFromDefaultRole(Permission.ENABLE_WEBCAM);
+
+      const { runtime, caller } = await joinChannelTwo(2);
+
+      try {
+        await expect(
+          caller.voice.produce({
+            transportId: 'transport',
+            kind: StreamKind.VIDEO,
+            rtpParameters: {}
+          })
+        ).rejects.toThrow('Insufficient permissions');
+      } finally {
+        await runtime.destroy();
+      }
+    });
+    test('should refuse the external stream kinds outright', async () => {
+      const { runtime, caller } = await joinChannelTwo(2);
+
+      try {
+        await expect(
+          caller.voice.produce({
+            transportId: 'transport',
+            kind: StreamKind.EXTERNAL_AUDIO as never,
+            rtpParameters: {}
+          })
+        ).rejects.toThrow();
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should pass the permission checks when the user holds them', async () => {
+      const { runtime, caller } = await joinChannelTwo(2);
+
+      try {
+        await expect(
+          caller.voice.produce({
+            transportId: 'transport',
+            kind: StreamKind.SCREEN,
+            rtpParameters: {}
+          })
+        ).rejects.toThrow('Producer transport not found');
+      } finally {
+        await runtime.destroy();
+      }
+    });
+  });
+
   describe('updateState', () => {
     const joinAsUser2 = async () => {
       const runtime = new VoiceRuntime(2);

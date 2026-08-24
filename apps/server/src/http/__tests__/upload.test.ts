@@ -1,13 +1,13 @@
-import { UploadHeaders, type TTempFile } from '@sharkord/shared';
+import { Permission, UploadHeaders, type TTempFile } from '@sharkord/shared';
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import net from 'net';
 import path from 'path';
 import { login, uploadFile } from '../../__tests__/helpers';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
 import { config } from '../../config';
-import { settings, users } from '../../db/schema';
+import { rolePermissions, settings, users } from '../../db/schema';
 import { TMP_PATH } from '../../helpers/paths';
 import { sanitizeFileName } from '../helpers';
 
@@ -92,6 +92,25 @@ describe('/upload', () => {
     const uploadResponse = await uploadFile(file, data.token);
 
     expect(uploadResponse.status).toBe(401);
+  });
+
+  test('should reject uploads from a user without UPLOAD_FILES', async () => {
+    const response = await login('testuser', 'password123');
+    const data: any = await response.json();
+
+    await tdb
+      .delete(rolePermissions)
+      .where(
+        and(
+          eq(rolePermissions.roleId, 2),
+          eq(rolePermissions.permission, Permission.UPLOAD_FILES)
+        )
+      );
+
+    const file = getMockFile('no permission to upload this');
+    const uploadResponse = await uploadFile(file, data.token);
+
+    expect(uploadResponse.status).toBe(403);
   });
 
   test('should rate limit excessive upload attempts', async () => {

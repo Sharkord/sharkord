@@ -1,5 +1,6 @@
 import {
   ActivityLogType,
+  Permission,
   STORAGE_MAX_FILES_PER_MESSAGE,
   type TTempFile
 } from '@sharkord/shared';
@@ -13,7 +14,8 @@ import {
 } from '../../__tests__/helpers';
 import { TEST_SECRET_TOKEN } from '../../__tests__/seed';
 import { tdb } from '../../__tests__/setup';
-import { activityLog } from '../../db/schema';
+import { getSettings } from '../../db/queries/server';
+import { activityLog, rolePermissions } from '../../db/schema';
 import { pluginManager } from '../../plugins';
 import { drainLoginsQueue } from '../../queues/logins';
 
@@ -244,6 +246,65 @@ describe('others router', () => {
     expect(settings.storageMaxFilesPerMessage).toBe(
       STORAGE_MAX_FILES_PER_MESSAGE
     );
+  });
+
+  describe('storage settings permissions', () => {
+    const grantOnly = async (permissions: Permission[]) => {
+      await tdb
+        .delete(rolePermissions)
+        .where(eq(rolePermissions.roleId, 2))
+        .run();
+
+      await tdb.insert(rolePermissions).values(
+        permissions.map((permission) => ({
+          roleId: 2,
+          permission,
+          createdAt: Date.now()
+        }))
+      );
+    };
+
+    test('should refuse a storage field without MANAGE_STORAGE', async () => {
+      await grantOnly([Permission.MANAGE_SETTINGS]);
+
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.others.updateSettings({ storageQuota: 123 })
+      ).rejects.toThrow('Insufficient permissions');
+    });
+
+    test('should allow a storage field with MANAGE_STORAGE alone', async () => {
+      await grantOnly([Permission.MANAGE_STORAGE]);
+
+      const { caller } = await initTest(2);
+
+      await caller.others.updateSettings({ storageQuota: 123 });
+
+      const settings = await getSettings();
+
+      expect(settings.storageQuota).toBe(123);
+    });
+
+    test('should refuse a non-storage field with MANAGE_STORAGE alone', async () => {
+      await grantOnly([Permission.MANAGE_STORAGE]);
+
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.others.updateSettings({ name: 'Renamed' })
+      ).rejects.toThrow('Insufficient permissions');
+    });
+
+    test('should require both when the update mixes the two', async () => {
+      await grantOnly([Permission.MANAGE_STORAGE]);
+
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.others.updateSettings({ name: 'Renamed', storageQuota: 123 })
+      ).rejects.toThrow('Insufficient permissions');
+    });
   });
 
   test('should let an admin read the join password back and clear it', async () => {

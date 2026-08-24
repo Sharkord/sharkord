@@ -1,8 +1,9 @@
-import { getErrorMessage, UploadHeaders } from '@sharkord/shared';
+import { getErrorMessage, Permission, UploadHeaders } from '@sharkord/shared';
 import fs from 'fs';
 import http from 'http';
 import z from 'zod';
 import { config } from '../config';
+import { userCan } from '../db/queries/roles';
 import { getSettings } from '../db/queries/server';
 import { getUserByToken } from '../db/queries/users';
 import { fileManager } from '../helpers/file-manager';
@@ -67,6 +68,12 @@ const uploadFileRouteHandler = async (
   if (!user) {
     req.resume();
     sendJsonError(res, 401, 'Unauthorized');
+    return;
+  }
+
+  if (!(await userCan(user.id, Permission.UPLOAD_FILES))) {
+    req.resume();
+    sendJsonError(res, 403, 'You do not have permission to upload files');
     return;
   }
 
