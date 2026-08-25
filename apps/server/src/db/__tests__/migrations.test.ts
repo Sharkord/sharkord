@@ -58,6 +58,46 @@ const buildPartialMigrationsFolder = (upToExclusive: string) => {
   return folder;
 };
 
+// the real chain with a broken migration appended, so the failure lands after a full run of
+// working ones rather than on the first statement the migrator sees
+const buildBrokenTailFolder = () => {
+  const folder = path.join(workDir, 'broken-tail');
+
+  fs.rmSync(folder, { recursive: true, force: true });
+  fs.mkdirSync(path.join(folder, 'meta'), { recursive: true });
+
+  const journal = JSON.parse(
+    fs.readFileSync(
+      path.join(SRC_MIGRATIONS_PATH, 'meta', '_journal.json'),
+      'utf-8'
+    )
+  ) as { entries: { idx: number; when: number; tag: string }[] };
+
+  for (const entry of journal.entries) {
+    fs.copyFileSync(
+      path.join(SRC_MIGRATIONS_PATH, `${entry.tag}.sql`),
+      path.join(folder, `${entry.tag}.sql`)
+    );
+  }
+
+  const last = journal.entries.at(-1)!;
+
+  journal.entries.push({
+    ...last,
+    idx: last.idx + 1,
+    when: last.when + 1000,
+    tag: '9999_broken'
+  });
+
+  fs.writeFileSync(path.join(folder, '9999_broken.sql'), 'THIS IS NOT SQL;');
+  fs.writeFileSync(
+    path.join(folder, 'meta', '_journal.json'),
+    JSON.stringify(journal)
+  );
+
+  return folder;
+};
+
 afterAll(() => {
   fs.rmSync(workDir, { recursive: true, force: true });
 });
@@ -102,11 +142,59 @@ describe('migrations', () => {
       (sqlite.query('PRAGMA foreign_keys').get() as { foreign_keys: number })
         .foreign_keys === 1;
 
+    testLogs.length = 0;
+
     await expect(migrateDatabase(sqlite, db, brokenFolder)).rejects.toThrow();
 
     expect(foreignKeysOn()).toBe(true);
 
+    // the sqlite error alone does not say which file it came from, and the rollback wipes
+    // the one table that could be asked afterwards
+    const reported = findTestLog('error', 'Migration failed while applying');
+
+    expect(reported).toBeDefined();
+    expect(reported!.message).toContain('0000_broken');
+    expect(reported!.message).toContain('rolled back');
+
     sqlite.close();
+  });
+
+  // a failed batch must leave the schema where the previous server version expects it,
+  // which is what makes reverting the binary a real recovery path
+  test('should apply nothing when a migration late in the batch fails', async () => {
+    fs.mkdirSync(workDir, { recursive: true });
+
+    const folder = buildBrokenTailFolder();
+    const dbPath = path.join(workDir, `broken-tail-${Date.now()}.sqlite`);
+    const sqlite = new Database(dbPath, { create: true, strict: true });
+    const db = drizzle({ client: sqlite });
+
+    await expect(migrateDatabase(sqlite, db, folder)).rejects.toThrow();
+
+    const tables = (
+      sqlite
+        .query(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+        )
+        .all() as { name: string }[]
+    ).map((table) => table.name);
+
+    expect(tables).not.toContain('users');
+    expect(
+      (
+        sqlite.query('SELECT count(*) c FROM __drizzle_migrations').get() as {
+          c: number;
+        }
+      ).c
+    ).toBe(0);
+
+    sqlite.close();
+
+    for (const name of fs
+      .readdirSync(BACKUPS_PATH)
+      .filter((entry) => entry.startsWith(path.basename(dbPath)))) {
+      fs.rmSync(path.join(BACKUPS_PATH, name), { force: true });
+    }
   });
 
   // migrations run with foreign keys off, and sqlite never revalidates existing rows when
@@ -189,6 +277,34 @@ describe('migrations', () => {
     expect(hasTokenVersion(sqlite)).toBe(true);
 
     backup.close();
+    sqlite.close();
+
+    for (const name of created) {
+      fs.rmSync(path.join(BACKUPS_PATH, name), { force: true });
+    }
+  });
+
+  // a restart loop on a broken migration would otherwise write a full copy of the database
+  // per attempt, all of them identical because the failure rolls back
+  test('should not snapshot twice for the same pending migration', async () => {
+    fs.mkdirSync(workDir, { recursive: true });
+
+    const folder = buildBrokenTailFolder();
+    const dbName = `retry-${Date.now()}.sqlite`;
+    const dbPath = path.join(workDir, dbName);
+    const sqlite = new Database(dbPath, { create: true, strict: true });
+    const db = drizzle({ client: sqlite });
+
+    await expect(migrateDatabase(sqlite, db, folder)).rejects.toThrow();
+    await expect(migrateDatabase(sqlite, db, folder)).rejects.toThrow();
+    await expect(migrateDatabase(sqlite, db, folder)).rejects.toThrow();
+
+    const created = fs
+      .readdirSync(BACKUPS_PATH)
+      .filter((name) => name.startsWith(dbName));
+
+    expect(created).toHaveLength(1);
+
     sqlite.close();
 
     for (const name of created) {

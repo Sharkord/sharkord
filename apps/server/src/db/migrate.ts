@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@sharkord/shared';
 import type { Database } from 'bun:sqlite';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
@@ -50,8 +51,8 @@ const reportForeignKeyViolations = (sqlite: Database) => {
 
 // drizzle's migrate() takes no logger and no callback, so the only way to name what it ran
 // is to apply its own rule first: it runs every journal entry stamped later than the newest
-// row in its migrations table (sqlite-core/dialect.js). read before the run rather than
-// after, so a migration that throws still names the candidates it died among
+// row in its migrations table (sqlite-core/dialect.js). read before the run, because after a
+// failure the table has been rolled back and no longer says what was pending
 const getPendingMigrationTags = async (
   sqlite: Database,
   migrationsFolder: string
@@ -90,7 +91,7 @@ const getPendingMigrationTags = async (
 };
 
 // VACUUM INTO, not a file copy: WAL splits the committed state across db.sqlite and its
-// -wal. never pruned, so this costs the size of the database per upgrade
+// -wal. never pruned, so this costs the size of the database per distinct pre-migration state
 const backupDatabase = async (
   sqlite: Database,
   pendingTags: string[]
@@ -101,9 +102,25 @@ const backupDatabase = async (
 
   await fs.mkdir(BACKUPS_PATH, { recursive: true });
 
+  const suffix = `.before-${pendingTags[0]}.sqlite`;
+  const existing = (await fs.readdir(BACKUPS_PATH)).find(
+    (name) => name.startsWith(path.basename(filename)) && name.endsWith(suffix)
+  );
+
+  // a failed migration rolls the whole batch back, so the database cannot have moved since
+  // that snapshot was taken and a second one would be a copy of it. this is what stops a
+  // restart loop on a broken migration writing a full copy per attempt
+  if (existing) {
+    logger.info(
+      `Database already backed up to ${path.join(BACKUPS_PATH, existing)}`
+    );
+
+    return;
+  }
+
   const backupPath = path.join(
     BACKUPS_PATH,
-    `${path.basename(filename)}.${Date.now()}.before-${pendingTags[0]}.sqlite`
+    `${path.basename(filename)}.${Date.now()}${suffix}`
   );
 
   sqlite.run('VACUUM INTO ?', [backupPath]);
@@ -137,6 +154,16 @@ const migrateDatabase = async (
   // connection with foreign keys off, and every cascade in the schema depends on them
   try {
     await migrate(db, { migrationsFolder });
+  } catch (error) {
+    // drizzle runs the batch in one transaction and rolls back, so the database is
+    // untouched and the old server version still boots against it
+    logger.error(
+      'Migration failed while applying %s. The database was rolled back and is unchanged: %s',
+      pendingTags.join(', '),
+      getErrorMessage(error)
+    );
+
+    throw error;
   } finally {
     sqlite.run('PRAGMA foreign_keys = ON;');
   }
