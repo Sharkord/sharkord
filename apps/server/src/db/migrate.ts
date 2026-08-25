@@ -3,6 +3,7 @@ import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import fs from 'fs/promises';
 import path from 'path';
+import { BACKUPS_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 
 type TForeignKeyViolation = {
@@ -88,6 +89,28 @@ const getPendingMigrationTags = async (
     .map((entry) => entry.tag);
 };
 
+// VACUUM INTO, not a file copy: WAL splits the committed state across db.sqlite and its
+// -wal. never pruned, so this costs the size of the database per upgrade
+const backupDatabase = async (
+  sqlite: Database,
+  pendingTags: string[]
+): Promise<void> => {
+  const { filename } = sqlite;
+
+  if (!filename || filename === ':memory:') return;
+
+  await fs.mkdir(BACKUPS_PATH, { recursive: true });
+
+  const backupPath = path.join(
+    BACKUPS_PATH,
+    `${path.basename(filename)}.${Date.now()}.before-${pendingTags[0]}.sqlite`
+  );
+
+  sqlite.run('VACUUM INTO ?', [backupPath]);
+
+  logger.info(`Database backed up to ${backupPath}`);
+};
+
 // the only way migrations may be applied, because the pragma order is not optional.
 //
 // a rebuild migration (create __new_x, copy rows, drop x, rename) fires every child foreign
@@ -102,6 +125,11 @@ const migrateDatabase = async (
   migrationsFolder: string
 ): Promise<void> => {
   const pendingTags = await getPendingMigrationTags(sqlite, migrationsFolder);
+
+  // not caught: running a destructive migration with no way back is worse than not booting
+  if (pendingTags.length > 0) {
+    await backupDatabase(sqlite, pendingTags);
+  }
 
   sqlite.run('PRAGMA foreign_keys = OFF;');
 

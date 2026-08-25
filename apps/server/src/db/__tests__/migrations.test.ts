@@ -4,8 +4,11 @@ import { drizzle } from 'drizzle-orm/bun-sqlite';
 import fs from 'fs';
 import path from 'path';
 import { findTestLog, testLogs } from '../../__tests__/setup';
-import { config } from '../../config';
-import { SRC_MIGRATIONS_PATH, TMP_PATH } from '../../helpers/paths';
+import {
+  BACKUPS_PATH,
+  SRC_MIGRATIONS_PATH,
+  TMP_PATH
+} from '../../helpers/paths';
 import { migrateDatabase } from '../migrate';
 
 // the guard on migrateDatabase's pragma order. a rebuild migration (create __new_x, copy,
@@ -150,16 +153,55 @@ describe('migrations', () => {
     sqlite.close();
   });
 
+  test('should snapshot the database before applying pending migrations', async () => {
+    fs.mkdirSync(workDir, { recursive: true });
+
+    const dbName = `backup-${Date.now()}.sqlite`;
+    const dbPath = path.join(workDir, dbName);
+    const sqlite = new Database(dbPath, { create: true, strict: true });
+    const db = drizzle({ client: sqlite });
+
+    // stop short of 0023, the migration that adds users.token_version
+    await migrateDatabase(
+      sqlite,
+      db,
+      buildPartialMigrationsFolder('0023_users_token_version')
+    );
+
+    await migrateDatabase(sqlite, db, SRC_MIGRATIONS_PATH);
+
+    const created = fs
+      .readdirSync(BACKUPS_PATH)
+      .filter((name) => name.startsWith(dbName))
+      .sort();
+
+    expect(created).toHaveLength(2);
+    expect(created.at(-1)).toContain('before-0023_users_token_version');
+
+    const hasTokenVersion = (target: Database) =>
+      (
+        target.query('PRAGMA table_info(users)').all() as { name: string }[]
+      ).some((column) => column.name === 'token_version');
+
+    const backup = new Database(path.join(BACKUPS_PATH, created.at(-1)!));
+
+    expect(hasTokenVersion(backup)).toBe(false);
+    expect(hasTokenVersion(sqlite)).toBe(true);
+
+    backup.close();
+    sqlite.close();
+
+    for (const name of created) {
+      fs.rmSync(path.join(BACKUPS_PATH, name), { force: true });
+    }
+  });
+
   test('should report rows left pointing at rows that do not exist', async () => {
     fs.mkdirSync(workDir, { recursive: true });
 
     const dbPath = path.join(workDir, `fk-check-${Date.now()}.sqlite`);
     const sqlite = new Database(dbPath, { create: true, strict: true });
     const db = drizzle({ client: sqlite });
-
-    const originalDebug = config.server.debug;
-
-    config.server.debug = true;
 
     try {
       await migrateDatabase(sqlite, db, SRC_MIGRATIONS_PATH);
@@ -184,7 +226,6 @@ describe('migrations', () => {
       expect(reported).toBeDefined();
       expect(reported!.message).toContain('messages');
     } finally {
-      config.server.debug = originalDebug;
       sqlite.close();
     }
   });

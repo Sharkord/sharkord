@@ -37,9 +37,17 @@ const getMediasoupBinaryPath = (): string | undefined => {
   );
 };
 
+const isPathInside = (basePath: string, targetPath: string): boolean => {
+  const base = path.resolve(basePath);
+  const target = path.resolve(targetPath);
+
+  return target === base || target.startsWith(base + path.sep);
+};
+
 const DATA_PATH = getDataPath();
 const MEDIASOUP_BINARY_PATH = getMediasoupBinaryPath();
 const DB_PATH = path.join(DATA_PATH, 'db.sqlite');
+const BACKUPS_PATH = path.join(DATA_PATH, 'backups');
 const LOGS_PATH = path.join(DATA_PATH, 'logs');
 const PUBLIC_PATH = path.join(DATA_PATH, 'public');
 const TMP_PATH = path.join(DATA_PATH, 'tmp');
@@ -51,14 +59,8 @@ const CONFIG_INI_PATH = path.resolve(DATA_PATH, 'config.ini');
 const PLUGINS_PATH = path.join(DATA_PATH, 'plugins');
 const SRC_MIGRATIONS_PATH = path.join(process.cwd(), 'src', 'db', 'migrations');
 
-const isPathInside = (basePath: string, targetPath: string): boolean => {
-  const base = path.resolve(basePath);
-  const target = path.resolve(targetPath);
-
-  return target === base || target.startsWith(base + path.sep);
-};
-
 export {
+  BACKUPS_PATH,
   CONFIG_INI_PATH,
   DATA_PATH,
   DB_PATH,

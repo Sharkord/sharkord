@@ -74,7 +74,7 @@ const useRestoreLastSelectedChannel = () => {
   }, [channelsMap, autoJoinLastChannel]);
 };
 
-const useVoiceMoveSubscription = () => {
+const useFollowVoiceMove = () => {
   const selectChannel = useSelectChannel();
   const voiceMoveTargetChannelId = useVoiceMoveTargetChannelId();
 
@@ -88,6 +88,6 @@ const useVoiceMoveSubscription = () => {
 
 export {
   useCategoryExpanded,
-  useRestoreLastSelectedChannel,
-  useVoiceMoveSubscription
+  useFollowVoiceMove,
+  useRestoreLastSelectedChannel
 };

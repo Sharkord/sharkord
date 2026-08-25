@@ -1,5 +1,6 @@
 import type {
   PluginContext,
+  PluginModule,
   TCreateStreamOptions,
   TExternalStreamHandle,
   TPluginHttpMethod,
@@ -43,11 +44,6 @@ import { PluginHttpRouteRegistry } from './http-route-registry';
 import { PluginLogger } from './plugin-logger';
 import { PluginSettingsManager } from './plugin-settings-manager';
 import { PluginStateStore } from './plugin-state-store';
-
-type PluginModule = {
-  onLoad: (ctx: PluginContext) => void | Promise<void>;
-  onUnload?: (ctx: UnloadPluginContext) => void | Promise<void>;
-};
 
 class PluginManager {
   private loadedPlugins = new Map<string, PluginModule>();

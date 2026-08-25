@@ -289,6 +289,17 @@ to 0.
 it cannot bring back rows that are gone. Any server that has already booted this branch needs
 restoring from a backup taken before it.
 
+**Which is why `migrateDatabase` now takes that backup itself**, added after review: whenever
+there is something pending, it writes a snapshot to `<data>/backups/` before the pragma is
+touched, and a failure to write one aborts the boot rather than migrating without a way back.
+`VACUUM INTO` rather than copying the file, because the database runs in WAL mode and the
+committed state is split across `db.sqlite` and its `-wal`, so copying either alone yields a
+stale snapshot; it also refuses to overwrite, so a backup cannot be clobbered. Snapshots are
+never pruned, which costs the size of the database per upgrade. In-memory databases are
+skipped, so the test harnesses and the e2e seed are unaffected. Covered by `should snapshot
+the database before applying pending migrations`, which asserts the file is the state
+*before* the run by checking it lacks the column 0023 adds.
+
 ### R2 — opening a direct message never clears its badge
 
 **Not caused by the audit**, byte-identical in `development`. It surfaced together with R1,

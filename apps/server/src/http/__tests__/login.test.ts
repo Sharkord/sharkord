@@ -463,12 +463,9 @@ describe('/login', () => {
   });
 
   test('should not let a spoofed forwarded header reset the /login limiter', async () => {
-    // /login stays keyed on the socket address because there is no authenticated user yet,
-    // so this is the endpoint where the trusted-proxy gate actually protects against
-    // unlimited password guessing.
-    //
-    // the tests reach the server over loopback, which the default trustedProxies now
-    // trusts, so the untrusted socket this asserts about has to be set up explicitly
+    // /login is keyed on the socket address, so this gate is what stands between an
+    // attacker and unlimited password guessing. the tests connect over loopback, which the
+    // default trusts, so the untrusted socket has to be set up explicitly
     const originalTrustedProxies = [...config.server.trustedProxies];
 
     config.server.trustedProxies = [];
@@ -494,8 +491,6 @@ describe('/login', () => {
     }
   });
 
-  // the flip side of the test above, and the reason the default is what it is: a proxy on
-  // the same host is trusted, so its forwarded chain is what the limiter keys on
   test('should key the /login limiter per client behind a trusted loopback proxy', async () => {
     const attempts = config.rateLimiters.login.maxRequests;
 
