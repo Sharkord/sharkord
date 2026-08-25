@@ -239,6 +239,11 @@ export interface UnloadPluginContext extends Pick<
   'path' | 'logger' | 'log' | 'debug' | 'error' | 'voice' | 'messages' | 'ui'
 > {}
 
+export type PluginModule = {
+  onLoad: (ctx: PluginContext) => void | Promise<void>;
+  onUnload?: (ctx: UnloadPluginContext) => void | Promise<void>;
+};
+
 type TSharkordState = ReturnType<TPluginStore['getState']>;
 
 // re-export mediasoup types for plugin usage

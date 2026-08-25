@@ -103,8 +103,11 @@ const useScrollController = ({
 
     if (content) observer.observe(content);
 
+    // ceiling: media that settles after this lands mid-scroll
     const stopObservingTimer = setTimeout(() => observer.disconnect(), 1000);
 
+    // and the real window is shorter than 1s: messages.length is a dependency, so the next
+    // message or page tears the observer down and the early return above blocks a new one
     return () => {
       observer.disconnect();
       clearTimeout(stopObservingTimer);

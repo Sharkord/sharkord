@@ -5,7 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { pluginManager } from '..';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
-import { tdb } from '../../__tests__/setup';
+import { findTestLog, tdb } from '../../__tests__/setup';
 import { messages, pluginData, settings } from '../../db/schema';
 import { fileManager } from '../../helpers/file-manager';
 import { PLUGINS_PATH, PUBLIC_PATH, UPLOADS_PATH } from '../../helpers/paths';
@@ -108,19 +108,16 @@ describe('plugin-manager', () => {
       ).rejects.toThrow('Plugin client entry file not found');
     });
 
-    test('should fail to load plugin without onUnload', async () => {
+    test('should load plugin without onUnload and warn about it', async () => {
       await pluginManager.togglePlugin('plugin-no-unload', true);
-
-      // required, because unloading cannot free the module: only the plugin can
-      // stop what it started outside the registries
       await pluginManager.load('plugin-no-unload');
 
       const info = await pluginManager.getPluginInfo('plugin-no-unload');
 
-      expect(info.loadError).toBeDefined();
-      expect(info.loadError).toContain(
-        "does not export an 'onUnload' function"
-      );
+      expect(info.loadError).toBeUndefined();
+      expect(
+        findTestLog('warn', 'will be required in a future SDK version')
+      ).toBeDefined();
     });
 
     test('should fail to load plugin missing sdk version', async () => {

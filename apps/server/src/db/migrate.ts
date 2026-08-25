@@ -3,7 +3,6 @@ import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import fs from 'fs/promises';
 import path from 'path';
-import { config } from '../config';
 import { logger } from '../logger';
 
 type TForeignKeyViolation = {
@@ -124,9 +123,7 @@ const migrateDatabase = async (
     logger.info(`Migration ${tag} ran`);
   }
 
-  if (config.server.debug) {
-    reportForeignKeyViolations(sqlite);
-  }
+  reportForeignKeyViolations(sqlite);
 };
 
 export { migrateDatabase };

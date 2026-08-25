@@ -1,11 +1,14 @@
+import { store } from '@/features/store';
 import { logDebug } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
+import { currentVoiceChannelIdSelector } from '../channels/selectors';
 import { handleSubscriptionError } from '../subscription-error';
 import {
   addExternalStreamToVoiceChannel,
   addUserToVoiceChannel,
   removeExternalStreamFromVoiceChannel,
   removeUserFromVoiceChannel,
+  setVoiceMoveTargetChannelId,
   updateExternalStreamInVoiceChannel,
   updateVoiceUserState
 } from './actions';
@@ -77,6 +80,20 @@ const subscribeToVoice = () => {
       onError: handleSubscriptionError('onVoiceRemoveExternalStreamSub')
     });
 
+  const onMovedSub = trpc.voice.onMoved.subscribe(undefined, {
+    onData: ({ channelId, fromChannelId }) => {
+      logDebug('[EVENTS] voice.onMoved', { channelId, fromChannelId });
+
+      const state = store.getState();
+      const currentVoiceChannelId = currentVoiceChannelIdSelector(state);
+
+      if (currentVoiceChannelId !== fromChannelId) return;
+
+      setVoiceMoveTargetChannelId(channelId);
+    },
+    onError: handleSubscriptionError('onMoved')
+  });
+
   return () => {
     onUserJoinVoiceSub.unsubscribe();
     onUserLeaveVoiceSub.unsubscribe();
@@ -84,6 +101,7 @@ const subscribeToVoice = () => {
     onVoiceAddExternalStreamSub.unsubscribe();
     onVoiceUpdateExternalStreamSub.unsubscribe();
     onVoiceRemoveExternalStreamSub.unsubscribe();
+    onMovedSub.unsubscribe();
   };
 };
 

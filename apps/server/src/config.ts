@@ -90,7 +90,7 @@ const defaultConfig: TConfig = {
     autoupdate: false,
     maxRequestBodyBytes: 256 * 1024,
     allowedOrigins: ['*'],
-    trustedProxies: []
+    trustedProxies: ['127.0.0.1', '::1']
   },
   webRtc: {
     port: 40000,

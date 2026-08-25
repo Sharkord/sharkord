@@ -10,6 +10,9 @@ export const ownVoiceStateSelector = (state: IRootState) => {
 export const pinnedCardSelector = (state: IRootState) =>
   state.server.pinnedCard;
 
+export const voiceMoveTargetChannelIdSelector = (state: IRootState) =>
+  state.server.voiceMoveTargetChannelId;
+
 export const voiceChannelStateSelector = (
   state: IRootState,
   channelId: number

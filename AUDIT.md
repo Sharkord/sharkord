@@ -3365,7 +3365,7 @@ Two notes that survive the dismissal:
   isolation is deliberately not attempted, since that line is instruction material for
   agents working in this repo.
 
-**6.2 — [FIXED] disabling a plugin does not stop it running.** `unload()` (`index.ts:601`) calls
+**6.2 — [PARTLY FIXED] disabling a plugin does not stop it running.** `unload()` (`index.ts:601`) calls
 `onUnload`, clears the registries, and deletes the module from the map. It cannot free the
 module: anything the plugin started outside the registries keeps going, so a
 `setInterval`, an open socket, an event listener on a global, or a monkey-patched
@@ -3402,22 +3402,27 @@ Fixed:
 
 - `getPluginModuleSpecifier` returns a plain `file://` URL and no longer stats the entry
   file to build a query string, with a comment recording why.
-- `onUnload` is now **required**: `PluginModule` declares it non-optional and `load()`
-  refuses a plugin without it, the same way it already refused one without `onLoad`. This
-  breaks any existing plugin that omits it, which was the accepted cost.
+- `onUnload` is **deprecated-optional, not required**, by decision after review. Making it
+  mandatory broke every existing plugin that omits it, with a runtime load error the author
+  had no way to see coming. Instead: `PluginModule` keeps it optional, `load()` logs a
+  warning naming what leaks without it and saying it will be required in a future SDK
+  version, and `unload()` calls it with `?.`. The break is deferred to a version bump that
+  can announce itself.
+- `@sharkord/plugin-sdk` now exports a `PluginModule` type, so an author who types their
+  server entry with it is told about `onUnload` at compile time rather than at load. This
+  closes half of what "Not done" listed below.
 - `unload()` carries a comment stating plainly that it frees only what the registries know
   about, and that a timer, socket, global listener or patched prototype survives until the
-  process restarts. That is the reason `onUnload` is mandatory rather than advisory.
+  process restarts. That is the reason `onUnload` is pushed rather than merely offered.
 
 Fixture and test updates: five mock plugins that must load gained an `onUnload`, and
-`should load plugin without onUnload` became `should fail to load plugin without onUnload`
-(asserting `loadError`, since `load()` records rather than rejects). The pre-existing
+`should load plugin without onUnload` became `should load plugin without onUnload and warn
+about it` (asserting no `loadError`, plus the warning via `findTestLog`). The pre-existing
 `should load updated plugin code after server entry changes` still passes, which is
 independent confirmation that the cache delete is what makes a reload pick up new code.
 
 Not done: the UI still says "disabled" with no hint that a restart is needed to fully
-unload, and the SDK has no `PluginModule` type to make the new requirement visible to plugin
-authors before they hit the load error.
+unload.
 
 **6.3 — [FLAGGED, out of scope for now, see F7] every plugin HTTP route is an unauthenticated public endpoint, by
 construction.** The SDK's handler type is
@@ -3589,8 +3594,9 @@ them are reachable in the harness:
   rejected (6.4). This is the one to write first: it is a two-line assertion and it fails
   today.
 - ~~no test that unloading a plugin stops its side effects (6.2).~~ partly: the fixture
-  without `onUnload` is now a load failure rather than a silent leak, so the "no cleanup at
-  all" case cannot happen. A fixture that sets an interval and *does* implement `onUnload`
+  without `onUnload` now loads with a warning rather than failing, so the "no cleanup at
+  all" case is still reachable and is what the warning exists to make visible. A fixture
+  that sets an interval and *does* implement `onUnload`
   badly would still document the surviving-side-effect case.
 - `http-route-registry.test.ts` (55 lines) covers registration and matching but nothing
   covers the dispatch path in `http/index.ts`, so nothing records that plugin routes are

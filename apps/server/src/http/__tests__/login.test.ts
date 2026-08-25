@@ -465,22 +465,56 @@ describe('/login', () => {
   test('should not let a spoofed forwarded header reset the /login limiter', async () => {
     // /login stays keyed on the socket address because there is no authenticated user yet,
     // so this is the endpoint where the trusted-proxy gate actually protects against
-    // unlimited password guessing
+    // unlimited password guessing.
+    //
+    // the tests reach the server over loopback, which the default trustedProxies now
+    // trusts, so the untrusted socket this asserts about has to be set up explicitly
+    const originalTrustedProxies = [...config.server.trustedProxies];
+
+    config.server.trustedProxies = [];
+
+    try {
+      const attempts = config.rateLimiters.login.maxRequests;
+
+      for (let i = 0; i < attempts; i++) {
+        await login('testowner', 'wrongpassword', undefined, {
+          'x-forwarded-for': `1.2.3.${i}`,
+          'x-real-ip': `4.5.6.${i}`
+        });
+      }
+
+      const limited = await login('testowner', 'password123', undefined, {
+        'x-forwarded-for': '9.9.9.9',
+        'cf-connecting-ip': '8.8.8.8'
+      });
+
+      expect(limited.status).toBe(429);
+    } finally {
+      config.server.trustedProxies = originalTrustedProxies;
+    }
+  });
+
+  // the flip side of the test above, and the reason the default is what it is: a proxy on
+  // the same host is trusted, so its forwarded chain is what the limiter keys on
+  test('should key the /login limiter per client behind a trusted loopback proxy', async () => {
     const attempts = config.rateLimiters.login.maxRequests;
 
     for (let i = 0; i < attempts; i++) {
       await login('testowner', 'wrongpassword', undefined, {
-        'x-forwarded-for': `1.2.3.${i}`,
-        'x-real-ip': `4.5.6.${i}`
+        'x-forwarded-for': `5.5.5.${i}`
       });
     }
 
-    const limited = await login('testowner', 'password123', undefined, {
-      'x-forwarded-for': '9.9.9.9',
-      'cf-connecting-ip': '8.8.8.8'
-    });
+    const differentClient = await login(
+      'testowner',
+      'wrongpassword',
+      undefined,
+      {
+        'x-forwarded-for': '6.6.6.6'
+      }
+    );
 
-    expect(limited.status).toBe(429);
+    expect(differentClient.status).not.toBe(429);
   });
 
   test('should fail with missing identity', async () => {

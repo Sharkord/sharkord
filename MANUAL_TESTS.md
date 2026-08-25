@@ -21,8 +21,11 @@ run with the right expectations:
 | Gap | reachable by that layer and **not written yet** |
 | No | not reachable there: real hardware, a real network drop, or client rendering with no test runner |
 
-`apps/client` and `packages/ui` have **no test runner at all**, so every client-only row reads
-No in the Unit column. The e2e suite runs chromium only, against one shared server.
+`apps/client` runs `bun test` and has 32 tests across 4 files, but all of them cover pure
+functions (selectors, helpers, the lru cache): no dom library is installed, so **nothing
+renders a component**. `packages/ui` has no test script at all. That is why every row about
+what a component shows still reads No in the Unit column, while a row about a helper does not.
+The e2e suite runs chromium only, against one shared server.
 
 Progress: **62 / 80 closed, 15 still to run.** 42 of those were run by hand; the other 20 are
 closed on the strength of their unit tests without a manual run.
@@ -114,6 +117,10 @@ The biggest behaviour change in the audit. M42 first.
 
 ## Messages, channels and search
 
+**Run the scroll rows (M73, M64, M35, M37) in Firefox as well as Chrome.** R3's root cause was
+Chrome's scroll anchoring compensating before the restore did, and the e2e suite is chromium
+only, so Firefox has no coverage of the path at all.
+
 | ✓ | # | Unit | E2E | Finding | What to do | Expected |
 | --- | --- | --- | --- | --- | --- | --- |
 | [x] | M74 | Partial | Yes | 2.4 | Search for a message far back in a busy channel and jump to it. Check the banner, scroll up from the window, click the banner, and repeat in a channel that is actively receiving messages | The window opens around the target with a "Viewing older messages" banner; scrolling up loads older messages continuously; the banner returns you to the newest message and disappears. **Messages arriving while the banner is up are deliberately withheld** and appear when you return. Jumping to a recent message shows no banner at all | **Now covered by e2e** (`pagination.pw.ts`, both jump specs). Still worth one human pass for the actively-receiving-messages case, which the suite cannot stage
@@ -192,6 +199,9 @@ Added after the audit shipped a migration that destroyed data on a real server, 
 | [x] | M78 | Yes | No | R1 | After migrating, open each channel once and confirm the unread badge clears and stays clear across a reconnect | Read markers were reset to NULL by the old migration and are deliberately **not** repaired, so expect one round of "everything unread" that clears per channel as you visit it | **Passed:** nothing showed as unread. Note this is the migration no longer nulling the markers, not a repair: rows already nulled by an earlier boot of this branch stay nulled, so a database that was damaged before the fix still needs its backup
 
 ## Start here
+
+**M36 and M48 block the merge, the other 13 do not.** They are the only net for a control that
+stopped being rendered, which typecheck, lint and the e2e suite all pass clean over: see R7.
 
 If there is only time for a handful:
 

@@ -255,6 +255,12 @@ export const leaveVoice = async (options?: {
   }
 };
 
+export const setVoiceMoveTargetChannelId = (
+  channelId: number | undefined
+): void => {
+  store.dispatch(serverSliceActions.setVoiceMoveTargetChannelId(channelId));
+};
+
 export const setPinnedCard = (pinnedCard: TPinnedCard | undefined): void => {
   store.dispatch(serverSliceActions.setPinnedCard(pinnedCard));
 };

@@ -46,7 +46,7 @@ import { PluginStateStore } from './plugin-state-store';
 
 type PluginModule = {
   onLoad: (ctx: PluginContext) => void | Promise<void>;
-  onUnload: (ctx: UnloadPluginContext) => void | Promise<void>;
+  onUnload?: (ctx: UnloadPluginContext) => void | Promise<void>;
 };
 
 class PluginManager {
@@ -402,8 +402,9 @@ class PluginManager {
       }
 
       if (typeof mod.onUnload !== 'function') {
-        throw new Error(
-          `Plugin ${pluginId} does not export an 'onUnload' function`
+        logger.warn(
+          "Plugin %s does not export an 'onUnload' function. This will be required in a future SDK version.",
+          pluginId
         );
       }
 
@@ -461,7 +462,7 @@ class PluginManager {
     try {
       const unloadCtx: UnloadPluginContext = this.createUnloadContext(pluginId);
 
-      await pluginModule.onUnload(unloadCtx);
+      await pluginModule.onUnload?.(unloadCtx);
     } catch (error) {
       logger.error(
         'Error in plugin %s onUnload: %s',

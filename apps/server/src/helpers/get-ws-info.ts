@@ -2,6 +2,7 @@ import type http from 'http';
 import ipaddr from 'ipaddr.js';
 import { UAParser } from 'ua-parser-js';
 import { config } from '../config';
+import { logger } from '../logger';
 import type { TConnectionInfo } from '../types';
 import { isPublicIp } from './network';
 
@@ -212,6 +213,23 @@ const getSocketIp = (
   return pickBestIp(socketCandidates);
 };
 
+let hasWarnedAboutUntrustedProxy = false;
+
+const warnAboutUntrustedProxy = (
+  socketIp: string | undefined,
+  headers: http.IncomingHttpHeaders
+) => {
+  if (hasWarnedAboutUntrustedProxy) return;
+  if (!headers['x-forwarded-for'] && !headers['forwarded']) return;
+
+  hasWarnedAboutUntrustedProxy = true;
+
+  logger.warn(
+    'Requests are arriving from %s with forwarded headers, but that address is not in server.trustedProxies, so the headers are ignored and every client is rate limited as one. Add it to server.trustedProxies (or SHARKORD_TRUSTED_PROXIES) if it is your proxy.',
+    socketIp ?? 'an unknown address'
+  );
+};
+
 const getWsIp = (
   ws: any | undefined,
   req: http.IncomingMessage | undefined
@@ -220,6 +238,8 @@ const getWsIp = (
   const { trustedProxies } = config.server;
 
   if (!isTrustedProxyAddress(socketIp, trustedProxies)) {
+    warnAboutUntrustedProxy(socketIp, req?.headers ?? {});
+
     return socketIp;
   }
 

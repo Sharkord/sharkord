@@ -41,8 +41,9 @@ export interface IServerState {
   ownUserId: number | undefined;
   selectedChannelId: number | undefined;
   currentVoiceChannelId: number | undefined;
+  // it lives here rather than in the subscription because joining the new room needs the voice provider context
+  voiceMoveTargetChannelId: number | undefined;
   messagesMap: TMessagesMap;
-  // channels whose list is a bounded jump window rather than history ending at the present
   detachedChannels: Record<number, boolean>;
   threadMessagesMap: TThreadMessagesMap;
   users: TJoinedPublicUser[];
@@ -87,6 +88,7 @@ const initialState: IServerState = {
   emojis: [],
   selectedChannelId: undefined,
   currentVoiceChannelId: undefined,
+  voiceMoveTargetChannelId: undefined,
   messagesMap: {},
   detachedChannels: {},
   threadMessagesMap: {},
@@ -649,6 +651,12 @@ export const serverSlice = createSlice({
       action: PayloadAction<number | undefined>
     ) => {
       state.currentVoiceChannelId = action.payload;
+    },
+    setVoiceMoveTargetChannelId: (
+      state,
+      action: PayloadAction<number | undefined>
+    ) => {
+      state.voiceMoveTargetChannelId = action.payload;
     },
     setChannelPermissions: (
       state,
