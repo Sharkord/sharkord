@@ -11,6 +11,7 @@ import { db } from '../../db';
 import { publishHiddenChannelToUser } from '../../db/publishers';
 import { userCan } from '../../db/queries/roles';
 import { channels } from '../../db/schema';
+import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { grantVoiceMove } from '../../helpers/voice-move-grants';
 import { logger } from '../../logger';
 import { VoiceRuntime } from '../../runtimes/voice';
@@ -32,7 +33,11 @@ const moveUserRoute = rateLimitedProcedure(protectedProcedure, {
     await ctx.needsPermission(Permission.MOVE_MEMBERS);
 
     const channel = await db
-      .select()
+      .select({
+        name: channels.name,
+        type: channels.type,
+        isDm: channels.isDm
+      })
       .from(channels)
       .where(eq(channels.id, input.channelId))
       .get();
@@ -47,6 +52,17 @@ const moveUserRoute = rateLimitedProcedure(protectedProcedure, {
       message: 'Channel is not a voice channel'
     });
 
+    invariant(!channel.isDm, {
+      code: 'BAD_REQUEST',
+      message: 'Cannot move a user into a direct message call'
+    });
+
+    // the mover must be able to see the destination themselves, not only hold
+    // JOIN on it. Deliberate and known: the *target* does not need either, so a
+    // move can pull someone into a private voice channel they cannot normally
+    // see, and publishHiddenChannelToUser then reveals it to them. That is the
+    // intended moderation capability, not an oversight
+    await assertChannelAccess(ctx, input.channelId);
     await ctx.needsChannelPermission(input.channelId, ChannelPermission.JOIN);
 
     const canUseVoice = await userCan(

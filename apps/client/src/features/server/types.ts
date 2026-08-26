@@ -34,10 +34,6 @@ export type TThreadMessagesMap = {
   [parentMessageId: number]: TJoinedMessage[];
 };
 
-export type TMessagesPagination = {
-  cursor: number | null;
-};
-
 export type TDisconnectInfo = {
   code: number;
   reason: string;
@@ -47,4 +43,10 @@ export type TDisconnectInfo = {
 
 export type TVoiceUser = TJoinedPublicUser & {
   state: TVoiceUserState;
+};
+
+export type TReconnectState = {
+  attempt: number;
+  maxAttempts: number;
+  nextAttemptAt: number | null;
 };

@@ -1,8 +1,12 @@
-import { ActivityLogType, Permission } from '@sharkord/shared';
+import {
+  ActivityLogType,
+  ChannelPermission,
+  Permission
+} from '@sharkord/shared';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
-import { publishChannelPermissions } from '../../db/publishers';
+import { publishChannelAccessChange } from '../../db/publishers';
 import { getAffectedOnlineUserIdsForChannel } from '../../db/queries/channels';
 import { isDirectMessageChannel } from '../../db/queries/dms';
 import {
@@ -38,33 +42,34 @@ const deletePermissionsRoute = protectedProcedure
       message: 'Cannot delete DM channel permissions'
     });
 
-    await db.transaction(async (tx) => {
+    const audienceBefore = await getAffectedOnlineUserIdsForChannel(
+      input.channelId,
+      ChannelPermission.VIEW_CHANNEL
+    );
+
+    db.transaction((tx) => {
       if (input.userId) {
-        await tx
-          .delete(channelUserPermissions)
+        tx.delete(channelUserPermissions)
           .where(
             and(
               eq(channelUserPermissions.channelId, input.channelId),
               eq(channelUserPermissions.userId, input.userId)
             )
-          );
+          )
+          .run();
       } else if (input.roleId) {
-        await tx
-          .delete(channelRolePermissions)
+        tx.delete(channelRolePermissions)
           .where(
             and(
               eq(channelRolePermissions.channelId, input.channelId),
               eq(channelRolePermissions.roleId, input.roleId)
             )
-          );
+          )
+          .run();
       }
     });
 
-    const affectedUserIds = await getAffectedOnlineUserIdsForChannel(
-      input.channelId
-    );
-
-    publishChannelPermissions(affectedUserIds);
+    await publishChannelAccessChange(input.channelId, audienceBefore);
     enqueueActivityLog({
       type: ActivityLogType.DELETED_CHANNEL_PERMISSIONS,
       userId: ctx.user.id,

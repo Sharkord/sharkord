@@ -1,5 +1,6 @@
 import {
   MARKETPLACE_REGISTRY_URL,
+  parseMarketplaceRegistry,
   type TMarketplaceEntry
 } from '@sharkord/shared';
 import type { TFunction } from 'i18next';
@@ -26,7 +27,7 @@ const useMarketplaceData = (t: TFunction<'settings'>) => {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const data = (await response.json()) as TMarketplaceEntry[];
+      const data = parseMarketplaceRegistry(await response.json());
 
       const sortedEntries = data
         .map((entry) => ({

@@ -1,17 +1,20 @@
 import { setSelectedChannelId } from '@/features/server/channels/actions';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { channelByIdSelector } from '@/features/server/channels/selectors';
-import { joinVoice } from '@/features/server/voice/actions';
+import { joinVoice, leaveVoice } from '@/features/server/voice/actions';
 import { useVoice } from '@/features/server/voice/hooks';
 import { store } from '@/features/store';
 import { LocalStorageKey } from '@/helpers/storage';
 import { ChannelType } from '@sharkord/shared';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 // the single entry point for navigating to a channel, it also joins voice and
 // remembers the last text channel, so never dispatch setSelectedChannelId directly
 const useSelectChannel = () => {
+  const { t } = useTranslation('common');
+
   const { init } = useVoice();
   const currentVoiceChannelId = useCurrentVoiceChannelId();
 
@@ -37,23 +40,18 @@ const useSelectChannel = () => {
       ) {
         const response = await joinVoice(channel.id);
 
-        if (!response) {
-          // joining voice failed
-          setSelectedChannelId(undefined);
-          toast.error('Failed to join voice channel');
-
-          return;
-        }
+        if (!response) return;
 
         try {
           await init(response, channel.id);
         } catch {
-          setSelectedChannelId(undefined);
-          toast.error('Failed to initialize voice connection');
+          await leaveVoice({ reason: 'init_failed' });
+
+          toast.error(t('common:failedInitVoiceConnection'));
         }
       }
     },
-    [currentVoiceChannelId, init]
+    [currentVoiceChannelId, init, t]
   );
 };
 

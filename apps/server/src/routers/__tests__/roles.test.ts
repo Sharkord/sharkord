@@ -308,4 +308,72 @@ describe('roles router', () => {
       expect(role!.permissions).toContain(perm);
     });
   });
+
+  test('should not let a role manager grant a permission they lack', async () => {
+    const { caller: owner } = await initTest();
+    const roleId = await owner.roles.add();
+
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.roles.update({
+        roleId,
+        name: 'Escalated',
+        color: '#00ff00',
+        permissions: [Permission.MANAGE_SETTINGS],
+        storageQuotaOverrideEnabled: false,
+        storageSpaceQuota: 0
+      })
+    ).rejects.toThrow('You cannot grant permissions that you do not have');
+
+    const roles = await owner.roles.getAll();
+
+    expect(roles.find((r) => r.id === roleId)!.permissions.length).toBe(0);
+  });
+
+  test('should let a role manager edit a role holding a permission they lack', async () => {
+    const { caller: owner } = await initTest();
+    const roleId = await owner.roles.add();
+
+    await owner.roles.update({
+      roleId,
+      name: 'Higher Role',
+      color: '#00ff00',
+      permissions: [Permission.MANAGE_SETTINGS],
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0
+    });
+
+    const { caller } = await initTest(5);
+
+    await caller.roles.update({
+      roleId,
+      name: 'Renamed Higher Role',
+      color: '#00ff00',
+      permissions: [Permission.MANAGE_SETTINGS],
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0
+    });
+
+    const roles = await owner.roles.getAll();
+    const role = roles.find((r) => r.id === roleId);
+
+    expect(role!.name).toBe('Renamed Higher Role');
+    expect(role!.permissions).toContain(Permission.MANAGE_SETTINGS);
+  });
+
+  test('should throw when updating a non-existing role', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.roles.update({
+        roleId: 9999,
+        name: 'Ghost',
+        color: '#00ff00',
+        permissions: [],
+        storageQuotaOverrideEnabled: false,
+        storageSpaceQuota: 0
+      })
+    ).rejects.toThrow('Role not found');
+  });
 });

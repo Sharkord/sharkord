@@ -1,10 +1,10 @@
-import { DatePicker } from '@/components/date-picker';
 import { useRoles } from '@/features/server/roles/hooks';
 import { useForm } from '@/hooks/use-form';
 import { getTRPCClient } from '@/lib/trpc';
 import { getRandomString } from '@sharkord/shared';
 import {
   Button,
+  DatePicker,
   Dialog,
   DialogContent,
   DialogDescription,

@@ -1,6 +1,7 @@
 import { logDebug } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TJoinedMessage } from '@sharkord/shared';
+import { handleSubscriptionError } from '../subscription-error';
 import {
   addMessages,
   addTypingUser,
@@ -15,9 +16,9 @@ const subscribeToMessages = () => {
   const onMessageSub = trpc.messages.onNew.subscribe(undefined, {
     onData: (message: TJoinedMessage) => {
       logDebug('[EVENTS] messages.onNew', { message });
-      addMessages(message.channelId, [message], {}, true);
+      addMessages(message.channelId, [message], true);
     },
-    onError: (err) => console.error('onMessage subscription error:', err)
+    onError: handleSubscriptionError('onMessage')
   });
 
   const onMessageUpdateSub = trpc.messages.onUpdate.subscribe(undefined, {
@@ -25,7 +26,7 @@ const subscribeToMessages = () => {
       logDebug('[EVENTS] messages.onUpdate', { message });
       updateMessage(message.channelId, message);
     },
-    onError: (err) => console.error('onMessageUpdate subscription error:', err)
+    onError: handleSubscriptionError('onMessageUpdate')
   });
 
   const onMessageDeleteSub = trpc.messages.onDelete.subscribe(undefined, {
@@ -33,7 +34,7 @@ const subscribeToMessages = () => {
       logDebug('[EVENTS] messages.onDelete', { messageId, channelId });
       deleteMessage(channelId, messageId);
     },
-    onError: (err) => console.error('onMessageDelete subscription error:', err)
+    onError: handleSubscriptionError('onMessageDelete')
   });
 
   const onMessageTypingSub = trpc.messages.onTyping.subscribe(undefined, {
@@ -53,7 +54,7 @@ const subscribeToMessages = () => {
       });
       addTypingUser(channelId, userId, parentMessageId);
     },
-    onError: (err) => console.error('onMessageTyping subscription error:', err)
+    onError: handleSubscriptionError('onMessageTyping')
   });
 
   const onThreadReplyCountUpdateSub =
@@ -74,8 +75,7 @@ const subscribeToMessages = () => {
         });
         updateReplyCount(channelId, messageId, replyCount);
       },
-      onError: (err) =>
-        console.error('onThreadReplyCountUpdate subscription error:', err)
+      onError: handleSubscriptionError('onThreadReplyCountUpdate')
     });
 
   return () => {

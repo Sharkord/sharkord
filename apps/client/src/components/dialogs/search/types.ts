@@ -46,4 +46,5 @@ export type TUnifiedSearchResult =
 export type TSearchResults = {
   messages: TSearchResultMessage[];
   files: TSearchResultFile[];
+  truncated: boolean;
 };

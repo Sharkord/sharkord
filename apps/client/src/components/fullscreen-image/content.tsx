@@ -3,6 +3,7 @@ import { IconButton } from '@sharkord/ui';
 import { Link, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 const portalRoot = document.getElementById('imagePortal')!;
@@ -13,6 +14,8 @@ type TFullScreenImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
 
 const FullScreenImage = memo(
   ({ as: Component = 'img', ...props }: TFullScreenImageProps) => {
+    const { t } = useTranslation('common');
+
     const [open, setOpen] = useState(false);
     const [visible, setVisible] = useState(false);
 
@@ -136,12 +139,12 @@ const FullScreenImage = memo(
         try {
           navigator.clipboard.writeText(props.src);
 
-          toast.success('Image link copied to clipboard');
+          toast.success(t('common:imageLinkCopied'));
         } catch {
-          toast.error('Failed to copy image link');
+          toast.error(t('common:failedCopyImageLink'));
         }
       },
-      [props.src]
+      [props.src, t]
     );
 
     const portalContainer = open

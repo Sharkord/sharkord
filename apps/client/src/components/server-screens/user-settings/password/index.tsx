@@ -1,6 +1,6 @@
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useForm } from '@/hooks/use-form';
-import { getTRPCClient } from '@/lib/trpc';
+import { cleanup, getTRPCClient } from '@/lib/trpc';
 import {
   Button,
   Card,
@@ -29,6 +29,7 @@ const Password = memo(() => {
     try {
       await trpc.users.updatePassword.mutate(values);
       toast.success(t('passwordUpdated'));
+      cleanup();
     } catch (error) {
       setTrpcErrors(error);
     }

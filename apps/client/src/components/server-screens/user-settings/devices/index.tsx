@@ -221,15 +221,17 @@ const Devices = memo(() => {
     if (didPrimeDevicesOnGrantedRef.current) return;
     didPrimeDevicesOnGrantedRef.current = true;
 
-    void (async () => {
+    const primeDevices = async () => {
       await requestPermission({ silent: true });
       await loadDevices();
-    })();
+    };
+
+    primeDevices();
   }, [permissionState, requestPermission, loadDevices]);
 
   useEffect(() => {
     return () => {
-      void restoreVoiceStateAfterTestRef.current();
+      restoreVoiceStateAfterTestRef.current();
     };
   }, []);
 

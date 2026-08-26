@@ -12,6 +12,10 @@ import { CardControls } from './card-controls';
 import { CardTheme } from './card-theme';
 import { FullscreenButton } from './fullscreen-button';
 import { useFullscreen } from './hooks/use-fullscreen';
+import {
+  PinnedCardType,
+  type TPinnedCard
+} from './hooks/use-pin-card-controller';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PictureInPictureButton } from './picture-in-picture-button';
@@ -99,7 +103,8 @@ type TExternalStreamCardProps = {
   streamId: number;
   stream: TExternalStream;
   isPinned?: boolean;
-  onPin: () => void;
+  cardId: string;
+  onPin: (card: TPinnedCard) => void;
   onUnpin: () => void;
   className?: string;
   showPinControls: boolean;
@@ -110,6 +115,7 @@ const ExternalStreamCard = memo(
     streamId,
     stream,
     isPinned = false,
+    cardId,
     onPin,
     onUnpin,
     className,
@@ -160,9 +166,13 @@ const ExternalStreamCard = memo(
         onUnpin?.();
         resetZoom();
       } else {
-        onPin?.();
+        onPin({
+          id: cardId,
+          type: PinnedCardType.EXTERNAL_STREAM,
+          userId: streamId
+        });
       }
-    }, [isPinned, onPin, onUnpin, resetZoom]);
+    }, [isPinned, onPin, onUnpin, cardId, streamId, resetZoom]);
 
     const handleVolumeChange = useCallback(
       (newVolume: number) => {

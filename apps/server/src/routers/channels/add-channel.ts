@@ -3,9 +3,10 @@ import { desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { publishChannel } from '../../db/publishers';
-import { channels } from '../../db/schema';
+import { categories, channels } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { VoiceRuntime } from '../../runtimes/voice';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const addChannelRoute = protectedProcedure
@@ -19,9 +20,21 @@ const addChannelRoute = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_CHANNELS);
 
-    const channel = await db.transaction(async (tx) => {
-      const maxPositionChannel = await tx
-        .select()
+    const category = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(eq(categories.id, input.categoryId))
+      .limit(1)
+      .get();
+
+    invariant(category, {
+      code: 'NOT_FOUND',
+      message: 'Category not found'
+    });
+
+    const channel = db.transaction((tx) => {
+      const maxPositionChannel = tx
+        .select({ position: channels.position })
         .from(channels)
         .orderBy(desc(channels.position))
         .where(eq(channels.categoryId, input.categoryId))
@@ -30,7 +43,7 @@ const addChannelRoute = protectedProcedure
 
       const now = Date.now();
 
-      const newChannel = await tx
+      const newChannel = tx
         .insert(channels)
         .values({
           position:
@@ -51,7 +64,13 @@ const addChannelRoute = protectedProcedure
     if (channel.type === ChannelType.VOICE) {
       const runtime = new VoiceRuntime(channel.id);
 
-      await runtime.init();
+      try {
+        await runtime.init();
+      } catch (error) {
+        await db.delete(channels).where(eq(channels.id, channel.id));
+
+        throw error;
+      }
     }
 
     publishChannel(channel.id, 'create');

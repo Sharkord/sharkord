@@ -14,6 +14,7 @@ const updateUserRoute = protectedProcedure
     z.object({
       name: z
         .string()
+        .trim()
         .min(1)
         .max(24)
         .refine((val) => val !== DELETED_USER_IDENTITY_AND_NAME, {

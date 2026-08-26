@@ -1,10 +1,5 @@
-import type {
-  TFile,
-  TJoinedUser,
-  TLogin,
-  TMessage,
-  TStorageData
-} from '@sharkord/shared';
+import type { TAdminUserInfo } from '@/features/server/admin/hooks';
+import type { TFile, TLogin, TMessage, TStorageData } from '@sharkord/shared';
 import { createContext, useContext } from 'react';
 
 enum ModViewScreen {
@@ -17,7 +12,7 @@ enum ModViewScreen {
 type TModViewContext = {
   refetch: () => void;
   userId: number;
-  user: TJoinedUser;
+  user: TAdminUserInfo;
   logins: TLogin[];
   files: TFile[];
   storage: TStorageData & { quota: number };
@@ -39,7 +34,7 @@ const ModViewContext = createContext<TModViewContext>({
     quota: 0
   },
   messages: [],
-  user: {} as TJoinedUser,
+  user: {} as TAdminUserInfo,
   view: undefined,
   setView: () => {},
   links: []

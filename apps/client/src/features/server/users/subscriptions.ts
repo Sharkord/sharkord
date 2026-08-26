@@ -1,6 +1,7 @@
 import { logDebug } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
 import { UserStatus, type TJoinedPublicUser } from '@sharkord/shared';
+import { handleSubscriptionError } from '../subscription-error';
 import {
   addUser,
   handleUserJoin,
@@ -17,7 +18,7 @@ const subscribeToUsers = () => {
       logDebug('[EVENTS] users.onJoin', { user });
       handleUserJoin(user);
     },
-    onError: (err) => console.error('onUserJoin subscription error:', err)
+    onError: handleSubscriptionError('onUserJoin')
   });
 
   const onUserCreateSub = trpc.users.onCreate.subscribe(undefined, {
@@ -25,7 +26,7 @@ const subscribeToUsers = () => {
       logDebug('[EVENTS] users.onCreate', { user });
       addUser(user);
     },
-    onError: (err) => console.error('onUserCreate subscription error:', err)
+    onError: handleSubscriptionError('onUserCreate')
   });
 
   const onUserLeaveSub = trpc.users.onLeave.subscribe(undefined, {
@@ -33,7 +34,7 @@ const subscribeToUsers = () => {
       logDebug('[EVENTS] users.onLeave', { userId });
       updateUser(userId, { status: UserStatus.OFFLINE });
     },
-    onError: (err) => console.error('onUserLeave subscription error:', err)
+    onError: handleSubscriptionError('onUserLeave')
   });
 
   const onUserUpdateSub = trpc.users.onUpdate.subscribe(undefined, {
@@ -41,7 +42,7 @@ const subscribeToUsers = () => {
       logDebug('[EVENTS] users.onUpdate', { user });
       updateUser(user.id, user);
     },
-    onError: (err) => console.error('onUserUpdate subscription error:', err)
+    onError: handleSubscriptionError('onUserUpdate')
   });
 
   const onUserDeleteSub = trpc.users.onDelete.subscribe(undefined, {
@@ -54,7 +55,7 @@ const subscribeToUsers = () => {
         reassignUser(userId, deletedUserId);
       }
     },
-    onError: (err) => console.error('onUserDelete subscription error:', err)
+    onError: handleSubscriptionError('onUserDelete')
   });
 
   return () => {

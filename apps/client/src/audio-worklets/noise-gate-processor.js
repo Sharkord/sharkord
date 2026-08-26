@@ -13,9 +13,22 @@ class NoiseGateProcessor extends AudioWorkletProcessor {
     this.port.onmessage = (event) => {
       const data = event.data;
 
-      if (!data || typeof data !== 'object') return;
+      if (!data || typeof data !== 'object') {
+        console.warn('[noise-gate] ignored a non-object message', data);
+        return;
+      }
 
-      if (data.type !== 'config') return;
+      if (data.type !== 'config') {
+        console.warn('[noise-gate] ignored unknown message type', data.type);
+        return;
+      }
+
+      const known = ['type', 'enabled', 'thresholdDb', 'holdMs'];
+      const unknown = Object.keys(data).filter((key) => !known.includes(key));
+
+      if (unknown.length > 0) {
+        console.warn('[noise-gate] config had unknown fields', unknown);
+      }
 
       if (typeof data.enabled === 'boolean') {
         this.enabled = data.enabled;

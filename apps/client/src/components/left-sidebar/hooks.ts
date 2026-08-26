@@ -1,13 +1,11 @@
 import { useAutoJoinLastChannel } from '@/features/app/hooks';
 import { setSelectedChannelId } from '@/features/server/channels/actions';
-import {
-  useChannelsMap,
-  useCurrentVoiceChannelId
-} from '@/features/server/channels/hooks';
+import { useChannelsMap } from '@/features/server/channels/hooks';
+import { setVoiceMoveTargetChannelId } from '@/features/server/voice/actions';
+import { useVoiceMoveTargetChannelId } from '@/features/server/voice/hooks';
 import { getLocalStorageItemAsJSON, LocalStorageKey } from '@/helpers/storage';
 import { useSelectChannel } from '@/hooks/use-select-channel';
-import { getTRPCClient } from '@/lib/trpc';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const loadExpandedValue = (categoryId: number): boolean => {
   const expandedMap = getLocalStorageItemAsJSON<Record<number, boolean>>(
@@ -76,33 +74,20 @@ const useRestoreLastSelectedChannel = () => {
   }, [channelsMap, autoJoinLastChannel]);
 };
 
-const useVoiceMoveSubscription = () => {
+const useFollowVoiceMove = () => {
   const selectChannel = useSelectChannel();
-  const currentVoiceChannelId = useCurrentVoiceChannelId();
-  const selectChannelRef = useRef(selectChannel);
-  const currentVoiceChannelIdRef = useRef(currentVoiceChannelId);
-
-  selectChannelRef.current = selectChannel;
-  currentVoiceChannelIdRef.current = currentVoiceChannelId;
+  const voiceMoveTargetChannelId = useVoiceMoveTargetChannelId();
 
   useEffect(() => {
-    const trpc = getTRPCClient();
+    if (voiceMoveTargetChannelId === undefined) return;
 
-    const sub = trpc.voice.onMoved.subscribe(undefined, {
-      onData: ({ channelId, fromChannelId }) => {
-        if (currentVoiceChannelIdRef.current !== fromChannelId) return;
-
-        selectChannelRef.current(channelId);
-      },
-      onError: (err) => console.error('onMoved subscription error:', err)
-    });
-
-    return () => sub.unsubscribe();
-  }, []);
+    setVoiceMoveTargetChannelId(undefined);
+    selectChannel(voiceMoveTargetChannelId);
+  }, [voiceMoveTargetChannelId, selectChannel]);
 };
 
 export {
   useCategoryExpanded,
-  useRestoreLastSelectedChannel,
-  useVoiceMoveSubscription
+  useFollowVoiceMove,
+  useRestoreLastSelectedChannel
 };

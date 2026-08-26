@@ -1,29 +1,50 @@
-import { ActivityLogType, getRandomString, Permission } from '@sharkord/shared';
+import {
+  ActivityLogType,
+  getRandomString,
+  INVITE_CODE_REGEX,
+  Permission
+} from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { config } from '../../config';
 import { db } from '../../db';
 import { invites, roles } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const addInviteRoute = protectedProcedure
+const addInviteRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.adminCreate.maxRequests,
+  windowMs: config.rateLimiters.adminCreate.windowMs,
+  logLabel: 'addInvite'
+})
   .input(
     z.object({
-      maxUses: z.number().min(0).max(100).optional().default(0),
-      expiresAt: z.number().optional().nullable().default(null),
-      code: z.string().min(4).max(64).optional(),
+      maxUses: z.number().int().min(0).max(100).optional().default(0),
+      expiresAt: z.number().int().optional().nullable().default(null),
+      code: z
+        .string()
+        .min(4)
+        .max(64)
+        .regex(INVITE_CODE_REGEX, 'Invalid invite code')
+        .optional(),
       roleId: z.number().optional()
     })
   )
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_INVITES);
 
+    invariant(!input.expiresAt || input.expiresAt > Date.now(), {
+      code: 'BAD_REQUEST',
+      message: 'The expiration date must be in the future.'
+    });
+
     if (input.roleId) {
       const role = await db
-        .select()
+        .select({ id: roles.id })
         .from(roles)
         .where(eq(roles.id, input.roleId))
+        .limit(1)
         .get();
 
       invariant(role, {
@@ -33,16 +54,6 @@ const addInviteRoute = protectedProcedure
     }
 
     const newCode = input.code || getRandomString(24);
-    const existingInvite = await db
-      .select()
-      .from(invites)
-      .where(eq(invites.code, newCode))
-      .get();
-
-    invariant(!existingInvite, {
-      code: 'CONFLICT',
-      message: 'An invite with this code already exists'
-    });
 
     const invite = await db
       .insert(invites)
@@ -55,8 +66,14 @@ const addInviteRoute = protectedProcedure
         expiresAt: input.expiresAt || null,
         createdAt: Date.now()
       })
+      .onConflictDoNothing()
       .returning()
       .get();
+
+    invariant(invite, {
+      code: 'CONFLICT',
+      message: 'An invite with this code already exists'
+    });
 
     enqueueActivityLog({
       type: ActivityLogType.CREATED_INVITE,

@@ -13,6 +13,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
+  TestId,
   type TDirectMessageConversation
 } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
@@ -38,6 +39,7 @@ const DirectMessageItem = memo(
 
     return (
       <button
+        data-testid={TestId.DM_ITEM}
         type="button"
         className={cn(
           'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground',

@@ -5,8 +5,10 @@
 declare global {
   interface Window {
     useToken: (token: string) => Promise<void>;
-    openSoundsModal?: () => void;
-    printVoiceStats?: () => void;
+    sharkordDebug?: {
+      openSoundsModal?: () => void;
+      printVoiceStats?: () => void;
+    };
     DEBUG?: boolean;
 
     // plugin store exposed for plugins to use imperatively

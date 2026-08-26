@@ -1,20 +1,32 @@
 import {
   DEFAULT_MESSAGES_LIMIT,
-  ServerEvents,
-  type TMessage
+  zMessagesCursor,
+  type TMessage,
+  type TMessagesCursor
 } from '@sharkord/shared';
-import { and, count, desc, eq, gte, inArray, isNull, lt } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  lt,
+  or
+} from 'drizzle-orm';
 import { alias } from 'drizzle-orm/sqlite-core';
 import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
-import { getChannelsReadStatesForUser } from '../../db/queries/channels';
 import { joinMessagesWithRelations } from '../../db/queries/messages';
-import { channelReadStates, channels, messages } from '../../db/schema';
+import { channels, messages } from '../../db/schema';
 import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { invariant } from '../../utils/invariant';
-import { pubsub } from '../../utils/pubsub';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+
+const JUMP_CONTEXT_LIMIT = 20;
 
 const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
   maxRequests: config.rateLimiters.getMessages.maxRequests,
@@ -24,9 +36,14 @@ const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
   .input(
     z.object({
       channelId: z.number(),
-      cursor: z.number().nullish(),
+      cursor: zMessagesCursor.nullish(),
       targetMessageId: z.number().nullish(),
-      limit: z.number().default(DEFAULT_MESSAGES_LIMIT)
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(DEFAULT_MESSAGES_LIMIT)
+        .default(DEFAULT_MESSAGES_LIMIT)
     })
   )
   .meta({ infinite: true })
@@ -54,7 +71,10 @@ const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
     );
 
     let rows: TMessage[];
-    let nextCursor: number | null = null;
+    let nextCursor: TMessagesCursor | null = null;
+    // true when a jump window stops short of the newest message, so the client knows its list
+    // is not contiguous with the present and must offer a way back
+    let hasNewer = false;
 
     if (targetMessageId) {
       // fetch all messages from newest down to (and including) the target
@@ -83,31 +103,74 @@ const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
         message: 'Target message must be a root message'
       });
 
-      // fetch everything from newest down to the target, plus 20 older messages
-      // for context around the target
-      const olderMessages = await db
-        .select()
-        .from(messages)
-        .where(and(baseWhere, lt(messages.createdAt, targetMessage.createdAt)))
-        .orderBy(desc(messages.createdAt))
-        .limit(20);
+      // a window around the target rather than everything since it: linking to a message from
+      // a year ago used to load a year of history, joined with files, reactions and reply
+      // previews, in one response
+      const [olderMessages, newerMessages] = await Promise.all([
+        db
+          .select()
+          .from(messages)
+          .where(
+            and(baseWhere, lt(messages.createdAt, targetMessage.createdAt))
+          )
+          .orderBy(desc(messages.createdAt), desc(messages.id))
+          .limit(JUMP_CONTEXT_LIMIT + 1),
+        // ascending, so the window is anchored at the target and grows towards the present.
+        // ordering this half descending takes the newest messages in the channel instead,
+        // which leaves the target outside its own window once the limit bites
+        db
+          .select()
+          .from(messages)
+          .where(
+            and(baseWhere, gte(messages.createdAt, targetMessage.createdAt))
+          )
+          .orderBy(asc(messages.createdAt), asc(messages.id))
+          .limit(limit + 1)
+      ]);
 
-      const newerMessages = await db
-        .select()
-        .from(messages)
-        .where(and(baseWhere, gte(messages.createdAt, targetMessage.createdAt)))
-        .orderBy(desc(messages.createdAt));
+      hasNewer = newerMessages.length > limit;
+
+      if (hasNewer) newerMessages.pop();
+
+      newerMessages.reverse();
+
+      const hasOlder = olderMessages.length > JUMP_CONTEXT_LIMIT;
+
+      if (hasOlder) olderMessages.pop();
 
       rows = [...newerMessages, ...olderMessages];
+
+      const oldestReturnedMessage = rows.at(-1);
+
+      // the window paginates upward from its own oldest row, so the client does not have to
+      // keep the channel's page-1 cursor, which points somewhere else entirely
+      nextCursor =
+        hasOlder && oldestReturnedMessage
+          ? {
+              createdAt: oldestReturnedMessage.createdAt,
+              id: oldestReturnedMessage.id
+            }
+          : null;
     } else {
       // standard cursor-based pagination
       rows = await db
         .select()
         .from(messages)
         .where(
-          cursor ? and(baseWhere, lt(messages.createdAt, cursor)) : baseWhere
+          cursor
+            ? and(
+                baseWhere,
+                or(
+                  lt(messages.createdAt, cursor.createdAt),
+                  and(
+                    eq(messages.createdAt, cursor.createdAt),
+                    lt(messages.id, cursor.id)
+                  )
+                )
+              )
+            : baseWhere
         )
-        .orderBy(desc(messages.createdAt))
+        .orderBy(desc(messages.createdAt), desc(messages.id))
         .limit(limit + 1);
 
       if (rows.length > limit) {
@@ -115,12 +178,17 @@ const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
 
         const lastReturnedMessage = rows.at(-1);
 
-        nextCursor = lastReturnedMessage ? lastReturnedMessage.createdAt : null;
+        nextCursor = lastReturnedMessage
+          ? {
+              createdAt: lastReturnedMessage.createdAt,
+              id: lastReturnedMessage.id
+            }
+          : null;
       }
     }
 
     if (rows.length === 0) {
-      return { messages: [], nextCursor };
+      return { messages: [], nextCursor, hasNewer };
     }
 
     const messagesWithRelations = await joinMessagesWithRelations(rows);
@@ -152,48 +220,7 @@ const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
       replyCount: replyCountByMessage[msg.id] ?? 0
     }));
 
-    // always update read state to the absolute latest message in the channel
-    // (not just the newest in this batch, in case user is scrolling back through history)
-    // this is not ideal, but it's good enough for now
-    const latestMessage = await db
-      .select()
-      .from(messages)
-      .where(
-        and(eq(messages.channelId, channelId), isNull(messages.parentMessageId))
-      )
-      .orderBy(desc(messages.createdAt))
-      .limit(1)
-      .get();
-
-    if (latestMessage) {
-      await db
-        .insert(channelReadStates)
-        .values({
-          channelId,
-          userId: ctx.userId,
-          lastReadMessageId: latestMessage.id,
-          lastReadAt: Date.now()
-        })
-        .onConflictDoUpdate({
-          target: [channelReadStates.channelId, channelReadStates.userId],
-          set: {
-            lastReadMessageId: latestMessage.id,
-            lastReadAt: Date.now()
-          }
-        });
-
-      const updatedReadStates = await getChannelsReadStatesForUser(
-        ctx.userId,
-        channelId
-      );
-
-      pubsub.publishFor(ctx.userId, ServerEvents.CHANNEL_READ_STATES_UPDATE, {
-        channelId,
-        count: updatedReadStates[channelId] ?? 0
-      });
-    }
-
-    return { messages: messagesWithReplyCounts, nextCursor };
+    return { messages: messagesWithReplyCounts, nextCursor, hasNewer };
   });
 
 export { getMessagesRoute };

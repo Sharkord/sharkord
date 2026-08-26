@@ -93,7 +93,7 @@ const Details = memo(() => {
             <Row
               icon={<IdCard className="h-4 w-4 text-muted-foreground" />}
               label={t('identityDetailLabel')}
-              value={user.identity}
+              value={user.identity ?? ''}
               hidden
             />
 

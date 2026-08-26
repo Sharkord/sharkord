@@ -6,10 +6,8 @@ const assertChannelAccess = async (
   ctx: Context,
   channelId: number
 ): Promise<void> => {
-  await Promise.all([
-    assertDmChannel(channelId, ctx.userId),
-    ctx.needsChannelPermission(channelId, ChannelPermission.VIEW_CHANNEL)
-  ]);
+  await assertDmChannel(channelId, ctx.userId);
+  await ctx.needsChannelPermission(channelId, ChannelPermission.VIEW_CHANNEL);
 };
 
 export { assertChannelAccess };

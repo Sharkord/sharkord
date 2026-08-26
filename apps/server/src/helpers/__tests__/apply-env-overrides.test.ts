@@ -169,3 +169,33 @@ describe('applyEnvOverrides', () => {
     expect(result.mediasoup.announcedAddress).toBe('');
   });
 });
+
+describe('applyEnvOverrides - unreachable paths', () => {
+  test('skips an override whose parent key does not exist', () => {
+    delete process.env.TEST_MISSING_PARENT;
+    process.env.TEST_MISSING_PARENT = '42';
+
+    const config = { server: { port: 1 } };
+
+    expect(() =>
+      applyEnvOverrides(config, {
+        'nope.deeper.value': 'TEST_MISSING_PARENT'
+      })
+    ).not.toThrow();
+
+    delete process.env.TEST_MISSING_PARENT;
+  });
+
+  test('leaves the config untouched when the path is unreachable', () => {
+    process.env.TEST_UNREACHABLE = '42';
+
+    const config = { server: { port: 1 } };
+    const result = applyEnvOverrides(config, {
+      'server.nested.value': 'TEST_UNREACHABLE'
+    });
+
+    expect(result).toEqual({ server: { port: 1 } });
+
+    delete process.env.TEST_UNREACHABLE;
+  });
+});

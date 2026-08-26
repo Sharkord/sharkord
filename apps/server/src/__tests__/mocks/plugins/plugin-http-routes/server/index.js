@@ -35,4 +35,6 @@ const onLoad = (ctx) => {
   ctx.http.delete('/*', (req, res) => text(res, 'catch-all'));
 };
 
-export { onLoad };
+const onUnload = () => {};
+
+export { onLoad, onUnload };

@@ -4,15 +4,10 @@ import { toast } from 'sonner';
 import { getUrlFromServer } from './get-file-url';
 import { getSessionStorageItem, SessionStorageKey } from './storage';
 
-const getSafeFileName = (name: string) => {
-  return (
-    name
-      .trim()
-      .normalize('NFKD') // decomposes accented chars
-      // eslint-disable-next-line no-control-regex
-      .replace(/[^\x00-\x7F]/g, '_') // replaces non-ASCII chars with underscore
-  );
-};
+// an http header cannot carry anything outside latin-1: setRequestHeader throws on cjk and
+// cyrillic names, and latin-1 accents survive only by accident. the server decodes this
+// before sanitizing
+const encodeFileName = (name: string) => encodeURIComponent(name.trim());
 
 const uploadImage = async (file: File): Promise<TTempFile | undefined> => {
   if (!file.type.startsWith('image/')) {
@@ -44,7 +39,7 @@ const uploadFile = async (file: File, options?: TUploadFileOptions) => {
     xhr.setRequestHeader(UploadHeaders.TYPE, file.type);
     xhr.setRequestHeader(
       UploadHeaders.ORIGINAL_NAME,
-      getSafeFileName(file.name)
+      encodeFileName(file.name)
     );
     xhr.setRequestHeader(
       UploadHeaders.TOKEN,
@@ -95,19 +90,17 @@ const uploadFiles = async (
   files: File[],
   onProgress?: (fileIndex: number, progress: TUploadProgress) => void
 ) => {
-  const uploadedFiles: TTempFile[] = [];
+  const results = await Promise.all(
+    files.map((file, i) =>
+      uploadFile(file, {
+        onProgress: onProgress
+          ? (progress) => onProgress(i, progress)
+          : undefined
+      })
+    )
+  );
 
-  for (let i = 0; i < files.length; i++) {
-    const uploadedFile = await uploadFile(files[i], {
-      onProgress: onProgress ? (progress) => onProgress(i, progress) : undefined
-    });
-
-    if (!uploadedFile) continue;
-
-    uploadedFiles.push(uploadedFile);
-  }
-
-  return uploadedFiles;
+  return results.filter((file): file is TTempFile => !!file);
 };
 
 export { uploadFile, uploadFiles, uploadImage, type TUploadProgress };

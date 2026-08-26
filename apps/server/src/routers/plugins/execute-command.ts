@@ -1,12 +1,17 @@
 import { ActivityLogType, Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
+import { config } from '../../config';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
 import { pluginManager } from '../../plugins';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const executeCommandRoute = protectedProcedure
+const executeCommandRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.pluginExecute.maxRequests,
+  windowMs: config.rateLimiters.pluginExecute.windowMs,
+  logLabel: 'executeCommand'
+})
   .input(
     z.object({
       pluginId: zPluginId,
@@ -22,24 +27,26 @@ const executeCommandRoute = protectedProcedure
       message: `Command "${input.commandName}" not found for plugin "${input.pluginId}"`
     });
 
-    enqueueActivityLog({
-      type: ActivityLogType.EXECUTED_PLUGIN_COMMAND,
-      userId: ctx.user.id,
-      details: {
-        pluginId: input.pluginId,
-        commandName: input.commandName,
-        args: input.args ?? {}
-      }
-    });
+    try {
+      const response = await pluginManager.executeCommand(
+        input.pluginId,
+        input.commandName,
+        getInvokerCtxFromTrpcCtx(ctx),
+        input.args ?? {}
+      );
 
-    const response = await pluginManager.executeCommand(
-      input.pluginId,
-      input.commandName,
-      getInvokerCtxFromTrpcCtx(ctx),
-      input.args ?? {}
-    );
-
-    return response;
+      return response;
+    } finally {
+      enqueueActivityLog({
+        type: ActivityLogType.EXECUTED_PLUGIN_COMMAND,
+        userId: ctx.user.id,
+        details: {
+          pluginId: input.pluginId,
+          commandName: input.commandName,
+          args: input.args ?? {}
+        }
+      });
+    }
   });
 
 export { executeCommandRoute };

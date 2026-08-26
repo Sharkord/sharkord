@@ -1,5 +1,6 @@
 import {
   ActivityLogType,
+  HEX_COLOR_REGEX,
   OWNER_ROLE_ID,
   Permission,
   STORAGE_MAX_QUOTA_PER_USER,
@@ -10,8 +11,10 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { syncRolePermissions } from '../../db/mutations/roles';
 import { publishRole } from '../../db/publishers';
+import { getRole } from '../../db/queries/roles';
 import { roles } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const updateRoleRoute = protectedProcedure
@@ -19,9 +22,7 @@ const updateRoleRoute = protectedProcedure
     z.object({
       roleId: z.number().min(1),
       name: z.string().min(1).max(26),
-      color: z
-        .string()
-        .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
+      color: z.string().regex(HEX_COLOR_REGEX, 'Invalid hex color'),
       permissions: z.enum(Permission).array(),
       storageQuotaOverrideEnabled: z.boolean(),
       storageSpaceQuota: z
@@ -32,6 +33,22 @@ const updateRoleRoute = protectedProcedure
   )
   .mutation(async ({ ctx, input }) => {
     await ctx.needsPermission(Permission.MANAGE_ROLES);
+
+    const role = await getRole(input.roleId);
+
+    invariant(role, {
+      code: 'NOT_FOUND',
+      message: 'Role not found.'
+    });
+
+    const addedPermissions = input.permissions.filter(
+      (permission) => !role.permissions.includes(permission)
+    );
+
+    invariant(await ctx.hasPermission(addedPermissions), {
+      code: 'FORBIDDEN',
+      message: 'You cannot grant permissions that you do not have.'
+    });
 
     const updatedRole = await db
       .update(roles)

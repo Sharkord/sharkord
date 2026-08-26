@@ -26,6 +26,7 @@
     "prettier-plugin-organize-imports": "^4.1.0"
   },
   "peerDependencies": {
+    "mediasoup": "^3.19.11",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   }

@@ -1,5 +1,5 @@
 import type { TJoinedEmoji } from '@sharkord/shared';
-import { eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { db } from '..';
 import { attachFileToken } from '../../helpers/files-crypto';
 import { emojis, files, users } from '../schema';
@@ -61,11 +61,18 @@ const getEmojis = async (): Promise<TJoinedEmoji[]> => {
   );
 };
 
-const emojiExists = async (name: string): Promise<boolean> => {
+const emojiExists = async (
+  name: string,
+  excludeId?: number
+): Promise<boolean> => {
   const emoji = await db
-    .select()
+    .select({ id: emojis.id })
     .from(emojis)
-    .where(eq(emojis.name, name))
+    .where(
+      excludeId === undefined
+        ? eq(emojis.name, name)
+        : and(eq(emojis.name, name), ne(emojis.id, excludeId))
+    )
     .limit(1)
     .get();
 

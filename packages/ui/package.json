@@ -31,15 +31,12 @@
     "@sharkord/shared": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "eslint-plugin-react-you-might-not-need-an-effect": "^0.7.0",
     "lucide-react": "^0.544.0",
     "next-themes": "^0.4.6",
     "react-colorful": "^5.6.1",
     "react-day-picker": "^9.11.1",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^3.3.1",
-    "tailwindcss": "^4.1.13"
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@types/bun": "latest",

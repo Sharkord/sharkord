@@ -20,6 +20,7 @@
   "stopScreenShare": "Dejar de compartir pantalla",
   "startScreenShare": "Compartir pantalla",
   "transportStats": "Estadísticas de transporte",
+  "voiceDiagnostics": "Diagnóstico de voz",
   "outgoing": "Saliente",
   "incoming": "Entrante",
   "noData": "Sin datos",
@@ -70,5 +71,7 @@
   "deleteCategoryMsg": "¿Estás seguro de que quieres eliminar esta categoría? Esto ELIMINARÁ todos los canales dentro de esta categoría. Esta acción no se puede deshacer.",
   "categoryDeleted": "Categoría eliminada",
   "failedDeleteCategory": "Error al eliminar la categoría",
-  "userVolume": "Volumen del usuario"
+  "userVolume": "Volumen del usuario",
+  "microphone": "Micrófono",
+  "noiseSuppression": "Supresión de ruido"
 }

@@ -1,21 +1,10 @@
 import audioMeterProcessorUrl from '@/audio-worklets/audio-meter-processor.js?url';
 import { MICROPHONE_AUDIO_METER_WORKLET_NAME } from '@/helpers/audio-gate';
+import { createWorkletLoader } from './create-worklet-loader';
 
 type TAudioMeterWorkletConfig = {
   enabled?: boolean;
   updateIntervalMs?: number;
-};
-
-const workletLoadPromises = new WeakMap<BaseAudioContext, Promise<void>>();
-
-const isAudioWorkletSupported = () => {
-  if (typeof window === 'undefined') return false;
-
-  return (
-    typeof window.AudioWorkletNode !== 'undefined' &&
-    typeof window.AudioContext !== 'undefined' &&
-    'audioWorklet' in window.AudioContext.prototype
-  );
 };
 
 const postAudioMeterWorkletConfig = (
@@ -29,20 +18,10 @@ const postAudioMeterWorkletConfig = (
   });
 };
 
-const ensureAudioMeterWorkletLoaded = async (audioContext: AudioContext) => {
-  if (!isAudioWorkletSupported()) {
-    throw new Error('AudioWorklet is not supported in this browser.');
-  }
-
-  let loadPromise = workletLoadPromises.get(audioContext);
-
-  if (!loadPromise) {
-    loadPromise = audioContext.audioWorklet.addModule(audioMeterProcessorUrl);
-    workletLoadPromises.set(audioContext, loadPromise);
-  }
-
-  await loadPromise;
-};
+const { ensureLoaded: ensureAudioMeterWorkletLoaded } = createWorkletLoader({
+  url: audioMeterProcessorUrl,
+  errorLabel: 'audio meter'
+});
 
 const createAudioMeterWorkletNode = async (
   audioContext: AudioContext,

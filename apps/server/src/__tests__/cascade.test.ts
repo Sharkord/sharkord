@@ -113,6 +113,29 @@ describe('database cascades', async () => {
     expect(messagesAfter.length).toBe(1); // only the DM message from setup should remain
   });
 
+  test('deleting a user nulls edited_by instead of deleting the message', async () => {
+    const messageRows = await tdb.select().from(messages);
+    const target = messageRows.find((message) => message.userId !== 2);
+
+    expect(target).toBeDefined();
+
+    await tdb
+      .update(messages)
+      .set({ editedBy: 2, editedAt: Date.now() })
+      .where(eq(messages.id, target!.id));
+
+    await tdb.delete(users).where(eq(users.id, 2));
+
+    const after = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.id, target!.id))
+      .get();
+
+    expect(after).toBeDefined();
+    expect(after!.editedBy).toBeNull();
+  });
+
   test('deleting a user cascades to user_roles', async () => {
     const usersBefore = await tdb.select().from(users);
     const userId = usersBefore[0]!.id;
@@ -278,6 +301,53 @@ describe('database cascades', async () => {
     expect(readStatesAfter.length).toBe(0);
   });
 
+  test('deleting a message leaves every other reader caught up', async () => {
+    // the marker used to be a foreign key with onDelete 'set null', so deleting the one
+    // message a channel's readers all pointed at reset it to unread for every one of them.
+    // ids are monotonic, so the marker stays meaningful once the message is gone
+    const [readerOne, readerTwo] = await tdb.select().from(users);
+    const channelId = 1;
+
+    const newestMessage = await tdb
+      .insert(messages)
+      .values({
+        userId: readerOne!.id,
+        channelId,
+        content: 'the message every marker points at',
+        metadata: null,
+        createdAt: Date.now()
+      })
+      .returning()
+      .get();
+
+    await tdb.insert(channelReadStates).values([
+      {
+        channelId,
+        userId: readerOne!.id,
+        lastReadMessageId: newestMessage.id,
+        lastReadAt: Date.now()
+      },
+      {
+        channelId,
+        userId: readerTwo!.id,
+        lastReadMessageId: newestMessage.id,
+        lastReadAt: Date.now()
+      }
+    ]);
+
+    await tdb.delete(messages).where(eq(messages.id, newestMessage.id));
+
+    const markersAfter = await tdb
+      .select()
+      .from(channelReadStates)
+      .where(eq(channelReadStates.channelId, channelId));
+
+    expect(markersAfter.length).toBe(2);
+    markersAfter.forEach((marker) =>
+      expect(marker.lastReadMessageId).toBe(newestMessage.id)
+    );
+  });
+
   test('deleting a user cascades to channel_read_states and channel_user_permissions', async () => {
     const usersBefore = await tdb.select().from(users);
     const channelsBefore = await tdb.select().from(channels);
@@ -324,6 +394,126 @@ describe('database cascades', async () => {
 
     expect(readStatesAfter.length).toBe(0);
     expect(channelUserPermsAfter.length).toBe(0);
+  });
+
+  test('deleting a message cascades to its thread replies', async () => {
+    const [channel] = await tdb.select().from(channels);
+    const [user] = await tdb.select().from(users);
+
+    const [parent] = await tdb
+      .insert(messages)
+      .values({
+        channelId: channel!.id,
+        userId: user!.id,
+        content: 'parent',
+        createdAt: Date.now()
+      })
+      .returning();
+
+    await tdb.insert(messages).values([
+      {
+        channelId: channel!.id,
+        userId: user!.id,
+        content: 'reply one',
+        parentMessageId: parent!.id,
+        createdAt: Date.now()
+      },
+      {
+        channelId: channel!.id,
+        userId: user!.id,
+        content: 'reply two',
+        parentMessageId: parent!.id,
+        createdAt: Date.now()
+      }
+    ]);
+
+    await tdb.delete(messages).where(eq(messages.id, parent!.id));
+
+    const orphans = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.parentMessageId, parent!.id));
+
+    expect(orphans.length).toBe(0);
+  });
+
+  test('deleting a message nulls inline replies pointing at it', async () => {
+    const [channel] = await tdb.select().from(channels);
+    const [user] = await tdb.select().from(users);
+
+    const [target] = await tdb
+      .insert(messages)
+      .values({
+        channelId: channel!.id,
+        userId: user!.id,
+        content: 'target',
+        createdAt: Date.now()
+      })
+      .returning();
+
+    const [replier] = await tdb
+      .insert(messages)
+      .values({
+        channelId: channel!.id,
+        userId: user!.id,
+        content: 'replying to it',
+        replyToMessageId: target!.id,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    await tdb.delete(messages).where(eq(messages.id, target!.id));
+
+    const reloaded = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.id, replier!.id))
+      .get();
+
+    // the replying message survives, it just loses the dangling pointer
+    expect(reloaded).toBeDefined();
+    expect(reloaded?.replyToMessageId).toBeNull();
+  });
+
+  test('deleting a channel removes thread replies with their parents', async () => {
+    const [user] = await tdb.select().from(users);
+
+    const [channel] = await tdb
+      .insert(channels)
+      .values({
+        name: 'thread-cascade',
+        type: 'TEXT',
+        position: 99,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    const [parent] = await tdb
+      .insert(messages)
+      .values({
+        channelId: channel!.id,
+        userId: user!.id,
+        content: 'parent',
+        createdAt: Date.now()
+      })
+      .returning();
+
+    await tdb.insert(messages).values({
+      channelId: channel!.id,
+      userId: user!.id,
+      content: 'reply',
+      parentMessageId: parent!.id,
+      createdAt: Date.now()
+    });
+
+    await tdb.delete(channels).where(eq(channels.id, channel!.id));
+
+    const remaining = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.channelId, channel!.id));
+
+    expect(remaining.length).toBe(0);
   });
 
   test('deleting a message cascades to message_files and message_reactions', async () => {
@@ -742,5 +932,47 @@ describe('database cascades', async () => {
       .where(eq(directMessages.channelId, dmChannel!.id));
 
     expect(dmsAfter.length).toBe(0);
+  });
+
+  test('should remove message_files rows when the file is deleted', async () => {
+    const [file] = await tdb
+      .insert(files)
+      .values({
+        name: 'cascade-file.bin',
+        originalName: 'cascade-file.bin',
+        md5: 'cascade-md5',
+        userId: 1,
+        size: 1,
+        mimeType: 'application/octet-stream',
+        extension: '.bin',
+        createdAt: Date.now()
+      })
+      .returning();
+
+    await tdb.insert(messageFiles).values({
+      messageId: 1,
+      fileId: file!.id,
+      createdAt: Date.now()
+    });
+
+    expect(
+      (
+        await tdb
+          .select()
+          .from(messageFiles)
+          .where(eq(messageFiles.fileId, file!.id))
+      ).length
+    ).toBe(1);
+
+    await tdb.delete(files).where(eq(files.id, file!.id));
+
+    expect(
+      (
+        await tdb
+          .select()
+          .from(messageFiles)
+          .where(eq(messageFiles.fileId, file!.id))
+      ).length
+    ).toBe(0);
   });
 });

@@ -1,4 +1,5 @@
 import { MICROPHONE_GATE_DEFAULT_THRESHOLD_DB } from '@/helpers/audio-gate';
+import { logVoice, logVoiceError } from '@/helpers/browser-logger';
 import { getRestrictOwnAudioSupport } from '@/helpers/get-display-media-support';
 import {
   getLocalStorageItemAsJSON,
@@ -21,6 +22,8 @@ import {
   useRef,
   useState
 } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 const getDefaultDeviceSettings = (): TDeviceSettings => ({
   microphoneId: undefined,
@@ -28,8 +31,8 @@ const getDefaultDeviceSettings = (): TDeviceSettings => ({
   webcamId: undefined,
   webcamResolution: Resolution['720p'],
   webcamFramerate: 30,
-  echoCancellation: false,
-  noiseSuppression: NoiseSuppression.NONE,
+  echoCancellation: true,
+  noiseSuppression: NoiseSuppression.RNNOISE,
   autoGainControl: true,
   noiseGateEnabled: false,
   noiseGateThresholdDb: MICROPHONE_GATE_DEFAULT_THRESHOLD_DB,
@@ -133,7 +136,15 @@ const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
   const [devicesEnumerated, setDevicesEnumerated] = useState(false);
   const initializedRef = useRef(false);
   const devicesRef = useRef(devices);
-  devicesRef.current = devices;
+
+  // written in an effect rather than during render: a render that is never committed would
+  // otherwise leave the ref holding a value no one else can see. only read from callbacks,
+  // which always run after commit
+  useEffect(() => {
+    devicesRef.current = devices;
+  }, [devices]);
+
+  const { t } = useTranslation();
 
   const loadDevices = useCallback(async () => {
     if (!navigator.mediaDevices?.enumerateDevices) {
@@ -144,6 +155,12 @@ const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
 
     try {
       const allDevices = await navigator.mediaDevices.enumerateDevices();
+
+      logVoice('devices: enumerated', {
+        audioInputs: allDevices.filter((d) => d.kind === 'audioinput').length,
+        audioOutputs: allDevices.filter((d) => d.kind === 'audiooutput').length,
+        videoInputs: allDevices.filter((d) => d.kind === 'videoinput').length
+      });
 
       setInputDevices(
         normalizeDevices(
@@ -165,10 +182,13 @@ const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
           'videoinput'
         )
       );
+    } catch (error) {
+      toast.error(t('failedLoadDevices'));
+      logVoiceError('devices: enumeration failed', error);
     } finally {
       setDevicesEnumerated(true);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadDevices();
@@ -176,6 +196,7 @@ const DevicesProvider = memo(({ children }: TDevicesProviderProps) => {
     if (!navigator.mediaDevices?.addEventListener) return;
 
     const onDeviceChange = () => {
+      logVoice('devices: device list changed');
       loadDevices();
     };
 

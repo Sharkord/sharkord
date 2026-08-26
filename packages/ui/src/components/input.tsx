@@ -1,10 +1,11 @@
-import type { TTrpcErrors } from '@sharkord/shared';
 import * as React from 'react';
 import { cn } from '../lib/utils';
 
+type TFieldErrors = Record<string, string | undefined>;
+
 type InputProps = React.ComponentProps<'input'> & {
   error?: string;
-  resetError?: React.Dispatch<React.SetStateAction<TTrpcErrors>>;
+  resetError?: React.Dispatch<React.SetStateAction<TFieldErrors>>;
   onEnter?: () => void;
 };
 

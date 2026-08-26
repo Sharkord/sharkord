@@ -1,5 +1,5 @@
 const onLoad = (ctx) => {
-  ctx.log('Plugin slow command loaded');
+  ctx.logger.log('Plugin slow command loaded');
 
   ctx.commands.register({
     name: 'hang',
@@ -18,4 +18,6 @@ const onLoad = (ctx) => {
   });
 };
 
-export { onLoad };
+const onUnload = () => {};
+
+export { onLoad, onUnload };

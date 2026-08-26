@@ -1,8 +1,14 @@
 export * from './metrics';
 export * from './permissions';
 export * from './storage';
+export * from './upload';
 
 export const DEFAULT_MESSAGES_LIMIT = 100;
+export const MESSAGE_MAX_LENGTH = 10_000;
+
+// a reaction is either a unicode emoji (long ZWJ sequences included) or the
+// name of a custom server emoji, which add-emoji caps at 32
+export const REACTION_EMOJI_MAX_LENGTH = 32;
 
 export const OWNER_ROLE_ID = 1;
 

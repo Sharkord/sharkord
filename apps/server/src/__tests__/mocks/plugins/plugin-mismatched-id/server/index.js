@@ -1,5 +1,7 @@
 const onLoad = (ctx) => {
-  ctx.log('Mismatched ID plugin loaded');
+  ctx.logger.log('Mismatched ID plugin loaded');
 };
 
-export { onLoad };
+const onUnload = () => {};
+
+export { onLoad, onUnload };

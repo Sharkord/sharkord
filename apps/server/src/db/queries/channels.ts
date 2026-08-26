@@ -5,7 +5,7 @@ import {
   type TChannelUserPermissionsMap,
   type TReadStateMap
 } from '@sharkord/shared';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import { db } from '..';
 import { getOnlineUserIds } from '../../utils/wss';
 import {
@@ -84,58 +84,95 @@ const getPermissions = async (
   return { userPermissionMap, rolePermissionMap };
 };
 
-const channelUserCan = async (
+const resolvePermission = (
   channelId: number,
-  userId: number,
-  permission: ChannelPermission
-): Promise<boolean> => {
-  const roleIds = await getUserRoleIds(userId);
-
-  if (roleIds.includes(OWNER_ROLE_ID)) {
-    return true;
-  }
-
-  const [channel] = await db
-    .select()
-    .from(channels)
-    .where(eq(channels.id, channelId))
-    .limit(1);
-
-  if (!channel) {
-    return false;
-  }
-
-  if (!channel.private) {
-    return true;
-  }
-
-  const { userPermissionMap, rolePermissionMap } = await getPermissions(
-    userId,
-    roleIds,
-    permission,
-    channelId
-  );
-
+  {
+    userPermissionMap,
+    rolePermissionMap
+  }: Awaited<ReturnType<typeof getPermissions>>
+) => {
   const userPerm = userPermissionMap.get(channelId);
 
   if (userPerm !== undefined) {
     return userPerm;
   }
 
-  const rolePerm = rolePermissionMap.get(channelId);
+  return rolePermissionMap.get(channelId) ?? false;
+};
 
-  if (rolePerm !== undefined) {
-    return rolePerm;
+// the single answer to "may this user do X in this channel", used by the ws context and
+// therefore by every route. the publishers cannot call it, since they resolve a whole
+// audience rather than one user, so getAffectedUserIdsForChannel below reproduces this
+// precedence instead: owner role, then the user level row, then the role grant. the two
+// have to agree or an event reaches someone a route would have refused
+const channelUserCan = async (
+  channelId: number,
+  userId: number,
+  permission: ChannelPermission
+): Promise<boolean> => {
+  const channel = await db
+    .select({ private: channels.private, isDm: channels.isDm })
+    .from(channels)
+    .where(eq(channels.id, channelId))
+    .limit(1)
+    .get();
+
+  if (!channel) {
+    return false;
   }
 
-  return false;
+  // dm channels have no granular permissions, membership is the whole rule
+  if (channel.isDm) {
+    return isUserDmParticipant(channelId, userId);
+  }
+
+  // public channels grant everything, which is deliberate and disclosed in the
+  // channel settings UI (see the corrected 2.1)
+  if (!channel.private) {
+    return true;
+  }
+
+  const roleIds = await getUserRoleIds(userId);
+
+  if (roleIds.includes(OWNER_ROLE_ID)) {
+    return true;
+  }
+
+  const isViewPermission = permission === ChannelPermission.VIEW_CHANNEL;
+
+  const [viewPermissions, targetPermissions] = await Promise.all([
+    getPermissions(userId, roleIds, ChannelPermission.VIEW_CHANNEL, channelId),
+    isViewPermission
+      ? undefined
+      : getPermissions(userId, roleIds, permission, channelId)
+  ]);
+
+  // a permission granted on a channel the user cannot see is not a permission
+  if (!resolvePermission(channelId, viewPermissions)) {
+    return false;
+  }
+
+  if (isViewPermission) {
+    return true;
+  }
+
+  return resolvePermission(channelId, targetPermissions!);
 };
 
 const getChannelsForUser = async (userId: number): Promise<TChannel[]> => {
   const roleIds = await getUserRoleIds(userId);
 
   if (roleIds.includes(OWNER_ROLE_ID)) {
-    return await db.select().from(channels);
+    const [ownerChannels, ownerDmChannelIds] = await Promise.all([
+      db.select().from(channels),
+      getDirectMessageChannelIdsForUser(userId)
+    ]);
+
+    const ownerDmChannelIdSet = new Set(ownerDmChannelIds);
+
+    return ownerChannels.filter(
+      (channel) => !channel.isDm || ownerDmChannelIdSet.has(channel.id)
+    );
   }
 
   const [allChannels, { userPermissionMap, rolePermissionMap }, dmChannelIds] =
@@ -145,9 +182,11 @@ const getChannelsForUser = async (userId: number): Promise<TChannel[]> => {
       getDirectMessageChannelIdsForUser(userId)
     ]);
 
+  const dmChannelIdSet = new Set(dmChannelIds);
+
   const accessibleChannels = allChannels.filter((channel) => {
     const isPublicChannel = !channel.private;
-    const isDmChannelParticipant = dmChannelIds.includes(channel.id);
+    const isDmChannelParticipant = dmChannelIdSet.has(channel.id);
 
     if (isPublicChannel || isDmChannelParticipant) {
       return true;
@@ -171,7 +210,13 @@ const getAllChannelUserPermissions = async (
   userId: number
 ): Promise<TChannelUserPermissionsMap> => {
   const roleIds = await getUserRoleIds(userId);
-  const allChannels = await db.select().from(channels);
+
+  const [allChannels, dmChannelIds] = await Promise.all([
+    db.select({ id: channels.id, isDm: channels.isDm }).from(channels),
+    getDirectMessageChannelIdsForUser(userId)
+  ]);
+
+  const dmChannelIdSet = new Set(dmChannelIds);
 
   const userPermissions = await db
     .select({
@@ -253,15 +298,11 @@ const getAllChannelUserPermissions = async (
       permissions[permissionType] = false;
     }
 
-    if (channel.isDm) {
-      // for DM channels we need to check if the user is a participant, if not we set all permissions to false
-      const isParticipant = await isUserDmParticipant(channel.id, userId);
-
-      if (isParticipant) {
-        // if the user is a participant in the DM channel, we set all permissions to true because DM channels don't have granular permissions
-        for (const permissionType of allPermissionTypes) {
-          permissions[permissionType] = true;
-        }
+    // dm channels have no granular permissions, membership decides everything.
+    // Resolved from one query above rather than one per dm channel in this loop
+    if (channel.isDm && dmChannelIdSet.has(channel.id)) {
+      for (const permissionType of allPermissionTypes) {
+        permissions[permissionType] = true;
       }
     }
 
@@ -274,74 +315,9 @@ const getAllChannelUserPermissions = async (
   return channelPermissions;
 };
 
-const getRoleChannelPermissions = async (
-  roleId: number,
-  channelId: number
-): Promise<Record<ChannelPermission, boolean>> => {
-  const rolePermissions = await db
-    .select({
-      permission: channelRolePermissions.permission,
-      allow: channelRolePermissions.allow
-    })
-    .from(channelRolePermissions)
-    .where(
-      and(
-        eq(channelRolePermissions.roleId, roleId),
-        eq(channelRolePermissions.channelId, channelId)
-      )
-    );
-
-  const allPermissionTypes = Object.values(ChannelPermission);
-  const permissions: Record<string, boolean> = {};
-
-  const permissionMap = new Map(
-    rolePermissions.map((p) => [p.permission as ChannelPermission, p.allow])
-  );
-
-  for (const permissionType of allPermissionTypes) {
-    permissions[permissionType] = permissionMap.get(permissionType) ?? false;
-  }
-
-  return permissions;
-};
-
-const getUserChannelPermissions = async (
-  userId: number,
-  channelId: number
-): Promise<Record<ChannelPermission, boolean>> => {
-  const userPermissions = await db
-    .select({
-      permission: channelUserPermissions.permission,
-      allow: channelUserPermissions.allow
-    })
-    .from(channelUserPermissions)
-    .where(
-      and(
-        eq(channelUserPermissions.userId, userId),
-        eq(channelUserPermissions.channelId, channelId)
-      )
-    );
-
-  const allPermissionTypes = Object.values(ChannelPermission);
-  const permissions: Record<string, boolean> = {};
-
-  const permissionMap = new Map(
-    userPermissions.map((p) => [p.permission as ChannelPermission, p.allow])
-  );
-
-  for (const permissionType of allPermissionTypes) {
-    permissions[permissionType] = permissionMap.get(permissionType) ?? false;
-  }
-
-  return permissions;
-};
-
 const getAffectedUserIdsForChannel = async (
   channelId: number,
-  options?: {
-    forceAllUsers?: boolean;
-    permission?: ChannelPermission;
-  }
+  permission: ChannelPermission
 ): Promise<number[]> => {
   const [channel] = await db
     .select()
@@ -359,25 +335,28 @@ const getAffectedUserIdsForChannel = async (
   }
 
   // if channel is public, return all user IDs
-  if (!channel.private || options?.forceAllUsers) {
+  if (!channel.private) {
     return getAllUserIds();
   }
 
-  // if a specific permission is required, filter by it
-  const permission = options?.permission;
-
-  const usersWithDirectPerms = await db
-    .select({ userId: channelUserPermissions.userId })
+  // both sides of the user level rows, not just the grants: a deny has to beat a role grant
+  // here exactly as resolvePermission makes it beat one in channelUserCan
+  const userPermissionRows = await db
+    .select({
+      userId: channelUserPermissions.userId,
+      allow: channelUserPermissions.allow
+    })
     .from(channelUserPermissions)
     .where(
       and(
         eq(channelUserPermissions.channelId, channelId),
-        permission
-          ? eq(channelUserPermissions.permission, permission)
-          : undefined,
-        permission ? eq(channelUserPermissions.allow, true) : undefined
+        eq(channelUserPermissions.permission, permission)
       )
     );
+
+  const deniedUserIds = new Set(
+    userPermissionRows.filter((row) => !row.allow).map((row) => row.userId)
+  );
 
   const rolesWithPerms = await db
     .select({ roleId: channelRolePermissions.roleId })
@@ -385,10 +364,8 @@ const getAffectedUserIdsForChannel = async (
     .where(
       and(
         eq(channelRolePermissions.channelId, channelId),
-        permission
-          ? eq(channelRolePermissions.permission, permission)
-          : undefined,
-        permission ? eq(channelRolePermissions.allow, true) : undefined
+        eq(channelRolePermissions.permission, permission),
+        eq(channelRolePermissions.allow, true)
       )
     );
 
@@ -411,8 +388,14 @@ const getAffectedUserIdsForChannel = async (
 
   const userIdSet = new Set<number>();
 
-  usersWithDirectPerms.forEach((u) => userIdSet.add(u.userId));
-  usersWithRoles.forEach((u) => userIdSet.add(u.userId));
+  userPermissionRows
+    .filter((row) => row.allow)
+    .forEach((row) => userIdSet.add(row.userId));
+
+  usersWithRoles.forEach((u) => {
+    if (!deniedUserIds.has(u.userId)) userIdSet.add(u.userId);
+  });
+
   owners.forEach((u) => userIdSet.add(u.userId));
 
   return Array.from(userIdSet);
@@ -420,22 +403,32 @@ const getAffectedUserIdsForChannel = async (
 
 const getAffectedOnlineUserIdsForChannel = async (
   channelId: number,
-  options?: {
-    forceAllUsers?: boolean;
-    permission?: ChannelPermission;
-  }
+  permission: ChannelPermission
 ): Promise<number[]> => {
-  const affectedUserIds = await getAffectedUserIdsForChannel(
-    channelId,
-    options
-  );
   const onlineUserIds = getOnlineUserIds();
 
-  const onlineAffectedUserIds = affectedUserIds.filter((userId) =>
-    onlineUserIds.includes(userId)
+  if (onlineUserIds.length === 0) return [];
+
+  const channel = await db
+    .select({ private: channels.private, isDm: channels.isDm })
+    .from(channels)
+    .where(eq(channels.id, channelId))
+    .limit(1)
+    .get();
+
+  if (!channel) return [];
+
+  // every online user is affected by definition, so there is no point reading
+  // the users table to intersect it with itself
+  if (!channel.private && !channel.isDm) {
+    return onlineUserIds;
+  }
+
+  const affectedUserIds = new Set(
+    await getAffectedUserIdsForChannel(channelId, permission)
   );
 
-  return onlineAffectedUserIds;
+  return onlineUserIds.filter((userId) => affectedUserIds.has(userId));
 };
 
 const getChannelsReadStatesForUser = async (
@@ -449,46 +442,56 @@ const getChannelsReadStatesForUser = async (
   const conditions = [];
 
   if (channelId) {
-    conditions.push(eq(messages.channelId, channelId));
+    conditions.push(eq(channels.id, channelId));
   }
 
-  // exclude DM channels the user does not participate in:
-  // include the message if the channel is NOT a DM, or if it IS a DM the user is part of
+  // a channel that has never had a message gets no entry at all, which is what
+  // the messages-driven query used to produce implicitly. An index seek, unlike
+  // the scan it replaces
+  conditions.push(
+    sql`EXISTS (SELECT 1 FROM messages m WHERE m.channel_id = ${channels.id})`
+  );
+
+  // exclude DM channels the user does not participate in: keep the channel if it
+  // is not a DM, or if it is one the user belongs to
   if (dmChannelIds.length > 0) {
     conditions.push(
-      sql`(${channels.isDm} = 0 OR ${messages.channelId} IN (${sql.join(
-        dmChannelIds.map((id) => sql`${id}`),
-        sql`, `
-      )}))`
+      or(eq(channels.isDm, false), inArray(channels.id, dmChannelIds))
     );
   } else {
     conditions.push(eq(channels.isDm, false));
   }
 
+  // driven from channels rather than messages, and every unread predicate sits
+  // in the join instead of a COUNT(CASE ...) over the whole table: a channel the
+  // user has caught up on costs an index seek rather than a scan of its history
   const results = await db
     .select({
-      channelId: messages.channelId,
-      unreadCount: sql<number>`
-        COUNT(CASE
-          WHEN ${messages.userId} != ${userId}
-            AND ${messages.parentMessageId} IS NULL
-            AND (${channelReadStates.lastReadMessageId} IS NULL
-              OR ${messages.id} > ${channelReadStates.lastReadMessageId})
-          THEN 1
-        END)
-      `.as('unread_count')
+      channelId: channels.id,
+      unreadCount: sql<number>`COUNT(${messages.id})`.as('unread_count')
     })
-    .from(messages)
-    .innerJoin(channels, eq(channels.id, messages.channelId))
+    .from(channels)
     .leftJoin(
       channelReadStates,
       and(
-        eq(channelReadStates.channelId, messages.channelId),
+        eq(channelReadStates.channelId, channels.id),
         eq(channelReadStates.userId, userId)
       )
     )
+    .leftJoin(
+      messages,
+      and(
+        eq(messages.channelId, channels.id),
+        ne(messages.userId, userId),
+        isNull(messages.parentMessageId),
+        or(
+          isNull(channelReadStates.lastReadMessageId),
+          gt(messages.id, channelReadStates.lastReadMessageId)
+        )
+      )
+    )
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .groupBy(messages.channelId);
+    .groupBy(channels.id);
 
   const readStateMap: TReadStateMap = {};
 
@@ -505,7 +508,5 @@ export {
   getAffectedUserIdsForChannel,
   getAllChannelUserPermissions,
   getChannelsForUser,
-  getChannelsReadStatesForUser,
-  getRoleChannelPermissions,
-  getUserChannelPermissions
+  getChannelsReadStatesForUser
 };

@@ -183,6 +183,12 @@ class PluginSettingsManager {
       );
     }
 
+    if (typeof value !== def.type) {
+      throw new Error(
+        `Setting '${key}' expects a ${def.type}, received ${typeof value}.`
+      );
+    }
+
     const values = this.settingValues.get(pluginId) || {};
 
     values[key] = value;

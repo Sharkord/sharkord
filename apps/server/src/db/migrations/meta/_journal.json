@@ -127,6 +127,69 @@
       "when": 1786049599269,
       "tag": "0017_banner_color_to_profile_color",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1786113655012,
+      "tag": "0018_message_parent_reply_foreign_keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1786137080287,
+      "tag": "0019_messages_channel_parent_created_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1786137098394,
+      "tag": "0020_settings_single_row_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1786150128999,
+      "tag": "0021_activity_log_nullable_user",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1786315702733,
+      "tag": "0022_messages_parent_channel_id_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1786316205977,
+      "tag": "0023_users_token_version",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1786569272511,
+      "tag": "0024_drop_redundant_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1786614139014,
+      "tag": "0025_read_state_marker_not_a_foreign_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1787252858420,
+      "tag": "0026_edited_by_not_a_cascade",
+      "breakpoints": true
     }
   ]
 }

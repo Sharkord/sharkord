@@ -16,6 +16,7 @@ import { SearchDialog } from './search';
 import { ServerPasswordDialog } from './server-password';
 import { SoundsDialog } from './sounds';
 import { TextInputDialog } from './text-input';
+import { VoiceDebugDialog } from './voice-debug';
 import { WelcomeProfileSetupDialog } from './welcome-profile-setup';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -34,7 +35,8 @@ const DialogsMap: any = {
   [Dialog.PLUGIN_INSTALL_CONFIRM]: PluginInstallConfirmDialog,
   [Dialog.DELETE_USER]: DeleteUserDialog,
   [Dialog.SEARCH]: SearchDialog,
-  [Dialog.WELCOME_PROFILE_SETUP]: WelcomeProfileSetupDialog
+  [Dialog.WELCOME_PROFILE_SETUP]: WelcomeProfileSetupDialog,
+  [Dialog.VOICE_DEBUG]: VoiceDebugDialog
 };
 
 const DialogsProvider = memo(() => {

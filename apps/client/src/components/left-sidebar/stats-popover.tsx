@@ -1,8 +1,18 @@
-import { useVoice } from '@/features/server/voice/hooks';
+import { useDevices } from '@/components/devices-provider/hooks/use-devices';
+import { Dialog } from '@/components/dialogs/dialogs';
+import { useVoiceStats } from '@/components/voice-provider/stats-context';
+import { openDialog } from '@/features/dialogs/actions';
 import { formatBigNumber } from '@/helpers/format-big-number';
-import { Popover, PopoverContent, PopoverTrigger } from '@sharkord/ui';
+import { NoiseSuppression } from '@/types';
+import {
+  IconButton,
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@sharkord/ui';
 import { filesize } from 'filesize';
-import { memo, useMemo, useState } from 'react';
+import { Stethoscope } from 'lucide-react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 type StatsPopoverProps = {
@@ -21,6 +31,13 @@ const hardwareEncoders = [
 ];
 
 const softwareEncoders = ['libvpx', 'openh264', 'libaom', 'software'];
+
+const NOISE_SUPPRESSION_LABEL_KEYS: Record<NoiseSuppression, string> = {
+  [NoiseSuppression.NONE]: 'settings:noiseSuppressionNone',
+  [NoiseSuppression.STANDARD]: 'settings:noiseSuppressionStandardName',
+  [NoiseSuppression.RNNOISE]: 'settings:noiseSuppressionRnnoiseName',
+  [NoiseSuppression.DTLN]: 'settings:noiseSuppressionDtlnName'
+};
 
 const getCodecLabel = (codec: string) => {
   const parts = codec.split('/');
@@ -67,7 +84,8 @@ StatsLabelValue.displayName = 'StatsLabelValue';
 
 const StatsPopover = memo(({ children }: StatsPopoverProps) => {
   const { t } = useTranslation('sidebar');
-  const { transportStats } = useVoice();
+  const transportStats = useVoiceStats();
+  const { devices } = useDevices();
   const [showSimulcastLayers, setShowSimulcastLayers] = useState(false);
 
   const {
@@ -107,18 +125,40 @@ const StatsPopover = memo(({ children }: StatsPopoverProps) => {
     };
   }, [screenShare?.encoderImplementation, t]);
 
+  const hasNoiseSuppression =
+    devices.noiseSuppression !== NoiseSuppression.NONE;
+
+  const noiseSuppressionLabel = t(
+    NOISE_SUPPRESSION_LABEL_KEYS[devices.noiseSuppression]
+  );
+
   const codec = useMemo(() => {
     return screenShare?.codec ? getCodecLabel(screenShare.codec) : undefined;
   }, [screenShare?.codec]);
+
+  const handleOpenDiagnostics = useCallback(() => {
+    openDialog(Dialog.VOICE_DEBUG);
+  }, []);
 
   return (
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent side="top" align="start" className="p-0">
         <div className="w-72 p-3 text-xs">
-          <h3 className="font-semibold text-sm mb-2 text-foreground">
-            {t('transportStats')}
-          </h3>
+          <div className="mb-2 flex items-center gap-2">
+            <h3 className="font-semibold text-sm text-foreground">
+              {t('transportStats')}
+            </h3>
+            <IconButton
+              className="ml-auto"
+              variant="ghost"
+              size="sm"
+              icon={Stethoscope}
+              title={t('voiceDiagnostics')}
+              aria-label={t('voiceDiagnostics')}
+              onClick={handleOpenDiagnostics}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4 mb-3">
             <div>
               <h4 className="font-medium text-green-400 mb-1">
@@ -187,6 +227,20 @@ const StatsPopover = memo(({ children }: StatsPopoverProps) => {
               )}
             </div>
           </div>
+
+          {hasNoiseSuppression && (
+            <div className="border-t border-border/50 pt-2 mb-3">
+              <h4 className="font-medium text-purple-400 mb-1">
+                {t('microphone')}
+              </h4>
+              <div>
+                <StatsLabelValue
+                  label={t('noiseSuppression')}
+                  value={noiseSuppressionLabel}
+                />
+              </div>
+            </div>
+          )}
 
           {screenShare && (
             <div className="border-t border-border/50 pt-2 mb-3">

@@ -11,7 +11,6 @@ describe('/info', () => {
     const data = (await response.json()) as TServerInfo;
 
     expect(data).toHaveProperty('serverId');
-    expect(data).toHaveProperty('version');
     expect(data).toHaveProperty('name');
     expect(data).toHaveProperty('description');
     expect(data).toHaveProperty('logo');
@@ -20,5 +19,12 @@ describe('/info', () => {
     expect(data.name).toBe('Test Server');
     expect(data.description).toBe('Test server description');
     expect(data.allowNewUsers).toBe(true);
+  });
+
+  test('should not publish the server version pre-auth', async () => {
+    const response = await fetch(`${testsBaseUrl}/info`);
+    const data = (await response.json()) as TServerInfo;
+
+    expect(data.version).toBeUndefined();
   });
 });

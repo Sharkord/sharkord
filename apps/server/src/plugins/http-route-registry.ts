@@ -13,6 +13,7 @@ type TPluginHttpRoute = {
 
 // a single '*' is only allowed as the last segment, e.g. '/api/*' or '/*'
 const VALID_WILDCARD_PATH = /^[^*]*\/\*$/;
+const MAX_ROUTES_PER_PLUGIN = 100;
 
 // '/hello/' and '/hello' are the same route, '/' stays '/'
 const normalizeRoutePath = (routePath: string) =>
@@ -42,6 +43,12 @@ class PluginHttpRouteRegistry {
 
     if (!routePath.startsWith('/')) {
       throw new Error(`HTTP route path '${routePath}' must start with '/'.`);
+    }
+
+    if ((this.routes.get(pluginId)?.size ?? 0) >= MAX_ROUTES_PER_PLUGIN) {
+      throw new Error(
+        `Plugin '${pluginId}' exceeded the maximum of ${MAX_ROUTES_PER_PLUGIN} HTTP routes.`
+      );
     }
 
     if (routePath.includes('*') && !VALID_WILDCARD_PATH.test(routePath)) {

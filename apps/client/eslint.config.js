@@ -10,6 +10,25 @@ import tseslint from 'typescript-eslint';
 export default defineConfig([
   globalIgnores(['dist']),
   {
+    // audio worklet processors are plain JS by necessity: they are loaded by ?url so they
+    // cannot be bundled as TS. lint is the only automated coverage they can get, and the
+    // AudioWorklet globals are not in globals.browser
+    files: ['src/audio-worklets/*.js'],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2020,
+      sourceType: 'module',
+      globals: {
+        ...globals.browser,
+        AudioWorkletProcessor: 'readonly',
+        registerProcessor: 'readonly',
+        currentTime: 'readonly',
+        currentFrame: 'readonly',
+        sampleRate: 'readonly'
+      }
+    }
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: {

@@ -1,11 +1,13 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
 import { store } from '@/features/store';
-import { logVoice } from '@/helpers/browser-logger';
+import { logVoice, logVoiceError } from '@/helpers/browser-logger';
+import { playSound } from '@/helpers/sounds';
 import {
   LocalStorageKey,
   setLocalStorageItem,
   setLocalStorageItemBool
 } from '@/helpers/storage';
+import { i18n } from '@/i18n';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   getTrpcError,
@@ -23,7 +25,6 @@ import {
   selectedChannelIdSelector
 } from '../channels/selectors';
 import { serverSliceActions } from '../slice';
-import { playSound } from '../sounds/actions';
 import { SoundType } from '../types';
 import { ownUserIdSelector } from '../users/selectors';
 import { ownVoiceStateSelector } from './selectors';
@@ -50,6 +51,26 @@ export const addUserToVoiceChannel = (
   }
 };
 
+const clearLocalVoiceSession = (): void => {
+  const state = store.getState();
+
+  const selectedChannelId = selectedChannelIdSelector(state);
+  const currentVoiceChannelId = currentVoiceChannelIdSelector(state);
+
+  logVoice('session: clearing local voice session', {
+    selectedChannelId,
+    currentVoiceChannelId
+  });
+
+  if (selectedChannelId === currentVoiceChannelId) {
+    setSelectedChannelId(undefined);
+  }
+
+  setCurrentVoiceChannelId(undefined);
+  updateOwnVoiceState({ webcamEnabled: false, sharingScreen: false });
+  setPinnedCard(undefined);
+};
+
 export const removeUserFromVoiceChannel = (
   userId: number,
   channelId: number
@@ -62,9 +83,20 @@ export const removeUserFromVoiceChannel = (
     serverSliceActions.removeUserFromVoiceChannel({ userId, channelId })
   );
 
-  if (userId !== ownUserId && channelId === currentChannelId) {
-    playSound(SoundType.REMOTE_USER_LEFT_VOICE_CHANNEL);
+  if (channelId !== currentChannelId) return;
+
+  // the server took us out of this call rather than the other way round: the channel was
+  // deleted, its category was, or the runtime was destroyed. without this the call ends but
+  // the app goes on showing the user as connected to a channel that no longer exists
+  if (userId === ownUserId) {
+    logVoice('session: removed from voice by the server', { channelId });
+
+    clearLocalVoiceSession();
+
+    return;
   }
+
+  playSound(SoundType.REMOTE_USER_LEFT_VOICE_CHANNEL);
 };
 
 export const addExternalStreamToVoiceChannel = (
@@ -159,17 +191,25 @@ export const joinVoice = async (
   setCurrentVoiceChannelId(channelId);
 
   const { micMuted, soundMuted } = ownVoiceStateSelector(state);
-  const client = getTRPCClient();
+
+  logVoice('session: join requested', { channelId, micMuted, soundMuted });
 
   try {
+    const client = getTRPCClient();
+
     const { routerRtpCapabilities } = await client.voice.join.mutate({
       channelId,
       state: { micMuted, soundMuted }
     });
 
+    logVoice('session: joined', { channelId });
+
     return routerRtpCapabilities;
   } catch (error) {
-    toast.error(getTrpcError(error, 'Failed to join voice channel'));
+    logVoiceError('session: join failed', error, { channelId });
+    clearLocalVoiceSession();
+
+    toast.error(getTrpcError(error, i18n.t('common:failedJoinVoiceChannel')));
   }
 
   return undefined;
@@ -178,6 +218,7 @@ export const joinVoice = async (
 export type TLeaveVoiceReason =
   | 'user_disconnect_button'
   | 'switch_channel'
+  | 'init_failed'
   | 'unknown';
 
 export const leaveVoice = async (options?: {
@@ -189,32 +230,35 @@ export const leaveVoice = async (options?: {
   const reason = options?.reason ?? 'unknown';
 
   if (!currentChannelId) {
-    logVoice('Leave voice requested without active channel', { reason });
+    logVoice('session: leave requested with no active channel', { reason });
     return;
   }
 
-  logVoice('Leave voice requested', {
+  logVoice('session: leave requested', {
     reason,
     channelId: currentChannelId,
     selectedChannelId
   });
 
-  if (selectedChannelId === currentChannelId) {
-    setSelectedChannelId(undefined);
-  }
-
-  setCurrentVoiceChannelId(undefined);
-  updateOwnVoiceState({ webcamEnabled: false, sharingScreen: false });
-  setPinnedCard(undefined);
-
-  const client = getTRPCClient();
+  clearLocalVoiceSession();
 
   try {
+    const client = getTRPCClient();
+
     await client.voice.leave.mutate();
     playSound(SoundType.OWN_USER_LEFT_VOICE_CHANNEL);
   } catch (error) {
-    toast.error(getTrpcError(error, 'Failed to leave voice channel'));
+    logVoiceError('session: leave failed', error, {
+      channelId: currentChannelId
+    });
+    toast.error(getTrpcError(error, i18n.t('common:failedLeaveVoiceChannel')));
   }
+};
+
+export const setVoiceMoveTargetChannelId = (
+  channelId: number | undefined
+): void => {
+  store.dispatch(serverSliceActions.setVoiceMoveTargetChannelId(channelId));
 };
 
 export const setPinnedCard = (pinnedCard: TPinnedCard | undefined): void => {

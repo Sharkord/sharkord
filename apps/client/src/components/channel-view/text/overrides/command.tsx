@@ -29,6 +29,11 @@ const CommandOverride = memo(({ command }: TCommandOverrideProps) => {
     return JSON.stringify(value);
   }, []);
 
+  const toggleExpanded = useCallback(
+    () => setIsExpanded((expanded) => !expanded),
+    []
+  );
+
   const getStatusIcon = useCallback(() => {
     switch (command.status) {
       case 'completed':
@@ -105,7 +110,7 @@ const CommandOverride = memo(({ command }: TCommandOverrideProps) => {
           {command.response && (
             <div className="mt-0.5 flex flex-col rounded-md border border-border/50 bg-background/50">
               <button
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={toggleExpanded}
                 className="flex w-full items-center gap-2 px-2 py-1.5 text-left transition-colors hover:bg-muted/50"
               >
                 {isExpanded ? (

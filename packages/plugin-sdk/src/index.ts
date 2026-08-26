@@ -3,9 +3,11 @@ import type {
   CommandDefinition,
   TActionContract,
   TBeforeFileSaveHook,
+  TChannel,
   TCommandArg,
   TCommandContract,
   TInvokerContext,
+  TJoinedPublicUser,
   TPluginActions,
   TPluginComponentsMapBySlotId,
   TPluginSettingDefinition,
@@ -93,6 +95,7 @@ export interface EventPayloads {
     messageId: number;
     channelId: number;
     userId: number | null;
+    editedBy: number | null;
     pluginId: string | null;
     content: string;
     textContent: string;
@@ -147,8 +150,11 @@ export interface PluginContext {
     error(...args: unknown[]): void;
   };
 
+  /** @deprecated use ctx.logger.log instead */
   log(...args: unknown[]): void;
+  /** @deprecated use ctx.logger.debug instead */
   debug(...args: unknown[]): void;
+  /** @deprecated use ctx.logger.error instead */
   error(...args: unknown[]): void;
 
   events: {
@@ -216,9 +222,9 @@ export interface PluginContext {
   };
 
   data: {
-    getUser(userId: number): Promise<unknown | undefined>;
-    getChannel(channelId: number): Promise<unknown | undefined>;
-    getPublicUsers(): Promise<unknown[]>;
+    getUser(userId: number): Promise<TJoinedPublicUser | undefined>;
+    getChannel(channelId: number): Promise<TChannel | undefined>;
+    getPublicUsers(): Promise<TJoinedPublicUser[]>;
   };
 
   ui: {
@@ -232,6 +238,11 @@ export interface UnloadPluginContext extends Pick<
   PluginContext,
   'path' | 'logger' | 'log' | 'debug' | 'error' | 'voice' | 'messages' | 'ui'
 > {}
+
+export type PluginModule = {
+  onLoad: (ctx: PluginContext) => void | Promise<void>;
+  onUnload?: (ctx: UnloadPluginContext) => void | Promise<void>;
+};
 
 type TSharkordState = ReturnType<TPluginStore['getState']>;
 

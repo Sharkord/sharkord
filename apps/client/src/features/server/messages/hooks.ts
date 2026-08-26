@@ -1,15 +1,26 @@
 import type { IRootState } from '@/features/store';
 import { getTRPCClient } from '@/lib/trpc';
-import { DEFAULT_MESSAGES_LIMIT, type TJoinedMessage } from '@sharkord/shared';
+import {
+  DEFAULT_MESSAGES_LIMIT,
+  type TJoinedMessage,
+  type TMessagesCursor
+} from '@sharkord/shared';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { addMessages, addThreadMessages, clearThreadMessages } from './actions';
+import {
+  addMessages,
+  addThreadMessages,
+  clearThreadMessages,
+  setChannelMessages,
+  trimChannelMessages
+} from './actions';
 import {
   findMessageElement,
   highlightMessageElement,
   waitForMessageElement
 } from './helpers';
 import {
+  isChannelDetachedSelector,
   messagesByChannelIdSelector,
   parentMessageByIdSelector,
   threadMessagesByParentIdSelector
@@ -89,13 +100,13 @@ const useGroupedMessages = (messages: TJoinedMessage[]) =>
   }, [messages]);
 
 type TFetchPage = (
-  cursor: number | null
-) => Promise<{ nextCursor: number | null }>;
+  cursor: TMessagesCursor | null
+) => Promise<{ nextCursor: TMessagesCursor | null }>;
 
 // fetch a page of channel messages from the server
 const fetchChannelMessagesPage = async (input: {
   channelId: number;
-  cursor: number | null;
+  cursor: TMessagesCursor | null;
   limit: number;
   targetMessageId?: number;
 }) => {
@@ -105,14 +116,12 @@ const fetchChannelMessagesPage = async (input: {
 };
 
 // reverse (newest-first -> oldest-first) and store messages
-const storeChannelMessages = (
-  channelId: number,
-  rawPage: TJoinedMessage[],
-  opts?: { prepend?: boolean }
-) => {
+// messages are merged chronologically by the reducer regardless of which end a page came
+// from, so there is no ordering option to pass here
+const storeChannelMessages = (channelId: number, rawPage: TJoinedMessage[]) => {
   const page = [...rawPage].reverse();
 
-  addMessages(channelId, page, opts);
+  addMessages(channelId, page);
 };
 
 const usePaginatedMessages = (
@@ -124,11 +133,11 @@ const usePaginatedMessages = (
   const [loading, setLoading] = useState(
     options?.initialLoading ?? messages.length === 0
   );
-  const [cursor, setCursor] = useState<number | null>(null);
+  const [cursor, setCursor] = useState<TMessagesCursor | null>(null);
   const [hasMore, setHasMore] = useState(true);
 
   const fetchMessages = useCallback(
-    async (cursorToFetch: number | null) => {
+    async (cursorToFetch: TMessagesCursor | null) => {
       setFetching(true);
 
       try {
@@ -163,6 +172,11 @@ const usePaginatedMessages = (
     setLoading(true);
   }, []);
 
+  const applyCursor = useCallback((nextCursor: TMessagesCursor | null) => {
+    setCursor(nextCursor);
+    setHasMore(nextCursor !== null);
+  }, []);
+
   return {
     fetching,
     loading,
@@ -173,6 +187,7 @@ const usePaginatedMessages = (
     groupedMessages,
     isEmpty,
     fetchMessages,
+    applyCursor,
     reset
   };
 };
@@ -180,18 +195,19 @@ const usePaginatedMessages = (
 export const useMessages = (channelId: number) => {
   const messages = useMessagesByChannelId(channelId);
   const inited = useRef(false);
+  const detachedFromPresent = useSelector((state: IRootState) =>
+    isChannelDetachedSelector(state, channelId)
+  );
 
   const fetchPage = useCallback(
-    async (cursorToFetch: number | null) => {
+    async (cursorToFetch: TMessagesCursor | null) => {
       const { messages: rawPage, nextCursor } = await fetchChannelMessagesPage({
         channelId,
         cursor: cursorToFetch,
         limit: DEFAULT_MESSAGES_LIMIT
       });
 
-      storeChannelMessages(channelId, rawPage, {
-        prepend: cursorToFetch !== null
-      });
+      storeChannelMessages(channelId, rawPage);
 
       return { nextCursor };
     },
@@ -208,6 +224,10 @@ export const useMessages = (channelId: number) => {
     inited.current = true;
   }, [paginated]);
 
+  useEffect(() => () => trimChannelMessages(channelId), [channelId]);
+
+  const { applyCursor } = paginated;
+
   const scrollToMessage = useCallback(
     async (messageId: number, highlightTime = 4000) => {
       // check if the message is already rendered in the messages container
@@ -219,14 +239,32 @@ export const useMessages = (channelId: number) => {
         return;
       }
 
-      const { messages: rawPage } = await fetchChannelMessagesPage({
+      const {
+        messages: rawPage,
+        nextCursor,
+        hasNewer
+      } = await fetchChannelMessagesPage({
         channelId,
         cursor: null,
         limit: DEFAULT_MESSAGES_LIMIT,
         targetMessageId: messageId
       });
 
-      storeChannelMessages(channelId, rawPage, { prepend: true });
+      if (hasNewer) {
+        // the window stops short of the newest message, so merging it into the channel's
+        // existing list would put a gap in the middle of what is rendered. replace instead and
+        // let the banner offer the way back to the present
+        setChannelMessages(channelId, [...rawPage].reverse(), true);
+        applyCursor(nextCursor);
+      } else if (detachedFromPresent) {
+        // this window does reach the present, but the list it would merge into is an older
+        // detached window, so merging splices two disjoint stretches of history together and
+        // leaves the channel detached with no way back. replace and reattach instead
+        setChannelMessages(channelId, [...rawPage].reverse(), false);
+        applyCursor(nextCursor);
+      } else {
+        storeChannelMessages(channelId, rawPage);
+      }
 
       const element = await waitForMessageElement(messageId);
 
@@ -234,10 +272,26 @@ export const useMessages = (channelId: number) => {
         highlightMessageElement(element, highlightTime);
       }
     },
-    [channelId]
+    [channelId, applyCursor, detachedFromPresent]
   );
 
-  return { ...paginated, scrollToMessage };
+  const returnToPresent = useCallback(async () => {
+    const { messages: rawPage, nextCursor } = await fetchChannelMessagesPage({
+      channelId,
+      cursor: null,
+      limit: DEFAULT_MESSAGES_LIMIT
+    });
+
+    setChannelMessages(channelId, [...rawPage].reverse(), false);
+    applyCursor(nextCursor);
+  }, [channelId, applyCursor]);
+
+  return {
+    ...paginated,
+    scrollToMessage,
+    detachedFromPresent,
+    returnToPresent
+  };
 };
 
 export const useThreadMessagesByParentId = (parentMessageId: number) =>
@@ -249,7 +303,7 @@ export const useThreadMessages = (parentMessageId: number) => {
   const messages = useThreadMessagesByParentId(parentMessageId);
 
   const fetchPage = useCallback(
-    async (cursorToFetch: number | null) => {
+    async (cursorToFetch: TMessagesCursor | null) => {
       const trpcClient = getTRPCClient();
 
       const { messages: page, nextCursor } =

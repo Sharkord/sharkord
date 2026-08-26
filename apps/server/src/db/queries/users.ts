@@ -242,6 +242,7 @@ const getUserById = async (
       banned: users.banned,
       banReason: users.banReason,
       bannedAt: users.bannedAt,
+      tokenVersion: users.tokenVersion,
       avatar: avatarFiles,
       banner: bannerFiles
     })
@@ -301,6 +302,7 @@ const getUserByIdentity = async (
       banned: users.banned,
       banReason: users.banReason,
       bannedAt: users.bannedAt,
+      tokenVersion: users.tokenVersion,
       avatar: avatarFiles,
       banner: bannerFiles
     })
@@ -346,6 +348,15 @@ const getUserByToken = async (token: string | undefined) => {
 
     const user = await getUserById(decoded.userId);
 
+    if (user?.banned) return undefined;
+
+    // a deleted user has no row, so deletion already invalidates its tokens. this covers
+    // the case where the row survives but its sessions should not, such as a password
+    // change. tokens predating this mechanism carry no version and count as 0
+    if (user && (decoded.tokenVersion ?? 0) !== user.tokenVersion) {
+      return undefined;
+    }
+
     return user;
   } catch {
     return undefined;
@@ -374,6 +385,7 @@ const getUsers = async (): Promise<TJoinedUser[]> => {
           banned: users.banned,
           banReason: users.banReason,
           bannedAt: users.bannedAt,
+          tokenVersion: users.tokenVersion,
           avatar: avatarFiles,
           banner: bannerFiles
         })
@@ -427,6 +439,7 @@ const getUsers = async (): Promise<TJoinedUser[]> => {
     banned: result.banned,
     banReason: result.banReason,
     bannedAt: result.bannedAt,
+    tokenVersion: result.tokenVersion,
     roleIds: rolesMap[result.id] || []
   }));
 };

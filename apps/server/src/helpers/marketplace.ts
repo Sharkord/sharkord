@@ -1,6 +1,6 @@
 import {
   MARKETPLACE_REGISTRY_URL,
-  type TMarketplaceEntry,
+  parseMarketplaceRegistry,
   type TMarketplacePluginVersion
 } from '@sharkord/shared';
 import { invariant } from '../utils/invariant';
@@ -13,7 +13,7 @@ const fetchMarketplaceVersion = async (
 
   invariant(response.ok, 'Failed to fetch marketplace registry');
 
-  const entries = (await response.json()) as TMarketplaceEntry[];
+  const entries = parseMarketplaceRegistry(await response.json());
   const entry = entries.find((e) => e.plugin.id === pluginId);
 
   invariant(entry, `Plugin '${pluginId}' not found in marketplace`);

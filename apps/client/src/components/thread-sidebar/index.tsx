@@ -3,7 +3,7 @@ import { useThreadSidebar } from '@/features/app/hooks';
 import { LocalStorageKey } from '@/helpers/storage';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ThreadContent } from './tread-content';
+import { ThreadContent } from './thread-content';
 
 const MIN_WIDTH = 360;
 const MAX_WIDTH = 600;

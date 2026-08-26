@@ -1,13 +1,15 @@
-import { sha256 } from '@sharkord/shared';
+import { ChannelType, sha256 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
-import { eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { login } from '../../__tests__/helpers';
 import { TEST_SECRET_TOKEN } from '../../__tests__/seed';
-import { tdb } from '../../__tests__/setup';
+import { tdb, testsBaseUrl } from '../../__tests__/setup';
+import { config } from '../../config';
 import { getChannelsReadStatesForUser } from '../../db/queries/channels';
 import {
   channelReadStates,
+  channels,
   invites,
   messages,
   roles,
@@ -130,6 +132,92 @@ describe('/login', () => {
     expect(unreadMap[1]).toBe(1);
   });
 
+  test('should not treat a thread reply as the latest message in the backfill', async () => {
+    const [parent] = await tdb
+      .insert(messages)
+      .values({
+        userId: 1,
+        channelId: 1,
+        content: 'top level',
+        metadata: null,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    // a reply lives in the same channel but must not move the channel's read marker,
+    // or the new user would start with the thread's parent already marked unread
+    await tdb.insert(messages).values({
+      userId: 1,
+      channelId: 1,
+      content: 'thread reply',
+      parentMessageId: parent!.id,
+      metadata: null,
+      createdAt: Date.now() + 1
+    });
+
+    const response = await login('threadbackfilluser', 'password123');
+
+    expect(response.status).toBe(200);
+
+    const newUser = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.identity, 'threadbackfilluser'))
+      .get();
+
+    const readState = await tdb
+      .select()
+      .from(channelReadStates)
+      .where(
+        and(
+          eq(channelReadStates.userId, newUser!.id),
+          eq(channelReadStates.channelId, 1)
+        )
+      )
+      .get();
+
+    expect(readState?.lastReadMessageId).toBe(parent!.id);
+
+    const unreadMap = await getChannelsReadStatesForUser(newUser!.id);
+
+    expect(unreadMap[1]).toBe(0);
+  });
+
+  test('should not write a read state for a channel with no messages', async () => {
+    const [emptyChannel] = await tdb
+      .insert(channels)
+      .values({
+        name: 'empty-for-backfill',
+        type: ChannelType.TEXT,
+        position: 99,
+        createdAt: Date.now()
+      })
+      .returning();
+
+    const response = await login('emptychanneluser', 'password123');
+
+    expect(response.status).toBe(200);
+
+    const newUser = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.identity, 'emptychanneluser'))
+      .get();
+
+    const readState = await tdb
+      .select()
+      .from(channelReadStates)
+      .where(
+        and(
+          eq(channelReadStates.userId, newUser!.id),
+          eq(channelReadStates.channelId, emptyChannel!.id)
+        )
+      )
+      .get();
+
+    expect(readState).toBeUndefined();
+  });
+
   test('should fail when allowNewUsers is false and no invite provided', async () => {
     await tdb.update(settings).set({ allowNewUsers: false });
 
@@ -171,6 +259,81 @@ describe('/login', () => {
       .get();
 
     expect(updatedInvite?.uses).toBe(1);
+  });
+
+  test('should not let concurrent registrations exceed maxUses', async () => {
+    await tdb.update(settings).set({ allowNewUsers: false });
+
+    await tdb.insert(invites).values({
+      code: 'RACEINVITE',
+      creatorId: 1,
+      maxUses: 1,
+      uses: 0,
+      expiresAt: Date.now() + 86400000,
+      createdAt: Date.now()
+    });
+
+    const responses = await Promise.all([
+      login('raceuser1', 'password123', 'RACEINVITE'),
+      login('raceuser2', 'password123', 'RACEINVITE')
+    ]);
+
+    const statuses = responses.map((response) => response.status).sort();
+
+    expect(statuses).toEqual([200, 400]);
+
+    const updatedInvite = await tdb
+      .select()
+      .from(invites)
+      .where(eq(invites.code, 'RACEINVITE'))
+      .get();
+
+    expect(updatedInvite?.uses).toBe(1);
+
+    const registered = await tdb
+      .select()
+      .from(users)
+      .where(inArray(users.identity, ['raceuser1', 'raceuser2']));
+
+    expect(registered.length).toBe(1);
+  });
+
+  test('should not consume an invite use when registration fails', async () => {
+    await tdb.update(settings).set({ allowNewUsers: false });
+
+    await tdb.insert(invites).values({
+      code: 'ROLLBACKINVITE',
+      creatorId: 1,
+      maxUses: 5,
+      uses: 0,
+      expiresAt: Date.now() + 86400000,
+      createdAt: Date.now()
+    });
+
+    // both requests pass the "identity does not exist" check, so the second
+    // one fails on the unique identity index inside the transaction
+    const responses = await Promise.all([
+      login('sameidentity', 'password123', 'ROLLBACKINVITE'),
+      login('sameidentity', 'password123', 'ROLLBACKINVITE')
+    ]);
+
+    const okCount = responses.filter((r) => r.status === 200).length;
+
+    expect(okCount).toBeGreaterThanOrEqual(1);
+
+    const updatedInvite = await tdb
+      .select()
+      .from(invites)
+      .where(eq(invites.code, 'ROLLBACKINVITE'))
+      .get();
+
+    const registered = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.identity, 'sameidentity'));
+
+    // one use per user actually created, a rolled back registration leaves none
+    expect(updatedInvite?.uses).toBe(registered.length);
   });
 
   test('should fail with expired invite', async () => {
@@ -283,6 +446,70 @@ describe('/login', () => {
     expect(data.errors).toHaveProperty('identity', 'Invalid credentials');
     expect(data.errors.identity).not.toContain('banned');
     expect(data.errors.identity).not.toContain('Test ban reason');
+  });
+
+  test('should rate limit /login on its own limiter', async () => {
+    // this used to borrow config.rateLimiters.joinServer, so tuning the join limit silently
+    // retuned brute-force protection on the password endpoint
+    const attempts = config.rateLimiters.login.maxRequests;
+
+    for (let i = 0; i < attempts; i++) {
+      await login('testowner', 'wrongpassword');
+    }
+
+    const limited = await login('testowner', 'password123');
+
+    expect(limited.status).toBe(429);
+  });
+
+  test('should not let a spoofed forwarded header reset the /login limiter', async () => {
+    // /login is keyed on the socket address, so this gate is what stands between an
+    // attacker and unlimited password guessing. the tests connect over loopback, which the
+    // default trusts, so the untrusted socket has to be set up explicitly
+    const originalTrustedProxies = [...config.server.trustedProxies];
+
+    config.server.trustedProxies = [];
+
+    try {
+      const attempts = config.rateLimiters.login.maxRequests;
+
+      for (let i = 0; i < attempts; i++) {
+        await login('testowner', 'wrongpassword', undefined, {
+          'x-forwarded-for': `1.2.3.${i}`,
+          'x-real-ip': `4.5.6.${i}`
+        });
+      }
+
+      const limited = await login('testowner', 'password123', undefined, {
+        'x-forwarded-for': '9.9.9.9',
+        'cf-connecting-ip': '8.8.8.8'
+      });
+
+      expect(limited.status).toBe(429);
+    } finally {
+      config.server.trustedProxies = originalTrustedProxies;
+    }
+  });
+
+  test('should key the /login limiter per client behind a trusted loopback proxy', async () => {
+    const attempts = config.rateLimiters.login.maxRequests;
+
+    for (let i = 0; i < attempts; i++) {
+      await login('testowner', 'wrongpassword', undefined, {
+        'x-forwarded-for': `5.5.5.${i}`
+      });
+    }
+
+    const differentClient = await login(
+      'testowner',
+      'wrongpassword',
+      undefined,
+      {
+        'x-forwarded-for': '6.6.6.6'
+      }
+    );
+
+    expect(differentClient.status).not.toBe(429);
   });
 
   test('should fail with missing identity', async () => {
@@ -420,5 +647,25 @@ describe('/login', () => {
 
     expect(decoded2).toHaveProperty('userId');
     expect(decoded2.userId).toBe(firstUser?.id);
+  });
+
+  // over a real socket, not the mock getJsonBody's own tests drive: the body cap used to
+  // destroy the request, so the 413 was written to a connection that no longer existed and
+  // every caller got a reset instead. only an end to end request can see that
+  test('should answer an oversized body with a 413', async () => {
+    const response = await fetch(`${testsBaseUrl}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        identity: 'a'.repeat(config.server.maxRequestBodyBytes + 1),
+        password: 'password123'
+      })
+    });
+
+    expect(response.status).toBe(413);
+
+    const data = (await response.json()) as { error: string };
+
+    expect(data.error).toContain(String(config.server.maxRequestBodyBytes));
   });
 });

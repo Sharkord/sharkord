@@ -1,15 +1,20 @@
 import { Dialog } from '@/components/dialogs/dialogs';
 import { logDebug } from '@/helpers/browser-logger';
 import { getHostFromServer } from '@/helpers/get-file-url';
+import { playSound } from '@/helpers/sounds';
+import { pushVoiceDebugEvent } from '@/helpers/voice-debug';
+import { i18n } from '@/i18n';
 import { cleanup, connectToTRPC, getTRPCClient } from '@/lib/trpc';
 import type { TMessageJumpToTarget } from '@/types';
 import { type TPublicServerSettings, type TServerInfo } from '@sharkord/shared';
+import { TRPCClientError } from '@trpc/client';
 import { toast } from 'sonner';
 import { appSliceActions } from '../app/slice';
 import { openDialog } from '../dialogs/actions';
 import { store } from '../store';
 import {
   channelReadStateByIdSelector,
+  currentVoiceChannelIdSelector,
   isChannelTextVisibleByIdSelector
 } from './channels/selectors';
 import {
@@ -17,9 +22,9 @@ import {
   setPluginCommands,
   setPluginComponents
 } from './plugins/actions';
-import { infoSelector } from './selectors';
+import { connectedSelector, infoSelector } from './selectors';
 import { serverSliceActions } from './slice';
-import { type TDisconnectInfo } from './types';
+import { SoundType, type TDisconnectInfo } from './types';
 
 let unsubscribeFromServer: (() => void) | null = null;
 
@@ -33,14 +38,6 @@ export const resetServerState = () => {
 
 export const setDisconnectInfo = (info: TDisconnectInfo | undefined) => {
   store.dispatch(serverSliceActions.setDisconnectInfo(info));
-};
-
-export const setConnecting = (status: boolean) => {
-  store.dispatch(serverSliceActions.setConnecting(status));
-};
-
-export const setServerId = (id: string) => {
-  store.dispatch(serverSliceActions.setServerId(id));
 };
 
 export const setDmsOpen = (open: boolean) => {
@@ -97,6 +94,12 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
 
   const { initSubscriptions } = await import('./subscriptions');
 
+  try {
+    unsubscribeFromServer?.();
+  } catch (error) {
+    logDebug('failed to unsubscribe stale subscriptions', error);
+  }
+
   unsubscribeFromServer = initSubscriptions();
 
   store.dispatch(serverSliceActions.setInitialData(data));
@@ -117,6 +120,115 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
 export const disconnectFromServer = () => {
   cleanup();
   unsubscribeFromServer?.();
+};
+
+const RECONNECT_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 8_000];
+
+let reconnectAttempt = 0;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let reconnectDisconnectInfo: TDisconnectInfo | undefined;
+
+export const cancelReconnect = () => {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+
+  reconnectAttempt = 0;
+  reconnectDisconnectInfo = undefined;
+};
+
+const abandonReconnect = () => {
+  const info = reconnectDisconnectInfo;
+
+  cleanup();
+  setDisconnectInfo(info);
+  playSound(SoundType.SERVER_DISCONNECTED);
+};
+
+// a reconnected socket starts unauthenticated: the server only sets ctx.authenticated and
+// tracks the user in joinServer, and every subscription sits behind that. so recovering a
+// dropped connection means replaying the whole join, not just reopening the transport.
+export const reconnectToServer = (info: TDisconnectInfo) => {
+  if (reconnectTimer) return;
+
+  const state = store.getState();
+
+  if (reconnectAttempt === 0 && !connectedSelector(state)) {
+    setConnected(false);
+    cleanup();
+
+    return;
+  }
+
+  setConnected(false);
+
+  reconnectDisconnectInfo = info;
+
+  const delay = RECONNECT_DELAYS_MS[reconnectAttempt];
+
+  if (delay === undefined) {
+    abandonReconnect();
+    return;
+  }
+
+  reconnectAttempt += 1;
+
+  pushVoiceDebugEvent('ws', 'reconnect scheduled', {
+    attempt: reconnectAttempt,
+    delay,
+    code: info.code,
+    reason: info.reason
+  });
+
+  store.dispatch(
+    serverSliceActions.setReconnect({
+      attempt: reconnectAttempt,
+      maxAttempts: RECONNECT_DELAYS_MS.length,
+      nextAttemptAt: Date.now() + delay
+    })
+  );
+
+  reconnectTimer = setTimeout(async () => {
+    reconnectTimer = null;
+
+    store.dispatch(
+      serverSliceActions.setReconnect({
+        attempt: reconnectAttempt,
+        maxAttempts: RECONNECT_DELAYS_MS.length,
+        nextAttemptAt: null
+      })
+    );
+
+    try {
+      // connect() opens the password dialog instead of joining when the server asks for one,
+      // so reconnecting stays true until setInitialData clears it
+      await connect();
+      cancelReconnect();
+
+      pushVoiceDebugEvent('ws', 'reconnected', {
+        voiceChannelId: currentVoiceChannelIdSelector(store.getState())
+      });
+    } catch (error) {
+      logDebug('reconnect attempt failed', error);
+
+      pushVoiceDebugEvent('error', 'reconnect attempt failed', {
+        error: String(error)
+      });
+
+      const isAuthFailure =
+        error instanceof TRPCClientError &&
+        (error.data?.code === 'UNAUTHORIZED' ||
+          error.data?.code === 'FORBIDDEN');
+
+      if (isAuthFailure) {
+        abandonReconnect();
+        return;
+      }
+
+      reconnectToServer(info);
+    }
+  }, delay);
 };
 
 export const jumpToMessage = (target: TMessageJumpToTarget) => {
@@ -140,7 +252,7 @@ export const jumpToMessage = (target: TMessageJumpToTarget) => {
   }
 };
 
-export const markChannelAsRead = (
+export const markChannelAsRead = async (
   channelId: number,
   force: boolean = false
 ) => {
@@ -157,12 +269,20 @@ export const markChannelAsRead = (
     );
   }
 
-  const trpc = getTRPCClient();
-
   try {
-    trpc.channels.markAsRead.mutate({ channelId });
+    // inside the try: getTRPCClient throws while a reconnect holds no client, and every
+    // caller here dispatches rather than awaits, so it surfaces as an unhandled rejection
+    // with the optimistic zero left behind
+    await getTRPCClient().channels.markAsRead.mutate({ channelId });
   } catch {
-    // ignore errors
+    if (unreadCount > 0) {
+      store.dispatch(
+        serverSliceActions.setChannelReadState({
+          channelId,
+          count: unreadCount
+        })
+      );
+    }
   }
 };
 
@@ -172,12 +292,13 @@ window.useToken = async (token: string) => {
   try {
     await trpc.others.useSecretToken.mutate({ token });
 
-    toast.success('You are now an owner of this server');
+    toast.success(i18n.t('common:nowServerOwner'));
   } catch {
-    toast.error('Invalid access token');
+    toast.error(i18n.t('common:invalidAccessToken'));
   }
 };
 
-window.openSoundsModal = () => {
-  openDialog(Dialog.SOUNDS);
+window.sharkordDebug = {
+  ...window.sharkordDebug,
+  openSoundsModal: () => openDialog(Dialog.SOUNDS)
 };

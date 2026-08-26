@@ -7,10 +7,10 @@ import {
   type TMessageMetadata
 } from '@sharkord/shared';
 import { normalizeComparableUrl } from './helpers';
+import { readFromCache, writeToCache } from './lru-cache';
 import type { TFoundMedia } from './types';
 
 const ALLOWED_MEDIA_TYPES = ['image', 'video', 'audio'];
-const MAX_CACHE_SIZE = 500;
 
 const mediaCache = new Map<string, TFoundMedia[]>();
 
@@ -38,18 +38,6 @@ const isMediaMetadata = (
   return (
     !!metadata.mediaType && ALLOWED_MEDIA_TYPES.includes(metadata.mediaType)
   );
-};
-
-const trimMediaCache = () => {
-  if (mediaCache.size < MAX_CACHE_SIZE) {
-    return;
-  }
-
-  const oldestKey = mediaCache.keys().next().value;
-
-  if (oldestKey) {
-    mediaCache.delete(oldestKey);
-  }
 };
 
 const getStableMediaKey = (counts: Map<string, number>, baseKey: string) => {
@@ -81,9 +69,9 @@ const buildMediaSignature = (message: TJoinedMessage) => {
 const extractMessageMedia = (message: TJoinedMessage): TFoundMedia[] => {
   const mediaSignature = buildMediaSignature(message);
 
-  if (mediaCache.has(mediaSignature)) {
-    return mediaCache.get(mediaSignature)!;
-  }
+  const cached = readFromCache(mediaCache, mediaSignature);
+
+  if (cached !== undefined) return cached;
 
   const mediaKeyCounts = new Map<string, number>();
 
@@ -138,8 +126,6 @@ const extractMessageMedia = (message: TJoinedMessage): TFoundMedia[] => {
     })
     .filter((media) => !!media) as TFoundMedia[];
 
-  trimMediaCache();
-
   const seenMedia = new Set<string>();
 
   const media = [...mediaFromFiles, ...mediaFromMetadata].filter((item) => {
@@ -154,7 +140,7 @@ const extractMessageMedia = (message: TJoinedMessage): TFoundMedia[] => {
     return true;
   });
 
-  mediaCache.set(mediaSignature, media);
+  writeToCache(mediaCache, mediaSignature, media);
 
   return media;
 };

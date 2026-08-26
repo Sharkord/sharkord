@@ -8,29 +8,25 @@ import { files, settings } from '../schema';
 let token: string;
 
 const getSettings = async (): Promise<TJoinedSettings> => {
-  const serverSettings = await db.select().from(settings).get();
+  const row = await db
+    .select({ settings, logo: files })
+    .from(settings)
+    .leftJoin(files, eq(files.id, settings.logoId))
+    .get();
 
-  if (!serverSettings) {
+  if (!row) {
     throw new Error(
       'Server settings not found in database. Something is wrong.'
     );
   }
 
-  if (!token && serverSettings.secretToken) {
-    token = serverSettings.secretToken;
+  if (!token && row.settings.secretToken) {
+    token = row.settings.secretToken;
   }
 
-  const logo = serverSettings.logoId
-    ? await db
-        .select()
-        .from(files)
-        .where(eq(files.id, serverSettings.logoId))
-        .get()
-    : undefined;
-
   return {
-    ...serverSettings,
-    logo: logo ?? null
+    ...row.settings,
+    logo: row.logo ?? null
   };
 };
 

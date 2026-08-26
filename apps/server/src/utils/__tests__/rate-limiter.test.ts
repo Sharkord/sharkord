@@ -95,7 +95,7 @@ describe('FixedWindowRateLimiter', () => {
     });
   });
 
-  test('evicts oldest key when maxEntries is reached', () => {
+  test('evicts to stay within maxEntries', () => {
     const limiter = new FixedWindowRateLimiter({
       maxRequests: 2,
       windowMs: 60_000,
@@ -113,5 +113,59 @@ describe('FixedWindowRateLimiter', () => {
       remaining: 1,
       retryAfterMs: 0
     });
+  });
+
+  test('reclaims expired entries and leaves live ones alone', () => {
+    const limiter = new FixedWindowRateLimiter({
+      maxRequests: 1,
+      windowMs: 50,
+      maxEntries: 3
+    });
+
+    limiter.consume('stale-a');
+    limiter.consume('stale-b');
+
+    Bun.sleepSync(60);
+
+    // inserted after the others expired, so this one is the only live entry
+    limiter.consume('live');
+    limiter.consume('newcomer');
+
+    // the sweep freed the two expired keys, so the live window was untouched
+    expect(limiter.consume('live').allowed).toBe(false);
+  });
+
+  test('evicts a batch when full instead of a single entry', () => {
+    const limiter = new FixedWindowRateLimiter({
+      maxRequests: 1,
+      windowMs: 60_000,
+      maxEntries: 20
+    });
+
+    for (let i = 0; i < 20; i++) {
+      limiter.consume(`key-${i}`);
+    }
+
+    expect(limiter.size).toBe(20);
+
+    // one insert over the cap evicts ceil(20 * 0.1) = 2, leaving headroom so
+    // the next inserts do not each trigger another sweep
+    limiter.consume('newcomer');
+
+    expect(limiter.size).toBe(19);
+  });
+
+  test('never grows past maxEntries', () => {
+    const limiter = new FixedWindowRateLimiter({
+      maxRequests: 1,
+      windowMs: 60_000,
+      maxEntries: 10
+    });
+
+    for (let i = 0; i < 500; i++) {
+      limiter.consume(`key-${i}`);
+    }
+
+    expect(limiter.size).toBeLessThanOrEqual(10);
   });
 });

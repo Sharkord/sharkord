@@ -1,6 +1,7 @@
-import { Permission, zPluginId } from '@sharkord/shared';
+import { ActivityLogType, Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
 import { pluginManager } from '../../plugins';
+import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure } from '../../utils/trpc';
 
 const updateSettingRoute = protectedProcedure
@@ -19,6 +20,12 @@ const updateSettingRoute = protectedProcedure
       input.key,
       input.value
     );
+
+    enqueueActivityLog({
+      type: ActivityLogType.PLUGIN_SETTING_UPDATED,
+      userId: ctx.user.id,
+      details: { pluginId: input.pluginId, key: input.key }
+    });
   });
 
 export { updateSettingRoute };

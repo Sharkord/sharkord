@@ -9,10 +9,17 @@ import fs from 'fs/promises';
 import path from 'path';
 import { getMockedToken, uploadFile } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
-import { files, roles, settings, userRoles } from '../../db/schema';
+import {
+  files,
+  messageFiles,
+  roles,
+  settings,
+  userRoles,
+  users
+} from '../../db/schema';
+import { fileManager } from '../../helpers/file-manager';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../../helpers/paths';
 import { pluginManager } from '../../plugins';
-import { fileManager } from '../file-manager';
 
 const UNCOMPRESSED_PNG_PATH = path.join(
   __dirname,
@@ -633,6 +640,14 @@ describe('file manager', () => {
 
     const oldSavedFile = await fileManager.saveFile(oldTempFile.id, 1);
 
+    // only message attachments are reclaimable, so the file has to be attached
+    // to one for this to be a realistic candidate
+    await tdb.insert(messageFiles).values({
+      messageId: 1,
+      fileId: oldSavedFile.id,
+      createdAt: Date.now()
+    });
+
     await Bun.sleep(100); // ensure different timestamps
 
     const totalLimit = oldSavedFile.size + 5;
@@ -675,6 +690,75 @@ describe('file manager', () => {
       .get();
 
     expect(newDbFile).toBeDefined();
+  });
+
+  test('should not reclaim avatars, emojis or the logo when freeing space', async () => {
+    const avatarName = `avatar-${Date.now()}.txt`;
+    const avatarPath = path.join(UPLOADS_PATH, avatarName);
+
+    await fs.writeFile(avatarPath, 'avatar content that is long enough');
+
+    const avatarStats = await fs.stat(avatarPath);
+
+    const avatarTempFile = await fileManager.addTemporaryFile({
+      filePath: avatarPath,
+      size: avatarStats.size,
+      originalName: avatarName,
+      userId: 1
+    });
+
+    const avatarFile = await fileManager.saveFile(avatarTempFile.id, 1);
+
+    await tdb
+      .update(users)
+      .set({ avatarId: avatarFile.id })
+      .where(eq(users.id, 1));
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, avatarFile.name));
+
+    await Bun.sleep(100);
+
+    // a quota that the avatar alone already exceeds, so an unfiltered reclaim
+    // would pick it as the oldest file on the server
+    await tdb.update(settings).set({
+      storageQuota: avatarFile.size + 5,
+      storageUploadMaxFileSize: avatarFile.size + 5,
+      storageOverflowAction: StorageOverflowAction.DELETE_OLD_FILES
+    });
+
+    const newName = `attachment-${Date.now()}.txt`;
+    const newPath = path.join(UPLOADS_PATH, newName);
+
+    await fs.writeFile(newPath, 'new attachment');
+
+    const newStats = await fs.stat(newPath);
+
+    const newTempFile = await fileManager.addTemporaryFile({
+      filePath: newPath,
+      size: newStats.size,
+      originalName: newName,
+      userId: 1
+    });
+
+    const newSavedFile = await fileManager.saveFile(newTempFile.id, 1);
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, newSavedFile.name));
+
+    const avatarAfter = await tdb
+      .select()
+      .from(files)
+      .where(eq(files.id, avatarFile.id))
+      .get();
+
+    expect(avatarAfter).toBeDefined();
+
+    const ownerAfter = await tdb
+      .select({ avatarId: users.avatarId })
+      .from(users)
+      .where(eq(users.id, 1))
+      .get();
+
+    expect(ownerAfter!.avatarId).toBe(avatarFile.id);
   });
 
   test('should allow save when storage limits are disabled', async () => {

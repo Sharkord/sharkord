@@ -49,7 +49,8 @@ persistent goes through the database.
   `utils/` — infrastructure with no domain knowledge (trpc setup, pubsub, env, rate
   limiters). If unsure, it's a helper.
 - `queues/` — background work off the request path. `crons/` — scheduled jobs.
-- `plugins/` — plugin loading, registries, event bus, sandboxing.
+- `plugins/` — plugin loading, registries, event bus. Plugins run in the server
+  process by design, there is no sandbox and isolation is deliberately not attempted.
 
 Conventions:
 
@@ -181,6 +182,15 @@ blocks everything. Optimize for **round trips and row counts**, not for clever S
   `channels_category_position_idx`). Adding an index is a schema change → new migration.
 - **Group multi-statement writes in `db.transaction()`** — it is one fsync instead of many
   and keeps the data consistent on failure. Reorder/permission/delete routes already do it.
+- **The transaction callback must be synchronous.** Write
+  `db.transaction((tx) => { ... })`, never `db.transaction(async (tx) => { ... })`, and end
+  every statement inside with the driver's sync execution (`.run()`, `.get()`, `.all()`)
+  instead of `await`. drizzle's bun-sqlite driver runs the callback inside bun's native
+  `Database.transaction()`, which commits the moment the callback returns: an async
+  callback returns a pending promise, so the commit happens before any awaited statement
+  has run and **nothing rolls back**. Anything genuinely async (password hashing, a
+  settings read) has to happen before the transaction opens. `__tests__/transactions.test.ts`
+  guards this.
 - **Let the database cascade.** Foreign keys declare `onDelete: 'cascade'` and
   `PRAGMA foreign_keys = ON` is set, so don't hand-delete child rows.
 - Don't add a cache. If a query is measurably slow, fix the index or the query shape
@@ -240,9 +250,11 @@ reason — extend `seed.ts` or `helpers.ts` instead.
 
 `apps/client/src`:
 
-- `features/` — Redux Toolkit state, split by domain, each with the same four files:
-  `slice.ts`, `actions.ts`, `selectors.ts`, `hooks.ts`. Components read state through the
-  hooks/selectors, never by reaching into the store shape.
+- `features/` — Redux Toolkit state, read through hooks/selectors, never by reaching into the
+  store shape. Top level slices (`app`, `dialogs`, `server-screens`, `server`) own a `slice.ts`;
+  the `server/*` domains have **none**, their reducers all live in `features/server/slice.ts`
+  and the domain folder holds `actions.ts`, `selectors.ts`, `hooks.ts` and `subscriptions.ts`.
+  A service that owns no state belongs in `helpers/` or `lib/`, not here.
 - `components/` — app components, one folder per component with `index.tsx` plus its local
   parts, `helpers.ts` and `hooks/`. Keep component-local logic in that folder.
 - `screens/` — top-level routes. `hooks/` — generic reusable hooks (`use-*.ts`).
@@ -252,11 +264,16 @@ reason — extend `seed.ts` or `helpers.ts` instead.
   no `any`. Import with the `@/` alias.
 - User-facing strings go through i18n (`src/i18n`), never hardcoded. That includes toast
   messages in `catch` blocks: `toast.error(getTrpcError(error, t('failedX')))`.
+  In a component or a hook, always use `const { t } = useTranslation('ns')`, and add `t` to
+  the dependency array of any `useCallback`/`useEffect` that uses it. The imperative
+  `import { i18n } from '@/i18n'` is only for code that is neither, a plain module such as
+  `features/**/actions.ts` or a `helpers/` function, where there is no hook to call.
 - Agressive memo everywhere: `React.memo`, `useMemo`, `useCallback`. Never define an event
   handler inline in JSX (`onDrop={(e) => ...}`, `onClick={() => setX(false)}`) — a new
   function identity on every render defeats the `React.memo` on the child receiving it.
   Extract it to a named `useCallback` above the return.
-- Components should be small and focused; if a component is >200 lines, break it up. If a screen is >400 lines, break it up.
+- Components should be small and focused. Split when a file has become hard to follow or has
+  grown a second responsibility, **never because it crossed a line count**.
 
 Server calls go inline where they are used, wrapped in `try`/`catch` with a toast, the way
 `handleDragEnd` in `left-sidebar/channels.tsx` does it. Do not add a function to
@@ -276,32 +293,30 @@ Name a hook after the thing it owns, not the event it reacts to:
 ### Selectors and caching
 
 Every selector runs on every dispatch, for every subscribed component. A selector that
-builds a new array or object on each call hands `useSelector` a new reference every time
-and re-renders its component on **unrelated** state changes. Pick the right tool:
+builds a new array or object **without memoizing** hands `useSelector` a new reference every
+time and re-renders its component on **unrelated** state changes. Pick the right tool:
 
 - **Plain function** for a direct state read: `(state: IRootState) => state.server.x`.
   Nothing is derived, so there is nothing to memoize. `selectedChannelIdSelector`.
 - **`createSelector`** (`@reduxjs/toolkit`) the moment you `filter`, `map`, `sort`,
   `reduce`, or build an object/array. `directMessagesUnreadCountSelector`.
-- **`createCachedSelector`** (`re-reselect`) for any selector that takes a parameter, keyed
+- **`createCachedSelector`** (`re-reselect`) for a selector that takes a parameter, keyed
   by that parameter: `createCachedSelector([inputs, (_, id) => id], fn)((_, id) => id)`.
-  `createSelector` has a cache of one, so two components asking for different ids in the
-  same render evict each other and recompute forever. `channelByIdSelector`,
-  `userByIdSelector`.
+  `channelByIdSelector`, `userByIdSelector`.
 
-Rules that follow from that:
+Installed `reselect` 5 memoizes per combination of inputs, not in a single slot, so
+parameterized selectors do not evict each other. Rules:
 
-- **Never wrap a parameterized selector in a plain `createSelector`.** The outer selector
-  inherits the cache of one and thrashes exactly the same way, which is invisible when the
-  result is a primitive and a re-render loop when it is an array (`userStatusSelector` and
-  `userRolesSelector` are the existing offenders, don't copy them). Use
-  `createCachedSelector` with the same key.
-- **Return a stable empty value.** A `?? {}` or `?? []` fallback allocates on every call.
-  Use the module-level `DEFAULT_OBJECT` / `DEFAULT_ARRAY` constant the domain already
-  declares.
+- **Prefer `createCachedSelector` for parameterized selectors**, for explicit keying and an
+  obvious cache boundary. This is a **consistency** rule, not a performance one: do not
+  rewrite a working plain `createSelector` on performance grounds.
+- **Return a stable empty value.** A `?? {}` or `?? []` fallback in a **plain** selector
+  allocates on every call and re-renders the component on every dispatch, since there is no
+  memoization to save you. Use the module-level `DEFAULT_OBJECT` / `DEFAULT_ARRAY` the domain
+  already declares.
 - **Compose selectors, don't re-derive.** Pass existing selectors as inputs rather than
-  reaching into `state` again inside the result function, so the memoization actually has
-  something to compare.
+  reaching into `state` again inside the result function, so the memoization has something to
+  compare.
 - **A selector that must stay uncached** (because it reads several slices imperatively)
   belongs in actions only, and says so in a comment above it, the way
   `isChannelTextVisibleByIdSelector` does.
@@ -314,14 +329,26 @@ Rules that follow from that:
 - Domain rules used by more than one selector go in `features/server/helpers.ts`
   (`canViewChannel`), never re-implemented inline. Re-implementing one is how the owner
   branch gets dropped.
+- **Name selector results before comparing them.** When reading the store imperatively, assign
+  each call to a `const` and compare the names, never the calls:
+
+  ```ts
+  // no
+  if (selectedChannelIdSelector(state) === currentVoiceChannelIdSelector(state)) {
+
+  // yes
+  const selectedChannelId = selectedChannelIdSelector(state);
+  const currentVoiceChannelId = currentVoiceChannelIdSelector(state);
+
+  if (selectedChannelId === currentVoiceChannelId) {
+  ```
+
+  The names are what say which two things are being compared, the call sites do not. It also
+  keeps the reads together at the top of the function, where a stale `state` is obvious. A
+  single boolean guard whose selector already reads as the condition is fine as it stands
+  (`if (isCurrentVoiceChannelSelectedSelector(state)) return;`).
 
 `bun run magic` applies here too.
-
-## Before writing new code
-
-Make sure you understand the existing patterns and helpers. If you find yourself writing a lot of new code, check if it can be done with existing helpers or patterns first. Avoid introducing unneeded abstractions or dependencies for a single use case unless absolutely necessary.
-
-Never use dashes (—) when writing code, comments, UI strings, or commit messages.
 
 ## After the feature/fix is done
 
@@ -337,16 +364,19 @@ This command will output a list of missing translations, including the language,
 
 ### Tests
 
-Make sure all tests pass and that you have added tests for any new functionality. Run the following command to run all tests:
+Every new behaviour needs tests and the whole suite must pass, see [Testing](#testing).
 
-```bash
-bun run test
-```
+## Style
 
-
-## Extra notes
-
-Always start comments with lowercase
-NEVER comment in the middle of a react component's JSX
-NEVER comment in a type definition
-Do not make useless comments like "this is a function that does X" or "this is a type definition for Y". Comments are useful for edge cases, explaining why something is done a certain way, or providing context that isn't obvious from the code itself.
+- Never use dashes (—) in code, comments, UI strings or commit messages.
+- Always start comments with lowercase.
+- Comment edge cases, non-obvious context and **why**. Never restate what the code says.
+- NEVER comment in the middle of a react component's JSX, or inside a type definition.
+- NEVER nest ternaries. One `a ? b : c` is fine; a ternary inside another one's branches is
+  not, in code or in JSX. Use an early return, a lookup object, or an `if`/`else` assigned to a
+  `let`. If the branches are what a component renders, split it into two components or pull the
+  choice into a variable above the return.
+- NEVER prefix a call with `void`. Write `returnToPresent();`, not `void returnToPresent();`.
+  It reads as a type, adds nothing at runtime, and marks the one thing worth looking at (a
+  promise nobody awaits) as deliberate instead of leaving it visible. If the promise genuinely
+  cannot be awaited, either handle its failure with a `.catch()` or say why in a comment.

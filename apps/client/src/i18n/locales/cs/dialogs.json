@@ -126,5 +126,6 @@
   "pluginInstallUseDocker": "Silně doporučujeme spouštět Sharkord v kontejneru pro izolaci a redukci rizik.",
   "pluginInstallDocsNote": "Více informací naleznete v dokumentaci:",
   "pluginInstallConfirmBtn": "Nainstalovat rozšíření",
-  "pluginInstallConfirmCountdown": "Čekejte ({{seconds}}s)"
+  "pluginInstallConfirmCountdown": "Čekejte ({{seconds}}s)",
+  "searchTruncated": "Zobrazují se pouze nejnovější shody. Upřesněte hledání pro zúžení výsledků."
 }

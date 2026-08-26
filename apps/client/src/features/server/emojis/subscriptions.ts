@@ -1,6 +1,7 @@
 import { logDebug } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TJoinedEmoji } from '@sharkord/shared';
+import { handleSubscriptionError } from '../subscription-error';
 import { addEmoji, removeEmoji, updateEmoji } from './actions';
 
 const subscribeToEmojis = () => {
@@ -11,7 +12,7 @@ const subscribeToEmojis = () => {
       logDebug('[EVENTS] emojis.onCreate', { emoji });
       addEmoji(emoji);
     },
-    onError: (err) => console.error('onEmojiCreate subscription error:', err)
+    onError: handleSubscriptionError('onEmojiCreate')
   });
 
   const onEmojiDeleteSub = trpc.emojis.onDelete.subscribe(undefined, {
@@ -19,7 +20,7 @@ const subscribeToEmojis = () => {
       logDebug('[EVENTS] emojis.onDelete', { emojiId });
       removeEmoji(emojiId);
     },
-    onError: (err) => console.error('onEmojiDelete subscription error:', err)
+    onError: handleSubscriptionError('onEmojiDelete')
   });
 
   const onEmojiUpdateSub = trpc.emojis.onUpdate.subscribe(undefined, {
@@ -27,7 +28,7 @@ const subscribeToEmojis = () => {
       logDebug('[EVENTS] emojis.onUpdate', { emoji });
       updateEmoji(emoji.id, emoji);
     },
-    onError: (err) => console.error('onEmojiUpdate subscription error:', err)
+    onError: handleSubscriptionError('onEmojiUpdate')
   });
 
   return () => {

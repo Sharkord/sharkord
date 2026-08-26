@@ -1,5 +1,6 @@
 import type {
   PluginContext,
+  PluginModule,
   TCreateStreamOptions,
   TExternalStreamHandle,
   TPluginHttpMethod,
@@ -43,11 +44,6 @@ import { PluginHttpRouteRegistry } from './http-route-registry';
 import { PluginLogger } from './plugin-logger';
 import { PluginSettingsManager } from './plugin-settings-manager';
 import { PluginStateStore } from './plugin-state-store';
-
-type PluginModule = {
-  onLoad: (ctx: PluginContext) => void | Promise<void>;
-  onUnload?: (ctx: UnloadPluginContext) => void | Promise<void>;
-};
 
 class PluginManager {
   private loadedPlugins = new Map<string, PluginModule>();
@@ -227,16 +223,8 @@ class PluginManager {
     return path.join(pluginPath, SERVER_ENTRY_FILE);
   };
 
-  private getPluginModuleSpecifier = async (
-    pluginPath: string,
-    version: string
-  ): Promise<string> => {
-    const serverEntryPath = this.getServerEntryPath(pluginPath);
-    const stat = await fs.stat(serverEntryPath);
-    const moduleUrl = pathToFileURL(serverEntryPath).href;
-
-    return `${moduleUrl}?version=${encodeURIComponent(version)}&mtime=${encodeURIComponent(stat.mtimeMs.toString())}&size=${stat.size}`;
-  };
+  private getPluginModuleSpecifier = (pluginPath: string): string =>
+    pathToFileURL(this.getServerEntryPath(pluginPath)).href;
 
   private invalidateDynamicImportCache = (pluginPath: string) => {
     const serverEntryPath = this.getServerEntryPath(pluginPath);
@@ -399,16 +387,20 @@ class PluginManager {
 
     try {
       const ctx = this.createContext(pluginId);
-      const moduleSpecifier = await this.getPluginModuleSpecifier(
-        info.path,
-        info.version
-      );
+      const moduleSpecifier = this.getPluginModuleSpecifier(info.path);
 
       const mod = await import(moduleSpecifier);
 
       if (typeof mod.onLoad !== 'function') {
         throw new Error(
           `Plugin ${pluginId} does not export an 'onLoad' function`
+        );
+      }
+
+      if (typeof mod.onUnload !== 'function') {
+        logger.warn(
+          "Plugin %s does not export an 'onUnload' function. This will be required in a future SDK version.",
+          pluginId
         );
       }
 
@@ -463,19 +455,16 @@ class PluginManager {
       return;
     }
 
-    if (typeof pluginModule.onUnload === 'function') {
-      try {
-        const unloadCtx: UnloadPluginContext =
-          this.createUnloadContext(pluginId);
+    try {
+      const unloadCtx: UnloadPluginContext = this.createUnloadContext(pluginId);
 
-        await pluginModule.onUnload(unloadCtx);
-      } catch (error) {
-        logger.error(
-          'Error in plugin %s onUnload: %s',
-          pluginId,
-          getErrorMessage(error)
-        );
-      }
+      await pluginModule.onUnload?.(unloadCtx);
+    } catch (error) {
+      logger.error(
+        'Error in plugin %s onUnload: %s',
+        pluginId,
+        getErrorMessage(error)
+      );
     }
 
     this.cleanupPluginRegistrations(pluginId);
@@ -506,6 +495,151 @@ class PluginManager {
     }
   };
 
+  // the parts an unload context also needs. Built separately so unloading does
+  // not construct the registration closures (http, commands, actions, settings,
+  // hooks) only to discard them
+  private createSharedContext = (
+    pluginId: string,
+    scopedLogger: ReturnType<PluginLogger['createScopedLogger']>
+  ) => ({
+    path: this.getPluginPath(pluginId),
+    logger: scopedLogger,
+    // deprecated flat aliases (ctx.log / ctx.debug / ctx.error), kept so
+    // existing plugins keep working. ctx.logger.* is the supported form
+    ...scopedLogger,
+    ui: {
+      enable: () => {
+        this.uiState.set(pluginId, true);
+        pubsub.publish(
+          ServerEvents.PLUGIN_COMPONENTS_CHANGE,
+          this.getPluginIdsWithComponents()
+        );
+      },
+      disable: () => {
+        this.uiState.set(pluginId, false);
+        pubsub.publish(
+          ServerEvents.PLUGIN_COMPONENTS_CHANGE,
+          this.getPluginIdsWithComponents()
+        );
+      }
+    },
+    voice: {
+      getRouter: (channelId: number) => {
+        const channel = VoiceRuntime.findById(channelId);
+
+        if (!channel) {
+          throw new Error(
+            `Voice runtime not found for channel ID ${channelId}`
+          );
+        }
+
+        return channel.getRouter();
+      },
+      createStream: (options: TCreateStreamOptions): TExternalStreamHandle => {
+        const channel = VoiceRuntime.findById(options.channelId);
+
+        if (!channel) {
+          throw new Error(
+            `Voice runtime not found for channel ID ${options.channelId}`
+          );
+        }
+
+        const streamId = channel.createExternalStream({
+          title: options.title,
+          key: options.key,
+          pluginId,
+          avatarUrl: options.avatarUrl,
+          bannerUrl: options.bannerUrl,
+          producers: options.producers,
+          videoLayers: options.videoLayers
+        });
+
+        const stream = channel.getState().externalStreams[streamId]!;
+
+        pubsub.publish(ServerEvents.VOICE_ADD_EXTERNAL_STREAM, {
+          channelId: options.channelId,
+          streamId,
+          stream
+        });
+
+        if (options.producers.audio) {
+          pubsub.publishForChannel(
+            options.channelId,
+            ServerEvents.VOICE_NEW_PRODUCER,
+            {
+              channelId: options.channelId,
+              remoteId: streamId,
+              kind: StreamKind.EXTERNAL_AUDIO
+            }
+          );
+        }
+
+        if (options.producers.video) {
+          pubsub.publishForChannel(
+            options.channelId,
+            ServerEvents.VOICE_NEW_PRODUCER,
+            {
+              channelId: options.channelId,
+              remoteId: streamId,
+              kind: StreamKind.EXTERNAL_VIDEO
+            }
+          );
+        }
+
+        scopedLogger.debug(
+          `Created external stream '${options.title}' (key: ${options.key}, id: ${streamId}) with tracks: audio=${!!options.producers.audio}, video=${!!options.producers.video}`
+        );
+
+        return {
+          streamId,
+          remove: () => {
+            channel.removeExternalStream(streamId);
+
+            scopedLogger.debug(
+              `Removed external stream '${options.title}' (key: ${options.key}, id: ${streamId})`
+            );
+          },
+          update: (updateOptions) => {
+            channel.updateExternalStream(streamId, updateOptions);
+
+            scopedLogger.debug(
+              `Updated external stream '${options.title}' (key: ${options.key}, id: ${streamId})`
+            );
+          }
+        };
+      },
+      getListenInfo: () => VoiceRuntime.getListenInfo()
+    },
+    messages: {
+      send: async (
+        channelId: number,
+        content: string,
+        options?: {
+          parentMessageId?: number;
+          replyToMessageId?: number;
+        }
+      ) =>
+        createPluginMessage({
+          pluginId,
+          channelId,
+          content,
+          parentMessageId: options?.parentMessageId,
+          replyToMessageId: options?.replyToMessageId
+        }),
+      edit: async (messageId: number, content: string) =>
+        editPluginMessage({
+          pluginId,
+          messageId,
+          content
+        }),
+      delete: async (messageId: number) =>
+        deletePluginMessage({
+          pluginId,
+          messageId
+        })
+    }
+  });
+
   private createContext = (pluginId: string): PluginContext => {
     const scopedLogger = this.pluginLogger.createScopedLogger(pluginId);
 
@@ -522,9 +656,7 @@ class PluginManager {
 
     return {
       pluginId,
-      path: this.getPluginPath(pluginId),
-      logger: scopedLogger,
-      ...scopedLogger,
+      ...this.createSharedContext(pluginId, scopedLogger),
       events: {
         on: (event, handler) => {
           return eventBus.register(pluginId, event, handler);
@@ -533,143 +665,10 @@ class PluginManager {
           eventBus.unregister(pluginId, event, handler);
         }
       },
-      ui: {
-        enable: () => {
-          this.uiState.set(pluginId, true);
-          pubsub.publish(
-            ServerEvents.PLUGIN_COMPONENTS_CHANGE,
-            this.getPluginIdsWithComponents()
-          );
-        },
-        disable: () => {
-          this.uiState.set(pluginId, false);
-          pubsub.publish(
-            ServerEvents.PLUGIN_COMPONENTS_CHANGE,
-            this.getPluginIdsWithComponents()
-          );
-        }
-      },
       actions: {
         register: (action) => {
           this.actionRegistry.register(pluginId, action);
         }
-      },
-      voice: {
-        getRouter: (channelId: number) => {
-          const channel = VoiceRuntime.findById(channelId);
-
-          if (!channel) {
-            throw new Error(
-              `Voice runtime not found for channel ID ${channelId}`
-            );
-          }
-
-          return channel.getRouter();
-        },
-        createStream: (
-          options: TCreateStreamOptions
-        ): TExternalStreamHandle => {
-          const channel = VoiceRuntime.findById(options.channelId);
-
-          if (!channel) {
-            throw new Error(
-              `Voice runtime not found for channel ID ${options.channelId}`
-            );
-          }
-
-          const streamId = channel.createExternalStream({
-            title: options.title,
-            key: options.key,
-            pluginId,
-            avatarUrl: options.avatarUrl,
-            bannerUrl: options.bannerUrl,
-            producers: options.producers,
-            videoLayers: options.videoLayers
-          });
-
-          const stream = channel.getState().externalStreams[streamId]!;
-
-          pubsub.publish(ServerEvents.VOICE_ADD_EXTERNAL_STREAM, {
-            channelId: options.channelId,
-            streamId,
-            stream
-          });
-
-          if (options.producers.audio) {
-            pubsub.publishForChannel(
-              options.channelId,
-              ServerEvents.VOICE_NEW_PRODUCER,
-              {
-                channelId: options.channelId,
-                remoteId: streamId,
-                kind: StreamKind.EXTERNAL_AUDIO
-              }
-            );
-          }
-
-          if (options.producers.video) {
-            pubsub.publishForChannel(
-              options.channelId,
-              ServerEvents.VOICE_NEW_PRODUCER,
-              {
-                channelId: options.channelId,
-                remoteId: streamId,
-                kind: StreamKind.EXTERNAL_VIDEO
-              }
-            );
-          }
-
-          scopedLogger.debug(
-            `Created external stream '${options.title}' (key: ${options.key}, id: ${streamId}) with tracks: audio=${!!options.producers.audio}, video=${!!options.producers.video}`
-          );
-
-          return {
-            streamId,
-            remove: () => {
-              channel.removeExternalStream(streamId);
-
-              scopedLogger.debug(
-                `Removed external stream '${options.title}' (key: ${options.key}, id: ${streamId})`
-              );
-            },
-            update: (updateOptions) => {
-              channel.updateExternalStream(streamId, updateOptions);
-
-              scopedLogger.debug(
-                `Updated external stream '${options.title}' (key: ${options.key}, id: ${streamId})`
-              );
-            }
-          };
-        },
-        getListenInfo: () => VoiceRuntime.getListenInfo()
-      },
-      messages: {
-        send: async (
-          channelId: number,
-          content: string,
-          options?: {
-            parentMessageId?: number;
-            replyToMessageId?: number;
-          }
-        ) =>
-          createPluginMessage({
-            pluginId,
-            channelId,
-            content,
-            parentMessageId: options?.parentMessageId,
-            replyToMessageId: options?.replyToMessageId
-          }),
-        edit: async (messageId: number, content: string) =>
-          editPluginMessage({
-            pluginId,
-            messageId,
-            content
-          }),
-        delete: async (messageId: number) =>
-          deletePluginMessage({
-            pluginId,
-            messageId
-          })
       },
       commands: {
         register: (command) => {
@@ -715,20 +714,11 @@ class PluginManager {
     };
   };
 
-  private createUnloadContext = (pluginId: string): UnloadPluginContext => {
-    const baseContext = this.createContext(pluginId);
-
-    return {
-      path: baseContext.path,
-      logger: baseContext.logger,
-      log: baseContext.log,
-      debug: baseContext.debug,
-      error: baseContext.error,
-      voice: baseContext.voice,
-      messages: baseContext.messages,
-      ui: baseContext.ui
-    };
-  };
+  private createUnloadContext = (pluginId: string): UnloadPluginContext =>
+    this.createSharedContext(
+      pluginId,
+      this.pluginLogger.createScopedLogger(pluginId)
+    );
 }
 
 const pluginManager = new PluginManager();

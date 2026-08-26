@@ -89,7 +89,10 @@ const PluginCommandsDialog = memo(
 
         toast.success(t('commandSuccess', { command: selectedCommand }));
       } catch (error) {
-        const errorMessage = getTrpcError(error, 'Failed to execute command');
+        const errorMessage = getTrpcError(
+          error,
+          t('common:failedExecuteCommand')
+        );
 
         setCommandResponse({
           success: false,

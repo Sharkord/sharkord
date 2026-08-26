@@ -1,12 +1,20 @@
 import { type TConnectionParams } from '@sharkord/shared';
 import type { CreateWSSContextFnOptions } from '@trpc/server/adapters/ws';
 import type { IncomingMessage } from 'http';
+import type WebSocket from 'ws';
 import { createContext } from '../utils/wss';
 
-const createMockContextOptions = async (opts?: {
+type TMockContextOptions = {
   customToken?: string;
-}): Promise<CreateWSSContextFnOptions> => {
-  const { customToken } = opts ?? {};
+  headers?: IncomingMessage['headers'];
+  remoteAddress?: string;
+  socket?: WebSocket;
+};
+
+const createMockContextOptions = async (
+  opts?: TMockContextOptions
+): Promise<CreateWSSContextFnOptions> => {
+  const { customToken, headers, remoteAddress, socket } = opts ?? {};
 
   const token = customToken;
 
@@ -23,21 +31,21 @@ const createMockContextOptions = async (opts?: {
       url: new URL('ws://localhost:3000')
     },
     req: {
-      headers: {},
+      headers: headers ?? {},
       socket: {
-        remoteAddress: '127.0.0.1'
+        remoteAddress: remoteAddress ?? '127.0.0.1'
       }
     } as IncomingMessage,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    res: undefined as any
+    res: socket as any
   };
 };
 
-const createMockContext = async (opts?: { customToken?: string }) => {
+const createMockContext = async (opts?: TMockContextOptions) => {
   const contextOpts = await createMockContextOptions(opts);
   const ctx = await createContext(contextOpts);
 
   return ctx;
 };
 
-export { createMockContext };
+export { createMockContext, type TMockContextOptions };

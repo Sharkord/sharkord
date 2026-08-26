@@ -1,8 +1,9 @@
-import { type TMessage } from '@sharkord/shared';
+import { ServerEvents } from '@sharkord/shared';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
+import { getChannelsReadStatesForUser } from '../../db/queries/channels';
 import { channelReadStates, messages } from '../../db/schema';
 import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
@@ -22,14 +23,13 @@ const markAsReadRoute = rateLimitedProcedure(protectedProcedure, {
 
     const { channelId } = input;
 
-    // get the newest root message in the channel (excluding thread replies)
-    const newestMessage: TMessage | undefined = await db
-      .select()
+    const newestMessage = await db
+      .select({ id: messages.id })
       .from(messages)
       .where(
         and(eq(messages.channelId, channelId), isNull(messages.parentMessageId))
       )
-      .orderBy(desc(messages.createdAt))
+      .orderBy(desc(messages.id))
       .limit(1)
       .get();
 
@@ -37,40 +37,32 @@ const markAsReadRoute = rateLimitedProcedure(protectedProcedure, {
       return;
     }
 
-    const newestId = newestMessage.id;
-
-    const existingState = await db
-      .select()
-      .from(channelReadStates)
-      .where(
-        and(
-          eq(channelReadStates.channelId, channelId),
-          eq(channelReadStates.userId, ctx.userId)
-        )
-      )
-      .get();
-
-    if (existingState) {
-      await db
-        .update(channelReadStates)
-        .set({
-          lastReadMessageId: newestId,
-          lastReadAt: Date.now()
-        })
-        .where(
-          and(
-            eq(channelReadStates.channelId, channelId),
-            eq(channelReadStates.userId, ctx.userId)
-          )
-        );
-    } else {
-      await db.insert(channelReadStates).values({
+    await db
+      .insert(channelReadStates)
+      .values({
         channelId,
         userId: ctx.userId,
-        lastReadMessageId: newestId,
+        lastReadMessageId: newestMessage.id,
         lastReadAt: Date.now()
+      })
+      .onConflictDoUpdate({
+        target: [channelReadStates.channelId, channelReadStates.userId],
+        set: {
+          lastReadMessageId: newestMessage.id,
+          lastReadAt: Date.now()
+        }
       });
-    }
+
+    const updatedReadStates = await getChannelsReadStatesForUser(
+      ctx.userId,
+      channelId
+    );
+
+    // the caller's other sessions need to drop the unread badge too
+    ctx.pubsub.publishFor(ctx.userId, ServerEvents.CHANNEL_READ_STATES_UPDATE, {
+      channelId,
+      count: updatedReadStates[channelId] ?? 0
+    });
   });
 
 export { markAsReadRoute };

@@ -69,6 +69,7 @@ const editPluginMessage = async (
     messageId,
     channelId: message.channelId,
     userId: null,
+    editedBy: null,
     pluginId,
     content: sanitizedContent,
     textContent: getPlainTextFromHtml(sanitizedContent)

@@ -1,14 +1,12 @@
-import { isEmptyMessage, Permission } from '@sharkord/shared';
-import { eq } from 'drizzle-orm';
+import { isEmptyMessage } from '@sharkord/shared';
 import { z } from 'zod';
-import { db } from '../../db';
 import { removeFile } from '../../db/mutations/files';
+import { deleteMessage } from '../../db/mutations/messages';
 import { publishMessage } from '../../db/publishers';
 import { getFilesByMessageId } from '../../db/queries/files';
 import { getMessageByFileId } from '../../db/queries/messages';
-import { messages } from '../../db/schema';
 import { assertChannelAccess } from '../../helpers/assert-channel-access';
-import { eventBus } from '../../plugins/event-bus';
+import { assertCanModifyMessage } from '../../helpers/load-message-for-write';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -19,19 +17,12 @@ const deleteFileRoute = protectedProcedure
 
     invariant(message, {
       code: 'NOT_FOUND',
-      message: 'Message not found'
+      message: 'File not found'
     });
 
     await assertChannelAccess(ctx, message.channelId);
 
-    invariant(
-      message.userId === ctx.user.id ||
-        (await ctx.hasPermission(Permission.MANAGE_MESSAGES)),
-      {
-        code: 'FORBIDDEN',
-        message: 'You do not have permission to delete this file'
-      }
-    );
+    await assertCanModifyMessage(ctx, message, 'delete this file');
 
     await removeFile(input.fileId);
 
@@ -40,13 +31,10 @@ const deleteFileRoute = protectedProcedure
     const files = await getFilesByMessageId(message.id);
 
     if (isEmptyMessage(message.content) && files.length == 0) {
-      await db.delete(messages).where(eq(messages.id, message.id));
-
-      publishMessage(message.id, message.channelId, 'delete');
-
-      eventBus.emit('message:deleted', {
+      await deleteMessage({
+        id: message.id,
         channelId: message.channelId,
-        messageId: message.id
+        parentMessageId: message.parentMessageId
       });
     }
   });

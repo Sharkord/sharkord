@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { messages } from '../../db/schema';
-import { assertChannelAccess } from '../../helpers/assert-channel-access';
+import { loadMessageForWrite } from '../../helpers/load-message-for-write';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
@@ -18,18 +18,7 @@ const toggleMessagePinRoute = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.PIN_MESSAGES);
 
-    const message = await db
-      .select()
-      .from(messages)
-      .where(eq(messages.id, input.messageId))
-      .get();
-
-    invariant(message, {
-      code: 'NOT_FOUND',
-      message: 'Message not found'
-    });
-
-    await assertChannelAccess(ctx, message.channelId);
+    const message = await loadMessageForWrite(ctx, input.messageId);
 
     invariant(!message.parentMessageId, {
       code: 'BAD_REQUEST',
@@ -37,13 +26,14 @@ const toggleMessagePinRoute = protectedProcedure
     });
 
     const now = Date.now();
+    const isPinning = !message.pinned;
 
     await db
       .update(messages)
       .set({
-        pinned: !message.pinned,
-        pinnedAt: now,
-        pinnedBy: ctx.user.id,
+        pinned: isPinning,
+        pinnedAt: isPinning ? now : null,
+        pinnedBy: isPinning ? ctx.user.id : null,
         updatedAt: now
       })
       .where(eq(messages.id, input.messageId));

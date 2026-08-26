@@ -1,7 +1,9 @@
-import { ChannelPermission, ChannelType } from '@sharkord/shared';
+import { ChannelPermission, ChannelType, ServerEvents } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
-import { initTest } from '../../__tests__/helpers';
+import { createFakeSocket, initTest } from '../../__tests__/helpers';
 import { getChannelsReadStatesForUser } from '../../db/queries/channels';
+import { VoiceRuntime } from '../../runtimes/voice';
+import { pubsub } from '../../utils/pubsub';
 
 describe('channels router', () => {
   test('should throw when user lacks permissions (add)', async () => {
@@ -96,15 +98,13 @@ describe('channels router', () => {
   test('should create a new text channel', async () => {
     const { caller } = await initTest();
 
-    await caller.channels.add({
+    const channelId = await caller.channels.add({
       type: ChannelType.TEXT,
       name: 'test-channel',
       categoryId: 1
     });
 
-    const channel = await caller.channels.get({
-      channelId: 5
-    });
+    const channel = await caller.channels.get({ channelId });
 
     expect(channel).toBeDefined();
     expect(channel.name).toBe('test-channel');
@@ -115,15 +115,13 @@ describe('channels router', () => {
   test('should create a new voice channel', async () => {
     const { caller } = await initTest();
 
-    await caller.channels.add({
+    const channelId = await caller.channels.add({
       type: ChannelType.VOICE,
       name: 'voice-lounge',
       categoryId: 1
     });
 
-    const channel = await caller.channels.get({
-      channelId: 5
-    });
+    const channel = await caller.channels.get({ channelId });
 
     expect(channel).toBeDefined();
     expect(channel.name).toBe('voice-lounge');
@@ -161,6 +159,51 @@ describe('channels router', () => {
     expect(channel.private).toBe(true);
   });
 
+  test('should throw when adding a channel to a non-existing category', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.channels.add({
+        type: ChannelType.TEXT,
+        name: 'orphan-channel',
+        categoryId: 9999
+      })
+    ).rejects.toThrow('Category not found');
+  });
+
+  test('should throw when updating permissions for a non-existing role', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.channels.updatePermissions({
+        channelId: 1,
+        roleId: 9999,
+        permissions: []
+      })
+    ).rejects.toThrow('Role not found');
+  });
+
+  test('should throw when updating a non-existing channel', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.channels.update({
+        channelId: 9999,
+        name: 'ghost-channel'
+      })
+    ).rejects.toThrow('Channel not found');
+  });
+
+  test('should throw when updating a channel with no values', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.channels.update({
+        channelId: 1
+      })
+    ).rejects.toThrow('Nothing to update');
+  });
+
   test('should update channel topic to null', async () => {
     const { caller } = await initTest();
 
@@ -196,6 +239,109 @@ describe('channels router', () => {
         channelId: newChannelId
       })
     ).rejects.toThrow('Channel not found');
+  });
+
+  // the client cannot clear a call it was never told ended: this is the event R4's fix hangs
+  // off, so a delete that quietly leaves the runtime standing puts the bug straight back
+  test('should end the call in a voice channel that is deleted', async () => {
+    const { caller } = await initTest();
+
+    const runtime = new VoiceRuntime(2);
+
+    runtime.addUser(2, { micMuted: false, soundMuted: false });
+
+    const departures: { channelId: number; userId: number }[] = [];
+
+    const subscription = pubsub
+      .subscribe(ServerEvents.USER_LEAVE_VOICE)
+      .subscribe({
+        next: (departure) => {
+          departures.push(departure);
+        }
+      });
+
+    await caller.channels.delete({ channelId: 2 });
+
+    subscription.unsubscribe();
+
+    expect(VoiceRuntime.findById(2)).toBeUndefined();
+    expect(departures).toEqual([{ channelId: 2, userId: 2 }]);
+  });
+
+  // channel 5 is private, the default role may view it and user 2 is denied. the client can
+  // only drop a channel it is told about, and the audience is read after the write, so the
+  // person who just lost access is the one at risk of never hearing
+  describe('channel access events', () => {
+    const RESTRICTED_CHANNEL_ID = 5;
+
+    const collectFor = (userId: number) => {
+      const created: number[] = [];
+      const deleted: number[] = [];
+
+      const subscriptions = [
+        pubsub.subscribeFor(userId, ServerEvents.CHANNEL_CREATE).subscribe({
+          next: (channel) => {
+            created.push(channel.id);
+          }
+        }),
+        pubsub.subscribeFor(userId, ServerEvents.CHANNEL_DELETE).subscribe({
+          next: (channelId) => {
+            deleted.push(channelId);
+          }
+        })
+      ];
+
+      return {
+        created,
+        deleted,
+        stop: () => subscriptions.forEach((s) => s.unsubscribe())
+      };
+    };
+
+    test('should tell a user who just lost access that the channel is gone', async () => {
+      const { caller } = await initTest();
+
+      // the audience is online users only, so the watcher has to hold a socket to be in it
+      await initTest(3, { socket: createFakeSocket() });
+
+      // user 3 can see it through the default role, so they are in the audience beforehand
+      const events = collectFor(3);
+
+      try {
+        await caller.channels.updatePermissions({
+          channelId: RESTRICTED_CHANNEL_ID,
+          userId: 3,
+          permissions: []
+        });
+
+        expect(events.deleted).toEqual([RESTRICTED_CHANNEL_ID]);
+        expect(events.created).toEqual([]);
+      } finally {
+        events.stop();
+      }
+    });
+
+    test('should send the channel to a user who just gained access', async () => {
+      const { caller } = await initTest();
+
+      await initTest(2, { socket: createFakeSocket() });
+
+      // user 2 is denied, so their client has never been sent this channel
+      const events = collectFor(2);
+
+      try {
+        await caller.channels.updatePermissions({
+          channelId: RESTRICTED_CHANNEL_ID,
+          userId: 2,
+          permissions: [ChannelPermission.VIEW_CHANNEL]
+        });
+
+        expect(events.created).toEqual([RESTRICTED_CHANNEL_ID]);
+        expect(events.deleted).toEqual([]);
+      } finally {
+        events.stop();
+      }
+    });
   });
 
   test('should throw when deleting non-existing channel', async () => {
@@ -466,6 +612,111 @@ describe('channels router', () => {
     // after marking as read, there should be 0 unread messages
     expect(afterReadStates[2]).toBeDefined();
     expect(afterReadStates[2]).toBe(0);
+  });
+
+  // the unread count compares ids, so the marker has to be the highest id in the channel.
+  // picking the newest timestamp instead leaves anything stamped earlier but inserted later
+  // unread forever, and marking as read again keeps choosing the same wrong row. a clock
+  // that steps backwards between two messages is enough to produce it
+  test('should mark as read up to the highest message id, not the newest timestamp', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    await caller1.messages.send({
+      channelId: 2,
+      content: 'Sent first, stamped later',
+      files: []
+    });
+
+    const realNow = Date.now;
+
+    Date.now = () => realNow() - 60_000;
+
+    try {
+      await caller1.messages.send({
+        channelId: 2,
+        content: 'Sent second, stamped earlier',
+        files: []
+      });
+    } finally {
+      Date.now = realNow;
+    }
+
+    const beforeReadStates = await getChannelsReadStatesForUser(2, 2);
+
+    expect(beforeReadStates[2]).toBe(2);
+
+    await caller2.channels.markAsRead({ channelId: 2 });
+
+    const afterReadStates = await getChannelsReadStatesForUser(2, 2);
+
+    expect(afterReadStates[2]).toBe(0);
+  });
+
+  test('should not mark a channel as read just by fetching its messages', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    await caller1.messages.send({
+      channelId: 2,
+      content: 'Unread for user two',
+      files: []
+    });
+
+    // reading a page used to upsert the read state to the newest message, so
+    // scrolling back through history silently marked everything read
+    await caller2.messages.get({ channelId: 2, cursor: null, limit: 50 });
+
+    const readStates = await getChannelsReadStatesForUser(2, 2);
+
+    expect(readStates[2]).toBe(1);
+  });
+
+  test('should mark channel as read twice without conflicting', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    await caller1.messages.send({
+      channelId: 2,
+      content: 'Test message',
+      files: []
+    });
+
+    await Promise.all([
+      caller2.channels.markAsRead({ channelId: 2 }),
+      caller2.channels.markAsRead({ channelId: 2 })
+    ]);
+
+    const readStates = await getChannelsReadStatesForUser(2, 2);
+
+    expect(readStates[2]).toBe(0);
+  });
+
+  test('should publish a read state update when marking as read', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    await caller1.messages.send({
+      channelId: 2,
+      content: 'Test message',
+      files: []
+    });
+
+    const events: { channelId: number; count: number }[] = [];
+
+    const subscription = pubsub
+      .subscribeFor(2, ServerEvents.CHANNEL_READ_STATES_UPDATE)
+      .subscribe({
+        next: (event) => {
+          events.push(event);
+        }
+      });
+
+    await caller2.channels.markAsRead({ channelId: 2 });
+
+    subscription.unsubscribe();
+
+    expect(events).toEqual([{ channelId: 2, count: 0 }]);
   });
 
   test('should mark channel as read with no messages', async () => {
@@ -794,21 +1045,25 @@ describe('channels router', () => {
   test('should create channel with incrementing position', async () => {
     const { caller } = await initTest();
 
-    await caller.channels.add({
+    const firstChannelId = await caller.channels.add({
       type: ChannelType.TEXT,
       name: 'first-channel',
       categoryId: 1
     });
 
-    const firstChannel = await caller.channels.get({ channelId: 5 });
+    const firstChannel = await caller.channels.get({
+      channelId: firstChannelId
+    });
 
-    await caller.channels.add({
+    const secondChannelId = await caller.channels.add({
       type: ChannelType.TEXT,
       name: 'second-channel',
       categoryId: 1
     });
 
-    const secondChannel = await caller.channels.get({ channelId: 6 });
+    const secondChannel = await caller.channels.get({
+      channelId: secondChannelId
+    });
 
     expect(secondChannel.position).toBeGreaterThan(firstChannel.position);
   });
@@ -870,20 +1125,20 @@ describe('channels router', () => {
   test('should create channels in different categories', async () => {
     const { caller } = await initTest();
 
-    await caller.channels.add({
+    const catOneChannelId = await caller.channels.add({
       type: ChannelType.TEXT,
       name: 'cat-1-channel',
       categoryId: 1
     });
 
-    await caller.channels.add({
+    const catTwoChannelId = await caller.channels.add({
       type: ChannelType.TEXT,
       name: 'cat-2-channel',
       categoryId: 2
     });
 
-    const channel1 = await caller.channels.get({ channelId: 5 });
-    const channel2 = await caller.channels.get({ channelId: 6 });
+    const channel1 = await caller.channels.get({ channelId: catOneChannelId });
+    const channel2 = await caller.channels.get({ channelId: catTwoChannelId });
 
     expect(channel1.categoryId).toBe(1);
     expect(channel2.categoryId).toBe(2);

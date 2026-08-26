@@ -5,6 +5,7 @@ import { RelativeTime } from '@/components/relative-time';
 import { UserAvatar } from '@/components/user-avatar';
 import { usePluginMetadata } from '@/features/server/plugins/hooks';
 import type { TMessageJumpToTarget } from '@/types';
+import { TestId } from '@sharkord/shared';
 import { IconButton, Tooltip } from '@sharkord/ui';
 import { ArrowRight, Hash } from 'lucide-react';
 import { memo, useCallback } from 'react';
@@ -88,6 +89,7 @@ const SearchResultMessageCard = memo(
               variant="ghost"
               size="sm"
               onClick={handleJump}
+              data-testid={TestId.SEARCH_RESULT_JUMP}
             />
           </Tooltip>
         </div>

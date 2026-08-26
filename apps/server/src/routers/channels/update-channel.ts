@@ -34,19 +34,31 @@ const updateChannelRoute = protectedProcedure
       .where(eq(channels.id, input.channelId))
       .get();
 
+    invariant(oldChannel, {
+      code: 'NOT_FOUND',
+      message: 'Channel not found'
+    });
+
+    const values = {
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.topic !== undefined && { topic: input.topic }),
+      ...(input.private !== undefined && { private: input.private })
+    };
+
+    invariant(Object.keys(values).length > 0, {
+      code: 'BAD_REQUEST',
+      message: 'Nothing to update.'
+    });
+
     const updatedChannel = await db
       .update(channels)
-      .set({
-        name: input.name,
-        topic: input.topic,
-        private: input.private
-      })
+      .set(values)
       .where(eq(channels.id, input.channelId))
       .returning()
       .get();
 
     // privacy setting changed
-    const ensureUserAccess = updatedChannel.private !== oldChannel?.private;
+    const ensureUserAccess = updatedChannel.private !== oldChannel.private;
 
     publishChannel(updatedChannel.id, 'update', ensureUserAccess);
     enqueueActivityLog({

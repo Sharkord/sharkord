@@ -7,6 +7,7 @@ import {
 } from '@/features/app/selectors';
 import { store } from '@/features/store';
 import { getFileUrl } from '@/helpers/get-file-url';
+import { playSound } from '@/helpers/sounds';
 import {
   getPlainTextFromHtml,
   hasMention,
@@ -20,7 +21,6 @@ import {
 } from '../channels/selectors';
 import { pluginMetadataByIdSelector } from '../plugins/selectors';
 import { serverSliceActions } from '../slice';
-import { playSound } from '../sounds/actions';
 import { SoundType } from '../types';
 import { ownUserIdSelector, userByIdSelector } from '../users/selectors';
 import { threadMessagesMapSelector } from './selectors';
@@ -63,10 +63,23 @@ const typingTimeouts: { [key: string]: NodeJS.Timeout } = {};
 const getTypingKey = (channelId: number, userId: number) =>
   `${channelId}-${userId}`;
 
+export const setChannelMessages = (
+  channelId: number,
+  messages: TJoinedMessage[],
+  detached: boolean
+) => {
+  store.dispatch(
+    serverSliceActions.setChannelMessages({ channelId, messages, detached })
+  );
+};
+
+export const trimChannelMessages = (channelId: number) => {
+  store.dispatch(serverSliceActions.trimChannelMessages(channelId));
+};
+
 export const addMessages = (
   channelId: number,
   messages: TJoinedMessage[],
-  opts: { prepend?: boolean } = {},
   isSubscriptionMessage = false
 ) => {
   const rootMessages = messages.filter((m) => !m.parentMessageId);
@@ -77,7 +90,7 @@ export const addMessages = (
       serverSliceActions.addMessages({
         channelId,
         messages: rootMessages,
-        opts
+        isLive: isSubscriptionMessage
       })
     );
   }
@@ -98,8 +111,7 @@ export const addMessages = (
     store.dispatch(
       serverSliceActions.addThreadMessages({
         parentMessageId,
-        messages: replies,
-        opts
+        messages: replies
       })
     );
   }
@@ -225,14 +237,12 @@ export const deleteMessage = (channelId: number, messageId: number) => {
 
 export const addThreadMessages = (
   parentMessageId: number,
-  messages: TJoinedMessage[],
-  opts: { prepend?: boolean } = {}
+  messages: TJoinedMessage[]
 ) => {
   store.dispatch(
     serverSliceActions.addThreadMessages({
       parentMessageId,
-      messages,
-      opts
+      messages
     })
   );
 };

@@ -5,20 +5,21 @@ import {
   useTypingUsersByChannelId
 } from '@/features/server/hooks';
 import { useMessages } from '@/features/server/messages/hooks';
-import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
+import { playSound } from '@/helpers/sounds';
 import { LocalStorageKey } from '@/helpers/storage';
+import { useTypingSignal } from '@/hooks/use-typing-signal';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TReplyTarget } from '@/types';
 import {
   ChannelPermission,
-  TYPING_MS,
   getTrpcError,
   prepareMessageHtml,
+  TestId,
   type TJoinedMessage
 } from '@sharkord/shared';
 import { Spinner } from '@sharkord/ui';
-import { throttle } from 'lodash-es';
+import { ArrowDown } from 'lucide-react';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -28,6 +29,7 @@ import { useArrowUpEdit } from './hooks/use-arrow-up-edit';
 import { useScrollController } from './hooks/use-scroll-controller';
 import { useScrollToJumpTarget } from './hooks/use-scroll-to-jump-target';
 import { MessagesGroup } from './messages-group';
+import { TextNoAccess } from './text-no-access';
 import { TextSkeleton } from './text-skeleton';
 import { TextTopbar } from './text-top-bar';
 import {
@@ -50,7 +52,9 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
     loading,
     fetching,
     groupedMessages,
-    scrollToMessage
+    scrollToMessage,
+    detachedFromPresent,
+    returnToPresent
   } = useMessages(channelId);
 
   useScrollToJumpTarget(channelId, scrollToMessage);
@@ -107,19 +111,7 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
 
   const channelCan = useChannelCan(channelId);
 
-  const sendTypingSignal = useMemo(
-    () =>
-      throttle(async () => {
-        const trpc = getTRPCClient();
-
-        try {
-          await trpc.messages.signalTyping.mutate({ channelId });
-        } catch {
-          // ignore
-        }
-      }, TYPING_MS),
-    [channelId]
-  );
+  const sendTypingSignal = useTypingSignal(channelId);
 
   const setNewMessageHandler = useCallback(
     (value: string) => {
@@ -167,7 +159,20 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
     setReplyingToMessage(message);
   }, []);
 
-  if (!channelCan(ChannelPermission.VIEW_CHANNEL) || loading) {
+  const handleReturnToPresent = useCallback(() => {
+    returnToPresent();
+  }, [returnToPresent]);
+
+  const handleCancelReply = useCallback(
+    () => setReplyingToMessage(undefined),
+    [setReplyingToMessage]
+  );
+
+  if (!channelCan(ChannelPermission.VIEW_CHANNEL)) {
+    return <TextNoAccess />;
+  }
+
+  if (loading) {
     return <TextSkeleton />;
   }
 
@@ -212,6 +217,18 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
         </div>
       </div>
 
+      {detachedFromPresent && (
+        <button
+          type="button"
+          onClick={handleReturnToPresent}
+          data-testid={TestId.RETURN_TO_PRESENT}
+          className="mx-2 mb-1 flex items-center justify-center gap-2 rounded-md bg-muted px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted/80 cursor-pointer"
+        >
+          <ArrowDown className="size-3.5" />
+          {t('viewingOlderMessages')}
+        </button>
+      )}
+
       <ChatInputDivider
         composeContainerRef={composeContainerRef}
         scrollToBottom={scrollToBottom}
@@ -230,7 +247,7 @@ const TextChannel = memo(({ channelId, onClose }: TChannelProps) => {
         onTyping={sendTypingSignal}
         typingUsers={typingUsers}
         showPluginSlot
-        onCancelReply={() => setReplyingToMessage(undefined)}
+        onCancelReply={handleCancelReply}
         replyTarget={replyTarget}
         onArrowUp={handleArrowUpEdit}
         onResize={onComposeResize}

@@ -1,6 +1,7 @@
-import { Permission, zPluginId } from '@sharkord/shared';
+import { ActivityLogType, Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
 import { pluginManager } from '../../plugins';
+import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure } from '../../utils/trpc';
 
 const removeRoute = protectedProcedure
@@ -13,6 +14,12 @@ const removeRoute = protectedProcedure
     await ctx.needsPermission(Permission.MANAGE_PLUGINS);
 
     await pluginManager.removePlugin(input.pluginId);
+
+    enqueueActivityLog({
+      type: ActivityLogType.PLUGIN_REMOVED,
+      userId: ctx.user.id,
+      details: { pluginId: input.pluginId }
+    });
   });
 
 export { removeRoute };

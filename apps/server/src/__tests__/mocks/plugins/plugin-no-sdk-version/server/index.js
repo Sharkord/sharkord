@@ -1,9 +1,9 @@
 const onLoad = (ctx) => {
-  ctx.log('plugin-no-sdk-version loaded');
+  ctx.logger.log('plugin-no-sdk-version loaded');
 };
 
 const onUnload = (ctx) => {
-  ctx.log('plugin-no-sdk-version unloaded');
+  ctx.logger.log('plugin-no-sdk-version unloaded');
 };
 
 export { onLoad, onUnload };

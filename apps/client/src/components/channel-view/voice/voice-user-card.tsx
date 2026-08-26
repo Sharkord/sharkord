@@ -16,6 +16,10 @@ import { HeadphoneOff, MicOff, Monitor, Video } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { CardTheme } from './card-theme';
 import { cardControlClass, cardDensity } from './helpers';
+import {
+  PinnedCardType,
+  type TPinnedCard
+} from './hooks/use-pin-card-controller';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
@@ -24,7 +28,8 @@ import { VolumeButton } from './volume-button';
 
 type TVoiceUserCardProps = {
   userId: number;
-  onPin: () => void;
+  cardId: string;
+  onPin: (card: TPinnedCard) => void;
   onUnpin: () => void;
   showPinControls?: boolean;
   voiceUser: TVoiceUser;
@@ -36,6 +41,7 @@ type TVoiceUserCardProps = {
 const VoiceUserCard = memo(
   ({
     userId,
+    cardId,
     onPin,
     onUnpin,
     className,
@@ -63,9 +69,9 @@ const VoiceUserCard = memo(
       if (isPinned) {
         onUnpin?.();
       } else {
-        onPin?.();
+        onPin({ id: cardId, type: PinnedCardType.USER, userId: userId });
       }
-    }, [isPinned, onPin, onUnpin]);
+    }, [isPinned, onPin, onUnpin, cardId, userId]);
 
     const backgroundStyle = useMemo(
       () =>

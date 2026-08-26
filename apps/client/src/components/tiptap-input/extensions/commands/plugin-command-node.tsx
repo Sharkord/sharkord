@@ -5,13 +5,8 @@ import {
   ReactNodeViewRenderer,
   type NodeViewProps
 } from '@tiptap/react';
-import {
-  memo,
-  useEffect,
-  useMemo,
-  useRef,
-  type KeyboardEvent as ReactKeyboardEvent
-} from 'react';
+import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 
 type TPluginCommandValues = Record<string, string>;
 
@@ -77,6 +72,78 @@ const serializePluginCommandText = (
 
   return tokens.join(' ');
 };
+
+type TCommandArgInputProps = {
+  arg: TCommandArg;
+  value: string;
+  onValueChange: (name: string, value: string) => void;
+  handleTabNavigation: (
+    event: ReactKeyboardEvent<HTMLInputElement | HTMLSelectElement>
+  ) => boolean;
+};
+
+const CommandArgInput = memo(
+  ({
+    arg,
+    value,
+    onValueChange,
+    handleTabNavigation
+  }: TCommandArgInputProps) => {
+    const handleChange = useCallback(
+      (event: ChangeEvent<HTMLSelectElement | HTMLInputElement>) =>
+        onValueChange(arg.name, event.target.value),
+      [onValueChange, arg.name]
+    );
+
+    const handleKeyDown = useCallback(
+      (event: ReactKeyboardEvent<HTMLSelectElement | HTMLInputElement>) => {
+        if (handleTabNavigation(event)) return;
+
+        if (
+          event.key === 'Escape' &&
+          event.currentTarget instanceof HTMLInputElement
+        ) {
+          event.currentTarget.blur();
+        }
+
+        event.stopPropagation();
+      },
+      [handleTabNavigation]
+    );
+
+    if (arg.type === 'boolean') {
+      return (
+        <label className="inline-flex items-center gap-1 rounded bg-background px-1.5 py-0.5">
+          <span className="text-[10px] text-muted-foreground">{arg.name}</span>
+          <select
+            className="h-5 rounded border bg-background px-1 text-[11px]"
+            value={value}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+          >
+            <option value="">-</option>
+            <option value="true">true</option>
+            <option value="false">false</option>
+          </select>
+        </label>
+      );
+    }
+
+    return (
+      <label className="inline-flex items-center gap-1 rounded bg-background px-1.5 py-0.5">
+        <span className="text-[10px] text-muted-foreground">{arg.name}</span>
+        <input
+          type={arg.type === 'number' ? 'number' : 'text'}
+          value={value}
+          placeholder={arg.required ? 'required' : 'optional'}
+          className="h-5 min-w-18 rounded border bg-background px-1 text-[11px]"
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+        />
+      </label>
+    );
+  }
+);
 
 const PluginCommandNodeView = memo(
   ({ node, updateAttributes, editor, getPos }: NodeViewProps) => {
@@ -205,67 +272,15 @@ const PluginCommandNodeView = memo(
           {attrs.commandName}
         </span>
 
-        {argDefs.map((arg) => {
-          const value = values[arg.name] ?? '';
-
-          if (arg.type === 'boolean') {
-            return (
-              <label
-                key={arg.name}
-                className="inline-flex items-center gap-1 rounded bg-background px-1.5 py-0.5"
-              >
-                <span className="text-[10px] text-muted-foreground">
-                  {arg.name}
-                </span>
-                <select
-                  className="h-5 rounded border bg-background px-1 text-[11px]"
-                  value={value}
-                  onChange={(e) => setValue(arg.name, e.target.value)}
-                  onKeyDown={(e) => {
-                    if (handleTabNavigation(e)) {
-                      return;
-                    }
-
-                    e.stopPropagation();
-                  }}
-                >
-                  <option value="">-</option>
-                  <option value="true">true</option>
-                  <option value="false">false</option>
-                </select>
-              </label>
-            );
-          }
-
-          return (
-            <label
-              key={arg.name}
-              className="inline-flex items-center gap-1 rounded bg-background px-1.5 py-0.5"
-            >
-              <span className="text-[10px] text-muted-foreground">
-                {arg.name}
-              </span>
-              <input
-                type={arg.type === 'number' ? 'number' : 'text'}
-                value={value}
-                placeholder={arg.required ? 'required' : 'optional'}
-                className="h-5 min-w-18 rounded border bg-background px-1 text-[11px]"
-                onChange={(e) => setValue(arg.name, e.target.value)}
-                onKeyDown={(e) => {
-                  if (handleTabNavigation(e)) {
-                    return;
-                  }
-
-                  if (e.key === 'Escape') {
-                    (e.currentTarget as HTMLInputElement).blur();
-                  }
-
-                  e.stopPropagation();
-                }}
-              />
-            </label>
-          );
-        })}
+        {argDefs.map((arg) => (
+          <CommandArgInput
+            key={arg.name}
+            arg={arg}
+            value={values[arg.name] ?? ''}
+            onValueChange={setValue}
+            handleTabNavigation={handleTabNavigation}
+          />
+        ))}
       </NodeViewWrapper>
     );
   }

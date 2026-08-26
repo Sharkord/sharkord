@@ -1,25 +1,24 @@
-import { ChannelType, Permission, ServerEvents } from '@sharkord/shared';
+import { ChannelType, ServerEvents } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { db } from '../../db';
 import { unpublishHiddenChannelFromUser } from '../../db/publishers';
 import { channels } from '../../db/schema';
+import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
 import { logger } from '../../logger';
-import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const leaveVoiceRoute = protectedProcedure.mutation(async ({ ctx }) => {
-  await ctx.needsPermission(Permission.JOIN_VOICE_CHANNELS);
-
-  invariant(ctx.currentVoiceChannelId, {
-    code: 'BAD_REQUEST',
-    message: 'User is not in a voice channel'
-  });
+  const { runtime, channelId } = await getCurrentVoiceRuntime(ctx);
 
   const channel = await db
-    .select()
+    .select({
+      id: channels.id,
+      name: channels.name,
+      type: channels.type
+    })
     .from(channels)
-    .where(eq(channels.id, ctx.currentVoiceChannelId))
+    .where(eq(channels.id, channelId))
     .get();
 
   invariant(channel, {
@@ -32,13 +31,6 @@ const leaveVoiceRoute = protectedProcedure.mutation(async ({ ctx }) => {
     message: 'Channel is not a voice channel'
   });
 
-  const runtime = VoiceRuntime.findById(ctx.currentVoiceChannelId);
-
-  invariant(runtime, {
-    code: 'INTERNAL_SERVER_ERROR',
-    message: 'Voice runtime not found for this channel'
-  });
-
   const userInChannel = runtime.getUser(ctx.user.id);
 
   invariant(userInChannel, {
@@ -49,7 +41,7 @@ const leaveVoiceRoute = protectedProcedure.mutation(async ({ ctx }) => {
   runtime.removeUser(ctx.user.id);
 
   ctx.pubsub.publish(ServerEvents.USER_LEAVE_VOICE, {
-    channelId: ctx.currentVoiceChannelId,
+    channelId,
     userId: ctx.user.id
   });
 

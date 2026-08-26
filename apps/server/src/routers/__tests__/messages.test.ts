@@ -1,11 +1,20 @@
-import { ChannelPermission, Permission } from '@sharkord/shared';
+import {
+  ChannelPermission,
+  DEFAULT_MESSAGES_LIMIT,
+  MESSAGE_MAX_LENGTH,
+  Permission,
+  REACTION_EMOJI_MAX_LENGTH
+} from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
 import { initTest, uploadFile } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
+import { config } from '../../config';
 import {
   files,
   messageFiles,
+  messageReactions,
+  messages,
   rolePermissions,
   settings
 } from '../../db/schema';
@@ -60,6 +69,49 @@ describe('messages router', () => {
         messageId
       })
     ).rejects.toThrow('You do not have permission to delete this message');
+  });
+
+  test('should clear pin metadata when unpinning', async () => {
+    const { caller } = await initTest();
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'pin me'
+    });
+
+    await caller.messages.togglePin({ messageId });
+
+    const pinned = await tdb
+      .select({
+        pinned: messages.pinned,
+        pinnedAt: messages.pinnedAt,
+        pinnedBy: messages.pinnedBy
+      })
+      .from(messages)
+      .where(eq(messages.id, messageId))
+      .get();
+
+    expect(pinned?.pinned).toBe(true);
+    expect(pinned?.pinnedAt).toBeGreaterThan(0);
+    expect(pinned?.pinnedBy).toBe(1);
+
+    await caller.messages.togglePin({ messageId });
+
+    const unpinned = await tdb
+      .select({
+        pinned: messages.pinned,
+        pinnedAt: messages.pinnedAt,
+        pinnedBy: messages.pinnedBy
+      })
+      .from(messages)
+      .where(eq(messages.id, messageId))
+      .get();
+
+    // an unpinned message must not record who unpinned it in the field that means
+    // "who pinned it"
+    expect(unpinned?.pinned).toBe(false);
+    expect(unpinned?.pinnedAt).toBeNull();
+    expect(unpinned?.pinnedBy).toBeNull();
   });
 
   test('should throw when user lacks permissions (toggleReaction)', async () => {
@@ -428,6 +480,107 @@ describe('messages router', () => {
     ).toBe(false);
   });
 
+  // the flag is what tells the user their results were cut off. it is set by three separate
+  // conditions and a wrong one is silent: the list just ends, with no sign there was more
+  test('should not flag a narrow search as truncated', async () => {
+    const { caller } = await initTest(1);
+
+    await caller.messages.send({
+      channelId: 1,
+      content: 'a distinctive needle in the haystack'
+    });
+
+    const result = await caller.messages.search({ query: 'needle' });
+
+    expect(result.messages.length).toBe(1);
+    expect(result.truncated).toBe(false);
+  });
+
+  test('should flag a search that fills the message limit as truncated', async () => {
+    const { caller } = await initTest(1);
+
+    const now = Date.now();
+
+    // inserted rather than sent: filling the limit through the route trips its rate limiter
+    await tdb.insert(messages).values(
+      Array.from({ length: 25 }).map((_, index) => ({
+        channelId: 1,
+        userId: 1,
+        content: `repeated haystack line ${index}`,
+        metadata: null,
+        createdAt: now + index
+      }))
+    );
+
+    const result = await caller.messages.search({ query: 'haystack' });
+
+    expect(result.messages.length).toBe(25);
+    expect(result.truncated).toBe(true);
+  });
+
+  // the sql filter matches raw html and the js filter matches the rendered text, so a term
+  // living only in a link target fills the fetch limit and survives none of it. the flag is
+  // the only thing telling the user that empty list is not the whole story
+  test('should flag a search that fetched its limit but matched nothing', async () => {
+    const { caller } = await initTest(1);
+
+    const now = Date.now();
+
+    await tdb.insert(messages).values(
+      Array.from({ length: 100 }).map((_, index) => ({
+        channelId: 1,
+        userId: 1,
+        content: `<a href="https://example.com/hiddenterm">link ${index}</a>`,
+        metadata: null,
+        createdAt: now + index
+      }))
+    );
+
+    const result = await caller.messages.search({ query: 'hiddenterm' });
+
+    expect(result.messages.length).toBe(0);
+    expect(result.truncated).toBe(true);
+  });
+
+  test('should flag a search that fills the file limit as truncated', async () => {
+    const { caller } = await initTest(1);
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'nothing here matches the term'
+    });
+
+    const now = Date.now();
+
+    // one message carrying the whole file limit, so the flag can only come from the file
+    // condition and not from either of the message ones
+    for (let i = 0; i < 25; i++) {
+      const [file] = await tdb
+        .insert(files)
+        .values({
+          name: `bundle-${now}-${i}.zip`,
+          originalName: `manylimitfile-${i}.zip`,
+          md5: `bundle-md5-${now}-${i}`,
+          userId: 1,
+          size: 16,
+          mimeType: 'application/zip',
+          extension: 'zip',
+          createdAt: now
+        })
+        .returning();
+
+      await tdb
+        .insert(messageFiles)
+        .values({ messageId, fileId: file!.id, createdAt: now });
+    }
+
+    const result = await caller.messages.search({ query: 'manylimitfile' });
+
+    expect(result.messages.length).toBe(0);
+    expect(result.files.length).toBe(25);
+    expect(result.truncated).toBe(true);
+  });
+
   test('should throw when search is disabled on server', async () => {
     const { caller } = await initTest(1);
 
@@ -639,6 +792,169 @@ describe('messages router', () => {
     ).toBeUndefined();
   });
 
+  test('should not create a message when saving its files fails', async () => {
+    const { caller } = await initTest();
+
+    const before = await tdb.select().from(messages);
+
+    // no temp file with this id exists, so saveFile rejects
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'this should not survive',
+        files: ['missing-temp-file-id']
+      })
+    ).rejects.toThrow();
+
+    const after = await tdb.select().from(messages);
+
+    expect(after.length).toBe(before.length);
+    expect(after.some((m) => m.content?.includes('should not survive'))).toBe(
+      false
+    );
+  });
+
+  test('should not skip messages that share a millisecond across a page boundary', async () => {
+    const { caller } = await initTest();
+
+    const now = Date.now();
+    const inserted = await tdb
+      .insert(messages)
+      .values(
+        Array.from({ length: 6 }, (_, i) => ({
+          channelId: 1,
+          userId: 1,
+          content: `same millisecond ${i}`,
+          // identical createdAt, so the cursor cannot separate them on time
+          createdAt: now
+        }))
+      )
+      .returning();
+
+    const seen = new Set<number>();
+    let cursor = null as { createdAt: number; id: number } | null;
+
+    // two pages of two, straight through the identical timestamps
+    for (let page = 0; page < 3; page++) {
+      const result = await caller.messages.get({
+        channelId: 1,
+        cursor,
+        limit: 2
+      });
+
+      result.messages.forEach((m) => seen.add(m.id));
+
+      cursor = result.nextCursor;
+
+      if (!cursor) break;
+    }
+
+    const missed = inserted.filter((m) => !seen.has(m.id));
+
+    expect(missed.length).toBe(0);
+  });
+
+  test('should rate limit excessive thread fetches', async () => {
+    const { caller } = await initTest();
+    const { maxRequests } = config.rateLimiters.getMessages;
+
+    const parentId = await caller.messages.send({
+      channelId: 1,
+      content: 'Thread parent',
+      files: []
+    });
+
+    for (let i = 0; i < maxRequests; i++) {
+      await caller.messages.getThread({ parentMessageId: parentId });
+    }
+
+    await expect(
+      caller.messages.getThread({ parentMessageId: parentId })
+    ).rejects.toThrow('Too many requests');
+  });
+
+  test('should reject a negative page limit', async () => {
+    const { caller } = await initTest();
+
+    // sqlite reads a negative LIMIT as no limit at all, so this used to return
+    // the whole channel
+    await expect(
+      caller.messages.get({ channelId: 1, limit: -2 })
+    ).rejects.toThrow();
+
+    await expect(
+      caller.messages.getThread({ parentMessageId: 1, limit: -2 })
+    ).rejects.toThrow();
+  });
+
+  test('should reject a page limit above the maximum', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.messages.get({ channelId: 1, limit: 1_000_000 })
+    ).rejects.toThrow();
+  });
+
+  test('should reject a non-integer page limit', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.messages.get({ channelId: 1, limit: 10.5 })
+    ).rejects.toThrow();
+  });
+
+  test('should accept a page limit at the maximum', async () => {
+    const { caller } = await initTest();
+
+    const result = await caller.messages.get({
+      channelId: 1,
+      limit: DEFAULT_MESSAGES_LIMIT
+    });
+
+    expect(result.messages).toBeDefined();
+  });
+
+  test('should reject a message longer than the maximum', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'a'.repeat(MESSAGE_MAX_LENGTH + 1),
+        files: []
+      })
+    ).rejects.toThrow();
+  });
+
+  test('should accept a message exactly at the maximum', async () => {
+    const { caller } = await initTest();
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'a'.repeat(MESSAGE_MAX_LENGTH),
+      files: []
+    });
+
+    expect(messageId).toBeDefined();
+  });
+
+  test('should reject an edit longer than the maximum', async () => {
+    const { caller } = await initTest();
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'short enough',
+      files: []
+    });
+
+    await expect(
+      caller.messages.edit({
+        messageId,
+        content: 'a'.repeat(MESSAGE_MAX_LENGTH + 1)
+      })
+    ).rejects.toThrow();
+  });
+
   test('should throw when editing non-existing message', async () => {
     const { caller } = await initTest();
 
@@ -713,6 +1029,76 @@ describe('messages router', () => {
     );
 
     expect(messageWithoutReaction!.reactions.length).toBe(0);
+  });
+
+  test('should reject an oversized reaction emoji', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.messages.toggleReaction({
+        messageId: 1,
+        emoji: 'a'.repeat(REACTION_EMOJI_MAX_LENGTH + 1)
+      })
+    ).rejects.toThrow();
+  });
+
+  test('should accept the shortcode the picker actually sends', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.messages.toggleReaction({ messageId: 1, emoji: 'fox' })
+    ).resolves.toBeUndefined();
+  });
+
+  test('should reject a reaction that is neither an emoji nor a shortcode', async () => {
+    const { caller } = await initTest();
+
+    // anything that could not have come from the picker: spaces, markup, punctuation. an
+    // unknown but well-shaped shortcode is allowed through and renders as ':code:', which is
+    // the price of not shipping the whole emoji table to the server
+    for (const emoji of ['not an emoji', '<b>x</b>', 'Lol!', '../etc']) {
+      await expect(
+        caller.messages.toggleReaction({ messageId: 1, emoji })
+      ).rejects.toThrow('Unknown emoji');
+    }
+  });
+
+  test('should accept a multi codepoint unicode emoji', async () => {
+    const { caller } = await initTest();
+
+    await caller.messages.toggleReaction({
+      messageId: 1,
+      emoji: '👨‍👩‍👧‍👦'
+    });
+
+    const message = await caller.messages.getOne({ messageId: 1 });
+
+    expect(message.reactions.some((r) => r.emoji === '👨‍👩‍👧‍👦')).toBe(true);
+  });
+
+  test('should still allow removing a reaction whose emoji is unknown', async () => {
+    const { caller } = await initTest();
+
+    await tdb.insert(messageReactions).values({
+      messageId: 1,
+      userId: 1,
+      emoji: 'deleted-custom-emoji',
+      fileId: null,
+      createdAt: Date.now()
+    });
+
+    // the existence check only applies when adding, so a reaction survives its
+    // custom emoji being deleted and can still be toggled off
+    await caller.messages.toggleReaction({
+      messageId: 1,
+      emoji: 'deleted-custom-emoji'
+    });
+
+    const message = await caller.messages.getOne({ messageId: 1 });
+
+    expect(
+      message.reactions.some((r) => r.emoji === 'deleted-custom-emoji')
+    ).toBe(false);
   });
 
   test('should allow multiple users to react to the same message', async () => {
@@ -921,7 +1307,7 @@ describe('messages router', () => {
     expect(intersection.length).toBe(0);
   });
 
-  test('should fetch all messages until targetMessageId plus 20 older', async () => {
+  test('should return a window around targetMessageId, not everything since it', async () => {
     globalThis.disableRateLimiting = true;
 
     const { caller } = await initTest();
@@ -929,61 +1315,117 @@ describe('messages router', () => {
     const sentMessageIds: number[] = [];
 
     for (let i = 0; i < 10; i++) {
-      const messageId = await caller.messages.send({
-        channelId: 2,
-        content: `Message ${i + 1}`,
-        files: []
-      });
-
-      sentMessageIds.push(messageId);
+      sentMessageIds.push(
+        await caller.messages.send({
+          channelId: 2,
+          content: `Message ${i + 1}`,
+          files: []
+        })
+      );
     }
 
-    // target the newest message — should return all 10 + up to 20 older (0 exist)
-    const newestId = sentMessageIds[9]!;
+    // target the newest: nothing newer than it, so the window reaches the present
+    const newestResult = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      targetMessageId: sentMessageIds[9]!,
+      limit: 50
+    });
+
+    expect(newestResult.messages.length).toBe(10);
+    expect(newestResult.hasNewer).toBe(false);
+    expect(newestResult.nextCursor).toBeNull();
+
+    // target the third: 7 newer + target + 2 older, all inside the limit
+    const middleResult = await caller.messages.get({
+      channelId: 2,
+      cursor: null,
+      targetMessageId: sentMessageIds[2]!,
+      limit: 50
+    });
+
+    expect(middleResult.messages.length).toBe(10);
+    expect(middleResult.hasNewer).toBe(false);
+    expect(middleResult.messages.some((m) => m.id === sentMessageIds[2]!)).toBe(
+      true
+    );
+
+    globalThis.disableRateLimiting = false;
+  });
+
+  test('should cap the newer half of a jump window at the requested limit', async () => {
+    // this is 2.4. the newer half had no limit at all, so jumping to an old message returned
+    // every root message since, joined with files, reactions and reply previews
+    globalThis.disableRateLimiting = true;
+
+    const { caller } = await initTest();
+
+    const sentMessageIds: number[] = [];
+
+    for (let i = 0; i < 30; i++) {
+      sentMessageIds.push(
+        await caller.messages.send({
+          channelId: 2,
+          content: `Message ${i + 1}`,
+          files: []
+        })
+      );
+    }
+
+    const target = sentMessageIds[0]!;
 
     const result = await caller.messages.get({
       channelId: 2,
       cursor: null,
-      targetMessageId: newestId,
-      limit: 1
+      targetMessageId: target,
+      limit: 5
     });
 
-    // only the target itself + 0 newer + 9 older (capped by available)
-    expect(result.messages.length).toBe(10);
-    expect(result.nextCursor).toBeNull();
-    expect(result.messages.some((message) => message.id === newestId)).toBe(
-      true
-    );
+    // 5 newer at most, plus the target itself, and no older exist below it
+    expect(result.messages.length).toBeLessThanOrEqual(6);
+    expect(result.hasNewer).toBe(true);
+    expect(result.messages.some((m) => m.id === target)).toBe(true);
 
-    // target the 3rd message (index 2) — 7 newer + target + 2 older = 10
-    const middleId = sentMessageIds[2]!;
+    globalThis.disableRateLimiting = false;
+  });
 
-    const result2 = await caller.messages.get({
+  test('should page upward from a jump window using its own cursor', async () => {
+    globalThis.disableRateLimiting = true;
+
+    const { caller } = await initTest();
+
+    const sentMessageIds: number[] = [];
+
+    for (let i = 0; i < 40; i++) {
+      sentMessageIds.push(
+        await caller.messages.send({
+          channelId: 2,
+          content: `Message ${i + 1}`,
+          files: []
+        })
+      );
+    }
+
+    // target near the top so more than the 20 context messages sit below it
+    const result = await caller.messages.get({
       channelId: 2,
       cursor: null,
-      targetMessageId: middleId,
-      limit: 1
+      targetMessageId: sentMessageIds[35]!,
+      limit: 50
     });
 
-    expect(result2.messages.length).toBe(10);
-    expect(result2.messages.some((message) => message.id === middleId)).toBe(
-      true
-    );
+    expect(result.nextCursor).not.toBeNull();
 
-    // target the oldest — 9 newer + target + 0 older = 10
-    const oldestId = sentMessageIds[0]!;
-
-    const result3 = await caller.messages.get({
+    const olderPage = await caller.messages.get({
       channelId: 2,
-      cursor: null,
-      targetMessageId: oldestId,
-      limit: 1
+      cursor: result.nextCursor,
+      limit: 50
     });
 
-    expect(result3.messages.length).toBe(10);
-    expect(result3.messages.some((message) => message.id === oldestId)).toBe(
-      true
-    );
+    const windowIds = new Set(result.messages.map((m) => m.id));
+
+    expect(olderPage.messages.length).toBeGreaterThan(0);
+    expect(olderPage.messages.every((m) => !windowIds.has(m.id))).toBe(true);
 
     globalThis.disableRateLimiting = false;
   });
@@ -1043,7 +1485,7 @@ describe('messages router', () => {
     expect(sentMessage!.files.length).toBe(0);
   });
 
-  test('should trim attached files to configured max files per message', async () => {
+  test('should reject a message with more files than the configured maximum', async () => {
     const { caller, mockedToken } = await initTest();
 
     await tdb
@@ -1065,65 +1507,67 @@ describe('messages router', () => {
     const temp2 = (await response2.json()) as { id: string };
     const temp3 = (await response3.json()) as { id: string };
 
-    const messageId = await caller.messages.send({
-      channelId: 1,
-      content: 'Message with limited attachments',
-      files: [temp1.id, temp2.id, temp3.id]
-    });
-
-    const messages = await caller.messages.get({
-      channelId: 1,
-      cursor: null,
-      limit: 50
-    });
-
-    const sentMessage = messages.messages.find((m) => m.id === messageId);
-
-    expect(sentMessage).toBeDefined();
-    expect(sentMessage!.files.length).toBe(2);
-
-    const names = sentMessage!.files.map((f) => f.originalName);
-
-    expect(names).toContain('one.txt');
-    expect(names).toContain('two.txt');
-    expect(names).not.toContain('three.txt');
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'Message with too many attachments',
+        files: [temp1.id, temp2.id, temp3.id]
+      })
+    ).rejects.toThrow('You can attach at most 2 file(s) per message.');
   });
 
-  test('should discard all attached files when max files per message is 0', async () => {
+  test('should accept a message with exactly the configured maximum files', async () => {
     const { caller, mockedToken } = await initTest();
 
-    await tdb
-      .update(settings)
-      .set({
-        storageMaxFilesPerMessage: 0
-      })
-      .execute();
+    await tdb.update(settings).set({ storageMaxFilesPerMessage: 2 }).execute();
 
-    const file1 = new File(['file one'], 'one.txt', { type: 'text/plain' });
-    const file2 = new File(['file two'], 'two.txt', { type: 'text/plain' });
-
-    const response1 = await uploadFile(file1, mockedToken);
-    const response2 = await uploadFile(file2, mockedToken);
+    const response1 = await uploadFile(
+      new File(['file one'], 'one.txt', { type: 'text/plain' }),
+      mockedToken
+    );
+    const response2 = await uploadFile(
+      new File(['file two'], 'two.txt', { type: 'text/plain' }),
+      mockedToken
+    );
 
     const temp1 = (await response1.json()) as { id: string };
     const temp2 = (await response2.json()) as { id: string };
 
     const messageId = await caller.messages.send({
       channelId: 1,
-      content: 'Message with files while limit is zero',
+      content: 'Message at the attachment limit',
       files: [temp1.id, temp2.id]
     });
 
-    const messages = await caller.messages.get({
+    const page = await caller.messages.get({
       channelId: 1,
       cursor: null,
       limit: 50
     });
 
-    const sentMessage = messages.messages.find((m) => m.id === messageId);
+    const sentMessage = page.messages.find((m) => m.id === messageId);
 
-    expect(sentMessage).toBeDefined();
-    expect(sentMessage!.files.length).toBe(0);
+    expect(sentMessage!.files.length).toBe(2);
+  });
+
+  test('should reject any attachment when max files per message is 0', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    await tdb.update(settings).set({ storageMaxFilesPerMessage: 0 }).execute();
+
+    const response = await uploadFile(
+      new File(['file one'], 'one.txt', { type: 'text/plain' }),
+      mockedToken
+    );
+    const temp = (await response.json()) as { id: string };
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'Message with attachments disabled',
+        files: [temp.id]
+      })
+    ).rejects.toThrow('You can attach at most 0 file(s) per message.');
   });
 
   test('should update message updatedAt timestamp on edit', async () => {

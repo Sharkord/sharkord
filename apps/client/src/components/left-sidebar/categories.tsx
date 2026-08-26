@@ -113,6 +113,7 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
 
         <Protect permission={Permission.MANAGE_CHANNELS}>
           <IconButton
+            data-testid={TestId.CATEGORY_ADD_CHANNEL}
             variant="ghost"
             size="sm"
             icon={Plus}

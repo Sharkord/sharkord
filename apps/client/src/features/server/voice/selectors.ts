@@ -3,14 +3,15 @@ import { createCachedSelector } from 're-reselect';
 
 const DEFAULT_OBJECT = {};
 
-export const voiceMapSelector = (state: IRootState) => state.server.voiceMap;
-
 export const ownVoiceStateSelector = (state: IRootState) => {
   return state.server.ownVoiceState;
 };
 
 export const pinnedCardSelector = (state: IRootState) =>
   state.server.pinnedCard;
+
+export const voiceMoveTargetChannelIdSelector = (state: IRootState) =>
+  state.server.voiceMoveTargetChannelId;
 
 export const voiceChannelStateSelector = (
   state: IRootState,
@@ -38,12 +39,6 @@ export const voiceChannelAudioExternalStreamsSelector = createCachedSelector(
   voiceChannelExternalStreamsListSelector,
   (externalStreams) =>
     externalStreams.filter((stream) => stream.tracks?.audio === true)
-)((_state: IRootState, channelId: number) => channelId);
-
-export const voiceChannelVideoExternalStreamsSelector = createCachedSelector(
-  voiceChannelExternalStreamsListSelector,
-  (externalStreams) =>
-    externalStreams.filter((stream) => stream.tracks?.video === true)
 )((_state: IRootState, channelId: number) => channelId);
 
 export const hideNonVideoParticipantsSelector = (state: IRootState) =>
