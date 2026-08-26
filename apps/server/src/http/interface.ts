@@ -1,6 +1,7 @@
 import http from 'http';
 import path from 'path';
-import { INTERFACE_PATH, isPathInside } from '../helpers/paths';
+import { isPathInside } from '../helpers/is-path-inside';
+import { INTERFACE_PATH } from '../helpers/paths';
 import { IS_DEVELOPMENT, IS_TEST } from '../utils/env';
 import { sendFile, sendJsonError } from './helpers';
 

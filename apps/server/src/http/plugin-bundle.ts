@@ -2,7 +2,8 @@ import { CLIENT_ENTRY_FILE } from '@sharkord/shared';
 import http from 'http';
 import path from 'path';
 import { getSettings } from '../db/queries/server';
-import { isPathInside, PLUGINS_PATH } from '../helpers/paths';
+import { isPathInside } from '../helpers/is-path-inside';
+import { PLUGINS_PATH } from '../helpers/paths';
 import { pluginManager } from '../plugins';
 import { sendFile, sendJsonError } from './helpers';
 

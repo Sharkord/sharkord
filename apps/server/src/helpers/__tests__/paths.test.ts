@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import path from 'path';
-import { isPathInside } from '../paths';
+import { isPathInside } from '../is-path-inside';
 
 describe('isPathInside', () => {
   test('accepts the base directory itself', () => {

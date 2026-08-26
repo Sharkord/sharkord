@@ -37,13 +37,6 @@ const getMediasoupBinaryPath = (): string | undefined => {
   );
 };
 
-const isPathInside = (basePath: string, targetPath: string): boolean => {
-  const base = path.resolve(basePath);
-  const target = path.resolve(targetPath);
-
-  return target === base || target.startsWith(base + path.sep);
-};
-
 const DATA_PATH = getDataPath();
 const MEDIASOUP_BINARY_PATH = getMediasoupBinaryPath();
 const DB_PATH = path.join(DATA_PATH, 'db.sqlite');
@@ -66,7 +59,6 @@ export {
   DB_PATH,
   DRIZZLE_PATH,
   INTERFACE_PATH,
-  isPathInside,
   LOGS_PATH,
   MEDIASOUP_BINARY_PATH,
   MEDIASOUP_PATH,
