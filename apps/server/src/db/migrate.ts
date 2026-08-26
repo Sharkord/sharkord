@@ -4,6 +4,7 @@ import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import fs from 'fs/promises';
 import path from 'path';
+import { config } from '../config';
 import { BACKUPS_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 
@@ -143,9 +144,16 @@ const migrateDatabase = async (
 ): Promise<void> => {
   const pendingTags = await getPendingMigrationTags(sqlite, migrationsFolder);
 
-  // not caught: running a destructive migration with no way back is worse than not booting
   if (pendingTags.length > 0) {
-    await backupDatabase(sqlite, pendingTags);
+    // not caught: running a destructive migration with no way back is worse than not booting
+    if (config.server.backupDatabase) {
+      await backupDatabase(sqlite, pendingTags);
+    } else {
+      logger.warn(
+        'Applying %d migration(s) with server.backupDatabase off, so there is no snapshot to restore if one of them loses data',
+        pendingTags.length
+      );
+    }
   }
 
   sqlite.run('PRAGMA foreign_keys = OFF;');

@@ -32,6 +32,12 @@ describe('trustedProxies default', () => {
   });
 });
 
+describe('backupDatabase default', () => {
+  test('should be on, since it is the only thing that makes a bad migration recoverable', () => {
+    expect(defaultConfig.server.backupDatabase).toBe(true);
+  });
+});
+
 describe('env overrides are validated', () => {
   const savedEnv: Record<string, string | undefined> = {};
 
@@ -63,6 +69,12 @@ describe('env overrides are validated', () => {
     setEnv('SHARKORD_PORT', 'not-a-port');
 
     expect(applyOverrides).toThrow();
+  });
+
+  test('should turn the database backup off from the env', () => {
+    setEnv('SHARKORD_BACKUP_DATABASE', 'false');
+
+    expect(applyOverrides().server.backupDatabase).toBe(false);
   });
 
   test('should reject a port outside the allowed range', () => {

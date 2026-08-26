@@ -4,6 +4,7 @@ import { drizzle } from 'drizzle-orm/bun-sqlite';
 import fs from 'fs';
 import path from 'path';
 import { findTestLog, testLogs } from '../../__tests__/setup';
+import { config } from '../../config';
 import {
   BACKUPS_PATH,
   SRC_MIGRATIONS_PATH,
@@ -309,6 +310,36 @@ describe('migrations', () => {
 
     for (const name of created) {
       fs.rmSync(path.join(BACKUPS_PATH, name), { force: true });
+    }
+  });
+
+  test('should not snapshot when server.backupDatabase is off', async () => {
+    fs.mkdirSync(workDir, { recursive: true });
+
+    const dbName = `no-backup-${Date.now()}.sqlite`;
+    const sqlite = new Database(path.join(workDir, dbName), {
+      create: true,
+      strict: true
+    });
+    const db = drizzle({ client: sqlite });
+
+    const original = config.server.backupDatabase;
+
+    config.server.backupDatabase = false;
+    testLogs.length = 0;
+
+    try {
+      await migrateDatabase(sqlite, db, SRC_MIGRATIONS_PATH);
+
+      const created = fs
+        .readdirSync(BACKUPS_PATH)
+        .filter((name) => name.startsWith(dbName));
+
+      expect(created).toHaveLength(0);
+      expect(findTestLog('warn', 'server.backupDatabase off')).toBeDefined();
+    } finally {
+      config.server.backupDatabase = original;
+      sqlite.close();
     }
   });
 
