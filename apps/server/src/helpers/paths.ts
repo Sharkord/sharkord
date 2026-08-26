@@ -5,17 +5,17 @@ import {
   SERVER_VERSION,
   SHARKORD_MEDIASOUP_BIN_NAME
 } from '../utils/env';
-import { getAppDataPath } from './fs';
+import { getAppDataPath } from '../utils/fs';
 
 const getDataPath = (): string => {
+  if (IS_TEST) {
+    return path.resolve(process.cwd(), './data-test');
+  }
+
   const INJECTED_DATA_PATH = process.env.SHARKORD_DATA_PATH;
 
   if (INJECTED_DATA_PATH) {
     return path.resolve(INJECTED_DATA_PATH);
-  }
-
-  if (IS_TEST) {
-    return path.resolve(process.cwd(), './data-test');
   }
 
   if (IS_DEVELOPMENT) {
@@ -40,6 +40,7 @@ const getMediasoupBinaryPath = (): string | undefined => {
 const DATA_PATH = getDataPath();
 const MEDIASOUP_BINARY_PATH = getMediasoupBinaryPath();
 const DB_PATH = path.join(DATA_PATH, 'db.sqlite');
+const BACKUPS_PATH = path.join(DATA_PATH, 'backups');
 const LOGS_PATH = path.join(DATA_PATH, 'logs');
 const PUBLIC_PATH = path.join(DATA_PATH, 'public');
 const TMP_PATH = path.join(DATA_PATH, 'tmp');
@@ -52,6 +53,7 @@ const PLUGINS_PATH = path.join(DATA_PATH, 'plugins');
 const SRC_MIGRATIONS_PATH = path.join(process.cwd(), 'src', 'db', 'migrations');
 
 export {
+  BACKUPS_PATH,
   CONFIG_INI_PATH,
   DATA_PATH,
   DB_PATH,

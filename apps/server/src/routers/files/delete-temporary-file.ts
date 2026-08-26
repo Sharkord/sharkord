@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { fileManager } from '../../utils/file-manager.js';
-import { invariant } from '../../utils/invariant.js';
-import { protectedProcedure } from '../../utils/trpc.js';
+import { fileManager } from '../../helpers/file-manager';
+import { invariant } from '../../utils/invariant';
+import { protectedProcedure } from '../../utils/trpc';
 
 const deleteTemporaryFileRoute = protectedProcedure
   .input(z.object({ fileId: z.string() }))

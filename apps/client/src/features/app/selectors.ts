@@ -6,8 +6,6 @@ export const appLoadingSelector = (state: IRootState) => state.app.appLoading;
 export const isAutoConnectingSelector = (state: IRootState) =>
   state.app.isAutoConnecting;
 
-export const devicesSelector = (state: IRootState) => state.app.devices;
-
 export const modViewOpenSelector = (state: IRootState) => state.app.modViewOpen;
 
 export const modViewUserIdSelector = (state: IRootState) =>
@@ -76,9 +74,3 @@ export const threadSidebarDataSelector = createSelector(
 
 export const isShiftHeldSelector = (state: IRootState) =>
   state.app.modifierKeysHeldMap?.Shift ?? false;
-
-export const isCtrlHeldSelector = (state: IRootState) =>
-  state.app.modifierKeysHeldMap?.Control ?? false;
-
-export const isAltHeldSelector = (state: IRootState) =>
-  state.app.modifierKeysHeldMap?.Alt ?? false;

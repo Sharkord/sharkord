@@ -20,6 +20,7 @@
   "stopScreenShare": "Остановить демонстрацию экрана",
   "startScreenShare": "Начать демонстрацию экрана",
   "transportStats": "Статистика передачи",
+  "voiceDiagnostics": "Диагностика голоса",
   "outgoing": "Исходящий",
   "incoming": "Входящий",
   "noData": "Нет данных",
@@ -42,6 +43,7 @@
   "createChannel": "Создать канал",
   "failedReorderChannels": "Не удалось изменить порядок каналов",
   "failedReorderCategories": "Не удалось изменить порядок категорий",
+  "failedMoveUser": "Не удалось переместить пользователя",
   "directMessages": "Личные сообщения",
   "failedLoadDMs": "Не удалось загрузить личные сообщения",
   "couldNotOpenDM": "Не удалось открыть личные сообщения",
@@ -69,5 +71,7 @@
   "deleteCategoryMsg": "Вы уверены, что хотите удалить эту категорию? Это удалит все каналы в этой категории. Это действие невозможно отменить.",
   "categoryDeleted": "Категория удалена",
   "failedDeleteCategory": "Не удалось удалить категорию",
-  "userVolume": "Громкость пользователя"
+  "userVolume": "Громкость пользователя",
+  "microphone": "Микрофон",
+  "noiseSuppression": "Шумоподавление"
 }

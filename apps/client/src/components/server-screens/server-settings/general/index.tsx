@@ -53,6 +53,7 @@ const General = memo(() => {
 
         <Group label={t('serverPasswordLabel')}>
           <Input
+            type="password"
             value={settings.password}
             onChange={(e) => onChange('password', e.target.value)}
             placeholder={t('serverPasswordPlaceholder')}

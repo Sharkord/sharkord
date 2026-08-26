@@ -1,5 +1,7 @@
 const onLoad = (ctx) => {
-  ctx.log('This should never load');
+  ctx.logger.log('This should never load');
 };
 
-export { onLoad };
+const onUnload = () => {};
+
+export { onLoad, onUnload };

@@ -20,6 +20,7 @@
   "stopScreenShare": "Interrompi condivisione schermo",
   "startScreenShare": "Avvia condivisione schermo",
   "transportStats": "Statistiche trasporto",
+  "voiceDiagnostics": "Diagnostica vocale",
   "outgoing": "In uscita",
   "incoming": "In ingresso",
   "noData": "Nessun dato",
@@ -42,6 +43,7 @@
   "createChannel": "Crea canale",
   "failedReorderChannels": "Impossibile riordinare i canali",
   "failedReorderCategories": "Impossibile riordinare le categorie",
+  "failedMoveUser": "Impossibile spostare l'utente",
   "directMessages": "Messaggi diretti",
   "failedLoadDMs": "Impossibile caricare i messaggi diretti",
   "couldNotOpenDM": "Impossibile aprire il messaggio diretto",
@@ -69,5 +71,7 @@
   "deleteCategoryMsg": "Sei sicuro di voler eliminare questa categoria? Questo ELIMINERA tutti i canali all'interno della categoria. Questa azione non puo essere annullata.",
   "categoryDeleted": "Categoria eliminata",
   "failedDeleteCategory": "Impossibile eliminare la categoria",
-  "userVolume": "Volume utente"
+  "userVolume": "Volume utente",
+  "microphone": "Microfono",
+  "noiseSuppression": "Soppressione del rumore"
 }

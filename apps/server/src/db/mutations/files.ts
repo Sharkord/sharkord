@@ -5,11 +5,9 @@ import path from 'path';
 import { db } from '..';
 import { PUBLIC_PATH } from '../../helpers/paths';
 import { logger } from '../../logger';
-import { files, messageFiles } from '../schema';
+import { files } from '../schema';
 
 const removeFile = async (fileId: number): Promise<TFile | undefined> => {
-  await db.delete(messageFiles).where(eq(messageFiles.fileId, fileId));
-
   const removedFile = await db
     .delete(files)
     .where(eq(files.id, fileId))

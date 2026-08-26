@@ -17,6 +17,9 @@ type TRateLimitEntry = {
   resetAt: number;
 };
 
+// share of the table dropped when it is full and nothing has expired
+const EVICTION_RATIO = 0.1;
+
 // this is a pretty basic implementation of a fixed window rate limiter, but for now it's better than nothing
 class FixedWindowRateLimiter {
   private readonly entries = new Map<string, TRateLimitEntry>();
@@ -35,8 +38,13 @@ class FixedWindowRateLimiter {
   }
 
   public consume = (key: string): TRateLimitResult => {
-    if ((IS_DEVELOPMENT && !IS_TEST) || globalThis.disableRateLimiting) {
-      // disable rate limiting in development but not in tests
+    // the globalThis escape hatch is honoured only under test, so it cannot become a
+    // production kill switch. limiting stays off in development, which does mean no dev
+    // exercises this path
+    if (
+      (IS_DEVELOPMENT && !IS_TEST) ||
+      (IS_TEST && globalThis.disableRateLimiting)
+    ) {
       return {
         allowed: true,
         remaining: this.maxRequests,
@@ -84,6 +92,10 @@ class FixedWindowRateLimiter {
     this.entries.clear();
   };
 
+  public get size() {
+    return this.entries.size;
+  }
+
   private gc = (now: number) => {
     if (this.entries.size < this.maxEntries) {
       return;
@@ -99,10 +111,17 @@ class FixedWindowRateLimiter {
       return;
     }
 
-    const oldestKey = this.entries.keys().next().value;
+    const evictionCount = Math.max(
+      1,
+      Math.ceil(this.entries.size * EVICTION_RATIO)
+    );
 
-    if (oldestKey) {
-      this.entries.delete(oldestKey);
+    const soonestToExpire = Array.from(this.entries.entries())
+      .sort((a, b) => a[1].resetAt - b[1].resetAt)
+      .slice(0, evictionCount);
+
+    for (const [key] of soonestToExpire) {
+      this.entries.delete(key);
     }
   };
 }

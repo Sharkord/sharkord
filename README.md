@@ -20,6 +20,21 @@
 
 Sharkord is a self-hosted communication platform that brings the most important Discord-like features to your own infrastructure. Voice, video, and screen sharing without the bloat or surveillance.
 
+## Screenshots
+
+![Sharkord Screenshot](https://i.imgur.com/urO9vKC.png)
+
+## Features
+
+- **Voice channels** with video and screen sharing, over a built-in mediasoup SFU
+- **Text channels** grouped into categories, with threads, replies, reactions, pins and search
+- **Direct messages** between members
+- **Roles and permissions**, with per-channel overrides for individual roles and users
+- **Custom emoji**, mentions and channel references
+- **Invites** with usage limits and automatic role assignment
+- **File uploads** with per-user storage quotas and optional signed URLs
+- **Plugins** that extend both server and client, through the [plugin SDK](packages/plugin-sdk)
+
 ## Docs
 
 For detailed documentation, please visit our [Documentation](https://sharkord.com/docs).
@@ -54,8 +69,8 @@ docker run \
   sharkord/sharkord:latest
 ```
 
-> [!NOTE]
-> Upon first launch, Sharkord will create a secure token and print it to the console. This token allows ANYONE to gain owner access to your server, so make sure to store it securely and do not lose it!
+> [!WARNING]
+> Upon first launch, Sharkord creates a secret token and prints it to the console. It is both the credential that grants owner access and the key your server signs every session and file URL with, so anyone who obtains it can take ownership **and** impersonate any account. Keep it out of logs, screenshots and issue reports, store it securely, and do not lose it.
 
 Once the server is running, open your web browser and navigate to [http://localhost:4991](http://localhost:4991) to access the Sharkord client interface. If you're running the server on a different machine, replace `localhost` with the server's IP address or domain name.
 
@@ -63,7 +78,7 @@ Check out our [Documentation](https://sharkord.com/docs) for more detailed setup
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details, and [Development](DEVELOPMENT.md) for running Sharkord locally.
 
 ## License
 

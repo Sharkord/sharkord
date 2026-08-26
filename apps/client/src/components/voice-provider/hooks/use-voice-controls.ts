@@ -1,11 +1,13 @@
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
-import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
 import { updateOwnVoiceState } from '@/features/server/voice/actions';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
+import { logVoice, logVoiceError } from '@/helpers/browser-logger';
+import { playSound } from '@/helpers/sounds';
 import { getTRPCClient } from '@/lib/trpc';
 import { getTrpcError } from '@sharkord/shared';
 import { useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TPendingMicRestoreState = {
@@ -39,6 +41,7 @@ const useVoiceControls = ({
   startScreenShareStream,
   stopScreenShareStream
 }: TUseVoiceControlsParams) => {
+  const { t } = useTranslation('common');
   const ownVoiceState = useOwnVoiceState();
   const currentVoiceChannelId = useCurrentVoiceChannelId();
 
@@ -59,6 +62,8 @@ const useVoiceControls = ({
     }
 
     isTogglingMic.current = true;
+
+    logVoice('mic: toggle requested', { micMuted: nextMicMuted });
 
     const previousPendingMicRestoreState = pendingMicRestoreStateRef.current;
 
@@ -92,11 +97,15 @@ const useVoiceControls = ({
       pendingMicRestoreStateRef.current = previousPendingMicRestoreState;
 
       updateOwnVoiceState({ micMuted: !nextMicMuted });
-      toast.error(getTrpcError(error, 'Failed to update microphone state'));
+      logVoiceError('mic: toggle failed, rolled back', error, {
+        micMuted: nextMicMuted
+      });
+      toast.error(getTrpcError(error, t('common:failedUpdateMicrophoneState')));
     } finally {
       isTogglingMic.current = false;
     }
   }, [
+    t,
     ownVoiceState.micMuted,
     ownVoiceState.soundMuted,
     startMicStream,
@@ -110,6 +119,8 @@ const useVoiceControls = ({
 
     const nextSoundMuted = !ownVoiceState.soundMuted;
     const trpc = getTRPCClient();
+
+    logVoice('sound: toggle requested', { soundMuted: nextSoundMuted });
     const previousPendingMicRestoreState = pendingMicRestoreStateRef.current;
     const nextVoiceState: TVoiceStateUpdate = {
       soundMuted: nextSoundMuted
@@ -165,11 +176,15 @@ const useVoiceControls = ({
     } catch (error) {
       pendingMicRestoreStateRef.current = previousPendingMicRestoreState;
       updateOwnVoiceState(rollbackVoiceState);
-      toast.error(getTrpcError(error, 'Failed to update sound state'));
+      logVoiceError('sound: toggle failed, rolled back', error, {
+        soundMuted: nextSoundMuted
+      });
+      toast.error(getTrpcError(error, t('common:failedUpdateSoundState')));
     } finally {
       isTogglingSound.current = false;
     }
   }, [
+    t,
     ownVoiceState.soundMuted,
     ownVoiceState.micMuted,
     currentVoiceChannelId,
@@ -184,6 +199,8 @@ const useVoiceControls = ({
 
     const newState = !ownVoiceState.webcamEnabled;
     const trpc = getTRPCClient();
+
+    logVoice('webcam: toggle requested', { enabled: newState });
 
     updateOwnVoiceState({ webcamEnabled: newState });
 
@@ -212,11 +229,15 @@ const useVoiceControls = ({
         // ignore
       }
 
-      toast.error(getTrpcError(error, 'Failed to update webcam state'));
+      logVoiceError('webcam: toggle failed, rolled back', error, {
+        enabled: newState
+      });
+      toast.error(getTrpcError(error, t('common:failedUpdateWebcamState')));
     } finally {
       isTogglingWebcam.current = false;
     }
   }, [
+    t,
     ownVoiceState.webcamEnabled,
     currentVoiceChannelId,
     startWebcamStream,
@@ -229,6 +250,8 @@ const useVoiceControls = ({
 
     const newState = !ownVoiceState.sharingScreen;
     const trpc = getTRPCClient();
+
+    logVoice('screen: toggle requested', { sharing: newState });
 
     updateOwnVoiceState({ sharingScreen: newState });
 
@@ -271,11 +294,17 @@ const useVoiceControls = ({
         // ignore
       }
 
-      toast.error(getTrpcError(error, 'Failed to update screen share state'));
+      logVoiceError('screen: toggle failed, rolled back', error, {
+        sharing: newState
+      });
+      toast.error(
+        getTrpcError(error, t('common:failedUpdateScreenShareState'))
+      );
     } finally {
       isTogglingScreenShare.current = false;
     }
   }, [
+    t,
     ownVoiceState.sharingScreen,
     startScreenShareStream,
     stopScreenShareStream

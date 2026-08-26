@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import semver from 'semver';
 import { parseArgs } from 'util';
-import { zipDirectory } from '../src/helpers/zip';
+import { zipDirectory } from '../src/utils/zip';
 import {
   compile,
   getCurrentVersion,

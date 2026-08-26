@@ -1,8 +1,5 @@
 export enum LocalStorageKey {
   IDENTITY = 'sharkord-identity',
-  REMEMBER_CREDENTIALS = 'sharkord-remember-identity',
-  USER_PASSWORD = 'sharkord-user-password',
-  SERVER_PASSWORD = 'sharkord-server-password',
   VITE_UI_THEME = 'vite-ui-theme',
   DEVICES_SETTINGS = 'sharkord-devices-settings',
   FLOATING_CARD_POSITION = 'sharkord-floating-card-position',
@@ -33,7 +30,8 @@ export enum LocalStorageKey {
   BROWSER_NOTIFICATIONS_FOR_REPLIES = 'sharkord-browser-notifications-for-replies',
   LANGUAGE = 'sharkord-language',
   PLUGIN_SLOT_DEBUG = 'sharkord-plugin-slot-debug',
-  HIDE_OWN_SCREEN_SHARE = 'sharkord-hide-own-screen-share'
+  HIDE_OWN_SCREEN_SHARE = 'sharkord-hide-own-screen-share',
+  ALWAYS_SHOW_VOICE_CONTROLS = 'sharkord-always-show-voice-controls'
 }
 
 export enum SessionStorageKey {

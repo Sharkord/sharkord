@@ -1,13 +1,24 @@
 import {
   DELETED_USER_IDENTITY_AND_NAME,
+  DisconnectCode,
   OWNER_ROLE_ID,
   Permission,
+  ServerEvents,
   type TTempFile
 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
-import { initTest, uploadFile } from '../../__tests__/helpers';
+import jwt from 'jsonwebtoken';
+import {
+  createFakeSocket,
+  getCaller,
+  getMockedToken,
+  initTest,
+  login,
+  uploadFile
+} from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
+import { getUserByToken } from '../../db/queries/users';
 import {
   channels,
   emojis,
@@ -21,6 +32,7 @@ import {
   userRoles,
   users
 } from '../../db/schema';
+import { pubsub } from '../../utils/pubsub';
 
 describe('users router', () => {
   test('should throw when user lacks permissions (getAll)', async () => {
@@ -114,10 +126,11 @@ describe('users router', () => {
     expect(Array.isArray(users)).toBe(true);
     expect(users.length).toBeGreaterThan(0);
 
-    // verify sensitive fields are cleared
+    // verify sensitive fields are removed rather than blanked
     users.forEach((user) => {
-      expect(user.password).toBeEmpty();
-      expect(user.identity).toBeEmpty();
+      expect('password' in user).toBe(false);
+      expect('identity' in user).toBe(false);
+      expect('tokenVersion' in user).toBe(false);
     });
   });
 
@@ -263,7 +276,10 @@ describe('users router', () => {
     expect(info.user).toBeDefined();
     expect(info.user.id).toBe(1);
 
-    expect(info.user.identity).toBeEmpty();
+    // identity stays present but null without VIEW_USER_SENSITIVE_DATA
+    expect(info.user.identity).toBeNull();
+    expect('password' in info.user).toBe(false);
+    expect('tokenVersion' in info.user).toBe(false);
     expect(info.logins.length).toBeGreaterThan(0);
 
     info.logins.forEach((login) => {
@@ -287,7 +303,7 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Updated Name',
-      bannerColor: '#ff0000',
+      profileColor: '#ff0000',
       bio: 'This is my new bio'
     });
 
@@ -296,7 +312,7 @@ describe('users router', () => {
 
     expect(updatedUser).toBeDefined();
     expect(updatedUser!.name).toBe('Updated Name');
-    expect(updatedUser!.bannerColor).toBe('#ff0000');
+    expect(updatedUser!.profileColor).toBe('#ff0000');
     expect(updatedUser!.bio).toBe('This is my new bio');
   });
 
@@ -305,7 +321,7 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Test User',
-      bannerColor: '#00ff00'
+      profileColor: '#00ff00'
     });
 
     const users = await caller.users.getAll();
@@ -313,7 +329,63 @@ describe('users router', () => {
 
     expect(updatedUser).toBeDefined();
     expect(updatedUser!.name).toBe('Test User');
-    expect(updatedUser!.bannerColor).toBe('#00ff00');
+    expect(updatedUser!.profileColor).toBe('#00ff00');
+  });
+
+  test('should accept a shorthand hex profile color', async () => {
+    const { caller } = await initTest();
+
+    await caller.users.update({
+      name: 'Test User',
+      profileColor: '#f0f'
+    });
+
+    const info = await caller.users.getInfo({ userId: 1 });
+
+    expect(info.user.profileColor).toBe('#f0f');
+  });
+
+  test('should reject a profile color that is not a hex value', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.update({
+        name: 'Test User',
+        // a pre-migration bannerColor could hold a full css gradient
+        profileColor: 'linear-gradient(90deg, red, blue)'
+      })
+    ).rejects.toThrow('Invalid hex color');
+  });
+
+  test('should reject a hex value of the wrong length', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.update({
+        name: 'Test User',
+        profileColor: '#12345'
+      })
+    ).rejects.toThrow('Invalid hex color');
+  });
+
+  test('should leave the stored profile color untouched when validation fails', async () => {
+    const { caller } = await initTest();
+
+    await caller.users.update({
+      name: 'Test User',
+      profileColor: '#123456'
+    });
+
+    await expect(
+      caller.users.update({
+        name: 'Test User',
+        profileColor: 'nope'
+      })
+    ).rejects.toThrow('Invalid hex color');
+
+    const info = await caller.users.getInfo({ userId: 1 });
+
+    expect(info.user.profileColor).toBe('#123456');
   });
 
   test('should update password successfully', async () => {
@@ -347,6 +419,115 @@ describe('users router', () => {
     // should verify against the new password
     const isValid = await Bun.password.verify(newPassword, row!.password);
     expect(isValid).toBe(true);
+  });
+
+  test('should invalidate tokens issued before a password change', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    expect(await getUserByToken(mockedToken)).toBeDefined();
+
+    await caller.users.updatePassword({
+      currentPassword: 'password123',
+      newPassword: 'newpassword456',
+      confirmNewPassword: 'newpassword456'
+    });
+
+    const row = await tdb
+      .select({ tokenVersion: users.tokenVersion })
+      .from(users)
+      .where(eq(users.id, 1))
+      .get();
+
+    expect(row?.tokenVersion).toBe(1);
+
+    // the old token still verifies cryptographically, it is the tokensValidAfter check
+    // that has to refuse it
+    expect(jwt.decode(mockedToken)).toBeTruthy();
+    expect(await getUserByToken(mockedToken)).toBeUndefined();
+  });
+
+  test('should accept a token carrying the new version', async () => {
+    const { caller } = await initTest();
+
+    await caller.users.updatePassword({
+      currentPassword: 'password123',
+      newPassword: 'newpassword456',
+      confirmNewPassword: 'newpassword456'
+    });
+
+    const freshToken = await getMockedToken(1, 1);
+
+    expect(await getUserByToken(freshToken)).toBeDefined();
+  });
+
+  test('should leave other users tokens alone on a password change', async () => {
+    const { caller } = await initTest();
+    const otherToken = await getMockedToken(2);
+
+    await caller.users.updatePassword({
+      currentPassword: 'password123',
+      newPassword: 'newpassword456',
+      confirmNewPassword: 'newpassword456'
+    });
+
+    expect(await getUserByToken(otherToken)).toBeDefined();
+  });
+
+  test('should close every session of its own user on a password change', async () => {
+    const ownSocket = createFakeSocket();
+    const otherSocket = createFakeSocket();
+
+    const { caller } = await initTest(1, undefined, {
+      getOwnWs: () => ownSocket,
+      getUserWs: () => [ownSocket, otherSocket]
+    });
+
+    await caller.users.updatePassword({
+      currentPassword: 'password123',
+      newPassword: 'newpassword456',
+      confirmNewPassword: 'newpassword456'
+    });
+
+    const closed = {
+      code: DisconnectCode.KICKED,
+      reason: 'Your password was changed'
+    };
+
+    // the sockets close a tick after the mutation answers, so that the response is not
+    // lost with the connection it travels on
+    expect(otherSocket.closes).toEqual([]);
+    expect(ownSocket.closes).toEqual([]);
+
+    await Bun.sleep(1);
+
+    expect(otherSocket.closes).toEqual([closed]);
+
+    // the caller included: the version bump invalidated the token it is holding, so there
+    // is nothing left for that session to authenticate with
+    expect(ownSocket.closes).toEqual([closed]);
+  });
+
+  test('should not close any session when the password change is refused', async () => {
+    const ownSocket = createFakeSocket();
+    const otherSocket = createFakeSocket();
+
+    const { caller } = await initTest(1, undefined, {
+      getOwnWs: () => ownSocket,
+      getUserWs: () => [ownSocket, otherSocket]
+    });
+
+    await expect(
+      caller.users.updatePassword({
+        currentPassword: 'wrongpassword',
+        newPassword: 'newpassword456',
+        confirmNewPassword: 'newpassword456'
+      })
+    ).rejects.toThrow('Current password is incorrect');
+
+    await Bun.sleep(1);
+
+    expect(otherSocket.closes).toEqual([]);
+    expect(ownSocket.closes).toEqual([]);
   });
 
   test('should throw when current password is incorrect', async () => {
@@ -556,6 +737,61 @@ describe('users router', () => {
     expect(secondInfo.user.avatarId).not.toBe(firstAvatarId);
   });
 
+  test('should keep the previous avatar when the new one is rejected', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    const file = new File(['first avatar'], 'avatar1.png', {
+      type: 'image/png'
+    });
+
+    const uploadResponse = await uploadFile(file, mockedToken);
+    const uploadData = (await uploadResponse.json()) as TTempFile;
+
+    await caller.users.changeAvatar({
+      fileId: uploadData.id
+    });
+
+    const before = await caller.users.getInfo({ userId: 1 });
+
+    expect(before.user.avatarId).toBeDefined();
+
+    await tdb
+      .update(settings)
+      .set({
+        storageMaxAvatarSize: 10
+      })
+      .execute();
+
+    const rejectedFile = new File(
+      ['second avatar, bigger than ten bytes'],
+      'avatar2.png',
+      {
+        type: 'image/png'
+      }
+    );
+
+    const rejectedUpload = await uploadFile(rejectedFile, mockedToken);
+    const rejectedData = (await rejectedUpload.json()) as TTempFile;
+
+    await expect(
+      caller.users.changeAvatar({
+        fileId: rejectedData.id
+      })
+    ).rejects.toThrow('Avatar file exceeds the configured maximum size');
+
+    const after = await caller.users.getInfo({ userId: 1 });
+
+    expect(after.user.avatarId).toBe(before.user.avatarId);
+
+    const avatarFile = await tdb
+      .select({ id: files.id })
+      .from(files)
+      .where(eq(files.id, before.user.avatarId!))
+      .get();
+
+    expect(avatarFile).toBeDefined();
+  });
+
   test('should add role to user', async () => {
     const { caller } = await initTest();
 
@@ -569,6 +805,49 @@ describe('users router', () => {
     });
 
     expect(info.user.roleIds).toContain(1);
+  });
+
+  // a role can carry view permissions on private channels, so granting or removing one moves
+  // the set of channels the user's client should be holding
+  test('should send and withdraw role granted channels as roles change', async () => {
+    const { caller } = await initTest();
+
+    // user 2 is denied channel 5 at the user level, so use the moderator role's holder
+    // instead: user 5 holds no granting role until we give them the default one
+    await tdb
+      .delete(userRoles)
+      .where(and(eq(userRoles.userId, 5), eq(userRoles.roleId, 2)));
+
+    await initTest(5, { socket: createFakeSocket() });
+
+    const created: number[] = [];
+    const deleted: number[] = [];
+
+    const subscriptions = [
+      pubsub.subscribeFor(5, ServerEvents.CHANNEL_CREATE).subscribe({
+        next: (channel) => {
+          created.push(channel.id);
+        }
+      }),
+      pubsub.subscribeFor(5, ServerEvents.CHANNEL_DELETE).subscribe({
+        next: (channelId) => {
+          deleted.push(channelId);
+        }
+      })
+    ];
+
+    try {
+      await caller.users.addRole({ userId: 5, roleId: 2 });
+
+      expect(created).toContain(5);
+      expect(deleted).toEqual([]);
+
+      await caller.users.removeRole({ userId: 5, roleId: 2 });
+
+      expect(deleted).toContain(5);
+    } finally {
+      subscriptions.forEach((subscription) => subscription.unsubscribe());
+    }
   });
 
   test('should throw when adding duplicate role', async () => {
@@ -602,6 +881,33 @@ describe('users router', () => {
     expect(info.user.roleIds).not.toContain(1);
   });
 
+  // user 5 is the seeded moderator: MANAGE_USERS and MANAGE_ROLES, nothing else. role 2 is
+  // the default role, which grants sending messages and voice. taking it away is a change to
+  // what its holder can do, so the same gate addRole applies has to apply here
+  test('should throw when removing a role with permissions the caller lacks', async () => {
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.users.removeRole({
+        userId: 3,
+        roleId: 2
+      })
+    ).rejects.toThrow(
+      'You cannot remove a role with permissions that you do not have.'
+    );
+  });
+
+  test('should throw when removing a role that does not exist', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.removeRole({
+        userId: 2,
+        roleId: 9999
+      })
+    ).rejects.toThrow('Role not found');
+  });
+
   test('should throw when non-owner user tries to assign owner role to someone else', async () => {
     const { caller } = await initTest();
     const newRoleId = await caller.roles.add();
@@ -629,7 +935,7 @@ describe('users router', () => {
         password: 'password',
         bannerId: null,
         bio: null,
-        bannerColor: null,
+        profileColor: '#262626',
         createdAt: Date.now()
       })
       .returning({ id: users.id })
@@ -703,6 +1009,18 @@ describe('users router', () => {
     expect(info.user.banned).toBe(true);
     expect(info.user.banReason).toBe('Violated community guidelines');
     expect(info.user.bannedAt).toBeDefined();
+  });
+
+  test('should refuse a new session for a banned user', async () => {
+    const { caller } = await initTest();
+
+    await caller.users.ban({
+      userId: 2,
+      reason: 'Violated community guidelines'
+    });
+
+    // the token stays cryptographically valid, the ban has to be what stops it
+    await expect(getCaller(2)).rejects.toThrow('Invalid authentication token');
   });
 
   test('should ban user without reason', async () => {
@@ -897,6 +1215,86 @@ describe('users router', () => {
     expect(reactionAfterDelete!.userId).toBe(deletedPlaceholderUser!.id);
   });
 
+  test('should keep a message edited by the deleted user', async () => {
+    const { caller } = await initTest();
+
+    const messageBefore = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.id, 1))
+      .get();
+
+    expect(messageBefore).toBeDefined();
+    expect(messageBefore!.userId).not.toBe(2);
+
+    await tdb
+      .update(messages)
+      .set({ editedBy: 2, editedAt: Date.now() })
+      .where(eq(messages.id, 1));
+
+    await caller.users.delete({ userId: 2, wipe: false });
+
+    const messageAfter = await tdb
+      .select()
+      .from(messages)
+      .where(eq(messages.id, 1))
+      .get();
+
+    expect(messageAfter).toBeDefined();
+    expect(messageAfter!.userId).toBe(messageBefore!.userId);
+    expect(messageAfter!.editedBy).toBeNull();
+  });
+
+  test('should delete a second user who shared a reaction with the first', async () => {
+    const { caller } = await initTest();
+
+    const now = Date.now();
+
+    await tdb.insert(messageReactions).values([
+      {
+        messageId: 1,
+        userId: 2,
+        emoji: '👍',
+        fileId: null,
+        createdAt: now
+      },
+      {
+        messageId: 1,
+        userId: 3,
+        emoji: '👍',
+        fileId: null,
+        createdAt: now
+      }
+    ]);
+
+    await caller.users.delete({ userId: 2, wipe: false });
+    await caller.users.delete({ userId: 3, wipe: false });
+
+    const remainingUsers = await tdb
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, 3));
+
+    expect(remainingUsers.length).toBe(0);
+
+    const placeholder = await tdb
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.identity, DELETED_USER_IDENTITY_AND_NAME))
+      .get();
+
+    // the two reactions collapse into the one row the placeholder can hold
+    const reactions = await tdb
+      .select({ userId: messageReactions.userId })
+      .from(messageReactions)
+      .where(
+        and(eq(messageReactions.messageId, 1), eq(messageReactions.emoji, '👍'))
+      );
+
+    expect(reactions.length).toBe(1);
+    expect(reactions[0]!.userId).toBe(placeholder!.id);
+  });
+
   test('should wipe all linked data when deleting user with wipe', async () => {
     const { caller } = await initTest();
 
@@ -1075,6 +1473,104 @@ describe('users router', () => {
     expect(info.user.banReason).toBeNull();
   });
 
+  test('should kick every session of a connected user', async () => {
+    const firstTab = createFakeSocket();
+    const secondTab = createFakeSocket();
+
+    const { caller } = await initTest(1, undefined, {
+      getUserWs: (userId) => (userId === 2 ? [firstTab, secondTab] : [])
+    });
+
+    await caller.users.kick({ userId: 2, reason: 'Take a break' });
+
+    const closed = { code: DisconnectCode.KICKED, reason: 'Take a break' };
+
+    expect(firstTab.closes).toEqual([closed]);
+    expect(secondTab.closes).toEqual([closed]);
+
+    const row = await tdb
+      .select({ tokenVersion: users.tokenVersion })
+      .from(users)
+      .where(eq(users.id, 2))
+      .get();
+
+    expect(row?.tokenVersion).toBe(1);
+  });
+
+  test('should refuse the token a kicked session was holding', async () => {
+    const socket = createFakeSocket();
+
+    const { caller } = await initTest(1, undefined, {
+      getUserWs: (userId) => (userId === 2 ? [socket] : [])
+    });
+
+    await caller.users.kick({ userId: 2 });
+
+    // the token stays cryptographically valid, the bumped version has to be what stops it
+    await expect(getCaller(2)).rejects.toThrow('Invalid authentication token');
+  });
+
+  test('should let a kicked user open a new session right away', async () => {
+    const socket = createFakeSocket();
+
+    const { caller } = await initTest(1, undefined, {
+      getUserWs: (userId) => (userId === 2 ? [socket] : [])
+    });
+
+    await caller.users.kick({ userId: 2 });
+
+    const response = await login('testuser', 'password123');
+
+    expect(response.status).toBe(200);
+
+    const { token } = (await response.json()) as { token: string };
+
+    // a kick ends the session without barring re-entry, so the fresh token has to carry the
+    // bumped version. minting it from a stale read would lock the user out until the next kick
+    expect(await getUserByToken(token)).toBeDefined();
+  });
+
+  test('should close every session of a banned user', async () => {
+    const firstTab = createFakeSocket();
+    const secondTab = createFakeSocket();
+
+    const { caller } = await initTest(1, undefined, {
+      getUserWs: (userId) => (userId === 2 ? [firstTab, secondTab] : [])
+    });
+
+    await caller.users.ban({
+      userId: 2,
+      reason: 'Violated community guidelines'
+    });
+
+    const closed = {
+      code: DisconnectCode.BANNED,
+      reason: 'Violated community guidelines'
+    };
+
+    expect(firstTab.closes).toEqual([closed]);
+    expect(secondTab.closes).toEqual([closed]);
+  });
+
+  test('should close every session of a deleted user', async () => {
+    const firstTab = createFakeSocket();
+    const secondTab = createFakeSocket();
+
+    const { caller } = await initTest(1, undefined, {
+      getUserWs: (userId) => (userId === 2 ? [firstTab, secondTab] : [])
+    });
+
+    await caller.users.delete({ userId: 2 });
+
+    const closed = {
+      code: DisconnectCode.KICKED,
+      reason: 'Your account has been deleted'
+    };
+
+    expect(firstTab.closes).toEqual([closed]);
+    expect(secondTab.closes).toEqual([closed]);
+  });
+
   test('should throw when kicking non-connected user', async () => {
     const { caller } = await initTest();
 
@@ -1123,21 +1619,21 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Test',
-      bannerColor: '#abc123'
+      profileColor: '#abc123'
     });
 
     let info = await caller.users.getInfo({ userId: 1 });
 
-    expect(info.user.bannerColor).toBe('#abc123');
+    expect(info.user.profileColor).toBe('#abc123');
 
     await caller.users.update({
       name: 'Test',
-      bannerColor: '#f0f'
+      profileColor: '#f0f'
     });
 
     info = await caller.users.getInfo({ userId: 1 });
 
-    expect(info.user.bannerColor).toBe('#f0f');
+    expect(info.user.profileColor).toBe('#f0f');
   });
 
   test('should handle bio with special characters', async () => {
@@ -1147,7 +1643,7 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Test User',
-      bannerColor: '#000000',
+      profileColor: '#000000',
       bio: specialBio
     });
 
@@ -1161,27 +1657,189 @@ describe('users router', () => {
 
     await caller.users.update({
       name: 'Name 1',
-      bannerColor: '#111111',
+      profileColor: '#111111',
       bio: 'Bio 1'
     });
 
     await caller.users.update({
       name: 'Name 2',
-      bannerColor: '#222222',
+      profileColor: '#222222',
       bio: 'Bio 2'
     });
 
     await caller.users.update({
       name: 'Final Name',
-      bannerColor: '#333333',
+      profileColor: '#333333',
       bio: 'Final Bio'
     });
 
     const info = await caller.users.getInfo({ userId: 1 });
 
     expect(info.user.name).toBe('Final Name');
-    expect(info.user.bannerColor).toBe('#333333');
+    expect(info.user.profileColor).toBe('#333333');
     expect(info.user.bio).toBe('Final Bio');
+  });
+
+  test('should throw when banning a non-existing user', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.ban({
+        userId: 9999
+      })
+    ).rejects.toThrow('User not found');
+  });
+
+  test('should throw when unbanning a non-existing user', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.unban({
+        userId: 9999
+      })
+    ).rejects.toThrow('User not found');
+  });
+
+  test('should reject a new password equal to the current one', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.updatePassword({
+        currentPassword: 'password123',
+        newPassword: 'password123',
+        confirmNewPassword: 'password123'
+      })
+    ).rejects.toThrow('New password must be different from the current one');
+  });
+
+  test('should not let a moderator assign a role holding permissions they lack', async () => {
+    const { caller: owner } = await initTest();
+    const roleId = await owner.roles.add();
+
+    await owner.roles.update({
+      roleId,
+      name: 'Higher Role',
+      color: '#00ff00',
+      permissions: [Permission.MANAGE_SETTINGS],
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0
+    });
+
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.users.addRole({
+        userId: 5,
+        roleId
+      })
+    ).rejects.toThrow(
+      'You cannot assign a role with permissions that you do not have'
+    );
+
+    const assigned = await tdb
+      .select()
+      .from(userRoles)
+      .where(and(eq(userRoles.userId, 5), eq(userRoles.roleId, roleId)));
+
+    expect(assigned.length).toBe(0);
+  });
+
+  test('should throw when adding a non-existing role to a user', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.addRole({
+        userId: 2,
+        roleId: 9999
+      })
+    ).rejects.toThrow('Role not found');
+  });
+
+  test('should not let a moderator ban the owner', async () => {
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.users.ban({
+        userId: 1
+      })
+    ).rejects.toThrow('Only users with the owner role can act on the server');
+
+    const [owner] = await tdb.select().from(users).where(eq(users.id, 1));
+
+    expect(owner!.banned).toBeFalsy();
+  });
+
+  test('should not let a moderator kick the owner', async () => {
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.users.kick({
+        userId: 1
+      })
+    ).rejects.toThrow('Only users with the owner role can act on the server');
+  });
+
+  test('should not let a moderator delete the owner', async () => {
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.users.delete({
+        userId: 1,
+        wipe: true
+      })
+    ).rejects.toThrow('Only users with the owner role can act on the server');
+
+    const [owner] = await tdb.select().from(users).where(eq(users.id, 1));
+
+    expect(owner).toBeDefined();
+  });
+
+  test('should not let a moderator change the owner roles', async () => {
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.users.addRole({
+        userId: 1,
+        roleId: 3
+      })
+    ).rejects.toThrow('Only users with the owner role can act on the server');
+
+    await expect(
+      caller.users.removeRole({
+        userId: 1,
+        roleId: OWNER_ROLE_ID
+      })
+    ).rejects.toThrow('Only users with the owner role can');
+  });
+
+  test('should let a moderator ban a regular user', async () => {
+    const { caller } = await initTest(5);
+
+    await caller.users.ban({
+      userId: 2
+    });
+
+    const [target] = await tdb.select().from(users).where(eq(users.id, 2));
+
+    expect(target!.banned).toBe(true);
+  });
+
+  test('should let the owner act on another owner-role holder', async () => {
+    await tdb.insert(userRoles).values({
+      userId: 2,
+      roleId: OWNER_ROLE_ID,
+      createdAt: Date.now()
+    });
+
+    const { caller } = await initTest();
+
+    await caller.users.ban({
+      userId: 2
+    });
+
+    const [target] = await tdb.select().from(users).where(eq(users.id, 2));
+
+    expect(target!.banned).toBe(true);
   });
 
   test('should not return dm messages in user info', async () => {

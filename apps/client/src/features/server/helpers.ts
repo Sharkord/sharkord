@@ -8,9 +8,14 @@ import type { channelPermissionsSelector } from './channels/selectors';
 const canViewChannel = (
   channel: { id: number; private: boolean },
   channelPermissions: ReturnType<typeof channelPermissionsSelector>,
-  isOwner: boolean
+  isOwner: boolean,
+  currentVoiceChannelId?: number
 ) => {
   if (isOwner || !channel.private) {
+    return true;
+  }
+
+  if (channel.id === currentVoiceChannelId) {
     return true;
   }
 

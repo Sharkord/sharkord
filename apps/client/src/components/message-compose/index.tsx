@@ -2,7 +2,9 @@ import { EmojiPicker } from '@/components/emoji-picker';
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import type { TTiptapInputHandle } from '@/components/tiptap-input';
 import { TiptapInput } from '@/components/tiptap-input';
+import type { TEmojiItem } from '@/components/tiptap-input/helpers';
 import { LocalStorageKey } from '@/helpers/storage';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 
 import { useChannelById } from '@/features/server/channels/hooks';
 import {
@@ -18,6 +20,7 @@ import type { TJoinedPublicUser, TTempFile } from '@sharkord/shared';
 import {
   ChannelPermission,
   isEmptyMessage,
+  MESSAGE_MAX_LENGTH,
   Permission,
   PluginSlot
 } from '@sharkord/shared';
@@ -36,6 +39,7 @@ import {
   type RefObject
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { DEFAULT_MAX_HEIGHT_VH } from '../channel-view/text/helpers';
 import { useMessageAuthorName } from '../channel-view/text/hooks/use-message-author-name';
 import { PreviewFile } from '../channel-view/text/preview-file';
@@ -167,14 +171,16 @@ const MessageCompose = memo(
         return;
       }
 
+      if (message.length > MESSAGE_MAX_LENGTH) {
+        toast.error(t('messageTooLong', { max: MESSAGE_MAX_LENGTH }));
+
+        return;
+      }
+
       setSending(true);
       sendingRef.current = true;
 
-      const maxFilesPerMessage =
-        publicSettings?.storageMaxFilesPerMessage ?? Number.MAX_SAFE_INTEGER;
-      const filesToSend = files.slice(0, Math.max(0, maxFilesPerMessage));
-
-      const success = await onSend(message, filesToSend);
+      const success = await onSend(message, files);
 
       sendingRef.current = false;
       setSending(false);
@@ -198,10 +204,23 @@ const MessageCompose = memo(
       canSendMessages,
       onSend,
       clearFiles,
-      publicSettings,
       containerRef,
-      inputDefaultMaxHeightVh
+      inputDefaultMaxHeightVh,
+      t
     ]);
+
+    const focusInputOnBackdropClick = useCallback(
+      (event: ReactMouseEvent<HTMLDivElement>) => {
+        if (event.target !== event.currentTarget) return;
+
+        tiptapRef.current?.focus();
+      },
+      []
+    );
+
+    const insertEmoji = useCallback((emoji: TEmojiItem) => {
+      tiptapRef.current?.insertEmoji(emoji);
+    }, []);
 
     const onRemoveFileClick = useCallback(
       async (fileId: string) => {
@@ -209,11 +228,7 @@ const MessageCompose = memo(
 
         const trpc = getTRPCClient();
 
-        try {
-          trpc.files.deleteTemporary.mutate({ fileId });
-        } catch {
-          // ignore error
-        }
+        await trpc.files.deleteTemporary.mutate({ fileId }).catch(() => {});
       },
       [removeFile]
     );
@@ -249,11 +264,7 @@ const MessageCompose = memo(
 
         <div
           className={`compose-scroll-row flex items-start flex-1 overflow-y-auto cursor-text${uploading ? ' bg-muted' : ''}`}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              tiptapRef.current?.focus();
-            }
-          }}
+          onClick={focusInputOnBackdropClick}
         >
           <div className="flex flex-1 flex-col">
             {replyTarget && (
@@ -317,9 +328,7 @@ const MessageCompose = memo(
               <PluginSlotRenderer slotId={PluginSlot.CHAT_ACTIONS} />
             )}
 
-            <EmojiPicker
-              onEmojiSelect={(emoji) => tiptapRef.current?.insertEmoji(emoji)}
-            >
+            <EmojiPicker onEmojiSelect={insertEmoji}>
               <Button
                 size="icon"
                 variant="ghost"

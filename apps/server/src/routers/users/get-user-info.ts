@@ -29,8 +29,8 @@ const getUserInfoRoute = protectedProcedure
     const [logins, files, messages, storageUsage, settings] = await Promise.all(
       [
         getLastLogins(user.id, 6),
-        getFilesByUserId(user.id),
-        getNonDirectMessagesFromUserId(user.id),
+        getFilesByUserId(user.id, -1),
+        getNonDirectMessagesFromUserId(user.id, -1),
         getStorageUsageByUserId(user.id),
         getSettings()
       ]
@@ -41,18 +41,18 @@ const getUserInfoRoute = protectedProcedure
       settings.storageSpaceQuotaByUser
     );
 
-    let cleanUser = clearFields(user, ['password']);
-    let cleanLogins: TLogin[] = [...logins];
+    const canSeeSensitiveData = await ctx.hasPermission(
+      Permission.VIEW_USER_SENSITIVE_DATA
+    );
 
-    if (!(await ctx.hasPermission(Permission.VIEW_USER_SENSITIVE_DATA))) {
-      // doesn't have permission to view sensitive data, remove identity, ip and location
-      cleanUser = clearFields(cleanUser, ['identity']);
-      cleanLogins = logins.map((login) => ({
-        ...login,
-        ip: null,
-        loc: null
-      }));
-    }
+    const cleanUser = {
+      ...clearFields(user, ['password', 'tokenVersion']),
+      identity: canSeeSensitiveData ? user.identity : null
+    };
+
+    const cleanLogins: TLogin[] = canSeeSensitiveData
+      ? [...logins]
+      : logins.map((login) => ({ ...login, ip: null, loc: null }));
 
     return {
       user: cleanUser,

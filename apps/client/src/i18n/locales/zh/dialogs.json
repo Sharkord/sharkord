@@ -126,5 +126,6 @@
   "pluginInstallUseDocker": "我们强烈建议在 Docker 容器中运行 Sharkord 以实现隔离并降低风险。",
   "pluginInstallDocsNote": "欲了解更多详情，请阅读文档：",
   "pluginInstallConfirmBtn": "安装插件",
-  "pluginInstallConfirmCountdown": "等待 ({{seconds}}s)"
+  "pluginInstallConfirmCountdown": "等待 ({{seconds}}s)",
+  "searchTruncated": "仅显示最近的匹配结果。请细化搜索条件以缩小范围。"
 }

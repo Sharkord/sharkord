@@ -1,10 +1,13 @@
-import { UploadHeaders, type TTempFile } from '@sharkord/shared';
+import { Permission, UploadHeaders, type TTempFile } from '@sharkord/shared';
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
+import { and, eq } from 'drizzle-orm';
 import fs from 'fs/promises';
+import net from 'net';
 import path from 'path';
 import { login, uploadFile } from '../../__tests__/helpers';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
-import { settings } from '../../db/schema';
+import { config } from '../../config';
+import { rolePermissions, settings, users } from '../../db/schema';
 import { TMP_PATH } from '../../helpers/paths';
 import { sanitizeFileName } from '../helpers';
 
@@ -74,6 +77,55 @@ describe('/upload', () => {
     expect(data).toHaveProperty('errors');
     expect(data.errors[UploadHeaders.TOKEN]).toBeDefined();
     expect(data.errors[UploadHeaders.ORIGINAL_NAME]).toBeDefined();
+  });
+
+  test('should reject uploads from a banned user', async () => {
+    const response = await login('testuser', 'password123');
+    const data: any = await response.json();
+
+    await tdb
+      .update(users)
+      .set({ banned: true, banReason: 'spam', bannedAt: Date.now() })
+      .where(eq(users.identity, 'testuser'));
+
+    const file = getMockFile('banned users should not be able to upload');
+    const uploadResponse = await uploadFile(file, data.token);
+
+    expect(uploadResponse.status).toBe(401);
+  });
+
+  test('should reject uploads from a user without UPLOAD_FILES', async () => {
+    const response = await login('testuser', 'password123');
+    const data: any = await response.json();
+
+    await tdb
+      .delete(rolePermissions)
+      .where(
+        and(
+          eq(rolePermissions.roleId, 2),
+          eq(rolePermissions.permission, Permission.UPLOAD_FILES)
+        )
+      );
+
+    const file = getMockFile('no permission to upload this');
+    const uploadResponse = await uploadFile(file, data.token);
+
+    expect(uploadResponse.status).toBe(403);
+  });
+
+  test('should rate limit excessive upload attempts', async () => {
+    const { maxRequests } = config.rateLimiters.upload;
+    const statuses: number[] = [];
+
+    for (let i = 0; i < maxRequests + 1; i++) {
+      const file = getMockFile(`rate limit probe ${i}`);
+      const response = await uploadFile(file, token);
+
+      statuses.push(response.status);
+    }
+
+    expect(statuses.slice(0, maxRequests).every((s) => s === 200)).toBe(true);
+    expect(statuses.at(-1)).toBe(429);
   });
 
   test('should throw when upload token is invalid', async () => {
@@ -277,6 +329,73 @@ describe('/upload', () => {
     expect(await fs.exists(data.path)).toBe(true);
   });
 
+  test('should refuse a body longer than the declared content-length', async () => {
+    // fetch computes content-length from the body, so lying about
+    // it needs a raw socket. the corrected finding claims the write stream cannot be fed past
+    // the declared length: the parser frames the body at 5 bytes and answers the trailing
+    // bytes as a malformed follow-on request rather than appending them to the upload
+    const { port } = new URL(testsBaseUrl);
+
+    const raw = await new Promise<string>((resolve, reject) => {
+      const socket = net.connect(Number(port), 'localhost');
+      let response = '';
+
+      socket.on('data', (chunk) => {
+        response += chunk.toString();
+      });
+      socket.on('error', reject);
+      socket.on('close', () => resolve(response));
+
+      socket.write(
+        [
+          'POST /upload HTTP/1.1',
+          'Host: localhost',
+          'Connection: close',
+          'Content-Type: application/octet-stream',
+          'Content-Length: 5',
+          `${UploadHeaders.ORIGINAL_NAME}: overflow.txt`,
+          `${UploadHeaders.TOKEN}: ${token}`,
+          '',
+          'hello, and then a lot more bytes that were never declared'
+        ].join('\r\n')
+      );
+    });
+
+    expect(raw).toContain('400 Bad Request');
+  });
+
+  test('should reject a non-numeric content-length', async () => {
+    // NaN is not greater than storageUploadMaxFileSize, so a garbage header used to pass the
+    // size check and land in the file row as the recorded size
+    const { port } = new URL(testsBaseUrl);
+
+    const raw = await new Promise<string>((resolve, reject) => {
+      const socket = net.connect(Number(port), 'localhost');
+      let response = '';
+
+      socket.on('data', (chunk) => {
+        response += chunk.toString();
+      });
+      socket.on('error', reject);
+      socket.on('close', () => resolve(response));
+
+      socket.write(
+        [
+          'POST /upload HTTP/1.1',
+          'Host: localhost',
+          'Connection: close',
+          'Content-Length: not-a-number',
+          `${UploadHeaders.ORIGINAL_NAME}: bogus.txt`,
+          `${UploadHeaders.TOKEN}: ${token}`,
+          '',
+          ''
+        ].join('\r\n')
+      );
+    });
+
+    expect(raw).not.toContain('200 OK');
+  });
+
   test('should reject filenames with path traversal (../)', async () => {
     const content = 'path traversal attempt';
 
@@ -475,5 +594,26 @@ describe('sanitizeFileName', () => {
 
   test('should handle filenames with multiple extensions', () => {
     expect(sanitizeFileName('file.backup.old.txt')).toBe('file.backup.old.txt');
+  });
+
+  test('should decode the percent-encoded names the client sends', () => {
+    expect(sanitizeFileName('caf%C3%A9.png')).toBe('café.png');
+    expect(sanitizeFileName('%E6%96%87%E6%9B%B8.png')).toBe('文書.png');
+    expect(sanitizeFileName('%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82.txt')).toBe(
+      'привет.txt'
+    );
+    expect(sanitizeFileName('my%20report.pdf')).toBe('my report.pdf');
+  });
+
+  test('should strip traversal and null bytes hidden behind percent-encoding', () => {
+    expect(sanitizeFileName('..%2F..%2Fetc%2Fpasswd')).toBe('passwd');
+    expect(sanitizeFileName('%2E%2E%2F%2E%2E%2Fshadow')).toBe('shadow');
+    expect(sanitizeFileName('%2E%2E')).toBeNull();
+    expect(sanitizeFileName('evil%00.txt')).toBeNull();
+  });
+
+  test('should keep names a malformed escape makes undecodable', () => {
+    expect(sanitizeFileName('100%.txt')).toBe('100%.txt');
+    expect(sanitizeFileName('50%off%.png')).toBe('50%off%.png');
   });
 });

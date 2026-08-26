@@ -20,6 +20,7 @@
   "stopScreenShare": "Zastavit sdílení obrazovky",
   "startScreenShare": "Spustit sdílení obrazovky",
   "transportStats": "Statistiky přenosu",
+  "voiceDiagnostics": "Diagnostika hlasu",
   "outgoing": "Odchozí",
   "incoming": "Příchozí",
   "noData": "Žádná data",
@@ -42,6 +43,7 @@
   "createChannel": "Vytvořit kanál",
   "failedReorderChannels": "Nepodařilo se změnit pořadí kanálů",
   "failedReorderCategories": "Nepodařilo se změnit pořadí kategorií",
+  "failedMoveUser": "Nepodařilo se přesunout uživatele",
   "directMessages": "Přímé zprávy",
   "failedLoadDMs": "Nepodařilo se načíst přímé zprávy",
   "couldNotOpenDM": "Nepodařilo se otevřít přímou zprávu",
@@ -69,5 +71,7 @@
   "deleteCategoryMsg": "Opravdu chcete odstranit tuto kategorii? Odstraní se tím i VŠECHNY kanály v této kategorii. Tuto akci nelze vrátit zpět.",
   "categoryDeleted": "Kategorie byla odstraněna",
   "failedDeleteCategory": "Kategorii se odstranit nepodařilo",
-  "userVolume": "Hlasitost uživatele"
+  "userVolume": "Hlasitost uživatele",
+  "microphone": "Mikrofon",
+  "noiseSuppression": "Potlačení šumu"
 }

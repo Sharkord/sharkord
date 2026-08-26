@@ -1,5 +1,5 @@
 const onLoad = (ctx) => {
-  ctx.log('Plugin without onUnload loaded');
+  ctx.logger.log('Plugin without onUnload loaded');
 };
 
 export { onLoad };

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `settings_single_row_idx` ON `settings` ((1));

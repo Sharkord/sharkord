@@ -23,7 +23,10 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
-        '/manifest.json': `http://localhost:${env.SERVER_PORT || 4991}`
+        '/manifest.json': `http://localhost:${env.SERVER_PORT || 4991}`,
+        // sanitizing rewrites message image urls to same-origin paths, which in dev is
+        // this vite server rather than the one holding the files
+        '/public': `http://localhost:${env.SERVER_PORT || 4991}`
       }
     }
   };

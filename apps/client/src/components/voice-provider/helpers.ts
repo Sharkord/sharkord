@@ -189,6 +189,21 @@ const getSimulcastQualityLayers = (
   });
 };
 
+const EXTERNAL_STREAM_KINDS: StreamKind[] = [
+  StreamKind.EXTERNAL_AUDIO,
+  StreamKind.EXTERNAL_VIDEO
+];
+
+const isOwnProducerEvent = (
+  remoteId: number,
+  ownUserId: number | undefined,
+  kind: StreamKind
+): boolean => {
+  if (EXTERNAL_STREAM_KINDS.includes(kind)) return false;
+
+  return ownUserId !== undefined && remoteId === ownUserId;
+};
+
 const getSimulcastCodec = (
   rtpCapabilities: RtpCapabilities | null
 ): RtpCodecCapability | undefined =>
@@ -205,6 +220,7 @@ export {
   getStoredStreamQuality,
   getStreamQualityDropdownValue,
   getStreamQualityStorageKey,
+  isOwnProducerEvent,
   loadStreamQualitiesFromStorage,
   normalizeStreamQuality,
   parseStreamQualityDropdownValue,

@@ -2,9 +2,6 @@ import { store } from '@/features/store';
 import type { TJoinedRole } from '@sharkord/shared';
 import { serverSliceActions } from '../slice';
 
-export const setRoles = (roles: TJoinedRole[]) =>
-  store.dispatch(serverSliceActions.setRoles(roles));
-
 export const addRole = (role: TJoinedRole) =>
   store.dispatch(serverSliceActions.addRole(role));
 

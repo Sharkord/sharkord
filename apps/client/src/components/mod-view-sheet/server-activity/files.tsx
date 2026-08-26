@@ -1,10 +1,10 @@
 import { FileCard } from '@/components/channel-view/text/file-card';
-import { PaginatedList } from '@/components/paginated-list';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TFile } from '@sharkord/shared';
 import { getTrpcError } from '@sharkord/shared';
+import { PaginatedList } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';

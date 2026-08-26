@@ -6,6 +6,7 @@ import path from 'path';
 import { initTest, login, uploadFile } from '../../__tests__/helpers';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
 import { loadCrons } from '../../crons';
+import { cleanupFiles } from '../../crons/cleanup-files';
 import {
   channels,
   files,
@@ -13,9 +14,9 @@ import {
   messages,
   settings
 } from '../../db/schema';
+import { fileManager } from '../../helpers/file-manager';
 import { generateFileToken } from '../../helpers/files-crypto';
 import { PUBLIC_PATH } from '../../helpers/paths';
-import { fileManager } from '../../utils/file-manager';
 
 const upload = async (file: File, token: string) => {
   const uploadResponse = await uploadFile(file, token);
@@ -304,6 +305,13 @@ describe('/public', () => {
       channelId: 1
     });
 
+    // the cleanup cron skips recently created files so it cannot race an upload
+    // that has not been linked yet, so this one is aged past that window
+    await tdb
+      .update(files)
+      .set({ createdAt: Date.now() - 60 * 60 * 1000 })
+      .where(eq(files.id, dbFile!.id));
+
     // load crons here, it will run the file cleanup cron job
     await loadCrons();
 
@@ -320,6 +328,30 @@ describe('/public', () => {
 
     // file is deleted from disk
     expect(await fs.exists(path.join(PUBLIC_PATH, dbFile!.name))).toBe(false);
+  });
+
+  test('should not clean up a file that was just created', async () => {
+    // the third fixture is saved without ever being linked to a message, which
+    // is exactly the state a file is in between saveFile and the statement that
+    // links it
+    const dbFile = await tdb
+      .select()
+      .from(files)
+      .where(eq(files.originalName, 'orphan.txt'))
+      .get();
+
+    expect(dbFile).toBeDefined();
+
+    await cleanupFiles();
+
+    const afterDbFile = await tdb
+      .select()
+      .from(files)
+      .where(eq(files.id, dbFile!.id))
+      .get();
+
+    expect(afterDbFile).toBeDefined();
+    expect(await fs.exists(path.join(PUBLIC_PATH, dbFile!.name))).toBe(true);
   });
 
   test('should allow access to private channel files without token when signed URLs disabled', async () => {

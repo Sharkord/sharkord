@@ -11,6 +11,7 @@
     "build": "tsc -b && bun ./build/build.ts",
     "db:gen": "bunx drizzle-kit generate --dialect sqlite --schema ./src/db/schema.ts --out ./src/db/migrations",
     "db:check": "bunx drizzle-kit check --dialect sqlite --out ./src/db/migrations",
+    "seed:mock": "bun ./scripts/seed-mock.ts",
     "format": "prettier --write \"**/*.ts*\" --config ./.prettierrc.json",
     "format:check": "prettier --check \"**/*.ts*\" --config ./.prettierrc.json",
     "lint": "eslint ./src/**/*.ts --ext ts --report-unused-disable-directives",
@@ -21,6 +22,7 @@
     "test:watch": "bun test --watch"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.6.0",
     "@types/ini": "^4.1.1",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/sanitize-html": "^2.16.0",

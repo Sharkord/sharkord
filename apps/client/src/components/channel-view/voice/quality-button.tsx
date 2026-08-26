@@ -11,19 +11,29 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-  IconButton
+  IconButton,
+  type TIconButtonSize
 } from '@sharkord/ui';
 import { Gauge } from 'lucide-react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { memo, useCallback, useState } from 'react';
 
 type TQualityButtonProps = {
   streamId: number;
   kind: StreamKind.VIDEO | StreamKind.SCREEN | StreamKind.EXTERNAL_VIDEO;
   disabled?: boolean;
+  className?: string;
+  size?: TIconButtonSize;
 };
 
 const QualityButton = memo(
-  ({ streamId, kind, disabled = false }: TQualityButtonProps) => {
+  ({
+    streamId,
+    kind,
+    disabled = false,
+    className,
+    size = 'sm'
+  }: TQualityButtonProps) => {
     const { setStreamQuality } = useVoice();
     const [isPending, setIsPending] = useState(false);
 
@@ -53,6 +63,10 @@ const QualityButton = memo(
 
     const isDisabled = disabled || isPending;
 
+    const stopPropagation = useCallback((event: ReactMouseEvent) => {
+      event.stopPropagation();
+    }, []);
+
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -64,7 +78,8 @@ const QualityButton = memo(
                 ? 'Quality selection unavailable'
                 : `Quality: ${qualityLabel ?? 'Auto'}`
             }
-            size="sm"
+            size={size}
+            className={className}
             disabled={isDisabled}
           />
         </DropdownMenuTrigger>
@@ -72,7 +87,7 @@ const QualityButton = memo(
           align="center"
           side="top"
           className="w-32"
-          onClick={(e) => e.stopPropagation()}
+          onClick={stopPropagation}
         >
           <DropdownMenuRadioGroup
             value={getStreamQualityDropdownValue(quality)}

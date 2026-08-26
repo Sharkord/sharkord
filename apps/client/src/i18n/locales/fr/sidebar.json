@@ -20,6 +20,7 @@
   "stopScreenShare": "Arrêter le partage d'écran",
   "startScreenShare": "Démarrer le partage d'écran",
   "transportStats": "Statistiques de transport",
+  "voiceDiagnostics": "Diagnostic vocal",
   "outgoing": "Sortant",
   "incoming": "Entrant",
   "noData": "Aucune donnée",
@@ -42,6 +43,7 @@
   "createChannel": "Créer un canal",
   "failedReorderChannels": "Échec du réordonnancement des canaux",
   "failedReorderCategories": "Échec du réordonnancement des catégories",
+  "failedMoveUser": "Échec du déplacement de l'utilisateur",
   "directMessages": "Messages privés",
   "failedLoadDMs": "Échec du chargement des messages privés",
   "couldNotOpenDM": "Impossible d'ouvrir le message privé",
@@ -69,5 +71,7 @@
   "deleteCategoryMsg": "Êtes-vous sûr de vouloir supprimer cette catégorie ? Cela SUPPRIMERA tous les canaux contenus dans cette catégorie. Cette action est irréversible.",
   "categoryDeleted": "Catégorie supprimée",
   "failedDeleteCategory": "Échec de la suppression de la catégorie",
-  "userVolume": "Volume de l'utilisateur"
+  "userVolume": "Volume de l'utilisateur",
+  "microphone": "Microphone",
+  "noiseSuppression": "Suppression du bruit"
 }

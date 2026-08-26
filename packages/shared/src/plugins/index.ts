@@ -1,20 +1,13 @@
 import z from 'zod';
-
-export const zPluginId = z
-  .string()
-  .min(1, 'Plugin ID is required')
-  .regex(
-    /^[a-z0-9-]+$/,
-    'Plugin ID must contain only lowercase letters, numbers, and dashes'
-  );
+import { zHttpUrl, zPluginId } from './primitives';
 
 export const zPluginManifest = z.object({
   id: zPluginId,
   name: z.string().min(1, 'Plugin name is required'),
   author: z.string().min(1, 'Plugin author is required'),
   description: z.string().min(1, 'Plugin description is required'),
-  homepage: z.url().optional(),
-  logo: z.url().optional(),
+  homepage: zHttpUrl.optional(),
+  logo: zHttpUrl.optional(),
   sdkVersion: z.number().int().nonnegative(),
   version: z
     .string()
@@ -22,10 +15,6 @@ export const zPluginManifest = z.object({
 });
 
 export type TPluginManifest = z.infer<typeof zPluginManifest>;
-
-export const zPluginPackageJson = zPluginManifest;
-
-export type TPluginPackageJson = TPluginManifest;
 
 export type TPluginInfo = {
   id: string;
@@ -116,7 +105,7 @@ export const zParsedDomCommand = z.object({
   commandName: z.string().min(1),
   status: z.enum(['pending', 'completed', 'failed']).default('pending'),
   response: z.string().optional(),
-  logo: z.url().optional(),
+  logo: zHttpUrl.optional(),
   args: z.array(
     z.object({
       name: z.string(),
@@ -195,3 +184,4 @@ export const CLIENT_ENTRY_FILE = 'client/index.js';
 export * from './client-sdk';
 export * from './hooks';
 export * from './marketplace';
+export * from './primitives';

@@ -1,71 +1,36 @@
 import { getFileUrl } from '@/helpers/get-file-url';
-import { uploadImage } from '@/helpers/upload-file';
-import { useFilePicker } from '@/hooks/use-file-picker';
-import { getTRPCClient } from '@/lib/trpc';
+import { useImageManager } from '@/hooks/use-image-manager';
 import { cn } from '@/lib/utils';
 import type { TJoinedPublicUser } from '@sharkord/shared';
 import { Button, buttonVariants, Group } from '@sharkord/ui';
 import { Upload } from 'lucide-react';
-import { memo, useCallback } from 'react';
-import { toast } from 'sonner';
+import { memo } from 'react';
 
 type TBannerManagerProps = {
   user: TJoinedPublicUser;
 };
 
 const BannerManager = memo(({ user }: TBannerManagerProps) => {
-  const openFilePicker = useFilePicker();
-
-  const removeBanner = useCallback(async () => {
-    const trpc = getTRPCClient();
-
-    try {
-      await trpc.users.changeBanner.mutate({ fileId: undefined });
-
-      toast.success('Banner removed successfully!');
-    } catch {
-      toast.error('Could not remove banner. Please try again.');
-    }
-  }, []);
-
-  const onBannerClick = useCallback(async () => {
-    const trpc = getTRPCClient();
-
-    try {
-      const [file] = await openFilePicker('image/*');
-
-      const temporaryFile = await uploadImage(file);
-
-      if (!temporaryFile) {
-        return;
-      }
-
-      await trpc.users.changeBanner.mutate({ fileId: temporaryFile.id });
-
-      toast.success('Banner updated successfully!');
-    } catch {
-      toast.error('Could not update banner. Please try again.');
-    }
-  }, [openFilePicker]);
+  const { onPick, onRemove } = useImageManager('banner');
 
   return (
     <Group label="Banner">
       <div className="space-y-2">
         <div
-          className="relative group cursor-pointer w-80 h-24"
-          onClick={onBannerClick}
+          className="relative group cursor-pointer w-80 h-32"
+          onClick={onPick}
         >
           {user.banner ? (
             <img
               src={getFileUrl(user.banner)}
               alt="User Banner"
-              className="w-80 h-24 object-cover rounded-md transition-opacity group-hover:opacity-70"
+              className="w-80 h-32 object-cover rounded-md transition-opacity group-hover:opacity-70"
             />
           ) : (
             <div
               className={cn(
                 buttonVariants({ variant: 'outline' }),
-                'w-80 h-24 cursor-pointer transition-opacity group-hover:opacity-70'
+                'w-80 h-32 cursor-pointer transition-opacity group-hover:opacity-70'
               )}
             />
           )}
@@ -78,7 +43,7 @@ const BannerManager = memo(({ user }: TBannerManagerProps) => {
       </div>
       {user.bannerId && (
         <div>
-          <Button size="sm" variant="outline" onClick={removeBanner}>
+          <Button size="sm" variant="outline" onClick={onRemove}>
             Remove banner
           </Button>
         </div>

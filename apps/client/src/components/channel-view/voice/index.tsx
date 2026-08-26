@@ -8,10 +8,7 @@ import {
 import { memo, useMemo } from 'react';
 import { ControlsBar } from './controls-bar';
 import { ExternalStreamCard } from './external-stream-card';
-import {
-  PinnedCardType,
-  usePinCardController
-} from './hooks/use-pin-card-controller';
+import { usePinCardController } from './hooks/use-pin-card-controller';
 import { ScreenShareCard } from './screen-share-card';
 import { VoiceGrid } from './voice-grid';
 import { VoiceUserCard } from './voice-user-card';
@@ -27,6 +24,7 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
   const hideNonVideoParticipants = useHideNonVideoParticipants();
   const hideOwnScreenShare = useHideOwnScreenShare();
   const ownUserId = useOwnUserId();
+  const isAnyCardPinned = pinnedCard !== undefined;
 
   const cards = useMemo(() => {
     const cards: React.ReactNode[] = [];
@@ -51,13 +49,9 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
             key={userCardId}
             userId={voiceUser.id}
             isPinned={isPinned(userCardId)}
-            onPin={() =>
-              pinCard({
-                id: userCardId,
-                type: PinnedCardType.USER,
-                userId: voiceUser.id
-              })
-            }
+            isAnyCardPinned={isAnyCardPinned}
+            cardId={userCardId}
+            onPin={pinCard}
             onUnpin={unpinCard}
             voiceUser={voiceUser}
           />
@@ -75,13 +69,9 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
             key={screenShareCardId}
             userId={voiceUser.id}
             isPinned={isPinned(screenShareCardId)}
-            onPin={() =>
-              pinCard({
-                id: screenShareCardId,
-                type: PinnedCardType.SCREEN_SHARE,
-                userId: voiceUser.id
-              })
-            }
+            isAnyCardPinned={isAnyCardPinned}
+            cardId={screenShareCardId}
+            onPin={pinCard}
             onUnpin={unpinCard}
             showPinControls
           />
@@ -101,13 +91,8 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
             streamId={stream.streamId}
             stream={stream}
             isPinned={isPinned(externalStreamCardId)}
-            onPin={() =>
-              pinCard({
-                id: externalStreamCardId,
-                type: PinnedCardType.EXTERNAL_STREAM,
-                userId: stream.streamId
-              })
-            }
+            cardId={externalStreamCardId}
+            onPin={pinCard}
             onUnpin={unpinCard}
             showPinControls
           />
@@ -124,7 +109,8 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
     unpinCard,
     hideNonVideoParticipants,
     hideOwnScreenShare,
-    ownUserId
+    ownUserId,
+    isAnyCardPinned
   ]);
 
   if (voiceUsers.length === 0) {
@@ -143,10 +129,8 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
   }
 
   return (
-    <div className="flex-1 relative bg-background overflow-hidden">
-      <VoiceGrid pinnedCardId={pinnedCard?.id} className="h-full">
-        {cards}
-      </VoiceGrid>
+    <div className="flex flex-col size-full relative bg-background overflow-hidden group/voice-stage">
+      <VoiceGrid pinnedCardId={pinnedCard?.id}>{cards}</VoiceGrid>
       <ControlsBar channelId={channelId} />
     </div>
   );

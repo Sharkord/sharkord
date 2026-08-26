@@ -11,9 +11,17 @@ const getPrivateIp = async () => {
   return addresses[0];
 };
 
+// every lookup is a third party call on the boot path, so it must be bounded
+const PUBLIC_IP_TIMEOUT_MS = 3000;
+
+const fetchWithTimeout = async (url: string): Promise<Response> =>
+  fetch(url, { signal: AbortSignal.timeout(PUBLIC_IP_TIMEOUT_MS) });
+
 const getPublicIpFromIpify = async (): Promise<string | undefined> => {
   try {
-    const response = await fetch('https://api.ipify.org?format=json');
+    const response = await fetchWithTimeout(
+      'https://api.ipify.org?format=json'
+    );
     const data = (await response.json()) as {
       ip: string;
     };
@@ -27,7 +35,7 @@ const getPublicIpFromIpify = async (): Promise<string | undefined> => {
 // fallback since it can return ipv6 sometimes
 const getPublicIpFromIfconfig = async (): Promise<string | undefined> => {
   try {
-    const response = await fetch('https://ifconfig.me/ip');
+    const response = await fetchWithTimeout('https://ifconfig.me/ip');
     const ip = (await response.text()).trim();
 
     return ip;
@@ -38,7 +46,7 @@ const getPublicIpFromIfconfig = async (): Promise<string | undefined> => {
 
 const getPublicIpFromIcanhazip = async (): Promise<string | undefined> => {
   try {
-    const response = await fetch('https://ipv4.icanhazip.com');
+    const response = await fetchWithTimeout('https://ipv4.icanhazip.com');
     const ip = (await response.text()).trim();
 
     return ip;
@@ -58,28 +66,38 @@ const getPublicIp = async () => {
     ip = await getPublicIpFromIfconfig();
   }
 
+  if (!ip) {
+    // logger imports config, which imports this file, so console keeps the
+    // boot path free of a circular import
+    console.warn(
+      'Could not determine the public IP address from any provider. Set webRtc.announcedAddress in config.ini if voice does not work.'
+    );
+  }
+
   return ip;
 };
 
-const isPrivateIP = (ip: string): boolean => {
+// the single answer to "is this a routable public address". an allowlist of one range
+// rather than a blocklist, so anything ipaddr does not call unicast (carrierGradeNat,
+// reserved, benchmarking and friends) is treated as not public. an unparseable address is
+// not public either, which is what makes isPrivateIP below fail closed
+const isPublicIp = (ip: string): boolean => {
   try {
-    const addr = ipaddr.parse(ip);
-    const range = addr.range();
+    const parsed = ipaddr.parse(ip);
 
-    const blockedRanges = [
-      'unspecified',
-      'broadcast',
-      'multicast',
-      'linkLocal',
-      'loopback',
-      'private',
-      'uniqueLocal'
-    ];
+    if (parsed.kind() === 'ipv6') {
+      const v6 = parsed as ipaddr.IPv6;
 
-    return blockedRanges.includes(range);
+      if (v6.isIPv4MappedAddress())
+        return v6.toIPv4Address().range() === 'unicast';
+    }
+
+    return parsed.range() === 'unicast';
   } catch {
-    return true; // if we can't parse it, block it
+    return false;
   }
 };
 
-export { getPrivateIp, getPublicIp, isPrivateIP };
+const isPrivateIP = (ip: string): boolean => !isPublicIp(ip);
+
+export { getPrivateIp, getPublicIp, isPrivateIP, isPublicIp };

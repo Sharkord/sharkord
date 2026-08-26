@@ -1,6 +1,7 @@
 import { logDebug } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TJoinedRole } from '@sharkord/shared';
+import { handleSubscriptionError } from '../subscription-error';
 import { addRole, removeRole, updateRole } from './actions';
 
 const subscribeToRoles = () => {
@@ -11,7 +12,7 @@ const subscribeToRoles = () => {
       logDebug('[EVENTS] roles.onCreate', { role });
       addRole(role);
     },
-    onError: (err) => console.error('onRoleCreate subscription error:', err)
+    onError: handleSubscriptionError('onRoleCreate')
   });
 
   const onRoleDeleteSub = trpc.roles.onDelete.subscribe(undefined, {
@@ -19,7 +20,7 @@ const subscribeToRoles = () => {
       logDebug('[EVENTS] roles.onDelete', { roleId });
       removeRole(roleId);
     },
-    onError: (err) => console.error('onRoleDelete subscription error:', err)
+    onError: handleSubscriptionError('onRoleDelete')
   });
 
   const onRoleUpdateSub = trpc.roles.onUpdate.subscribe(undefined, {
@@ -27,7 +28,7 @@ const subscribeToRoles = () => {
       logDebug('[EVENTS] roles.onUpdate', { role });
       updateRole(role.id, role);
     },
-    onError: (err) => console.error('onRoleUpdate subscription error:', err)
+    onError: handleSubscriptionError('onRoleUpdate')
   });
 
   return () => {

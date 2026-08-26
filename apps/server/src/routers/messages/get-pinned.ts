@@ -1,13 +1,17 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { config } from '../../config';
 import { db } from '../../db';
 import { joinMessagesWithRelations } from '../../db/queries/messages';
-import { channels, messages } from '../../db/schema';
+import { messages } from '../../db/schema';
 import { assertChannelAccess } from '../../helpers/assert-channel-access';
-import { invariant } from '../../utils/invariant';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const getPinnedRoute = protectedProcedure
+const getPinnedRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.getMessages.maxRequests,
+  windowMs: config.rateLimiters.getMessages.windowMs,
+  logLabel: 'getPinned'
+})
   .input(
     z.object({
       channelId: z.number()
@@ -15,19 +19,6 @@ const getPinnedRoute = protectedProcedure
   )
   .query(async ({ ctx, input }) => {
     await assertChannelAccess(ctx, input.channelId);
-
-    const channel = await db
-      .select({
-        private: channels.private
-      })
-      .from(channels)
-      .where(eq(channels.id, input.channelId))
-      .get();
-
-    invariant(channel, {
-      code: 'NOT_FOUND',
-      message: 'Channel not found'
-    });
 
     const rows = await db
       .select()

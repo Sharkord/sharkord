@@ -136,33 +136,16 @@ const isUserDmParticipant = async (
   return !!dm;
 };
 
-// check if the user is a participant in the DM channel, throw if not
-const assertDmParticipant = async (
-  channelId: number,
-  userId: number
-): Promise<void> => {
-  const isDm = await isDirectMessageChannel(channelId);
-
-  if (!isDm) return;
-
-  const isParticipant = await isUserDmParticipant(channelId, userId);
-
-  if (!isParticipant) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'You are not a participant in this DM channel'
-    });
-  }
-};
-
-// checks if the channel of the message is a DM channel, and if so checks if the user is a participant, throwing if not
+// checks if the channel is a DM channel, and if so that direct messages are on
+// and the user is a participant. returns whether it was a DM so the caller does
+// not have to ask the same question again
 const assertDmChannel = async (
   channelId: number,
   userId: number
-): Promise<void> => {
+): Promise<boolean> => {
   const isDm = await isDirectMessageChannel(channelId);
 
-  if (!isDm) return;
+  if (!isDm) return false;
 
   const settings = await getSettings();
 
@@ -173,7 +156,16 @@ const assertDmChannel = async (
     });
   }
 
-  await assertDmParticipant(channelId, userId);
+  const isParticipant = await isUserDmParticipant(channelId, userId);
+
+  if (!isParticipant) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'You are not a participant in this DM channel'
+    });
+  }
+
+  return true;
 };
 
 const getDirectMessageChannelParticipantIds = async (
@@ -196,7 +188,6 @@ const getDirectMessageChannelParticipantIds = async (
 
 export {
   assertDmChannel,
-  assertDmParticipant,
   getDirectMessageChannel,
   getDirectMessageChannelIdsForUser,
   getDirectMessageChannelParticipantIds,

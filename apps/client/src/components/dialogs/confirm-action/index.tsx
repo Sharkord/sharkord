@@ -62,4 +62,4 @@ const ConfirmActionDialog = memo(
   }
 );
 
-export default ConfirmActionDialog;
+export { ConfirmActionDialog };

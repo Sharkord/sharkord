@@ -1,10 +1,23 @@
 import { Dialog } from '@/components/dialogs/dialogs';
 import type { TGenericObject } from '@sharkord/shared';
 import { store } from '../store';
+import { dialogInfoSelector } from './selectors';
 import { dialogSliceActions } from './slice';
 
 export const openDialog = (dialog: Dialog, props?: TGenericObject) => {
   store.dispatch(dialogSliceActions.openDialog({ dialog, props }));
+};
+
+export const toggleDialog = (dialog: Dialog) => {
+  const { openDialog: current, isOpen } = dialogInfoSelector(store.getState());
+
+  if (isOpen && current === dialog) {
+    closeDialogs();
+
+    return;
+  }
+
+  openDialog(dialog);
 };
 
 export const closeDialogs = () => {

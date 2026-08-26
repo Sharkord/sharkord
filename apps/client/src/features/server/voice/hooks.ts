@@ -6,6 +6,7 @@ import { useContext, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useIsOwnUser } from '../users/hooks';
 import {
+  alwaysShowVoiceControlsSelector,
   hideNonVideoParticipantsSelector,
   hideOwnScreenShareSelector,
   ownVoiceStateSelector,
@@ -13,20 +14,8 @@ import {
   showUserBannersInVoiceSelector,
   voiceChannelAudioExternalStreamsSelector,
   voiceChannelExternalStreamsListSelector,
-  voiceChannelExternalStreamsSelector,
-  voiceChannelStateSelector,
-  voiceChannelVideoExternalStreamsSelector
+  voiceMoveTargetChannelIdSelector
 } from './selectors';
-
-export const useVoiceChannelState = (channelId: number) =>
-  useSelector((state: IRootState) =>
-    voiceChannelStateSelector(state, channelId)
-  );
-
-export const useVoiceChannelExternalStreams = (channelId: number) =>
-  useSelector((state: IRootState) =>
-    voiceChannelExternalStreamsSelector(state, channelId)
-  );
 
 export const useVoiceChannelExternalStreamsList = (channelId: number) =>
   useSelector((state: IRootState) =>
@@ -36,11 +25,6 @@ export const useVoiceChannelExternalStreamsList = (channelId: number) =>
 export const useVoiceChannelAudioExternalStreams = (channelId: number) =>
   useSelector((state: IRootState) =>
     voiceChannelAudioExternalStreamsSelector(state, channelId)
-  );
-
-export const useVoiceChannelVideoExternalStreams = (channelId: number) =>
-  useSelector((state: IRootState) =>
-    voiceChannelVideoExternalStreamsSelector(state, channelId)
   );
 
 export const useVoice = () => {
@@ -59,6 +43,9 @@ export const useOwnVoiceState = () => useSelector(ownVoiceStateSelector);
 
 export const usePinnedCard = () => useSelector(pinnedCardSelector);
 
+export const useVoiceMoveTargetChannelId = () =>
+  useSelector(voiceMoveTargetChannelIdSelector);
+
 export const useHideNonVideoParticipants = () =>
   useSelector(hideNonVideoParticipantsSelector);
 
@@ -67,6 +54,9 @@ export const useShowUserBannersInVoice = () =>
 
 export const useHideOwnScreenShare = () =>
   useSelector(hideOwnScreenShareSelector);
+
+export const useAlwaysShowVoiceControls = () =>
+  useSelector(alwaysShowVoiceControlsSelector);
 
 export const useSpeakingState = (userId: number) => {
   const { remoteUserStreams, localAudioStream } = useVoice();

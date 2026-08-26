@@ -1,7 +1,6 @@
 import type { TServerInfo } from '@sharkord/shared';
 import http from 'http';
 import { getSettings } from '../db/queries/server';
-import { SERVER_VERSION } from '../utils/env';
 
 const infoRouteHandler = async (
   req: http.IncomingMessage,
@@ -11,7 +10,6 @@ const infoRouteHandler = async (
 
   const info: TServerInfo = {
     serverId: settings.serverId,
-    version: SERVER_VERSION,
     name: settings.name,
     description: settings.description,
     logo: settings.logo,

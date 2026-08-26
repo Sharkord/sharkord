@@ -5,11 +5,19 @@ import z from 'zod';
 import { config } from '../config';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
+import { pluginManager } from '../plugins';
+import { SERVER_VERSION } from '../utils/env';
+import { HttpValidationError, PayloadTooLargeError } from './errors';
 import { healthRouteHandler } from './healthz';
 import {
-  getRequestPathname,
+  applyCorsHeaders,
+  getRequestUrl,
   hasPrefixPathSegment,
-  type HttpRouteHandler
+  isSupportedHttpMethod,
+  sendJsonError,
+  sendJsonFieldErrors,
+  type HttpRouteHandler,
+  type TSupportedHttpMethod
 } from './helpers';
 import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
@@ -19,17 +27,43 @@ import { pluginBundleRouteHandler } from './plugin-bundle';
 import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
 import { uploadFileRouteHandler } from './upload';
-import { HttpValidationError } from './utils';
 
+// parsed once per request and handed to every handler, so nothing below re-parses the url
+// or re-resolves the client ip
 type RouteContext = {
   info: ReturnType<typeof getWsInfo>;
+  pathname: string;
+  url: URL;
 };
 
-type SupportedMethod = 'GET' | 'POST';
+// plugin routes are registered with decoded paths, so decode per segment to keep
+// an encoded '/' inside a segment from splitting into two
+const getPluginRoute = (pathname: string) => {
+  if (!hasPrefixPathSegment(pathname, '/plugins')) {
+    return undefined;
+  }
+
+  const [, , pluginId, ...routePathSegments] = pathname.split('/');
+
+  if (!pluginId) {
+    return undefined;
+  }
+
+  try {
+    return {
+      pluginId: decodeURIComponent(pluginId),
+      routePath: `/${routePathSegments
+        .map((segment) => decodeURIComponent(segment))
+        .join('/')}`
+    };
+  } catch {
+    return undefined;
+  }
+};
 
 const routeHandlers: Partial<
   Record<
-    SupportedMethod,
+    TSupportedHttpMethod,
     {
       exact: Record<string, HttpRouteHandler<RouteContext>>;
       prefix: Record<string, HttpRouteHandler<RouteContext>>;
@@ -38,21 +72,20 @@ const routeHandlers: Partial<
 > = {
   GET: {
     exact: {
-      '/healthz': (req, res) => healthRouteHandler(req, res),
-      '/info': (req, res) => infoRouteHandler(req, res),
-      '/manifest.json': (req, res) => manifestRouteHandler(req, res)
+      '/healthz': healthRouteHandler,
+      '/info': infoRouteHandler,
+      '/manifest.json': manifestRouteHandler
     },
     prefix: {
-      '/public': (req, res) => publicRouteHandler(req, res),
-      '/plugin-components': (req, res) =>
-        pluginsComponentsRouteHandler(req, res),
-      '/plugin-bundle': (req, res) => pluginBundleRouteHandler(req, res)
+      '/public': publicRouteHandler,
+      '/plugin-components': pluginsComponentsRouteHandler,
+      '/plugin-bundle': pluginBundleRouteHandler
     }
   },
   POST: {
     exact: {
-      '/upload': (req, res) => uploadFileRouteHandler(req, res),
-      '/login': (req, res) => loginRouteHandler(req, res)
+      '/upload': uploadFileRouteHandler,
+      '/login': loginRouteHandler
     },
     prefix: {}
   }
@@ -64,32 +97,33 @@ const createHttpServer = async (port: number = config.server.port) => {
   return new Promise<http.Server>((resolve) => {
     const server = http.createServer(
       async (req: http.IncomingMessage, res: http.ServerResponse) => {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', '*');
+        applyCorsHeaders(req, res);
+
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        res.setHeader('X-Sharkord-Version', SERVER_VERSION);
 
         const info = getWsInfo(undefined, req);
+        const url = getRequestUrl(req);
 
         logger.debug(
-          `${chalk.dim('[HTTP]')} ${req.method} ${req.url} - ${info?.ip}`
+          `${chalk.dim('[HTTP]')} ${req.method} ${url?.pathname} - ${info?.ip}`
         );
 
-        if (req.method === 'OPTIONS') {
-          res.writeHead(204);
-          res.end();
+        if (!url) {
+          sendJsonError(res, 400, 'Bad request');
           return;
         }
 
-        const pathname = getRequestPathname(req);
-
-        if (!pathname) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Bad request' }));
-          return;
-        }
+        const pathname = url.pathname;
+        const ctx: RouteContext = { info, pathname, url };
 
         try {
-          const method = req.method as SupportedMethod | undefined;
+          const method =
+            req.method && isSupportedHttpMethod(req.method)
+              ? req.method
+              : undefined;
 
           if (method) {
             const methodHandlers = routeHandlers[method];
@@ -98,25 +132,69 @@ const createHttpServer = async (port: number = config.server.port) => {
               const exactHandler = methodHandlers.exact[pathname];
 
               if (exactHandler) {
-                return await exactHandler(req, res, { info });
+                return await exactHandler(req, res, ctx);
               }
 
               for (const [prefix, prefixHandler] of Object.entries(
                 methodHandlers.prefix
               )) {
                 if (hasPrefixPathSegment(pathname, prefix)) {
-                  return await prefixHandler(req, res, { info });
+                  return await prefixHandler(req, res, ctx);
                 }
+              }
+            }
+
+            const pluginRoute = getPluginRoute(pathname);
+
+            if (pluginRoute) {
+              const pluginRouteHandler = pluginManager.getHttpRouteHandler(
+                pluginRoute.pluginId,
+                method,
+                pluginRoute.routePath
+              );
+
+              if (pluginRouteHandler) {
+                return await pluginRouteHandler(req, res);
+              }
+
+              if (method !== 'OPTIONS') {
+                sendJsonError(res, 404, 'Not found');
+
+                return;
               }
             }
           }
 
+          if (method === 'OPTIONS') {
+            res.writeHead(204);
+            res.end();
+
+            return;
+          }
+
           // fallback to interface route handler for GET requests
           if (method === 'GET') {
-            return await interfaceRouteHandler(req, res);
+            return await interfaceRouteHandler(req, res, ctx);
           }
         } catch (error) {
+          // a handler that already started writing cannot be turned into an error
+          // response, so drop the connection instead of throwing on writeHead
+          if (res.headersSent) {
+            logger.error(
+              'HTTP route error after the response started: %s',
+              getErrorMessage(error)
+            );
+
+            res.destroy();
+            return;
+          }
+
           const errorsMap: Record<string, string> = {};
+
+          if (error instanceof PayloadTooLargeError) {
+            sendJsonError(res, 413, error.message);
+            return;
+          }
 
           if (error instanceof z.ZodError) {
             for (const issue of error.issues) {
@@ -127,26 +205,22 @@ const createHttpServer = async (port: number = config.server.port) => {
               }
             }
 
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ errors: errorsMap }));
+            sendJsonFieldErrors(res, 400, errorsMap);
             return;
           } else if (error instanceof HttpValidationError) {
             errorsMap[error.field] = error.message;
 
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ errors: errorsMap }));
+            sendJsonFieldErrors(res, 400, errorsMap);
             return;
           }
 
           logger.error('HTTP route error: %s', getErrorMessage(error));
 
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Internal server error' }));
+          sendJsonError(res, 500, 'Internal server error');
           return;
         }
 
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Not found' }));
+        sendJsonError(res, 404, 'Not found');
       }
     );
 
@@ -157,7 +231,6 @@ const createHttpServer = async (port: number = config.server.port) => {
 
     server.on('close', () => {
       logger.debug('HTTP server closed');
-      process.exit(0);
     });
 
     server.listen(port);

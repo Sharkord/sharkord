@@ -45,7 +45,10 @@ const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
   .query(async ({ ctx, input }) => {
     const settings = await getSettings();
 
-    invariant(settings.enableSearch, 'Search is disabled on this server');
+    invariant(settings.enableSearch, {
+      code: 'FORBIDDEN',
+      message: 'Search is disabled on this server'
+    });
 
     const accessibleChannels = await getChannelsForUser(ctx.userId);
 
@@ -56,7 +59,8 @@ const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
     if (accessibleChannelIds.length === 0) {
       return {
         messages: [],
-        files: []
+        files: [],
+        truncated: false
       };
     }
 
@@ -71,8 +75,7 @@ const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
         .select({
           message: messages,
           channelName: channels.name,
-          channelIsDm: channels.isDm,
-          channelPrivate: channels.private
+          channelIsDm: channels.isDm
         })
         .from(messages)
         .innerJoin(channels, eq(channels.id, messages.channelId))
@@ -92,8 +95,7 @@ const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
           messageContent: messages.content,
           messageCreatedAt: messages.createdAt,
           channelName: channels.name,
-          channelIsDm: channels.isDm,
-          channelPrivate: channels.private
+          channelIsDm: channels.isDm
         })
         .from(messageFiles)
         .innerJoin(files, eq(files.id, messageFiles.fileId))
@@ -153,9 +155,9 @@ const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
     }
 
     const matchedMessagesWithFiles = matchedMessages.map((row) => {
-      const messageFiles = filesByMessageId.get(row.message.id) ?? [];
+      const attachedFiles = filesByMessageId.get(row.message.id) ?? [];
 
-      const preparedFiles = messageFiles.map((file) =>
+      const preparedFiles = attachedFiles.map((file) =>
         attachFileToken(
           file,
           settings.storageSignedUrlsEnabled,
@@ -191,9 +193,15 @@ const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
       };
     });
 
+    const truncated =
+      messageRows.length >= messageFetchLimit ||
+      fileRows.length >= FILES_LIMIT ||
+      matchedMessages.length >= MESSAGES_LIMIT;
+
     return {
       messages: matchedMessagesWithFiles,
-      files: matchedFiles
+      files: matchedFiles,
+      truncated
     };
   });
 

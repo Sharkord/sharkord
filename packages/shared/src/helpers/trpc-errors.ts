@@ -2,13 +2,19 @@ import { TRPCClientError } from '@trpc/client';
 
 export type TTrpcErrors = Record<string, string | undefined>;
 
+const GENERIC_ERROR = 'Something went wrong, please try again.';
+
 const parseTrpcErrors = (err: unknown): TTrpcErrors => {
   if (!(err instanceof TRPCClientError)) {
-    if (typeof err === 'object') {
+    if (err instanceof Error) {
+      return { _general: err.message || GENERIC_ERROR };
+    }
+
+    if (err && typeof err === 'object' && !Array.isArray(err)) {
       return err as TTrpcErrors;
     }
 
-    return { _general: 'Something went wrong, please try again.' };
+    return { _general: GENERIC_ERROR };
   }
 
   try {
@@ -18,15 +24,21 @@ const parseTrpcErrors = (err: unknown): TTrpcErrors => {
       message: string;
     }[] = JSON.parse(err.message);
 
-    return parsed.reduce<TTrpcErrors>((acc, issue) => {
+    const fieldErrors = parsed.reduce<TTrpcErrors>((acc, issue) => {
       const field = issue.path?.[0] ?? '_general';
 
       acc[field] = issue.message;
 
       return acc;
     }, {});
+
+    if (!Object.keys(fieldErrors).length) {
+      return { _general: GENERIC_ERROR };
+    }
+
+    return fieldErrors;
   } catch {
-    return { _general: err.message };
+    return { _general: err.message || GENERIC_ERROR };
   }
 };
 

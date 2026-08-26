@@ -15,11 +15,11 @@ const onLoad = (ctx) => {
     return newPath;
   });
 
-  ctx.log('Plugin before-file-save loaded');
+  ctx.logger.log('Plugin before-file-save loaded');
 };
 
 const onUnload = (ctx) => {
-  ctx.log('Plugin before-file-save unloaded');
+  ctx.logger.log('Plugin before-file-save unloaded');
 };
 
 export { onLoad, onUnload };

@@ -9,6 +9,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
   Permission,
+  TestId,
   UserStatus,
   getTrpcError
 } from '@sharkord/shared';
@@ -88,7 +89,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
             <div
               className="h-24 w-full rounded-t-md"
               style={{
-                background: user.bannerColor || '#5865f2'
+                background: user.profileColor || '#5865f2'
               }}
             />
           )}
@@ -146,6 +147,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
             <div className="flex gap-2 items-center">
               {showDmButton && (
                 <IconButton
+                  data-testid={TestId.USER_POPOVER_DM}
                   icon={MessageSquare}
                   variant="ghost"
                   size="sm"
@@ -157,6 +159,7 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
               {
                 <Protect permission={Permission.MANAGE_USERS}>
                   <IconButton
+                    data-testid={TestId.USER_POPOVER_MODERATE}
                     icon={UserCog}
                     variant="ghost"
                     size="sm"

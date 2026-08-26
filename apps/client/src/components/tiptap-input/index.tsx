@@ -1,4 +1,5 @@
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
+import { useReferenceableChannels } from '@/features/server/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
 import { TestId, type TCommandInfo } from '@sharkord/shared';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
@@ -13,6 +14,12 @@ import {
   useRef,
   type Ref
 } from 'react';
+import { ChannelReference } from './extensions/channel-reference';
+import { ChannelReferenceNode } from './extensions/channel-reference/node';
+import {
+  CHANNEL_REF_STORAGE_KEY,
+  ChannelReferenceSuggestion
+} from './extensions/channel-reference/suggestion';
 import {
   COMMANDS_STORAGE_KEY,
   CommandSuggestion
@@ -73,6 +80,7 @@ const TiptapInput = memo(
 
     const customEmojis = useCustomEmojis();
     const users = useFilteredUsers();
+    const channels = useReferenceableChannels();
 
     const extensions = useMemo(() => {
       const exts = [
@@ -108,6 +116,11 @@ const TiptapInput = memo(
           suggestion: MentionSuggestion
         }),
         MentionNode,
+        ChannelReference.configure({
+          channels,
+          suggestion: ChannelReferenceSuggestion
+        }),
+        ChannelReferenceNode,
         PluginCommandNode
       ];
 
@@ -122,7 +135,7 @@ const TiptapInput = memo(
       }
 
       return exts;
-    }, [customEmojis, commands, users]);
+    }, [customEmojis, commands, users, channels]);
 
     const editor = useEditor({
       extensions,
@@ -262,6 +275,20 @@ const TiptapInput = memo(
         }
       }
     }, [editor, users]);
+
+    // keep channel reference storage in sync with the channels from the store
+    useEffect(() => {
+      if (editor) {
+        const storage = editor.storage as unknown as Record<
+          string,
+          { channels?: typeof channels }
+        >;
+
+        if (storage[CHANNEL_REF_STORAGE_KEY]) {
+          storage[CHANNEL_REF_STORAGE_KEY].channels = channels;
+        }
+      }
+    }, [editor, channels]);
 
     useEffect(() => {
       if (editor && value !== undefined) {

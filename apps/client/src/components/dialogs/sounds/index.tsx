@@ -1,6 +1,6 @@
 import type { TDialogBaseProps } from '@/components/dialogs/types';
-import { getSoundTypes, playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
+import { getSoundTypes, playSound } from '@/helpers/sounds';
 import {
   Button,
   Dialog,

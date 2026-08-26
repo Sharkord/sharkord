@@ -42,7 +42,7 @@ export type Context = {
   getOwnWs: () => WebSocket | undefined;
   getStatusById: (userId: number) => UserStatus;
   setWsUserId: (userId: number) => void;
-  getUserWs: (userId: number) => WebSocket | undefined;
+  getUserWs: (userId: number) => WebSocket[];
   getConnectionInfo: () => TConnectionInfo | undefined;
   throwValidationError: (field: string, message: string) => never;
   saveUserIp: (userId: number, ip: string) => Promise<void>;
@@ -106,7 +106,9 @@ const rateLimitedProcedure = (
       return next();
     }
 
-    const key = getClientRateLimitKey(connectionInfo.ip);
+    const key = getClientRateLimitKey(
+      ctx.userId ? `user:${ctx.userId}` : connectionInfo.ip
+    );
     const rateLimit = limiter.consume(key);
 
     if (!rateLimit.allowed) {

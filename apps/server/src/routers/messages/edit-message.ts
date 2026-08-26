@@ -1,5 +1,5 @@
 import {
-  Permission,
+  MESSAGE_MAX_LENGTH,
   getPlainTextFromHtml,
   isEmptyMessage
 } from '@sharkord/shared';
@@ -9,7 +9,10 @@ import { config } from '../../config';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { messages } from '../../db/schema';
-import { assertChannelAccess } from '../../helpers/assert-channel-access';
+import {
+  assertCanModifyMessage,
+  loadMessageForWrite
+} from '../../helpers/load-message-for-write';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
 import { eventBus } from '../../plugins/event-bus';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
@@ -24,42 +27,18 @@ const editMessageRoute = rateLimitedProcedure(protectedProcedure, {
   .input(
     z.object({
       messageId: z.number(),
-      content: z.string()
+      content: z.string().max(MESSAGE_MAX_LENGTH)
     })
   )
   .mutation(async ({ input, ctx }) => {
-    const message = await db
-      .select({
-        userId: messages.userId,
-        pluginId: messages.pluginId,
-        channelId: messages.channelId,
-        editable: messages.editable
-      })
-      .from(messages)
-      .where(eq(messages.id, input.messageId))
-      .limit(1)
-      .get();
-
-    invariant(message, {
-      code: 'NOT_FOUND',
-      message: 'Message not found'
-    });
-
-    await assertChannelAccess(ctx, message.channelId);
+    const message = await loadMessageForWrite(ctx, input.messageId);
 
     invariant(message.editable, {
       code: 'FORBIDDEN',
       message: 'This message is not editable'
     });
 
-    invariant(
-      message.userId === ctx.user.id ||
-        (await ctx.hasPermission(Permission.MANAGE_MESSAGES)),
-      {
-        code: 'FORBIDDEN',
-        message: 'You do not have permission to edit this message'
-      }
-    );
+    await assertCanModifyMessage(ctx, message, 'edit this message');
 
     invariant(!isEmptyMessage(input.content), {
       code: 'BAD_REQUEST',
@@ -74,12 +53,14 @@ const editMessageRoute = rateLimitedProcedure(protectedProcedure, {
         'Your message only contained unsupported or removed content, so there was nothing to send.'
     });
 
+    const editedAt = Date.now();
+
     await db
       .update(messages)
       .set({
         content: sanitizedContent,
-        updatedAt: Date.now(),
-        editedAt: Date.now(),
+        updatedAt: editedAt,
+        editedAt,
         editedBy: ctx.user.id
       })
       .where(eq(messages.id, input.messageId));
@@ -91,6 +72,7 @@ const editMessageRoute = rateLimitedProcedure(protectedProcedure, {
       messageId: input.messageId,
       channelId: message.channelId,
       userId: message.userId,
+      editedBy: ctx.user.id,
       pluginId: message.pluginId,
       content: sanitizedContent,
       textContent: getPlainTextFromHtml(sanitizedContent)

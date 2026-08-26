@@ -13,18 +13,25 @@ const applyEnvOverrides = <T>(
         unknown
       >;
 
+      let isReachable = true;
+
       for (let i = 0; i < keys.length - 1; i++) {
         const key = keys[i];
+        const next = key === undefined ? undefined : current[key];
 
-        if (key === undefined) continue;
+        // a typo in the override map would otherwise throw on the next lookup
+        if (!next || typeof next !== 'object') {
+          isReachable = false;
+          break;
+        }
 
-        current = current[key] as Record<string, unknown>;
+        current = next as Record<string, unknown>;
       }
 
       const finalKey = keys[keys.length - 1];
       const envValue = process.env[envVar];
 
-      if (finalKey === undefined) {
+      if (!isReachable || finalKey === undefined) {
         continue;
       }
 

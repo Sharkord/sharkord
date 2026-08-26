@@ -14,6 +14,7 @@ export enum Permission {
   MANAGE_EMOJIS = 'MANAGE_EMOJIS',
   MANAGE_SETTINGS = 'MANAGE_SETTINGS',
   MANAGE_USERS = 'MANAGE_USERS',
+  MOVE_MEMBERS = 'MOVE_MEMBERS',
   MANAGE_MESSAGES = 'MANAGE_MESSAGES',
   MANAGE_STORAGE = 'MANAGE_STORAGE',
   MANAGE_INVITES = 'MANAGE_INVITES',
@@ -30,13 +31,6 @@ export const DEFAULT_ROLE_PERMISSIONS = [
   Permission.SHARE_SCREEN,
   Permission.ENABLE_WEBCAM
 ];
-
-export enum UploadHeaders {
-  ORIGINAL_NAME = 'x-file-name',
-  TYPE = 'x-file-type',
-  CONTENT_LENGTH = 'content-length',
-  TOKEN = 'x-token'
-}
 
 export enum ChannelPermission {
   VIEW_CHANNEL = 'VIEW_CHANNEL',

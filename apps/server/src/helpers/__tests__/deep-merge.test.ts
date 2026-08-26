@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { parse } from 'ini';
-import { deepMerge } from '../deep-merge';
+import { deepMerge } from '../../utils/deep-merge';
 
 describe('deepMerge', () => {
   test('merges flat objects', () => {

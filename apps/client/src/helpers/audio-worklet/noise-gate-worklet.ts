@@ -3,6 +3,10 @@ import {
   MICROPHONE_GATE_CLOSE_HOLD_MS,
   MICROPHONE_NOISE_GATE_WORKLET_NAME
 } from '@/helpers/audio-gate';
+import {
+  createWorkletLoader,
+  isAudioWorkletSupported
+} from './create-worklet-loader';
 
 type TNoiseGateWorkletConfig = {
   enabled?: boolean;
@@ -15,23 +19,12 @@ type TNoiseGateWorkletAvailability = {
   reason?: string;
 };
 
-const workletLoadPromises = new WeakMap<BaseAudioContext, Promise<void>>();
 const availabilitySubscribers = new Set<() => void>();
 let runtimeUnavailableReason: string | undefined;
 let availabilitySnapshotCache: TNoiseGateWorkletAvailability | null = null;
 
 const notifyAvailabilitySubscribers = () => {
   availabilitySubscribers.forEach((listener) => listener());
-};
-
-const isNoiseGateWorkletSupported = () => {
-  if (typeof window === 'undefined') return false;
-
-  return (
-    typeof window.AudioWorkletNode !== 'undefined' &&
-    typeof window.AudioContext !== 'undefined' &&
-    'audioWorklet' in window.AudioContext.prototype
-  );
 };
 
 const subscribeNoiseGateWorkletAvailability = (listener: () => void) => {
@@ -45,7 +38,7 @@ const subscribeNoiseGateWorkletAvailability = (listener: () => void) => {
 const getNoiseGateWorkletAvailabilitySnapshot =
   (): TNoiseGateWorkletAvailability => {
     const nextSnapshot: TNoiseGateWorkletAvailability =
-      !isNoiseGateWorkletSupported()
+      !isAudioWorkletSupported()
         ? {
             available: false,
             reason: 'This browser does not support AudioWorklet.'
@@ -89,20 +82,10 @@ const postNoiseGateWorkletConfig = (
   });
 };
 
-const ensureNoiseGateWorkletLoaded = async (audioContext: AudioContext) => {
-  if (!isNoiseGateWorkletSupported()) {
-    throw new Error('AudioWorklet is not supported in this browser.');
-  }
-
-  let loadPromise = workletLoadPromises.get(audioContext);
-
-  if (!loadPromise) {
-    loadPromise = audioContext.audioWorklet.addModule(noiseGateProcessorUrl);
-    workletLoadPromises.set(audioContext, loadPromise);
-  }
-
-  await loadPromise;
-};
+const { ensureLoaded: ensureNoiseGateWorkletLoaded } = createWorkletLoader({
+  url: noiseGateProcessorUrl,
+  errorLabel: 'noise gate'
+});
 
 const createNoiseGateWorkletNode = async (
   audioContext: AudioContext,
@@ -126,7 +109,6 @@ const createNoiseGateWorkletNode = async (
 export {
   createNoiseGateWorkletNode,
   getNoiseGateWorkletAvailabilitySnapshot,
-  isNoiseGateWorkletSupported,
   markNoiseGateWorkletUnavailable,
   postNoiseGateWorkletConfig,
   subscribeNoiseGateWorkletAvailability

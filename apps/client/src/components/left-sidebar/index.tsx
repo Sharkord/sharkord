@@ -12,6 +12,7 @@ import { memo } from 'react';
 import { Categories } from './categories';
 import { DirectMessages } from './direct-messages';
 import { DmButton } from './direct-messages/dm-button';
+import { useFollowVoiceMove, useRestoreLastSelectedChannel } from './hooks';
 import { PluginButtons } from './plugin-buttons';
 import { ServerDropdownMenu } from './server-dropdown';
 import { UserControl } from './user-control';
@@ -29,6 +30,9 @@ const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
   const serverName = useServerName();
   const dmsOpen = useDmsOpen();
   const publicSettings = usePublicServerSettings();
+
+  useRestoreLastSelectedChannel();
+  useFollowVoiceMove();
 
   return (
     <ResizableSidebar

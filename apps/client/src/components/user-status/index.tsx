@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { UserStatus } from '@sharkord/shared';
+import { TestId, UserStatus } from '@sharkord/shared';
 import { memo } from 'react';
 
 type TUserStatusBadgeProps = {
@@ -10,6 +10,8 @@ type TUserStatusBadgeProps = {
 const UserStatusBadge = memo(({ status, className }: TUserStatusBadgeProps) => {
   return (
     <div
+      data-testid={TestId.USER_STATUS}
+      data-status={status}
       className={cn(
         'h-3 w-3 rounded-full border-2 border-card',
         status === UserStatus.ONLINE && 'bg-green-500',

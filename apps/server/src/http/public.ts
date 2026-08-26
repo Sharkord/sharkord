@@ -1,6 +1,4 @@
-import { getErrorMessage } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
-import fs from 'fs';
 import http from 'http';
 import path from 'path';
 import { db } from '../db';
@@ -10,12 +8,7 @@ import { files } from '../db/schema';
 import { verifyFileToken } from '../helpers/files-crypto';
 import { PUBLIC_PATH } from '../helpers/paths';
 import { logger } from '../logger';
-import {
-  buildCacheControl,
-  buildEtag,
-  sendJsonError,
-  sendNotModified
-} from './helpers';
+import { buildCacheControl, sendFile, sendJsonError } from './helpers';
 
 const INLINE_ALLOW_LIST = [
   'image/png',
@@ -27,50 +20,21 @@ const INLINE_ALLOW_LIST = [
   'audio/mpeg'
 ];
 
-const pipeFileStream = (
-  filePath: string,
-  res: http.ServerResponse,
-  streamOptions?: { start: number; end: number }
-) => {
-  const fileStream = fs.createReadStream(filePath, streamOptions);
-
-  fileStream.pipe(res);
-
-  fileStream.on('error', (err) => {
-    logger.error('Error serving file: %s', getErrorMessage(err));
-
-    if (!res.headersSent) {
-      res.writeHead(500, {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store'
-      });
-      res.end(JSON.stringify({ error: 'Internal server error' }));
-    }
-  });
-
-  res.on('close', () => {
-    fileStream.destroy();
-  });
-
-  fileStream.on('end', () => {
-    res.end();
-  });
-};
-
 const publicRouteHandler = async (
   req: http.IncomingMessage,
-  res: http.ServerResponse
+  res: http.ServerResponse,
+  { url }: { url: URL }
 ) => {
-  if (!req.url) {
-    sendJsonError(res, 400, 'Bad request');
-    return;
-  }
-
-  const url = new URL(req.url!, `http://${req.headers.host}`);
   const fileName = decodeURIComponent(path.basename(url.pathname));
 
   const dbFile = await db
-    .select()
+    .select({
+      id: files.id,
+      name: files.name,
+      md5: files.md5,
+      mimeType: files.mimeType,
+      originalName: files.originalName
+    })
     .from(files)
     .where(eq(files.name, fileName))
     .get();
@@ -127,23 +91,6 @@ const publicRouteHandler = async (
 
   const filePath = path.join(PUBLIC_PATH, dbFile.name);
 
-  if (!fs.existsSync(filePath)) {
-    sendJsonError(res, 404, 'File not found on disk');
-
-    logger.error(
-      'File %s exists in database but not on disk (%s)',
-      dbFile.name,
-      filePath
-    );
-
-    return;
-  }
-
-  const stat = fs.statSync(filePath);
-  const etag = buildEtag(dbFile.md5, stat);
-  const lastModified = stat.mtime.toUTCString();
-  const cacheControl = buildCacheControl(isSignedUrlProtected, tokenExpiresAt);
-
   const contentDisposition = INLINE_ALLOW_LIST.includes(dbFile.mimeType)
     ? 'inline'
     : 'attachment';
@@ -157,80 +104,19 @@ const publicRouteHandler = async (
     '%27'
   );
 
-  const dispositionHeader = `${contentDisposition}; filename="${safeFileName}"; filename*=UTF-8''${encodedFileName}`;
-
-  const rangeHeader = req.headers.range;
-
-  if (
-    !rangeHeader &&
-    sendNotModified(req, res, {
-      etag,
-      lastModified,
-      cacheControl,
-      mtimeMs: stat.mtimeMs,
-      extraHeaders: { Vary: 'Range' }
-    })
-  ) {
-    return;
-  }
-
-  if (rangeHeader) {
-    const match = rangeHeader.match(/^bytes=(\d+)-(\d*)$/);
-
-    if (!match) {
-      res.writeHead(416, {
-        'Content-Range': `bytes */${stat.size}`,
-        'Cache-Control': 'no-store'
-      });
-      res.end();
-
-      return;
-    }
-
-    const start = parseInt(match[1]!, 10);
-    const end = match[2] ? parseInt(match[2], 10) : stat.size - 1;
-
-    if (start >= stat.size || end >= stat.size || start > end) {
-      res.writeHead(416, {
-        'Content-Range': `bytes */${stat.size}`,
-        'Cache-Control': 'no-store'
-      });
-      res.end();
-
-      return;
-    }
-
-    const contentLength = end - start + 1;
-
-    res.writeHead(206, {
-      'Content-Type': dbFile.mimeType,
-      'Content-Length': contentLength,
-      'Content-Range': `bytes ${start}-${end}/${stat.size}`,
-      'Accept-Ranges': 'bytes',
-      'Content-Disposition': dispositionHeader,
-      ETag: etag,
-      'Last-Modified': lastModified,
-      'Cache-Control': cacheControl,
-      Vary: 'Range'
-    });
-
-    pipeFileStream(filePath, res, { start, end });
-  } else {
-    res.writeHead(200, {
-      'Content-Type': dbFile.mimeType,
-      'Content-Length': stat.size,
-      'Accept-Ranges': 'bytes',
-      'Content-Disposition': dispositionHeader,
-      ETag: etag,
-      'Last-Modified': lastModified,
-      'Cache-Control': cacheControl,
-      Vary: 'Range'
-    });
-
-    pipeFileStream(filePath, res);
-  }
-
-  return res;
+  await sendFile(req, res, filePath, {
+    cacheControl: buildCacheControl(isSignedUrlProtected, tokenExpiresAt),
+    md5: dbFile.md5,
+    contentType: dbFile.mimeType,
+    contentDisposition: `${contentDisposition}; filename="${safeFileName}"; filename*=UTF-8''${encodedFileName}`,
+    notFoundMessage: 'File not found on disk',
+    onNotFound: () =>
+      logger.error(
+        'File %s exists in database but not on disk (%s)',
+        dbFile.name,
+        filePath
+      )
+  });
 };
 
 export { publicRouteHandler };

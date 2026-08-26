@@ -5,10 +5,10 @@ import fs from 'fs/promises';
 import path from 'path';
 import { pluginManager } from '..';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
-import { tdb } from '../../__tests__/setup';
+import { findTestLog, tdb } from '../../__tests__/setup';
 import { messages, pluginData, settings } from '../../db/schema';
+import { fileManager } from '../../helpers/file-manager';
 import { PLUGINS_PATH, PUBLIC_PATH, UPLOADS_PATH } from '../../helpers/paths';
-import { fileManager } from '../../utils/file-manager';
 import { eventBus } from '../event-bus';
 import { withTimeout } from '../execution-timeout';
 
@@ -108,13 +108,16 @@ describe('plugin-manager', () => {
       ).rejects.toThrow('Plugin client entry file not found');
     });
 
-    test('should load plugin without onUnload', async () => {
+    test('should load plugin without onUnload and warn about it', async () => {
       await pluginManager.togglePlugin('plugin-no-unload', true);
       await pluginManager.load('plugin-no-unload');
 
       const info = await pluginManager.getPluginInfo('plugin-no-unload');
 
       expect(info.loadError).toBeUndefined();
+      expect(
+        findTestLog('warn', 'will be required in a future SDK version')
+      ).toBeDefined();
     });
 
     test('should fail to load plugin missing sdk version', async () => {
@@ -161,7 +164,7 @@ describe('plugin-manager', () => {
         await pluginManager.unload('plugin-a');
 
         const updatedSource = `const onLoad = (ctx) => {
-  ctx.log('My Plugin loaded (updated)');
+  ctx.logger.log('My Plugin loaded (updated)');
 
   ctx.commands.register({
     name: 'updated-command',
@@ -171,7 +174,7 @@ describe('plugin-manager', () => {
 };
 
 const onUnload = (ctx) => {
-  ctx.log('My Plugin unloaded (updated)');
+  ctx.logger.log('My Plugin unloaded (updated)');
 };
 
 export { onLoad, onUnload };

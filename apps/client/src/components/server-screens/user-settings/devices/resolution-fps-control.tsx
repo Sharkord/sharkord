@@ -77,4 +77,4 @@ const ResolutionFpsControl = memo(
   }
 );
 
-export default ResolutionFpsControl;
+export { ResolutionFpsControl };

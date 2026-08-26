@@ -181,6 +181,30 @@ describe('emojis router', () => {
     ).toBeUndefined();
   });
 
+  test('should allow renaming an emoji to the name it already has', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    const file = new File(['noop rename'], 'noop.png', { type: 'image/png' });
+    const upload = await uploadFile(file, mockedToken);
+    const data = (await upload.json()) as TTempFile;
+
+    await caller.emojis.add([{ fileId: data.id, name: 'same_name' }]);
+
+    const emoji = (await caller.emojis.getAll()).find(
+      (e) => e.name === 'same_name'
+    );
+
+    // the uniqueness check used to match the row being edited, so a no-op rename
+    // reported that the name was already taken by itself
+    await caller.emojis.update({ emojiId: emoji!.id, name: 'same_name' });
+
+    const after = (await caller.emojis.getAll()).find(
+      (e) => e.id === emoji!.id
+    );
+
+    expect(after!.name).toBe('same_name');
+  });
+
   test('should throw when updating emoji to existing name', async () => {
     const { caller, mockedToken } = await initTest();
 
@@ -295,5 +319,22 @@ describe('emojis router', () => {
     const updatedEmoji = updatedEmojis.find((e) => e.id === emoji!.id);
 
     expect(updatedEmoji!.fileId).toBe(originalFileId);
+  });
+
+  test('should reject an oversized batch of emojis', async () => {
+    const { caller } = await initTest();
+
+    const batch = Array.from({ length: 21 }, (_, index) => ({
+      fileId: `temp-${index}`,
+      name: `emoji_${index}`
+    }));
+
+    await expect(caller.emojis.add(batch)).rejects.toThrow();
+  });
+
+  test('should reject an empty batch of emojis', async () => {
+    const { caller } = await initTest();
+
+    await expect(caller.emojis.add([])).rejects.toThrow();
   });
 });

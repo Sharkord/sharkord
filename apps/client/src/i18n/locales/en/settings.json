@@ -26,7 +26,7 @@
   "usernamePlaceholder": "Username",
   "bioLabel": "Bio",
   "bioPlaceholder": "Tell us about yourself...",
-  "bannerColorLabel": "Banner color",
+  "profileColorLabel": "Profile color",
   "profileUpdated": "Profile updated",
   "passwordTitle": "Password",
   "passwordDesc": "In this section, you can update your password.",
@@ -303,7 +303,6 @@
   "categoryInfoDesc": "Manage your category's basic information",
   "categoryNameLabel": "Name",
   "categoryNamePlaceholder": "Enter category name",
-
   "emojiTitle": "Emojis",
   "searchEmojisPlaceholder": "Search emojis...",
   "noEmojisFound": "No emojis found",
@@ -324,30 +323,24 @@
   "uploadEmojiTitle": "Upload Custom Emojis",
   "uploadEmojiDesc": "Select an emoji to edit or upload new ones to customize your server",
   "uploadEmojiBtn": "Upload Emoji",
-
   "diskTotalSpace": "Total Disk Space",
   "diskAvailableSpace": "Available Space",
   "diskSystemUsed": "System Used",
   "diskSharkordUsed": "Sharkord Used",
   "diskUsage": "Disk Usage",
   "diskUsedPercent": "{{percent}}% used",
-
   "overflowDeleteOldFiles": "Delete old files",
   "overflowPreventUploads": "Prevent new file uploads",
-
   "imageOptimizationLabel": "Enable image optimization",
   "imageOptimizationDesc": "Converts supported image uploads to optimized WebP files.",
   "imageQualityLabel": "Image quality",
   "imageQualityDesc": "Controls the WebP quality used for optimized images. Higher values preserve detail but use more storage.",
-
   "signedUrlsLabel": "Signed URLs",
   "signedUrlsDesc": "When enabled, all file URLs require a signed token with an expiration time. This prevents unauthorized access to files by URL guessing. When disabled, files in public channels are accessible by anyone with the URL.",
   "signedUrlsTtlLabel": "Signed URL expiration",
   "signedUrlsTtlDesc": "How long a signed URL remains valid before it expires. Shorter durations enhance security but may cause inconvenience for users accessing files.",
   "signedUrlsTtlUnit": "minutes",
-
   "moderateUserAction": "Moderate User",
-
   "inviteCopied": "Invite code copied to clipboard",
   "inviteNever": "Never",
   "inviteExpired": "Expired",
@@ -359,7 +352,6 @@
   "inviteDeletedSuccess": "Invite deleted",
   "failedDeleteInvite": "Failed to delete invite",
   "inviteDefault": "Default",
-
   "modViewLoading": "Loading...",
   "modViewTitle": "User Moderation Panel",
   "goBack": "Go back",
@@ -389,18 +381,15 @@
   "failedUnban": "Failed to unban user",
   "deleteBtn": "Delete",
   "modViewAssignRoleBtn": "Assign Role",
-
   "serverActivityTitle": "Server Activity",
   "serverActivityMessages": "Messages",
   "serverActivityLinks": "Links",
   "serverActivityFiles": "Files",
-
   "modViewStorageTitle": "Storage",
   "modViewStorageUsed": "Used storage",
   "modViewStorageQuota": "Quota",
   "modViewStorageFiles": "Files",
   "modViewStorageUsage": "Usage",
-
   "detailsTitle": "Details",
   "userIdLabel": "User ID",
   "identityDetailLabel": "Identity",
@@ -415,7 +404,6 @@
   "unknownValue": "Unknown",
   "naValue": "N/A",
   "noReasonProvidedDetail": "No reason provided",
-
   "searchMessagesPlaceholder": "Search in messages...",
   "noMessagesFound": "No messages found.",
   "searchFilesPlaceholder": "Search files...",
@@ -426,7 +414,6 @@
   "deleteFileMsg": "Are you sure you want to delete this file?",
   "fileDeletedSuccess": "File deleted successfully",
   "failedDeleteFile": "Failed to delete file",
-
   "standard": "Standard",
   "experimental": "experimental"
 }

@@ -1,7 +1,7 @@
 name: Bug Report
 description: Report a bug in Sharkord. Please provide as much detail as possible to help us identify and fix the issue.
 title: "[Bug]: "
-labels: ["bug"]
+labels: ["bug", "needs-triage"]
 assignees: []
 
 body:
@@ -11,11 +11,34 @@ body:
         Please search existing issues before opening a new one.
         Issues that do not follow this template may be closed.
 
+  - type: checkboxes
+    id: search
+    attributes:
+      label: Before reporting
+      options:
+        - label: I searched the existing issues and this has not been reported yet
+          required: true
+        - label: I can reproduce this on the latest release
+          required: true
+
   - type: input
     id: version
     attributes:
       label: Sharkord Version
+      description: Shown at the bottom of the connect screen. `latest` is not a version.
       placeholder: e.g. v1.2.3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: How are you running Sharkord?
+      options:
+        - Standalone binary
+        - Docker
+        - Built from source
+        - Other (describe below)
     validations:
       required: true
 
@@ -23,11 +46,12 @@ body:
     id: environment
     attributes:
       label: Environment
-      value: |
-        - **OS:** <e.g. Windows 10, CachyOS>
-        - **Browser:** <e.g. Chrome 90, Firefox 88>
-        - **Using reverse proxy:** <e.g. Nginx, Caddy>
-        - **Additional details:** <e.g. running in Docker, using custom config>
+      description: Server OS, browser, and anything unusual about the setup.
+      placeholder: |
+        - OS: CachyOS
+        - Browser: Firefox 88
+        - Reverse proxy: Caddy
+        - Anything else: custom config.ini, behind NAT, ...
     validations:
       required: true
 
@@ -36,7 +60,7 @@ body:
     attributes:
       label: Steps to Reproduce
       description: Provide clear step-by-step instructions
-      value: |
+      placeholder: |
         1. Go to...
         2. Click...
         3. Observe...
@@ -60,5 +84,15 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Logs / Screenshots
-      description: Paste logs or attach screenshots
+      label: Logs
+      description: |
+        Server logs and browser console output.
+        **Redact your secret token before pasting**: the server prints it on first launch, and it grants
+        ownership of your server as well as the ability to impersonate any account.
+      render: shell
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Optional. Attach anything that shows the problem.

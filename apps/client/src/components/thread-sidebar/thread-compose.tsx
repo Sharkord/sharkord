@@ -2,20 +2,20 @@ import {
   MessageCompose,
   type TMessageComposeHandle
 } from '@/components/message-compose';
-import { playSound } from '@/features/server/sounds/actions';
 import { SoundType } from '@/features/server/types';
+import { playSound } from '@/helpers/sounds';
 import type { LocalStorageKey } from '@/helpers/storage';
+import { useTypingSignal } from '@/hooks/use-typing-signal';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TReplyTarget } from '@/types';
 import type { TJoinedPublicUser } from '@sharkord/shared';
 import {
-  TYPING_MS,
   getTrpcError,
   prepareMessageHtml,
   type TJoinedMessage
 } from '@sharkord/shared';
-import { throttle } from 'lodash-es';
 import { memo, useCallback, useMemo, useState, type Ref } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TThreadComposeProps = {
@@ -60,22 +60,9 @@ const ThreadCompose = memo(
       return { userId: replyingToMessage.userId, pluginId: null };
     }, [replyingToMessage]);
 
-    const sendTypingSignal = useMemo(
-      () =>
-        throttle(async () => {
-          const trpc = getTRPCClient();
+    const { t } = useTranslation();
 
-          try {
-            await trpc.messages.signalTyping.mutate({
-              channelId,
-              parentMessageId
-            });
-          } catch {
-            // ignore
-          }
-        }, TYPING_MS),
-      [channelId, parentMessageId]
-    );
+    const sendTypingSignal = useTypingSignal(channelId, parentMessageId);
 
     const onSend = useCallback(
       async (message: string, files: { id: string }[]) => {
@@ -94,7 +81,7 @@ const ThreadCompose = memo(
 
           playSound(SoundType.MESSAGE_SENT);
         } catch (error) {
-          toast.error(getTrpcError(error, 'Failed to send reply'));
+          toast.error(getTrpcError(error, t('failedSendReply')));
           return false;
         }
 
@@ -107,7 +94,8 @@ const ThreadCompose = memo(
         sendTypingSignal,
         parentMessageId,
         replyingToMessage?.id,
-        onCancelReply
+        onCancelReply,
+        t
       ]
     );
 

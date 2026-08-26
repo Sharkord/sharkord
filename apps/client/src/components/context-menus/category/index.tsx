@@ -4,7 +4,7 @@ import { openServerScreen } from '@/features/server-screens/actions';
 import { useCategoryById } from '@/features/server/categories/hooks';
 import { useCan } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
-import { Permission } from '@sharkord/shared';
+import { Permission, TestId } from '@sharkord/shared';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -65,7 +65,11 @@ const CategoryContextMenu = memo(
           <ContextMenuItem onClick={onEditClick}>
             {t('editLabel')}
           </ContextMenuItem>
-          <ContextMenuItem variant="destructive" onClick={onDeleteClick}>
+          <ContextMenuItem
+            data-testid={TestId.CATEGORY_MENU_DELETE}
+            variant="destructive"
+            onClick={onDeleteClick}
+          >
             {t('deleteLabel')}
           </ContextMenuItem>
         </ContextMenuContent>

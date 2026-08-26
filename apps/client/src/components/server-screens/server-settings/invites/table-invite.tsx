@@ -132,7 +132,7 @@ const TableInvite = memo(({ invite, refetch }: TTableInviteProps) => {
       </div>
 
       <div className="flex items-center gap-2 min-w-0">
-        <UserAvatar userId={1} showUserPopover />
+        <UserAvatar userId={invite.creator.id} showUserPopover />
       </div>
 
       <div className="flex items-center text-muted-foreground">

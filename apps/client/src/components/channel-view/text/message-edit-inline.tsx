@@ -48,13 +48,15 @@ const MessageEditInline = memo(
       [message.id, onBlur, t]
     );
 
+    const handleSubmit = useCallback(() => onSubmit(value), [onSubmit, value]);
+
     return (
       <div className="flex flex-col gap-2">
         <AutoFocus>
           <TiptapInput
             value={value}
             onChange={setValue}
-            onSubmit={() => onSubmit(value)}
+            onSubmit={handleSubmit}
             onCancel={onBlur}
           />
         </AutoFocus>

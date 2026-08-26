@@ -5,6 +5,7 @@ import { db } from '../../db';
 import { activityLog } from '../../db/schema';
 import { logger } from '../../logger';
 import { getUserIp } from '../../utils/wss';
+import { drainQueue } from '../drain';
 
 const activityLogQueue = new Queue({
   concurrency: 2,
@@ -17,14 +18,14 @@ activityLogQueue.autostart = true;
 type TEnqueueActivityLog<T extends ActivityLogType = ActivityLogType> = {
   type: T;
   details?: TActivityLogDetailsMap[T];
-  userId?: number;
+  userId?: number | null;
   ip?: string;
 };
 
 const enqueueActivityLog = <T extends ActivityLogType>({
   type,
   details = {} as TActivityLogDetailsMap[T],
-  userId = 1,
+  userId = null,
   ip
 }: TEnqueueActivityLog<T>) => {
   const date = Date.now();
@@ -36,7 +37,7 @@ const enqueueActivityLog = <T extends ActivityLogType>({
       userId,
       type: type,
       details,
-      ip: ip || getUserIp(userId) || null,
+      ip: ip || (userId ? getUserIp(userId) : undefined) || null,
       createdAt: date
     });
 
@@ -48,4 +49,6 @@ const enqueueActivityLog = <T extends ActivityLogType>({
   });
 };
 
-export { enqueueActivityLog };
+const drainActivityLogQueue = () => drainQueue(activityLogQueue);
+
+export { drainActivityLogQueue, enqueueActivityLog };

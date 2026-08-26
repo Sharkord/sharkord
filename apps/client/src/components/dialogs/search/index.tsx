@@ -1,8 +1,8 @@
 import type { TDialogBaseProps } from '@/components/dialogs/types';
-import { PaginatedList } from '@/components/paginated-list';
 import { jumpToMessage } from '@/features/server/actions';
 import { useOnEsc } from '@/hooks/use-on-esc';
 import type { TMessageJumpToTarget } from '@/types';
+import { TestId } from '@sharkord/shared';
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   Input,
+  PaginatedList,
   Spinner
 } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
@@ -27,7 +28,7 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
   const { t } = useTranslation('dialogs');
   useOnEsc(close);
 
-  const { query, setQuery, loading, canSearch, unifiedResults } =
+  const { query, setQuery, loading, canSearch, unifiedResults, truncated } =
     useSearch(isOpen);
 
   const onJump = useCallback(
@@ -54,6 +55,7 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={t('searchPlaceholder')}
+                data-testid={TestId.SEARCH_INPUT}
                 autoFocus
                 className="h-10"
               />
@@ -109,6 +111,15 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
                   alwaysShow
                   className="flex shrink-0 items-center justify-center gap-1 border-t border-border pt-3"
                 />
+
+                {truncated && (
+                  <div
+                    data-testid={TestId.SEARCH_TRUNCATED_NOTICE}
+                    className="shrink-0 pt-2 text-center text-xs text-muted-foreground"
+                  >
+                    {t('searchTruncated')}
+                  </div>
+                )}
               </PaginatedList>
             )}
           </div>

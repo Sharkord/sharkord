@@ -30,6 +30,12 @@ const removeEmojiElements = (html: string): string =>
     .replace(/<span[^>]*data-type="emoji"[^>]*>.*?<\/span>/gi, '')
     .replace(/<img[^>]*class="emoji-image"[^>]*\/?>/gi, '');
 
+const removeChannelReferenceElements = (html: string): string =>
+  html.replace(
+    /<span[^>]*data-type="channel-reference"[^>]*>.*?<\/span>/gi,
+    ''
+  );
+
 const hasMediaTag = (html: string): boolean =>
   /<(img|video|audio|iframe)\b/i.test(html);
 
@@ -37,20 +43,26 @@ const hasEmojiElement = (html: string): boolean =>
   /<span[^>]*data-type="emoji"[^>]*>/.test(html) ||
   /<img[^>]*class="emoji-image"[^>]*>/.test(html);
 
+const hasChannelReferenceElement = (html: string): boolean =>
+  /<span[^>]*data-type="channel-reference"[^>]*>/i.test(html);
+
 const isEmptyMessage = (content: string | undefined | null): boolean => {
   if (!content) return true;
 
   const cleaned = removeProseMirrorArtifacts(content);
   const hasMedia = hasMediaTag(cleaned);
   const hasText = stripToText(cleaned).length > 0;
+  const hasChannelReference = hasChannelReferenceElement(cleaned);
 
-  return !hasText && !hasMedia;
+  return !hasText && !hasMedia && !hasChannelReference;
 };
 
 const isEmojiOnlyMessage = (content: string | undefined | null): boolean => {
   if (!content) return false;
 
   if (!hasEmojiElement(content)) return false;
+
+  if (hasChannelReferenceElement(content)) return false;
 
   return stripToText(content, [removeEmojiElements]).length === 0;
 };
@@ -59,7 +71,8 @@ const getPlainTextFromHtml = (html: string): string => {
   return stripToText(html, [
     removeProseMirrorArtifacts,
     removeEmojiElements,
-    removeCommandElements
+    removeCommandElements,
+    removeChannelReferenceElements
   ]);
 };
 
@@ -67,6 +80,7 @@ export {
   getPlainTextFromHtml,
   isEmojiOnlyMessage,
   isEmptyMessage,
+  removeChannelReferenceElements,
   removeCommandElements,
   removeEmojiElements
 };

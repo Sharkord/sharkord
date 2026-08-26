@@ -8,7 +8,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please check the roadmap before requesting new features.
+        Please check the [Roadmap](https://github.com/Sharkord/sharkord/blob/development/ROADMAP.md)
+        and [what Sharkord is not](https://github.com/Sharkord/sharkord/blob/development/CONTRIBUTING.md#what-sharkord-is-not)
+        before requesting new features.
         Large features should be discussed before implementation.
         If your feature does not align with the project's goals, it may be closed.
 

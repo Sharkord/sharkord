@@ -5,21 +5,21 @@ let eventCounts = {
 };
 
 const onLoad = (ctx) => {
-  ctx.log('Plugin with events loaded');
+  ctx.logger.log('Plugin with events loaded');
 
   ctx.events.on('user:joined', ({ username }) => {
     eventCounts.userJoined++;
-    ctx.log(`User joined event: ${username}`);
+    ctx.logger.log(`User joined event: ${username}`);
   });
 
   ctx.events.on('user:left', ({ username }) => {
     eventCounts.userLeft++;
-    ctx.log(`User left event: ${username}`);
+    ctx.logger.log(`User left event: ${username}`);
   });
 
   ctx.events.on('message:created', ({ content }) => {
     eventCounts.messageCreated++;
-    ctx.log(`Message created event: ${content}`);
+    ctx.logger.log(`Message created event: ${content}`);
   });
 
   ctx.commands.register({
@@ -32,7 +32,7 @@ const onLoad = (ctx) => {
 };
 
 const onUnload = (ctx) => {
-  ctx.log('Plugin with events unloaded');
+  ctx.logger.log('Plugin with events unloaded');
   eventCounts = { userJoined: 0, userLeft: 0, messageCreated: 0 };
 };
 

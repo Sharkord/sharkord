@@ -10,6 +10,7 @@ import {
   useState,
   type RefObject
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type TDisplayItem = {
@@ -27,6 +28,8 @@ const useUploadFiles = (
   containerRef: RefObject<HTMLElement | null>,
   disabled: boolean = false
 ) => {
+  const { t } = useTranslation('common');
+
   const [files, setFiles] = useState<TTempFile[]>([]);
   const filesRef = useRef<TTempFile[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -124,7 +127,7 @@ const useUploadFiles = (
     if (disabled) return false;
 
     if (!settings?.storageUploadEnabled) {
-      toast.warning('File uploads are disabled on this server.');
+      toast.warning(t('common:uploadsDisabled'));
 
       return false;
     }
@@ -138,13 +141,14 @@ const useUploadFiles = (
     }
 
     if (!can(Permission.UPLOAD_FILES)) {
-      toast.error('You do not have permission to upload files.');
+      toast.error(t('common:noUploadPermission'));
 
       return false;
     }
 
     return true;
   }, [
+    t,
     disabled,
     settings?.storageUploadEnabled,
     canShareFilesInDirectMessages,

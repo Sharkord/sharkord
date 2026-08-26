@@ -7,12 +7,9 @@ import {
   channelByIdSelector,
   channelReadStateByIdSelector,
   isChannelTextVisibleByIdSelector,
+  isCurrentVoiceChannelSelectedSelector,
   selectedChannelIdSelector
 } from './selectors';
-
-export const setChannels = (channels: TChannel[]) => {
-  store.dispatch(serverSliceActions.setChannels(channels));
-};
 
 export const setSelectedChannelId = (channelId: number | undefined) => {
   store.dispatch(serverSliceActions.setSelectedChannelId(channelId));
@@ -67,6 +64,9 @@ export const setChannelPermissions = (
   const channel = channelByIdSelector(state, selectedChannel || -1);
 
   if (!channel?.private) return;
+
+  // the user is connected to it, so it stays visible until they disconnect
+  if (isCurrentVoiceChannelSelectedSelector(state)) return;
 
   // user is in a channel that is private, so we need to check if their permissions changed
   const canViewChannel =

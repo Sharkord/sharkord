@@ -1,7 +1,7 @@
-import { Permission, StreamKind } from '@sharkord/shared';
+import { StreamKind } from '@sharkord/shared';
 import { z } from 'zod';
 import { getSettings } from '../../db/queries/server';
-import { VoiceRuntime } from '../../runtimes/voice';
+import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -24,25 +24,13 @@ const setConsumerQualityRoute = protectedProcedure
     })
   )
   .mutation(async ({ input, ctx }) => {
-    await ctx.needsPermission(Permission.JOIN_VOICE_CHANNELS);
-
-    invariant(ctx.currentVoiceChannelId, {
-      code: 'BAD_REQUEST',
-      message: 'User is not in a voice channel'
-    });
+    const { runtime } = await getCurrentVoiceRuntime(ctx);
 
     const { webRtcSimulcastEnabled } = await getSettings();
 
     invariant(webRtcSimulcastEnabled, {
       code: 'BAD_REQUEST',
       message: 'Simulcast is not enabled on this server'
-    });
-
-    const runtime = VoiceRuntime.findById(ctx.currentVoiceChannelId);
-
-    invariant(runtime, {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'Voice runtime not found for this channel'
     });
 
     const consumer = runtime.getConsumer(

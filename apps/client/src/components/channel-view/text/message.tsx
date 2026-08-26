@@ -62,6 +62,20 @@ const Message = memo(
     const onThreadClick = useCallback(() => {
       openThreadSidebar(message.id, message.channelId);
     }, [message.id, message.channelId]);
+    const handleEdit = useCallback(() => setIsPencilEditing(true), []);
+
+    const handleReply = useCallback(
+      () => onReplyMessageSelect?.(message),
+      [onReplyMessageSelect, message]
+    );
+
+    const handleEditBlur = useCallback(() => {
+      setIsPencilEditing(false);
+
+      if (editingMessageId === message.id) {
+        onEditComplete?.();
+      }
+    }, [editingMessageId, message.id, onEditComplete]);
 
     return (
       <div
@@ -93,7 +107,7 @@ const Message = memo(
             )}
             {!disableActions && (
               <MessageActions
-                onEdit={() => setIsPencilEditing(true)}
+                onEdit={handleEdit}
                 canManage={canManage}
                 messageId={message.id}
                 channelId={message.channelId}
@@ -101,20 +115,12 @@ const Message = memo(
                 isPinned={message.pinned ?? false}
                 disablePin={!!message.parentMessageId}
                 isThreadReply={isThreadReply}
-                onReply={() => onReplyMessageSelect?.(message)}
+                onReply={handleReply}
               />
             )}
           </>
         ) : (
-          <MessageEditInline
-            message={message}
-            onBlur={() => {
-              setIsPencilEditing(false);
-              if (editingMessageId === message.id) {
-                onEditComplete?.();
-              }
-            }}
-          />
+          <MessageEditInline message={message} onBlur={handleEditBlur} />
         )}
       </div>
     );

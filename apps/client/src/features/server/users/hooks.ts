@@ -3,7 +3,6 @@ import { useSelector } from 'react-redux';
 import {
   filteredUsersSelector,
   isOwnUserSelector,
-  ownPublicUserSelector,
   ownUserIdSelector,
   ownUserSelector,
   userByIdSelector,
@@ -13,8 +12,6 @@ import {
 } from './selectors';
 
 export const useUsers = () => useSelector(usersSelector);
-
-export const useOwnUser = () => useSelector(ownUserSelector);
 
 export const useOwnUserId = () => useSelector(ownUserIdSelector);
 
@@ -29,7 +26,7 @@ export const useUserById = (userId: number | null) =>
   );
 
 export const useOwnPublicUser = () =>
-  useSelector((state: IRootState) => ownPublicUserSelector(state));
+  useSelector((state: IRootState) => ownUserSelector(state));
 
 export const useUserStatus = (userId: number) =>
   useSelector((state: IRootState) => userStatusSelector(state, userId));

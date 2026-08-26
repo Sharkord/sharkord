@@ -74,7 +74,10 @@ type Events = {
     userId: number;
     state: TVoiceUserState;
   };
-
+  [ServerEvents.USER_VOICE_MOVED]: {
+    channelId: number;
+    fromChannelId: number;
+  };
   [ServerEvents.VOICE_NEW_PRODUCER]: {
     channelId: number;
     remoteId: number;

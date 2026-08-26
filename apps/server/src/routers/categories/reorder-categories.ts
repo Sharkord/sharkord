@@ -1,18 +1,19 @@
 import { ActivityLogType, Permission } from '@sharkord/shared';
-import { asc, eq } from 'drizzle-orm';
+import { asc } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
+import { reorderPositions } from '../../db/mutations/positions';
 import { publishCategory } from '../../db/publishers';
 import { categories } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure } from '../../utils/trpc';
 
-// TODO: all the reordering logic from categories and channels is BAD and will need to be redone, but for now this will do the trick
+const MAX_REORDERED_CATEGORIES = 500;
 
 const reorderCategoriesRoute = protectedProcedure
   .input(
     z.object({
-      categoryIds: z.array(z.number())
+      categoryIds: z.array(z.number()).max(MAX_REORDERED_CATEGORIES)
     })
   )
   .mutation(async ({ input, ctx }) => {
@@ -23,39 +24,11 @@ const reorderCategoriesRoute = protectedProcedure
       .from(categories)
       .orderBy(asc(categories.position), asc(categories.id));
 
-    const existingCategoryIds = existingCategories.map(
-      (category) => category.id
+    const nextCategoryOrder = await reorderPositions(
+      categories,
+      existingCategories.map((category) => category.id),
+      input.categoryIds
     );
-
-    const validIds = new Set(existingCategoryIds);
-    const nextVisibleIds: number[] = [];
-
-    for (const categoryId of input.categoryIds) {
-      if (validIds.has(categoryId) && !nextVisibleIds.includes(categoryId)) {
-        nextVisibleIds.push(categoryId);
-      }
-    }
-
-    const missingCategoryIds = existingCategoryIds.filter(
-      (categoryId) => !nextVisibleIds.includes(categoryId)
-    );
-
-    const nextCategoryOrder = [...nextVisibleIds, ...missingCategoryIds];
-
-    await db.transaction(async (tx) => {
-      for (let i = 0; i < nextCategoryOrder.length; i++) {
-        const categoryId = nextCategoryOrder[i]!;
-        const newPosition = i + 1;
-
-        await tx
-          .update(categories)
-          .set({
-            position: newPosition,
-            updatedAt: Date.now()
-          })
-          .where(eq(categories.id, categoryId));
-      }
-    });
 
     nextCategoryOrder.forEach((categoryId) => {
       publishCategory(categoryId, 'update');
@@ -63,13 +36,10 @@ const reorderCategoriesRoute = protectedProcedure
 
     if (nextCategoryOrder.length > 0) {
       enqueueActivityLog({
-        type: ActivityLogType.UPDATED_CATEGORY,
+        type: ActivityLogType.REORDERED_CATEGORIES,
         userId: ctx.user.id,
         details: {
-          categoryId: nextCategoryOrder[0]!,
-          values: {
-            position: nextCategoryOrder.length
-          }
+          categoryIds: nextCategoryOrder
         }
       });
     }

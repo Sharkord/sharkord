@@ -15,6 +15,7 @@ import {
   useVoiceUsersByChannelId
 } from '@/features/server/hooks';
 import { useVoiceChannelExternalStreamsList } from '@/features/server/voice/hooks';
+import { useSelectChannel } from '@/hooks/use-select-channel';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
@@ -39,13 +40,13 @@ import {
   getTrpcError
 } from '@sharkord/shared';
 import { Hash, Volume2 } from 'lucide-react';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ChannelContextMenu } from '../context-menus/channel';
 import { UnreadCount } from '../unread-count';
 import { ExternalStream } from './external-stream';
-import { useSelectChannel } from './hooks';
+import { VOICE_USER_DND_MIME } from './helpers';
 import { VoiceUser } from './voice-user';
 import { Waveform } from './waveform';
 
@@ -59,6 +60,7 @@ const Voice = memo(
     isSelected,
     ...props
   }: TVoiceProps & { isSelected: boolean }) => {
+    const { t } = useTranslation('sidebar');
     const users = useVoiceUsersByChannelId(channel.id);
     const externalStreams = useVoiceChannelExternalStreamsList(channel.id);
     const unreadCount = useUnreadMessagesCount(channel.id);
@@ -66,14 +68,55 @@ const Voice = memo(
     const currentVoiceChannelId = useCurrentVoiceChannelId();
     const someoneIsSharingScreen = useHasSharingScreenUsers(channel.id);
 
+    const [isDragOver, setIsDragOver] = useState(false);
+
     const isVoiceActive = users.length > 0 || externalStreams.length > 0;
     const isOwnChannel = currentVoiceChannelId === channel.id;
+
+    const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+      if (!e.dataTransfer.types.includes(VOICE_USER_DND_MIME)) return;
+
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+
+      setIsDragOver(true);
+    }, []);
+
+    const handleDragLeave = useCallback(() => setIsDragOver(false), []);
+
+    const handleDrop = useCallback(
+      async (e: React.DragEvent<HTMLDivElement>) => {
+        setIsDragOver(false);
+
+        const raw = e.dataTransfer.getData(VOICE_USER_DND_MIME);
+
+        if (!raw) return;
+
+        e.preventDefault();
+
+        const userId = Number(raw);
+
+        if (!userId || users.some((user) => user.id === userId)) return;
+
+        try {
+          const trpc = getTRPCClient();
+
+          await trpc.voice.moveUser.mutate({ userId, channelId: channel.id });
+        } catch (error) {
+          toast.error(getTrpcError(error, t('failedMoveUser')));
+        }
+      },
+      [channel.id, users, t]
+    );
 
     return (
       <>
         <ItemWrapper
           {...props}
           isSelected={isSelected}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
           className={cn(props.className, {
             'text-blue-500':
               someoneIsSharingScreen && (isOwnChannel || isSelected),
@@ -82,7 +125,8 @@ const Voice = memo(
               (isSelected &&
                 !someoneIsSharingScreen &&
                 !isOwnChannel &&
-                isVoiceActive)
+                isVoiceActive),
+            'ring-1 ring-primary bg-accent/40': isDragOver
           })}
         >
           {isVoiceActive ? (
@@ -162,6 +206,9 @@ type TItemWrapperProps = {
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   style?: React.CSSProperties;
   disabled?: boolean;
+  onDragOver?: React.DragEventHandler<HTMLDivElement>;
+  onDragLeave?: React.DragEventHandler<HTMLDivElement>;
+  onDrop?: React.DragEventHandler<HTMLDivElement>;
 };
 
 const ItemWrapper = memo(
@@ -172,13 +219,19 @@ const ItemWrapper = memo(
     className,
     dragHandleProps,
     style,
-    disabled = false
+    disabled = false,
+    onDragOver,
+    onDragLeave,
+    onDrop
   }: TItemWrapperProps) => {
     return (
       <div
         {...dragHandleProps}
         data-testid={TestId.CHANNEL_ITEM}
         style={style}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
         className={cn(
           'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground select-none cursor-pointer',
           {
@@ -199,13 +252,18 @@ const ItemWrapper = memo(
 type TChannelProps = {
   channelId: number;
   isSelected: boolean;
-  onClick: () => void;
+  onSelect: (channelId: number) => void;
 };
 
-const Channel = memo(({ channelId, isSelected, onClick }: TChannelProps) => {
+const Channel = memo(({ channelId, isSelected, onSelect }: TChannelProps) => {
+  const onClick = useCallback(() => onSelect(channelId), [onSelect, channelId]);
+
   const channel = useChannelById(channelId);
   const channelCan = useChannelCan(channelId);
   const can = useCan();
+  const currentVoiceChannelId = useCurrentVoiceChannelId();
+
+  const isConnectedVoiceChannel = currentVoiceChannelId === channelId;
 
   const {
     attributes,
@@ -221,6 +279,7 @@ const Channel = memo(({ channelId, isSelected, onClick }: TChannelProps) => {
   }
 
   if (
+    !isConnectedVoiceChannel &&
     !channelCan(ChannelPermission.VIEW_CHANNEL) &&
     !can(Permission.MANAGE_CHANNELS)
   ) {
@@ -253,8 +312,9 @@ const Channel = memo(({ channelId, isSelected, onClick }: TChannelProps) => {
               onClick={onClick}
               dragHandleProps={{ ...attributes, ...listeners }}
               disabled={
-                !channelCan(ChannelPermission.JOIN) ||
-                !can(Permission.JOIN_VOICE_CHANNELS)
+                !isConnectedVoiceChannel &&
+                (!channelCan(ChannelPermission.JOIN) ||
+                  !can(Permission.JOIN_VOICE_CHANNELS))
               }
             />
           )}
@@ -339,7 +399,7 @@ const Channels = memo(({ categoryId }: TChannelsProps) => {
               key={channel.id}
               channelId={channel.id}
               isSelected={selectedChannelId === channel.id}
-              onClick={() => onChannelClick(channel.id)}
+              onSelect={onChannelClick}
             />
           ))}
         </SortableContext>

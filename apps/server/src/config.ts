@@ -3,22 +3,55 @@ import fs from 'fs/promises';
 import { parse, stringify } from 'ini';
 import z from 'zod';
 import { applyEnvOverrides } from './helpers/apply-env-overrides';
-import { deepMerge } from './helpers/deep-merge';
 import { ensureServerDirs } from './helpers/ensure-server-dirs';
 import { getPrivateIp, getPublicIp } from './helpers/network';
 import { CONFIG_INI_PATH } from './helpers/paths';
-import { IS_DEVELOPMENT } from './utils/env';
+import { deepMerge } from './utils/deep-merge';
+import { IS_DEVELOPMENT, IS_TEST } from './utils/env';
 
-const [SERVER_PUBLIC_IP, SERVER_PRIVATE_IP] = await Promise.all([
-  getPublicIp(),
-  getPrivateIp()
-]);
+const deepFreeze = <T>(value: T): T => {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    Object.values(value).forEach(deepFreeze);
+  }
+
+  return value;
+};
+
+const zRateLimiter = z.object({
+  maxRequests: z.coerce.number().int().positive(),
+  windowMs: z.coerce.number().int().positive()
+});
 
 const zConfig = z.object({
   server: z.object({
     port: z.coerce.number().int().positive(),
     debug: z.coerce.boolean(),
-    autoupdate: z.coerce.boolean()
+    autoupdate: z.coerce.boolean(),
+    backupDatabase: z.coerce.boolean(),
+    maxRequestBodyBytes: z.coerce.number().int().positive(),
+    allowedOrigins: z
+      .preprocess(
+        (value) => {
+          if (Array.isArray(value)) return value;
+          if (typeof value === 'string') return value.split(',');
+
+          return [value];
+        },
+        z.array(z.string().trim().min(1))
+      )
+      .default(['*']),
+    trustedProxies: z
+      .preprocess(
+        (value) => {
+          if (Array.isArray(value)) return value;
+          if (typeof value === 'string') return value.split(',');
+
+          return [value];
+        },
+        z.array(z.string().trim().min(1))
+      )
+      .default([])
   }),
   webRtc: z.object({
     port: z.coerce.number().int().positive(),
@@ -26,50 +59,26 @@ const zConfig = z.object({
     maxBitrate: z.coerce.number().int().positive()
   }),
   rateLimiters: z.object({
-    sendAndEditMessage: z.object({
-      maxRequests: z.coerce.number().int().positive(),
-      windowMs: z.coerce.number().int().positive()
-    }),
-    joinVoiceChannel: z.object({
-      maxRequests: z.coerce.number().int().positive(),
-      windowMs: z.coerce.number().int().positive()
-    }),
-    joinServer: z.object({
-      maxRequests: z.coerce.number().int().positive(),
-      windowMs: z.coerce.number().int().positive()
-    }),
-    search: z.object({
-      maxRequests: z.coerce.number().int().positive(),
-      windowMs: z.coerce.number().int().positive()
-    }),
-    signalTyping: z.object({
-      maxRequests: z.coerce.number().int().positive(),
-      windowMs: z.coerce.number().int().positive()
-    }),
-    getMessages: z.object({
-      maxRequests: z.coerce.number().int().positive(),
-      windowMs: z.coerce.number().int().positive()
-    }),
-    markAsRead: z.object({
-      maxRequests: z.coerce.number().int().positive(),
-      windowMs: z.coerce.number().int().positive()
-    }),
-    toggleMessageReaction: z.object({
-      maxRequests: z.coerce.number().int().positive(),
-      windowMs: z.coerce.number().int().positive()
-    }),
-    addEmoji: z.object({
-      maxRequests: z.coerce.number().int().positive(),
-      windowMs: z.coerce.number().int().positive()
-    }),
-    openDirectMessage: z.object({
-      maxRequests: z.coerce.number().int().positive(),
-      windowMs: z.coerce.number().int().positive()
-    }),
-    handshake: z.object({
-      maxRequests: z.coerce.number().int().positive(),
-      windowMs: z.coerce.number().int().positive()
-    })
+    sendAndEditMessage: zRateLimiter,
+    joinVoiceChannel: zRateLimiter,
+    moveMembers: zRateLimiter,
+    login: zRateLimiter,
+    joinServer: zRateLimiter,
+    upload: zRateLimiter,
+    search: zRateLimiter,
+    signalTyping: zRateLimiter,
+    getMessages: zRateLimiter,
+    markAsRead: zRateLimiter,
+    toggleMessageReaction: zRateLimiter,
+    addEmoji: zRateLimiter,
+    openDirectMessage: zRateLimiter,
+    handshake: zRateLimiter,
+    updatePassword: zRateLimiter,
+    adminCreate: zRateLimiter,
+    voiceTransport: zRateLimiter,
+    voiceStream: zRateLimiter,
+    useSecretToken: zRateLimiter,
+    pluginExecute: zRateLimiter
   })
 });
 
@@ -79,7 +88,18 @@ const defaultConfig: TConfig = {
   server: {
     port: 4991,
     debug: IS_DEVELOPMENT,
-    autoupdate: false
+    autoupdate: false,
+    backupDatabase: true,
+    maxRequestBodyBytes: 256 * 1024,
+    allowedOrigins: ['*'],
+    trustedProxies: [
+      '127.0.0.1',
+      '::1',
+      '10.0.0.0/8',
+      '172.16.0.0/12',
+      '192.168.0.0/16',
+      'fc00::/7'
+    ]
   },
   webRtc: {
     port: 40000,
@@ -95,8 +115,20 @@ const defaultConfig: TConfig = {
       maxRequests: 20,
       windowMs: 60_000
     },
+    moveMembers: {
+      maxRequests: 20,
+      windowMs: 60_000
+    },
+    login: {
+      maxRequests: 5,
+      windowMs: 60_000
+    },
     joinServer: {
       maxRequests: 5,
+      windowMs: 60_000
+    },
+    upload: {
+      maxRequests: 30,
       windowMs: 60_000
     },
     search: {
@@ -129,6 +161,31 @@ const defaultConfig: TConfig = {
     },
     handshake: {
       maxRequests: 10,
+      windowMs: 60_000
+    },
+    updatePassword: {
+      maxRequests: 5,
+      windowMs: 60_000
+    },
+    adminCreate: {
+      maxRequests: 60,
+      windowMs: 60_000
+    },
+    voiceTransport: {
+      maxRequests: 30,
+      windowMs: 60_000
+    },
+    voiceStream: {
+      maxRequests: 200,
+      windowMs: 60_000
+    },
+    useSecretToken: {
+      maxRequests: 5,
+      windowMs: 60_000
+    },
+    // arbitrary plugin code, driven by whoever holds USE_PLUGINS
+    pluginExecute: {
+      maxRequests: 60,
       windowMs: 60_000
     }
   }
@@ -168,15 +225,38 @@ if (!configExists) {
   }
 }
 
-config = applyEnvOverrides(config, {
+const envOverridesMap: Record<string, string> = {
   'server.port': 'SHARKORD_PORT',
   'server.debug': 'SHARKORD_DEBUG',
   'server.autoupdate': 'SHARKORD_AUTOUPDATE',
+  'server.backupDatabase': 'SHARKORD_BACKUP_DATABASE',
+  'server.maxRequestBodyBytes': 'SHARKORD_MAX_REQUEST_BODY_BYTES',
+  'server.allowedOrigins': 'SHARKORD_ALLOWED_ORIGINS',
+  'server.trustedProxies': 'SHARKORD_TRUSTED_PROXIES',
   'webRtc.port': 'SHARKORD_WEBRTC_PORT',
   'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS',
   'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE'
-});
+};
 
-config = Object.freeze(config);
+// validated again after the overrides, otherwise an env var could put a value
+// in the config that does not match its type at all
+config = zConfig.parse(applyEnvOverrides(config, envOverridesMap));
+config = IS_TEST ? config : deepFreeze(config);
 
-export { config, SERVER_PRIVATE_IP, SERVER_PUBLIC_IP };
+const SERVER_PRIVATE_IP = await getPrivateIp();
+
+// only used as the mediasoup announced address when the operator has not set
+// one, so an explicit announcedAddress makes the third party lookup pointless
+const SERVER_PUBLIC_IP = config.webRtc.announcedAddress
+  ? undefined
+  : await getPublicIp();
+
+export {
+  config,
+  deepFreeze,
+  defaultConfig,
+  envOverridesMap,
+  SERVER_PRIVATE_IP,
+  SERVER_PUBLIC_IP,
+  zConfig
+};

@@ -1,7 +1,9 @@
+import { Dialog } from '@/components/dialogs/dialogs';
 import {
   setModifierKeysHeldMap,
   togglePluginSlotDebug
 } from '@/features/app/actions';
+import { toggleDialog } from '@/features/dialogs/actions';
 import { memo, useCallback, useEffect } from 'react';
 
 const HotkeysController = memo(() => {
@@ -10,9 +12,15 @@ const HotkeysController = memo(() => {
       togglePluginSlotDebug();
     }
 
+    if (e.key === 'F9') {
+      e.preventDefault();
+      toggleDialog(Dialog.VOICE_DEBUG);
+    }
+
     if (e.key === 'Alt') {
       e.preventDefault();
     }
+
     setModifierKeysHeldMap({
       Shift: e.shiftKey,
       Control: e.ctrlKey,

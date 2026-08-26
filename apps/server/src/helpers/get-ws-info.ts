@@ -1,23 +1,13 @@
 import type http from 'http';
 import ipaddr from 'ipaddr.js';
 import { UAParser } from 'ua-parser-js';
+import { config } from '../config';
+import { logger } from '../logger';
 import type { TConnectionInfo } from '../types';
-
-// have no fucking idea what's going on in this file
-// 100% trusting AI on this one
+import { isPublicIp } from './network';
 
 const MAX_IP_CANDIDATES = 20;
 const MAX_HEADER_LENGTH = 2048;
-const DIRECT_HEADERS = [
-  'cf-connecting-ip',
-  'true-client-ip',
-  'cf-real-ip',
-  'x-real-ip',
-  'x-client-ip',
-  'x-cluster-client-ip',
-  'fly-client-ip',
-  'fastly-client-ip'
-];
 
 const getHeaderValue = (
   headers: http.IncomingHttpHeaders,
@@ -93,14 +83,6 @@ const normalizeIp = (value: string): string | undefined => {
   }
 };
 
-const isPublicIp = (ip: string): boolean => {
-  try {
-    return toCanonical(ipaddr.parse(ip)).range() === 'unicast';
-  } catch {
-    return false;
-  }
-};
-
 const pickBestIp = (candidates: string[]): string | undefined => {
   const normalized = candidates
     .slice(0, MAX_IP_CANDIDATES)
@@ -124,36 +106,104 @@ const extractForwardedCandidates = (value: string): string[] =>
     )
     .slice(0, MAX_IP_CANDIDATES);
 
-const getWsIp = (
+// the client is the right-most entry that is not one of our own proxies. everything to its
+// left was written by whoever connected to that proxy and can say anything: nginx's standard
+// `$proxy_add_x_forwarded_for` keeps the client's header and appends the peer, so a client
+// sending `X-Forwarded-For: 1.2.3.4` arrives as `1.2.3.4, <real client>`. picking the
+// left-most public looking entry there hands every rate limit bucket to the caller
+const pickClientIpFromChain = (
+  candidates: string[],
+  trustedProxies: string[]
+): string | undefined => {
+  const normalized = candidates
+    .slice(0, MAX_IP_CANDIDATES)
+    .map(normalizeIp)
+    .filter((ip): ip is string => Boolean(ip));
+
+  if (!normalized.length) return undefined;
+
+  for (let index = normalized.length - 1; index >= 0; index--) {
+    const candidate = normalized[index]!;
+
+    if (!isTrustedProxyAddress(candidate, trustedProxies)) return candidate;
+  }
+
+  // the whole chain is our own infrastructure, so the left-most is as far back as it goes
+  return normalized[0];
+};
+
+// resolves the client ip a proxy claims to be forwarding. never call this without first
+// proving the connection came from a trusted proxy: every header read here is attacker
+// controlled on a direct connection.
+//
+// only the two chain headers are read. single-value vendor headers (`cf-connecting-ip`,
+// `x-real-ip` and friends) carry no hop information, so a value the proxy set and one the
+// client sent are indistinguishable, and any proxy that does not overwrite them is a
+// spoofing hole. a deployment that sets none of these falls back to the socket address,
+// which over-limits rather than under-limits
+const getForwardedIp = (
+  headers: http.IncomingHttpHeaders,
+  trustedProxies: string[]
+): string | undefined => {
+  const xForwardedFor = getHeaderValue(headers, 'x-forwarded-for');
+
+  if (xForwardedFor) {
+    const ip = pickClientIpFromChain(
+      splitCommaSeparated(xForwardedFor),
+      trustedProxies
+    );
+
+    if (ip) return ip;
+  }
+
+  const forwarded = getHeaderValue(headers, 'forwarded');
+
+  if (forwarded) {
+    const ip = pickClientIpFromChain(
+      extractForwardedCandidates(forwarded),
+      trustedProxies
+    );
+
+    if (ip) return ip;
+  }
+
+  return undefined;
+};
+
+const matchesProxyEntry = (address: string, entry: string): boolean => {
+  try {
+    const parsed = ipaddr.parse(address);
+
+    if (entry.includes('/')) {
+      const cidr = ipaddr.parseCIDR(entry);
+
+      // ipaddr throws when the kinds differ, so check before matching
+      if (parsed.kind() !== cidr[0].kind()) return false;
+
+      return parsed.match(cidr);
+    }
+
+    const normalizedEntry = normalizeIp(entry);
+
+    return !!normalizedEntry && normalizedEntry === address;
+  } catch {
+    return false;
+  }
+};
+
+const isTrustedProxyAddress = (
+  address: string | undefined,
+  trustedProxies: string[]
+): boolean => {
+  if (!address) return false;
+
+  return trustedProxies.some((entry) => matchesProxyEntry(address, entry));
+};
+
+const getSocketIp = (
   ws: any | undefined,
   req: http.IncomingMessage | undefined
 ): string | undefined => {
-  const headers = req?.headers ?? {};
-
-  // 1. high-trust CDN / proxy headers (single-value, most trustworthy)
-  for (const header of DIRECT_HEADERS) {
-    const value = getHeaderValue(headers, header);
-    if (!value) continue;
-
-    const ip = pickBestIp(splitCommaSeparated(value));
-    if (ip) return ip;
-  }
-
-  // 2. standard multi-hop proxy header
-  const xForwardedFor = getHeaderValue(headers, 'x-forwarded-for');
-  if (xForwardedFor) {
-    const ip = pickBestIp(splitCommaSeparated(xForwardedFor));
-    if (ip) return ip;
-  }
-
-  // 3. RFC 7239 Forwarded header
-  const forwarded = getHeaderValue(headers, 'forwarded');
-  if (forwarded) {
-    const ip = pickBestIp(extractForwardedCandidates(forwarded));
-    if (ip) return ip;
-  }
-
-  // 4. fallback to raw socket remote address
   const socketCandidates = [
     ws?._socket?.remoteAddress,
     ws?.socket?.remoteAddress,
@@ -161,6 +211,39 @@ const getWsIp = (
   ].filter((v): v is string => typeof v === 'string' && v.length > 0);
 
   return pickBestIp(socketCandidates);
+};
+
+let hasWarnedAboutUntrustedProxy = false;
+
+const warnAboutUntrustedProxy = (
+  socketIp: string | undefined,
+  headers: http.IncomingHttpHeaders
+) => {
+  if (hasWarnedAboutUntrustedProxy) return;
+  if (!headers['x-forwarded-for'] && !headers['forwarded']) return;
+
+  hasWarnedAboutUntrustedProxy = true;
+
+  logger.warn(
+    'Requests are arriving from %s with forwarded headers, but that address is not in server.trustedProxies, so the headers are ignored and every client is rate limited as one. Add it to server.trustedProxies (or SHARKORD_TRUSTED_PROXIES) if it is your proxy.',
+    socketIp ?? 'an unknown address'
+  );
+};
+
+const getWsIp = (
+  ws: any | undefined,
+  req: http.IncomingMessage | undefined
+): string | undefined => {
+  const socketIp = getSocketIp(ws, req);
+  const { trustedProxies } = config.server;
+
+  if (!isTrustedProxyAddress(socketIp, trustedProxies)) {
+    warnAboutUntrustedProxy(socketIp, req?.headers ?? {});
+
+    return socketIp;
+  }
+
+  return getForwardedIp(req?.headers ?? {}, trustedProxies) ?? socketIp;
 };
 
 const getWsInfo = (
@@ -199,4 +282,4 @@ const getWsInfo = (
   return { ip, os, device, userAgent };
 };
 
-export { getWsInfo };
+export { getForwardedIp, getWsInfo, isTrustedProxyAddress };

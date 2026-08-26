@@ -1,5 +1,5 @@
 const onLoad = (ctx) => {
-  ctx.log('Plugin message actions loaded');
+  ctx.logger.log('Plugin message actions loaded');
 
   ctx.commands.register({
     name: 'send-message',
@@ -73,7 +73,7 @@ const onLoad = (ctx) => {
 };
 
 const onUnload = (ctx) => {
-  ctx.log('Plugin message actions unloaded');
+  ctx.logger.log('Plugin message actions unloaded');
 };
 
 export { onLoad, onUnload };

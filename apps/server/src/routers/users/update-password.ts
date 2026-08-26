@@ -1,13 +1,18 @@
-import { ActivityLogType } from '@sharkord/shared';
-import { eq } from 'drizzle-orm';
+import { ActivityLogType, DisconnectCode } from '@sharkord/shared';
+import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { config } from '../../config';
 import { db } from '../../db';
 import { users } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const updatePasswordRoute = protectedProcedure
+const updatePasswordRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.updatePassword.maxRequests,
+  windowMs: config.rateLimiters.updatePassword.windowMs,
+  logLabel: 'updatePassword'
+})
   .input(
     z.object({
       currentPassword: z.string().min(4).max(128),
@@ -48,15 +53,31 @@ const updatePasswordRoute = protectedProcedure
       );
     }
 
-    const hashedNewPassword = await Bun.password.hash(input.confirmNewPassword);
+    if (input.newPassword === input.currentPassword) {
+      ctx.throwValidationError(
+        'newPassword',
+        'New password must be different from the current one'
+      );
+    }
+
+    const hashedNewPassword = await Bun.password.hash(input.newPassword);
 
     await db
       .update(users)
       .set({
-        password: hashedNewPassword
+        password: hashedNewPassword,
+        tokenVersion: sql`${users.tokenVersion} + 1`
       })
       .where(eq(users.id, ctx.userId))
       .run();
+
+    const sockets = ctx.getUserWs(ctx.userId);
+
+    setTimeout(() => {
+      sockets.forEach((socket) =>
+        socket.close(DisconnectCode.KICKED, 'Your password was changed')
+      );
+    }, 0);
 
     enqueueActivityLog({
       type: ActivityLogType.USER_UPDATED_PASSWORD,

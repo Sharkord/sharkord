@@ -1,5 +1,5 @@
 import path from 'path';
-import { ensureDir } from './fs';
+import { ensureDir } from '../utils/fs';
 import * as serverPaths from './paths';
 
 const ensureServerDirs = async () => {
