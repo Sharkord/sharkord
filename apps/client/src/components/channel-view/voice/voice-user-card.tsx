@@ -15,7 +15,12 @@ import { StreamKind } from '@sharkord/shared';
 import { HeadphoneOff, MicOff, Monitor, Video } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { CardTheme } from './card-theme';
-import { cardControlClass, cardDensity } from './helpers';
+import {
+  cardBadgeClass,
+  cardControlClass,
+  cardControlsClass,
+  cardDensity
+} from './helpers';
 import {
   PinnedCardType,
   type TPinnedCard
@@ -133,44 +138,45 @@ const VoiceUserCard = memo(
 
         <div
           className={cn(
-            'absolute top-0 right-0 z-10 min-h-4 items-center',
+            'absolute top-0 right-0 z-10 justify-end',
             density.inset,
-            density.controls,
-            'hidden group-hover/voice-user-card:inline-flex',
-            'has-[[data-state=open]]:inline-flex'
+            'hidden group-hover/voice-user-card:flex',
+            'has-[[data-state=open]]:flex'
           )}
         >
-          {!isOwnUser && (
-            <VolumeButton
-              volumeKey={volumeKey}
-              size={density.icon}
-              className={cardControlClass(isCompact)}
-            />
-          )}
-          {showQualityControl && (
-            <QualityButton
-              streamId={userId}
-              kind={StreamKind.VIDEO}
-              disabled={!isSimulcastConsumer(userId, StreamKind.VIDEO)}
-              size={density.icon}
-              className={cardControlClass(isCompact)}
-            />
-          )}
-          {hasVideoStream && (
-            <PictureInPictureButton
-              videoRef={videoRef}
-              size={density.icon}
-              className={cardControlClass(isCompact)}
-            />
-          )}
-          {showPinControls && (
-            <PinButton
-              isPinned={isPinned}
-              handlePinToggle={handlePinToggle}
-              size={density.icon}
-              className={cardControlClass(isCompact, isPinned)}
-            />
-          )}
+          <div className={cardControlsClass(isCompact)}>
+            {!isOwnUser && (
+              <VolumeButton
+                volumeKey={volumeKey}
+                size={density.icon}
+                className={cardControlClass()}
+              />
+            )}
+            {showQualityControl && (
+              <QualityButton
+                streamId={userId}
+                kind={StreamKind.VIDEO}
+                disabled={!isSimulcastConsumer(userId, StreamKind.VIDEO)}
+                size={density.icon}
+                className={cardControlClass()}
+              />
+            )}
+            {hasVideoStream && (
+              <PictureInPictureButton
+                videoRef={videoRef}
+                size={density.icon}
+                className={cardControlClass()}
+              />
+            )}
+            {showPinControls && (
+              <PinButton
+                isPinned={isPinned}
+                handlePinToggle={handlePinToggle}
+                size={density.icon}
+                className={cardControlClass(isPinned)}
+              />
+            )}
+          </div>
         </div>
 
         <div
@@ -178,8 +184,7 @@ const VoiceUserCard = memo(
         >
           <div
             className={cn(
-              'inline-flex min-w-0 min-h-4 py-2 items-center bg-black/70 rounded overflow-hidden truncate',
-              density.badge,
+              cardBadgeClass(isCompact),
               !voiceUser.state.micMuted &&
                 !voiceUser.state.soundMuted &&
                 !voiceUser.state.webcamEnabled &&

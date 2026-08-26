@@ -1,4 +1,7 @@
-import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
+import {
+  useVolumeControl,
+  type TVolumeKey
+} from '@/components/voice-provider/volume-control-context';
 import {
   useShowUserBannersInVoice,
   useVoice
@@ -8,9 +11,14 @@ import { StreamKind, type TExternalStream } from '@sharkord/shared';
 import { Avatar, AvatarFallback, AvatarImage, IconButton } from '@sharkord/ui';
 import { Headphones, Router, Video, ZoomIn, ZoomOut } from 'lucide-react';
 import { memo, useCallback, type RefObject } from 'react';
-import { CardControls } from './card-controls';
 import { CardTheme } from './card-theme';
 import { FullscreenButton } from './fullscreen-button';
+import {
+  cardBadgeClass,
+  cardControlClass,
+  cardControlsClass,
+  cardDensity
+} from './helpers';
 import { useFullscreen } from './hooks/use-fullscreen';
 import {
   PinnedCardType,
@@ -22,7 +30,7 @@ import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { QualityButton } from './quality-button';
 import { getStreamQualityMetadataLabel } from './quality-options';
-import { StreamSettingsPopover } from './stream-settings-popover';
+import { VolumeButton } from './volume-button';
 
 type TExternalStreamControlsProps = {
   isPinned: boolean;
@@ -35,12 +43,10 @@ type TExternalStreamControlsProps = {
   hasVideo: boolean;
   hasAudio: boolean;
   showQualityControl: boolean;
-  volume: number;
-  isMuted: boolean;
-  onVolumeChange: (volume: number) => void;
-  onMuteToggle: () => void;
+  volumeKey: TVolumeKey;
   videoRef: RefObject<HTMLVideoElement | null>;
   streamId: number;
+  isCompact: boolean;
 };
 
 const ExternalStreamControls = memo(
@@ -55,46 +61,73 @@ const ExternalStreamControls = memo(
     hasVideo,
     hasAudio,
     showQualityControl,
-    volume,
-    isMuted,
-    onVolumeChange,
-    onMuteToggle,
+    volumeKey,
     videoRef,
-    streamId
+    streamId,
+    isCompact
   }: TExternalStreamControlsProps) => {
+    const density = cardDensity(isCompact);
+
     return (
-      <CardControls>
-        {hasAudio && (
-          <StreamSettingsPopover
-            volume={volume}
-            isMuted={isMuted}
-            onVolumeChange={onVolumeChange}
-            onMuteToggle={onMuteToggle}
-          />
+      <div
+        className={cn(
+          'absolute top-0 right-0 z-10 justify-end',
+          density.inset,
+          'hidden group-hover/external-stream-card:flex',
+          'has-[[data-state=open]]:flex'
         )}
-        {showQualityControl && (
-          <QualityButton streamId={streamId} kind={StreamKind.EXTERNAL_VIDEO} />
-        )}
-        {hasVideo && <PictureInPictureButton videoRef={videoRef} />}
-        {hasVideo && (
-          <FullscreenButton
-            isFullscreen={isFullscreen}
-            handleToggleFullscreen={handleToggleFullscreen}
-          />
-        )}
-        {showPinControls && hasVideo && isPinned && (
-          <IconButton
-            variant={isZoomEnabled ? 'default' : 'ghost'}
-            icon={isZoomEnabled ? ZoomOut : ZoomIn}
-            onClick={handleToggleZoom}
-            title={isZoomEnabled ? 'Disable Zoom' : 'Enable Zoom'}
-            size="sm"
-          />
-        )}
-        {showPinControls && (
-          <PinButton isPinned={isPinned} handlePinToggle={handlePinToggle} />
-        )}
-      </CardControls>
+      >
+        <div className={cardControlsClass(isCompact)}>
+          {hasAudio && (
+            <VolumeButton
+              volumeKey={volumeKey}
+              size={density.icon}
+              className={cardControlClass()}
+            />
+          )}
+          {showQualityControl && (
+            <QualityButton
+              streamId={streamId}
+              kind={StreamKind.EXTERNAL_VIDEO}
+              size={density.icon}
+              className={cardControlClass()}
+            />
+          )}
+          {hasVideo && (
+            <PictureInPictureButton
+              videoRef={videoRef}
+              size={density.icon}
+              className={cardControlClass()}
+            />
+          )}
+          {hasVideo && (
+            <FullscreenButton
+              isFullscreen={isFullscreen}
+              handleToggleFullscreen={handleToggleFullscreen}
+              size={density.icon}
+              className={cardControlClass(isFullscreen)}
+            />
+          )}
+          {showPinControls && hasVideo && isPinned && (
+            <IconButton
+              variant={isZoomEnabled ? 'default' : 'ghost'}
+              icon={isZoomEnabled ? ZoomOut : ZoomIn}
+              onClick={handleToggleZoom}
+              title={isZoomEnabled ? 'Disable Zoom' : 'Enable Zoom'}
+              size={density.icon}
+              className={cardControlClass(isZoomEnabled)}
+            />
+          )}
+          {showPinControls && (
+            <PinButton
+              isPinned={isPinned}
+              handlePinToggle={handlePinToggle}
+              size={density.icon}
+              className={cardControlClass(isPinned)}
+            />
+          )}
+        </div>
+      </div>
     );
   }
 );
@@ -108,6 +141,7 @@ type TExternalStreamCardProps = {
   onUnpin: () => void;
   className?: string;
   showPinControls: boolean;
+  isAnyCardPinned?: boolean;
 };
 
 const ExternalStreamCard = memo(
@@ -119,13 +153,13 @@ const ExternalStreamCard = memo(
     onPin,
     onUnpin,
     className,
-    showPinControls = true
+    showPinControls = true,
+    isAnyCardPinned = false
   }: TExternalStreamCardProps) => {
     const { externalVideoRef, hasExternalVideoStream, hasExternalAudioStream } =
       useVoiceRefs(streamId, stream.pluginId, stream.key);
 
-    const { getVolume, setVolume, toggleMute, getExternalVolumeKey } =
-      useVolumeControl();
+    const { getVolume, getExternalVolumeKey } = useVolumeControl();
 
     const showUserBanners = useShowUserBannersInVoice();
     const { getStreamQuality, getStreamQualityLayers, isSimulcastConsumer } =
@@ -133,6 +167,9 @@ const ExternalStreamCard = memo(
     const volumeKey = getExternalVolumeKey(stream.pluginId, stream.key);
     const volume = getVolume(volumeKey);
     const isMuted = volume === 0;
+
+    const isCompact = isAnyCardPinned && !isPinned;
+    const density = cardDensity(isCompact);
 
     const {
       containerRef,
@@ -174,17 +211,6 @@ const ExternalStreamCard = memo(
       }
     }, [isPinned, onPin, onUnpin, cardId, streamId, resetZoom]);
 
-    const handleVolumeChange = useCallback(
-      (newVolume: number) => {
-        setVolume(volumeKey, newVolume);
-      },
-      [volumeKey, setVolume]
-    );
-
-    const handleMuteToggle = useCallback(() => {
-      toggleMute(volumeKey);
-    }, [volumeKey, toggleMute]);
-
     const hasVideo = stream.tracks?.video && hasExternalVideoStream;
     const hasAudio = stream.tracks?.audio && hasExternalAudioStream;
 
@@ -210,11 +236,11 @@ const ExternalStreamCard = memo(
         className={cn(
           'relative bg-card',
           'flex items-center justify-center',
-          'w-full h-full',
+          'size-full',
           isFullscreen
             ? 'rounded-none border-none'
-            : 'rounded-lg overflow-hidden border border-border',
-          (!isFullscreen || isOverlayVisible) && 'group',
+            : 'rounded overflow-hidden border border-border',
+          (!isFullscreen || isOverlayVisible) && 'group/external-stream-card',
           className
         )}
         onWheel={hasVideo ? handleWheel : undefined}
@@ -234,7 +260,7 @@ const ExternalStreamCard = memo(
       >
         {stream.bannerUrl && showUserBanners ? (
           <div
-            className="h-full w-full rounded-t-md bg-cover bg-center blur-sm brightness-50 bg-no-repeat absolute inset-0"
+            className="h-full w-full rounded bg-cover bg-center blur-sm brightness-50 bg-no-repeat absolute inset-0"
             style={{
               backgroundImage: `url("${stream.bannerUrl}")`
             }}
@@ -254,12 +280,10 @@ const ExternalStreamCard = memo(
           hasVideo={!!hasVideo}
           hasAudio={!!hasAudio}
           showQualityControl={!!hasVideo && isSimulcastExternalVideoConsumer}
-          volume={volume}
-          isMuted={isMuted}
-          onVolumeChange={handleVolumeChange}
-          onMuteToggle={handleMuteToggle}
+          volumeKey={volumeKey}
           videoRef={externalVideoRef}
           streamId={streamId}
+          isCompact={isCompact}
         />
 
         {hasVideo ? (
@@ -299,49 +323,47 @@ const ExternalStreamCard = memo(
           </div>
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 p-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="flex items-center gap-2 min-w-0">
+        <div
+          className={cn(
+            'absolute bottom-0 left-0 right-0 z-10',
+            density.inset,
+            'hidden group-hover/external-stream-card:flex'
+          )}
+        >
+          <div className={cardBadgeClass(isCompact)}>
             {stream.avatarUrl ? (
               <img
                 src={stream.avatarUrl}
                 alt={stream.title || 'External Stream'}
-                className="h-5 shrink-0 rounded-full"
+                className="size-4 shrink-0 rounded-full"
               />
             ) : (
-              <Router className="size-3.5 text-purple-400 shrink-0" />
+              <Router className="size-3 text-purple-400 shrink-0" />
             )}
-            <span className="text-white font-medium text-xs truncate">
+            {hasVideo && <Video className="size-3 text-blue-400 shrink-0" />}
+            {hasAudio && (
+              <Headphones
+                className={cn(
+                  'size-3 shrink-0',
+                  isMuted ? 'text-red-400' : 'text-green-400'
+                )}
+              />
+            )}
+            <p className={cn('leading-none truncate', density.label)}>
               {stream.title || 'External Stream'}
-            </span>
-            {qualityLabel && (
-              <span className="text-white/50 text-xs shrink-0">
-                ({qualityLabel})
-              </span>
-            )}
-
-            <div className="flex items-center gap-1 ml-auto">
-              {hasVideo && <Video className="size-3 text-blue-400" />}
-              {hasAudio && (
-                <Headphones
-                  className={cn(
-                    'size-3',
-                    isMuted ? 'text-red-400' : 'text-green-400'
-                  )}
-                />
+              {(qualityLabel || stream.pluginId) && (
+                <span className="text-muted-foreground text-xs ml-2 leading-none">
+                  {qualityLabel && `(${qualityLabel})`}
+                  {qualityLabel && stream.pluginId && ' '}
+                  {stream.pluginId && `via ${stream.pluginId}`}
+                </span>
               )}
-            </div>
-
-            {stream.pluginId && (
-              <span className="text-white/50 text-[10px] shrink-0">
-                via {stream.pluginId}
-              </span>
-            )}
-
-            {isZoomEnabled && zoom > 1 && (
-              <span className="text-white/70 text-xs shrink-0">
-                {Math.round(zoom * 100)}%
-              </span>
-            )}
+              {isZoomEnabled && zoom > 1 && (
+                <span className="text-white/70 text-xs ml-2 leading-none">
+                  {Math.round(zoom * 100)}%
+                </span>
+              )}
+            </p>
           </div>
         </div>
       </div>
