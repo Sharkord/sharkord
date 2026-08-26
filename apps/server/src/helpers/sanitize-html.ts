@@ -6,24 +6,22 @@ import sanitize from 'sanitize-html';
 // come from jsdelivr
 const ALLOWED_IMAGE_HOSTS = ['cdn.jsdelivr.net'];
 
-const isAllowedImageSrc = (src?: string): boolean => {
-  if (!src) return false;
+const resolveImageSrc = (src?: string): string | null => {
+  if (!src) return null;
 
-  // relative, so same origin by construction
-  if (src.startsWith('/public/')) return true;
+  if (src.startsWith('/public/')) return src;
 
   try {
     const url = new URL(src);
 
-    if (ALLOWED_IMAGE_HOSTS.includes(url.hostname)) return true;
+    if (ALLOWED_IMAGE_HOSTS.includes(url.hostname)) return src;
 
-    // the client builds custom emoji urls absolutely, against whatever host the
-    // deployment answers on, and the server cannot know that host. Matching the
-    // path narrows this to something shaped like our own uploads, it does not
-    // prove the origin: see 7.4 in AUDIT.md
-    return url.pathname.startsWith('/public/');
+    if (url.pathname.startsWith('/public/'))
+      return `${url.pathname}${url.search}`;
+
+    return null;
   } catch {
-    return false;
+    return null;
   }
 };
 
@@ -100,7 +98,9 @@ const sanitizeMessageHtml = (html: string): string => {
       // an arbitrary remote src makes every member of the channel fetch a URL
       // the sender chose, which is an IP harvester and a read receipt
       img: (tagName, attribs) => {
-        if (isAllowedImageSrc(attribs.src)) return { tagName, attribs };
+        const src = resolveImageSrc(attribs.src);
+
+        if (src) return { tagName, attribs: { ...attribs, src } };
 
         const allowedAttribs = { ...attribs };
 

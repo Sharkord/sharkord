@@ -46,7 +46,7 @@ const getUserInfoRoute = protectedProcedure
     );
 
     const cleanUser = {
-      ...clearFields(user, ['password']),
+      ...clearFields(user, ['password', 'tokenVersion']),
       identity: canSeeSensitiveData ? user.identity : null
     };
 

@@ -4,7 +4,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { login } from '../../__tests__/helpers';
 import { TEST_SECRET_TOKEN } from '../../__tests__/seed';
-import { tdb } from '../../__tests__/setup';
+import { tdb, testsBaseUrl } from '../../__tests__/setup';
 import { config } from '../../config';
 import { getChannelsReadStatesForUser } from '../../db/queries/channels';
 import {
@@ -647,5 +647,25 @@ describe('/login', () => {
 
     expect(decoded2).toHaveProperty('userId');
     expect(decoded2.userId).toBe(firstUser?.id);
+  });
+
+  // over a real socket, not the mock getJsonBody's own tests drive: the body cap used to
+  // destroy the request, so the 413 was written to a connection that no longer existed and
+  // every caller got a reset instead. only an end to end request can see that
+  test('should answer an oversized body with a 413', async () => {
+    const response = await fetch(`${testsBaseUrl}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        identity: 'a'.repeat(config.server.maxRequestBodyBytes + 1),
+        password: 'password123'
+      })
+    });
+
+    expect(response.status).toBe(413);
+
+    const data = (await response.json()) as { error: string };
+
+    expect(data.error).toContain(String(config.server.maxRequestBodyBytes));
   });
 });

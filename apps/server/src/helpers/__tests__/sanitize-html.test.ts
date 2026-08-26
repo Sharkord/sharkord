@@ -200,9 +200,37 @@ describe('sanitize-html', () => {
     expect(sanitizeMessageHtml(input)).toBe('<img alt="x" />');
   });
 
-  test('should keep images served from this server', () => {
+  test('should keep images served from this server, as a same origin path', () => {
     const input =
       '<img src="https://my-server.test/public/emoji.png" alt="e" />';
+
+    expect(sanitizeMessageHtml(input)).toBe(
+      '<img src="/public/emoji.png" alt="e" />'
+    );
+  });
+
+  test('should keep the signed url parameters when dropping the origin', () => {
+    const input =
+      '<img src="https://my-server.test/public/emoji.png?accessToken=abc&amp;expires=123" alt="e" />';
+
+    expect(sanitizeMessageHtml(input)).toBe(
+      '<img src="/public/emoji.png?accessToken=abc&amp;expires=123" alt="e" />'
+    );
+  });
+
+  // the host cannot be verified, so it is discarded rather than trusted: the path a sender
+  // controls now points back at this server instead of at one they chose
+  test('should not fetch a foreign host that shapes its path like ours', () => {
+    const input =
+      '<img src="https://tracker.example/public/pixel.png" alt="x" />';
+
+    expect(sanitizeMessageHtml(input)).toBe(
+      '<img src="/public/pixel.png" alt="x" />'
+    );
+  });
+
+  test('should keep an already relative image src', () => {
+    const input = '<img src="/public/emoji.png" alt="e" />';
 
     expect(sanitizeMessageHtml(input)).toBe(input);
   });

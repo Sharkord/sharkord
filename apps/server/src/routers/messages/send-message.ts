@@ -2,6 +2,7 @@ import {
   ActivityLogType,
   ChannelPermission,
   FileSaveType,
+  getErrorMessage,
   getPlainTextFromHtml,
   isEmptyMessage,
   MESSAGE_MAX_LENGTH,
@@ -21,6 +22,7 @@ import { fileManager } from '../../helpers/file-manager';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
 import { parseCommandArgs } from '../../helpers/parse-command-args';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
+import { logger } from '../../logger';
 import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
@@ -227,6 +229,16 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
               .then((response) => updateCommandStatus('completed', response))
               .catch((error) =>
                 updateCommandStatus('failed', error?.message || 'Unknown error')
+              )
+              // the handler above is what writes the status, so a failure in it is the end
+              // of the line: there is nothing further to fall back to and no request left
+              // to answer
+              .catch((error) =>
+                logger.error(
+                  'Failed to record the status of command %s: %s',
+                  foundCommand.name,
+                  getErrorMessage(error)
+                )
               )
               .finally(() => {
                 enqueueActivityLog({

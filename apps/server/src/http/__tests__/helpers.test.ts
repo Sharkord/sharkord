@@ -24,6 +24,12 @@ const createMockRequest = (
     return req;
   }) as http.IncomingMessage['destroy'];
 
+  req.pause = (() => {
+    req.emit('pause');
+
+    return req;
+  }) as http.IncomingMessage['pause'];
+
   return req;
 };
 
@@ -209,9 +215,17 @@ describe('http helpers', () => {
       );
     });
 
-    test('destroys the request when the body is too large', async () => {
+    // destroying it instead would take the socket down before the 413 the rejection turns
+    // into can be written, which is what `should answer an oversized body with a 413` in
+    // login.test.ts covers from the other side
+    test('pauses the request rather than destroying it when the body is too large', async () => {
       const req = createMockRequest('/login', 'localhost:9999');
+      let paused = false;
       let destroyed = false;
+
+      req.on('pause', () => {
+        paused = true;
+      });
 
       req.on('close', () => {
         destroyed = true;
@@ -224,7 +238,8 @@ describe('http helpers', () => {
       await expect(getJsonBody(req, 32)).rejects.toBeInstanceOf(
         PayloadTooLargeError
       );
-      expect(destroyed).toBe(true);
+      expect(paused).toBe(true);
+      expect(destroyed).toBe(false);
     });
 
     test('accepts a body exactly at the maximum', async () => {

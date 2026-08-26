@@ -71,14 +71,13 @@ const updatePasswordRoute = rateLimitedProcedure(protectedProcedure, {
       .where(eq(users.id, ctx.userId))
       .run();
 
-    const ownWs = ctx.getOwnWs();
+    const sockets = ctx.getUserWs(ctx.userId);
 
-    ctx
-      .getUserWs(ctx.userId)
-      .filter((socket) => socket !== ownWs)
-      .forEach((socket) =>
+    setTimeout(() => {
+      sockets.forEach((socket) =>
         socket.close(DisconnectCode.KICKED, 'Your password was changed')
       );
+    }, 0);
 
     enqueueActivityLog({
       type: ActivityLogType.USER_UPDATED_PASSWORD,

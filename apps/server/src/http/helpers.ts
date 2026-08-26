@@ -50,9 +50,8 @@ const getJsonBody = async <T = any>(
       size += chunk.length;
 
       if (size > maxBytes) {
-        // stop reading before the body can grow past the cap, the socket is
-        // useless to us either way once we refuse the request
-        req.destroy();
+        // pause the stream to avoid reading more data than necessary, and reject the promise
+        req.pause();
         reject(new PayloadTooLargeError(maxBytes));
 
         return;

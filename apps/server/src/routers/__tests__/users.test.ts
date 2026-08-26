@@ -279,6 +279,7 @@ describe('users router', () => {
     // identity stays present but null without VIEW_USER_SENSITIVE_DATA
     expect(info.user.identity).toBeNull();
     expect('password' in info.user).toBe(false);
+    expect('tokenVersion' in info.user).toBe(false);
     expect(info.logins.length).toBeGreaterThan(0);
 
     info.logins.forEach((login) => {
@@ -472,7 +473,7 @@ describe('users router', () => {
     expect(await getUserByToken(otherToken)).toBeDefined();
   });
 
-  test('should close every other session of its own user on a password change', async () => {
+  test('should close every session of its own user on a password change', async () => {
     const ownSocket = createFakeSocket();
     const otherSocket = createFakeSocket();
 
@@ -487,12 +488,23 @@ describe('users router', () => {
       confirmNewPassword: 'newpassword456'
     });
 
-    expect(otherSocket.closes).toEqual([
-      { code: DisconnectCode.KICKED, reason: 'Your password was changed' }
-    ]);
+    const closed = {
+      code: DisconnectCode.KICKED,
+      reason: 'Your password was changed'
+    };
 
-    // the session that changed the password keeps running, it already has the new credentials
+    // the sockets close a tick after the mutation answers, so that the response is not
+    // lost with the connection it travels on
+    expect(otherSocket.closes).toEqual([]);
     expect(ownSocket.closes).toEqual([]);
+
+    await Bun.sleep(1);
+
+    expect(otherSocket.closes).toEqual([closed]);
+
+    // the caller included: the version bump invalidated the token it is holding, so there
+    // is nothing left for that session to authenticate with
+    expect(ownSocket.closes).toEqual([closed]);
   });
 
   test('should not close any session when the password change is refused', async () => {
@@ -511,6 +523,8 @@ describe('users router', () => {
         confirmNewPassword: 'newpassword456'
       })
     ).rejects.toThrow('Current password is incorrect');
+
+    await Bun.sleep(1);
 
     expect(otherSocket.closes).toEqual([]);
     expect(ownSocket.closes).toEqual([]);
