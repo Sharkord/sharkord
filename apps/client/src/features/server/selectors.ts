@@ -246,3 +246,26 @@ export const categoryHasUnreadMentionsSelector = createCachedSelector(
     });
   }
 )((_, categoryId: number) => categoryId);
+
+export const totalUnreadCountSelector = createSelector(
+  [
+    channelsSelector,
+    channelsReadStatesSelector,
+    channelPermissionsSelector,
+    isOwnUserOwnerSelector,
+    currentVoiceChannelIdSelector
+  ],
+  (channels, readStates, channelPermissions, isOwner, currentVoiceChannelId) =>
+    channels.reduce((total, channel) => {
+      const isVisible =
+        channel.isDm ||
+        canViewChannel(
+          channel,
+          channelPermissions,
+          isOwner,
+          currentVoiceChannelId
+        );
+
+      return isVisible ? total + (readStates[channel.id] ?? 0) : total;
+    }, 0)
+);

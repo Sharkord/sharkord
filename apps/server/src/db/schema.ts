@@ -185,6 +185,10 @@ const users = sqliteTable(
     banReason: text('ban_reason'),
     bannedAt: integer('banned_at'),
     tokenVersion: integer('token_version').notNull().default(0),
+    oidcSub: text('oidc_sub').unique(),
+    passwordSet: integer('password_set', { mode: 'boolean' })
+      .notNull()
+      .default(true),
     profileColor: text('profile_color')
       .notNull()
       .default(DEFAULT_PROFILE_COLOR),

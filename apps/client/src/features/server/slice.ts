@@ -39,6 +39,7 @@ export interface IServerState {
   channels: TChannel[];
   emojis: TJoinedEmoji[];
   ownUserId: number | undefined;
+  ownUserPasswordSet: boolean;
   selectedChannelId: number | undefined;
   currentVoiceChannelId: number | undefined;
   // it lives here rather than in the subscription because joining the new room needs the voice provider context
@@ -83,6 +84,7 @@ const initialState: IServerState = {
   disconnectInfo: undefined,
   serverId: undefined,
   ownUserId: undefined,
+  ownUserPasswordSet: true,
   categories: [],
   channels: [],
   emojis: [],
@@ -170,6 +172,7 @@ export const serverSlice = createSlice({
         channels: TChannel[];
         users: TJoinedPublicUser[];
         ownUserId: number;
+        ownUserPasswordSet: boolean;
         roles: TJoinedRole[];
         emojis: TJoinedEmoji[];
         publicSettings: TPublicServerSettings | undefined;
@@ -188,6 +191,7 @@ export const serverSlice = createSlice({
       state.users = action.payload.users;
       state.roles = action.payload.roles;
       state.ownUserId = action.payload.ownUserId;
+      state.ownUserPasswordSet = action.payload.ownUserPasswordSet;
       state.publicSettings = action.payload.publicSettings;
       state.voiceMap = action.payload.voiceMap;
       state.externalStreamsMap = action.payload.externalStreamsMap;

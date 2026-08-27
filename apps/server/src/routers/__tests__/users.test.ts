@@ -1858,4 +1858,97 @@ describe('users router', () => {
     expect(userInfo.messages.length).toBe(0);
     expect(dbMessages.length).toBeGreaterThan(0);
   });
+  describe('password changes on provider accounts', () => {
+    // the stored hash is random for these, so the current password check would reject them
+    // anyway. the point is that it is refused as a rule rather than by luck
+    test('should refuse to change the password of an account with none set', async () => {
+      await tdb
+        .update(users)
+        .set({ oidcSub: 'some-provider-subject', passwordSet: false })
+        .where(eq(users.id, 2));
+
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.users.updatePassword({
+          currentPassword: 'password123',
+          newPassword: 'newpassword123',
+          confirmNewPassword: 'newpassword123'
+        })
+      ).rejects.toThrow(
+        'This account signs in through an identity provider, so it has no password to change'
+      );
+    });
+
+    // a local account that later linked keeps the password its owner chose, and has to be
+    // able to rotate it: it is the fallback when the provider is unreachable
+    test('should still allow a linked account to change its password', async () => {
+      await tdb
+        .update(users)
+        .set({ oidcSub: 'some-provider-subject' })
+        .where(eq(users.id, 2));
+
+      const { caller } = await initTest(2);
+
+      await caller.users.updatePassword({
+        currentPassword: 'password123',
+        newPassword: 'newpassword123',
+        confirmNewPassword: 'newpassword123'
+      });
+
+      const updated = await tdb
+        .select({ password: users.password })
+        .from(users)
+        .where(eq(users.id, 2))
+        .get();
+
+      expect(
+        await Bun.password.verify('newpassword123', updated!.password)
+      ).toBe(true);
+    });
+  });
+
+  describe('oidc account source', () => {
+    test('should report a locally registered user as not oidc', async () => {
+      const { caller } = await initTest();
+
+      const userInfo = await caller.users.getInfo({ userId: 2 });
+
+      expect(userInfo.user.isOidcUser).toBe(false);
+    });
+
+    test('should report a linked user as oidc', async () => {
+      await tdb
+        .update(users)
+        .set({ oidcSub: 'some-provider-subject' })
+        .where(eq(users.id, 2));
+
+      const { caller } = await initTest();
+
+      const userInfo = await caller.users.getInfo({ userId: 2 });
+
+      expect(userInfo.user.isOidcUser).toBe(true);
+    });
+
+    // the subject identifies the account at the provider and nothing in the interface
+    // needs it, so it must not travel to a client even behind MANAGE_USERS
+    test('should never expose the provider subject itself', async () => {
+      await tdb
+        .update(users)
+        .set({ oidcSub: 'some-provider-subject' })
+        .where(eq(users.id, 2));
+
+      const { caller } = await initTest();
+
+      const userInfo = await caller.users.getInfo({ userId: 2 });
+      const allUsers = await caller.users.getAll();
+
+      expect(userInfo.user).not.toHaveProperty('oidcSub');
+      expect(JSON.stringify(allUsers)).not.toContain('some-provider-subject');
+
+      for (const user of allUsers) {
+        expect(user).not.toHaveProperty('oidcSub');
+      }
+    });
+  });
 });

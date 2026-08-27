@@ -53,6 +53,14 @@ const zConfig = z.object({
       )
       .default([])
   }),
+  oidc: z.object({
+    enabled: z.coerce.boolean(),
+    issuer: z.string(),
+    clientId: z.string(),
+    clientSecret: z.string(),
+    redirectUri: z.string(),
+    disableLocalLogin: z.coerce.boolean()
+  }),
   webRtc: z.object({
     port: z.coerce.number().int().positive(),
     announcedAddress: z.string(),
@@ -78,7 +86,8 @@ const zConfig = z.object({
     voiceTransport: zRateLimiter,
     voiceStream: zRateLimiter,
     useSecretToken: zRateLimiter,
-    pluginExecute: zRateLimiter
+    pluginExecute: zRateLimiter,
+    oidc: zRateLimiter
   })
 });
 
@@ -100,6 +109,14 @@ const defaultConfig: TConfig = {
       '192.168.0.0/16',
       'fc00::/7'
     ]
+  },
+  oidc: {
+    enabled: false,
+    issuer: '',
+    clientId: '',
+    clientSecret: '',
+    redirectUri: '',
+    disableLocalLogin: false
   },
   webRtc: {
     port: 40000,
@@ -183,9 +200,12 @@ const defaultConfig: TConfig = {
       maxRequests: 5,
       windowMs: 60_000
     },
-    // arbitrary plugin code, driven by whoever holds USE_PLUGINS
     pluginExecute: {
       maxRequests: 60,
+      windowMs: 60_000
+    },
+    oidc: {
+      maxRequests: 30,
       windowMs: 60_000
     }
   }
@@ -233,6 +253,12 @@ const envOverridesMap: Record<string, string> = {
   'server.maxRequestBodyBytes': 'SHARKORD_MAX_REQUEST_BODY_BYTES',
   'server.allowedOrigins': 'SHARKORD_ALLOWED_ORIGINS',
   'server.trustedProxies': 'SHARKORD_TRUSTED_PROXIES',
+  'oidc.enabled': 'SHARKORD_OIDC_ENABLED',
+  'oidc.issuer': 'SHARKORD_OIDC_ISSUER',
+  'oidc.clientId': 'SHARKORD_OIDC_CLIENT_ID',
+  'oidc.clientSecret': 'SHARKORD_OIDC_CLIENT_SECRET',
+  'oidc.redirectUri': 'SHARKORD_OIDC_REDIRECT_URI',
+  'oidc.disableLocalLogin': 'SHARKORD_OIDC_DISABLE_LOCAL_LOGIN',
   'webRtc.port': 'SHARKORD_WEBRTC_PORT',
   'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS',
   'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE'

@@ -10,6 +10,14 @@
   "invitedTitle": "Sei stato invitato a entrare in questo server",
   "inviteCode": "Codice invito: {{code}}",
   "connectError": "Impossibile connettersi: {{message}}",
+  "oidcBtn": "Accedi con SSO",
+  "oidcCompleting": "Completamento dell'accesso",
+  "oidcError": {
+    "access_denied": "Il tuo provider di identità ha rifiutato l'accesso.",
+    "invalid_state": "Non è stato possibile verificare questa richiesta di accesso. Riprova.",
+    "expired": "Questa richiesta di accesso è scaduta. Riprova.",
+    "server_error": "Si è verificato un problema durante l'accesso. Riprova."
+  },
   "loggingInAutomatically": "Accesso automatico in corso...",
   "loadingApp": "Caricamento di Sharkord",
   "loadingPlugins": "Caricamento plugin"

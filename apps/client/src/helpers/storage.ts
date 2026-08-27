@@ -35,7 +35,8 @@ export enum LocalStorageKey {
 }
 
 export enum SessionStorageKey {
-  TOKEN = 'sharkord-token'
+  TOKEN = 'sharkord-token',
+  OIDC_NO_AUTO_REDIRECT = 'sharkord-oidc-no-auto-redirect'
 }
 
 const getLocalStorageItem = (key: LocalStorageKey): string | null => {

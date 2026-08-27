@@ -23,7 +23,8 @@ const updatePasswordRoute = rateLimitedProcedure(protectedProcedure, {
   .mutation(async ({ ctx, input }) => {
     const user = await db
       .select({
-        password: users.password
+        password: users.password,
+        passwordSet: users.passwordSet
       })
       .from(users)
       .where(eq(users.id, ctx.userId))
@@ -32,6 +33,12 @@ const updatePasswordRoute = rateLimitedProcedure(protectedProcedure, {
     invariant(user, {
       code: 'NOT_FOUND',
       message: 'User not found'
+    });
+
+    invariant(user.passwordSet, {
+      code: 'FORBIDDEN',
+      message:
+        'This account signs in through an identity provider, so it has no password to change'
     });
 
     const currentPasswordValid = await Bun.password.verify(

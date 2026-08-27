@@ -10,6 +10,14 @@
   "invitedTitle": "You were invited to join this server",
   "inviteCode": "Invite code: {{code}}",
   "connectError": "Could not connect: {{message}}",
+  "oidcBtn": "Sign in with SSO",
+  "oidcCompleting": "Completing sign in",
+  "oidcError": {
+    "access_denied": "Your identity provider refused the sign in.",
+    "invalid_state": "This sign in request could not be verified. Please try again.",
+    "expired": "This sign in request expired. Please try again.",
+    "server_error": "Something went wrong while signing in. Please try again."
+  },
   "loggingInAutomatically": "Logging in automatically...",
   "loadingApp": "Loading Sharkord",
   "loadingPlugins": "Loading Plugins"

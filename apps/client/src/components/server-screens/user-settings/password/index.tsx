@@ -1,7 +1,11 @@
 import { closeServerScreens } from '@/features/server-screens/actions';
+import { useOwnUserPasswordSet } from '@/features/server/users/hooks';
 import { useForm } from '@/hooks/use-form';
 import { cleanup, getTRPCClient } from '@/lib/trpc';
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
   Button,
   Card,
   CardContent,
@@ -23,6 +27,8 @@ const Password = memo(() => {
     confirmNewPassword: ''
   });
 
+  const canChangePassword = useOwnUserPasswordSet();
+
   const updatePassword = useCallback(async () => {
     const trpc = getTRPCClient();
 
@@ -42,23 +48,41 @@ const Password = memo(() => {
         <CardDescription>{t('passwordDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {!canChangePassword && (
+          <Alert variant="info">
+            <AlertTitle>{t('passwordManagedBySsoTitle')}</AlertTitle>
+            <AlertDescription>{t('passwordManagedBySsoDesc')}</AlertDescription>
+          </Alert>
+        )}
+
         <Group label={t('currentPasswordLabel')}>
-          <Input {...r('currentPassword', 'password')} />
+          <Input
+            {...r('currentPassword', 'password')}
+            disabled={!canChangePassword}
+          />
         </Group>
 
         <Group label={t('newPasswordLabel')}>
-          <Input {...r('newPassword', 'password')} />
+          <Input
+            {...r('newPassword', 'password')}
+            disabled={!canChangePassword}
+          />
         </Group>
 
         <Group label={t('confirmNewPasswordLabel')}>
-          <Input {...r('confirmNewPassword', 'password')} />
+          <Input
+            {...r('confirmNewPassword', 'password')}
+            disabled={!canChangePassword}
+          />
         </Group>
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={closeServerScreens}>
             {t('cancel')}
           </Button>
-          <Button onClick={updatePassword}>{t('saveChanges')}</Button>
+          <Button onClick={updatePassword} disabled={!canChangePassword}>
+            {t('saveChanges')}
+          </Button>
         </div>
       </CardContent>
     </Card>

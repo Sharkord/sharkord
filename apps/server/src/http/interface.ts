@@ -26,7 +26,7 @@ const interfaceRouteHandler = async (
   { url }: { url: URL }
 ) => {
   if (IS_DEVELOPMENT && !IS_TEST) {
-    res.writeHead(302, { Location: 'http://localhost:5173' });
+    res.writeHead(302, { Location: `http://localhost:5173${url.search}` });
     res.end();
 
     return res;
