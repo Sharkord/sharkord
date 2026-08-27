@@ -125,7 +125,16 @@ export type TServerInfo = Pick<
 > & {
   logo: TFile | null;
   version?: string;
+  oidcEnabled: boolean;
+  oidcDisableLocalLogin: boolean;
 };
+
+export enum OidcError {
+  ACCESS_DENIED = 'access_denied',
+  INVALID_STATE = 'invalid_state',
+  EXPIRED = 'expired',
+  SERVER_ERROR = 'server_error'
+}
 
 export type TWebAppManifest = {
   name: string;

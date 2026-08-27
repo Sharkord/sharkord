@@ -24,6 +24,7 @@ import {
   reconnectSelector,
   referenceableChannelsSelector,
   serverNameSelector,
+  totalUnreadCountSelector,
   typingUsersByChannelIdSelector,
   typingUsersByThreadIdSelector,
   userRolesSelector,
@@ -40,6 +41,8 @@ export const useReconnectState = () => useSelector(reconnectSelector);
 export const useDisconnectInfo = () => useSelector(disconnectInfoSelector);
 
 export const useServerName = () => useSelector(serverNameSelector);
+
+export const useTotalUnreadCount = () => useSelector(totalUnreadCountSelector);
 
 export const usePublicServerSettings = () =>
   useSelector(publicServerSettingsSelector);

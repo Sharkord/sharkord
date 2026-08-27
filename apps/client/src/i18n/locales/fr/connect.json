@@ -10,6 +10,14 @@
   "invitedTitle": "Vous avez été invité à rejoindre ce serveur",
   "inviteCode": "Code d'invitation : {{code}}",
   "connectError": "Impossible de se connecter : {{message}}",
+  "oidcBtn": "Se connecter avec SSO",
+  "oidcCompleting": "Finalisation de la connexion",
+  "oidcError": {
+    "access_denied": "Votre fournisseur d'identité a refusé la connexion.",
+    "invalid_state": "Cette demande de connexion n'a pas pu être vérifiée. Veuillez réessayer.",
+    "expired": "Cette demande de connexion a expiré. Veuillez réessayer.",
+    "server_error": "Une erreur est survenue lors de la connexion. Veuillez réessayer."
+  },
   "loggingInAutomatically": "Connexion automatique...",
   "loadingApp": "Chargement de Sharkord",
   "loadingPlugins": "Chargement des plugins"

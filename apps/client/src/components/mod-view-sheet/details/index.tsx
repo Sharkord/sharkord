@@ -19,6 +19,7 @@ import {
   Gavel,
   Globe,
   IdCard,
+  KeyRound,
   Network
 } from 'lucide-react';
 import { memo, useState } from 'react';
@@ -111,6 +112,16 @@ const Details = memo(() => {
               hidden
             />
           </Protect>
+
+          <Row
+            icon={<KeyRound className="h-4 w-4 text-muted-foreground" />}
+            label={t('accountSourceLabel')}
+            value={
+              user.isOidcUser
+                ? t('accountSourceOidc')
+                : t('accountSourcePassword')
+            }
+          />
 
           <Row
             icon={<Calendar className="h-4 w-4 text-muted-foreground" />}

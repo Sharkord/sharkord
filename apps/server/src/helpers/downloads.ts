@@ -8,6 +8,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { logger } from '../logger';
 import { ensureDir } from '../utils/fs';
+import { readBodyWithLimit } from '../utils/read-body-with-limit';
 import { sha256File } from '../utils/sha-256-file';
 import { PLUGINS_PATH, TMP_PATH } from './paths';
 
@@ -123,38 +124,14 @@ const downloadFile = async (url: string, outputPath: string): Promise<void> => {
     throw new Error(`Failed to download file: ${res.status} ${res.statusText}`);
   }
 
-  const declaredSize = Number(res.headers.get('content-length'));
-
-  if (declaredSize > MAX_DOWNLOAD_BYTES) {
-    throw new Error('Download exceeds the maximum allowed size');
-  }
-
-  if (!res.body) {
-    throw new Error('Download response has no body');
-  }
-
   const writer = Bun.file(outputPath).writer();
 
-  let written = 0;
-
-  const reader = res.body.getReader();
-
   try {
-    for (;;) {
-      const { done, value } = await reader.read();
-
-      if (done) break;
-
-      written += value.byteLength;
-
-      if (written > MAX_DOWNLOAD_BYTES) {
-        await reader.cancel();
-
-        throw new Error('Download exceeds the maximum allowed size');
-      }
-
-      writer.write(value);
-    }
+    await readBodyWithLimit(res, {
+      maxBytes: MAX_DOWNLOAD_BYTES,
+      tooLargeMessage: 'Download exceeds the maximum allowed size',
+      onChunk: (chunk) => writer.write(chunk)
+    });
 
     await writer.end();
   } catch (error) {

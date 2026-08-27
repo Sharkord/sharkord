@@ -5,6 +5,7 @@ import fsPromises from 'fs/promises';
 import http from 'http';
 import path from 'path';
 import { config } from '../config';
+import { isTrustedProxyAddress } from '../helpers/get-ws-info';
 import { logger } from '../logger';
 import type { FixedWindowRateLimiter } from '../utils/rate-limiters';
 import {
@@ -134,6 +135,47 @@ const applyCorsHeaders = (
 
 const hasPrefixPathSegment = (pathname: string, prefix: string): boolean => {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
+};
+
+const getForwardedHeader = (
+  req: http.IncomingMessage,
+  name: string
+): string | undefined => {
+  const value = req.headers[name];
+  const first = Array.isArray(value) ? value[0] : value;
+
+  return first?.split(',')[0]?.trim();
+};
+
+const getForwardedOrigin = (req: http.IncomingMessage) => {
+  if (
+    !isTrustedProxyAddress(
+      req.socket.remoteAddress,
+      config.server.trustedProxies
+    )
+  ) {
+    return undefined;
+  }
+
+  return {
+    proto: getForwardedHeader(req, 'x-forwarded-proto'),
+    host: getForwardedHeader(req, 'x-forwarded-host')
+  };
+};
+
+const isSecureRequest = (req: http.IncomingMessage): boolean => {
+  const forwarded = getForwardedOrigin(req);
+
+  if (forwarded?.proto) return forwarded.proto === 'https';
+
+  return 'encrypted' in req.socket && !!req.socket.encrypted;
+};
+
+const getPublicOrigin = (req: http.IncomingMessage): string => {
+  const forwarded = getForwardedOrigin(req);
+  const proto = isSecureRequest(req) ? 'https' : 'http';
+
+  return `${proto}://${forwarded?.host || req.headers.host}`;
 };
 
 const getRequestUrl = (req: http.IncomingMessage): URL | null => {
@@ -458,8 +500,10 @@ export {
   buildEtag,
   enforceHttpRateLimit,
   getJsonBody,
+  getPublicOrigin,
   getRequestUrl,
   hasPrefixPathSegment,
+  isSecureRequest,
   isSupportedHttpMethod,
   parseByteRange,
   sanitizeFileName,

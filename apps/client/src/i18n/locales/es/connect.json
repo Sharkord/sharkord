@@ -10,6 +10,14 @@
   "invitedTitle": "Has sido invitado a unirte a este servidor",
   "inviteCode": "Código de invitación: {{code}}",
   "connectError": "No se pudo conectar: {{message}}",
+  "oidcBtn": "Iniciar sesión con SSO",
+  "oidcCompleting": "Completando el inicio de sesión",
+  "oidcError": {
+    "access_denied": "Tu proveedor de identidad rechazó el inicio de sesión.",
+    "invalid_state": "No se pudo verificar esta solicitud de inicio de sesión. Inténtalo de nuevo.",
+    "expired": "Esta solicitud de inicio de sesión ha caducado. Inténtalo de nuevo.",
+    "server_error": "Algo salió mal al iniciar sesión. Inténtalo de nuevo."
+  },
   "loggingInAutomatically": "Iniciando sesión automáticamente...",
   "loadingApp": "Cargando Sharkord",
   "loadingPlugins": "Cargando plugins"

@@ -34,6 +34,7 @@
     "drizzle-kit": "^0.31.5",
     "eslint": "^8.56.0",
     "eslint-plugin-unused-imports": "^4.1.4",
+    "jose": "^6.2.10",
     "prettier": "^3.5.3",
     "prettier-plugin-organize-imports": "^4.1.0"
   },
@@ -54,6 +55,7 @@
     "jsonwebtoken": "^9.0.2",
     "link-preview-js": "^3.1.0",
     "mediasoup": "3.19.19",
+    "openid-client": "^6.8.7",
     "queue": "^7.0.0",
     "sanitize-html": "^2.17.0",
     "semver": "^7.7.3",
