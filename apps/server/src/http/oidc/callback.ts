@@ -149,7 +149,16 @@ const oidcCallbackRouteHandler = async (
     const code =
       error instanceof OidcCallbackError ? error.code : OidcError.SERVER_ERROR;
 
-    logger.error('OIDC callback failed: %s', getErrorMessage(error));
+    if (error instanceof client.ResponseBodyError) {
+      logger.error(
+        'OIDC callback failed: provider returned "%s" (%s) with status %d',
+        error.error,
+        error.error_description ?? 'no description',
+        error.status
+      );
+    } else {
+      logger.error('OIDC callback failed: %s', getErrorMessage(error));
+    }
 
     redirectWithError(res, origin, code, { 'Set-Cookie': clearCookie });
   }

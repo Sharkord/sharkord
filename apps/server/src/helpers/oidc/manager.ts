@@ -72,9 +72,10 @@ class OidcManager {
     const metadata = discovered.serverMetadata();
     const supported = metadata.token_endpoint_auth_methods_supported;
 
-    if (supported?.includes('client_secret_post')) return discovered;
+    if (!supported || supported.includes('client_secret_post'))
+      return discovered;
 
-    if (supported && !supported.includes('client_secret_basic')) {
+    if (!supported.includes('client_secret_basic')) {
       logger.warn(
         'OIDC provider advertises no client authentication method we support (%s), trying client_secret_post',
         supported.join(', ')

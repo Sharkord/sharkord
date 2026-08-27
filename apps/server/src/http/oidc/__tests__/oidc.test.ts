@@ -228,14 +228,13 @@ describe('client authentication method', () => {
     expect(provider.getLastTokenAuth()).toBe('post');
   });
 
-  // the discovery spec makes client_secret_basic the default for an omitted field, and
-  // providers that leave it out are relying on exactly that
-  test('should use basic auth when the provider advertises nothing', async () => {
+  // the spec makes basic the default for an omitted field, but real providers that omit it
+  test('should keep posting the secret when the provider advertises nothing', async () => {
     provider.setAuthMethods(undefined);
 
     await signIn();
 
-    expect(provider.getLastTokenAuth()).toBe('basic');
+    expect(provider.getLastTokenAuth()).toBe('post');
   });
 });
 
