@@ -7,16 +7,17 @@ import {
 import {
   useDisconnectInfo,
   useIsConnected,
-  useIsReconnecting,
-  useServerName
+  useIsReconnecting
 } from '@/features/server/hooks';
 import { Connect } from '@/screens/connect';
 import { Disconnected } from '@/screens/disconnected';
 import { LoadingApp } from '@/screens/loading-app';
 import { ServerView } from '@/screens/server-view';
 import { DisconnectCode } from '@sharkord/shared';
-import { memo, useEffect } from 'react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useDocumentTitle } from './hooks/use-document-title';
+import { useOidcAutoRedirect } from './hooks/use-oidc-auto-redirect';
 
 const Routing = memo(() => {
   const { t } = useTranslation('connect');
@@ -24,18 +25,11 @@ const Routing = memo(() => {
   const isAppLoading = useIsAppLoading();
   const isPluginsLoading = useIsPluginsLoading();
   const disconnectInfo = useDisconnectInfo();
-  const serverName = useServerName();
   const isAutoConnecting = useIsAutoConnecting();
   const isReconnecting = useIsReconnecting();
 
-  useEffect(() => {
-    if (isConnected && serverName) {
-      document.title = `${serverName} - Sharkord`;
-      return;
-    }
-
-    document.title = 'Sharkord';
-  }, [isConnected, serverName]);
+  useDocumentTitle();
+  useOidcAutoRedirect();
 
   if (isAppLoading || isPluginsLoading) {
     return (

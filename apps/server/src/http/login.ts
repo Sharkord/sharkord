@@ -4,30 +4,23 @@ import {
   sha256
 } from '@sharkord/shared';
 import chalk from 'chalk';
-import { and, eq, isNull, lt, max, or, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import http from 'http';
 import jwt from 'jsonwebtoken';
 import z from 'zod';
 import { config } from '../config';
 import { db } from '../db';
+import { createUser } from '../db/mutations/users';
 import { publishUser } from '../db/publishers';
 import { isInviteValid } from '../db/queries/invites';
-import { getDefaultRole } from '../db/queries/roles';
 import { getServerToken, getSettings } from '../db/queries/server';
 import { getUserByIdentity } from '../db/queries/users';
-import {
-  channelReadStates,
-  channels,
-  invites,
-  messages,
-  userRoles,
-  users
-} from '../db/schema';
+import { users } from '../db/schema';
 import { getWsInfo } from '../helpers/get-ws-info';
+import { isLocalLoginDisabled } from '../helpers/oidc/settings';
 import { safeCompare } from '../helpers/safe-compare';
 import { logger } from '../logger';
 import { enqueueActivityLog } from '../queues/activity-log';
-import { invariant } from '../utils/invariant';
 import { createRateLimiter } from '../utils/rate-limiters/rate-limiter';
 import { HttpValidationError } from './errors';
 import { enforceHttpRateLimit, getJsonBody } from './helpers';
@@ -65,123 +58,6 @@ const getDummyArgon2Hash = (): Promise<string> => {
   return dummyArgon2HashPromise;
 };
 
-// creates the user, its roles, the invite consumption and the read state
-// backfill as one unit. nothing here may publish or enqueue: a rollback has to
-// leave no trace outside the database
-const registerUser = async (
-  identity: string,
-  password: string,
-  inviteCode?: string,
-  inviteRoleId?: number | null
-): Promise<number> => {
-  const hashedPassword = (await Bun.password.hash(password)).toString();
-
-  const defaultRole = await getDefaultRole();
-
-  invariant(defaultRole, {
-    code: 'NOT_FOUND',
-    message: 'Default role not found'
-  });
-
-  const randomNum = Math.floor(Math.random() * 99999) + 10000; // between 10000 and 99999 to ensure it's always 5 digits, for better readability
-
-  return db.transaction((tx) => {
-    if (inviteCode) {
-      const consumed = tx
-        .update(invites)
-        .set({ uses: sql`${invites.uses} + 1` })
-        .where(
-          and(
-            eq(invites.code, inviteCode),
-            or(isNull(invites.maxUses), lt(invites.uses, invites.maxUses))
-          )
-        )
-        .returning({ id: invites.id })
-        .all();
-
-      if (consumed.length === 0) {
-        throw new HttpValidationError(
-          'identity',
-          'This invite code has reached its maximum uses'
-        );
-      }
-    }
-
-    const user = tx
-      .insert(users)
-      .values({
-        name: `SharkordUser${randomNum}`,
-        identity,
-        createdAt: Date.now(),
-        password: hashedPassword
-      })
-      .returning()
-      .get();
-
-    tx.insert(userRoles)
-      .values({
-        roleId: defaultRole.id,
-        userId: user.id,
-        createdAt: Date.now()
-      })
-      .run();
-
-    // if the invite has a specific role and it's different from the default, assign it too
-    if (inviteRoleId && inviteRoleId !== defaultRole.id) {
-      tx.insert(userRoles)
-        .values({
-          roleId: inviteRoleId,
-          userId: user.id,
-          createdAt: Date.now()
-        })
-        .run();
-    }
-
-    // mark all existing messages as read so the new user doesn't see
-    // a flood of unread messages on first join.
-    //
-    // driven off channels rather than grouping over messages: there are tens of channels
-    // and potentially millions of messages, so this is one index seek per channel instead
-    // of a full scan plus a temp b-tree. measured on 500k messages across 40 channels,
-    // the group-by shape cost ~100ms and this costs ~0.02ms, and it runs inline on an
-    // unauthenticated request
-    const latestTopLevelMessageId = tx
-      .select({ value: max(messages.id) })
-      .from(messages)
-      .where(
-        and(
-          eq(messages.channelId, channels.id),
-          isNull(messages.parentMessageId)
-        )
-      );
-
-    const latestMessagePerChannel = tx
-      .select({
-        channelId: channels.id,
-        latestMessageId: sql<
-          number | null
-        >`(${latestTopLevelMessageId})`.mapWith(Number)
-      })
-      .from(channels)
-      .all();
-
-    const readStateValues = latestMessagePerChannel
-      .filter((row) => !!row.latestMessageId)
-      .map((row) => ({
-        channelId: row.channelId,
-        userId: user.id,
-        lastReadMessageId: row.latestMessageId!,
-        lastReadAt: Date.now()
-      }));
-
-    if (readStateValues.length > 0) {
-      tx.insert(channelReadStates).values(readStateValues).run();
-    }
-
-    return user.id;
-  });
-};
-
 const loginRouteHandler = async (
   req: http.IncomingMessage,
   res: http.ServerResponse
@@ -190,6 +66,13 @@ const loginRouteHandler = async (
 
   if (data.identity === DELETED_USER_IDENTITY_AND_NAME) {
     throw new HttpValidationError('identity', 'This identity is reserved');
+  }
+
+  if (isLocalLoginDisabled()) {
+    throw new HttpValidationError(
+      'identity',
+      'This server only accepts sign in through its identity provider'
+    );
   }
 
   const settings = await getSettings();
@@ -229,12 +112,12 @@ const loginRouteHandler = async (
     inviteRoleId = result.invite?.roleId ?? null;
 
     // user doesn't exist, but registration is open OR invite was valid - create the user automatically
-    const registeredUserId = await registerUser(
-      data.identity,
-      data.password,
-      usedInviteCode,
+    const registeredUserId = await createUser({
+      identity: data.identity,
+      hashedPassword: (await Bun.password.hash(data.password)).toString(),
+      inviteCode: usedInviteCode,
       inviteRoleId
-    );
+    });
 
     existingUser = await getUserByIdentity(data.identity);
 

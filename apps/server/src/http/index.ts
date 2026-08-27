@@ -23,6 +23,9 @@ import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
 import { loginRouteHandler } from './login';
 import { manifestRouteHandler } from './manifest';
+import { oidcCallbackRouteHandler } from './oidc/callback';
+import { oidcExchangeRouteHandler } from './oidc/exchange';
+import { oidcLoginRouteHandler } from './oidc/login';
 import { pluginBundleRouteHandler } from './plugin-bundle';
 import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
@@ -74,7 +77,9 @@ const routeHandlers: Partial<
     exact: {
       '/healthz': healthRouteHandler,
       '/info': infoRouteHandler,
-      '/manifest.json': manifestRouteHandler
+      '/manifest.json': manifestRouteHandler,
+      '/oidc/login': oidcLoginRouteHandler,
+      '/oidc/callback': oidcCallbackRouteHandler
     },
     prefix: {
       '/public': publicRouteHandler,
@@ -85,14 +90,14 @@ const routeHandlers: Partial<
   POST: {
     exact: {
       '/upload': uploadFileRouteHandler,
-      '/login': loginRouteHandler
+      '/login': loginRouteHandler,
+      '/oidc/exchange': oidcExchangeRouteHandler
     },
     prefix: {}
   }
 };
 
 // this http server implementation is temporary and will be moved to bun server later when things are more stable
-
 const createHttpServer = async (port: number = config.server.port) => {
   return new Promise<http.Server>((resolve) => {
     const server = http.createServer(

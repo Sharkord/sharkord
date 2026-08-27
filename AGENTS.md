@@ -380,3 +380,4 @@ Every new behaviour needs tests and the whole suite must pass, see [Testing](#te
   It reads as a type, adds nothing at runtime, and marks the one thing worth looking at (a
   promise nobody awaits) as deliberate instead of leaving it visible. If the promise genuinely
   cannot be awaited, either handle its failure with a `.catch()` or say why in a comment.
+- Do NOT comment on everything. Comments are for context and explain possible edge cases, not for restating what the code does.

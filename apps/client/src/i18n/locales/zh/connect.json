@@ -10,6 +10,14 @@
   "invitedTitle": "您受邀加入此服务器",
   "inviteCode": "邀请码：{{code}}",
   "connectError": "连接失败：{{message}}",
+  "oidcBtn": "使用 SSO 登录",
+  "oidcCompleting": "正在完成登录",
+  "oidcError": {
+    "access_denied": "你的身份提供商拒绝了此次登录。",
+    "invalid_state": "无法验证此登录请求，请重试。",
+    "expired": "此登录请求已过期，请重试。",
+    "server_error": "登录时出现问题，请重试。"
+  },
   "loggingInAutomatically": "正在自动登录...",
   "loadingApp": "正在加载 Sharkord",
   "loadingPlugins": "正在加载插件"

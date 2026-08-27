@@ -8,6 +8,7 @@ import {
   setDisconnectInfo
 } from '@/features/server/actions';
 import { SoundType } from '@/features/server/types';
+import { suppressOidcAutoRedirect } from '@/helpers/oidc';
 import { playSound } from '@/helpers/sounds';
 import {
   getSessionStorageItem,
@@ -144,8 +145,12 @@ const cleanup = () => {
   // cleanup can be called due to various reasons (manual disconnect, connection error, auto-login failure, etc).
   // so we remove any persisted auto-login token to prevent auto-login loops.
   // skip this when navigating away (refresh/close) - Firefox fires onClose during refresh, Chrome does not
-  if (!isNavigatingAway)
+  if (!isNavigatingAway) {
     removeLocalStorageItem(LocalStorageKey.AUTO_LOGIN_TOKEN);
+
+    // same reasoning, for a server that redirects straight to its identity provider
+    suppressOidcAutoRedirect();
+  }
 
   resetServerScreens();
   resetServerState();

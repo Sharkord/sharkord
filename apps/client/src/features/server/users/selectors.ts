@@ -48,6 +48,9 @@ export const filteredUsersSelector = createSelector(
     )
 );
 
+export const ownUserPasswordSetSelector = (state: IRootState) =>
+  state.server.ownUserPasswordSet;
+
 export const ownUserSelector = createSelector(
   [ownUserIdSelector, usersSelector],
   (ownUserId, users) => users.find((user) => user.id === ownUserId)

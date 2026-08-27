@@ -10,6 +10,14 @@
   "invitedTitle": "K připojení k tomuto serveru jste byli pozváni",
   "inviteCode": "Kód pozvánky: {{code}}",
   "connectError": "K serveru se připojit nepodařilo: {{message}}",
+  "oidcBtn": "Přihlásit se přes SSO",
+  "oidcCompleting": "Dokončuje se přihlášení",
+  "oidcError": {
+    "access_denied": "Poskytovatel identity přihlášení odmítl.",
+    "invalid_state": "Tento požadavek na přihlášení se nepodařilo ověřit. Zkuste to prosím znovu.",
+    "expired": "Platnost tohoto požadavku na přihlášení vypršela. Zkuste to prosím znovu.",
+    "server_error": "Při přihlašování se něco pokazilo. Zkuste to prosím znovu."
+  },
   "loggingInAutomatically": "Automaticky se připojuji...",
   "loadingApp": "Načítám Sharkord",
   "loadingPlugins": "Načítám rozšíření"

@@ -4,6 +4,7 @@ import {
   filteredUsersSelector,
   isOwnUserSelector,
   ownUserIdSelector,
+  ownUserPasswordSetSelector,
   ownUserSelector,
   userByIdSelector,
   usernamesSelector,
@@ -14,6 +15,9 @@ import {
 export const useUsers = () => useSelector(usersSelector);
 
 export const useOwnUserId = () => useSelector(ownUserIdSelector);
+
+export const useOwnUserPasswordSet = () =>
+  useSelector(ownUserPasswordSetSelector);
 
 export const useIsOwnUser = (userId: number | null) =>
   useSelector((state: IRootState) =>
