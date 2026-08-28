@@ -46,9 +46,14 @@ const useCategoryExpanded = (categoryId: number) => {
     });
   }, [categoryId]);
 
+  const expand = useCallback(() => {
+    saveExpandedValue(categoryId, true);
+    setExpanded(true);
+  }, [categoryId]);
+
   return useMemo(
-    () => ({ expanded, toggleExpanded }),
-    [expanded, toggleExpanded]
+    () => ({ expand, expanded, toggleExpanded }),
+    [expand, expanded, toggleExpanded]
   );
 };
 

@@ -2,6 +2,7 @@ import type { IRootState } from '@/features/store';
 import { useSelector } from 'react-redux';
 import {
   channelByIdSelector,
+  channelIdsByCategorySelector,
   channelPermissionsByIdSelector,
   channelsByCategoryIdSelector,
   channelsMapSelector,
@@ -23,6 +24,9 @@ export const useChannelsByCategoryId = (categoryId: number) =>
   useSelector((state: IRootState) =>
     channelsByCategoryIdSelector(state, categoryId)
   );
+
+export const useChannelIdsByCategory = () =>
+  useSelector(channelIdsByCategorySelector);
 
 export const useSelectedChannelId = () =>
   useSelector(selectedChannelIdSelector);

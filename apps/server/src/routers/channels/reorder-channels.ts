@@ -1,11 +1,12 @@
 import { ActivityLogType, Permission } from '@sharkord/shared';
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { reorderPositions } from '../../db/mutations/positions';
 import { publishChannel } from '../../db/publishers';
-import { channels } from '../../db/schema';
+import { categories, channels } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const MAX_REORDERED_CHANNELS = 500;
@@ -19,6 +20,47 @@ const reorderChannelsRoute = protectedProcedure
   )
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_CHANNELS);
+
+    const [category, requestedChannels] = await Promise.all([
+      db
+        .select({ id: categories.id })
+        .from(categories)
+        .where(eq(categories.id, input.categoryId))
+        .limit(1)
+        .get(),
+      db
+        .select({
+          id: channels.id,
+          categoryId: channels.categoryId,
+          isDm: channels.isDm
+        })
+        .from(channels)
+        .where(inArray(channels.id, input.channelIds))
+    ]);
+
+    invariant(category, {
+      code: 'NOT_FOUND',
+      message: 'Category not found'
+    });
+
+    invariant(
+      requestedChannels.every((channel) => !channel.isDm),
+      {
+        code: 'FORBIDDEN',
+        message: 'Cannot move DM channels into a category'
+      }
+    );
+
+    const movedChannelIds = requestedChannels
+      .filter((channel) => channel.categoryId !== input.categoryId)
+      .map((channel) => channel.id);
+
+    if (movedChannelIds.length > 0) {
+      await db
+        .update(channels)
+        .set({ categoryId: input.categoryId, updatedAt: Date.now() })
+        .where(inArray(channels.id, movedChannelIds));
+    }
 
     const existingCategoryChannels = await db
       .select({ id: channels.id })
