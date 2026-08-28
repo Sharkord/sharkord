@@ -62,6 +62,27 @@ export const channelsByCategoryIdSelector = createCachedSelector(
       .sort((a, b) => a.position - b.position || a.id - b.id)
 )((_, categoryId: number) => categoryId);
 
+export const channelIdsByCategorySelector = createSelector(
+  channelsSelector,
+  (channels) => {
+    const map: Record<number, number[]> = {};
+
+    [...channels]
+      .sort((a, b) => a.position - b.position || a.id - b.id)
+      .forEach((channel) => {
+        if (channel.categoryId === null) return;
+
+        const categoryChannelIds = map[channel.categoryId] ?? [];
+
+        categoryChannelIds.push(channel.id);
+
+        map[channel.categoryId] = categoryChannelIds;
+      });
+
+    return map;
+  }
+);
+
 export const isCurrentVoiceChannelSelectedSelector = createSelector(
   [selectedChannelIdSelector, currentVoiceChannelIdSelector],
   (selectedChannelId, currentVoiceChannelId) =>
