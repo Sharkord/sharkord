@@ -123,6 +123,8 @@
   "wasReactedBy": "{{reacters}} 做出了反应。",
   "andMore": "以及其他 {{count}} 人",
   "toggleParticipants": "显示/隐藏参与者",
+  "sendReaction": "发送表情反应",
+  "failedSendVoiceReaction": "发送表情反应失败",
   "viewingOlderMessages": "正在查看较早的消息，跳转到最新",
   "noChannelAccessTitle": "无权访问此聊天",
   "noChannelAccessDescription": "你在此语音频道中，但没有权限阅读其消息。",

@@ -2,12 +2,14 @@ import {
   ChannelPermission,
   Permission,
   ServerEvents,
-  StreamKind
+  StreamKind,
+  type TVoiceReactionEmoji
 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
 import { initTest } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
+import { config } from '../../config';
 import {
   channelRolePermissions,
   rolePermissions,
@@ -419,7 +421,8 @@ describe('voice router', () => {
           kind: StreamKind.VIDEO,
           quality: { mode: 'auto' }
         }),
-      getProducers: () => caller.voice.getProducers()
+      getProducers: () => caller.voice.getProducers(),
+      sendReaction: () => caller.voice.sendReaction({ emoji: '👍' })
     });
 
     test('should refuse every guarded route when the user is not in a voice channel', async () => {
@@ -818,6 +821,78 @@ describe('voice producer subscriptions', () => {
       expect(received).toEqual([]);
     } finally {
       subscription.unsubscribe();
+    }
+  });
+});
+
+describe('sendReaction', () => {
+  const VOICE_CHANNEL_ID = 2;
+
+  const joinChannelTwo = async (userId: number) => {
+    const runtime = new VoiceRuntime(VOICE_CHANNEL_ID);
+
+    runtime.addUser(userId, { micMuted: false, soundMuted: false });
+
+    const { caller } = await initTest(userId, undefined, {
+      currentVoiceChannelId: VOICE_CHANNEL_ID
+    });
+
+    return { runtime, caller };
+  };
+
+  test('should broadcast the reaction to every listener', async () => {
+    const { runtime, caller } = await joinChannelTwo(1);
+
+    const reactions: { channelId: number; userId: number; emoji: string }[] =
+      [];
+
+    const subscription = pubsub
+      .subscribe(ServerEvents.USER_VOICE_REACTION)
+      .subscribe({
+        next: (reaction) => {
+          reactions.push(reaction);
+        }
+      });
+
+    try {
+      await caller.voice.sendReaction({ emoji: '🎉' });
+
+      expect(reactions).toEqual([
+        { channelId: VOICE_CHANNEL_ID, userId: 1, emoji: '🎉' }
+      ]);
+    } finally {
+      subscription.unsubscribe();
+      await runtime.destroy();
+    }
+  });
+
+  test('should refuse an emoji outside the allowed set', async () => {
+    const { runtime, caller } = await joinChannelTwo(1);
+
+    try {
+      await expect(
+        caller.voice.sendReaction({
+          emoji: '💩' as TVoiceReactionEmoji
+        })
+      ).rejects.toThrow();
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should rate limit reaction spam', async () => {
+    const { runtime, caller } = await joinChannelTwo(2);
+
+    try {
+      for (let i = 0; i < config.rateLimiters.voiceReaction.maxRequests; i++) {
+        await caller.voice.sendReaction({ emoji: '👍' }).catch(() => {});
+      }
+
+      await expect(caller.voice.sendReaction({ emoji: '👍' })).rejects.toThrow(
+        'Too many requests. Please try again shortly.'
+      );
+    } finally {
+      await runtime.destroy();
     }
   });
 });

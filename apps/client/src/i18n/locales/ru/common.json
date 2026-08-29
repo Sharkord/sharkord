@@ -123,6 +123,8 @@
   "wasReactedBy": "на это отреагировали {{reacters}}.",
   "andMore": "и еще {{count}}",
   "toggleParticipants": "Показать/скрыть участников",
+  "sendReaction": "Отправить реакцию",
+  "failedSendVoiceReaction": "Не удалось отправить реакцию",
   "viewingOlderMessages": "Показаны старые сообщения, перейти к последним",
   "noChannelAccessTitle": "Нет доступа к этому чату",
   "noChannelAccessDescription": "Вы находитесь в этом голосовом канале, но у вас нет прав на чтение его сообщений.",

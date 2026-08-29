@@ -85,6 +85,7 @@ const zConfig = z.object({
     adminCreate: zRateLimiter,
     voiceTransport: zRateLimiter,
     voiceStream: zRateLimiter,
+    voiceReaction: zRateLimiter,
     useSecretToken: zRateLimiter,
     pluginExecute: zRateLimiter,
     oidc: zRateLimiter
@@ -195,6 +196,10 @@ const defaultConfig: TConfig = {
     voiceStream: {
       maxRequests: 200,
       windowMs: 60_000
+    },
+    voiceReaction: {
+      maxRequests: 20,
+      windowMs: 30_000
     },
     useSecretToken: {
       maxRequests: 5,

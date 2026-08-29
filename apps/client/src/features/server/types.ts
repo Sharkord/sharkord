@@ -1,6 +1,7 @@
 import {
   type TJoinedMessage,
   type TJoinedPublicUser,
+  type TVoiceReactionEmoji,
   type TVoiceUserState
 } from '@sharkord/shared';
 
@@ -43,6 +44,11 @@ export type TDisconnectInfo = {
 
 export type TVoiceUser = TJoinedPublicUser & {
   state: TVoiceUserState;
+};
+
+export type TVoiceReaction = {
+  emoji: TVoiceReactionEmoji;
+  id: number;
 };
 
 export type TReconnectState = {

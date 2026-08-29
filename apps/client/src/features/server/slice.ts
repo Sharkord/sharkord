@@ -26,7 +26,8 @@ import type {
   TDisconnectInfo,
   TMessagesMap,
   TReconnectState,
-  TThreadMessagesMap
+  TThreadMessagesMap,
+  TVoiceReaction
 } from './types';
 
 export interface IServerState {
@@ -59,6 +60,9 @@ export interface IServerState {
     [parentMessageId: number]: number[];
   };
   voiceMap: TVoiceMap;
+  voiceReactions: {
+    [userId: number]: TVoiceReaction;
+  };
   externalStreamsMap: TExternalStreamsMap;
   ownVoiceState: TVoiceUserState;
   pinnedCard: TPinnedCard | undefined;
@@ -102,6 +106,7 @@ const initialState: IServerState = {
   typingMap: {},
   threadTypingMap: {},
   voiceMap: {},
+  voiceReactions: {},
   externalStreamsMap: {},
   ownVoiceState: {
     micMuted: false,
@@ -782,6 +787,24 @@ export const serverSlice = createSlice({
         ...state.voiceMap[channelId].users[userId],
         ...newState
       };
+    },
+    setVoiceReaction: (
+      state,
+      action: PayloadAction<{ userId: number; reaction: TVoiceReaction }>
+    ) => {
+      const { userId, reaction } = action.payload;
+
+      state.voiceReactions[userId] = reaction;
+    },
+    clearVoiceReaction: (
+      state,
+      action: PayloadAction<{ userId: number; reactionId: number }>
+    ) => {
+      const { userId, reactionId } = action.payload;
+
+      if (state.voiceReactions[userId]?.id !== reactionId) return;
+
+      delete state.voiceReactions[userId];
     },
     updateOwnVoiceState: (
       state,

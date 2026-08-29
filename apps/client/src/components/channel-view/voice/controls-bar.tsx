@@ -1,3 +1,4 @@
+import { useIsCurrentVoiceChannelSelected } from '@/features/server/channels/hooks';
 import { useChannelCan } from '@/features/server/hooks';
 import { leaveVoice } from '@/features/server/voice/actions';
 import {
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { ControlToggleButton } from './control-toggle-button';
+import { ReactionsButton } from './reactions-button';
 
 type TControlsBarProps = {
   channelId: number;
@@ -37,6 +39,7 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
   const ownVoiceState = useOwnVoiceState();
   const channelCan = useChannelCan(channelId);
   const alwaysShowControls = useAlwaysShowVoiceControls();
+  const isConnectedToThisChannel = useIsCurrentVoiceChannelSelected();
 
   const permissions = useMemo(
     () => ({
@@ -114,6 +117,14 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
             onClick={toggleScreenShare}
             disabled={!permissions.canShareScreen}
           />
+        )}
+
+        {isConnectedToThisChannel && (
+          <>
+            <div className="h-8 border-r-2 border-border" />
+
+            <ReactionsButton />
+          </>
         )}
       </div>
       <Tooltip content="Disconnect">

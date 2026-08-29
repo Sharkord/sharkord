@@ -41,6 +41,9 @@ export const voiceChannelAudioExternalStreamsSelector = createCachedSelector(
     externalStreams.filter((stream) => stream.tracks?.audio === true)
 )((_state: IRootState, channelId: number) => channelId);
 
+export const voiceReactionSelector = (state: IRootState, userId: number) =>
+  state.server.voiceReactions[userId];
+
 export const hideNonVideoParticipantsSelector = (state: IRootState) =>
   state.server.hideNonVideoParticipants;
 

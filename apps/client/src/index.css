@@ -187,7 +187,7 @@ body {
   body {
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb-color-dark)
-      var(--scrollbar-track-color-dark);
+    var(--scrollbar-track-color-dark);
   }
 
   /* Webkit Browsers */
@@ -366,6 +366,32 @@ body {
       0 0 50px rgb(22, 163, 74, 0.4),
       0 0 75px rgb(22, 163, 74, 0.2);
   }
+}
+
+@keyframes voice-reaction-float {
+  0% {
+    opacity: 0;
+    transform: translateY(40%) scale(0.4);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0) scale(1.1);
+  }
+  18% {
+    transform: translateY(0) scale(1);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-15%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60%) scale(0.9);
+  }
+}
+
+.voice-reaction {
+  animation: voice-reaction-float ease-out forwards;
 }
 
 .speaking-effect-low {

@@ -29,6 +29,7 @@ import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { QualityButton } from './quality-button';
+import { VoiceReaction } from './voice-reaction';
 import { VolumeButton } from './volume-button';
 
 type TVoiceUserCardProps = {
@@ -135,6 +136,8 @@ const VoiceUserCard = memo(
             showStatusBadge={false}
           />
         )}
+
+        <VoiceReaction userId={userId} isCompact={isCompact} />
 
         <div
           className={cn(

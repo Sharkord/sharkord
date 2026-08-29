@@ -11,7 +11,9 @@ import { i18n } from '@/i18n';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   getTrpcError,
+  VOICE_REACTION_DURATION_MS,
   type TExternalStream,
+  type TVoiceReactionEmoji,
   type TVoiceUserState
 } from '@sharkord/shared';
 import type { RtpCapabilities } from 'mediasoup-client/types';
@@ -164,6 +166,25 @@ export const updateVoiceUserState = (
   store.dispatch(
     serverSliceActions.updateVoiceUserState({ userId, channelId, newState })
   );
+};
+
+let nextVoiceReactionId = 0;
+
+export const showVoiceReaction = (
+  userId: number,
+  emoji: TVoiceReactionEmoji
+): void => {
+  const id = ++nextVoiceReactionId;
+
+  store.dispatch(
+    serverSliceActions.setVoiceReaction({ userId, reaction: { emoji, id } })
+  );
+
+  setTimeout(() => {
+    store.dispatch(
+      serverSliceActions.clearVoiceReaction({ userId, reactionId: id })
+    );
+  }, VOICE_REACTION_DURATION_MS);
 };
 
 export const updateOwnVoiceState = (
