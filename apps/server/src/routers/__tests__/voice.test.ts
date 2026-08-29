@@ -26,6 +26,20 @@ const PRIVATE_VOICE_CHANNEL_ID = 4;
 // seeded dm channel between user 3 and user 4
 const DM_CHANNEL_ID = 3;
 
+const VOICE_CHANNEL_ID = 2;
+
+const joinVoiceChannelTwo = async (userId: number) => {
+  const runtime = new VoiceRuntime(VOICE_CHANNEL_ID);
+
+  runtime.addUser(userId, { micMuted: false, soundMuted: false });
+
+  const { caller } = await initTest(userId, undefined, {
+    currentVoiceChannelId: VOICE_CHANNEL_ID
+  });
+
+  return { runtime, caller };
+};
+
 describe('voice router', () => {
   test('should rate limit excessive voice join attempts', async () => {
     const { caller } = await initTest(1);
@@ -577,18 +591,6 @@ describe('voice router', () => {
   });
 
   describe('produce', () => {
-    const joinChannelTwo = async (userId: number) => {
-      const runtime = new VoiceRuntime(2);
-
-      runtime.addUser(userId, { micMuted: false, soundMuted: false });
-
-      const { caller } = await initTest(userId, undefined, {
-        currentVoiceChannelId: 2
-      });
-
-      return { runtime, caller };
-    };
-
     const revokeFromDefaultRole = async (permission: Permission) =>
       tdb
         .delete(rolePermissions)
@@ -602,7 +604,7 @@ describe('voice router', () => {
     test('should refuse a screen share without SHARE_SCREEN', async () => {
       await revokeFromDefaultRole(Permission.SHARE_SCREEN);
 
-      const { runtime, caller } = await joinChannelTwo(2);
+      const { runtime, caller } = await joinVoiceChannelTwo(2);
 
       try {
         await expect(
@@ -620,7 +622,7 @@ describe('voice router', () => {
     test('should refuse screen audio without SHARE_SCREEN', async () => {
       await revokeFromDefaultRole(Permission.SHARE_SCREEN);
 
-      const { runtime, caller } = await joinChannelTwo(2);
+      const { runtime, caller } = await joinVoiceChannelTwo(2);
 
       try {
         await expect(
@@ -638,7 +640,7 @@ describe('voice router', () => {
     test('should refuse a webcam stream without ENABLE_WEBCAM', async () => {
       await revokeFromDefaultRole(Permission.ENABLE_WEBCAM);
 
-      const { runtime, caller } = await joinChannelTwo(2);
+      const { runtime, caller } = await joinVoiceChannelTwo(2);
 
       try {
         await expect(
@@ -653,7 +655,7 @@ describe('voice router', () => {
       }
     });
     test('should refuse the external stream kinds outright', async () => {
-      const { runtime, caller } = await joinChannelTwo(2);
+      const { runtime, caller } = await joinVoiceChannelTwo(2);
 
       try {
         await expect(
@@ -669,7 +671,7 @@ describe('voice router', () => {
     });
 
     test('should pass the permission checks when the user holds them', async () => {
-      const { runtime, caller } = await joinChannelTwo(2);
+      const { runtime, caller } = await joinVoiceChannelTwo(2);
 
       try {
         await expect(
@@ -686,20 +688,8 @@ describe('voice router', () => {
   });
 
   describe('updateState', () => {
-    const joinAsUser2 = async () => {
-      const runtime = new VoiceRuntime(2);
-
-      runtime.addUser(2, { micMuted: false, soundMuted: false });
-
-      const { caller } = await initTest(2, undefined, {
-        currentVoiceChannelId: 2
-      });
-
-      return { runtime, caller };
-    };
-
     test('should apply a state change the user is allowed to make', async () => {
-      const { runtime, caller } = await joinAsUser2();
+      const { runtime, caller } = await joinVoiceChannelTwo(2);
 
       try {
         await caller.voice.updateState({ micMuted: true, soundMuted: true });
@@ -759,6 +749,71 @@ describe('voice router', () => {
       }
     });
   });
+
+  describe('sendReaction', () => {
+    test('should broadcast the reaction to every listener', async () => {
+      const { runtime, caller } = await joinVoiceChannelTwo(1);
+
+      const reactions: {
+        channelId: number;
+        userId: number;
+        emoji: TVoiceReactionEmoji;
+      }[] = [];
+
+      const subscription = pubsub
+        .subscribe(ServerEvents.USER_VOICE_REACTION)
+        .subscribe({
+          next: (reaction) => {
+            reactions.push(reaction);
+          }
+        });
+
+      try {
+        await caller.voice.sendReaction({ emoji: '🎉' });
+
+        expect(reactions).toEqual([
+          { channelId: VOICE_CHANNEL_ID, userId: 1, emoji: '🎉' }
+        ]);
+      } finally {
+        subscription.unsubscribe();
+        await runtime.destroy();
+      }
+    });
+
+    test('should refuse an emoji outside the allowed set', async () => {
+      const { runtime, caller } = await joinVoiceChannelTwo(1);
+
+      try {
+        await expect(
+          caller.voice.sendReaction({
+            emoji: '💩' as TVoiceReactionEmoji
+          })
+        ).rejects.toThrow();
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should rate limit reaction spam', async () => {
+      const { runtime, caller } = await joinVoiceChannelTwo(2);
+
+      try {
+        for (
+          let i = 0;
+          i < config.rateLimiters.voiceReaction.maxRequests;
+          i++
+        ) {
+          await caller.voice.sendReaction({ emoji: '👍' }).catch(() => {});
+        }
+
+        await expect(
+          caller.voice.sendReaction({ emoji: '👍' })
+        ).rejects.toThrow('Too many requests. Please try again shortly.');
+      } finally {
+        await runtime.destroy();
+      }
+    });
+  });
 });
 
 // the client subscribes to these through a caller exactly like this, and the route binds
@@ -766,8 +821,6 @@ describe('voice router', () => {
 // hands back an observable bound to no channel, which stays silent for the rest of the
 // session and leaves a member hearing nothing until they rejoin
 describe('voice producer subscriptions', () => {
-  const VOICE_CHANNEL_ID = 2;
-
   const collect = async (caller: TVoiceCaller) => {
     const received: { remoteId: number; kind: StreamKind }[] = [];
 
@@ -821,78 +874,6 @@ describe('voice producer subscriptions', () => {
       expect(received).toEqual([]);
     } finally {
       subscription.unsubscribe();
-    }
-  });
-});
-
-describe('sendReaction', () => {
-  const VOICE_CHANNEL_ID = 2;
-
-  const joinChannelTwo = async (userId: number) => {
-    const runtime = new VoiceRuntime(VOICE_CHANNEL_ID);
-
-    runtime.addUser(userId, { micMuted: false, soundMuted: false });
-
-    const { caller } = await initTest(userId, undefined, {
-      currentVoiceChannelId: VOICE_CHANNEL_ID
-    });
-
-    return { runtime, caller };
-  };
-
-  test('should broadcast the reaction to every listener', async () => {
-    const { runtime, caller } = await joinChannelTwo(1);
-
-    const reactions: { channelId: number; userId: number; emoji: string }[] =
-      [];
-
-    const subscription = pubsub
-      .subscribe(ServerEvents.USER_VOICE_REACTION)
-      .subscribe({
-        next: (reaction) => {
-          reactions.push(reaction);
-        }
-      });
-
-    try {
-      await caller.voice.sendReaction({ emoji: '🎉' });
-
-      expect(reactions).toEqual([
-        { channelId: VOICE_CHANNEL_ID, userId: 1, emoji: '🎉' }
-      ]);
-    } finally {
-      subscription.unsubscribe();
-      await runtime.destroy();
-    }
-  });
-
-  test('should refuse an emoji outside the allowed set', async () => {
-    const { runtime, caller } = await joinChannelTwo(1);
-
-    try {
-      await expect(
-        caller.voice.sendReaction({
-          emoji: '💩' as TVoiceReactionEmoji
-        })
-      ).rejects.toThrow();
-    } finally {
-      await runtime.destroy();
-    }
-  });
-
-  test('should rate limit reaction spam', async () => {
-    const { runtime, caller } = await joinChannelTwo(2);
-
-    try {
-      for (let i = 0; i < config.rateLimiters.voiceReaction.maxRequests; i++) {
-        await caller.voice.sendReaction({ emoji: '👍' }).catch(() => {});
-      }
-
-      await expect(caller.voice.sendReaction({ emoji: '👍' })).rejects.toThrow(
-        'Too many requests. Please try again shortly.'
-      );
-    } finally {
-      await runtime.destroy();
     }
   });
 });

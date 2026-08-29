@@ -123,7 +123,7 @@
   "wasReactedBy": "{{reacters}} a réagi.",
   "andMore": "et {{count}} autres",
   "toggleParticipants": "Afficher/masquer les participants",
-  "sendReaction": "Envoyer une réaction",
+  "sendVoiceReaction": "Envoyer une réaction",
   "failedSendVoiceReaction": "Échec de l'envoi de la réaction",
   "viewingOlderMessages": "Affichage d’anciens messages, aller aux plus récents",
   "noChannelAccessTitle": "Aucun accès à ce salon",

@@ -2,6 +2,7 @@ export * from './metrics';
 export * from './permissions';
 export * from './storage';
 export * from './upload';
+export * from './voice';
 
 export const DEFAULT_MESSAGES_LIMIT = 100;
 export const MESSAGE_MAX_LENGTH = 10_000;
@@ -22,21 +23,3 @@ export enum DisconnectCode {
 }
 
 export const DELETED_USER_IDENTITY_AND_NAME = '__deleted_user__'; // this will be used as identity AND name, but in the interface we render as "Deleted"
-
-export const DEFAULT_BITRATE = 6000; // kbps,
-
-export const VOICE_REACTION_EMOJIS = [
-  '💖',
-  '👍',
-  '🎉',
-  '👏',
-  '😄',
-  '😮',
-  '😢',
-  '🤔',
-  '👎'
-] as const;
-
-export type TVoiceReactionEmoji = (typeof VOICE_REACTION_EMOJIS)[number];
-
-export const VOICE_REACTION_DURATION_MS = 2600;

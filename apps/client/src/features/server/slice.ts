@@ -29,8 +29,7 @@ import type {
   TThreadMessagesMap,
   TVoiceReaction
 } from './types';
-
-const MAX_VOICE_REACTIONS_PER_USER = 5;
+import { MAX_VOICE_REACTIONS_PER_USER } from './voice/statics';
 
 export interface IServerState {
   connected: boolean;
@@ -807,7 +806,7 @@ export const serverSlice = createSlice({
 
       if (reactions.length > MAX_VOICE_REACTIONS_PER_USER) reactions.shift();
     },
-    clearVoiceReaction: (
+    removeVoiceReaction: (
       state,
       action: PayloadAction<{ userId: number; reactionId: number }>
     ) => {

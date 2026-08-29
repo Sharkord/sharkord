@@ -123,7 +123,7 @@
   "wasReactedBy": "reagovali {{reacters}}.",
   "andMore": "a dalších {{count}}",
   "toggleParticipants": "Zobrazit/skrýt účastníky",
-  "sendReaction": "Odeslat reakci",
+  "sendVoiceReaction": "Odeslat reakci",
   "failedSendVoiceReaction": "Nepodařilo se odeslat reakci",
   "viewingOlderMessages": "Zobrazují se starší zprávy, přejít na nejnovější",
   "noChannelAccessTitle": "Bez přístupu k tomuto chatu",

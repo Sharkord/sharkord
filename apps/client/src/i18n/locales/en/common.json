@@ -125,7 +125,7 @@
   "typeAMessage": "Type a message...",
   "messageChannel": "Message \"{{name}}\"",
   "toggleParticipants": "Show/hide participants",
-  "sendReaction": "Send a reaction",
+  "sendVoiceReaction": "Send a reaction",
   "failedSendVoiceReaction": "Failed to send reaction",
   "viewingOlderMessages": "Viewing older messages, jump to the latest",
   "noChannelAccessTitle": "No access to this chat",

@@ -57,13 +57,13 @@ const ReactionsButton = memo(() => {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <Tooltip content={t('sendReaction')}>
+      <Tooltip content={t('sendVoiceReaction')}>
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
             className="rounded size-8 transition-all duration-200 hover:bg-muted/60"
-            aria-label={t('sendReaction')}
+            aria-label={t('sendVoiceReaction')}
           >
             <Smile className="size-4" />
           </Button>

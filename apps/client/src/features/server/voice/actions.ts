@@ -11,7 +11,6 @@ import { i18n } from '@/i18n';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   getTrpcError,
-  VOICE_REACTION_DURATION_MS,
   type TExternalStream,
   type TVoiceReactionEmoji,
   type TVoiceUserState
@@ -30,6 +29,7 @@ import { serverSliceActions } from '../slice';
 import { SoundType } from '../types';
 import { ownUserIdSelector } from '../users/selectors';
 import { ownVoiceStateSelector } from './selectors';
+import { VOICE_REACTION_DURATION_MS } from './statics';
 
 export const addUserToVoiceChannel = (
   userId: number,
@@ -170,9 +170,6 @@ export const updateVoiceUserState = (
 
 let nextVoiceReactionId = 0;
 
-const randomOffset = (min: number, max: number): number =>
-  (min + Math.random() * (max - min)) * (Math.random() < 0.5 ? -1 : 1);
-
 export const showVoiceReaction = (
   userId: number,
   emoji: TVoiceReactionEmoji
@@ -180,21 +177,12 @@ export const showVoiceReaction = (
   const id = ++nextVoiceReactionId;
 
   store.dispatch(
-    serverSliceActions.addVoiceReaction({
-      userId,
-      reaction: {
-        emoji,
-        id,
-        drift: randomOffset(12, 46),
-        rotation: randomOffset(5, 14),
-        scale: 0.85 + Math.random() * 0.3
-      }
-    })
+    serverSliceActions.addVoiceReaction({ userId, reaction: { id, emoji } })
   );
 
   setTimeout(() => {
     store.dispatch(
-      serverSliceActions.clearVoiceReaction({ userId, reactionId: id })
+      serverSliceActions.removeVoiceReaction({ userId, reactionId: id })
     );
   }, VOICE_REACTION_DURATION_MS);
 };

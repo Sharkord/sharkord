@@ -123,7 +123,7 @@
   "wasReactedBy": "ha sido reaccionado por {{reacters}}.",
   "andMore": "y {{count}} más",
   "toggleParticipants": "Mostrar/ocultar participantes",
-  "sendReaction": "Enviar una reacción",
+  "sendVoiceReaction": "Enviar una reacción",
   "failedSendVoiceReaction": "No se pudo enviar la reacción",
   "viewingOlderMessages": "Viendo mensajes antiguos, ir a los más recientes",
   "noChannelAccessTitle": "Sin acceso a este chat",
