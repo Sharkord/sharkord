@@ -49,6 +49,9 @@ export type TVoiceUser = TJoinedPublicUser & {
 export type TVoiceReaction = {
   emoji: TVoiceReactionEmoji;
   id: number;
+  drift: number;
+  rotation: number;
+  scale: number;
 };
 
 export type TReconnectState = {

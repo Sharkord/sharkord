@@ -187,7 +187,7 @@ body {
   body {
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb-color-dark)
-    var(--scrollbar-track-color-dark);
+      var(--scrollbar-track-color-dark);
   }
 
   /* Webkit Browsers */
@@ -368,30 +368,54 @@ body {
   }
 }
 
-@keyframes voice-reaction-float {
+@keyframes voice-reaction-rise {
   0% {
     opacity: 0;
-    transform: translateY(40%) scale(0.4);
+    transform: translate3d(0, 30%, 0);
   }
-  10% {
+  12% {
     opacity: 1;
-    transform: translateY(0) scale(1.1);
   }
-  18% {
-    transform: translateY(0) scale(1);
-  }
-  70% {
+  65% {
     opacity: 1;
-    transform: translateY(-15%) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translateY(-60%) scale(0.9);
+    transform: translate3d(var(--vr-drift), -210%, 0);
+  }
+}
+
+@keyframes voice-reaction-pop {
+  0% {
+    transform: scale(0.2) rotate(0deg);
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  14% {
+    transform: scale(var(--vr-scale)) rotate(var(--vr-rotation));
+    animation-timing-function: ease-in-out;
+  }
+  48% {
+    transform: scale(var(--vr-scale)) rotate(calc(var(--vr-rotation) * -1));
+    animation-timing-function: ease-in-out;
+  }
+  78% {
+    transform: scale(var(--vr-scale)) rotate(var(--vr-rotation));
+    animation-timing-function: ease-in;
+  }
+  100% {
+    transform: scale(calc(var(--vr-scale) * 0.7)) rotate(0deg);
   }
 }
 
 .voice-reaction {
-  animation: voice-reaction-float ease-out forwards;
+  animation: voice-reaction-rise var(--vr-duration)
+    cubic-bezier(0.19, 0.72, 0.34, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.voice-reaction-emoji {
+  animation: voice-reaction-pop var(--vr-duration) linear forwards;
+  will-change: transform;
 }
 
 .speaking-effect-low {

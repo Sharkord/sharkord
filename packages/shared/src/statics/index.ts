@@ -39,4 +39,4 @@ export const VOICE_REACTION_EMOJIS = [
 
 export type TVoiceReactionEmoji = (typeof VOICE_REACTION_EMOJIS)[number];
 
-export const VOICE_REACTION_DURATION_MS = 5000;
+export const VOICE_REACTION_DURATION_MS = 2600;

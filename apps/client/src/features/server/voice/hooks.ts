@@ -15,7 +15,7 @@ import {
   voiceChannelAudioExternalStreamsSelector,
   voiceChannelExternalStreamsListSelector,
   voiceMoveTargetChannelIdSelector,
-  voiceReactionSelector
+  voiceReactionsSelector
 } from './selectors';
 
 export const useVoiceChannelExternalStreamsList = (channelId: number) =>
@@ -47,8 +47,8 @@ export const usePinnedCard = () => useSelector(pinnedCardSelector);
 export const useVoiceMoveTargetChannelId = () =>
   useSelector(voiceMoveTargetChannelIdSelector);
 
-export const useVoiceReaction = (userId: number) =>
-  useSelector((state: IRootState) => voiceReactionSelector(state, userId));
+export const useVoiceReactions = (userId: number) =>
+  useSelector((state: IRootState) => voiceReactionsSelector(state, userId));
 
 export const useHideNonVideoParticipants = () =>
   useSelector(hideNonVideoParticipantsSelector);

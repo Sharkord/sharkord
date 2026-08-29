@@ -170,6 +170,9 @@ export const updateVoiceUserState = (
 
 let nextVoiceReactionId = 0;
 
+const randomOffset = (min: number, max: number): number =>
+  (min + Math.random() * (max - min)) * (Math.random() < 0.5 ? -1 : 1);
+
 export const showVoiceReaction = (
   userId: number,
   emoji: TVoiceReactionEmoji
@@ -177,7 +180,16 @@ export const showVoiceReaction = (
   const id = ++nextVoiceReactionId;
 
   store.dispatch(
-    serverSliceActions.setVoiceReaction({ userId, reaction: { emoji, id } })
+    serverSliceActions.addVoiceReaction({
+      userId,
+      reaction: {
+        emoji,
+        id,
+        drift: randomOffset(12, 46),
+        rotation: randomOffset(5, 14),
+        scale: 0.85 + Math.random() * 0.3
+      }
+    })
   );
 
   setTimeout(() => {

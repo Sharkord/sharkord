@@ -30,6 +30,8 @@ import type {
   TVoiceReaction
 } from './types';
 
+const MAX_VOICE_REACTIONS_PER_USER = 5;
+
 export interface IServerState {
   connected: boolean;
   connecting: boolean;
@@ -61,7 +63,7 @@ export interface IServerState {
   };
   voiceMap: TVoiceMap;
   voiceReactions: {
-    [userId: number]: TVoiceReaction;
+    [userId: number]: TVoiceReaction[];
   };
   externalStreamsMap: TExternalStreamsMap;
   ownVoiceState: TVoiceUserState;
@@ -788,23 +790,41 @@ export const serverSlice = createSlice({
         ...newState
       };
     },
-    setVoiceReaction: (
+    addVoiceReaction: (
       state,
       action: PayloadAction<{ userId: number; reaction: TVoiceReaction }>
     ) => {
       const { userId, reaction } = action.payload;
+      const reactions = state.voiceReactions[userId];
 
-      state.voiceReactions[userId] = reaction;
+      if (!reactions) {
+        state.voiceReactions[userId] = [reaction];
+
+        return;
+      }
+
+      reactions.push(reaction);
+
+      if (reactions.length > MAX_VOICE_REACTIONS_PER_USER) reactions.shift();
     },
     clearVoiceReaction: (
       state,
       action: PayloadAction<{ userId: number; reactionId: number }>
     ) => {
       const { userId, reactionId } = action.payload;
+      const reactions = state.voiceReactions[userId];
 
-      if (state.voiceReactions[userId]?.id !== reactionId) return;
+      if (!reactions) return;
 
-      delete state.voiceReactions[userId];
+      const remaining = reactions.filter(({ id }) => id !== reactionId);
+
+      if (!remaining.length) {
+        delete state.voiceReactions[userId];
+
+        return;
+      }
+
+      state.voiceReactions[userId] = remaining;
     },
     updateOwnVoiceState: (
       state,
