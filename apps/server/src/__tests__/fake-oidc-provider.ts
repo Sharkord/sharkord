@@ -175,6 +175,21 @@ const startFakeOidcProvider = async () => {
         return;
       }
 
+      // a real provider compares this against the authorize request, and a mismatch is how
+      // a proxy scheme confusion surfaces
+      if (params.get('redirect_uri') !== pending.redirectUri) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            error: 'invalid_grant',
+            error_description:
+              "The 'redirect_uri' from this request does not match the one from the authorize request."
+          })
+        );
+
+        return;
+      }
+
       // a provider that skipped this would hide a broken PKCE implementation on our side
       if (pending.codeChallenge) {
         const verifier = params.get('code_verifier') ?? '';

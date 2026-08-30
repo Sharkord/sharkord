@@ -238,6 +238,42 @@ describe('client authentication method', () => {
   });
 });
 
+describe('behind a tls terminating proxy', () => {
+  const PROXY_HEADERS = { 'x-forwarded-proto': 'https' };
+
+  test('should send the same redirect_uri to authorize and to token', async () => {
+    const loginResponse = await fetch(`${testsBaseUrl}/oidc/login`, {
+      redirect: 'manual',
+      headers: PROXY_HEADERS
+    });
+
+    const authorizeUrl = new URL(loginResponse.headers.get('location')!);
+    const cookie = getStateCookie(loginResponse);
+
+    expect(authorizeUrl.searchParams.get('redirect_uri')).toStartWith(
+      'https://'
+    );
+
+    const authorizeResponse = await fetch(authorizeUrl, { redirect: 'manual' });
+
+    // the proxy hands the request on over plain http, which is what the server sees
+    const forwarded = new URL(authorizeResponse.headers.get('location')!);
+
+    forwarded.protocol = 'http:';
+
+    const callbackResponse = await fetch(forwarded, {
+      redirect: 'manual',
+      headers: { ...PROXY_HEADERS, cookie }
+    });
+
+    const target = new URL(callbackResponse.headers.get('location')!);
+
+    expect(target.searchParams.get('oidc_error')).toBeNull();
+    expect(target.searchParams.get('oidc')).not.toBeNull();
+    expect(target.protocol).toBe('https:');
+  });
+});
+
 describe('/oidc/callback', () => {
   test('should create the user, assign the default role and back fill read states', async () => {
     const token = await signIn();
