@@ -133,6 +133,8 @@ export enum OidcError {
   ACCESS_DENIED = 'access_denied',
   INVALID_STATE = 'invalid_state',
   EXPIRED = 'expired',
+  RATE_LIMITED = 'rate_limited',
+  REGISTRATION_CLOSED = 'registration_closed',
   SERVER_ERROR = 'server_error'
 }
 

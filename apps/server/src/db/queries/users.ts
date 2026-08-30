@@ -244,6 +244,7 @@ const getJoinedUser = async (
       bannedAt: users.bannedAt,
       tokenVersion: users.tokenVersion,
       oidcSub: users.oidcSub,
+      oidcIssuer: users.oidcIssuer,
       passwordSet: users.passwordSet,
       avatar: avatarFiles,
       banner: bannerFiles
@@ -342,6 +343,7 @@ const getUsers = async (): Promise<TJoinedUser[]> => {
           bannedAt: users.bannedAt,
           tokenVersion: users.tokenVersion,
           oidcSub: users.oidcSub,
+          oidcIssuer: users.oidcIssuer,
           passwordSet: users.passwordSet,
           avatar: avatarFiles,
           banner: bannerFiles
@@ -398,6 +400,7 @@ const getUsers = async (): Promise<TJoinedUser[]> => {
     bannedAt: result.bannedAt,
     tokenVersion: result.tokenVersion,
     oidcSub: result.oidcSub,
+    oidcIssuer: result.oidcIssuer,
     passwordSet: result.passwordSet,
     roleIds: rolesMap[result.id] || []
   }));

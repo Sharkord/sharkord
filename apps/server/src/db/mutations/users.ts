@@ -17,6 +17,7 @@ type TCreateUserOptions = {
   hashedPassword: string;
   name?: string;
   oidcSub?: string;
+  oidcIssuer?: string;
   inviteCode?: string;
   inviteRoleId?: number | null;
 };
@@ -26,6 +27,7 @@ const createUser = async ({
   hashedPassword,
   name,
   oidcSub,
+  oidcIssuer,
   inviteCode,
   inviteRoleId
 }: TCreateUserOptions): Promise<number> => {
@@ -66,6 +68,7 @@ const createUser = async ({
         name: name || `SharkordUser${randomNum}`,
         identity,
         oidcSub,
+        oidcIssuer,
         // an account born at the provider gets an unusable random hash, so there is no
         // current password its owner could supply to change it
         passwordSet: !oidcSub,
@@ -139,11 +142,23 @@ const createUser = async ({
   });
 };
 
-const linkOidcSub = async (userId: number, oidcSub: string) => {
+const invalidateUserSessions = async (userId: number) => {
   await db
     .update(users)
-    .set({ oidcSub, updatedAt: Date.now() })
+    .set({ tokenVersion: sql`${users.tokenVersion} + 1` })
+    .where(eq(users.id, userId))
+    .run();
+};
+
+const linkOidcSub = async (
+  userId: number,
+  oidcSub: string,
+  oidcIssuer: string
+) => {
+  await db
+    .update(users)
+    .set({ oidcSub, oidcIssuer, updatedAt: Date.now() })
     .where(eq(users.id, userId));
 };
 
-export { createUser, linkOidcSub };
+export { createUser, invalidateUserSessions, linkOidcSub };

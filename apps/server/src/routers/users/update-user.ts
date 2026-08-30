@@ -1,6 +1,7 @@
 import {
   DELETED_USER_IDENTITY_AND_NAME,
-  HEX_COLOR_REGEX
+  HEX_COLOR_REGEX,
+  MAX_USER_NAME_LENGTH
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -16,7 +17,7 @@ const updateUserRoute = protectedProcedure
         .string()
         .trim()
         .min(1)
-        .max(24)
+        .max(MAX_USER_NAME_LENGTH)
         .refine((val) => val !== DELETED_USER_IDENTITY_AND_NAME, {
           message: 'Protected username'
         }),

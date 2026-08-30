@@ -27,7 +27,10 @@ const useOidcAutoRedirect = () => {
       hasDisconnectInfo: !!disconnectInfo,
       isLocalLoginDisabled: !!info?.oidcDisableLocalLogin,
       hasSavedToken: !!getLocalStorageItem(LocalStorageKey.AUTO_LOGIN_TOKEN),
-      isHandlingCallback: isHandlingOidcCallback(window.location.search),
+      isHandlingCallback: isHandlingOidcCallback(
+        window.location.search,
+        window.location.hash
+      ),
       isSuppressed: isOidcAutoRedirectSuppressed()
     });
 
