@@ -96,7 +96,11 @@ const completeOidcCallback = async (
 
   const oidcConfig = await oidcManager.getConfiguration();
 
-  const tokens = await client.authorizationCodeGrant(oidcConfig, url, {
+  const callbackUrl = new URL(transaction.redirectUri);
+
+  callbackUrl.search = url.search;
+
+  const tokens = await client.authorizationCodeGrant(oidcConfig, callbackUrl, {
     pkceCodeVerifier: transaction.codeVerifier,
     expectedState: stateParam,
     expectedNonce: transaction.nonce

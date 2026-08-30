@@ -26,7 +26,7 @@ const oidcLoginRouteHandler = async (
     const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
     const redirectUri = oidcManager.resolveRedirectUri(req);
 
-    oidcManager.startTransaction(state, { nonce, codeVerifier });
+    oidcManager.startTransaction(state, { nonce, codeVerifier, redirectUri });
 
     const authorizationUrl = client.buildAuthorizationUrl(oidcConfig, {
       redirect_uri: redirectUri,

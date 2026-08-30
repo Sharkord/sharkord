@@ -18,6 +18,7 @@ type TExpiring = { expiresAt: number };
 type TOidcTransaction = TExpiring & {
   nonce: string;
   codeVerifier: string;
+  redirectUri: string;
 };
 
 type TOidcHandoff = TExpiring & {
