@@ -16,6 +16,8 @@
     "access_denied": "你的身份提供商拒绝了此次登录。",
     "invalid_state": "无法验证此登录请求，请重试。",
     "expired": "此登录请求已过期，请重试。",
+    "rate_limited": "登录尝试次数过多，请稍候再试。",
+    "registration_closed": "此服务器不接受新注册。请联系管理员为你创建账号。",
     "server_error": "登录时出现问题，请重试。"
   },
   "loggingInAutomatically": "正在自动登录...",

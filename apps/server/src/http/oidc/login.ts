@@ -1,4 +1,4 @@
-import { getErrorMessage } from '@sharkord/shared';
+import { getErrorMessage, OidcError } from '@sharkord/shared';
 import type http from 'http';
 import * as client from 'openid-client';
 import type { getWsInfo } from '../../helpers/get-ws-info';
@@ -7,15 +7,20 @@ import {
   TRANSACTION_TTL_SECONDS
 } from '../../helpers/oidc/manager';
 import { logger } from '../../logger';
-import { sendJsonError } from '../helpers';
-import { buildStateCookie, guardOidcRoute } from './common';
+import { buildStateCookie, guardOidcRoute, redirectWithError } from './common';
 
 const oidcLoginRouteHandler = async (
   req: http.IncomingMessage,
   res: http.ServerResponse,
   { info }: { info: ReturnType<typeof getWsInfo> }
 ) => {
-  if (!guardOidcRoute(req, res, info?.ip, '/oidc/login')) return;
+  const guarded = guardOidcRoute(req, res, {
+    ip: info?.ip,
+    route: '/oidc/login',
+    isNavigation: true
+  });
+
+  if (!guarded) return;
 
   try {
     const oidcConfig = await oidcManager.getConfiguration();
@@ -46,7 +51,7 @@ const oidcLoginRouteHandler = async (
   } catch (error) {
     logger.error('OIDC login failed to start: %s', getErrorMessage(error));
 
-    sendJsonError(res, 500, 'Internal server error');
+    redirectWithError(req, res, OidcError.SERVER_ERROR);
   }
 };
 

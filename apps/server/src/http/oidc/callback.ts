@@ -4,32 +4,21 @@ import jwt from 'jsonwebtoken';
 import * as client from 'openid-client';
 import { getServerToken } from '../../db/queries/server';
 import type { getWsInfo } from '../../helpers/get-ws-info';
+import { OidcCallbackError } from '../../helpers/oidc/error';
 import { oidcManager } from '../../helpers/oidc/manager';
 import { resolveOidcUser, type TOidcClaims } from '../../helpers/oidc/user';
-import { safeCompare } from '../../helpers/safe-compare';
 import { logger } from '../../logger';
-import { getPublicOrigin } from '../helpers';
 import {
   clearStateCookie,
-  getCookie,
   guardOidcRoute,
-  OIDC_STATE_COOKIE,
+  hasStateCookie,
   redirectWithError
 } from './common';
-
-class OidcCallbackError extends Error {
-  constructor(
-    readonly code: OidcError,
-    message: string
-  ) {
-    super(message);
-  }
-}
 
 const collectClaims = async (
   oidcConfig: client.Configuration,
   tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers
-): Promise<TOidcClaims> => {
+): Promise<{ claims: TOidcClaims; userInfoFailed: boolean }> => {
   const idTokenClaims = tokens.claims();
 
   if (!idTokenClaims?.sub) {
@@ -44,7 +33,9 @@ const collectClaims = async (
     !idTokenClaims.preferred_username ||
     !idTokenClaims.picture;
 
-  if (!needsUserInfo) return { ...idTokenClaims };
+  if (!needsUserInfo) {
+    return { claims: { ...idTokenClaims }, userInfoFailed: false };
+  }
 
   try {
     const userInfo = await client.fetchUserInfo(
@@ -53,23 +44,23 @@ const collectClaims = async (
       idTokenClaims.sub
     );
 
-    return { ...userInfo, ...idTokenClaims };
+    return { claims: { ...userInfo, ...idTokenClaims }, userInfoFailed: false };
   } catch (error) {
     logger.warn(
       'OIDC userinfo request failed, continuing with ID token claims only: %s',
       getErrorMessage(error)
     );
 
-    return { ...idTokenClaims };
+    return { claims: { ...idTokenClaims }, userInfoFailed: true };
   }
 };
 
 const completeOidcCallback = async (
   req: http.IncomingMessage,
-  url: URL
-): Promise<string> => {
+  url: URL,
+  ip: string | undefined
+): Promise<{ handoffCode: string; origin: string }> => {
   const stateParam = url.searchParams.get('state');
-  const stateCookie = getCookie(req, OIDC_STATE_COOKIE);
 
   if (url.searchParams.has('error')) {
     throw new OidcCallbackError(
@@ -78,10 +69,10 @@ const completeOidcCallback = async (
     );
   }
 
-  if (!stateParam || !stateCookie || !safeCompare(stateParam, stateCookie)) {
+  if (!stateParam || !hasStateCookie(req, stateParam)) {
     throw new OidcCallbackError(
       OidcError.INVALID_STATE,
-      'State parameter does not match the state cookie'
+      'No state cookie for the state this callback carries'
     );
   }
 
@@ -106,8 +97,8 @@ const completeOidcCallback = async (
     expectedNonce: transaction.nonce
   });
 
-  const claims = await collectClaims(oidcConfig, tokens);
-  const { user } = await resolveOidcUser(claims);
+  const { claims, userInfoFailed } = await collectClaims(oidcConfig, tokens);
+  const { user } = await resolveOidcUser(claims, { userInfoFailed, ip });
 
   if (user.banned) {
     throw new OidcCallbackError(
@@ -124,7 +115,10 @@ const completeOidcCallback = async (
     { expiresIn: '604800s' } // 7 days, matching the password login
   );
 
-  return oidcManager.createHandoff(token);
+  return {
+    handoffCode: oidcManager.createHandoff(token, stateParam),
+    origin: callbackUrl.origin
+  };
 };
 
 const oidcCallbackRouteHandler = async (
@@ -132,20 +126,28 @@ const oidcCallbackRouteHandler = async (
   res: http.ServerResponse,
   { info, url }: { info: ReturnType<typeof getWsInfo>; url: URL }
 ) => {
-  if (!guardOidcRoute(req, res, info?.ip, '/oidc/callback')) return;
+  const guarded = guardOidcRoute(req, res, {
+    ip: info?.ip,
+    route: '/oidc/callback',
+    isNavigation: true
+  });
 
-  const origin = getPublicOrigin(req);
-  const clearCookie = clearStateCookie(req);
+  if (!guarded) return;
+
+  const state = url.searchParams.get('state');
 
   try {
-    const handoffCode = await completeOidcCallback(req, url);
+    const { handoffCode, origin } = await completeOidcCallback(
+      req,
+      url,
+      info?.ip
+    );
     const target = new URL(origin);
 
-    target.searchParams.set('oidc', handoffCode);
+    target.hash = `oidc=${handoffCode}`;
 
     res.writeHead(302, {
       'Cache-Control': 'no-store',
-      'Set-Cookie': clearCookie,
       Location: target.toString()
     });
     res.end();
@@ -164,7 +166,12 @@ const oidcCallbackRouteHandler = async (
       logger.error('OIDC callback failed: %s', getErrorMessage(error));
     }
 
-    redirectWithError(res, origin, code, { 'Set-Cookie': clearCookie });
+    redirectWithError(
+      req,
+      res,
+      code,
+      state ? { 'Set-Cookie': clearStateCookie(req, state) } : {}
+    );
   }
 };
 

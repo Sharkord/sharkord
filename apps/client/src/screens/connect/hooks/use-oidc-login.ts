@@ -1,6 +1,6 @@
 import { useInfo } from '@/features/server/hooks';
 import { getUrlFromServer } from '@/helpers/get-file-url';
-import { startOidcLogin } from '@/helpers/oidc';
+import { getOidcHandoffCode, startOidcLogin } from '@/helpers/oidc';
 import { useStrictEffect } from '@/hooks/use-strict-effect';
 import { OidcError } from '@sharkord/shared';
 import { useCallback, useState } from 'react';
@@ -11,15 +11,15 @@ type TUseOidcLoginOptions = {
   onToken: (token: string) => Promise<void>;
 };
 
-const getSearchParam = (name: string) =>
-  new URLSearchParams(window.location.search).get(name);
+const getOidcError = () =>
+  new URLSearchParams(window.location.search).get('oidc_error');
 
 const useOidcLogin = ({ onToken }: TUseOidcLoginOptions) => {
   const { t } = useTranslation('connect');
   const info = useInfo();
 
   const [isCompleting, setIsCompleting] = useState(
-    () => !!getSearchParam('oidc')
+    () => !!getOidcHandoffCode()
   );
 
   const exchangeCode = useCallback(
@@ -48,8 +48,8 @@ const useOidcLogin = ({ onToken }: TUseOidcLoginOptions) => {
   );
 
   useStrictEffect(() => {
-    const code = getSearchParam('oidc');
-    const error = getSearchParam('oidc_error');
+    const code = getOidcHandoffCode();
+    const error = getOidcError();
 
     if (!code && !error) return;
 

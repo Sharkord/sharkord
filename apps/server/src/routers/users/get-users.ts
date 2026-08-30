@@ -12,7 +12,8 @@ const getUsersRoute = protectedProcedure.query(async ({ ctx }) => {
     'identity',
     'password',
     'tokenVersion',
-    'oidcSub'
+    'oidcSub',
+    'oidcIssuer'
   ]);
 });
 

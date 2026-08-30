@@ -70,16 +70,22 @@ describe('shouldAutoRedirectToOidc', () => {
 
 describe('isHandlingOidcCallback', () => {
   test('should detect a successful callback', () => {
-    expect(isHandlingOidcCallback('?oidc=some-code')).toBe(true);
+    expect(isHandlingOidcCallback('', '#oidc=some-code')).toBe(true);
   });
 
   test('should detect a failed callback', () => {
-    expect(isHandlingOidcCallback('?oidc_error=server_error')).toBe(true);
+    expect(isHandlingOidcCallback('?oidc_error=server_error', '')).toBe(true);
   });
 
   test('should ignore unrelated query strings', () => {
-    expect(isHandlingOidcCallback('?invite=abc123')).toBe(false);
-    expect(isHandlingOidcCallback('')).toBe(false);
+    expect(isHandlingOidcCallback('?invite=abc123', '')).toBe(false);
+    expect(isHandlingOidcCallback('', '')).toBe(false);
+  });
+
+  // the code used to arrive in the query string, where it landed in every access log on
+  // the way. a stale link like that is not a callback this build can complete
+  test('should ignore a code left in the query string', () => {
+    expect(isHandlingOidcCallback('?oidc=some-code', '')).toBe(false);
   });
 });
 

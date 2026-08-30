@@ -1,6 +1,7 @@
 import {
   ActivityLogType,
   ChannelPermission,
+  DisconnectCode,
   getErrorMessage,
   OWNER_ROLE_ID,
   Permission,
@@ -52,6 +53,14 @@ const untrackUserSocket = (userId: number, ws: WebSocket) => {
 
 const getUserIp = (userId: number): string | undefined => {
   return usersIpMap.get(userId);
+};
+
+const disconnectUser = (
+  userId: number,
+  code: DisconnectCode,
+  reason?: string
+) => {
+  userSockets.get(userId)?.forEach((socket) => socket.close(code, reason));
 };
 
 const getOnlineUserIds = (): number[] => Array.from(userSockets.keys());
@@ -273,6 +282,7 @@ const createWsServer = async (server: http.Server) => {
 export {
   createContext,
   createWsServer,
+  disconnectUser,
   getOnlineUserIds,
   getUserIp,
   handleSocketClose

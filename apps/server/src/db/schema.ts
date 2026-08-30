@@ -186,6 +186,7 @@ const users = sqliteTable(
     bannedAt: integer('banned_at'),
     tokenVersion: integer('token_version').notNull().default(0),
     oidcSub: text('oidc_sub').unique(),
+    oidcIssuer: text('oidc_issuer'),
     passwordSet: integer('password_set', { mode: 'boolean' })
       .notNull()
       .default(true),
@@ -520,6 +521,29 @@ const directMessages = sqliteTable(
   ]
 );
 
+const oidcTransactions = sqliteTable(
+  'oidc_transactions',
+  {
+    state: text('state').primaryKey(),
+    nonce: text('nonce').notNull(),
+    codeVerifier: text('code_verifier').notNull(),
+    redirectUri: text('redirect_uri').notNull(),
+    expiresAt: integer('expires_at').notNull()
+  },
+  (t) => [index('oidc_transactions_expires_idx').on(t.expiresAt)]
+);
+
+const oidcHandoffs = sqliteTable(
+  'oidc_handoffs',
+  {
+    code: text('code').primaryKey(),
+    token: text('token').notNull(),
+    state: text('state').notNull(),
+    expiresAt: integer('expires_at').notNull()
+  },
+  (t) => [index('oidc_handoffs_expires_idx').on(t.expiresAt)]
+);
+
 const pluginData = sqliteTable('plugin_data', {
   pluginId: text('plugin_id').notNull().primaryKey(),
   enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
@@ -544,6 +568,8 @@ export {
   messageFiles,
   messageReactions,
   messages,
+  oidcHandoffs,
+  oidcTransactions,
   pluginData,
   rolePermissions,
   roles,

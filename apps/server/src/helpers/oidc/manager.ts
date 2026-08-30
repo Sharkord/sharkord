@@ -2,28 +2,24 @@ import { randomBytes } from 'crypto';
 import type http from 'http';
 import * as client from 'openid-client';
 import { config } from '../../config';
+import {
+  createOidcHandoff,
+  createOidcTransaction,
+  takeOidcHandoff,
+  takeOidcTransaction
+} from '../../db/mutations/oidc';
 import { getPublicOrigin } from '../../http/helpers';
 import { logger } from '../../logger';
 
-const WELL_KNOWN_SUFFIX = '/.well-known/openid-configuration';
 const DISCOVERY_CACHE_TTL_MS = 5 * 60 * 1000;
 
-// the state cookie is given the transaction's lifetime, so the two cannot drift apart
-const TRANSACTION_TTL_SECONDS = 5 * 60;
+// the state cookie is given the transaction's lifetime, so the two cannot drift apart.
+// long enough to survive mfa enrolment or a password reset on the provider side
+const TRANSACTION_TTL_SECONDS = 15 * 60;
 const TRANSACTION_TTL_MS = TRANSACTION_TTL_SECONDS * 1000;
 const HANDOFF_TTL_MS = 60 * 1000;
 
 type TExpiring = { expiresAt: number };
-
-type TOidcTransaction = TExpiring & {
-  nonce: string;
-  codeVerifier: string;
-  redirectUri: string;
-};
-
-type TOidcHandoff = TExpiring & {
-  token: string;
-};
 
 const isLocalHostname = (hostname: string) =>
   hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
@@ -32,39 +28,12 @@ class OidcManager {
   private discovery:
     | ({ value: client.Configuration; issuer: string } & TExpiring)
     | null = null;
-  private transactions = new Map<string, TOidcTransaction>();
-  private handoffs = new Map<string, TOidcHandoff>();
 
-  private sweep = (entries: Map<string, TExpiring>) => {
-    const now = Date.now();
-
-    for (const [key, entry] of entries) {
-      if (entry.expiresAt <= now) entries.delete(key);
-    }
-  };
-
-  private takeIfFresh = <T extends TExpiring>(
-    entries: Map<string, T>,
-    key: string
-  ): T | undefined => {
-    const entry = entries.get(key);
-
-    entries.delete(key);
-
-    if (!entry || entry.expiresAt <= Date.now()) return undefined;
-
-    return entry;
-  };
-
-  public getIssuerUrl = (): URL => {
-    const issuer = config.oidc.issuer.trim().replace(/\/+$/, '');
-
-    return new URL(
-      issuer.endsWith(WELL_KNOWN_SUFFIX)
-        ? issuer.slice(0, -WELL_KNOWN_SUFFIX.length)
-        : issuer
-    );
-  };
+  // verbatim on purpose. an issuer is compared to the discovery document by exact string,
+  // so a trailing slash is significant: Authentik's issuers end with one and normalising it
+  // away makes every discovery fail. openid-client already fetches a pasted well-known url
+  // directly, so there is nothing here worth being clever about
+  public getIssuerUrl = (): URL => new URL(config.oidc.issuer.trim());
 
   private applyClientAuthMethod = (
     discovered: client.Configuration,
@@ -142,40 +111,37 @@ class OidcManager {
     return `${getPublicOrigin(req)}/oidc/callback`;
   };
 
+  // logins in flight live in the database, so a restart in the middle of one does not
+  // strand the user on the provider with a state nothing here remembers
   public startTransaction = (
     state: string,
-    data: Omit<TOidcTransaction, 'expiresAt'>
-  ) => {
-    this.sweep(this.transactions);
-
-    this.transactions.set(state, {
+    data: { nonce: string; codeVerifier: string; redirectUri: string }
+  ) =>
+    createOidcTransaction({
       ...data,
+      state,
       expiresAt: Date.now() + TRANSACTION_TTL_MS
     });
-  };
 
-  public takeTransaction = (state: string) =>
-    this.takeIfFresh(this.transactions, state);
+  public takeTransaction = (state: string) => takeOidcTransaction(state);
 
-  public createHandoff = (token: string): string => {
-    this.sweep(this.handoffs);
-
+  public createHandoff = (token: string, state: string): string => {
     const code = randomBytes(32).toString('base64url');
 
-    this.handoffs.set(code, {
+    createOidcHandoff({
+      code,
       token,
+      state,
       expiresAt: Date.now() + HANDOFF_TTL_MS
     });
 
     return code;
   };
 
-  public takeHandoff = (code: string) => this.takeIfFresh(this.handoffs, code);
+  public takeHandoff = (code: string) => takeOidcHandoff(code);
 
   public resetForTests = () => {
     this.discovery = null;
-    this.transactions.clear();
-    this.handoffs.clear();
   };
 }
 

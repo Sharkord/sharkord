@@ -36,10 +36,10 @@ const isSupportedHttpMethod = (
   return supportedHttpMethods.includes(method as TSupportedHttpMethod);
 };
 
-const getJsonBody = async <T = any>(
+const getTextBody = async (
   req: http.IncomingMessage,
   maxBytes: number = config.server.maxRequestBodyBytes
-): Promise<T> => {
+): Promise<string> => {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     let size = 0;
@@ -62,19 +62,21 @@ const getJsonBody = async <T = any>(
     });
 
     req.on('end', () => {
-      try {
-        // concat before decoding, a multi-byte character can straddle two chunks
-        const body = Buffer.concat(chunks).toString('utf-8');
-        const json = body ? JSON.parse(body) : {};
-
-        resolve(json);
-      } catch (err) {
-        reject(err);
-      }
+      // concat before decoding, a multi-byte character can straddle two chunks
+      resolve(Buffer.concat(chunks).toString('utf-8'));
     });
 
     req.on('error', reject);
   });
+};
+
+const getJsonBody = async <T = any>(
+  req: http.IncomingMessage,
+  maxBytes: number = config.server.maxRequestBodyBytes
+): Promise<T> => {
+  const body = await getTextBody(req, maxBytes);
+
+  return body ? JSON.parse(body) : ({} as T);
 };
 
 // consumes one slot for the caller and writes a 429 when the bucket is empty.
@@ -502,6 +504,7 @@ export {
   getJsonBody,
   getPublicOrigin,
   getRequestUrl,
+  getTextBody,
   hasPrefixPathSegment,
   isSecureRequest,
   isSupportedHttpMethod,
