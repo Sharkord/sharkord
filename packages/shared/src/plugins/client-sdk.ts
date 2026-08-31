@@ -1,4 +1,3 @@
-import type { TPluginMetadata } from '.';
 import type {
   TCategory,
   TChannel,
@@ -7,6 +6,7 @@ import type {
   TJoinedRole
 } from '../tables';
 import type { TPublicServerSettings } from '../types';
+import type { TPluginMetadata } from './manifest';
 
 export type TPluginStoreState = {
   users: TJoinedPublicUser[];
@@ -30,6 +30,7 @@ export type TPluginActions = {
   sendMessage: (channelId: number, content: string) => Promise<void>;
   selectChannel: (channelId: number) => void;
   executePluginAction: <TResponse = unknown, TPayload = unknown>(
+    pluginId: string,
     actionName: string,
     payload?: TPayload
   ) => Promise<TResponse>;
@@ -39,4 +40,16 @@ export type TPluginStore = {
   getState: () => TPluginStoreState;
   subscribe: (listener: () => void) => () => void;
   actions: TPluginActions;
+};
+
+export const getPluginIdFromBundleUrl = (url: string): string | undefined => {
+  const match = url.match(/\/plugin-bundle\/([^/?#]+)\//);
+
+  if (!match?.[1]) return undefined;
+
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return undefined;
+  }
 };

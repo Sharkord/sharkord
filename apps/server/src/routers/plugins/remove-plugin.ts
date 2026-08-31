@@ -15,6 +15,8 @@ const removeRoute = protectedProcedure
 
     await pluginManager.removePlugin(input.pluginId);
 
+    pluginManager.publishPlugins();
+
     enqueueActivityLog({
       type: ActivityLogType.PLUGIN_REMOVED,
       userId: ctx.user.id,

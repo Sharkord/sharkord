@@ -13,6 +13,11 @@ export const pluginMetadataByIdSelector = createCachedSelector(
     pluginsMetadata.find((metadata) => metadata.pluginId === pluginId)
 )((_state, pluginId) => pluginId);
 
+export const pluginVersionByIdSelector = createCachedSelector(
+  pluginMetadataByIdSelector,
+  (metadata) => metadata?.version
+)((_state, pluginId) => pluginId);
+
 export const commandsSelector = (state: IRootState) =>
   state.server.pluginCommands;
 

@@ -8,20 +8,6 @@ import type {
 import { prepareMessageHtml } from '@sharkord/shared';
 import { setSelectedChannelId } from '../channels/actions';
 
-// I honestly can't tell if this is a genius or disgusting, I'm in shock
-const getPluginIdFromCallerStack = (): string => {
-  const stack = new Error().stack ?? '';
-  const match = stack.match(/\/plugin-bundle\/([^/]+)\//);
-
-  if (!match?.[1]) {
-    throw new Error(
-      'executePluginAction can only be called from plugin client code.'
-    );
-  }
-
-  return decodeURIComponent(match[1]);
-};
-
 const mapStateToPluginState = (state: IRootState): TPluginStoreState => ({
   users: state.server.users,
   channels: state.server.channels,
@@ -49,11 +35,11 @@ const pluginActions: TPluginActions = {
     setSelectedChannelId(channelId);
   },
   executePluginAction: async <TResponse = unknown, TPayload = unknown>(
+    pluginId: string,
     actionName: string,
     payload?: TPayload
   ) => {
     const trpc = getTRPCClient();
-    const pluginId = getPluginIdFromCallerStack();
 
     return trpc.plugins.executeAction.mutate({
       pluginId,

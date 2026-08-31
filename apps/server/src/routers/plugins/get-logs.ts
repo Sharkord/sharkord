@@ -12,9 +12,7 @@ const getPluginLogsRoute = protectedProcedure
   .query(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_PLUGINS);
 
-    const logs = await pluginManager.getLogs(input.pluginId);
-
-    return logs;
+    return pluginManager.getLogs(input.pluginId);
   });
 
 export { getPluginLogsRoute };

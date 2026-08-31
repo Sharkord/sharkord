@@ -1,54 +1,57 @@
 import type {
+  ActionDefinition,
+  CommandDefinition,
   PluginContext,
   PluginModule,
-  TCreateStreamOptions,
-  TExternalStreamHandle,
-  TPluginHttpMethod,
-  TPluginHttpRouteHandler,
-  UnloadPluginContext
+  TPluginHttpMethod
 } from '@sharkord/plugin-sdk';
 import {
-  CLIENT_ENTRY_FILE,
+  assertSdkVersionCompatibility,
   getErrorMessage,
-  PLUGIN_SDK_VERSION,
-  SERVER_ENTRY_FILE,
   ServerEvents,
-  StreamKind,
-  zPluginId,
   zPluginManifest,
+  type RegisteredCommand,
+  type TCommandsMapByPlugin,
   type TInvokerContext,
   type TPluginInfo,
   type TPluginManifest,
-  type TPluginMetadata
+  type TPluginMetadata,
+  type TPluginSettingDefinition
 } from '@sharkord/shared';
-import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
 import { pathToFileURL } from 'url';
-import { db } from '../db';
 import { getSettings } from '../db/queries/server';
-import { getPublicUserById, getPublicUsers } from '../db/queries/users';
-import { channels } from '../db/schema';
 import { PLUGINS_PATH } from '../helpers/paths';
+import {
+  getPluginClientEntryPath,
+  getPluginPath,
+  getPluginServerEntryPath
+} from '../helpers/plugin-paths';
 import { logger } from '../logger';
-import { VoiceRuntime } from '../runtimes/voice';
 import { pubsub } from '../utils/pubsub';
-import { ActionRegistry } from './action-registry';
-import { createPluginMessage } from './actions/create-plugin-message';
-import { deletePluginMessage } from './actions/delete-plugin-message';
-import { editPluginMessage } from './actions/edit-plugin-message';
-import { CommandRegistry } from './command-registry';
+import { createContext, createUnloadContext } from './create-context';
 import { eventBus } from './event-bus';
+import {
+  ACTION_EXECUTION_TIMEOUT_MS,
+  COMMAND_EXECUTION_TIMEOUT_MS,
+  LIFECYCLE_TIMEOUT_MS,
+  withTimeout
+} from './execution-timeout';
 import { HooksManager } from './hooks-manager';
 import { PluginHttpRouteRegistry } from './http-route-registry';
 import { PluginLogger } from './plugin-logger';
 import { PluginSettingsManager } from './plugin-settings-manager';
 import { PluginStateStore } from './plugin-state-store';
+import { PluginRegistry } from './registry';
 
 class PluginManager {
   private loadedPlugins = new Map<string, PluginModule>();
+  // the manifest of every loaded plugin, so publishing metadata does not have to
+  // re-read and re-parse every manifest.json off disk
+  private loadedManifests = new Map<string, TPluginManifest>();
   private loadErrors = new Map<string, string>();
-  private uiState = new Map<string, boolean>();
+  private pluginsWithUi = new Set<string>();
 
   private readonly stateStore = new PluginStateStore();
   private readonly pluginLogger = new PluginLogger();
@@ -62,29 +65,22 @@ class PluginManager {
     this.stateStore
   );
 
-  private readonly commandRegistry = new CommandRegistry(
+  private readonly commandRegistry = new PluginRegistry<
+    CommandDefinition<unknown>
+  >(
+    'command',
+    COMMAND_EXECUTION_TIMEOUT_MS,
     this.pluginLogger,
     this.stateStore
   );
 
-  private readonly actionRegistry = new ActionRegistry(
-    this.pluginLogger,
-    this.stateStore
-  );
+  private readonly actionRegistry = new PluginRegistry<
+    ActionDefinition<unknown>
+  >('action', ACTION_EXECUTION_TIMEOUT_MS, this.pluginLogger, this.stateStore);
 
   public isEnabled = (pluginId: string) => this.stateStore.isEnabled(pluginId);
 
   public getLogs = (pluginId: string) => this.pluginLogger.getLogs(pluginId);
-
-  public onLog = (
-    pluginId: string,
-    listener: Parameters<PluginLogger['onLog']>[1]
-  ) => this.pluginLogger.onLog(pluginId, listener);
-
-  public getCommands = () => this.commandRegistry.getAll();
-
-  public getCommandByName = (commandName: string | undefined) =>
-    this.commandRegistry.getByName(commandName);
 
   public hasCommand = (pluginId: string, commandName: string) =>
     this.commandRegistry.has(pluginId, commandName);
@@ -125,128 +121,112 @@ class PluginManager {
   public getBeforeFileSaveHooks = () =>
     this.hooksManager.getBeforeFileSaveHooks();
 
+  public getCommands = (): TCommandsMapByPlugin => {
+    const allCommands: TCommandsMapByPlugin = {};
+
+    for (const [pluginId, commands] of this.commandRegistry.getByPlugin()) {
+      allCommands[pluginId] = Array.from(commands.values()).map(
+        ({ name, description, args }) => ({
+          pluginId,
+          name,
+          description,
+          args
+        })
+      );
+    }
+
+    return allCommands;
+  };
+
+  // commands are addressed by bare name in chat, so the first plugin to claim a
+  // name keeps it. registerCommand warns the loser
+  public getCommandByName = (
+    commandName: string | undefined
+  ): RegisteredCommand | undefined => {
+    if (!commandName) return undefined;
+
+    for (const [pluginId, commands] of this.commandRegistry.getByPlugin()) {
+      const command = commands.get(commandName);
+
+      if (!command) continue;
+
+      return {
+        pluginId,
+        name: command.name,
+        description: command.description,
+        args: command.args,
+        command
+      };
+    }
+
+    return undefined;
+  };
+
   public getHttpRouteHandler = (
     pluginId: string,
     method: TPluginHttpMethod,
     routePath: string
   ) => {
-    if (!this.loadedPlugins.has(pluginId)) {
-      return undefined;
-    }
-
-    if (!this.stateStore.isEnabled(pluginId)) {
-      return undefined;
-    }
+    if (!this.loadedPlugins.has(pluginId)) return undefined;
+    if (!this.stateStore.isEnabled(pluginId)) return undefined;
 
     return this.httpRouteRegistry.get(pluginId, method, routePath);
   };
 
   public getPluginsFromPath = async (): Promise<string[]> => {
-    const files = await fs.readdir(PLUGINS_PATH);
+    const entries = await fs.readdir(PLUGINS_PATH, { withFileTypes: true });
 
-    const checks = files.map(async (file) => {
-      try {
-        const pluginPath = path.join(PLUGINS_PATH, file);
-        const stat = await fs.stat(pluginPath);
-
-        return stat.isDirectory() ? file : undefined;
-      } catch {
-        return undefined;
-      }
-    });
-
-    const resolved = await Promise.all(checks);
-
-    return resolved.filter((file) => Boolean(file)) as string[];
+    return entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
   };
 
-  public getPluginIdsWithComponents = (): string[] => {
-    const pluginIds = Array.from(this.loadedPlugins.keys());
+  public getPluginIdsWithComponents = (): string[] =>
+    Array.from(this.loadedPlugins.keys()).filter((pluginId) =>
+      this.pluginsWithUi.has(pluginId)
+    );
 
-    return pluginIds.filter((pluginId) => this.uiState.get(pluginId));
+  // the only thing a command chip needs off the manifest, and it is on the hot
+  // path of every command sent in chat
+  public getPluginLogo = (pluginId: string): string | undefined =>
+    this.loadedManifests.get(pluginId)?.logo;
+
+  public getActivePluginMetadata = (): TPluginMetadata[] =>
+    Array.from(this.loadedManifests.entries()).map(([pluginId, manifest]) => ({
+      pluginId,
+      name: manifest.name,
+      description: manifest.description,
+      version: manifest.version,
+      avatarUrl: manifest.logo
+    }));
+
+  public publishPlugins = () => {
+    pubsub.publish(ServerEvents.PLUGIN_COMMANDS_CHANGE, this.getCommands());
+    pubsub.publish(
+      ServerEvents.PLUGIN_METADATA_CHANGE,
+      this.getActivePluginMetadata()
+    );
+    pubsub.publish(
+      ServerEvents.PLUGIN_COMPONENTS_CHANGE,
+      this.getPluginIdsWithComponents()
+    );
   };
-
-  public getActivePluginMetadata = async (): Promise<TPluginMetadata[]> => {
-    const pluginIds = Array.from(this.loadedPlugins.keys());
-
-    const metadataResults: Array<TPluginMetadata | undefined> =
-      await Promise.all(
-        pluginIds.map(async (pluginId) => {
-          try {
-            const info = await this.getPluginInfo(pluginId);
-
-            return {
-              pluginId: info.id,
-              name: info.name,
-              description: info.description,
-              avatarUrl: info.logo
-            };
-          } catch {
-            return undefined;
-          }
-        })
-      );
-
-    return metadataResults.filter(
-      (metadata) => !!metadata
-    ) as TPluginMetadata[];
-  };
-
-  private validatePluginId = (pluginId: string) => {
-    try {
-      zPluginId.parse(pluginId);
-    } catch {
-      throw new Error(`Invalid plugin ID: '${pluginId}'`);
-    }
-  };
-
-  private getPluginPath = (pluginId: string) => {
-    this.validatePluginId(pluginId);
-
-    return path.join(PLUGINS_PATH, pluginId);
-  };
-
-  private verifySdkVersion = (
-    sdkVersion: number
-  ): { isValid: boolean; error?: string } => {
-    if (sdkVersion !== PLUGIN_SDK_VERSION) {
-      return {
-        isValid: false,
-        error: `Plugin SDK version ${sdkVersion} is not compatible with server SDK version ${PLUGIN_SDK_VERSION}.`
-      };
-    }
-
-    return { isValid: true };
-  };
-
-  private getServerEntryPath = (pluginPath: string) => {
-    return path.join(pluginPath, SERVER_ENTRY_FILE);
-  };
-
-  private getPluginModuleSpecifier = (pluginPath: string): string =>
-    pathToFileURL(this.getServerEntryPath(pluginPath)).href;
 
   private invalidateDynamicImportCache = (pluginPath: string) => {
-    const serverEntryPath = this.getServerEntryPath(pluginPath);
+    const serverEntryPath = getPluginServerEntryPath(pluginPath);
 
     for (const cacheKey of Object.keys(require.cache ?? {})) {
-      const isPluginModule = cacheKey.startsWith(serverEntryPath);
+      if (!cacheKey.startsWith(serverEntryPath)) continue;
+      if (!require.cache?.[cacheKey]) continue;
 
-      if (isPluginModule) {
-        const hasCacheEntry = require.cache?.[cacheKey];
+      logger.debug(`Deleting dynamic import cache for module: ${cacheKey}`);
 
-        if (hasCacheEntry) {
-          logger.debug(`Deleting dynamic import cache for module: ${cacheKey}`);
-
-          delete require.cache[cacheKey];
-        }
-      }
+      delete require.cache[cacheKey];
     }
   };
 
-  public getPluginInfo = async (pluginId: string): Promise<TPluginInfo> => {
-    await this.stateStore.ensure(pluginId);
-    const pluginPath = this.getPluginPath(pluginId);
+  private readManifest = async (pluginId: string): Promise<TPluginManifest> => {
+    const pluginPath = getPluginPath(pluginId);
     const manifestPath = path.join(pluginPath, 'manifest.json');
 
     if (!(await fs.exists(manifestPath))) {
@@ -269,38 +249,70 @@ class PluginManager {
       );
     }
 
-    const serverEntryPath = path.join(pluginPath, SERVER_ENTRY_FILE);
-    const clientEntryPath = path.join(pluginPath, CLIENT_ENTRY_FILE);
+    const [hasServerEntry, hasClientEntry] = await Promise.all([
+      fs.exists(getPluginServerEntryPath(pluginPath)),
+      fs.exists(getPluginClientEntryPath(pluginPath))
+    ]);
 
-    if (!(await fs.exists(serverEntryPath))) {
+    if (!hasServerEntry) {
       throw new Error('Plugin server entry file not found');
     }
 
-    if (!(await fs.exists(clientEntryPath))) {
+    if (!hasClientEntry) {
       throw new Error('Plugin client entry file not found');
     }
 
-    const loadError = this.loadErrors.get(pluginId);
+    return manifest;
+  };
+
+  public getPluginInfo = async (pluginId: string): Promise<TPluginInfo> => {
+    await this.stateStore.ensure(pluginId);
+
+    const manifest = await this.readManifest(pluginId);
 
     return {
       id: pluginId,
       enabled: this.stateStore.isEnabled(pluginId),
+      path: getPluginPath(pluginId),
       name: manifest.name,
-      path: pluginPath,
       description: manifest.description,
       version: manifest.version,
       sdkVersion: manifest.sdkVersion,
       logo: manifest.logo,
       author: manifest.author,
       homepage: manifest.homepage,
-      loadError
+      loadError: this.loadErrors.get(pluginId)
     };
   };
 
-  public loadPlugins = async () => {
-    const settings = await getSettings();
+  // a plugin whose manifest or entry files are broken has no info to report, but
+  // it still has to show up in the admin list with the reason it is broken
+  public getPluginInfoOrPlaceholder = async (
+    pluginId: string
+  ): Promise<TPluginInfo> => {
+    try {
+      return await this.getPluginInfo(pluginId);
+    } catch (error) {
+      return {
+        id: pluginId,
+        enabled: this.stateStore.isEnabled(pluginId),
+        path: getPluginPath(pluginId),
+        name: pluginId,
+        description: '',
+        version: '',
+        sdkVersion: 0,
+        logo: undefined,
+        author: '',
+        homepage: undefined,
+        loadError: getErrorMessage(error)
+      };
+    }
+  };
 
-    if (!settings.enablePlugins) return;
+  public loadPlugins = async () => {
+    const { enablePlugins } = await getSettings();
+
+    if (!enablePlugins) return;
 
     await this.stateStore.loadAll();
 
@@ -323,7 +335,7 @@ class PluginManager {
   };
 
   public unloadPlugins = async () => {
-    for (const pluginId of this.loadedPlugins.keys()) {
+    for (const pluginId of Array.from(this.loadedPlugins.keys())) {
       try {
         await this.unload(pluginId);
       } catch (error) {
@@ -338,6 +350,13 @@ class PluginManager {
 
   public togglePlugin = async (pluginId: string, enabled: boolean) => {
     await this.stateStore.ensure(pluginId);
+
+    // a plugin that is not on disk at all must not get an enabled state written
+    // for it. a plugin that is there but broken still can: load() records why
+    if (enabled && !(await fs.exists(getPluginPath(pluginId)))) {
+      throw new Error(`Plugin '${pluginId}' was not found.`);
+    }
+
     const wasEnabled = this.stateStore.isEnabled(pluginId);
 
     await this.stateStore.setEnabled(pluginId, enabled);
@@ -351,6 +370,38 @@ class PluginManager {
     }
   };
 
+  private setUiEnabled = (pluginId: string, enabled: boolean) => {
+    if (enabled) {
+      this.pluginsWithUi.add(pluginId);
+    } else {
+      this.pluginsWithUi.delete(pluginId);
+    }
+
+    pubsub.publish(
+      ServerEvents.PLUGIN_COMPONENTS_CHANGE,
+      this.getPluginIdsWithComponents()
+    );
+  };
+
+  private registerCommand = (
+    pluginId: string,
+    command: CommandDefinition<unknown>
+  ) => {
+    const existing = this.getCommandByName(command.name);
+
+    if (existing && existing.pluginId !== pluginId) {
+      this.pluginLogger.log(
+        pluginId,
+        'error',
+        `command: '${command.name}' is already registered by plugin '${existing.pluginId}' and will not be reachable from chat.`
+      );
+    }
+
+    this.commandRegistry.register(pluginId, command);
+
+    pubsub.publish(ServerEvents.PLUGIN_COMMANDS_CHANGE, this.getCommands());
+  };
+
   public load = async (pluginId: string) => {
     const { enablePlugins } = await getSettings();
 
@@ -358,36 +409,55 @@ class PluginManager {
       throw new Error('Plugins are disabled.');
     }
 
+    await this.stateStore.ensure(pluginId);
+
     if (!this.stateStore.isEnabled(pluginId)) {
       this.pluginLogger.log(
         pluginId,
         'debug',
         `Plugin ${pluginId} is disabled; skipping load.`
       );
-      return;
-    }
-
-    const info = await this.getPluginInfo(pluginId);
-
-    const { isValid, error } = this.verifySdkVersion(info.sdkVersion);
-
-    if (!isValid) {
-      const errorMessage = error || 'Unknown SDK version error';
-
-      this.loadErrors.set(pluginId, errorMessage);
-
-      this.pluginLogger.log(
-        pluginId,
-        'error',
-        `Failed to load plugin ${pluginId}: ${errorMessage}`
-      );
 
       return;
     }
+
+    const pluginPath = getPluginPath(pluginId);
 
     try {
-      const ctx = this.createContext(pluginId);
-      const moduleSpecifier = this.getPluginModuleSpecifier(info.path);
+      const manifest = await this.readManifest(pluginId);
+
+      assertSdkVersionCompatibility(manifest.sdkVersion);
+
+      const scopedLogger = this.pluginLogger.createScopedLogger(pluginId);
+
+      const ctx = createContext({
+        pluginId,
+        scopedLogger,
+        pluginPath,
+        setUiEnabled: (enabled) => this.setUiEnabled(pluginId, enabled),
+        registerAction: (action) =>
+          this.actionRegistry.register(
+            pluginId,
+            action as ActionDefinition<unknown>
+          ),
+        registerCommand: (command) =>
+          this.registerCommand(pluginId, command as CommandDefinition<unknown>),
+        // the manager stores definitions untyped, the sdk keys PluginSettings to
+        // the literal definitions the plugin passed in
+        registerSettings: ((definitions: TPluginSettingDefinition[]) =>
+          this.settingsManager.register(
+            pluginId,
+            definitions
+          )) as PluginContext['settings']['register'],
+        registerBeforeFileSave: (handler) =>
+          this.hooksManager.registerBeforeFileSave(pluginId, handler),
+        registerHttpRoute: (method, routePath, handler) =>
+          this.httpRouteRegistry.register(pluginId, method, routePath, handler)
+      });
+
+      const moduleSpecifier = pathToFileURL(
+        getPluginServerEntryPath(pluginPath)
+      ).href;
 
       const mod = await import(moduleSpecifier);
 
@@ -404,15 +474,22 @@ class PluginManager {
         );
       }
 
-      await mod.onLoad(ctx);
+      // the whole server boot waits on this, so a plugin that never finishes
+      // loading cannot be allowed to hold it open
+      await withTimeout(
+        Promise.resolve().then(() => mod.onLoad(ctx)),
+        LIFECYCLE_TIMEOUT_MS,
+        `Plugin ${pluginId} onLoad exceeded timeout of ${LIFECYCLE_TIMEOUT_MS}ms`
+      );
 
       this.loadedPlugins.set(pluginId, mod);
+      this.loadedManifests.set(pluginId, manifest);
       this.loadErrors.delete(pluginId);
 
       this.pluginLogger.log(
         pluginId,
         'info',
-        `Plugin loaded: ${pluginId}@v${info.version} by ${info.author}`
+        `Plugin loaded: ${pluginId}@v${manifest.version} by ${manifest.author}`
       );
     } catch (error) {
       const errorMessage = getErrorMessage(error);
@@ -425,25 +502,26 @@ class PluginManager {
         `Failed to load plugin ${pluginId}: ${errorMessage}`
       );
 
-      this.cleanupPluginRegistrations(pluginId);
-      this.uiState.delete(pluginId);
-      this.loadedPlugins.delete(pluginId);
-      this.invalidateDynamicImportCache(info.path);
+      this.forget(pluginId);
+      this.invalidateDynamicImportCache(pluginPath);
     }
   };
 
-  private cleanupPluginRegistrations = (pluginId: string) => {
+  private forget = (pluginId: string) => {
     eventBus.unload(pluginId);
     this.commandRegistry.unload(pluginId);
     this.actionRegistry.unload(pluginId);
     this.settingsManager.unload(pluginId);
     this.hooksManager.unload(pluginId);
     this.httpRouteRegistry.unload(pluginId);
+    this.pluginsWithUi.delete(pluginId);
+    this.loadedManifests.delete(pluginId);
+    this.loadedPlugins.delete(pluginId);
   };
 
   public unload = async (pluginId: string) => {
     const pluginModule = this.loadedPlugins.get(pluginId);
-    const pluginPath = this.getPluginPath(pluginId);
+    const pluginPath = getPluginPath(pluginId);
 
     if (!pluginModule) {
       this.pluginLogger.log(
@@ -456,9 +534,18 @@ class PluginManager {
     }
 
     try {
-      const unloadCtx: UnloadPluginContext = this.createUnloadContext(pluginId);
+      const unloadCtx = createUnloadContext({
+        pluginId,
+        scopedLogger: this.pluginLogger.createScopedLogger(pluginId),
+        pluginPath,
+        setUiEnabled: (enabled) => this.setUiEnabled(pluginId, enabled)
+      });
 
-      await pluginModule.onUnload?.(unloadCtx);
+      await withTimeout(
+        Promise.resolve().then(() => pluginModule.onUnload?.(unloadCtx)),
+        LIFECYCLE_TIMEOUT_MS,
+        `Plugin ${pluginId} onUnload exceeded timeout of ${LIFECYCLE_TIMEOUT_MS}ms`
+      );
     } catch (error) {
       logger.error(
         'Error in plugin %s onUnload: %s',
@@ -467,9 +554,7 @@ class PluginManager {
       );
     }
 
-    this.cleanupPluginRegistrations(pluginId);
-    this.uiState.delete(pluginId);
-    this.loadedPlugins.delete(pluginId);
+    this.forget(pluginId);
     this.loadErrors.delete(pluginId);
     this.invalidateDynamicImportCache(pluginPath);
 
@@ -479,12 +564,10 @@ class PluginManager {
   public removePlugin = async (pluginId: string) => {
     await this.unload(pluginId);
 
-    const pluginPath = this.getPluginPath(pluginId);
+    const pluginPath = getPluginPath(pluginId);
 
     try {
       await fs.rm(pluginPath, { recursive: true, force: true });
-
-      logger.debug(`Plugin removed: ${pluginId}`);
     } catch (error) {
       logger.error(
         `Failed to remove plugin ${pluginId}: %s`,
@@ -493,232 +576,14 @@ class PluginManager {
 
       throw new Error(`Failed to remove plugin: ${getErrorMessage(error)}`);
     }
+
+    // nothing on disk to attribute them to any more
+    this.forget(pluginId);
+    this.loadErrors.delete(pluginId);
+    this.pluginLogger.clear(pluginId);
+
+    logger.debug(`Plugin removed: ${pluginId}`);
   };
-
-  // the parts an unload context also needs. Built separately so unloading does
-  // not construct the registration closures (http, commands, actions, settings,
-  // hooks) only to discard them
-  private createSharedContext = (
-    pluginId: string,
-    scopedLogger: ReturnType<PluginLogger['createScopedLogger']>
-  ) => ({
-    path: this.getPluginPath(pluginId),
-    logger: scopedLogger,
-    // deprecated flat aliases (ctx.log / ctx.debug / ctx.error), kept so
-    // existing plugins keep working. ctx.logger.* is the supported form
-    ...scopedLogger,
-    ui: {
-      enable: () => {
-        this.uiState.set(pluginId, true);
-        pubsub.publish(
-          ServerEvents.PLUGIN_COMPONENTS_CHANGE,
-          this.getPluginIdsWithComponents()
-        );
-      },
-      disable: () => {
-        this.uiState.set(pluginId, false);
-        pubsub.publish(
-          ServerEvents.PLUGIN_COMPONENTS_CHANGE,
-          this.getPluginIdsWithComponents()
-        );
-      }
-    },
-    voice: {
-      getRouter: (channelId: number) => {
-        const channel = VoiceRuntime.findById(channelId);
-
-        if (!channel) {
-          throw new Error(
-            `Voice runtime not found for channel ID ${channelId}`
-          );
-        }
-
-        return channel.getRouter();
-      },
-      createStream: (options: TCreateStreamOptions): TExternalStreamHandle => {
-        const channel = VoiceRuntime.findById(options.channelId);
-
-        if (!channel) {
-          throw new Error(
-            `Voice runtime not found for channel ID ${options.channelId}`
-          );
-        }
-
-        const streamId = channel.createExternalStream({
-          title: options.title,
-          key: options.key,
-          pluginId,
-          avatarUrl: options.avatarUrl,
-          bannerUrl: options.bannerUrl,
-          producers: options.producers,
-          videoLayers: options.videoLayers
-        });
-
-        const stream = channel.getState().externalStreams[streamId]!;
-
-        pubsub.publish(ServerEvents.VOICE_ADD_EXTERNAL_STREAM, {
-          channelId: options.channelId,
-          streamId,
-          stream
-        });
-
-        if (options.producers.audio) {
-          pubsub.publishForChannel(
-            options.channelId,
-            ServerEvents.VOICE_NEW_PRODUCER,
-            {
-              channelId: options.channelId,
-              remoteId: streamId,
-              kind: StreamKind.EXTERNAL_AUDIO
-            }
-          );
-        }
-
-        if (options.producers.video) {
-          pubsub.publishForChannel(
-            options.channelId,
-            ServerEvents.VOICE_NEW_PRODUCER,
-            {
-              channelId: options.channelId,
-              remoteId: streamId,
-              kind: StreamKind.EXTERNAL_VIDEO
-            }
-          );
-        }
-
-        scopedLogger.debug(
-          `Created external stream '${options.title}' (key: ${options.key}, id: ${streamId}) with tracks: audio=${!!options.producers.audio}, video=${!!options.producers.video}`
-        );
-
-        return {
-          streamId,
-          remove: () => {
-            channel.removeExternalStream(streamId);
-
-            scopedLogger.debug(
-              `Removed external stream '${options.title}' (key: ${options.key}, id: ${streamId})`
-            );
-          },
-          update: (updateOptions) => {
-            channel.updateExternalStream(streamId, updateOptions);
-
-            scopedLogger.debug(
-              `Updated external stream '${options.title}' (key: ${options.key}, id: ${streamId})`
-            );
-          }
-        };
-      },
-      getListenInfo: () => VoiceRuntime.getListenInfo()
-    },
-    messages: {
-      send: async (
-        channelId: number,
-        content: string,
-        options?: {
-          parentMessageId?: number;
-          replyToMessageId?: number;
-        }
-      ) =>
-        createPluginMessage({
-          pluginId,
-          channelId,
-          content,
-          parentMessageId: options?.parentMessageId,
-          replyToMessageId: options?.replyToMessageId
-        }),
-      edit: async (messageId: number, content: string) =>
-        editPluginMessage({
-          pluginId,
-          messageId,
-          content
-        }),
-      delete: async (messageId: number) =>
-        deletePluginMessage({
-          pluginId,
-          messageId
-        })
-    }
-  });
-
-  private createContext = (pluginId: string): PluginContext => {
-    const scopedLogger = this.pluginLogger.createScopedLogger(pluginId);
-
-    const registerHttpRoute = (
-      method: TPluginHttpMethod,
-      routePath: string,
-      handler: TPluginHttpRouteHandler
-    ) => this.httpRouteRegistry.register(pluginId, method, routePath, handler);
-
-    const bindHttpMethod =
-      (method: TPluginHttpMethod) =>
-      (routePath: string, handler: TPluginHttpRouteHandler) =>
-        registerHttpRoute(method, routePath, handler);
-
-    return {
-      pluginId,
-      ...this.createSharedContext(pluginId, scopedLogger),
-      events: {
-        on: (event, handler) => {
-          return eventBus.register(pluginId, event, handler);
-        },
-        off: (event, handler) => {
-          eventBus.unregister(pluginId, event, handler);
-        }
-      },
-      actions: {
-        register: (action) => {
-          this.actionRegistry.register(pluginId, action);
-        }
-      },
-      commands: {
-        register: (command) => {
-          this.commandRegistry.register(pluginId, command);
-        }
-      },
-      settings: {
-        register: (definitions) => {
-          return this.settingsManager.register(
-            pluginId,
-            definitions
-          ) as ReturnType<PluginContext['settings']['register']>;
-        }
-      },
-      hooks: {
-        onBeforeFileSave: (handler) => {
-          this.hooksManager.registerBeforeFileSave(pluginId, handler);
-        }
-      },
-      http: {
-        register: registerHttpRoute,
-        get: bindHttpMethod('GET'),
-        post: bindHttpMethod('POST'),
-        patch: bindHttpMethod('PATCH'),
-        delete: bindHttpMethod('DELETE'),
-        options: bindHttpMethod('OPTIONS')
-      },
-      data: {
-        getUser: async (userId: number) => {
-          return getPublicUserById(userId);
-        },
-        getChannel: async (channelId: number) => {
-          return db
-            .select()
-            .from(channels)
-            .where(eq(channels.id, channelId))
-            .get();
-        },
-        getPublicUsers: async () => {
-          return getPublicUsers();
-        }
-      }
-    };
-  };
-
-  private createUnloadContext = (pluginId: string): UnloadPluginContext =>
-    this.createSharedContext(
-      pluginId,
-      this.pluginLogger.createScopedLogger(pluginId)
-    );
 }
 
 const pluginManager = new PluginManager();

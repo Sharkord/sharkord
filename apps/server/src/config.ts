@@ -87,6 +87,7 @@ const zConfig = z.object({
     voiceStream: zRateLimiter,
     useSecretToken: zRateLimiter,
     pluginExecute: zRateLimiter,
+    pluginInstall: zRateLimiter,
     oidc: zRateLimiter
   })
 });
@@ -202,6 +203,10 @@ const defaultConfig: TConfig = {
     },
     pluginExecute: {
       maxRequests: 60,
+      windowMs: 60_000
+    },
+    pluginInstall: {
+      maxRequests: 10,
       windowMs: 60_000
     },
     oidc: {

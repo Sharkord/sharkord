@@ -45,6 +45,7 @@ export enum ActivityLogType {
   EXECUTED_PLUGIN_ACTION = 'EXECUTED_PLUGIN_ACTION',
   PLUGIN_TOGGLED = 'PLUGIN_TOGGLED',
   PLUGIN_INSTALLED = 'PLUGIN_INSTALLED',
+  PLUGIN_UPDATED = 'PLUGIN_UPDATED',
   PLUGIN_REMOVED = 'PLUGIN_REMOVED',
   PLUGIN_SETTING_UPDATED = 'PLUGIN_SETTING_UPDATED',
   // -------------------- MESSAGES --------------------
@@ -195,6 +196,10 @@ export type TActivityLogDetailsMap = {
     enabled: boolean;
   };
   [ActivityLogType.PLUGIN_INSTALLED]: {
+    pluginId: string;
+    version: string;
+  };
+  [ActivityLogType.PLUGIN_UPDATED]: {
     pluginId: string;
     version: string;
   };

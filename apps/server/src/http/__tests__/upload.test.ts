@@ -30,10 +30,11 @@ describe('/upload', () => {
   });
 
   afterAll(async () => {
-    const files = await fs.readdir(TMP_PATH);
+    const entries = await fs.readdir(TMP_PATH);
 
-    for (const file of files) {
-      await fs.unlink(path.join(TMP_PATH, file));
+    // the tmp dir also holds directories other tests create, so this cannot assume files
+    for (const entry of entries) {
+      await fs.rm(path.join(TMP_PATH, entry), { recursive: true, force: true });
     }
   });
 

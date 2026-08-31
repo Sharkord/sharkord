@@ -5,7 +5,6 @@ import {
 } from '@sharkord/shared';
 import { count, eq } from 'drizzle-orm';
 import { db } from '.';
-import { pluginManager } from '../plugins';
 import { pubsub } from '../utils/pubsub';
 import {
   channelUserCan,
@@ -348,16 +347,6 @@ const publishChannelListChange = async (
   await publishChannelPermissions([userId]);
 };
 
-const publishPlugins = async () => {
-  const commands = pluginManager.getCommands();
-  const pluginIds = pluginManager.getPluginIdsWithComponents();
-  const metadata = await pluginManager.getActivePluginMetadata();
-
-  pubsub.publish(ServerEvents.PLUGIN_COMMANDS_CHANGE, commands);
-  pubsub.publish(ServerEvents.PLUGIN_COMPONENTS_CHANGE, pluginIds);
-  pubsub.publish(ServerEvents.PLUGIN_METADATA_CHANGE, metadata);
-};
-
 const publishReplyCount = async (
   parentMessageId: number,
   channelId: number
@@ -389,7 +378,6 @@ export {
   publishEmoji,
   publishHiddenChannelToUser,
   publishMessage,
-  publishPlugins,
   publishReplyCount,
   publishRole,
   publishSettings,

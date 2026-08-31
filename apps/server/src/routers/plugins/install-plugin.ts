@@ -1,12 +1,15 @@
 import { ActivityLogType, Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
-import { downloadPlugin } from '../../helpers/downloads';
-import { fetchMarketplaceVersion } from '../../helpers/marketplace';
-import { pluginManager } from '../../plugins';
+import { config } from '../../config';
+import { installPluginVersion } from '../../helpers/install-plugin-version';
 import { enqueueActivityLog } from '../../queues/activity-log';
-import { protectedProcedure } from '../../utils/trpc';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const installRoute = protectedProcedure
+const installRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.pluginInstall.maxRequests,
+  windowMs: config.rateLimiters.pluginInstall.windowMs,
+  logLabel: 'installPlugin'
+})
   .input(
     z.object({
       pluginId: zPluginId,
@@ -16,27 +19,10 @@ const installRoute = protectedProcedure
   .mutation(async ({ ctx, input }) => {
     await ctx.needsPermission(Permission.MANAGE_PLUGINS);
 
-    const versionData = await fetchMarketplaceVersion(
+    const versionData = await installPluginVersion(
       input.pluginId,
       input.version
     );
-
-    const wasEnabled = pluginManager.isEnabled(input.pluginId);
-
-    if (wasEnabled) {
-      await pluginManager.unload(input.pluginId);
-    }
-
-    try {
-      await downloadPlugin(versionData.downloadUrl, versionData.checksum);
-    } finally {
-      // a failed download (network, checksum) would otherwise leave the plugin
-      // unloaded in the process while still enabled in the database, dead until
-      // the next restart
-      if (wasEnabled) {
-        await pluginManager.load(input.pluginId);
-      }
-    }
 
     enqueueActivityLog({
       type: ActivityLogType.PLUGIN_INSTALLED,

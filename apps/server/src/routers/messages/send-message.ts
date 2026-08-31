@@ -183,13 +183,11 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
             });
           }
 
-          const plugin = await pluginManager.getPluginInfo(
-            foundCommand?.pluginId || ''
-          );
+          const pluginLogo = pluginManager.getPluginLogo(foundCommand.pluginId);
 
           editable = false;
           targetContent = toDomCommand(
-            { ...foundCommand, imageUrl: plugin?.logo, status: 'pending' },
+            { ...foundCommand, imageUrl: pluginLogo, status: 'pending' },
             args
           );
 
@@ -202,7 +200,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
               const updatedContent = toDomCommand(
                 {
                   ...foundCommand,
-                  imageUrl: plugin?.logo,
+                  imageUrl: pluginLogo,
                   response,
                   status
                 },

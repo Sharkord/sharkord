@@ -1,12 +1,15 @@
-import { Permission, zPluginId } from '@sharkord/shared';
+import { ActivityLogType, Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
-import { publishPlugins } from '../../db/publishers';
-import { downloadPlugin } from '../../helpers/downloads';
-import { fetchMarketplaceVersion } from '../../helpers/marketplace';
-import { pluginManager } from '../../plugins';
-import { protectedProcedure } from '../../utils/trpc';
+import { config } from '../../config';
+import { installPluginVersion } from '../../helpers/install-plugin-version';
+import { enqueueActivityLog } from '../../queues/activity-log';
+import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
-const updateRoute = protectedProcedure
+const updateRoute = rateLimitedProcedure(protectedProcedure, {
+  maxRequests: config.rateLimiters.pluginInstall.maxRequests,
+  windowMs: config.rateLimiters.pluginInstall.windowMs,
+  logLabel: 'updatePlugin'
+})
   .input(
     z.object({
       pluginId: zPluginId,
@@ -16,24 +19,19 @@ const updateRoute = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_PLUGINS);
 
-    const versionData = await fetchMarketplaceVersion(
+    const versionData = await installPluginVersion(
       input.pluginId,
       input.version
     );
 
-    const wasEnabled = pluginManager.isEnabled(input.pluginId);
-
-    if (wasEnabled) {
-      await pluginManager.togglePlugin(input.pluginId, false);
-    }
-
-    await downloadPlugin(versionData.downloadUrl, versionData.checksum);
-
-    if (wasEnabled) {
-      await pluginManager.togglePlugin(input.pluginId, true);
-    }
-
-    publishPlugins();
+    enqueueActivityLog({
+      type: ActivityLogType.PLUGIN_UPDATED,
+      userId: ctx.user.id,
+      details: {
+        pluginId: input.pluginId,
+        version: versionData.version
+      }
+    });
   });
 
 export { updateRoute };

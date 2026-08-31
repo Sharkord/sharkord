@@ -3,6 +3,7 @@ import type {
   TInvokerContext,
   TPluginActions
 } from '@sharkord/shared';
+import { getPluginIdFromBundleUrl } from '@sharkord/shared';
 import type { PluginContext } from '.';
 
 type TypedRegisterAction<TActions extends TActionContract> = <
@@ -39,12 +40,27 @@ const createRegisterAction = <TActions extends TActionContract>(
   return registerAction;
 };
 
+const getOwnPluginId = (): string => {
+  const pluginId = getPluginIdFromBundleUrl(import.meta.url);
+
+  if (!pluginId) {
+    throw new Error(
+      'createCallAction can only be used from plugin client code served by Sharkord.'
+    );
+  }
+
+  return pluginId;
+};
+
 const createCallAction = <TActions extends TActionContract>(
   actions: TPluginActions
 ) => {
+  const pluginId = getOwnPluginId();
+
   const callAction: TypedCallAction<TActions> = (name, ...args) => {
     const payload = args[0];
-    return actions.executePluginAction(name, payload) as Promise<
+
+    return actions.executePluginAction(pluginId, name, payload) as Promise<
       TActions[typeof name]['response']
     >;
   };

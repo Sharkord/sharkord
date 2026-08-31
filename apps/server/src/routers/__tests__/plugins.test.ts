@@ -9,6 +9,7 @@ import { tdb } from '../../__tests__/setup';
 import { activityLog, pluginData } from '../../db/schema';
 import { PLUGINS_PATH } from '../../helpers/paths';
 import { pluginManager } from '../../plugins';
+import { eventBus } from '../../plugins/event-bus';
 
 describe('plugins router', () => {
   beforeEach(async () => {
@@ -30,7 +31,10 @@ describe('plugins router', () => {
     const { plugins } = await caller.plugins.get();
 
     expect(plugins).toBeDefined();
-    expect(plugins.length).toBe(13);
+    // every directory under the plugins path is listed, broken ones included
+    expect(plugins.length).toBe(
+      (await pluginManager.getPluginsFromPath()).length
+    );
   });
 
   test('should include plugin metadata', async () => {
@@ -48,7 +52,7 @@ describe('plugins router', () => {
     expect(pluginA!.description).toBeDefined();
   });
 
-  test('should filter out plugins with invalid manifest.json', async () => {
+  test('should list plugins with an invalid manifest.json and say why', async () => {
     const { caller } = await initTest();
 
     const result = await caller.plugins.get();
@@ -56,7 +60,8 @@ describe('plugins router', () => {
       (p: TPluginInfo) => p.id === 'plugin-invalid-package'
     );
 
-    expect(invalidPlugin).toBeUndefined();
+    expect(invalidPlugin).toBeDefined();
+    expect(invalidPlugin!.loadError).toContain('manifest.json');
   });
 
   test('should include enabled state', async () => {
@@ -746,6 +751,7 @@ describe('plugins router', () => {
       });
 
       expect(mockDownload).toHaveBeenCalledWith(
+        'plugin-example',
         'https://example.com/plugin.tar.gz',
         'deadbeef1234'
       );
@@ -771,6 +777,225 @@ describe('plugins router', () => {
           pluginId: 'plugin-example'
         })
       ).rejects.toThrow();
+    });
+  });
+
+  describe('concurrent installs', () => {
+    test('should serialize installs of the same plugin', async () => {
+      const { caller } = await initTest();
+      const order: string[] = [];
+      let active = 0;
+
+      mock.module('../../helpers/downloads', () => ({
+        downloadPlugin: mock(async () => {
+          active += 1;
+          order.push(`start:${active}`);
+
+          await Bun.sleep(20);
+
+          order.push(`end:${active}`);
+          active -= 1;
+        }),
+        downloadFile: mock(() => Promise.resolve())
+      }));
+
+      mock.module('../../helpers/marketplace', () => ({
+        fetchMarketplaceVersion: mock(() =>
+          Promise.resolve({
+            version: '0.0.1',
+            downloadUrl: 'https://example.com/plugin-a.tar.gz',
+            checksum: 'deadbeef1234',
+            sdkVersion: 1,
+            size: 1000
+          })
+        )
+      }));
+
+      await Promise.all([
+        caller.plugins.install({ pluginId: 'plugin-a', version: '0.0.1' }),
+        caller.plugins.update({ pluginId: 'plugin-a', version: '0.0.1' })
+      ]);
+
+      // never two swaps in flight at once, so the directory is never half written
+      expect(order).toEqual(['start:1', 'end:1', 'start:1', 'end:1']);
+    });
+
+    test('should not serialize installs of different plugins', async () => {
+      const { caller } = await initTest();
+      let active = 0;
+      let peak = 0;
+
+      mock.module('../../helpers/downloads', () => ({
+        downloadPlugin: mock(async () => {
+          active += 1;
+          peak = Math.max(peak, active);
+
+          await Bun.sleep(20);
+
+          active -= 1;
+        }),
+        downloadFile: mock(() => Promise.resolve())
+      }));
+
+      mock.module('../../helpers/marketplace', () => ({
+        fetchMarketplaceVersion: mock(() =>
+          Promise.resolve({
+            version: '0.0.1',
+            downloadUrl: 'https://example.com/plugin.tar.gz',
+            checksum: 'deadbeef1234',
+            sdkVersion: 1,
+            size: 1000
+          })
+        )
+      }));
+
+      await Promise.all([
+        caller.plugins.install({ pluginId: 'plugin-a', version: '0.0.1' }),
+        caller.plugins.install({ pluginId: 'plugin-b', version: '0.0.1' })
+      ]);
+
+      expect(peak).toBe(2);
+    });
+
+    test('should still run a queued install after the one before it fails', async () => {
+      const { caller } = await initTest();
+      let calls = 0;
+
+      mock.module('../../helpers/downloads', () => ({
+        downloadPlugin: mock(async () => {
+          calls += 1;
+
+          if (calls === 1) {
+            throw new Error('network exploded');
+          }
+        }),
+        downloadFile: mock(() => Promise.resolve())
+      }));
+
+      mock.module('../../helpers/marketplace', () => ({
+        fetchMarketplaceVersion: mock(() =>
+          Promise.resolve({
+            version: '0.0.1',
+            downloadUrl: 'https://example.com/plugin-a.tar.gz',
+            checksum: 'deadbeef1234',
+            sdkVersion: 1,
+            size: 1000
+          })
+        )
+      }));
+
+      const [first, second] = await Promise.allSettled([
+        caller.plugins.install({ pluginId: 'plugin-a', version: '0.0.1' }),
+        caller.plugins.install({ pluginId: 'plugin-a', version: '0.0.1' })
+      ]);
+
+      expect(first!.status).toBe('rejected');
+      expect(second!.status).toBe('fulfilled');
+      expect(calls).toBe(2);
+    });
+  });
+
+  describe('commands sent through chat', () => {
+    const getLastMessage = async (
+      caller: Awaited<ReturnType<typeof initTest>>['caller']
+    ) => {
+      const result = await caller.messages.get({
+        channelId: 1,
+        cursor: null,
+        limit: 1
+      });
+
+      return result.messages[0]!;
+    };
+
+    test('should store a command chip carrying the plugin logo', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-b');
+      await caller.messages.send({
+        channelId: 1,
+        content: '<p>/sum 2 3</p>',
+        files: []
+      });
+
+      const message = await getLastMessage(caller);
+
+      expect(message.content).toContain('<command ');
+      expect(message.content).toContain(
+        'data-plugin-logo="https://example.com/logo.png"'
+      );
+      expect(message.content).toContain('data-plugin-id="plugin-b"');
+      expect(message.content).toContain('data-command="sum"');
+      // a command chip is rendered from its attributes, not edited as text
+      expect(message.editable).toBe(false);
+    });
+
+    test('should record the command result on the message once it finishes', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-b');
+      await caller.messages.send({
+        channelId: 1,
+        content: '<p>/sum 2 3</p>',
+        files: []
+      });
+
+      const messageId = (await getLastMessage(caller)).id;
+
+      // the executor deliberately runs after the mutation returns
+      await Bun.sleep(50);
+
+      const message = await getLastMessage(caller);
+
+      expect(message.id).toBe(messageId);
+      expect(message.content).toContain('data-status="completed"');
+      expect(message.content).toContain('&quot;result&quot;: 5');
+    });
+
+    test('should leave a normal message alone when it is not a command', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-b');
+      await caller.messages.send({
+        channelId: 1,
+        content: '<p>just talking</p>',
+        files: []
+      });
+
+      const message = await getLastMessage(caller);
+
+      expect(message.content).not.toContain('<command');
+      expect(message.editable).toBe(true);
+    });
+  });
+
+  describe('log subscription', () => {
+    // plugin logs carry whatever a plugin writes, so this has to be gated the
+    // same way the getLogs query is
+    test('should throw when user lacks permissions', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(caller.plugins.onLog()).rejects.toThrow(
+        'Insufficient permissions'
+      );
+    });
+
+    test('should subscribe when user can manage plugins', async () => {
+      const { caller } = await initTest();
+
+      const subscription = await caller.plugins.onLog();
+
+      expect(subscription).toBeDefined();
+    });
+  });
+
+  describe('command subscription', () => {
+    // every client subscribes to this on connect, so a permission check here
+    // disconnects everyone who cannot use plugins
+    test('should subscribe even when the user cannot use plugins', async () => {
+      const { caller } = await initTest(2);
+
+      expect(await caller.plugins.onCommandsChange()).toBeDefined();
     });
   });
 
@@ -802,9 +1027,49 @@ describe('plugins router', () => {
       });
 
       expect(mockDownload).toHaveBeenCalledWith(
+        'plugin-a',
         'https://example.com/plugin-a-v2.tar.gz',
         'cafebabe5678'
       );
+    });
+
+    test('should leave an enabled plugin loaded when the download fails', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.togglePlugin('plugin-a', true);
+
+      mock.module('../../helpers/downloads', () => ({
+        downloadPlugin: mock(() =>
+          Promise.reject(new Error('network exploded'))
+        ),
+        downloadFile: mock(() => Promise.resolve())
+      }));
+
+      mock.module('../../helpers/marketplace', () => ({
+        fetchMarketplaceVersion: mock(() =>
+          Promise.resolve({
+            version: '0.0.1',
+            downloadUrl: 'https://example.com/plugin-a.tar.gz',
+            checksum: 'deadbeef1234',
+            sdkVersion: 1,
+            size: 1000
+          })
+        )
+      }));
+
+      await expect(
+        caller.plugins.update({ pluginId: 'plugin-a', version: '0.0.1' })
+      ).rejects.toThrow('network exploded');
+
+      // still enabled and still running: the failure must not have taken the
+      // plugin down or flipped its persisted state
+      expect(pluginManager.isEnabled('plugin-a')).toBe(true);
+      expect(eventBus.hasPlugin('plugin-a')).toBe(true);
+
+      const { plugins } = await caller.plugins.get();
+      const pluginA = plugins.find((p: TPluginInfo) => p.id === 'plugin-a');
+
+      expect(pluginA!.enabled).toBe(true);
     });
 
     test('should reject empty version', async () => {
