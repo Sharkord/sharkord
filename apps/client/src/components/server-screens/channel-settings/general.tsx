@@ -1,72 +1,85 @@
-import { closeServerScreens } from '@/features/server-screens/actions';
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
+import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { useAdminChannelGeneral } from '@/features/server/admin/hooks';
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Group,
-  Input,
-  Switch,
-  Textarea
-} from '@sharkord/ui';
-import { memo } from 'react';
+import { getTRPCClient } from '@/lib/trpc';
+import { Group, Input, LoadingCard, Switch, Textarea } from '@sharkord/ui';
+import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 type TGeneralProps = {
   channelId: number;
 };
 
+type TChannelValues = {
+  name: string;
+  topic: string;
+  private: boolean;
+};
+
 const General = memo(({ channelId }: TGeneralProps) => {
   const { t } = useTranslation('settings');
-  const { channel, loading, onChange, submit, errors } =
-    useAdminChannelGeneral(channelId);
+  const { channel, loading } = useAdminChannelGeneral(channelId);
 
-  if (!channel) return null;
+  const onSave = useCallback(
+    async (values: TChannelValues) => {
+      const trpc = getTRPCClient();
+
+      await trpc.channels.update.mutate({
+        channelId,
+        name: values.name,
+        topic: values.topic || null,
+        private: values.private
+      });
+    },
+    [channelId]
+  );
+
+  const { r, values, onChange, reset } = useSettingsForm<TChannelValues>({
+    initialValues: { name: '', topic: '', private: false },
+    onSave,
+    successMessage: t('channelUpdated'),
+    errorMessage: t('failedUpdateChannel')
+  });
+
+  useEffect(() => {
+    if (!channel) return;
+
+    reset({
+      name: channel.name,
+      topic: channel.topic ?? '',
+      private: channel.private
+    });
+  }, [channel, reset]);
+
+  const handlePrivateChange = useCallback(
+    (value: boolean) => onChange('private', value),
+    [onChange]
+  );
+
+  if (loading) {
+    return <LoadingCard className="h-64" />;
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('channelInfoTitle')}</CardTitle>
-        <CardDescription>{t('channelInfoDesc')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Group label={t('channelNameLabel')}>
-          <Input
-            value={channel.name}
-            onChange={(e) => onChange('name', e.target.value)}
-            placeholder={t('channelNamePlaceholder')}
-            error={errors.name}
-          />
-        </Group>
+    <SettingsSection
+      title={t('channelInfoTitle')}
+      description={t('channelInfoDesc')}
+    >
+      <Group label={t('channelNameLabel')}>
+        <Input placeholder={t('channelNamePlaceholder')} {...r('name')} />
+      </Group>
 
-        <Group label={t('channelTopicLabel')}>
-          <Textarea
-            value={channel.topic ?? ''}
-            onChange={(e) => onChange('topic', e.target.value || null)}
-            placeholder={t('channelTopicPlaceholder')}
-          />
-        </Group>
+      <Group label={t('channelTopicLabel')}>
+        <Textarea placeholder={t('channelTopicPlaceholder')} {...r('topic')} />
+      </Group>
 
-        <Group label={t('privateLabel')} description={t('privateDesc')}>
-          <Switch
-            checked={channel.private}
-            onCheckedChange={(value) => onChange('private', value)}
-          />
-        </Group>
-
-        <div className="flex justify-end gap-2 pt-4">
-          <Button variant="outline" onClick={closeServerScreens}>
-            {t('cancel')}
-          </Button>
-          <Button onClick={submit} disabled={loading}>
-            {t('saveChanges')}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      <Group label={t('privateLabel')} description={t('privateDesc')}>
+        <Switch
+          checked={values.private}
+          onCheckedChange={handlePrivateChange}
+        />
+      </Group>
+    </SettingsSection>
   );
 });
 

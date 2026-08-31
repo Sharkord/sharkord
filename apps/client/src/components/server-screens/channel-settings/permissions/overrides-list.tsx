@@ -1,3 +1,4 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useRoleById } from '@/features/server/roles/hooks';
 import { useUserById } from '@/features/server/users/hooks';
 import { getInitialsFromName } from '@/helpers/get-initials-from-name';
@@ -8,15 +9,7 @@ import type {
   TChannelUserPermission
 } from '@sharkord/shared';
 import { getTrpcError } from '@sharkord/shared';
-import {
-  Avatar,
-  AvatarFallback,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Separator
-} from '@sharkord/ui';
+import { Avatar, AvatarFallback, Separator } from '@sharkord/ui';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -228,41 +221,38 @@ const OverridesList = memo(
     );
 
     return (
-      <Card className="w-64 flex-shrink-0">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">{t('rolesUsersTitle')}</CardTitle>
-            <SearchPopover
-              onSelect={onSelect}
-              ignoreRoleIds={usedRolesIds}
-              ignoreUserIds={usedUserIds}
-            />
+      <SettingsSection
+        title={t('rolesUsersTitle')}
+        action={
+          <SearchPopover
+            onSelect={onSelect}
+            ignoreRoleIds={usedRolesIds}
+            ignoreUserIds={usedUserIds}
+          />
+        }
+      >
+        {isEmpty ? (
+          <div className="py-8 text-center text-sm text-muted-foreground">
+            {t('noPermissionOverridesYet')}
           </div>
-        </CardHeader>
-        <CardContent className="space-y-2 p-2">
-          {isEmpty ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              {t('noPermissionOverridesYet')}
-            </div>
-          ) : (
-            <>
-              <RolesSection
-                rolePermissions={rolePermissions}
-                selectedKey={selectedOverrideId || ''}
-                setSelectedKey={setSelectedOverrideId}
-              />
+        ) : (
+          <>
+            <RolesSection
+              rolePermissions={rolePermissions}
+              selectedKey={selectedOverrideId || ''}
+              setSelectedKey={setSelectedOverrideId}
+            />
 
-              {hasRoles && hasUsers && <Separator className="my-2" />}
+            {hasRoles && hasUsers && <Separator className="my-2" />}
 
-              <UsersSection
-                userPermissions={userPermissions}
-                selectedKey={selectedOverrideId || ''}
-                setSelectedKey={setSelectedOverrideId}
-              />
-            </>
-          )}
-        </CardContent>
-      </Card>
+            <UsersSection
+              userPermissions={userPermissions}
+              selectedKey={selectedOverrideId || ''}
+              setSelectedKey={setSelectedOverrideId}
+            />
+          </>
+        )}
+      </SettingsSection>
     );
   }
 );
