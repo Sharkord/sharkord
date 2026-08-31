@@ -1,11 +1,12 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
+import { StatePanel } from '@/components/server-screens/settings-shell/state-panel';
+import { cn } from '@/lib/utils';
 import type { TPluginInfo } from '@sharkord/shared';
-import { Button, Card, CardContent, Input } from '@sharkord/ui';
+import { Button, Input } from '@sharkord/ui';
 import { AlertCircle, Package, RefreshCw, Search } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ListWithSeparators } from '../list-with-separators';
-import { SectionHeader } from '../section-header';
-import { StatePanel } from '../state-panel';
 import { useMarketplaceData } from './hooks';
 import { MarketplaceItem } from './marketplace-item';
 import { MarketplaceSkeleton } from './marketplace-skeleton';
@@ -33,6 +34,11 @@ const Marketplace = memo(({ plugins, refetchInstalled }: TMarketplaceProps) => {
     await refresh();
   }, [refresh]);
 
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value),
+    [setSearch]
+  );
+
   const renderContent = () => {
     if (loading) {
       return <MarketplaceSkeleton />;
@@ -59,7 +65,7 @@ const Marketplace = memo(({ plugins, refetchInstalled }: TMarketplaceProps) => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={handleSearchChange}
             placeholder={t('marketplaceSearchPlaceholder')}
             className="pl-9"
           />
@@ -85,17 +91,25 @@ const Marketplace = memo(({ plugins, refetchInstalled }: TMarketplaceProps) => {
   };
 
   return (
-    <Card>
-      <SectionHeader
-        title={t('marketplaceTitle')}
-        description={t('marketplaceDesc')}
-        onRefresh={handleRefresh}
-        isRefreshing={isRefreshing}
-        refreshDisabled={isRefreshing || loading}
-        refreshLabel={t('refreshBtn')}
-      />
-      <CardContent>{renderContent()}</CardContent>
-    </Card>
+    <SettingsSection
+      title={t('marketplaceTitle')}
+      description={t('marketplaceDesc')}
+      action={
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing || loading}
+        >
+          <RefreshCw
+            className={cn('h-4 w-4', isRefreshing && 'animate-spin')}
+          />
+          {t('refreshBtn')}
+        </Button>
+      }
+    >
+      {renderContent()}
+    </SettingsSection>
   );
 });
 

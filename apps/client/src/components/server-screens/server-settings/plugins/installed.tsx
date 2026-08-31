@@ -1,36 +1,27 @@
-import { Dialog } from '@/components/dialogs/dialogs';
-import { openDialog, requestConfirmation } from '@/features/dialogs/actions';
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
+import { requestConfirmation } from '@/features/dialogs/actions';
 import { usePluginsEnabled } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
+import { cn } from '@/lib/utils';
 import type { TPluginInfo } from '@sharkord/shared';
 import { getTrpcError } from '@sharkord/shared';
 import {
   Alert,
   AlertDescription,
   Badge,
-  Card,
-  CardContent,
+  Button,
   IconButton,
   LoadingCard,
   Switch,
   Tooltip
 } from '@sharkord/ui';
-import {
-  AlertCircle,
-  FileText,
-  Package,
-  Settings,
-  Terminal,
-  Trash2,
-  User
-} from 'lucide-react';
+import { AlertCircle, Package, RefreshCw, Trash2, User } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { StatePanel } from '../../settings-shell/state-panel';
 import { ListWithSeparators } from './list-with-separators';
 import { ImageWithFallback } from './marketplace/image-with-fallback';
-import { SectionHeader } from './section-header';
-import { StatePanel } from './state-panel';
 
 type TPluginItemProps = {
   plugin: TPluginInfo;
@@ -74,27 +65,6 @@ const PluginItem = memo(({ plugin, onToggle, onRemove }: TPluginItemProps) => {
     }
   }, [plugin.id, plugin.name, onRemove, t]);
 
-  const handleViewLogs = useCallback(() => {
-    openDialog(Dialog.PLUGIN_LOGS, {
-      pluginName: plugin.name,
-      pluginId: plugin.id,
-      logs: [] // will be populated by subscription later
-    });
-  }, [plugin.name, plugin.id]);
-
-  const handleViewCommands = useCallback(() => {
-    openDialog(Dialog.PLUGIN_COMMANDS, {
-      pluginId: plugin.id
-    });
-  }, [plugin.id]);
-
-  const handleViewSettings = useCallback(() => {
-    openDialog(Dialog.PLUGIN_SETTINGS, {
-      pluginId: plugin.id,
-      pluginName: plugin.name
-    });
-  }, [plugin.id, plugin.name]);
-
   return (
     <div className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
       <div className="flex-shrink-0">
@@ -123,32 +93,6 @@ const PluginItem = memo(({ plugin, onToggle, onRemove }: TPluginItemProps) => {
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Tooltip content={t('logsBtn')}>
-              <IconButton
-                icon={FileText}
-                variant="ghost"
-                size="sm"
-                onClick={handleViewLogs}
-              />
-            </Tooltip>
-            <Tooltip content={t('commandsBtn')}>
-              <IconButton
-                icon={Terminal}
-                variant="ghost"
-                size="sm"
-                onClick={handleViewCommands}
-                disabled={!plugin.enabled}
-              />
-            </Tooltip>
-            <Tooltip content={t('settingsBtn')}>
-              <IconButton
-                icon={Settings}
-                variant="ghost"
-                size="sm"
-                onClick={handleViewSettings}
-                disabled={!plugin.enabled}
-              />
-            </Tooltip>
             <Tooltip content={t('removeBtn')}>
               <IconButton
                 icon={Trash2}
@@ -268,48 +212,58 @@ const InstalledPlugins = memo(
       return <LoadingCard className="h-[600px]" />;
     }
 
-    return (
-      <Card>
-        <SectionHeader
-          title={t('pluginsTitle')}
-          description={t('pluginsManageDesc')}
-          onRefresh={handleRefresh}
-          isRefreshing={isRefreshing}
-          refreshDisabled={isRefreshing || loading || !enabled}
-          refreshLabel={t('refreshBtn')}
+    let content = (
+      <StatePanel
+        icon={AlertCircle}
+        title={t('pluginsDisabledTitle')}
+        description={t('pluginsDisabledDesc')}
+      />
+    );
+
+    if (enabled && plugins.length === 0) {
+      content = (
+        <StatePanel
+          icon={Package}
+          title={t('noPluginsTitle')}
+          description={t('noPluginsDesc')}
         />
-        <CardContent>
-          {enabled ? (
-            <>
-              {plugins.length === 0 ? (
-                <StatePanel
-                  icon={Package}
-                  title={t('noPluginsTitle')}
-                  description={t('noPluginsDesc')}
-                />
-              ) : (
-                <ListWithSeparators
-                  items={plugins}
-                  getKey={(plugin) => plugin.id}
-                  renderItem={(plugin) => (
-                    <PluginItem
-                      plugin={plugin}
-                      onToggle={handleToggle}
-                      onRemove={handleRemove}
-                    />
-                  )}
-                />
-              )}
-            </>
-          ) : (
-            <StatePanel
-              icon={AlertCircle}
-              title={t('pluginsDisabledTitle')}
-              description={t('pluginsDisabledDesc')}
+      );
+    } else if (enabled) {
+      content = (
+        <ListWithSeparators
+          items={plugins}
+          getKey={(plugin) => plugin.id}
+          renderItem={(plugin) => (
+            <PluginItem
+              plugin={plugin}
+              onToggle={handleToggle}
+              onRemove={handleRemove}
             />
           )}
-        </CardContent>
-      </Card>
+        />
+      );
+    }
+
+    return (
+      <SettingsSection
+        title={t('pluginsTitle')}
+        description={t('pluginsManageDesc')}
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing || loading || !enabled}
+          >
+            <RefreshCw
+              className={cn('h-4 w-4', isRefreshing && 'animate-spin')}
+            />
+            {t('refreshBtn')}
+          </Button>
+        }
+      >
+        {content}
+      </SettingsSection>
     );
   }
 );

@@ -1,0 +1,95 @@
+import { cn } from '@/lib/utils';
+import { Separator } from '@sharkord/ui';
+
+import { memo, useCallback } from 'react';
+import type { TSettingsEntry } from './types';
+
+type TSidebarEntryProps = {
+  entry: TSettingsEntry;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
+};
+
+const SidebarEntry = memo(
+  ({ entry, isSelected, onSelect }: TSidebarEntryProps) => {
+    const { icon: Icon, logo, label } = entry;
+
+    const handleClick = useCallback(
+      () => onSelect(entry.id),
+      [onSelect, entry.id]
+    );
+
+    return (
+      <button
+        onClick={handleClick}
+        className={cn(
+          'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent',
+          isSelected && 'bg-accent font-medium'
+        )}
+      >
+        {logo ? (
+          <img
+            src={logo}
+            alt=""
+            className="h-4 w-4 shrink-0 rounded-sm object-cover"
+          />
+        ) : (
+          <Icon className="h-4 w-4 shrink-0" />
+        )}
+        <span className="truncate">{label}</span>
+      </button>
+    );
+  }
+);
+
+type TSettingsSidebarProps = {
+  entries: TSettingsEntry[];
+  pluginEntries: TSettingsEntry[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+  className?: string;
+};
+
+const SettingsSidebar = memo(
+  ({
+    entries,
+    pluginEntries,
+    selectedId,
+    onSelect,
+    className
+  }: TSettingsSidebarProps) => {
+    return (
+      <nav
+        className={cn(
+          'w-60 shrink-0 space-y-1 overflow-y-auto border-r bg-background p-3',
+          className
+        )}
+      >
+        {entries.map((entry) => (
+          <SidebarEntry
+            key={entry.id}
+            entry={entry}
+            isSelected={entry.id === selectedId}
+            onSelect={onSelect}
+          />
+        ))}
+
+        {pluginEntries.length > 0 && (
+          <>
+            <Separator className="my-3" />
+            {pluginEntries.map((entry) => (
+              <SidebarEntry
+                key={entry.id}
+                entry={entry}
+                isSelected={entry.id === selectedId}
+                onSelect={onSelect}
+              />
+            ))}
+          </>
+        )}
+      </nav>
+    );
+  }
+);
+
+export { SettingsSidebar };
