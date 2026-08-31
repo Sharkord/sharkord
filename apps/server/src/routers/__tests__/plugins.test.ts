@@ -1,11 +1,15 @@
-import { ActivityLogType, type TPluginInfo } from '@sharkord/shared';
+import {
+  ActivityLogType,
+  ChannelType,
+  type TPluginInfo
+} from '@sharkord/shared';
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
 import { initTest } from '../../__tests__/helpers';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
-import { tdb } from '../../__tests__/setup';
+import { tdb, testsBaseUrl } from '../../__tests__/setup';
 import { activityLog, pluginData } from '../../db/schema';
 import { PLUGINS_PATH } from '../../helpers/paths';
 import { pluginManager } from '../../plugins';
@@ -966,6 +970,226 @@ describe('plugins router', () => {
 
       expect(message.content).not.toContain('<command');
       expect(message.editable).toBe(true);
+    });
+  });
+
+  describe('beforeMessageSave hook', () => {
+    const sendMessage = async (
+      caller: Awaited<ReturnType<typeof initTest>>['caller'],
+      content: string
+    ) =>
+      caller.messages.send({
+        channelId: 1,
+        content: `<p>${content}</p>`,
+        files: []
+      });
+
+    const getLastContent = async (
+      caller: Awaited<ReturnType<typeof initTest>>['caller']
+    ) => {
+      const result = await caller.messages.get({
+        channelId: 1,
+        cursor: null,
+        limit: 1
+      });
+
+      return result.messages[0]!;
+    };
+
+    beforeEach(async () => {
+      await pluginManager.togglePlugin('plugin-before-message-save', true);
+    });
+
+    test('should leave an ordinary message untouched', async () => {
+      const { caller } = await initTest();
+
+      await sendMessage(caller, 'hello there');
+
+      expect((await getLastContent(caller)).content).toContain('hello there');
+    });
+
+    test('should let a plugin rewrite a message before it is stored', async () => {
+      const { caller } = await initTest();
+
+      await sendMessage(caller, 'rewriteme please');
+
+      const message = await getLastContent(caller);
+
+      expect(message.content).toContain('rewritten by plugin');
+      expect(message.content).not.toContain('rewriteme');
+    });
+
+    // the whole point of the hook: the message must never reach the database
+    test('should let a plugin refuse a message, with its own reason', async () => {
+      const { caller } = await initTest();
+
+      await sendMessage(caller, 'before the filter');
+
+      const before = await getLastContent(caller);
+
+      await expect(sendMessage(caller, 'rejectme now')).rejects.toThrow(
+        'Blocked by the test filter'
+      );
+
+      expect((await getLastContent(caller)).id).toBe(before.id);
+    });
+
+    test('should run on edits too, so a filter cannot be dodged by editing', async () => {
+      const { caller } = await initTest();
+
+      await sendMessage(caller, 'innocent');
+
+      const messageId = (await getLastContent(caller)).id;
+
+      await expect(
+        caller.messages.edit({ messageId, content: '<p>rejectme now</p>' })
+      ).rejects.toThrow('Blocked by the test filter');
+
+      expect((await getLastContent(caller)).content).toContain('innocent');
+    });
+
+    test('should rewrite on edit as well', async () => {
+      const { caller } = await initTest();
+
+      await sendMessage(caller, 'innocent');
+
+      const messageId = (await getLastContent(caller)).id;
+
+      await caller.messages.edit({
+        messageId,
+        content: '<p>rewriteme now</p>'
+      });
+
+      expect((await getLastContent(caller)).content).toContain(
+        'rewritten by plugin'
+      );
+    });
+
+    // a plugin returns untrusted html, exactly like a user does
+    test('should sanitize what a plugin returns', async () => {
+      const { caller } = await initTest();
+
+      await sendMessage(caller, 'injectme');
+
+      const message = await getLastContent(caller);
+
+      expect(message.content).toContain('ok');
+      expect(message.content).not.toContain('<script');
+    });
+
+    test('should refuse a replacement that is empty', async () => {
+      const { caller } = await initTest();
+
+      await expect(sendMessage(caller, 'emptyme')).rejects.toThrow(
+        'replaced this message with empty content'
+      );
+    });
+
+    // a throw is a bug, not a decision, so the sender learns nothing from it
+    test('should fail closed with a generic message when a hook throws', async () => {
+      const { caller } = await initTest();
+
+      await expect(sendMessage(caller, 'crashme')).rejects.toThrow(
+        'A plugin failed while checking this request.'
+      );
+    });
+
+    test('should record a thrown hook against the plugin log', async () => {
+      const { caller } = await initTest();
+
+      await expect(sendMessage(caller, 'crashme')).rejects.toThrow();
+
+      const logs = pluginManager.getLogs('plugin-before-message-save');
+
+      expect(
+        logs.some(
+          (log) => log.type === 'error' && log.message.includes('Hook failed')
+        )
+      ).toBe(true);
+    });
+
+    test('should not run while the plugin is disabled', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.togglePlugin('plugin-before-message-save', false);
+
+      await sendMessage(caller, 'rejectme now');
+
+      expect((await getLastContent(caller)).content).toContain('rejectme');
+    });
+  });
+
+  describe('other hooks', () => {
+    beforeEach(async () => {
+      await pluginManager.togglePlugin('plugin-before-message-save', true);
+    });
+
+    test('should let a plugin rename a channel as it is created', async () => {
+      const { caller } = await initTest();
+
+      const channelId = await caller.channels.add({
+        name: 'renameme',
+        type: ChannelType.TEXT,
+        categoryId: 1
+      });
+
+      const channel = await caller.channels.get({ channelId });
+
+      expect(channel!.name).toBe('renamed-by-plugin');
+    });
+
+    test('should let a plugin refuse a channel name', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.channels.add({
+          name: 'rejectme',
+          type: ChannelType.TEXT,
+          categoryId: 1
+        })
+      ).rejects.toThrow('That channel name is not allowed');
+    });
+
+    test('should leave an ordinary channel name alone', async () => {
+      const { caller } = await initTest();
+
+      const channelId = await caller.channels.add({
+        name: 'general-two',
+        type: ChannelType.TEXT,
+        categoryId: 1
+      });
+
+      const channel = await caller.channels.get({ channelId });
+
+      expect(channel!.name).toBe('general-two');
+    });
+
+    test('should let a plugin refuse a voice join', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.voice.join({ channelId: 2, state: {} })
+      ).rejects.toThrow('Voice is closed right now');
+    });
+
+    test('should let a plugin refuse a login', async () => {
+      const response = await fetch(`${testsBaseUrl}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identity: 'blockedidentity',
+          password: 'password123'
+        })
+      });
+
+      const body = (await response.json()) as {
+        errors: Record<string, string>;
+      };
+
+      expect(response.status).toBe(400);
+      expect(body.errors.identity).toBe(
+        'This account is not allowed to sign in'
+      );
     });
   });
 

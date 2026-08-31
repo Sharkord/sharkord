@@ -2,7 +2,11 @@ import type {
   ActionDefinition,
   CommandDefinition,
   TActionContract,
+  TBeforeChannelCreateHook,
   TBeforeFileSaveHook,
+  TBeforeLoginHook,
+  TBeforeMessageSaveHook,
+  TBeforeVoiceJoinHook,
   TChannel,
   TCommandArg,
   TCommandContract,
@@ -15,7 +19,12 @@ import type {
   TPluginStoreState,
   TStreamQualityLayer
 } from '@sharkord/shared';
-import { FileSaveType, PLUGIN_SDK_VERSION, PluginSlot } from '@sharkord/shared';
+import {
+  FileSaveType,
+  MessageSaveType,
+  PLUGIN_SDK_VERSION,
+  PluginSlot
+} from '@sharkord/shared';
 import type { IncomingMessage, ServerResponse } from 'http';
 import type { AppData, Producer, Router } from 'mediasoup/types';
 
@@ -206,6 +215,10 @@ export interface PluginContext {
 
   hooks: {
     onBeforeFileSave(handler: TBeforeFileSaveHook): void;
+    onBeforeMessageSave(handler: TBeforeMessageSaveHook): void;
+    onBeforeChannelCreate(handler: TBeforeChannelCreateHook): void;
+    onBeforeVoiceJoin(handler: TBeforeVoiceJoinHook): void;
+    onBeforeLogin(handler: TBeforeLoginHook): void;
   };
 
   http: {
@@ -265,7 +278,11 @@ export type {
   ActionDefinition,
   CommandDefinition,
   TActionContract,
+  TBeforeChannelCreateHook,
   TBeforeFileSaveHook,
+  TBeforeLoginHook,
+  TBeforeMessageSaveHook,
+  TBeforeVoiceJoinHook,
   TCommandArg,
   TCommandContract,
   TInvokerContext,
@@ -278,4 +295,4 @@ export type {
 
 export * from './actions';
 export * from './commands';
-export { FileSaveType, PLUGIN_SDK_VERSION, PluginSlot };
+export { FileSaveType, MessageSaveType, PLUGIN_SDK_VERSION, PluginSlot };

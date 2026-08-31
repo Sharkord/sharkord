@@ -38,9 +38,13 @@ import {
   LIFECYCLE_TIMEOUT_MS,
   withTimeout
 } from './execution-timeout';
-import { HooksManager } from './hooks-manager';
+import {
+  HooksManager,
+  type THookHandlers,
+  type THookName
+} from './hooks-manager';
 import { PluginHttpRouteRegistry } from './http-route-registry';
-import { PluginLogger } from './plugin-logger';
+import { pluginLogger } from './plugin-logger';
 import { PluginSettingsManager } from './plugin-settings-manager';
 import { PluginStateStore } from './plugin-state-store';
 import { PluginRegistry } from './registry';
@@ -54,7 +58,7 @@ class PluginManager {
   private pluginsWithUi = new Set<string>();
 
   private readonly stateStore = new PluginStateStore();
-  private readonly pluginLogger = new PluginLogger();
+  private readonly pluginLogger = pluginLogger;
   private readonly hooksManager = new HooksManager();
   private readonly httpRouteRegistry = new PluginHttpRouteRegistry(
     this.pluginLogger
@@ -111,15 +115,16 @@ class PluginManager {
     value: unknown
   ) => this.settingsManager.updateSetting(pluginId, key, value);
 
-  public registerBeforeFileSaveHook = (
-    ...args: Parameters<HooksManager['registerBeforeFileSave']>
-  ) => this.hooksManager.registerBeforeFileSave(...args);
+  public registerHook = <TName extends THookName>(
+    name: TName,
+    pluginId: string,
+    handler: THookHandlers[TName]
+  ) => this.hooksManager.register(name, pluginId, handler);
 
-  public clearBeforeFileSaveHooks = () =>
-    this.hooksManager.clearBeforeFileSaveHooks();
+  public getHooks = <TName extends THookName>(name: TName) =>
+    this.hooksManager.get(name);
 
-  public getBeforeFileSaveHooks = () =>
-    this.hooksManager.getBeforeFileSaveHooks();
+  public clearHooks = () => this.hooksManager.clearAll();
 
   public getCommands = (): TCommandsMapByPlugin => {
     const allCommands: TCommandsMapByPlugin = {};
@@ -450,7 +455,15 @@ class PluginManager {
             definitions
           )) as PluginContext['settings']['register'],
         registerBeforeFileSave: (handler) =>
-          this.hooksManager.registerBeforeFileSave(pluginId, handler),
+          this.hooksManager.register('beforeFileSave', pluginId, handler),
+        registerBeforeMessageSave: (handler) =>
+          this.hooksManager.register('beforeMessageSave', pluginId, handler),
+        registerBeforeChannelCreate: (handler) =>
+          this.hooksManager.register('beforeChannelCreate', pluginId, handler),
+        registerBeforeVoiceJoin: (handler) =>
+          this.hooksManager.register('beforeVoiceJoin', pluginId, handler),
+        registerBeforeLogin: (handler) =>
+          this.hooksManager.register('beforeLogin', pluginId, handler),
         registerHttpRoute: (method, routePath, handler) =>
           this.httpRouteRegistry.register(pluginId, method, routePath, handler)
       });

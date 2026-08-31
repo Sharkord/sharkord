@@ -1,9 +1,17 @@
-import { ActivityLogType, ChannelType, Permission } from '@sharkord/shared';
+import {
+  ActivityLogType,
+  ChannelType,
+  Permission,
+  type TBeforeChannelCreatePayload,
+  type TBeforeChannelCreateUpdate
+} from '@sharkord/shared';
 import { desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { publishChannel } from '../../db/publishers';
 import { categories, channels } from '../../db/schema';
+import { pluginManager } from '../../plugins';
+import { runHook } from '../../plugins/run-hook';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
@@ -32,6 +40,27 @@ const addChannelRoute = protectedProcedure
       message: 'Category not found'
     });
 
+    const { name } = await runHook<
+      TBeforeChannelCreatePayload,
+      TBeforeChannelCreateUpdate
+    >({
+      entries: pluginManager.getHooks('beforeChannelCreate'),
+      payload: {
+        name: input.name,
+        type: input.type,
+        categoryId: input.categoryId,
+        userId: ctx.user.id
+      },
+      normalize: (payload, pluginId) => {
+        invariant(payload.name.trim().length > 0, {
+          code: 'BAD_REQUEST',
+          message: `Plugin '${pluginId}' replaced this channel name with nothing.`
+        });
+
+        return payload;
+      }
+    });
+
     const channel = db.transaction((tx) => {
       const maxPositionChannel = tx
         .select({ position: channels.position })
@@ -50,7 +79,7 @@ const addChannelRoute = protectedProcedure
             maxPositionChannel?.position !== undefined
               ? maxPositionChannel.position + 1
               : 0,
-          name: input.name,
+          name,
           type: input.type,
           categoryId: input.categoryId,
           createdAt: now

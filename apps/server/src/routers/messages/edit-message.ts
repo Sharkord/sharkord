@@ -1,18 +1,21 @@
 import {
-  MESSAGE_MAX_LENGTH,
   getPlainTextFromHtml,
-  isEmptyMessage
+  isEmptyMessage,
+  MESSAGE_MAX_LENGTH,
+  MessageSaveType
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
+import { getSettings } from '../../db/queries/server';
 import { messages } from '../../db/schema';
 import {
   assertCanModifyMessage,
   loadMessageForWrite
 } from '../../helpers/load-message-for-write';
+import { runBeforeMessageSaveHooks } from '../../helpers/run-before-message-save-hooks';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
 import { eventBus } from '../../plugins/event-bus';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
@@ -45,13 +48,25 @@ const editMessageRoute = rateLimitedProcedure(protectedProcedure, {
       message: 'Message cannot be empty.'
     });
 
-    const sanitizedContent = sanitizeMessageHtml(input.content);
+    let sanitizedContent = sanitizeMessageHtml(input.content);
 
     invariant(!isEmptyMessage(sanitizedContent), {
       code: 'BAD_REQUEST',
       message:
         'Your message only contained unsupported or removed content, so there was nothing to send.'
     });
+
+    const { enablePlugins } = await getSettings();
+
+    if (enablePlugins) {
+      sanitizedContent = await runBeforeMessageSaveHooks({
+        content: sanitizedContent,
+        channelId: message.channelId,
+        userId: ctx.userId,
+        type: MessageSaveType.EDIT,
+        messageId: input.messageId
+      });
+    }
 
     const editedAt = Date.now();
 

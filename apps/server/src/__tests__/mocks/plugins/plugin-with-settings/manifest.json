@@ -2,7 +2,7 @@
   "id": "plugin-with-settings",
   "name": "plugin-with-settings",
   "version": "0.0.1",
-  "sdkVersion": 1,
+  "sdkVersion": 2,
   "author": "Test Author",
   "description": "A mock plugin with settings for testing."
 }

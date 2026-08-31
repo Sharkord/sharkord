@@ -6,6 +6,7 @@ import {
   getPlainTextFromHtml,
   isEmptyMessage,
   MESSAGE_MAX_LENGTH,
+  MessageSaveType,
   Permission,
   STORAGE_MAX_FILES_PER_MESSAGE,
   toDomCommand
@@ -21,6 +22,7 @@ import { messageFiles, messages } from '../../db/schema';
 import { fileManager } from '../../helpers/file-manager';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
 import { parseCommandArgs } from '../../helpers/parse-command-args';
+import { runBeforeMessageSaveHooks } from '../../helpers/run-before-message-save-hooks';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
 import { logger } from '../../logger';
 import { pluginManager } from '../../plugins';
@@ -148,6 +150,15 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       message:
         'Your message only contained unsupported or removed content, so there was nothing to send.'
     });
+
+    if (enablePlugins) {
+      targetContent = await runBeforeMessageSaveHooks({
+        content: targetContent,
+        channelId: input.channelId,
+        userId: ctx.userId,
+        type: MessageSaveType.CREATE
+      });
+    }
 
     let editable = true;
     let commandExecutor: ((messageId: number) => void) | undefined = undefined;

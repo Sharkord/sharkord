@@ -1,15 +1,35 @@
-import { FileSaveType, type TBeforeFileSavePayload } from '@sharkord/shared';
+import {
+  FileSaveType,
+  MessageSaveType,
+  type TBeforeFileSavePayload,
+  type TBeforeMessageSavePayload
+} from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { HooksManager } from '../hooks-manager';
 
-const payload = {
-  tempFile: { id: 'temp-1' },
+const payload: TBeforeFileSavePayload = {
+  bytes: new Uint8Array([1, 2, 3]),
+  originalName: 'cat.png',
+  extension: 'png',
+  size: 3,
   userId: 1,
   type: FileSaveType.MESSAGE
-} as unknown as TBeforeFileSavePayload;
+};
 
 const getHandlers = (hooks: HooksManager, pluginId: string) =>
-  hooks.getBeforeFileSaveHooks().find((hook) => hook.pluginId === pluginId)
+  hooks.get('beforeFileSave').find((hook) => hook.pluginId === pluginId)
+    ?.handlers ?? [];
+
+const messagePayload: TBeforeMessageSavePayload = {
+  content: '<p>hi</p>',
+  textContent: 'hi',
+  channelId: 1,
+  userId: 1,
+  type: MessageSaveType.CREATE
+};
+
+const getMessageHandlers = (hooks: HooksManager, pluginId: string) =>
+  hooks.get('beforeMessageSave').find((hook) => hook.pluginId === pluginId)
     ?.handlers ?? [];
 
 describe('hooks-manager', () => {
@@ -19,7 +39,7 @@ describe('hooks-manager', () => {
     const hooks = new HooksManager();
     const handler = async () => {};
 
-    hooks.registerBeforeFileSave('plugin-a', handler);
+    hooks.register('beforeFileSave', 'plugin-a', handler);
 
     const [wrapped] = getHandlers(hooks, 'plugin-a');
 
@@ -31,15 +51,17 @@ describe('hooks-manager', () => {
     const hooks = new HooksManager();
     let received: TBeforeFileSavePayload | undefined;
 
-    hooks.registerBeforeFileSave('plugin-a', async (hookPayload) => {
+    hooks.register('beforeFileSave', 'plugin-a', async (hookPayload) => {
       received = hookPayload;
 
-      return '/tmp/replacement.txt';
+      return { update: { originalName: 'renamed.png' } };
     });
 
     const [wrapped] = getHandlers(hooks, 'plugin-a');
 
-    expect(await wrapped!(payload)).toBe('/tmp/replacement.txt');
+    expect(await wrapped!(payload)).toEqual({
+      update: { originalName: 'renamed.png' }
+    });
     expect(received).toBe(payload);
   });
 
@@ -47,7 +69,7 @@ describe('hooks-manager', () => {
   test('should propagate a rejection from the handler', async () => {
     const hooks = new HooksManager();
 
-    hooks.registerBeforeFileSave('plugin-a', async () => {
+    hooks.register('beforeFileSave', 'plugin-a', async () => {
       throw new Error('rejected by plugin');
     });
 
@@ -59,7 +81,7 @@ describe('hooks-manager', () => {
   test('should propagate a synchronous throw from the handler', async () => {
     const hooks = new HooksManager();
 
-    hooks.registerBeforeFileSave('plugin-a', (() => {
+    hooks.register('beforeFileSave', 'plugin-a', (() => {
       throw new Error('threw before returning');
     }) as never);
 
@@ -72,10 +94,10 @@ describe('hooks-manager', () => {
     const hooks = new HooksManager();
     const calls: string[] = [];
 
-    hooks.registerBeforeFileSave('plugin-a', async () => {
+    hooks.register('beforeFileSave', 'plugin-a', async () => {
       calls.push('first');
     });
-    hooks.registerBeforeFileSave('plugin-a', async () => {
+    hooks.register('beforeFileSave', 'plugin-a', async () => {
       calls.push('second');
     });
 
@@ -86,11 +108,50 @@ describe('hooks-manager', () => {
     expect(calls).toEqual(['first', 'second']);
   });
 
+  test('should hand out wrapped beforeMessageSave handlers too', async () => {
+    const hooks = new HooksManager();
+    const handler = async () => ({ update: { content: '<p>rewritten</p>' } });
+
+    hooks.register('beforeMessageSave', 'plugin-a', handler);
+
+    const [wrapped] = getMessageHandlers(hooks, 'plugin-a');
+
+    expect(wrapped).not.toBe(handler);
+    expect(await wrapped!(messagePayload)).toEqual({
+      update: { content: '<p>rewritten</p>' }
+    });
+  });
+
+  // refusing a message is what the hook is for, so the wrapper must not swallow it
+  test('should propagate a beforeMessageSave failure', async () => {
+    const hooks = new HooksManager();
+
+    hooks.register('beforeMessageSave', 'plugin-a', async () => {
+      throw new Error('blocked');
+    });
+
+    const [wrapped] = getMessageHandlers(hooks, 'plugin-a');
+
+    await expect(wrapped!(messagePayload)).rejects.toThrow('blocked');
+  });
+
+  test('should drop both hook kinds when a plugin unloads', () => {
+    const hooks = new HooksManager();
+
+    hooks.register('beforeFileSave', 'plugin-a', async () => {});
+    hooks.register('beforeMessageSave', 'plugin-a', async () => {});
+
+    hooks.unload('plugin-a');
+
+    expect(getHandlers(hooks, 'plugin-a')).toHaveLength(0);
+    expect(getMessageHandlers(hooks, 'plugin-a')).toHaveLength(0);
+  });
+
   test('should drop only the unloaded plugin hooks', () => {
     const hooks = new HooksManager();
 
-    hooks.registerBeforeFileSave('plugin-a', async () => {});
-    hooks.registerBeforeFileSave('plugin-b', async () => {});
+    hooks.register('beforeFileSave', 'plugin-a', async () => {});
+    hooks.register('beforeFileSave', 'plugin-b', async () => {});
 
     hooks.unload('plugin-a');
 

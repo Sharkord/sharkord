@@ -59,5 +59,7 @@ class PluginLogger {
   });
 }
 
-export { PluginLogger };
+const pluginLogger = new PluginLogger();
+
+export { PluginLogger, pluginLogger };
 export type { ScopedLogger };

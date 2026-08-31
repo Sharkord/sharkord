@@ -27,6 +27,10 @@ type TContextDependencies = {
   registerCommand: PluginContext['commands']['register'];
   registerSettings: PluginContext['settings']['register'];
   registerBeforeFileSave: PluginContext['hooks']['onBeforeFileSave'];
+  registerBeforeMessageSave: PluginContext['hooks']['onBeforeMessageSave'];
+  registerBeforeChannelCreate: PluginContext['hooks']['onBeforeChannelCreate'];
+  registerBeforeVoiceJoin: PluginContext['hooks']['onBeforeVoiceJoin'];
+  registerBeforeLogin: PluginContext['hooks']['onBeforeLogin'];
   registerHttpRoute: PluginContext['http']['register'];
   setUiEnabled: (enabled: boolean) => void;
 };
@@ -158,7 +162,13 @@ const createContext = (deps: TContextDependencies): PluginContext => {
     actions: { register: deps.registerAction },
     commands: { register: deps.registerCommand },
     settings: { register: deps.registerSettings },
-    hooks: { onBeforeFileSave: deps.registerBeforeFileSave },
+    hooks: {
+      onBeforeFileSave: deps.registerBeforeFileSave,
+      onBeforeMessageSave: deps.registerBeforeMessageSave,
+      onBeforeChannelCreate: deps.registerBeforeChannelCreate,
+      onBeforeVoiceJoin: deps.registerBeforeVoiceJoin,
+      onBeforeLogin: deps.registerBeforeLogin
+    },
     http: {
       register: registerHttpRoute,
       get: bindHttpMethod('GET'),

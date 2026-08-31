@@ -4,7 +4,6 @@ import {
   STORAGE_MAX_IMAGE_OPTIMIZATION_QUALITY,
   STORAGE_MIN_IMAGE_OPTIMIZATION_QUALITY,
   StorageOverflowAction,
-  type TBeforeFileSaveResult,
   type TFile,
   type TJoinedSettings,
   type TTempFile
@@ -24,6 +23,7 @@ import { files } from '../db/schema';
 import { PUBLIC_PATH, TMP_PATH, UPLOADS_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 import { pluginManager } from '../plugins';
+import { runHook } from '../plugins/run-hook';
 
 /**
  * Files workflow:
@@ -317,35 +317,6 @@ class FileManager {
     }
   };
 
-  private applyBeforeFileSaveResult = async (
-    tempFile: TTempFile,
-    newFilePath: TBeforeFileSaveResult
-  ) => {
-    try {
-      if (!newFilePath) return;
-
-      await fs.stat(newFilePath);
-
-      const previousPath = tempFile.path;
-
-      tempFile.path = newFilePath;
-      tempFile.size = (await fs.stat(newFilePath)).size;
-      tempFile.md5 = await md5File(newFilePath);
-
-      if (previousPath !== newFilePath) {
-        try {
-          await fs.unlink(previousPath);
-        } catch {
-          // ignore
-        }
-      }
-    } catch (error) {
-      throw new Error(
-        `Failed to apply file changes from beforeFileSave hook: ${getErrorMessage(error)}`
-      );
-    }
-  };
-
   private getUniqueName = async (originalName: string): Promise<string> => {
     const baseName = path.basename(originalName, path.extname(originalName));
     const extension = getNormalizedExtension(originalName);
@@ -372,6 +343,41 @@ class FileManager {
     return fileName;
   };
 
+  private runBeforeFileSaveHooks = async (
+    tempFile: TTempFile,
+    userId: number,
+    type: FileSaveType
+  ) => {
+    const entries = pluginManager.getHooks('beforeFileSave');
+
+    if (entries.length === 0) return;
+
+    const bytes = await Bun.file(tempFile.path).bytes();
+
+    const result = await runHook({
+      entries,
+      payload: {
+        bytes,
+        originalName: tempFile.originalName,
+        extension: tempFile.extension,
+        size: tempFile.size,
+        userId,
+        type
+      }
+    });
+
+    if (result.originalName !== tempFile.originalName) {
+      tempFile.originalName = result.originalName;
+    }
+
+    if (result.bytes === bytes) return;
+
+    await fs.writeFile(tempFile.path, result.bytes);
+
+    tempFile.size = result.bytes.byteLength;
+    tempFile.md5 = await md5File(tempFile.path);
+  };
+
   public async saveFile(
     tempFileId: string,
     userId: number,
@@ -388,22 +394,7 @@ class FileManager {
     }
 
     if (type) {
-      const hooks = pluginManager.getBeforeFileSaveHooks();
-
-      for (const { handlers } of hooks) {
-        for (const handler of handlers) {
-          // freeze file to prevent plugins from modifying it directly - they must return a new path if they want to change the file
-          const frozenFile = Object.freeze({ ...tempFile });
-
-          const result = await handler({
-            tempFile: frozenFile,
-            userId,
-            type
-          });
-
-          await this.applyBeforeFileSaveResult(tempFile, result);
-        }
-      }
+      await this.runBeforeFileSaveHooks(tempFile, userId, type);
     }
 
     const settings = await getSettings();
