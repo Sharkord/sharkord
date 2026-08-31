@@ -21,6 +21,7 @@ import { getUserRoles } from '../db/queries/roles';
 import { getUserById, getUserByToken } from '../db/queries/users';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
+import { eventBus } from '../plugins/event-bus';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { appRouter } from '../routers';
 import { VoiceRuntime } from '../runtimes/voice';
@@ -223,6 +224,11 @@ const handleSocketClose = async (ws: WebSocket) => {
     usersIpMap.delete(user.id);
     pubsub.publish(ServerEvents.USER_LEAVE, user.id);
 
+    eventBus.emit('user:left', {
+      userId: user.id,
+      username: user.name
+    });
+
     logger.info('%s left the server', user.name);
 
     enqueueActivityLog({
@@ -285,5 +291,6 @@ export {
   disconnectUser,
   getOnlineUserIds,
   getUserIp,
-  handleSocketClose
+  handleSocketClose,
+  trackUserSocket
 };

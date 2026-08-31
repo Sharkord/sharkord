@@ -10,6 +10,7 @@ import { messages, pluginData, settings } from '../../db/schema';
 import { fileManager } from '../../helpers/file-manager';
 import { PLUGINS_PATH, PUBLIC_PATH, UPLOADS_PATH } from '../../helpers/paths';
 import { getPluginDataPath } from '../../helpers/plugin-paths';
+import { handleSocketClose, trackUserSocket } from '../../utils/wss';
 import { eventBus } from '../event-bus';
 import { withTimeout } from '../execution-timeout';
 
@@ -1198,6 +1199,55 @@ export { onLoad, onUnload };
       // since the plugin is unloaded, we can't query it, but we can verify
       // the event bus no longer has handlers for this plugin
       expect(eventBus.hasPlugin('plugin-with-events')).toBe(false);
+    });
+  });
+
+  describe('user:left', () => {
+    type TSocket = Parameters<typeof handleSocketClose>[0];
+
+    const getCounts = async () =>
+      (await pluginManager.executeCommand(
+        'plugin-with-events',
+        'get-counts',
+        mockInvokerCtx,
+        {}
+      )) as { userJoined: number; userLeft: number };
+
+    test('should fire when a user closes their last session', async () => {
+      await pluginManager.load('plugin-with-events');
+
+      expect((await getCounts()).userLeft).toBe(0);
+
+      await handleSocketClose({ userId: 2 } as unknown as TSocket);
+
+      expect((await getCounts()).userLeft).toBe(1);
+    });
+
+    // a second tab closing is not a departure, so the event must not fire
+    test('should not fire while another session is still open', async () => {
+      await pluginManager.load('plugin-with-events');
+
+      const first = { userId: 2 } as unknown as TSocket;
+      const second = { userId: 2 } as unknown as TSocket;
+
+      trackUserSocket(2, first);
+      trackUserSocket(2, second);
+
+      await handleSocketClose(first);
+
+      expect((await getCounts()).userLeft).toBe(0);
+
+      await handleSocketClose(second);
+
+      expect((await getCounts()).userLeft).toBe(1);
+    });
+
+    test('should ignore a socket that never authenticated', async () => {
+      await pluginManager.load('plugin-with-events');
+
+      await handleSocketClose({} as unknown as TSocket);
+
+      expect((await getCounts()).userLeft).toBe(0);
     });
   });
 
