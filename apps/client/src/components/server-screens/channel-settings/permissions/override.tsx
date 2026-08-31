@@ -1,11 +1,13 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
+import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { UserAvatar } from '@/components/user-avatar';
 import { useRoleById } from '@/features/server/roles/hooks';
 import { useUserById } from '@/features/server/users/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { ChannelPermission, getTrpcError } from '@sharkord/shared';
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@sharkord/ui';
-import { Trash2 } from 'lucide-react';
-import { memo, useCallback, useState } from 'react';
+import { CardTitle, IconButton, Tooltip } from '@sharkord/ui';
+import { Trash2, X } from 'lucide-react';
+import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ChannelPermissionList } from './channel-permission-list';
@@ -56,6 +58,10 @@ type TOverrideProps = {
   refetch: () => Promise<void>;
 };
 
+type TOverrideValues = {
+  permissions: TChannelPermission[];
+};
+
 const Override = memo(
   ({
     channelId,
@@ -65,28 +71,41 @@ const Override = memo(
     refetch
   }: TOverrideProps) => {
     const { t } = useTranslation('settings');
-    const [localPermissions, setLocalPermissions] =
-      useState<TChannelPermission[]>(permissions);
     const [overrideType, targetIdStr] = overrideId.split('-');
     const targetId = parseInt(targetIdStr, 10);
     const isRole = overrideType === 'role';
 
+    const onSave = useCallback(
+      async (values: TOverrideValues) => {
+        const trpc = getTRPCClient();
+        const target = isRole ? { roleId: targetId } : { userId: targetId };
+
+        await trpc.channels.updatePermissions.mutate({
+          ...target,
+          channelId,
+          permissions: values.permissions
+            .filter((perm) => perm.allow)
+            .map((perm) => perm.permission)
+        });
+
+        await refetch();
+      },
+      [channelId, isRole, targetId, refetch]
+    );
+
+    const { values, onChange } = useSettingsForm<TOverrideValues>({
+      initialValues: { permissions },
+      onSave,
+      successMessage: t('permissionOverrideUpdated'),
+      errorMessage: t('failedUpdatePermissionOverride')
+    });
+
     const onDeleteOverride = useCallback(async () => {
       const trpc = getTRPCClient();
+      const target = isRole ? { roleId: targetId } : { userId: targetId };
 
       try {
-        const payload = {};
-
-        if (isRole) {
-          Object.assign(payload, { roleId: targetId });
-        } else {
-          Object.assign(payload, { userId: targetId });
-        }
-
-        await trpc.channels.deletePermissions.mutate({
-          ...payload,
-          channelId
-        });
+        await trpc.channels.deletePermissions.mutate({ ...target, channelId });
 
         toast.success(t('permissionOverrideDeleted'));
         setSelectedOverrideId(undefined);
@@ -97,82 +116,61 @@ const Override = memo(
       }
     }, [channelId, isRole, targetId, setSelectedOverrideId, refetch, t]);
 
-    const onUpdateOverride = useCallback(async () => {
-      const trpc = getTRPCClient();
+    const onClose = useCallback(
+      () => setSelectedOverrideId(undefined),
+      [setSelectedOverrideId]
+    );
 
-      try {
-        const payload = { channelId };
-
-        if (isRole) {
-          Object.assign(payload, { roleId: targetId });
-        } else {
-          Object.assign(payload, { userId: targetId });
-        }
-
-        const allowedPermissions = localPermissions
-          .filter((perm) => perm.allow)
-          .map((perm) => perm.permission);
-
-        await trpc.channels.updatePermissions.mutate({
-          ...payload,
-          permissions: allowedPermissions
-        });
-
-        toast.success(t('permissionOverrideUpdated'));
-        await refetch();
-      } catch (error) {
-        toast.error(getTrpcError(error, t('failedUpdatePermissionOverride')));
-      }
-    }, [channelId, isRole, targetId, localPermissions, refetch, t]);
-
-    const onTogglePermission = useCallback((permission: ChannelPermission) => {
-      setLocalPermissions((prevPermissions) =>
-        prevPermissions.map((perm) =>
-          perm.permission === permission
-            ? { ...perm, allow: !perm.allow }
-            : perm
-        )
-      );
-    }, []);
+    const onTogglePermission = useCallback(
+      (permission: ChannelPermission) => {
+        onChange(
+          'permissions',
+          values.permissions.map((perm) =>
+            perm.permission === permission
+              ? { ...perm, allow: !perm.allow }
+              : perm
+          )
+        );
+      },
+      [onChange, values.permissions]
+    );
 
     return (
-      <Card className="flex-1">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {overrideType === 'role' ? (
-                <RoleHeader roleId={targetId} />
-              ) : (
-                <UserHeader userId={targetId} />
-              )}
-            </div>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={onDeleteOverride}
-              className="text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <ChannelPermissionList
-            permissions={localPermissions}
-            onTogglePermission={onTogglePermission}
-          />
-
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => setSelectedOverrideId(undefined)}
-            >
-              {t('cancel')}
-            </Button>
-            <Button onClick={onUpdateOverride}>{t('saveChanges')}</Button>
-          </div>
-        </CardContent>
-      </Card>
+      <SettingsSection
+        className="flex-1"
+        title={
+          isRole ? (
+            <RoleHeader roleId={targetId} />
+          ) : (
+            <UserHeader userId={targetId} />
+          )
+        }
+        action={
+          <>
+            <Tooltip content={t('deleteOverrideTooltip')}>
+              <IconButton
+                icon={Trash2}
+                size="sm"
+                variant="destructive"
+                onClick={onDeleteOverride}
+              />
+            </Tooltip>
+            <Tooltip content={t('closeEditorTooltip')}>
+              <IconButton
+                icon={X}
+                size="sm"
+                variant="ghost"
+                onClick={onClose}
+              />
+            </Tooltip>
+          </>
+        }
+      >
+        <ChannelPermissionList
+          permissions={values.permissions}
+          onTogglePermission={onTogglePermission}
+        />
+      </SettingsSection>
     );
   }
 );

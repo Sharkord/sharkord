@@ -1,55 +1,56 @@
-import { closeServerScreens } from '@/features/server-screens/actions';
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
+import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { useAdminCategoryGeneral } from '@/features/server/admin/hooks';
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Group,
-  Input
-} from '@sharkord/ui';
-import { memo } from 'react';
+import { getTRPCClient } from '@/lib/trpc';
+import { Group, Input, LoadingCard } from '@sharkord/ui';
+import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 type TGeneralProps = {
   categoryId: number;
 };
 
+type TCategoryValues = {
+  name: string;
+};
+
 const General = memo(({ categoryId }: TGeneralProps) => {
   const { t } = useTranslation('settings');
-  const { category, loading, onChange, submit, errors } =
-    useAdminCategoryGeneral(categoryId);
+  const { category, loading } = useAdminCategoryGeneral(categoryId);
 
-  if (!category) return null;
+  const onSave = useCallback(
+    async (values: TCategoryValues) => {
+      const trpc = getTRPCClient();
+
+      await trpc.categories.update.mutate({ categoryId, name: values.name });
+    },
+    [categoryId]
+  );
+
+  const { r, reset } = useSettingsForm<TCategoryValues>({
+    initialValues: { name: '' },
+    onSave,
+    successMessage: t('categoryUpdated'),
+    errorMessage: t('failedUpdateCategory')
+  });
+
+  useEffect(() => {
+    if (category) reset({ name: category.name });
+  }, [category, reset]);
+
+  if (loading) {
+    return <LoadingCard className="h-64" />;
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('categoryInfoTitle')}</CardTitle>
-        <CardDescription>{t('categoryInfoDesc')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Group label={t('categoryNameLabel')}>
-          <Input
-            value={category.name}
-            onChange={(e) => onChange('name', e.target.value)}
-            placeholder={t('categoryNamePlaceholder')}
-            error={errors.name}
-          />
-        </Group>
-
-        <div className="flex justify-end gap-2 pt-4">
-          <Button variant="outline" onClick={closeServerScreens}>
-            {t('cancel')}
-          </Button>
-          <Button onClick={submit} disabled={loading}>
-            {t('saveChanges')}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <SettingsSection
+      title={t('categoryInfoTitle')}
+      description={t('categoryInfoDesc')}
+    >
+      <Group label={t('categoryNameLabel')}>
+        <Input placeholder={t('categoryNamePlaceholder')} {...r('name')} />
+      </Group>
+    </SettingsSection>
   );
 });
 

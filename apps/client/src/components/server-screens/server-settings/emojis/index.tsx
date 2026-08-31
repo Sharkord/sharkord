@@ -1,14 +1,15 @@
+import { SettingsListEditor } from '@/components/server-screens/settings-shell/list-editor';
 import { useAdminEmojis } from '@/features/server/admin/hooks';
 import { uploadFiles } from '@/helpers/upload-file';
 import { useFilePicker } from '@/hooks/use-file-picker';
 import { getTRPCClient } from '@/lib/trpc';
-import { LoadingCard } from '@sharkord/ui';
+import { Button, LoadingCard, Spinner } from '@sharkord/ui';
+import { Smile, Upload } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { EmojiList } from './emoji-list';
 import { UpdateEmoji } from './update-emoji';
-import { UploadEmoji } from './upload-emoji';
 
 const Emojis = memo(() => {
   const { t } = useTranslation('settings');
@@ -50,7 +51,7 @@ const Emojis = memo(() => {
   }, [openFilePicker, refetch, t]);
 
   const selectedEmoji = useMemo(
-    () => emojis.find((e) => e.id === selectedEmojiId),
+    () => emojis.find((emoji) => emoji.id === selectedEmojiId),
     [emojis, selectedEmojiId]
   );
 
@@ -59,26 +60,40 @@ const Emojis = memo(() => {
   }
 
   return (
-    <div className="flex gap-6">
-      <EmojiList
-        emojis={emojis}
-        setSelectedEmojiId={(id) => setSelectedEmojiId(id)}
-        selectedEmojiId={selectedEmojiId ?? -1}
-        uploadEmoji={uploadEmoji}
-        isUploading={isUploading}
-      />
-
-      {selectedEmoji ? (
-        <UpdateEmoji
-          key={selectedEmoji.id}
-          selectedEmoji={selectedEmoji}
+    <SettingsListEditor
+      emptyIcon={Smile}
+      emptyTitle={t('uploadEmojiTitle')}
+      emptyDescription={t('uploadEmojiDesc')}
+      emptyAction={
+        <Button onClick={uploadEmoji} disabled={isUploading}>
+          {isUploading ? (
+            <Spinner size="xxs" />
+          ) : (
+            <Upload className="h-4 w-4" />
+          )}
+          {t('uploadEmojiBtn')}
+        </Button>
+      }
+      list={
+        <EmojiList
+          emojis={emojis}
           setSelectedEmojiId={setSelectedEmojiId}
-          refetch={refetch}
+          selectedEmojiId={selectedEmojiId}
+          uploadEmoji={uploadEmoji}
+          isUploading={isUploading}
         />
-      ) : (
-        <UploadEmoji uploadEmoji={uploadEmoji} isUploading={isUploading} />
-      )}
-    </div>
+      }
+      editor={
+        selectedEmoji && (
+          <UpdateEmoji
+            key={selectedEmoji.id}
+            selectedEmoji={selectedEmoji}
+            setSelectedEmojiId={setSelectedEmojiId}
+            refetch={refetch}
+          />
+        )
+      }
+    />
   );
 });
 

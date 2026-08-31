@@ -1,8 +1,15 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@sharkord/ui';
-import { memo } from 'react';
+import {
+  Bell,
+  Headphones,
+  KeyRound,
+  SlidersHorizontal,
+  User
+} from 'lucide-react';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TServerScreenBaseProps } from '../screens';
-import { ServerScreenLayout } from '../server-screen-layout';
+import { SettingsShell } from '../settings-shell';
+import type { TSettingsEntry } from '../settings-shell/types';
 import { Devices } from './devices';
 import { Notifications } from './notifications';
 import { Others } from './others';
@@ -14,38 +21,48 @@ type TUserSettingsProps = TServerScreenBaseProps;
 const UserSettings = memo(({ close }: TUserSettingsProps) => {
   const { t } = useTranslation('settings');
 
-  return (
-    <ServerScreenLayout close={close} title={t('userSettingsTitle')}>
-      <div className="mx-auto max-w-4xl">
-        <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="profile">{t('profileTab')}</TabsTrigger>
-            <TabsTrigger value="devices">{t('devicesTab')}</TabsTrigger>
-            <TabsTrigger value="password">{t('passwordTab')}</TabsTrigger>
-            <TabsTrigger value="notifications">
-              {t('notificationsTab')}
-            </TabsTrigger>
-            <TabsTrigger value="others">{t('othersTab')}</TabsTrigger>
-          </TabsList>
+  const entries = useMemo<TSettingsEntry[]>(
+    () => [
+      {
+        id: 'profile',
+        label: t('profileTab'),
+        icon: User,
+        content: <Profile />
+      },
+      {
+        id: 'devices',
+        label: t('devicesTab'),
+        icon: Headphones,
+        content: <Devices />
+      },
+      {
+        id: 'password',
+        label: t('passwordTab'),
+        icon: KeyRound,
+        content: <Password />
+      },
+      {
+        id: 'notifications',
+        label: t('notificationsTab'),
+        icon: Bell,
+        content: <Notifications />
+      },
+      {
+        id: 'others',
+        label: t('othersTab'),
+        icon: SlidersHorizontal,
+        content: <Others />
+      }
+    ],
+    [t]
+  );
 
-          <TabsContent value="profile" className="space-y-6">
-            <Profile />
-          </TabsContent>
-          <TabsContent value="devices" className="space-y-6">
-            <Devices />
-          </TabsContent>
-          <TabsContent value="password" className="space-y-6">
-            <Password />
-          </TabsContent>
-          <TabsContent value="notifications" className="space-y-6">
-            <Notifications />
-          </TabsContent>
-          <TabsContent value="others" className="space-y-6">
-            <Others />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </ServerScreenLayout>
+  return (
+    <SettingsShell
+      title={t('userSettingsTitle')}
+      close={close}
+      entries={entries}
+    />
   );
 });
 

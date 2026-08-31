@@ -9,7 +9,7 @@ type TResponseProps = {
 };
 
 const Response = memo(({ response }: TResponseProps) => {
-  const { t } = useTranslation('dialogs');
+  const { t } = useTranslation('settings');
 
   return (
     <div className="mt-6">
