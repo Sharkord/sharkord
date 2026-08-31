@@ -488,5 +488,7 @@
   "pluginSettingsTitle": "Настройки",
   "saving": "Сохранение...",
   "selectedChannelIdLabel": "ID выбранного канала",
-  "unsavedChanges": "У вас есть несохранённые изменения"
+  "unsavedChanges": "У вас есть несохранённые изменения",
+  "secretSetPlaceholder": "Задано. Оставьте пустым, чтобы сохранить",
+  "secretUnsetPlaceholder": "Не задано"
 }

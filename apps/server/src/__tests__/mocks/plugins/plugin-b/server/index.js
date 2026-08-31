@@ -42,6 +42,45 @@ const onLoad = (ctx) => {
     }
   });
 
+  ctx.commands.register({
+    name: 'can-manage-users',
+    description: 'Whether a user may manage users',
+    args: [{ name: 'userId', type: 'number', required: true }],
+    async execute(invokerCtx, args) {
+      return {
+        allowed: await ctx.permissions.userCan(args.userId, 'MANAGE_USERS')
+      };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'grant-role',
+    description: 'Assign a role to a user',
+    args: [
+      { name: 'userId', type: 'number', required: true },
+      { name: 'roleId', type: 'number', required: true }
+    ],
+    async execute(invokerCtx, args) {
+      await ctx.roles.assign(args.userId, args.roleId);
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'revoke-role',
+    description: 'Remove a role from a user',
+    args: [
+      { name: 'userId', type: 'number', required: true },
+      { name: 'roleId', type: 'number', required: true }
+    ],
+    async execute(invokerCtx, args) {
+      await ctx.roles.remove(args.userId, args.roleId);
+
+      return { ok: true };
+    }
+  });
+
   ctx.actions.register({
     name: 'multiply',
     description: 'Multiply two numbers',

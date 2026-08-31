@@ -32,6 +32,7 @@ const usePluginSettings = (pluginId: string) => {
     []
   );
   const [values, setValues] = useState<Record<string, unknown>>({});
+  const [secretsSet, setSecretsSet] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -44,6 +45,7 @@ const usePluginSettings = (pluginId: string) => {
 
         setDefinitions(result.definitions);
         setValues(result.values);
+        setSecretsSet(result.secretsSet);
       } catch (error) {
         toast.error(getTrpcError(error, t('failedLoadPluginSettings')));
       } finally {
@@ -54,7 +56,7 @@ const usePluginSettings = (pluginId: string) => {
     fetchSettings();
   }, [pluginId, t]);
 
-  return { definitions, values, loading };
+  return { definitions, values, secretsSet, loading };
 };
 
 type TPluginViewProps = {
@@ -63,7 +65,9 @@ type TPluginViewProps = {
 
 const PluginView = memo(({ plugin }: TPluginViewProps) => {
   const { t } = useTranslation('settings');
-  const { definitions, values, loading } = usePluginSettings(plugin.id);
+  const { definitions, values, secretsSet, loading } = usePluginSettings(
+    plugin.id
+  );
   const commandsMap = usePluginCommands();
 
   const hasCommands = (commandsMap[plugin.id] ?? []).length > 0;
@@ -147,6 +151,7 @@ const PluginView = memo(({ plugin }: TPluginViewProps) => {
               pluginId={plugin.id}
               definitions={definitions}
               values={values}
+              secretsSet={secretsSet}
             />
           </TabsContent>
         )}

@@ -1,7 +1,9 @@
 import type { PluginSettings } from '@sharkord/plugin-sdk';
-import type {
-  TPluginSettingDefinition,
-  TPluginSettingsResponse
+import {
+  getSettingValueError,
+  isSecretSetting,
+  type TPluginSettingDefinition,
+  type TPluginSettingsResponse
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
@@ -114,6 +116,14 @@ class PluginSettingsManager {
           return;
         }
 
+        const valueError = getSettingValueError(definition, value);
+
+        if (valueError) {
+          this.pluginLogger.log(pluginId, 'error', valueError);
+
+          return;
+        }
+
         this.setValue(pluginId, key, value).catch((error) => {
           this.pluginLogger.log(
             pluginId,
@@ -130,18 +140,35 @@ class PluginSettingsManager {
     pluginId: string
   ): Promise<TPluginSettingsResponse> => {
     const definitions = this.settingDefinitions.get(pluginId) ?? [];
-    const values = this.settingValues.get(pluginId);
 
-    if (values) return { definitions, values };
+    const values =
+      this.settingValues.get(pluginId) ??
+      this.mergeWithDefaults(definitions, await this.loadFromDb(pluginId));
 
-    // the plugin is not loaded, so nothing is in memory to read from
     return {
       definitions,
-      values: this.mergeWithDefaults(
-        definitions,
-        await this.loadFromDb(pluginId)
-      )
+      ...this.withoutSecrets(definitions, values)
     };
+  };
+
+  private withoutSecrets = (
+    definitions: TPluginSettingDefinition[],
+    values: Record<string, unknown>
+  ) => {
+    const visible: Record<string, unknown> = { ...values };
+    const secretsSet: string[] = [];
+
+    for (const definition of definitions) {
+      if (!isSecretSetting(definition)) continue;
+
+      if (String(visible[definition.key] ?? '').length > 0) {
+        secretsSet.push(definition.key);
+      }
+
+      delete visible[definition.key];
+    }
+
+    return { values: visible, secretsSet };
   };
 
   public updateSetting = async (
@@ -163,10 +190,10 @@ class PluginSettingsManager {
       );
     }
 
-    if (typeof value !== definition.type) {
-      throw new Error(
-        `Setting '${key}' expects a ${definition.type}, received ${typeof value}.`
-      );
+    const valueError = getSettingValueError(definition, value);
+
+    if (valueError) {
+      throw new Error(valueError);
     }
 
     await this.setValue(pluginId, key, value);

@@ -479,5 +479,7 @@
   "pluginSettingsTitle": "Paramètres",
   "saving": "Enregistrement...",
   "selectedChannelIdLabel": "ID du salon sélectionné",
-  "unsavedChanges": "Vous avez des modifications non enregistrées"
+  "unsavedChanges": "Vous avez des modifications non enregistrées",
+  "secretSetPlaceholder": "Défini. Laissez vide pour le conserver",
+  "secretUnsetPlaceholder": "Non défini"
 }

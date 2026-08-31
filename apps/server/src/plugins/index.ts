@@ -25,10 +25,12 @@ import { getSettings } from '../db/queries/server';
 import { PLUGINS_PATH } from '../helpers/paths';
 import {
   getPluginClientEntryPath,
+  getPluginDataPath,
   getPluginPath,
   getPluginServerEntryPath
 } from '../helpers/plugin-paths';
 import { logger } from '../logger';
+import { ensureDir } from '../utils/fs';
 import { pubsub } from '../utils/pubsub';
 import { createContext, createUnloadContext } from './create-context';
 import { eventBus } from './event-bus';
@@ -434,11 +436,15 @@ class PluginManager {
       assertSdkVersionCompatibility(manifest.sdkVersion);
 
       const scopedLogger = this.pluginLogger.createScopedLogger(pluginId);
+      const dataPath = getPluginDataPath(pluginId);
+
+      await ensureDir(dataPath);
 
       const ctx = createContext({
         pluginId,
         scopedLogger,
         pluginPath,
+        dataPath,
         setUiEnabled: (enabled) => this.setUiEnabled(pluginId, enabled),
         registerAction: (action) =>
           this.actionRegistry.register(
@@ -551,6 +557,7 @@ class PluginManager {
         pluginId,
         scopedLogger: this.pluginLogger.createScopedLogger(pluginId),
         pluginPath,
+        dataPath: getPluginDataPath(pluginId),
         setUiEnabled: (enabled) => this.setUiEnabled(pluginId, enabled)
       });
 
@@ -588,6 +595,18 @@ class PluginManager {
       );
 
       throw new Error(`Failed to remove plugin: ${getErrorMessage(error)}`);
+    }
+
+    try {
+      await fs.rm(getPluginDataPath(pluginId), {
+        recursive: true,
+        force: true
+      });
+    } catch (error) {
+      logger.error(
+        `Failed to remove plugin data for ${pluginId}: %s`,
+        getErrorMessage(error)
+      );
     }
 
     // nothing on disk to attribute them to any more

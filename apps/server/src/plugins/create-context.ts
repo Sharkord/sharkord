@@ -6,9 +6,16 @@ import type {
   TPluginHttpRouteHandler,
   UnloadPluginContext
 } from '@sharkord/plugin-sdk';
-import { ServerEvents, StreamKind } from '@sharkord/shared';
+import {
+  ServerEvents,
+  StreamKind,
+  type ChannelPermission,
+  type Permission
+} from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
+import { channelUserCan } from '../db/queries/channels';
+import { getRoles, userCan } from '../db/queries/roles';
 import { getPublicUserById, getPublicUsers } from '../db/queries/users';
 import { channels } from '../db/schema';
 import { VoiceRuntime } from '../runtimes/voice';
@@ -16,11 +23,16 @@ import { pubsub } from '../utils/pubsub';
 import { createPluginMessage } from './actions/create-plugin-message';
 import { deletePluginMessage } from './actions/delete-plugin-message';
 import { editPluginMessage } from './actions/edit-plugin-message';
+import {
+  assignPluginUserRole,
+  removePluginUserRole
+} from './actions/set-plugin-user-role';
 import { eventBus } from './event-bus';
 import type { ScopedLogger } from './plugin-logger';
 
 type TContextDependencies = {
   pluginId: string;
+  dataPath: string;
   scopedLogger: ScopedLogger;
   pluginPath: string;
   registerAction: PluginContext['actions']['register'];
@@ -108,12 +120,14 @@ const createUnloadContext = ({
   pluginId,
   scopedLogger,
   pluginPath,
+  dataPath,
   setUiEnabled
 }: Pick<
   TContextDependencies,
-  'pluginId' | 'scopedLogger' | 'pluginPath' | 'setUiEnabled'
+  'pluginId' | 'scopedLogger' | 'pluginPath' | 'dataPath' | 'setUiEnabled'
 >): UnloadPluginContext => ({
   path: pluginPath,
+  dataPath,
   logger: scopedLogger,
   // TODO: deprecate this in favor of ctx.logger.* (e.g. ctx.logger.debug)
   // deprecated flat aliases (ctx.log / ctx.debug / ctx.error), kept so existing
@@ -176,6 +190,22 @@ const createContext = (deps: TContextDependencies): PluginContext => {
       patch: bindHttpMethod('PATCH'),
       delete: bindHttpMethod('DELETE'),
       options: bindHttpMethod('OPTIONS')
+    },
+    permissions: {
+      userCan: async (userId: number, permission: Permission) =>
+        userCan(userId, permission),
+      userCanInChannel: async (
+        userId: number,
+        channelId: number,
+        permission: ChannelPermission
+      ) => channelUserCan(channelId, userId, permission)
+    },
+    roles: {
+      list: async () => getRoles(),
+      assign: async (userId: number, roleId: number) =>
+        assignPluginUserRole(userId, roleId),
+      remove: async (userId: number, roleId: number) =>
+        removePluginUserRole(userId, roleId)
     },
     data: {
       getUser: async (userId: number) => getPublicUserById(userId),

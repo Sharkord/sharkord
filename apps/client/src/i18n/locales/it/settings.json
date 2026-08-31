@@ -479,5 +479,7 @@
   "pluginSettingsTitle": "Impostazioni",
   "saving": "Salvataggio...",
   "selectedChannelIdLabel": "ID del canale selezionato",
-  "unsavedChanges": "Hai modifiche non salvate"
+  "unsavedChanges": "Hai modifiche non salvate",
+  "secretSetPlaceholder": "Impostato. Lascia vuoto per mantenerlo",
+  "secretUnsetPlaceholder": "Non impostato"
 }

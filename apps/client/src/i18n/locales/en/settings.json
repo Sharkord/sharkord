@@ -481,5 +481,7 @@
   "pluginSettingsTitle": "Settings",
   "saving": "Saving...",
   "selectedChannelIdLabel": "Selected channel ID",
-  "unsavedChanges": "You have unsaved changes"
+  "unsavedChanges": "You have unsaved changes",
+  "secretSetPlaceholder": "Set. Leave blank to keep it",
+  "secretUnsetPlaceholder": "Not set"
 }

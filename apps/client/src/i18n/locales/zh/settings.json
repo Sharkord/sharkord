@@ -479,5 +479,7 @@
   "pluginSettingsTitle": "设置",
   "saving": "保存中...",
   "selectedChannelIdLabel": "已选频道 ID",
-  "unsavedChanges": "你有未保存的更改"
+  "unsavedChanges": "你有未保存的更改",
+  "secretSetPlaceholder": "已设置。留空即保持不变",
+  "secretUnsetPlaceholder": "未设置"
 }

@@ -22,6 +22,25 @@ const onLoad = async (ctx) => {
       description: 'Whether the feature is enabled',
       type: 'boolean',
       defaultValue: true
+    },
+    {
+      key: 'apiKey',
+      name: 'API Key',
+      description: 'Credential for the upstream service',
+      type: 'secret',
+      defaultValue: ''
+    },
+    {
+      key: 'mode',
+      name: 'Mode',
+      description: 'How the plugin behaves',
+      type: 'enum',
+      defaultValue: 'balanced',
+      options: [
+        { value: 'fast', label: 'Fast' },
+        { value: 'balanced', label: 'Balanced' },
+        { value: 'thorough', label: 'Thorough' }
+      ]
     }
   ]);
 
@@ -32,7 +51,9 @@ const onLoad = async (ctx) => {
       return {
         greeting: pluginSettings.get('greeting'),
         maxRetries: pluginSettings.get('maxRetries'),
-        enabled: pluginSettings.get('enabled')
+        enabled: pluginSettings.get('enabled'),
+        apiKey: pluginSettings.get('apiKey'),
+        mode: pluginSettings.get('mode')
       };
     }
   });
@@ -43,6 +64,16 @@ const onLoad = async (ctx) => {
     args: [{ name: 'value', type: 'string', required: true }],
     execute: async (_ctx, args) => {
       pluginSettings.set('greeting', args.value);
+      return { success: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'set-mode',
+    description: 'Updates the mode setting',
+    args: [{ name: 'value', type: 'string', required: true }],
+    execute: async (_ctx, args) => {
+      pluginSettings.set('mode', args.value);
       return { success: true };
     }
   });

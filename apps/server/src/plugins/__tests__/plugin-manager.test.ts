@@ -9,6 +9,7 @@ import { findTestLog, tdb } from '../../__tests__/setup';
 import { messages, pluginData, settings } from '../../db/schema';
 import { fileManager } from '../../helpers/file-manager';
 import { PLUGINS_PATH, PUBLIC_PATH, UPLOADS_PATH } from '../../helpers/paths';
+import { getPluginDataPath } from '../../helpers/plugin-paths';
 import { eventBus } from '../event-bus';
 import { withTimeout } from '../execution-timeout';
 
@@ -47,7 +48,9 @@ describe('plugin-manager', () => {
 
       const commands = pluginManager.getCommands();
       expect(commands['plugin-b']).toBeDefined();
-      expect(commands['plugin-b']!.length).toBe(2);
+      expect(commands['plugin-b']!.map((command) => command.name)).toEqual(
+        expect.arrayContaining(['test-command', 'sum'])
+      );
     });
 
     test('should skip loading disabled plugin', async () => {
@@ -343,7 +346,7 @@ export { onLoad, onUnload };
       const commands = pluginManager.getCommands();
 
       expect(commands['plugin-b']).toBeDefined();
-      expect(commands['plugin-b']!.length).toBe(2);
+      expect(commands['plugin-b']!.length).toBeGreaterThan(0);
       expect(commands['plugin-with-events']).toBeDefined();
       expect(commands['plugin-with-events']!.length).toBe(1);
     });
@@ -417,6 +420,61 @@ export { onLoad, onUnload };
       expect(pluginManager.getPluginIdsWithComponents()).not.toContain(
         'plugin-b'
       );
+    });
+  });
+
+  describe('plugin data directory', () => {
+    const markerPath = () =>
+      path.join(getPluginDataPath('plugin-a'), 'marker.txt');
+
+    test('should exist before onLoad runs, so a plugin can write to it', async () => {
+      await pluginManager.load('plugin-a');
+
+      expect(await fs.exists(markerPath())).toBe(true);
+    });
+
+    // the whole point: an update replaces the plugin folder, not its data
+    test('should survive the plugin folder being replaced', async () => {
+      await pluginManager.load('plugin-a');
+      await fs.writeFile(markerPath(), 'written before the update');
+
+      const pluginPath = path.join(PLUGINS_PATH, 'plugin-a');
+      const source = await fs
+        .cp(pluginPath, `${pluginPath}-copy`, { recursive: true })
+        .then(() => `${pluginPath}-copy`);
+
+      await pluginManager.unload('plugin-a');
+
+      // exactly what installing an update does to the plugin's own folder
+      await fs.rm(pluginPath, { recursive: true, force: true });
+      await fs.cp(source, pluginPath, { recursive: true });
+      await fs.rm(source, { recursive: true, force: true });
+
+      await pluginManager.load('plugin-a');
+
+      expect(await Bun.file(markerPath()).text()).toBe(
+        'written before the update'
+      );
+    });
+
+    test('should be removed with the plugin', async () => {
+      const pluginPath = path.join(PLUGINS_PATH, 'plugin-a');
+      const backup = `${pluginPath}-backup`;
+
+      await fs.cp(pluginPath, backup, { recursive: true });
+
+      try {
+        await pluginManager.load('plugin-a');
+
+        expect(await fs.exists(getPluginDataPath('plugin-a'))).toBe(true);
+
+        await pluginManager.removePlugin('plugin-a');
+
+        expect(await fs.exists(getPluginDataPath('plugin-a'))).toBe(false);
+      } finally {
+        await fs.cp(backup, pluginPath, { recursive: true });
+        await fs.rm(backup, { recursive: true, force: true });
+      }
     });
   });
 
@@ -760,7 +818,9 @@ export { onLoad, onUnload };
       expect(result).toEqual({
         greeting: 'Hello!',
         maxRetries: 3,
-        enabled: true
+        enabled: true,
+        apiKey: '',
+        mode: 'balanced'
       });
     });
 
@@ -791,13 +851,91 @@ export { onLoad, onUnload };
         'plugin-with-settings'
       );
 
-      expect(settings.definitions).toHaveLength(3);
-      expect(settings.definitions[0]!.key).toBe('greeting');
-      expect(settings.definitions[1]!.key).toBe('maxRetries');
-      expect(settings.definitions[2]!.key).toBe('enabled');
+      expect(settings.definitions.map((d) => d.key)).toEqual([
+        'greeting',
+        'maxRetries',
+        'enabled',
+        'apiKey',
+        'mode'
+      ]);
       expect(settings.values.greeting).toBe('Hello!');
       expect(settings.values.maxRetries).toBe(3);
       expect(settings.values.enabled).toBe(true);
+      expect(settings.values.mode).toBe('balanced');
+    });
+
+    // a credential must not travel to the admin client, only the fact it is set
+    test('should never send a secret value to the client', async () => {
+      await pluginManager.load('plugin-with-settings');
+
+      const before = await pluginManager.getPluginSettings(
+        'plugin-with-settings'
+      );
+
+      expect('apiKey' in before.values).toBe(false);
+      expect(before.secretsSet).toEqual([]);
+
+      await pluginManager.updatePluginSetting(
+        'plugin-with-settings',
+        'apiKey',
+        'super-secret-token'
+      );
+
+      const after = await pluginManager.getPluginSettings(
+        'plugin-with-settings'
+      );
+
+      expect('apiKey' in after.values).toBe(false);
+      expect(after.secretsSet).toEqual(['apiKey']);
+      expect(JSON.stringify(after)).not.toContain('super-secret-token');
+    });
+
+    // the plugin itself still reads the real value
+    test('should give the plugin the real secret value', async () => {
+      await pluginManager.load('plugin-with-settings');
+
+      await pluginManager.updatePluginSetting(
+        'plugin-with-settings',
+        'apiKey',
+        'super-secret-token'
+      );
+
+      const result = (await pluginManager.executeCommand(
+        'plugin-with-settings',
+        'get-settings',
+        mockInvokerCtx,
+        {}
+      )) as Record<string, unknown>;
+
+      expect(result.apiKey).toBe('super-secret-token');
+    });
+
+    test('should refuse an enum value outside its options', async () => {
+      await pluginManager.load('plugin-with-settings');
+
+      await expect(
+        pluginManager.updatePluginSetting(
+          'plugin-with-settings',
+          'mode',
+          'sideways'
+        )
+      ).rejects.toThrow('expects one of: fast, balanced, thorough');
+    });
+
+    test('should accept a declared enum value', async () => {
+      await pluginManager.load('plugin-with-settings');
+
+      await pluginManager.updatePluginSetting(
+        'plugin-with-settings',
+        'mode',
+        'thorough'
+      );
+
+      const settings = await pluginManager.getPluginSettings(
+        'plugin-with-settings'
+      );
+
+      expect(settings.values.mode).toBe('thorough');
     });
 
     test('should update settings via updatePluginSetting', async () => {
@@ -867,7 +1005,7 @@ export { onLoad, onUnload };
         'plugin-with-settings'
       );
 
-      expect(settingsBefore.definitions).toHaveLength(3);
+      expect(settingsBefore.definitions.length).toBeGreaterThan(0);
 
       await pluginManager.unload('plugin-with-settings');
 

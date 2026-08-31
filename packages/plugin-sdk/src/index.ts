@@ -12,6 +12,7 @@ import type {
   TCommandContract,
   TInvokerContext,
   TJoinedPublicUser,
+  TJoinedRole,
   TPluginActions,
   TPluginComponentsMapBySlotId,
   TPluginSettingDefinition,
@@ -20,8 +21,10 @@ import type {
   TStreamQualityLayer
 } from '@sharkord/shared';
 import {
+  ChannelPermission,
   FileSaveType,
   MessageSaveType,
+  Permission,
   PLUGIN_SDK_VERSION,
   PluginSlot
 } from '@sharkord/shared';
@@ -151,6 +154,7 @@ export interface PluginSettings<
 
 export interface PluginContext {
   path: string;
+  dataPath: string;
   pluginId: string;
 
   logger: {
@@ -234,6 +238,22 @@ export interface PluginContext {
     options(path: string, handler: TPluginHttpRouteHandler): void;
   };
 
+  permissions: {
+    userCan(userId: number, permission: Permission): Promise<boolean>;
+    userCanInChannel(
+      userId: number,
+      channelId: number,
+      permission: ChannelPermission
+    ): Promise<boolean>;
+  };
+
+  roles: {
+    list(): Promise<TJoinedRole[]>;
+    /** Refused for the owner role and for the server owner. */
+    assign(userId: number, roleId: number): Promise<void>;
+    remove(userId: number, roleId: number): Promise<void>;
+  };
+
   data: {
     getUser(userId: number): Promise<TJoinedPublicUser | undefined>;
     getChannel(channelId: number): Promise<TChannel | undefined>;
@@ -249,7 +269,15 @@ export interface PluginContext {
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface UnloadPluginContext extends Pick<
   PluginContext,
-  'path' | 'logger' | 'log' | 'debug' | 'error' | 'voice' | 'messages' | 'ui'
+  | 'path'
+  | 'dataPath'
+  | 'logger'
+  | 'log'
+  | 'debug'
+  | 'error'
+  | 'voice'
+  | 'messages'
+  | 'ui'
 > {}
 
 export type PluginModule = {
@@ -295,4 +323,11 @@ export type {
 
 export * from './actions';
 export * from './commands';
-export { FileSaveType, MessageSaveType, PLUGIN_SDK_VERSION, PluginSlot };
+export {
+  ChannelPermission,
+  FileSaveType,
+  MessageSaveType,
+  Permission,
+  PLUGIN_SDK_VERSION,
+  PluginSlot
+};

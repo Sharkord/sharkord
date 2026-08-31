@@ -479,5 +479,7 @@
   "pluginSettingsTitle": "Nastavení",
   "saving": "Ukládání...",
   "selectedChannelIdLabel": "ID vybraného kanálu",
-  "unsavedChanges": "Máte neuložené změny"
+  "unsavedChanges": "Máte neuložené změny",
+  "secretSetPlaceholder": "Nastaveno. Ponechte prázdné pro zachování",
+  "secretUnsetPlaceholder": "Nenastaveno"
 }
