@@ -19,6 +19,8 @@ import type {
   TPluginSettingDefinition,
   TPluginStore,
   TPluginStoreState,
+  TPluginTab,
+  TPluginTabs,
   TStreamQualityLayer
 } from '@sharkord/shared';
 import {
@@ -340,6 +342,8 @@ export type {
   TPluginComponentsMapBySlotId,
   TPluginStore,
   TPluginStoreState,
+  TPluginTab,
+  TPluginTabs,
   TSharkordState
 };
 

@@ -1,7 +1,15 @@
 import type { IRootState } from '@/features/store';
 import { createSelector } from '@reduxjs/toolkit';
-import { PluginSlot, type TPluginReactComponent } from '@sharkord/shared';
+import {
+  PluginSlot,
+  type TPluginReactComponent,
+  type TPluginTab
+} from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
+
+// stable empty value, so a plugin with no tabs does not re-render its view on
+// every unrelated dispatch
+const DEFAULT_TABS: TPluginTab[] = [];
 
 export const pluginsMetadataSelector = (state: IRootState) =>
   state.server.pluginsMetadata;
@@ -56,3 +64,12 @@ export const fullscreenPluginIdsSelector = createSelector(
   ],
   (componentsMap) => Object.keys(componentsMap)
 );
+
+export const pluginTabsSelector = (state: IRootState) =>
+  state.server.pluginTabs;
+
+export const pluginTabsByIdSelector = createCachedSelector(
+  pluginTabsSelector,
+  (_: IRootState, pluginId: string) => pluginId,
+  (pluginTabs, pluginId) => pluginTabs[pluginId] ?? DEFAULT_TABS
+)((_state, pluginId) => pluginId);

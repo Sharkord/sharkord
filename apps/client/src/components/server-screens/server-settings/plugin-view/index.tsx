@@ -1,5 +1,9 @@
 import { SettingsSection } from '@/components/server-screens/settings-shell/section';
-import { usePluginCommands } from '@/features/server/plugins/hooks';
+import { loadPluginTabs } from '@/features/server/plugins/actions';
+import {
+  usePluginCommands,
+  usePluginTabs
+} from '@/features/server/plugins/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   getTrpcError,
@@ -24,6 +28,7 @@ import { ImageWithFallback } from '../plugins/marketplace/image-with-fallback';
 import { PluginCommands } from './commands';
 import { PluginLogs } from './logs';
 import { PluginSettings } from './settings';
+import { PluginTabContent } from './tab-content';
 
 const usePluginSettings = (pluginId: string) => {
   const { t } = useTranslation('settings');
@@ -65,6 +70,11 @@ type TPluginViewProps = {
 
 const PluginView = memo(({ plugin }: TPluginViewProps) => {
   const { t } = useTranslation('settings');
+  const customTabs = usePluginTabs(plugin.id);
+
+  useEffect(() => {
+    loadPluginTabs(plugin.id);
+  }, [plugin.id]);
   const { definitions, values, secretsSet, loading } = usePluginSettings(
     plugin.id
   );
@@ -72,6 +82,11 @@ const PluginView = memo(({ plugin }: TPluginViewProps) => {
 
   const hasCommands = (commandsMap[plugin.id] ?? []).length > 0;
   const hasSettings = definitions.length > 0;
+
+  let defaultTab = 'logs';
+
+  if (hasCommands) defaultTab = 'commands';
+  if (hasSettings) defaultTab = 'settings';
 
   const identity = (
     <SettingsSection
@@ -121,7 +136,7 @@ const PluginView = memo(({ plugin }: TPluginViewProps) => {
   }
 
   // a plugin that only produces logs gets no sub navigation at all
-  if (!hasSettings && !hasCommands) {
+  if (!hasSettings && !hasCommands && customTabs.length === 0) {
     return (
       <>
         {identity}
@@ -134,7 +149,7 @@ const PluginView = memo(({ plugin }: TPluginViewProps) => {
     <>
       {identity}
 
-      <Tabs defaultValue={hasSettings ? 'settings' : 'commands'}>
+      <Tabs defaultValue={defaultTab}>
         <TabsList className="mb-4">
           {hasSettings && (
             <TabsTrigger value="settings">{t('pluginSettingsTab')}</TabsTrigger>
@@ -143,6 +158,11 @@ const PluginView = memo(({ plugin }: TPluginViewProps) => {
             <TabsTrigger value="commands">{t('pluginCommandsTab')}</TabsTrigger>
           )}
           <TabsTrigger value="logs">{t('pluginLogsTab')}</TabsTrigger>
+          {customTabs.map((tab) => (
+            <TabsTrigger key={tab.id} value={tab.id}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         {hasSettings && (
@@ -165,6 +185,12 @@ const PluginView = memo(({ plugin }: TPluginViewProps) => {
         <TabsContent value="logs" className="space-y-6">
           <PluginLogs pluginId={plugin.id} />
         </TabsContent>
+
+        {customTabs.map((tab) => (
+          <TabsContent key={tab.id} value={tab.id} className="space-y-6">
+            <PluginTabContent pluginId={plugin.id} tab={tab} />
+          </TabsContent>
+        ))}
       </Tabs>
     </>
   );

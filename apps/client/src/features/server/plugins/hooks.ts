@@ -6,7 +6,8 @@ import {
   flatCommandsSelector,
   fullscreenPluginIdsSelector,
   pluginComponentsBySlotSelector,
-  pluginMetadataByIdSelector
+  pluginMetadataByIdSelector,
+  pluginTabsByIdSelector
 } from './selectors';
 
 export const usePluginCommands = () => useSelector(commandsSelector);
@@ -22,6 +23,9 @@ export const usePluginMetadata = (pluginId: string | null | undefined) =>
   useSelector((state: IRootState) =>
     pluginId ? pluginMetadataByIdSelector(state, pluginId) : undefined
   );
+
+export const usePluginTabs = (pluginId: string) =>
+  useSelector((state: IRootState) => pluginTabsByIdSelector(state, pluginId));
 
 export const useFullscreenPluginIds = () =>
   useSelector(fullscreenPluginIdsSelector);
