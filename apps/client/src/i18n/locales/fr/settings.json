@@ -481,5 +481,22 @@
   "selectedChannelIdLabel": "ID du salon sélectionné",
   "unsavedChanges": "Vous avez des modifications non enregistrées",
   "secretSetPlaceholder": "Défini. Laissez vide pour le conserver",
-  "secretUnsetPlaceholder": "Non défini"
+  "secretUnsetPlaceholder": "Non défini",
+  "pluginPermissionsTab": "Permissions",
+  "pluginNoCapabilities": "Ce plugin n'expose aucune commande ni action.",
+  "failedLoadPluginCapabilities": "Échec du chargement des permissions du plugin",
+  "failedSavePluginCapability": "Échec de l'enregistrement de la permission",
+  "pluginCapabilityCommands": "Commandes",
+  "pluginCapabilityActions": "Actions",
+  "pluginCapabilityComponents": "Composants d'interface",
+  "pluginAccessAudienceTitle": "Qui",
+  "pluginAccessEveryone": "Tout le monde",
+  "pluginAccessEveryoneDesc": "Toute personne pouvant utiliser les plugins",
+  "pluginAccessEveryoneHelp": "Désactivez-en un pour le restreindre, puis choisissez quels rôles y ont droit.",
+  "pluginAccessRoleHelp": "Ce que ce rôle peut utiliser.",
+  "pluginAccessPublicLocked": "Disponible pour tout le monde",
+  "pluginAccessSelectAudience": "Choisissez qui configurer",
+  "pluginPermissionsSaved": "Permissions du plugin enregistrées",
+  "pluginAccessRequires": "Valeur par défaut du plugin : nécessite {{permission}}",
+  "pluginAccessResetToDefault": "Rétablir la valeur par défaut du plugin"
 }

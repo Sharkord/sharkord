@@ -121,6 +121,7 @@ const ServerSettings = memo(({ close }: TServerSettingsProps) => {
         label: plugin.name,
         icon: Package,
         logo: plugin.logo,
+        error: plugin.loadError,
         content: <PluginView plugin={plugin} />
       }));
   }, [plugins, canManagePlugins, pluginsEnabled]);

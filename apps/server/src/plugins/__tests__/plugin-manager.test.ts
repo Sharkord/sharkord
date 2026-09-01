@@ -1340,6 +1340,15 @@ export { onLoad, onUnload };
           .get()
       )?.version ?? null;
 
+    // the lifecycle log lives in the plugin's durable data directory, which
+    // outlives the per-test database on purpose, so it has to be cleared here
+    beforeEach(async () => {
+      await fs.rm(getPluginDataPath('plugin-upgrade'), {
+        recursive: true,
+        force: true
+      });
+    });
+
     afterEach(async () => {
       delete process.env.PLUGIN_UPGRADE_SHOULD_FAIL;
       await setManifestVersion('1.0.0');

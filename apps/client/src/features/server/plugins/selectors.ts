@@ -73,3 +73,15 @@ export const pluginTabsByIdSelector = createCachedSelector(
   (_: IRootState, pluginId: string) => pluginId,
   (pluginTabs, pluginId) => pluginTabs[pluginId] ?? DEFAULT_TABS
 )((_state, pluginId) => pluginId);
+
+const DEFAULT_SLOT_IDS: string[] = [];
+
+export const pluginSlotIdsSelector = createCachedSelector(
+  pluginComponentsSelector,
+  (_: IRootState, pluginId: string) => pluginId,
+  (pluginComponents, pluginId) => {
+    const slots = Object.keys(pluginComponents[pluginId] ?? {});
+
+    return slots.length > 0 ? slots : DEFAULT_SLOT_IDS;
+  }
+)((_state, pluginId) => pluginId);

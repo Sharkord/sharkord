@@ -17,6 +17,7 @@ import type {
   TPluginActions,
   TPluginComponentsMapBySlotId,
   TPluginSettingDefinition,
+  TPluginSlotRequirements,
   TPluginStore,
   TPluginStoreState,
   TPluginTab,
@@ -271,7 +272,7 @@ export interface PluginContext {
   };
 
   ui: {
-    enable(): void;
+    enable(requirements?: TPluginSlotRequirements): void;
     disable(): void;
   };
 }
@@ -340,6 +341,7 @@ export type {
   TInvokerContext,
   TPluginActions,
   TPluginComponentsMapBySlotId,
+  TPluginSlotRequirements,
   TPluginStore,
   TPluginStoreState,
   TPluginTab,

@@ -7,4 +7,5 @@ export type TSettingsEntry = {
   icon: LucideIcon;
   content: ReactNode;
   logo?: string;
+  error?: string;
 };

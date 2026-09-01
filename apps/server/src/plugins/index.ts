@@ -9,6 +9,9 @@ import type {
 import {
   assertSdkVersionCompatibility,
   getErrorMessage,
+  Permission,
+  PluginCapabilityType,
+  PluginSlot,
   ServerEvents,
   zPluginManifest,
   type RegisteredCommand,
@@ -17,11 +20,13 @@ import {
   type TPluginInfo,
   type TPluginManifest,
   type TPluginMetadata,
-  type TPluginSettingDefinition
+  type TPluginSettingDefinition,
+  type TPluginSlotRequirements
 } from '@sharkord/shared';
 import fs from 'fs/promises';
 import path from 'path';
 import { pathToFileURL } from 'url';
+import { deletePluginCapabilities } from '../db/queries/plugin-capabilities';
 import { getSettings } from '../db/queries/server';
 import { PLUGINS_PATH } from '../helpers/paths';
 import {
@@ -64,6 +69,10 @@ class PluginManager {
   private loadErrors = new Map<string, string>();
   private pluginsWithUi = new Set<string>();
 
+  // what each plugin declared its slots need, from ctx.ui.enable(). a slot that
+  // is not in here is public
+  private componentRequirements = new Map<string, TPluginSlotRequirements>();
+
   private readonly stateStore = new PluginStateStore();
   private readonly pluginLogger = pluginLogger;
   private readonly hooksManager = new HooksManager();
@@ -103,8 +112,31 @@ class PluginManager {
     args: TArgs
   ) => this.commandRegistry.execute(pluginId, commandName, invokerCtx, args);
 
+  public getActionNames = (pluginId: string): string[] =>
+    Array.from(this.actionRegistry.getByPlugin().get(pluginId)?.keys() ?? []);
+
   public hasAction = (pluginId: string, actionName: string) =>
     this.actionRegistry.has(pluginId, actionName);
+
+  public getRequiredPermission = (
+    pluginId: string,
+    type: PluginCapabilityType,
+    name: string
+  ): Permission | undefined => {
+    if (type === PluginCapabilityType.COMMAND)
+      return this.commandRegistry.get(pluginId, name)?.requires;
+
+    if (type === PluginCapabilityType.ACTION)
+      return this.actionRegistry.get(pluginId, name)?.requires;
+
+    return this.componentRequirements.get(pluginId)?.[name as PluginSlot];
+  };
+
+  /** every slot requirement a loaded plugin declared, for resolving access */
+  public getComponentRequirements = (): ReadonlyMap<
+    string,
+    TPluginSlotRequirements
+  > => this.componentRequirements;
 
   public executeAction = <TPayload = unknown>(
     pluginId: string,
@@ -382,11 +414,17 @@ class PluginManager {
     }
   };
 
-  private setUiEnabled = (pluginId: string, enabled: boolean) => {
+  private setUiEnabled = (
+    pluginId: string,
+    enabled: boolean,
+    requirements?: TPluginSlotRequirements
+  ) => {
     if (enabled) {
       this.pluginsWithUi.add(pluginId);
+      this.componentRequirements.set(pluginId, requirements ?? {});
     } else {
       this.pluginsWithUi.delete(pluginId);
+      this.componentRequirements.delete(pluginId);
     }
 
     pubsub.publish(
@@ -450,7 +488,8 @@ class PluginManager {
         scopedLogger,
         pluginPath,
         dataPath,
-        setUiEnabled: (enabled) => this.setUiEnabled(pluginId, enabled),
+        setUiEnabled: (enabled, requirements) =>
+          this.setUiEnabled(pluginId, enabled, requirements),
         registerAction: (action) =>
           this.actionRegistry.register(
             pluginId,
@@ -575,6 +614,7 @@ class PluginManager {
     this.hooksManager.unload(pluginId);
     this.httpRouteRegistry.unload(pluginId);
     this.pluginsWithUi.delete(pluginId);
+    this.componentRequirements.delete(pluginId);
     this.loadedManifests.delete(pluginId);
     this.loadedPlugins.delete(pluginId);
   };
@@ -649,6 +689,8 @@ class PluginManager {
         getErrorMessage(error)
       );
     }
+
+    await deletePluginCapabilities(pluginId);
 
     // nothing on disk to attribute them to any more
     this.forget(pluginId);

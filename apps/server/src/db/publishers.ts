@@ -5,6 +5,7 @@ import {
 } from '@sharkord/shared';
 import { count, eq } from 'drizzle-orm';
 import { db } from '.';
+import { getComponentAccessRules } from '../helpers/plugin-capability-access';
 import { pubsub } from '../utils/pubsub';
 import {
   channelUserCan,
@@ -347,6 +348,13 @@ const publishChannelListChange = async (
   await publishChannelPermissions([userId]);
 };
 
+const publishComponentAccess = async () => {
+  pubsub.publish(
+    ServerEvents.PLUGIN_COMPONENT_ACCESS_CHANGE,
+    await getComponentAccessRules()
+  );
+};
+
 const publishReplyCount = async (
   parentMessageId: number,
   channelId: number
@@ -375,6 +383,7 @@ export {
   publishChannelAccessChange,
   publishChannelListChange,
   publishChannelPermissions,
+  publishComponentAccess,
   publishEmoji,
   publishHiddenChannelToUser,
   publishMessage,

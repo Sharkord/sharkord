@@ -12,6 +12,7 @@ import type {
   TJoinedMessage,
   TJoinedPublicUser,
   TJoinedRole,
+  TPluginComponentAccessRule,
   TPluginComponentsMap,
   TPluginMetadata,
   TPluginTab,
@@ -76,6 +77,7 @@ export interface IServerState {
   alwaysShowVoiceControls: boolean;
   pluginComponents: TPluginComponentsMap;
   pluginTabs: TPluginTabsMap;
+  pluginComponentAccess: TPluginComponentAccessRule[];
   activeFullscreenPluginId: string | undefined;
   dmsOpen: boolean;
 }
@@ -131,6 +133,7 @@ const initialState: IServerState = {
   ),
   pluginComponents: {},
   pluginTabs: {},
+  pluginComponentAccess: [],
   activeFullscreenPluginId: undefined,
   dmsOpen: false,
   hideOwnScreenShare: getLocalStorageItemBool(
@@ -860,6 +863,12 @@ export const serverSlice = createSlice({
     },
     setPluginCommands: (state, action: PayloadAction<TCommandsMapByPlugin>) => {
       state.pluginCommands = action.payload;
+    },
+    setPluginComponentAccess: (
+      state,
+      action: { payload: TPluginComponentAccessRule[] }
+    ) => {
+      state.pluginComponentAccess = action.payload;
     },
     setPluginTabs: (state, action: { payload: TPluginTabsMap }) => {
       state.pluginTabs = action.payload;

@@ -20,6 +20,7 @@ import {
 import {
   processPluginComponents,
   setPluginCommands,
+  setPluginComponentAccess,
   setPluginComponents
 } from './plugins/actions';
 import { connectedSelector, infoSelector } from './selectors';
@@ -105,6 +106,7 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
   store.dispatch(serverSliceActions.setInitialData(data));
 
   setPluginCommands(data.commands);
+  setPluginComponentAccess(data.pluginComponentAccess);
 
   const components = await processPluginComponents(
     data.pluginIdsWithComponents
@@ -270,10 +272,9 @@ export const markChannelAsRead = async (
   }
 
   try {
-    // inside the try: getTRPCClient throws while a reconnect holds no client, and every
-    // caller here dispatches rather than awaits, so it surfaces as an unhandled rejection
-    // with the optimistic zero left behind
-    await getTRPCClient().channels.markAsRead.mutate({ channelId });
+    const trpc = getTRPCClient();
+
+    await trpc.channels.markAsRead.mutate({ channelId });
   } catch {
     if (unreadCount > 0) {
       store.dispatch(

@@ -48,6 +48,8 @@ export enum ActivityLogType {
   PLUGIN_UPDATED = 'PLUGIN_UPDATED',
   PLUGIN_REMOVED = 'PLUGIN_REMOVED',
   PLUGIN_SETTING_UPDATED = 'PLUGIN_SETTING_UPDATED',
+  PLUGIN_CAPABILITY_ACCESS_UPDATED = 'PLUGIN_CAPABILITY_ACCESS_UPDATED',
+  PLUGIN_CAPABILITY_ACCESS_RESET = 'PLUGIN_CAPABILITY_ACCESS_RESET',
   // -------------------- MESSAGES --------------------
   TOGGLED_MESSAGE_PIN = 'TOGGLED_MESSAGE_PIN'
 }
@@ -209,6 +211,15 @@ export type TActivityLogDetailsMap = {
   [ActivityLogType.PLUGIN_SETTING_UPDATED]: {
     pluginId: string;
     key: string;
+  };
+  [ActivityLogType.PLUGIN_CAPABILITY_ACCESS_UPDATED]: {
+    pluginId: string;
+    capability: string;
+    mode: string;
+  };
+  [ActivityLogType.PLUGIN_CAPABILITY_ACCESS_RESET]: {
+    pluginId: string;
+    capability: string;
   };
   // -------------------- MESSAGES --------------------
   [ActivityLogType.TOGGLED_MESSAGE_PIN]: {

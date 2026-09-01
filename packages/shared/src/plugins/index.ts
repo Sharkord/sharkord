@@ -1,3 +1,4 @@
+export * from './capabilities';
 export * from './client-sdk';
 export * from './commands';
 export * from './components';

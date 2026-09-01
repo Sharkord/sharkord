@@ -490,5 +490,22 @@
   "selectedChannelIdLabel": "ID выбранного канала",
   "unsavedChanges": "У вас есть несохранённые изменения",
   "secretSetPlaceholder": "Задано. Оставьте пустым, чтобы сохранить",
-  "secretUnsetPlaceholder": "Не задано"
+  "secretUnsetPlaceholder": "Не задано",
+  "pluginPermissionsTab": "Права",
+  "pluginNoCapabilities": "Этот плагин не предоставляет команд или действий.",
+  "failedLoadPluginCapabilities": "Не удалось загрузить права плагина",
+  "failedSavePluginCapability": "Не удалось сохранить право",
+  "pluginCapabilityCommands": "Команды",
+  "pluginCapabilityActions": "Действия",
+  "pluginCapabilityComponents": "Компоненты интерфейса",
+  "pluginAccessAudienceTitle": "Кто",
+  "pluginAccessEveryone": "Все",
+  "pluginAccessEveryoneDesc": "Любой, кто может использовать плагины",
+  "pluginAccessEveryoneHelp": "Выключите, чтобы ограничить, затем выберите роли, которым это доступно.",
+  "pluginAccessRoleHelp": "Что может использовать эта роль.",
+  "pluginAccessPublicLocked": "Доступно всем",
+  "pluginAccessSelectAudience": "Выберите, кого настроить",
+  "pluginPermissionsSaved": "Права плагина сохранены",
+  "pluginAccessRequires": "По умолчанию в плагине: требуется {{permission}}",
+  "pluginAccessResetToDefault": "Сбросить к значению по умолчанию плагина"
 }

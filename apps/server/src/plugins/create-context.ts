@@ -4,6 +4,7 @@ import type {
   TExternalStreamHandle,
   TPluginHttpMethod,
   TPluginHttpRouteHandler,
+  TPluginSlotRequirements,
   UnloadPluginContext,
   UpgradePluginContext
 } from '@sharkord/plugin-sdk';
@@ -50,7 +51,10 @@ type TContextDependencies = {
   registerBeforeVoiceJoin: PluginContext['hooks']['onBeforeVoiceJoin'];
   registerBeforeLogin: PluginContext['hooks']['onBeforeLogin'];
   registerHttpRoute: PluginContext['http']['register'];
-  setUiEnabled: (enabled: boolean) => void;
+  setUiEnabled: (
+    enabled: boolean,
+    requirements?: TPluginSlotRequirements
+  ) => void;
 };
 
 const getVoiceRuntime = (channelId: number) => {
@@ -140,7 +144,7 @@ const createUnloadContext = ({
   // plugins keep working. ctx.logger.* is the supported form
   ...scopedLogger,
   ui: {
-    enable: () => setUiEnabled(true),
+    enable: (requirements) => setUiEnabled(true, requirements),
     disable: () => setUiEnabled(false)
   },
   voice: {

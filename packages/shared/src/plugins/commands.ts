@@ -1,4 +1,5 @@
 import z from 'zod';
+import type { Permission } from '../statics/permissions';
 import { zHttpUrl, zPluginId } from './primitives';
 
 export type TCommandArg = {
@@ -23,12 +24,14 @@ export interface CommandDefinition<TArgs = void> {
   name: string;
   description?: string;
   args?: TCommandArg[];
+  requires?: Permission;
   execute(ctx: TInvokerContext, args: TArgs): Promise<unknown>;
 }
 
 export interface ActionDefinition<TPayload = void> {
   name: string;
   description?: string;
+  requires?: Permission;
   execute: (ctx: TInvokerContext, payload: TPayload) => Promise<unknown>;
 }
 

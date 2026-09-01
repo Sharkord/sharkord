@@ -481,5 +481,22 @@
   "selectedChannelIdLabel": "ID del canale selezionato",
   "unsavedChanges": "Hai modifiche non salvate",
   "secretSetPlaceholder": "Impostato. Lascia vuoto per mantenerlo",
-  "secretUnsetPlaceholder": "Non impostato"
+  "secretUnsetPlaceholder": "Non impostato",
+  "pluginPermissionsTab": "Permessi",
+  "pluginNoCapabilities": "Questo plugin non espone comandi o azioni.",
+  "failedLoadPluginCapabilities": "Caricamento dei permessi del plugin non riuscito",
+  "failedSavePluginCapability": "Salvataggio del permesso non riuscito",
+  "pluginCapabilityCommands": "Comandi",
+  "pluginCapabilityActions": "Azioni",
+  "pluginCapabilityComponents": "Componenti di interfaccia",
+  "pluginAccessAudienceTitle": "Chi",
+  "pluginAccessEveryone": "Tutti",
+  "pluginAccessEveryoneDesc": "Chiunque possa usare i plugin",
+  "pluginAccessEveryoneHelp": "Disattivane uno per limitarlo, poi scegli quali ruoli lo ottengono.",
+  "pluginAccessRoleHelp": "Cosa può usare questo ruolo.",
+  "pluginAccessPublicLocked": "Disponibile per tutti",
+  "pluginAccessSelectAudience": "Seleziona chi configurare",
+  "pluginPermissionsSaved": "Permessi del plugin salvati",
+  "pluginAccessRequires": "Impostazione predefinita del plugin: richiede {{permission}}",
+  "pluginAccessResetToDefault": "Ripristina il valore predefinito del plugin"
 }

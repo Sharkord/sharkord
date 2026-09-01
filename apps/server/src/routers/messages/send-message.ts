@@ -8,6 +8,7 @@ import {
   MESSAGE_MAX_LENGTH,
   MessageSaveType,
   Permission,
+  PluginCapabilityType,
   STORAGE_MAX_FILES_PER_MESSAGE,
   toDomCommand
 } from '@sharkord/shared';
@@ -22,6 +23,7 @@ import { messageFiles, messages } from '../../db/schema';
 import { fileManager } from '../../helpers/file-manager';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
 import { parseCommandArgs } from '../../helpers/parse-command-args';
+import { canUseCapability } from '../../helpers/plugin-capability-access';
 import { runBeforeMessageSaveHooks } from '../../helpers/run-before-message-save-hooks';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
 import { logger } from '../../logger';
@@ -175,7 +177,17 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       const foundCommand = pluginManager.getCommandByName(commandName);
 
       if (foundCommand) {
-        if (await ctx.hasPermission(Permission.USE_PLUGINS)) {
+        const canRunCommand =
+          !!foundCommand &&
+          (await ctx.hasPermission(Permission.USE_PLUGINS)) &&
+          (await canUseCapability(
+            ctx.userId,
+            foundCommand.pluginId,
+            PluginCapabilityType.COMMAND,
+            foundCommand.name
+          ));
+
+        if (canRunCommand) {
           const argsObject: Record<string, unknown> = {};
 
           if (foundCommand.args) {

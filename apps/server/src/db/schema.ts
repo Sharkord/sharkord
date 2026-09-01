@@ -1,5 +1,7 @@
 import {
   DEFAULT_PROFILE_COLOR,
+  PluginCapabilityMode,
+  PluginCapabilityType,
   type TActivityLogDetailsMap,
   type TMessageMetadata
 } from '@sharkord/shared';
@@ -554,6 +556,38 @@ const pluginData = sqliteTable('plugin_data', {
   version: text('version')
 });
 
+const pluginCapabilities = sqliteTable(
+  'plugin_capabilities',
+  {
+    pluginId: text('plugin_id').notNull(),
+    type: text('type').$type<PluginCapabilityType>().notNull(),
+    name: text('name').notNull(),
+    mode: text('mode')
+      .$type<PluginCapabilityMode>()
+      .notNull()
+      .default(PluginCapabilityMode.PUBLIC),
+    updatedAt: integer('updated_at').notNull()
+  },
+  (t) => [primaryKey({ columns: [t.pluginId, t.type, t.name] })]
+);
+
+const pluginCapabilityRoles = sqliteTable(
+  'plugin_capability_roles',
+  {
+    pluginId: text('plugin_id').notNull(),
+    type: text('type').notNull(),
+    name: text('name').notNull(),
+    roleId: integer('role_id')
+      .notNull()
+      .references(() => roles.id, { onDelete: 'cascade' }),
+    createdAt: integer('created_at').notNull()
+  },
+  (t) => [
+    primaryKey({ columns: [t.pluginId, t.type, t.name, t.roleId] }),
+    index('plugin_capability_roles_role_idx').on(t.roleId)
+  ]
+);
+
 export {
   activityLog,
   categories,
@@ -571,6 +605,8 @@ export {
   messages,
   oidcHandoffs,
   oidcTransactions,
+  pluginCapabilities,
+  pluginCapabilityRoles,
   pluginData,
   rolePermissions,
   roles,

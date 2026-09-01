@@ -1,6 +1,7 @@
 import { createSelector } from '@reduxjs/toolkit';
 import {
   OWNER_ROLE_ID,
+  PluginSlot,
   type TJoinedRole,
   type TPluginStoreState
 } from '@sharkord/shared';
@@ -25,7 +26,10 @@ import {
   threadTypingMapSelector,
   typingMapSelector
 } from './messages/selectors';
-import { pluginsMetadataSelector } from './plugins/selectors';
+import {
+  pluginComponentsSelector,
+  pluginsMetadataSelector
+} from './plugins/selectors';
 import { rolesSelector } from './roles/selectors';
 import type { TVoiceUser } from './types';
 import {
@@ -319,4 +323,61 @@ export const mapStateToPluginState = createSelector(
     currentVoiceChannelId,
     publicSettings
   })
+);
+
+export const pluginComponentAccessSelector = (state: IRootState) =>
+  state.server.pluginComponentAccess;
+
+const DEFAULT_HIDDEN_COMPONENTS: string[] = [];
+
+export const hiddenPluginComponentsSelector = createSelector(
+  [pluginComponentAccessSelector, ownUserRolesSelector, isOwnUserOwnerSelector],
+  (rules, ownUserRoles, isOwner) => {
+    if (isOwner || rules.length === 0) return DEFAULT_HIDDEN_COMPONENTS;
+
+    const ownRoleIds = ownUserRoles.map((role) => role.id);
+
+    const hidden = rules
+      .filter((rule) => !rule.roleIds.some((id) => ownRoleIds.includes(id)))
+      .map((rule) => `${rule.pluginId}:${rule.name}`);
+
+    return hidden.length > 0 ? hidden : DEFAULT_HIDDEN_COMPONENTS;
+  }
+);
+
+type TUserSettingsPlugin = {
+  pluginId: string;
+  name: string;
+  logo?: string;
+};
+
+const DEFAULT_USER_SETTINGS_PLUGINS: TUserSettingsPlugin[] = [];
+
+export const userSettingsPluginsSelector = createSelector(
+  [
+    pluginComponentsSelector,
+    pluginsMetadataSelector,
+    hiddenPluginComponentsSelector
+  ],
+  (pluginComponents, pluginsMetadata, hiddenComponents) => {
+    const plugins = Object.entries(pluginComponents)
+      .filter(
+        ([pluginId, slots]) =>
+          !!slots[PluginSlot.USER_SETTINGS]?.length &&
+          !hiddenComponents.includes(`${pluginId}:${PluginSlot.USER_SETTINGS}`)
+      )
+      .map(([pluginId]) => {
+        const metadata = pluginsMetadata.find(
+          (entry) => entry.pluginId === pluginId
+        );
+
+        return {
+          pluginId,
+          name: metadata?.name ?? pluginId,
+          logo: metadata?.avatarUrl
+        };
+      });
+
+    return plugins.length > 0 ? plugins : DEFAULT_USER_SETTINGS_PLUGINS;
+  }
 );

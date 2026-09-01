@@ -7,6 +7,7 @@ import {
   fullscreenPluginIdsSelector,
   pluginComponentsBySlotSelector,
   pluginMetadataByIdSelector,
+  pluginSlotIdsSelector,
   pluginTabsByIdSelector
 } from './selectors';
 
@@ -23,6 +24,9 @@ export const usePluginMetadata = (pluginId: string | null | undefined) =>
   useSelector((state: IRootState) =>
     pluginId ? pluginMetadataByIdSelector(state, pluginId) : undefined
   );
+
+export const usePluginSlotIds = (pluginId: string) =>
+  useSelector((state: IRootState) => pluginSlotIdsSelector(state, pluginId));
 
 export const usePluginTabs = (pluginId: string) =>
   useSelector((state: IRootState) => pluginTabsByIdSelector(state, pluginId));

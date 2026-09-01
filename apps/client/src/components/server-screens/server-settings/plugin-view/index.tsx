@@ -1,4 +1,5 @@
 import { SettingsSection } from '@/components/server-screens/settings-shell/section';
+import { useCan } from '@/features/server/hooks';
 import { loadPluginTabs } from '@/features/server/plugins/actions';
 import {
   usePluginCommands,
@@ -7,6 +8,7 @@ import {
 import { getTRPCClient } from '@/lib/trpc';
 import {
   getTrpcError,
+  Permission,
   type TPluginInfo,
   type TPluginSettingDefinition
 } from '@sharkord/shared';
@@ -27,6 +29,7 @@ import { toast } from 'sonner';
 import { ImageWithFallback } from '../plugins/marketplace/image-with-fallback';
 import { PluginCommands } from './commands';
 import { PluginLogs } from './logs';
+import { PluginPermissions } from './permissions';
 import { PluginSettings } from './settings';
 import { PluginTabContent } from './tab-content';
 
@@ -71,6 +74,8 @@ type TPluginViewProps = {
 const PluginView = memo(({ plugin }: TPluginViewProps) => {
   const { t } = useTranslation('settings');
   const customTabs = usePluginTabs(plugin.id);
+  const can = useCan();
+  const canManagePluginPermissions = can(Permission.MANAGE_PLUGIN_PERMISSIONS);
 
   useEffect(() => {
     loadPluginTabs(plugin.id);
@@ -136,7 +141,12 @@ const PluginView = memo(({ plugin }: TPluginViewProps) => {
   }
 
   // a plugin that only produces logs gets no sub navigation at all
-  if (!hasSettings && !hasCommands && customTabs.length === 0) {
+  if (
+    !hasSettings &&
+    !hasCommands &&
+    !canManagePluginPermissions &&
+    customTabs.length === 0
+  ) {
     return (
       <>
         {identity}
@@ -158,6 +168,11 @@ const PluginView = memo(({ plugin }: TPluginViewProps) => {
             <TabsTrigger value="commands">{t('pluginCommandsTab')}</TabsTrigger>
           )}
           <TabsTrigger value="logs">{t('pluginLogsTab')}</TabsTrigger>
+          {canManagePluginPermissions && (
+            <TabsTrigger value="permissions">
+              {t('pluginPermissionsTab')}
+            </TabsTrigger>
+          )}
           {customTabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id}>
               {tab.label}
@@ -185,6 +200,12 @@ const PluginView = memo(({ plugin }: TPluginViewProps) => {
         <TabsContent value="logs" className="space-y-6">
           <PluginLogs pluginId={plugin.id} />
         </TabsContent>
+
+        {canManagePluginPermissions && (
+          <TabsContent value="permissions" className="space-y-6">
+            <PluginPermissions pluginId={plugin.id} />
+          </TabsContent>
+        )}
 
         {customTabs.map((tab) => (
           <TabsContent key={tab.id} value={tab.id} className="space-y-6">

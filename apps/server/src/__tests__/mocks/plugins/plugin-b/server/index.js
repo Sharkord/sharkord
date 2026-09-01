@@ -3,7 +3,8 @@ const onLoad = (ctx) => {
   // instead of silently breaking existing plugins
   ctx.log('Plugin B loaded');
 
-  ctx.ui.enable();
+  // chat_actions is declared, topbar_right is left out and so stays public
+  ctx.ui.enable({ chat_actions: 'MANAGE_MESSAGES' });
 
   ctx.commands.register({
     name: 'test-command',
@@ -78,6 +79,29 @@ const onLoad = (ctx) => {
       await ctx.roles.remove(args.userId, args.roleId);
 
       return { ok: true };
+    }
+  });
+
+  // declares its own default access, so an unconfigured capability is not public
+  ctx.commands.register({
+    name: 'admin-sum',
+    description: 'Sum two numbers, for message managers',
+    requires: 'MANAGE_MESSAGES',
+    args: [
+      { name: 'a', type: 'number', required: true },
+      { name: 'b', type: 'number', required: true }
+    ],
+    async execute(invokerCtx, args) {
+      return { result: args.a + args.b };
+    }
+  });
+
+  ctx.actions.register({
+    name: 'admin-multiply',
+    description: 'Multiply two numbers, for user managers',
+    requires: 'MANAGE_USERS',
+    async execute(invokerCtx, payload) {
+      return { result: payload.a * payload.b };
     }
   });
 

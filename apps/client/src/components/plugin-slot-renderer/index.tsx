@@ -1,5 +1,5 @@
 import { usePluginSlotDebug } from '@/features/app/hooks';
-import { useCan } from '@/features/server/hooks';
+import { useCan, useHiddenPluginComponents } from '@/features/server/hooks';
 import { usePluginComponentsBySlot } from '@/features/server/plugins/hooks';
 import { Permission, type PluginSlot } from '@sharkord/shared';
 import { memo } from 'react';
@@ -8,13 +8,14 @@ import { PlugSlotDebugWrapper } from './plugin-slot-debug-wrapper';
 
 type TPluginSlotRendererProps = {
   slotId: PluginSlot;
-  activeFullscreenPluginId?: string;
+  onlyPluginId?: string;
 };
 
 const PluginSlotRenderer = memo(
-  ({ slotId, activeFullscreenPluginId }: TPluginSlotRendererProps) => {
+  ({ slotId, onlyPluginId }: TPluginSlotRendererProps) => {
     const debug = usePluginSlotDebug();
     const pluginComponentsBySlot = usePluginComponentsBySlot(slotId);
+    const hiddenComponents = useHiddenPluginComponents();
 
     const can = useCan();
 
@@ -25,10 +26,11 @@ const PluginSlotRenderer = memo(
     const content = Object.entries(pluginComponentsBySlot).map(
       ([pluginId, components]) =>
         components.map((Component, index) => {
-          if (
-            activeFullscreenPluginId &&
-            pluginId !== activeFullscreenPluginId
-          ) {
+          if (onlyPluginId && pluginId !== onlyPluginId) {
+            return null;
+          }
+
+          if (hiddenComponents.includes(`${pluginId}:${slotId}`)) {
             return null;
           }
 

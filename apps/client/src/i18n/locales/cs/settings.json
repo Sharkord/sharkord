@@ -481,5 +481,22 @@
   "selectedChannelIdLabel": "ID vybraného kanálu",
   "unsavedChanges": "Máte neuložené změny",
   "secretSetPlaceholder": "Nastaveno. Ponechte prázdné pro zachování",
-  "secretUnsetPlaceholder": "Nenastaveno"
+  "secretUnsetPlaceholder": "Nenastaveno",
+  "pluginPermissionsTab": "Oprávnění",
+  "pluginNoCapabilities": "Tento plugin nenabízí žádné příkazy ani akce.",
+  "failedLoadPluginCapabilities": "Načtení oprávnění pluginu se nezdařilo",
+  "failedSavePluginCapability": "Uložení oprávnění se nezdařilo",
+  "pluginCapabilityCommands": "Příkazy",
+  "pluginCapabilityActions": "Akce",
+  "pluginCapabilityComponents": "Komponenty rozhraní",
+  "pluginAccessAudienceTitle": "Kdo",
+  "pluginAccessEveryone": "Všichni",
+  "pluginAccessEveryoneDesc": "Kdokoli, kdo může používat pluginy",
+  "pluginAccessEveryoneHelp": "Vypnutím jednu omezíte a poté vyberete, které role ji dostanou.",
+  "pluginAccessRoleHelp": "Co může tato role používat.",
+  "pluginAccessPublicLocked": "Dostupné všem",
+  "pluginAccessSelectAudience": "Vyberte, koho nastavit",
+  "pluginPermissionsSaved": "Oprávnění pluginu uložena",
+  "pluginAccessRequires": "Výchozí nastavení pluginu: vyžaduje {{permission}}",
+  "pluginAccessResetToDefault": "Obnovit výchozí nastavení pluginu"
 }

@@ -52,6 +52,11 @@ const untrackUserSocket = (userId: number, ws: WebSocket) => {
   if (sockets.size === 0) userSockets.delete(userId);
 };
 
+const clearUserSocketsForTests = () => {
+  userSockets.clear();
+  usersIpMap.clear();
+};
+
 const getUserIp = (userId: number): string | undefined => {
   return usersIpMap.get(userId);
 };
@@ -286,6 +291,7 @@ const createWsServer = async (server: http.Server) => {
 };
 
 export {
+  clearUserSocketsForTests,
   createContext,
   createWsServer,
   disconnectUser,

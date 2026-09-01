@@ -4,6 +4,7 @@ import { handleSubscriptionError } from '../subscription-error';
 import {
   processPluginComponents,
   setPluginCommands,
+  setPluginComponentAccess,
   setPluginComponents,
   setPluginsMetadata
 } from './actions';
@@ -35,6 +36,15 @@ const subscribeToPlugins = () => {
     }
   );
 
+  const onComponentAccessChangeSub =
+    trpc.plugins.onComponentAccessChange.subscribe(undefined, {
+      onData: (data) => {
+        logDebug('[EVENTS] plugins.onComponentAccessChange', { data });
+        setPluginComponentAccess(data);
+      },
+      onError: handleSubscriptionError('onComponentAccessChange')
+    });
+
   const onMetadataChangeSub = trpc.plugins.onMetadataChange.subscribe(
     undefined,
     {
@@ -47,6 +57,7 @@ const subscribeToPlugins = () => {
   );
 
   return () => {
+    onComponentAccessChangeSub.unsubscribe();
     onCommandsChangeSub.unsubscribe();
     onComponentsChangeSub.unsubscribe();
     onMetadataChangeSub.unsubscribe();

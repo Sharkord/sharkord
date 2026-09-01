@@ -218,6 +218,13 @@
       "when": 1788219275550,
       "tag": "0030_plugin_data_version",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1788254089571,
+      "tag": "0031_plugin_capability_permissions",
+      "breakpoints": true
     }
   ]
 }

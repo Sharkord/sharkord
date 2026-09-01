@@ -2,6 +2,10 @@ import {
   ActivityLogType,
   ChannelType,
   OWNER_ROLE_ID,
+  Permission,
+  PluginCapabilityMode,
+  PluginCapabilityType,
+  PluginSlot,
   type TPluginInfo
 } from '@sharkord/shared';
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
@@ -12,8 +16,9 @@ import { initTest } from '../../__tests__/helpers';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
 import { getUserRoleIds } from '../../db/queries/roles';
-import { activityLog, pluginData } from '../../db/schema';
+import { activityLog, pluginData, rolePermissions } from '../../db/schema';
 import { PLUGINS_PATH } from '../../helpers/paths';
+import { getComponentAccessRules } from '../../helpers/plugin-capability-access';
 import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
 
@@ -1284,6 +1289,441 @@ describe('plugins router', () => {
           args: { userId: 2, roleId: 9999 }
         })
       ).rejects.toThrow('Role not found');
+    });
+  });
+
+  describe('capability permissions', () => {
+    const MODERATOR_ROLE = 4;
+    const MEMBER_ROLE = 2;
+    const MODERATOR_USER = 5;
+
+    // no seeded role can use plugins, so the moderator is granted it here and
+    // everything below then turns on the capability rules alone
+    beforeEach(async () => {
+      await tdb.insert(rolePermissions).values({
+        roleId: MODERATOR_ROLE,
+        permission: Permission.USE_PLUGINS,
+        createdAt: Date.now()
+      });
+
+      await pluginManager.load('plugin-b');
+    });
+
+    const restrict = async (name: string, roleIds: number[]) => {
+      const { caller } = await initTest();
+
+      await caller.plugins.setCapabilityAccess({
+        pluginId: 'plugin-b',
+        type: PluginCapabilityType.COMMAND,
+        name,
+        mode: PluginCapabilityMode.RESTRICTED,
+        roleIds
+      });
+    };
+
+    const runSum = async (userId?: number) => {
+      const { caller } = await initTest(userId);
+
+      return caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'sum',
+        args: { a: 1, b: 2 }
+      });
+    };
+
+    test('should be usable by default, with nothing configured', async () => {
+      expect(await runSum(MODERATOR_USER)).toBeDefined();
+    });
+
+    test('should deny a restricted command to a role without a grant', async () => {
+      await restrict('sum', [MEMBER_ROLE]);
+
+      await expect(runSum(MODERATOR_USER)).rejects.toThrow(
+        'do not have access'
+      );
+    });
+
+    test('should allow a restricted command to a granted role', async () => {
+      await restrict('sum', [MODERATOR_ROLE]);
+
+      expect(await runSum(MODERATOR_USER)).toBeDefined();
+    });
+
+    // restricted with nobody selected means nobody, rather than everybody
+    test('should deny a restricted command with no roles at all', async () => {
+      await restrict('sum', []);
+
+      await expect(runSum(MODERATOR_USER)).rejects.toThrow(
+        'do not have access'
+      );
+    });
+
+    test('should never lock out the owner', async () => {
+      await restrict('sum', []);
+
+      expect(await runSum()).toBeDefined();
+    });
+
+    test('should apply to actions as well as commands', async () => {
+      const { caller: owner } = await initTest();
+
+      await owner.plugins.setCapabilityAccess({
+        pluginId: 'plugin-b',
+        type: PluginCapabilityType.ACTION,
+        name: 'multiply',
+        mode: PluginCapabilityMode.RESTRICTED,
+        roleIds: []
+      });
+
+      const { caller } = await initTest(MODERATOR_USER);
+
+      await expect(
+        caller.plugins.executeAction({
+          pluginId: 'plugin-b',
+          actionName: 'multiply',
+          payload: { a: 2, b: 3 }
+        })
+      ).rejects.toThrow('do not have access');
+    });
+
+    test('should go back to public when the mode is reset', async () => {
+      await restrict('sum', []);
+
+      const { caller: owner } = await initTest();
+
+      await owner.plugins.setCapabilityAccess({
+        pluginId: 'plugin-b',
+        type: PluginCapabilityType.COMMAND,
+        name: 'sum',
+        mode: PluginCapabilityMode.PUBLIC,
+        roleIds: []
+      });
+
+      expect(await runSum(MODERATOR_USER)).toBeDefined();
+    });
+
+    test('should list capabilities with their current access', async () => {
+      await restrict('sum', [MODERATOR_ROLE]);
+
+      const { caller } = await initTest();
+      const { capabilities } = await caller.plugins.getCapabilities({
+        pluginId: 'plugin-b'
+      });
+
+      const sum = capabilities.find((c) => c.name === 'sum');
+
+      expect(sum!.mode).toBe(PluginCapabilityMode.RESTRICTED);
+      expect(sum!.roleIds).toEqual([MODERATOR_ROLE]);
+      expect(
+        capabilities.some((c) => c.type === PluginCapabilityType.ACTION)
+      ).toBe(true);
+    });
+
+    test('should need the permission to read capabilities', async () => {
+      const { caller } = await initTest(MODERATOR_USER);
+
+      await expect(
+        caller.plugins.getCapabilities({ pluginId: 'plugin-b' })
+      ).rejects.toThrow('Insufficient permissions');
+    });
+
+    test('should need the permission to change access', async () => {
+      const { caller } = await initTest(MODERATOR_USER);
+
+      await expect(
+        caller.plugins.setCapabilityAccess({
+          pluginId: 'plugin-b',
+          type: PluginCapabilityType.COMMAND,
+          name: 'sum',
+          mode: PluginCapabilityMode.PUBLIC,
+          roleIds: []
+        })
+      ).rejects.toThrow('Insufficient permissions');
+    });
+
+    // plugin-b declares admin-sum as requiring MANAGE_MESSAGES and
+    // admin-multiply as requiring MANAGE_USERS. the seeded moderator role holds
+    // MANAGE_USERS and MANAGE_ROLES only
+    describe('plugin declared defaults', () => {
+      const runAdminSum = async (userId?: number) => {
+        const { caller } = await initTest(userId);
+
+        return caller.plugins.executeCommand({
+          pluginId: 'plugin-b',
+          commandName: 'admin-sum',
+          args: { a: 1, b: 2 }
+        });
+      };
+
+      test('should deny a declared command to a user without the permission', async () => {
+        await expect(runAdminSum(MODERATOR_USER)).rejects.toThrow(
+          'do not have access'
+        );
+      });
+
+      test('should allow a declared command to a user with the permission', async () => {
+        await tdb.insert(rolePermissions).values({
+          roleId: MODERATOR_ROLE,
+          permission: Permission.MANAGE_MESSAGES,
+          createdAt: Date.now()
+        });
+
+        expect(await runAdminSum(MODERATOR_USER)).toBeDefined();
+      });
+
+      test('should allow the owner regardless of the declaration', async () => {
+        expect(await runAdminSum()).toBeDefined();
+      });
+
+      test('should apply a declaration to actions too', async () => {
+        const { caller } = await initTest(MODERATOR_USER);
+
+        expect(
+          await caller.plugins.executeAction({
+            pluginId: 'plugin-b',
+            actionName: 'admin-multiply',
+            payload: { a: 2, b: 3 }
+          })
+        ).toBeDefined();
+      });
+
+      test('should let an admin grant a role the declaration would deny', async () => {
+        const { caller: owner } = await initTest();
+
+        await owner.plugins.setCapabilityAccess({
+          pluginId: 'plugin-b',
+          type: PluginCapabilityType.COMMAND,
+          name: 'admin-sum',
+          mode: PluginCapabilityMode.RESTRICTED,
+          roleIds: [MODERATOR_ROLE]
+        });
+
+        expect(await runAdminSum(MODERATOR_USER)).toBeDefined();
+      });
+
+      test('should let an admin open a declared capability to everyone', async () => {
+        const { caller: owner } = await initTest();
+
+        await owner.plugins.setCapabilityAccess({
+          pluginId: 'plugin-b',
+          type: PluginCapabilityType.COMMAND,
+          name: 'admin-sum',
+          mode: PluginCapabilityMode.PUBLIC,
+          roleIds: []
+        });
+
+        expect(await runAdminSum(MODERATOR_USER)).toBeDefined();
+      });
+
+      test('should fall back to the declaration once the config is reset', async () => {
+        const { caller: owner } = await initTest();
+
+        await owner.plugins.setCapabilityAccess({
+          pluginId: 'plugin-b',
+          type: PluginCapabilityType.COMMAND,
+          name: 'admin-sum',
+          mode: PluginCapabilityMode.PUBLIC,
+          roleIds: []
+        });
+
+        expect(await runAdminSum(MODERATOR_USER)).toBeDefined();
+
+        await owner.plugins.resetCapabilityAccess({
+          pluginId: 'plugin-b',
+          type: PluginCapabilityType.COMMAND,
+          name: 'admin-sum'
+        });
+
+        await expect(runAdminSum(MODERATOR_USER)).rejects.toThrow(
+          'do not have access'
+        );
+      });
+
+      test('should report the declaration and its resolved default', async () => {
+        const { caller } = await initTest();
+        const { capabilities } = await caller.plugins.getCapabilities({
+          pluginId: 'plugin-b'
+        });
+
+        const adminSum = capabilities.find((c) => c.name === 'admin-sum');
+
+        expect(adminSum!.requires).toBe(Permission.MANAGE_MESSAGES);
+        expect(adminSum!.configured).toBe(false);
+        expect(adminSum!.mode).toBe(PluginCapabilityMode.RESTRICTED);
+        expect(adminSum!.roleIds).toEqual([]);
+
+        const adminMultiply = capabilities.find(
+          (c) => c.name === 'admin-multiply'
+        );
+
+        expect(adminMultiply!.requires).toBe(Permission.MANAGE_USERS);
+        expect(adminMultiply!.roleIds).toEqual([MODERATOR_ROLE]);
+      });
+
+      test('should keep the declared default alongside an admin override', async () => {
+        const { caller } = await initTest();
+
+        await caller.plugins.setCapabilityAccess({
+          pluginId: 'plugin-b',
+          type: PluginCapabilityType.COMMAND,
+          name: 'admin-sum',
+          mode: PluginCapabilityMode.PUBLIC,
+          roleIds: []
+        });
+
+        const { capabilities } = await caller.plugins.getCapabilities({
+          pluginId: 'plugin-b'
+        });
+
+        const adminSum = capabilities.find((c) => c.name === 'admin-sum');
+
+        expect(adminSum!.configured).toBe(true);
+        expect(adminSum!.mode).toBe(PluginCapabilityMode.PUBLIC);
+        expect(adminSum!.defaultAccess.mode).toBe(
+          PluginCapabilityMode.RESTRICTED
+        );
+      });
+
+      test('should report an undeclared capability as public by default', async () => {
+        const { caller } = await initTest();
+        const { capabilities } = await caller.plugins.getCapabilities({
+          pluginId: 'plugin-b'
+        });
+
+        const sum = capabilities.find((c) => c.name === 'sum');
+
+        expect(sum!.requires).toBeUndefined();
+        expect(sum!.configured).toBe(false);
+        expect(sum!.mode).toBe(PluginCapabilityMode.PUBLIC);
+      });
+
+      // plugin-b declares chat_actions as needing MANAGE_MESSAGES, and leaves
+      // its other slots undeclared. hiding a component is presentation, so the
+      // rules go to every client rather than gating a call
+      describe('components', () => {
+        const chatActionsRule = async () => {
+          const rules = await getComponentAccessRules();
+
+          return rules.find(
+            (rule) =>
+              rule.pluginId === 'plugin-b' &&
+              rule.name === PluginSlot.CHAT_ACTIONS
+          );
+        };
+
+        test('should restrict a declared slot to the roles that qualify', async () => {
+          expect((await chatActionsRule())?.roleIds).toEqual([]);
+
+          await tdb.insert(rolePermissions).values({
+            roleId: MODERATOR_ROLE,
+            permission: Permission.MANAGE_MESSAGES,
+            createdAt: Date.now()
+          });
+
+          expect((await chatActionsRule())?.roleIds).toEqual([MODERATOR_ROLE]);
+        });
+
+        test('should leave an undeclared slot public', async () => {
+          const rules = await getComponentAccessRules();
+
+          expect(
+            rules.some((rule) => rule.name === PluginSlot.TOPBAR_RIGHT)
+          ).toBe(false);
+        });
+
+        test('should let an admin override a declared slot to public', async () => {
+          const { caller } = await initTest();
+
+          await caller.plugins.setCapabilityAccess({
+            pluginId: 'plugin-b',
+            type: PluginCapabilityType.COMPONENT,
+            name: PluginSlot.CHAT_ACTIONS,
+            mode: PluginCapabilityMode.PUBLIC,
+            roleIds: []
+          });
+
+          expect(await chatActionsRule()).toBeUndefined();
+        });
+
+        test('should let an admin grant a declared slot to another role', async () => {
+          const { caller } = await initTest();
+
+          await caller.plugins.setCapabilityAccess({
+            pluginId: 'plugin-b',
+            type: PluginCapabilityType.COMPONENT,
+            name: PluginSlot.CHAT_ACTIONS,
+            mode: PluginCapabilityMode.RESTRICTED,
+            roleIds: [MEMBER_ROLE]
+          });
+
+          expect((await chatActionsRule())?.roleIds).toEqual([MEMBER_ROLE]);
+        });
+
+        test('should fall back to the declaration once reset', async () => {
+          const { caller } = await initTest();
+
+          await caller.plugins.setCapabilityAccess({
+            pluginId: 'plugin-b',
+            type: PluginCapabilityType.COMPONENT,
+            name: PluginSlot.CHAT_ACTIONS,
+            mode: PluginCapabilityMode.PUBLIC,
+            roleIds: []
+          });
+
+          expect(await chatActionsRule()).toBeUndefined();
+
+          await caller.plugins.resetCapabilityAccess({
+            pluginId: 'plugin-b',
+            type: PluginCapabilityType.COMPONENT,
+            name: PluginSlot.CHAT_ACTIONS
+          });
+
+          expect((await chatActionsRule())?.roleIds).toEqual([]);
+        });
+
+        test('should list a declared slot with no stored row', async () => {
+          const { caller } = await initTest();
+          const { capabilities } = await caller.plugins.getCapabilities({
+            pluginId: 'plugin-b'
+          });
+
+          const chatActions = capabilities.find(
+            (c) => c.name === PluginSlot.CHAT_ACTIONS
+          );
+
+          expect(chatActions!.type).toBe(PluginCapabilityType.COMPONENT);
+          expect(chatActions!.requires).toBe(Permission.MANAGE_MESSAGES);
+          expect(chatActions!.configured).toBe(false);
+        });
+
+        test('should send the rules in the connect payload', async () => {
+          const { initialData } = await initTest();
+
+          expect(
+            initialData.pluginComponentAccess.some(
+              (rule) => rule.name === PluginSlot.CHAT_ACTIONS
+            )
+          ).toBe(true);
+        });
+
+        test('should drop the declaration when the plugin unloads', async () => {
+          await pluginManager.unload('plugin-b');
+
+          expect(await chatActionsRule()).toBeUndefined();
+        });
+      });
+
+      test('should need the permission to reset access', async () => {
+        const { caller } = await initTest(MODERATOR_USER);
+
+        await expect(
+          caller.plugins.resetCapabilityAccess({
+            pluginId: 'plugin-b',
+            type: PluginCapabilityType.COMMAND,
+            name: 'admin-sum'
+          })
+        ).rejects.toThrow('Insufficient permissions');
+      });
     });
   });
 

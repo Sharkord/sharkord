@@ -11,6 +11,7 @@ import { drainActivityLogQueue } from '../queues/activity-log';
 import { drainLoginsQueue } from '../queues/logins';
 import { loadMediasoup } from '../utils/mediasoup';
 import { clearRateLimitersForTests } from '../utils/rate-limiters/rate-limiter';
+import { clearUserSocketsForTests } from '../utils/wss';
 import { DRIZZLE_PATH, setTestDb } from './mock-db';
 import { seedTestDb } from './seed';
 
@@ -92,6 +93,7 @@ beforeEach(async () => {
 
   clearRateLimitersForTests();
   clearVoiceMoveGrantsForTests();
+  clearUserSocketsForTests();
 
   if (sqlite) {
     try {

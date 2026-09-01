@@ -281,6 +281,31 @@ Server calls go inline where they are used, wrapped in `try`/`catch` with a toas
 nothing and hides the call site. `actions.ts` is for dispatching to the store and for logic
 that several components share.
 
+**Always name the client, never chain off the call.** `getTRPCClient()` is assigned to a
+`const trpc` first, and the procedure is called on that:
+
+```ts
+// no
+await getTRPCClient().messages.toggleReaction.mutate({ messageId, emoji });
+
+// yes
+const trpc = getTRPCClient();
+
+try {
+  await trpc.messages.toggleReaction.mutate({
+    messageId,
+    emoji: emoji.shortcodes[0]
+  });
+} catch (error) {
+  // code
+}
+```
+
+The chained form buries the call site, gets worse the moment a second call is added, and
+hides that `getTRPCClient()` itself can throw. Where that throw matters — it has no client
+during a reconnect — put the `const trpc` **inside** the `try` so the failure lands in the
+same `catch` as the call.
+
 Derived state is a selector, never an inline comparison inside an action or component.
 Before writing one, **search `selectors.ts` for it** — comparisons like "is the selected
 channel the one we are connected to" usually already exist
