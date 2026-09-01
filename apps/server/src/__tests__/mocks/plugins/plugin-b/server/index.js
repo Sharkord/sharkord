@@ -166,6 +166,40 @@ const onLoad = (ctx) => {
   });
 
   ctx.commands.register({
+    name: 'push',
+    description: 'Push something to plugin clients',
+    args: [
+      { name: 'target', type: 'string', required: true },
+      { name: 'userId', type: 'number', required: false },
+      { name: 'note', type: 'string', required: false }
+    ],
+    async execute(invokerCtx, args) {
+      const data = { note: args.note ?? 'hi' };
+
+      if (args.target === 'all') {
+        ctx.push.toAll(data);
+      } else if (args.target === 'users') {
+        ctx.push.toUsers([args.userId], data);
+      } else {
+        ctx.push.toUser(args.userId, data);
+      }
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'push-too-big',
+    description: 'Push more than the cap allows',
+    args: [{ name: 'userId', type: 'number', required: true }],
+    async execute(invokerCtx, args) {
+      ctx.push.toUser(args.userId, { blob: 'x'.repeat(70000) });
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
     name: 'pin',
     description: 'Pin or unpin a message',
     args: [

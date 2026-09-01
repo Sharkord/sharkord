@@ -31,10 +31,15 @@ const onMetadataChangeRoute = protectedProcedure.subscription(
   }
 );
 
+const onPushRoute = protectedProcedure.subscription(async ({ ctx }) => {
+  return ctx.pubsub.subscribeFor(ctx.user.id, ServerEvents.PLUGIN_PUSH);
+});
+
 export {
   onCommandsChangeRoute,
   onComponentAccessChangeRoute,
   onComponentsChangeRoute,
   onMetadataChangeRoute,
-  onPluginLogRoute
+  onPluginLogRoute,
+  onPushRoute
 };

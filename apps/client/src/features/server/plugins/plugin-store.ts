@@ -6,6 +6,8 @@ import type { TPluginActions, TPluginStore } from '@sharkord/shared';
 import { prepareMessageHtml, UploadHeaders } from '@sharkord/shared';
 import { setSelectedChannelId } from '../channels/actions';
 import { mapStateToPluginState } from '../selectors';
+import { onPluginPush } from './push-registry';
+import { usePluginPush } from './use-plugin-push';
 import { usePluginUserData } from './use-plugin-user-data';
 
 const pluginActions: TPluginActions = {
@@ -52,14 +54,16 @@ const pluginActions: TPluginActions = {
     const trpc = getTRPCClient();
 
     await trpc.plugins.setUserData.mutate({ pluginId, data });
-  }
+  },
+  onPush: (pluginId: string, handler: (data: unknown) => void) =>
+    onPluginPush(pluginId, handler)
 };
 
 const pluginStore: TPluginStore = {
   getState: () => mapStateToPluginState(store.getState()),
   subscribe: (listener: () => void) => store.subscribe(listener),
   actions: pluginActions,
-  hooks: { useUserData: usePluginUserData }
+  hooks: { useUserData: usePluginUserData, usePush: usePluginPush }
 };
 
 const exposePluginStore = () => {

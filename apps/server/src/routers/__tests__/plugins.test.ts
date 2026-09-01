@@ -6,7 +6,9 @@ import {
   PluginCapabilityMode,
   PluginCapabilityType,
   PluginSlot,
-  type TPluginInfo
+  ServerEvents,
+  type TPluginInfo,
+  type TPluginPushEvent
 } from '@sharkord/shared';
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
@@ -34,6 +36,7 @@ import { getComponentAccessRules } from '../../helpers/plugin-capability-access'
 import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
 import { drainActivityLogQueue } from '../../queues/activity-log';
+import { pubsub } from '../../utils/pubsub';
 
 describe('plugins router', () => {
   beforeEach(async () => {
@@ -1847,6 +1850,88 @@ describe('plugins router', () => {
       await expect(
         run('react', { messageId: 9999, emoji: '👍' })
       ).rejects.toThrow('Message not found');
+    });
+  });
+
+  // pushes are addressed server side, so a subscriber only ever sees its own
+  describe('push', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const listen = (userId: number) => {
+      const received: TPluginPushEvent[] = [];
+
+      const subscription = pubsub
+        .subscribeFor(userId, ServerEvents.PLUGIN_PUSH)
+        .subscribe({ next: (event) => received.push(event) });
+
+      return { received, stop: () => subscription.unsubscribe() };
+    };
+
+    const push = async (args: Record<string, unknown>) => {
+      const { caller } = await initTest();
+
+      return caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'push',
+        args
+      });
+    };
+
+    test('should reach the addressed user', async () => {
+      const target = listen(2);
+
+      await push({ target: 'user', userId: 2, note: 'hello' });
+
+      expect(target.received).toEqual([
+        { pluginId: 'plugin-b', data: { note: 'hello' } }
+      ]);
+
+      target.stop();
+    });
+
+    test('should not reach anyone else', async () => {
+      const target = listen(2);
+      const other = listen(5);
+
+      await push({ target: 'user', userId: 2 });
+
+      expect(target.received).toHaveLength(1);
+      expect(other.received).toHaveLength(0);
+
+      target.stop();
+      other.stop();
+    });
+
+    test('should reach every user in a list', async () => {
+      const target = listen(2);
+
+      await push({ target: 'users', userId: 2 });
+
+      expect(target.received).toHaveLength(1);
+
+      target.stop();
+    });
+
+    test('should stop reaching a listener that unsubscribed', async () => {
+      const target = listen(2);
+
+      target.stop();
+
+      await push({ target: 'user', userId: 2 });
+
+      expect(target.received).toHaveLength(0);
+    });
+
+    test('should refuse a payload over the cap', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.executeCommand({
+          pluginId: 'plugin-b',
+          commandName: 'push-too-big',
+          args: { userId: 2 }
+        })
+      ).rejects.toThrow('cannot exceed');
     });
   });
 

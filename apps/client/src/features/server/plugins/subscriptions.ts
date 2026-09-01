@@ -8,6 +8,7 @@ import {
   setPluginComponents,
   setPluginsMetadata
 } from './actions';
+import { dispatchPluginPush } from './push-registry';
 
 const subscribeToPlugins = () => {
   const trpc = getTRPCClient();
@@ -56,8 +57,17 @@ const subscribeToPlugins = () => {
     }
   );
 
+  const onPushSub = trpc.plugins.onPush.subscribe(undefined, {
+    onData: ({ pluginId, data }) => {
+      logDebug('[EVENTS] plugins.onPush', { pluginId });
+      dispatchPluginPush(pluginId, data);
+    },
+    onError: handleSubscriptionError('onPush')
+  });
+
   return () => {
     onComponentAccessChangeSub.unsubscribe();
+    onPushSub.unsubscribe();
     onCommandsChangeSub.unsubscribe();
     onComponentsChangeSub.unsubscribe();
     onMetadataChangeSub.unsubscribe();

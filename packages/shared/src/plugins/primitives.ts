@@ -12,3 +12,10 @@ export const zPluginId = z
 export const zHttpUrl = z.url({ protocol: /^https?$/ });
 
 export const PLUGIN_USER_DATA_MAX_BYTES = 64 * 1024; // 64 kb
+
+export type TPluginPushEvent = {
+  pluginId: string;
+  data: unknown;
+};
+
+export const PLUGIN_PUSH_MAX_BYTES = 64 * 1024; // 64 kb

@@ -36,6 +36,10 @@ import {
 } from './actions/moderate-plugin-user';
 import { setPluginMessagePinned } from './actions/pin-plugin-message';
 import {
+  pushToAllPluginClients,
+  pushToPluginClients
+} from './actions/push-to-plugin-clients';
+import {
   addPluginReaction,
   removePluginReaction
 } from './actions/react-plugin-message';
@@ -273,6 +277,13 @@ const createContext = (deps: TContextDependencies): PluginContext => {
         assignPluginUserRole(userId, roleId),
       remove: async (userId: number, roleId: number) =>
         removePluginUserRole(userId, roleId)
+    },
+    push: {
+      toUser: (userId: number, data: unknown) =>
+        pushToPluginClients(pluginId, [userId], data),
+      toUsers: (userIds: number[], data: unknown) =>
+        pushToPluginClients(pluginId, userIds, data),
+      toAll: (data: unknown) => pushToAllPluginClients(pluginId, data)
     },
     userData: {
       get: async (userId: number) => getPluginUserData(pluginId, userId),

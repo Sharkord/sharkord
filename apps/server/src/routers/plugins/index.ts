@@ -4,7 +4,8 @@ import {
   onComponentAccessChangeRoute,
   onComponentsChangeRoute,
   onMetadataChangeRoute,
-  onPluginLogRoute
+  onPluginLogRoute,
+  onPushRoute
 } from './events';
 import { executeActionRoute } from './execute-action';
 import { executeCommandRoute } from './execute-command';
@@ -27,6 +28,7 @@ export const pluginsRouter = t.router({
   get: getPluginsRoute,
   toggle: togglePluginRoute,
   onLog: onPluginLogRoute,
+  onPush: onPushRoute,
   getLogs: getPluginLogsRoute,
   getCommands: getCommandsRoute,
   getCapabilities: getCapabilitiesRoute,

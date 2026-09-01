@@ -44,6 +44,7 @@ export type TPluginActions = {
     pluginId: string,
     data: Record<string, unknown>
   ) => Promise<void>;
+  onPush: (pluginId: string, handler: (data: unknown) => void) => () => void;
 };
 
 export type TPluginUserData = {
@@ -53,6 +54,7 @@ export type TPluginUserData = {
 };
 
 export type TPluginHooks = {
+  usePush: (handler: (data: unknown) => void) => void;
   useUserData: () => TPluginUserData;
 };
 

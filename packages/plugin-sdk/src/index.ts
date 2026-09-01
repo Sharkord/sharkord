@@ -386,6 +386,11 @@ export interface PluginContext {
     remove(userId: number, roleId: number): Promise<void>;
   };
 
+  push: {
+    toUser(userId: number, data: unknown): void;
+    toUsers(userIds: number[], data: unknown): void;
+    toAll(data: unknown): void;
+  };
   userData: {
     get(userId: number): Promise<Record<string, unknown>>;
     set(userId: number, data: Record<string, unknown>): Promise<void>;
