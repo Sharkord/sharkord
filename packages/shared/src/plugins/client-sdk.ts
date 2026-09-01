@@ -39,12 +39,28 @@ export type TPluginActions = {
     path: string,
     init?: RequestInit
   ) => Promise<Response>;
+  getUserData: (pluginId: string) => Promise<Record<string, unknown>>;
+  setUserData: (
+    pluginId: string,
+    data: Record<string, unknown>
+  ) => Promise<void>;
+};
+
+export type TPluginUserData = {
+  data: Record<string, unknown>;
+  loading: boolean;
+  save: (data: Record<string, unknown>) => Promise<void>;
+};
+
+export type TPluginHooks = {
+  useUserData: () => TPluginUserData;
 };
 
 export type TPluginStore = {
   getState: () => TPluginStoreState;
   subscribe: (listener: () => void) => () => void;
   actions: TPluginActions;
+  hooks: TPluginHooks;
 };
 
 export const getPluginIdFromBundleUrl = (url: string): string | undefined => {

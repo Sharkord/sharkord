@@ -1,6 +1,7 @@
 import { usePluginSlotDebug } from '@/features/app/hooks';
 import { useCan, useHiddenPluginComponents } from '@/features/server/hooks';
 import { usePluginComponentsBySlot } from '@/features/server/plugins/hooks';
+import { PluginIdContext } from '@/features/server/plugins/plugin-id-context';
 import { Permission, type PluginSlot } from '@sharkord/shared';
 import { memo } from 'react';
 import { ErrorBoundary } from './error-boundary';
@@ -34,7 +35,11 @@ const PluginSlotRenderer = memo(
             return null;
           }
 
-          const rendered = <Component />;
+          const rendered = (
+            <PluginIdContext.Provider value={pluginId}>
+              <Component />
+            </PluginIdContext.Provider>
+          );
 
           const wrappedContent = debug ? (
             <PlugSlotDebugWrapper pluginId={pluginId} slotId={slotId}>

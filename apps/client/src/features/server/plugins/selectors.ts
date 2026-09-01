@@ -21,6 +21,19 @@ export const pluginMetadataByIdSelector = createCachedSelector(
     pluginsMetadata.find((metadata) => metadata.pluginId === pluginId)
 )((_state, pluginId) => pluginId);
 
+export const pluginNamesSelector = createSelector(
+  [pluginsMetadataSelector],
+  (pluginsMetadata) => {
+    const map: Record<string, string> = {};
+
+    pluginsMetadata.forEach((metadata) => {
+      map[metadata.pluginId] = metadata.name;
+    });
+
+    return map;
+  }
+);
+
 export const pluginVersionByIdSelector = createCachedSelector(
   pluginMetadataByIdSelector,
   (metadata) => metadata?.version

@@ -17,6 +17,11 @@ import {
 } from '@sharkord/shared';
 import { channelUserCan } from '../db/queries/channels';
 import { getMessage } from '../db/queries/messages';
+import {
+  deletePluginUserData,
+  getPluginUserData,
+  setPluginUserData
+} from '../db/queries/plugin-user-data';
 import { getRole, getRoles, userCan } from '../db/queries/roles';
 import { getPublicUserById, getPublicUsers } from '../db/queries/users';
 import { VoiceRuntime } from '../runtimes/voice';
@@ -29,6 +34,11 @@ import {
   kickPluginUser,
   unbanPluginUser
 } from './actions/moderate-plugin-user';
+import { setPluginMessagePinned } from './actions/pin-plugin-message';
+import {
+  addPluginReaction,
+  removePluginReaction
+} from './actions/react-plugin-message';
 import {
   listPluginMessages,
   type TListPluginMessagesOptions
@@ -183,7 +193,14 @@ const createUnloadContext = ({
     delete: async (messageId) => deletePluginMessage({ pluginId, messageId }),
     get: async (messageId: number) => getMessage(messageId),
     list: async (options: TListPluginMessagesOptions) =>
-      listPluginMessages(options)
+      listPluginMessages(options),
+    pin: async (messageId: number) => setPluginMessagePinned(messageId, true),
+    unpin: async (messageId: number) =>
+      setPluginMessagePinned(messageId, false),
+    react: async (messageId: number, emoji: string) =>
+      addPluginReaction(pluginId, messageId, emoji),
+    unreact: async (messageId: number, emoji: string) =>
+      removePluginReaction(pluginId, messageId, emoji)
   }
 });
 
@@ -256,6 +273,12 @@ const createContext = (deps: TContextDependencies): PluginContext => {
         assignPluginUserRole(userId, roleId),
       remove: async (userId: number, roleId: number) =>
         removePluginUserRole(userId, roleId)
+    },
+    userData: {
+      get: async (userId: number) => getPluginUserData(pluginId, userId),
+      set: async (userId: number, data: Record<string, unknown>) =>
+        setPluginUserData(pluginId, userId, data),
+      delete: async (userId: number) => deletePluginUserData(pluginId, userId)
     },
     users: {
       list: async () => getPublicUsers(),

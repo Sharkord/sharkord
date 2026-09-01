@@ -1,4 +1,5 @@
 import { ErrorBoundary } from '@/components/plugin-slot-renderer/error-boundary';
+import { PluginIdContext } from '@/features/server/plugins/plugin-id-context';
 import type { TPluginTab } from '@sharkord/shared';
 import { memo } from 'react';
 
@@ -12,7 +13,9 @@ const PluginTabContent = memo(({ pluginId, tab }: TPluginTabContentProps) => {
 
   return (
     <ErrorBoundary pluginId={pluginId} slotId={`tab:${tab.id}`}>
-      <Component />
+      <PluginIdContext.Provider value={pluginId}>
+        <Component />
+      </PluginIdContext.Provider>
     </ErrorBoundary>
   );
 });

@@ -227,7 +227,7 @@ export type TActivityLogDetailsMap = {
     messageId: number;
     channelId: number;
     pinned: boolean;
-    pinnedBy: number;
+    pinnedBy?: number;
   };
 };
 

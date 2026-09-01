@@ -232,6 +232,20 @@
       "when": 1788286981185,
       "tag": "0032_files_plugin_owner",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1788303109853,
+      "tag": "0033_plugin_user_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1788303909961,
+      "tag": "0034_plugin_reactions",
+      "breakpoints": true
     }
   ]
 }

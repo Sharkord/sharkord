@@ -373,9 +373,10 @@ const messageReactions = sqliteTable(
     messageId: integer('message_id')
       .notNull()
       .references(() => messages.id, { onDelete: 'cascade' }),
-    userId: integer('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+    userId: integer('user_id').references(() => users.id, {
+      onDelete: 'cascade'
+    }),
+    pluginId: text('plugin_id'),
     emoji: text('emoji').notNull(),
     fileId: integer('file_id').references(() => files.id, {
       onDelete: 'set null'
@@ -384,6 +385,11 @@ const messageReactions = sqliteTable(
   },
   (t) => [
     primaryKey({ columns: [t.messageId, t.userId, t.emoji] }),
+    uniqueIndex('reaction_msg_emoji_plugin_unique_idx').on(
+      t.messageId,
+      t.emoji,
+      t.pluginId
+    ),
     index('reaction_emoji_idx').on(t.emoji),
     index('reaction_user_idx').on(t.userId),
     index('reaction_msg_emoji_idx').on(t.messageId, t.emoji)
@@ -557,6 +563,25 @@ const pluginData = sqliteTable('plugin_data', {
   version: text('version')
 });
 
+const pluginUserData = sqliteTable(
+  'plugin_user_data',
+  {
+    pluginId: text('plugin_id').notNull(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    data: text('data', { mode: 'json' })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    updatedAt: integer('updated_at').notNull()
+  },
+  (t) => [
+    primaryKey({ columns: [t.pluginId, t.userId] }),
+    index('plugin_user_data_user_idx').on(t.userId)
+  ]
+);
+
 const pluginCapabilities = sqliteTable(
   'plugin_capabilities',
   {
@@ -609,6 +634,7 @@ export {
   pluginCapabilities,
   pluginCapabilityRoles,
   pluginData,
+  pluginUserData,
   rolePermissions,
   roles,
   settings,

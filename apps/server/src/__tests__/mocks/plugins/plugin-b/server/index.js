@@ -166,6 +166,70 @@ const onLoad = (ctx) => {
   });
 
   ctx.commands.register({
+    name: 'pin',
+    description: 'Pin or unpin a message',
+    args: [
+      { name: 'messageId', type: 'number', required: true },
+      { name: 'pinned', type: 'boolean', required: true }
+    ],
+    async execute(invokerCtx, args) {
+      if (args.pinned) {
+        await ctx.messages.pin(args.messageId);
+      } else {
+        await ctx.messages.unpin(args.messageId);
+      }
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'react',
+    description: 'React or unreact as the plugin',
+    args: [
+      { name: 'messageId', type: 'number', required: true },
+      { name: 'emoji', type: 'string', required: true },
+      { name: 'remove', type: 'boolean', required: false }
+    ],
+    async execute(invokerCtx, args) {
+      if (args.remove) {
+        await ctx.messages.unreact(args.messageId, args.emoji);
+      } else {
+        await ctx.messages.react(args.messageId, args.emoji);
+      }
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'remember',
+    description: 'Store and read back per-user data',
+    args: [
+      { name: 'userId', type: 'number', required: true },
+      { name: 'value', type: 'string', required: false }
+    ],
+    async execute(invokerCtx, args) {
+      if (args.value !== undefined) {
+        await ctx.userData.set(args.userId, { note: args.value });
+      }
+
+      return { data: await ctx.userData.get(args.userId) };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'forget',
+    description: 'Drop per-user data',
+    args: [{ name: 'userId', type: 'number', required: true }],
+    async execute(invokerCtx, args) {
+      await ctx.userData.delete(args.userId);
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
     name: 'moderate',
     description: 'Ban, unban or kick a user',
     args: [

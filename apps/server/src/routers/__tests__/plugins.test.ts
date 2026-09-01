@@ -22,7 +22,10 @@ import {
   channels,
   files,
   messageFiles,
+  messageReactions,
+  messages,
   pluginData,
+  pluginUserData,
   rolePermissions,
   users
 } from '../../db/schema';
@@ -1622,6 +1625,228 @@ describe('plugins router', () => {
       expect(
         (entry!.details as { bannedBy?: number } | null)?.bannedBy
       ).toBeUndefined();
+    });
+  });
+
+  // one blob per plugin per user, keyed by the plugin's own id, which the
+  // server side takes from the context rather than from the caller
+  describe('per-user data', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const run = async (commandName: string, args: Record<string, unknown>) => {
+      const { caller } = await initTest();
+
+      return (await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName,
+        args
+      })) as { data?: Record<string, unknown> };
+    };
+
+    test('should store and read back a user blob', async () => {
+      await run('remember', { userId: 2, value: 'hello' });
+
+      const result = await run('remember', { userId: 2 });
+
+      expect(result.data).toEqual({ note: 'hello' });
+    });
+
+    test('should keep users apart', async () => {
+      await run('remember', { userId: 2, value: 'two' });
+      await run('remember', { userId: 5, value: 'five' });
+
+      expect((await run('remember', { userId: 2 })).data).toEqual({
+        note: 'two'
+      });
+      expect((await run('remember', { userId: 5 })).data).toEqual({
+        note: 'five'
+      });
+    });
+
+    test('should answer with an empty object when nothing was stored', async () => {
+      expect((await run('remember', { userId: 2 })).data).toEqual({});
+    });
+
+    test('should delete a user blob', async () => {
+      await run('remember', { userId: 2, value: 'hello' });
+      await run('forget', { userId: 2 });
+
+      expect((await run('remember', { userId: 2 })).data).toEqual({});
+    });
+
+    // the row references users with a cascade, so this needs no cleanup code
+    test('should go with the user when the user is deleted', async () => {
+      await run('remember', { userId: 2, value: 'hello' });
+
+      const { caller } = await initTest();
+
+      await caller.users.delete({ userId: 2, wipe: false });
+
+      expect(
+        await tdb
+          .select()
+          .from(pluginUserData)
+          .where(eq(pluginUserData.userId, 2))
+      ).toHaveLength(0);
+    });
+
+    test('should go when the plugin is uninstalled', async () => {
+      await run('remember', { userId: 2, value: 'hello' });
+
+      await pluginManager.removePlugin('plugin-b');
+
+      expect(
+        await tdb
+          .select()
+          .from(pluginUserData)
+          .where(eq(pluginUserData.pluginId, 'plugin-b'))
+      ).toHaveLength(0);
+    });
+
+    test('should refuse a blob over the size cap', async () => {
+      await expect(
+        run('remember', { userId: 2, value: 'x'.repeat(70_000) })
+      ).rejects.toThrow('cannot exceed');
+    });
+
+    // the route names a plugin, never a user: it can only ever touch the
+    // caller's own row
+    test('should read and write only the caller row over trpc', async () => {
+      // no seeded role can use plugins, so the moderator is granted it here
+      await tdb.insert(rolePermissions).values({
+        roleId: 4,
+        permission: Permission.USE_PLUGINS,
+        createdAt: Date.now()
+      });
+
+      const { caller } = await initTest(5);
+
+      await caller.plugins.setUserData({
+        pluginId: 'plugin-b',
+        data: { theme: 'dark' }
+      });
+
+      expect(
+        await caller.plugins.getUserData({ pluginId: 'plugin-b' })
+      ).toEqual({ theme: 'dark' });
+
+      const { caller: owner } = await initTest();
+
+      expect(await owner.plugins.getUserData({ pluginId: 'plugin-b' })).toEqual(
+        {}
+      );
+    });
+
+    test('should need the plugin permission', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.plugins.getUserData({ pluginId: 'plugin-b' })
+      ).rejects.toThrow('Insufficient permissions');
+    });
+  });
+
+  describe('pinning and reacting', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const run = async (commandName: string, args: Record<string, unknown>) => {
+      const { caller } = await initTest();
+
+      return caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName,
+        args
+      });
+    };
+
+    const readMessage = async (messageId: number) =>
+      tdb.select().from(messages).where(eq(messages.id, messageId)).get();
+
+    const readReactions = async (messageId: number) =>
+      tdb
+        .select()
+        .from(messageReactions)
+        .where(eq(messageReactions.messageId, messageId));
+
+    test('should pin a message with no actor', async () => {
+      await run('pin', { messageId: 1, pinned: true });
+
+      const message = await readMessage(1);
+
+      expect(message!.pinned).toBe(true);
+      expect(message!.pinnedAt).toBeGreaterThan(0);
+      expect(message!.pinnedBy).toBeNull();
+    });
+
+    test('should unpin a message', async () => {
+      await run('pin', { messageId: 1, pinned: true });
+      await run('pin', { messageId: 1, pinned: false });
+
+      const message = await readMessage(1);
+
+      expect(message!.pinned).toBe(false);
+      expect(message!.pinnedAt).toBeNull();
+    });
+
+    test('should refuse to pin a thread message', async () => {
+      const { caller } = await initTest();
+
+      const reply = await caller.messages.send({
+        channelId: 1,
+        content: '<p>reply</p>',
+        parentMessageId: 1,
+        files: []
+      });
+
+      await expect(
+        run('pin', { messageId: reply, pinned: true })
+      ).rejects.toThrow('Cannot pin a thread message');
+    });
+
+    // the plugin reacts as itself, so the row names it and has no user
+    test('should react as the plugin', async () => {
+      await run('react', { messageId: 1, emoji: '👍' });
+
+      const [reaction] = await readReactions(1);
+
+      expect(reaction!.pluginId).toBe('plugin-b');
+      expect(reaction!.userId).toBeNull();
+      expect(reaction!.emoji).toBe('👍');
+    });
+
+    test('should not react twice with the same emoji', async () => {
+      await run('react', { messageId: 1, emoji: '👍' });
+      await run('react', { messageId: 1, emoji: '👍' });
+
+      expect(await readReactions(1)).toHaveLength(1);
+    });
+
+    test('should remove its own reaction', async () => {
+      await run('react', { messageId: 1, emoji: '👍' });
+      await run('react', { messageId: 1, emoji: '👍', remove: true });
+
+      expect(await readReactions(1)).toHaveLength(0);
+    });
+
+    // a plugin reaction and a user reaction with the same emoji are separate
+    test('should sit alongside a user reaction of the same emoji', async () => {
+      const { caller } = await initTest();
+
+      await caller.messages.toggleReaction({ messageId: 1, emoji: '👍' });
+      await run('react', { messageId: 1, emoji: '👍' });
+
+      const reactions = await readReactions(1);
+
+      expect(reactions).toHaveLength(2);
+      expect(
+        reactions.filter((row) => row.pluginId === 'plugin-b')
+      ).toHaveLength(1);
+    });
+
+    test('should reject a message that does not exist', async () => {
+      await expect(
+        run('react', { messageId: 9999, emoji: '👍' })
+      ).rejects.toThrow('Message not found');
     });
   });
 

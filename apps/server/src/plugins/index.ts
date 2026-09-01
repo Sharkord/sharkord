@@ -28,6 +28,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { pathToFileURL } from 'url';
 import { deletePluginCapabilities } from '../db/queries/plugin-capabilities';
+import { deleteAllPluginUserData } from '../db/queries/plugin-user-data';
 import { getSettings } from '../db/queries/server';
 import { PLUGINS_PATH } from '../helpers/paths';
 import {
@@ -758,6 +759,7 @@ class PluginManager {
     }
 
     await deletePluginCapabilities(pluginId);
+    await deleteAllPluginUserData(pluginId);
     await this.stateStore.remove(pluginId);
 
     // nothing on disk to attribute them to any more

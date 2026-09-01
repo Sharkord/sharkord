@@ -6,6 +6,7 @@ import type { TPluginActions, TPluginStore } from '@sharkord/shared';
 import { prepareMessageHtml, UploadHeaders } from '@sharkord/shared';
 import { setSelectedChannelId } from '../channels/actions';
 import { mapStateToPluginState } from '../selectors';
+import { usePluginUserData } from './use-plugin-user-data';
 
 const pluginActions: TPluginActions = {
   sendMessage: async (channelId: number, content: string) => {
@@ -41,13 +42,24 @@ const pluginActions: TPluginActions = {
         [UploadHeaders.TOKEN]:
           getSessionStorageItem(SessionStorageKey.TOKEN) ?? ''
       }
-    })
+    }),
+  getUserData: async (pluginId: string) => {
+    const trpc = getTRPCClient();
+
+    return trpc.plugins.getUserData.query({ pluginId });
+  },
+  setUserData: async (pluginId: string, data: Record<string, unknown>) => {
+    const trpc = getTRPCClient();
+
+    await trpc.plugins.setUserData.mutate({ pluginId, data });
+  }
 };
 
 const pluginStore: TPluginStore = {
   getState: () => mapStateToPluginState(store.getState()),
   subscribe: (listener: () => void) => store.subscribe(listener),
-  actions: pluginActions
+  actions: pluginActions,
+  hooks: { useUserData: usePluginUserData }
 };
 
 const exposePluginStore = () => {

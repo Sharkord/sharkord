@@ -149,24 +149,26 @@ export interface EventPayloads {
   'reaction:added': {
     messageId: number;
     channelId: number;
-    userId: number;
+    userId?: number;
+    pluginId?: string;
     emoji: string;
   };
   'reaction:removed': {
     messageId: number;
     channelId: number;
-    userId: number;
+    userId?: number;
+    pluginId?: string;
     emoji: string;
   };
   'message:pinned': {
     messageId: number;
     channelId: number;
-    userId: number;
+    userId?: number;
   };
   'message:unpinned': {
     messageId: number;
     channelId: number;
-    userId: number;
+    userId?: number;
   };
   'user:banned': {
     userId: number;
@@ -304,6 +306,10 @@ export interface PluginContext {
     edit(messageId: number, content: string): Promise<void>;
     delete(messageId: number): Promise<void>;
     get(messageId: number): Promise<TJoinedMessage | undefined>;
+    pin(messageId: number): Promise<void>;
+    unpin(messageId: number): Promise<void>;
+    react(messageId: number, emoji: string): Promise<void>;
+    unreact(messageId: number, emoji: string): Promise<void>;
     list(options: {
       channelId: number;
       limit?: number;
@@ -380,6 +386,12 @@ export interface PluginContext {
     remove(userId: number, roleId: number): Promise<void>;
   };
 
+  userData: {
+    get(userId: number): Promise<Record<string, unknown>>;
+    set(userId: number, data: Record<string, unknown>): Promise<void>;
+    delete(userId: number): Promise<void>;
+  };
+
   users: {
     list(): Promise<TJoinedPublicUser[]>;
     get(userId: number): Promise<TJoinedPublicUser | undefined>;
@@ -387,6 +399,7 @@ export interface PluginContext {
     unban(userId: number): Promise<void>;
     kick(userId: number, reason?: string): Promise<void>;
   };
+
   channels: {
     list(): Promise<TChannel[]>;
     get(channelId: number): Promise<TChannel | undefined>;
@@ -402,6 +415,7 @@ export interface PluginContext {
     ): Promise<void>;
     delete(channelId: number): Promise<void>;
   };
+
   categories: {
     list(): Promise<TCategory[]>;
     get(categoryId: number): Promise<TCategory | undefined>;
