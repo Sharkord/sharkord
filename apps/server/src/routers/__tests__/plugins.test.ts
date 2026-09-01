@@ -1353,6 +1353,35 @@ describe('plugins router', () => {
 
     // channel 3 is the seeded DM, and the write calls refuse it, so listing it
     // would only offer a plugin ids it cannot use
+    test('should read one of each kind by id', async () => {
+      const result = (await run('lookup', {
+        userId: 1,
+        channelId: 1,
+        categoryId: 1,
+        roleId: OWNER_ROLE_ID
+      })) as unknown as Record<string, string | number>;
+
+      expect(result.user).toBe('Test Owner');
+      expect(result.channel).toBe('General');
+      expect(result.category).toBe('Text Channels');
+      expect(result.role).toBe('Owner');
+      expect(result.userCount).toBe(5);
+    });
+
+    test('should answer undefined for ids that do not exist', async () => {
+      const result = (await run('lookup', {
+        userId: 9999,
+        channelId: 9999,
+        categoryId: 9999,
+        roleId: 9999
+      })) as unknown as Record<string, string | undefined>;
+
+      expect(result.user).toBeUndefined();
+      expect(result.channel).toBeUndefined();
+      expect(result.category).toBeUndefined();
+      expect(result.role).toBeUndefined();
+    });
+
     test('should list channels without the DMs', async () => {
       const result = (await run('list-channels', {})) as unknown as {
         names: string[];

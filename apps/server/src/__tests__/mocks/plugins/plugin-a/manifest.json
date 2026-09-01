@@ -2,7 +2,7 @@
   "id": "plugin-a",
   "name": "plugin-a",
   "version": "0.0.1",
-  "sdkVersion": 2,
+  "sdkVersion": 3,
   "author": "My Name",
   "homepage": "https://mocked.com",
   "description": "This is a mocked plugin for testing purposes.",

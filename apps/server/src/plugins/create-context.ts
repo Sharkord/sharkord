@@ -15,13 +15,10 @@ import {
   type ChannelPermission,
   type Permission
 } from '@sharkord/shared';
-import { eq } from 'drizzle-orm';
-import { db } from '../db';
 import { channelUserCan } from '../db/queries/channels';
 import { getMessage } from '../db/queries/messages';
-import { getRoles, userCan } from '../db/queries/roles';
+import { getRole, getRoles, userCan } from '../db/queries/roles';
 import { getPublicUserById, getPublicUsers } from '../db/queries/users';
-import { channels } from '../db/schema';
 import { VoiceRuntime } from '../runtimes/voice';
 import { pubsub } from '../utils/pubsub';
 import { createPluginMessage } from './actions/create-plugin-message';
@@ -40,6 +37,8 @@ import {
   createPluginChannel,
   deletePluginCategory,
   deletePluginChannel,
+  getPluginCategory,
+  getPluginChannel,
   listPluginCategories,
   listPluginChannels,
   updatePluginCategory,
@@ -246,13 +245,19 @@ const createContext = (deps: TContextDependencies): PluginContext => {
     },
     roles: {
       list: async () => getRoles(),
+      get: async (roleId: number) => getRole(roleId),
       assign: async (userId: number, roleId: number) =>
         assignPluginUserRole(userId, roleId),
       remove: async (userId: number, roleId: number) =>
         removePluginUserRole(userId, roleId)
     },
+    users: {
+      list: async () => getPublicUsers(),
+      get: async (userId: number) => getPublicUserById(userId)
+    },
     channels: {
       list: async () => listPluginChannels(),
+      get: async (channelId: number) => getPluginChannel(channelId),
       create: async (input) => createPluginChannel(input),
       update: async (channelId, values) =>
         updatePluginChannel(channelId, values),
@@ -260,16 +265,11 @@ const createContext = (deps: TContextDependencies): PluginContext => {
     },
     categories: {
       list: async () => listPluginCategories(),
+      get: async (categoryId: number) => getPluginCategory(categoryId),
       create: async (name) => createPluginCategory(name),
       update: async (categoryId, name) =>
         updatePluginCategory(categoryId, name),
       delete: async (categoryId) => deletePluginCategory(categoryId)
-    },
-    data: {
-      getUser: async (userId: number) => getPublicUserById(userId),
-      getChannel: async (channelId: number) =>
-        db.select().from(channels).where(eq(channels.id, channelId)).get(),
-      getPublicUsers: async () => getPublicUsers()
     }
   };
 };

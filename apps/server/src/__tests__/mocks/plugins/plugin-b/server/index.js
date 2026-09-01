@@ -133,6 +133,33 @@ const onLoad = (ctx) => {
   });
 
   ctx.commands.register({
+    name: 'lookup',
+    description: 'Read one of each kind of thing by id',
+    args: [
+      { name: 'userId', type: 'number', required: true },
+      { name: 'channelId', type: 'number', required: true },
+      { name: 'categoryId', type: 'number', required: true },
+      { name: 'roleId', type: 'number', required: true }
+    ],
+    async execute(invokerCtx, args) {
+      const [user, channel, category, role] = await Promise.all([
+        ctx.users.get(args.userId),
+        ctx.channels.get(args.channelId),
+        ctx.categories.get(args.categoryId),
+        ctx.roles.get(args.roleId)
+      ]);
+
+      return {
+        user: user?.name,
+        channel: channel?.name,
+        category: category?.name,
+        role: role?.name,
+        userCount: (await ctx.users.list()).length
+      };
+    }
+  });
+
+  ctx.commands.register({
     name: 'list-channels',
     description: 'List channels a plugin can act on',
     async execute() {

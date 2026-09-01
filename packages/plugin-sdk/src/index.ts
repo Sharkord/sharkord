@@ -293,18 +293,18 @@ export interface PluginContext {
 
   roles: {
     list(): Promise<TJoinedRole[]>;
-    /** Refused for the owner role and for the server owner. */
+    get(roleId: number): Promise<TJoinedRole | undefined>;
     assign(userId: number, roleId: number): Promise<void>;
     remove(userId: number, roleId: number): Promise<void>;
   };
 
-  data: {
-    getUser(userId: number): Promise<TJoinedPublicUser | undefined>;
-    getChannel(channelId: number): Promise<TChannel | undefined>;
-    getPublicUsers(): Promise<TJoinedPublicUser[]>;
+  users: {
+    list(): Promise<TJoinedPublicUser[]>;
+    get(userId: number): Promise<TJoinedPublicUser | undefined>;
   };
   channels: {
     list(): Promise<TChannel[]>;
+    get(channelId: number): Promise<TChannel | undefined>;
     create(input: {
       name: string;
       type: ChannelType;
@@ -319,6 +319,7 @@ export interface PluginContext {
   };
   categories: {
     list(): Promise<TCategory[]>;
+    get(categoryId: number): Promise<TCategory | undefined>;
     create(name: string): Promise<TCategory>;
     update(categoryId: number, name: string): Promise<void>;
     delete(categoryId: number): Promise<void>;

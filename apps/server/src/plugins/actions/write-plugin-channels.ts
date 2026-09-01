@@ -46,11 +46,29 @@ const listPluginChannels = async (): Promise<TChannel[]> =>
     .from(channels)
     .where(eq(channels.isDm, false))) as TChannel[];
 
+const getPluginChannel = async (
+  channelId: number
+): Promise<TChannel | undefined> =>
+  (await db.select().from(channels).where(eq(channels.id, channelId)).get()) as
+    | TChannel
+    | undefined;
+
+const getPluginCategory = async (
+  categoryId: number
+): Promise<TCategory | undefined> =>
+  (await db
+    .select()
+    .from(categories)
+    .where(eq(categories.id, categoryId))
+    .get()) as TCategory | undefined;
+
 export {
   createPluginCategory,
   createPluginChannel,
   deletePluginCategory,
   deletePluginChannel,
+  getPluginCategory,
+  getPluginChannel,
   listPluginCategories,
   listPluginChannels,
   updatePluginCategory,

@@ -2,7 +2,7 @@
   "id": "plugin-upgrade",
   "name": "plugin-upgrade",
   "version": "1.0.0",
-  "sdkVersion": 2,
+  "sdkVersion": 3,
   "author": "Test Author",
   "description": "Exercises the onUpgrade lifecycle hook"
 }
