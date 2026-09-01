@@ -507,5 +507,10 @@
   "pluginAccessSelectAudience": "Выберите, кого настроить",
   "pluginPermissionsSaved": "Права плагина сохранены",
   "pluginAccessRequires": "По умолчанию в плагине: требуется {{permission}}",
-  "pluginAccessResetToDefault": "Сбросить к значению по умолчанию плагина"
+  "pluginAccessResetToDefault": "Сбросить к значению по умолчанию плагина",
+  "pluginStorageTitle": "Файлы плагинов",
+  "pluginStorageDesc": "Место, занятое файлами, которые плагины прикрепили к сообщениям. Они остаются с сообщением после удаления плагина.",
+  "pluginStorageUninstalled": "Удалён",
+  "pluginStorageFiles_one": "{{count}} файл",
+  "pluginStorageFiles_other": "{{count}} файлов"
 }

@@ -498,5 +498,10 @@
   "pluginAccessSelectAudience": "选择要配置的对象",
   "pluginPermissionsSaved": "插件权限已保存",
   "pluginAccessRequires": "插件默认设置：需要 {{permission}}",
-  "pluginAccessResetToDefault": "重置为插件默认设置"
+  "pluginAccessResetToDefault": "重置为插件默认设置",
+  "pluginStorageTitle": "插件文件",
+  "pluginStorageDesc": "插件附加到消息的文件所占用的空间。插件被移除后，这些文件仍随消息保留。",
+  "pluginStorageUninstalled": "已卸载",
+  "pluginStorageFiles_one": "{{count}} 个文件",
+  "pluginStorageFiles_other": "{{count}} 个文件"
 }

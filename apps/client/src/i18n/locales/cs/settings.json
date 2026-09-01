@@ -498,5 +498,10 @@
   "pluginAccessSelectAudience": "Vyberte, koho nastavit",
   "pluginPermissionsSaved": "Oprávnění pluginu uložena",
   "pluginAccessRequires": "Výchozí nastavení pluginu: vyžaduje {{permission}}",
-  "pluginAccessResetToDefault": "Obnovit výchozí nastavení pluginu"
+  "pluginAccessResetToDefault": "Obnovit výchozí nastavení pluginu",
+  "pluginStorageTitle": "Soubory pluginů",
+  "pluginStorageDesc": "Místo zabrané soubory, které pluginy připojily ke zprávám. Po odstranění pluginu zůstávají u zprávy.",
+  "pluginStorageUninstalled": "Odinstalováno",
+  "pluginStorageFiles_one": "{{count}} soubor",
+  "pluginStorageFiles_other": "{{count}} souborů"
 }

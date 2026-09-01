@@ -16,6 +16,7 @@ import {
   type TLogin,
   type TMessage,
   type TPluginInfo,
+  type TPluginStorageUsage,
   type TStorageData,
   type TStorageSettings,
   type TTrpcErrors
@@ -247,16 +248,18 @@ export const useAdminStorage = () => {
   const [diskMetrics, setDiskMetrics] = useState<TDiskMetrics | undefined>(
     undefined
   );
+  const [pluginStorage, setPluginStorage] = useState<TPluginStorageUsage[]>([]);
 
   const fetchStorageSettings = useCallback(async () => {
     setLoading(true);
 
     const trpc = getTRPCClient();
-    const { storageSettings, diskMetrics } =
+    const { storageSettings, diskMetrics, pluginStorage } =
       await trpc.others.getStorageSettings.query();
 
     setStorageSettings(storageSettings);
     setDiskMetrics(diskMetrics);
+    setPluginStorage(pluginStorage);
     setLoading(false);
   }, []);
 
@@ -267,6 +270,7 @@ export const useAdminStorage = () => {
   return {
     storageSettings,
     diskMetrics,
+    pluginStorage,
     refetch: fetchStorageSettings,
     loading
   };

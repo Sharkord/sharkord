@@ -498,5 +498,10 @@
   "pluginAccessSelectAudience": "Seleziona chi configurare",
   "pluginPermissionsSaved": "Permessi del plugin salvati",
   "pluginAccessRequires": "Impostazione predefinita del plugin: richiede {{permission}}",
-  "pluginAccessResetToDefault": "Ripristina il valore predefinito del plugin"
+  "pluginAccessResetToDefault": "Ripristina il valore predefinito del plugin",
+  "pluginStorageTitle": "File dei plugin",
+  "pluginStorageDesc": "Spazio usato dai file allegati ai messaggi dai plugin. Restano con il messaggio dopo la rimozione del plugin.",
+  "pluginStorageUninstalled": "Disinstallato",
+  "pluginStorageFiles_one": "{{count}} file",
+  "pluginStorageFiles_other": "{{count}} file"
 }

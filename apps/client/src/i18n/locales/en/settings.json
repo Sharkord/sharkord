@@ -500,5 +500,10 @@
   "pluginAccessSelectAudience": "Select who to configure",
   "pluginPermissionsSaved": "Plugin permissions saved",
   "pluginAccessRequires": "Plugin default: requires {{permission}}",
-  "pluginAccessResetToDefault": "Reset to the plugin default"
+  "pluginAccessResetToDefault": "Reset to the plugin default",
+  "pluginStorageTitle": "Plugin files",
+  "pluginStorageDesc": "Space used by files plugins attached to messages. They stay with the message after a plugin is removed.",
+  "pluginStorageUninstalled": "Uninstalled",
+  "pluginStorageFiles_one": "{{count}} file",
+  "pluginStorageFiles_other": "{{count}} files"
 }

@@ -1473,7 +1473,7 @@ describe('plugins router', () => {
         pluginId: 'plugin-b',
         commandName: 'attach',
         args: { channelId: 1, name: 'note.txt', body }
-      })) as Record<string, number>;
+      })) as { messageId: number };
     };
 
     const attachedFile = async (messageId: number) => {
