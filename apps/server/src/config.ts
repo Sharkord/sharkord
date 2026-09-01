@@ -88,6 +88,7 @@ const zConfig = z.object({
     useSecretToken: zRateLimiter,
     pluginExecute: zRateLimiter,
     pluginInstall: zRateLimiter,
+    pluginRoute: zRateLimiter,
     oidc: zRateLimiter
   })
 });
@@ -207,6 +208,10 @@ const defaultConfig: TConfig = {
     },
     pluginInstall: {
       maxRequests: 10,
+      windowMs: 60_000
+    },
+    pluginRoute: {
+      maxRequests: 300,
       windowMs: 60_000
     },
     oidc: {

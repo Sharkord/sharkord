@@ -4,6 +4,7 @@ import type {
   TExternalStreamHandle,
   TPluginHttpMethod,
   TPluginHttpRouteHandler,
+  TPluginHttpRouteOptions,
   TPluginSlotRequirements,
   UnloadPluginContext,
   UpgradePluginContext
@@ -192,8 +193,12 @@ const createContext = (deps: TContextDependencies): PluginContext => {
 
   const bindHttpMethod =
     (method: TPluginHttpMethod) =>
-    (routePath: string, handler: TPluginHttpRouteHandler) =>
-      registerHttpRoute(method, routePath, handler);
+    (
+      routePath: string,
+      handler: TPluginHttpRouteHandler,
+      options?: TPluginHttpRouteOptions
+    ) =>
+      registerHttpRoute(method, routePath, handler, options);
 
   return {
     pluginId,

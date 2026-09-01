@@ -65,9 +65,19 @@ export type TExternalStreamHandle = {
 
 export type TPluginHttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'OPTIONS';
 
+export type TPluginHttpRouteOptions = {
+  auth?: boolean;
+  requires?: Permission;
+};
+
+export type TPluginHttpRouteContext = {
+  userId?: number;
+};
+
 export type TPluginHttpRouteHandler = (
   req: IncomingMessage,
-  res: ServerResponse
+  res: ServerResponse,
+  ctx: TPluginHttpRouteContext
 ) => Promise<unknown> | unknown;
 
 export type ServerEvent =
@@ -240,13 +250,34 @@ export interface PluginContext {
     register(
       method: TPluginHttpMethod,
       path: string,
-      handler: TPluginHttpRouteHandler
+      handler: TPluginHttpRouteHandler,
+      options?: TPluginHttpRouteOptions
     ): void;
-    get(path: string, handler: TPluginHttpRouteHandler): void;
-    post(path: string, handler: TPluginHttpRouteHandler): void;
-    patch(path: string, handler: TPluginHttpRouteHandler): void;
-    delete(path: string, handler: TPluginHttpRouteHandler): void;
-    options(path: string, handler: TPluginHttpRouteHandler): void;
+    get(
+      path: string,
+      handler: TPluginHttpRouteHandler,
+      options?: TPluginHttpRouteOptions
+    ): void;
+    post(
+      path: string,
+      handler: TPluginHttpRouteHandler,
+      options?: TPluginHttpRouteOptions
+    ): void;
+    patch(
+      path: string,
+      handler: TPluginHttpRouteHandler,
+      options?: TPluginHttpRouteOptions
+    ): void;
+    delete(
+      path: string,
+      handler: TPluginHttpRouteHandler,
+      options?: TPluginHttpRouteOptions
+    ): void;
+    options(
+      path: string,
+      handler: TPluginHttpRouteHandler,
+      options?: TPluginHttpRouteOptions
+    ): void;
   };
 
   permissions: {

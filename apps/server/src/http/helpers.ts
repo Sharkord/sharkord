@@ -1,5 +1,5 @@
 import type { TPluginHttpMethod } from '@sharkord/plugin-sdk';
-import { getErrorMessage } from '@sharkord/shared';
+import { getErrorMessage, UploadHeaders } from '@sharkord/shared';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import http from 'http';
@@ -133,6 +133,19 @@ const applyCorsHeaders = (
     supportedHttpMethods.join(', ')
   );
   res.setHeader('Access-Control-Allow-Headers', '*');
+};
+
+const getRequestToken = (req: http.IncomingMessage): string | undefined => {
+  const authorization = req.headers.authorization;
+
+  if (authorization?.toLowerCase().startsWith('bearer ')) {
+    return authorization.slice(7).trim() || undefined;
+  }
+
+  const header = req.headers[UploadHeaders.TOKEN];
+  const token = Array.isArray(header) ? header[0] : header;
+
+  return token?.trim() || undefined;
 };
 
 const hasPrefixPathSegment = (pathname: string, prefix: string): boolean => {
@@ -503,6 +516,7 @@ export {
   enforceHttpRateLimit,
   getJsonBody,
   getPublicOrigin,
+  getRequestToken,
   getRequestUrl,
   getTextBody,
   hasPrefixPathSegment,

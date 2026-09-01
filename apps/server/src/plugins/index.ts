@@ -206,7 +206,7 @@ class PluginManager {
     return undefined;
   };
 
-  public getHttpRouteHandler = (
+  public getHttpRoute = (
     pluginId: string,
     method: TPluginHttpMethod,
     routePath: string
@@ -514,8 +514,14 @@ class PluginManager {
           this.hooksManager.register('beforeVoiceJoin', pluginId, handler),
         registerBeforeLogin: (handler) =>
           this.hooksManager.register('beforeLogin', pluginId, handler),
-        registerHttpRoute: (method, routePath, handler) =>
-          this.httpRouteRegistry.register(pluginId, method, routePath, handler)
+        registerHttpRoute: (method, routePath, handler, options) =>
+          this.httpRouteRegistry.register(
+            pluginId,
+            method,
+            routePath,
+            handler,
+            options
+          )
       });
 
       const moduleSpecifier = pathToFileURL(

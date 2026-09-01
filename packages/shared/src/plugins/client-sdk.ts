@@ -34,6 +34,11 @@ export type TPluginActions = {
     actionName: string,
     payload?: TPayload
   ) => Promise<TResponse>;
+  fetchPluginRoute: (
+    pluginId: string,
+    path: string,
+    init?: RequestInit
+  ) => Promise<Response>;
 };
 
 export type TPluginStore = {

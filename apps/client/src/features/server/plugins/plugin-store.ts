@@ -1,7 +1,9 @@
 import { store } from '@/features/store';
+import { getPluginRouteUrl } from '@/helpers/get-plugin-route-url';
+import { getSessionStorageItem, SessionStorageKey } from '@/helpers/storage';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TPluginActions, TPluginStore } from '@sharkord/shared';
-import { prepareMessageHtml } from '@sharkord/shared';
+import { prepareMessageHtml, UploadHeaders } from '@sharkord/shared';
 import { setSelectedChannelId } from '../channels/actions';
 import { mapStateToPluginState } from '../selectors';
 
@@ -30,7 +32,16 @@ const pluginActions: TPluginActions = {
       actionName,
       payload
     }) as Promise<TResponse>;
-  }
+  },
+  fetchPluginRoute: (pluginId: string, path: string, init?: RequestInit) =>
+    fetch(getPluginRouteUrl(pluginId, path), {
+      ...init,
+      headers: {
+        ...init?.headers,
+        [UploadHeaders.TOKEN]:
+          getSessionStorageItem(SessionStorageKey.TOKEN) ?? ''
+      }
+    })
 };
 
 const pluginStore: TPluginStore = {

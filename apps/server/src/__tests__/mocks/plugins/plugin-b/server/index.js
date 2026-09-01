@@ -118,6 +118,25 @@ const onLoad = (ctx) => {
     res.end(JSON.stringify({ pluginId: ctx.pluginId, method: req.method }));
   });
 
+  // declares a caller, so the host resolves one before the handler runs
+  ctx.http.get(
+    '/me',
+    (req, res, routeCtx) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ userId: routeCtx.userId }));
+    },
+    { auth: true }
+  );
+
+  ctx.http.get(
+    '/admin-only',
+    (req, res, routeCtx) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ userId: routeCtx.userId }));
+    },
+    { requires: 'MANAGE_MESSAGES' }
+  );
+
   ctx.http.post('/echo', async (req, res) => {
     let body = '';
 

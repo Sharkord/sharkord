@@ -1,6 +1,7 @@
 import type {
   TPluginHttpMethod,
-  TPluginHttpRouteHandler
+  TPluginHttpRouteHandler,
+  TPluginHttpRouteOptions
 } from '@sharkord/plugin-sdk';
 import { hasPrefixPathSegment, isSupportedHttpMethod } from '../http/helpers';
 import type { PluginLogger } from './plugin-logger';
@@ -9,6 +10,7 @@ type TPluginHttpRoute = {
   method: TPluginHttpMethod;
   path: string;
   handler: TPluginHttpRouteHandler;
+  options?: TPluginHttpRouteOptions;
 };
 
 // a single '*' is only allowed as the last segment, e.g. '/api/*' or '/*'
@@ -35,7 +37,8 @@ class PluginHttpRouteRegistry {
     pluginId: string,
     method: TPluginHttpMethod,
     routePath: string,
-    handler: TPluginHttpRouteHandler
+    handler: TPluginHttpRouteHandler,
+    options?: TPluginHttpRouteOptions
   ) => {
     if (!isSupportedHttpMethod(method)) {
       throw new Error(`HTTP method '${method}' is not supported.`);
@@ -69,7 +72,7 @@ class PluginHttpRouteRegistry {
       );
     }
 
-    pluginRoutes.set(key, { method, path, handler });
+    pluginRoutes.set(key, { method, path, handler, options });
 
     this.routes.set(pluginId, pluginRoutes);
 
@@ -84,7 +87,7 @@ class PluginHttpRouteRegistry {
     pluginId: string,
     method: TPluginHttpMethod,
     routePath: string
-  ): TPluginHttpRouteHandler | undefined => {
+  ): TPluginHttpRoute | undefined => {
     const pluginRoutes = this.routes.get(pluginId);
 
     if (!pluginRoutes) {
@@ -95,7 +98,7 @@ class PluginHttpRouteRegistry {
     const exactMatch = pluginRoutes.get(getRouteKey(method, path));
 
     if (exactMatch) {
-      return exactMatch.handler;
+      return exactMatch;
     }
 
     // the most specific wildcard wins, so '/api/v1/*' beats '/api/*'
@@ -110,7 +113,7 @@ class PluginHttpRouteRegistry {
       }
     }
 
-    return wildcardMatch?.handler;
+    return wildcardMatch;
   };
 
   public unload = (pluginId: string) => {
@@ -119,3 +122,4 @@ class PluginHttpRouteRegistry {
 }
 
 export { PluginHttpRouteRegistry };
+export type { TPluginHttpRoute };
