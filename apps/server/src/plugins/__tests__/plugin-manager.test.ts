@@ -1104,6 +1104,85 @@ export { onLoad, onUnload };
     });
   });
 
+  describe('reconcileRemovedPlugins', () => {
+    const backupPath = (pluginId: string) =>
+      path.join(PLUGINS_PATH, `${pluginId}-backup`);
+
+    const removeDirectory = async (pluginId: string) => {
+      const pluginPath = path.join(PLUGINS_PATH, pluginId);
+
+      await fs.cp(pluginPath, backupPath(pluginId), { recursive: true });
+      await fs.rm(pluginPath, { recursive: true, force: true });
+    };
+
+    const restoreDirectory = async (pluginId: string) => {
+      const backup = backupPath(pluginId);
+
+      if (!(await fs.exists(backup))) return;
+
+      await fs.cp(backup, path.join(PLUGINS_PATH, pluginId), {
+        recursive: true
+      });
+      await fs.rm(backup, { recursive: true, force: true });
+    };
+
+    const pluginRow = async (pluginId: string) =>
+      tdb
+        .select()
+        .from(pluginData)
+        .where(eq(pluginData.pluginId, pluginId))
+        .get();
+
+    afterEach(() => restoreDirectory('plugin-a'));
+
+    test('should treat a directory that is gone as an uninstall', async () => {
+      await pluginManager.togglePlugin('plugin-a', true);
+
+      expect(await pluginRow('plugin-a')).toBeDefined();
+
+      await removeDirectory('plugin-a');
+      await pluginManager.reconcileRemovedPlugins();
+
+      expect(await pluginRow('plugin-a')).toBeUndefined();
+    });
+
+    test('should disable it before uninstalling', async () => {
+      await pluginManager.togglePlugin('plugin-a', true);
+
+      expect(pluginManager.isEnabled('plugin-a')).toBe(true);
+
+      await removeDirectory('plugin-a');
+      await pluginManager.reconcileRemovedPlugins();
+
+      expect(pluginManager.isEnabled('plugin-a')).toBe(false);
+      expect(pluginManager.getLogs('plugin-a')).toEqual([]);
+    });
+
+    test('should leave a plugin that is still on disk alone', async () => {
+      await pluginManager.togglePlugin('plugin-a', true);
+
+      await pluginManager.reconcileRemovedPlugins();
+
+      expect(await pluginRow('plugin-a')).toBeDefined();
+      expect(pluginManager.isEnabled('plugin-a')).toBe(true);
+    });
+
+    // installing removes the directory before writing the new one, and reading
+    // that as an uninstall would wipe the plugin mid-update
+    test('should ignore a plugin that is being installed', async () => {
+      await pluginManager.togglePlugin('plugin-a', true);
+
+      await removeDirectory('plugin-a');
+      pluginManager.markInstalling('plugin-a');
+
+      await pluginManager.reconcileRemovedPlugins();
+
+      expect(await pluginRow('plugin-a')).toBeDefined();
+
+      pluginManager.clearInstalling('plugin-a');
+    });
+  });
+
   describe('removePlugin', () => {
     test('should forget the logs and the load error of a removed plugin', async () => {
       const pluginPath = path.join(PLUGINS_PATH, 'plugin-throws-error');

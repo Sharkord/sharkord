@@ -23,6 +23,7 @@ import {
   type TPluginSettingDefinition,
   type TPluginSlotRequirements
 } from '@sharkord/shared';
+import { watch } from 'fs';
 import fs from 'fs/promises';
 import path from 'path';
 import { pathToFileURL } from 'url';
@@ -61,6 +62,8 @@ import { PluginSettingsManager } from './plugin-settings-manager';
 import { PluginStateStore } from './plugin-state-store';
 import { PluginRegistry } from './registry';
 
+const PLUGIN_WATCH_DEBOUNCE_MS = 2_000;
+
 class PluginManager {
   private loadedPlugins = new Map<string, PluginModule>();
   // the manifest of every loaded plugin, so publishing metadata does not have to
@@ -72,6 +75,9 @@ class PluginManager {
   // what each plugin declared its slots need, from ctx.ui.enable(). a slot that
   // is not in here is public
   private componentRequirements = new Map<string, TPluginSlotRequirements>();
+
+  private installing = new Set<string>();
+  private watchDebounce?: NodeJS.Timeout;
 
   private readonly stateStore = new PluginStateStore();
   private readonly pluginLogger = pluginLogger;
@@ -351,6 +357,61 @@ class PluginManager {
         loadError: getErrorMessage(error)
       };
     }
+  };
+
+  public markInstalling = (pluginId: string) => {
+    this.installing.add(pluginId);
+  };
+
+  public clearInstalling = (pluginId: string) => {
+    this.installing.delete(pluginId);
+  };
+
+  public reconcileRemovedPlugins = async () => {
+    for (const pluginId of this.stateStore.knownPluginIds()) {
+      if (this.installing.has(pluginId)) continue;
+      if (await fs.exists(getPluginPath(pluginId))) continue;
+
+      logger.warn(
+        `Plugin ${pluginId} is no longer on disk, treating it as uninstalled.`
+      );
+
+      if (this.stateStore.isEnabled(pluginId)) {
+        await this.togglePlugin(pluginId, false);
+      }
+
+      await this.removePlugin(pluginId);
+      this.publishPlugins();
+    }
+  };
+
+  private watchPluginsDirectory = () => {
+    try {
+      watch(PLUGINS_PATH, () => {
+        clearTimeout(this.watchDebounce);
+
+        this.watchDebounce = setTimeout(() => {
+          this.reconcileRemovedPlugins().catch((error) =>
+            logger.error(
+              'Failed to reconcile removed plugins: %s',
+              getErrorMessage(error)
+            )
+          );
+        }, PLUGIN_WATCH_DEBOUNCE_MS);
+      });
+    } catch (error) {
+      logger.error(
+        'Could not watch the plugins directory: %s',
+        getErrorMessage(error)
+      );
+    }
+  };
+
+  public init = async () => {
+    await this.loadPlugins();
+    await this.reconcileRemovedPlugins();
+
+    this.watchPluginsDirectory();
   };
 
   public loadPlugins = async () => {
@@ -697,6 +758,7 @@ class PluginManager {
     }
 
     await deletePluginCapabilities(pluginId);
+    await this.stateStore.remove(pluginId);
 
     // nothing on disk to attribute them to any more
     this.forget(pluginId);

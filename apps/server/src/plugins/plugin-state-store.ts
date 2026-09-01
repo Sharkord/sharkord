@@ -72,6 +72,14 @@ class PluginStateStore {
       });
   };
 
+  public knownPluginIds = (): string[] => Object.keys(this.pluginStates);
+
+  public remove = async (pluginId: string) => {
+    delete this.pluginStates[pluginId];
+
+    await db.delete(pluginData).where(eq(pluginData.pluginId, pluginId));
+  };
+
   public setEnabled = async (pluginId: string, enabled: boolean) => {
     this.pluginStates[pluginId] = enabled;
 

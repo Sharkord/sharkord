@@ -14,6 +14,8 @@ const swapPluginVersion = async (pluginId: string, version: string) => {
     await pluginManager.unload(pluginId);
   }
 
+  pluginManager.markInstalling(pluginId);
+
   try {
     await downloadPlugin(
       pluginId,
@@ -21,6 +23,8 @@ const swapPluginVersion = async (pluginId: string, version: string) => {
       versionData.checksum
     );
   } finally {
+    pluginManager.clearInstalling(pluginId);
+
     if (wasEnabled) {
       // load() records its own failures against the plugin, but anything it
       // rethrows here would replace the error that actually stopped the install
