@@ -4,6 +4,7 @@ import { db } from '../db';
 import { invalidateUserSessions } from '../db/mutations/users';
 import { publishUser } from '../db/publishers';
 import { users } from '../db/schema';
+import { eventBus } from '../plugins/event-bus';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { invariant } from '../utils/invariant';
 import { disconnectUser, getUserWsCount } from '../utils/wss';
@@ -54,6 +55,12 @@ const banUser = async (
 
   publishUser(userId, 'update');
 
+  eventBus.emit('user:banned', {
+    userId,
+    reason,
+    actorUserId: actorUserId ?? undefined
+  });
+
   enqueueActivityLog({
     type: ActivityLogType.USER_BANNED,
     userId,
@@ -70,6 +77,11 @@ const unbanUser = async (userId: number, actorUserId: number | null) => {
     .where(eq(users.id, userId));
 
   publishUser(userId, 'update');
+
+  eventBus.emit('user:unbanned', {
+    userId,
+    actorUserId: actorUserId ?? undefined
+  });
 
   enqueueActivityLog({
     type: ActivityLogType.USER_UNBANNED,
@@ -92,6 +104,12 @@ const kickUser = async (
   await invalidateUserSessions(userId);
 
   sessions.close(DisconnectCode.KICKED, reason);
+
+  eventBus.emit('user:kicked', {
+    userId,
+    reason,
+    actorUserId: actorUserId ?? undefined
+  });
 
   enqueueActivityLog({
     type: ActivityLogType.USER_KICKED,

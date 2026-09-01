@@ -13,6 +13,7 @@ import { getEmojiFileIdByEmojiName } from '../../db/queries/emojis';
 import { getReaction } from '../../db/queries/messages';
 import { messageReactions } from '../../db/schema';
 import { loadMessageForWrite } from '../../helpers/load-message-for-write';
+import { eventBus } from '../../plugins/event-bus';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
@@ -71,6 +72,13 @@ const toggleMessageReactionRoute = rateLimitedProcedure(protectedProcedure, {
     }
 
     publishMessage(input.messageId, message.channelId, 'update');
+
+    eventBus.emit(reaction ? 'reaction:removed' : 'reaction:added', {
+      messageId: input.messageId,
+      channelId: message.channelId,
+      userId: ctx.user.id,
+      emoji: input.emoji
+    });
   });
 
 export { toggleMessageReactionRoute };

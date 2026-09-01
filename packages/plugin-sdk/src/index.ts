@@ -92,7 +92,21 @@ export type ServerEvent =
   | 'message:deleted'
   | 'voice:runtime_initialized'
   | 'voice:runtime_closed'
-  | 'setting:set';
+  | 'setting:set'
+  | 'reaction:added'
+  | 'reaction:removed'
+  | 'message:pinned'
+  | 'message:unpinned'
+  | 'user:banned'
+  | 'user:unbanned'
+  | 'user:kicked'
+  | 'user:created'
+  | 'user:deleted'
+  | 'role:assigned'
+  | 'role:removed'
+  | 'channel:created'
+  | 'channel:updated'
+  | 'channel:deleted';
 
 export interface EventPayloads {
   'user:joined': {
@@ -131,6 +145,73 @@ export interface EventPayloads {
   'message:deleted': {
     messageId: number;
     channelId: number;
+  };
+  'reaction:added': {
+    messageId: number;
+    channelId: number;
+    userId: number;
+    emoji: string;
+  };
+  'reaction:removed': {
+    messageId: number;
+    channelId: number;
+    userId: number;
+    emoji: string;
+  };
+  'message:pinned': {
+    messageId: number;
+    channelId: number;
+    userId: number;
+  };
+  'message:unpinned': {
+    messageId: number;
+    channelId: number;
+    userId: number;
+  };
+  'user:banned': {
+    userId: number;
+    reason?: string;
+    actorUserId?: number;
+  };
+  'user:unbanned': {
+    userId: number;
+    actorUserId?: number;
+  };
+  'user:kicked': {
+    userId: number;
+    reason?: string;
+    actorUserId?: number;
+  };
+  'user:created': {
+    userId: number;
+    username: string;
+  };
+  'user:deleted': {
+    userId: number;
+  };
+  'role:assigned': {
+    userId: number;
+    roleId: number;
+  };
+  'role:removed': {
+    userId: number;
+    roleId: number;
+  };
+  'channel:created': {
+    channelId: number;
+    name: string;
+    type: string;
+    categoryId: number | null;
+  };
+  'channel:updated': {
+    channelId: number;
+    name: string;
+    type: string;
+    categoryId: number | null;
+  };
+  'channel:deleted': {
+    channelId: number;
+    name: string;
   };
   'voice:runtime_initialized': {
     channelId: number;

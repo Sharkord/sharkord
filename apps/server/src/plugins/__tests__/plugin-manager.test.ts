@@ -1,4 +1,5 @@
 import {
+  ChannelType,
   DEFAULT_MESSAGES_LIMIT,
   FileSaveType,
   type TInvokerContext
@@ -15,6 +16,7 @@ import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
 import { pluginManager } from '..';
+import { initTest } from '../../__tests__/helpers';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { findTestLog, tdb } from '../../__tests__/setup';
 import { messages, pluginData, settings } from '../../db/schema';
@@ -360,7 +362,9 @@ export { onLoad, onUnload };
       expect(commands['plugin-b']).toBeDefined();
       expect(commands['plugin-b']!.length).toBeGreaterThan(0);
       expect(commands['plugin-with-events']).toBeDefined();
-      expect(commands['plugin-with-events']!.length).toBe(1);
+      expect(
+        commands['plugin-with-events']!.map((command) => command.name)
+      ).toContain('get-counts');
     });
 
     test('should check if plugin has specific command', async () => {
@@ -1409,6 +1413,151 @@ export { onLoad, onUnload };
         'load'
       ]);
       expect(await storedVersion()).toBe('2.0.0');
+    });
+  });
+
+  // one emit point per event, all on paths the routes and the plugin API share
+  describe('new events', () => {
+    beforeEach(() => pluginManager.load('plugin-with-events'));
+
+    // the assertions below all expect the event to have fired, so this reads as
+    // the payload rather than making every call site unwrap a null
+    const lastEvent = async (name: string): Promise<unknown> => {
+      const result = (await pluginManager.executeCommand(
+        'plugin-with-events',
+        'get-last-event',
+        mockInvokerCtx,
+        { name }
+      )) as { payload: unknown };
+
+      return result.payload;
+    };
+
+    test('should fire when a reaction is added and removed', async () => {
+      const { caller } = await initTest();
+
+      await caller.messages.toggleReaction({ messageId: 1, emoji: '👍' });
+
+      expect(await lastEvent('reaction:added')).toEqual({
+        messageId: 1,
+        channelId: 1,
+        userId: 1,
+        emoji: '👍'
+      });
+
+      await caller.messages.toggleReaction({ messageId: 1, emoji: '👍' });
+
+      expect(await lastEvent('reaction:removed')).toBeDefined();
+    });
+
+    test('should fire when a message is pinned and unpinned', async () => {
+      const { caller } = await initTest();
+
+      await caller.messages.togglePin({ messageId: 1 });
+
+      expect(await lastEvent('message:pinned')).toEqual({
+        messageId: 1,
+        channelId: 1,
+        userId: 1
+      });
+
+      await caller.messages.togglePin({ messageId: 1 });
+
+      expect(await lastEvent('message:unpinned')).toBeDefined();
+    });
+
+    test('should fire when a user is banned and unbanned', async () => {
+      const { caller } = await initTest();
+
+      await caller.users.ban({ userId: 2, reason: 'spam' });
+
+      expect(await lastEvent('user:banned')).toEqual({
+        userId: 2,
+        reason: 'spam',
+        actorUserId: 1
+      });
+
+      await caller.users.unban({ userId: 2 });
+
+      expect(await lastEvent('user:unbanned')).toEqual({
+        userId: 2,
+        actorUserId: 1
+      });
+    });
+
+    // a plugin is not a user, so the actor is absent rather than invented
+    test('should fire with no actor when a plugin bans', async () => {
+      await pluginManager.load('plugin-b');
+
+      await pluginManager.executeCommand(
+        'plugin-b',
+        'moderate',
+        mockInvokerCtx,
+        { action: 'ban', userId: 2 }
+      );
+
+      const payload = (await lastEvent('user:banned')) as {
+        actorUserId?: number;
+      };
+
+      expect(payload.actorUserId).toBeUndefined();
+    });
+
+    test('should fire when a role is assigned and removed', async () => {
+      const { caller } = await initTest();
+
+      await caller.users.addRole({ userId: 2, roleId: 4 });
+
+      expect(await lastEvent('role:assigned')).toEqual({
+        userId: 2,
+        roleId: 4
+      });
+
+      await caller.users.removeRole({ userId: 2, roleId: 4 });
+
+      expect(await lastEvent('role:removed')).toEqual({
+        userId: 2,
+        roleId: 4
+      });
+    });
+
+    test('should fire through the whole channel lifecycle', async () => {
+      const { caller } = await initTest();
+
+      const channelId = await caller.channels.add({
+        name: 'events',
+        type: ChannelType.TEXT,
+        categoryId: 1
+      });
+
+      expect(await lastEvent('channel:created')).toEqual({
+        channelId,
+        name: 'events',
+        type: ChannelType.TEXT,
+        categoryId: 1
+      });
+
+      await caller.channels.update({ channelId, name: 'renamed' });
+
+      expect(await lastEvent('channel:updated')).toMatchObject({
+        channelId,
+        name: 'renamed'
+      });
+
+      await caller.channels.delete({ channelId });
+
+      expect(await lastEvent('channel:deleted')).toEqual({
+        channelId,
+        name: 'renamed'
+      });
+    });
+
+    test('should fire when a user is deleted', async () => {
+      const { caller } = await initTest();
+
+      await caller.users.delete({ userId: 2, wipe: false });
+
+      expect(await lastEvent('user:deleted')).toEqual({ userId: 2 });
     });
   });
 

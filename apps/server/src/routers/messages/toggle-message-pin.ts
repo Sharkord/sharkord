@@ -5,6 +5,7 @@ import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { messages } from '../../db/schema';
 import { loadMessageForWrite } from '../../helpers/load-message-for-write';
+import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
@@ -39,6 +40,13 @@ const toggleMessagePinRoute = protectedProcedure
       .where(eq(messages.id, input.messageId));
 
     publishMessage(input.messageId, message.channelId, 'update');
+
+    eventBus.emit(isPinning ? 'message:pinned' : 'message:unpinned', {
+      messageId: input.messageId,
+      channelId: message.channelId,
+      userId: ctx.user.id
+    });
+
     enqueueActivityLog({
       type: ActivityLogType.TOGGLED_MESSAGE_PIN,
       userId: ctx.user.id,

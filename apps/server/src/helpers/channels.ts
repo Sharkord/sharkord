@@ -12,6 +12,7 @@ import { publishChannel } from '../db/publishers';
 import { isDirectMessageChannel } from '../db/queries/dms';
 import { categories, channels } from '../db/schema';
 import { pluginManager } from '../plugins';
+import { eventBus } from '../plugins/event-bus';
 import { runHook } from '../plugins/run-hook';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { VoiceRuntime } from '../runtimes/voice';
@@ -114,6 +115,14 @@ const createChannel = async (
   }
 
   publishChannel(channel.id, 'create');
+
+  eventBus.emit('channel:created', {
+    channelId: channel.id,
+    name: channel.name,
+    type: channel.type,
+    categoryId: channel.categoryId
+  });
+
   enqueueActivityLog({
     type: ActivityLogType.CREATED_CHANNEL,
     userId,
@@ -178,6 +187,14 @@ const updateChannel = async (
   const ensureUserAccess = updatedChannel.private !== oldChannel.private;
 
   publishChannel(updatedChannel.id, 'update', ensureUserAccess);
+
+  eventBus.emit('channel:updated', {
+    channelId: updatedChannel.id,
+    name: updatedChannel.name,
+    type: updatedChannel.type,
+    categoryId: updatedChannel.categoryId
+  });
+
   enqueueActivityLog({
     type: ActivityLogType.UPDATED_CHANNEL,
     userId,
@@ -205,6 +222,12 @@ const deleteChannel = async (channelId: number, userId: number | null) => {
   await VoiceRuntime.findById(removedChannel.id)?.destroy();
 
   publishChannel(removedChannel.id, 'delete');
+
+  eventBus.emit('channel:deleted', {
+    channelId: removedChannel.id,
+    name: removedChannel.name
+  });
+
   enqueueActivityLog({
     type: ActivityLogType.DELETED_CHANNEL,
     userId,

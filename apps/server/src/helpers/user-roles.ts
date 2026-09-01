@@ -4,6 +4,7 @@ import { publishChannelListChange, publishUser } from '../db/publishers';
 import { getChannelsForUser } from '../db/queries/channels';
 import { getRole } from '../db/queries/roles';
 import { userRoles } from '../db/schema';
+import { eventBus } from '../plugins/event-bus';
 import { invariant } from '../utils/invariant';
 
 const assignRole = async (userId: number, roleId: number) => {
@@ -34,6 +35,8 @@ const assignRole = async (userId: number, roleId: number) => {
   });
 
   publishUser(userId, 'update');
+
+  eventBus.emit('role:assigned', { userId, roleId });
 
   await publishChannelListChange(
     userId,
@@ -67,6 +70,8 @@ const removeRole = async (userId: number, roleId: number) => {
     .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)));
 
   publishUser(userId, 'update');
+
+  eventBus.emit('role:removed', { userId, roleId });
 
   await publishChannelListChange(
     userId,

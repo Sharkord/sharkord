@@ -19,6 +19,7 @@ import {
   users
 } from '../../db/schema';
 import { assertCanActOnUser } from '../../helpers/assert-can-act-on-user';
+import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
 import { pubsub } from '../../utils/pubsub';
@@ -165,6 +166,8 @@ const deleteUserRoute = protectedProcedure
       userId: input.userId,
       deletedUserId
     });
+
+    eventBus.emit('user:deleted', { userId: input.userId });
 
     enqueueActivityLog({
       type: ActivityLogType.USER_DELETED,
