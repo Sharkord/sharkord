@@ -35,6 +35,16 @@ import {
   assignPluginUserRole,
   removePluginUserRole
 } from './actions/set-plugin-user-role';
+import {
+  createPluginCategory,
+  createPluginChannel,
+  deletePluginCategory,
+  deletePluginChannel,
+  listPluginCategories,
+  listPluginChannels,
+  updatePluginCategory,
+  updatePluginChannel
+} from './actions/write-plugin-channels';
 import { eventBus } from './event-bus';
 import type { ScopedLogger } from './plugin-logger';
 
@@ -240,6 +250,20 @@ const createContext = (deps: TContextDependencies): PluginContext => {
         assignPluginUserRole(userId, roleId),
       remove: async (userId: number, roleId: number) =>
         removePluginUserRole(userId, roleId)
+    },
+    channels: {
+      list: async () => listPluginChannels(),
+      create: async (input) => createPluginChannel(input),
+      update: async (channelId, values) =>
+        updatePluginChannel(channelId, values),
+      delete: async (channelId) => deletePluginChannel(channelId)
+    },
+    categories: {
+      list: async () => listPluginCategories(),
+      create: async (name) => createPluginCategory(name),
+      update: async (categoryId, name) =>
+        updatePluginCategory(categoryId, name),
+      delete: async (categoryId) => deletePluginCategory(categoryId)
     },
     data: {
       getUser: async (userId: number) => getPublicUserById(userId),

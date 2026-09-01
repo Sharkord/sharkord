@@ -113,6 +113,82 @@ const onLoad = (ctx) => {
     }
   });
 
+  ctx.commands.register({
+    name: 'make-ticket',
+    description: 'Create a private channel in a category',
+    args: [
+      { name: 'name', type: 'string', required: true },
+      { name: 'categoryId', type: 'number', required: true }
+    ],
+    async execute(invokerCtx, args) {
+      const channel = await ctx.channels.create({
+        name: args.name,
+        type: 'TEXT',
+        categoryId: args.categoryId,
+        private: true
+      });
+
+      return { channelId: channel.id, private: channel.private };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'list-channels',
+    description: 'List channels a plugin can act on',
+    async execute() {
+      const list = await ctx.channels.list();
+
+      return { names: list.map((channel) => channel.name) };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'rename-channel',
+    description: 'Rename a channel',
+    args: [
+      { name: 'channelId', type: 'number', required: true },
+      { name: 'name', type: 'string', required: true }
+    ],
+    async execute(invokerCtx, args) {
+      await ctx.channels.update(args.channelId, { name: args.name });
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'drop-channel',
+    description: 'Delete a channel',
+    args: [{ name: 'channelId', type: 'number', required: true }],
+    async execute(invokerCtx, args) {
+      await ctx.channels.delete(args.channelId);
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'make-category',
+    description: 'Create a category',
+    args: [{ name: 'name', type: 'string', required: true }],
+    async execute(invokerCtx, args) {
+      const category = await ctx.categories.create(args.name);
+
+      return { categoryId: category.id, count: (await ctx.categories.list()).length };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'drop-category',
+    description: 'Delete a category',
+    args: [{ name: 'categoryId', type: 'number', required: true }],
+    async execute(invokerCtx, args) {
+      await ctx.categories.delete(args.categoryId);
+
+      return { ok: true };
+    }
+  });
+
   ctx.http.get('/hello', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ pluginId: ctx.pluginId, method: req.method }));

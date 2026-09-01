@@ -57,7 +57,7 @@ export type TBeforeChannelCreatePayload = {
   name: string;
   type: string;
   categoryId: number;
-  userId: number;
+  userId?: number; // not present when it's a plugin creating the channel
 };
 
 export type TBeforeChannelCreateUpdate = {

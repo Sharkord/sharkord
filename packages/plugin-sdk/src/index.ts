@@ -7,6 +7,7 @@ import type {
   TBeforeLoginHook,
   TBeforeMessageSaveHook,
   TBeforeVoiceJoinHook,
+  TCategory,
   TChannel,
   TCommandArg,
   TCommandContract,
@@ -26,6 +27,7 @@ import type {
 } from '@sharkord/shared';
 import {
   ChannelPermission,
+  ChannelType,
   FileSaveType,
   MessageSaveType,
   Permission,
@@ -301,6 +303,26 @@ export interface PluginContext {
     getChannel(channelId: number): Promise<TChannel | undefined>;
     getPublicUsers(): Promise<TJoinedPublicUser[]>;
   };
+  channels: {
+    list(): Promise<TChannel[]>;
+    create(input: {
+      name: string;
+      type: ChannelType;
+      categoryId: number;
+      private?: boolean;
+    }): Promise<TChannel>;
+    update(
+      channelId: number,
+      values: { name?: string; topic?: string | null; private?: boolean }
+    ): Promise<void>;
+    delete(channelId: number): Promise<void>;
+  };
+  categories: {
+    list(): Promise<TCategory[]>;
+    create(name: string): Promise<TCategory>;
+    update(categoryId: number, name: string): Promise<void>;
+    delete(categoryId: number): Promise<void>;
+  };
 
   ui: {
     enable(requirements?: TPluginSlotRequirements): void;
@@ -367,6 +389,8 @@ export type {
   TBeforeLoginHook,
   TBeforeMessageSaveHook,
   TBeforeVoiceJoinHook,
+  TCategory,
+  TChannel,
   TCommandArg,
   TCommandContract,
   TInvokerContext,
@@ -384,6 +408,7 @@ export * from './actions';
 export * from './commands';
 export {
   ChannelPermission,
+  ChannelType,
   FileSaveType,
   MessageSaveType,
   Permission,

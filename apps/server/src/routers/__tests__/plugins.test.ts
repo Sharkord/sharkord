@@ -16,7 +16,13 @@ import { initTest } from '../../__tests__/helpers';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
 import { getUserRoleIds } from '../../db/queries/roles';
-import { activityLog, pluginData, rolePermissions } from '../../db/schema';
+import {
+  activityLog,
+  categories,
+  channels,
+  pluginData,
+  rolePermissions
+} from '../../db/schema';
 import { PLUGINS_PATH } from '../../helpers/paths';
 import { getComponentAccessRules } from '../../helpers/plugin-capability-access';
 import { pluginManager } from '../../plugins';
@@ -1289,6 +1295,138 @@ describe('plugins router', () => {
           args: { userId: 2, roleId: 9999 }
         })
       ).rejects.toThrow('Role not found');
+    });
+  });
+
+  // plugin channel and category writes go through the same helpers the routes
+  // use, so these check the plugin path reaches them and publishes
+  describe('channel and category writes', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const run = async (commandName: string, args: Record<string, unknown>) => {
+      const { caller } = await initTest();
+
+      return (await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName,
+        args
+      })) as Record<string, number | boolean>;
+    };
+
+    test('should create a channel in a category', async () => {
+      const result = await run('make-ticket', {
+        name: 'ticket-1',
+        categoryId: 1
+      });
+
+      const channel = await tdb
+        .select()
+        .from(channels)
+        .where(eq(channels.id, result.channelId as number))
+        .get();
+
+      expect(channel!.name).toBe('ticket-1');
+      expect(channel!.categoryId).toBe(1);
+    });
+
+    // a ticket channel that is public even briefly has leaked
+    test('should create it private in one step', async () => {
+      const result = await run('make-ticket', {
+        name: 'ticket-2',
+        categoryId: 1
+      });
+
+      expect(result.private).toBe(true);
+    });
+
+    test('should reject a category that does not exist', async () => {
+      await expect(
+        run('make-ticket', { name: 'nope', categoryId: 9999 })
+      ).rejects.toThrow('Category not found');
+    });
+
+    test('should reject a name the route would reject too', async () => {
+      await expect(
+        run('make-ticket', { name: 'x'.repeat(28), categoryId: 1 })
+      ).rejects.toThrow();
+    });
+
+    // channel 3 is the seeded DM, and the write calls refuse it, so listing it
+    // would only offer a plugin ids it cannot use
+    test('should list channels without the DMs', async () => {
+      const result = (await run('list-channels', {})) as unknown as {
+        names: string[];
+      };
+
+      expect(result.names).toContain('General');
+      expect(result.names).not.toContain('DM Channel');
+    });
+
+    test('should update a channel', async () => {
+      await run('rename-channel', { channelId: 1, name: 'renamed' });
+
+      const channel = await tdb
+        .select()
+        .from(channels)
+        .where(eq(channels.id, 1))
+        .get();
+
+      expect(channel!.name).toBe('renamed');
+    });
+
+    test('should delete a channel', async () => {
+      await run('drop-channel', { channelId: 1 });
+
+      const channel = await tdb
+        .select()
+        .from(channels)
+        .where(eq(channels.id, 1))
+        .get();
+
+      expect(channel).toBeUndefined();
+    });
+
+    // channel 3 is the seeded DM, which the routes refuse to touch
+    test('should refuse to update a DM channel', async () => {
+      await expect(
+        run('rename-channel', { channelId: 3, name: 'nope' })
+      ).rejects.toThrow('Cannot update DM channels');
+    });
+
+    test('should refuse to delete a DM channel', async () => {
+      await expect(run('drop-channel', { channelId: 3 })).rejects.toThrow(
+        'Cannot delete DM channels'
+      );
+    });
+
+    test('should create and list categories', async () => {
+      const result = await run('make-category', { name: 'Tickets' });
+
+      const category = await tdb
+        .select()
+        .from(categories)
+        .where(eq(categories.id, result.categoryId as number))
+        .get();
+
+      expect(category!.name).toBe('Tickets');
+      expect(result.count).toBe(3);
+    });
+
+    test('should delete a category and its channels', async () => {
+      await run('drop-category', { categoryId: 1 });
+
+      const remaining = await tdb
+        .select()
+        .from(channels)
+        .where(eq(channels.categoryId, 1));
+
+      expect(remaining).toHaveLength(0);
+    });
+
+    test('should reject deleting a category that does not exist', async () => {
+      await expect(run('drop-category', { categoryId: 9999 })).rejects.toThrow(
+        'Category not found'
+      );
     });
   });
 
