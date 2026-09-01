@@ -11,6 +11,7 @@ import type {
   TCommandArg,
   TCommandContract,
   TInvokerContext,
+  TJoinedMessage,
   TJoinedPublicUser,
   TJoinedRole,
   TPluginActions,
@@ -205,6 +206,13 @@ export interface PluginContext {
     ): Promise<{ messageId: number }>;
     edit(messageId: number, content: string): Promise<void>;
     delete(messageId: number): Promise<void>;
+    get(messageId: number): Promise<TJoinedMessage | undefined>;
+    list(options: {
+      channelId: number;
+      limit?: number;
+      before?: number;
+      parentMessageId?: number;
+    }): Promise<TJoinedMessage[]>;
   };
 
   commands: {
@@ -280,9 +288,23 @@ export interface UnloadPluginContext extends Pick<
   | 'ui'
 > {}
 
+export type TUpgradeInfo = {
+  previousVersion: string;
+  version: string;
+};
+
+export type UpgradePluginContext = Pick<
+  PluginContext,
+  'pluginId' | 'path' | 'dataPath' | 'logger' | 'log' | 'debug' | 'error'
+>;
+
 export type PluginModule = {
   onLoad: (ctx: PluginContext) => void | Promise<void>;
   onUnload?: (ctx: UnloadPluginContext) => void | Promise<void>;
+  onUpgrade?: (
+    ctx: UpgradePluginContext,
+    info: TUpgradeInfo
+  ) => void | Promise<void>;
 };
 
 type TSharkordState = ReturnType<TPluginStore['getState']>;

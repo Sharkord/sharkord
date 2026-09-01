@@ -1,7 +1,12 @@
 import { createSelector } from '@reduxjs/toolkit';
-import { OWNER_ROLE_ID, type TJoinedRole } from '@sharkord/shared';
+import {
+  OWNER_ROLE_ID,
+  type TJoinedRole,
+  type TPluginStoreState
+} from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
 import type { IRootState } from '../store';
+import { categoriesSelector } from './categories/selectors';
 import {
   channelByIdSelector,
   channelPermissionsSelector,
@@ -9,8 +14,10 @@ import {
   channelsByCategoryIdSelector,
   channelsReadStatesSelector,
   channelsSelector,
-  currentVoiceChannelIdSelector
+  currentVoiceChannelIdSelector,
+  selectedChannelIdSelector
 } from './channels/selectors';
+import { emojisSelector } from './emojis/selectors';
 import { canViewChannel, hasUnreadMentionInMessages } from './helpers';
 import {
   messagesByChannelIdSelector,
@@ -18,13 +25,15 @@ import {
   threadTypingMapSelector,
   typingMapSelector
 } from './messages/selectors';
+import { pluginsMetadataSelector } from './plugins/selectors';
 import { rolesSelector } from './roles/selectors';
 import type { TVoiceUser } from './types';
 import {
   ownUserIdSelector,
   ownUserSelector,
   userByIdSelector,
-  usersMapSelector
+  usersMapSelector,
+  usersSelector
 } from './users/selectors';
 import { voiceChannelStateSelector } from './voice/selectors';
 
@@ -268,4 +277,46 @@ export const totalUnreadCountSelector = createSelector(
 
       return isVisible ? total + (readStates[channel.id] ?? 0) : total;
     }, 0)
+);
+
+// memoized because plugins are told to read this through the store's getState,
+// and the standard way to consume an external store in react requires the
+// snapshot to keep its identity while nothing has changed. rebuilding the object
+// on every call makes useSyncExternalStore re-render forever
+export const mapStateToPluginState = createSelector(
+  [
+    usersSelector,
+    channelsSelector,
+    categoriesSelector,
+    rolesSelector,
+    emojisSelector,
+    pluginsMetadataSelector,
+    ownUserIdSelector,
+    selectedChannelIdSelector,
+    currentVoiceChannelIdSelector,
+    publicServerSettingsSelector
+  ],
+  (
+    users,
+    channels,
+    categories,
+    roles,
+    emojis,
+    plugins,
+    ownUserId,
+    selectedChannelId,
+    currentVoiceChannelId,
+    publicSettings
+  ): TPluginStoreState => ({
+    users,
+    channels,
+    categories,
+    roles,
+    emojis,
+    plugins,
+    ownUserId,
+    selectedChannelId,
+    currentVoiceChannelId,
+    publicSettings
+  })
 );

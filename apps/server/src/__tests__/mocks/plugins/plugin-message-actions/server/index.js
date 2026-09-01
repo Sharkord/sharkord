@@ -70,6 +70,39 @@ const onLoad = (ctx) => {
       return { success: true };
     }
   });
+  ctx.commands.register({
+    name: 'list-messages',
+    description: 'List messages in a channel',
+    args: [
+      { name: 'channelId', type: 'number', required: true },
+      { name: 'limit', type: 'number', required: false },
+      { name: 'before', type: 'number', required: false }
+    ],
+    async execute(invokerCtx, args) {
+      const messages = await ctx.messages.list({
+        channelId: args.channelId,
+        limit: args.limit,
+        before: args.before
+      });
+
+      return {
+        count: messages.length,
+        contents: messages.map((message) => message.content),
+        createdAt: messages.map((message) => message.createdAt)
+      };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'get-message',
+    description: 'Read one message',
+    args: [{ name: 'messageId', type: 'number', required: true }],
+    async execute(invokerCtx, args) {
+      const message = await ctx.messages.get(args.messageId);
+
+      return { found: !!message, content: message?.content ?? null };
+    }
+  });
 };
 
 const onUnload = (ctx) => {

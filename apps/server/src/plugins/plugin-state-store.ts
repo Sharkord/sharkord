@@ -51,6 +51,27 @@ class PluginStateStore {
     return this.pluginStates[pluginId] ?? false;
   };
 
+  public getLoadedVersion = async (pluginId: string) => {
+    const row = await db
+      .select({ version: pluginData.version })
+      .from(pluginData)
+      .where(eq(pluginData.pluginId, pluginId))
+      .limit(1)
+      .get();
+
+    return row?.version ?? null;
+  };
+
+  public setLoadedVersion = async (pluginId: string, version: string) => {
+    await db
+      .insert(pluginData)
+      .values({ pluginId, enabled: this.isEnabled(pluginId), version })
+      .onConflictDoUpdate({
+        target: pluginData.pluginId,
+        set: { version }
+      });
+  };
+
   public setEnabled = async (pluginId: string, enabled: boolean) => {
     this.pluginStates[pluginId] = enabled;
 

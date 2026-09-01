@@ -4,7 +4,8 @@ import type {
   TExternalStreamHandle,
   TPluginHttpMethod,
   TPluginHttpRouteHandler,
-  UnloadPluginContext
+  UnloadPluginContext,
+  UpgradePluginContext
 } from '@sharkord/plugin-sdk';
 import {
   ServerEvents,
@@ -15,6 +16,7 @@ import {
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { channelUserCan } from '../db/queries/channels';
+import { getMessage } from '../db/queries/messages';
 import { getRoles, userCan } from '../db/queries/roles';
 import { getPublicUserById, getPublicUsers } from '../db/queries/users';
 import { channels } from '../db/schema';
@@ -23,6 +25,10 @@ import { pubsub } from '../utils/pubsub';
 import { createPluginMessage } from './actions/create-plugin-message';
 import { deletePluginMessage } from './actions/delete-plugin-message';
 import { editPluginMessage } from './actions/edit-plugin-message';
+import {
+  listPluginMessages,
+  type TListPluginMessagesOptions
+} from './actions/read-plugin-messages';
 import {
   assignPluginUserRole,
   removePluginUserRole
@@ -154,8 +160,27 @@ const createUnloadContext = ({
       }),
     edit: async (messageId, content) =>
       editPluginMessage({ pluginId, messageId, content }),
-    delete: async (messageId) => deletePluginMessage({ pluginId, messageId })
+    delete: async (messageId) => deletePluginMessage({ pluginId, messageId }),
+    get: async (messageId: number) => getMessage(messageId),
+    list: async (options: TListPluginMessagesOptions) =>
+      listPluginMessages(options)
   }
+});
+
+const createUpgradeContext = ({
+  pluginId,
+  scopedLogger,
+  pluginPath,
+  dataPath
+}: Pick<
+  TContextDependencies,
+  'pluginId' | 'scopedLogger' | 'pluginPath' | 'dataPath'
+>): UpgradePluginContext => ({
+  pluginId,
+  path: pluginPath,
+  dataPath,
+  logger: scopedLogger,
+  ...scopedLogger
 });
 
 const createContext = (deps: TContextDependencies): PluginContext => {
@@ -216,5 +241,5 @@ const createContext = (deps: TContextDependencies): PluginContext => {
   };
 };
 
-export { createContext, createUnloadContext };
+export { createContext, createUnloadContext, createUpgradeContext };
 export type { TContextDependencies };

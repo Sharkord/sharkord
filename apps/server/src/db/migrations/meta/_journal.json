@@ -211,6 +211,13 @@
       "when": 1788122361469,
       "tag": "0029_oidc_flow_storage",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1788219275550,
+      "tag": "0030_plugin_data_version",
+      "breakpoints": true
     }
   ]
 }

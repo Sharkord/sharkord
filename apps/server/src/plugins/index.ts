@@ -3,7 +3,8 @@ import type {
   CommandDefinition,
   PluginContext,
   PluginModule,
-  TPluginHttpMethod
+  TPluginHttpMethod,
+  TUpgradeInfo
 } from '@sharkord/plugin-sdk';
 import {
   assertSdkVersionCompatibility,
@@ -32,7 +33,11 @@ import {
 import { logger } from '../logger';
 import { ensureDir } from '../utils/fs';
 import { pubsub } from '../utils/pubsub';
-import { createContext, createUnloadContext } from './create-context';
+import {
+  createContext,
+  createUnloadContext,
+  createUpgradeContext
+} from './create-context';
 import { eventBus } from './event-bus';
 import {
   ACTION_EXECUTION_TIMEOUT_MS,
@@ -493,13 +498,22 @@ class PluginManager {
         );
       }
 
-      // the whole server boot waits on this, so a plugin that never finishes
-      // loading cannot be allowed to hold it open
+      const previousVersion = await this.stateStore.getLoadedVersion(pluginId);
+
+      if (previousVersion && previousVersion !== manifest.version) {
+        await this.runUpgrade(mod, pluginId, {
+          previousVersion,
+          version: manifest.version
+        });
+      }
+
       await withTimeout(
         Promise.resolve().then(() => mod.onLoad(ctx)),
         LIFECYCLE_TIMEOUT_MS,
         `Plugin ${pluginId} onLoad exceeded timeout of ${LIFECYCLE_TIMEOUT_MS}ms`
       );
+
+      await this.stateStore.setLoadedVersion(pluginId, manifest.version);
 
       this.loadedPlugins.set(pluginId, mod);
       this.loadedManifests.set(pluginId, manifest);
@@ -524,6 +538,33 @@ class PluginManager {
       this.forget(pluginId);
       this.invalidateDynamicImportCache(pluginPath);
     }
+  };
+
+  private runUpgrade = async (
+    mod: PluginModule,
+    pluginId: string,
+    info: TUpgradeInfo
+  ) => {
+    if (typeof mod.onUpgrade !== 'function') return;
+
+    this.pluginLogger.log(
+      pluginId,
+      'info',
+      `Upgrading from v${info.previousVersion} to v${info.version}`
+    );
+
+    const upgradeCtx = createUpgradeContext({
+      pluginId,
+      scopedLogger: this.pluginLogger.createScopedLogger(pluginId),
+      pluginPath: getPluginPath(pluginId),
+      dataPath: getPluginDataPath(pluginId)
+    });
+
+    await withTimeout(
+      Promise.resolve().then(() => mod.onUpgrade?.(upgradeCtx, info)),
+      LIFECYCLE_TIMEOUT_MS,
+      `Plugin ${pluginId} onUpgrade exceeded timeout of ${LIFECYCLE_TIMEOUT_MS}ms`
+    );
   };
 
   private forget = (pluginId: string) => {

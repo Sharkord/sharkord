@@ -550,7 +550,8 @@ const pluginData = sqliteTable('plugin_data', {
   settings: text('settings', { mode: 'json' })
     .$type<Record<string, unknown>>()
     .notNull()
-    .default({})
+    .default({}),
+  version: text('version')
 });
 
 export {

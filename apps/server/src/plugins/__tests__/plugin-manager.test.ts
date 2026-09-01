@@ -1,5 +1,16 @@
-import { FileSaveType, type TInvokerContext } from '@sharkord/shared';
-import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import {
+  DEFAULT_MESSAGES_LIMIT,
+  FileSaveType,
+  type TInvokerContext
+} from '@sharkord/shared';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test
+} from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
@@ -1199,6 +1210,196 @@ export { onLoad, onUnload };
       // since the plugin is unloaded, we can't query it, but we can verify
       // the event bus no longer has handlers for this plugin
       expect(eventBus.hasPlugin('plugin-with-events')).toBe(false);
+    });
+  });
+
+  describe('reading messages', () => {
+    const run = async (command: string, args: Record<string, unknown>) =>
+      (await pluginManager.executeCommand(
+        'plugin-message-actions',
+        command,
+        mockInvokerCtx,
+        args
+      )) as {
+        count: number;
+        contents: string[];
+        createdAt: number[];
+        found?: boolean;
+        content?: string | null;
+      };
+
+    beforeEach(async () => {
+      await pluginManager.load('plugin-message-actions');
+    });
+
+    test('should read the messages already in a channel', async () => {
+      const result = await run('list-messages', { channelId: 1 });
+
+      expect(result.count).toBeGreaterThan(0);
+      expect(result.contents).toContain('Test message');
+    });
+
+    test('should return newest first', async () => {
+      await pluginManager.executeCommand(
+        'plugin-message-actions',
+        'send-message',
+        mockInvokerCtx,
+        { channelId: 1, content: 'newer message' }
+      );
+
+      const result = await run('list-messages', { channelId: 1 });
+
+      expect(result.contents[0]).toContain('newer message');
+      expect(result.createdAt[0]).toBeGreaterThanOrEqual(
+        result.createdAt[result.createdAt.length - 1]!
+      );
+    });
+
+    test('should page backwards with before', async () => {
+      await pluginManager.executeCommand(
+        'plugin-message-actions',
+        'send-message',
+        mockInvokerCtx,
+        { channelId: 1, content: 'newer message' }
+      );
+
+      const firstPage = await run('list-messages', { channelId: 1, limit: 1 });
+
+      expect(firstPage.count).toBe(1);
+
+      const secondPage = await run('list-messages', {
+        channelId: 1,
+        limit: 1,
+        before: firstPage.createdAt[0]
+      });
+
+      expect(secondPage.count).toBe(1);
+      expect(secondPage.contents[0]).not.toBe(firstPage.contents[0]);
+    });
+
+    // the cap is enforced by the server, not trusted from the plugin
+    test('should clamp an absurd limit', async () => {
+      const result = await run('list-messages', {
+        channelId: 1,
+        limit: 100000
+      });
+
+      expect(result.count).toBeLessThanOrEqual(DEFAULT_MESSAGES_LIMIT);
+    });
+
+    test('should read a single message by id', async () => {
+      const { messageId } = (await pluginManager.executeCommand(
+        'plugin-message-actions',
+        'send-message',
+        mockInvokerCtx,
+        { channelId: 1, content: 'findable' }
+      )) as { messageId: number };
+
+      const result = await run('get-message', { messageId });
+
+      expect(result.found).toBe(true);
+      expect(result.content).toContain('findable');
+    });
+
+    test('should return nothing for a message that does not exist', async () => {
+      const result = await run('get-message', { messageId: 999999 });
+
+      expect(result.found).toBe(false);
+    });
+  });
+
+  describe('onUpgrade', () => {
+    const MANIFEST = path.join(PLUGINS_PATH, 'plugin-upgrade', 'manifest.json');
+
+    const setManifestVersion = async (version: string) => {
+      const manifest = JSON.parse(await fs.readFile(MANIFEST, 'utf-8'));
+
+      await fs.writeFile(
+        MANIFEST,
+        JSON.stringify({ ...manifest, version }, null, 2)
+      );
+    };
+
+    const readLifecycle = async () => {
+      const logPath = path.join(
+        getPluginDataPath('plugin-upgrade'),
+        'lifecycle.log'
+      );
+
+      if (!(await fs.exists(logPath))) return [];
+
+      return (await fs.readFile(logPath, 'utf-8')).trim().split('\n');
+    };
+
+    const storedVersion = async () =>
+      (
+        await tdb
+          .select({ version: pluginData.version })
+          .from(pluginData)
+          .where(eq(pluginData.pluginId, 'plugin-upgrade'))
+          .get()
+      )?.version ?? null;
+
+    afterEach(async () => {
+      delete process.env.PLUGIN_UPGRADE_SHOULD_FAIL;
+      await setManifestVersion('1.0.0');
+    });
+
+    test('should not run on a first install', async () => {
+      await pluginManager.load('plugin-upgrade');
+
+      expect(await readLifecycle()).toEqual(['load']);
+      expect(await storedVersion()).toBe('1.0.0');
+    });
+
+    test('should run before onLoad when the version changed', async () => {
+      await pluginManager.load('plugin-upgrade');
+      await pluginManager.unload('plugin-upgrade');
+
+      await setManifestVersion('2.0.0');
+      await pluginManager.load('plugin-upgrade');
+
+      expect(await readLifecycle()).toEqual([
+        'load',
+        'upgrade:1.0.0->2.0.0',
+        'load'
+      ]);
+      expect(await storedVersion()).toBe('2.0.0');
+    });
+
+    test('should not run again once the version is recorded', async () => {
+      await pluginManager.load('plugin-upgrade');
+      await pluginManager.unload('plugin-upgrade');
+      await pluginManager.load('plugin-upgrade');
+
+      expect(await readLifecycle()).toEqual(['load', 'load']);
+    });
+
+    // a half migrated plugin must not start, and must try again next time
+    test('should stop the load and keep the old version when it throws', async () => {
+      await pluginManager.load('plugin-upgrade');
+      await pluginManager.unload('plugin-upgrade');
+
+      process.env.PLUGIN_UPGRADE_SHOULD_FAIL = 'true';
+      await setManifestVersion('2.0.0');
+      await pluginManager.load('plugin-upgrade');
+
+      const info = await pluginManager.getPluginInfo('plugin-upgrade');
+
+      expect(info.loadError).toContain('migration failed');
+      expect(await storedVersion()).toBe('1.0.0');
+      expect(await readLifecycle()).toEqual(['load']);
+
+      delete process.env.PLUGIN_UPGRADE_SHOULD_FAIL;
+
+      await pluginManager.load('plugin-upgrade');
+
+      expect(await readLifecycle()).toEqual([
+        'load',
+        'upgrade:1.0.0->2.0.0',
+        'load'
+      ]);
+      expect(await storedVersion()).toBe('2.0.0');
     });
   });
 
