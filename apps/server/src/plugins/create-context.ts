@@ -25,6 +25,11 @@ import { createPluginMessage } from './actions/create-plugin-message';
 import { deletePluginMessage } from './actions/delete-plugin-message';
 import { editPluginMessage } from './actions/edit-plugin-message';
 import {
+  banPluginUser,
+  kickPluginUser,
+  unbanPluginUser
+} from './actions/moderate-plugin-user';
+import {
   listPluginMessages,
   type TListPluginMessagesOptions
 } from './actions/read-plugin-messages';
@@ -254,7 +259,12 @@ const createContext = (deps: TContextDependencies): PluginContext => {
     },
     users: {
       list: async () => getPublicUsers(),
-      get: async (userId: number) => getPublicUserById(userId)
+      get: async (userId: number) => getPublicUserById(userId),
+      ban: async (userId: number, reason?: string) =>
+        banPluginUser(userId, reason),
+      unban: async (userId: number) => unbanPluginUser(userId),
+      kick: async (userId: number, reason?: string) =>
+        kickPluginUser(userId, reason)
     },
     channels: {
       list: async () => listPluginChannels(),

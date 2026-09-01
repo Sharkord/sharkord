@@ -71,6 +71,9 @@ const disconnectUser = (
 
 const getOnlineUserIds = (): number[] => Array.from(userSockets.keys());
 
+const getUserWsCount = (userId: number): number =>
+  userSockets.get(userId)?.size ?? 0;
+
 const createContext = async ({
   info,
   req,
@@ -297,6 +300,7 @@ export {
   disconnectUser,
   getOnlineUserIds,
   getUserIp,
+  getUserWsCount,
   handleSocketClose,
   trackUserSocket
 };

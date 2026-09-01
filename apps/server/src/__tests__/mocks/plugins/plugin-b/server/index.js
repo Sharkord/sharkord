@@ -166,6 +166,26 @@ const onLoad = (ctx) => {
   });
 
   ctx.commands.register({
+    name: 'moderate',
+    description: 'Ban, unban or kick a user',
+    args: [
+      { name: 'action', type: 'string', required: true },
+      { name: 'userId', type: 'number', required: true }
+    ],
+    async execute(invokerCtx, args) {
+      if (args.action === 'ban') {
+        await ctx.users.ban(args.userId, 'spam');
+      } else if (args.action === 'unban') {
+        await ctx.users.unban(args.userId);
+      } else {
+        await ctx.users.kick(args.userId, 'spam');
+      }
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
     name: 'lookup',
     description: 'Read one of each kind of thing by id',
     args: [

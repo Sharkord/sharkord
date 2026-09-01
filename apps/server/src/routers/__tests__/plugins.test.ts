@@ -23,12 +23,14 @@ import {
   files,
   messageFiles,
   pluginData,
-  rolePermissions
+  rolePermissions,
+  users
 } from '../../db/schema';
 import { PLUGINS_PATH } from '../../helpers/paths';
 import { getComponentAccessRules } from '../../helpers/plugin-capability-access';
 import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
+import { drainActivityLogQueue } from '../../queues/activity-log';
 
 describe('plugins router', () => {
   beforeEach(async () => {
@@ -1540,6 +1542,86 @@ describe('plugins router', () => {
       ).rejects.toThrow();
 
       expect(await tdb.select().from(files)).toHaveLength(before.length);
+    });
+  });
+
+  // moderation goes through the same helpers the routes use. the routes protect
+  // the owner by hierarchy, a plugin has no actor so it may never touch the owner
+  describe('moderation', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const moderate = async (action: string, userId: number) => {
+      const { caller } = await initTest();
+
+      return caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'moderate',
+        args: { action, userId }
+      });
+    };
+
+    const readUser = async (userId: number) =>
+      tdb.select().from(users).where(eq(users.id, userId)).get();
+
+    test('should ban a user', async () => {
+      await moderate('ban', 2);
+
+      const user = await readUser(2);
+
+      expect(user!.banned).toBe(true);
+      expect(user!.banReason).toBe('spam');
+      expect(user!.bannedAt).toBeGreaterThan(0);
+    });
+
+    test('should unban a user', async () => {
+      await moderate('ban', 2);
+      await moderate('unban', 2);
+
+      const user = await readUser(2);
+
+      expect(user!.banned).toBe(false);
+      expect(user!.banReason).toBeNull();
+    });
+
+    test('should refuse to ban the server owner', async () => {
+      await expect(moderate('ban', 1)).rejects.toThrow(
+        'cannot ban the server owner'
+      );
+
+      expect((await readUser(1))!.banned).toBe(false);
+    });
+
+    test('should refuse to kick the server owner', async () => {
+      await expect(moderate('kick', 1)).rejects.toThrow(
+        'cannot kick the server owner'
+      );
+    });
+
+    test('should refuse to kick a user with no session', async () => {
+      await expect(moderate('kick', 2)).rejects.toThrow('not connected');
+    });
+
+    test('should reject a user that does not exist', async () => {
+      await expect(moderate('ban', 9999)).rejects.toThrow('User not found');
+    });
+
+    test('should record the ban with no actor', async () => {
+      await moderate('ban', 2);
+
+      await drainActivityLogQueue();
+
+      const entry = await tdb
+        .select()
+        .from(activityLog)
+        .where(eq(activityLog.type, ActivityLogType.USER_BANNED))
+        .get();
+
+      // userId on the entry is the target; the actor lives in the details, and
+      // a plugin has none
+      expect(entry!.userId).toBe(2);
+      expect(
+        (entry!.details as { bannedBy?: number } | null)?.bannedBy
+      ).toBeUndefined();
     });
   });
 

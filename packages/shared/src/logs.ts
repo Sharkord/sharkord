@@ -62,16 +62,17 @@ export type TActivityLogDetailsMap = {
     }>;
   };
   // -------------------- USERS --------------------
+  // the "By" fields are absent when a plugin acted, since it is not a user
   [ActivityLogType.USER_KICKED]: {
     reason: string | undefined;
-    kickedBy: number;
+    kickedBy?: number;
   };
   [ActivityLogType.USER_BANNED]: {
     reason: string | undefined;
-    bannedBy: number;
+    bannedBy?: number;
   };
   [ActivityLogType.USER_UNBANNED]: {
-    unbannedBy: number;
+    unbannedBy?: number;
   };
   [ActivityLogType.USER_DELETED]: {
     reason: string | undefined;

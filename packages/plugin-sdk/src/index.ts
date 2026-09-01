@@ -302,6 +302,9 @@ export interface PluginContext {
   users: {
     list(): Promise<TJoinedPublicUser[]>;
     get(userId: number): Promise<TJoinedPublicUser | undefined>;
+    ban(userId: number, reason?: string): Promise<void>;
+    unban(userId: number): Promise<void>;
+    kick(userId: number, reason?: string): Promise<void>;
   };
   channels: {
     list(): Promise<TChannel[]>;
