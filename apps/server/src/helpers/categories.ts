@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db } from '../db';
 import { publishCategory, publishChannel } from '../db/publishers';
 import { categories, channels } from '../db/schema';
+import { eventBus } from '../plugins/event-bus';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { VoiceRuntime } from '../runtimes/voice';
 import { invariant } from '../utils/invariant';
@@ -31,6 +32,12 @@ const createCategory = async (
     .get();
 
   publishCategory(created.id, 'create');
+
+  eventBus.emit('category:created', {
+    categoryId: created.id,
+    name: created.name
+  });
+
   enqueueActivityLog({
     type: ActivityLogType.CREATED_CATEGORY,
     userId,
@@ -68,6 +75,9 @@ const updateCategory = async (
     .where(eq(categories.id, categoryId));
 
   publishCategory(categoryId, 'update');
+
+  eventBus.emit('category:updated', { categoryId, name: parsedName });
+
   enqueueActivityLog({
     type: ActivityLogType.UPDATED_CATEGORY,
     userId,
@@ -102,6 +112,12 @@ const deleteCategory = async (categoryId: number, userId: number | null) => {
   }
 
   publishCategory(removedCategory.id, 'delete');
+
+  eventBus.emit('category:deleted', {
+    categoryId: removedCategory.id,
+    name: removedCategory.name
+  });
+
   enqueueActivityLog({
     type: ActivityLogType.DELETED_CATEGORY,
     userId,

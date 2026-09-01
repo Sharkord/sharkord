@@ -4,6 +4,7 @@ import { config } from '../../config';
 import { db } from '../../db';
 import { publishRole } from '../../db/publishers';
 import { roles } from '../../db/schema';
+import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
@@ -39,6 +40,9 @@ const addRoleRoute = rateLimitedProcedure(protectedProcedure, {
     .get();
 
   publishRole(role.id, 'create');
+
+  eventBus.emit('role:created', { roleId: role.id, name: role.name });
+
   enqueueActivityLog({
     type: ActivityLogType.CREATED_ROLE,
     userId: ctx.user.id,

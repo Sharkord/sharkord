@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { publishUser } from '../../db/publishers';
 import { users } from '../../db/schema';
+import { eventBus } from '../../plugins/event-bus';
 import { protectedProcedure } from '../../utils/trpc';
 
 const updateUserRoute = protectedProcedure
@@ -38,6 +39,11 @@ const updateUserRoute = protectedProcedure
       .get();
 
     publishUser(updatedUser.id, 'update');
+
+    eventBus.emit('user:updated', {
+      userId: updatedUser.id,
+      username: updatedUser.name
+    });
   });
 
 export { updateUserRoute };

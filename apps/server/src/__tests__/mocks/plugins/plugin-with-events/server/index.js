@@ -22,7 +22,14 @@ const RECORDED = [
   'role:removed',
   'channel:created',
   'channel:updated',
-  'channel:deleted'
+  'channel:deleted',
+  'category:created',
+  'category:updated',
+  'category:deleted',
+  'role:created',
+  'role:updated',
+  'role:deleted',
+  'user:updated'
 ];
 
 const onLoad = (ctx) => {

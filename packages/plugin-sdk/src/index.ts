@@ -106,7 +106,14 @@ export type ServerEvent =
   | 'role:removed'
   | 'channel:created'
   | 'channel:updated'
-  | 'channel:deleted';
+  | 'channel:deleted'
+  | 'category:created'
+  | 'category:updated'
+  | 'category:deleted'
+  | 'role:created'
+  | 'role:updated'
+  | 'role:deleted'
+  | 'user:updated';
 
 export interface EventPayloads {
   'user:joined': {
@@ -214,6 +221,34 @@ export interface EventPayloads {
   'channel:deleted': {
     channelId: number;
     name: string;
+  };
+  'category:created': {
+    categoryId: number;
+    name: string;
+  };
+  'category:updated': {
+    categoryId: number;
+    name: string;
+  };
+  'category:deleted': {
+    categoryId: number;
+    name: string;
+  };
+  'role:created': {
+    roleId: number;
+    name: string;
+  };
+  'role:updated': {
+    roleId: number;
+    name: string;
+  };
+  'role:deleted': {
+    roleId: number;
+    name: string;
+  };
+  'user:updated': {
+    userId: number;
+    username: string;
   };
   'voice:runtime_initialized': {
     channelId: number;

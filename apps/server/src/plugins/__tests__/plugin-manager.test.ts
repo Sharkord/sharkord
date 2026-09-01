@@ -2,6 +2,7 @@ import {
   ChannelType,
   DEFAULT_MESSAGES_LIMIT,
   FileSaveType,
+  STORAGE_MIN_QUOTA_PER_USER,
   type TInvokerContext
 } from '@sharkord/shared';
 import {
@@ -1628,6 +1629,72 @@ export { onLoad, onUnload };
       expect(await lastEvent('channel:deleted')).toEqual({
         channelId,
         name: 'renamed'
+      });
+    });
+
+    test('should fire through the whole category lifecycle', async () => {
+      const { caller } = await initTest();
+
+      const categoryId = await caller.categories.add({ name: 'events' });
+
+      expect(await lastEvent('category:created')).toEqual({
+        categoryId,
+        name: 'events'
+      });
+
+      await caller.categories.update({ categoryId, name: 'renamed' });
+
+      expect(await lastEvent('category:updated')).toEqual({
+        categoryId,
+        name: 'renamed'
+      });
+
+      await caller.categories.delete({ categoryId });
+
+      expect(await lastEvent('category:deleted')).toEqual({
+        categoryId,
+        name: 'renamed'
+      });
+    });
+
+    // the role itself, as opposed to role:assigned which is membership
+    test('should fire through the whole role lifecycle', async () => {
+      const { caller } = await initTest();
+
+      const roleId = await caller.roles.add();
+
+      expect(await lastEvent('role:created')).toMatchObject({ roleId });
+
+      await caller.roles.update({
+        roleId,
+        name: 'Renamed',
+        color: '#ffffff',
+        permissions: [],
+        storageQuotaOverrideEnabled: false,
+        storageSpaceQuota: STORAGE_MIN_QUOTA_PER_USER
+      });
+
+      expect(await lastEvent('role:updated')).toEqual({
+        roleId,
+        name: 'Renamed'
+      });
+
+      await caller.roles.delete({ roleId });
+
+      expect(await lastEvent('role:deleted')).toMatchObject({ roleId });
+    });
+
+    test('should fire when a user edits their profile', async () => {
+      const { caller } = await initTest(1);
+
+      await caller.users.update({
+        name: 'Renamed Owner',
+        profileColor: '#ffffff'
+      });
+
+      expect(await lastEvent('user:updated')).toEqual({
+        userId: 1,
+        username: 'Renamed Owner'
       });
     });
 
