@@ -133,6 +133,39 @@ const onLoad = (ctx) => {
   });
 
   ctx.commands.register({
+    name: 'attach',
+    description: 'Store bytes and post them as an attachment',
+    args: [
+      { name: 'channelId', type: 'number', required: true },
+      { name: 'name', type: 'string', required: true },
+      { name: 'body', type: 'string', required: true }
+    ],
+    async execute(invokerCtx, args) {
+      const { messageId } = await ctx.messages.send(args.channelId, '', {
+        files: [
+          { name: args.name, data: new TextEncoder().encode(args.body) }
+        ]
+      });
+
+      return { messageId };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'send-too-many-files',
+    description: 'Attach more files than the server allows',
+    args: [{ name: 'channelId', type: 'number', required: true }],
+    async execute(invokerCtx, args) {
+      return ctx.messages.send(args.channelId, 'too many', {
+        files: Array.from({ length: 50 }, (_, index) => ({
+          name: `f-${index}.txt`,
+          data: new TextEncoder().encode('x')
+        }))
+      });
+    }
+  });
+
+  ctx.commands.register({
     name: 'lookup',
     description: 'Read one of each kind of thing by id',
     args: [

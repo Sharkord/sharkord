@@ -18,7 +18,7 @@ export type TBeforeFileSavePayload = {
   originalName: string;
   extension: string;
   size: number;
-  userId: number;
+  userId?: number;
   type: FileSaveType;
 };
 

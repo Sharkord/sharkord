@@ -20,6 +20,8 @@ import {
   activityLog,
   categories,
   channels,
+  files,
+  messageFiles,
   pluginData,
   rolePermissions
 } from '../../db/schema';
@@ -1456,6 +1458,88 @@ describe('plugins router', () => {
       await expect(run('drop-category', { categoryId: 9999 })).rejects.toThrow(
         'Category not found'
       );
+    });
+  });
+
+  // files are stored and linked in the one send call, so a plugin never holds a
+  // file id and cannot leave bytes behind that no message points at
+  describe('message attachments', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const attach = async (body = 'hello attachment') => {
+      const { caller } = await initTest();
+
+      return (await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'attach',
+        args: { channelId: 1, name: 'note.txt', body }
+      })) as Record<string, number>;
+    };
+
+    const attachedFile = async (messageId: number) => {
+      const link = await tdb
+        .select()
+        .from(messageFiles)
+        .where(eq(messageFiles.messageId, messageId))
+        .get();
+
+      if (!link) return undefined;
+
+      return tdb.select().from(files).where(eq(files.id, link.fileId)).get();
+    };
+
+    test('should store the bytes as a real file row', async () => {
+      const { messageId } = await attach();
+      const file = await attachedFile(messageId);
+
+      expect(file!.originalName).toBe('note.txt');
+      expect(file!.size).toBe('hello attachment'.length);
+      expect(file!.mimeType).toBeTruthy();
+    });
+
+    test('should own the file by plugin and not by a user', async () => {
+      const { messageId } = await attach();
+      const file = await attachedFile(messageId);
+
+      expect(file!.pluginId).toBe('plugin-b');
+      expect(file!.userId).toBeNull();
+    });
+
+    // a message that carries a file does not need to say anything
+    test('should allow an empty message when a file is attached', async () => {
+      const { messageId } = await attach();
+
+      expect(messageId).toBeGreaterThan(0);
+    });
+
+    test('should refuse more files than the server allows', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.executeCommand({
+          pluginId: 'plugin-b',
+          commandName: 'send-too-many-files',
+          args: { channelId: 1 }
+        })
+      ).rejects.toThrow('can be attached per message');
+    });
+
+    // nothing is written until every check has passed, so a refused message
+    // cannot leave an unreferenced file behind
+    test('should store nothing when the message is refused', async () => {
+      const before = await tdb.select().from(files);
+
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.executeCommand({
+          pluginId: 'plugin-b',
+          commandName: 'send-too-many-files',
+          args: { channelId: 1 }
+        })
+      ).rejects.toThrow();
+
+      expect(await tdb.select().from(files)).toHaveLength(before.length);
     });
   });
 

@@ -1,4 +1,4 @@
-import type { TJoinedMessage } from '@sharkord/shared';
+import type { TFile, TJoinedMessage } from '@sharkord/shared';
 
 export type TSearchResultMessage = TJoinedMessage & {
   plainContent: string;
@@ -7,20 +7,7 @@ export type TSearchResultMessage = TJoinedMessage & {
 };
 
 export type TSearchResultFile = {
-  file: {
-    id: number;
-    name: string;
-    originalName: string;
-    size: number;
-    extension: string;
-    mimeType: string;
-    createdAt: number;
-    updatedAt: number | null;
-    md5: string;
-    userId: number;
-    _accessToken?: string;
-    _accessTokenExpiresAt?: number;
-  };
+  file: TFile;
   messageId: number;
   channelId: number;
   messageContent: string | null;

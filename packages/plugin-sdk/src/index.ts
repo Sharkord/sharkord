@@ -217,6 +217,7 @@ export interface PluginContext {
       options?: {
         parentMessageId?: number; // used for threads
         replyToMessageId?: number; // used for inline replies
+        files?: { name: string; data: Uint8Array }[];
       }
     ): Promise<{ messageId: number }>;
     edit(messageId: number, content: string): Promise<void>;

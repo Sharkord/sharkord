@@ -170,7 +170,8 @@ const createUnloadContext = ({
         channelId,
         content,
         parentMessageId: options?.parentMessageId,
-        replyToMessageId: options?.replyToMessageId
+        replyToMessageId: options?.replyToMessageId,
+        files: options?.files
       }),
     edit: async (messageId, content) =>
       editPluginMessage({ pluginId, messageId, content }),

@@ -110,7 +110,7 @@ class TemporaryFileManager {
     filePath: string;
     size: number;
     originalName: string;
-    userId: number;
+    userId: number | null;
   }): Promise<TTempFile> => {
     const md5 = await md5File(filePath);
     const fileId = randomUUIDv7();
@@ -189,20 +189,25 @@ class FileManager {
     tempFile: TTempFile,
     settings: TJoinedSettings
   ) => {
-    const [userStorage, serverStorage, userStorageQuota] = await Promise.all([
-      getStorageUsageByUserId(tempFile.userId),
-      getUsedFileQuota(),
-      getEffectiveStorageSpaceQuotaByUserId(
-        tempFile.userId,
-        settings.storageSpaceQuotaByUser
-      )
-    ]);
+    const { userId } = tempFile;
 
-    const newTotalStorage = userStorage.usedStorage + tempFile.size;
+    if (userId !== null && userId !== undefined) {
+      const [userStorage, userStorageQuota] = await Promise.all([
+        getStorageUsageByUserId(userId),
+        getEffectiveStorageSpaceQuotaByUserId(
+          userId,
+          settings.storageSpaceQuotaByUser
+        )
+      ]);
 
-    if (userStorageQuota > 0 && newTotalStorage > userStorageQuota) {
-      throw new Error('User storage limit exceeded');
+      const newTotalStorage = userStorage.usedStorage + tempFile.size;
+
+      if (userStorageQuota > 0 && newTotalStorage > userStorageQuota) {
+        throw new Error('User storage limit exceeded');
+      }
     }
+
+    const serverStorage = await getUsedFileQuota();
 
     const newServerStorage = serverStorage + tempFile.size;
 
@@ -345,7 +350,7 @@ class FileManager {
 
   private runBeforeFileSaveHooks = async (
     tempFile: TTempFile,
-    userId: number,
+    userId: number | null,
     type: FileSaveType
   ) => {
     const entries = pluginManager.getHooks('beforeFileSave');
@@ -361,7 +366,7 @@ class FileManager {
         originalName: tempFile.originalName,
         extension: tempFile.extension,
         size: tempFile.size,
-        userId,
+        userId: userId ?? undefined,
         type
       }
     });
@@ -378,6 +383,50 @@ class FileManager {
     tempFile.md5 = await md5File(tempFile.path);
   };
 
+  private async persistTempFile(
+    tempFile: TTempFile,
+    owner: { userId: number | null; pluginId: string | null },
+    type?: FileSaveType
+  ): Promise<TFile> {
+    if (type) {
+      await this.runBeforeFileSaveHooks(tempFile, owner.userId, type);
+    }
+
+    const settings = await getSettings();
+
+    await this.optimizeImageIfEnabled(tempFile, settings);
+
+    // after optimization but before the move, so an optimized file cannot slip
+    // past the storage limits
+    this.validateFinalFileSize(tempFile, type, settings);
+
+    await this.handleStorageLimits(tempFile, settings);
+
+    const fileName = await this.getUniqueName(tempFile.originalName);
+    const destinationPath = path.join(PUBLIC_PATH, fileName);
+
+    await moveFile(tempFile.path, destinationPath);
+    await this.removeTemporaryFile(tempFile.id, true);
+
+    const bunFile = Bun.file(destinationPath);
+
+    return db
+      .insert(files)
+      .values({
+        name: fileName,
+        extension: tempFile.extension,
+        md5: tempFile.md5,
+        size: tempFile.size,
+        originalName: tempFile.originalName,
+        userId: owner.userId,
+        pluginId: owner.pluginId,
+        mimeType: bunFile?.type || 'application/octet-stream',
+        createdAt: Date.now()
+      })
+      .returning()
+      .get();
+  }
+
   public async saveFile(
     tempFileId: string,
     userId: number,
@@ -393,41 +442,39 @@ class FileManager {
       throw new Error("You don't have permission to access this file");
     }
 
-    if (type) {
-      await this.runBeforeFileSaveHooks(tempFile, userId, type);
+    return this.persistTempFile(tempFile, { userId, pluginId: null }, type);
+  }
+
+  public async savePluginFile(
+    pluginId: string,
+    originalName: string,
+    data: Uint8Array
+  ): Promise<TFile> {
+    const stagingPath = path.join(
+      TMP_PATH,
+      `${randomUUIDv7()}${getNormalizedExtension(originalName)}`
+    );
+
+    await fs.writeFile(stagingPath, data);
+
+    const tempFile = await this.addTemporaryFile({
+      filePath: stagingPath,
+      size: data.byteLength,
+      originalName,
+      userId: null
+    });
+
+    try {
+      return await this.persistTempFile(
+        tempFile,
+        { userId: null, pluginId },
+        FileSaveType.MESSAGE
+      );
+    } catch (error) {
+      await this.removeTemporaryFile(tempFile.id);
+
+      throw error;
     }
-
-    const settings = await getSettings();
-
-    await this.optimizeImageIfEnabled(tempFile, settings);
-
-    // check for file size after optimization but before moving to final destination to prevent hitting storage limits with optimized files
-    this.validateFinalFileSize(tempFile, type, settings);
-
-    await this.handleStorageLimits(tempFile, settings);
-
-    const fileName = await this.getUniqueName(tempFile.originalName);
-    const destinationPath = path.join(PUBLIC_PATH, fileName);
-
-    await moveFile(tempFile.path, destinationPath);
-    await this.removeTemporaryFile(tempFileId, true);
-
-    const bunFile = Bun.file(destinationPath);
-
-    return db
-      .insert(files)
-      .values({
-        name: fileName,
-        extension: tempFile.extension,
-        md5: tempFile.md5,
-        size: tempFile.size,
-        originalName: tempFile.originalName,
-        userId,
-        mimeType: bunFile?.type || 'application/octet-stream',
-        createdAt: Date.now()
-      })
-      .returning()
-      .get();
   }
 }
 
