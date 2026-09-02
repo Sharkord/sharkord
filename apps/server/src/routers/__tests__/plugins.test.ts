@@ -29,6 +29,7 @@ import {
   pluginData,
   pluginUserData,
   rolePermissions,
+  userRoles,
   users
 } from '../../db/schema';
 import { PLUGINS_PATH } from '../../helpers/paths';
@@ -2060,6 +2061,191 @@ describe('plugins router', () => {
       expect(
         capabilities.some((c) => c.type === PluginCapabilityType.ACTION)
       ).toBe(true);
+    });
+
+    // every test above configures one capability on one plugin. these are about
+    // rules bleeding into things they were never meant to touch
+    describe('isolation', () => {
+      const GUEST_ROLE = 3;
+
+      const restrictAction = async (
+        pluginId: string,
+        name: string,
+        roleIds: number[]
+      ) => {
+        const { caller } = await initTest();
+
+        await caller.plugins.setCapabilityAccess({
+          pluginId,
+          type: PluginCapabilityType.ACTION,
+          name,
+          mode: PluginCapabilityMode.RESTRICTED,
+          roleIds
+        });
+      };
+
+      const restrictCommand = async (
+        pluginId: string,
+        name: string,
+        roleIds: number[]
+      ) => {
+        const { caller } = await initTest();
+
+        await caller.plugins.setCapabilityAccess({
+          pluginId,
+          type: PluginCapabilityType.COMMAND,
+          name,
+          mode: PluginCapabilityMode.RESTRICTED,
+          roleIds
+        });
+      };
+
+      const runCommand = async (
+        pluginId: string,
+        commandName: string,
+        userId: number
+      ) => {
+        const { caller } = await initTest(userId);
+
+        return caller.plugins.executeCommand({
+          pluginId,
+          commandName,
+          args: { a: 1, b: 2 }
+        });
+      };
+
+      const runAction = async (
+        pluginId: string,
+        actionName: string,
+        userId: number
+      ) => {
+        const { caller } = await initTest(userId);
+
+        return caller.plugins.executeAction({
+          pluginId,
+          actionName,
+          payload: { a: 1, b: 2 }
+        });
+      };
+
+      test('should leave the other commands of the same plugin alone', async () => {
+        await restrictCommand('plugin-b', 'sum', []);
+
+        expect(
+          await runCommand('plugin-b', 'test-command', MODERATOR_USER)
+        ).toBeDefined();
+      });
+
+      test('should keep two capabilities configured differently apart', async () => {
+        await restrictCommand('plugin-b', 'sum', []);
+        await restrictCommand('plugin-b', 'test-command', [MODERATOR_ROLE]);
+
+        await expect(
+          runCommand('plugin-b', 'sum', MODERATOR_USER)
+        ).rejects.toThrow('do not have access');
+        expect(
+          await runCommand('plugin-b', 'test-command', MODERATOR_USER)
+        ).toBeDefined();
+      });
+
+      // plugin-a registers its own 'sum', so the plugin half of the key matters
+      test('should not restrict another plugin with the same capability name', async () => {
+        await pluginManager.load('plugin-a');
+
+        await restrictCommand('plugin-b', 'sum', []);
+
+        await expect(
+          runCommand('plugin-b', 'sum', MODERATOR_USER)
+        ).rejects.toThrow('do not have access');
+        expect(
+          await runCommand('plugin-a', 'sum', MODERATOR_USER)
+        ).toBeDefined();
+      });
+
+      test('should not carry a rule across to another plugin being configured', async () => {
+        await pluginManager.load('plugin-a');
+
+        await restrictCommand('plugin-a', 'sum', []);
+
+        expect(
+          await runCommand('plugin-b', 'sum', MODERATOR_USER)
+        ).toBeDefined();
+      });
+
+      // plugin-b has both a command and an action called 'sum'
+      test('should not restrict an action by restricting the command of the same name', async () => {
+        await restrictCommand('plugin-b', 'sum', []);
+
+        expect(
+          await runAction('plugin-b', 'sum', MODERATOR_USER)
+        ).toBeDefined();
+      });
+
+      test('should not restrict a command by restricting the action of the same name', async () => {
+        await restrictAction('plugin-b', 'sum', []);
+
+        expect(
+          await runCommand('plugin-b', 'sum', MODERATOR_USER)
+        ).toBeDefined();
+      });
+
+      // the rule is any of, so one granted role among several is enough
+      test('should allow a user whose other role is the granted one', async () => {
+        await tdb.insert(userRoles).values({
+          userId: MODERATOR_USER,
+          roleId: GUEST_ROLE,
+          createdAt: Date.now()
+        });
+
+        await restrictCommand('plugin-b', 'sum', [GUEST_ROLE]);
+
+        expect(
+          await runCommand('plugin-b', 'sum', MODERATOR_USER)
+        ).toBeDefined();
+      });
+
+      // the grant rows cascade with the role, which turns the capability into
+      // one nobody can reach rather than one everybody can
+      test('should deny everyone once the only granted role is deleted', async () => {
+        await restrictCommand('plugin-b', 'sum', [GUEST_ROLE]);
+
+        await tdb.insert(userRoles).values({
+          userId: MODERATOR_USER,
+          roleId: GUEST_ROLE,
+          createdAt: Date.now()
+        });
+
+        expect(
+          await runCommand('plugin-b', 'sum', MODERATOR_USER)
+        ).toBeDefined();
+
+        const { caller } = await initTest();
+
+        await caller.roles.delete({ roleId: GUEST_ROLE });
+
+        await expect(
+          runCommand('plugin-b', 'sum', MODERATOR_USER)
+        ).rejects.toThrow('do not have access');
+      });
+
+      test('should deny a user who loses the granted role', async () => {
+        await restrictCommand('plugin-b', 'sum', [MODERATOR_ROLE]);
+
+        expect(
+          await runCommand('plugin-b', 'sum', MODERATOR_USER)
+        ).toBeDefined();
+
+        const { caller } = await initTest();
+
+        await caller.users.removeRole({
+          userId: MODERATOR_USER,
+          roleId: MODERATOR_ROLE
+        });
+
+        await expect(
+          runCommand('plugin-b', 'sum', MODERATOR_USER)
+        ).rejects.toThrow();
+      });
     });
 
     test('should need the permission to read capabilities', async () => {

@@ -5,6 +5,7 @@ import fs from 'fs/promises';
 import { getMockedToken } from '../../__tests__/helpers';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
+import { config } from '../../config';
 import { rolePermissions, users } from '../../db/schema';
 import { PLUGINS_PATH } from '../../helpers/paths';
 import { pluginManager } from '../../plugins';
@@ -16,6 +17,41 @@ describe('/plugins/:pluginId/*', () => {
   });
 
   beforeEach(resetPluginMocks);
+
+  // every plugin route shares one limiter, so a public one is enough to prove it
+  describe('rate limiting', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    test('should stop hammering a plugin route from one address', async () => {
+      const { maxRequests } = config.rateLimiters.pluginRoute;
+
+      for (let attempt = 0; attempt < maxRequests; attempt++) {
+        await fetch(`${testsBaseUrl}/plugins/plugin-b/hello`);
+      }
+
+      const response = await fetch(`${testsBaseUrl}/plugins/plugin-b/hello`);
+
+      expect(response.status).toBe(429);
+      expect(await response.json()).toMatchObject({
+        error: expect.stringContaining('Too many requests')
+      });
+    });
+
+    test('should count an authenticated route against the same limit', async () => {
+      const { maxRequests } = config.rateLimiters.pluginRoute;
+
+      for (let attempt = 0; attempt < maxRequests; attempt++) {
+        await fetch(`${testsBaseUrl}/plugins/plugin-b/hello`);
+      }
+
+      const response = await fetch(`${testsBaseUrl}/plugins/plugin-b/me`, {
+        headers: { authorization: `Bearer ${await getMockedToken(2)}` }
+      });
+
+      // the limiter runs before the caller is resolved, so this is 429 not 401
+      expect(response.status).toBe(429);
+    });
+  });
 
   // plugin-b declares GET /me as auth only and GET /admin-only as needing
   // MANAGE_MESSAGES. the seeded moderator role (4, user 5) holds MANAGE_USERS

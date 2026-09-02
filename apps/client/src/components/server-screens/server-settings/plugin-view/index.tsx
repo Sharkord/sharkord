@@ -162,19 +162,25 @@ const PluginView = memo(({ plugin }: TPluginViewProps) => {
       <Tabs defaultValue={defaultTab}>
         <TabsList className="mb-4">
           {hasSettings && (
-            <TabsTrigger value="settings">{t('pluginSettingsTab')}</TabsTrigger>
+            <TabsTrigger value="settings" data-tab="settings">
+              {t('pluginSettingsTab')}
+            </TabsTrigger>
           )}
           {hasCommands && (
-            <TabsTrigger value="commands">{t('pluginCommandsTab')}</TabsTrigger>
+            <TabsTrigger value="commands" data-tab="commands">
+              {t('pluginCommandsTab')}
+            </TabsTrigger>
           )}
-          <TabsTrigger value="logs">{t('pluginLogsTab')}</TabsTrigger>
+          <TabsTrigger value="logs" data-tab="logs">
+            {t('pluginLogsTab')}
+          </TabsTrigger>
           {canManagePluginPermissions && (
-            <TabsTrigger value="permissions">
+            <TabsTrigger value="permissions" data-tab="permissions">
               {t('pluginPermissionsTab')}
             </TabsTrigger>
           )}
           {customTabs.map((tab) => (
-            <TabsTrigger key={tab.id} value={tab.id}>
+            <TabsTrigger key={tab.id} value={tab.id} data-tab={tab.id}>
               {tab.label}
             </TabsTrigger>
           ))}

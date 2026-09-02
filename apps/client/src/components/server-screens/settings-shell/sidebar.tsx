@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { TestId } from '@sharkord/shared';
 import { Separator, Tooltip } from '@sharkord/ui';
 import { AlertCircle } from 'lucide-react';
 
@@ -22,6 +23,7 @@ const SidebarEntry = memo(
 
     return (
       <button
+        data-testid={TestId.SETTINGS_SIDEBAR_ENTRY}
         onClick={handleClick}
         className={cn(
           'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent',

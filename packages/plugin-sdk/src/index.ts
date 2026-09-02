@@ -426,6 +426,7 @@ export interface PluginContext {
     toUsers(userIds: number[], data: unknown): void;
     toAll(data: unknown): void;
   };
+
   userData: {
     get(userId: number): Promise<Record<string, unknown>>;
     set(userId: number, data: Record<string, unknown>): Promise<void>;

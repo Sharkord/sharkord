@@ -1,7 +1,7 @@
 import z from 'zod';
 import { zHttpUrl, zPluginId } from './primitives';
 
-export const PLUGIN_SDK_VERSION = 3;
+export const PLUGIN_SDK_VERSION = 2;
 
 export const SERVER_ENTRY_FILE = 'server/index.js';
 export const CLIENT_ENTRY_FILE = 'client/index.js';

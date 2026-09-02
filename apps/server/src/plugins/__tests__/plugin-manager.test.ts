@@ -328,12 +328,14 @@ export { onLoad, onUnload };
       ).rejects.toThrow('is not enabled');
     });
 
+    // a plugin that registers none at all, which is a different branch from a
+    // plugin that has commands but not the one asked for
     test('should throw error when plugin has no commands', async () => {
-      await pluginManager.load('plugin-a');
+      await pluginManager.load('plugin-http-routes');
 
       await expect(
         pluginManager.executeCommand(
-          'plugin-a',
+          'plugin-http-routes',
           'nonexistent',
           mockInvokerCtx,
           {}

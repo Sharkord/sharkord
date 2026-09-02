@@ -2,7 +2,7 @@
   "id": "plugin-before-message-save",
   "name": "plugin-before-message-save",
   "version": "1.0.0",
-  "sdkVersion": 3,
+  "sdkVersion": 2,
   "author": "Test Author",
   "description": "Exercises every plugin hook"
 }

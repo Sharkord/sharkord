@@ -105,6 +105,15 @@ const onLoad = (ctx) => {
     }
   });
 
+  // same name as this plugin's own 'sum' command, one type apart
+  ctx.actions.register({
+    name: 'sum',
+    description: 'Sum two numbers as an action',
+    async execute(invokerCtx, payload) {
+      return { result: payload.a + payload.b };
+    }
+  });
+
   ctx.actions.register({
     name: 'multiply',
     description: 'Multiply two numbers',

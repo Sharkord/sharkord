@@ -4,7 +4,7 @@ import { usePluginsEnabled } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import type { TPluginInfo } from '@sharkord/shared';
-import { getTrpcError } from '@sharkord/shared';
+import { getTrpcError, TestId } from '@sharkord/shared';
 import {
   Alert,
   AlertDescription,
@@ -66,7 +66,10 @@ const PluginItem = memo(({ plugin, onToggle, onRemove }: TPluginItemProps) => {
   }, [plugin.id, plugin.name, onRemove, t]);
 
   return (
-    <div className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+    <div
+      data-testid={TestId.INSTALLED_PLUGIN_ITEM}
+      className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+    >
       <div className="flex-shrink-0">
         {plugin.logo ? (
           <ImageWithFallback
