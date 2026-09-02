@@ -6,7 +6,7 @@ import type { PluginStateStore } from './plugin-state-store';
 type TExecutableDefinition = {
   name: string;
   description?: string;
-  execute: (ctx: TInvokerContext, input: never) => Promise<unknown>;
+  executes: (ctx: TInvokerContext, input: never) => Promise<unknown>;
 };
 
 const MAX_REGISTRATIONS_PER_PLUGIN = 100;
@@ -24,9 +24,9 @@ class PluginRegistry<TDefinition extends TExecutableDefinition> {
   ) {}
 
   public register = (pluginId: string, definition: TDefinition) => {
-    if (typeof definition.execute !== 'function') {
+    if (typeof definition.executes !== 'function') {
       throw new Error(
-        `${this.kind} '${definition.name}' must define an execute() method.`
+        `${this.kind} '${definition.name}' must define an executes() method.`
       );
     }
 
@@ -120,7 +120,7 @@ class PluginRegistry<TDefinition extends TExecutableDefinition> {
       );
 
       return await withTimeout(
-        definition.execute(invokerCtx, input as never),
+        definition.executes(invokerCtx, input as never),
         this.timeoutMs,
         `${this.kind} '${name}' from plugin '${pluginId}' exceeded timeout of ${this.timeoutMs}ms`
       );

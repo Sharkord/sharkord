@@ -25,7 +25,7 @@ export type TInvokerContext = {
 
 /**
  * A slash command. Users type `/name` in chat, and both the invocation and what
- * `execute` returns render as a chip in the channel, so the answer is public.
+ * `executes` returns render as a chip in the channel, so the answer is public.
  *
  * ```ts
  * ctx.commands.register({
@@ -33,7 +33,7 @@ export type TInvokerContext = {
  *   description: 'Roll a die',
  *   args: [{ name: 'sides', type: 'number', required: true }],
  *   requires: Permission.SEND_MESSAGES,
- *   async execute(invoker, args) {
+ *   async executes(invoker, args) {
  *     return { message: `${1 + Math.floor(Math.random() * args.sides)}` };
  *   }
  * });
@@ -45,14 +45,14 @@ export interface CommandDefinition<TArgs = void> {
   description?: string;
   args?: TCommandArg[];
   requires?: Permission;
-  execute(ctx: TInvokerContext, args: TArgs): Promise<unknown>;
+  executes(ctx: TInvokerContext, args: TArgs): Promise<unknown>;
 }
 
 export interface ActionDefinition<TPayload = void> {
   name: string;
   description?: string;
   requires?: Permission;
-  execute: (ctx: TInvokerContext, payload: TPayload) => Promise<unknown>;
+  executes: (ctx: TInvokerContext, payload: TPayload) => Promise<unknown>;
 }
 
 export type TCommandInfo = {

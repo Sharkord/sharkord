@@ -31,7 +31,7 @@ describe('command-parser', () => {
         status: 'pending',
         command: {
           name: 'test-command',
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -65,7 +65,7 @@ describe('command-parser', () => {
               required: true
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -119,7 +119,7 @@ describe('command-parser', () => {
               required: true
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -165,7 +165,7 @@ describe('command-parser', () => {
               sensitive: true
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -185,7 +185,7 @@ describe('command-parser', () => {
         status: 'pending',
         command: {
           name: 'ping',
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -219,7 +219,7 @@ describe('command-parser', () => {
               required: true
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -263,7 +263,7 @@ describe('command-parser', () => {
               required: false
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -312,7 +312,7 @@ describe('command-parser', () => {
               sensitive: true
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -625,7 +625,7 @@ describe('command-parser', () => {
               required: true
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -679,7 +679,7 @@ describe('command-parser', () => {
               sensitive: true
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -709,7 +709,7 @@ describe('command-parser', () => {
         imageUrl: 'https://example.com/logo.png',
         command: {
           name: 'test',
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -731,7 +731,7 @@ describe('command-parser', () => {
         command: {
           name: 'echo',
           args: [{ name: 'text', type: 'string', required: true }],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -758,7 +758,7 @@ describe('command-parser', () => {
         response: `done' <script>alert(1)</script>`,
         command: {
           name: 'evil',
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -783,7 +783,7 @@ describe('command-parser', () => {
         status: 'pending',
         command: {
           name: 'test',
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 

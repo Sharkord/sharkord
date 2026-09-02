@@ -17,7 +17,7 @@ const onLoad = async (ctx) => {
       { name: 'a', type: 'number', required: true },
       { name: 'b', type: 'number', required: true }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       return { result: args.a + args.b, from: 'plugin-a' };
     }
   });

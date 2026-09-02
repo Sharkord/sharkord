@@ -47,7 +47,7 @@ const onLoad = async (ctx) => {
   ctx.commands.register({
     name: 'get-settings',
     description: 'Returns current settings values',
-    execute: async () => {
+    executes: async () => {
       return {
         greeting: pluginSettings.get('greeting'),
         maxRetries: pluginSettings.get('maxRetries'),
@@ -62,7 +62,7 @@ const onLoad = async (ctx) => {
     name: 'set-greeting',
     description: 'Updates greeting setting',
     args: [{ name: 'value', type: 'string', required: true }],
-    execute: async (_ctx, args) => {
+    executes: async (_ctx, args) => {
       pluginSettings.set('greeting', args.value);
       return { success: true };
     }
@@ -72,7 +72,7 @@ const onLoad = async (ctx) => {
     name: 'set-mode',
     description: 'Updates the mode setting',
     args: [{ name: 'value', type: 'string', required: true }],
-    execute: async (_ctx, args) => {
+    executes: async (_ctx, args) => {
       pluginSettings.set('mode', args.value);
       return { success: true };
     }

@@ -17,7 +17,7 @@ const onLoad = (ctx) => {
         required: true
       }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       ctx.logger.log('Executing test-command with:', args);
       return { success: true, message: args.message };
     }
@@ -38,7 +38,7 @@ const onLoad = (ctx) => {
         required: true
       }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       return { result: args.a + args.b };
     }
   });
@@ -47,7 +47,7 @@ const onLoad = (ctx) => {
     name: 'can-manage-users',
     description: 'Whether a user may manage users',
     args: [{ name: 'userId', type: 'number', required: true }],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       return {
         allowed: await ctx.permissions.userCan(args.userId, 'MANAGE_USERS')
       };
@@ -61,7 +61,7 @@ const onLoad = (ctx) => {
       { name: 'userId', type: 'number', required: true },
       { name: 'roleId', type: 'number', required: true }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       await ctx.roles.assign(args.userId, args.roleId);
 
       return { ok: true };
@@ -75,7 +75,7 @@ const onLoad = (ctx) => {
       { name: 'userId', type: 'number', required: true },
       { name: 'roleId', type: 'number', required: true }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       await ctx.roles.remove(args.userId, args.roleId);
 
       return { ok: true };
@@ -91,7 +91,7 @@ const onLoad = (ctx) => {
       { name: 'a', type: 'number', required: true },
       { name: 'b', type: 'number', required: true }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       return { result: args.a + args.b };
     }
   });
@@ -100,7 +100,7 @@ const onLoad = (ctx) => {
     name: 'admin-multiply',
     description: 'Multiply two numbers, for user managers',
     requires: 'MANAGE_USERS',
-    async execute(invokerCtx, payload) {
+    async executes(invokerCtx, payload) {
       return { result: payload.a * payload.b };
     }
   });
@@ -109,7 +109,7 @@ const onLoad = (ctx) => {
   ctx.actions.register({
     name: 'sum',
     description: 'Sum two numbers as an action',
-    async execute(invokerCtx, payload) {
+    async executes(invokerCtx, payload) {
       return { result: payload.a + payload.b };
     }
   });
@@ -117,7 +117,7 @@ const onLoad = (ctx) => {
   ctx.actions.register({
     name: 'multiply',
     description: 'Multiply two numbers',
-    async execute(invokerCtx, payload) {
+    async executes(invokerCtx, payload) {
       return { result: payload.a * payload.b };
     }
   });
@@ -129,7 +129,7 @@ const onLoad = (ctx) => {
       { name: 'name', type: 'string', required: true },
       { name: 'categoryId', type: 'number', required: true }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       const channel = await ctx.channels.create({
         name: args.name,
         type: 'TEXT',
@@ -149,7 +149,7 @@ const onLoad = (ctx) => {
       { name: 'name', type: 'string', required: true },
       { name: 'body', type: 'string', required: true }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       const { messageId } = await ctx.messages.send(args.channelId, '', {
         files: [
           { name: args.name, data: new TextEncoder().encode(args.body) }
@@ -164,7 +164,7 @@ const onLoad = (ctx) => {
     name: 'send-too-many-files',
     description: 'Attach more files than the server allows',
     args: [{ name: 'channelId', type: 'number', required: true }],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       return ctx.messages.send(args.channelId, 'too many', {
         files: Array.from({ length: 50 }, (_, index) => ({
           name: `f-${index}.txt`,
@@ -182,7 +182,7 @@ const onLoad = (ctx) => {
       { name: 'userId', type: 'number', required: false },
       { name: 'note', type: 'string', required: false }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       const data = { note: args.note ?? 'hi' };
 
       if (args.target === 'all') {
@@ -201,7 +201,7 @@ const onLoad = (ctx) => {
     name: 'push-too-big',
     description: 'Push more than the cap allows',
     args: [{ name: 'userId', type: 'number', required: true }],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       ctx.push.toUser(args.userId, { blob: 'x'.repeat(70000) });
 
       return { ok: true };
@@ -215,7 +215,7 @@ const onLoad = (ctx) => {
       { name: 'messageId', type: 'number', required: true },
       { name: 'pinned', type: 'boolean', required: true }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       if (args.pinned) {
         await ctx.messages.pin(args.messageId);
       } else {
@@ -234,7 +234,7 @@ const onLoad = (ctx) => {
       { name: 'emoji', type: 'string', required: true },
       { name: 'remove', type: 'boolean', required: false }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       if (args.remove) {
         await ctx.messages.unreact(args.messageId, args.emoji);
       } else {
@@ -252,7 +252,7 @@ const onLoad = (ctx) => {
       { name: 'userId', type: 'number', required: true },
       { name: 'value', type: 'string', required: false }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       if (args.value !== undefined) {
         await ctx.userData.set(args.userId, { note: args.value });
       }
@@ -265,7 +265,7 @@ const onLoad = (ctx) => {
     name: 'forget',
     description: 'Drop per-user data',
     args: [{ name: 'userId', type: 'number', required: true }],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       await ctx.userData.delete(args.userId);
 
       return { ok: true };
@@ -279,7 +279,7 @@ const onLoad = (ctx) => {
       { name: 'action', type: 'string', required: true },
       { name: 'userId', type: 'number', required: true }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       if (args.action === 'ban') {
         await ctx.users.ban(args.userId, 'spam');
       } else if (args.action === 'unban') {
@@ -301,7 +301,7 @@ const onLoad = (ctx) => {
       { name: 'categoryId', type: 'number', required: true },
       { name: 'roleId', type: 'number', required: true }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       const [user, channel, category, role] = await Promise.all([
         ctx.users.get(args.userId),
         ctx.channels.get(args.channelId),
@@ -322,7 +322,7 @@ const onLoad = (ctx) => {
   ctx.commands.register({
     name: 'list-channels',
     description: 'List channels a plugin can act on',
-    async execute() {
+    async executes() {
       const list = await ctx.channels.list();
 
       return { names: list.map((channel) => channel.name) };
@@ -336,7 +336,7 @@ const onLoad = (ctx) => {
       { name: 'channelId', type: 'number', required: true },
       { name: 'name', type: 'string', required: true }
     ],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       await ctx.channels.update(args.channelId, { name: args.name });
 
       return { ok: true };
@@ -347,7 +347,7 @@ const onLoad = (ctx) => {
     name: 'drop-channel',
     description: 'Delete a channel',
     args: [{ name: 'channelId', type: 'number', required: true }],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       await ctx.channels.delete(args.channelId);
 
       return { ok: true };
@@ -358,7 +358,7 @@ const onLoad = (ctx) => {
     name: 'make-category',
     description: 'Create a category',
     args: [{ name: 'name', type: 'string', required: true }],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       const category = await ctx.categories.create(args.name);
 
       return { categoryId: category.id, count: (await ctx.categories.list()).length };
@@ -369,7 +369,7 @@ const onLoad = (ctx) => {
     name: 'drop-category',
     description: 'Delete a category',
     args: [{ name: 'categoryId', type: 'number', required: true }],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       await ctx.categories.delete(args.categoryId);
 
       return { ok: true };

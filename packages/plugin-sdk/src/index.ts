@@ -393,7 +393,7 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
    * typed into chat and produces no message.
    *
    * The name has to be one of the contract's `actions` keys, and the payload
-   * and return type of `execute` follow from it.
+   * and return type of `executes` follow from it.
    */
   actions: {
     register<K extends keyof TContractActions<C> & string>(action: {
@@ -404,7 +404,7 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
        * is public; either way a server owner can override the access per role.
        */
       requires?: Permission;
-      execute: (
+      executes: (
         ctx: TInvokerContext,
         payload: TContractActions<C>[K]['payload']
       ) => Promise<TContractActions<C>[K]['response']>;
@@ -476,7 +476,7 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
    * as a chip in the channel, so the response is public.
    *
    * The name has to be one of the contract's `commands` keys, and the args and
-   * return type of `execute` follow from it. `args` describes the fields users
+   * return type of `executes` follow from it. `args` describes the fields users
    * fill in; it is the UI side of the same shape.
    */
   commands: {
@@ -489,7 +489,7 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
        * is public; either way a server owner can override the access per role.
        */
       requires?: Permission;
-      execute: (
+      executes: (
         ctx: TInvokerContext,
         args: TContractCommands<C>[K]['args']
       ) => Promise<TContractCommands<C>[K]['response']>;
@@ -688,7 +688,7 @@ export type UpgradePluginContext = Pick<
  * const onLoad = (ctx) => {
  *   ctx.commands.register({
  *     name: 'ping',
- *     async execute() {
+ *     async executes() {
  *       return { message: 'pong' };
  *     }
  *   });

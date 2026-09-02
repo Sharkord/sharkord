@@ -59,7 +59,7 @@ const onLoad = (ctx) => {
   ctx.commands.register({
     name: 'get-counts',
     description: 'Get event counts',
-    async execute() {
+    async executes() {
       return eventCounts;
     }
   });
@@ -68,7 +68,7 @@ const onLoad = (ctx) => {
     name: 'get-last-event',
     description: 'The payload of the last event of a given name',
     args: [{ name: 'name', type: 'string', required: true }],
-    async execute(invokerCtx, args) {
+    async executes(invokerCtx, args) {
       return { payload: lastPayloads[args.name] ?? null };
     }
   });

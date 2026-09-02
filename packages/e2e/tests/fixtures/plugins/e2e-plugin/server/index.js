@@ -6,7 +6,7 @@ const onLoad = (ctx) => {
   ctx.commands.register({
     name: 'e2e-ping',
     description: 'Answers so a command can be asserted end to end',
-    async execute() {
+    async executes() {
       return { message: 'pong' };
     }
   });

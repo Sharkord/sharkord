@@ -201,7 +201,7 @@ describe('plugin-manager', () => {
   ctx.commands.register({
     name: 'updated-command',
     description: 'Command from updated plugin file',
-    execute: async () => ({ ok: true })
+    executes: async () => ({ ok: true })
   });
 };
 
