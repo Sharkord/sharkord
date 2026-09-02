@@ -25,11 +25,6 @@ export type TPluginStoreState = {
   publicSettings: TPublicServerSettings | undefined;
 };
 
-export type TActionContract = Record<
-  string,
-  { payload: unknown; response: unknown }
->;
-
 /**
  * What a plugin's client code can ask the app to do, through
  * `window.__SHARKORD_STORE__.actions`.
@@ -61,10 +56,12 @@ export type TPluginActions = {
   onPush: (pluginId: string, handler: (data: unknown) => void) => () => void;
 };
 
-export type TPluginUserData = {
-  data: Record<string, unknown>;
+export type TPluginUserData<
+  T extends Record<string, unknown> = Record<string, unknown>
+> = {
+  data: T;
   loading: boolean;
-  save: (data: Record<string, unknown>) => Promise<void>;
+  save: (data: T) => Promise<void>;
 };
 
 export type TPluginHooks = {

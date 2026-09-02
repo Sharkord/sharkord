@@ -2,6 +2,7 @@ export * from './capabilities';
 export * from './client-sdk';
 export * from './commands';
 export * from './components';
+export * from './contract';
 export * from './hooks';
 export * from './manifest';
 export * from './marketplace';

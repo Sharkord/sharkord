@@ -1,30 +1,11 @@
 import type {
-  Permission,
   TActionContract,
-  TInvokerContext,
-  TPluginActions
+  TContractActions,
+  TPluginActions,
+  TPluginContract
 } from '@sharkord/shared';
 // deep import: the '@sharkord/shared' barrel pulls zod into every client bundle
 import { getPluginIdFromBundleUrl } from '@sharkord/shared/src/plugins/client-sdk';
-import type { PluginContext } from '.';
-
-type TypedRegisterAction<TActions extends TActionContract> = <
-  K extends keyof TActions & string
->(
-  name: K,
-  handler: (
-    invoker: TInvokerContext,
-    payload: TActions[K]['payload']
-  ) => Promise<TActions[K]['response']>,
-  options?: {
-    description?: string;
-    /**
-     * The permission a user needs to call this action. Without it the action
-     * is public; either way a server owner can override the access per role.
-     */
-    requires?: Permission;
-  }
-) => void;
 
 type TypedCallAction<TActions extends TActionContract> = <
   K extends keyof TActions & string
@@ -34,27 +15,6 @@ type TypedCallAction<TActions extends TActionContract> = <
     ? []
     : [payload: TActions[K]['payload']]
 ) => Promise<TActions[K]['response']>;
-
-const createRegisterAction = <TActions extends TActionContract>(
-  ctx: PluginContext
-) => {
-  const registerAction: TypedRegisterAction<TActions> = (
-    name,
-    handler,
-    options
-  ) => {
-    ctx.actions.register({
-      name,
-      description: options?.description,
-      requires: options?.requires,
-      async execute(invokerCtx, payload) {
-        return handler(invokerCtx, payload as never);
-      }
-    });
-  };
-
-  return registerAction;
-};
 
 const getOwnPluginId = (): string => {
   const pluginId = getPluginIdFromBundleUrl(import.meta.url);
@@ -68,21 +28,21 @@ const getOwnPluginId = (): string => {
   return pluginId;
 };
 
-const createCallAction = <TActions extends TActionContract>(
+const createCallAction = <C extends TPluginContract>(
   actions: TPluginActions
 ) => {
   const pluginId = getOwnPluginId();
 
-  const callAction: TypedCallAction<TActions> = (name, ...args) => {
+  const callAction: TypedCallAction<TContractActions<C>> = (name, ...args) => {
     const payload = args[0];
 
     return actions.executePluginAction(pluginId, name, payload) as Promise<
-      TActions[typeof name]['response']
+      TContractActions<C>[typeof name]['response']
     >;
   };
 
   return callAction;
 };
 
-export { createCallAction, createRegisterAction };
-export type { TActionContract, TypedCallAction, TypedRegisterAction };
+export { createCallAction };
+export type { TActionContract, TypedCallAction };

@@ -11,12 +11,17 @@ import type {
   TChannel,
   TCommandArg,
   TCommandContract,
+  TContractActions,
+  TContractCommands,
+  TContractPush,
+  TContractUserData,
   TInvokerContext,
   TJoinedMessage,
   TJoinedPublicUser,
   TJoinedRole,
   TPluginActions,
   TPluginComponentsMapBySlotId,
+  TPluginContract,
   TPluginSettingDefinition,
   TPluginSlotRequirements,
   TPluginStore,
@@ -313,11 +318,25 @@ export interface PluginSettings<
 /**
  * Everything the host hands a plugin, passed to `onLoad`.
  *
+ * Pass the plugin's `TPluginContract` and the parts of the context it covers
+ * are typed from it, names included:
+ *
+ * ```ts
+ * type TSharkord = {
+ *   actions: { roll: { payload: { sides: number }; response: number } };
+ * };
+ *
+ * const onLoad = (ctx: PluginContext<TSharkord>) => { ... };
+ * ```
+ *
+ * The contract is optional, and so is every key in it: what you leave out
+ * behaves as it did before, with `unknown` payloads.
+ *
  * Plugins run inside the server process. There is no sandbox, so nothing here
  * is a security boundary: it is the supported way to reach the host, not a
  * fence around it.
  */
-export interface PluginContext {
+export interface PluginContext<C extends TPluginContract = TPluginContract> {
   /**
    * This plugin's own folder. Read-only in practice: installing an update
    * deletes and rewrites it, so anything you write here is gone afterwards.
@@ -372,9 +391,24 @@ export interface PluginContext {
    * Functions the plugin's own UI can call, through
    * `store.actions.executePluginAction`. Unlike a command, an action is not
    * typed into chat and produces no message.
+   *
+   * The name has to be one of the contract's `actions` keys, and the payload
+   * and return type of `execute` follow from it.
    */
   actions: {
-    register<TPayload = void>(action: ActionDefinition<TPayload>): void;
+    register<K extends keyof TContractActions<C> & string>(action: {
+      name: K;
+      description?: string;
+      /**
+       * The permission a user needs to call this action. Without it the action
+       * is public; either way a server owner can override the access per role.
+       */
+      requires?: Permission;
+      execute: (
+        ctx: TInvokerContext,
+        payload: TContractActions<C>[K]['payload']
+      ) => Promise<TContractActions<C>[K]['response']>;
+    }): void;
   };
 
   /**
@@ -440,9 +474,26 @@ export interface PluginContext {
   /**
    * Slash commands users type into chat. The invocation and its answer render
    * as a chip in the channel, so the response is public.
+   *
+   * The name has to be one of the contract's `commands` keys, and the args and
+   * return type of `execute` follow from it. `args` describes the fields users
+   * fill in; it is the UI side of the same shape.
    */
   commands: {
-    register<TArgs = void>(command: CommandDefinition<TArgs>): void;
+    register<K extends keyof TContractCommands<C> & string>(command: {
+      name: K;
+      description?: string;
+      args?: TCommandArg[];
+      /**
+       * The permission a user needs to run this command. Without it the command
+       * is public; either way a server owner can override the access per role.
+       */
+      requires?: Permission;
+      execute: (
+        ctx: TInvokerContext,
+        args: TContractCommands<C>[K]['args']
+      ) => Promise<TContractCommands<C>[K]['response']>;
+    }): void;
   };
 
   /**
@@ -546,14 +597,14 @@ export interface PluginContext {
   };
 
   push: {
-    toUser(userId: number, data: unknown): void;
-    toUsers(userIds: number[], data: unknown): void;
-    toAll(data: unknown): void;
+    toUser(userId: number, data: TContractPush<C>): void;
+    toUsers(userIds: number[], data: TContractPush<C>): void;
+    toAll(data: TContractPush<C>): void;
   };
 
   userData: {
-    get(userId: number): Promise<Record<string, unknown>>;
-    set(userId: number, data: Record<string, unknown>): Promise<void>;
+    get(userId: number): Promise<TContractUserData<C>>;
+    set(userId: number, data: TContractUserData<C>): Promise<void>;
     delete(userId: number): Promise<void>;
   };
 
@@ -646,14 +697,14 @@ export type UpgradePluginContext = Pick<
  * export { onLoad };
  * ```
  */
-export type PluginModule = {
+export type PluginModule<C extends TPluginContract = TPluginContract> = {
   /**
    * Called once when the plugin loads, and again after every enable or update.
    * Register everything here: commands, actions, hooks, routes, settings, UI.
    *
    * Throwing stops the load and the reason is shown to admins.
    */
-  onLoad: (ctx: PluginContext) => void | Promise<void>;
+  onLoad: (ctx: PluginContext<C>) => void | Promise<void>;
   /**
    * Called when the plugin is disabled, updated, removed, or the server stops.
    * Commands, hooks, routes and event handlers are unregistered for you: this
@@ -708,6 +759,7 @@ export type {
   TInvokerContext,
   TPluginActions,
   TPluginComponentsMapBySlotId,
+  TPluginContract,
   TPluginSlotRequirements,
   TPluginStore,
   TPluginStoreState,
@@ -717,7 +769,6 @@ export type {
 };
 
 export * from './actions';
-export * from './commands';
 export {
   ChannelPermission,
   ChannelType,

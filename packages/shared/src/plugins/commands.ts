@@ -23,11 +23,6 @@ export type TInvokerContext = {
   currentVoiceChannelId?: number;
 };
 
-export type TCommandContract = Record<
-  string,
-  { args: unknown; response: unknown }
->;
-
 /**
  * A slash command. Users type `/name` in chat, and both the invocation and what
  * `execute` returns render as a chip in the channel, so the answer is public.
