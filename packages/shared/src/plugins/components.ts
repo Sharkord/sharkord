@@ -1,5 +1,9 @@
 import type { Permission } from '../statics/permissions';
 
+/**
+ * Where in the client a plugin component can render. Each is a fixed place in
+ * the host's own layout, and a slot can hold components from several plugins.
+ */
 export enum PluginSlot {
   CONNECT_SCREEN = 'connect_screen',
   HOME_SCREEN = 'home_screen',
@@ -9,10 +13,25 @@ export enum PluginSlot {
   USER_SETTINGS = 'user_settings'
 }
 
+/** A component the host renders. It receives no props. */
 export type TPluginReactComponent = React.ComponentType;
 
 export type TPluginSlotRequirements = Partial<Record<PluginSlot, Permission>>;
 
+/**
+ * What a plugin's `client/index.js` exports as `components`.
+ *
+ * ```tsx
+ * export const components: TPluginComponentsMapBySlotId = {
+ *   [PluginSlot.CHAT_ACTIONS]: [MyButton],
+ *   [PluginSlot.USER_SETTINGS]: [MyPreferences]
+ * };
+ * ```
+ *
+ * Components receive no props. Import React from the host through
+ * `window.__SHARKORD_REACT__` rather than bundling your own, or hooks will
+ * throw against a second copy.
+ */
 export type TPluginComponentsMapBySlotId = {
   [slot in PluginSlot]?: TPluginReactComponent[];
 };
@@ -21,19 +40,32 @@ export type TPluginComponentsMap = {
   [pluginId: string]: TPluginComponentsMapBySlotId;
 };
 
+/** One tab in the plugin's own view, beside Settings, Commands and Logs. */
 export type TPluginTab = {
+  /** unique within the plugin, and not one of the reserved built-in ids */
   id: string;
+  /** shown on the tab itself, so write it in the language you ship */
   label: string;
   component: TPluginReactComponent;
 };
 
-/** what a plugin annotates its `tabs` export with */
+/**
+ * What a plugin annotates its `tabs` export with. Admin facing: these render in
+ * server settings, where only someone who can manage plugins will see them.
+ *
+ * ```tsx
+ * export const tabs: TPluginTabs = [
+ *   { id: 'stats', label: 'Stats', component: Stats }
+ * ];
+ * ```
+ */
 export type TPluginTabs = TPluginTab[];
 
 export type TPluginTabsMap = {
   [pluginId: string]: TPluginTab[];
 };
 
+/** built-in tab ids: a custom tab claiming one of these is dropped */
 export const RESERVED_PLUGIN_TAB_IDS = ['settings', 'commands', 'logs'];
 
 const isRenderableComponent = (value: unknown) =>

@@ -2,16 +2,24 @@ import z from 'zod';
 import type { Permission } from '../statics/permissions';
 import { zHttpUrl, zPluginId } from './primitives';
 
+/** One argument of a slash command, rendered as a field in the command chip. */
 export type TCommandArg = {
   name: string;
   description?: string;
   type: 'string' | 'number' | 'boolean';
   required?: boolean;
+  /**
+   * Masks the value in the rendered chip and keeps it out of the plugin log.
+   * For passwords and tokens. It hides the value from onlookers, not from the
+   * server.
+   */
   sensitive?: boolean;
 };
 
+/** Who ran a command or action, and where they were when they did. */
 export type TInvokerContext = {
   userId: number;
+  /** the voice channel they are connected to, if any */
   currentVoiceChannelId?: number;
 };
 
@@ -20,7 +28,24 @@ export type TCommandContract = Record<
   { args: unknown; response: unknown }
 >;
 
+/**
+ * A slash command. Users type `/name` in chat, and both the invocation and what
+ * `execute` returns render as a chip in the channel, so the answer is public.
+ *
+ * ```ts
+ * ctx.commands.register({
+ *   name: 'roll',
+ *   description: 'Roll a die',
+ *   args: [{ name: 'sides', type: 'number', required: true }],
+ *   requires: Permission.SEND_MESSAGES,
+ *   async execute(invoker, args) {
+ *     return { message: `${1 + Math.floor(Math.random() * args.sides)}` };
+ *   }
+ * });
+ * ```
+ */
 export interface CommandDefinition<TArgs = void> {
+  /** what users type after the slash. two plugins cannot share one */
   name: string;
   description?: string;
   args?: TCommandArg[];

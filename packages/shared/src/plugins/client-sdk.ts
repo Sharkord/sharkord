@@ -8,6 +8,10 @@ import type {
 import type { TPublicServerSettings } from '../types';
 import type { TPluginMetadata } from './manifest';
 
+/**
+ * The slice of the client's state a plugin component can read, through
+ * `store.getState()`. A snapshot, not live: subscribe to be told it changed.
+ */
 export type TPluginStoreState = {
   users: TJoinedPublicUser[];
   channels: TChannel[];
@@ -26,9 +30,19 @@ export type TActionContract = Record<
   { payload: unknown; response: unknown }
 >;
 
+/**
+ * What a plugin's client code can ask the app to do, through
+ * `window.__SHARKORD_STORE__.actions`.
+ *
+ * Every call takes the plugin id because a bundle has no identity of its own in
+ * the page. Inside a rendered component prefer the hooks, which know which
+ * plugin they belong to.
+ */
 export type TPluginActions = {
+  /** sends as the signed-in user, not as the plugin */
   sendMessage: (channelId: number, content: string) => Promise<void>;
   selectChannel: (channelId: number) => void;
+  /** calls one of the plugin's own `ctx.actions.register` functions */
   executePluginAction: <TResponse = unknown, TPayload = unknown>(
     pluginId: string,
     actionName: string,
@@ -58,10 +72,22 @@ export type TPluginHooks = {
   useUserData: () => TPluginUserData;
 };
 
+/**
+ * The bridge between a plugin's client code and the app, on
+ * `window.__SHARKORD_STORE__`.
+ */
 export type TPluginStore = {
   getState: () => TPluginStoreState;
+  /**
+   * Fires on **every** state change in the app, not only the parts you read, so
+   * compare what you care about before doing work. Returns an unsubscribe.
+   */
   subscribe: (listener: () => void) => () => void;
   actions: TPluginActions;
+  /**
+   * React hooks created by the host, so they share its React and know which
+   * plugin is rendering. Only valid inside a component the host renders.
+   */
   hooks: TPluginHooks;
 };
 

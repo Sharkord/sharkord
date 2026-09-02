@@ -1,9 +1,16 @@
 import z from 'zod';
 import { zHttpUrl, zPluginId } from './primitives';
 
+/**
+ * The SDK contract this server speaks. A plugin declares the same number as
+ * `sdkVersion` in its manifest, and one that does not match is refused at load
+ * rather than failing later against an API that moved.
+ */
 export const PLUGIN_SDK_VERSION = 2;
 
+/** where the host looks for a plugin's `onLoad` */
 export const SERVER_ENTRY_FILE = 'server/index.js';
+/** the only file of a plugin the browser can fetch, so bundle the UI into it */
 export const CLIENT_ENTRY_FILE = 'client/index.js';
 
 export const zPluginManifest = z.object({
