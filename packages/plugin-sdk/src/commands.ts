@@ -1,4 +1,5 @@
 import type {
+  Permission,
   TCommandArg,
   TCommandContract,
   TInvokerContext
@@ -12,6 +13,11 @@ type TypedRegisterCommand<TCommands extends TCommandContract> = <
   options: {
     description?: string;
     args?: TCommandArg[];
+    /**
+     * The permission a user needs to run this command. Without it the command
+     * is public; either way a server owner can override the access per role.
+     */
+    requires?: Permission;
   },
   handler: (
     invoker: TInvokerContext,
@@ -31,6 +37,7 @@ const createRegisterCommand = <TCommands extends TCommandContract>(
       name,
       description: options.description,
       args: options.args,
+      requires: options.requires,
       async execute(invokerCtx, args) {
         return handler(invokerCtx, args as never);
       }

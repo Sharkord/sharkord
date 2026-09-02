@@ -1,9 +1,11 @@
 import type {
+  Permission,
   TActionContract,
   TInvokerContext,
   TPluginActions
 } from '@sharkord/shared';
-import { getPluginIdFromBundleUrl } from '@sharkord/shared';
+// deep import: the '@sharkord/shared' barrel pulls zod into every client bundle
+import { getPluginIdFromBundleUrl } from '@sharkord/shared/src/plugins/client-sdk';
 import type { PluginContext } from '.';
 
 type TypedRegisterAction<TActions extends TActionContract> = <
@@ -13,7 +15,15 @@ type TypedRegisterAction<TActions extends TActionContract> = <
   handler: (
     invoker: TInvokerContext,
     payload: TActions[K]['payload']
-  ) => Promise<TActions[K]['response']>
+  ) => Promise<TActions[K]['response']>,
+  options?: {
+    description?: string;
+    /**
+     * The permission a user needs to call this action. Without it the action
+     * is public; either way a server owner can override the access per role.
+     */
+    requires?: Permission;
+  }
 ) => void;
 
 type TypedCallAction<TActions extends TActionContract> = <
@@ -28,9 +38,15 @@ type TypedCallAction<TActions extends TActionContract> = <
 const createRegisterAction = <TActions extends TActionContract>(
   ctx: PluginContext
 ) => {
-  const registerAction: TypedRegisterAction<TActions> = (name, handler) => {
+  const registerAction: TypedRegisterAction<TActions> = (
+    name,
+    handler,
+    options
+  ) => {
     ctx.actions.register({
       name,
+      description: options?.description,
+      requires: options?.requires,
       async execute(invokerCtx, payload) {
         return handler(invokerCtx, payload as never);
       }
