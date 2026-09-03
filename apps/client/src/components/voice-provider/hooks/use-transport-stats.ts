@@ -1,6 +1,11 @@
 import { logVoice, logVoiceError } from '@/helpers/browser-logger';
-import type { AppData, Producer, Transport } from 'mediasoup-client/types';
+import type { Producer, Transport } from 'mediasoup-client/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { TWhipPublisher } from '../whip-publisher';
+
+// the screen share publisher is either a mediasoup-client producer or the
+// WHIP RTCPeerConnection wrapper; both expose the same stats surface
+type TScreenShareStatsSource = Producer | TWhipPublisher;
 
 export type TransportStats = {
   bytesReceived: number;
@@ -75,7 +80,7 @@ const useTransportStats = () => {
   const subscriberCountRef = useRef(0);
   const producerTransportRef = useRef<Transport | null>(null);
   const consumerTransportRef = useRef<Transport | null>(null);
-  const screenShareProducerRef = useRef<Producer<AppData> | null>(null);
+  const screenShareProducerRef = useRef<TScreenShareStatsSource | null>(null);
   const previousStatsRef = useRef<{
     producer: TransportStats | null;
     consumer: TransportStats | null;
@@ -456,7 +461,7 @@ const useTransportStats = () => {
   );
 
   const setScreenShareProducer = useCallback(
-    (producer: Producer<AppData> | null | undefined) => {
+    (producer: TScreenShareStatsSource | null | undefined) => {
       screenShareProducerRef.current = producer || null;
 
       if (!producer) {

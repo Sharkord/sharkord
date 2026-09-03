@@ -66,6 +66,10 @@ const zConfig = z.object({
     announcedAddress: z.string(),
     maxBitrate: z.coerce.number().int().positive()
   }),
+  whip: z.object({
+    enabled: z.coerce.boolean(),
+    key: z.string()
+  }),
   rateLimiters: z.object({
     sendAndEditMessage: zRateLimiter,
     joinVoiceChannel: zRateLimiter,
@@ -87,7 +91,8 @@ const zConfig = z.object({
     voiceStream: zRateLimiter,
     useSecretToken: zRateLimiter,
     pluginExecute: zRateLimiter,
-    oidc: zRateLimiter
+    oidc: zRateLimiter,
+    whip: zRateLimiter
   })
 });
 
@@ -122,6 +127,10 @@ const defaultConfig: TConfig = {
     port: 40000,
     announcedAddress: '',
     maxBitrate: 30_000_000 // 30 Mbps
+  },
+  whip: {
+    enabled: false,
+    key: ''
   },
   rateLimiters: {
     sendAndEditMessage: {
@@ -207,6 +216,10 @@ const defaultConfig: TConfig = {
     oidc: {
       maxRequests: 30,
       windowMs: 60_000
+    },
+    whip: {
+      maxRequests: 20,
+      windowMs: 60_000
     }
   }
 };
@@ -261,7 +274,9 @@ const envOverridesMap: Record<string, string> = {
   'oidc.disableLocalLogin': 'SHARKORD_OIDC_DISABLE_LOCAL_LOGIN',
   'webRtc.port': 'SHARKORD_WEBRTC_PORT',
   'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS',
-  'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE'
+  'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE',
+  'whip.enabled': 'SHARKORD_WHIP_ENABLED',
+  'whip.key': 'SHARKORD_WHIP_KEY'
 };
 
 // validated again after the overrides, otherwise an env var could put a value

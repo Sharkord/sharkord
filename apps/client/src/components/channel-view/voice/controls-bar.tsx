@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { ControlToggleButton } from './control-toggle-button';
+import { WhipIngestButton } from './whip-ingest-button';
 
 type TControlsBarProps = {
   channelId: number;
@@ -115,6 +116,15 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
             disabled={!permissions.canShareScreen}
           />
         )}
+
+        <WhipIngestButton
+          channelId={channelId}
+          className={
+            permissions.canShareScreen
+              ? undefined
+              : 'opacity-50 pointer-events-none'
+          }
+        />
       </div>
       <Tooltip content="Disconnect">
         <Button

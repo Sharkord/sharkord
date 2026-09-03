@@ -17,6 +17,7 @@ import {
   onVoiceUpdateExternalStreamRoute
 } from './events';
 import { getProducersRoute } from './get-producers';
+import { getWhipIngestInfoRoute } from './get-whip-ingest-info';
 import { joinVoiceRoute } from './join';
 import { leaveVoiceRoute } from './leave';
 import { moveUserRoute } from './move';
@@ -38,6 +39,7 @@ export const voiceRouter = t.router({
   consume: consumeRoute,
   setConsumerQuality: setConsumerQualityRoute,
   getProducers: getProducersRoute,
+  getWhipIngestInfo: getWhipIngestInfoRoute,
   onJoin: onUserJoinVoiceRoute,
   onLeave: onUserLeaveVoiceRoute,
   onUpdateState: onUserUpdateVoiceStateRoute,

@@ -54,6 +54,13 @@ type TVoiceDebugProducer = {
   stats: TVoiceDebugStat[];
 };
 
+// the screen share publishes through a WHIP RTCPeerConnection instead of a
+// mediasoup-client producer, so the debug source carries this subset
+type TVoiceDebugWhipPublisher = {
+  closed: boolean;
+  getStats: () => Promise<RTCStatsReport>;
+};
+
 type TVoiceDebugConsumer = {
   remoteId: number;
   kind: string;
@@ -82,7 +89,7 @@ type TVoiceDebugSnapshot = {
 type TVoiceDebugSource = () => {
   producerTransport?: Transport;
   consumerTransport?: Transport;
-  producers: { kind: string; producer?: Producer }[];
+  producers: { kind: string; producer?: Producer | TVoiceDebugWhipPublisher }[];
   consumers: { remoteId: number; kind: string; consumer: Consumer }[];
   routerRtpCapabilities?: RtpCapabilities | null;
   deviceRtpCapabilities?: RtpCapabilities | null;
@@ -207,28 +214,55 @@ const describeTransport = async (
       )
 });
 
+// mediasoup producers carry the mediasoup-only surface; anything with stats
+// but without it is the WHIP publisher
+const isMediasoupProducer = (producer: unknown): producer is Producer =>
+  !!producer &&
+  'id' in (producer as object) &&
+  'rtpParameters' in (producer as object);
+
 const describeProducer = async (
   kind: string,
-  producer: Producer,
+  producer: Producer | TVoiceDebugWhipPublisher,
   collectErrors: string[]
-): Promise<TVoiceDebugProducer> => ({
-  kind,
-  id: producer.id,
-  mediaKind: producer.kind,
-  closed: producer.closed,
-  paused: producer.paused,
-  maxSpatialLayer: producer.maxSpatialLayer,
-  codec: producer.rtpParameters?.codecs?.[0]?.mimeType,
-  encodings: producer.rtpParameters?.encodings ?? [],
-  track: describeTrack(producer.track),
-  stats: producer.closed
-    ? []
-    : await readStats(
-        () => producer.getStats(),
-        `${kind} producer stats`,
-        collectErrors
-      )
-});
+): Promise<TVoiceDebugProducer> => {
+  if (!isMediasoupProducer(producer)) {
+    return {
+      kind,
+      id: 'whip-session',
+      mediaKind: 'video',
+      closed: producer.closed,
+      paused: false,
+      encodings: [],
+      stats: producer.closed
+        ? []
+        : await readStats(
+            () => producer.getStats(),
+            `${kind} whip publisher stats`,
+            collectErrors
+          )
+    };
+  }
+
+  return {
+    kind,
+    id: producer.id,
+    mediaKind: producer.kind,
+    closed: producer.closed,
+    paused: producer.paused,
+    maxSpatialLayer: producer.maxSpatialLayer,
+    codec: producer.rtpParameters?.codecs?.[0]?.mimeType,
+    encodings: producer.rtpParameters?.encodings ?? [],
+    track: describeTrack(producer.track),
+    stats: producer.closed
+      ? []
+      : await readStats(
+          () => producer.getStats(),
+          `${kind} producer stats`,
+          collectErrors
+        )
+  };
+};
 
 const describeConsumer = async (
   remoteId: number,

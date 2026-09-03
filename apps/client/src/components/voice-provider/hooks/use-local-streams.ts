@@ -1,5 +1,6 @@
-import type { AppData, Producer } from 'mediasoup-client/types';
+import type { Producer } from 'mediasoup-client/types';
 import { useCallback, useRef, useState } from 'react';
+import type { TWhipPublisher } from '../whip-publisher';
 
 const useLocalStreams = () => {
   const [localVideoStream, setLocalVideoStream] = useState<
@@ -15,14 +16,16 @@ const useLocalStreams = () => {
     MediaStream | undefined
   >(undefined);
 
-  const localVideoProducer = useRef<Producer<AppData> | undefined>(undefined);
-  const localAudioProducer = useRef<Producer<AppData> | undefined>(undefined);
-  const localScreenShareProducer = useRef<Producer<AppData> | undefined>(
-    undefined
-  );
-  const localScreenShareAudioProducer = useRef<Producer<AppData> | undefined>(
-    undefined
-  );
+  const localVideoProducer = useRef<Producer | undefined>(undefined);
+  const localAudioProducer = useRef<Producer | undefined>(undefined);
+  // screen share publishes through WHIP, so these hold the WHIP publisher;
+  // the mediasoup-client producer type stays for webcam/mic parity
+  const localScreenShareProducer = useRef<
+    TWhipPublisher | Producer | undefined
+  >(undefined);
+  const localScreenShareAudioProducer = useRef<
+    TWhipPublisher | Producer | undefined
+  >(undefined);
 
   const clearLocalStreams = useCallback(() => {
     localVideoStream?.getTracks().forEach((track) => track.stop());

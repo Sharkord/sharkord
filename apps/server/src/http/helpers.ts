@@ -132,7 +132,11 @@ const applyCorsHeaders = (
     'Access-Control-Allow-Methods',
     supportedHttpMethods.join(', ')
   );
-  res.setHeader('Access-Control-Allow-Headers', '*');
+  // "*" does not cover Authorization in the fetch spec, so common headers are
+  // listed explicitly for cross-origin WHIP publishers
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+  // let browser clients read the WHIP session URL out of the response
+  res.setHeader('Access-Control-Expose-Headers', 'Location, Link');
 };
 
 const hasPrefixPathSegment = (pathname: string, prefix: string): boolean => {
