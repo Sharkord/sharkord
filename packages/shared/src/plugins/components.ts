@@ -8,13 +8,38 @@ export enum PluginSlot {
   CONNECT_SCREEN = 'connect_screen',
   HOME_SCREEN = 'home_screen',
   CHAT_ACTIONS = 'chat_actions',
+  MESSAGE_ACTIONS = 'message_actions',
   TOPBAR_RIGHT = 'topbar_right',
   FULL_SCREEN = 'full_screen',
   USER_SETTINGS = 'user_settings'
 }
 
-/** A component the host renders. It receives no props. */
-export type TPluginReactComponent = React.ComponentType;
+/**
+ * What the host passes each slot's components. A slot that renders inside
+ * something says what that something is, which is the only way a component can
+ * know: the store's selected channel is a guess that is wrong in a thread, and
+ * nothing in the store says which message a row belongs to.
+ *
+ * Ids only. Anything else about them is a lookup the plugin can do itself, on
+ * the server where it has the whole row.
+ */
+export type TPluginSlotProps = {
+  [PluginSlot.CONNECT_SCREEN]: EmptyProps;
+  [PluginSlot.HOME_SCREEN]: EmptyProps;
+  /** the composer the button sits in */
+  [PluginSlot.CHAT_ACTIONS]: { channelId: number };
+  /** the message the row belongs to */
+  [PluginSlot.MESSAGE_ACTIONS]: { messageId: number; channelId: number };
+  [PluginSlot.TOPBAR_RIGHT]: EmptyProps;
+  [PluginSlot.FULL_SCREEN]: EmptyProps;
+  [PluginSlot.USER_SETTINGS]: EmptyProps;
+};
+
+type EmptyProps = Record<string, never>;
+
+/** A component the host renders, with whatever its slot passes. */
+export type TPluginReactComponent<TProps = EmptyProps> =
+  React.ComponentType<TProps>;
 
 export type TPluginSlotRequirements = Partial<Record<PluginSlot, Permission>>;
 
@@ -23,17 +48,18 @@ export type TPluginSlotRequirements = Partial<Record<PluginSlot, Permission>>;
  *
  * ```tsx
  * export const components: TPluginComponentsMapBySlotId = {
- *   [PluginSlot.CHAT_ACTIONS]: [MyButton],
+ *   [PluginSlot.CHAT_ACTIONS]: [({ channelId }) => <MyButton channelId={channelId} />],
  *   [PluginSlot.USER_SETTINGS]: [MyPreferences]
  * };
  * ```
  *
- * Components receive no props. Import React from the host through
+ * Each slot types its components from `TPluginSlotProps`, so a component that
+ * takes no props still fits anywhere. Import React from the host through
  * `window.__SHARKORD_REACT__` rather than bundling your own, or hooks will
  * throw against a second copy.
  */
 export type TPluginComponentsMapBySlotId = {
-  [slot in PluginSlot]?: TPluginReactComponent[];
+  [S in PluginSlot]?: TPluginReactComponent<TPluginSlotProps[S]>[];
 };
 
 export type TPluginComponentsMap = {

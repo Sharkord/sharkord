@@ -32,6 +32,22 @@ const ActionButtons = () => {
   );
 };
 
+// renders what the slot passed in, so a test can prove the props arrive and
+// not merely that the component mounted
+const ChatAction = ({ channelId }) =>
+  React.createElement(
+    'div',
+    { 'data-testid': 'e2e-plugin-chat-action-props' },
+    `channel:${channelId}`
+  );
+
+const MessageAction = ({ messageId, channelId }) =>
+  React.createElement(
+    'div',
+    { 'data-testid': 'e2e-plugin-message-action' },
+    `message:${messageId} channel:${channelId}`
+  );
+
 const UserSettings = () => {
   const { data, loading, save } = window.__SHARKORD_STORE__.hooks.useUserData();
 
@@ -60,7 +76,8 @@ export const components = {
   // the topbar is on screen for the whole session, unlike chat_actions which
   // needs a channel open first
   topbar_right: [testable('e2e-plugin-topbar', 'topbar'), ActionButtons],
-  chat_actions: [testable('e2e-plugin-chat-action', 'chat action')],
+  chat_actions: [testable('e2e-plugin-chat-action', 'chat action'), ChatAction],
+  message_actions: [MessageAction],
   user_settings: [UserSettings]
 };
 

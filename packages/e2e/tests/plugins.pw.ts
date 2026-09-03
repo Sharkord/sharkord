@@ -60,6 +60,30 @@ test('renders a plugin component in the chat actions slot', async ({
   await expect(chatActionSlot(page)).toBeVisible();
 });
 
+// the store's selected channel is a guess: it is wrong in a thread, and says
+// nothing about which message a row belongs to. the slot has to pass it
+test('passes the channel to a chat actions component', async ({ page }) => {
+  await loginAs(page, OWNER.identity, OWNER.password);
+  await openChannel(page, 'General');
+
+  await expect(page.getByTestId('e2e-plugin-chat-action-props')).toHaveText(
+    'channel:1'
+  );
+});
+
+test('passes the message to a message actions component', async ({ page }) => {
+  await loginAs(page, OWNER.identity, OWNER.password);
+  await openChannel(page, 'General');
+
+  // the actions row only exists while the message is hovered
+  await page.getByTestId(TestId.MESSAGE_ITEM).first().hover();
+
+  const action = page.getByTestId('e2e-plugin-message-action').first();
+
+  await expect(action).toBeVisible();
+  await expect(action).toHaveText(/^message:\d+ channel:1$/);
+});
+
 test('renders the plugin entry and its component in user settings', async ({
   page
 }) => {

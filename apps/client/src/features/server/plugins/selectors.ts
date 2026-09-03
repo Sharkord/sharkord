@@ -62,7 +62,7 @@ export const pluginComponentsBySlotSelector = createCachedSelector(
       const slots = pluginComponents[pluginId];
 
       if (slots?.[slotId]) {
-        componentsBySlot[pluginId] = slots[slotId];
+        componentsBySlot[pluginId] = slots[slotId] as TPluginReactComponent[];
       }
     }
 
