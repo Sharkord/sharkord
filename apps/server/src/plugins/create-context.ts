@@ -24,8 +24,10 @@ import {
 } from '../db/queries/plugin-user-data';
 import { getRole, getRoles, userCan } from '../db/queries/roles';
 import { getPublicUserById, getPublicUsers } from '../db/queries/users';
+import { getPluginVoiceRuntime } from '../helpers/get-plugin-voice-runtime';
 import { VoiceRuntime } from '../runtimes/voice';
 import { pubsub } from '../utils/pubsub';
+import { consumeVoiceProducer } from './actions/consume-voice-producer';
 import { createPluginMessage } from './actions/create-plugin-message';
 import { deletePluginMessage } from './actions/delete-plugin-message';
 import { editPluginMessage } from './actions/edit-plugin-message';
@@ -86,22 +88,12 @@ type TContextDependencies = {
   ) => void;
 };
 
-const getVoiceRuntime = (channelId: number) => {
-  const channel = VoiceRuntime.findById(channelId);
-
-  if (!channel) {
-    throw new Error(`Voice runtime not found for channel ID ${channelId}`);
-  }
-
-  return channel;
-};
-
 const createStream = (
   pluginId: string,
   scopedLogger: ScopedLogger,
   options: TCreateStreamOptions
 ): TExternalStreamHandle => {
-  const channel = getVoiceRuntime(options.channelId);
+  const channel = getPluginVoiceRuntime(options.channelId);
 
   const streamId = channel.createExternalStream({
     title: options.title,
@@ -177,10 +169,16 @@ const createUnloadContext = ({
     disable: () => setUiEnabled(false)
   },
   voice: {
-    getRouter: (channelId: number) => getVoiceRuntime(channelId).getRouter(),
+    getRouter: (channelId: number) =>
+      getPluginVoiceRuntime(channelId).getRouter(),
     createStream: (options: TCreateStreamOptions) =>
       createStream(pluginId, scopedLogger, options),
-    getListenInfo: () => VoiceRuntime.getListenInfo()
+    getListenInfo: () => VoiceRuntime.getListenInfo(),
+    getState: (channelId: number) =>
+      getPluginVoiceRuntime(channelId).getState(),
+    getProducers: (channelId: number) =>
+      getPluginVoiceRuntime(channelId).listProducers(),
+    consume: (options) => consumeVoiceProducer(pluginId, scopedLogger, options)
   },
   messages: {
     send: async (channelId, content, options) =>

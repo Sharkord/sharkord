@@ -7,6 +7,7 @@ import {
   type TStreamQualityLayer,
   type TTransportParams,
   type TVoiceMap,
+  type TVoiceProducerInfo,
   type TVoiceUserState
 } from '@sharkord/shared';
 import type {
@@ -651,7 +652,21 @@ class VoiceRuntime {
 
     this.setProducerQualityLayers(userId, type, validatedQualityLayers);
 
+    eventBus.emit('voice:producer_added', {
+      channelId: this.id,
+      userId,
+      kind: type,
+      producerId: producer.id
+    });
+
     producer.observer.on('close', () => {
+      eventBus.emit('voice:producer_removed', {
+        channelId: this.id,
+        userId,
+        kind: type,
+        producerId: producer.id
+      });
+
       if (type === StreamKind.VIDEO) {
         delete this.videoProducers[userId];
       } else if (type === StreamKind.AUDIO) {
@@ -1010,6 +1025,24 @@ class VoiceRuntime {
     return kind === 'audio'
       ? internal.producers.audioProducer
       : internal.producers.videoProducer;
+  };
+
+  public listProducers = (): TVoiceProducerInfo[] => {
+    const maps = [
+      [StreamKind.AUDIO, this.audioProducers],
+      [StreamKind.VIDEO, this.videoProducers],
+      [StreamKind.SCREEN, this.screenProducers],
+      [StreamKind.SCREEN_AUDIO, this.screenAudioProducers]
+    ] as const;
+
+    return maps.flatMap(([kind, producers]) =>
+      Object.entries(producers).map(([userId, producer]) => ({
+        userId: +userId,
+        kind,
+        producerId: producer.id,
+        paused: producer.paused
+      }))
+    );
   };
 
   public getRemoteIds = (userId: number): TRemoteProducerIds => {

@@ -40,6 +40,7 @@ import {
 import { logger } from '../logger';
 import { ensureDir } from '../utils/fs';
 import { pubsub } from '../utils/pubsub';
+import { closePluginVoiceConsumers } from './actions/consume-voice-producer';
 import {
   createContext,
   createUnloadContext,
@@ -724,6 +725,7 @@ class PluginManager {
   };
 
   private forget = (pluginId: string) => {
+    closePluginVoiceConsumers(pluginId);
     eventBus.unload(pluginId);
     this.commandRegistry.unload(pluginId);
     this.actionRegistry.unload(pluginId);

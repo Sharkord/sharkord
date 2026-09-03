@@ -9,6 +9,7 @@ import type {
   TBeforeVoiceJoinHook,
   TCategory,
   TChannel,
+  TChannelState,
   TCommandArg,
   TCommandContract,
   TContractActions,
@@ -28,7 +29,8 @@ import type {
   TPluginStoreState,
   TPluginTab,
   TPluginTabs,
-  TStreamQualityLayer
+  TStreamQualityLayer,
+  TVoiceProducerInfo
 } from '@sharkord/shared';
 import {
   ChannelPermission,
@@ -37,10 +39,40 @@ import {
   MessageSaveType,
   Permission,
   PLUGIN_SDK_VERSION,
-  PluginSlot
+  PluginSlot,
+  StreamKind
 } from '@sharkord/shared';
 import type { IncomingMessage, ServerResponse } from 'http';
-import type { AppData, Producer, Router } from 'mediasoup/types';
+import type { AppData, Producer, Router, RtpParameters } from 'mediasoup/types';
+
+/** What to consume, and where its packets go. */
+export type TConsumeOptions = {
+  channelId: number;
+  /** the producing user, from `getProducers` or `voice:producer_added` */
+  userId: number;
+  kind: StreamKind;
+  /**
+   * One RTP packet, header included. Called often: for audio roughly every
+   * 20ms per speaker, so keep it to buffering and do the work elsewhere.
+   */
+  onRtp: (packet: Buffer) => void;
+};
+
+/**
+ * A live consumer of someone's media. Close it when you are done, or it keeps
+ * pulling packets until the producer ends or the plugin unloads.
+ */
+export type TVoiceConsumerHandle = {
+  producerId: string;
+  /**
+   * What the packets are, which is what an SDP needs if you hand them to
+   * ffmpeg later.
+   */
+  rtpParameters: RtpParameters;
+  /** video only, and needed before the first frame is decodable */
+  requestKeyFrame(): Promise<void>;
+  close(): void;
+};
 
 /**
  * A stream the plugin produces into a voice channel, so it appears alongside
@@ -113,6 +145,8 @@ export type ServerEvent =
   | 'message:deleted'
   | 'voice:runtime_initialized'
   | 'voice:runtime_closed'
+  | 'voice:producer_added'
+  | 'voice:producer_removed'
   | 'setting:set'
   | 'reaction:added'
   | 'reaction:removed'
@@ -278,6 +312,24 @@ export interface EventPayloads {
   'voice:runtime_closed': {
     channelId: number;
   };
+  /**
+   * A user started sending audio, video or a screen. The producer is live from
+   * here until `voice:producer_removed`, so this is where a recorder starts
+   * consuming; for whoever was already producing, read `getProducers`.
+   */
+  'voice:producer_added': {
+    channelId: number;
+    userId: number;
+    kind: StreamKind;
+    producerId: string;
+  };
+  /** fires however the producer ended: stopped, disconnected or channel closed */
+  'voice:producer_removed': {
+    channelId: number;
+    userId: number;
+    kind: StreamKind;
+    producerId: string;
+  };
   'setting:set': {
     key: string;
     value: unknown;
@@ -424,6 +476,26 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
       ip: string;
       announcedAddress: string | undefined;
     };
+    /** who is connected, what they have muted, and the plugin streams playing */
+    getState(channelId: number): TChannelState;
+    /**
+     * Every live producer in the channel. A recorder that starts mid call has
+     * to read this as well as listening for `voice:producer_added`, or it only
+     * hears whoever unmutes after it started.
+     */
+    getProducers(channelId: number): TVoiceProducerInfo[];
+    /**
+     * Receives a user's media as RTP packets, in this process: no ports and no
+     * external program. What arrives is exactly what the browser sent, so audio
+     * is Opus at 48kHz and decoding it is yours to do.
+     *
+     * Pipe it to ffmpeg instead when you want a file: create a plain transport
+     * from `getRouter()` and consume the same `producerId`, which is the path
+     * that gets you decoding, resampling and muxing for free.
+     *
+     * The handle closes itself when the producer ends or the plugin unloads.
+     */
+    consume(options: TConsumeOptions): Promise<TVoiceConsumerHandle>;
   };
 
   /**
