@@ -17,6 +17,7 @@ import {
 import {
   NoiseSuppression,
   Resolution,
+  ScreenCursor,
   VideoCodec,
   type TDeviceSettings
 } from '@/types';
@@ -600,6 +601,32 @@ const Devices = memo(() => {
               </Select>
             </div>
           </div>
+
+          <Group label={t('screenCursorLabel')}>
+            <Select
+              value={values.screenCursor ?? ScreenCursor.ALWAYS}
+              onValueChange={(value) =>
+                onChange('screenCursor', value as ScreenCursor)
+              }
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value={ScreenCursor.ALWAYS}>
+                    {t('screenCursorAlways')}
+                  </SelectItem>
+                  <SelectItem value={ScreenCursor.MOTION}>
+                    {t('screenCursorMotion')}
+                  </SelectItem>
+                  <SelectItem value={ScreenCursor.NEVER}>
+                    {t('screenCursorNever')}
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Group>
 
           <div className="flex flex-col gap-2">
             <Label>{t('maxBitrateLabel')}</Label>
