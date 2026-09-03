@@ -1,4 +1,5 @@
 import z from 'zod';
+import type { TLocale } from '../statics/locales';
 import type { Permission } from '../statics/permissions';
 import { zHttpUrl, zPluginId } from './primitives';
 
@@ -16,11 +17,44 @@ export type TCommandArg = {
   sensitive?: boolean;
 };
 
-/** Who ran a command or action, and where they were when they did. */
+/** Where an invocation came from, since a command can arrive both ways. */
+export type TInvokerSource = 'chat' | 'api';
+
+/**
+ * Who ran a command or action, and where they were when they did.
+ *
+ * Every id here is one the host proved the caller can reach, so it is safe to
+ * write to. `locale` is the exception: it is what the client said it is using,
+ * which is worth nothing more than the language of a reply.
+ */
 export type TInvokerContext = {
   userId: number;
+  /**
+   * `chat` when the user typed the command into a channel, where the answer
+   * renders as a public chip; `api` when a plugin's own UI called it and the
+   * answer goes back to that caller alone.
+   */
+  source: TInvokerSource;
+  /**
+   * The channel the invocation came from: where the command was typed, or what
+   * the caller had open. Absent when the caller had no channel open.
+   */
+  channelId?: number;
+  /**
+   * The thread the command was typed in, when it was. Answer with this as
+   * `parentMessageId` or the reply lands in the channel instead of the thread.
+   */
+  parentMessageId?: number;
+  /** the command's own message, for replying to it. chat invocations only */
+  messageId?: number;
   /** the voice channel they are connected to, if any */
   currentVoiceChannelId?: number;
+  /**
+   * The language the client is showing, for plugins that answer in text. Read
+   * when the session started, so a user who switches language mid session is
+   * still reported as the language they joined with.
+   */
+  locale: TLocale;
 };
 
 /**

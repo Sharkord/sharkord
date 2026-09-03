@@ -244,7 +244,12 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
               .executeCommand(
                 foundCommand.pluginId,
                 foundCommand.name,
-                getInvokerCtxFromTrpcCtx(ctx),
+                getInvokerCtxFromTrpcCtx(ctx, {
+                  source: 'chat',
+                  channelId: input.channelId,
+                  parentMessageId: input.parentMessageId,
+                  messageId
+                }),
                 argsObject
               )
               .then((response) => updateCommandStatus('completed', response))

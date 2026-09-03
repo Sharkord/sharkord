@@ -5,6 +5,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import type { TPluginActions, TPluginStore } from '@sharkord/shared';
 import { prepareMessageHtml, UploadHeaders } from '@sharkord/shared';
 import { setSelectedChannelId } from '../channels/actions';
+import { selectedChannelIdSelector } from '../channels/selectors';
 import { mapStateToPluginState } from '../selectors';
 import { onPluginPush } from './push-registry';
 import { usePluginCanUse } from './use-plugin-can-use';
@@ -30,11 +31,13 @@ const pluginActions: TPluginActions = {
     payload?: TPayload
   ) => {
     const trpc = getTRPCClient();
+    const state = store.getState();
 
     return trpc.plugins.executeAction.mutate({
       pluginId,
       actionName,
-      payload
+      payload,
+      channelId: selectedChannelIdSelector(state)
     }) as Promise<TResponse>;
   },
   fetchPluginRoute: (pluginId: string, path: string, init?: RequestInit) =>

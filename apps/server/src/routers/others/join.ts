@@ -1,4 +1,9 @@
-import { ActivityLogType, ServerEvents, UserStatus } from '@sharkord/shared';
+import {
+  ActivityLogType,
+  ServerEvents,
+  UserStatus,
+  zLocale
+} from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
@@ -34,7 +39,8 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
   .input(
     z.object({
       handshakeHash: z.string(),
-      password: z.string().optional()
+      password: z.string().optional(),
+      locale: zLocale.optional()
     })
   )
   .query(async ({ input, ctx }) => {
@@ -75,6 +81,8 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
 
     ctx.authenticated = true;
     ctx.setWsUserId(ctx.user.id);
+
+    if (input.locale) ctx.locale = input.locale;
 
     const [
       allCategories,

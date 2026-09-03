@@ -2,6 +2,7 @@ import {
   ChannelPermission,
   UserStatus,
   type Permission,
+  type TLocale,
   type TUser
 } from '@sharkord/shared';
 import { initTRPC, TRPCError } from '@trpc/server';
@@ -25,6 +26,7 @@ export type Context = {
   userId: number;
   token: string;
   currentVoiceChannelId: number | undefined;
+  locale: TLocale;
   hasPermission: (
     targetPermission: Permission | Permission[]
   ) => Promise<boolean>;

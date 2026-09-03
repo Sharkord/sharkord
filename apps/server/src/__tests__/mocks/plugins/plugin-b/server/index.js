@@ -43,6 +43,23 @@ const onLoad = (ctx) => {
     }
   });
 
+  // hands the whole invoker context back, so tests can assert what reached it
+  ctx.commands.register({
+    name: 'echo-invoker',
+    description: 'Returns the invoker context it was called with',
+    async executes(invokerCtx) {
+      return invokerCtx;
+    }
+  });
+
+  ctx.actions.register({
+    name: 'echo-invoker',
+    description: 'Returns the invoker context it was called with',
+    async executes(invokerCtx) {
+      return invokerCtx;
+    }
+  });
+
   ctx.commands.register({
     name: 'can-manage-users',
     description: 'Whether a user may manage users',

@@ -1,12 +1,14 @@
 import {
   ActivityLogType,
   ChannelType,
+  DEFAULT_LOCALE,
   OWNER_ROLE_ID,
   Permission,
   PluginCapabilityMode,
   PluginCapabilityType,
   PluginSlot,
   ServerEvents,
+  type TInvokerContext,
   type TPluginInfo,
   type TPluginPushEvent
 } from '@sharkord/shared';
@@ -923,6 +925,149 @@ describe('plugins router', () => {
       expect(first!.status).toBe('rejected');
       expect(second!.status).toBe('fulfilled');
       expect(calls).toBe(2);
+    });
+  });
+
+  // what a plugin is told about where it was called from. every id here is one
+  // the route proved the caller can reach, so a plugin can write to it
+  describe('invoker context', () => {
+    const echoInvoker = async (
+      caller: Awaited<ReturnType<typeof initTest>>['caller'],
+      channelId?: number
+    ) =>
+      (await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'echo-invoker',
+        channelId
+      })) as TInvokerContext;
+
+    const DM_CHANNEL_ID = 3;
+    const PRIVATE_VOICE_CHANNEL_ID = 4;
+    const MODERATOR_ROLE = 4;
+    const MODERATOR_USER = 5;
+
+    beforeEach(async () => {
+      // no seeded role can use plugins, so the rejections below turn on the
+      // channel check alone
+      await tdb.insert(rolePermissions).values({
+        roleId: MODERATOR_ROLE,
+        permission: Permission.USE_PLUGINS,
+        createdAt: Date.now()
+      });
+
+      await pluginManager.load('plugin-b');
+    });
+
+    test('should carry the channel a command was typed in', async () => {
+      const { caller } = await initTest();
+
+      await caller.messages.send({
+        channelId: 1,
+        content: '<p>/echo-invoker</p>',
+        files: []
+      });
+
+      await Bun.sleep(50);
+
+      const { messages } = await caller.messages.get({
+        channelId: 1,
+        cursor: null,
+        limit: 1
+      });
+
+      const chip = messages[0]!;
+
+      expect(chip.content).toContain('&quot;source&quot;: &quot;chat&quot;');
+      expect(chip.content).toContain('&quot;channelId&quot;: 1');
+      // the chip is the command's own message, for replying to it
+      expect(chip.content).toContain(`&quot;messageId&quot;: ${chip.id}`);
+    });
+
+    // without this an answer escapes the thread it was asked in
+    test('should carry the thread a command was typed in', async () => {
+      const { caller } = await initTest();
+
+      await caller.messages.send({
+        channelId: 1,
+        content: '<p>/echo-invoker</p>',
+        files: [],
+        parentMessageId: 1
+      });
+
+      await Bun.sleep(50);
+
+      const { messages } = await caller.messages.getThread({
+        parentMessageId: 1,
+        cursor: null,
+        limit: 1
+      });
+
+      expect(messages[0]!.content).toContain('&quot;parentMessageId&quot;: 1');
+    });
+
+    test('should mark an invocation that did not come from chat', async () => {
+      const { caller } = await initTest();
+
+      expect((await echoInvoker(caller)).source).toBe('api');
+    });
+
+    test('should carry the channel the caller had open', async () => {
+      const { caller } = await initTest();
+
+      expect((await echoInvoker(caller, 1)).channelId).toBe(1);
+    });
+
+    test('should run without a channel when the caller had none open', async () => {
+      const { caller } = await initTest();
+
+      expect((await echoInvoker(caller)).channelId).toBeUndefined();
+    });
+
+    // the client sends this one, so it is a claim until the route checks it
+    test('should refuse a channel the caller cannot see', async () => {
+      const { caller } = await initTest(MODERATOR_USER);
+
+      await expect(echoInvoker(caller, DM_CHANNEL_ID)).rejects.toThrow();
+    });
+
+    test('should refuse a private channel the caller has no access to', async () => {
+      const { caller } = await initTest(MODERATOR_USER);
+
+      await expect(
+        echoInvoker(caller, PRIVATE_VOICE_CHANNEL_ID)
+      ).rejects.toThrow('Insufficient channel permissions');
+    });
+
+    test('should carry the language the client joined with', async () => {
+      const { caller } = await initTest();
+      const { handshakeHash } = await caller.others.handshake();
+
+      await caller.others.joinServer({ handshakeHash, locale: 'fr' });
+
+      expect((await echoInvoker(caller)).locale).toBe('fr');
+    });
+
+    test('should fall back to english when the client says nothing', async () => {
+      const { caller } = await initTest();
+
+      expect((await echoInvoker(caller)).locale).toBe(DEFAULT_LOCALE);
+    });
+
+    test('should reach an action the same way', async () => {
+      const { caller } = await initTest();
+
+      const invoker = (await caller.plugins.executeAction({
+        pluginId: 'plugin-b',
+        actionName: 'echo-invoker',
+        channelId: 1
+      })) as TInvokerContext;
+
+      expect(invoker).toMatchObject({
+        userId: 1,
+        source: 'api',
+        channelId: 1,
+        locale: DEFAULT_LOCALE
+      });
     });
   });
 

@@ -6,7 +6,11 @@ import { pushVoiceDebugEvent } from '@/helpers/voice-debug';
 import { i18n } from '@/i18n';
 import { cleanup, connectToTRPC, getTRPCClient } from '@/lib/trpc';
 import type { TMessageJumpToTarget } from '@/types';
-import { type TPublicServerSettings, type TServerInfo } from '@sharkord/shared';
+import {
+  type TLocale,
+  type TPublicServerSettings,
+  type TServerInfo
+} from '@sharkord/shared';
 import { TRPCClientError } from '@trpc/client';
 import { toast } from 'sonner';
 import { appSliceActions } from '../app/slice';
@@ -89,7 +93,11 @@ export const connect = async () => {
 
 export const joinServer = async (handshakeHash: string, password?: string) => {
   const trpc = getTRPCClient();
-  const data = await trpc.others.joinServer.query({ handshakeHash, password });
+  const data = await trpc.others.joinServer.query({
+    handshakeHash,
+    password,
+    locale: i18n.resolvedLanguage as TLocale
+  });
 
   logDebug('joinServer', data);
 

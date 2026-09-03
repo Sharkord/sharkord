@@ -1,5 +1,6 @@
 import {
   ChannelType,
+  DEFAULT_LOCALE,
   DEFAULT_MESSAGES_LIMIT,
   FileSaveType,
   STORAGE_MIN_QUOTA_PER_USER,
@@ -34,7 +35,9 @@ describe('plugin-manager', () => {
 
   const mockInvokerCtx: TInvokerContext = {
     userId: 1,
-    currentVoiceChannelId: undefined
+    source: 'api',
+    currentVoiceChannelId: undefined,
+    locale: DEFAULT_LOCALE
   };
 
   describe('load', () => {

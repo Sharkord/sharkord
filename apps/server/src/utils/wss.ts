@@ -1,6 +1,7 @@
 import {
   ActivityLogType,
   ChannelPermission,
+  DEFAULT_LOCALE,
   DisconnectCode,
   getErrorMessage,
   OWNER_ROLE_ID,
@@ -184,6 +185,7 @@ const createContext = async ({
     userId: decodedUser.id,
     handshakeHash: '',
     currentVoiceChannelId: undefined,
+    locale: DEFAULT_LOCALE,
     hasPermission,
     needsPermission,
     hasChannelPermission,

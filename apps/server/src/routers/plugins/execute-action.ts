@@ -6,6 +6,7 @@ import {
 } from '@sharkord/shared';
 import z from 'zod';
 import { config } from '../../config';
+import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
 import { canUseCapability } from '../../helpers/plugin-capability-access';
 import { pluginManager } from '../../plugins';
@@ -22,7 +23,8 @@ const executeActionRoute = rateLimitedProcedure(protectedProcedure, {
     z.object({
       pluginId: zPluginId,
       actionName: z.string(),
-      payload: z.unknown().optional()
+      payload: z.unknown().optional(),
+      channelId: z.number().optional()
     })
   )
   .mutation(async ({ ctx, input }) => {
@@ -46,11 +48,16 @@ const executeActionRoute = rateLimitedProcedure(protectedProcedure, {
       message: `Action "${input.actionName}" not found for plugin "${input.pluginId}"`
     });
 
+    if (input.channelId) await assertChannelAccess(ctx, input.channelId);
+
     try {
       const response = await pluginManager.executeAction(
         input.pluginId,
         input.actionName,
-        getInvokerCtxFromTrpcCtx(ctx),
+        getInvokerCtxFromTrpcCtx(ctx, {
+          source: 'api',
+          channelId: input.channelId
+        }),
         input.payload
       );
 
