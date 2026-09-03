@@ -41,6 +41,12 @@ export enum VideoCodec {
   AV1 = 'video/AV1'
 }
 
+export enum ScreenCursor {
+  ALWAYS = 'always',
+  MOTION = 'motion',
+  NEVER = 'never'
+}
+
 export enum NoiseSuppression {
   NONE = 'none',
   STANDARD = 'standard',
@@ -68,6 +74,7 @@ export type TDeviceSettings = {
   screenFramerate: number;
   screenCodec: VideoCodec;
   screenBitrate: number;
+  screenCursor: ScreenCursor;
 };
 
 export type TRemoteUserStreamKinds =
