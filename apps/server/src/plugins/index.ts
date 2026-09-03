@@ -31,6 +31,7 @@ import { deletePluginCapabilities } from '../db/queries/plugin-capabilities';
 import { deleteAllPluginUserData } from '../db/queries/plugin-user-data';
 import { getSettings } from '../db/queries/server';
 import { PLUGINS_PATH } from '../helpers/paths';
+import { parsePluginCommandArgs } from '../helpers/plugin-command-args';
 import {
   getPluginClientEntryPath,
   getPluginDataPath,
@@ -120,12 +121,36 @@ class PluginManager {
   public hasCommand = (pluginId: string, commandName: string) =>
     this.commandRegistry.has(pluginId, commandName);
 
-  public executeCommand = <TArgs = unknown>(
+  /**
+   * Arguments are validated here rather than at either call site: chat parses
+   * them out of text and the api takes them as json, and the handler is
+   * entitled to the same shape from both. A rejection is the caller's fault,
+   * so it happens before the registry logs anything against the plugin.
+   */
+  // async so a rejected argument is a rejected promise: the chat path attaches
+  // its failure handling to the returned promise, and a synchronous throw here
+  // would take down the whole send instead of marking the command failed
+  public executeCommand = async (
     pluginId: string,
     commandName: string,
     invokerCtx: TInvokerContext,
-    args: TArgs
-  ) => this.commandRegistry.execute(pluginId, commandName, invokerCtx, args);
+    args: Record<string, unknown>
+  ) => {
+    const definition = this.commandRegistry.get(pluginId, commandName);
+
+    const parsedArgs = parsePluginCommandArgs(
+      commandName,
+      definition?.args,
+      args
+    );
+
+    return this.commandRegistry.execute(
+      pluginId,
+      commandName,
+      invokerCtx,
+      parsedArgs
+    );
+  };
 
   public getActionNames = (pluginId: string): string[] =>
     Array.from(this.actionRegistry.getByPlugin().get(pluginId)?.keys() ?? []);

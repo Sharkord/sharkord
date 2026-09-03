@@ -928,6 +928,118 @@ describe('plugins router', () => {
     });
   });
 
+  // a command's declared args read like a schema, so they are one: the handler
+  // gets the declared types whether the call came from chat or from the api
+  describe('command arguments', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const echoArgs = async (args: Record<string, unknown>) => {
+      const { caller } = await initTest();
+
+      return caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'echo-args',
+        args
+      });
+    };
+
+    const runInChat = async (content: string) => {
+      const { caller } = await initTest();
+
+      await caller.messages.send({ channelId: 1, content, files: [] });
+
+      await Bun.sleep(50);
+
+      const { messages } = await caller.messages.get({
+        channelId: 1,
+        cursor: null,
+        limit: 1
+      });
+
+      return messages[0]!.content;
+    };
+
+    test('should coerce chat text into the declared types', async () => {
+      const chip = await runInChat('<p>/echo-args 20 true hello</p>');
+
+      expect(chip).toContain('data-status="completed"');
+      expect(chip).toContain('&quot;count&quot;: 20');
+      expect(chip).toContain('&quot;flag&quot;: true');
+      expect(chip).toContain('&quot;note&quot;: &quot;hello&quot;');
+    });
+
+    // 'false' is a non-empty string, which is how a boolean argument that reads
+    // as false ends up true
+    test('should read false as false', async () => {
+      const chip = await runInChat('<p>/echo-args 1 false</p>');
+
+      expect(chip).toContain('&quot;flag&quot;: false');
+    });
+
+    test('should refuse text that is not a number', async () => {
+      const chip = await runInChat('<p>/echo-args abc true</p>');
+
+      expect(chip).toContain('data-status="failed"');
+      expect(chip).toContain('count');
+    });
+
+    test('should refuse a missing required argument', async () => {
+      const chip = await runInChat('<p>/echo-args</p>');
+
+      expect(chip).toContain('data-status="failed"');
+    });
+
+    test('should coerce api arguments the same way', async () => {
+      expect(await echoArgs({ count: '20', flag: 'true' })).toEqual({
+        count: 20,
+        flag: true
+      });
+    });
+
+    test('should take api arguments that already have the right type', async () => {
+      expect(await echoArgs({ count: 20, flag: false })).toEqual({
+        count: 20,
+        flag: false
+      });
+    });
+
+    test('should refuse an argument of the wrong type', async () => {
+      await expect(
+        echoArgs({ count: { evil: true }, flag: true })
+      ).rejects.toThrow('count');
+    });
+
+    test('should refuse a missing required argument from the api', async () => {
+      await expect(echoArgs({ flag: true })).rejects.toThrow('count');
+    });
+
+    test('should drop an argument the command never declared', async () => {
+      expect(await echoArgs({ count: 1, flag: true, extra: 'nope' })).toEqual({
+        count: 1,
+        flag: true
+      });
+    });
+
+    test('should leave an optional argument out when it was not given', async () => {
+      expect(await echoArgs({ count: 1, flag: true })).not.toHaveProperty(
+        'note'
+      );
+    });
+
+    // a command that declares nothing parses its own input
+    test('should pass anything through for a command that declares no args', async () => {
+      const { caller } = await initTest();
+
+      const invoker = (await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'echo-invoker',
+        args: { whatever: [1, 2, 3] }
+      })) as TInvokerContext;
+
+      expect(invoker.userId).toBe(1);
+    });
+  });
+
   // what a plugin is told about where it was called from. every id here is one
   // the route proved the caller can reach, so a plugin can write to it
   describe('invoker context', () => {
@@ -2251,15 +2363,12 @@ describe('plugins router', () => {
       const runCommand = async (
         pluginId: string,
         commandName: string,
-        userId: number
+        userId: number,
+        args: Record<string, unknown> = { a: 1, b: 2 }
       ) => {
         const { caller } = await initTest(userId);
 
-        return caller.plugins.executeCommand({
-          pluginId,
-          commandName,
-          args: { a: 1, b: 2 }
-        });
+        return caller.plugins.executeCommand({ pluginId, commandName, args });
       };
 
       const runAction = async (
@@ -2280,7 +2389,9 @@ describe('plugins router', () => {
         await restrictCommand('plugin-b', 'sum', []);
 
         expect(
-          await runCommand('plugin-b', 'test-command', MODERATOR_USER)
+          await runCommand('plugin-b', 'test-command', MODERATOR_USER, {
+            message: 'hi'
+          })
         ).toBeDefined();
       });
 
@@ -2292,7 +2403,9 @@ describe('plugins router', () => {
           runCommand('plugin-b', 'sum', MODERATOR_USER)
         ).rejects.toThrow('do not have access');
         expect(
-          await runCommand('plugin-b', 'test-command', MODERATOR_USER)
+          await runCommand('plugin-b', 'test-command', MODERATOR_USER, {
+            message: 'hi'
+          })
         ).toBeDefined();
       });
 

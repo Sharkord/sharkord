@@ -190,21 +190,9 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
         if (canRunCommand) {
           const argsObject: Record<string, unknown> = {};
 
-          if (foundCommand.args) {
-            foundCommand.args.forEach((argDef, index) => {
-              if (index < args.length) {
-                const value = args[index];
-
-                if (argDef.type === 'number') {
-                  argsObject[argDef.name] = Number(value);
-                } else if (argDef.type === 'boolean') {
-                  argsObject[argDef.name] = value === 'true';
-                } else {
-                  argsObject[argDef.name] = value;
-                }
-              }
-            });
-          }
+          foundCommand.args?.forEach((argDef, index) => {
+            if (index < args.length) argsObject[argDef.name] = args[index];
+          });
 
           const pluginLogo = pluginManager.getPluginLogo(foundCommand.pluginId);
 

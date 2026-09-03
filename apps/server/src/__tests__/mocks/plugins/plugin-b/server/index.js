@@ -43,6 +43,20 @@ const onLoad = (ctx) => {
     }
   });
 
+  // one of each declared type, with an optional one, for the arg validation
+  ctx.commands.register({
+    name: 'echo-args',
+    description: 'Returns the args it was called with',
+    args: [
+      { name: 'count', type: 'number', required: true },
+      { name: 'flag', type: 'boolean', required: true },
+      { name: 'note', type: 'string' }
+    ],
+    async executes(invokerCtx, args) {
+      return args;
+    }
+  });
+
   // hands the whole invoker context back, so tests can assert what reached it
   ctx.commands.register({
     name: 'echo-invoker',
