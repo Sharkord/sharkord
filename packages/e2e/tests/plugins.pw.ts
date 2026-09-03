@@ -84,6 +84,51 @@ test('passes the message to a message actions component', async ({ page }) => {
   await expect(action).toHaveText(/^message:\d+ channel:1$/);
 });
 
+test('passes the message to a message footer component', async ({ page }) => {
+  await loginAs(page, OWNER.identity, OWNER.password);
+  await openChannel(page, 'General');
+
+  await expect(
+    page.getByTestId('e2e-plugin-message-footer').first()
+  ).toHaveText(/^message:\d+ channel:1$/);
+});
+
+test('passes the channel to a channel header component', async ({ page }) => {
+  await loginAs(page, OWNER.identity, OWNER.password);
+  await openChannel(page, 'General');
+
+  await expect(page.getByTestId('e2e-plugin-channel-header')).toHaveText(
+    'channel:1'
+  );
+});
+
+// this one mounts once per member, which is the slot most likely to be noticed
+test('passes the member to a member list component', async ({ page }) => {
+  await loginAs(page, OWNER.identity, OWNER.password);
+  await openChannel(page, 'General');
+
+  const items = page.getByTestId('e2e-plugin-member-item');
+
+  await expect(items.first()).toBeVisible();
+  await expect(items.first()).toHaveText(/^user:\d+$/);
+
+  // one per member row, not one for the list
+  const members = await page.getByTestId(TestId.MEMBER_ITEM).count();
+
+  expect(await items.count()).toBe(members);
+});
+
+test('passes the user to a popover component', async ({ page }) => {
+  await loginAs(page, OWNER.identity, OWNER.password);
+  await openChannel(page, 'General');
+
+  await page.getByTestId(TestId.MEMBER_ITEM).first().click();
+
+  await expect(page.getByTestId('e2e-plugin-user-popover')).toHaveText(
+    /^user:\d+$/
+  );
+});
+
 test('renders the plugin entry and its component in user settings', async ({
   page
 }) => {

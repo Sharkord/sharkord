@@ -9,6 +9,10 @@ export enum PluginSlot {
   HOME_SCREEN = 'home_screen',
   CHAT_ACTIONS = 'chat_actions',
   MESSAGE_ACTIONS = 'message_actions',
+  MESSAGE_FOOTER = 'message_footer',
+  MEMBER_LIST_ITEM = 'member_list_item',
+  USER_POPOVER = 'user_popover',
+  CHANNEL_HEADER = 'channel_header',
   TOPBAR_RIGHT = 'topbar_right',
   FULL_SCREEN = 'full_screen',
   USER_SETTINGS = 'user_settings'
@@ -30,6 +34,14 @@ export type TPluginSlotProps = {
   [PluginSlot.CHAT_ACTIONS]: { channelId: number };
   /** the message the row belongs to */
   [PluginSlot.MESSAGE_ACTIONS]: { messageId: number; channelId: number };
+  /** the message rendered above it */
+  [PluginSlot.MESSAGE_FOOTER]: { messageId: number; channelId: number };
+  /** the member of the row. renders once per member, so keep it cheap */
+  [PluginSlot.MEMBER_LIST_ITEM]: { userId: number };
+  /** the user whose card is open */
+  [PluginSlot.USER_POPOVER]: { userId: number };
+  /** the channel being read */
+  [PluginSlot.CHANNEL_HEADER]: { channelId: number };
   [PluginSlot.TOPBAR_RIGHT]: EmptyProps;
   [PluginSlot.FULL_SCREEN]: EmptyProps;
   [PluginSlot.USER_SETTINGS]: EmptyProps;

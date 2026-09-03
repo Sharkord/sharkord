@@ -48,6 +48,39 @@ const MessageAction = ({ messageId, channelId }) =>
     `message:${messageId} channel:${channelId}`
   );
 
+// decorates General only: a footer under every message makes rows taller, and
+// the pagination specs scroll a channel of hundreds of them. gating on the
+// channel is what a real plugin does with these props anyway
+const MessageFooter = ({ messageId, channelId }) =>
+  channelId === 1
+    ? React.createElement(
+        'div',
+        { 'data-testid': 'e2e-plugin-message-footer' },
+        `message:${messageId} channel:${channelId}`
+      )
+    : null;
+
+const MemberListItem = ({ userId }) =>
+  React.createElement(
+    'span',
+    { 'data-testid': 'e2e-plugin-member-item' },
+    `user:${userId}`
+  );
+
+const UserPopoverAction = ({ userId }) =>
+  React.createElement(
+    'span',
+    { 'data-testid': 'e2e-plugin-user-popover' },
+    `user:${userId}`
+  );
+
+const ChannelHeader = ({ channelId }) =>
+  React.createElement(
+    'span',
+    { 'data-testid': 'e2e-plugin-channel-header' },
+    `channel:${channelId}`
+  );
+
 const UserSettings = () => {
   const { data, loading, save } = window.__SHARKORD_STORE__.hooks.useUserData();
 
@@ -78,6 +111,10 @@ export const components = {
   topbar_right: [testable('e2e-plugin-topbar', 'topbar'), ActionButtons],
   chat_actions: [testable('e2e-plugin-chat-action', 'chat action'), ChatAction],
   message_actions: [MessageAction],
+  message_footer: [MessageFooter],
+  member_list_item: [MemberListItem],
+  user_popover: [UserPopoverAction],
+  channel_header: [ChannelHeader],
   user_settings: [UserSettings]
 };
 
