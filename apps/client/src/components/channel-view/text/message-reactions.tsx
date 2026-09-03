@@ -221,7 +221,7 @@ const MessageReactions = memo(
 
       // sort by first reaction createdAt desc
       return Array.from(reactionMap.values()).sort(
-        (a, b) => b.createdAt + a.createdAt
+        (a, b) => b.createdAt - a.createdAt
       );
     }, [reactions, ownUserId]);
 

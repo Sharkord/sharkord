@@ -1,4 +1,8 @@
-import { getLocalStorageItem, type LocalStorageKey } from '@/helpers/storage';
+import {
+  getLocalStorageItem,
+  type LocalStorageKey,
+  setLocalStorageItem
+} from '@/helpers/storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 type TResizableSidebarOptions = {
@@ -46,7 +50,7 @@ const useResizableSidebar = ({
       if (newWidth >= minWidth && newWidth <= maxWidth) {
         setWidth(newWidth);
 
-        localStorage.setItem(storageKey, newWidth.toString());
+        setLocalStorageItem(storageKey, newWidth.toString());
       }
     };
 
