@@ -871,7 +871,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       const displayMediaConstraints: MediaStreamConstraints = {
         video: {
           ...getResWidthHeight(devices?.screenResolution),
-          frameRate: devices?.screenFramerate
+          frameRate: devices?.screenFramerate,
+          // @ts-expect-error - display capture only, not in MediaTrackConstraints
+          cursor: devices.screenCursor
         },
         audio: {
           echoCancellation: false,
@@ -1119,6 +1121,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     devices.screenBitrate,
     devices.restrictOwnAudio,
     devices.suppressLocalAudioPlayback,
+    devices.screenCursor,
     simulcastEnabled
   ]);
 

@@ -1,4 +1,8 @@
-import { getLocalStorageItem, LocalStorageKey } from '@/helpers/storage';
+import {
+  getLocalStorageItem,
+  LocalStorageKey,
+  setLocalStorageItem
+} from '@/helpers/storage';
 import type { TLocale } from '@sharkord/shared';
 import type { Locale } from 'date-fns';
 import { cs, enUS, es, fr, it, ru, zhCN } from 'date-fns/locale';
@@ -74,7 +78,7 @@ export const i18nReady = i18n
   });
 
 i18n.on('languageChanged', (lng) => {
-  localStorage.setItem(LocalStorageKey.LANGUAGE, lng);
+  setLocalStorageItem(LocalStorageKey.LANGUAGE, lng);
 });
 
 export { i18n };
