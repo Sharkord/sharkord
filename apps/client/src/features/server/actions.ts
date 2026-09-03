@@ -19,8 +19,8 @@ import {
 } from './channels/selectors';
 import {
   processPluginComponents,
+  setPluginCapabilityAccess,
   setPluginCommands,
-  setPluginComponentAccess,
   setPluginComponents
 } from './plugins/actions';
 import { connectedSelector, infoSelector } from './selectors';
@@ -106,7 +106,7 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
   store.dispatch(serverSliceActions.setInitialData(data));
 
   setPluginCommands(data.commands);
-  setPluginComponentAccess(data.pluginComponentAccess);
+  setPluginCapabilityAccess(data.pluginCapabilityAccess);
 
   const components = await processPluginComponents(
     data.pluginIdsWithComponents

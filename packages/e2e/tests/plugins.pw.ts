@@ -70,6 +70,29 @@ test('renders the plugin entry and its component in user settings', async ({
   await expect(page.getByTestId('e2e-plugin-user-settings')).toBeVisible();
 });
 
+const restrictedAction = (page: Page) =>
+  page.getByTestId('e2e-plugin-restricted-action');
+const openAction = (page: Page) => page.getByTestId('e2e-plugin-open-action');
+
+// the owner is never restricted, whatever a capability declares
+test('a plugin ui reflects the access the owner has', async ({ page }) => {
+  await loginAs(page, OWNER.identity, OWNER.password);
+
+  await expect(restrictedAction(page)).toBeEnabled();
+  await expect(openAction(page)).toBeEnabled();
+});
+
+// the moderator may use plugins but does not hold MANAGE_MESSAGES, which is what
+// the restricted action declares
+test('a plugin ui reflects a capability the user may not use', async ({
+  page
+}) => {
+  await loginAs(page, MODERATOR.identity, MODERATOR.password);
+
+  await expect(restrictedAction(page)).toBeDisabled();
+  await expect(openAction(page)).toBeEnabled();
+});
+
 test('renders a plugin custom tab in the plugin view', async ({ page }) => {
   await loginAs(page, OWNER.identity, OWNER.password);
 

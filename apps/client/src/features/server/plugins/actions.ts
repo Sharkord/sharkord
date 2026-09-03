@@ -6,7 +6,7 @@ import {
   parsePluginTabs,
   PluginSlot,
   type TCommandsMapByPlugin,
-  type TPluginComponentAccessRule,
+  type TPluginCapabilityAccessRule,
   type TPluginComponentsMap,
   type TPluginComponentsMapBySlotId,
   type TPluginMetadata,
@@ -25,8 +25,9 @@ export const setPluginCommands = (commands: TCommandsMapByPlugin) =>
 export const setPluginComponents = (components: TPluginComponentsMap) =>
   store.dispatch(serverSliceActions.setPluginComponents(components));
 
-export const setPluginComponentAccess = (rules: TPluginComponentAccessRule[]) =>
-  store.dispatch(serverSliceActions.setPluginComponentAccess(rules));
+export const setPluginCapabilityAccess = (
+  rules: TPluginCapabilityAccessRule[]
+) => store.dispatch(serverSliceActions.setPluginCapabilityAccess(rules));
 
 export const setPluginTabs = (tabs: TPluginTabsMap) =>
   store.dispatch(serverSliceActions.setPluginTabs(tabs));

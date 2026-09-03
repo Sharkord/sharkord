@@ -1,6 +1,7 @@
 import { createSelector } from '@reduxjs/toolkit';
 import {
   OWNER_ROLE_ID,
+  PluginCapabilityType,
   PluginSlot,
   type TJoinedRole,
   type TPluginStoreState
@@ -325,24 +326,67 @@ export const mapStateToPluginState = createSelector(
   })
 );
 
-export const pluginComponentAccessSelector = (state: IRootState) =>
-  state.server.pluginComponentAccess;
+export const pluginCapabilityAccessSelector = (state: IRootState) =>
+  state.server.pluginCapabilityAccess;
 
 const DEFAULT_HIDDEN_COMPONENTS: string[] = [];
 
 export const hiddenPluginComponentsSelector = createSelector(
-  [pluginComponentAccessSelector, ownUserRolesSelector, isOwnUserOwnerSelector],
+  [
+    pluginCapabilityAccessSelector,
+    ownUserRolesSelector,
+    isOwnUserOwnerSelector
+  ],
   (rules, ownUserRoles, isOwner) => {
     if (isOwner || rules.length === 0) return DEFAULT_HIDDEN_COMPONENTS;
 
     const ownRoleIds = ownUserRoles.map((role) => role.id);
 
     const hidden = rules
-      .filter((rule) => !rule.roleIds.some((id) => ownRoleIds.includes(id)))
+      .filter(
+        (rule) =>
+          rule.type === PluginCapabilityType.COMPONENT &&
+          !rule.roleIds.some((id) => ownRoleIds.includes(id))
+      )
       .map((rule) => `${rule.pluginId}:${rule.name}`);
 
     return hidden.length > 0 ? hidden : DEFAULT_HIDDEN_COMPONENTS;
   }
+);
+
+export const canUsePluginCapabilitySelector = createCachedSelector(
+  [
+    pluginCapabilityAccessSelector,
+    ownUserRolesSelector,
+    isOwnUserOwnerSelector,
+    (_: IRootState, pluginId: string) => pluginId,
+    (_: IRootState, _pluginId: string, type: PluginCapabilityType) => type,
+    (
+      _: IRootState,
+      _pluginId: string,
+      _type: PluginCapabilityType,
+      name: string
+    ) => name
+  ],
+  (rules, ownUserRoles, isOwner, pluginId, type, name) => {
+    if (isOwner) return true;
+
+    const rule = rules.find(
+      (candidate) =>
+        candidate.pluginId === pluginId &&
+        candidate.type === type &&
+        candidate.name === name
+    );
+
+    if (!rule) return true;
+
+    return rule.roleIds.some((roleId) =>
+      ownUserRoles.some((role) => role.id === roleId)
+    );
+  }
+)(
+  (_: IRootState, pluginId: string, type: PluginCapabilityType, name: string) =>
+    `${pluginId}:${type}:${name}`
 );
 
 type TUserSettingsPlugin = {

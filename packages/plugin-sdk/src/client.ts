@@ -1,4 +1,6 @@
 import type {
+  TContractActions,
+  TContractCommands,
   TContractPush,
   TContractUserData,
   TPluginActions,
@@ -9,6 +11,8 @@ import type {
   TPluginTabs,
   TPluginUserData
 } from '@sharkord/shared';
+// deep import: the '@sharkord/shared' barrel pulls zod into every client bundle
+import { PluginCapabilityType } from '@sharkord/shared/src/plugins/capabilities';
 import { useSyncExternalStore } from 'react';
 import { createCallAction as bindCallAction } from './actions';
 
@@ -56,6 +60,26 @@ const useUserData = <C extends TPluginContract = TPluginContract>() =>
   store.hooks.useUserData() as TPluginUserData<TContractUserData<C>>;
 
 /**
+ * Whether the user may run one of this plugin's actions, so the UI can disable
+ * a button rather than let the call fail. Pass the contract to autocomplete the
+ * name.
+ *
+ * UX only: the server checks again on every call, and it is the answer that
+ * counts.
+ */
+const useCanUseAction = <C extends TPluginContract = TPluginContract>(
+  name: keyof TContractActions<C> & string
+) => store.hooks.useCanUse(PluginCapabilityType.ACTION, name);
+
+/**
+ * The same for a slash command, for UI that lists or offers them. The command
+ * is refused server side either way.
+ */
+const useCanUseCommand = <C extends TPluginContract = TPluginContract>(
+  name: keyof TContractCommands<C> & string
+) => store.hooks.useCanUse(PluginCapabilityType.COMMAND, name);
+
+/**
  * Reads a slice of Sharkord's state and re-renders when it changes.
  *
  * The selector must return a stable reference for unchanged state: reading a
@@ -65,5 +89,13 @@ const useUserData = <C extends TPluginContract = TPluginContract>() =>
 const useStoreSelector = <T>(selector: (state: TPluginStoreState) => T): T =>
   useSyncExternalStore(store.subscribe, () => selector(store.getState()));
 
-export { actions, createCallAction, usePush, useStoreSelector, useUserData };
+export {
+  actions,
+  createCallAction,
+  useCanUseAction,
+  useCanUseCommand,
+  usePush,
+  useStoreSelector,
+  useUserData
+};
 export type { TPluginComponentsMapBySlotId, TPluginStoreState, TPluginTabs };

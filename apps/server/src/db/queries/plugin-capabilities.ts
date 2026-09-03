@@ -122,33 +122,37 @@ const setCapabilityAccess = async (
   }
 };
 
-const getComponentCapabilityRows = async () => {
+const getCapabilityRows = async () => {
   const [modes, grants] = await Promise.all([
     db
       .select({
         pluginId: pluginCapabilities.pluginId,
+        type: pluginCapabilities.type,
         name: pluginCapabilities.name,
         mode: pluginCapabilities.mode
       })
-      .from(pluginCapabilities)
-      .where(eq(pluginCapabilities.type, PluginCapabilityType.COMPONENT)),
+      .from(pluginCapabilities),
     db
       .select({
         pluginId: pluginCapabilityRoles.pluginId,
+        type: pluginCapabilityRoles.type,
         name: pluginCapabilityRoles.name,
         roleId: pluginCapabilityRoles.roleId
       })
       .from(pluginCapabilityRoles)
-      .where(eq(pluginCapabilityRoles.type, PluginCapabilityType.COMPONENT))
   ]);
 
   return modes.map((row) => ({
     pluginId: row.pluginId,
+    type: row.type,
     name: row.name,
     mode: row.mode,
     roleIds: grants
       .filter(
-        (grant) => grant.pluginId === row.pluginId && grant.name === row.name
+        (grant) =>
+          grant.pluginId === row.pluginId &&
+          grant.type === row.type &&
+          grant.name === row.name
       )
       .map((grant) => grant.roleId)
   }));
@@ -188,7 +192,7 @@ export {
   deleteCapabilityAccess,
   deletePluginCapabilities,
   getCapabilityAccess,
-  getComponentCapabilityRows,
+  getCapabilityRows,
   getPluginCapabilityAccess,
   setCapabilityAccess
 };

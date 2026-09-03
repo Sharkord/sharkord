@@ -5,7 +5,7 @@ import {
 } from '@sharkord/shared';
 import { count, eq } from 'drizzle-orm';
 import { db } from '.';
-import { getComponentAccessRules } from '../helpers/plugin-capability-access';
+import { getCapabilityAccessRules } from '../helpers/plugin-capability-access';
 import { pubsub } from '../utils/pubsub';
 import {
   channelUserCan,
@@ -95,6 +95,8 @@ const publishRole = async (
   type: 'create' | 'update' | 'delete'
 ) => {
   if (!roleId) return;
+
+  publishCapabilityAccess();
 
   if (type === 'delete') {
     pubsub.publish(ServerEvents.ROLE_DELETE, roleId);
@@ -348,10 +350,10 @@ const publishChannelListChange = async (
   await publishChannelPermissions([userId]);
 };
 
-const publishComponentAccess = async () => {
+const publishCapabilityAccess = async () => {
   pubsub.publish(
-    ServerEvents.PLUGIN_COMPONENT_ACCESS_CHANGE,
-    await getComponentAccessRules()
+    ServerEvents.PLUGIN_CAPABILITY_ACCESS_CHANGE,
+    await getCapabilityAccessRules()
   );
 };
 
@@ -378,12 +380,12 @@ const publishReplyCount = async (
 };
 
 export {
+  publishCapabilityAccess,
   publishCategory,
   publishChannel,
   publishChannelAccessChange,
   publishChannelListChange,
   publishChannelPermissions,
-  publishComponentAccess,
   publishEmoji,
   publishHiddenChannelToUser,
   publishMessage,

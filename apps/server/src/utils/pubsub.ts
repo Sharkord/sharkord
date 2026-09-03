@@ -11,7 +11,7 @@ import type {
   TJoinedPublicUser,
   TJoinedRole,
   TLogEntry,
-  TPluginComponentAccessRule,
+  TPluginCapabilityAccessRule,
   TPluginMetadata,
   TPluginPushEvent,
   TPublicServerSettings,
@@ -108,7 +108,7 @@ type Events = {
   [ServerEvents.PLUGIN_LOG]: TLogEntry;
   [ServerEvents.PLUGIN_COMMANDS_CHANGE]: TCommandsMapByPlugin;
   [ServerEvents.PLUGIN_COMPONENTS_CHANGE]: string[]; // list of plugin ids that have components enabled
-  [ServerEvents.PLUGIN_COMPONENT_ACCESS_CHANGE]: TPluginComponentAccessRule[];
+  [ServerEvents.PLUGIN_CAPABILITY_ACCESS_CHANGE]: TPluginCapabilityAccessRule[];
   [ServerEvents.PLUGIN_PUSH]: TPluginPushEvent;
   [ServerEvents.PLUGIN_METADATA_CHANGE]: TPluginMetadata[];
 

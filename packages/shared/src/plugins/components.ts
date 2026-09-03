@@ -99,9 +99,3 @@ export const parsePluginTabs = (value: unknown): TPluginTab[] => {
     return true;
   });
 };
-
-export type TPluginComponentAccessRule = {
-  pluginId: string;
-  name: string;
-  roleIds: number[];
-};

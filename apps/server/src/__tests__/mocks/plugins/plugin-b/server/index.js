@@ -105,6 +105,17 @@ const onLoad = (ctx) => {
     }
   });
 
+  // same name as the 'admin-sum' command, and declares a different permission:
+  // configuring one type must not swallow the other's declaration
+  ctx.actions.register({
+    name: 'admin-sum',
+    description: 'Sum two numbers, for user managers',
+    requires: 'MANAGE_USERS',
+    async executes(invokerCtx, payload) {
+      return { result: payload.a + payload.b };
+    }
+  });
+
   // same name as this plugin's own 'sum' command, one type apart
   ctx.actions.register({
     name: 'sum',

@@ -1,4 +1,5 @@
 import { getErrorMessage } from '@sharkord/shared';
+import { publishCapabilityAccess } from '../db/publishers';
 import { logger } from '../logger';
 import { pluginManager } from '../plugins';
 import { downloadPlugin } from './downloads';
@@ -40,6 +41,7 @@ const swapPluginVersion = async (pluginId: string, version: string) => {
     }
 
     pluginManager.publishPlugins();
+    publishCapabilityAccess();
   }
 
   return versionData;

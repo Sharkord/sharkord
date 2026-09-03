@@ -24,3 +24,10 @@ export type TPluginCapability = TPluginCapabilityAccess & {
   requires?: Permission;
   defaultAccess: TPluginCapabilityAccess;
 };
+
+export type TPluginCapabilityAccessRule = {
+  pluginId: string;
+  type: PluginCapabilityType;
+  name: string;
+  roleIds: number[];
+};

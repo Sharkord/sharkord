@@ -1,7 +1,7 @@
 import { t } from '../../utils/trpc';
 import {
+  onCapabilityAccessChangeRoute,
   onCommandsChangeRoute,
-  onComponentAccessChangeRoute,
   onComponentsChangeRoute,
   onMetadataChangeRoute,
   onPluginLogRoute,
@@ -40,7 +40,7 @@ export const pluginsRouter = t.router({
   executeAction: executeActionRoute,
   onCommandsChange: onCommandsChangeRoute,
   onComponentsChange: onComponentsChangeRoute,
-  onComponentAccessChange: onComponentAccessChangeRoute,
+  onCapabilityAccessChange: onCapabilityAccessChangeRoute,
   onMetadataChange: onMetadataChangeRoute,
   getSettings: getSettingsRoute,
   updateSetting: updateSettingRoute,

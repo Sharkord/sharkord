@@ -3,8 +3,8 @@ import { getTRPCClient } from '@/lib/trpc';
 import { handleSubscriptionError } from '../subscription-error';
 import {
   processPluginComponents,
+  setPluginCapabilityAccess,
   setPluginCommands,
-  setPluginComponentAccess,
   setPluginComponents,
   setPluginsMetadata
 } from './actions';
@@ -37,13 +37,13 @@ const subscribeToPlugins = () => {
     }
   );
 
-  const onComponentAccessChangeSub =
-    trpc.plugins.onComponentAccessChange.subscribe(undefined, {
+  const onCapabilityAccessChangeSub =
+    trpc.plugins.onCapabilityAccessChange.subscribe(undefined, {
       onData: (data) => {
-        logDebug('[EVENTS] plugins.onComponentAccessChange', { data });
-        setPluginComponentAccess(data);
+        logDebug('[EVENTS] plugins.onCapabilityAccessChange', { data });
+        setPluginCapabilityAccess(data);
       },
-      onError: handleSubscriptionError('onComponentAccessChange')
+      onError: handleSubscriptionError('onCapabilityAccessChange')
     });
 
   const onMetadataChangeSub = trpc.plugins.onMetadataChange.subscribe(
@@ -66,7 +66,7 @@ const subscribeToPlugins = () => {
   });
 
   return () => {
-    onComponentAccessChangeSub.unsubscribe();
+    onCapabilityAccessChangeSub.unsubscribe();
     onPushSub.unsubscribe();
     onCommandsChangeSub.unsubscribe();
     onComponentsChangeSub.unsubscribe();

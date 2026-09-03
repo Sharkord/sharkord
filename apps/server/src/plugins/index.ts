@@ -65,6 +65,13 @@ import { PluginRegistry } from './registry';
 
 const PLUGIN_WATCH_DEBOUNCE_MS = 2_000;
 
+type TPluginCapabilityRequirement = {
+  pluginId: string;
+  type: PluginCapabilityType;
+  name: string;
+  requires: Permission;
+};
+
 class PluginManager {
   private loadedPlugins = new Map<string, PluginModule>();
   // the manifest of every loaded plugin, so publishing metadata does not have to
@@ -139,11 +146,53 @@ class PluginManager {
     return this.componentRequirements.get(pluginId)?.[name as PluginSlot];
   };
 
-  /** every slot requirement a loaded plugin declared, for resolving access */
   public getComponentRequirements = (): ReadonlyMap<
     string,
     TPluginSlotRequirements
   > => this.componentRequirements;
+
+  public getCapabilityRequirements = (): TPluginCapabilityRequirement[] => {
+    const requirements: TPluginCapabilityRequirement[] = [];
+
+    const collect = (
+      type: PluginCapabilityType,
+      byPlugin: ReadonlyMap<
+        string,
+        ReadonlyMap<string, { requires?: Permission }>
+      >
+    ) => {
+      for (const [pluginId, entries] of byPlugin) {
+        for (const [name, definition] of entries) {
+          if (!definition.requires) continue;
+
+          requirements.push({
+            pluginId,
+            type,
+            name,
+            requires: definition.requires
+          });
+        }
+      }
+    };
+
+    collect(PluginCapabilityType.COMMAND, this.commandRegistry.getByPlugin());
+    collect(PluginCapabilityType.ACTION, this.actionRegistry.getByPlugin());
+
+    for (const [pluginId, slots] of this.componentRequirements) {
+      for (const [name, requires] of Object.entries(slots)) {
+        if (!requires) continue;
+
+        requirements.push({
+          pluginId,
+          type: PluginCapabilityType.COMPONENT,
+          name,
+          requires
+        });
+      }
+    }
+
+    return requirements;
+  };
 
   public executeAction = <TPayload = unknown>(
     pluginId: string,

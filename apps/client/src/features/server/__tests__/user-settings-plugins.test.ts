@@ -1,8 +1,9 @@
 import type { IRootState } from '@/features/store';
 import {
   OWNER_ROLE_ID,
+  PluginCapabilityType,
   PluginSlot,
-  type TPluginComponentAccessRule,
+  type TPluginCapabilityAccessRule,
   type TPluginComponentsMap,
   type TPluginMetadata
 } from '@sharkord/shared';
@@ -23,7 +24,7 @@ const METADATA: TPluginMetadata[] = [
 
 type TStateOptions = {
   components?: TPluginComponentsMap;
-  access?: TPluginComponentAccessRule[];
+  access?: TPluginCapabilityAccessRule[];
   roleIds?: number[];
 };
 
@@ -36,7 +37,7 @@ const stateWith = ({
     server: {
       pluginComponents: components,
       pluginsMetadata: METADATA,
-      pluginComponentAccess: access,
+      pluginCapabilityAccess: access,
       ownUserId: 1,
       users: [{ id: 1, roleIds }],
       roles: [{ id: 2 }, { id: 9 }, { id: OWNER_ROLE_ID }]
@@ -80,6 +81,7 @@ describe('userSettingsPluginsSelector', () => {
         access: [
           {
             pluginId: 'plugin-a',
+            type: PluginCapabilityType.COMPONENT,
             name: PluginSlot.USER_SETTINGS,
             roleIds: [9]
           }
@@ -97,6 +99,7 @@ describe('userSettingsPluginsSelector', () => {
         access: [
           {
             pluginId: 'plugin-a',
+            type: PluginCapabilityType.COMPONENT,
             name: PluginSlot.USER_SETTINGS,
             roleIds: [2]
           }
@@ -114,6 +117,7 @@ describe('userSettingsPluginsSelector', () => {
         access: [
           {
             pluginId: 'plugin-a',
+            type: PluginCapabilityType.COMPONENT,
             name: PluginSlot.USER_SETTINGS,
             roleIds: [9]
           }

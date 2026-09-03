@@ -5,7 +5,7 @@ import {
   zPluginId
 } from '@sharkord/shared';
 import z from 'zod';
-import { publishComponentAccess } from '../../db/publishers';
+import { publishCapabilityAccess } from '../../db/publishers';
 import { deleteCapabilityAccess } from '../../db/queries/plugin-capabilities';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure } from '../../utils/trpc';
@@ -24,7 +24,7 @@ const resetCapabilityAccessRoute = protectedProcedure
     await deleteCapabilityAccess(input.pluginId, input.type, input.name);
 
     if (input.type === PluginCapabilityType.COMPONENT) {
-      publishComponentAccess();
+      publishCapabilityAccess();
     }
 
     enqueueActivityLog({

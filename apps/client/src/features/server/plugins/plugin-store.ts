@@ -7,6 +7,7 @@ import { prepareMessageHtml, UploadHeaders } from '@sharkord/shared';
 import { setSelectedChannelId } from '../channels/actions';
 import { mapStateToPluginState } from '../selectors';
 import { onPluginPush } from './push-registry';
+import { usePluginCanUse } from './use-plugin-can-use';
 import { usePluginPush } from './use-plugin-push';
 import { usePluginUserData } from './use-plugin-user-data';
 
@@ -63,7 +64,11 @@ const pluginStore: TPluginStore = {
   getState: () => mapStateToPluginState(store.getState()),
   subscribe: (listener: () => void) => store.subscribe(listener),
   actions: pluginActions,
-  hooks: { useUserData: usePluginUserData, usePush: usePluginPush }
+  hooks: {
+    useUserData: usePluginUserData,
+    usePush: usePluginPush,
+    useCanUse: usePluginCanUse
+  }
 };
 
 const exposePluginStore = () => {

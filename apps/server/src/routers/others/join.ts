@@ -14,7 +14,7 @@ import { getRoles } from '../../db/queries/roles';
 import { getPublicSettings, getSettings } from '../../db/queries/server';
 import { getPublicUsers } from '../../db/queries/users';
 import { categories, users } from '../../db/schema';
-import { getComponentAccessRules } from '../../helpers/plugin-capability-access';
+import { getCapabilityAccessRules } from '../../helpers/plugin-capability-access';
 import { safeCompare } from '../../helpers/safe-compare';
 import { shouldAskServerPassword } from '../../helpers/should-ask-server-password';
 import { logger } from '../../logger';
@@ -87,7 +87,7 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
       publicSettings,
       pluginsMetadata,
       hasJoinedBefore,
-      pluginComponentAccess
+      pluginCapabilityAccess
     ] = await Promise.all([
       db.select().from(categories),
       getChannelsForUser(ctx.user.id), // filter channels based on permissions and DM participation
@@ -99,7 +99,7 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
       getPublicSettings(),
       pluginManager.getActivePluginMetadata(),
       hasUserJoinedBefore(ctx.user.id),
-      getComponentAccessRules()
+      getCapabilityAccessRules()
     ]);
 
     const showWelcomeDialog = settings.showWelcomeDialog && !hasJoinedBefore;
@@ -166,7 +166,7 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
       readStates,
       commands: pluginManager.getCommands(),
       pluginIdsWithComponents: pluginManager.getPluginIdsWithComponents(),
-      pluginComponentAccess,
+      pluginCapabilityAccess,
       pluginsMetadata,
       externalStreamsMap,
       showWelcomeDialog

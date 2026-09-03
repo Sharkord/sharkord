@@ -19,9 +19,9 @@ const onComponentsChangeRoute = protectedProcedure.subscription(
   }
 );
 
-const onComponentAccessChangeRoute = protectedProcedure.subscription(
+const onCapabilityAccessChangeRoute = protectedProcedure.subscription(
   async ({ ctx }) => {
-    return ctx.pubsub.subscribe(ServerEvents.PLUGIN_COMPONENT_ACCESS_CHANGE);
+    return ctx.pubsub.subscribe(ServerEvents.PLUGIN_CAPABILITY_ACCESS_CHANGE);
   }
 );
 
@@ -36,8 +36,8 @@ const onPushRoute = protectedProcedure.subscription(async ({ ctx }) => {
 });
 
 export {
+  onCapabilityAccessChangeRoute,
   onCommandsChangeRoute,
-  onComponentAccessChangeRoute,
   onComponentsChangeRoute,
   onMetadataChangeRoute,
   onPluginLogRoute,

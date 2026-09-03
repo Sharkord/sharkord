@@ -33,7 +33,10 @@ import {
   users
 } from '../../db/schema';
 import { PLUGINS_PATH } from '../../helpers/paths';
-import { getComponentAccessRules } from '../../helpers/plugin-capability-access';
+import {
+  canUseCapability,
+  getCapabilityAccessRules
+} from '../../helpers/plugin-capability-access';
 import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
 import { drainActivityLogQueue } from '../../queues/activity-log';
@@ -2431,7 +2434,7 @@ describe('plugins router', () => {
       // rules go to every client rather than gating a call
       describe('components', () => {
         const chatActionsRule = async () => {
-          const rules = await getComponentAccessRules();
+          const rules = await getCapabilityAccessRules();
 
           return rules.find(
             (rule) =>
@@ -2453,7 +2456,7 @@ describe('plugins router', () => {
         });
 
         test('should leave an undeclared slot public', async () => {
-          const rules = await getComponentAccessRules();
+          const rules = await getCapabilityAccessRules();
 
           expect(
             rules.some((rule) => rule.name === PluginSlot.TOPBAR_RIGHT)
@@ -2529,7 +2532,7 @@ describe('plugins router', () => {
           const { initialData } = await initTest();
 
           expect(
-            initialData.pluginComponentAccess.some(
+            initialData.pluginCapabilityAccess.some(
               (rule) => rule.name === PluginSlot.CHAT_ACTIONS
             )
           ).toBe(true);
@@ -2539,6 +2542,145 @@ describe('plugins router', () => {
           await pluginManager.unload('plugin-b');
 
           expect(await chatActionsRule()).toBeUndefined();
+        });
+      });
+
+      // the client resolves access from these rules, so they have to answer the
+      // same as canUseCapability does for the call itself
+      describe('access rules', () => {
+        const ruleFor = async (type: PluginCapabilityType, name: string) => {
+          const rules = await getCapabilityAccessRules();
+
+          return rules.find(
+            (rule) =>
+              rule.pluginId === 'plugin-b' &&
+              rule.type === type &&
+              rule.name === name
+          );
+        };
+
+        test('should resolve a declared command to the roles that qualify', async () => {
+          const rule = await ruleFor(PluginCapabilityType.COMMAND, 'admin-sum');
+
+          expect(rule?.roleIds).toEqual([]);
+
+          await tdb.insert(rolePermissions).values({
+            roleId: MODERATOR_ROLE,
+            permission: Permission.MANAGE_MESSAGES,
+            createdAt: Date.now()
+          });
+
+          expect(
+            (await ruleFor(PluginCapabilityType.COMMAND, 'admin-sum'))?.roleIds
+          ).toEqual([MODERATOR_ROLE]);
+        });
+
+        test('should resolve a declared action to the roles that qualify', async () => {
+          const rule = await ruleFor(
+            PluginCapabilityType.ACTION,
+            'admin-multiply'
+          );
+
+          expect(rule?.roleIds).toEqual([MODERATOR_ROLE]);
+        });
+
+        test('should leave an undeclared capability without a rule', async () => {
+          expect(
+            await ruleFor(PluginCapabilityType.COMMAND, 'sum')
+          ).toBeUndefined();
+        });
+
+        // 'sum' is both a command and an action in plugin-b
+        test('should keep a restriction to the type it was set on', async () => {
+          await restrict('sum', [MODERATOR_ROLE]);
+
+          expect(
+            (await ruleFor(PluginCapabilityType.COMMAND, 'sum'))?.roleIds
+          ).toEqual([MODERATOR_ROLE]);
+
+          expect(
+            await ruleFor(PluginCapabilityType.ACTION, 'sum')
+          ).toBeUndefined();
+        });
+
+        test('should keep a declaration when the other type of the same name is configured', async () => {
+          const { caller } = await initTest();
+
+          await caller.plugins.setCapabilityAccess({
+            pluginId: 'plugin-b',
+            type: PluginCapabilityType.COMMAND,
+            name: 'admin-sum',
+            mode: PluginCapabilityMode.PUBLIC,
+            roleIds: []
+          });
+
+          expect(
+            (await ruleFor(PluginCapabilityType.ACTION, 'admin-sum'))?.roleIds
+          ).toEqual([MODERATOR_ROLE]);
+        });
+
+        test('should let an admin restriction replace the declared default', async () => {
+          await restrict('admin-sum', [MEMBER_ROLE]);
+
+          expect(
+            (await ruleFor(PluginCapabilityType.COMMAND, 'admin-sum'))?.roleIds
+          ).toEqual([MEMBER_ROLE]);
+        });
+
+        test('should drop the rule when an admin makes a declared command public', async () => {
+          const { caller } = await initTest();
+
+          await caller.plugins.setCapabilityAccess({
+            pluginId: 'plugin-b',
+            type: PluginCapabilityType.COMMAND,
+            name: 'admin-sum',
+            mode: PluginCapabilityMode.PUBLIC,
+            roleIds: []
+          });
+
+          expect(
+            await ruleFor(PluginCapabilityType.COMMAND, 'admin-sum')
+          ).toBeUndefined();
+        });
+
+        // the rules and canUseCapability are two implementations of one
+        // precedence, and this is what catches them drifting apart
+        test('should agree with canUseCapability', async () => {
+          await restrict('sum', [MODERATOR_ROLE]);
+
+          const cases = [
+            { type: PluginCapabilityType.COMMAND, name: 'sum' },
+            { type: PluginCapabilityType.COMMAND, name: 'admin-sum' },
+            { type: PluginCapabilityType.ACTION, name: 'admin-multiply' },
+            { type: PluginCapabilityType.ACTION, name: 'sum' }
+          ];
+
+          const rules = await getCapabilityAccessRules();
+
+          for (const userId of [1, MODERATOR_USER]) {
+            const roleIds = await getUserRoleIds(userId);
+
+            for (const { type, name } of cases) {
+              const rule = rules.find(
+                (candidate) =>
+                  candidate.pluginId === 'plugin-b' &&
+                  candidate.type === type &&
+                  candidate.name === name
+              );
+
+              const allowedByRules =
+                roleIds.includes(OWNER_ROLE_ID) ||
+                !rule ||
+                rule.roleIds.some((roleId) => roleIds.includes(roleId));
+
+              expect({ userId, name, type, allowed: allowedByRules }).toEqual({
+                userId,
+                name,
+                type,
+                allowed: await canUseCapability(userId, 'plugin-b', type, name)
+              });
+            }
+          }
         });
       });
 

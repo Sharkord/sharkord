@@ -2,11 +2,11 @@ import {
   OWNER_ROLE_ID,
   PluginCapabilityMode,
   PluginCapabilityType,
-  type TPluginComponentAccessRule
+  type TPluginCapabilityAccessRule
 } from '@sharkord/shared';
 import {
   getCapabilityAccess,
-  getComponentCapabilityRows
+  getCapabilityRows
 } from '../db/queries/plugin-capabilities';
 import { getRoles, getUserRoleIds, userCan } from '../db/queries/roles';
 import { pluginManager } from '../plugins';
@@ -35,42 +35,44 @@ const canUseCapability = async (
   return roleIds.some((roleId) => access.roleIds.includes(roleId));
 };
 
-const getComponentAccessRules = async (): Promise<
-  TPluginComponentAccessRule[]
+const getCapabilityAccessRules = async (): Promise<
+  TPluginCapabilityAccessRule[]
 > => {
-  const [stored, roles] = await Promise.all([
-    getComponentCapabilityRows(),
-    getRoles()
-  ]);
+  const [stored, roles] = await Promise.all([getCapabilityRows(), getRoles()]);
 
   const rules = stored
     .filter((row) => row.mode === PluginCapabilityMode.RESTRICTED)
-    .map(({ pluginId, name, roleIds }) => ({ pluginId, name, roleIds }));
+    .map(({ pluginId, type, name, roleIds }) => ({
+      pluginId,
+      type,
+      name,
+      roleIds
+    }));
 
-  for (const [pluginId, requirements] of pluginManager
-    .getComponentRequirements()
-    .entries()) {
-    for (const [name, permission] of Object.entries(requirements)) {
-      const isConfigured = stored.some(
-        (row) => row.pluginId === pluginId && row.name === name
-      );
+  for (const requirement of pluginManager.getCapabilityRequirements()) {
+    const { pluginId, type, name, requires } = requirement;
 
-      if (isConfigured) continue;
+    const isConfigured = stored.some(
+      (row) =>
+        row.pluginId === pluginId && row.type === type && row.name === name
+    );
 
-      rules.push({
-        pluginId,
-        name,
-        roleIds: roles
-          .filter(
-            (role) =>
-              role.id !== OWNER_ROLE_ID && role.permissions.includes(permission)
-          )
-          .map((role) => role.id)
-      });
-    }
+    if (isConfigured) continue;
+
+    rules.push({
+      pluginId,
+      type,
+      name,
+      roleIds: roles
+        .filter(
+          (role) =>
+            role.id !== OWNER_ROLE_ID && role.permissions.includes(requires)
+        )
+        .map((role) => role.id)
+    });
   }
 
   return rules;
 };
 
-export { canUseCapability, getComponentAccessRules };
+export { canUseCapability, getCapabilityAccessRules };

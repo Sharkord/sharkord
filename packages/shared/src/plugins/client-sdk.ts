@@ -6,6 +6,7 @@ import type {
   TJoinedRole
 } from '../tables';
 import type { TPublicServerSettings } from '../types';
+import type { PluginCapabilityType } from './capabilities';
 import type { TPluginMetadata } from './manifest';
 
 /**
@@ -67,6 +68,7 @@ export type TPluginUserData<
 export type TPluginHooks = {
   usePush: (handler: (data: unknown) => void) => void;
   useUserData: () => TPluginUserData;
+  useCanUse: (type: PluginCapabilityType, name: string) => boolean;
 };
 
 /**
