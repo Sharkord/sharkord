@@ -1,19 +1,14 @@
+import type { TJoinedRole } from '@sharkord/shared';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { publishChannelListChange, publishUser } from '../db/publishers';
 import { getChannelsForUser } from '../db/queries/channels';
-import { getRole } from '../db/queries/roles';
 import { userRoles } from '../db/schema';
 import { eventBus } from '../plugins/event-bus';
 import { invariant } from '../utils/invariant';
 
-const assignRole = async (userId: number, roleId: number) => {
-  const role = await getRole(roleId);
-
-  invariant(role, {
-    code: 'NOT_FOUND',
-    message: 'Role not found'
-  });
+const assignRole = async (userId: number, role: TJoinedRole) => {
+  const roleId = role.id;
 
   const existing = await db
     .select({ roleId: userRoles.roleId })
@@ -44,13 +39,8 @@ const assignRole = async (userId: number, roleId: number) => {
   );
 };
 
-const removeRole = async (userId: number, roleId: number) => {
-  const role = await getRole(roleId);
-
-  invariant(role, {
-    code: 'NOT_FOUND',
-    message: 'Role not found'
-  });
+const removeRole = async (userId: number, role: TJoinedRole) => {
+  const roleId = role.id;
 
   const existing = await db
     .select({ roleId: userRoles.roleId })

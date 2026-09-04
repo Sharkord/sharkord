@@ -85,6 +85,12 @@ Before you write anything, search for it. Most of what a new route needs already
   domain rules in `helpers/`, infrastructure in `utils/`, orchestration only in the route.
   A route that contains a raw multi-table query, or a `utils/` file that knows about
   permissions, is in the wrong place.
+- **A domain operation in `helpers/` owns its own write.** `banUser`, `createChannel` and
+  `setMessagePinned` each do one write next to the event, the publish and the activity log
+  that belong with it, because a route and a plugin action both have to go through exactly
+  that sequence. Splitting the statement into `db/mutations/` for one caller buys an
+  indirection and loses the guarantee that the side effects travel with it. A write that is
+  genuinely just a write, reused by several operations, still belongs in `db/mutations/`.
 - **Shared means shared.** Anything both client and server rely on — constants, enums,
   types, regexes, validation rules — lives in `packages/shared`, declared once. Anything
   only one side uses does not belong there.

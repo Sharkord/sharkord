@@ -33,7 +33,7 @@ const addRoleRoute = protectedProcedure
 
     await assertCanActOnUser(ctx.userId, input.userId);
 
-    await assignRole(input.userId, input.roleId);
+    await assignRole(input.userId, role);
   });
 
 export { addRoleRoute };

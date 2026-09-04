@@ -33,7 +33,7 @@ const removeRoleRoute = protectedProcedure
 
     await assertCanActOnUser(ctx.userId, input.userId);
 
-    await removeRole(input.userId, input.roleId);
+    await removeRole(input.userId, role);
   });
 
 export { removeRoleRoute };
