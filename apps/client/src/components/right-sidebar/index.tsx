@@ -1,9 +1,14 @@
+import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { ResizableSidebar } from '@/components/resizable-sidebar';
 import { UserAvatar } from '@/components/user-avatar';
 import { useUsers } from '@/features/server/users/hooks';
 import { LocalStorageKey } from '@/helpers/storage';
 import { cn } from '@/lib/utils';
-import { DELETED_USER_IDENTITY_AND_NAME, TestId } from '@sharkord/shared';
+import {
+  DELETED_USER_IDENTITY_AND_NAME,
+  PluginSlot,
+  TestId
+} from '@sharkord/shared';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UserPopover } from '../user-popover';
@@ -20,6 +25,8 @@ type TUserProps = {
 };
 
 const User = memo(({ userId, name, banned }: TUserProps) => {
+  const pluginProps = useMemo(() => ({ userId }), [userId]);
+
   return (
     <UserPopover userId={userId}>
       <div
@@ -35,6 +42,11 @@ const User = memo(({ userId, name, banned }: TUserProps) => {
         >
           {name}
         </span>
+
+        <PluginSlotRenderer
+          slotId={PluginSlot.MEMBER_LIST_ITEM}
+          props={pluginProps}
+        />
       </div>
     </UserPopover>
   );

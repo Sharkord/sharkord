@@ -3,6 +3,7 @@ import {
   LocalStorageKey,
   setLocalStorageItem
 } from '@/helpers/storage';
+import type { TLocale } from '@sharkord/shared';
 import type { Locale } from 'date-fns';
 import { cs, enUS, es, fr, it, ptBR, ru, zhCN } from 'date-fns/locale';
 import i18n from 'i18next';
@@ -18,9 +19,9 @@ export const SUPPORTED_LANGUAGES = [
   { code: 'ru', label: 'Русский', dateLocale: ru },
   { code: 'zh', label: '中文', dateLocale: zhCN },
   { code: 'pt-BR', label: 'Português (Brasil)', dateLocale: ptBR }
-] satisfies Array<{ code: string; label: string; dateLocale: Locale }>;
+] satisfies Array<{ code: TLocale; label: string; dateLocale: Locale }>;
 
-export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]['code'];
+export type SupportedLanguage = TLocale;
 
 const savedLanguage = getLocalStorageItem(LocalStorageKey.LANGUAGE);
 

@@ -1,8 +1,14 @@
 import { SettingsSection } from '@/components/server-screens/settings-shell/section';
-import { usePluginCommands } from '@/features/server/plugins/hooks';
+import { useCan } from '@/features/server/hooks';
+import { loadPluginTabs } from '@/features/server/plugins/actions';
+import {
+  usePluginCommands,
+  usePluginTabs
+} from '@/features/server/plugins/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import {
   getTrpcError,
+  Permission,
   type TPluginInfo,
   type TPluginSettingDefinition
 } from '@sharkord/shared';
@@ -23,7 +29,9 @@ import { toast } from 'sonner';
 import { ImageWithFallback } from '../plugins/marketplace/image-with-fallback';
 import { PluginCommands } from './commands';
 import { PluginLogs } from './logs';
+import { PluginPermissions } from './permissions';
 import { PluginSettings } from './settings';
+import { PluginTabContent } from './tab-content';
 
 const usePluginSettings = (pluginId: string) => {
   const { t } = useTranslation('settings');
@@ -32,6 +40,7 @@ const usePluginSettings = (pluginId: string) => {
     []
   );
   const [values, setValues] = useState<Record<string, unknown>>({});
+  const [secretsSet, setSecretsSet] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -44,6 +53,7 @@ const usePluginSettings = (pluginId: string) => {
 
         setDefinitions(result.definitions);
         setValues(result.values);
+        setSecretsSet(result.secretsSet);
       } catch (error) {
         toast.error(getTrpcError(error, t('failedLoadPluginSettings')));
       } finally {
@@ -54,7 +64,7 @@ const usePluginSettings = (pluginId: string) => {
     fetchSettings();
   }, [pluginId, t]);
 
-  return { definitions, values, loading };
+  return { definitions, values, secretsSet, loading };
 };
 
 type TPluginViewProps = {
@@ -63,11 +73,25 @@ type TPluginViewProps = {
 
 const PluginView = memo(({ plugin }: TPluginViewProps) => {
   const { t } = useTranslation('settings');
-  const { definitions, values, loading } = usePluginSettings(plugin.id);
+  const customTabs = usePluginTabs(plugin.id);
+  const can = useCan();
+  const canManagePluginPermissions = can(Permission.MANAGE_PLUGIN_PERMISSIONS);
+
+  useEffect(() => {
+    loadPluginTabs(plugin.id);
+  }, [plugin.id]);
+  const { definitions, values, secretsSet, loading } = usePluginSettings(
+    plugin.id
+  );
   const commandsMap = usePluginCommands();
 
   const hasCommands = (commandsMap[plugin.id] ?? []).length > 0;
   const hasSettings = definitions.length > 0;
+
+  let defaultTab = 'logs';
+
+  if (hasCommands) defaultTab = 'commands';
+  if (hasSettings) defaultTab = 'settings';
 
   const identity = (
     <SettingsSection
@@ -117,7 +141,12 @@ const PluginView = memo(({ plugin }: TPluginViewProps) => {
   }
 
   // a plugin that only produces logs gets no sub navigation at all
-  if (!hasSettings && !hasCommands) {
+  if (
+    !hasSettings &&
+    !hasCommands &&
+    !canManagePluginPermissions &&
+    customTabs.length === 0
+  ) {
     return (
       <>
         {identity}
@@ -130,15 +159,31 @@ const PluginView = memo(({ plugin }: TPluginViewProps) => {
     <>
       {identity}
 
-      <Tabs defaultValue={hasSettings ? 'settings' : 'commands'}>
+      <Tabs defaultValue={defaultTab}>
         <TabsList className="mb-4">
           {hasSettings && (
-            <TabsTrigger value="settings">{t('pluginSettingsTab')}</TabsTrigger>
+            <TabsTrigger value="settings" data-tab="settings">
+              {t('pluginSettingsTab')}
+            </TabsTrigger>
           )}
           {hasCommands && (
-            <TabsTrigger value="commands">{t('pluginCommandsTab')}</TabsTrigger>
+            <TabsTrigger value="commands" data-tab="commands">
+              {t('pluginCommandsTab')}
+            </TabsTrigger>
           )}
-          <TabsTrigger value="logs">{t('pluginLogsTab')}</TabsTrigger>
+          <TabsTrigger value="logs" data-tab="logs">
+            {t('pluginLogsTab')}
+          </TabsTrigger>
+          {canManagePluginPermissions && (
+            <TabsTrigger value="permissions" data-tab="permissions">
+              {t('pluginPermissionsTab')}
+            </TabsTrigger>
+          )}
+          {customTabs.map((tab) => (
+            <TabsTrigger key={tab.id} value={tab.id} data-tab={tab.id}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         {hasSettings && (
@@ -147,6 +192,7 @@ const PluginView = memo(({ plugin }: TPluginViewProps) => {
               pluginId={plugin.id}
               definitions={definitions}
               values={values}
+              secretsSet={secretsSet}
             />
           </TabsContent>
         )}
@@ -160,6 +206,18 @@ const PluginView = memo(({ plugin }: TPluginViewProps) => {
         <TabsContent value="logs" className="space-y-6">
           <PluginLogs pluginId={plugin.id} />
         </TabsContent>
+
+        {canManagePluginPermissions && (
+          <TabsContent value="permissions" className="space-y-6">
+            <PluginPermissions pluginId={plugin.id} />
+          </TabsContent>
+        )}
+
+        {customTabs.map((tab) => (
+          <TabsContent key={tab.id} value={tab.id} className="space-y-6">
+            <PluginTabContent pluginId={plugin.id} tab={tab} />
+          </TabsContent>
+        ))}
       </Tabs>
     </>
   );

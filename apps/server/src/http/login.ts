@@ -1,7 +1,8 @@
 import {
   ActivityLogType,
   DELETED_USER_IDENTITY_AND_NAME,
-  sha256
+  sha256,
+  type TBeforeLoginPayload
 } from '@sharkord/shared';
 import chalk from 'chalk';
 import { eq } from 'drizzle-orm';
@@ -20,6 +21,8 @@ import { getWsInfo } from '../helpers/get-ws-info';
 import { isLocalLoginDisabled } from '../helpers/oidc/settings';
 import { safeCompare } from '../helpers/safe-compare';
 import { logger } from '../logger';
+import { pluginManager } from '../plugins';
+import { runHook } from '../plugins/run-hook';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { createRateLimiter } from '../utils/rate-limiters/rate-limiter';
 import { HttpValidationError } from './errors';
@@ -78,6 +81,18 @@ const loginRouteHandler = async (
   const settings = await getSettings();
   let existingUser = await getUserByIdentity(data.identity);
   const connectionInfo = getWsInfo(undefined, req);
+
+  await runHook<TBeforeLoginPayload, never>({
+    entries: pluginManager.getHooks('beforeLogin'),
+    payload: {
+      identity: data.identity,
+      ip: connectionInfo?.ip,
+      isExistingUser: !!existingUser
+    },
+    reject: (message) => {
+      throw new HttpValidationError('identity', message);
+    }
+  });
 
   const allowed = enforceHttpRateLimit(
     res,

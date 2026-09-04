@@ -33,6 +33,8 @@ const resetPluginMocks = async () => {
     { pluginId: 'plugin-a', enabled: true },
     { pluginId: 'plugin-b', enabled: true },
     { pluginId: 'plugin-before-file-save', enabled: true },
+    { pluginId: 'plugin-before-message-save', enabled: false },
+    { pluginId: 'plugin-upgrade', enabled: true },
     { pluginId: 'plugin-message-actions', enabled: true },
     { pluginId: 'plugin-with-events', enabled: true },
     { pluginId: 'plugin-with-settings', enabled: true },

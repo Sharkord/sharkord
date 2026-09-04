@@ -3,10 +3,12 @@ import { getTRPCClient } from '@/lib/trpc';
 import { handleSubscriptionError } from '../subscription-error';
 import {
   processPluginComponents,
+  setPluginCapabilityAccess,
   setPluginCommands,
   setPluginComponents,
   setPluginsMetadata
 } from './actions';
+import { dispatchPluginPush } from './push-registry';
 
 const subscribeToPlugins = () => {
   const trpc = getTRPCClient();
@@ -35,6 +37,15 @@ const subscribeToPlugins = () => {
     }
   );
 
+  const onCapabilityAccessChangeSub =
+    trpc.plugins.onCapabilityAccessChange.subscribe(undefined, {
+      onData: (data) => {
+        logDebug('[EVENTS] plugins.onCapabilityAccessChange', { data });
+        setPluginCapabilityAccess(data);
+      },
+      onError: handleSubscriptionError('onCapabilityAccessChange')
+    });
+
   const onMetadataChangeSub = trpc.plugins.onMetadataChange.subscribe(
     undefined,
     {
@@ -46,7 +57,17 @@ const subscribeToPlugins = () => {
     }
   );
 
+  const onPushSub = trpc.plugins.onPush.subscribe(undefined, {
+    onData: ({ pluginId, data }) => {
+      logDebug('[EVENTS] plugins.onPush', { pluginId });
+      dispatchPluginPush(pluginId, data);
+    },
+    onError: handleSubscriptionError('onPush')
+  });
+
   return () => {
+    onCapabilityAccessChangeSub.unsubscribe();
+    onPushSub.unsubscribe();
     onCommandsChangeSub.unsubscribe();
     onComponentsChangeSub.unsubscribe();
     onMetadataChangeSub.unsubscribe();

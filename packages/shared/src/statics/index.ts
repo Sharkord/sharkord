@@ -1,3 +1,4 @@
+export * from './locales';
 export * from './metrics';
 export * from './permissions';
 export * from './storage';

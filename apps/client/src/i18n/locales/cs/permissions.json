@@ -25,6 +25,7 @@
     "MANAGE_INVITES": "Spravovat pozvánky",
     "MANAGE_UPDATES": "Spravovat aktualizace",
     "MANAGE_PLUGINS": "Spravovat rozšíření",
+    "MANAGE_PLUGIN_PERMISSIONS": "Spravovat oprávnění pluginů",
     "USE_PLUGINS": "Používat rozšíření",
     "VIEW_USER_SENSITIVE_DATA": "Zobrazit senzitivní data uživatelů"
   },
@@ -49,6 +50,7 @@
     "MANAGE_INVITES": "Umožňuje vytvářet, upravovat a mazat pozvánky na server.",
     "MANAGE_UPDATES": "Umožňuje spravovat aktualizace.",
     "MANAGE_PLUGINS": "Umožňuje spravovat rozšíření.",
+    "MANAGE_PLUGIN_PERMISSIONS": "Umožňuje určit, které role mohou používat jednotlivé příkazy a akce pluginu. Kdo jej má, může tato oprávnění udělit sám sobě.",
     "USE_PLUGINS": "Umožňuje používat rozšíření, jako například spouštění příkazů a zobrazení grafických elementů přidaných rozšířeními.",
     "VIEW_USER_SENSITIVE_DATA": "Umožňuje zobrazení senzitivních dat uživatelů, jako je identita, IP adresa a geografická lokace."
   },

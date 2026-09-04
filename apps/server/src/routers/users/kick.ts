@@ -1,9 +1,7 @@
-import { ActivityLogType, DisconnectCode, Permission } from '@sharkord/shared';
+import { Permission } from '@sharkord/shared';
 import z from 'zod';
-import { invalidateUserSessions } from '../../db/mutations/users';
 import { assertCanActOnUser } from '../../helpers/assert-can-act-on-user';
-import { enqueueActivityLog } from '../../queues/activity-log';
-import { invariant } from '../../utils/invariant';
+import { ctxUserSessions, kickUser } from '../../helpers/moderation';
 import { protectedProcedure } from '../../utils/trpc';
 
 const kickRoute = protectedProcedure
@@ -18,27 +16,12 @@ const kickRoute = protectedProcedure
 
     await assertCanActOnUser(ctx.userId, input.userId);
 
-    const userSockets = ctx.getUserWs(input.userId);
-
-    invariant(userSockets.length > 0, {
-      code: 'NOT_FOUND',
-      message: 'User is not connected'
-    });
-
-    await invalidateUserSessions(input.userId);
-
-    userSockets.forEach((socket) =>
-      socket.close(DisconnectCode.KICKED, input.reason)
+    await kickUser(
+      input.userId,
+      input.reason,
+      ctx.userId,
+      ctxUserSessions(ctx, input.userId)
     );
-
-    enqueueActivityLog({
-      type: ActivityLogType.USER_KICKED,
-      userId: input.userId,
-      details: {
-        reason: input.reason,
-        kickedBy: ctx.userId
-      }
-    });
   });
 
 export { kickRoute };

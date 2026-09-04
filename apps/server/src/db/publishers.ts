@@ -1,11 +1,13 @@
 import {
   ChannelPermission,
+  getErrorMessage,
   ServerEvents,
   type TChannelUserPermissionsMap
 } from '@sharkord/shared';
 import { count, eq } from 'drizzle-orm';
 import { db } from '.';
-import { pluginManager } from '../plugins';
+import { getCapabilityAccessRules } from '../helpers/plugin-capability-access';
+import { logger } from '../logger';
 import { pubsub } from '../utils/pubsub';
 import {
   channelUserCan,
@@ -95,6 +97,8 @@ const publishRole = async (
   type: 'create' | 'update' | 'delete'
 ) => {
   if (!roleId) return;
+
+  publishCapabilityAccess();
 
   if (type === 'delete') {
     pubsub.publish(ServerEvents.ROLE_DELETE, roleId);
@@ -348,14 +352,18 @@ const publishChannelListChange = async (
   await publishChannelPermissions([userId]);
 };
 
-const publishPlugins = async () => {
-  const commands = pluginManager.getCommands();
-  const pluginIds = pluginManager.getPluginIdsWithComponents();
-  const metadata = await pluginManager.getActivePluginMetadata();
-
-  pubsub.publish(ServerEvents.PLUGIN_COMMANDS_CHANGE, commands);
-  pubsub.publish(ServerEvents.PLUGIN_COMPONENTS_CHANGE, pluginIds);
-  pubsub.publish(ServerEvents.PLUGIN_METADATA_CHANGE, metadata);
+const publishCapabilityAccess = async () => {
+  try {
+    pubsub.publish(
+      ServerEvents.PLUGIN_CAPABILITY_ACCESS_CHANGE,
+      await getCapabilityAccessRules()
+    );
+  } catch (error) {
+    logger.error(
+      'Failed to publish plugin capability access: %s',
+      getErrorMessage(error)
+    );
+  }
 };
 
 const publishReplyCount = async (
@@ -381,6 +389,7 @@ const publishReplyCount = async (
 };
 
 export {
+  publishCapabilityAccess,
   publishCategory,
   publishChannel,
   publishChannelAccessChange,
@@ -389,7 +398,6 @@ export {
   publishEmoji,
   publishHiddenChannelToUser,
   publishMessage,
-  publishPlugins,
   publishReplyCount,
   publishRole,
   publishSettings,

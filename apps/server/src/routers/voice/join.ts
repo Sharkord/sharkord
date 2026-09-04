@@ -2,7 +2,8 @@ import {
   ChannelPermission,
   ChannelType,
   Permission,
-  ServerEvents
+  ServerEvents,
+  type TBeforeVoiceJoinPayload
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -14,6 +15,8 @@ import {
   hasVoiceMoveGrant
 } from '../../helpers/voice-move-grants';
 import { logger } from '../../logger';
+import { pluginManager } from '../../plugins';
+import { runHook } from '../../plugins/run-hook';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
@@ -74,6 +77,15 @@ const joinVoiceRoute = rateLimitedProcedure(protectedProcedure, {
     invariant(!userAlreadyInVoiceChannel, {
       code: 'BAD_REQUEST',
       message: 'User already in a voice channel'
+    });
+
+    await runHook<TBeforeVoiceJoinPayload, never>({
+      entries: pluginManager.getHooks('beforeVoiceJoin'),
+      payload: {
+        channelId: input.channelId,
+        userId: ctx.user.id,
+        movedByModerator
+      }
     });
 
     const runtime = VoiceRuntime.findById(input.channelId);

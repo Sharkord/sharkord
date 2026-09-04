@@ -1,6 +1,7 @@
 import { and, eq, isNull, lt, max, or, sql } from 'drizzle-orm';
 import { db } from '..';
 import { HttpValidationError } from '../../http/errors';
+import { eventBus } from '../../plugins/event-bus';
 import { invariant } from '../../utils/invariant';
 import { getDefaultRole } from '../queries/roles';
 import {
@@ -39,8 +40,9 @@ const createUser = async ({
   });
 
   const randomNum = Math.floor(Math.random() * 99999) + 10000; // between 10000 and 99999 to ensure it's always 5 digits, for better readability
+  const username = name || `SharkordUser${randomNum}`;
 
-  return db.transaction((tx) => {
+  const userId = db.transaction((tx) => {
     if (inviteCode) {
       const consumed = tx
         .update(invites)
@@ -65,7 +67,7 @@ const createUser = async ({
     const user = tx
       .insert(users)
       .values({
-        name: name || `SharkordUser${randomNum}`,
+        name: username,
         identity,
         oidcSub,
         oidcIssuer,
@@ -140,6 +142,10 @@ const createUser = async ({
 
     return user.id;
   });
+
+  eventBus.emit('user:created', { userId, username });
+
+  return userId;
 };
 
 const invalidateUserSessions = async (userId: number) => {

@@ -28,6 +28,7 @@ import { oidcCallbackRouteHandler } from './oidc/callback';
 import { oidcExchangeRouteHandler } from './oidc/exchange';
 import { oidcLoginRouteHandler } from './oidc/login';
 import { pluginBundleRouteHandler } from './plugin-bundle';
+import { runPluginRoute } from './plugin-route';
 import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
 import { uploadFileRouteHandler } from './upload';
@@ -154,14 +155,14 @@ const createHttpServer = async (port: number = config.server.port) => {
             const pluginRoute = getPluginRoute(pathname);
 
             if (pluginRoute) {
-              const pluginRouteHandler = pluginManager.getHttpRouteHandler(
+              const route = pluginManager.getHttpRoute(
                 pluginRoute.pluginId,
                 method,
                 pluginRoute.routePath
               );
 
-              if (pluginRouteHandler) {
-                return await pluginRouteHandler(req, res);
+              if (route) {
+                return await runPluginRoute(req, res, route);
               }
 
               if (method !== 'OPTIONS') {

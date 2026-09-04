@@ -2,7 +2,7 @@
   "id": "plugin-missing-entry",
   "name": "plugin-missing-entry",
   "version": "1.0.0",
-  "sdkVersion": 1,
+  "sdkVersion": 2,
   "author": "Test Author",
   "description": "Plugin with missing entry file"
 }

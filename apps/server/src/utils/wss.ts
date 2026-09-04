@@ -1,6 +1,7 @@
 import {
   ActivityLogType,
   ChannelPermission,
+  DEFAULT_LOCALE,
   DisconnectCode,
   getErrorMessage,
   OWNER_ROLE_ID,
@@ -21,6 +22,7 @@ import { getUserRoles } from '../db/queries/roles';
 import { getUserById, getUserByToken } from '../db/queries/users';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { logger } from '../logger';
+import { eventBus } from '../plugins/event-bus';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { appRouter } from '../routers';
 import { VoiceRuntime } from '../runtimes/voice';
@@ -51,6 +53,11 @@ const untrackUserSocket = (userId: number, ws: WebSocket) => {
   if (sockets.size === 0) userSockets.delete(userId);
 };
 
+const clearUserSocketsForTests = () => {
+  userSockets.clear();
+  usersIpMap.clear();
+};
+
 const getUserIp = (userId: number): string | undefined => {
   return usersIpMap.get(userId);
 };
@@ -64,6 +71,9 @@ const disconnectUser = (
 };
 
 const getOnlineUserIds = (): number[] => Array.from(userSockets.keys());
+
+const getUserWsCount = (userId: number): number =>
+  userSockets.get(userId)?.size ?? 0;
 
 const createContext = async ({
   info,
@@ -175,6 +185,7 @@ const createContext = async ({
     userId: decodedUser.id,
     handshakeHash: '',
     currentVoiceChannelId: undefined,
+    locale: DEFAULT_LOCALE,
     hasPermission,
     needsPermission,
     hasChannelPermission,
@@ -222,6 +233,11 @@ const handleSocketClose = async (ws: WebSocket) => {
 
     usersIpMap.delete(user.id);
     pubsub.publish(ServerEvents.USER_LEAVE, user.id);
+
+    eventBus.emit('user:left', {
+      userId: user.id,
+      username: user.name
+    });
 
     logger.info('%s left the server', user.name);
 
@@ -280,10 +296,13 @@ const createWsServer = async (server: http.Server) => {
 };
 
 export {
+  clearUserSocketsForTests,
   createContext,
   createWsServer,
   disconnectUser,
   getOnlineUserIds,
   getUserIp,
-  handleSocketClose
+  getUserWsCount,
+  handleSocketClose,
+  trackUserSocket
 };

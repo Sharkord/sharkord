@@ -1,10 +1,22 @@
-import type { TInvokerContext } from '@sharkord/shared';
+import type { TInvokerContext, TInvokerSource } from '@sharkord/shared';
 import type { Context } from '../utils/trpc';
 
-const getInvokerCtxFromTrpcCtx = (ctx: Context): TInvokerContext => {
+type TInvocation = {
+  source: TInvokerSource;
+  channelId?: number;
+  parentMessageId?: number;
+  messageId?: number;
+};
+
+const getInvokerCtxFromTrpcCtx = (
+  ctx: Context,
+  invocation: TInvocation
+): TInvokerContext => {
   return {
     userId: ctx.user.id,
-    currentVoiceChannelId: ctx.currentVoiceChannelId
+    currentVoiceChannelId: ctx.currentVoiceChannelId,
+    locale: ctx.locale,
+    ...invocation
   };
 };
 

@@ -4,7 +4,7 @@ const onLoad = (ctx) => {
   ctx.commands.register({
     name: 'hang',
     description: 'A command that hangs forever',
-    async execute() {
+    async executes() {
       return new Promise(() => {});
     }
   });
@@ -12,7 +12,7 @@ const onLoad = (ctx) => {
   ctx.actions.register({
     name: 'hang',
     description: 'An action that hangs forever',
-    async execute() {
+    async executes() {
       return new Promise(() => {});
     }
   });

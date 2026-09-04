@@ -1,4 +1,9 @@
-import { ActivityLogType, ServerEvents, UserStatus } from '@sharkord/shared';
+import {
+  ActivityLogType,
+  ServerEvents,
+  UserStatus,
+  zLocale
+} from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
@@ -14,6 +19,7 @@ import { getRoles } from '../../db/queries/roles';
 import { getPublicSettings, getSettings } from '../../db/queries/server';
 import { getPublicUsers } from '../../db/queries/users';
 import { categories, users } from '../../db/schema';
+import { getCapabilityAccessRules } from '../../helpers/plugin-capability-access';
 import { safeCompare } from '../../helpers/safe-compare';
 import { shouldAskServerPassword } from '../../helpers/should-ask-server-password';
 import { logger } from '../../logger';
@@ -33,7 +39,8 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
   .input(
     z.object({
       handshakeHash: z.string(),
-      password: z.string().optional()
+      password: z.string().optional(),
+      locale: zLocale.optional()
     })
   )
   .query(async ({ input, ctx }) => {
@@ -75,6 +82,8 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
     ctx.authenticated = true;
     ctx.setWsUserId(ctx.user.id);
 
+    if (input.locale) ctx.locale = input.locale;
+
     const [
       allCategories,
       channelsForUser,
@@ -85,7 +94,8 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
       readStates,
       publicSettings,
       pluginsMetadata,
-      hasJoinedBefore
+      hasJoinedBefore,
+      pluginCapabilityAccess
     ] = await Promise.all([
       db.select().from(categories),
       getChannelsForUser(ctx.user.id), // filter channels based on permissions and DM participation
@@ -96,7 +106,8 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
       getChannelsReadStatesForUser(ctx.user.id),
       getPublicSettings(),
       pluginManager.getActivePluginMetadata(),
-      hasUserJoinedBefore(ctx.user.id)
+      hasUserJoinedBefore(ctx.user.id),
+      getCapabilityAccessRules()
     ]);
 
     const showWelcomeDialog = settings.showWelcomeDialog && !hasJoinedBefore;
@@ -163,6 +174,7 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
       readStates,
       commands: pluginManager.getCommands(),
       pluginIdsWithComponents: pluginManager.getPluginIdsWithComponents(),
+      pluginCapabilityAccess,
       pluginsMetadata,
       externalStreamsMap,
       showWelcomeDialog

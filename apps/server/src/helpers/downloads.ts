@@ -1,6 +1,5 @@
 import {
-  CLIENT_ENTRY_FILE,
-  SERVER_ENTRY_FILE,
+  assertSdkVersionCompatibility,
   zPluginManifest
 } from '@sharkord/shared';
 import { randomUUIDv7 } from 'bun';
@@ -10,14 +9,20 @@ import { logger } from '../logger';
 import { ensureDir } from '../utils/fs';
 import { readBodyWithLimit } from '../utils/read-body-with-limit';
 import { sha256File } from '../utils/sha-256-file';
-import { PLUGINS_PATH, TMP_PATH } from './paths';
+import { isPathInside } from './is-path-inside';
+import { TMP_PATH } from './paths';
+import {
+  getPluginClientEntryPath,
+  getPluginPath,
+  getPluginServerEntryPath
+} from './plugin-paths';
 
 const downloadsPath = path.join(TMP_PATH, 'downloads');
 
 const hasPluginStructure = async (pluginPath: string): Promise<boolean> => {
   const manifestPath = path.join(pluginPath, 'manifest.json');
-  const serverEntryPath = path.join(pluginPath, SERVER_ENTRY_FILE);
-  const clientEntryPath = path.join(pluginPath, CLIENT_ENTRY_FILE);
+  const serverEntryPath = getPluginServerEntryPath(pluginPath);
+  const clientEntryPath = getPluginClientEntryPath(pluginPath);
 
   const [hasManifest, hasServerEntry, hasClientEntry] = await Promise.all([
     fs.exists(manifestPath),
@@ -62,7 +67,43 @@ const resolveExtractedPluginPath = async (
   return pluginDirs[0]!;
 };
 
+// archive entry paths come from whoever built the archive, so they are checked
+// before extraction rather than after: a '../' entry would already have written
+// outside the directory by the time it could be noticed on disk
+const assertArchiveStaysInside = async (
+  archive: Bun.Archive,
+  extractPath: string
+) => {
+  const entries = await archive.files();
+
+  for (const entryPath of entries.keys()) {
+    const resolved = path.resolve(extractPath, entryPath);
+
+    if (!isPathInside(extractPath, resolved)) {
+      throw new Error(
+        `Downloaded archive contains an entry outside the extraction directory: '${entryPath}'`
+      );
+    }
+  }
+};
+
+const assertNoLinks = async (extractPath: string) => {
+  const entries = await fs.readdir(extractPath, {
+    recursive: true,
+    withFileTypes: true
+  });
+
+  const link = entries.find((entry) => entry.isSymbolicLink());
+
+  if (link) {
+    throw new Error(
+      `Downloaded archive contains a symlink: '${link.name}'. Plugins cannot ship links.`
+    );
+  }
+};
+
 const downloadPlugin = async (
+  expectedPluginId: string,
   url: string,
   expectedChecksum: string
 ): Promise<void> => {
@@ -86,7 +127,12 @@ const downloadPlugin = async (
 
     const archiveBytes = await Bun.file(archivePath).bytes();
     const archive = new Bun.Archive(archiveBytes);
+
+    await assertArchiveStaysInside(archive, extractPath);
+
     const entryCount = await archive.extract(extractPath);
+
+    await assertNoLinks(extractPath);
 
     logger.debug(`Extracted ${entryCount} entries from plugin archive`);
 
@@ -96,7 +142,15 @@ const downloadPlugin = async (
       JSON.parse(await fs.readFile(manifestPath, 'utf-8'))
     );
 
-    const targetPluginPath = path.join(PLUGINS_PATH, manifest.id);
+    if (manifest.id !== expectedPluginId) {
+      throw new Error(
+        `Downloaded archive contains plugin '${manifest.id}', expected '${expectedPluginId}'`
+      );
+    }
+
+    assertSdkVersionCompatibility(manifest.sdkVersion);
+
+    const targetPluginPath = getPluginPath(manifest.id);
 
     await fs.rm(targetPluginPath, { recursive: true, force: true });
     await fs.cp(pluginPath, targetPluginPath, { recursive: true });
@@ -142,4 +196,4 @@ const downloadFile = async (url: string, outputPath: string): Promise<void> => {
   }
 };
 
-export { downloadFile, downloadPlugin };
+export { assertNoLinks, downloadFile, downloadPlugin };

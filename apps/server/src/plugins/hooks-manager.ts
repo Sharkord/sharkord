@@ -1,35 +1,79 @@
-import type { TBeforeFileSaveHook } from '@sharkord/shared';
+import type {
+  TBeforeChannelCreateHook,
+  TBeforeFileSaveHook,
+  TBeforeLoginHook,
+  TBeforeMessageSaveHook,
+  TBeforeVoiceJoinHook
+} from '@sharkord/shared';
+import { HOOK_EXECUTION_TIMEOUT_MS, withTimeout } from './execution-timeout';
+
+type THookHandlers = {
+  beforeFileSave: TBeforeFileSaveHook;
+  beforeMessageSave: TBeforeMessageSaveHook;
+  beforeChannelCreate: TBeforeChannelCreateHook;
+  beforeVoiceJoin: TBeforeVoiceJoinHook;
+  beforeLogin: TBeforeLoginHook;
+};
+
+type THookName = keyof THookHandlers;
+
+type THookEntries<TName extends THookName> = Array<{
+  pluginId: string;
+  handlers: THookHandlers[TName][];
+}>;
 
 class HooksManager {
-  private beforeFileSaveHooks = new Map<string, TBeforeFileSaveHook[]>();
+  private hooks = new Map<THookName, Map<string, THookHandlers[THookName][]>>();
 
-  public registerBeforeFileSave = (
+  private byPlugin = <TName extends THookName>(name: TName) => {
+    const existing = this.hooks.get(name);
+
+    if (existing) return existing as Map<string, THookHandlers[TName][]>;
+
+    const created = new Map<string, THookHandlers[TName][]>();
+
+    this.hooks.set(name, created);
+
+    return created;
+  };
+
+  public register = <TName extends THookName>(
+    name: TName,
     pluginId: string,
-    handler: TBeforeFileSaveHook
+    handler: THookHandlers[TName]
   ) => {
-    const existing = this.beforeFileSaveHooks.get(pluginId) ?? [];
+    const handlers = this.byPlugin(name);
+    const existing = handlers.get(pluginId) ?? [];
 
     existing.push(handler);
-
-    this.beforeFileSaveHooks.set(pluginId, existing);
+    handlers.set(pluginId, existing);
   };
 
-  public clearBeforeFileSaveHooks = () => {
-    this.beforeFileSaveHooks.clear();
-  };
+  public get = <TName extends THookName>(name: TName): THookEntries<TName> =>
+    Array.from(this.byPlugin(name).entries()).map(([pluginId, handlers]) => ({
+      pluginId,
+      handlers: handlers.map((handler) => {
+        const run = handler as (payload: never) => Promise<unknown>;
 
-  public getBeforeFileSaveHooks = (): Array<{
-    pluginId: string;
-    handlers: TBeforeFileSaveHook[];
-  }> => {
-    const entries = Array.from(this.beforeFileSaveHooks.entries());
+        return ((payload: never) =>
+          withTimeout(
+            Promise.resolve().then(() => run(payload)),
+            HOOK_EXECUTION_TIMEOUT_MS,
+            `${name} hook from plugin '${pluginId}' exceeded timeout of ${HOOK_EXECUTION_TIMEOUT_MS}ms`
+          )) as THookHandlers[TName];
+      })
+    }));
 
-    return entries.map(([pluginId, handlers]) => ({ pluginId, handlers }));
+  public clearAll = () => {
+    this.hooks.clear();
   };
 
   public unload = (pluginId: string) => {
-    this.beforeFileSaveHooks.delete(pluginId);
+    for (const handlers of this.hooks.values()) {
+      handlers.delete(pluginId);
+    }
   };
 }
 
 export { HooksManager };
+export type { THookHandlers, THookName };

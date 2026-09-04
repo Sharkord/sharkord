@@ -1,7 +1,11 @@
+import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
+import { useCan, useUserSettingsPlugins } from '@/features/server/hooks';
+import { Permission, PluginSlot } from '@sharkord/shared';
 import {
   Bell,
   Headphones,
   KeyRound,
+  Package,
   SlidersHorizontal,
   User
 } from 'lucide-react';
@@ -20,6 +24,8 @@ type TUserSettingsProps = TServerScreenBaseProps;
 
 const UserSettings = memo(({ close }: TUserSettingsProps) => {
   const { t } = useTranslation('settings');
+  const can = useCan();
+  const userSettingsPlugins = useUserSettingsPlugins();
 
   const entries = useMemo<TSettingsEntry[]>(
     () => [
@@ -57,11 +63,31 @@ const UserSettings = memo(({ close }: TUserSettingsProps) => {
     [t]
   );
 
+  // the plugin owns everything inside its entry, so this renders its slot and
+  // nothing else
+  const pluginEntries = useMemo<TSettingsEntry[]>(() => {
+    if (!can(Permission.USE_PLUGINS)) return [];
+
+    return userSettingsPlugins.map((plugin) => ({
+      id: `plugin-${plugin.pluginId}`,
+      label: plugin.name,
+      icon: Package,
+      logo: plugin.logo,
+      content: (
+        <PluginSlotRenderer
+          slotId={PluginSlot.USER_SETTINGS}
+          onlyPluginId={plugin.pluginId}
+        />
+      )
+    }));
+  }, [can, userSettingsPlugins]);
+
   return (
     <SettingsShell
       title={t('userSettingsTitle')}
       close={close}
       entries={entries}
+      pluginEntries={pluginEntries}
     />
   );
 });

@@ -45,6 +45,7 @@ import { filesize } from 'filesize';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DiskMetrics } from './metrics';
+import { PluginStorageUsage } from './plugin-usage';
 import {
   MAX_AVATAR_SIZE_PRESETS,
   MAX_BANNER_SIZE_PRESETS,
@@ -80,7 +81,8 @@ const toSizeLabel = (value: unknown) =>
 
 const Storage = memo(() => {
   const { t } = useTranslation('settings');
-  const { storageSettings, diskMetrics, loading } = useAdminStorage();
+  const { storageSettings, diskMetrics, pluginStorage, loading } =
+    useAdminStorage();
 
   const onSave = useCallback(async (values: TStorageSettings) => {
     const trpc = getTRPCClient();
@@ -133,6 +135,8 @@ const Storage = memo(() => {
   return (
     <SettingsSection title={t('storageTitle')} description={t('storageDesc')}>
       <DiskMetrics diskMetrics={diskMetrics!} />
+
+      <PluginStorageUsage pluginStorage={pluginStorage} />
 
       <Group label={t('allowUploadsLabel')} description={t('allowUploadsDesc')}>
         <Switch

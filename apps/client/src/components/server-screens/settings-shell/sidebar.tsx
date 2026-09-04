@@ -1,5 +1,7 @@
 import { cn } from '@/lib/utils';
-import { Separator } from '@sharkord/ui';
+import { TestId } from '@sharkord/shared';
+import { Separator, Tooltip } from '@sharkord/ui';
+import { AlertCircle } from 'lucide-react';
 
 import { memo, useCallback } from 'react';
 import type { TSettingsEntry } from './types';
@@ -12,7 +14,7 @@ type TSidebarEntryProps = {
 
 const SidebarEntry = memo(
   ({ entry, isSelected, onSelect }: TSidebarEntryProps) => {
-    const { icon: Icon, logo, label } = entry;
+    const { icon: Icon, logo, label, error } = entry;
 
     const handleClick = useCallback(
       () => onSelect(entry.id),
@@ -21,6 +23,7 @@ const SidebarEntry = memo(
 
     return (
       <button
+        data-testid={TestId.SETTINGS_SIDEBAR_ENTRY}
         onClick={handleClick}
         className={cn(
           'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent',
@@ -37,6 +40,15 @@ const SidebarEntry = memo(
           <Icon className="h-4 w-4 shrink-0" />
         )}
         <span className="truncate">{label}</span>
+        {error && (
+          <Tooltip content={error}>
+            <AlertCircle
+              role="img"
+              aria-label={error}
+              className="ml-auto h-4 w-4 shrink-0 text-destructive"
+            />
+          </Tooltip>
+        )}
       </button>
     );
   }

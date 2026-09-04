@@ -33,3 +33,11 @@ await migrateDatabase(sqlite, db, MIGRATIONS_PATH);
 await seedTestDb(db, { e2e: true });
 
 sqlite.close();
+
+// the plugin the specs assert on. it has to land before playwright starts the
+// server, which loads whatever is in this directory at boot
+await fs.cp(
+  path.resolve(import.meta.dir, '../fixtures/plugins'),
+  path.join(e2eDataPath, 'plugins'),
+  { recursive: true }
+);

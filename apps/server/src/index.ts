@@ -22,7 +22,7 @@ import { loadMediasoup } from './utils/mediasoup';
 import { printDebug } from './utils/print-debug';
 
 await loadDb();
-await pluginManager.loadPlugins();
+await pluginManager.init();
 await createServers();
 await loadMediasoup();
 await initVoiceRuntimes();

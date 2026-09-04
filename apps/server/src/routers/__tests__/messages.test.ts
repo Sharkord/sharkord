@@ -114,6 +114,28 @@ describe('messages router', () => {
     expect(unpinned?.pinnedBy).toBeNull();
   });
 
+  test('should throw when user lacks permissions (togglePin)', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    const messageId = await caller1.messages.send({
+      channelId: 1,
+      content: 'pin me'
+    });
+
+    await expect(caller2.messages.togglePin({ messageId })).rejects.toThrow(
+      'Insufficient permissions'
+    );
+
+    const message = await tdb
+      .select({ pinned: messages.pinned })
+      .from(messages)
+      .where(eq(messages.id, messageId))
+      .get();
+
+    expect(message?.pinned).toBe(false);
+  });
+
   test('should throw when user lacks permissions (toggleReaction)', async () => {
     const { caller: caller1 } = await initTest(1);
     const { caller: caller2 } = await initTest(2);

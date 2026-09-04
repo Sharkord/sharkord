@@ -1,88 +1,20 @@
-import { ActivityLogType, ChannelType, Permission } from '@sharkord/shared';
-import { desc, eq } from 'drizzle-orm';
+import { ChannelType, Permission } from '@sharkord/shared';
 import { z } from 'zod';
-import { db } from '../../db';
-import { publishChannel } from '../../db/publishers';
-import { categories, channels } from '../../db/schema';
-import { enqueueActivityLog } from '../../queues/activity-log';
-import { VoiceRuntime } from '../../runtimes/voice';
-import { invariant } from '../../utils/invariant';
+import { createChannel, zChannelName } from '../../helpers/channels';
 import { protectedProcedure } from '../../utils/trpc';
 
 const addChannelRoute = protectedProcedure
   .input(
     z.object({
       type: z.enum(ChannelType),
-      name: z.string().min(1).max(27),
+      name: zChannelName,
       categoryId: z.number()
     })
   )
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_CHANNELS);
 
-    const category = await db
-      .select({ id: categories.id })
-      .from(categories)
-      .where(eq(categories.id, input.categoryId))
-      .limit(1)
-      .get();
-
-    invariant(category, {
-      code: 'NOT_FOUND',
-      message: 'Category not found'
-    });
-
-    const channel = db.transaction((tx) => {
-      const maxPositionChannel = tx
-        .select({ position: channels.position })
-        .from(channels)
-        .orderBy(desc(channels.position))
-        .where(eq(channels.categoryId, input.categoryId))
-        .limit(1)
-        .get();
-
-      const now = Date.now();
-
-      const newChannel = tx
-        .insert(channels)
-        .values({
-          position:
-            maxPositionChannel?.position !== undefined
-              ? maxPositionChannel.position + 1
-              : 0,
-          name: input.name,
-          type: input.type,
-          categoryId: input.categoryId,
-          createdAt: now
-        })
-        .returning()
-        .get();
-
-      return newChannel;
-    });
-
-    if (channel.type === ChannelType.VOICE) {
-      const runtime = new VoiceRuntime(channel.id);
-
-      try {
-        await runtime.init();
-      } catch (error) {
-        await db.delete(channels).where(eq(channels.id, channel.id));
-
-        throw error;
-      }
-    }
-
-    publishChannel(channel.id, 'create');
-    enqueueActivityLog({
-      type: ActivityLogType.CREATED_CHANNEL,
-      userId: ctx.user.id,
-      details: {
-        channelId: channel.id,
-        channelName: channel.name,
-        type: channel.type as ChannelType
-      }
-    });
+    const channel = await createChannel(input, ctx.user.id);
 
     return channel.id;
   });

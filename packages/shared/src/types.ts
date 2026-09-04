@@ -116,7 +116,7 @@ export type TTempFile = {
   md5: string;
   path: string;
   extension: string;
-  userId: number;
+  userId: number | null;
 };
 
 export type TServerInfo = Pick<

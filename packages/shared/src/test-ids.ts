@@ -32,6 +32,10 @@ export enum TestId {
   SERVER_MENU_TRIGGER = 'server-menu-trigger',
   SERVER_MENU_ADD_CATEGORY = 'server-menu-add-category',
   SERVER_MENU_DISCONNECT = 'server-menu-disconnect',
+  SERVER_MENU_SERVER_SETTINGS = 'server-menu-server-settings',
+  USER_SETTINGS_TRIGGER = 'user-settings-trigger',
+  SETTINGS_SIDEBAR_ENTRY = 'settings-sidebar-entry',
+  INSTALLED_PLUGIN_ITEM = 'installed-plugin-item',
   CATEGORY_ADD_CHANNEL = 'category-add-channel',
   CATEGORY_MENU_DELETE = 'category-menu-delete'
 }

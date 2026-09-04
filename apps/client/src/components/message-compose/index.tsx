@@ -218,6 +218,8 @@ const MessageCompose = memo(
       []
     );
 
+    const chatActionsProps = useMemo(() => ({ channelId }), [channelId]);
+
     const insertEmoji = useCallback((emoji: TEmojiItem) => {
       tiptapRef.current?.insertEmoji(emoji);
     }, []);
@@ -325,7 +327,10 @@ const MessageCompose = memo(
           <input {...fileInputProps} />
           <div className="flex items-start pr-4 pt-2 shrink-0 sticky top-0">
             {showPluginSlot && (
-              <PluginSlotRenderer slotId={PluginSlot.CHAT_ACTIONS} />
+              <PluginSlotRenderer
+                slotId={PluginSlot.CHAT_ACTIONS}
+                props={chatActionsProps}
+              />
             )}
 
             <EmojiPicker onEmojiSelect={insertEmoji}>

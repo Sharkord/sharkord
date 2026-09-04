@@ -14,6 +14,7 @@ import {
   hasSharingScreenUsersSelector,
   hasUnreadMentionsSelector,
   hasVisibleChannelsInCategorySelector,
+  hiddenPluginComponentsSelector,
   infoSelector,
   isOwnUserOwnerSelector,
   ownUserRolesSelector,
@@ -28,6 +29,7 @@ import {
   typingUsersByChannelIdSelector,
   typingUsersByThreadIdSelector,
   userRolesSelector,
+  userSettingsPluginsSelector,
   voiceUsersByChannelIdSelector,
   webRtcSimulcastEnabledSelector
 } from './selectors';
@@ -51,6 +53,9 @@ export const useWebRtcSimulcastEnabled = () =>
   useSelector(webRtcSimulcastEnabledSelector);
 
 export const useOwnUserRoles = () => useSelector(ownUserRolesSelector);
+
+export const useHiddenPluginComponents = () =>
+  useSelector(hiddenPluginComponentsSelector);
 
 export const useInfo = () => useSelector(infoSelector);
 
@@ -176,3 +181,6 @@ export const useActiveFullscreenPluginId = () =>
   useSelector(activeFullscreenPluginIdSelector);
 
 export const useDmsOpen = () => useSelector(dmsOpenSelector);
+
+export const useUserSettingsPlugins = () =>
+  useSelector(userSettingsPluginsSelector);

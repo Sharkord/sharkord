@@ -25,6 +25,7 @@
     "MANAGE_INVITES": "Gerenciar convites",
     "MANAGE_UPDATES": "Gerenciar atualizações",
     "MANAGE_PLUGINS": "Gerenciar plugins",
+    "MANAGE_PLUGIN_PERMISSIONS": "Gerenciar permissões de plugins",
     "USE_PLUGINS": "Usar plugins",
     "VIEW_USER_SENSITIVE_DATA": "Ver dados sensíveis de usuários"
   },
@@ -49,6 +50,7 @@
     "MANAGE_INVITES": "Concede a habilidade de criar, editar e excluir convites do servidor.",
     "MANAGE_UPDATES": "Concede a habilidade de realizar atualizações.",
     "MANAGE_PLUGINS": "Concede a habilidade de gerenciar plugins.",
+    "MANAGE_PLUGIN_PERMISSIONS": "Concede a habilidade de escolher quais cargos podem usar cada comando e ação de um plugin. Quem tiver essa permissão pode conceder essas capacidades a si mesmo.",
     "USE_PLUGINS": "Concede a habilidade de usar plugins, como executar comandos de plugin ou ver elementos de UI adicionados por plugins.",
     "VIEW_USER_SENSITIVE_DATA": "Concede a habilidade de visualizar dados sensíveis de usuários, como identidade, endereço IP e localização."
   },

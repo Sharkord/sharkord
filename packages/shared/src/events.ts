@@ -43,7 +43,9 @@ export enum ServerEvents {
   PLUGIN_LOG = 'pluginLog',
   PLUGIN_COMMANDS_CHANGE = 'pluginCommandsChange',
   PLUGIN_COMPONENTS_CHANGE = 'pluginComponentsChange',
+  PLUGIN_CAPABILITY_ACCESS_CHANGE = 'pluginCapabilityAccessChange',
   PLUGIN_METADATA_CHANGE = 'pluginMetadataChange',
+  PLUGIN_PUSH = 'pluginPush',
 
   CATEGORY_CREATE = 'categoryCreate',
   CATEGORY_UPDATE = 'categoryUpdate',

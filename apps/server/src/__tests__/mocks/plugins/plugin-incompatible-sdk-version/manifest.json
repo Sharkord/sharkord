@@ -2,7 +2,7 @@
   "id": "plugin-incompatible-sdk-version",
   "name": "plugin-incompatible-sdk-version",
   "version": "1.0.0",
-  "sdkVersion": 2,
+  "sdkVersion": 999,
   "author": "Test Author",
   "description": "Plugin with incompatible sdkVersion"
 }

@@ -6,7 +6,9 @@ import {
   getPlainTextFromHtml,
   isEmptyMessage,
   MESSAGE_MAX_LENGTH,
+  MessageSaveType,
   Permission,
+  PluginCapabilityType,
   STORAGE_MAX_FILES_PER_MESSAGE,
   toDomCommand
 } from '@sharkord/shared';
@@ -21,6 +23,8 @@ import { messageFiles, messages } from '../../db/schema';
 import { fileManager } from '../../helpers/file-manager';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
 import { parseCommandArgs } from '../../helpers/parse-command-args';
+import { canUseCapability } from '../../helpers/plugin-capability-access';
+import { runBeforeMessageSaveHooks } from '../../helpers/run-before-message-save-hooks';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
 import { logger } from '../../logger';
 import { pluginManager } from '../../plugins';
@@ -118,9 +122,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       message: `You can attach at most ${storageMaxFilesPerMessage} file(s) per message.`
     });
 
-    const limitedFiles = input.files;
-
-    if (limitedFiles.length > 0) {
+    if (input.files.length > 0) {
       await ctx.needsPermission(Permission.UPLOAD_FILES);
 
       invariant(settings.storageUploadEnabled, {
@@ -136,18 +138,27 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       }
     }
 
-    invariant(!isEmptyMessage(input.content) || limitedFiles.length != 0, {
+    invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
       code: 'BAD_REQUEST',
       message: 'Message cannot be empty.'
     });
 
     let targetContent = sanitizeMessageHtml(input.content);
 
-    invariant(!isEmptyMessage(targetContent) || limitedFiles.length != 0, {
+    invariant(!isEmptyMessage(targetContent) || input.files.length != 0, {
       code: 'BAD_REQUEST',
       message:
         'Your message only contained unsupported or removed content, so there was nothing to send.'
     });
+
+    if (enablePlugins) {
+      targetContent = await runBeforeMessageSaveHooks({
+        content: targetContent,
+        channelId: input.channelId,
+        userId: ctx.userId,
+        type: MessageSaveType.CREATE
+      });
+    }
 
     let editable = true;
     let commandExecutor: ((messageId: number) => void) | undefined = undefined;
@@ -164,32 +175,28 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       const foundCommand = pluginManager.getCommandByName(commandName);
 
       if (foundCommand) {
-        if (await ctx.hasPermission(Permission.USE_PLUGINS)) {
+        const canRunCommand =
+          !!foundCommand &&
+          (await ctx.hasPermission(Permission.USE_PLUGINS)) &&
+          (await canUseCapability(
+            ctx.userId,
+            foundCommand.pluginId,
+            PluginCapabilityType.COMMAND,
+            foundCommand.name
+          ));
+
+        if (canRunCommand) {
           const argsObject: Record<string, unknown> = {};
 
-          if (foundCommand.args) {
-            foundCommand.args.forEach((argDef, index) => {
-              if (index < args.length) {
-                const value = args[index];
+          foundCommand.args?.forEach((argDef, index) => {
+            if (index < args.length) argsObject[argDef.name] = args[index];
+          });
 
-                if (argDef.type === 'number') {
-                  argsObject[argDef.name] = Number(value);
-                } else if (argDef.type === 'boolean') {
-                  argsObject[argDef.name] = value === 'true';
-                } else {
-                  argsObject[argDef.name] = value;
-                }
-              }
-            });
-          }
-
-          const plugin = await pluginManager.getPluginInfo(
-            foundCommand?.pluginId || ''
-          );
+          const pluginLogo = pluginManager.getPluginLogo(foundCommand.pluginId);
 
           editable = false;
           targetContent = toDomCommand(
-            { ...foundCommand, imageUrl: plugin?.logo, status: 'pending' },
+            { ...foundCommand, imageUrl: pluginLogo, status: 'pending' },
             args
           );
 
@@ -202,7 +209,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
               const updatedContent = toDomCommand(
                 {
                   ...foundCommand,
-                  imageUrl: plugin?.logo,
+                  imageUrl: pluginLogo,
                   response,
                   status
                 },
@@ -223,7 +230,12 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
               .executeCommand(
                 foundCommand.pluginId,
                 foundCommand.name,
-                getInvokerCtxFromTrpcCtx(ctx),
+                getInvokerCtxFromTrpcCtx(ctx, {
+                  source: 'chat',
+                  channelId: input.channelId,
+                  parentMessageId: input.parentMessageId,
+                  messageId
+                }),
                 argsObject
               )
               .then((response) => updateCommandStatus('completed', response))
@@ -258,7 +270,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     const savedFileIds: number[] = [];
 
-    for (const tempFileId of limitedFiles) {
+    for (const tempFileId of input.files) {
       const newFile = await fileManager.saveFile(
         tempFileId,
         ctx.userId,

@@ -4,7 +4,7 @@ import { useChannelCan } from '@/features/server/hooks';
 import { useOwnPublicUser } from '@/features/server/users/hooks';
 import { useVoice } from '@/features/server/voice/hooks';
 import { cn } from '@/lib/utils';
-import { ChannelPermission } from '@sharkord/shared';
+import { ChannelPermission, TestId } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import { HeadphoneOff, Headphones, Mic, MicOff, Settings } from 'lucide-react';
 import { memo, useCallback } from 'react';
@@ -94,6 +94,7 @@ const UserControl = memo(() => {
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          data-testid={TestId.USER_SETTINGS_TRIGGER}
           onClick={handleSettingsClick}
           title={t('userSettings')}
         >

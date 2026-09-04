@@ -2,7 +2,7 @@
   "id": "plugin-http-routes",
   "name": "plugin-http-routes",
   "version": "1.0.0",
-  "sdkVersion": 1,
+  "sdkVersion": 2,
   "author": "Test Author",
   "homepage": "https://example.com",
   "description": "Plugin with HTTP route edge cases",

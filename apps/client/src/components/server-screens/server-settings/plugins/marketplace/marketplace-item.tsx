@@ -65,6 +65,15 @@ const MarketplaceItem = memo(
 
     const sdkCompatible = sdkVersion === PLUGIN_SDK_VERSION;
 
+    // the badge alone does not say what is wrong, and the number a plugin needs
+    // is the only thing that tells an admin whether to wait for an update
+    const sdkTooltip = sdkCompatible
+      ? t('marketplaceSdkCompatibleTooltip', { version: PLUGIN_SDK_VERSION })
+      : t('marketplaceSdkIncompatibleTooltip', {
+          required: sdkVersion,
+          current: PLUGIN_SDK_VERSION
+        });
+
     const updateAvailable = useMemo(() => {
       if (!installedVersion || !latestCompatibleVersion) return false;
 
@@ -178,14 +187,16 @@ const MarketplaceItem = memo(
                     </Badge>
                   </Tooltip>
                 )}
-                <Badge
-                  variant={sdkCompatible ? 'secondary' : 'destructive'}
-                  className="text-xs shrink-0"
-                >
-                  {sdkCompatible
-                    ? t('marketplaceSdkCompatible')
-                    : t('marketplaceSdkIncompatible')}
-                </Badge>
+                <Tooltip content={sdkTooltip}>
+                  <Badge
+                    variant={sdkCompatible ? 'secondary' : 'destructive'}
+                    className="text-xs shrink-0"
+                  >
+                    {sdkCompatible
+                      ? t('marketplaceSdkCompatible')
+                      : t('marketplaceSdkIncompatible')}
+                  </Badge>
+                </Tooltip>
               </div>
               <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                 {plugin.description}

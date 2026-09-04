@@ -6,7 +6,11 @@ import { pushVoiceDebugEvent } from '@/helpers/voice-debug';
 import { i18n } from '@/i18n';
 import { cleanup, connectToTRPC, getTRPCClient } from '@/lib/trpc';
 import type { TMessageJumpToTarget } from '@/types';
-import { type TPublicServerSettings, type TServerInfo } from '@sharkord/shared';
+import {
+  type TLocale,
+  type TPublicServerSettings,
+  type TServerInfo
+} from '@sharkord/shared';
 import { TRPCClientError } from '@trpc/client';
 import { toast } from 'sonner';
 import { appSliceActions } from '../app/slice';
@@ -19,6 +23,7 @@ import {
 } from './channels/selectors';
 import {
   processPluginComponents,
+  setPluginCapabilityAccess,
   setPluginCommands,
   setPluginComponents
 } from './plugins/actions';
@@ -88,7 +93,11 @@ export const connect = async () => {
 
 export const joinServer = async (handshakeHash: string, password?: string) => {
   const trpc = getTRPCClient();
-  const data = await trpc.others.joinServer.query({ handshakeHash, password });
+  const data = await trpc.others.joinServer.query({
+    handshakeHash,
+    password,
+    locale: i18n.resolvedLanguage as TLocale
+  });
 
   logDebug('joinServer', data);
 
@@ -105,6 +114,7 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
   store.dispatch(serverSliceActions.setInitialData(data));
 
   setPluginCommands(data.commands);
+  setPluginCapabilityAccess(data.pluginCapabilityAccess);
 
   const components = await processPluginComponents(
     data.pluginIdsWithComponents
@@ -270,10 +280,9 @@ export const markChannelAsRead = async (
   }
 
   try {
-    // inside the try: getTRPCClient throws while a reconnect holds no client, and every
-    // caller here dispatches rather than awaits, so it surfaces as an unhandled rejection
-    // with the optimistic zero left behind
-    await getTRPCClient().channels.markAsRead.mutate({ channelId });
+    const trpc = getTRPCClient();
+
+    await trpc.channels.markAsRead.mutate({ channelId });
   } catch {
     if (unreadCount > 0) {
       store.dispatch(

@@ -24,7 +24,7 @@ const zMarketplacePluginVersion = z.object({
   version: z.string().min(1),
   downloadUrl: z.url({ protocol: /^https$/ }),
   checksum: z.string().min(1),
-  sdkVersion: z.union([z.number(), z.string()]),
+  sdkVersion: z.number().int().nonnegative(),
   size: z.number(),
   timestamp: z.number()
 });
