@@ -928,6 +928,83 @@ describe('plugins router', () => {
     });
   });
 
+  // a plugin posting a formatted message does not want the host rewriting it
+  // with a link card underneath, and may not want the url fetched at all
+  describe('link previews', () => {
+    const enqueue = mock(() => {});
+
+    beforeEach(async () => {
+      enqueue.mockClear();
+
+      mock.module('../../queues/message-metadata', () => ({
+        enqueueProcessMetadata: enqueue,
+        messageMetadataQueue: { push: mock(() => {}) }
+      }));
+
+      await pluginManager.load('plugin-b');
+    });
+
+    const sendLink = async (previews: boolean) => {
+      const { caller } = await initTest();
+
+      return (await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'send-link',
+        args: { channelId: 1, previews }
+      })) as { messageId: number };
+    };
+
+    test('should look the link up by default', async () => {
+      await sendLink(true);
+
+      expect(enqueue).toHaveBeenCalledTimes(1);
+    });
+
+    test('should skip the lookup when the plugin turns previews off', async () => {
+      await sendLink(false);
+
+      expect(enqueue).not.toHaveBeenCalled();
+    });
+
+    test('should still store the message when previews are off', async () => {
+      const { messageId } = await sendLink(false);
+      const { caller } = await initTest();
+
+      const message = await caller.messages.getOne({ messageId });
+
+      expect(message?.content).toContain('https://example.com/thing');
+      expect(message?.metadata).toBeNull();
+    });
+
+    // an edit looks the links up again, so a message sent without cards would
+    // get them back the moment the plugin touched it
+    test('should skip the lookup on an edit too', async () => {
+      const { messageId } = await sendLink(false);
+      const { caller } = await initTest();
+
+      await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'edit-link',
+        args: { messageId, previews: false }
+      });
+
+      expect(enqueue).not.toHaveBeenCalled();
+    });
+
+    test('should look the link up on an edit that asks for it', async () => {
+      const { messageId } = await sendLink(false);
+      const { caller } = await initTest();
+
+      await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'edit-link',
+        args: { messageId, previews: true }
+      });
+
+      expect(enqueue).toHaveBeenCalledTimes(1);
+    });
+  });
+
   // a command's declared args read like a schema, so they are one: the handler
   // gets the declared types whether the call came from chat or from the api
   describe('command arguments', () => {

@@ -516,10 +516,27 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
         parentMessageId?: number; // used for threads
         replyToMessageId?: number; // used for inline replies
         files?: { name: string; data: Uint8Array }[];
+        /**
+         * Whether the host looks up the links in the message. On by default.
+         *
+         * Turn it off and the message renders as written: no link cards, and
+         * no inline image or video for a link that points at one. Worth doing
+         * when the message is already formatted the way you want it, or when
+         * you would rather the server not fetch the url at all.
+         */
+        previews?: boolean;
       }
     ): Promise<{ messageId: number }>;
-    /** any message, not only the plugin's own */
-    edit(messageId: number, content: string): Promise<void>;
+    /**
+     * Any message, not only the plugin's own. An edit looks the links up
+     * again, so pass `previews: false` here too or a message sent without
+     * cards gets them back.
+     */
+    edit(
+      messageId: number,
+      content: string,
+      options?: { previews?: boolean }
+    ): Promise<void>;
     delete(messageId: number): Promise<void>;
     get(messageId: number): Promise<TJoinedMessage | undefined>;
     /** thread replies cannot be pinned */

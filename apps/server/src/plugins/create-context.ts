@@ -188,10 +188,16 @@ const createUnloadContext = ({
         content,
         parentMessageId: options?.parentMessageId,
         replyToMessageId: options?.replyToMessageId,
-        files: options?.files
+        files: options?.files,
+        previews: options?.previews
       }),
-    edit: async (messageId, content) =>
-      editPluginMessage({ pluginId, messageId, content }),
+    edit: async (messageId, content, options) =>
+      editPluginMessage({
+        pluginId,
+        messageId,
+        content,
+        previews: options?.previews
+      }),
     delete: async (messageId) => deletePluginMessage({ pluginId, messageId }),
     get: async (messageId: number) => getMessage(messageId),
     list: async (options: TListPluginMessagesOptions) =>

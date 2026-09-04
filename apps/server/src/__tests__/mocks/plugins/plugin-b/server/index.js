@@ -203,6 +203,40 @@ const onLoad = (ctx) => {
   });
 
   ctx.commands.register({
+    name: 'send-link',
+    description: 'Post a link, with or without the host looking it up',
+    args: [
+      { name: 'channelId', type: 'number', required: true },
+      { name: 'previews', type: 'boolean', required: true }
+    ],
+    async executes(invokerCtx, args) {
+      return ctx.messages.send(
+        args.channelId,
+        '<p>https://example.com/thing</p>',
+        { previews: args.previews }
+      );
+    }
+  });
+
+  ctx.commands.register({
+    name: 'edit-link',
+    description: 'Edit a message to a link, with or without the lookup',
+    args: [
+      { name: 'messageId', type: 'number', required: true },
+      { name: 'previews', type: 'boolean', required: true }
+    ],
+    async executes(invokerCtx, args) {
+      await ctx.messages.edit(
+        args.messageId,
+        '<p>https://example.com/edited</p>',
+        { previews: args.previews }
+      );
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
     name: 'send-too-many-files',
     description: 'Attach more files than the server allows',
     args: [{ name: 'channelId', type: 'number', required: true }],

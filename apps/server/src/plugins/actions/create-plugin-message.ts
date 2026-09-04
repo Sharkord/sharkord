@@ -23,6 +23,7 @@ type TCreatePluginMessageOptions = {
   parentMessageId?: number;
   replyToMessageId?: number;
   files?: TPluginMessageFile[];
+  previews?: boolean;
 };
 
 const createPluginMessage = async (
@@ -34,7 +35,8 @@ const createPluginMessage = async (
     content,
     parentMessageId,
     replyToMessageId,
-    files = []
+    files = [],
+    previews = true
   } = options;
 
   invariant(pluginManager.isEnabled(pluginId), {
@@ -167,7 +169,7 @@ const createPluginMessage = async (
     publishReplyCount(parentMessageId, channelId);
   }
 
-  enqueueProcessMetadata(sanitizedContent, message.id);
+  if (previews) enqueueProcessMetadata(sanitizedContent, message.id);
 
   eventBus.emit('message:created', {
     messageId: message.id,
