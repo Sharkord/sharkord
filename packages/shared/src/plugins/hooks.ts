@@ -32,6 +32,9 @@ export type TBeforeFileSavePayload = {
    * you need: a hook that decides on the name, the extension or the size never
    * pays for it. Reading twice costs nothing, and once an earlier hook has
    * replaced the file this returns the replacement.
+   *
+   * Only callable while your hook runs. The file it reads is the temporary one,
+   * which is gone by the time the save has finished.
    */
   readBytes: () => Promise<Uint8Array>;
   /** what the uploader called it, before the host makes it unique on disk */

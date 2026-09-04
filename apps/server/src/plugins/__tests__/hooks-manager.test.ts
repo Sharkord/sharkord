@@ -8,7 +8,7 @@ import { describe, expect, test } from 'bun:test';
 import { HooksManager } from '../hooks-manager';
 
 const payload: TBeforeFileSavePayload = {
-  bytes: new Uint8Array([1, 2, 3]),
+  readBytes: async () => new Uint8Array([1, 2, 3]),
   originalName: 'cat.png',
   extension: 'png',
   size: 3,

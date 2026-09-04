@@ -1074,12 +1074,15 @@ describe('file manager – beforeFileSave hooks', () => {
 
   test('hook is called with correct payload when type is provided', async () => {
     let capturedPayload: TBeforeFileSavePayload | null = null;
+    let capturedBytes: Uint8Array | null = null;
 
+    // readBytes reads the temp file, which only exists while the hook runs
     pluginManager.registerHook(
       'beforeFileSave',
       'test-plugin',
       async (payload) => {
         capturedPayload = payload;
+        capturedBytes = await payload.readBytes();
       }
     );
 
@@ -1095,9 +1098,7 @@ describe('file manager – beforeFileSave hooks', () => {
     expect(capturedPayload).not.toBeNull();
     expect(capturedPayload!.userId).toBe(1);
     expect(capturedPayload!.type).toBe(FileSaveType.MESSAGE);
-    expect(new TextDecoder().decode(await capturedPayload!.readBytes())).toBe(
-      'hook test content'
-    );
+    expect(new TextDecoder().decode(capturedBytes!)).toBe('hook test content');
     expect(capturedPayload!.originalName).toBe(tempFile.originalName);
     expect(capturedPayload!.size).toBe(tempFile.size);
   });
@@ -1185,9 +1186,9 @@ describe('file manager – beforeFileSave hooks', () => {
     tempFilesToCleanup.push(path.join(PUBLIC_PATH, saved.name));
 
     // the size travels with the replacement, so 5 is 'first', not the original
-    expect(
-      await fs.readFile(path.join(PUBLIC_PATH, saved.name), 'utf-8')
-    ).toBe('first-5');
+    expect(await fs.readFile(path.join(PUBLIC_PATH, saved.name), 'utf-8')).toBe(
+      'first-5'
+    );
   });
 
   test('hook refusing aborts the save and propagates its reason', async () => {
