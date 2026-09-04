@@ -11,7 +11,8 @@ import type {
   TPluginTabs,
   TPluginUserData
 } from '@sharkord/shared';
-// deep import: the '@sharkord/shared' barrel pulls zod into every client bundle
+// deep import: the barrel is tree shakeable now that the package declares
+// itself side effect free, and this does not rely on the bundler honouring it
 import { PluginCapabilityType } from '@sharkord/shared/src/plugins/capabilities';
 import { useSyncExternalStore } from 'react';
 import { createCallAction as bindCallAction } from './actions';

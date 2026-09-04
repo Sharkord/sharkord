@@ -4,7 +4,8 @@ import type {
   TPluginActions,
   TPluginContract
 } from '@sharkord/shared';
-// deep import: the '@sharkord/shared' barrel pulls zod into every client bundle
+// deep import: the barrel is tree shakeable now that the package declares
+// itself side effect free, and this does not rely on the bundler honouring it
 import { getPluginIdFromBundleUrl } from '@sharkord/shared/src/plugins/client-sdk';
 
 type TypedCallAction<TActions extends TActionContract> = <
