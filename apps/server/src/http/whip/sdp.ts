@@ -248,7 +248,12 @@ const parseWhipOffer = (
           return false;
         }
 
-        return strictlyMatchesRouterCodec(entry, parameters, mimeType, candidate);
+        return strictlyMatchesRouterCodec(
+          entry,
+          parameters,
+          mimeType,
+          candidate
+        );
       });
 
       if (!routerCodec) continue;
