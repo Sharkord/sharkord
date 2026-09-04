@@ -11,6 +11,9 @@ const isOidcAutoRedirectSuppressed = () =>
 const suppressOidcAutoRedirect = () =>
   setSessionStorageItem(SessionStorageKey.OIDC_NO_AUTO_REDIRECT, 'true');
 
+const getOidcHandoffCode = () =>
+  new URLSearchParams(window.location.hash.slice(1)).get('oidc');
+
 const startOidcLogin = () => {
   suppressOidcAutoRedirect();
 
@@ -18,6 +21,7 @@ const startOidcLogin = () => {
 };
 
 export {
+  getOidcHandoffCode,
   isOidcAutoRedirectSuppressed,
   startOidcLogin,
   suppressOidcAutoRedirect

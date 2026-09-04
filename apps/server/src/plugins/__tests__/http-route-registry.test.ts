@@ -49,7 +49,7 @@ describe('PluginHttpRouteRegistry', () => {
     registry.register('plugin-b', 'GET', '/dropped', noop);
     registry.unload('plugin-b');
 
-    expect(registry.get('plugin-a', 'GET', '/kept')).toBe(noop);
+    expect(registry.get('plugin-a', 'GET', '/kept')?.handler).toBe(noop);
     expect(registry.get('plugin-b', 'GET', '/dropped')).toBeUndefined();
   });
 });

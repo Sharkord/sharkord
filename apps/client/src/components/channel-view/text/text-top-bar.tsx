@@ -1,5 +1,6 @@
+import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { useChannelById } from '@/features/server/channels/hooks';
-import { ChannelType } from '@sharkord/shared';
+import { ChannelType, PluginSlot } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
 import { Hash, MessageCircleMore, Volume2, X } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
@@ -14,6 +15,8 @@ type TTextTopbarProps = {
 const TextTopbar = memo(
   ({ onScrollToMessage, channelId, onClose }: TTextTopbarProps) => {
     const channel = useChannelById(channelId);
+
+    const pluginProps = useMemo(() => ({ channelId }), [channelId]);
 
     const info = useMemo(() => {
       if (channel?.isDm) {
@@ -63,6 +66,11 @@ const TextTopbar = memo(
             )}
           </div>
           <div className="flex items-center gap-2">
+            <PluginSlotRenderer
+              slotId={PluginSlot.CHANNEL_HEADER}
+              props={pluginProps}
+            />
+
             <PinnedMessagesPopover onScrollToMessage={onScrollToMessage} />
             {onClose && (
               <IconButton

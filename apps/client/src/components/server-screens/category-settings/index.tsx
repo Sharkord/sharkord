@@ -1,8 +1,9 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@sharkord/ui';
-import { memo } from 'react';
+import { Settings } from 'lucide-react';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TServerScreenBaseProps } from '../screens';
-import { ServerScreenLayout } from '../server-screen-layout';
+import { SettingsShell } from '../settings-shell';
+import type { TSettingsEntry } from '../settings-shell/types';
 import { General } from './general';
 
 type TCategorySettingsProps = TServerScreenBaseProps & {
@@ -13,20 +14,24 @@ const CategorySettings = memo(
   ({ close, categoryId }: TCategorySettingsProps) => {
     const { t } = useTranslation('settings');
 
-    return (
-      <ServerScreenLayout close={close} title={t('categorySettingsTitle')}>
-        <div className="mx-auto max-w-4xl">
-          <Tabs defaultValue="general" className="w-full">
-            <TabsList className="mb-6">
-              <TabsTrigger value="general">{t('generalTab')}</TabsTrigger>
-            </TabsList>
+    const entries = useMemo<TSettingsEntry[]>(
+      () => [
+        {
+          id: 'general',
+          label: t('generalTab'),
+          icon: Settings,
+          content: <General categoryId={categoryId} />
+        }
+      ],
+      [t, categoryId]
+    );
 
-            <TabsContent value="general" className="space-y-6">
-              <General categoryId={categoryId} />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </ServerScreenLayout>
+    return (
+      <SettingsShell
+        title={t('categorySettingsTitle')}
+        close={close}
+        entries={entries}
+      />
     );
   }
 );

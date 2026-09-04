@@ -16,6 +16,8 @@
     "access_denied": "Poskytovatel identity přihlášení odmítl.",
     "invalid_state": "Tento požadavek na přihlášení se nepodařilo ověřit. Zkuste to prosím znovu.",
     "expired": "Platnost tohoto požadavku na přihlášení vypršela. Zkuste to prosím znovu.",
+    "rate_limited": "Příliš mnoho pokusů o přihlášení. Chvíli počkejte a zkuste to znovu.",
+    "registration_closed": "Tento server nepřijímá nové registrace. Požádejte správce o vytvoření účtu.",
     "server_error": "Při přihlašování se něco pokazilo. Zkuste to prosím znovu."
   },
   "loggingInAutomatically": "Automaticky se připojuji...",

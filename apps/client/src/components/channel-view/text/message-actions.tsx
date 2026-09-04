@@ -1,5 +1,6 @@
 import { EmojiPicker } from '@/components/emoji-picker';
 import { useRecentEmojis } from '@/components/emoji-picker/use-recent-emojis';
+import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { Protect } from '@/components/protect';
 import {
   shouldUseFallbackImage,
@@ -9,7 +10,7 @@ import { openThreadSidebar } from '@/features/app/actions';
 import { useIsShiftHeld } from '@/features/app/hooks';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
-import { Permission } from '@sharkord/shared';
+import { Permission, PluginSlot } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
 import {
   MessageSquareText,
@@ -91,6 +92,11 @@ const MessageActions = memo(
     );
 
     const isShiftHeld = useIsShiftHeld();
+
+    const pluginProps = useMemo(
+      () => ({ messageId, channelId }),
+      [messageId, channelId]
+    );
 
     const onDeleteClick = useCallback(async () => {
       if (!isShiftHeld) {
@@ -201,6 +207,11 @@ const MessageActions = memo(
             />
           </Protect>
         )}
+
+        <PluginSlotRenderer
+          slotId={PluginSlot.MESSAGE_ACTIONS}
+          props={pluginProps}
+        />
 
         <Protect permission={Permission.REACT_TO_MESSAGES}>
           <div className="flex items-center space-x-0.5 border-l pl-1 gap-1">

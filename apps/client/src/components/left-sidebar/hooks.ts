@@ -3,7 +3,12 @@ import { setSelectedChannelId } from '@/features/server/channels/actions';
 import { useChannelsMap } from '@/features/server/channels/hooks';
 import { setVoiceMoveTargetChannelId } from '@/features/server/voice/actions';
 import { useVoiceMoveTargetChannelId } from '@/features/server/voice/hooks';
-import { getLocalStorageItemAsJSON, LocalStorageKey } from '@/helpers/storage';
+import {
+  getLocalStorageItem,
+  getLocalStorageItemAsJSON,
+  LocalStorageKey,
+  setLocalStorageItemAsJSON
+} from '@/helpers/storage';
 import { useSelectChannel } from '@/hooks/use-select-channel';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -27,9 +32,9 @@ const saveExpandedValue = (categoryId: number, expanded: boolean): void => {
     [categoryId]: expanded
   };
 
-  localStorage.setItem(
+  setLocalStorageItemAsJSON(
     LocalStorageKey.CATEGORIES_EXPANDED,
-    JSON.stringify(newExpandedMap)
+    newExpandedMap
   );
 };
 
@@ -46,9 +51,14 @@ const useCategoryExpanded = (categoryId: number) => {
     });
   }, [categoryId]);
 
+  const expand = useCallback(() => {
+    saveExpandedValue(categoryId, true);
+    setExpanded(true);
+  }, [categoryId]);
+
   return useMemo(
-    () => ({ expanded, toggleExpanded }),
-    [expanded, toggleExpanded]
+    () => ({ expand, expanded, toggleExpanded }),
+    [expand, expanded, toggleExpanded]
   );
 };
 
@@ -59,7 +69,7 @@ const useRestoreLastSelectedChannel = () => {
   useEffect(() => {
     if (!autoJoinLastChannel) return;
 
-    const lastSelectedChannelId = localStorage.getItem(
+    const lastSelectedChannelId = getLocalStorageItem(
       LocalStorageKey.LAST_SELECTED_CHANNEL
     );
 

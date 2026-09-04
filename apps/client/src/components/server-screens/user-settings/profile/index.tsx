@@ -1,16 +1,13 @@
-import { closeServerScreens } from '@/features/server-screens/actions';
+import { ImagePicker } from '@/components/image-picker';
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
+import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
+import { UserAvatar } from '@/components/user-avatar';
 import { useOwnPublicUser } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
-import { useForm } from '@/hooks/use-form';
+import type { TPickedImage } from '@/hooks/use-pick-image';
 import { getTRPCClient } from '@/lib/trpc';
 import { DEFAULT_PROFILE_COLOR } from '@sharkord/shared';
 import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   ColorPicker,
   Group,
   ImageSwatchPicker,
@@ -19,87 +16,117 @@ import {
 } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { AvatarManager } from './avatar-manager';
-import { BannerManager } from './banner-manager';
+
+type TProfileValues = {
+  name: string;
+  profileColor: string;
+  bio: string;
+  // undefined means untouched, null means remove
+  avatar?: TPickedImage | null;
+  banner?: TPickedImage | null;
+};
 
 const Profile = memo(() => {
   const { t } = useTranslation('settings');
   const ownPublicUser = useOwnPublicUser();
-  const { setTrpcErrors, r, values, onChange } = useForm({
-    name: ownPublicUser?.name ?? '',
-    profileColor: ownPublicUser?.profileColor ?? DEFAULT_PROFILE_COLOR,
-    bio: ownPublicUser?.bio ?? ''
+
+  const onSave = useCallback(async (values: TProfileValues) => {
+    const trpc = getTRPCClient();
+
+    await trpc.users.update.mutate({
+      name: values.name,
+      profileColor: values.profileColor,
+      bio: values.bio
+    });
+
+    if (values.avatar !== undefined) {
+      await trpc.users.changeAvatar.mutate({ fileId: values.avatar?.fileId });
+    }
+
+    if (values.banner !== undefined) {
+      await trpc.users.changeBanner.mutate({ fileId: values.banner?.fileId });
+    }
+  }, []);
+
+  const { r, values, onChange } = useSettingsForm<TProfileValues>({
+    initialValues: {
+      name: ownPublicUser?.name ?? '',
+      profileColor: ownPublicUser?.profileColor ?? DEFAULT_PROFILE_COLOR,
+      bio: ownPublicUser?.bio ?? ''
+    },
+    onSave,
+    successMessage: t('profileUpdated'),
+    errorMessage: t('failedUpdateProfile')
   });
 
   const handleColorChange = useCallback(
-    (color: string) => {
-      onChange('profileColor', color);
-    },
+    (color: string) => onChange('profileColor', color),
     [onChange]
   );
 
-  const onUpdateUser = useCallback(async () => {
-    const trpc = getTRPCClient();
+  const handleAvatarChange = useCallback(
+    (picked: TPickedImage | null) => onChange('avatar', picked),
+    [onChange]
+  );
 
-    try {
-      await trpc.users.update.mutate(values);
-      toast.success(t('profileUpdated'));
-    } catch (error) {
-      setTrpcErrors(error);
-    }
-  }, [values, setTrpcErrors, t]);
+  const handleBannerChange = useCallback(
+    (picked: TPickedImage | null) => onChange('banner', picked),
+    [onChange]
+  );
 
   if (!ownPublicUser) return null;
 
-  const userAvatarUrl = getFileUrl(ownPublicUser.avatar);
-  const userBannerUrl = getFileUrl(ownPublicUser.banner);
+  const userAvatarUrl =
+    values.avatar?.previewUrl ?? getFileUrl(ownPublicUser.avatar);
+  const userBannerUrl =
+    values.banner?.previewUrl ?? getFileUrl(ownPublicUser.banner);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('profileTitle')}</CardTitle>
-        <CardDescription>{t('profileDesc')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-start gap-4">
-          <AvatarManager user={ownPublicUser} />
-
-          <BannerManager user={ownPublicUser} />
-
-          <Group label={t('profileColorLabel')}>
-            <ColorPicker
-              value={values.profileColor}
-              onChange={handleColorChange}
-              defaultValue={DEFAULT_PROFILE_COLOR}
+    <SettingsSection title={t('profileTitle')} description={t('profileDesc')}>
+      <div className="flex flex-wrap items-start gap-4">
+        <ImagePicker
+          label={t('avatarLabel')}
+          className="h-32 w-32 rounded-full"
+          currentUrl={getFileUrl(ownPublicUser.avatar)}
+          draft={values.avatar}
+          onChange={handleAvatarChange}
+          fallback={
+            <UserAvatar
+              userId={ownPublicUser.id}
+              className="h-32 w-32 rounded-full bg-muted"
+              showStatusBadge={false}
+              showUserPopover={false}
             />
-            <ImageSwatchPicker
-              src={userAvatarUrl}
-              onChange={handleColorChange}
-            />
-            <ImageSwatchPicker
-              src={userBannerUrl}
-              onChange={handleColorChange}
-            />
-          </Group>
-        </div>
+          }
+        />
 
-        <Group label={t('usernameLabel')}>
-          <Input placeholder={t('usernamePlaceholder')} {...r('name')} />
+        <ImagePicker
+          label={t('bannerLabel')}
+          className="h-32 w-80"
+          currentUrl={getFileUrl(ownPublicUser.banner)}
+          draft={values.banner}
+          onChange={handleBannerChange}
+        />
+
+        <Group label={t('profileColorLabel')}>
+          <ColorPicker
+            value={values.profileColor}
+            onChange={handleColorChange}
+            defaultValue={DEFAULT_PROFILE_COLOR}
+          />
+          <ImageSwatchPicker src={userAvatarUrl} onChange={handleColorChange} />
+          <ImageSwatchPicker src={userBannerUrl} onChange={handleColorChange} />
         </Group>
+      </div>
 
-        <Group label={t('bioLabel')}>
-          <Textarea placeholder={t('bioPlaceholder')} {...r('bio')} />
-        </Group>
+      <Group label={t('usernameLabel')}>
+        <Input placeholder={t('usernamePlaceholder')} {...r('name')} />
+      </Group>
 
-        <div className="flex justify-end gap-2 pt-4">
-          <Button variant="outline" onClick={closeServerScreens}>
-            {t('cancel')}
-          </Button>
-          <Button onClick={onUpdateUser}>{t('saveChanges')}</Button>
-        </div>
-      </CardContent>
-    </Card>
+      <Group label={t('bioLabel')}>
+        <Textarea placeholder={t('bioPlaceholder')} {...r('bio')} />
+      </Group>
+    </SettingsSection>
   );
 });
 

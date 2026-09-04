@@ -1,5 +1,7 @@
 import {
   DEFAULT_PROFILE_COLOR,
+  PluginCapabilityMode,
+  PluginCapabilityType,
   type TActivityLogDetailsMap,
   type TMessageMetadata
 } from '@sharkord/shared';
@@ -21,7 +23,8 @@ const files = sqliteTable(
     name: text('name').notNull().unique(),
     originalName: text('original_name').notNull(),
     md5: text('md5').notNull(),
-    userId: integer('user_id').notNull(),
+    userId: integer('user_id'),
+    pluginId: text('plugin_id'),
     size: integer('size').notNull(),
     mimeType: text('mime_type').notNull(),
     extension: text('extension').notNull(),
@@ -186,6 +189,7 @@ const users = sqliteTable(
     bannedAt: integer('banned_at'),
     tokenVersion: integer('token_version').notNull().default(0),
     oidcSub: text('oidc_sub').unique(),
+    oidcIssuer: text('oidc_issuer'),
     passwordSet: integer('password_set', { mode: 'boolean' })
       .notNull()
       .default(true),
@@ -369,9 +373,10 @@ const messageReactions = sqliteTable(
     messageId: integer('message_id')
       .notNull()
       .references(() => messages.id, { onDelete: 'cascade' }),
-    userId: integer('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+    userId: integer('user_id').references(() => users.id, {
+      onDelete: 'cascade'
+    }),
+    pluginId: text('plugin_id'),
     emoji: text('emoji').notNull(),
     fileId: integer('file_id').references(() => files.id, {
       onDelete: 'set null'
@@ -380,6 +385,11 @@ const messageReactions = sqliteTable(
   },
   (t) => [
     primaryKey({ columns: [t.messageId, t.userId, t.emoji] }),
+    uniqueIndex('reaction_msg_emoji_plugin_unique_idx').on(
+      t.messageId,
+      t.emoji,
+      t.pluginId
+    ),
     index('reaction_emoji_idx').on(t.emoji),
     index('reaction_user_idx').on(t.userId),
     index('reaction_msg_emoji_idx').on(t.messageId, t.emoji)
@@ -520,14 +530,89 @@ const directMessages = sqliteTable(
   ]
 );
 
+const oidcTransactions = sqliteTable(
+  'oidc_transactions',
+  {
+    state: text('state').primaryKey(),
+    nonce: text('nonce').notNull(),
+    codeVerifier: text('code_verifier').notNull(),
+    redirectUri: text('redirect_uri').notNull(),
+    expiresAt: integer('expires_at').notNull()
+  },
+  (t) => [index('oidc_transactions_expires_idx').on(t.expiresAt)]
+);
+
+const oidcHandoffs = sqliteTable(
+  'oidc_handoffs',
+  {
+    code: text('code').primaryKey(),
+    token: text('token').notNull(),
+    state: text('state').notNull(),
+    expiresAt: integer('expires_at').notNull()
+  },
+  (t) => [index('oidc_handoffs_expires_idx').on(t.expiresAt)]
+);
+
 const pluginData = sqliteTable('plugin_data', {
   pluginId: text('plugin_id').notNull().primaryKey(),
   enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
   settings: text('settings', { mode: 'json' })
     .$type<Record<string, unknown>>()
     .notNull()
-    .default({})
+    .default({}),
+  version: text('version')
 });
+
+const pluginUserData = sqliteTable(
+  'plugin_user_data',
+  {
+    pluginId: text('plugin_id').notNull(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    data: text('data', { mode: 'json' })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    updatedAt: integer('updated_at').notNull()
+  },
+  (t) => [
+    primaryKey({ columns: [t.pluginId, t.userId] }),
+    index('plugin_user_data_user_idx').on(t.userId)
+  ]
+);
+
+const pluginCapabilities = sqliteTable(
+  'plugin_capabilities',
+  {
+    pluginId: text('plugin_id').notNull(),
+    type: text('type').$type<PluginCapabilityType>().notNull(),
+    name: text('name').notNull(),
+    mode: text('mode')
+      .$type<PluginCapabilityMode>()
+      .notNull()
+      .default(PluginCapabilityMode.PUBLIC),
+    updatedAt: integer('updated_at').notNull()
+  },
+  (t) => [primaryKey({ columns: [t.pluginId, t.type, t.name] })]
+);
+
+const pluginCapabilityRoles = sqliteTable(
+  'plugin_capability_roles',
+  {
+    pluginId: text('plugin_id').notNull(),
+    type: text('type').notNull(),
+    name: text('name').notNull(),
+    roleId: integer('role_id')
+      .notNull()
+      .references(() => roles.id, { onDelete: 'cascade' }),
+    createdAt: integer('created_at').notNull()
+  },
+  (t) => [
+    primaryKey({ columns: [t.pluginId, t.type, t.name, t.roleId] }),
+    index('plugin_capability_roles_role_idx').on(t.roleId)
+  ]
+);
 
 export {
   activityLog,
@@ -544,7 +629,12 @@ export {
   messageFiles,
   messageReactions,
   messages,
+  oidcHandoffs,
+  oidcTransactions,
+  pluginCapabilities,
+  pluginCapabilityRoles,
   pluginData,
+  pluginUserData,
   rolePermissions,
   roles,
   settings,

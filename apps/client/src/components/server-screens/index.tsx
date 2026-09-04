@@ -1,7 +1,6 @@
-import { useModViewOpen } from '@/features/app/hooks';
 import { closeServerScreens } from '@/features/server-screens/actions';
 import { useServerScreenInfo } from '@/features/server-screens/hooks';
-import { createElement, memo, useCallback, useEffect, type JSX } from 'react';
+import { createElement, memo, type JSX } from 'react';
 import { createPortal } from 'react-dom';
 import { CategorySettings } from './category-settings';
 import { ChannelSettings } from './channel-settings';
@@ -17,36 +16,6 @@ const ScreensMap = {
 };
 
 const portalRoot = document.getElementById('portal')!;
-
-type TComponentWrapperProps = {
-  children: React.ReactNode;
-};
-
-const ComponentWrapper = ({ children }: TComponentWrapperProps) => {
-  const { isOpen } = useModViewOpen();
-
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      // when mod view is open, do not close server screens
-      if (isOpen) return;
-
-      if (e.key === 'Escape') {
-        closeServerScreens();
-      }
-    },
-    [isOpen]
-  );
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [handleKeyDown]);
-
-  return children;
-};
 
 const ServerScreensProvider = memo(() => {
   const { isOpen, props, openServerScreen } = useServerScreenInfo();
@@ -74,10 +43,7 @@ const ServerScreensProvider = memo(() => {
 
   if (!realIsOpen) return null;
 
-  return createPortal(
-    <ComponentWrapper>{component}</ComponentWrapper>,
-    portalRoot
-  );
+  return createPortal(component, portalRoot);
 });
 
 export { ServerScreensProvider };

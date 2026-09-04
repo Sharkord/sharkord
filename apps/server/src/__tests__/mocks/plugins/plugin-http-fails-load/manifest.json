@@ -2,7 +2,7 @@
   "id": "plugin-http-fails-load",
   "name": "plugin-http-fails-load",
   "version": "1.0.0",
-  "sdkVersion": 1,
+  "sdkVersion": 2,
   "author": "Test Author",
   "homepage": "https://example.com",
   "description": "Plugin that fails after registering HTTP routes",

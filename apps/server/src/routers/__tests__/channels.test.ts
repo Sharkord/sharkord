@@ -381,7 +381,7 @@ describe('channels router', () => {
 
     await caller.channels.reorder({
       categoryId: 1,
-      channelIds: [channelAId, 3, 1, 2]
+      channelIds: [channelAId, 1, channelBId]
     });
 
     const [channel1, channel2, channelA, channelB] = await Promise.all([
@@ -428,6 +428,52 @@ describe('channels router', () => {
     expect(channel1.position).toBe(2);
     expect(channelA.position).toBe(3);
     expect(channel2.position).toBe(1);
+  });
+
+  test('should move a channel into another category at the requested index', async () => {
+    const { caller } = await initTest();
+
+    await caller.channels.reorder({
+      categoryId: 1,
+      channelIds: [2, 1]
+    });
+
+    const [channel1, channel2, channel4] = await Promise.all([
+      caller.channels.get({ channelId: 1 }),
+      caller.channels.get({ channelId: 2 }),
+      caller.channels.get({ channelId: 4 })
+    ]);
+
+    expect(channel2.categoryId).toBe(1);
+    expect(channel2.position).toBe(1);
+    expect(channel1.categoryId).toBe(1);
+    expect(channel1.position).toBe(2);
+
+    // the source category is untouched, it only ends up with a gap in positions
+    expect(channel4.categoryId).toBe(2);
+    expect(channel4.position).toBe(2);
+  });
+
+  test('should throw when moving a DM channel into a category', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.channels.reorder({
+        categoryId: 1,
+        channelIds: [3, 1]
+      })
+    ).rejects.toThrow('Cannot move DM channels into a category');
+  });
+
+  test('should throw when reordering into a category that does not exist', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.channels.reorder({
+        categoryId: 999,
+        channelIds: [1]
+      })
+    ).rejects.toThrow('Category not found');
   });
 
   test('should set channel permissions for a role', async () => {

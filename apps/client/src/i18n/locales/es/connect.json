@@ -16,6 +16,8 @@
     "access_denied": "Tu proveedor de identidad rechazó el inicio de sesión.",
     "invalid_state": "No se pudo verificar esta solicitud de inicio de sesión. Inténtalo de nuevo.",
     "expired": "Esta solicitud de inicio de sesión ha caducado. Inténtalo de nuevo.",
+    "rate_limited": "Demasiados intentos de inicio de sesión. Espera un momento e inténtalo de nuevo.",
+    "registration_closed": "Este servidor no acepta nuevos registros. Pide a un administrador que cree tu cuenta.",
     "server_error": "Algo salió mal al iniciar sesión. Inténtalo de nuevo."
   },
   "loggingInAutomatically": "Iniciando sesión automáticamente...",

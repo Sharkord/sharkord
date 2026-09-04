@@ -31,10 +31,7 @@ const assertCanModifyMessage = async (
   );
 };
 
-const loadMessageForWrite = async (
-  ctx: Context,
-  messageId: number
-): Promise<TMessageForWrite> => {
+const loadMessage = async (messageId: number): Promise<TMessageForWrite> => {
   const message = await db
     .select({
       id: messages.id,
@@ -55,9 +52,19 @@ const loadMessageForWrite = async (
     message: 'Message not found'
   });
 
+  return message;
+};
+
+const loadMessageForWrite = async (
+  ctx: Context,
+  messageId: number
+): Promise<TMessageForWrite> => {
+  const message = await loadMessage(messageId);
+
   await assertChannelAccess(ctx, message.channelId);
 
   return message;
 };
 
-export { assertCanModifyMessage, loadMessageForWrite };
+export { assertCanModifyMessage, loadMessage, loadMessageForWrite };
+export type { TMessageForWrite };

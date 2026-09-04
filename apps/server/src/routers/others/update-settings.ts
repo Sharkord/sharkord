@@ -94,6 +94,10 @@ const updateSettingsRoute = protectedProcedure
       } else {
         await pluginManager.unloadPlugins();
       }
+
+      // connected clients would otherwise keep rendering slots and commands of
+      // plugins that are no longer running
+      pluginManager.publishPlugins();
     }
 
     publishSettings();

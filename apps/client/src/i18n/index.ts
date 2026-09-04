@@ -1,6 +1,11 @@
-import { getLocalStorageItem, LocalStorageKey } from '@/helpers/storage';
+import {
+  getLocalStorageItem,
+  LocalStorageKey,
+  setLocalStorageItem
+} from '@/helpers/storage';
+import type { TLocale } from '@sharkord/shared';
 import type { Locale } from 'date-fns';
-import { cs, enUS, es, fr, it, ru, zhCN } from 'date-fns/locale';
+import { cs, enUS, es, fr, it, ptBR, ru, zhCN } from 'date-fns/locale';
 import i18n from 'i18next';
 import resourcesToBackend from 'i18next-resources-to-backend';
 import { initReactI18next } from 'react-i18next';
@@ -12,10 +17,11 @@ export const SUPPORTED_LANGUAGES = [
   { code: 'fr', label: 'Français', dateLocale: fr },
   { code: 'it', label: 'Italiano', dateLocale: it },
   { code: 'ru', label: 'Русский', dateLocale: ru },
-  { code: 'zh', label: '中文', dateLocale: zhCN }
-] satisfies Array<{ code: string; label: string; dateLocale: Locale }>;
+  { code: 'zh', label: '中文', dateLocale: zhCN },
+  { code: 'pt-BR', label: 'Português (Brasil)', dateLocale: ptBR }
+] satisfies Array<{ code: TLocale; label: string; dateLocale: Locale }>;
 
-export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]['code'];
+export type SupportedLanguage = TLocale;
 
 const savedLanguage = getLocalStorageItem(LocalStorageKey.LANGUAGE);
 
@@ -73,7 +79,7 @@ export const i18nReady = i18n
   });
 
 i18n.on('languageChanged', (lng) => {
-  localStorage.setItem(LocalStorageKey.LANGUAGE, lng);
+  setLocalStorageItem(LocalStorageKey.LANGUAGE, lng);
 });
 
 export { i18n };

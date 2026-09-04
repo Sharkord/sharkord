@@ -1,5 +1,5 @@
 import type { IceCandidate, IceParameters } from 'mediasoup/types';
-import type { TExternalStreamTracks } from './types';
+import type { StreamKind, TExternalStreamTracks } from './types';
 
 export type { ConsumerType } from 'mediasoup/types';
 
@@ -48,4 +48,11 @@ export type TExternalStreamsMap = {
   [channelId: number]: {
     [streamId: number]: TExternalStream;
   };
+};
+
+export type TVoiceProducerInfo = {
+  userId: number;
+  kind: StreamKind;
+  producerId: string;
+  paused: boolean;
 };

@@ -8,33 +8,22 @@ import {
   useCategoryUnreadData,
   useHasVisibleChannelsInCategory
 } from '@/features/server/hooks';
-import { getTRPCClient } from '@/lib/trpc';
-import {
-  DndContext,
-  type DragEndEvent,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy
-} from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Permission, TestId, getTrpcError } from '@sharkord/shared';
+import { Permission, TestId } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { CategoryContextMenu } from '../context-menus/category';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
 import { UnreadCount } from '../unread-count';
 import { Channels } from './channels';
+import { categoryDndId } from './helpers';
 import { useCategoryExpanded } from './hooks';
+import { SidebarDnd } from './sidebar-dnd';
+import { useCategoryAutoExpand } from './use-sidebar-dnd';
 
 type TCategoryProps = {
   categoryId: number;
@@ -45,7 +34,10 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
   const can = useCan();
   const hasVisibleChannelsInCategory =
     useHasVisibleChannelsInCategory(categoryId);
-  const { expanded, toggleExpanded } = useCategoryExpanded(categoryId);
+  const { expand, expanded, toggleExpanded } = useCategoryExpanded(categoryId);
+
+  useCategoryAutoExpand(categoryId, expanded, expand);
+
   const category = useCategoryById(categoryId);
   const { unreadCount, hasUnreadMentions } = useCategoryUnreadData(categoryId);
 
@@ -56,7 +48,10 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
     transform,
     transition,
     isDragging
-  } = useSortable({ id: categoryId });
+  } = useSortable({
+    id: categoryDndId(categoryId),
+    data: { type: 'category', categoryId }
+  });
 
   const onCreateChannelClick = useCallback(() => {
     openDialog(Dialog.CREATE_CHANNEL, { categoryId });
@@ -123,76 +118,21 @@ const Category = memo(({ categoryId }: TCategoryProps) => {
         </Protect>
       </div>
 
-      {expanded && <Channels categoryId={category.id} />}
+      {expanded && !isDragging && <Channels categoryId={category.id} />}
     </div>
   );
 });
 
 const Categories = memo(() => {
-  const { t } = useTranslation('sidebar');
-  const can = useCan();
   const categories = useCategories();
-  const categoryIds = useMemo(
-    () => categories.map((cat) => cat.id),
-    [categories]
-  );
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8
-      }
-    })
-  );
-
-  const handleDragEnd = useCallback(
-    async (event: DragEndEvent) => {
-      const { active, over } = event;
-
-      if (!over || active.id === over.id) {
-        return;
-      }
-
-      const oldIndex = categoryIds.indexOf(active.id as number);
-      const newIndex = categoryIds.indexOf(over.id as number);
-
-      if (oldIndex === -1 || newIndex === -1) {
-        return;
-      }
-
-      const reorderedIds = [...categoryIds];
-      const [movedId] = reorderedIds.splice(oldIndex, 1);
-
-      reorderedIds.splice(newIndex, 0, movedId);
-
-      const trpc = getTRPCClient();
-
-      try {
-        await trpc.categories.reorder.mutate({ categoryIds: reorderedIds });
-      } catch (error) {
-        toast.error(getTrpcError(error, t('failedReorderCategories')));
-      }
-    },
-    [categoryIds, t]
-  );
 
   return (
     <div className="flex-1 overflow-y-auto p-2">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={categoryIds}
-          strategy={verticalListSortingStrategy}
-          disabled={!can(Permission.MANAGE_CATEGORIES)}
-        >
-          {categories.map((category) => (
-            <Category key={category.id} categoryId={category.id} />
-          ))}
-        </SortableContext>
-      </DndContext>
+      <SidebarDnd>
+        {categories.map((category) => (
+          <Category key={category.id} categoryId={category.id} />
+        ))}
+      </SidebarDnd>
     </div>
   );
 });

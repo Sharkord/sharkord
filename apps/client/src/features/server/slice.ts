@@ -12,8 +12,11 @@ import type {
   TJoinedMessage,
   TJoinedPublicUser,
   TJoinedRole,
+  TPluginCapabilityAccessRule,
   TPluginComponentsMap,
   TPluginMetadata,
+  TPluginTab,
+  TPluginTabsMap,
   TPublicServerSettings,
   TReadStateMap,
   TServerInfo,
@@ -73,6 +76,8 @@ export interface IServerState {
   hideOwnScreenShare: boolean;
   alwaysShowVoiceControls: boolean;
   pluginComponents: TPluginComponentsMap;
+  pluginTabs: TPluginTabsMap;
+  pluginCapabilityAccess: TPluginCapabilityAccessRule[];
   activeFullscreenPluginId: string | undefined;
   dmsOpen: boolean;
 }
@@ -127,6 +132,8 @@ const initialState: IServerState = {
     true
   ),
   pluginComponents: {},
+  pluginTabs: {},
+  pluginCapabilityAccess: [],
   activeFullscreenPluginId: undefined,
   dmsOpen: false,
   hideOwnScreenShare: getLocalStorageItemBool(
@@ -856,6 +863,21 @@ export const serverSlice = createSlice({
     },
     setPluginCommands: (state, action: PayloadAction<TCommandsMapByPlugin>) => {
       state.pluginCommands = action.payload;
+    },
+    setPluginCapabilityAccess: (
+      state,
+      action: { payload: TPluginCapabilityAccessRule[] }
+    ) => {
+      state.pluginCapabilityAccess = action.payload;
+    },
+    setPluginTabs: (state, action: { payload: TPluginTabsMap }) => {
+      state.pluginTabs = action.payload;
+    },
+    setPluginTabsForPlugin: (
+      state,
+      action: { payload: { pluginId: string; tabs: TPluginTab[] } }
+    ) => {
+      state.pluginTabs[action.payload.pluginId] = action.payload.tabs;
     },
     setPluginComponents: (
       state,

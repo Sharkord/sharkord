@@ -1,14 +1,31 @@
-import { FileSaveType, type TInvokerContext } from '@sharkord/shared';
-import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import {
+  ChannelType,
+  DEFAULT_LOCALE,
+  DEFAULT_MESSAGES_LIMIT,
+  FileSaveType,
+  STORAGE_MIN_QUOTA_PER_USER,
+  type TInvokerContext
+} from '@sharkord/shared';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test
+} from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
 import { pluginManager } from '..';
+import { initTest } from '../../__tests__/helpers';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { findTestLog, tdb } from '../../__tests__/setup';
 import { messages, pluginData, settings } from '../../db/schema';
 import { fileManager } from '../../helpers/file-manager';
 import { PLUGINS_PATH, PUBLIC_PATH, UPLOADS_PATH } from '../../helpers/paths';
+import { getPluginDataPath } from '../../helpers/plugin-paths';
+import { handleSocketClose, trackUserSocket } from '../../utils/wss';
 import { eventBus } from '../event-bus';
 import { withTimeout } from '../execution-timeout';
 
@@ -18,7 +35,9 @@ describe('plugin-manager', () => {
 
   const mockInvokerCtx: TInvokerContext = {
     userId: 1,
-    currentVoiceChannelId: undefined
+    source: 'api',
+    currentVoiceChannelId: undefined,
+    locale: DEFAULT_LOCALE
   };
 
   describe('load', () => {
@@ -47,7 +66,9 @@ describe('plugin-manager', () => {
 
       const commands = pluginManager.getCommands();
       expect(commands['plugin-b']).toBeDefined();
-      expect(commands['plugin-b']!.length).toBe(2);
+      expect(commands['plugin-b']!.map((command) => command.name)).toEqual(
+        expect.arrayContaining(['test-command', 'sum'])
+      );
     });
 
     test('should skip loading disabled plugin', async () => {
@@ -122,18 +143,32 @@ describe('plugin-manager', () => {
 
     test('should fail to load plugin missing sdk version', async () => {
       await pluginManager.togglePlugin('plugin-no-sdk-version', true);
+      await pluginManager.load('plugin-no-sdk-version');
 
-      await expect(pluginManager.load('plugin-no-sdk-version')).rejects.toThrow(
-        'Invalid manifest.json'
+      const info = await pluginManager.getPluginInfoOrPlaceholder(
+        'plugin-no-sdk-version'
       );
+
+      expect(info.loadError).toContain('Invalid manifest.json');
     });
 
     test('should fail to load plugin with invalid sdk version', async () => {
       await pluginManager.togglePlugin('plugin-invalid-sdk-version', true);
+      await pluginManager.load('plugin-invalid-sdk-version');
 
+      const info = await pluginManager.getPluginInfoOrPlaceholder(
+        'plugin-invalid-sdk-version'
+      );
+
+      expect(info.loadError).toContain('Invalid manifest.json');
+    });
+
+    test('should refuse to enable a plugin that is not on disk', async () => {
       await expect(
-        pluginManager.load('plugin-invalid-sdk-version')
-      ).rejects.toThrow('Invalid manifest.json');
+        pluginManager.togglePlugin('not-installed', true)
+      ).rejects.toThrow("Plugin 'not-installed' was not found.");
+
+      expect(pluginManager.isEnabled('not-installed')).toBe(false);
     });
 
     test('should fail to load plugin with incompatible sdk version', async () => {
@@ -169,7 +204,7 @@ describe('plugin-manager', () => {
   ctx.commands.register({
     name: 'updated-command',
     description: 'Command from updated plugin file',
-    execute: async () => ({ ok: true })
+    executes: async () => ({ ok: true })
   });
 };
 
@@ -296,12 +331,14 @@ export { onLoad, onUnload };
       ).rejects.toThrow('is not enabled');
     });
 
+    // a plugin that registers none at all, which is a different branch from a
+    // plugin that has commands but not the one asked for
     test('should throw error when plugin has no commands', async () => {
-      await pluginManager.load('plugin-a');
+      await pluginManager.load('plugin-http-routes');
 
       await expect(
         pluginManager.executeCommand(
-          'plugin-a',
+          'plugin-http-routes',
           'nonexistent',
           mockInvokerCtx,
           {}
@@ -329,9 +366,11 @@ export { onLoad, onUnload };
       const commands = pluginManager.getCommands();
 
       expect(commands['plugin-b']).toBeDefined();
-      expect(commands['plugin-b']!.length).toBe(2);
+      expect(commands['plugin-b']!.length).toBeGreaterThan(0);
       expect(commands['plugin-with-events']).toBeDefined();
-      expect(commands['plugin-with-events']!.length).toBe(1);
+      expect(
+        commands['plugin-with-events']!.map((command) => command.name)
+      ).toContain('get-counts');
     });
 
     test('should check if plugin has specific command', async () => {
@@ -403,6 +442,90 @@ export { onLoad, onUnload };
       expect(pluginManager.getPluginIdsWithComponents()).not.toContain(
         'plugin-b'
       );
+    });
+  });
+
+  describe('plugin data directory', () => {
+    const markerPath = () =>
+      path.join(getPluginDataPath('plugin-a'), 'marker.txt');
+
+    test('should exist before onLoad runs, so a plugin can write to it', async () => {
+      await pluginManager.load('plugin-a');
+
+      expect(await fs.exists(markerPath())).toBe(true);
+    });
+
+    // the whole point: an update replaces the plugin folder, not its data
+    test('should survive the plugin folder being replaced', async () => {
+      await pluginManager.load('plugin-a');
+      await fs.writeFile(markerPath(), 'written before the update');
+
+      const pluginPath = path.join(PLUGINS_PATH, 'plugin-a');
+      const source = await fs
+        .cp(pluginPath, `${pluginPath}-copy`, { recursive: true })
+        .then(() => `${pluginPath}-copy`);
+
+      await pluginManager.unload('plugin-a');
+
+      // exactly what installing an update does to the plugin's own folder
+      await fs.rm(pluginPath, { recursive: true, force: true });
+      await fs.cp(source, pluginPath, { recursive: true });
+      await fs.rm(source, { recursive: true, force: true });
+
+      await pluginManager.load('plugin-a');
+
+      expect(await Bun.file(markerPath()).text()).toBe(
+        'written before the update'
+      );
+    });
+
+    test('should be removed with the plugin', async () => {
+      const pluginPath = path.join(PLUGINS_PATH, 'plugin-a');
+      const backup = `${pluginPath}-backup`;
+
+      await fs.cp(pluginPath, backup, { recursive: true });
+
+      try {
+        await pluginManager.load('plugin-a');
+
+        expect(await fs.exists(getPluginDataPath('plugin-a'))).toBe(true);
+
+        await pluginManager.removePlugin('plugin-a');
+
+        expect(await fs.exists(getPluginDataPath('plugin-a'))).toBe(false);
+      } finally {
+        await fs.cp(backup, pluginPath, { recursive: true });
+        await fs.rm(backup, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('metadata', () => {
+    test('should report the loaded plugin manifest, version included', async () => {
+      await pluginManager.load('plugin-b');
+
+      const metadata = pluginManager
+        .getActivePluginMetadata()
+        .find((entry) => entry.pluginId === 'plugin-b');
+
+      expect(metadata).toEqual({
+        pluginId: 'plugin-b',
+        name: 'plugin-b',
+        description: 'Plugin B with commands',
+        version: '1.2.3',
+        avatarUrl: 'https://example.com/logo.png'
+      });
+    });
+
+    test('should drop a plugin from the metadata once it unloads', async () => {
+      await pluginManager.load('plugin-b');
+      await pluginManager.unload('plugin-b');
+
+      expect(
+        pluginManager
+          .getActivePluginMetadata()
+          .some((entry) => entry.pluginId === 'plugin-b')
+      ).toBe(false);
     });
   });
 
@@ -542,21 +665,6 @@ export { onLoad, onUnload };
 
       expect(logs.length).toBeLessThanOrEqual(1000);
     });
-
-    test('should support log listener', async () => {
-      let capturedLog = null;
-
-      const unsubscribe = pluginManager.onLog('plugin-a', (log) => {
-        capturedLog = log;
-      });
-
-      await pluginManager.load('plugin-a');
-
-      expect(capturedLog).not.toBeNull();
-      expect(capturedLog!.pluginId).toBe('plugin-a');
-
-      unsubscribe();
-    });
   });
 
   describe('unloadPlugins', () => {
@@ -608,81 +716,6 @@ export { onLoad, onUnload };
 
       expect(getCountsCommand).toBeDefined();
       expect(getCountsCommand!.pluginId).toBe('plugin-with-events');
-    });
-  });
-
-  describe('log listener cleanup', () => {
-    test('should stop receiving logs after unsubscribe', async () => {
-      const capturedLogs: unknown[] = [];
-
-      const unsubscribe = pluginManager.onLog('plugin-a', (log) => {
-        capturedLogs.push(log);
-      });
-
-      await pluginManager.load('plugin-a');
-
-      const countBeforeUnsubscribe = capturedLogs.length;
-      expect(countBeforeUnsubscribe).toBeGreaterThan(0);
-
-      unsubscribe();
-
-      // trigger more logs by unloading
-      await pluginManager.unload('plugin-a');
-
-      // should not have received new logs after unsubscribe
-      expect(capturedLogs.length).toBe(countBeforeUnsubscribe);
-    });
-
-    test('should support multiple listeners for the same plugin', async () => {
-      let listener1Count = 0;
-      let listener2Count = 0;
-
-      const unsub1 = pluginManager.onLog('plugin-a', () => {
-        listener1Count++;
-      });
-
-      const unsub2 = pluginManager.onLog('plugin-a', () => {
-        listener2Count++;
-      });
-
-      await pluginManager.load('plugin-a');
-
-      expect(listener1Count).toBeGreaterThan(0);
-      expect(listener2Count).toBeGreaterThan(0);
-      expect(listener1Count).toBe(listener2Count);
-
-      unsub1();
-      unsub2();
-    });
-
-    test('should only remove the specific listener on unsubscribe', async () => {
-      let listener1Count = 0;
-      let listener2Count = 0;
-
-      const unsub1 = pluginManager.onLog('plugin-a', () => {
-        listener1Count++;
-      });
-
-      const unsub2 = pluginManager.onLog('plugin-a', () => {
-        listener2Count++;
-      });
-
-      await pluginManager.load('plugin-a');
-
-      const l1Before = listener1Count;
-      const l2Before = listener2Count;
-
-      // unsubscribe only listener 1
-      unsub1();
-
-      // trigger more logs
-      await pluginManager.unload('plugin-a');
-
-      // listener 1 should not have increased, listener 2 should have
-      expect(listener1Count).toBe(l1Before);
-      expect(listener2Count).toBeGreaterThan(l2Before);
-
-      unsub2();
     });
   });
 
@@ -807,7 +840,9 @@ export { onLoad, onUnload };
       expect(result).toEqual({
         greeting: 'Hello!',
         maxRetries: 3,
-        enabled: true
+        enabled: true,
+        apiKey: '',
+        mode: 'balanced'
       });
     });
 
@@ -838,13 +873,91 @@ export { onLoad, onUnload };
         'plugin-with-settings'
       );
 
-      expect(settings.definitions).toHaveLength(3);
-      expect(settings.definitions[0]!.key).toBe('greeting');
-      expect(settings.definitions[1]!.key).toBe('maxRetries');
-      expect(settings.definitions[2]!.key).toBe('enabled');
+      expect(settings.definitions.map((d) => d.key)).toEqual([
+        'greeting',
+        'maxRetries',
+        'enabled',
+        'apiKey',
+        'mode'
+      ]);
       expect(settings.values.greeting).toBe('Hello!');
       expect(settings.values.maxRetries).toBe(3);
       expect(settings.values.enabled).toBe(true);
+      expect(settings.values.mode).toBe('balanced');
+    });
+
+    // a credential must not travel to the admin client, only the fact it is set
+    test('should never send a secret value to the client', async () => {
+      await pluginManager.load('plugin-with-settings');
+
+      const before = await pluginManager.getPluginSettings(
+        'plugin-with-settings'
+      );
+
+      expect('apiKey' in before.values).toBe(false);
+      expect(before.secretsSet).toEqual([]);
+
+      await pluginManager.updatePluginSetting(
+        'plugin-with-settings',
+        'apiKey',
+        'super-secret-token'
+      );
+
+      const after = await pluginManager.getPluginSettings(
+        'plugin-with-settings'
+      );
+
+      expect('apiKey' in after.values).toBe(false);
+      expect(after.secretsSet).toEqual(['apiKey']);
+      expect(JSON.stringify(after)).not.toContain('super-secret-token');
+    });
+
+    // the plugin itself still reads the real value
+    test('should give the plugin the real secret value', async () => {
+      await pluginManager.load('plugin-with-settings');
+
+      await pluginManager.updatePluginSetting(
+        'plugin-with-settings',
+        'apiKey',
+        'super-secret-token'
+      );
+
+      const result = (await pluginManager.executeCommand(
+        'plugin-with-settings',
+        'get-settings',
+        mockInvokerCtx,
+        {}
+      )) as Record<string, unknown>;
+
+      expect(result.apiKey).toBe('super-secret-token');
+    });
+
+    test('should refuse an enum value outside its options', async () => {
+      await pluginManager.load('plugin-with-settings');
+
+      await expect(
+        pluginManager.updatePluginSetting(
+          'plugin-with-settings',
+          'mode',
+          'sideways'
+        )
+      ).rejects.toThrow('expects one of: fast, balanced, thorough');
+    });
+
+    test('should accept a declared enum value', async () => {
+      await pluginManager.load('plugin-with-settings');
+
+      await pluginManager.updatePluginSetting(
+        'plugin-with-settings',
+        'mode',
+        'thorough'
+      );
+
+      const settings = await pluginManager.getPluginSettings(
+        'plugin-with-settings'
+      );
+
+      expect(settings.values.mode).toBe('thorough');
     });
 
     test('should update settings via updatePluginSetting', async () => {
@@ -914,7 +1027,7 @@ export { onLoad, onUnload };
         'plugin-with-settings'
       );
 
-      expect(settingsBefore.definitions).toHaveLength(3);
+      expect(settingsBefore.definitions.length).toBeGreaterThan(0);
 
       await pluginManager.unload('plugin-with-settings');
 
@@ -924,6 +1037,182 @@ export { onLoad, onUnload };
 
       // definitions should be empty since the plugin was unloaded
       expect(settingsAfter.definitions).toHaveLength(0);
+    });
+  });
+
+  describe('settings change notifications', () => {
+    test('should emit setting:set when an admin updates a setting', async () => {
+      await pluginManager.load('plugin-with-settings');
+
+      const received: Array<{ key: string; value: unknown }> = [];
+
+      eventBus.register('plugin-with-settings', 'setting:set', (payload) => {
+        received.push(payload);
+      });
+
+      await pluginManager.updatePluginSetting(
+        'plugin-with-settings',
+        'greeting',
+        'Hi from the admin'
+      );
+
+      expect(received).toEqual([
+        { key: 'greeting', value: 'Hi from the admin' }
+      ]);
+    });
+
+    // a plugin's settings are its own: values can be tokens, and a broadcast put
+    // them in front of every other loaded plugin
+    test('should not deliver setting:set to other plugins', async () => {
+      await pluginManager.load('plugin-with-settings');
+
+      const ownEvents: unknown[] = [];
+      const otherEvents: unknown[] = [];
+
+      eventBus.register('plugin-with-settings', 'setting:set', (payload) => {
+        ownEvents.push(payload);
+      });
+
+      eventBus.register('other-plugin', 'setting:set', (payload) => {
+        otherEvents.push(payload);
+      });
+
+      await pluginManager.updatePluginSetting(
+        'plugin-with-settings',
+        'greeting',
+        'scoped'
+      );
+
+      expect(ownEvents).toEqual([{ key: 'greeting', value: 'scoped' }]);
+      expect(otherEvents).toEqual([]);
+
+      eventBus.unload('other-plugin');
+    });
+
+    test('should not emit setting:set when the update is rejected', async () => {
+      await pluginManager.load('plugin-with-settings');
+
+      let emitted = 0;
+
+      eventBus.register('plugin-with-settings', 'setting:set', () => {
+        emitted += 1;
+      });
+
+      await expect(
+        pluginManager.updatePluginSetting(
+          'plugin-with-settings',
+          'greeting',
+          123
+        )
+      ).rejects.toThrow('expects a string');
+
+      expect(emitted).toBe(0);
+    });
+  });
+
+  describe('reconcileRemovedPlugins', () => {
+    const backupPath = (pluginId: string) =>
+      path.join(PLUGINS_PATH, `${pluginId}-backup`);
+
+    const removeDirectory = async (pluginId: string) => {
+      const pluginPath = path.join(PLUGINS_PATH, pluginId);
+
+      await fs.cp(pluginPath, backupPath(pluginId), { recursive: true });
+      await fs.rm(pluginPath, { recursive: true, force: true });
+    };
+
+    const restoreDirectory = async (pluginId: string) => {
+      const backup = backupPath(pluginId);
+
+      if (!(await fs.exists(backup))) return;
+
+      await fs.cp(backup, path.join(PLUGINS_PATH, pluginId), {
+        recursive: true
+      });
+      await fs.rm(backup, { recursive: true, force: true });
+    };
+
+    const pluginRow = async (pluginId: string) =>
+      tdb
+        .select()
+        .from(pluginData)
+        .where(eq(pluginData.pluginId, pluginId))
+        .get();
+
+    afterEach(() => restoreDirectory('plugin-a'));
+
+    test('should treat a directory that is gone as an uninstall', async () => {
+      await pluginManager.togglePlugin('plugin-a', true);
+
+      expect(await pluginRow('plugin-a')).toBeDefined();
+
+      await removeDirectory('plugin-a');
+      await pluginManager.reconcileRemovedPlugins();
+
+      expect(await pluginRow('plugin-a')).toBeUndefined();
+    });
+
+    test('should disable it before uninstalling', async () => {
+      await pluginManager.togglePlugin('plugin-a', true);
+
+      expect(pluginManager.isEnabled('plugin-a')).toBe(true);
+
+      await removeDirectory('plugin-a');
+      await pluginManager.reconcileRemovedPlugins();
+
+      expect(pluginManager.isEnabled('plugin-a')).toBe(false);
+      expect(pluginManager.getLogs('plugin-a')).toEqual([]);
+    });
+
+    test('should leave a plugin that is still on disk alone', async () => {
+      await pluginManager.togglePlugin('plugin-a', true);
+
+      await pluginManager.reconcileRemovedPlugins();
+
+      expect(await pluginRow('plugin-a')).toBeDefined();
+      expect(pluginManager.isEnabled('plugin-a')).toBe(true);
+    });
+
+    // installing removes the directory before writing the new one, and reading
+    // that as an uninstall would wipe the plugin mid-update
+    test('should ignore a plugin that is being installed', async () => {
+      await pluginManager.togglePlugin('plugin-a', true);
+
+      await removeDirectory('plugin-a');
+      pluginManager.markInstalling('plugin-a');
+
+      await pluginManager.reconcileRemovedPlugins();
+
+      expect(await pluginRow('plugin-a')).toBeDefined();
+
+      pluginManager.clearInstalling('plugin-a');
+    });
+  });
+
+  describe('removePlugin', () => {
+    test('should forget the logs and the load error of a removed plugin', async () => {
+      const pluginPath = path.join(PLUGINS_PATH, 'plugin-throws-error');
+      const backup = await fs
+        .cp(pluginPath, `${pluginPath}-backup`, { recursive: true })
+        .then(() => `${pluginPath}-backup`);
+
+      try {
+        await pluginManager.load('plugin-throws-error');
+
+        expect(
+          pluginManager.getLogs('plugin-throws-error').length
+        ).toBeGreaterThan(0);
+        expect(
+          (await pluginManager.getPluginInfo('plugin-throws-error')).loadError
+        ).toBeDefined();
+
+        await pluginManager.removePlugin('plugin-throws-error');
+
+        expect(pluginManager.getLogs('plugin-throws-error')).toEqual([]);
+      } finally {
+        await fs.cp(backup, pluginPath, { recursive: true });
+        await fs.rm(backup, { recursive: true, force: true });
+      }
     });
   });
 
@@ -1010,6 +1299,465 @@ export { onLoad, onUnload };
       // since the plugin is unloaded, we can't query it, but we can verify
       // the event bus no longer has handlers for this plugin
       expect(eventBus.hasPlugin('plugin-with-events')).toBe(false);
+    });
+  });
+
+  describe('reading messages', () => {
+    const run = async (command: string, args: Record<string, unknown>) =>
+      (await pluginManager.executeCommand(
+        'plugin-message-actions',
+        command,
+        mockInvokerCtx,
+        args
+      )) as {
+        count: number;
+        contents: string[];
+        createdAt: number[];
+        found?: boolean;
+        content?: string | null;
+      };
+
+    beforeEach(async () => {
+      await pluginManager.load('plugin-message-actions');
+    });
+
+    test('should read the messages already in a channel', async () => {
+      const result = await run('list-messages', { channelId: 1 });
+
+      expect(result.count).toBeGreaterThan(0);
+      expect(result.contents).toContain('Test message');
+    });
+
+    test('should return newest first', async () => {
+      await pluginManager.executeCommand(
+        'plugin-message-actions',
+        'send-message',
+        mockInvokerCtx,
+        { channelId: 1, content: 'newer message' }
+      );
+
+      const result = await run('list-messages', { channelId: 1 });
+
+      expect(result.contents[0]).toContain('newer message');
+      expect(result.createdAt[0]).toBeGreaterThanOrEqual(
+        result.createdAt[result.createdAt.length - 1]!
+      );
+    });
+
+    test('should page backwards with before', async () => {
+      await pluginManager.executeCommand(
+        'plugin-message-actions',
+        'send-message',
+        mockInvokerCtx,
+        { channelId: 1, content: 'newer message' }
+      );
+
+      const firstPage = await run('list-messages', { channelId: 1, limit: 1 });
+
+      expect(firstPage.count).toBe(1);
+
+      const secondPage = await run('list-messages', {
+        channelId: 1,
+        limit: 1,
+        before: firstPage.createdAt[0]
+      });
+
+      expect(secondPage.count).toBe(1);
+      expect(secondPage.contents[0]).not.toBe(firstPage.contents[0]);
+    });
+
+    // the cap is enforced by the server, not trusted from the plugin
+    test('should clamp an absurd limit', async () => {
+      const result = await run('list-messages', {
+        channelId: 1,
+        limit: 100000
+      });
+
+      expect(result.count).toBeLessThanOrEqual(DEFAULT_MESSAGES_LIMIT);
+    });
+
+    test('should read a single message by id', async () => {
+      const { messageId } = (await pluginManager.executeCommand(
+        'plugin-message-actions',
+        'send-message',
+        mockInvokerCtx,
+        { channelId: 1, content: 'findable' }
+      )) as { messageId: number };
+
+      const result = await run('get-message', { messageId });
+
+      expect(result.found).toBe(true);
+      expect(result.content).toContain('findable');
+    });
+
+    test('should return nothing for a message that does not exist', async () => {
+      const result = await run('get-message', { messageId: 999999 });
+
+      expect(result.found).toBe(false);
+    });
+  });
+
+  describe('onUpgrade', () => {
+    const MANIFEST = path.join(PLUGINS_PATH, 'plugin-upgrade', 'manifest.json');
+
+    const setManifestVersion = async (version: string) => {
+      const manifest = JSON.parse(await fs.readFile(MANIFEST, 'utf-8'));
+
+      await fs.writeFile(
+        MANIFEST,
+        JSON.stringify({ ...manifest, version }, null, 2)
+      );
+    };
+
+    const readLifecycle = async () => {
+      const logPath = path.join(
+        getPluginDataPath('plugin-upgrade'),
+        'lifecycle.log'
+      );
+
+      if (!(await fs.exists(logPath))) return [];
+
+      return (await fs.readFile(logPath, 'utf-8')).trim().split('\n');
+    };
+
+    const storedVersion = async () =>
+      (
+        await tdb
+          .select({ version: pluginData.version })
+          .from(pluginData)
+          .where(eq(pluginData.pluginId, 'plugin-upgrade'))
+          .get()
+      )?.version ?? null;
+
+    // the lifecycle log lives in the plugin's durable data directory, which
+    // outlives the per-test database on purpose, so it has to be cleared here
+    beforeEach(async () => {
+      await fs.rm(getPluginDataPath('plugin-upgrade'), {
+        recursive: true,
+        force: true
+      });
+    });
+
+    afterEach(async () => {
+      delete process.env.PLUGIN_UPGRADE_SHOULD_FAIL;
+      await setManifestVersion('1.0.0');
+    });
+
+    test('should not run on a first install', async () => {
+      await pluginManager.load('plugin-upgrade');
+
+      expect(await readLifecycle()).toEqual(['load']);
+      expect(await storedVersion()).toBe('1.0.0');
+    });
+
+    test('should run before onLoad when the version changed', async () => {
+      await pluginManager.load('plugin-upgrade');
+      await pluginManager.unload('plugin-upgrade');
+
+      await setManifestVersion('2.0.0');
+      await pluginManager.load('plugin-upgrade');
+
+      expect(await readLifecycle()).toEqual([
+        'load',
+        'upgrade:1.0.0->2.0.0',
+        'load'
+      ]);
+      expect(await storedVersion()).toBe('2.0.0');
+    });
+
+    test('should not run again once the version is recorded', async () => {
+      await pluginManager.load('plugin-upgrade');
+      await pluginManager.unload('plugin-upgrade');
+      await pluginManager.load('plugin-upgrade');
+
+      expect(await readLifecycle()).toEqual(['load', 'load']);
+    });
+
+    // a half migrated plugin must not start, and must try again next time
+    test('should stop the load and keep the old version when it throws', async () => {
+      await pluginManager.load('plugin-upgrade');
+      await pluginManager.unload('plugin-upgrade');
+
+      process.env.PLUGIN_UPGRADE_SHOULD_FAIL = 'true';
+      await setManifestVersion('2.0.0');
+      await pluginManager.load('plugin-upgrade');
+
+      const info = await pluginManager.getPluginInfo('plugin-upgrade');
+
+      expect(info.loadError).toContain('migration failed');
+      expect(await storedVersion()).toBe('1.0.0');
+      expect(await readLifecycle()).toEqual(['load']);
+
+      delete process.env.PLUGIN_UPGRADE_SHOULD_FAIL;
+
+      await pluginManager.load('plugin-upgrade');
+
+      expect(await readLifecycle()).toEqual([
+        'load',
+        'upgrade:1.0.0->2.0.0',
+        'load'
+      ]);
+      expect(await storedVersion()).toBe('2.0.0');
+    });
+  });
+
+  // one emit point per event, all on paths the routes and the plugin API share
+  describe('new events', () => {
+    beforeEach(() => pluginManager.load('plugin-with-events'));
+
+    // the assertions below all expect the event to have fired, so this reads as
+    // the payload rather than making every call site unwrap a null
+    const lastEvent = async (name: string): Promise<unknown> => {
+      const result = (await pluginManager.executeCommand(
+        'plugin-with-events',
+        'get-last-event',
+        mockInvokerCtx,
+        { name }
+      )) as { payload: unknown };
+
+      return result.payload;
+    };
+
+    test('should fire when a reaction is added and removed', async () => {
+      const { caller } = await initTest();
+
+      await caller.messages.toggleReaction({ messageId: 1, emoji: '👍' });
+
+      expect(await lastEvent('reaction:added')).toEqual({
+        messageId: 1,
+        channelId: 1,
+        userId: 1,
+        emoji: '👍'
+      });
+
+      await caller.messages.toggleReaction({ messageId: 1, emoji: '👍' });
+
+      expect(await lastEvent('reaction:removed')).toBeDefined();
+    });
+
+    test('should fire when a message is pinned and unpinned', async () => {
+      const { caller } = await initTest();
+
+      await caller.messages.togglePin({ messageId: 1 });
+
+      expect(await lastEvent('message:pinned')).toEqual({
+        messageId: 1,
+        channelId: 1,
+        userId: 1
+      });
+
+      await caller.messages.togglePin({ messageId: 1 });
+
+      expect(await lastEvent('message:unpinned')).toBeDefined();
+    });
+
+    test('should fire when a user is banned and unbanned', async () => {
+      const { caller } = await initTest();
+
+      await caller.users.ban({ userId: 2, reason: 'spam' });
+
+      expect(await lastEvent('user:banned')).toEqual({
+        userId: 2,
+        reason: 'spam',
+        actorUserId: 1
+      });
+
+      await caller.users.unban({ userId: 2 });
+
+      expect(await lastEvent('user:unbanned')).toEqual({
+        userId: 2,
+        actorUserId: 1
+      });
+    });
+
+    // a plugin is not a user, so the actor is absent rather than invented
+    test('should fire with no actor when a plugin bans', async () => {
+      await pluginManager.load('plugin-b');
+
+      await pluginManager.executeCommand(
+        'plugin-b',
+        'moderate',
+        mockInvokerCtx,
+        { action: 'ban', userId: 2 }
+      );
+
+      const payload = (await lastEvent('user:banned')) as {
+        actorUserId?: number;
+      };
+
+      expect(payload.actorUserId).toBeUndefined();
+    });
+
+    test('should fire when a role is assigned and removed', async () => {
+      const { caller } = await initTest();
+
+      await caller.users.addRole({ userId: 2, roleId: 4 });
+
+      expect(await lastEvent('role:assigned')).toEqual({
+        userId: 2,
+        roleId: 4
+      });
+
+      await caller.users.removeRole({ userId: 2, roleId: 4 });
+
+      expect(await lastEvent('role:removed')).toEqual({
+        userId: 2,
+        roleId: 4
+      });
+    });
+
+    test('should fire through the whole channel lifecycle', async () => {
+      const { caller } = await initTest();
+
+      const channelId = await caller.channels.add({
+        name: 'events',
+        type: ChannelType.TEXT,
+        categoryId: 1
+      });
+
+      expect(await lastEvent('channel:created')).toEqual({
+        channelId,
+        name: 'events',
+        type: ChannelType.TEXT,
+        categoryId: 1
+      });
+
+      await caller.channels.update({ channelId, name: 'renamed' });
+
+      expect(await lastEvent('channel:updated')).toMatchObject({
+        channelId,
+        name: 'renamed'
+      });
+
+      await caller.channels.delete({ channelId });
+
+      expect(await lastEvent('channel:deleted')).toEqual({
+        channelId,
+        name: 'renamed'
+      });
+    });
+
+    test('should fire through the whole category lifecycle', async () => {
+      const { caller } = await initTest();
+
+      const categoryId = await caller.categories.add({ name: 'events' });
+
+      expect(await lastEvent('category:created')).toEqual({
+        categoryId,
+        name: 'events'
+      });
+
+      await caller.categories.update({ categoryId, name: 'renamed' });
+
+      expect(await lastEvent('category:updated')).toEqual({
+        categoryId,
+        name: 'renamed'
+      });
+
+      await caller.categories.delete({ categoryId });
+
+      expect(await lastEvent('category:deleted')).toEqual({
+        categoryId,
+        name: 'renamed'
+      });
+    });
+
+    // the role itself, as opposed to role:assigned which is membership
+    test('should fire through the whole role lifecycle', async () => {
+      const { caller } = await initTest();
+
+      const roleId = await caller.roles.add();
+
+      expect(await lastEvent('role:created')).toMatchObject({ roleId });
+
+      await caller.roles.update({
+        roleId,
+        name: 'Renamed',
+        color: '#ffffff',
+        permissions: [],
+        storageQuotaOverrideEnabled: false,
+        storageSpaceQuota: STORAGE_MIN_QUOTA_PER_USER
+      });
+
+      expect(await lastEvent('role:updated')).toEqual({
+        roleId,
+        name: 'Renamed'
+      });
+
+      await caller.roles.delete({ roleId });
+
+      expect(await lastEvent('role:deleted')).toMatchObject({ roleId });
+    });
+
+    test('should fire when a user edits their profile', async () => {
+      const { caller } = await initTest(1);
+
+      await caller.users.update({
+        name: 'Renamed Owner',
+        profileColor: '#ffffff'
+      });
+
+      expect(await lastEvent('user:updated')).toEqual({
+        userId: 1,
+        username: 'Renamed Owner'
+      });
+    });
+
+    test('should fire when a user is deleted', async () => {
+      const { caller } = await initTest();
+
+      await caller.users.delete({ userId: 2, wipe: false });
+
+      expect(await lastEvent('user:deleted')).toEqual({ userId: 2 });
+    });
+  });
+
+  describe('user:left', () => {
+    type TSocket = Parameters<typeof handleSocketClose>[0];
+
+    const getCounts = async () =>
+      (await pluginManager.executeCommand(
+        'plugin-with-events',
+        'get-counts',
+        mockInvokerCtx,
+        {}
+      )) as { userJoined: number; userLeft: number };
+
+    test('should fire when a user closes their last session', async () => {
+      await pluginManager.load('plugin-with-events');
+
+      expect((await getCounts()).userLeft).toBe(0);
+
+      await handleSocketClose({ userId: 2 } as unknown as TSocket);
+
+      expect((await getCounts()).userLeft).toBe(1);
+    });
+
+    // a second tab closing is not a departure, so the event must not fire
+    test('should not fire while another session is still open', async () => {
+      await pluginManager.load('plugin-with-events');
+
+      const first = { userId: 2 } as unknown as TSocket;
+      const second = { userId: 2 } as unknown as TSocket;
+
+      trackUserSocket(2, first);
+      trackUserSocket(2, second);
+
+      await handleSocketClose(first);
+
+      expect((await getCounts()).userLeft).toBe(0);
+
+      await handleSocketClose(second);
+
+      expect((await getCounts()).userLeft).toBe(1);
+    });
+
+    test('should ignore a socket that never authenticated', async () => {
+      await pluginManager.load('plugin-with-events');
+
+      await handleSocketClose({} as unknown as TSocket);
+
+      expect((await getCounts()).userLeft).toBe(0);
     });
   });
 

@@ -2,7 +2,7 @@
   "id": "plugin-slow-command",
   "name": "Plugin Slow Command",
   "version": "0.0.1",
-  "sdkVersion": 1,
+  "sdkVersion": 2,
   "author": "Test Author",
   "description": "Plugin with a command that hangs forever, used to test execution timeout."
 }

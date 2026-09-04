@@ -1,4 +1,5 @@
 import { Permission, type TStorageSettings } from '@sharkord/shared';
+import { getStorageUsageByPlugin } from '../../db/queries/files';
 import { getSettings } from '../../db/queries/server';
 import { getDiskMetrics } from '../../utils/metrics';
 import { protectedProcedure } from '../../utils/trpc';
@@ -6,9 +7,10 @@ import { protectedProcedure } from '../../utils/trpc';
 const getStorageSettingsRoute = protectedProcedure.query(async ({ ctx }) => {
   await ctx.needsPermission(Permission.MANAGE_STORAGE);
 
-  const [settings, diskMetrics] = await Promise.all([
+  const [settings, diskMetrics, pluginStorage] = await Promise.all([
     getSettings(),
-    getDiskMetrics()
+    getDiskMetrics(),
+    getStorageUsageByPlugin()
   ]);
 
   const storageSettings: TStorageSettings = {
@@ -28,7 +30,7 @@ const getStorageSettingsRoute = protectedProcedure.query(async ({ ctx }) => {
     storageImageOptimizationQuality: settings.storageImageOptimizationQuality
   };
 
-  return { storageSettings, diskMetrics };
+  return { storageSettings, diskMetrics, pluginStorage };
 });
 
 export { getStorageSettingsRoute };

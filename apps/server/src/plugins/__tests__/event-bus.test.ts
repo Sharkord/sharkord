@@ -257,11 +257,11 @@ describe('event-bus', () => {
     });
   });
 
-  describe('on and off', () => {
-    test('should register handler with on method', async () => {
+  describe('register and unregister', () => {
+    test('should register handler with register method', async () => {
       const handler = mock(() => {});
 
-      eventBus.on('message:created', handler);
+      eventBus.register('plugin1', 'message:created', handler);
 
       await eventBus.emit('message:created', {
         messageId: 1,
@@ -275,10 +275,10 @@ describe('event-bus', () => {
       expect(handler).toHaveBeenCalledTimes(1);
     });
 
-    test('should remove handler with off method', async () => {
+    test('should remove handler with unregister method', async () => {
       const handler = mock(() => {});
 
-      eventBus.on('message:created', handler);
+      eventBus.register('plugin1', 'message:created', handler);
 
       await eventBus.emit('message:created', {
         messageId: 1,
@@ -291,7 +291,7 @@ describe('event-bus', () => {
 
       expect(handler).toHaveBeenCalledTimes(1);
 
-      eventBus.off('message:created', handler);
+      eventBus.unregister('plugin1', 'message:created', handler);
 
       await eventBus.emit('message:created', {
         messageId: 2,
@@ -314,7 +314,7 @@ describe('event-bus', () => {
 
       eventBus.register('plugin1', 'message:created', handler1);
       eventBus.register('plugin2', 'user:joined', handler2);
-      eventBus.on('message:deleted', handler3);
+      eventBus.register('plugin3', 'message:deleted', handler3);
 
       expect(eventBus.getListenersCount('message:created')).toBe(1);
       expect(eventBus.getListenersCount('user:joined')).toBe(1);
@@ -484,11 +484,15 @@ describe('event-bus', () => {
     });
   });
 
-  describe('on() return value (unsubscribe)', () => {
-    test('on() returns a function that removes the handler', async () => {
+  describe('register() return value (unsubscribe)', () => {
+    test('register() returns a function that removes the handler', async () => {
       const handler = mock(() => {});
 
-      const unsubscribe = eventBus.on('message:created', handler);
+      const unsubscribe = eventBus.register(
+        'plugin1',
+        'message:created',
+        handler
+      );
 
       await eventBus.emit('message:created', {
         messageId: 1,

@@ -1,0 +1,8 @@
+{
+  "id": "e2e-plugin",
+  "name": "E2E Plugin",
+  "author": "Sharkord",
+  "description": "Renders into every slot the end to end tests assert on",
+  "sdkVersion": 2,
+  "version": "1.0.0"
+}

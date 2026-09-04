@@ -204,6 +204,48 @@
       "when": 1787838956003,
       "tag": "0028_users_password_set",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1788122361469,
+      "tag": "0029_oidc_flow_storage",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1788219275550,
+      "tag": "0030_plugin_data_version",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1788254089571,
+      "tag": "0031_plugin_capability_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1788286981185,
+      "tag": "0032_files_plugin_owner",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1788303109853,
+      "tag": "0033_plugin_user_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1788303909961,
+      "tag": "0034_plugin_reactions",
+      "breakpoints": true
     }
   ]
 }

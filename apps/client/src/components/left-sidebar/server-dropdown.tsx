@@ -69,6 +69,7 @@ const ServerDropdownMenu = memo(() => {
         </Protect>
         <Protect permission={serverSettingsPermissions}>
           <DropdownMenuItem
+            data-testid={TestId.SERVER_MENU_SERVER_SETTINGS}
             onClick={() => openServerScreen(ServerScreen.SERVER_SETTINGS)}
           >
             {t('serverSettings')}

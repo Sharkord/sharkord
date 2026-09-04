@@ -1,3 +1,4 @@
+export * from './locales';
 export * from './metrics';
 export * from './permissions';
 export * from './storage';
@@ -20,6 +21,8 @@ export enum DisconnectCode {
   BANNED = 40001,
   SERVER_SHUTDOWN = 40002
 }
+
+export const MAX_USER_NAME_LENGTH = 24;
 
 export const DELETED_USER_IDENTITY_AND_NAME = '__deleted_user__'; // this will be used as identity AND name, but in the interface we render as "Deleted"
 
