@@ -59,7 +59,7 @@ import {
   type THookHandlers,
   type THookName
 } from './hooks-manager';
-import { PluginHttpRouteRegistry } from './http-route-registry';
+import { getRouteKey, PluginHttpRouteRegistry } from './http-route-registry';
 import { pluginLogger } from './plugin-logger';
 import { PluginSettingsManager } from './plugin-settings-manager';
 import { PluginStateStore } from './plugin-state-store';
@@ -169,6 +169,9 @@ class PluginManager {
     if (type === PluginCapabilityType.ACTION)
       return this.actionRegistry.get(pluginId, name)?.requires;
 
+    if (type === PluginCapabilityType.HTTP_ROUTE)
+      return this.httpRouteRegistry.getByKey(pluginId, name)?.options?.requires;
+
     return this.componentRequirements.get(pluginId)?.[name as PluginSlot];
   };
 
@@ -203,6 +206,19 @@ class PluginManager {
 
     collect(PluginCapabilityType.COMMAND, this.commandRegistry.getByPlugin());
     collect(PluginCapabilityType.ACTION, this.actionRegistry.getByPlugin());
+
+    for (const [pluginId, routes] of this.httpRouteRegistry.byPlugin()) {
+      for (const route of routes.values()) {
+        if (!route.options?.requires) continue;
+
+        requirements.push({
+          pluginId,
+          type: PluginCapabilityType.HTTP_ROUTE,
+          name: getRouteKey(route.method, route.path),
+          requires: route.options.requires
+        });
+      }
+    }
 
     for (const [pluginId, slots] of this.componentRequirements) {
       for (const [name, requires] of Object.entries(slots)) {
@@ -287,6 +303,9 @@ class PluginManager {
 
     return undefined;
   };
+
+  public getHttpRoutes = (pluginId: string) =>
+    this.httpRouteRegistry.list(pluginId);
 
   public getHttpRoute = (
     pluginId: string,

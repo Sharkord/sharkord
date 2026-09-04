@@ -501,6 +501,7 @@
   "failedSavePluginCapability": "Не удалось сохранить право",
   "pluginCapabilityCommands": "Команды",
   "pluginCapabilityActions": "Действия",
+  "pluginCapabilityHttpRoutes": "HTTP-маршруты",
   "pluginCapabilityComponents": "Компоненты интерфейса",
   "pluginAccessAudienceTitle": "Кто",
   "pluginAccessEveryone": "Все",

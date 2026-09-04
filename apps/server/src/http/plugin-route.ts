@@ -1,9 +1,14 @@
+import { PluginCapabilityMode, PluginCapabilityType } from '@sharkord/shared';
 import type http from 'http';
 import { config } from '../config';
-import { userCan } from '../db/queries/roles';
+import { getCapabilityAccess } from '../db/queries/plugin-capabilities';
 import { getUserByToken } from '../db/queries/users';
 import { getWsInfo } from '../helpers/get-ws-info';
-import type { TPluginHttpRoute } from '../plugins/http-route-registry';
+import { canUseResolvedCapability } from '../helpers/plugin-capability-access';
+import {
+  getRouteKey,
+  type TPluginHttpRoute
+} from '../plugins/http-route-registry';
 import { createRateLimiter } from '../utils/rate-limiters/rate-limiter';
 import {
   enforceHttpRateLimit,
@@ -38,8 +43,24 @@ const runPluginRoute = async (
   }
 
   const { options } = route;
+  const capabilityName = getRouteKey(route.method, route.path);
 
-  if (!options?.auth && !options?.requires) {
+  const access = await getCapabilityAccess(
+    route.pluginId,
+    PluginCapabilityType.HTTP_ROUTE,
+    capabilityName
+  );
+
+  // an admin restricting a route makes it authenticated whatever the plugin
+  // asked for, since there is no caller to match against roles otherwise. auth
+  // works the other way and stays the plugin's call: its handler expects a
+  // userId, so opening the route up cannot take that away
+  const needsCaller =
+    options?.auth ||
+    options?.requires ||
+    access?.mode === PluginCapabilityMode.RESTRICTED;
+
+  if (!needsCaller) {
     return route.handler(req, res, {});
   }
 
@@ -51,7 +72,15 @@ const runPluginRoute = async (
     return;
   }
 
-  if (options.requires && !(await userCan(user.id, options.requires))) {
+  const canUseRoute = await canUseResolvedCapability(
+    user.id,
+    route.pluginId,
+    PluginCapabilityType.HTTP_ROUTE,
+    capabilityName,
+    access
+  );
+
+  if (!canUseRoute) {
     sendJsonError(res, 403, 'Insufficient permissions.');
 
     return;

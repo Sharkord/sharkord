@@ -492,6 +492,7 @@
   "failedSavePluginCapability": "保存插件权限失败",
   "pluginCapabilityCommands": "命令",
   "pluginCapabilityActions": "操作",
+  "pluginCapabilityHttpRoutes": "HTTP 路由",
   "pluginCapabilityComponents": "界面组件",
   "pluginAccessAudienceTitle": "对象",
   "pluginAccessEveryone": "所有人",

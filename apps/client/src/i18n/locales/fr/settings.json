@@ -492,6 +492,7 @@
   "failedSavePluginCapability": "Échec de l'enregistrement de la permission",
   "pluginCapabilityCommands": "Commandes",
   "pluginCapabilityActions": "Actions",
+  "pluginCapabilityHttpRoutes": "Routes HTTP",
   "pluginCapabilityComponents": "Composants d'interface",
   "pluginAccessAudienceTitle": "Qui",
   "pluginAccessEveryone": "Tout le monde",

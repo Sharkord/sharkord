@@ -492,6 +492,7 @@
   "failedSavePluginCapability": "Salvataggio del permesso non riuscito",
   "pluginCapabilityCommands": "Comandi",
   "pluginCapabilityActions": "Azioni",
+  "pluginCapabilityHttpRoutes": "Rotte HTTP",
   "pluginCapabilityComponents": "Componenti di interfaccia",
   "pluginAccessAudienceTitle": "Chi",
   "pluginAccessEveryone": "Tutti",

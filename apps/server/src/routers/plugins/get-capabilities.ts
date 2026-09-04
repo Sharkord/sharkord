@@ -10,6 +10,7 @@ import z from 'zod';
 import { getPluginCapabilityAccess } from '../../db/queries/plugin-capabilities';
 import { getRoles } from '../../db/queries/roles';
 import { pluginManager } from '../../plugins';
+import { getRouteKey } from '../../plugins/http-route-registry';
 import { protectedProcedure } from '../../utils/trpc';
 
 const getCapabilitiesRoute = protectedProcedure
@@ -87,6 +88,18 @@ const getCapabilitiesRoute = protectedProcedure
       .getActionNames(input.pluginId)
       .map((name) => resolve(PluginCapabilityType.ACTION, name));
 
+    // described by where it answers, since the name alone is just the method
+    // and the path the plugin registered
+    const httpRoutes = pluginManager
+      .getHttpRoutes(input.pluginId)
+      .map((route) =>
+        resolve(
+          PluginCapabilityType.HTTP_ROUTE,
+          getRouteKey(route.method, route.path),
+          `${route.method} /plugins/${input.pluginId}${route.path}`
+        )
+      );
+
     // a slot is known here when it was configured or declared. one that is
     // neither exists only in the client bundle, so the tab merges those in
     const declaredSlots = Object.keys(
@@ -104,7 +117,9 @@ const getCapabilitiesRoute = protectedProcedure
       resolve(PluginCapabilityType.COMPONENT, name)
     );
 
-    return { capabilities: [...commands, ...actions, ...components] };
+    return {
+      capabilities: [...commands, ...actions, ...httpRoutes, ...components]
+    };
   });
 
 export { getCapabilitiesRoute };

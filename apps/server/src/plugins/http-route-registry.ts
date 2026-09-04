@@ -7,6 +7,7 @@ import { hasPrefixPathSegment, isSupportedHttpMethod } from '../http/helpers';
 import type { PluginLogger } from './plugin-logger';
 
 type TPluginHttpRoute = {
+  pluginId: string;
   method: TPluginHttpMethod;
   path: string;
   handler: TPluginHttpRouteHandler;
@@ -72,7 +73,7 @@ class PluginHttpRouteRegistry {
       );
     }
 
-    pluginRoutes.set(key, { method, path, handler, options });
+    pluginRoutes.set(key, { pluginId, method, path, handler, options });
 
     this.routes.set(pluginId, pluginRoutes);
 
@@ -82,6 +83,19 @@ class PluginHttpRouteRegistry {
       `Registered HTTP route: ${method} /plugins/${pluginId}${path}`
     );
   };
+
+  public byPlugin = (): ReadonlyMap<
+    string,
+    ReadonlyMap<string, TPluginHttpRoute>
+  > => this.routes;
+
+  public list = (pluginId: string): TPluginHttpRoute[] =>
+    Array.from(this.routes.get(pluginId)?.values() ?? []);
+
+  public getByKey = (
+    pluginId: string,
+    key: string
+  ): TPluginHttpRoute | undefined => this.routes.get(pluginId)?.get(key);
 
   public get = (
     pluginId: string,
@@ -121,5 +135,5 @@ class PluginHttpRouteRegistry {
   };
 }
 
-export { PluginHttpRouteRegistry };
+export { getRouteKey, PluginHttpRouteRegistry };
 export type { TPluginHttpRoute };

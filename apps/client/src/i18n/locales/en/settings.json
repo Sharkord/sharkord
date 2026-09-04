@@ -494,6 +494,7 @@
   "failedSavePluginCapability": "Failed to save plugin permission",
   "pluginCapabilityCommands": "Commands",
   "pluginCapabilityActions": "Actions",
+  "pluginCapabilityHttpRoutes": "HTTP routes",
   "pluginCapabilityComponents": "UI components",
   "pluginAccessAudienceTitle": "Who",
   "pluginAccessEveryone": "Everyone",

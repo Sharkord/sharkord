@@ -18,6 +18,7 @@ import {
 const SECTIONS = [
   { type: PluginCapabilityType.COMMAND, key: 'pluginCapabilityCommands' },
   { type: PluginCapabilityType.ACTION, key: 'pluginCapabilityActions' },
+  { type: PluginCapabilityType.HTTP_ROUTE, key: 'pluginCapabilityHttpRoutes' },
   { type: PluginCapabilityType.COMPONENT, key: 'pluginCapabilityComponents' }
 ];
 

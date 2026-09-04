@@ -492,6 +492,7 @@
   "failedSavePluginCapability": "Uložení oprávnění se nezdařilo",
   "pluginCapabilityCommands": "Příkazy",
   "pluginCapabilityActions": "Akce",
+  "pluginCapabilityHttpRoutes": "HTTP cesty",
   "pluginCapabilityComponents": "Komponenty rozhraní",
   "pluginAccessAudienceTitle": "Kdo",
   "pluginAccessEveryone": "Všichni",

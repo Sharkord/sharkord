@@ -2,6 +2,7 @@ import {
   OWNER_ROLE_ID,
   PluginCapabilityMode,
   PluginCapabilityType,
+  type TPluginCapabilityAccess,
   type TPluginCapabilityAccessRule
 } from '@sharkord/shared';
 import {
@@ -11,14 +12,13 @@ import {
 import { getRoles, getUserRoleIds, userCan } from '../db/queries/roles';
 import { pluginManager } from '../plugins';
 
-const canUseCapability = async (
+const canUseResolvedCapability = async (
   userId: number,
   pluginId: string,
   type: PluginCapabilityType,
-  name: string
+  name: string,
+  access: TPluginCapabilityAccess | null
 ): Promise<boolean> => {
-  const access = await getCapabilityAccess(pluginId, type, name);
-
   if (!access) {
     const requires = pluginManager.getRequiredPermission(pluginId, type, name);
 
@@ -34,6 +34,20 @@ const canUseCapability = async (
 
   return roleIds.some((roleId) => access.roleIds.includes(roleId));
 };
+
+const canUseCapability = async (
+  userId: number,
+  pluginId: string,
+  type: PluginCapabilityType,
+  name: string
+): Promise<boolean> =>
+  canUseResolvedCapability(
+    userId,
+    pluginId,
+    type,
+    name,
+    await getCapabilityAccess(pluginId, type, name)
+  );
 
 const getCapabilityAccessRules = async (): Promise<
   TPluginCapabilityAccessRule[]
@@ -75,4 +89,4 @@ const getCapabilityAccessRules = async (): Promise<
   return rules;
 };
 
-export { canUseCapability, getCapabilityAccessRules };
+export { canUseCapability, canUseResolvedCapability, getCapabilityAccessRules };

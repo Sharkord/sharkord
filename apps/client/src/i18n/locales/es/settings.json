@@ -492,6 +492,7 @@
   "failedSavePluginCapability": "No se pudo guardar el permiso del plugin",
   "pluginCapabilityCommands": "Comandos",
   "pluginCapabilityActions": "Acciones",
+  "pluginCapabilityHttpRoutes": "Rutas HTTP",
   "pluginCapabilityComponents": "Componentes de interfaz",
   "pluginAccessAudienceTitle": "Quién",
   "pluginAccessEveryone": "Todos",
