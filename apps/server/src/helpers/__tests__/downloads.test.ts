@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
-import { downloadFile, downloadPlugin } from '../downloads';
+import { assertNoLinks, downloadFile, downloadPlugin } from '../downloads';
 import { PLUGINS_PATH } from '../paths';
 
 const MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024;
@@ -214,6 +214,22 @@ describe('downloadPlugin', () => {
     await expect(
       downloadPlugin('plugin-traversal', url('/plugin-traversal.tar'), checksum)
     ).rejects.toThrow('outside the extraction directory');
+  });
+
+  // Bun.Archive builds regular files only, so the link has to be made on disk:
+  // it is what an extracted archive carrying one would leave behind
+  test('should refuse an extracted archive that carries a symlink', async () => {
+    const extracted = await fs.mkdtemp(path.join(os.tmpdir(), 'symlink-'));
+
+    await fs.mkdir(path.join(extracted, 'plugin-linky'));
+    await fs.writeFile(path.join(extracted, 'plugin-linky/a.txt'), 'x');
+    await fs.symlink('/etc/passwd', path.join(extracted, 'plugin-linky/link'));
+
+    await expect(assertNoLinks(extracted)).rejects.toThrow(
+      'Plugins cannot ship links'
+    );
+
+    await fs.rm(extracted, { recursive: true, force: true });
   });
 
   // a plugin the server could never load must not reach the plugins directory

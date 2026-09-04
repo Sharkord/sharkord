@@ -122,9 +122,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       message: `You can attach at most ${storageMaxFilesPerMessage} file(s) per message.`
     });
 
-    const limitedFiles = input.files;
-
-    if (limitedFiles.length > 0) {
+    if (input.files.length > 0) {
       await ctx.needsPermission(Permission.UPLOAD_FILES);
 
       invariant(settings.storageUploadEnabled, {
@@ -140,14 +138,14 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       }
     }
 
-    invariant(!isEmptyMessage(input.content) || limitedFiles.length != 0, {
+    invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
       code: 'BAD_REQUEST',
       message: 'Message cannot be empty.'
     });
 
     let targetContent = sanitizeMessageHtml(input.content);
 
-    invariant(!isEmptyMessage(targetContent) || limitedFiles.length != 0, {
+    invariant(!isEmptyMessage(targetContent) || input.files.length != 0, {
       code: 'BAD_REQUEST',
       message:
         'Your message only contained unsupported or removed content, so there was nothing to send.'
@@ -272,7 +270,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     const savedFileIds: number[] = [];
 
-    for (const tempFileId of limitedFiles) {
+    for (const tempFileId of input.files) {
       const newFile = await fileManager.saveFile(
         tempFileId,
         ctx.userId,

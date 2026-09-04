@@ -68,6 +68,7 @@ const runPluginRoute = async (
 
   if (!user) {
     sendJsonError(res, 401, 'Authentication required.');
+    req.resume();
 
     return;
   }
@@ -82,6 +83,7 @@ const runPluginRoute = async (
 
   if (!canUseRoute) {
     sendJsonError(res, 403, 'Insufficient permissions.');
+    req.resume();
 
     return;
   }

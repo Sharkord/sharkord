@@ -87,6 +87,21 @@ const assertArchiveStaysInside = async (
   }
 };
 
+const assertNoLinks = async (extractPath: string) => {
+  const entries = await fs.readdir(extractPath, {
+    recursive: true,
+    withFileTypes: true
+  });
+
+  const link = entries.find((entry) => entry.isSymbolicLink());
+
+  if (link) {
+    throw new Error(
+      `Downloaded archive contains a symlink: '${link.name}'. Plugins cannot ship links.`
+    );
+  }
+};
+
 const downloadPlugin = async (
   expectedPluginId: string,
   url: string,
@@ -116,6 +131,8 @@ const downloadPlugin = async (
     await assertArchiveStaysInside(archive, extractPath);
 
     const entryCount = await archive.extract(extractPath);
+
+    await assertNoLinks(extractPath);
 
     logger.debug(`Extracted ${entryCount} entries from plugin archive`);
 
@@ -179,4 +196,4 @@ const downloadFile = async (url: string, outputPath: string): Promise<void> => {
   }
 };
 
-export { downloadFile, downloadPlugin };
+export { assertNoLinks, downloadFile, downloadPlugin };

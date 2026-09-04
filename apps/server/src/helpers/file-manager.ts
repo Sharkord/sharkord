@@ -193,7 +193,7 @@ class FileManager {
   ) => {
     const { userId } = tempFile;
 
-    if (userId !== null && userId !== undefined) {
+    if (userId) {
       const [userStorage, userStorageQuota] = await Promise.all([
         getStorageUsageByUserId(userId),
         getEffectiveStorageSpaceQuotaByUserId(
