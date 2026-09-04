@@ -391,6 +391,8 @@
   "marketplaceSdkBadge": "{{status}}",
   "marketplaceSdkCompatible": "Совместимо",
   "marketplaceSdkIncompatible": "Несовместимо",
+  "marketplaceSdkCompatibleTooltip": "Собран для SDK версии {{version}} - той, что использует этот сервер.",
+  "marketplaceSdkIncompatibleTooltip": "Требуется SDK версии {{required}}, на этом сервере {{current}}.",
   "marketplaceVerifiedTooltip": "Этот плагин был проверен Sharkord.",
   "marketplaceInstallSuccess": "\"{{name}}\" успешно установлен. Вам нужно включить его вручную, чтобы начать использовать.",
   "noiseSuppressionNone": "Нет",

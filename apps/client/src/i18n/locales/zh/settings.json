@@ -411,6 +411,8 @@
   "marketplaceSdkBadge": "{{status}}",
   "marketplaceSdkCompatible": "兼容",
   "marketplaceSdkIncompatible": "不兼容",
+  "marketplaceSdkCompatibleTooltip": "为 SDK 版本 {{version}} 构建，与本服务器一致。",
+  "marketplaceSdkIncompatibleTooltip": "需要 SDK 版本 {{required}}，本服务器为 {{current}}。",
   "marketplaceVerifiedTooltip": "此插件已通过 Sharkord 验证。",
   "marketplaceInstallSuccess": "\"{{name}}\" 已成功安装。您需要手动启用它才能开始使用。",
   "standard": "标准",

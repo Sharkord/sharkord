@@ -235,6 +235,8 @@
   "marketplaceSdkBadge": "{{status}}",
   "marketplaceSdkCompatible": "Kompatibilní",
   "marketplaceSdkIncompatible": "Nekompatibilní",
+  "marketplaceSdkCompatibleTooltip": "Vytvořeno pro SDK verze {{version}}, kterou tento server používá.",
+  "marketplaceSdkIncompatibleTooltip": "Vyžaduje SDK verze {{required}}, tento server používá {{current}}.",
   "marketplaceReleasedOn": "Vydáno {{date}}",
   "marketplaceVerifiedTooltip": "Toto rozšíření bylo ověřeno týmem Sharkord.",
   "marketplaceInstallSuccess": "Rozšíření „{{name}}“ bylo úspěšně nainstalováno. Chcete-li jej začít používat, musíte jej ručně povolit.",

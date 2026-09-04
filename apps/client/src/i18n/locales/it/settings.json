@@ -235,6 +235,8 @@
   "marketplaceSdkBadge": "{{status}}",
   "marketplaceSdkCompatible": "Compatibile",
   "marketplaceSdkIncompatible": "Non compatibile",
+  "marketplaceSdkCompatibleTooltip": "Creato per la versione {{version}} dell SDK, quella di questo server.",
+  "marketplaceSdkIncompatibleTooltip": "Richiede la versione {{required}} dell SDK, questo server usa la {{current}}.",
   "marketplaceReleasedOn": "Rilasciato il {{date}}",
   "marketplaceVerifiedTooltip": "Questo plugin e stato verificato da Sharkord.",
   "marketplaceInstallSuccess": "\"{{name}}\" e stato installato con successo. Devi abilitarlo manualmente per iniziare a usarlo.",
