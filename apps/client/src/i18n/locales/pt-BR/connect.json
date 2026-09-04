@@ -1,0 +1,26 @@
+{
+  "identityLabel": "Identidade",
+  "identityHelp": "Um identificador único para sua conta neste servidor. Você pode usar o que preferir, como um endereço de e-mail ou um nome de usuário. Isso não será compartilhado publicamente.",
+  "passwordLabel": "Senha",
+  "autoLoginLabel": "Entrar automaticamente",
+  "insecureTitle": "Conexão Insegura",
+  "insecureDesc": "Você está acessando o servidor por meio de uma conexão insegura (HTTP). Por padrão, os navegadores bloqueiam o acesso a dispositivos de mídia como câmera e microfone em origens inseguras. Isso significa que você não poderá usar recursos de vídeo ou bate-papo por voz enquanto estiver conectado ao servidor via HTTP. Se você for o administrador do servidor, pode configurar o HTTPS seguindo as instruções na documentação.",
+  "connectBtn": "Conectar",
+  "registrationDisabled": "Novos registros de usuários estão desativados. Se você ainda não possui uma conta, precisa ser convidado por um usuário existente para entrar neste servidor.",
+  "invitedTitle": "Você foi convidado para entrar neste servidor",
+  "inviteCode": "Código de convite: {{code}}",
+  "connectError": "Não foi possível conectar: {{message}}",
+  "oidcBtn": "Entrar com SSO",
+  "oidcCompleting": "Concluindo o login",
+  "oidcError": {
+    "access_denied": "Seu provedor de identidade recusou o login.",
+    "invalid_state": "Esta solicitação de login não pôde ser verificada. Por favor, tente novamente.",
+    "expired": "Esta solicitação de login expirou. Por favor, tente novamente.",
+    "rate_limited": "Muitas tentativas de login. Aguarde um momento e tente novamente.",
+    "registration_closed": "Este servidor não está aceitando novos registros. Peça a um administrador para criar sua conta.",
+    "server_error": "Algo deu errado durante o login. Por favor, tente novamente."
+  },
+  "loggingInAutomatically": "Entrando automaticamente...",
+  "loadingApp": "Carregando o Sharkord",
+  "loadingPlugins": "Carregando Plugins"
+}
