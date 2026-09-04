@@ -7,6 +7,7 @@ import { users } from '../db/schema';
 import { eventBus } from '../plugins/event-bus';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { invariant } from '../utils/invariant';
+import type { Context } from '../utils/trpc';
 import { disconnectUser, getUserWsCount } from '../utils/wss';
 
 type TUserSessions = {
@@ -17,6 +18,12 @@ type TUserSessions = {
 const serverUserSessions = (userId: number): TUserSessions => ({
   count: () => getUserWsCount(userId),
   close: (code, reason) => disconnectUser(userId, code, reason)
+});
+
+const ctxUserSessions = (ctx: Context, userId: number): TUserSessions => ({
+  count: () => ctx.getUserWs(userId).length,
+  close: (code, reason) =>
+    ctx.getUserWs(userId).forEach((socket) => socket.close(code, reason))
 });
 
 const assertUserExists = async (userId: number) => {
@@ -118,5 +125,5 @@ const kickUser = async (
   });
 };
 
-export { banUser, kickUser, serverUserSessions, unbanUser };
+export { banUser, ctxUserSessions, kickUser, serverUserSessions, unbanUser };
 export type { TUserSessions };

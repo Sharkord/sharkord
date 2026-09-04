@@ -1,7 +1,7 @@
 import { Permission } from '@sharkord/shared';
 import z from 'zod';
 import { assertCanActOnUser } from '../../helpers/assert-can-act-on-user';
-import { banUser } from '../../helpers/moderation';
+import { banUser, ctxUserSessions } from '../../helpers/moderation';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -22,11 +22,12 @@ const banRoute = protectedProcedure
 
     await assertCanActOnUser(ctx.userId, input.userId);
 
-    await banUser(input.userId, input.reason, ctx.userId, {
-      count: () => ctx.getUserWs(input.userId).length,
-      close: (code, reason) =>
-        ctx.getUserWs(input.userId).forEach((s) => s.close(code, reason))
-    });
+    await banUser(
+      input.userId,
+      input.reason,
+      ctx.userId,
+      ctxUserSessions(ctx, input.userId)
+    );
   });
 
 export { banRoute };

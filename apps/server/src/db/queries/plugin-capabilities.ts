@@ -87,39 +87,45 @@ const setCapabilityAccess = async (
 ) => {
   const now = Date.now();
 
-  await db
-    .insert(pluginCapabilities)
-    .values({ pluginId, type, name, mode, updatedAt: now })
-    .onConflictDoUpdate({
-      target: [
-        pluginCapabilities.pluginId,
-        pluginCapabilities.type,
-        pluginCapabilities.name
-      ],
-      set: { mode, updatedAt: now }
-    });
+  // the mode and its grants are one decision: a crash between them would leave
+  // grants under a mode that no longer wants them
+  db.transaction((tx) => {
+    tx.insert(pluginCapabilities)
+      .values({ pluginId, type, name, mode, updatedAt: now })
+      .onConflictDoUpdate({
+        target: [
+          pluginCapabilities.pluginId,
+          pluginCapabilities.type,
+          pluginCapabilities.name
+        ],
+        set: { mode, updatedAt: now }
+      })
+      .run();
 
-  await db
-    .delete(pluginCapabilityRoles)
-    .where(
-      and(
-        eq(pluginCapabilityRoles.pluginId, pluginId),
-        eq(pluginCapabilityRoles.type, type),
-        eq(pluginCapabilityRoles.name, name)
+    tx.delete(pluginCapabilityRoles)
+      .where(
+        and(
+          eq(pluginCapabilityRoles.pluginId, pluginId),
+          eq(pluginCapabilityRoles.type, type),
+          eq(pluginCapabilityRoles.name, name)
+        )
       )
-    );
+      .run();
 
-  if (mode === PluginCapabilityMode.RESTRICTED && roleIds.length > 0) {
-    await db.insert(pluginCapabilityRoles).values(
-      roleIds.map((roleId) => ({
-        pluginId,
-        type,
-        name,
-        roleId,
-        createdAt: now
-      }))
-    );
-  }
+    if (mode === PluginCapabilityMode.RESTRICTED && roleIds.length > 0) {
+      tx.insert(pluginCapabilityRoles)
+        .values(
+          roleIds.map((roleId) => ({
+            pluginId,
+            type,
+            name,
+            roleId,
+            createdAt: now
+          }))
+        )
+        .run();
+    }
+  });
 };
 
 const getCapabilityRows = async () => {
@@ -163,29 +169,33 @@ const deleteCapabilityAccess = async (
   type: PluginCapabilityType,
   name: string
 ) => {
-  await db
-    .delete(pluginCapabilityRoles)
-    .where(
-      and(
-        eq(pluginCapabilityRoles.pluginId, pluginId),
-        eq(pluginCapabilityRoles.type, type),
-        eq(pluginCapabilityRoles.name, name)
+  db.transaction((tx) => {
+    tx.delete(pluginCapabilityRoles)
+      .where(
+        and(
+          eq(pluginCapabilityRoles.pluginId, pluginId),
+          eq(pluginCapabilityRoles.type, type),
+          eq(pluginCapabilityRoles.name, name)
+        )
       )
-    );
+      .run();
 
-  await db
-    .delete(pluginCapabilities)
-    .where(capabilityWhere(pluginId, type, name));
+    tx.delete(pluginCapabilities)
+      .where(capabilityWhere(pluginId, type, name))
+      .run();
+  });
 };
 
 const deletePluginCapabilities = async (pluginId: string) => {
-  await db
-    .delete(pluginCapabilityRoles)
-    .where(eq(pluginCapabilityRoles.pluginId, pluginId));
+  db.transaction((tx) => {
+    tx.delete(pluginCapabilityRoles)
+      .where(eq(pluginCapabilityRoles.pluginId, pluginId))
+      .run();
 
-  await db
-    .delete(pluginCapabilities)
-    .where(eq(pluginCapabilities.pluginId, pluginId));
+    tx.delete(pluginCapabilities)
+      .where(eq(pluginCapabilities.pluginId, pluginId))
+      .run();
+  });
 };
 
 export {

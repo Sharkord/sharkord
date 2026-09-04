@@ -1,10 +1,11 @@
-import { ActivityLogType, Permission, zPluginId } from '@sharkord/shared';
+import { Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
 import { config } from '../../config';
 import { installPluginVersion } from '../../helpers/install-plugin-version';
-import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
+// also serves plugins.update: both ask for one version of one plugin to be the
+// one on disk, and the activity log tells the two apart by what was there
 const installRoute = rateLimitedProcedure(protectedProcedure, {
   maxRequests: config.rateLimiters.pluginInstall.maxRequests,
   windowMs: config.rateLimiters.pluginInstall.windowMs,
@@ -19,19 +20,7 @@ const installRoute = rateLimitedProcedure(protectedProcedure, {
   .mutation(async ({ ctx, input }) => {
     await ctx.needsPermission(Permission.MANAGE_PLUGINS);
 
-    const versionData = await installPluginVersion(
-      input.pluginId,
-      input.version
-    );
-
-    enqueueActivityLog({
-      type: ActivityLogType.PLUGIN_INSTALLED,
-      userId: ctx.user.id,
-      details: {
-        pluginId: input.pluginId,
-        version: versionData.version
-      }
-    });
+    await installPluginVersion(input.pluginId, input.version, ctx.user.id);
   });
 
 export { installRoute };

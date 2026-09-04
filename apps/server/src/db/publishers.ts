@@ -1,11 +1,13 @@
 import {
   ChannelPermission,
+  getErrorMessage,
   ServerEvents,
   type TChannelUserPermissionsMap
 } from '@sharkord/shared';
 import { count, eq } from 'drizzle-orm';
 import { db } from '.';
 import { getCapabilityAccessRules } from '../helpers/plugin-capability-access';
+import { logger } from '../logger';
 import { pubsub } from '../utils/pubsub';
 import {
   channelUserCan,
@@ -351,10 +353,17 @@ const publishChannelListChange = async (
 };
 
 const publishCapabilityAccess = async () => {
-  pubsub.publish(
-    ServerEvents.PLUGIN_CAPABILITY_ACCESS_CHANGE,
-    await getCapabilityAccessRules()
-  );
+  try {
+    pubsub.publish(
+      ServerEvents.PLUGIN_CAPABILITY_ACCESS_CHANGE,
+      await getCapabilityAccessRules()
+    );
+  } catch (error) {
+    logger.error(
+      'Failed to publish plugin capability access: %s',
+      getErrorMessage(error)
+    );
+  }
 };
 
 const publishReplyCount = async (

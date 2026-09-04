@@ -1,15 +1,19 @@
-import { getErrorMessage } from '@sharkord/shared';
+import { ActivityLogType, getErrorMessage } from '@sharkord/shared';
+import fs from 'fs/promises';
 import { publishCapabilityAccess } from '../db/publishers';
 import { logger } from '../logger';
 import { pluginManager } from '../plugins';
+import { enqueueActivityLog } from '../queues/activity-log';
 import { downloadPlugin } from './downloads';
 import { fetchMarketplaceVersion } from './marketplace';
+import { getPluginPath } from './plugin-paths';
 
 const inFlight = new Map<string, Promise<unknown>>();
 
 const swapPluginVersion = async (pluginId: string, version: string) => {
   const versionData = await fetchMarketplaceVersion(pluginId, version);
   const wasEnabled = pluginManager.isEnabled(pluginId);
+  const wasInstalled = await fs.exists(getPluginPath(pluginId));
 
   if (wasEnabled) {
     await pluginManager.unload(pluginId);
@@ -44,10 +48,14 @@ const swapPluginVersion = async (pluginId: string, version: string) => {
     publishCapabilityAccess();
   }
 
-  return versionData;
+  return { versionData, wasInstalled };
 };
 
-const installPluginVersion = async (pluginId: string, version: string) => {
+const installPluginVersion = async (
+  pluginId: string,
+  version: string,
+  userId: number
+) => {
   const previous = inFlight.get(pluginId) ?? Promise.resolve();
 
   const current = previous
@@ -57,7 +65,17 @@ const installPluginVersion = async (pluginId: string, version: string) => {
   inFlight.set(pluginId, current);
 
   try {
-    return await current;
+    const { versionData, wasInstalled } = await current;
+
+    enqueueActivityLog({
+      type: wasInstalled
+        ? ActivityLogType.PLUGIN_UPDATED
+        : ActivityLogType.PLUGIN_INSTALLED,
+      userId,
+      details: { pluginId, version: versionData.version }
+    });
+
+    return versionData;
   } finally {
     if (inFlight.get(pluginId) === current) {
       inFlight.delete(pluginId);

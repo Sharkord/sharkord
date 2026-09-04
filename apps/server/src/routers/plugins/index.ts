@@ -21,7 +21,6 @@ import { resetCapabilityAccessRoute } from './reset-capability-access';
 import { setCapabilityAccessRoute } from './set-capability-access';
 import { setUserDataRoute } from './set-user-data';
 import { togglePluginRoute } from './toggle-plugin';
-import { updateRoute } from './update-plugin';
 import { updateSettingRoute } from './update-setting';
 
 export const pluginsRouter = t.router({
@@ -45,6 +44,6 @@ export const pluginsRouter = t.router({
   getSettings: getSettingsRoute,
   updateSetting: updateSettingRoute,
   install: installRoute,
-  update: updateRoute,
+  update: installRoute,
   remove: removeRoute
 });

@@ -1,7 +1,7 @@
 import { Permission } from '@sharkord/shared';
 import z from 'zod';
 import { assertCanActOnUser } from '../../helpers/assert-can-act-on-user';
-import { kickUser } from '../../helpers/moderation';
+import { ctxUserSessions, kickUser } from '../../helpers/moderation';
 import { protectedProcedure } from '../../utils/trpc';
 
 const kickRoute = protectedProcedure
@@ -16,11 +16,12 @@ const kickRoute = protectedProcedure
 
     await assertCanActOnUser(ctx.userId, input.userId);
 
-    await kickUser(input.userId, input.reason, ctx.userId, {
-      count: () => ctx.getUserWs(input.userId).length,
-      close: (code, reason) =>
-        ctx.getUserWs(input.userId).forEach((s) => s.close(code, reason))
-    });
+    await kickUser(
+      input.userId,
+      input.reason,
+      ctx.userId,
+      ctxUserSessions(ctx, input.userId)
+    );
   });
 
 export { kickRoute };
