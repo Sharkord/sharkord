@@ -30,10 +30,13 @@ const setPluginUserData = async (
   userId: number,
   data: Record<string, unknown>
 ) => {
-  invariant(JSON.stringify(data).length <= PLUGIN_USER_DATA_MAX_BYTES, {
-    code: 'BAD_REQUEST',
-    message: `Plugin data for one user cannot exceed ${PLUGIN_USER_DATA_MAX_BYTES} bytes.`
-  });
+  invariant(
+    Buffer.byteLength(JSON.stringify(data)) <= PLUGIN_USER_DATA_MAX_BYTES,
+    {
+      code: 'BAD_REQUEST',
+      message: `Plugin data for one user cannot exceed ${PLUGIN_USER_DATA_MAX_BYTES} bytes.`
+    }
+  );
 
   const now = Date.now();
 

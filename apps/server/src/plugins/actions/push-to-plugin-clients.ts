@@ -12,10 +12,13 @@ const pushToPluginClients = (
   userIds: number[],
   data: unknown
 ) => {
-  invariant(JSON.stringify(data ?? null).length <= PLUGIN_PUSH_MAX_BYTES, {
-    code: 'BAD_REQUEST',
-    message: `A push cannot exceed ${PLUGIN_PUSH_MAX_BYTES} bytes.`
-  });
+  invariant(
+    Buffer.byteLength(JSON.stringify(data ?? null)) <= PLUGIN_PUSH_MAX_BYTES,
+    {
+      code: 'BAD_REQUEST',
+      message: `A push cannot exceed ${PLUGIN_PUSH_MAX_BYTES} bytes.`
+    }
+  );
 
   const payload: TPluginPushEvent = { pluginId, data };
 

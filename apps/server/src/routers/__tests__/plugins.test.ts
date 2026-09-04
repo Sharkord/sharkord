@@ -2051,6 +2051,26 @@ describe('plugins router', () => {
       ).rejects.toThrow('cannot exceed');
     });
 
+    // the cap is bytes, and one emoji is four of them
+    test('should measure the cap in bytes, not characters', async () => {
+      await expect(
+        run('remember', { userId: 2, value: '🦈'.repeat(20_000) })
+      ).rejects.toThrow('cannot exceed');
+    });
+
+    test('should refuse a plugin that is not installed', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.plugins.setUserData({
+          pluginId: 'not-a-plugin',
+          data: { theme: 'dark' }
+        })
+      ).rejects.toThrow('This plugin is not available.');
+
+      expect(await tdb.select().from(pluginUserData)).toHaveLength(0);
+    });
+
     // the route names a plugin, never a user: it can only ever touch the
     // caller's own row
     test('should read and write only the caller row over trpc', async () => {
