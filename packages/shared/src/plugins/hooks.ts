@@ -27,8 +27,13 @@ export enum FileSaveType {
 }
 
 export type TBeforeFileSavePayload = {
-  /** the whole file in memory, replaceable through the update */
-  bytes: Uint8Array;
+  /**
+   * Loads the whole file into memory, so only call it when the bytes are what
+   * you need: a hook that decides on the name, the extension or the size never
+   * pays for it. Reading twice costs nothing, and once an earlier hook has
+   * replaced the file this returns the replacement.
+   */
+  readBytes: () => Promise<Uint8Array>;
   /** what the uploader called it, before the host makes it unique on disk */
   originalName: string;
   /** lowercased, with the dot */
@@ -47,9 +52,10 @@ export type TBeforeFileSaveUpdate = {
  * Runs before any file is stored: message attachments, avatars, banners,
  * emojis and the server logo, told apart by `type`.
  *
- * Sees the bytes and may replace them, so it is where scanning, stripping
- * metadata and re-encoding belong. Runs before the size and quota checks, so a
- * replacement is measured, not the original.
+ * Can read the bytes through `readBytes()` and replace them through the update,
+ * so it is where scanning, stripping metadata and re-encoding belong. Runs
+ * before the size and quota checks, so a replacement is measured, not the
+ * original.
  */
 export type TBeforeFileSaveHook = (
   payload: TBeforeFileSavePayload

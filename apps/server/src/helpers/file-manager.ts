@@ -4,6 +4,8 @@ import {
   STORAGE_MAX_IMAGE_OPTIMIZATION_QUALITY,
   STORAGE_MIN_IMAGE_OPTIMIZATION_QUALITY,
   StorageOverflowAction,
+  type TBeforeFileSavePayload,
+  type TBeforeFileSaveUpdate,
   type TFile,
   type TJoinedSettings,
   type TTempFile
@@ -357,17 +359,28 @@ class FileManager {
 
     if (entries.length === 0) return;
 
-    const bytes = await Bun.file(tempFile.path).bytes();
+    let bytes: Uint8Array | undefined;
 
-    const result = await runHook({
+    const result = await runHook<
+      TBeforeFileSavePayload & TBeforeFileSaveUpdate,
+      TBeforeFileSaveUpdate
+    >({
       entries,
       payload: {
-        bytes,
+        readBytes: async () =>
+          (bytes ??= await Bun.file(tempFile.path).bytes()),
         originalName: tempFile.originalName,
         extension: tempFile.extension,
         size: tempFile.size,
         userId: userId ?? undefined,
         type
+      },
+      normalize: (payload) => {
+        if (!payload.bytes) return payload;
+
+        bytes = payload.bytes;
+
+        return { ...payload, size: payload.bytes.byteLength };
       }
     });
 
@@ -375,7 +388,7 @@ class FileManager {
       tempFile.originalName = result.originalName;
     }
 
-    if (result.bytes === bytes) return;
+    if (!result.bytes) return;
 
     await fs.writeFile(tempFile.path, result.bytes);
 

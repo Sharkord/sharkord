@@ -1095,7 +1095,7 @@ describe('file manager – beforeFileSave hooks', () => {
     expect(capturedPayload).not.toBeNull();
     expect(capturedPayload!.userId).toBe(1);
     expect(capturedPayload!.type).toBe(FileSaveType.MESSAGE);
-    expect(new TextDecoder().decode(capturedPayload!.bytes)).toBe(
+    expect(new TextDecoder().decode(await capturedPayload!.readBytes())).toBe(
       'hook test content'
     );
     expect(capturedPayload!.originalName).toBe(tempFile.originalName);
@@ -1154,6 +1154,40 @@ describe('file manager – beforeFileSave hooks', () => {
     // metadata should reflect the replacement
     expect(saved.size).toBe(Buffer.byteLength(replacementContent, 'utf-8'));
     expect(saved.md5).not.toBe(originalMd5);
+  });
+
+  // a replacement has to reach the next hook, or a second rewriting plugin
+  // would work off the content the first one already discarded
+  test('a later hook reads what an earlier one replaced', async () => {
+    pluginManager.registerHook('beforeFileSave', 'plugin-one', async () => ({
+      update: { bytes: new TextEncoder().encode('first') }
+    }));
+
+    pluginManager.registerHook(
+      'beforeFileSave',
+      'plugin-two',
+      async ({ readBytes, size }) => ({
+        update: {
+          bytes: new TextEncoder().encode(
+            `${new TextDecoder().decode(await readBytes())}-${size}`
+          )
+        }
+      })
+    );
+
+    const tempFile = await addTempFile('original content');
+    const saved = await fileManager.saveFile(
+      tempFile.id,
+      1,
+      FileSaveType.MESSAGE
+    );
+
+    tempFilesToCleanup.push(path.join(PUBLIC_PATH, saved.name));
+
+    // the size travels with the replacement, so 5 is 'first', not the original
+    expect(
+      await fs.readFile(path.join(PUBLIC_PATH, saved.name), 'utf-8')
+    ).toBe('first-5');
   });
 
   test('hook refusing aborts the save and propagates its reason', async () => {
@@ -1270,14 +1304,14 @@ describe('file manager – beforeFileSave hooks', () => {
     await fileManager.removeTemporaryFile(tempFile.id);
   });
 
-  // the payload is a copy, so mutating it does nothing: returning an update is
-  // the only way to change the file
+  // nothing a hook touches is written back: returning an update is the only way
+  // to change the file
   test('mutating the payload has no effect on the saved file', async () => {
     pluginManager.registerHook(
       'beforeFileSave',
       'test-plugin',
       async (payload) => {
-        payload.bytes = new TextEncoder().encode('mutated in place');
+        (await payload.readBytes()).fill(0);
         payload.originalName = 'mutated.txt';
       }
     );

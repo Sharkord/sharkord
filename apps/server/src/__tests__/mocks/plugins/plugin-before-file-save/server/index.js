@@ -1,6 +1,6 @@
 const onLoad = (ctx) => {
-  ctx.hooks.onBeforeFileSave(async ({ bytes }) => {
-    const original = new TextDecoder().decode(bytes);
+  ctx.hooks.onBeforeFileSave(async ({ readBytes }) => {
+    const original = new TextDecoder().decode(await readBytes());
 
     return {
       update: {
