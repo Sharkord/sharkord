@@ -9,6 +9,7 @@ import {
   PluginSlot,
   ServerEvents,
   type TInvokerContext,
+  type TPluginCapabilityAccessRule,
   type TPluginInfo,
   type TPluginPushEvent
 } from '@sharkord/shared';
@@ -2704,6 +2705,33 @@ describe('plugins router', () => {
         await expect(runAdminSum(MODERATOR_USER)).rejects.toThrow(
           'do not have access'
         );
+      });
+
+      // a connected client caches the rules from its connect payload, so a
+      // command it can no longer run has to reach it without a reload
+      test('should publish the rules when a command is restricted', async () => {
+        const { caller: owner } = await initTest();
+        const received: TPluginCapabilityAccessRule[][] = [];
+
+        const subscription = pubsub
+          .subscribe(ServerEvents.PLUGIN_CAPABILITY_ACCESS_CHANGE)
+          .subscribe({ next: (rules) => received.push(rules) });
+
+        await owner.plugins.setCapabilityAccess({
+          pluginId: 'plugin-b',
+          type: PluginCapabilityType.COMMAND,
+          name: 'sum',
+          mode: PluginCapabilityMode.RESTRICTED,
+          roleIds: [MODERATOR_ROLE]
+        });
+
+        await Bun.sleep(20);
+
+        subscription.unsubscribe();
+
+        expect(
+          received.at(-1)?.find((rule) => rule.name === 'sum')?.roleIds
+        ).toEqual([MODERATOR_ROLE]);
       });
 
       test('should report the declaration and its resolved default', async () => {

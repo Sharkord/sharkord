@@ -32,9 +32,9 @@ const setCapabilityAccessRoute = protectedProcedure
       input.roleIds
     );
 
-    if (input.type === PluginCapabilityType.COMPONENT) {
-      publishCapabilityAccess();
-    }
+    // every type matters to a connected client: components decide what renders,
+    // commands and actions back the sdk's useCanUse
+    publishCapabilityAccess();
 
     enqueueActivityLog({
       type: ActivityLogType.PLUGIN_CAPABILITY_ACCESS_UPDATED,

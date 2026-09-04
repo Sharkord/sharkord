@@ -23,9 +23,7 @@ const resetCapabilityAccessRoute = protectedProcedure
 
     await deleteCapabilityAccess(input.pluginId, input.type, input.name);
 
-    if (input.type === PluginCapabilityType.COMPONENT) {
-      publishCapabilityAccess();
-    }
+    publishCapabilityAccess();
 
     enqueueActivityLog({
       type: ActivityLogType.PLUGIN_CAPABILITY_ACCESS_RESET,
