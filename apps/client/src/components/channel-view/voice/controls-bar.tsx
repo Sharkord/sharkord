@@ -119,7 +119,7 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
       <Tooltip content="Disconnect">
         <Button
           className={cn(
-            'inline-flex h-full min-w-11 items-center justify-center rounded px-3 border border-border',
+            'inline-flex h-auto self-stretch min-w-11 items-center justify-center rounded px-3 border border-border',
             'pointer-events-auto text-white shadow-xl transition-all',
             'bg-[#ec4245] hover:bg-[#da373c]'
           )}
