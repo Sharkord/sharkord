@@ -1,3 +1,4 @@
+import { Protect } from '@/components/protect';
 import { useIsCurrentVoiceChannelSelected } from '@/features/server/channels/hooks';
 import { useChannelCan } from '@/features/server/hooks';
 import { leaveVoice } from '@/features/server/voice/actions';
@@ -7,7 +8,7 @@ import {
   useVoice
 } from '@/features/server/voice/hooks';
 import { cn } from '@/lib/utils';
-import { ChannelPermission } from '@sharkord/shared';
+import { ChannelPermission, Permission } from '@sharkord/shared';
 import { Button, Tooltip } from '@sharkord/ui';
 import {
   HeadphoneOff,
@@ -120,11 +121,11 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
         )}
 
         {isConnectedToThisChannel && (
-          <>
+          <Protect permission={Permission.SEND_VOICE_REACTION}>
             <div className="h-8 border-r-2 border-border" />
 
             <ReactionsButton />
-          </>
+          </Protect>
         )}
       </div>
       <Tooltip content="Disconnect">

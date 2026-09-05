@@ -13,7 +13,6 @@ import type {
   TLogEntry,
   TPluginMetadata,
   TPublicServerSettings,
-  TVoiceReactionEmoji,
   TVoiceUserState
 } from '@sharkord/shared';
 import type { Unsubscribable } from '@trpc/server/observable';
@@ -82,7 +81,7 @@ type Events = {
   [ServerEvents.USER_VOICE_REACTION]: {
     channelId: number;
     userId: number;
-    emoji: TVoiceReactionEmoji;
+    emoji: string;
   };
   [ServerEvents.VOICE_NEW_PRODUCER]: {
     channelId: number;

@@ -204,6 +204,13 @@
       "when": 1787838956003,
       "tag": "0028_users_password_set",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1788517601742,
+      "tag": "0029_grant_send_voice_reaction",
+      "breakpoints": true
     }
   ]
 }

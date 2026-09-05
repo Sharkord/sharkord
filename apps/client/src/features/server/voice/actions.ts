@@ -12,7 +12,6 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   getTrpcError,
   type TExternalStream,
-  type TVoiceReactionEmoji,
   type TVoiceUserState
 } from '@sharkord/shared';
 import type { RtpCapabilities } from 'mediasoup-client/types';
@@ -170,10 +169,7 @@ export const updateVoiceUserState = (
 
 let nextVoiceReactionId = 0;
 
-export const showVoiceReaction = (
-  userId: number,
-  emoji: TVoiceReactionEmoji
-): void => {
+export const showVoiceReaction = (userId: number, emoji: string): void => {
   const id = ++nextVoiceReactionId;
 
   store.dispatch(

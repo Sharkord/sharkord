@@ -1,9 +1,9 @@
 import {
   ChannelPermission,
   Permission,
+  REACTION_EMOJI_MAX_LENGTH,
   ServerEvents,
-  StreamKind,
-  type TVoiceReactionEmoji
+  StreamKind
 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
@@ -39,6 +39,16 @@ const joinVoiceChannelTwo = async (userId: number) => {
 
   return { runtime, caller };
 };
+
+const revokeFromDefaultRole = async (permission: Permission) =>
+  tdb
+    .delete(rolePermissions)
+    .where(
+      and(
+        eq(rolePermissions.roleId, 2),
+        eq(rolePermissions.permission, permission)
+      )
+    );
 
 describe('voice router', () => {
   test('should rate limit excessive voice join attempts', async () => {
@@ -436,7 +446,7 @@ describe('voice router', () => {
           quality: { mode: 'auto' }
         }),
       getProducers: () => caller.voice.getProducers(),
-      sendReaction: () => caller.voice.sendReaction({ emoji: '👍' })
+      sendReaction: () => caller.voice.sendReaction({ emoji: 'thumbsup' })
     });
 
     test('should refuse every guarded route when the user is not in a voice channel', async () => {
@@ -591,16 +601,6 @@ describe('voice router', () => {
   });
 
   describe('produce', () => {
-    const revokeFromDefaultRole = async (permission: Permission) =>
-      tdb
-        .delete(rolePermissions)
-        .where(
-          and(
-            eq(rolePermissions.roleId, 2),
-            eq(rolePermissions.permission, permission)
-          )
-        );
-
     test('should refuse a screen share without SHARE_SCREEN', async () => {
       await revokeFromDefaultRole(Permission.SHARE_SCREEN);
 
@@ -757,7 +757,7 @@ describe('voice router', () => {
       const reactions: {
         channelId: number;
         userId: number;
-        emoji: TVoiceReactionEmoji;
+        emoji: string;
       }[] = [];
 
       const subscription = pubsub
@@ -769,10 +769,10 @@ describe('voice router', () => {
         });
 
       try {
-        await caller.voice.sendReaction({ emoji: '🎉' });
+        await caller.voice.sendReaction({ emoji: 'tada' });
 
         expect(reactions).toEqual([
-          { channelId: VOICE_CHANNEL_ID, userId: 1, emoji: '🎉' }
+          { channelId: VOICE_CHANNEL_ID, userId: 1, emoji: 'tada' }
         ]);
       } finally {
         subscription.unsubscribe();
@@ -780,15 +780,57 @@ describe('voice router', () => {
       }
     });
 
-    test('should refuse an emoji outside the allowed set', async () => {
+    test('should accept any emoji character or shortcode the picker sends', async () => {
+      const { runtime, caller } = await joinVoiceChannelTwo(1);
+
+      try {
+        for (const emoji of ['💩', 'fox', 'partying_face']) {
+          await expect(
+            caller.voice.sendReaction({ emoji })
+          ).resolves.toBeUndefined();
+        }
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should refuse a reaction that is neither an emoji nor a shortcode', async () => {
+      const { runtime, caller } = await joinVoiceChannelTwo(1);
+
+      try {
+        for (const emoji of ['not an emoji', '<b>x</b>', 'Lol!', '../etc']) {
+          await expect(caller.voice.sendReaction({ emoji })).rejects.toThrow(
+            'Unknown emoji'
+          );
+        }
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should refuse a reaction longer than the emoji limit', async () => {
       const { runtime, caller } = await joinVoiceChannelTwo(1);
 
       try {
         await expect(
           caller.voice.sendReaction({
-            emoji: '💩' as TVoiceReactionEmoji
+            emoji: 'a'.repeat(REACTION_EMOJI_MAX_LENGTH + 1)
           })
         ).rejects.toThrow();
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should refuse a reaction without SEND_VOICE_REACTION', async () => {
+      await revokeFromDefaultRole(Permission.SEND_VOICE_REACTION);
+
+      const { runtime, caller } = await joinVoiceChannelTwo(2);
+
+      try {
+        await expect(
+          caller.voice.sendReaction({ emoji: 'thumbsup' })
+        ).rejects.toThrow('Insufficient permissions');
       } finally {
         await runtime.destroy();
       }
@@ -803,11 +845,13 @@ describe('voice router', () => {
           i < config.rateLimiters.voiceReaction.maxRequests;
           i++
         ) {
-          await caller.voice.sendReaction({ emoji: '👍' }).catch(() => {});
+          await caller.voice
+            .sendReaction({ emoji: 'thumbsup' })
+            .catch(() => {});
         }
 
         await expect(
-          caller.voice.sendReaction({ emoji: '👍' })
+          caller.voice.sendReaction({ emoji: 'thumbsup' })
         ).rejects.toThrow('Too many requests. Please try again shortly.');
       } finally {
         await runtime.destroy();

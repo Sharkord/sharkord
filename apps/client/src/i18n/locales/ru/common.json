@@ -125,6 +125,7 @@
   "toggleParticipants": "Показать/скрыть участников",
   "sendVoiceReaction": "Отправить реакцию",
   "failedSendVoiceReaction": "Не удалось отправить реакцию",
+  "moreVoiceReactions": "Больше эмодзи",
   "viewingOlderMessages": "Показаны старые сообщения, перейти к последним",
   "noChannelAccessTitle": "Нет доступа к этому чату",
   "noChannelAccessDescription": "Вы находитесь в этом голосовом канале, но у вас нет прав на чтение его сообщений.",

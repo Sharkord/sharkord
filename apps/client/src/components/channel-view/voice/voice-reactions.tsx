@@ -1,7 +1,8 @@
+import { Emoji } from '@/components/emoji';
+import { useCustomEmojiFile } from '@/features/server/emojis/hooks';
 import { useVoiceReactions } from '@/features/server/voice/hooks';
 import { VOICE_REACTION_DURATION_MS } from '@/features/server/voice/statics';
 import { cn } from '@/lib/utils';
-import type { TVoiceReactionEmoji } from '@sharkord/shared';
 import { memo, useRef, type CSSProperties } from 'react';
 
 const signedRandom = (min: number, max: number) =>
@@ -16,13 +17,14 @@ const createAnimationStyle = () =>
   }) as CSSProperties;
 
 type TVoiceReactionItemProps = {
-  emoji: TVoiceReactionEmoji;
+  emoji: string;
   isCompact?: boolean;
 };
 
 const VoiceReactionItem = memo(
   ({ emoji, isCompact }: TVoiceReactionItemProps) => {
     const styleRef = useRef<CSSProperties | null>(null);
+    const customEmojiFile = useCustomEmojiFile(emoji);
 
     if (!styleRef.current) styleRef.current = createAnimationStyle();
 
@@ -32,13 +34,13 @@ const VoiceReactionItem = memo(
         style={styleRef.current}
         aria-hidden="true"
       >
-        <span
-          className={cn(
-            'voice-reaction-emoji block leading-none drop-shadow-lg',
-            isCompact ? 'text-2xl' : 'text-5xl'
-          )}
-        >
-          {emoji}
+        <span className="voice-reaction-emoji block leading-none drop-shadow-lg">
+          <Emoji
+            emoji={emoji}
+            file={customEmojiFile}
+            className={isCompact ? 'size-6' : 'size-12'}
+            nativeEmojiClassName={isCompact ? 'text-2xl' : 'text-5xl'}
+          />
         </span>
       </span>
     );
