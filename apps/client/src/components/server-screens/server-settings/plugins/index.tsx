@@ -1,14 +1,19 @@
-import { useAdminPlugins } from '@/features/server/admin/hooks';
 import { usePluginsEnabled } from '@/features/server/hooks';
+import type { TPluginInfo } from '@sharkord/shared';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@sharkord/ui';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { InstalledPlugins } from './installed';
 import { Marketplace } from './marketplace';
 
-const Plugins = memo(() => {
+type TPluginsProps = {
+  plugins: TPluginInfo[];
+  loading: boolean;
+  refetch: () => Promise<void>;
+};
+
+const Plugins = memo(({ plugins, loading, refetch }: TPluginsProps) => {
   const { t } = useTranslation('settings');
-  const { plugins, loading, refetch } = useAdminPlugins();
   const pluginsEnabled = usePluginsEnabled();
 
   return (

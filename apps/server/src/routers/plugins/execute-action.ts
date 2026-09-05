@@ -1,7 +1,14 @@
-import { ActivityLogType, Permission, zPluginId } from '@sharkord/shared';
+import {
+  ActivityLogType,
+  Permission,
+  PluginCapabilityType,
+  zPluginId
+} from '@sharkord/shared';
 import z from 'zod';
 import { config } from '../../config';
+import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
+import { canUseCapability } from '../../helpers/plugin-capability-access';
 import { pluginManager } from '../../plugins';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
@@ -16,22 +23,41 @@ const executeActionRoute = rateLimitedProcedure(protectedProcedure, {
     z.object({
       pluginId: zPluginId,
       actionName: z.string(),
-      payload: z.unknown().optional()
+      payload: z.unknown().optional(),
+      channelId: z.number().optional()
     })
   )
   .mutation(async ({ ctx, input }) => {
     await ctx.needsPermission(Permission.USE_PLUGINS);
+
+    invariant(
+      await canUseCapability(
+        ctx.user.id,
+        input.pluginId,
+        PluginCapabilityType.ACTION,
+        input.actionName
+      ),
+      {
+        code: 'FORBIDDEN',
+        message: `You do not have access to this action.`
+      }
+    );
 
     invariant(pluginManager.hasAction(input.pluginId, input.actionName), {
       code: 'BAD_REQUEST',
       message: `Action "${input.actionName}" not found for plugin "${input.pluginId}"`
     });
 
+    if (input.channelId) await assertChannelAccess(ctx, input.channelId);
+
     try {
       const response = await pluginManager.executeAction(
         input.pluginId,
         input.actionName,
-        getInvokerCtxFromTrpcCtx(ctx),
+        getInvokerCtxFromTrpcCtx(ctx, {
+          source: 'api',
+          channelId: input.channelId
+        }),
         input.payload
       );
 

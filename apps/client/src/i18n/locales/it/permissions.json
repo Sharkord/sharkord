@@ -26,6 +26,7 @@
     "MANAGE_INVITES": "Gestire inviti",
     "MANAGE_UPDATES": "Gestire aggiornamenti",
     "MANAGE_PLUGINS": "Gestire plugin",
+    "MANAGE_PLUGIN_PERMISSIONS": "Gestisci permessi dei plugin",
     "USE_PLUGINS": "Usare plugin",
     "VIEW_USER_SENSITIVE_DATA": "Vedere dati sensibili utente"
   },
@@ -51,6 +52,7 @@
     "MANAGE_INVITES": "Concede la possibilita di creare, modificare ed eliminare inviti al server.",
     "MANAGE_UPDATES": "Concede la possibilita di eseguire aggiornamenti.",
     "MANAGE_PLUGINS": "Concede la possibilita di gestire i plugin.",
+    "MANAGE_PLUGIN_PERMISSIONS": "Consente di scegliere quali ruoli possono usare ogni comando e azione di un plugin. Chi lo possiede può concedere tali capacità a se stesso.",
     "USE_PLUGINS": "Concede la possibilita di usare i plugin, ad esempio eseguendo comandi plugin o visualizzando elementi UI aggiunti dai plugin.",
     "VIEW_USER_SENSITIVE_DATA": "Concede la possibilita di visualizzare dati sensibili utente come identita, indirizzo IP e posizione."
   },

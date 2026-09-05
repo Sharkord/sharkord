@@ -31,7 +31,7 @@ const TINY_PNG = Buffer.from(
   'base64'
 );
 
-const startFakeOidcProvider = async () => {
+const startFakeOidcProvider = async (basePath = '') => {
   const { privateKey, publicKey } = await generateKeyPair('RS256', {
     extractable: true
   });
@@ -62,6 +62,10 @@ const startFakeOidcProvider = async () => {
   // the negotiation picked the advertised method rather than assuming it did
   let lastTokenAuth: 'basic' | 'post' | 'none' = 'none';
 
+  // a provider whose userinfo endpoint is temporarily unreachable, which is a different
+  // case from one that simply has no email to give
+  let userInfoAvailable = true;
+
   const json = (res: http.ServerResponse, body: unknown) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(body));
@@ -87,15 +91,20 @@ const startFakeOidcProvider = async () => {
   };
 
   const server = http.createServer(async (req, res) => {
-    const url = new URL(req.url ?? '/', issuer);
+    const url = new URL(req.url ?? '/', `http://localhost`);
+    const path = basePath
+      ? url.pathname.slice(basePath.length) || '/'
+      : url.pathname;
 
-    if (url.pathname === '/.well-known/openid-configuration') {
+    if (path === '/.well-known/openid-configuration') {
+      const endpoints = issuer.replace(/\/+$/, '');
+
       json(res, {
         issuer,
-        authorization_endpoint: `${issuer}/authorize`,
-        token_endpoint: `${issuer}/token`,
-        jwks_uri: `${issuer}/jwks`,
-        userinfo_endpoint: `${issuer}/userinfo`,
+        authorization_endpoint: `${endpoints}/authorize`,
+        token_endpoint: `${endpoints}/token`,
+        jwks_uri: `${endpoints}/jwks`,
+        userinfo_endpoint: `${endpoints}/userinfo`,
         response_types_supported: ['code'],
         subject_types_supported: ['public'],
         id_token_signing_alg_values_supported: ['RS256'],
@@ -107,13 +116,13 @@ const startFakeOidcProvider = async () => {
       return;
     }
 
-    if (url.pathname === '/jwks') {
+    if (path === '/jwks') {
       json(res, { keys: [publicJwk] });
 
       return;
     }
 
-    if (url.pathname === '/authorize') {
+    if (path === '/authorize') {
       const redirectUri = url.searchParams.get('redirect_uri') ?? '';
       const code = randomBytes(16).toString('hex');
 
@@ -137,7 +146,7 @@ const startFakeOidcProvider = async () => {
       return;
     }
 
-    if (url.pathname === '/token') {
+    if (path === '/token') {
       const body = await new Response(req as never).text();
       const params = new URLSearchParams(body);
       const authorization = req.headers.authorization;
@@ -175,6 +184,21 @@ const startFakeOidcProvider = async () => {
         return;
       }
 
+      // a real provider compares this against the authorize request, and a mismatch is how
+      // a proxy scheme confusion surfaces
+      if (params.get('redirect_uri') !== pending.redirectUri) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            error: 'invalid_grant',
+            error_description:
+              "The 'redirect_uri' from this request does not match the one from the authorize request."
+          })
+        );
+
+        return;
+      }
+
       // a provider that skipped this would hide a broken PKCE implementation on our side
       if (pending.codeChallenge) {
         const verifier = params.get('code_verifier') ?? '';
@@ -200,13 +224,20 @@ const startFakeOidcProvider = async () => {
       return;
     }
 
-    if (url.pathname === '/userinfo') {
+    if (path === '/userinfo') {
+      if (!userInfoAvailable) {
+        res.writeHead(503);
+        res.end();
+
+        return;
+      }
+
       json(res, claims);
 
       return;
     }
 
-    if (url.pathname === '/avatar.png') {
+    if (path === '/avatar.png') {
       res.writeHead(200, {
         'Content-Type': 'image/png',
         'Content-Length': TINY_PNG.length
@@ -217,14 +248,14 @@ const startFakeOidcProvider = async () => {
     }
 
     // a picture the server must refuse to store, whatever it claims to be
-    if (url.pathname === '/not-an-image') {
+    if (path === '/not-an-image') {
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end('<html>definitely not a png</html>');
 
       return;
     }
 
-    if (url.pathname === '/redirected-avatar.png') {
+    if (path === '/redirected-avatar.png') {
       res.writeHead(302, { Location: `${issuer}/avatar.png` });
       res.end();
 
@@ -243,7 +274,7 @@ const startFakeOidcProvider = async () => {
     throw new Error('Fake OIDC provider did not bind to a TCP port');
   }
 
-  issuer = `http://localhost:${address.port}`;
+  issuer = `http://localhost:${address.port}${basePath}${basePath ? '/' : ''}`;
 
   return {
     issuer,
@@ -258,7 +289,31 @@ const startFakeOidcProvider = async () => {
     setAuthMethods: (next: string[] | undefined) => {
       authMethods = next;
     },
+    setUserInfoAvailable: (next: boolean) => {
+      userInfoAvailable = next;
+    },
     getLastTokenAuth: () => lastTokenAuth,
+    // a back-channel logout token, section 2.4. an override set to undefined drops that
+    // claim, which is how a test builds one the profile should refuse
+    createLogoutToken: (overrides: TFakeProviderClaims = {}) => {
+      const payload: TFakeProviderClaims = {
+        sub: String(claims.sub),
+        events: { 'http://schemas.openid.net/event/backchannel-logout': {} },
+        jti: randomBytes(8).toString('hex'),
+        ...overrides
+      };
+
+      return new SignJWT(payload)
+        .setProtectedHeader({
+          alg: 'RS256',
+          kid: 'test-key',
+          typ: 'logout+jwt'
+        })
+        .setIssuer(issuer)
+        .setAudience(CLIENT_ID)
+        .setIssuedAt()
+        .sign(privateKey);
+    },
     close: () => new Promise<void>((resolve) => server.close(() => resolve()))
   };
 };

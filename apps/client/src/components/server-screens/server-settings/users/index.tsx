@@ -1,12 +1,6 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useAdminUsers } from '@/features/server/admin/hooks';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  LoadingCard
-} from '@sharkord/ui';
+import { LoadingCard } from '@sharkord/ui';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UsersTable } from './users-table';
@@ -20,15 +14,9 @@ const Users = memo(() => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('usersTitle')}</CardTitle>
-        <CardDescription>{t('usersDesc')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <UsersTable users={users} refetch={refetch} />
-      </CardContent>
-    </Card>
+    <SettingsSection title={t('usersTitle')} description={t('usersDesc')}>
+      <UsersTable users={users} refetch={refetch} />
+    </SettingsSection>
   );
 });
 

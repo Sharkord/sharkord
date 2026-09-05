@@ -45,8 +45,11 @@ export enum ActivityLogType {
   EXECUTED_PLUGIN_ACTION = 'EXECUTED_PLUGIN_ACTION',
   PLUGIN_TOGGLED = 'PLUGIN_TOGGLED',
   PLUGIN_INSTALLED = 'PLUGIN_INSTALLED',
+  PLUGIN_UPDATED = 'PLUGIN_UPDATED',
   PLUGIN_REMOVED = 'PLUGIN_REMOVED',
   PLUGIN_SETTING_UPDATED = 'PLUGIN_SETTING_UPDATED',
+  PLUGIN_CAPABILITY_ACCESS_UPDATED = 'PLUGIN_CAPABILITY_ACCESS_UPDATED',
+  PLUGIN_CAPABILITY_ACCESS_RESET = 'PLUGIN_CAPABILITY_ACCESS_RESET',
   // -------------------- MESSAGES --------------------
   TOGGLED_MESSAGE_PIN = 'TOGGLED_MESSAGE_PIN'
 }
@@ -59,16 +62,17 @@ export type TActivityLogDetailsMap = {
     }>;
   };
   // -------------------- USERS --------------------
+  // the "By" fields are absent when a plugin acted, since it is not a user
   [ActivityLogType.USER_KICKED]: {
     reason: string | undefined;
-    kickedBy: number;
+    kickedBy?: number;
   };
   [ActivityLogType.USER_BANNED]: {
     reason: string | undefined;
-    bannedBy: number;
+    bannedBy?: number;
   };
   [ActivityLogType.USER_UNBANNED]: {
-    unbannedBy: number;
+    unbannedBy?: number;
   };
   [ActivityLogType.USER_DELETED]: {
     reason: string | undefined;
@@ -198,6 +202,10 @@ export type TActivityLogDetailsMap = {
     pluginId: string;
     version: string;
   };
+  [ActivityLogType.PLUGIN_UPDATED]: {
+    pluginId: string;
+    version: string;
+  };
   [ActivityLogType.PLUGIN_REMOVED]: {
     pluginId: string;
   };
@@ -205,12 +213,21 @@ export type TActivityLogDetailsMap = {
     pluginId: string;
     key: string;
   };
+  [ActivityLogType.PLUGIN_CAPABILITY_ACCESS_UPDATED]: {
+    pluginId: string;
+    capability: string;
+    mode: string;
+  };
+  [ActivityLogType.PLUGIN_CAPABILITY_ACCESS_RESET]: {
+    pluginId: string;
+    capability: string;
+  };
   // -------------------- MESSAGES --------------------
   [ActivityLogType.TOGGLED_MESSAGE_PIN]: {
     messageId: number;
     channelId: number;
     pinned: boolean;
-    pinnedBy: number;
+    pinnedBy?: number;
   };
 };
 

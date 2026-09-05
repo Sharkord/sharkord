@@ -1,19 +1,8 @@
 import { requestConfirmation } from '@/features/dialogs/actions';
-import { useForm } from '@/hooks/use-form';
 import { getTRPCClient, type TRouterOutputs } from '@/lib/trpc';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
   parseTrpcErrors,
-  STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY,
-  STORAGE_DEFAULT_MAX_AVATAR_SIZE,
-  STORAGE_DEFAULT_MAX_BANNER_SIZE,
-  STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
-  STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
-  STORAGE_MAX_FILE_SIZE,
-  STORAGE_MAX_QUOTA_PER_USER,
-  STORAGE_OVERFLOW_ACTION,
-  STORAGE_QUOTA,
-  StorageOverflowAction,
   type TCategory,
   type TChannel,
   type TChannelRolePermission,
@@ -23,108 +12,42 @@ import {
   type TJoinedEmoji,
   type TJoinedInvite,
   type TJoinedRole,
+  type TJoinedSettings,
   type TLogin,
   type TMessage,
   type TPluginInfo,
-  type TRole,
+  type TPluginStorageUsage,
   type TStorageData,
   type TStorageSettings,
   type TTrpcErrors
 } from '@sharkord/shared';
-import { filesize } from 'filesize';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 export type TAdminUser = TRouterOutputs['users']['getAll'][number];
 export type TAdminUserInfo = TRouterOutputs['users']['getInfo']['user'];
 
-// TODO: review this whole file for optimizations and improvements
-
 export const useAdminGeneral = () => {
-  const { t } = useTranslation('common');
   const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState<TTrpcErrors>({});
-  const [settings, setSettings] = useState({
-    name: '',
-    description: '',
-    password: '',
-    onlyAskForPasswordOnFirstJoin: false,
-    allowNewUsers: false,
-    directMessagesEnabled: true,
-    enablePlugins: false,
-    webRtcSimulcastEnabled: false,
-    enableSearch: true,
-    showWelcomeDialog: true
-  });
-  const [logo, setLogo] = useState<TFile | null>(null);
+  const [settings, setSettings] = useState<
+    Omit<TJoinedSettings, 'secretToken'> | undefined
+  >(undefined);
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);
 
     const trpc = getTRPCClient();
-    const settings = await trpc.others.getSettings.query();
 
-    setSettings({
-      name: settings.name,
-      description: settings.description ?? '',
-
-      password: settings.password ?? '',
-      onlyAskForPasswordOnFirstJoin:
-        settings.onlyAskForPasswordOnFirstJoin ?? false,
-      allowNewUsers: settings.allowNewUsers ?? false,
-      directMessagesEnabled: settings.directMessagesEnabled ?? true,
-      enablePlugins: settings.enablePlugins ?? false,
-      webRtcSimulcastEnabled: settings.webRtcSimulcastEnabled ?? false,
-      enableSearch: settings.enableSearch ?? true,
-      showWelcomeDialog: settings.showWelcomeDialog ?? true
-    });
+    setSettings(await trpc.others.getSettings.query());
     setLoading(false);
-    setLogo(settings.logo);
-  }, []);
-
-  const submit = useCallback(async () => {
-    const trpc = getTRPCClient();
-
-    try {
-      await trpc.others.updateSettings.mutate({
-        name: settings.name,
-        description: settings.description,
-        password: settings.password || null,
-        onlyAskForPasswordOnFirstJoin: settings.onlyAskForPasswordOnFirstJoin,
-        allowNewUsers: settings.allowNewUsers,
-        directMessagesEnabled: settings.directMessagesEnabled,
-        enablePlugins: settings.enablePlugins,
-        webRtcSimulcastEnabled: settings.webRtcSimulcastEnabled,
-        enableSearch: settings.enableSearch,
-        showWelcomeDialog: settings.showWelcomeDialog
-      });
-      toast.success(t('common:settingsUpdated'));
-    } catch (error) {
-      console.error('Error updating settings:', error);
-      setErrors(parseTrpcErrors(error));
-    }
-  }, [settings, t]);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const onChange = useCallback((field: keyof typeof settings, value: any) => {
-    setSettings((s) => ({ ...s, [field]: value }));
-    setErrors((e) => ({ ...e, [field]: undefined }));
   }, []);
 
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
 
-  return {
-    settings,
-    refetch: fetchSettings,
-    loading,
-    submit,
-    errors,
-    onChange,
-    logo
-  };
+  return { settings, refetch: fetchSettings, loading };
 };
 
 export const useAdminUpdates = () => {
@@ -196,12 +119,17 @@ export const useAdminUpdates = () => {
   };
 };
 
-export const useAdminPlugins = () => {
+export const useAdminPlugins = (canManagePlugins: boolean) => {
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<TTrpcErrors>({});
   const [plugins, setPlugins] = useState<TPluginInfo[]>([]);
 
   const fetchPlugins = useCallback(async () => {
+    if (!canManagePlugins) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
     const trpc = getTRPCClient();
@@ -218,7 +146,7 @@ export const useAdminPlugins = () => {
     }
 
     setLoading(false);
-  }, []);
+  }, [canManagePlugins]);
 
   useEffect(() => {
     fetchPlugins();
@@ -233,301 +161,118 @@ export const useAdminPlugins = () => {
 };
 
 export const useAdminChannelGeneral = (channelId: number) => {
-  const { t } = useTranslation('common');
   const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState<TTrpcErrors>({});
   const [channel, setChannel] = useState<TChannel | undefined>(undefined);
 
   const fetchChannel = useCallback(async () => {
     setLoading(true);
 
     const trpc = getTRPCClient();
-    const channel = await trpc.channels.get.query({ channelId });
 
-    setChannel(channel);
+    setChannel(await trpc.channels.get.query({ channelId }));
     setLoading(false);
   }, [channelId]);
-
-  const submit = useCallback(async () => {
-    const trpc = getTRPCClient();
-
-    try {
-      await trpc.channels.update.mutate({
-        channelId,
-        name: channel?.name ?? '',
-        topic: channel?.topic ?? null,
-        private: channel?.private ?? false
-      });
-
-      toast.success(t('common:channelUpdated'));
-    } catch (error) {
-      console.error('Error updating channel:', error);
-      setErrors(parseTrpcErrors(error));
-    }
-  }, [channel, channelId, t]);
-
-  const onChange = useCallback(
-    (field: keyof TChannel, value: string | null | boolean) => {
-      if (!channel) return;
-      setChannel((c) => (c ? { ...c, [field]: value } : c));
-      setErrors((e) => ({ ...e, [field]: undefined }));
-    },
-    [channel]
-  );
 
   useEffect(() => {
     fetchChannel();
   }, [fetchChannel]);
 
-  return {
-    channel,
-    refetch: fetchChannel,
-    loading,
-    errors,
-    onChange,
-    submit
-  };
+  return { channel, refetch: fetchChannel, loading };
 };
 
 export const useAdminCategoryGeneral = (categoryId: number) => {
-  const { t } = useTranslation('common');
   const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState<TTrpcErrors>({});
   const [category, setCategory] = useState<TCategory | undefined>(undefined);
 
   const fetchCategory = useCallback(async () => {
     setLoading(true);
 
     const trpc = getTRPCClient();
-    const category = await trpc.categories.get.query({ categoryId });
 
-    setCategory(category);
+    setCategory(await trpc.categories.get.query({ categoryId }));
     setLoading(false);
   }, [categoryId]);
-
-  const submit = useCallback(async () => {
-    const trpc = getTRPCClient();
-
-    try {
-      await trpc.categories.update.mutate({
-        categoryId,
-        name: category?.name ?? ''
-      });
-
-      toast.success(t('common:categoryUpdated'));
-    } catch (error) {
-      console.error('Error updating category:', error);
-      setErrors(parseTrpcErrors(error));
-    }
-  }, [category, categoryId, t]);
-
-  const onChange = useCallback(
-    (field: keyof TCategory, value: string | null) => {
-      if (!category) return;
-      setCategory((c) => (c ? { ...c, [field]: value } : c));
-      setErrors((e) => ({ ...e, [field]: undefined }));
-    },
-    [category]
-  );
 
   useEffect(() => {
     fetchCategory();
   }, [fetchCategory]);
 
-  return {
-    category,
-    refetch: fetchCategory,
-    loading,
-    errors,
-    onChange,
-    submit
-  };
+  return { category, refetch: fetchCategory, loading };
 };
 
 export const useAdminEmojis = () => {
   const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState<TTrpcErrors>({});
   const [emojis, setEmojis] = useState<TJoinedEmoji[]>([]);
 
   const fetchEmojis = useCallback(async () => {
     setLoading(true);
 
     const trpc = getTRPCClient();
-    const emojis = await trpc.emojis.getAll.query();
 
-    setEmojis(emojis);
+    setEmojis(await trpc.emojis.getAll.query());
     setLoading(false);
   }, []);
-
-  const onChange = useCallback(
-    (field: keyof TJoinedEmoji, value: string | null) => {
-      if (!emojis) return;
-
-      setEmojis((c) => (c ? { ...c, [field]: value } : c));
-      setErrors((e) => ({ ...e, [field]: undefined }));
-    },
-    [emojis]
-  );
 
   useEffect(() => {
     fetchEmojis();
   }, [fetchEmojis]);
 
-  return {
-    emojis,
-    refetch: fetchEmojis,
-    loading,
-    errors,
-    onChange
-  };
+  return { emojis, refetch: fetchEmojis, loading };
 };
 
 export const useAdminRoles = () => {
   const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState<TTrpcErrors>({});
   const [roles, setRoles] = useState<TJoinedRole[]>([]);
 
   const fetchRoles = useCallback(async () => {
     setLoading(true);
 
     const trpc = getTRPCClient();
-    const roles = await trpc.roles.getAll.query();
 
-    setRoles(roles);
+    setRoles(await trpc.roles.getAll.query());
     setLoading(false);
   }, []);
-
-  const onChange = useCallback(
-    (field: keyof TRole, value: string | null) => {
-      if (!roles) return;
-
-      setRoles((c) => (c ? { ...c, [field]: value } : c));
-      setErrors((e) => ({ ...e, [field]: undefined }));
-    },
-    [roles]
-  );
 
   useEffect(() => {
     fetchRoles();
   }, [fetchRoles]);
 
-  return {
-    roles,
-    refetch: fetchRoles,
-    loading,
-    errors,
-    onChange
-  };
+  return { roles, refetch: fetchRoles, loading };
 };
 
 export const useAdminStorage = () => {
-  const { t } = useTranslation('common');
   const [loading, setLoading] = useState(true);
-  const { values, setValues, setTrpcErrors, r, onChange } =
-    useForm<TStorageSettings>({
-      storageOverflowAction: STORAGE_OVERFLOW_ACTION,
-      storageSpaceQuotaByUser: STORAGE_MAX_QUOTA_PER_USER,
-      storageFileSharingInDirectMessages: true,
-      storageUploadEnabled: true,
-      storageUploadMaxFileSize: STORAGE_MAX_FILE_SIZE,
-      storageMaxAvatarSize: STORAGE_DEFAULT_MAX_AVATAR_SIZE,
-      storageMaxBannerSize: STORAGE_DEFAULT_MAX_BANNER_SIZE,
-      storageMaxFilesPerMessage: STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
-      storageQuota: STORAGE_QUOTA,
-      storageSignedUrlsEnabled: false,
-      storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
-      storageImageOptimizationEnabled: false,
-      storageImageOptimizationQuality:
-        STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY
-    });
+  const [storageSettings, setStorageSettings] = useState<
+    TStorageSettings | undefined
+  >(undefined);
   const [diskMetrics, setDiskMetrics] = useState<TDiskMetrics | undefined>(
     undefined
   );
+  const [pluginStorage, setPluginStorage] = useState<TPluginStorageUsage[]>([]);
 
   const fetchStorageSettings = useCallback(async () => {
     setLoading(true);
 
     const trpc = getTRPCClient();
-    const { storageSettings, diskMetrics } =
+    const { storageSettings, diskMetrics, pluginStorage } =
       await trpc.others.getStorageSettings.query();
 
-    setValues(storageSettings);
+    setStorageSettings(storageSettings);
     setDiskMetrics(diskMetrics);
+    setPluginStorage(pluginStorage);
     setLoading(false);
-  }, [setValues]);
-
-  const submit = useCallback(async () => {
-    const trpc = getTRPCClient();
-
-    try {
-      await trpc.others.updateSettings.mutate({
-        storageUploadEnabled: values.storageUploadEnabled,
-        storageFileSharingInDirectMessages:
-          values.storageFileSharingInDirectMessages,
-        storageQuota: values.storageQuota,
-        storageUploadMaxFileSize: values.storageUploadMaxFileSize,
-        storageMaxAvatarSize: values.storageMaxAvatarSize,
-        storageMaxBannerSize: values.storageMaxBannerSize,
-        storageMaxFilesPerMessage: values.storageMaxFilesPerMessage,
-        storageSpaceQuotaByUser: values.storageSpaceQuotaByUser,
-        storageOverflowAction:
-          values.storageOverflowAction as StorageOverflowAction,
-        storageSignedUrlsEnabled: values.storageSignedUrlsEnabled,
-        storageSignedUrlsTtlSeconds: values.storageSignedUrlsTtlSeconds,
-        storageImageOptimizationEnabled: values.storageImageOptimizationEnabled,
-        storageImageOptimizationQuality: values.storageImageOptimizationQuality
-      });
-      toast.success(t('common:storageSettingsUpdated'));
-    } catch (error) {
-      console.error('Error updating storage settings:', error);
-      setTrpcErrors(error);
-    }
-  }, [values, setTrpcErrors, t]);
-
-  const labels = useMemo(() => {
-    return {
-      storageUploadMaxFileSize: filesize(
-        Number(values.storageUploadMaxFileSize ?? 0),
-        {
-          output: 'object',
-          standard: 'jedec'
-        }
-      ),
-      storageSpaceQuotaByUser: filesize(
-        Number(values.storageSpaceQuotaByUser ?? 0),
-        {
-          output: 'object',
-          standard: 'jedec'
-        }
-      ),
-      storageQuota: filesize(Number(values.storageQuota ?? 0), {
-        output: 'object',
-        standard: 'jedec'
-      }),
-      storageMaxAvatarSize: filesize(Number(values.storageMaxAvatarSize ?? 0), {
-        output: 'object',
-        standard: 'jedec'
-      }),
-      storageMaxBannerSize: filesize(Number(values.storageMaxBannerSize ?? 0), {
-        output: 'object',
-        standard: 'jedec'
-      })
-    };
-  }, [values]);
+  }, []);
 
   useEffect(() => {
     fetchStorageSettings();
   }, [fetchStorageSettings]);
 
   return {
-    values,
-    labels,
+    storageSettings,
+    diskMetrics,
+    pluginStorage,
     refetch: fetchStorageSettings,
-    loading,
-    submit,
-    r,
-    onChange,
-    diskMetrics
+    loading
   };
 };
 

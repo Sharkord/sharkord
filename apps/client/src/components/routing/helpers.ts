@@ -32,10 +32,11 @@ const shouldAutoRedirectToOidc = ({
   return !isSuppressed;
 };
 
-const isHandlingOidcCallback = (search: string) => {
+const isHandlingOidcCallback = (search: string, hash: string) => {
   const params = new URLSearchParams(search);
+  const fragment = new URLSearchParams(hash.replace(/^#/, ''));
 
-  return params.has('oidc') || params.has('oidc_error');
+  return fragment.has('oidc') || params.has('oidc_error');
 };
 
 const getDocumentTitle = (

@@ -16,6 +16,8 @@
     "access_denied": "Il tuo provider di identità ha rifiutato l'accesso.",
     "invalid_state": "Non è stato possibile verificare questa richiesta di accesso. Riprova.",
     "expired": "Questa richiesta di accesso è scaduta. Riprova.",
+    "rate_limited": "Troppi tentativi di accesso. Attendi un momento e riprova.",
+    "registration_closed": "Questo server non accetta nuove registrazioni. Chiedi a un amministratore di creare il tuo account.",
     "server_error": "Si è verificato un problema durante l'accesso. Riprova."
   },
   "loggingInAutomatically": "Accesso automatico in corso...",

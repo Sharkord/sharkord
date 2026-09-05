@@ -5,6 +5,21 @@ import {
   type TParsedDomCommand
 } from '../plugins';
 
+// command arguments come from the message the user typed and responses come from
+// the plugin, and the element built here is stored as message content without
+// going through sanitizeMessageHtml (which does not allow <command> at all), so
+// every value has to be escaped here or it escapes its attribute
+const escapeAttribute = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const toAttribute = (name: string, value: string | undefined) =>
+  value === undefined ? '' : ` ${name}="${escapeAttribute(value)}"`;
+
 const toDomCommand = (
   command: RegisteredCommand & {
     imageUrl?: string;
@@ -31,13 +46,16 @@ const toDomCommand = (
         : JSON.stringify(command.response, null, 2)
       : '';
 
-  const logoAttr = command.imageUrl
-    ? ` data-plugin-logo="${command.imageUrl}"`
-    : '';
+  const attributes = [
+    toAttribute('data-plugin-id', command.pluginId),
+    toAttribute('data-plugin-logo', command.imageUrl),
+    toAttribute('data-command', command.name),
+    toAttribute('data-args', JSON.stringify(sanitizedArgs)),
+    toAttribute('data-status', command.status),
+    toAttribute('data-response', responseString)
+  ].join('');
 
-  return `<command data-plugin-id="${command.pluginId}"${logoAttr} data-command="${command.name}" data-args='${JSON.stringify(
-    sanitizedArgs
-  )}' data-status='${command.status}' data-response='${responseString}'></command>`;
+  return `<command${attributes}></command>`;
 };
 
 const parseDomCommand = (domElement: TCommandElement): TParsedDomCommand => {

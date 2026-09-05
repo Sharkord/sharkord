@@ -1,6 +1,6 @@
 {
   "name": "@sharkord/e2e",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "type": "module",
   "private": true,
   "scripts": {
@@ -15,7 +15,7 @@
     "lint:fix": "eslint ./tests/**/*.ts --ext ts --report-unused-disable-directives --fix",
     "check-types": "tsc --noEmit",
     "magic": "bun --bun run lint:fix && bun --bun run format && bun --bun run check-types",
-    "seed:e2e": "bun run ./tests/setup/seed-db.ts"
+    "seed:e2e": "SHARKORD_DATA_PATH=./e2e-data bun run ./tests/setup/seed-db.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

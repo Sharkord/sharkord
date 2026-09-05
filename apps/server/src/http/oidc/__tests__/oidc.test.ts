@@ -1,4 +1,9 @@
-import { OidcError, sha256 } from '@sharkord/shared';
+import {
+  ActivityLogType,
+  MAX_USER_NAME_LENGTH,
+  OidcError,
+  sha256
+} from '@sharkord/shared';
 import {
   afterAll,
   beforeAll,
@@ -19,8 +24,10 @@ import { TEST_SECRET_TOKEN } from '../../../__tests__/seed';
 import { findTestLog, tdb, testsBaseUrl } from '../../../__tests__/setup';
 import { config } from '../../../config';
 import {
+  activityLog,
   channelReadStates,
   files,
+  oidcTransactions,
   settings,
   userRoles,
   users
@@ -52,6 +59,9 @@ const getStateCookie = (response: Response) => {
   return cookie?.split(';')[0] ?? '';
 };
 
+const getHandoffCode = (target: URL) =>
+  new URLSearchParams(target.hash.replace(/^#/, '')).get('oidc');
+
 // walks the redirects a browser would follow: our login route, the provider's authorization
 // endpoint, then back into our callback carrying the state cookie
 const runOidcFlow = async (options: { cookie?: string } = {}) => {
@@ -75,25 +85,29 @@ const runOidcFlow = async (options: { cookie?: string } = {}) => {
   const target = new URL(callbackResponse.headers.get('location')!);
 
   return {
-    code: target.searchParams.get('oidc'),
-    error: target.searchParams.get('oidc_error')
+    code: getHandoffCode(target),
+    error: target.searchParams.get('oidc_error'),
+    cookie
   };
 };
 
-const exchange = async (code: string) =>
+const exchange = async (code: string, cookie?: string) =>
   fetch(`${testsBaseUrl}/oidc/exchange`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(cookie ? { cookie } : {})
+    },
     body: JSON.stringify({ code })
   });
 
 const signIn = async () => {
-  const { code, error } = await runOidcFlow();
+  const { code, error, cookie } = await runOidcFlow();
 
   expect(error).toBeNull();
   expect(code).not.toBeNull();
 
-  const response = await exchange(code!);
+  const response = await exchange(code!, cookie);
 
   expect(response.status).toBe(200);
 
@@ -129,8 +143,37 @@ beforeEach(() => {
     'preferred_username'
   ]);
   provider.setAuthMethods(['client_secret_post']);
+  provider.setUserInfoAvailable(true);
 
   oidcManager.resetForTests();
+});
+
+describe('an issuer that ends with a slash', () => {
+  let pathProvider: TFakeOidcProvider;
+
+  beforeAll(async () => {
+    pathProvider = await startFakeOidcProvider('/application/o/sharkord');
+  });
+
+  afterAll(async () => {
+    await pathProvider.close();
+  });
+
+  test('should keep the trailing slash so discovery validates', async () => {
+    expect(pathProvider.issuer).toEndWith('/');
+
+    config.oidc.issuer = pathProvider.issuer;
+    config.oidc.clientId = pathProvider.clientId;
+    config.oidc.clientSecret = pathProvider.clientSecret;
+    oidcManager.resetForTests();
+
+    const response = await fetch(`${testsBaseUrl}/oidc/login`, {
+      redirect: 'manual'
+    });
+
+    expect(response.status).toBe(302);
+    expect(findTestLog('error', 'does not match')).toBeUndefined();
+  });
 });
 
 describe('/oidc/login', () => {
@@ -161,21 +204,57 @@ describe('/oidc/login', () => {
     const [cookie] = response.headers.getSetCookie();
     const target = new URL(response.headers.get('location')!);
 
+    // keyed by state so a second tab starting a login cannot invalidate the first
     expect(cookie).toContain(
-      `sharkord_oidc_state=${target.searchParams.get('state')}`
+      `sharkord_oidc_state_${target.searchParams.get('state')}=1`
     );
     expect(cookie).toContain('HttpOnly');
     expect(cookie).toContain('SameSite=Lax');
   });
 
-  test('should 404 when oidc is disabled', async () => {
+  test('should not clobber a login already in flight in another tab', async () => {
+    const first = await fetch(`${testsBaseUrl}/oidc/login`, {
+      redirect: 'manual'
+    });
+    const second = await fetch(`${testsBaseUrl}/oidc/login`, {
+      redirect: 'manual'
+    });
+
+    const firstState = new URL(first.headers.get('location')!).searchParams.get(
+      'state'
+    )!;
+
+    // the browser holds both cookies, so the first tab can still finish
+    const cookies = [getStateCookie(first), getStateCookie(second)].join('; ');
+
+    const authorizeResponse = await fetch(first.headers.get('location')!, {
+      redirect: 'manual'
+    });
+
+    const callbackResponse = await fetch(
+      authorizeResponse.headers.get('location')!,
+      { redirect: 'manual', headers: { cookie: cookies } }
+    );
+
+    const target = new URL(callbackResponse.headers.get('location')!);
+
+    expect(firstState).toBeTruthy();
+    expect(target.searchParams.get('oidc_error')).toBeNull();
+    expect(getHandoffCode(target)).not.toBeNull();
+  });
+
+  // a browser is mid navigation, so json would strand it on a raw error page
+  test('should redirect rather than serve json when oidc is disabled', async () => {
     config.oidc.enabled = false;
 
     const response = await fetch(`${testsBaseUrl}/oidc/login`, {
       redirect: 'manual'
     });
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(302);
+    expect(
+      new URL(response.headers.get('location')!).searchParams.get('oidc_error')
+    ).toBe(OidcError.SERVER_ERROR);
   });
 
   // the loopback exemption that lets this suite (and a local setup) run over plain http
@@ -188,7 +267,10 @@ describe('/oidc/login', () => {
       redirect: 'manual'
     });
 
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(302);
+    expect(
+      new URL(response.headers.get('location')!).searchParams.get('oidc_error')
+    ).toBe(OidcError.SERVER_ERROR);
     expect(findTestLog('error', 'must use https')).toBeDefined();
   });
 
@@ -235,6 +317,42 @@ describe('client authentication method', () => {
     await signIn();
 
     expect(provider.getLastTokenAuth()).toBe('post');
+  });
+});
+
+describe('behind a tls terminating proxy', () => {
+  const PROXY_HEADERS = { 'x-forwarded-proto': 'https' };
+
+  test('should send the same redirect_uri to authorize and to token', async () => {
+    const loginResponse = await fetch(`${testsBaseUrl}/oidc/login`, {
+      redirect: 'manual',
+      headers: PROXY_HEADERS
+    });
+
+    const authorizeUrl = new URL(loginResponse.headers.get('location')!);
+    const cookie = getStateCookie(loginResponse);
+
+    expect(authorizeUrl.searchParams.get('redirect_uri')).toStartWith(
+      'https://'
+    );
+
+    const authorizeResponse = await fetch(authorizeUrl, { redirect: 'manual' });
+
+    // the proxy hands the request on over plain http, which is what the server sees
+    const forwarded = new URL(authorizeResponse.headers.get('location')!);
+
+    forwarded.protocol = 'http:';
+
+    const callbackResponse = await fetch(forwarded, {
+      redirect: 'manual',
+      headers: { ...PROXY_HEADERS, cookie }
+    });
+
+    const target = new URL(callbackResponse.headers.get('location')!);
+
+    expect(target.searchParams.get('oidc_error')).toBeNull();
+    expect(getHandoffCode(target)).not.toBeNull();
+    expect(target.protocol).toBe('https:');
   });
 });
 
@@ -376,25 +494,30 @@ describe('/oidc/callback', () => {
   test('should still refuse a string that is not true', async () => {
     provider.setClaims({
       ...DEFAULT_CLAIMS,
-      email: 'testowner',
       email_verified: 'false'
     });
 
-    const { error } = await runOidcFlow();
+    await signIn();
 
-    expect(error).toBe(OidcError.SERVER_ERROR);
+    const created = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.oidcSub, 'oidc-subject-1'))
+      .get();
+
+    expect(created!.identity).toBe('oidc-subject-1');
   });
 
-  test('should refuse to link an existing local account on an unverified email', async () => {
-    provider.setClaims({
-      ...DEFAULT_CLAIMS,
-      email: 'testowner',
-      email_verified: false
-    });
+  // an unverified email never becomes the identity any more, so what is left to refuse is
+  // a sub that collides with a local identity with nothing verified behind it
+  test('should refuse to link an existing local account on nothing verified', async () => {
+    provider.setClaims({ sub: 'testowner', preferred_username: 'impostor' });
+    provider.setIdTokenClaims(['sub', 'preferred_username']);
 
     const { error } = await runOidcFlow();
 
     expect(error).toBe(OidcError.SERVER_ERROR);
+    expect(findTestLog('error', 'email_verified is not true')).toBeDefined();
 
     const owner = await tdb
       .select()
@@ -427,7 +550,10 @@ describe('/oidc/callback', () => {
     expect(linked!.oidcSub).toBe('oidc-subject-1');
   });
 
-  test('should still create an account for a new identity with an unverified email', async () => {
+  // an unverified email is whatever the account holder typed at the provider. taking it as
+  // the identity would let them reserve an address here before its owner ever signs in,
+  // and the owner would then be refused for colliding with it
+  test('should key on the sub rather than an unverified email', async () => {
     provider.setClaims({ ...DEFAULT_CLAIMS, email_verified: false });
 
     await signIn();
@@ -439,6 +565,7 @@ describe('/oidc/callback', () => {
       .get();
 
     expect(created).toBeDefined();
+    expect(created!.identity).toBe('oidc-subject-1');
   });
 
   test('should import the picture claim as the avatar on registration', async () => {
@@ -596,6 +723,101 @@ describe('/oidc/callback', () => {
     expect(created).toBeUndefined();
   });
 
+  // the provider decides this string, and the interface renders any account named
+  // __deleted_user__ as a tombstone and hides it from the member list
+  test('should refuse the reserved name and fall back to a generated one', async () => {
+    provider.setClaims({
+      ...DEFAULT_CLAIMS,
+      preferred_username: '__deleted_user__',
+      name: '__deleted_user__'
+    });
+
+    await signIn();
+
+    const created = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.oidcSub, 'oidc-subject-1'))
+      .get();
+
+    expect(created!.name).not.toBe('__deleted_user__');
+    expect(created!.name).toStartWith('SharkordUser');
+  });
+
+  test('should refuse a name past the length the interface allows', async () => {
+    provider.setClaims({
+      ...DEFAULT_CLAIMS,
+      preferred_username: 'x'.repeat(80),
+      name: 'y'.repeat(80)
+    });
+
+    await signIn();
+
+    const created = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.oidcSub, 'oidc-subject-1'))
+      .get();
+
+    expect(created!.name.length).toBeLessThanOrEqual(MAX_USER_NAME_LENGTH);
+  });
+
+  test('should fall back to the name claim when preferred_username is unusable', async () => {
+    provider.setClaims({
+      ...DEFAULT_CLAIMS,
+      preferred_username: '   ',
+      name: 'Real Name'
+    });
+
+    await signIn();
+
+    const created = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.oidcSub, 'oidc-subject-1'))
+      .get();
+
+    expect(created!.name).toBe('Real Name');
+  });
+
+  // a transient userinfo failure used to leave the account permanently keyed on its sub,
+  // and nothing ever re-syncs the identity afterwards
+  test('should refuse to guess an identity when userinfo is unreachable', async () => {
+    provider.setIdTokenClaims(['sub']);
+    provider.setUserInfoAvailable(false);
+
+    const { error } = await runOidcFlow();
+
+    expect(error).toBe(OidcError.SERVER_ERROR);
+
+    const created = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.oidcSub, 'oidc-subject-1'))
+      .get();
+
+    expect(created).toBeUndefined();
+  });
+
+  // a provider that genuinely has no email is a different case from one we cannot reach
+  test('should key on the sub verbatim when the provider has no email', async () => {
+    provider.setClaims({
+      sub: 'MixedCaseSubject',
+      preferred_username: 'nomail'
+    });
+    provider.setIdTokenClaims(['sub', 'preferred_username']);
+
+    await signIn();
+
+    const created = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.oidcSub, 'MixedCaseSubject'))
+      .get();
+
+    expect(created!.identity).toBe('MixedCaseSubject');
+  });
+
   test('should reject a banned user', async () => {
     await signIn();
 
@@ -651,8 +873,8 @@ describe('/oidc/callback', () => {
       loginResponse.headers.get('location')!
     ).searchParams.get('state')!;
 
-    // stands in for the transaction expiring, or the server restarting mid login
-    oidcManager.resetForTests();
+    // stands in for the transaction expiring
+    await tdb.delete(oidcTransactions);
 
     const response = await fetch(
       `${testsBaseUrl}/oidc/callback?code=whatever&state=${state}`,
@@ -684,34 +906,51 @@ describe('/oidc/callback', () => {
     expect(target.searchParams.get('oidc_error')).toBe(OidcError.ACCESS_DENIED);
   });
 
-  test('should clear the state cookie on the way out', async () => {
+  // it used to be cleared here, but the exchange needs it to tell the browser that started
+  // the login from anyone else holding the code
+  test('should keep the state cookie for the exchange and clear it there', async () => {
+    const { code, cookie } = await runOidcFlow();
+
+    const response = await exchange(code!, cookie);
+    const [setCookie] = response.headers.getSetCookie();
+
+    expect(response.status).toBe(200);
+    expect(setCookie).toContain('sharkord_oidc_state_');
+    expect(setCookie).toContain('Max-Age=0');
+  });
+
+  test('should clear the state cookie when the callback fails', async () => {
     const loginResponse = await fetch(`${testsBaseUrl}/oidc/login`, {
       redirect: 'manual'
     });
 
     const cookie = getStateCookie(loginResponse);
-    const authorizeUrl = loginResponse.headers.get('location')!;
-    const authorizeResponse = await fetch(authorizeUrl, { redirect: 'manual' });
+    const state = new URL(
+      loginResponse.headers.get('location')!
+    ).searchParams.get('state')!;
 
-    const callbackResponse = await fetch(
-      authorizeResponse.headers.get('location')!,
+    const response = await fetch(
+      `${testsBaseUrl}/oidc/callback?error=access_denied&state=${state}`,
       { redirect: 'manual', headers: { cookie } }
     );
 
-    const [setCookie] = callbackResponse.headers.getSetCookie();
+    const [setCookie] = response.headers.getSetCookie();
 
-    expect(setCookie).toContain('sharkord_oidc_state=');
+    expect(setCookie).toContain('sharkord_oidc_state_');
     expect(setCookie).toContain('Max-Age=0');
   });
 
-  test('should 404 when oidc is disabled', async () => {
+  test('should redirect rather than serve json when oidc is disabled', async () => {
     config.oidc.enabled = false;
 
     const response = await fetch(`${testsBaseUrl}/oidc/callback?code=x`, {
       redirect: 'manual'
     });
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(302);
+    expect(
+      new URL(response.headers.get('location')!).searchParams.get('oidc_error')
+    ).toBe(OidcError.SERVER_ERROR);
   });
 });
 
@@ -741,12 +980,263 @@ describe('using the issued token', () => {
   });
 });
 
+describe('the issuer an account belongs to', () => {
+  test('should record the issuer the account was created against', async () => {
+    await signIn();
+
+    const created = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.oidcSub, 'oidc-subject-1'))
+      .get();
+
+    expect(created!.oidcIssuer).toBe(provider.issuer);
+  });
+
+  // a sub is only unique inside the issuer that minted it, so repointing the server at a
+  // provider whose subs happen to collide must not hand the old accounts over
+  test('should refuse a subject that belongs to a different issuer', async () => {
+    await signIn();
+
+    await tdb
+      .update(users)
+      .set({ oidcIssuer: 'https://somewhere.else.example.com/' })
+      .where(eq(users.oidcSub, 'oidc-subject-1'));
+
+    const { error } = await runOidcFlow();
+
+    expect(error).toBe(OidcError.ACCESS_DENIED);
+  });
+
+  test('should adopt the issuer on a link made before it was recorded', async () => {
+    await signIn();
+
+    await tdb
+      .update(users)
+      .set({ oidcIssuer: null })
+      .where(eq(users.oidcSub, 'oidc-subject-1'));
+
+    const { error } = await runOidcFlow();
+
+    const adopted = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.oidcSub, 'oidc-subject-1'))
+      .get();
+
+    expect(error).toBeNull();
+    expect(adopted!.oidcIssuer).toBe(provider.issuer);
+  });
+});
+
+describe('registrations through the provider', () => {
+  test('should refuse to register while new users are disabled', async () => {
+    await tdb.update(settings).set({ allowNewUsers: false });
+
+    const { error } = await runOidcFlow();
+
+    const created = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.oidcSub, 'oidc-subject-1'))
+      .get();
+
+    expect(error).toBe(OidcError.REGISTRATION_CLOSED);
+    expect(created).toBeUndefined();
+  });
+
+  // the gate is on registering, an account that already exists still signs in
+  test('should still sign in an existing account while new users are disabled', async () => {
+    await signIn();
+
+    await tdb.update(settings).set({ allowNewUsers: false });
+
+    const { error } = await runOidcFlow();
+
+    expect(error).toBeNull();
+  });
+
+  test('should log the registration', async () => {
+    await signIn();
+
+    const logs = await tdb
+      .select()
+      .from(activityLog)
+      .where(eq(activityLog.type, ActivityLogType.USER_CREATED))
+      .all();
+
+    const created = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.oidcSub, 'oidc-subject-1'))
+      .get();
+
+    expect(logs).toHaveLength(1);
+    expect(logs[0]!.userId).toBe(created!.id);
+  });
+
+  test('should not log a sign in that created nothing', async () => {
+    await signIn();
+    await signIn();
+
+    const logs = await tdb
+      .select()
+      .from(activityLog)
+      .where(eq(activityLog.type, ActivityLogType.USER_CREATED))
+      .all();
+
+    expect(logs).toHaveLength(1);
+  });
+});
+
+// the login in flight is a row rather than something the process holds, so a restart in
+// the middle of one does not strand the user on the provider
+describe('a login that outlives the process', () => {
+  test('should complete after everything held in memory is gone', async () => {
+    const loginResponse = await fetch(`${testsBaseUrl}/oidc/login`, {
+      redirect: 'manual'
+    });
+
+    const cookie = getStateCookie(loginResponse);
+    const authorizeResponse = await fetch(
+      loginResponse.headers.get('location')!,
+      { redirect: 'manual' }
+    );
+
+    oidcManager.resetForTests();
+
+    const callbackResponse = await fetch(
+      authorizeResponse.headers.get('location')!,
+      { redirect: 'manual', headers: { cookie } }
+    );
+
+    const target = new URL(callbackResponse.headers.get('location')!);
+
+    expect(target.searchParams.get('oidc_error')).toBeNull();
+    expect(getHandoffCode(target)).not.toBeNull();
+  });
+});
+
+describe('/oidc/backchannel-logout', () => {
+  const logout = async (token: string) =>
+    fetch(`${testsBaseUrl}/oidc/backchannel-logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ logout_token: token }).toString()
+    });
+
+  const getTokenVersion = async () => {
+    const user = await tdb
+      .select()
+      .from(users)
+      .where(eq(users.oidcSub, 'oidc-subject-1'))
+      .get();
+
+    return user?.tokenVersion;
+  };
+
+  test('should end every session the subject has here', async () => {
+    await signIn();
+
+    const response = await logout(await provider.createLogoutToken());
+
+    expect(response.status).toBe(200);
+    expect(await getTokenVersion()).toBe(1);
+  });
+
+  // answering the same way either side of it keeps the endpoint from reporting who has an
+  // account here
+  test('should accept a subject with no account here', async () => {
+    const response = await logout(
+      await provider.createLogoutToken({ sub: 'nobody' })
+    );
+
+    expect(response.status).toBe(200);
+  });
+
+  test('should refuse a token carrying a nonce', async () => {
+    await signIn();
+
+    const response = await logout(
+      await provider.createLogoutToken({ nonce: 'replayed-id-token' })
+    );
+
+    expect(response.status).toBe(400);
+    expect(await getTokenVersion()).toBe(0);
+  });
+
+  test('should refuse a token that is not a logout event', async () => {
+    await signIn();
+
+    const response = await logout(
+      await provider.createLogoutToken({ events: undefined })
+    );
+
+    expect(response.status).toBe(400);
+    expect(await getTokenVersion()).toBe(0);
+  });
+
+  test('should refuse a token that identifies no subject', async () => {
+    const response = await logout(
+      await provider.createLogoutToken({ sub: undefined })
+    );
+
+    expect(response.status).toBe(400);
+  });
+
+  test('should refuse a token nobody signed', async () => {
+    await signIn();
+
+    const response = await logout('not.a.jwt');
+
+    expect(response.status).toBe(400);
+    expect(await getTokenVersion()).toBe(0);
+  });
+
+  test('should refuse a subject linked to a different issuer', async () => {
+    await signIn();
+
+    await tdb
+      .update(users)
+      .set({ oidcIssuer: 'https://somewhere.else.example.com/' })
+      .where(eq(users.oidcSub, 'oidc-subject-1'));
+
+    const response = await logout(await provider.createLogoutToken());
+
+    expect(response.status).toBe(200);
+    expect(await getTokenVersion()).toBe(0);
+  });
+
+  test('should 404 when oidc is disabled', async () => {
+    config.oidc.enabled = false;
+
+    const response = await logout('anything');
+
+    expect(response.status).toBe(404);
+  });
+});
+
 describe('/oidc/exchange', () => {
   test('should reject a code that was already used', async () => {
+    const { code, cookie } = await runOidcFlow();
+
+    expect((await exchange(code!, cookie)).status).toBe(200);
+    expect((await exchange(code!, cookie)).status).toBe(401);
+  });
+
+  // the code travels through a redirect, so holding it is not on its own proof of being
+  // the browser that asked for the login
+  test('should reject a code presented without the state cookie', async () => {
     const { code } = await runOidcFlow();
 
-    expect((await exchange(code!)).status).toBe(200);
     expect((await exchange(code!)).status).toBe(401);
+  });
+
+  test("should reject a code presented with someone else's state cookie", async () => {
+    const { code } = await runOidcFlow();
+    const other = await runOidcFlow();
+
+    expect((await exchange(code!, other.cookie)).status).toBe(401);
   });
 
   test('should reject an unknown code', async () => {
@@ -785,6 +1275,22 @@ describe('oidc rate limiting', () => {
     const response = await fetch(`${testsBaseUrl}/oidc/login`, {
       redirect: 'manual'
     });
+
+    // still a navigation, so the reason comes back through the interface
+    expect(response.status).toBe(302);
+    expect(
+      new URL(response.headers.get('location')!).searchParams.get('oidc_error')
+    ).toBe(OidcError.RATE_LIMITED);
+  });
+
+  test('should answer the exchange route with json instead', async () => {
+    const { maxRequests } = config.rateLimiters.oidc;
+
+    for (let attempt = 0; attempt < maxRequests; attempt++) {
+      await fetch(`${testsBaseUrl}/oidc/login`, { redirect: 'manual' });
+    }
+
+    const response = await exchange('anything');
 
     expect(response.status).toBe(429);
   });

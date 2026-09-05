@@ -1,9 +1,24 @@
+import {
+  Permission,
+  PluginCapabilityMode,
+  PluginCapabilityType
+} from '@sharkord/shared';
 import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
+import { getMockedToken } from '../../__tests__/helpers';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
-import { testsBaseUrl } from '../../__tests__/setup';
+import { tdb, testsBaseUrl } from '../../__tests__/setup';
+import { config } from '../../config';
+import { setCapabilityAccess } from '../../db/queries/plugin-capabilities';
+import { rolePermissions, users } from '../../db/schema';
 import { PLUGINS_PATH } from '../../helpers/paths';
 import { pluginManager } from '../../plugins';
+
+// the seeded moderator: role 4 holds MANAGE_USERS and MANAGE_ROLES, not
+// MANAGE_MESSAGES, which is what plugin-b's /admin-only declares
+const MODERATOR = 5;
+const MODERATOR_ROLE = 4;
 
 describe('/plugins/:pluginId/*', () => {
   beforeAll(async () => {
@@ -12,6 +27,215 @@ describe('/plugins/:pluginId/*', () => {
   });
 
   beforeEach(resetPluginMocks);
+
+  // every plugin route shares one limiter, so a public one is enough to prove it
+  describe('rate limiting', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    test('should stop hammering a plugin route from one address', async () => {
+      const { maxRequests } = config.rateLimiters.pluginRoute;
+
+      for (let attempt = 0; attempt < maxRequests; attempt++) {
+        await fetch(`${testsBaseUrl}/plugins/plugin-b/hello`);
+      }
+
+      const response = await fetch(`${testsBaseUrl}/plugins/plugin-b/hello`);
+
+      expect(response.status).toBe(429);
+      expect(await response.json()).toMatchObject({
+        error: expect.stringContaining('Too many requests')
+      });
+    });
+
+    test('should count an authenticated route against the same limit', async () => {
+      const { maxRequests } = config.rateLimiters.pluginRoute;
+
+      for (let attempt = 0; attempt < maxRequests; attempt++) {
+        await fetch(`${testsBaseUrl}/plugins/plugin-b/hello`);
+      }
+
+      const response = await fetch(`${testsBaseUrl}/plugins/plugin-b/me`, {
+        headers: { authorization: `Bearer ${await getMockedToken(2)}` }
+      });
+
+      // the limiter runs before the caller is resolved, so this is 429 not 401
+      expect(response.status).toBe(429);
+    });
+  });
+
+  // plugin-b declares GET /me as auth only and GET /admin-only as needing
+  // MANAGE_MESSAGES. the seeded moderator role (4, user 5) holds MANAGE_USERS
+  // and MANAGE_ROLES but not MANAGE_MESSAGES
+  describe('route authentication', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const call = async (path: string, token?: string) =>
+      fetch(`${testsBaseUrl}/plugins/plugin-b${path}`, {
+        headers: token ? { authorization: `Bearer ${token}` } : undefined
+      });
+
+    test('leaves a route that declares nothing public', async () => {
+      const response = await call('/hello');
+
+      expect(response.status).toBe(200);
+    });
+
+    test('rejects an authenticated route with no token', async () => {
+      const response = await call('/me');
+
+      expect(response.status).toBe(401);
+    });
+
+    test('rejects a token that is not a token', async () => {
+      const response = await call('/me', 'not-a-jwt');
+
+      expect(response.status).toBe(401);
+    });
+
+    test('accepts a valid token and hands the handler the caller', async () => {
+      const response = await call('/me', await getMockedToken(2));
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ userId: 2 });
+    });
+
+    test('accepts the x-token header as well as Authorization', async () => {
+      const response = await fetch(`${testsBaseUrl}/plugins/plugin-b/me`, {
+        headers: { 'x-token': await getMockedToken(2) }
+      });
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ userId: 2 });
+    });
+
+    // a password change bumps tokenVersion, which has to end the old session
+    test('rejects a token whose version is stale', async () => {
+      const response = await call('/me', await getMockedToken(2, 99));
+
+      expect(response.status).toBe(401);
+    });
+
+    test('rejects a banned user', async () => {
+      await tdb.update(users).set({ banned: true }).where(eq(users.id, 2));
+
+      const response = await call('/me', await getMockedToken(2));
+
+      expect(response.status).toBe(401);
+    });
+
+    test('rejects a permission route without the permission', async () => {
+      const response = await call('/admin-only', await getMockedToken(5));
+
+      expect(response.status).toBe(403);
+    });
+
+    test('accepts a permission route once the role has it', async () => {
+      await tdb.insert(rolePermissions).values({
+        roleId: 4,
+        permission: Permission.MANAGE_MESSAGES,
+        createdAt: Date.now()
+      });
+
+      const response = await call('/admin-only', await getMockedToken(5));
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ userId: 5 });
+    });
+
+    test('lets the owner through a permission route', async () => {
+      const response = await call('/admin-only', await getMockedToken(1));
+
+      expect(response.status).toBe(200);
+    });
+
+    test('still rejects a permission route with no token at all', async () => {
+      const response = await call('/admin-only');
+
+      expect(response.status).toBe(401);
+    });
+  });
+
+  // what a route declares is only the default: an admin can widen or narrow it
+  // from the plugin's permissions tab, the same as a command or an action
+  describe('route capability access', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const call = async (path: string, token?: string) =>
+      fetch(`${testsBaseUrl}/plugins/plugin-b${path}`, {
+        headers: token ? { authorization: `Bearer ${token}` } : undefined
+      });
+
+    const restrict = (name: string, roleIds: number[]) =>
+      setCapabilityAccess(
+        'plugin-b',
+        PluginCapabilityType.HTTP_ROUTE,
+        name,
+        PluginCapabilityMode.RESTRICTED,
+        roleIds
+      );
+
+    // there is no caller to match against roles otherwise
+    test('turns a restricted public route into an authenticated one', async () => {
+      await restrict('GET /hello', [MODERATOR_ROLE]);
+
+      expect((await call('/hello')).status).toBe(401);
+    });
+
+    test('lets a granted role through a restricted public route', async () => {
+      await restrict('GET /hello', [MODERATOR_ROLE]);
+
+      const response = await call('/hello', await getMockedToken(MODERATOR));
+
+      expect(response.status).toBe(200);
+    });
+
+    test('refuses a role the restriction left out', async () => {
+      await restrict('GET /hello', [MODERATOR_ROLE]);
+
+      expect((await call('/hello', await getMockedToken(2))).status).toBe(403);
+    });
+
+    test('leaves an unconfigured route public', async () => {
+      await restrict('GET /me', [MODERATOR_ROLE]);
+
+      expect((await call('/hello')).status).toBe(200);
+    });
+
+    test('lets an admin open a route its own permission would refuse', async () => {
+      expect(
+        (await call('/admin-only', await getMockedToken(MODERATOR))).status
+      ).toBe(403);
+
+      await setCapabilityAccess(
+        'plugin-b',
+        PluginCapabilityType.HTTP_ROUTE,
+        'GET /admin-only',
+        PluginCapabilityMode.PUBLIC,
+        []
+      );
+
+      const response = await call(
+        '/admin-only',
+        await getMockedToken(MODERATOR)
+      );
+
+      // opened up, but still resolved: the handler asked for a caller
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ userId: MODERATOR });
+    });
+
+    test('keeps an auth route authenticated when opened to everyone', async () => {
+      await setCapabilityAccess(
+        'plugin-b',
+        PluginCapabilityType.HTTP_ROUTE,
+        'GET /me',
+        PluginCapabilityMode.PUBLIC,
+        []
+      );
+
+      expect((await call('/me')).status).toBe(401);
+    });
+  });
 
   describe('plugin-b', () => {
     beforeEach(() => pluginManager.load('plugin-b'));

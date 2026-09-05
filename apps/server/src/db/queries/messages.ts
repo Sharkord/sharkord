@@ -84,6 +84,7 @@ const joinMessagesWithRelations = async (
       .select({
         messageId: messageReactions.messageId,
         userId: messageReactions.userId,
+        pluginId: messageReactions.pluginId,
         emoji: messageReactions.emoji,
         createdAt: messageReactions.createdAt,
         fileId: messageReactions.fileId,
@@ -120,6 +121,7 @@ const joinMessagesWithRelations = async (
     const reaction: TJoinedMessageReaction = {
       messageId: r.messageId,
       userId: r.userId,
+      pluginId: r.pluginId,
       emoji: r.emoji,
       createdAt: r.createdAt,
       fileId: r.fileId,

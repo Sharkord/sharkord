@@ -1,8 +1,9 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@sharkord/ui';
-import { memo } from 'react';
+import { Settings, Shield } from 'lucide-react';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TServerScreenBaseProps } from '../screens';
-import { ServerScreenLayout } from '../server-screen-layout';
+import { SettingsShell } from '../settings-shell';
+import type { TSettingsEntry } from '../settings-shell/types';
 import { General } from './general';
 import { ChannelPermissions } from './permissions';
 
@@ -13,24 +14,30 @@ type TChannelSettingsProps = TServerScreenBaseProps & {
 const ChannelSettings = memo(({ close, channelId }: TChannelSettingsProps) => {
   const { t } = useTranslation('settings');
 
-  return (
-    <ServerScreenLayout close={close} title={t('channelSettingsTitle')}>
-      <div className="mx-auto max-w-4xl">
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="general">{t('generalTab')}</TabsTrigger>
-            <TabsTrigger value="permissions">{t('permissionsTab')}</TabsTrigger>
-          </TabsList>
+  const entries = useMemo<TSettingsEntry[]>(
+    () => [
+      {
+        id: 'general',
+        label: t('generalTab'),
+        icon: Settings,
+        content: <General channelId={channelId} />
+      },
+      {
+        id: 'permissions',
+        label: t('permissionsTab'),
+        icon: Shield,
+        content: <ChannelPermissions channelId={channelId} />
+      }
+    ],
+    [t, channelId]
+  );
 
-          <TabsContent value="general" className="space-y-6">
-            <General channelId={channelId} />
-          </TabsContent>
-          <TabsContent value="permissions" className="space-y-6">
-            <ChannelPermissions channelId={channelId} />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </ServerScreenLayout>
+  return (
+    <SettingsShell
+      title={t('channelSettingsTitle')}
+      close={close}
+      entries={entries}
+    />
   );
 });
 

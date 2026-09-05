@@ -16,6 +16,8 @@
     "access_denied": "Your identity provider refused the sign in.",
     "invalid_state": "This sign in request could not be verified. Please try again.",
     "expired": "This sign in request expired. Please try again.",
+    "rate_limited": "Too many sign in attempts. Please wait a moment and try again.",
+    "registration_closed": "This server is not accepting new registrations. Ask an administrator to create your account.",
     "server_error": "Something went wrong while signing in. Please try again."
   },
   "loggingInAutomatically": "Logging in automatically...",

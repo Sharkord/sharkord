@@ -4,7 +4,7 @@ import { channelByIdSelector } from '@/features/server/channels/selectors';
 import { joinVoice, leaveVoice } from '@/features/server/voice/actions';
 import { useVoice } from '@/features/server/voice/hooks';
 import { store } from '@/features/store';
-import { LocalStorageKey } from '@/helpers/storage';
+import { LocalStorageKey, setLocalStorageItem } from '@/helpers/storage';
 import { ChannelType } from '@sharkord/shared';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -28,7 +28,7 @@ const useSelectChannel = () => {
 
       if (channel.type !== ChannelType.VOICE) {
         // persist selected channel for non-voice channels
-        localStorage.setItem(
+        setLocalStorageItem(
           LocalStorageKey.LAST_SELECTED_CHANNEL,
           channel.id.toString()
         );

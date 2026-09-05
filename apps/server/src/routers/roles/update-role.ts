@@ -13,6 +13,7 @@ import { syncRolePermissions } from '../../db/mutations/roles';
 import { publishRole } from '../../db/publishers';
 import { getRole } from '../../db/queries/roles';
 import { roles } from '../../db/schema';
+import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
@@ -67,6 +68,11 @@ const updateRoleRoute = protectedProcedure
     }
 
     publishRole(updatedRole.id, 'update');
+
+    eventBus.emit('role:updated', {
+      roleId: updatedRole.id,
+      name: updatedRole.name
+    });
     enqueueActivityLog({
       type: ActivityLogType.UPDATED_ROLE,
       userId: ctx.user.id,

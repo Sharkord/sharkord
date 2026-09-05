@@ -1,15 +1,10 @@
-import { closeServerScreens } from '@/features/server-screens/actions';
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useAdminUpdates } from '@/features/server/admin/hooks';
 import {
   Alert,
   AlertDescription,
   AlertTitle,
   Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Group,
   LoadingCard
 } from '@sharkord/ui';
@@ -32,72 +27,64 @@ const Updates = memo(() => {
     return <LoadingCard className="h-[600px]" />;
   }
 
+  let status = (
+    <Alert variant="info">
+      <CheckCircle />
+      <AlertTitle>{t('upToDateTitle')}</AlertTitle>
+      <AlertDescription>{t('upToDateDesc')}</AlertDescription>
+    </Alert>
+  );
+
+  if (!canUpdate) {
+    status = (
+      <Alert variant="destructive">
+        <X />
+        <AlertTitle>{t('updatesNotSupportedTitle')}</AlertTitle>
+        <AlertDescription>{t('updatesNotSupportedDesc')}</AlertDescription>
+      </Alert>
+    );
+  } else if (hasUpdate) {
+    status = (
+      <Alert>
+        <Download />
+        <AlertTitle>{t('updateAvailableTitle')}</AlertTitle>
+        <AlertDescription>
+          {t('updateAvailableDesc', { version: latestVersion })}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('updatesTitle')}</CardTitle>
-        <CardDescription>{t('updatesDesc')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Group label={t('currentVersionLabel')}>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle className="h-4 w-4" />
-            <span className="font-mono">
-              {currentVersion || t('unknownVersion')}
-            </span>
-          </div>
-        </Group>
-
-        <Group label={t('latestVersionLabel')}>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <ArrowUpCircle className="h-4 w-4" />
-            <span className="font-mono">
-              {latestVersion || t('unknownVersion')}
-            </span>
-          </div>
-        </Group>
-
-        {!canUpdate ? (
-          <Alert variant="destructive">
-            <X />
-            <AlertTitle>{t('updatesNotSupportedTitle')}</AlertTitle>
-            <AlertDescription>{t('updatesNotSupportedDesc')}</AlertDescription>
-          </Alert>
-        ) : (
-          <>
-            {hasUpdate && (
-              <Alert>
-                <Download />
-                <AlertTitle>{t('updateAvailableTitle')}</AlertTitle>
-                <AlertDescription>
-                  {t('updateAvailableDesc', { version: latestVersion })}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {!hasUpdate && !loading && (
-              <Alert variant="info">
-                <CheckCircle />
-                <AlertTitle>{t('upToDateTitle')}</AlertTitle>
-                <AlertDescription>{t('upToDateDesc')}</AlertDescription>
-              </Alert>
-            )}
-          </>
-        )}
-
-        <div className="flex justify-end gap-2 pt-4">
-          <Button variant="outline" onClick={closeServerScreens}>
-            {t('close')}
-          </Button>
-          <Button
-            onClick={update}
-            disabled={loading || !hasUpdate || !canUpdate}
-          >
-            {hasUpdate ? t('updateServerBtn') : t('noUpdatesAvailableBtn')}
-          </Button>
+    <SettingsSection
+      title={t('updatesTitle')}
+      description={t('updatesDesc')}
+      action={
+        <Button onClick={update} disabled={!hasUpdate || !canUpdate}>
+          {t('updateServerBtn')}
+        </Button>
+      }
+    >
+      <Group label={t('currentVersionLabel')}>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <CheckCircle className="h-4 w-4" />
+          <span className="font-mono">
+            {currentVersion || t('unknownVersion')}
+          </span>
         </div>
-      </CardContent>
-    </Card>
+      </Group>
+
+      <Group label={t('latestVersionLabel')}>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <ArrowUpCircle className="h-4 w-4" />
+          <span className="font-mono">
+            {latestVersion || t('unknownVersion')}
+          </span>
+        </div>
+      </Group>
+
+      {status}
+    </SettingsSection>
   );
 });
 

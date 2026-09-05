@@ -1,21 +1,50 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { getTRPCClient } from '@/lib/trpc';
+import { cn } from '@/lib/utils';
 import type { TJoinedRole } from '@sharkord/shared';
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@sharkord/ui';
+import { IconButton, Tooltip } from '@sharkord/ui';
 import { Plus } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+type TRoleItemProps = {
+  role: TJoinedRole;
+  isSelected: boolean;
+  onSelect: (roleId: number) => void;
+};
+
+const RoleItem = memo(({ role, isSelected, onSelect }: TRoleItemProps) => {
+  const handleClick = useCallback(() => onSelect(role.id), [onSelect, role.id]);
+
+  return (
+    <button
+      onClick={handleClick}
+      className={cn(
+        'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent',
+        isSelected && 'bg-accent'
+      )}
+    >
+      <div
+        className="h-3 w-3 rounded-full"
+        style={{ backgroundColor: role.color }}
+      />
+      <span className="truncate">{role.name}</span>
+    </button>
+  );
+});
+
 type TRolesListProps = {
   roles: TJoinedRole[];
   selectedRoleId: number | undefined;
   setSelectedRoleId: (roleId: number) => void;
-  refetch: () => void;
+  refetch: () => Promise<void>;
 };
 
 const RolesList = memo(
   ({ roles, selectedRoleId, setSelectedRoleId, refetch }: TRolesListProps) => {
     const { t } = useTranslation('settings');
+
     const onAddRole = useCallback(async () => {
       const trpc = getTRPCClient();
 
@@ -32,35 +61,30 @@ const RolesList = memo(
     }, [refetch, setSelectedRoleId, t]);
 
     return (
-      <Card className="w-64 flex-shrink-0">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">{t('rolesTitle')}</CardTitle>
-            <Button size="icon" variant="ghost" onClick={onAddRole}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2 p-2">
+      <SettingsSection
+        title={t('rolesTitle')}
+        action={
+          <Tooltip content={t('addRoleTooltip')}>
+            <IconButton
+              icon={Plus}
+              size="sm"
+              variant="ghost"
+              onClick={onAddRole}
+            />
+          </Tooltip>
+        }
+      >
+        <div className="space-y-1">
           {roles.map((role) => (
-            <button
+            <RoleItem
               key={role.id}
-              onClick={() => setSelectedRoleId(role.id)}
-              className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent ${
-                selectedRoleId === role.id ? 'bg-accent' : ''
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <div
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: role.color }}
-                />
-                <span>{role.name}</span>
-              </div>
-            </button>
+              role={role}
+              isSelected={selectedRoleId === role.id}
+              onSelect={setSelectedRoleId}
+            />
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </SettingsSection>
     );
   }
 );

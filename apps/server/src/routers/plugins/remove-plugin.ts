@@ -1,5 +1,6 @@
 import { ActivityLogType, Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
+import { publishCapabilityAccess } from '../../db/publishers';
 import { pluginManager } from '../../plugins';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure } from '../../utils/trpc';
@@ -14,6 +15,9 @@ const removeRoute = protectedProcedure
     await ctx.needsPermission(Permission.MANAGE_PLUGINS);
 
     await pluginManager.removePlugin(input.pluginId);
+
+    pluginManager.publishPlugins();
+    publishCapabilityAccess();
 
     enqueueActivityLog({
       type: ActivityLogType.PLUGIN_REMOVED,

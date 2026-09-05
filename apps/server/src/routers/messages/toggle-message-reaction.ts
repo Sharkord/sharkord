@@ -8,6 +8,7 @@ import { getReaction } from '../../db/queries/messages';
 import { messageReactions } from '../../db/schema';
 import { loadMessageForWrite } from '../../helpers/load-message-for-write';
 import { resolveKnownEmojiFileId } from '../../helpers/resolve-known-emoji-file-id';
+import { eventBus } from '../../plugins/event-bus';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
 const toggleMessageReactionRoute = rateLimitedProcedure(protectedProcedure, {
@@ -55,6 +56,13 @@ const toggleMessageReactionRoute = rateLimitedProcedure(protectedProcedure, {
     }
 
     publishMessage(input.messageId, message.channelId, 'update');
+
+    eventBus.emit(reaction ? 'reaction:removed' : 'reaction:added', {
+      messageId: input.messageId,
+      channelId: message.channelId,
+      userId: ctx.user.id,
+      emoji: input.emoji
+    });
   });
 
 export { toggleMessageReactionRoute };

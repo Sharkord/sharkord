@@ -24,16 +24,22 @@ const assertFetchableAvatarUrl = async (url: URL) => {
     throw new Error(`unsupported protocol "${url.protocol}"`);
   }
 
-  if (url.hostname === oidcManager.getIssuerUrl().hostname) return;
+  if (url.origin === oidcManager.getIssuerUrl().origin) return;
 
   if (url.protocol !== 'https:') {
-    throw new Error('a picture outside the provider host must use https');
+    throw new Error('a picture outside the provider origin must use https');
   }
 
-  const { address } = await dns.lookup(url.hostname);
+  const addresses = await dns.lookup(url.hostname, { all: true });
 
-  if (!isPublicIp(address)) {
-    throw new Error(`"${url.hostname}" resolves to the private address`);
+  if (addresses.length === 0) {
+    throw new Error(`"${url.hostname}" does not resolve`);
+  }
+
+  for (const { address } of addresses) {
+    if (!isPublicIp(address)) {
+      throw new Error(`"${url.hostname}" resolves to the private address`);
+    }
   }
 };
 

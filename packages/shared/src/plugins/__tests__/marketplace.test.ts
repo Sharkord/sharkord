@@ -37,16 +37,17 @@ describe('zMarketplaceEntry', () => {
     });
   });
 
-  test('should accept sdkVersion as a number or a string', () => {
-    for (const sdkVersion of [1, '1']) {
+  // the same shape the manifest declares, so the two cannot drift
+  test('should require sdkVersion to be a non-negative integer', () => {
+    expect(zMarketplaceEntry.parse(validEntry).versions[0]!.sdkVersion).toBe(1);
+
+    for (const sdkVersion of ['1', 1.5, -1]) {
       const entry = {
         ...validEntry,
         versions: [{ ...validEntry.versions[0], sdkVersion }]
       };
 
-      expect(zMarketplaceEntry.parse(entry).versions[0]!.sdkVersion).toBe(
-        sdkVersion
-      );
+      expect(zMarketplaceEntry.safeParse(entry).success).toBe(false);
     }
   });
 

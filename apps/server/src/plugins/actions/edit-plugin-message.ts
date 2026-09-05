@@ -13,12 +13,13 @@ type TEditPluginMessageOptions = {
   pluginId: string;
   messageId: number;
   content: string;
+  previews?: boolean;
 };
 
 const editPluginMessage = async (
   options: TEditPluginMessageOptions
 ): Promise<void> => {
-  const { pluginId, messageId, content } = options;
+  const { pluginId, messageId, content, previews = true } = options;
 
   invariant(pluginManager.isEnabled(pluginId), {
     code: 'FORBIDDEN',
@@ -63,7 +64,7 @@ const editPluginMessage = async (
     .where(eq(messages.id, messageId));
 
   publishMessage(messageId, message.channelId, 'update');
-  enqueueProcessMetadata(sanitizedContent, messageId);
+  if (previews) enqueueProcessMetadata(sanitizedContent, messageId);
 
   eventBus.emit('message:updated', {
     messageId,

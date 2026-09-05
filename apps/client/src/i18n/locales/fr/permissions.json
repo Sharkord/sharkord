@@ -26,6 +26,7 @@
     "MANAGE_INVITES": "Gérer les invitations",
     "MANAGE_UPDATES": "Gérer les mises à jour",
     "MANAGE_PLUGINS": "Gérer les plugins",
+    "MANAGE_PLUGIN_PERMISSIONS": "Gérer les permissions des plugins",
     "USE_PLUGINS": "Utiliser les plugins",
     "EXECUTE_PLUGIN_COMMANDS": "Exécuter les commandes plugin",
     "VIEW_USER_SENSITIVE_DATA": "Afficher les données sensibles des utilisateurs"
@@ -52,6 +53,7 @@
     "MANAGE_INVITES": "Permet de créer, modifier et supprimer des invitations au serveur.",
     "MANAGE_UPDATES": "Permet d'effectuer des mises à jour.",
     "MANAGE_PLUGINS": "Permet de gérer les plugins.",
+    "MANAGE_PLUGIN_PERMISSIONS": "Permet de choisir quels rôles peuvent utiliser chaque commande et action d'un plugin. Celui qui la possède peut s'accorder ces capacités.",
     "USE_PLUGINS": "Permet d'utiliser les plugins, par exemple en exécutant des commandes de plugin ou en voyant des éléments d'interface ajoutés par des plugins.",
     "EXECUTE_PLUGIN_COMMANDS": "Permet d'exécuter des commandes plugin.",
     "VIEW_USER_SENSITIVE_DATA": "Permet de consulter les données sensibles des utilisateurs, telles que leurs identités, leurs adresses IP et leurs localisations."

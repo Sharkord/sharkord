@@ -1,6 +1,7 @@
 import { and, eq, isNull, lt, max, or, sql } from 'drizzle-orm';
 import { db } from '..';
 import { HttpValidationError } from '../../http/errors';
+import { eventBus } from '../../plugins/event-bus';
 import { invariant } from '../../utils/invariant';
 import { getDefaultRole } from '../queries/roles';
 import {
@@ -17,6 +18,7 @@ type TCreateUserOptions = {
   hashedPassword: string;
   name?: string;
   oidcSub?: string;
+  oidcIssuer?: string;
   inviteCode?: string;
   inviteRoleId?: number | null;
 };
@@ -26,6 +28,7 @@ const createUser = async ({
   hashedPassword,
   name,
   oidcSub,
+  oidcIssuer,
   inviteCode,
   inviteRoleId
 }: TCreateUserOptions): Promise<number> => {
@@ -37,8 +40,9 @@ const createUser = async ({
   });
 
   const randomNum = Math.floor(Math.random() * 99999) + 10000; // between 10000 and 99999 to ensure it's always 5 digits, for better readability
+  const username = name || `SharkordUser${randomNum}`;
 
-  return db.transaction((tx) => {
+  const userId = db.transaction((tx) => {
     if (inviteCode) {
       const consumed = tx
         .update(invites)
@@ -63,9 +67,10 @@ const createUser = async ({
     const user = tx
       .insert(users)
       .values({
-        name: name || `SharkordUser${randomNum}`,
+        name: username,
         identity,
         oidcSub,
+        oidcIssuer,
         // an account born at the provider gets an unusable random hash, so there is no
         // current password its owner could supply to change it
         passwordSet: !oidcSub,
@@ -137,13 +142,29 @@ const createUser = async ({
 
     return user.id;
   });
+
+  eventBus.emit('user:created', { userId, username });
+
+  return userId;
 };
 
-const linkOidcSub = async (userId: number, oidcSub: string) => {
+const invalidateUserSessions = async (userId: number) => {
   await db
     .update(users)
-    .set({ oidcSub, updatedAt: Date.now() })
+    .set({ tokenVersion: sql`${users.tokenVersion} + 1` })
+    .where(eq(users.id, userId))
+    .run();
+};
+
+const linkOidcSub = async (
+  userId: number,
+  oidcSub: string,
+  oidcIssuer: string
+) => {
+  await db
+    .update(users)
+    .set({ oidcSub, oidcIssuer, updatedAt: Date.now() })
     .where(eq(users.id, userId));
 };
 
-export { createUser, linkOidcSub };
+export { createUser, invalidateUserSessions, linkOidcSub };

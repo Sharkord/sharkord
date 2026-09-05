@@ -1,5 +1,5 @@
 import { Emoji } from '@/components/emoji';
-import { useOwnUserId, useUsernames } from '@/features/server/users/hooks';
+import { useOwnUserId } from '@/features/server/users/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
@@ -11,8 +11,7 @@ import { Button, Tooltip } from '@sharkord/ui';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-
-const MAX_REACTORS_PREVIEW = 4;
+import { useReactorNames } from './hooks/use-reactor-names';
 
 type TTooltipPreviewProps = {
   emojiName: string;
@@ -43,6 +42,7 @@ type TReactionProps = {
   onSelect: (emoji: string) => void;
   file: TFile | null;
   userIds: number[];
+  pluginIds: string[];
 };
 
 const Reaction = memo(
@@ -52,24 +52,11 @@ const Reaction = memo(
     isUserReacted,
     onSelect,
     file,
-    userIds
+    userIds,
+    pluginIds
   }: TReactionProps) => {
-    const { t } = useTranslation('common');
-    const usernames = useUsernames();
     const handleClick = useCallback(() => onSelect(emoji), [onSelect, emoji]);
-    const tooltipContent = useMemo(() => {
-      const names = userIds
-        .slice(0, MAX_REACTORS_PREVIEW)
-        .map((userId) => usernames[userId] || 'Unknown');
-
-      if (userIds.length > MAX_REACTORS_PREVIEW) {
-        names.push(
-          t('andMore', { count: userIds.length - MAX_REACTORS_PREVIEW })
-        );
-      }
-
-      return names.join(', ');
-    }, [userIds, usernames, t]);
+    const tooltipContent = useReactorNames(userIds, pluginIds);
 
     return (
       <Tooltip
@@ -114,6 +101,7 @@ type TAggregatedReaction = {
   emoji: string;
   count: number;
   userIds: number[];
+  pluginIds: string[];
   isUserReacted: boolean;
   createdAt: number;
   file: TFile | null;
@@ -151,6 +139,7 @@ const MessageReactions = memo(
             emoji: reaction.emoji,
             count: 0,
             userIds: [],
+            pluginIds: [],
             isUserReacted: false,
             createdAt: reaction.createdAt,
             file: reaction.file
@@ -160,7 +149,12 @@ const MessageReactions = memo(
         const aggregated = reactionMap.get(reaction.emoji)!;
 
         aggregated.count++;
-        aggregated.userIds.push(reaction.userId);
+
+        if (reaction.pluginId) {
+          aggregated.pluginIds.push(reaction.pluginId);
+        } else if (reaction.userId !== null) {
+          aggregated.userIds.push(reaction.userId);
+        }
 
         if (ownUserId && reaction.userId === ownUserId) {
           aggregated.isUserReacted = true;
@@ -169,7 +163,7 @@ const MessageReactions = memo(
 
       // sort by first reaction createdAt desc
       return Array.from(reactionMap.values()).sort(
-        (a, b) => b.createdAt + a.createdAt
+        (a, b) => b.createdAt - a.createdAt
       );
     }, [reactions, ownUserId]);
 
@@ -183,6 +177,7 @@ const MessageReactions = memo(
             emoji={reaction.emoji}
             count={reaction.count}
             userIds={reaction.userIds}
+            pluginIds={reaction.pluginIds}
             isUserReacted={reaction.isUserReacted}
             onSelect={handleReactionClick}
             file={reaction.file}

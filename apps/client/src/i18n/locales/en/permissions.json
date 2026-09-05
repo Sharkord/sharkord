@@ -26,6 +26,7 @@
     "MANAGE_INVITES": "Manage invites",
     "MANAGE_UPDATES": "Manage updates",
     "MANAGE_PLUGINS": "Manage plugins",
+    "MANAGE_PLUGIN_PERMISSIONS": "Manage plugin permissions",
     "USE_PLUGINS": "Use plugins",
     "VIEW_USER_SENSITIVE_DATA": "View user sensitive data"
   },
@@ -51,6 +52,7 @@
     "MANAGE_INVITES": "Grants the ability to create, edit, and delete server invites.",
     "MANAGE_UPDATES": "Grants the ability to perform updates.",
     "MANAGE_PLUGINS": "Grants the ability to manage plugins.",
+    "MANAGE_PLUGIN_PERMISSIONS": "Grants the ability to choose which roles can use each plugin command and action. Anyone with it can grant those capabilities to themselves.",
     "USE_PLUGINS": "Grants the ability to use plugins, such as executing plugin commands or seeing UI elements added by plugins.",
     "VIEW_USER_SENSITIVE_DATA": "Grants the ability to view user sensitive data like identity, IP address, and location."
   },

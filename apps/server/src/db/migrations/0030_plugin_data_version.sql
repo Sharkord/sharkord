@@ -1,0 +1,1 @@
+ALTER TABLE `plugin_data` ADD `version` text;

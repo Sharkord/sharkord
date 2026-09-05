@@ -2,36 +2,93 @@ import { OidcError } from '@sharkord/shared';
 import type http from 'http';
 import { config } from '../../config';
 import { isOidcEnabled } from '../../helpers/oidc/settings';
-import { createRateLimiter } from '../../utils/rate-limiters/rate-limiter';
+import { logger } from '../../logger';
 import {
-  enforceHttpRateLimit,
-  isSecureRequest,
-  sendJsonError
-} from '../helpers';
+  createRateLimiter,
+  getClientRateLimitKey,
+  getRateLimitRetrySeconds
+} from '../../utils/rate-limiters/rate-limiter';
+import { getPublicOrigin, isSecureRequest, sendJsonError } from '../helpers';
 
-const OIDC_STATE_COOKIE = 'sharkord_oidc_state';
+const OIDC_STATE_COOKIE_PREFIX = 'sharkord_oidc_state_';
 
 const oidcRateLimiter = createRateLimiter({
   maxRequests: config.rateLimiters.oidc.maxRequests,
   windowMs: config.rateLimiters.oidc.windowMs
 });
 
+const redirectWithError = (
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  error: OidcError,
+  extraHeaders: Record<string, string | string[]> = {}
+) => {
+  const target = new URL(getPublicOrigin(req));
+
+  target.searchParams.set('oidc_error', error);
+
+  res.writeHead(302, {
+    'Cache-Control': 'no-store',
+    ...extraHeaders,
+    Location: target.toString()
+  });
+  res.end();
+};
+
+const consumeRateLimit = (ip: string | undefined, route: string) => {
+  if (!ip) {
+    logger.warn(
+      `[Rate Limiter HTTP] Missing IP address in request info, skipping rate limiting for ${route} route.`
+    );
+
+    return { allowed: true, retryAfterMs: 0 };
+  }
+
+  return oidcRateLimiter.consume(getClientRateLimitKey(ip));
+};
+
 const guardOidcRoute = (
   req: http.IncomingMessage,
   res: http.ServerResponse,
-  ip: string | undefined,
-  route: string
+  {
+    ip,
+    route,
+    isNavigation
+  }: { ip: string | undefined; route: string; isNavigation: boolean }
 ): boolean => {
   if (!isOidcEnabled()) {
-    sendJsonError(res, 404, 'Not found');
+    if (isNavigation) {
+      redirectWithError(req, res, OidcError.SERVER_ERROR);
+    } else {
+      sendJsonError(res, 404, 'Not found');
+    }
 
     return false;
   }
 
-  return enforceHttpRateLimit(res, oidcRateLimiter, ip, {
-    route,
-    message: 'Too many sign in attempts. Please try again shortly.'
-  });
+  const rateLimit = consumeRateLimit(ip, route);
+
+  if (rateLimit.allowed) return true;
+
+  logger.debug(`[Rate Limiter HTTP] ${route} rate limited`);
+
+  if (isNavigation) {
+    redirectWithError(req, res, OidcError.RATE_LIMITED);
+
+    return false;
+  }
+
+  res.setHeader(
+    'Retry-After',
+    getRateLimitRetrySeconds(rateLimit.retryAfterMs)
+  );
+  sendJsonError(
+    res,
+    429,
+    'Too many sign in attempts. Please try again shortly.'
+  );
+
+  return false;
 };
 
 const getCookie = (
@@ -55,13 +112,16 @@ const getCookie = (
   return undefined;
 };
 
+const hasStateCookie = (req: http.IncomingMessage, state: string): boolean =>
+  getCookie(req, `${OIDC_STATE_COOKIE_PREFIX}${state}`) === '1';
+
 const buildStateCookie = (
   req: http.IncomingMessage,
-  value: string,
+  state: string,
   maxAgeSeconds: number
 ) => {
   const attributes = [
-    `${OIDC_STATE_COOKIE}=${value}`,
+    `${OIDC_STATE_COOKIE_PREFIX}${state}=${maxAgeSeconds === 0 ? '' : '1'}`,
     'HttpOnly',
     'SameSite=Lax',
     'Path=/',
@@ -73,32 +133,15 @@ const buildStateCookie = (
   return attributes.join('; ');
 };
 
-const clearStateCookie = (req: http.IncomingMessage) =>
-  buildStateCookie(req, '', 0);
-
-const redirectWithError = (
-  res: http.ServerResponse,
-  origin: string,
-  error: OidcError,
-  extraHeaders: Record<string, string | string[]> = {}
-) => {
-  const target = new URL(origin);
-
-  target.searchParams.set('oidc_error', error);
-
-  res.writeHead(302, {
-    'Cache-Control': 'no-store',
-    ...extraHeaders,
-    Location: target.toString()
-  });
-  res.end();
-};
+const clearStateCookie = (req: http.IncomingMessage, state: string) =>
+  buildStateCookie(req, state, 0);
 
 export {
   buildStateCookie,
   clearStateCookie,
   getCookie,
   guardOidcRoute,
-  OIDC_STATE_COOKIE,
+  hasStateCookie,
+  OIDC_STATE_COOKIE_PREFIX,
   redirectWithError
 };

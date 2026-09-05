@@ -6,7 +6,10 @@ import {
   flatCommandsSelector,
   fullscreenPluginIdsSelector,
   pluginComponentsBySlotSelector,
-  pluginMetadataByIdSelector
+  pluginMetadataByIdSelector,
+  pluginNamesSelector,
+  pluginSlotIdsSelector,
+  pluginTabsByIdSelector
 } from './selectors';
 
 export const usePluginCommands = () => useSelector(commandsSelector);
@@ -18,10 +21,18 @@ export const usePluginComponentsBySlot = (slotId: PluginSlot) =>
     pluginComponentsBySlotSelector(state, slotId)
   );
 
+export const usePluginNames = () => useSelector(pluginNamesSelector);
+
 export const usePluginMetadata = (pluginId: string | null | undefined) =>
   useSelector((state: IRootState) =>
     pluginId ? pluginMetadataByIdSelector(state, pluginId) : undefined
   );
+
+export const usePluginSlotIds = (pluginId: string) =>
+  useSelector((state: IRootState) => pluginSlotIdsSelector(state, pluginId));
+
+export const usePluginTabs = (pluginId: string) =>
+  useSelector((state: IRootState) => pluginTabsByIdSelector(state, pluginId));
 
 export const useFullscreenPluginIds = () =>
   useSelector(fullscreenPluginIdsSelector);

@@ -2,6 +2,23 @@ import { describe, expect, test } from 'bun:test';
 import type { RegisteredCommand } from '../../plugins';
 import { parseDomCommand, toDomCommand } from '../command-parser';
 
+// html parsers hand attribute values back with entities already decoded, so the
+// round-trip tests have to decode too or they assert on the escaped form
+const toAttribs = (domString: string): Record<string, string> => {
+  const attribs: Record<string, string> = {};
+
+  for (const [, name, value] of domString.matchAll(/([\w-]+)="([^"]*)"/g)) {
+    attribs[name!] = value!
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&');
+  }
+
+  return attribs;
+};
+
 describe('command-parser', () => {
   describe('toDomCommand', () => {
     test('should convert simple command to DOM string', () => {
@@ -14,14 +31,14 @@ describe('command-parser', () => {
         status: 'pending',
         command: {
           name: 'test-command',
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
       const result = toDomCommand(command, []);
 
       expect(result).toBe(
-        "<command data-plugin-id=\"test-plugin\" data-command=\"test-command\" data-args='[]' data-status='pending' data-response=''></command>"
+        '<command data-plugin-id="test-plugin" data-command="test-command" data-args="[]" data-status="pending" data-response=""></command>'
       );
     });
 
@@ -48,14 +65,14 @@ describe('command-parser', () => {
               required: true
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
       const result = toDomCommand(command, ['Alice']);
 
       expect(result).toBe(
-        '<command data-plugin-id="test-plugin" data-command="greet" data-args=\'[{"name":"username","value":"Alice","status":"pending"}]\' data-status=\'pending\' data-response=\'\'></command>'
+        '<command data-plugin-id="test-plugin" data-command="greet" data-args="[{&quot;name&quot;:&quot;username&quot;,&quot;value&quot;:&quot;Alice&quot;,&quot;status&quot;:&quot;pending&quot;}]" data-status="pending" data-response=""></command>'
       );
     });
 
@@ -102,14 +119,14 @@ describe('command-parser', () => {
               required: true
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
       const result = toDomCommand(command, [10, 20, 'add']);
 
       expect(result).toBe(
-        '<command data-plugin-id="test-plugin" data-command="calculate" data-args=\'[{"name":"a","value":10,"status":"completed"},{"name":"b","value":20,"status":"completed"},{"name":"operation","value":"add","status":"completed"}]\' data-status=\'completed\' data-response=\'\'></command>'
+        '<command data-plugin-id="test-plugin" data-command="calculate" data-args="[{&quot;name&quot;:&quot;a&quot;,&quot;value&quot;:10,&quot;status&quot;:&quot;completed&quot;},{&quot;name&quot;:&quot;b&quot;,&quot;value&quot;:20,&quot;status&quot;:&quot;completed&quot;},{&quot;name&quot;:&quot;operation&quot;,&quot;value&quot;:&quot;add&quot;,&quot;status&quot;:&quot;completed&quot;}]" data-status="completed" data-response=""></command>'
       );
     });
 
@@ -148,14 +165,14 @@ describe('command-parser', () => {
               sensitive: true
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
       const result = toDomCommand(command, ['alice', 'secret123']);
 
       expect(result).toBe(
-        '<command data-plugin-id="test-plugin" data-command="login" data-args=\'[{"name":"username","value":"alice","status":"pending"},{"name":"password","value":"****","status":"pending"}]\' data-status=\'pending\' data-response=\'\'></command>'
+        '<command data-plugin-id="test-plugin" data-command="login" data-args="[{&quot;name&quot;:&quot;username&quot;,&quot;value&quot;:&quot;alice&quot;,&quot;status&quot;:&quot;pending&quot;},{&quot;name&quot;:&quot;password&quot;,&quot;value&quot;:&quot;****&quot;,&quot;status&quot;:&quot;pending&quot;}]" data-status="pending" data-response=""></command>'
       );
     });
 
@@ -168,14 +185,14 @@ describe('command-parser', () => {
         status: 'pending',
         command: {
           name: 'ping',
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
       const result = toDomCommand(command, []);
 
       expect(result).toBe(
-        "<command data-plugin-id=\"test-plugin\" data-command=\"ping\" data-args='[]' data-status='pending' data-response=''></command>"
+        '<command data-plugin-id="test-plugin" data-command="ping" data-args="[]" data-status="pending" data-response=""></command>'
       );
     });
 
@@ -202,14 +219,14 @@ describe('command-parser', () => {
               required: true
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
       const result = toDomCommand(command, [true]);
 
       expect(result).toBe(
-        '<command data-plugin-id="test-plugin" data-command="toggle" data-args=\'[{"name":"enabled","value":true,"status":"pending"}]\' data-status=\'pending\' data-response=\'\'></command>'
+        '<command data-plugin-id="test-plugin" data-command="toggle" data-args="[{&quot;name&quot;:&quot;enabled&quot;,&quot;value&quot;:true,&quot;status&quot;:&quot;pending&quot;}]" data-status="pending" data-response=""></command>'
       );
     });
 
@@ -246,7 +263,7 @@ describe('command-parser', () => {
               required: false
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -254,7 +271,7 @@ describe('command-parser', () => {
 
       // undefined values are not included in the JSON stringification
       expect(result).toBe(
-        '<command data-plugin-id="test-plugin" data-command="test" data-args=\'[{"name":"value1","value":null,"status":"pending"},{"name":"value2","status":"pending"}]\' data-status=\'pending\' data-response=\'\'></command>'
+        '<command data-plugin-id="test-plugin" data-command="test" data-args="[{&quot;name&quot;:&quot;value1&quot;,&quot;value&quot;:null,&quot;status&quot;:&quot;pending&quot;},{&quot;name&quot;:&quot;value2&quot;,&quot;status&quot;:&quot;pending&quot;}]" data-status="pending" data-response=""></command>'
       );
     });
 
@@ -295,14 +312,14 @@ describe('command-parser', () => {
               sensitive: true
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
       const result = toDomCommand(command, ['abc123', 'xyz789']);
 
       expect(result).toBe(
-        '<command data-plugin-id="test-plugin" data-command="auth" data-args=\'[{"name":"token","value":"****","status":"pending"},{"name":"apiKey","value":"****","status":"pending"}]\' data-status=\'pending\' data-response=\'\'></command>'
+        '<command data-plugin-id="test-plugin" data-command="auth" data-args="[{&quot;name&quot;:&quot;token&quot;,&quot;value&quot;:&quot;****&quot;,&quot;status&quot;:&quot;pending&quot;},{&quot;name&quot;:&quot;apiKey&quot;,&quot;value&quot;:&quot;****&quot;,&quot;status&quot;:&quot;pending&quot;}]" data-status="pending" data-response=""></command>'
       );
     });
   });
@@ -608,26 +625,13 @@ describe('command-parser', () => {
               required: true
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
       const domString = toDomCommand(command, ['hello', 42]);
 
-      // Extract attributes from the DOM string
-      const commandMatch = domString.match(
-        /<command data-plugin-id="([^"]+)"(?: data-plugin-logo="([^"]*)")? data-command="([^"]+)" data-args='([^']+)' data-status='([^']*)' data-response='([^']*)'><\/command>/
-      );
-      const domElement = {
-        attribs: {
-          'data-plugin-id': commandMatch![1],
-          ...(commandMatch![2] ? { 'data-plugin-logo': commandMatch![2] } : {}),
-          'data-command': commandMatch![3],
-          'data-args': commandMatch![4],
-          'data-status': commandMatch![5],
-          'data-response': commandMatch![6]
-        }
-      };
+      const domElement = { attribs: toAttribs(domString) };
 
       const parsed = parseDomCommand(domElement);
 
@@ -675,26 +679,13 @@ describe('command-parser', () => {
               sensitive: true
             }
           ],
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
       const domString = toDomCommand(command, ['visible', 'hidden']);
 
-      // Extract attributes from the DOM string
-      const commandMatch = domString.match(
-        /<command data-plugin-id="([^"]+)"(?: data-plugin-logo="([^"]*)")? data-command="([^"]+)" data-args='([^']+)' data-status='([^']*)' data-response='([^']*)'><\/command>/
-      );
-      const domElement = {
-        attribs: {
-          'data-plugin-id': commandMatch![1],
-          ...(commandMatch![2] ? { 'data-plugin-logo': commandMatch![2] } : {}),
-          'data-command': commandMatch![3],
-          'data-args': commandMatch![4],
-          'data-status': commandMatch![5],
-          'data-response': commandMatch![6]
-        }
-      };
+      const domElement = { attribs: toAttribs(domString) };
 
       const parsed = parseDomCommand(domElement);
 
@@ -718,7 +709,7 @@ describe('command-parser', () => {
         imageUrl: 'https://example.com/logo.png',
         command: {
           name: 'test',
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 
@@ -727,6 +718,59 @@ describe('command-parser', () => {
       expect(result).toContain(
         'data-plugin-logo="https://example.com/logo.png"'
       );
+    });
+
+    test('escapes user supplied arguments so they cannot break out of the attribute', () => {
+      const command: RegisteredCommand & {
+        status: 'pending' | 'completed' | 'failed';
+      } = {
+        pluginId: 'test-plugin',
+        name: 'echo',
+        status: 'pending',
+        args: [{ name: 'text', type: 'string', required: true }],
+        command: {
+          name: 'echo',
+          args: [{ name: 'text', type: 'string', required: true }],
+          executes: async () => ({})
+        }
+      };
+
+      const result = toDomCommand(command, [
+        `a'></command><img src=x onerror=alert(1)>`
+      ]);
+
+      expect(result).not.toContain('<img');
+      expect(result).not.toContain('</command><');
+      expect(result.match(/<\/command>/g)).toHaveLength(1);
+      expect(parseDomCommand({ attribs: toAttribs(result) }).args).toEqual([
+        { name: 'text', value: `a'></command><img src=x onerror=alert(1)>` }
+      ]);
+    });
+
+    test('escapes plugin supplied responses and command names', () => {
+      const command: RegisteredCommand & {
+        status: 'pending' | 'completed' | 'failed';
+        response?: unknown;
+      } = {
+        pluginId: 'test-plugin',
+        name: `evil" onload="alert(1)`,
+        status: 'completed',
+        response: `done' <script>alert(1)</script>`,
+        command: {
+          name: 'evil',
+          executes: async () => ({})
+        }
+      };
+
+      const result = toDomCommand(command, []);
+
+      expect(result).not.toContain('<script');
+      expect(result).not.toContain('onload="alert');
+
+      const parsed = parseDomCommand({ attribs: toAttribs(result) });
+
+      expect(parsed.commandName).toBe(`evil" onload="alert(1)`);
+      expect(parsed.response).toBe(`done' <script>alert(1)</script>`);
     });
 
     test('should omit logo attribute when imageUrl is undefined', () => {
@@ -739,7 +783,7 @@ describe('command-parser', () => {
         status: 'pending',
         command: {
           name: 'test',
-          execute: async () => ({})
+          executes: async () => ({})
         }
       };
 

@@ -1,20 +1,11 @@
+import { SettingsListEditor } from '@/components/server-screens/settings-shell/list-editor';
 import {
   useAdminChannelGeneral,
   useAdminChannelPermissions
 } from '@/features/server/admin/hooks';
 import { ChannelPermission } from '@sharkord/shared';
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  LoadingCard
-} from '@sharkord/ui';
-import { MessageCircleWarning } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle, LoadingCard } from '@sharkord/ui';
+import { MessageCircleWarning, Users } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Override } from './override';
@@ -39,22 +30,15 @@ const ChannelPermissions = memo(({ channelId }: TChannelPermissionsProps) => {
 
     const [type, idStr] = selectedOverrideId.split('-');
     const id = parseInt(idStr);
+    const matches =
+      type === 'role'
+        ? rolePermissions.filter((perm) => perm.roleId === id)
+        : userPermissions.filter((perm) => perm.userId === id);
 
-    if (type === 'role') {
-      return rolePermissions
-        .filter((perm) => perm.roleId === id)
-        .map((perm) => ({
-          permission: perm.permission as ChannelPermission,
-          allow: perm.allow
-        }));
-    } else {
-      return userPermissions
-        .filter((perm) => perm.userId === id)
-        .map((perm) => ({
-          permission: perm.permission as ChannelPermission,
-          allow: perm.allow
-        }));
-    }
+    return matches.map((perm) => ({
+      permission: perm.permission as ChannelPermission,
+      allow: perm.allow
+    }));
   }, [selectedOverrideId, rolePermissions, userPermissions]);
 
   if (loading) {
@@ -62,22 +46,19 @@ const ChannelPermissions = memo(({ channelId }: TChannelPermissionsProps) => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('permissionsTitle')}</CardTitle>
-        <CardDescription className="flex flex-col space-y-4">
-          <span>{t('permissionsDesc')}</span>
-          {!channel?.private && (
-            <Alert variant="destructive">
-              <MessageCircleWarning />
-              <AlertTitle>{t('publicChannelTitle')}</AlertTitle>
-              <AlertDescription>{t('publicChannelDesc')}</AlertDescription>
-            </Alert>
-          )}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex gap-6">
+    <>
+      {!channel?.private && (
+        <Alert variant="destructive">
+          <MessageCircleWarning />
+          <AlertTitle>{t('publicChannelTitle')}</AlertTitle>
+          <AlertDescription>{t('publicChannelDesc')}</AlertDescription>
+        </Alert>
+      )}
+
+      <SettingsListEditor
+        emptyIcon={Users}
+        emptyTitle={t('selectRoleOrUser')}
+        list={
           <OverridesList
             channelId={channelId}
             rolePermissions={rolePermissions}
@@ -86,8 +67,9 @@ const ChannelPermissions = memo(({ channelId }: TChannelPermissionsProps) => {
             setSelectedOverrideId={setSelectedOverrideId}
             refetch={refetch}
           />
-
-          {selectedOverrideId ? (
+        }
+        editor={
+          selectedOverrideId && (
             <Override
               key={selectedOverrideId}
               channelId={channelId}
@@ -96,16 +78,10 @@ const ChannelPermissions = memo(({ channelId }: TChannelPermissionsProps) => {
               setSelectedOverrideId={setSelectedOverrideId}
               refetch={refetch}
             />
-          ) : (
-            <Card className="flex flex-1 items-center justify-center">
-              <CardContent className="py-12 text-center text-muted-foreground text-sm">
-                {t('selectRoleOrUser')}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+          )
+        }
+      />
+    </>
   );
 });
 

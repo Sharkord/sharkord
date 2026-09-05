@@ -3,11 +3,18 @@ import { eq } from 'drizzle-orm';
 import { pluginManager } from '..';
 import { db } from '../../db';
 import { publishMessage, publishReplyCount } from '../../db/publishers';
-import { channels, messages } from '../../db/schema';
+import { getSettings } from '../../db/queries/server';
+import { channels, messageFiles, messages } from '../../db/schema';
+import { fileManager } from '../../helpers/file-manager';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
 import { invariant } from '../../utils/invariant';
 import { eventBus } from '../event-bus';
+
+type TPluginMessageFile = {
+  name: string;
+  data: Uint8Array;
+};
 
 type TCreatePluginMessageOptions = {
   pluginId: string;
@@ -15,13 +22,22 @@ type TCreatePluginMessageOptions = {
   content: string;
   parentMessageId?: number;
   replyToMessageId?: number;
+  files?: TPluginMessageFile[];
+  previews?: boolean;
 };
 
 const createPluginMessage = async (
   options: TCreatePluginMessageOptions
 ): Promise<{ messageId: number }> => {
-  const { pluginId, channelId, content, parentMessageId, replyToMessageId } =
-    options;
+  const {
+    pluginId,
+    channelId,
+    content,
+    parentMessageId,
+    replyToMessageId,
+    files = [],
+    previews = true
+  } = options;
 
   invariant(pluginManager.isEnabled(pluginId), {
     code: 'FORBIDDEN',
@@ -90,27 +106,62 @@ const createPluginMessage = async (
     });
   }
 
+  const settings = await getSettings();
+
+  invariant(files.length <= Math.max(0, settings.storageMaxFilesPerMessage), {
+    code: 'BAD_REQUEST',
+    message: `At most ${settings.storageMaxFilesPerMessage} file(s) can be attached per message.`
+  });
+
   const sanitizedContent = sanitizeMessageHtml(content);
 
-  invariant(!isEmptyMessage(sanitizedContent), {
+  invariant(!isEmptyMessage(sanitizedContent) || files.length > 0, {
     code: 'BAD_REQUEST',
     message: 'Plugin message content cannot be empty.'
   });
 
-  const message = await db
-    .insert(messages)
-    .values({
-      channelId,
-      userId: null,
+  const fileIds: number[] = [];
+
+  for (const file of files) {
+    const saved = await fileManager.savePluginFile(
       pluginId,
-      content: sanitizedContent,
-      editable: false,
-      parentMessageId: parentMessageId ?? null,
-      replyToMessageId: replyToMessageId ?? null,
-      createdAt: Date.now()
-    })
-    .returning()
-    .get();
+      file.name,
+      file.data
+    );
+
+    fileIds.push(saved.id);
+  }
+
+  const message = db.transaction((tx) => {
+    const created = tx
+      .insert(messages)
+      .values({
+        channelId,
+        userId: null,
+        pluginId,
+        content: sanitizedContent,
+        editable: false,
+        parentMessageId: parentMessageId ?? null,
+        replyToMessageId: replyToMessageId ?? null,
+        createdAt: Date.now()
+      })
+      .returning()
+      .get();
+
+    if (fileIds.length > 0) {
+      tx.insert(messageFiles)
+        .values(
+          fileIds.map((fileId) => ({
+            messageId: created.id,
+            fileId,
+            createdAt: Date.now()
+          }))
+        )
+        .run();
+    }
+
+    return created;
+  });
 
   publishMessage(message.id, channelId, 'create');
 
@@ -118,7 +169,7 @@ const createPluginMessage = async (
     publishReplyCount(parentMessageId, channelId);
   }
 
-  enqueueProcessMetadata(sanitizedContent, message.id);
+  if (previews) enqueueProcessMetadata(sanitizedContent, message.id);
 
   eventBus.emit('message:created', {
     messageId: message.id,
@@ -133,3 +184,4 @@ const createPluginMessage = async (
 };
 
 export { createPluginMessage };
+export type { TPluginMessageFile };
