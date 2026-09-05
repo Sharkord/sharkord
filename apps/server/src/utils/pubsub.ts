@@ -80,6 +80,11 @@ type Events = {
     channelId: number;
     fromChannelId: number;
   };
+  [ServerEvents.USER_VOICE_REACTION]: {
+    channelId: number;
+    userId: number;
+    emoji: string;
+  };
   [ServerEvents.VOICE_NEW_PRODUCER]: {
     channelId: number;
     remoteId: number;
