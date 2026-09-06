@@ -20,6 +20,7 @@ import path from 'path';
 import { initTest } from '../../__tests__/helpers';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
+import { getChannelsReadStatesForUser } from '../../db/queries/channels';
 import { getUserRoleIds } from '../../db/queries/roles';
 import {
   activityLog,
@@ -926,6 +927,64 @@ describe('plugins router', () => {
       expect(first!.status).toBe('rejected');
       expect(second!.status).toBe('fulfilled');
       expect(calls).toBe(2);
+    });
+  });
+
+  // a plugin message is a message everyone in the channel has yet to read, and
+  // the badge that says so is the only sign it arrived
+  describe('unread counts', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const sendPluginMessage = async (channelId: number) => {
+      const { caller } = await initTest();
+
+      return (await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'send-link',
+        args: { channelId, previews: false }
+      })) as { messageId: number };
+    };
+
+    // channel 1 is seeded with one message from user 1, so every count here is
+    // measured as a delta rather than against a fixed number
+    const unreadInChannelOne = async (userId: number) =>
+      (await getChannelsReadStatesForUser(userId, 1))[1] ?? 0;
+
+    // the control: whatever the seed leaves behind, a user message moves this
+    test('should count a user message as unread for everyone else', async () => {
+      const { caller } = await initTest(1);
+      const before = await unreadInChannelOne(2);
+
+      await caller.messages.send({ channelId: 1, content: 'hello', files: [] });
+
+      expect(await unreadInChannelOne(2)).toBe(before + 1);
+    });
+
+    test('should count a plugin message as unread', async () => {
+      const before = await unreadInChannelOne(2);
+
+      await sendPluginMessage(1);
+
+      expect(await unreadInChannelOne(2)).toBe(before + 1);
+    });
+
+    // the message belongs to the plugin, not to whoever ran the command, so it
+    // is unread for them too
+    test('should count a plugin message for the user who triggered it', async () => {
+      const before = await unreadInChannelOne(1);
+
+      await sendPluginMessage(1);
+
+      expect(await unreadInChannelOne(1)).toBe(before + 1);
+    });
+
+    test('should clear a plugin message once the channel is read', async () => {
+      const { caller } = await initTest(2);
+
+      await sendPluginMessage(1);
+      await caller.channels.markAsRead({ channelId: 1 });
+
+      expect(await unreadInChannelOne(2)).toBe(0);
     });
   });
 
