@@ -27,6 +27,14 @@ const onUserUpdateVoiceStateRoute = protectedProcedure.subscription(
   }
 );
 
+// broadcast too: reactions render on the voice cards of whichever channel the user is
+// looking at, which is not necessarily the one they are connected to
+const onUserVoiceReactionRoute = protectedProcedure.subscription(
+  async ({ ctx }) => {
+    return ctx.pubsub.subscribe(ServerEvents.USER_VOICE_REACTION);
+  }
+);
+
 const onUserVoiceMovedRoute = protectedProcedure.subscription(
   async ({ ctx }) => {
     return ctx.pubsub.subscribeFor(ctx.user.id, ServerEvents.USER_VOICE_MOVED);
@@ -85,6 +93,7 @@ export {
   onUserLeaveVoiceRoute,
   onUserUpdateVoiceStateRoute,
   onUserVoiceMovedRoute,
+  onUserVoiceReactionRoute,
   onVoiceAddExternalStreamRoute,
   onVoiceNewProducerRoute,
   onVoiceProducerClosedRoute,

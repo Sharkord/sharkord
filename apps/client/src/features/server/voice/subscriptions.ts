@@ -9,6 +9,7 @@ import {
   removeExternalStreamFromVoiceChannel,
   removeUserFromVoiceChannel,
   setVoiceMoveTargetChannelId,
+  showVoiceReaction,
   updateExternalStreamInVoiceChannel,
   updateVoiceUserState
 } from './actions';
@@ -80,6 +81,14 @@ const subscribeToVoice = () => {
       onError: handleSubscriptionError('onVoiceRemoveExternalStreamSub')
     });
 
+  const onReactionSub = trpc.voice.onReaction.subscribe(undefined, {
+    onData: ({ channelId, userId, emoji }) => {
+      logDebug('[EVENTS] voice.onReaction', { channelId, userId, emoji });
+      showVoiceReaction(userId, emoji);
+    },
+    onError: handleSubscriptionError('onVoiceReaction')
+  });
+
   const onMovedSub = trpc.voice.onMoved.subscribe(undefined, {
     onData: ({ channelId, fromChannelId }) => {
       logDebug('[EVENTS] voice.onMoved', { channelId, fromChannelId });
@@ -101,6 +110,7 @@ const subscribeToVoice = () => {
     onVoiceAddExternalStreamSub.unsubscribe();
     onVoiceUpdateExternalStreamSub.unsubscribe();
     onVoiceRemoveExternalStreamSub.unsubscribe();
+    onReactionSub.unsubscribe();
     onMovedSub.unsubscribe();
   };
 };

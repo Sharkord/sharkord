@@ -28,6 +28,7 @@ import { serverSliceActions } from '../slice';
 import { SoundType } from '../types';
 import { ownUserIdSelector } from '../users/selectors';
 import { ownVoiceStateSelector } from './selectors';
+import { VOICE_REACTION_DURATION_MS } from './statics';
 
 export const addUserToVoiceChannel = (
   userId: number,
@@ -164,6 +165,22 @@ export const updateVoiceUserState = (
   store.dispatch(
     serverSliceActions.updateVoiceUserState({ userId, channelId, newState })
   );
+};
+
+let nextVoiceReactionId = 0;
+
+export const showVoiceReaction = (userId: number, emoji: string): void => {
+  const id = ++nextVoiceReactionId;
+
+  store.dispatch(
+    serverSliceActions.addVoiceReaction({ userId, reaction: { id, emoji } })
+  );
+
+  setTimeout(() => {
+    store.dispatch(
+      serverSliceActions.removeVoiceReaction({ userId, reactionId: id })
+    );
+  }, VOICE_REACTION_DURATION_MS);
 };
 
 export const updateOwnVoiceState = (

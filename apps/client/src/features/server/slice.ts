@@ -29,8 +29,10 @@ import type {
   TDisconnectInfo,
   TMessagesMap,
   TReconnectState,
-  TThreadMessagesMap
+  TThreadMessagesMap,
+  TVoiceReaction
 } from './types';
+import { MAX_VOICE_REACTIONS_PER_USER } from './voice/statics';
 
 export interface IServerState {
   connected: boolean;
@@ -62,6 +64,9 @@ export interface IServerState {
     [parentMessageId: number]: number[];
   };
   voiceMap: TVoiceMap;
+  voiceReactions: {
+    [userId: number]: TVoiceReaction[];
+  };
   externalStreamsMap: TExternalStreamsMap;
   ownVoiceState: TVoiceUserState;
   pinnedCard: TPinnedCard | undefined;
@@ -107,6 +112,7 @@ const initialState: IServerState = {
   typingMap: {},
   threadTypingMap: {},
   voiceMap: {},
+  voiceReactions: {},
   externalStreamsMap: {},
   ownVoiceState: {
     micMuted: false,
@@ -789,6 +795,42 @@ export const serverSlice = createSlice({
         ...state.voiceMap[channelId].users[userId],
         ...newState
       };
+    },
+    addVoiceReaction: (
+      state,
+      action: PayloadAction<{ userId: number; reaction: TVoiceReaction }>
+    ) => {
+      const { userId, reaction } = action.payload;
+      const reactions = state.voiceReactions[userId];
+
+      if (!reactions) {
+        state.voiceReactions[userId] = [reaction];
+
+        return;
+      }
+
+      reactions.push(reaction);
+
+      if (reactions.length > MAX_VOICE_REACTIONS_PER_USER) reactions.shift();
+    },
+    removeVoiceReaction: (
+      state,
+      action: PayloadAction<{ userId: number; reactionId: number }>
+    ) => {
+      const { userId, reactionId } = action.payload;
+      const reactions = state.voiceReactions[userId];
+
+      if (!reactions) return;
+
+      const remaining = reactions.filter(({ id }) => id !== reactionId);
+
+      if (!remaining.length) {
+        delete state.voiceReactions[userId];
+
+        return;
+      }
+
+      state.voiceReactions[userId] = remaining;
     },
     updateOwnVoiceState: (
       state,
