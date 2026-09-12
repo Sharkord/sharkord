@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-DATA_DIR="/home/bun/.config/sharkord"
+DATA_DIR=${DATA_DIR:-"/home/bun/.config/sharkord"}
 
 # if we're already running as non-root (e.g. K8s securityContext, Podman rootless),
 # just ensure the data directory exists and run the binary directly.
@@ -25,7 +25,7 @@ fi
 
 # ensure the data directory exists and is owned by the bun user
 mkdir -p "$DATA_DIR"
-chown -R bun:bun /home/bun/.config
+chown -R bun:bun "$DATA_DIR"
 
 # drop privileges and exec the binary
 exec su -s /bin/sh bun -c "exec /sharkord"
