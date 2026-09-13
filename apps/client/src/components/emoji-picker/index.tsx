@@ -1,4 +1,7 @@
-import type { TEmojiItem } from '@/components/tiptap-input/helpers';
+import {
+  mergeEmojis,
+  type TEmojiItem
+} from '@/components/tiptap-input/helpers';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import {
   Input,
@@ -38,7 +41,7 @@ const EmojiPicker = memo(
     );
 
     const allEmojis = useMemo(
-      () => [...ALL_EMOJIS, ...convertedCustomEmojis],
+      () => mergeEmojis(ALL_EMOJIS, convertedCustomEmojis),
       [convertedCustomEmojis]
     );
 
@@ -120,7 +123,10 @@ const EmojiPicker = memo(
                   <TabsTrigger value="custom">{t('customTab')}</TabsTrigger>
                 </TabsList>
                 <TabsContent value="native" className="flex-1 mt-0 min-h-0">
-                  <NativeEmojiTab onEmojiSelect={handleEmojiSelect} />
+                  <NativeEmojiTab
+                    customEmojis={convertedCustomEmojis}
+                    onEmojiSelect={handleEmojiSelect}
+                  />
                 </TabsContent>
                 <TabsContent value="custom" className="flex-1 mt-0 min-h-0">
                   <CustomEmojiTab
