@@ -24,4 +24,48 @@ const isTextPresentation = (emoji: string): boolean => {
 const shouldUseFallbackImage = (emoji: TEmojiItem): boolean =>
   !!emoji.fallbackImage && (!emoji.emoji || isTextPresentation(emoji.emoji));
 
-export { isTextPresentation, shouldUseFallbackImage, type TEmojiItem };
+type TShortcodedEmoji = Pick<TEmojiItem, 'name' | 'shortcodes'>;
+
+const getTakenShortcodes = (customEmojis: TShortcodedEmoji[]): Set<string> =>
+  new Set(
+    customEmojis.flatMap(({ name, shortcodes }) => [name, ...shortcodes])
+  );
+
+// a shortcode resolves to a single emoji everywhere downstream: tiptap stores only
+// the name on the node and keeps the first match for it, and reactions resolve that
+// same name against the custom emoji table. a built-in emoji whose shortcode a
+// custom one has taken is therefore unreachable, so it is dropped from every list
+// the user can pick from instead of being offered and inserting the custom emoji
+const withoutShadowedEmojis = <TBuiltIn extends TShortcodedEmoji>(
+  builtInEmojis: TBuiltIn[],
+  customEmojis: TShortcodedEmoji[]
+): TBuiltIn[] => {
+  if (customEmojis.length === 0) return builtInEmojis;
+
+  const takenShortcodes = getTakenShortcodes(customEmojis);
+
+  return builtInEmojis.filter(
+    ({ name, shortcodes }) =>
+      !takenShortcodes.has(name) &&
+      !shortcodes.some((shortcode) => takenShortcodes.has(shortcode))
+  );
+};
+
+const mergeEmojis = <
+  TBuiltIn extends TShortcodedEmoji,
+  TCustom extends TShortcodedEmoji
+>(
+  builtInEmojis: TBuiltIn[],
+  customEmojis: TCustom[]
+): (TBuiltIn | TCustom)[] => [
+  ...customEmojis,
+  ...withoutShadowedEmojis(builtInEmojis, customEmojis)
+];
+
+export {
+  isTextPresentation,
+  mergeEmojis,
+  shouldUseFallbackImage,
+  withoutShadowedEmojis,
+  type TEmojiItem
+};

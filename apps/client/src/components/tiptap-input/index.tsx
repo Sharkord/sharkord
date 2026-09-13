@@ -33,7 +33,7 @@ import {
   MENTION_STORAGE_KEY,
   MentionSuggestion
 } from './extensions/mentions/suggestion';
-import type { TEmojiItem } from './helpers';
+import { mergeEmojis, type TEmojiItem } from './helpers';
 
 type TTiptapInputHandle = {
   insertEmoji: (emoji: TEmojiItem) => void;
@@ -104,7 +104,7 @@ const TiptapInput = memo(
           }
         }),
         Emoji.configure({
-          emojis: [...gitHubEmojis, ...customEmojis],
+          emojis: mergeEmojis(gitHubEmojis, customEmojis),
           enableEmoticons: true,
           suggestion: EmojiSuggestion,
           HTMLAttributes: {
@@ -231,7 +231,7 @@ const TiptapInput = memo(
     // this ensures newly added emojis appear in autocomplete without refreshing the app
     useEffect(() => {
       if (editor) {
-        const allEmojis = [...gitHubEmojis, ...customEmojis];
+        const allEmojis = mergeEmojis(gitHubEmojis, customEmojis);
 
         if (editor.storage.emoji) {
           editor.storage.emoji.emojis = allEmojis;
