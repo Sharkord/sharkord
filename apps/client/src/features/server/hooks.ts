@@ -70,7 +70,7 @@ export const useCan = () => {
   const ownUserRoles = useOwnUserRoles();
   const isOwner = useIsOwnUserOwner();
 
-  // TODO: maybe this can can recieve both Permission and ChannelPermission?
+  // TODO: maybe this can receive both Permission and ChannelPermission?
   const can = useCallback(
     (permission: Permission | Permission[]) => {
       if (isOwner) return true;
