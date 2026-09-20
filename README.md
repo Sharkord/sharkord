@@ -69,6 +69,19 @@ docker run \
   sharkord/sharkord:latest
 ```
 
+To keep the data somewhere else, point `SHARKORD_DATA_PATH` at it and mount the volume at the same path. The entrypoint creates that directory and takes ownership of it before the server starts, so the server can write into it:
+
+```bash
+docker run \
+  -p 4991:4991/tcp \
+  -p 40000:40000/tcp \
+  -p 40000:40000/udp \
+  -e SHARKORD_DATA_PATH=/data \
+  -v ./data:/data \
+  --name sharkord \
+  sharkord/sharkord:latest
+```
+
 > [!WARNING]
 > Upon first launch, Sharkord creates a secret token and prints it to the console. It is both the credential that grants owner access and the key your server signs every session and file URL with, so anyone who obtains it can take ownership **and** impersonate any account. Keep it out of logs, screenshots and issue reports, store it securely, and do not lose it.
 
