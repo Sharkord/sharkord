@@ -8,6 +8,7 @@ import { isPublicIp } from './network';
 
 const MAX_IP_CANDIDATES = 20;
 const MAX_HEADER_LENGTH = 2048;
+const IPV4_MAPPED_PREFIX_BITS = 96;
 
 const getHeaderValue = (
   headers: http.IncomingHttpHeaders,
@@ -170,12 +171,31 @@ const getForwardedIp = (
   return undefined;
 };
 
+// A CIDR written in IPv4-mapped form (::ffff:10.0.0.0/104) covers the same
+// range as its IPv4 equivalent (10.0.0.0/8), so unmap it to let an IPv4
+// address match. The first 96 bits are the ::ffff: prefix.
+const toCanonicalCidr = (
+  cidr: [ipaddr.IPv4 | ipaddr.IPv6, number]
+): [ipaddr.IPv4 | ipaddr.IPv6, number] => {
+  const [base, bits] = cidr;
+
+  if (bits < IPV4_MAPPED_PREFIX_BITS) return cidr;
+
+  const canonicalBase = toCanonical(base);
+
+  if (canonicalBase.kind() === base.kind()) return cidr;
+
+  return [canonicalBase, bits - IPV4_MAPPED_PREFIX_BITS];
+};
+
 const matchesProxyEntry = (address: string, entry: string): boolean => {
   try {
-    const parsed = ipaddr.parse(address);
+    // A socket bound to :: reports IPv4 peers as ::ffff:10.0.0.1, which would
+    // never match an IPv4 entry, so compare both sides in canonical form
+    const parsed = toCanonical(ipaddr.parse(address));
 
     if (entry.includes('/')) {
-      const cidr = ipaddr.parseCIDR(entry);
+      const cidr = toCanonicalCidr(ipaddr.parseCIDR(entry));
 
       // ipaddr throws when the kinds differ, so check before matching
       if (parsed.kind() !== cidr[0].kind()) return false;
@@ -185,7 +205,7 @@ const matchesProxyEntry = (address: string, entry: string): boolean => {
 
     const normalizedEntry = normalizeIp(entry);
 
-    return !!normalizedEntry && normalizedEntry === address;
+    return !!normalizedEntry && normalizedEntry === parsed.toString();
   } catch {
     return false;
   }
