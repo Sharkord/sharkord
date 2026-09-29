@@ -33,6 +33,8 @@ describe('file manager', () => {
   let testFileName: string;
 
   beforeEach(async () => {
+    pluginManager.clearHooks();
+
     const content = 'test file content';
 
     testFileName = `test-${Date.now()}.txt`;
@@ -1008,6 +1010,50 @@ describe('file manager', () => {
     expect(saved1.name).toBe('report.txt');
     expect(saved2.name).toBe('report-2.txt');
   });
+
+  test('should give concurrent saves of the same name their own file', async () => {
+    const contents = ['one', 'two', 'three', 'four', 'five'];
+
+    const saved = await Promise.all(
+      contents.map((content) =>
+        fileManager.savePluginFile(
+          'test-plugin',
+          'race.txt',
+          new TextEncoder().encode(content)
+        )
+      )
+    );
+
+    for (const file of saved) {
+      tempFilesToCleanup.push(path.join(PUBLIC_PATH, file.name));
+    }
+
+    expect(new Set(saved.map((file) => file.name)).size).toBe(contents.length);
+
+    for (const [index, file] of saved.entries()) {
+      expect(
+        await fs.readFile(path.join(PUBLIC_PATH, file.name), 'utf-8')
+      ).toBe(contents[index]!);
+    }
+  });
+
+  test.each(['', '\uFEFF', '.', '..'])(
+    'should fall back to a safe name on disk when a plugin saves %p',
+    async (originalName) => {
+      const saved = await fileManager.savePluginFile(
+        'test-plugin',
+        originalName,
+        new TextEncoder().encode('fallback')
+      );
+
+      tempFilesToCleanup.push(path.join(PUBLIC_PATH, saved.name));
+
+      expect(saved.name).toBe('file');
+      expect(
+        await fs.readFile(path.join(PUBLIC_PATH, saved.name), 'utf-8')
+      ).toBe('fallback');
+    }
+  );
 });
 
 describe('file manager – beforeFileSave hooks', () => {
@@ -1136,7 +1182,6 @@ describe('file manager – beforeFileSave hooks', () => {
 
     const tempFile = await addTempFile('original content');
     const originalMd5 = tempFile.md5;
-    const originalPath = tempFile.path;
 
     const saved = await fileManager.saveFile(
       tempFile.id,

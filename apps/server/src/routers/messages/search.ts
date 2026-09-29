@@ -25,7 +25,25 @@ const MAX_MESSAGE_FETCH_LIMIT = 100; // absolute maximum number of messages to f
 const MESSAGES_LIMIT = 25;
 const FILES_LIMIT = 25;
 
-const escapeLikePattern = (value: string) => value.replace(/[\\%_]/g, '\\$&');
+const GLOB_SPECIAL_CHARS = new Set(['*', '?', '[']);
+
+const buildCaseInsensitiveGlob = (value: string) => {
+  let pattern = '';
+
+  for (const char of value) {
+    const upper = char.toUpperCase();
+
+    if (upper !== char && [...upper].length === 1) {
+      pattern += `[${char}${upper}]`;
+    } else if (GLOB_SPECIAL_CHARS.has(char)) {
+      pattern += `[${char}]`;
+    } else {
+      pattern += char;
+    }
+  }
+
+  return `*${pattern}*`;
+};
 
 const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
   maxRequests: config.rateLimiters.search.maxRequests,
@@ -64,7 +82,7 @@ const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
       };
     }
 
-    const likePattern = `%${escapeLikePattern(input.query)}%`;
+    const globPattern = buildCaseInsensitiveGlob(input.query);
     const messageFetchLimit = Math.min(
       MESSAGES_LIMIT * MESSAGE_FETCH_MULTIPLIER,
       MAX_MESSAGE_FETCH_LIMIT
@@ -82,7 +100,7 @@ const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
         .where(
           and(
             inArray(messages.channelId, accessibleChannelIds),
-            sql`lower(coalesce(${messages.content}, '')) LIKE ${likePattern} ESCAPE '\\'`
+            sql`${messages.content} GLOB ${globPattern}`
           )
         )
         .orderBy(desc(messages.createdAt))
@@ -104,7 +122,7 @@ const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
         .where(
           and(
             inArray(messages.channelId, accessibleChannelIds),
-            sql`lower(${files.originalName}) LIKE ${likePattern} ESCAPE '\\'`
+            sql`${files.originalName} GLOB ${globPattern}`
           )
         )
         .orderBy(desc(messages.createdAt))

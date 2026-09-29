@@ -25,6 +25,27 @@ const upload = async (file: File, token: string) => {
   return uploadData;
 };
 
+const uploadToMessage = async (
+  name: string,
+  content: string,
+  token: string
+) => {
+  const tempFile = await upload(
+    new File([content], name, { type: 'text/plain' }),
+    token
+  );
+
+  const { caller } = await initTest();
+
+  const messageId = await caller.messages.send({
+    content: 'Message with file',
+    channelId: 1,
+    files: [tempFile.id]
+  });
+
+  return (await getFileByMessageId(messageId))!;
+};
+
 const getFileByMessageId = async (
   messageId: number
 ): Promise<TFile | undefined> => {
@@ -163,9 +184,9 @@ describe('/public', () => {
     );
     const disposition = response.headers.get('Content-Disposition');
 
-    expect(disposition).toInclude(`filename="${dbFile!.name}"`);
+    expect(disposition).toInclude(`filename="${dbFile!.originalName}"`);
     expect(disposition).toInclude(
-      `filename*=UTF-8''${encodeURIComponent(dbFile!.name)}`
+      `filename*=UTF-8''${encodeURIComponent(dbFile!.originalName)}`
     );
 
     const responseText = await response.text();
@@ -537,6 +558,143 @@ describe('/public', () => {
         `filename*=UTF-8''${encodeURIComponent(name)}`
       );
       expect(await response.text()).toBe(content);
+    }
+  );
+
+  test('should not overwrite a file that exists on disk but not in the database', async () => {
+    await fs.writeFile(path.join(PUBLIC_PATH, 'disk-only.txt'), 'existing');
+
+    const dbFile = await uploadToMessage('disk-only.txt', 'new', token);
+
+    expect(dbFile.name).toBe('disk-only-2.txt');
+    expect(
+      await fs.readFile(path.join(PUBLIC_PATH, 'disk-only.txt'), 'utf-8')
+    ).toBe('existing');
+    expect(
+      await fs.readFile(path.join(PUBLIC_PATH, dbFile.name), 'utf-8')
+    ).toBe('new');
+  });
+
+  test.each([
+    ['que?.txt', 'que_.txt'],
+    ['say "hi".txt', 'say _hi_.txt'],
+    ['a|b<c>:d*.txt', 'a_b_c__d_.txt'],
+    ['tab\there.txt', 'tab_here.txt'],
+    ['notes.t?t', 'notes.t_t'],
+    ['a:b.txt', 'a_b.txt']
+  ])(
+    'should store %s on disk without characters windows reserves',
+    async (name, diskName) => {
+      const dbFile = await uploadToMessage(name, 'reserved chars', token);
+
+      expect(dbFile.name).toBe(diskName);
+      expect(dbFile.originalName).toBe(name);
+
+      const response = await fetch(
+        `${testsBaseUrl}/public/${encodeURIComponent(dbFile.name)}`
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('Content-Disposition')).toInclude(
+        `filename*=UTF-8''${encodeURIComponent(name)}`
+      );
+      expect(await response.text()).toBe('reserved chars');
+    }
+  );
+
+  test('should truncate names longer than 255 utf-8 bytes on disk', async () => {
+    const name = `${'Д'.repeat(200)}.txt`;
+
+    const first = await uploadToMessage(name, 'long name', token);
+    const second = await uploadToMessage(name, 'long name', token);
+
+    // two bytes per letter: 125 letters plus '.txt' is 254 bytes, 124 plus '-2.txt' is 254
+    expect(first.name).toBe(`${'Д'.repeat(125)}.txt`);
+    expect(second.name).toBe(`${'Д'.repeat(124)}-2.txt`);
+    expect(first.originalName).toBe(name);
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(first.name)}`
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Disposition')).toInclude(
+      `filename*=UTF-8''${encodeURIComponent(name)}`
+    );
+  });
+
+  test('should truncate an extension longer than 32 bytes', async () => {
+    const name = `notes.${'я'.repeat(200)}`;
+
+    const dbFile = await uploadToMessage(name, 'long extension', token);
+
+    expect(dbFile.name).toBe(`notes.${'я'.repeat(15)}`);
+    expect(dbFile.extension).toBe(`.${'я'.repeat(15)}`);
+    expect(dbFile.originalName).toBe(name);
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile.name)}`
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('long extension');
+  });
+
+  test.each([
+    ['\uFEFFbom.txt', 'bom.txt'],
+    ['\uFEFF\uFEFFdouble-bom.txt', 'double-bom.txt'],
+    ['\uFFFEreversed-bom.txt', 'reversed-bom.txt'],
+    ['\uFEFF\uFFFEmixed-bom.txt', 'mixed-bom.txt']
+  ])(
+    'should serve a file whose name starts with byte order marks (%#)',
+    async (name, storedName) => {
+      const dbFile = await uploadToMessage(name, 'bom', token);
+
+      expect(dbFile.name).toBe(storedName);
+      expect(dbFile.originalName).toBe(storedName);
+
+      const response = await fetch(`${testsBaseUrl}/public/${storedName}`);
+
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe('bom');
+    }
+  );
+
+  test('should not let a trailing backslash escape the fallback file name', async () => {
+    const pluginFile = await fileManager.savePluginFile(
+      'test-plugin',
+      'trail\\',
+      new TextEncoder().encode('plugin file')
+    );
+
+    await tdb.insert(messageFiles).values({
+      messageId: filesToCreate[0]!.messageId!,
+      fileId: pluginFile.id,
+      createdAt: Date.now()
+    });
+
+    expect(pluginFile.name).toBe('trail_');
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(pluginFile.name)}`
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Disposition')).toInclude(
+      `filename="trail_"; filename*=UTF-8''trail%5C`
+    );
+  });
+
+  test.each(['%E0%A4%A', '%', '%ZZ', '%C0%AF'])(
+    'should return 400 for the malformed escape %s',
+    async (encoded) => {
+      const response = await fetch(`${testsBaseUrl}/public/${encoded}`);
+
+      expect(response.status).toBe(400);
+
+      const data = (await response.json()) as { error: string };
+
+      expect(data).toHaveProperty('error', 'Invalid URL encoding');
     }
   );
 

@@ -222,8 +222,9 @@ const sanitizeFileName = (name: string): string | null => {
 
   const normalized = decoded.replace(/\\/g, '/');
 
-  // strip any directory components (e.g. "../../etc/passwd" -> "passwd")
-  const baseName = path.basename(normalized);
+  // strip any directory components (e.g. "../../etc/passwd" -> "passwd"). posix on purpose:
+  // the win32 basename also drops a drive prefix, turning "a:b.txt" into "b.txt"
+  const baseName = path.posix.basename(normalized);
 
   // reject empty names (e.g. after stripping path components from "/")
   if (!baseName || baseName === '.' || baseName === '..') {

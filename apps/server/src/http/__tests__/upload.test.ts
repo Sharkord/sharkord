@@ -577,6 +577,14 @@ describe('sanitizeFileName', () => {
     expect(sanitizeFileName('foo/../bar.txt')).toBe('bar.txt');
   });
 
+  test('should keep a leading letter and colon on every platform', () => {
+    expect(sanitizeFileName('a:b.txt')).toBe('a:b.txt');
+    expect(sanitizeFileName('C:informe.txt')).toBe('C:informe.txt');
+    expect(sanitizeFileName('x:')).toBe('x:');
+    expect(sanitizeFileName('C:\\Windows\\evil.txt')).toBe('evil.txt');
+    expect(sanitizeFileName('C:/Windows/evil.txt')).toBe('evil.txt');
+  });
+
   test('should return null for null bytes', () => {
     expect(sanitizeFileName('evil\0.txt')).toBeNull();
     expect(sanitizeFileName('\0')).toBeNull();

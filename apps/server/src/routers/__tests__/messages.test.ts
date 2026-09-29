@@ -603,6 +603,69 @@ describe('messages router', () => {
     expect(result.truncated).toBe(true);
   });
 
+  test('should match non ascii messages and file names regardless of case', async () => {
+    const { caller } = await initTest(1);
+
+    const messageId = await caller.messages.send({
+      channelId: 1,
+      content: 'Отчёт за МАРТ готов',
+      files: []
+    });
+
+    const now = Date.now();
+
+    const [insertedFile] = await tdb
+      .insert(files)
+      .values({
+        name: `report-${now}.txt`,
+        originalName: 'Отчёт за март.txt',
+        md5: `report-md5-${now}`,
+        userId: 1,
+        size: 64,
+        mimeType: 'text/plain',
+        extension: 'txt',
+        createdAt: now
+      })
+      .returning({ id: files.id });
+
+    await tdb.insert(messageFiles).values({
+      messageId,
+      fileId: insertedFile!.id,
+      createdAt: now
+    });
+
+    for (const query of ['отчёт', 'ОТЧЁТ', 'март']) {
+      const result = await caller.messages.search({ query });
+
+      expect(result.messages.map((message) => message.id)).toEqual([messageId]);
+      expect(result.files.map((item) => item.file.id)).toEqual([
+        insertedFile!.id
+      ]);
+    }
+  });
+
+  test('should treat glob wildcards in the query literally', async () => {
+    const { caller } = await initTest(1);
+
+    const literalMessageId = await caller.messages.send({
+      channelId: 1,
+      content: 'wild a*b?c[d] card',
+      files: []
+    });
+
+    await caller.messages.send({
+      channelId: 1,
+      content: 'wild axxbycd card',
+      files: []
+    });
+
+    const result = await caller.messages.search({ query: 'a*b?c[d]' });
+
+    expect(result.messages.map((message) => message.id)).toEqual([
+      literalMessageId
+    ]);
+  });
+
   test('should throw when search is disabled on server', async () => {
     const { caller } = await initTest(1);
 

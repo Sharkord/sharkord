@@ -52,11 +52,12 @@ const getIcons = async (settings: TJoinedSettings) => {
   }
 
   const logoPath = path.join(PUBLIC_PATH, settings.logo.name);
+  const logoSrc = `/public/${encodeURIComponent(settings.logo.name)}`;
 
   if (settings.logo.mimeType === 'image/svg+xml') {
     return [
       {
-        src: `/public/${settings.logo.name}`,
+        src: logoSrc,
         sizes: 'any',
         type: settings.logo.mimeType,
         purpose: 'any'
@@ -73,7 +74,7 @@ const getIcons = async (settings: TJoinedSettings) => {
 
   return [
     {
-      src: `/public/${settings.logo.name}`,
+      src: logoSrc,
       sizes: `${logoSize.width}x${logoSize.height}`,
       type: settings.logo.mimeType,
       purpose: 'any'

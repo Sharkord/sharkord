@@ -1,6 +1,7 @@
 import type { TWebAppManifest } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
-import { testsBaseUrl } from '../../__tests__/setup';
+import { tdb, testsBaseUrl } from '../../__tests__/setup';
+import { files, settings } from '../../db/schema';
 
 describe('/manifest.json', () => {
   test('should return PWA manifest with correct structure', async () => {
@@ -57,6 +58,30 @@ describe('/manifest.json', () => {
 
     expect(hasDefaultIcon192).toBe(true);
     expect(hasDefaultIcon512).toBe(true);
+  });
+
+  test('should percent-encode the logo name in the icon url', async () => {
+    const [logo] = await tdb
+      .insert(files)
+      .values({
+        name: 'logo #1 100%.svg',
+        originalName: 'logo #1 100%.svg',
+        md5: 'logo-md5',
+        userId: 1,
+        size: 64,
+        mimeType: 'image/svg+xml',
+        extension: '.svg',
+        createdAt: Date.now()
+      })
+      .returning({ id: files.id });
+
+    await tdb.update(settings).set({ logoId: logo!.id });
+
+    const response = await fetch(`${testsBaseUrl}/manifest.json`);
+    const manifest = (await response.json()) as TWebAppManifest;
+
+    expect(manifest.icons).toHaveLength(1);
+    expect(manifest.icons[0]!.src).toBe('/public/logo%20%231%20100%25.svg');
   });
 
   test('should include required icon properties', async () => {
