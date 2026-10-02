@@ -1,6 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useDevices } from '../devices-provider/hooks/use-devices';
+
 export const useAudioRecorder = (onStop: (file: File) => void) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -8,9 +10,15 @@ export const useAudioRecorder = (onStop: (file: File) => void) => {
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const { devices } = useDevices();
+  const microphoneId = devices.microphoneId;
+
   const startRecording = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const hasSpecificMic = microphoneId && microphoneId !== 'default';
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: hasSpecificMic ? { deviceId: { exact: microphoneId } } : true
+      });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
@@ -41,7 +49,7 @@ export const useAudioRecorder = (onStop: (file: File) => void) => {
     } catch {
       toast.error('Could not access microphone');
     }
-  }, [onStop]);
+  }, [onStop, microphoneId]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
