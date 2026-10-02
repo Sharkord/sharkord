@@ -46,6 +46,7 @@ import {
   channelDndId
 } from './helpers';
 import { useChannelDragPreview } from './use-sidebar-dnd';
+import { VoiceTimer } from './voice-timer';
 import { VoiceUser } from './voice-user';
 import { Waveform } from './waveform';
 
@@ -71,6 +72,19 @@ const Voice = memo(
 
     const isVoiceActive = users.length > 0 || externalStreams.length > 0;
     const isOwnChannel = currentVoiceChannelId === channel.id;
+
+    const earliestConnection = useMemo(() => {
+      if (!isVoiceActive) return undefined;
+
+      let earliest = Infinity;
+      users.forEach((user) => {
+        if (user.state.connectedAt && user.state.connectedAt < earliest) {
+          earliest = user.state.connectedAt;
+        }
+      });
+
+      return earliest === Infinity ? undefined : earliest;
+    }, [users, isVoiceActive]);
 
     const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
       if (!e.dataTransfer.types.includes(VOICE_USER_DND_MIME)) return;
@@ -134,7 +148,15 @@ const Voice = memo(
             <Volume2 className="h-4 w-4" />
           )}
 
-          <span className="flex-1 truncate">{channel.name}</span>
+          <div className="flex-1 flex items-baseline gap-1.5 min-w-0">
+            <span className="truncate">{channel.name}</span>
+            {earliestConnection && (
+              <VoiceTimer
+                connectedAt={earliestConnection}
+                className="text-[11px] text-green-500/80 ml-auto"
+              />
+            )}
+          </div>
 
           {unreadCount > 0 && (
             <UnreadCount count={unreadCount} hasMention={hasUnreadMentions} />

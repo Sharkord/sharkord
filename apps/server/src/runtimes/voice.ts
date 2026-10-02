@@ -409,7 +409,8 @@ class VoiceRuntime {
       userId,
       state: {
         ...defaultUserState,
-        ...state
+        ...state,
+        connectedAt: Date.now()
       }
     });
 
