@@ -158,6 +158,8 @@ const MessageCompose = memo(
       inputDefaultMaxHeightVh
     });
 
+    const autoSendAudioRef = useRef(false);
+
     const {
       isRecording,
       recordingTime,
@@ -165,7 +167,10 @@ const MessageCompose = memo(
       stopRecording,
       cancelRecording
     } = useAudioRecorder(
-      useCallback((file: File) => processFiles([file]), [processFiles])
+      useCallback((file: File) => {
+        autoSendAudioRef.current = true;
+        processFiles([file]);
+      }, [processFiles])
     );
 
     useImperativeHandle(
@@ -246,6 +251,12 @@ const MessageCompose = memo(
       },
       [removeFile]
     );
+    useEffect(() => {
+      if (autoSendAudioRef.current && !uploading && files.length > 0) {
+        autoSendAudioRef.current = false;
+        handleSend();
+      }
+    }, [uploading, files, handleSend]);
 
     useEffect(() => {
       // focus the input when user clicks on reply
