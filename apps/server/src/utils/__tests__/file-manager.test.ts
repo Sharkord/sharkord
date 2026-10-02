@@ -1136,7 +1136,6 @@ describe('file manager – beforeFileSave hooks', () => {
 
     const tempFile = await addTempFile('original content');
     const originalMd5 = tempFile.md5;
-    const originalPath = tempFile.path;
 
     const saved = await fileManager.saveFile(
       tempFile.id,

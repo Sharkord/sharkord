@@ -99,6 +99,18 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
     locale: i18n.resolvedLanguage as TLocale
   });
 
+  const state = store.getState();
+  const currentVoiceChannelId = currentVoiceChannelIdSelector(state);
+
+  if (
+    currentVoiceChannelId &&
+    (!data.voiceMap[currentVoiceChannelId] ||
+      !data.voiceMap[currentVoiceChannelId].users[data.ownUserId])
+  ) {
+    const { clearLocalVoiceSession } = await import('./voice/actions');
+    clearLocalVoiceSession();
+  }
+
   logDebug('joinServer', data);
 
   const { initSubscriptions } = await import('./subscriptions');

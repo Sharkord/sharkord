@@ -51,7 +51,7 @@ export const addUserToVoiceChannel = (
   }
 };
 
-const clearLocalVoiceSession = (): void => {
+export const clearLocalVoiceSession = (): void => {
   const state = store.getState();
 
   const selectedChannelId = selectedChannelIdSelector(state);
