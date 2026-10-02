@@ -17,7 +17,12 @@ export const useAudioRecorder = (onStop: (file: File) => void) => {
     try {
       const hasSpecificMic = microphoneId && microphoneId !== 'default';
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: hasSpecificMic ? { deviceId: { exact: microphoneId } } : true
+        audio: {
+          deviceId: hasSpecificMic ? { exact: microphoneId } : undefined,
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        }
       });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
@@ -53,9 +58,15 @@ export const useAudioRecorder = (onStop: (file: File) => void) => {
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
       if (timerRef.current) clearInterval(timerRef.current);
+      
+      // Delay stopping slightly to ensure the final audio frames are captured
+      setTimeout(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+        setIsRecording(false);
+      }, 200);
     }
   }, [isRecording]);
 
