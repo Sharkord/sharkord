@@ -172,8 +172,42 @@ const MessageCompose = memo(
       }
 
       if (message.length > MESSAGE_MAX_LENGTH) {
-        toast.error(t('messageTooLong', { max: MESSAGE_MAX_LENGTH }));
+        setSending(true);
+        sendingRef.current = true;
 
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = message;
+        const plainText = tempDiv.innerText || tempDiv.textContent || '';
+
+        const file = new File([plainText], 'message.txt', {
+          type: 'text/plain'
+        });
+
+        const { uploadFile } = await import('@/helpers/upload-file');
+        const uploadedFile = await uploadFile(file);
+
+        if (uploadedFile) {
+          const success = await onSend('', [...files, uploadedFile]);
+
+          if (success) {
+            clearFiles();
+            onMessageChange('');
+            toast.info(
+              t('messageConvertedToFile', {
+                defaultValue: 'Mensagem enviada como arquivo .txt!'
+              })
+            );
+          }
+        } else {
+          toast.error(
+            t('failedToUploadConvertedFile', {
+              defaultValue: 'Falha ao enviar a mensagem como arquivo.'
+            })
+          );
+        }
+
+        sendingRef.current = false;
+        setSending(false);
         return;
       }
 
@@ -206,7 +240,8 @@ const MessageCompose = memo(
       clearFiles,
       containerRef,
       inputDefaultMaxHeightVh,
-      t
+      t,
+      onMessageChange
     ]);
 
     const focusInputOnBackdropClick = useCallback(
