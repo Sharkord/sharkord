@@ -31,10 +31,10 @@ export const useAudioRecorder = (onStop: (file: File) => void) => {
         stream.getTracks().forEach((track) => track.stop());
 
         if (chunksRef.current.length > 0) {
-          const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          const blob = new Blob(chunksRef.current, { type: 'audio/ogg' });
           // create file with a unique name
-          const filename = `audio-message-${Date.now()}.webm`;
-          const file = new File([blob], filename, { type: 'audio/webm' });
+          const filename = `audio-message-${Date.now()}.ogg`;
+          const file = new File([blob], filename, { type: 'audio/ogg' });
           onStop(file);
         }
       };
