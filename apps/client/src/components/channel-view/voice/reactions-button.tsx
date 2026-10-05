@@ -55,8 +55,10 @@ const ReactionsButton = memo(() => {
     async (emoji: string) => {
       setOpen(false);
 
+      const trpc = getTRPCClient();
+
       try {
-        await getTRPCClient().voice.sendReaction.mutate({ emoji });
+        await trpc.voice.sendReaction.mutate({ emoji });
       } catch (error) {
         toast.error(getTrpcError(error, t('failedSendVoiceReaction')));
       }

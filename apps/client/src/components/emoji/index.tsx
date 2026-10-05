@@ -3,7 +3,7 @@ import { getFileUrl } from '@/helpers/get-file-url';
 import { cn } from '@/lib/utils';
 import type { TFile } from '@sharkord/shared';
 import { gitHubEmojis } from '@tiptap/extension-emoji';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 
 type TEmojiProps = {
   emoji: string;
@@ -22,14 +22,9 @@ const Emoji = memo(
       [emoji]
     );
 
-    const onError = useCallback(
-      (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-        const target = e.target as HTMLImageElement;
+    const [failed, setFailed] = useState(false);
 
-        target.outerHTML = `<span class="text-xs text-muted-foreground">:${emoji}:</span>`;
-      },
-      [emoji]
-    );
+    const onError = useCallback(() => setFailed(true), []);
 
     const imgSrc = useMemo(
       () => gitHubEmoji?.fallbackImage ?? getFileUrl(file),
@@ -42,6 +37,10 @@ const Emoji = memo(
           {gitHubEmoji.emoji}
         </span>
       );
+    }
+
+    if (failed) {
+      return <span className="text-xs text-muted-foreground">:{emoji}:</span>;
     }
 
     return (
