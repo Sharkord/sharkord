@@ -1,0 +1,1 @@
+INSERT OR IGNORE INTO `role_permissions` (`role_id`, `permission`, `created_at`) SELECT `role_id`, 'SEND_VOICE_REACTION', unixepoch() FROM `role_permissions` WHERE `permission` = 'JOIN_VOICE_CHANNELS';

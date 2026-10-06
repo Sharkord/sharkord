@@ -14,7 +14,7 @@
  *                          every "lacks permission" case), usera, userb, testmoderator
  *   roles             4    Owner (id 1), Member, Guest, Moderator
  *   userRoles         5    one per user, plus the moderator's extra role
- *   rolePermissions  29    the default permission sets for the roles above
+ *   rolePermissions  32    the default permission sets for the roles above
  *   categories        2    Text Channels, Voice Channels
  *   channels          5    1 General (text), Voice, DM Channel, Private Voice,
  *                          Restricted Text

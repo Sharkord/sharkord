@@ -45,6 +45,11 @@ export type TVoiceUser = TJoinedPublicUser & {
   state: TVoiceUserState;
 };
 
+export type TVoiceReaction = {
+  id: number;
+  emoji: string;
+};
+
 export type TReconnectState = {
   attempt: number;
   maxAttempts: number;

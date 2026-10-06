@@ -120,11 +120,15 @@ beforeAll(async () => {
   provider = await startFakeOidcProvider();
 });
 
+// config and the oidc manager are process wide, so the fake provider's issuer and the discovery
+// cached from it would otherwise reach every test file that runs after this one
+const originalOidcConfig = { ...config.oidc };
+
 afterAll(async () => {
   await provider.close();
 
-  config.oidc.enabled = false;
-  config.oidc.disableLocalLogin = false;
+  Object.assign(config.oidc, originalOidcConfig);
+  oidcManager.resetForTests();
 });
 
 beforeEach(() => {

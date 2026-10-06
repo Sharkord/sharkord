@@ -1,18 +1,18 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, spyOn, test, type Mock } from 'bun:test';
+import * as serverQueries from '../../db/queries/server';
 import { generateFileToken, verifyFileToken } from '../files-crypto';
-
-const mockGetServerTokenSync = mock(() => 'test-server-token-12345');
-
-mock.module('../../db/queries/server', () => ({
-  getServerTokenSync: mockGetServerTokenSync
-}));
 
 describe('files-crypto', () => {
   const fileId = 123;
   const futureExpiresAt = Date.now() + 3600000; // 1 hour from now
 
+  let mockGetServerTokenSync: Mock<typeof serverQueries.getServerTokenSync>;
+
   beforeEach(() => {
-    mockGetServerTokenSync.mockClear();
+    mockGetServerTokenSync = spyOn(
+      serverQueries,
+      'getServerTokenSync'
+    ).mockReturnValue('test-server-token-12345');
   });
 
   describe('generateFileToken', () => {
