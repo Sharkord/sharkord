@@ -26,7 +26,7 @@ import {
 } from '@sharkord/shared';
 import { Button, Spinner } from '@sharkord/ui';
 import { filesize } from 'filesize';
-import { Paperclip, Reply, Send, Smile, X } from 'lucide-react';
+import { Mic, Paperclip, Reply, Send, Smile, Trash2, X } from 'lucide-react';
 import {
   memo,
   useCallback,
@@ -45,6 +45,7 @@ import { useMessageAuthorName } from '../channel-view/text/hooks/use-message-aut
 import { PreviewFile } from '../channel-view/text/preview-file';
 import { UsersTypingIndicator } from '../channel-view/text/users-typing';
 import { useFileAwareHeight } from './hooks';
+import { useAudioRecorder } from './use-audio-recorder';
 
 type TMessageComposeProps = {
   channelId: number;
@@ -145,7 +146,8 @@ const MessageCompose = memo(
       uploadingSize,
       uploadSpeed,
       openFileDialog,
-      fileInputProps
+      fileInputProps,
+      processFiles
     } = useUploadFiles(channelId, containerRef, !canSendMessages);
 
     useFileAwareHeight({
@@ -155,6 +157,21 @@ const MessageCompose = memo(
       inputStorageKey,
       inputDefaultMaxHeightVh
     });
+
+    const autoSendAudioRef = useRef(false);
+
+    const {
+      isRecording,
+      recordingTime,
+      startRecording,
+      stopRecording,
+      cancelRecording
+    } = useAudioRecorder(
+      useCallback((file: File) => {
+        autoSendAudioRef.current = true;
+        processFiles([file]);
+      }, [processFiles])
+    );
 
     useImperativeHandle(
       ref,
@@ -234,6 +251,12 @@ const MessageCompose = memo(
       },
       [removeFile]
     );
+    useEffect(() => {
+      if (autoSendAudioRef.current && !uploading && files.length > 0) {
+        autoSendAudioRef.current = false;
+        handleSend();
+      }
+    }, [uploading, files, handleSend]);
 
     useEffect(() => {
       // focus the input when user clicks on reply
@@ -310,54 +333,98 @@ const MessageCompose = memo(
                 ))}
               </div>
             )}
-            <TiptapInput
-              ref={tiptapRef}
-              value={message}
-              placeholder={placeholder}
-              onChange={onMessageChange}
-              onSubmit={handleSend}
-              onTyping={onTyping}
-              onArrowUp={onArrowUp}
-              disabled={uploading || !canSendMessages}
-              readOnly={sending}
-              commands={pluginCommands}
-            />
+            {isRecording ? (
+              <div className="flex-1 flex items-center gap-3 px-4 py-2 bg-red-500/10 rounded-md mx-2 mb-2 animate-in fade-in zoom-in-95 duration-200">
+                <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping" />
+                <span className="text-sm font-medium text-red-500 tabular-nums">
+                  {Math.floor(recordingTime / 60)
+                    .toString()
+                    .padStart(2, '0')}
+                  :{(recordingTime % 60).toString().padStart(2, '0')}
+                </span>
+                <div className="flex-1" />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={cancelRecording}
+                  className="text-red-500 hover:text-red-600 hover:bg-red-500/20 h-8 w-8"
+                  title={t('cancelRecording')}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={stopRecording}
+                  className="text-green-500 hover:text-green-600 hover:bg-green-500/20 h-8 w-8"
+                  title={t('sendRecording')}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <TiptapInput
+                ref={tiptapRef}
+                value={message}
+                placeholder={placeholder}
+                onChange={onMessageChange}
+                onSubmit={handleSend}
+                onTyping={onTyping}
+                onArrowUp={onArrowUp}
+                disabled={uploading || !canSendMessages}
+                readOnly={sending}
+                commands={pluginCommands}
+              />
+            )}
           </div>
 
           <input {...fileInputProps} />
           <div className="flex items-start pr-4 pt-2 shrink-0 sticky top-0">
-            {showPluginSlot && (
+            {showPluginSlot && !isRecording && (
               <PluginSlotRenderer
                 slotId={PluginSlot.CHAT_ACTIONS}
                 props={chatActionsProps}
               />
             )}
 
-            <EmojiPicker onEmojiSelect={insertEmoji}>
-              <Button
-                size="icon"
-                variant="ghost"
-                disabled={uploading || !canSendMessages}
-              >
-                <Smile className="h-4 w-4" />
-              </Button>
-            </EmojiPicker>
-            <Button
-              size="icon"
-              variant="ghost"
-              disabled={uploading || !canUploadFiles}
-              onClick={openFileDialog}
-            >
-              <Paperclip className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={handleSend}
-              disabled={uploading || sending || !canSendMessages}
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+            {!isRecording && (
+              <>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  disabled={uploading || !canSendMessages}
+                  onClick={startRecording}
+                  title={t('recordAudio')}
+                >
+                  <Mic className="h-4 w-4" />
+                </Button>
+                <EmojiPicker onEmojiSelect={insertEmoji}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    disabled={uploading || !canSendMessages}
+                  >
+                    <Smile className="h-4 w-4" />
+                  </Button>
+                </EmojiPicker>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  disabled={uploading || !canUploadFiles}
+                  onClick={openFileDialog}
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleSend}
+                  disabled={uploading || sending || !canSendMessages}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
