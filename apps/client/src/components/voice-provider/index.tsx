@@ -97,6 +97,8 @@ type TVideoProducerAppData = {
   qualityLayers?: TStreamQualityLayer[];
 };
 
+type TRefsKey = number | `external:${number}`;
+
 export type { AudioVideoRefs };
 
 enum ConnectionStatus {
@@ -109,10 +111,10 @@ enum ConnectionStatus {
 export type TVoiceProvider = {
   loading: boolean;
   connectionStatus: ConnectionStatus;
-  audioVideoRefsMap: Map<number, AudioVideoRefs>;
+  audioVideoRefsMap: Map<TRefsKey, AudioVideoRefs>;
   ownVoiceState: TVoiceUserState;
   isScreenShareSupported: boolean;
-  getOrCreateRefs: (remoteId: number) => AudioVideoRefs;
+  getOrCreateRefs: (remoteId: number, isExternal?: boolean) => AudioVideoRefs;
   getConsumerCodec: (remoteId: number, kind: StreamKind) => string | undefined;
   getStreamQuality: (remoteId: number, kind: StreamKind) => TStreamQuality;
   getStreamQualityLayers: (
@@ -191,7 +193,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   );
   const routerRtpCapabilities = useRef<RtpCapabilities | null>(null);
   const deviceRtpCapabilities = useRef<RtpCapabilities | null>(null);
-  const audioVideoRefsMap = useRef<Map<number, AudioVideoRefs>>(new Map());
+  const audioVideoRefsMap = useRef<Map<TRefsKey, AudioVideoRefs>>(new Map());
   const previousVoiceChannelIdRef = useRef<number | undefined>(undefined);
   const [streamQualities, setStreamQualities] =
     useState<TStreamQualitySettings>(loadStreamQualitiesFromStorage);
@@ -334,20 +336,25 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     [shouldShowQualityPicker]
   );
 
-  const getOrCreateRefs = useCallback((remoteId: number): AudioVideoRefs => {
-    if (!audioVideoRefsMap.current.has(remoteId)) {
-      audioVideoRefsMap.current.set(remoteId, {
-        videoRef: { current: null },
-        audioRef: { current: null },
-        screenShareRef: { current: null },
-        screenShareAudioRef: { current: null },
-        externalAudioRef: { current: null },
-        externalVideoRef: { current: null }
-      });
-    }
+  const getOrCreateRefs = useCallback(
+    (remoteId: number, isExternal = false): AudioVideoRefs => {
+      const key: TRefsKey = isExternal ? `external:${remoteId}` : remoteId;
 
-    return audioVideoRefsMap.current.get(remoteId)!;
-  }, []);
+      if (!audioVideoRefsMap.current.has(key)) {
+        audioVideoRefsMap.current.set(key, {
+          videoRef: { current: null },
+          audioRef: { current: null },
+          screenShareRef: { current: null },
+          screenShareAudioRef: { current: null },
+          externalAudioRef: { current: null },
+          externalVideoRef: { current: null }
+        });
+      }
+
+      return audioVideoRefsMap.current.get(key)!;
+    },
+    []
+  );
 
   const {
     addExternalStreamTrack,

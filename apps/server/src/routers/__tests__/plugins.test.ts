@@ -13,13 +13,18 @@ import {
   type TPluginInfo,
   type TPluginPushEvent
 } from '@sharkord/shared';
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
 import { initTest } from '../../__tests__/helpers';
-import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
+import {
+  loadMockedPlugins,
+  mockPluginDownload,
+  resetPluginMocks
+} from '../../__tests__/mocks';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
+import { getChannelsReadStatesForUser } from '../../db/queries/channels';
 import { getUserRoleIds } from '../../db/queries/roles';
 import {
   activityLog,
@@ -43,6 +48,7 @@ import {
 import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
 import { drainActivityLogQueue } from '../../queues/activity-log';
+import * as messageMetadata from '../../queues/message-metadata';
 import { pubsub } from '../../utils/pubsub';
 
 describe('plugins router', () => {
@@ -762,22 +768,7 @@ describe('plugins router', () => {
       const { caller } = await initTest();
       const mockDownload = mock(() => Promise.resolve());
 
-      mock.module('../../helpers/downloads', () => ({
-        downloadPlugin: mockDownload,
-        downloadFile: mock(() => Promise.resolve())
-      }));
-
-      mock.module('../../helpers/marketplace', () => ({
-        fetchMarketplaceVersion: mock(() =>
-          Promise.resolve({
-            version: '0.0.1',
-            downloadUrl: 'https://example.com/plugin.tar.gz',
-            checksum: 'deadbeef1234',
-            sdkVersion: 1,
-            size: 1000
-          })
-        )
-      }));
+      mockPluginDownload(mockDownload);
 
       await caller.plugins.install({
         pluginId: 'plugin-example',
@@ -820,30 +811,15 @@ describe('plugins router', () => {
       const order: string[] = [];
       let active = 0;
 
-      mock.module('../../helpers/downloads', () => ({
-        downloadPlugin: mock(async () => {
-          active += 1;
-          order.push(`start:${active}`);
+      mockPluginDownload(async () => {
+        active += 1;
+        order.push(`start:${active}`);
 
-          await Bun.sleep(20);
+        await Bun.sleep(20);
 
-          order.push(`end:${active}`);
-          active -= 1;
-        }),
-        downloadFile: mock(() => Promise.resolve())
-      }));
-
-      mock.module('../../helpers/marketplace', () => ({
-        fetchMarketplaceVersion: mock(() =>
-          Promise.resolve({
-            version: '0.0.1',
-            downloadUrl: 'https://example.com/plugin-a.tar.gz',
-            checksum: 'deadbeef1234',
-            sdkVersion: 1,
-            size: 1000
-          })
-        )
-      }));
+        order.push(`end:${active}`);
+        active -= 1;
+      });
 
       await Promise.all([
         caller.plugins.install({ pluginId: 'plugin-a', version: '0.0.1' }),
@@ -859,29 +835,14 @@ describe('plugins router', () => {
       let active = 0;
       let peak = 0;
 
-      mock.module('../../helpers/downloads', () => ({
-        downloadPlugin: mock(async () => {
-          active += 1;
-          peak = Math.max(peak, active);
+      mockPluginDownload(async () => {
+        active += 1;
+        peak = Math.max(peak, active);
 
-          await Bun.sleep(20);
+        await Bun.sleep(20);
 
-          active -= 1;
-        }),
-        downloadFile: mock(() => Promise.resolve())
-      }));
-
-      mock.module('../../helpers/marketplace', () => ({
-        fetchMarketplaceVersion: mock(() =>
-          Promise.resolve({
-            version: '0.0.1',
-            downloadUrl: 'https://example.com/plugin.tar.gz',
-            checksum: 'deadbeef1234',
-            sdkVersion: 1,
-            size: 1000
-          })
-        )
-      }));
+        active -= 1;
+      });
 
       await Promise.all([
         caller.plugins.install({ pluginId: 'plugin-a', version: '0.0.1' }),
@@ -895,28 +856,13 @@ describe('plugins router', () => {
       const { caller } = await initTest();
       let calls = 0;
 
-      mock.module('../../helpers/downloads', () => ({
-        downloadPlugin: mock(async () => {
-          calls += 1;
+      mockPluginDownload(async () => {
+        calls += 1;
 
-          if (calls === 1) {
-            throw new Error('network exploded');
-          }
-        }),
-        downloadFile: mock(() => Promise.resolve())
-      }));
-
-      mock.module('../../helpers/marketplace', () => ({
-        fetchMarketplaceVersion: mock(() =>
-          Promise.resolve({
-            version: '0.0.1',
-            downloadUrl: 'https://example.com/plugin-a.tar.gz',
-            checksum: 'deadbeef1234',
-            sdkVersion: 1,
-            size: 1000
-          })
-        )
-      }));
+        if (calls === 1) {
+          throw new Error('network exploded');
+        }
+      });
 
       const [first, second] = await Promise.allSettled([
         caller.plugins.install({ pluginId: 'plugin-a', version: '0.0.1' }),
@@ -929,6 +875,64 @@ describe('plugins router', () => {
     });
   });
 
+  // a plugin message is a message everyone in the channel has yet to read, and
+  // the badge that says so is the only sign it arrived
+  describe('unread counts', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const sendPluginMessage = async (channelId: number) => {
+      const { caller } = await initTest();
+
+      return (await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'send-link',
+        args: { channelId, previews: false }
+      })) as { messageId: number };
+    };
+
+    // channel 1 is seeded with one message from user 1, so every count here is
+    // measured as a delta rather than against a fixed number
+    const unreadInChannelOne = async (userId: number) =>
+      (await getChannelsReadStatesForUser(userId, 1))[1] ?? 0;
+
+    // the control: whatever the seed leaves behind, a user message moves this
+    test('should count a user message as unread for everyone else', async () => {
+      const { caller } = await initTest(1);
+      const before = await unreadInChannelOne(2);
+
+      await caller.messages.send({ channelId: 1, content: 'hello', files: [] });
+
+      expect(await unreadInChannelOne(2)).toBe(before + 1);
+    });
+
+    test('should count a plugin message as unread', async () => {
+      const before = await unreadInChannelOne(2);
+
+      await sendPluginMessage(1);
+
+      expect(await unreadInChannelOne(2)).toBe(before + 1);
+    });
+
+    // the message belongs to the plugin, not to whoever ran the command, so it
+    // is unread for them too
+    test('should count a plugin message for the user who triggered it', async () => {
+      const before = await unreadInChannelOne(1);
+
+      await sendPluginMessage(1);
+
+      expect(await unreadInChannelOne(1)).toBe(before + 1);
+    });
+
+    test('should clear a plugin message once the channel is read', async () => {
+      const { caller } = await initTest(2);
+
+      await sendPluginMessage(1);
+      await caller.channels.markAsRead({ channelId: 1 });
+
+      expect(await unreadInChannelOne(2)).toBe(0);
+    });
+  });
+
   // a plugin posting a formatted message does not want the host rewriting it
   // with a link card underneath, and may not want the url fetched at all
   describe('link previews', () => {
@@ -937,10 +941,9 @@ describe('plugins router', () => {
     beforeEach(async () => {
       enqueue.mockClear();
 
-      mock.module('../../queues/message-metadata', () => ({
-        enqueueProcessMetadata: enqueue,
-        messageMetadataQueue: { push: mock(() => {}) }
-      }));
+      spyOn(messageMetadata, 'enqueueProcessMetadata').mockImplementation(
+        enqueue
+      );
 
       await pluginManager.load('plugin-b');
     });
@@ -3116,22 +3119,12 @@ describe('plugins router', () => {
       const { caller } = await initTest();
       const mockDownload = mock(() => Promise.resolve());
 
-      mock.module('../../helpers/downloads', () => ({
-        downloadPlugin: mockDownload,
-        downloadFile: mock(() => Promise.resolve())
-      }));
-
-      mock.module('../../helpers/marketplace', () => ({
-        fetchMarketplaceVersion: mock(() =>
-          Promise.resolve({
-            version: '2.0.0',
-            downloadUrl: 'https://example.com/plugin-a-v2.tar.gz',
-            checksum: 'cafebabe5678',
-            sdkVersion: 1,
-            size: 2000
-          })
-        )
-      }));
+      mockPluginDownload(mockDownload, {
+        version: '2.0.0',
+        downloadUrl: 'https://example.com/plugin-a-v2.tar.gz',
+        checksum: 'cafebabe5678',
+        size: 2000
+      });
 
       await caller.plugins.update({
         pluginId: 'plugin-a',
@@ -3150,24 +3143,7 @@ describe('plugins router', () => {
 
       await pluginManager.togglePlugin('plugin-a', true);
 
-      mock.module('../../helpers/downloads', () => ({
-        downloadPlugin: mock(() =>
-          Promise.reject(new Error('network exploded'))
-        ),
-        downloadFile: mock(() => Promise.resolve())
-      }));
-
-      mock.module('../../helpers/marketplace', () => ({
-        fetchMarketplaceVersion: mock(() =>
-          Promise.resolve({
-            version: '0.0.1',
-            downloadUrl: 'https://example.com/plugin-a.tar.gz',
-            checksum: 'deadbeef1234',
-            sdkVersion: 1,
-            size: 1000
-          })
-        )
-      }));
+      mockPluginDownload(() => Promise.reject(new Error('network exploded')));
 
       await expect(
         caller.plugins.update({ pluginId: 'plugin-a', version: '0.0.1' })
@@ -3281,22 +3257,7 @@ describe('plugins router', () => {
     test('should log a plugin install with its version', async () => {
       const { caller } = await initTest();
 
-      mock.module('../../helpers/downloads', () => ({
-        downloadPlugin: mock(() => Promise.resolve()),
-        downloadFile: mock(() => Promise.resolve())
-      }));
-
-      mock.module('../../helpers/marketplace', () => ({
-        fetchMarketplaceVersion: mock(() =>
-          Promise.resolve({
-            version: '0.0.1',
-            downloadUrl: 'https://example.com/plugin.tar.gz',
-            checksum: 'deadbeef1234',
-            sdkVersion: 1,
-            size: 1000
-          })
-        )
-      }));
+      mockPluginDownload();
 
       await caller.plugins.install({
         pluginId: 'plugin-example',

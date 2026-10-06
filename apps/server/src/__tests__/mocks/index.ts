@@ -1,6 +1,10 @@
+import type { TMarketplacePluginVersion } from '@sharkord/shared';
+import { spyOn } from 'bun:test';
 import fs from 'fs/promises';
 import path from 'path';
 import { pluginData, settings } from '../../db/schema';
+import * as downloads from '../../helpers/downloads';
+import * as marketplace from '../../helpers/marketplace';
 import { PLUGINS_PATH } from '../../helpers/paths';
 import { pluginManager } from '../../plugins';
 import { tdb } from '../setup';
@@ -55,4 +59,27 @@ const resetPluginMocks = async () => {
   await pluginManager.unloadPlugins();
 };
 
-export { loadMockedPlugins, resetPluginMocks };
+const DEFAULT_MARKETPLACE_VERSION: TMarketplacePluginVersion = {
+  version: '0.0.1',
+  downloadUrl: 'https://example.com/plugin.tar.gz',
+  checksum: 'deadbeef1234',
+  sdkVersion: 1,
+  size: 1000,
+  timestamp: 1
+};
+
+// stubs the two network calls an install or update makes. spied rather than replaced with
+// mock.module, which outlives the test file, so the mock.restore in setup puts the real ones back
+const mockPluginDownload = (
+  download: typeof downloads.downloadPlugin = async () => {},
+  version: Partial<TMarketplacePluginVersion> = {}
+) => {
+  spyOn(marketplace, 'fetchMarketplaceVersion').mockResolvedValue({
+    ...DEFAULT_MARKETPLACE_VERSION,
+    ...version
+  });
+
+  return spyOn(downloads, 'downloadPlugin').mockImplementation(download);
+};
+
+export { loadMockedPlugins, mockPluginDownload, resetPluginMocks };

@@ -482,7 +482,7 @@ const getChannelsReadStatesForUser = async (
       messages,
       and(
         eq(messages.channelId, channels.id),
-        ne(messages.userId, userId),
+        or(isNull(messages.userId), ne(messages.userId, userId)),
         isNull(messages.parentMessageId),
         or(
           isNull(channelReadStates.lastReadMessageId),

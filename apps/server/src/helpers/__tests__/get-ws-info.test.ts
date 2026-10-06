@@ -580,5 +580,48 @@ describe('getWsInfo - trusted proxy gate', () => {
     test('matches any address when the range covers everything', () => {
       expect(isTrustedProxyAddress('203.0.113.9', ['0.0.0.0/0'])).toBe(true);
     });
+
+    test('matches an ipv4-mapped address against an exact ipv4 entry', () => {
+      expect(isTrustedProxyAddress('::ffff:10.0.0.1', ['10.0.0.1'])).toBe(true);
+      expect(isTrustedProxyAddress('::ffff:10.0.0.2', ['10.0.0.1'])).toBe(
+        false
+      );
+    });
+
+    test('matches an ipv4-mapped address against an ipv4 cidr range', () => {
+      expect(isTrustedProxyAddress('::ffff:10.0.3.9', ['10.0.0.0/16'])).toBe(
+        true
+      );
+      expect(isTrustedProxyAddress('::ffff:10.1.0.1', ['10.0.0.0/16'])).toBe(
+        false
+      );
+    });
+
+    test('matches an ipv4-mapped loopback against a loopback entry', () => {
+      expect(isTrustedProxyAddress('::ffff:127.0.0.1', ['127.0.0.1'])).toBe(
+        true
+      );
+    });
+
+    test('matches an ipv4 address against an ipv4-mapped cidr entry', () => {
+      expect(isTrustedProxyAddress('10.0.3.9', ['::ffff:10.0.0.0/112'])).toBe(
+        true
+      );
+      expect(isTrustedProxyAddress('10.1.0.1', ['::ffff:10.0.0.0/112'])).toBe(
+        false
+      );
+    });
+
+    test('does not match an ipv4-mapped address against an ipv6 range', () => {
+      expect(isTrustedProxyAddress('::ffff:10.0.0.1', ['2001:db8::/32'])).toBe(
+        false
+      );
+    });
+
+    test('does not match an ipv4-mapped address outside the range', () => {
+      expect(isTrustedProxyAddress('::ffff:10.0.0.1', ['172.16.0.0/12'])).toBe(
+        false
+      );
+    });
   });
 });

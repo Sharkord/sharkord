@@ -135,6 +135,8 @@ type TExternalStreamInternal = {
   producers: TExternalStreamProducers;
 };
 
+const EXTERNAL_STREAM_ID_BASE = 1_000_000;
+
 class VoiceRuntime {
   public readonly id: number;
   private state: TChannelState = { users: [], externalStreams: {} };
@@ -148,7 +150,7 @@ class VoiceRuntime {
   private consumers: TConsumerMap = {};
   private producerQualityLayers: TProducerQualityLayerMap = {};
 
-  private externalCounter = 0;
+  private externalCounter = EXTERNAL_STREAM_ID_BASE;
   private externalStreamsInternal: {
     [streamId: number]: TExternalStreamInternal;
   } = {};
@@ -1085,4 +1087,4 @@ class VoiceRuntime {
   };
 }
 
-export { VoiceRuntime };
+export { EXTERNAL_STREAM_ID_BASE, VoiceRuntime };

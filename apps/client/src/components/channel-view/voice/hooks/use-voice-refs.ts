@@ -9,9 +9,9 @@ import { useAudioLevel } from './use-audio-level';
 
 const useVoiceRefs = (
   remoteId: number,
-  pluginId?: string,
-  streamKey?: string
+  externalStream?: { pluginId: string; streamKey: string }
 ) => {
+  const isExternalStream = !!externalStream;
   const {
     remoteUserStreams,
     externalStreams,
@@ -21,7 +21,8 @@ const useVoiceRefs = (
     ownVoiceState,
     getOrCreateRefs
   } = useVoice();
-  const isOwnUser = useIsOwnUser(remoteId);
+  // an external stream has no owner, and its id is not from the user id space
+  const isOwnUser = useIsOwnUser(isExternalStream ? null : remoteId);
   const {
     getVolume,
     getUserVolumeKey,
@@ -37,7 +38,7 @@ const useVoiceRefs = (
     screenShareAudioRef,
     externalAudioRef,
     externalVideoRef
-  } = getOrCreateRefs(remoteId);
+  } = getOrCreateRefs(remoteId, isExternalStream);
 
   const videoStream = useMemo(() => {
     if (isOwnUser) return localVideoStream;
@@ -69,21 +70,15 @@ const useVoiceRefs = (
     return remoteUserStreams[remoteId]?.[StreamKind.SCREEN_AUDIO];
   }, [remoteUserStreams, remoteId, isOwnUser]);
 
-  const externalAudioStream = useMemo(() => {
-    if (isOwnUser) return undefined;
+  const externalAudioStream = useMemo(
+    () => externalStreams[remoteId]?.audioStream,
+    [externalStreams, remoteId]
+  );
 
-    const external = externalStreams[remoteId];
-
-    return external?.audioStream;
-  }, [externalStreams, remoteId, isOwnUser]);
-
-  const externalVideoStream = useMemo(() => {
-    if (isOwnUser) return undefined;
-
-    const external = externalStreams[remoteId];
-
-    return external?.videoStream;
-  }, [externalStreams, remoteId, isOwnUser]);
+  const externalVideoStream = useMemo(
+    () => externalStreams[remoteId]?.videoStream,
+    [externalStreams, remoteId]
+  );
 
   const { audioLevel, isSpeaking, speakingIntensity, speakingEffectClass } =
     useAudioLevel(audioStreamForLevel);
@@ -94,8 +89,9 @@ const useVoiceRefs = (
   const userScreenVolumeKey = getUserScreenVolumeKey(remoteId);
   const userScreenVolume = getVolume(userScreenVolumeKey);
 
-  const externalVolumeKey =
-    pluginId && streamKey ? getExternalVolumeKey(pluginId, streamKey) : null;
+  const externalVolumeKey = externalStream
+    ? getExternalVolumeKey(externalStream.pluginId, externalStream.streamKey)
+    : null;
 
   const externalVolume = externalVolumeKey ? getVolume(externalVolumeKey) : 100;
 

@@ -157,7 +157,10 @@ const ExternalStreamCard = memo(
     isAnyCardPinned = false
   }: TExternalStreamCardProps) => {
     const { externalVideoRef, hasExternalVideoStream, hasExternalAudioStream } =
-      useVoiceRefs(streamId, stream.pluginId, stream.key);
+      useVoiceRefs(streamId, {
+        pluginId: stream.pluginId,
+        streamKey: stream.key
+      });
 
     const { getVolume, getExternalVolumeKey } = useVolumeControl();
 

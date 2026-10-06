@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Consumer, Producer } from 'mediasoup/types';
 import { eventBus } from '../../plugins/event-bus';
 import { pubsub } from '../../utils/pubsub';
-import { VoiceRuntime } from '../voice';
+import { EXTERNAL_STREAM_ID_BASE, VoiceRuntime } from '../voice';
 
 type TCloseHandler = () => void;
 
@@ -133,10 +133,10 @@ describe('VoiceRuntime producer and consumer maps', () => {
 });
 
 describe('VoiceRuntime external streams', () => {
-  // ids come from a counter that starts at zero, so the second stream in a channel is id 1,
-  // which is also the first user id. the client cannot decide "this producer is mine" from
-  // the id alone, see isOwnProducerEvent
-  test('should hand out ids from zero, colliding with user ids', () => {
+  // the id reaches clients in the same field as a user id, and anything that reads
+  // one as the other drops the stream for exactly the user whose id matched: the
+  // music that played for everyone else. so the two ranges cannot overlap
+  test('should hand out ids that cannot collide with user ids', () => {
     const runtime = createRuntime();
 
     const first = runtime.createExternalStream({
@@ -153,8 +153,8 @@ describe('VoiceRuntime external streams', () => {
       producers: { audio: createProducerStub() as unknown as Producer }
     });
 
-    expect(first).toBe(0);
-    expect(second).toBe(1);
+    expect(first).toBe(EXTERNAL_STREAM_ID_BASE);
+    expect(second).toBe(EXTERNAL_STREAM_ID_BASE + 1);
   });
 
   test('should expose a new stream to the joining snapshot', () => {

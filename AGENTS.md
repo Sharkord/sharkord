@@ -230,6 +230,12 @@ How server tests work:
   file, and reference it from the test by its seeded id. Append new rows **after** the
   existing ones so the ids already asserted on elsewhere do not shift, and check
   `setup.test.ts` (it asserts the seeded row counts) when you add one.
+- Every test file runs in **one process**, in an order that depends on the checkout, so
+  anything a test leaves behind reaches whichever file runs next. Never use `mock.module`
+  in a test: it replaces the module for the rest of the run and `mock.restore()` does not
+  undo it. Use `spyOn` on the module object instead (`import * as x from '...'`), which the
+  global `afterEach` in `setup.ts` restores. Any process wide state a test changes
+  (`config`, a singleton) must be put back before the file ends.
 
 ### Route test coverage (mandatory)
 
