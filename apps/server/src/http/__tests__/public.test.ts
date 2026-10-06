@@ -528,25 +528,12 @@ describe('/public', () => {
     'should serve a file named %s with an ascii fallback name',
     async (name, fallbackName) => {
       const content = 'non ascii name';
-      const tempFile = await upload(
-        new File([content], name, { type: 'text/plain' }),
-        token
-      );
+      const dbFile = await uploadToMessage(name, content, token);
 
-      const { caller } = await initTest();
-
-      const messageId = await caller.messages.send({
-        content: 'Message with file',
-        channelId: 1,
-        files: [tempFile.id]
-      });
-
-      const dbFile = await getFileByMessageId(messageId);
-
-      expect(dbFile?.originalName).toBe(name);
+      expect(dbFile.originalName).toBe(name);
 
       const response = await fetch(
-        `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+        `${testsBaseUrl}/public/${encodeURIComponent(dbFile.name)}`
       );
 
       expect(response.status).toBe(200);
