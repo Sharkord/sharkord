@@ -100,8 +100,11 @@ const defaultUserState: TVoiceUserState = {
   micMuted: false,
   soundMuted: false,
   webcamEnabled: false,
-  sharingScreen: false
+  sharingScreen: false,
+  supportsDirectScreenShare: false
 };
+
+type TDirectScreenShareStopReason = 'stopped' | 'channel-not-1:1' | 'peer-left';
 
 type TTransportMap = {
   [userId: number]: WebRtcTransport<AppData>;
@@ -149,6 +152,7 @@ class VoiceRuntime {
   private screenAudioProducers: TProducerMap = {};
   private consumers: TConsumerMap = {};
   private producerQualityLayers: TProducerQualityLayerMap = {};
+  private directScreenSharePeers = new Map<number, number>();
 
   private externalCounter = EXTERNAL_STREAM_ID_BASE;
   private externalStreamsInternal: {
@@ -315,6 +319,8 @@ class VoiceRuntime {
   };
 
   public destroy = async () => {
+    this.stopAllDirectScreenShares('peer-left');
+
     await this.router?.close();
 
     Object.values(this.consumerTransports).forEach((transport) => {
@@ -401,7 +407,8 @@ class VoiceRuntime {
 
   public addUser = (
     userId: number,
-    state: Pick<TVoiceUserState, 'micMuted' | 'soundMuted'>
+    state: Pick<TVoiceUserState, 'micMuted' | 'soundMuted'> &
+      Pick<TVoiceUserState, 'supportsDirectScreenShare'>
   ) => {
     if (this.getUser(userId)) return;
 
@@ -413,6 +420,10 @@ class VoiceRuntime {
       }
     });
 
+    if (this.state.users.length > 2) {
+      this.stopAllDirectScreenShares('channel-not-1:1');
+    }
+
     eventBus.emit('user:joined_voice', {
       userId: userId,
       channelId: this.id
@@ -420,6 +431,12 @@ class VoiceRuntime {
   };
 
   public removeUser = (userId: number) => {
+    this.directScreenSharePeers.forEach((peerUserId, sharerId) => {
+      if (sharerId === userId || peerUserId === userId) {
+        this.stopDirectScreenShare(sharerId, 'peer-left');
+      }
+    });
+
     this.state.users = this.state.users.filter((u) => u.userId !== userId);
 
     this.cleanupUserResources(userId);
@@ -427,6 +444,61 @@ class VoiceRuntime {
     eventBus.emit('user:left_voice', {
       userId: userId,
       channelId: this.id
+    });
+  };
+
+  public getDirectScreenSharePeer = (sharerId: number) => {
+    return this.directScreenSharePeers.get(sharerId);
+  };
+
+  public getDirectScreenShareSharer = (receiverId: number) => {
+    return Array.from(this.directScreenSharePeers.entries()).find(
+      ([, peerId]) => peerId === receiverId
+    )?.[0];
+  };
+
+  public hasDirectScreenShare = (userId: number) => {
+    return Array.from(this.directScreenSharePeers.entries()).some(
+      ([sharerId, peerId]) => sharerId === userId || peerId === userId
+    );
+  };
+
+  public startDirectScreenShare = (sharerId: number, receiverId: number) => {
+    if (this.hasDirectScreenShare(sharerId)) return false;
+    if (this.hasDirectScreenShare(receiverId)) return false;
+
+    this.directScreenSharePeers.set(sharerId, receiverId);
+
+    return true;
+  };
+
+  public stopDirectScreenShare = (
+    sharerId: number,
+    reason: TDirectScreenShareStopReason = 'stopped'
+  ) => {
+    const receiverId = this.directScreenSharePeers.get(sharerId);
+
+    if (receiverId === undefined) return;
+
+    this.directScreenSharePeers.delete(sharerId);
+    pubsub.publishFor(
+      [sharerId, receiverId],
+      ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL,
+      {
+        channelId: this.id,
+        senderId: sharerId,
+        sharerId,
+        type: 'stop',
+        reason
+      }
+    );
+  };
+
+  public stopAllDirectScreenShares = (
+    reason: TDirectScreenShareStopReason = 'stopped'
+  ) => {
+    Array.from(this.directScreenSharePeers.keys()).forEach((sharerId) => {
+      this.stopDirectScreenShare(sharerId, reason);
     });
   };
 

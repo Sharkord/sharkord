@@ -77,6 +77,14 @@ export type TDeviceSettings = {
   screenCursor: ScreenCursor;
 };
 
+export type TScreenShareTransport = 'direct' | 'server';
+
+export type TDirectScreenShareStatus =
+  | 'idle'
+  | 'connecting'
+  | 'connected'
+  | 'failed';
+
 export type TRemoteUserStreamKinds =
   | StreamKind.AUDIO
   | StreamKind.VIDEO

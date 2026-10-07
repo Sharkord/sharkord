@@ -55,6 +55,7 @@
   "failedUpdateSoundState": "Error al actualizar el estado del sonido",
   "failedUpdateWebcamState": "Error al actualizar el estado de la cámara",
   "failedUpdateScreenShareState": "Error al actualizar el estado de la pantalla compartida",
+  "directScreenShareFailed": "No se pudo establecer la conexión directa. Detén la compartición y vuelve a iniciarla con Servidor (SFU) seleccionado.",
   "notificationPermissionDenied": "Permiso de notificaciones denegado",
   "uploadsDisabled": "Las subidas de archivos están deshabilitadas en este servidor",
   "noUploadPermission": "No tienes permiso para subir archivos",

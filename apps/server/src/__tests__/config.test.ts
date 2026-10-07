@@ -38,6 +38,14 @@ describe('backupDatabase default', () => {
   });
 });
 
+describe('peerToPeer ICE server configuration', () => {
+  test('should default to a public STUN server', () => {
+    expect(JSON.parse(defaultConfig.peerToPeer.iceServers)).toEqual([
+      { urls: 'stun:stun.l.google.com:19302' }
+    ]);
+  });
+});
+
 describe('env overrides are validated', () => {
   const savedEnv: Record<string, string | undefined> = {};
 
@@ -45,6 +53,12 @@ describe('env overrides are validated', () => {
     if (!(key in savedEnv)) savedEnv[key] = process.env[key];
 
     process.env[key] = value;
+  };
+
+  const unsetEnv = (key: string) => {
+    if (!(key in savedEnv)) savedEnv[key] = process.env[key];
+
+    delete process.env[key];
   };
 
   afterEach(() => {
@@ -121,7 +135,31 @@ describe('env overrides are validated', () => {
     expect(applyOverrides).toThrow();
   });
 
+  test('should accept JSON ICE server overrides', () => {
+    const iceServers = [
+      {
+        urls: ['turn:turn.example.test:3478', 'turns:turn.example.test:5349'],
+        username: 'test-user',
+        credential: 'test-credential'
+      }
+    ];
+
+    setEnv('SHARKORD_P2P_ICE_SERVERS', JSON.stringify(iceServers));
+
+    expect(JSON.parse(applyOverrides().peerToPeer.iceServers)).toEqual(
+      iceServers
+    );
+  });
+
+  test('should reject malformed JSON ICE server overrides', () => {
+    setEnv('SHARKORD_P2P_ICE_SERVERS', 'not-json');
+
+    expect(applyOverrides).toThrow();
+  });
+
   test('should leave the config untouched when no variable is set', () => {
+    Object.values(envOverridesMap).forEach(unsetEnv);
+
     expect(applyOverrides()).toEqual(zConfig.parse(defaultConfig));
   });
 

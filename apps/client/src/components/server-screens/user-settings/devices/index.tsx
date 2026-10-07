@@ -15,11 +15,16 @@ import {
   getSuppressLocalAudioPlaybackSupport
 } from '@/helpers/get-display-media-support';
 import {
+  getScreenShareTransport,
+  setScreenShareTransport
+} from '@/helpers/screen-share-transport';
+import {
   NoiseSuppression,
   Resolution,
   ScreenCursor,
   VideoCodec,
-  type TDeviceSettings
+  type TDeviceSettings,
+  type TScreenShareTransport
 } from '@/types';
 import { DEFAULT_BITRATE } from '@sharkord/shared';
 import {
@@ -27,7 +32,6 @@ import {
   AlertDescription,
   Button,
   Group,
-  Label,
   LoadingCard,
   Select,
   SelectContent,
@@ -36,10 +40,8 @@ import {
   SelectTrigger,
   SelectValue,
   Separator,
-  Slider,
   Switch
 } from '@sharkord/ui';
-import { filesize } from 'filesize';
 import { Info } from 'lucide-react';
 import {
   memo,
@@ -47,6 +49,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   useSyncExternalStore
 } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -56,6 +59,7 @@ import { useWebcamTest } from './hooks/use-webcam-test';
 import { MicrophoneTestLevelBar } from './microphone-test-level-bar';
 import { ResolutionFpsControl } from './resolution-fps-control';
 import { RestrictOwnAudioAlert } from './restrict-own-audio-alert';
+import { ScreenShareSettings } from './screen-share-settings';
 import { SuppressLocalAudioPlaybackAlert } from './suppress-local-audio-playback-alert';
 import { SupressionHelp } from './supression-help';
 
@@ -85,6 +89,9 @@ const Devices = memo(() => {
     successMessage: t('deviceSettingsSaved'),
     errorMessage: t('failedSaveDeviceSettings')
   });
+  const [screenShareTransport, setScreenShareTransportState] = useState(
+    getScreenShareTransport
+  );
   const noiseGateWorkletAvailability = useSyncExternalStore(
     subscribeNoiseGateWorkletAvailability,
     getNoiseGateWorkletAvailabilitySnapshot,
@@ -252,6 +259,30 @@ const Devices = memo(() => {
   const maxBitrate = useMemo(
     () => (settings?.webRtcMaxBitrate ? settings.webRtcMaxBitrate / 1000 : 0),
     [settings?.webRtcMaxBitrate]
+  );
+
+  const handleScreenResolutionChange = useCallback(
+    (value: Resolution) => onChange('screenResolution', value),
+    [onChange]
+  );
+  const handleScreenFramerateChange = useCallback(
+    (value: number) => onChange('screenFramerate', value),
+    [onChange]
+  );
+  const handleScreenBitrateChange = useCallback(
+    (value: number) => onChange('screenBitrate', value),
+    [onChange]
+  );
+  const handleShareSystemAudioChange = useCallback(
+    (value: boolean) => onChange('shareSystemAudio', value),
+    [onChange]
+  );
+  const handleScreenShareTransportChange = useCallback(
+    (value: TScreenShareTransport) => {
+      setScreenShareTransportState(value);
+      setScreenShareTransport(value);
+    },
+    []
   );
 
   useEffect(() => {
@@ -569,37 +600,40 @@ const Devices = memo(() => {
           />
         </Group>
         <Group label={t('screenSharingLabel')}>
-          <div className="flex">
-            <ResolutionFpsControl
-              framerate={values.screenFramerate}
-              resolution={values.screenResolution}
-              onFramerateChange={(value) => onChange('screenFramerate', value)}
-              onResolutionChange={(value) =>
-                onChange('screenResolution', value as Resolution)
-              }
-            />
+          <ScreenShareSettings
+            resolution={values.screenResolution}
+            framerate={values.screenFramerate}
+            bitrate={values.screenBitrate ?? DEFAULT_BITRATE}
+            shareSystemAudio={values.shareSystemAudio}
+            transport={screenShareTransport}
+            maxBitrate={maxBitrate}
+            onResolutionChange={handleScreenResolutionChange}
+            onFramerateChange={handleScreenFramerateChange}
+            onBitrateChange={handleScreenBitrateChange}
+            onShareSystemAudioChange={handleShareSystemAudioChange}
+            onTransportChange={handleScreenShareTransportChange}
+          />
 
-            <div className="ml-2">
-              <Select
-                value={values.screenCodec ?? VideoCodec.AUTO}
-                onValueChange={(value) =>
-                  onChange('screenCodec', value as VideoCodec)
-                }
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder={t('selectCodecPlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value={VideoCodec.AUTO}>Auto</SelectItem>
-                    <SelectItem value={VideoCodec.VP8}>VP8</SelectItem>
-                    <SelectItem value={VideoCodec.VP9}>VP9</SelectItem>
-                    <SelectItem value={VideoCodec.H264}>H264</SelectItem>
-                    <SelectItem value={VideoCodec.AV1}>AV1</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="mt-4">
+            <Select
+              value={values.screenCodec ?? VideoCodec.AUTO}
+              onValueChange={(value) =>
+                onChange('screenCodec', value as VideoCodec)
+              }
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder={t('selectCodecPlaceholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value={VideoCodec.AUTO}>Auto</SelectItem>
+                  <SelectItem value={VideoCodec.VP8}>VP8</SelectItem>
+                  <SelectItem value={VideoCodec.VP9}>VP9</SelectItem>
+                  <SelectItem value={VideoCodec.H264}>H264</SelectItem>
+                  <SelectItem value={VideoCodec.AV1}>AV1</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
 
           <Group label={t('screenCursorLabel')}>
@@ -627,27 +661,6 @@ const Devices = memo(() => {
               </SelectContent>
             </Select>
           </Group>
-
-          <div className="flex flex-col gap-2">
-            <Label>{t('maxBitrateLabel')}</Label>
-
-            <Slider
-              className="max-w-96"
-              min={200}
-              max={maxBitrate}
-              step={100}
-              value={[values.screenBitrate ?? DEFAULT_BITRATE]}
-              onValueChange={([value]) => onChange('screenBitrate', value)}
-              rightSlot={
-                <span className="text-sm text-muted-foreground w-20 text-right">
-                  {filesize((values.screenBitrate ?? DEFAULT_BITRATE) * 125, {
-                    bits: true
-                  })}
-                  /s
-                </span>
-              }
-            />
-          </div>
 
           <Group
             label={t('restrictOwnAudioLabel')}

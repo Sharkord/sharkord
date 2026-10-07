@@ -31,6 +31,7 @@ export enum LocalStorageKey {
   LANGUAGE = 'sharkord-language',
   PLUGIN_SLOT_DEBUG = 'sharkord-plugin-slot-debug',
   HIDE_OWN_SCREEN_SHARE = 'sharkord-hide-own-screen-share',
+  SCREEN_SHARE_TRANSPORT = 'sharkord-screen-share-transport',
   ALWAYS_SHOW_VOICE_CONTROLS = 'sharkord-always-show-voice-controls'
 }
 

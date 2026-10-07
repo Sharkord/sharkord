@@ -40,6 +40,29 @@ const joinVoiceChannelTwo = async (userId: number) => {
   return { runtime, caller };
 };
 
+const createDirectScreenShareRuntime = (
+  userIds: number[],
+  supportedUserIds: number[] = userIds,
+  channelId: number = VOICE_CHANNEL_ID
+) => {
+  const runtime = new VoiceRuntime(channelId);
+
+  userIds.forEach((userId) => {
+    runtime.addUser(userId, {
+      micMuted: false,
+      soundMuted: false,
+      supportsDirectScreenShare: supportedUserIds.includes(userId)
+    });
+  });
+
+  return runtime;
+};
+
+const initVoiceCaller = (
+  userId: number,
+  channelId: number = VOICE_CHANNEL_ID
+) => initTest(userId, undefined, { currentVoiceChannelId: channelId });
+
 const revokeFromDefaultRole = async (permission: Permission) =>
   tdb
     .delete(rolePermissions)
@@ -49,6 +72,22 @@ const revokeFromDefaultRole = async (permission: Permission) =>
         eq(rolePermissions.permission, permission)
       )
     );
+
+const grantPrivateChannelViewToDefaultRole = async (channelId: number) => {
+  const defaultRole = await tdb
+    .select({ id: roles.id })
+    .from(roles)
+    .where(eq(roles.isDefault, true))
+    .get();
+
+  await tdb.insert(channelRolePermissions).values({
+    channelId,
+    roleId: defaultRole!.id,
+    permission: ChannelPermission.VIEW_CHANNEL,
+    allow: true,
+    createdAt: Date.now()
+  });
+};
 
 describe('voice router', () => {
   test('should rate limit excessive voice join attempts', async () => {
@@ -446,7 +485,18 @@ describe('voice router', () => {
           quality: { mode: 'auto' }
         }),
       getProducers: () => caller.voice.getProducers(),
-      sendReaction: () => caller.voice.sendReaction({ emoji: 'thumbsup' })
+      sendReaction: () => caller.voice.sendReaction({ emoji: 'thumbsup' }),
+      startDirectScreenShare: () =>
+        caller.voice.startDirectScreenShare({
+          description: { type: 'offer', sdp: 'offer' }
+        }),
+      signalDirectScreenShare: () =>
+        caller.voice.signalDirectScreenShare({
+          type: 'candidate',
+          sharerId: 1,
+          candidate: { candidate: '' }
+        }),
+      stopDirectScreenShare: () => caller.voice.stopDirectScreenShare({})
     });
 
     test('should refuse every guarded route when the user is not in a voice channel', async () => {
@@ -857,6 +907,606 @@ describe('voice router', () => {
         await runtime.destroy();
       }
     });
+  });
+});
+
+describe('direct screen share routes', () => {
+  const offerInput = {
+    description: { type: 'offer' as const, sdp: 'offer sdp' }
+  };
+
+  const answerInput = {
+    type: 'answer' as const,
+    sharerId: 1,
+    description: { type: 'answer' as const, sdp: 'answer sdp' }
+  };
+
+  test('should treat a legacy voice join as unsupported and return ICE servers', async () => {
+    const runtime = new VoiceRuntime(VOICE_CHANNEL_ID);
+    await runtime.init();
+    const { caller } = await initTest(1);
+
+    try {
+      const result = await caller.voice.join({
+        channelId: VOICE_CHANNEL_ID,
+        state: { micMuted: false, soundMuted: false }
+      });
+
+      expect(runtime.getUserState(1).supportsDirectScreenShare).toBe(false);
+      expect(result.iceServers).toEqual(
+        JSON.parse(config.peerToPeer.iceServers)
+      );
+
+      await caller.voice.leave();
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should reject invalid start payloads', async () => {
+    const { caller } = await initTest(1);
+    const invalidInputs = [
+      { description: { type: 'answer', sdp: 'answer sdp' } },
+      { description: { type: 'offer', sdp: '' } },
+      { description: { type: 'offer', sdp: 's'.repeat(65_537) } }
+    ];
+
+    for (const input of invalidInputs) {
+      await expect(
+        caller.voice.startDirectScreenShare(input as never)
+      ).rejects.toThrow();
+    }
+  });
+
+  test('should reject invalid signal payloads', async () => {
+    const { caller } = await initTest(1);
+    const invalidInputs = [
+      { ...answerInput, sharerId: 0 },
+      {
+        ...answerInput,
+        description: { type: 'offer', sdp: 'offer sdp' }
+      },
+      {
+        ...answerInput,
+        description: { type: 'answer', sdp: '' }
+      },
+      {
+        ...answerInput,
+        description: { type: 'answer', sdp: 's'.repeat(65_537) }
+      },
+      {
+        type: 'candidate',
+        sharerId: 1,
+        candidate: { candidate: 'c'.repeat(4097) }
+      },
+      {
+        type: 'candidate',
+        sharerId: 1,
+        candidate: { candidate: '', sdpMid: 'm'.repeat(257) }
+      },
+      {
+        type: 'candidate',
+        sharerId: 1,
+        candidate: { candidate: '', sdpMLineIndex: -1 }
+      },
+      {
+        type: 'candidate',
+        sharerId: 1,
+        candidate: { candidate: '', sdpMLineIndex: 1.5 }
+      },
+      {
+        type: 'candidate',
+        sharerId: 1,
+        candidate: { candidate: '', usernameFragment: 'u'.repeat(257) }
+      }
+    ];
+
+    for (const input of invalidInputs) {
+      await expect(
+        caller.voice.signalDirectScreenShare(input as never)
+      ).rejects.toThrow();
+    }
+  });
+
+  test('should reject a stop payload that is not an object', async () => {
+    const { caller } = await initTest(1);
+
+    await expect(
+      caller.voice.stopDirectScreenShare(null as never)
+    ).rejects.toThrow();
+  });
+
+  test('should create a supported 1:1 share and deliver the offer to its peer', async () => {
+    const runtime = createDirectScreenShareRuntime([1, 2]);
+    const { caller } = await initVoiceCaller(1);
+    const received: unknown[] = [];
+    const subscription = pubsub
+      .subscribeFor(2, ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL)
+      .subscribe({ next: (signal) => received.push(signal) });
+
+    try {
+      await expect(
+        caller.voice.startDirectScreenShare(offerInput)
+      ).resolves.toEqual({ peerUserId: 2 });
+
+      expect(runtime.getDirectScreenSharePeer(1)).toBe(2);
+      expect(received).toEqual([
+        {
+          channelId: VOICE_CHANNEL_ID,
+          senderId: 1,
+          sharerId: 1,
+          type: 'offer',
+          description: offerInput.description
+        }
+      ]);
+    } finally {
+      subscription.unsubscribe();
+      await runtime.destroy();
+    }
+  });
+
+  test('should require global screen share permission to start', async () => {
+    await revokeFromDefaultRole(Permission.SHARE_SCREEN);
+    const runtime = createDirectScreenShareRuntime([2, 3]);
+    const { caller } = await initVoiceCaller(2);
+
+    try {
+      await expect(
+        caller.voice.startDirectScreenShare(offerInput)
+      ).rejects.toThrow('Insufficient permissions');
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should require channel screen share permission to start', async () => {
+    await grantPrivateChannelViewToDefaultRole(PRIVATE_VOICE_CHANNEL_ID);
+    const runtime = createDirectScreenShareRuntime(
+      [2, 3],
+      [2, 3],
+      PRIVATE_VOICE_CHANNEL_ID
+    );
+    const { caller } = await initVoiceCaller(2, PRIVATE_VOICE_CHANNEL_ID);
+
+    try {
+      await expect(
+        caller.voice.startDirectScreenShare(offerInput)
+      ).rejects.toThrow('Insufficient channel permissions');
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should require the sharer to be a channel participant', async () => {
+    const runtime = createDirectScreenShareRuntime([2, 3]);
+    const { caller } = await initVoiceCaller(1);
+
+    try {
+      await expect(
+        caller.voice.startDirectScreenShare(offerInput)
+      ).rejects.toThrow('User is not in this voice channel');
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should only start when the voice channel has exactly two participants', async () => {
+    for (const userIds of [[1], [1, 2, 3]]) {
+      const runtime = createDirectScreenShareRuntime(userIds);
+      const { caller } = await initVoiceCaller(1);
+
+      try {
+        await expect(
+          caller.voice.startDirectScreenShare(offerInput)
+        ).rejects.toThrow(
+          'Direct screen sharing is only available with two participants'
+        );
+      } finally {
+        await runtime.destroy();
+      }
+    }
+  });
+
+  test('should require both participants to declare direct screen share support', async () => {
+    for (const supportedUserIds of [[1], [2]]) {
+      const runtime = createDirectScreenShareRuntime([1, 2], supportedUserIds);
+      const { caller } = await initVoiceCaller(1);
+
+      try {
+        await expect(
+          caller.voice.startDirectScreenShare(offerInput)
+        ).rejects.toThrow(
+          'Both participants must support direct screen sharing'
+        );
+      } finally {
+        await runtime.destroy();
+      }
+    }
+  });
+
+  test('should refuse a second share while the sharer already has one active', async () => {
+    const runtime = createDirectScreenShareRuntime([1, 2]);
+    runtime.startDirectScreenShare(1, 2);
+    const { caller } = await initVoiceCaller(1);
+
+    try {
+      await expect(
+        caller.voice.startDirectScreenShare(offerInput)
+      ).rejects.toThrow('A direct screen share is already active');
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should refuse a new share when its receiver is already in a share', async () => {
+    const runtime = createDirectScreenShareRuntime([1, 2]);
+    runtime.startDirectScreenShare(3, 2);
+    const { caller } = await initVoiceCaller(1);
+
+    try {
+      await expect(
+        caller.voice.startDirectScreenShare(offerInput)
+      ).rejects.toThrow('A direct screen share is already active');
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should allow end of candidates in a signal and relay answers and candidates to the peer', async () => {
+    const runtime = createDirectScreenShareRuntime([1, 2]);
+    runtime.startDirectScreenShare(1, 2);
+    const { caller: sharerCaller } = await initVoiceCaller(1);
+    const { caller: receiverCaller } = await initVoiceCaller(2);
+    const receivedBySharer: unknown[] = [];
+    const receivedByReceiver: unknown[] = [];
+    const sharerSubscription = pubsub
+      .subscribeFor(1, ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL)
+      .subscribe({ next: (signal) => receivedBySharer.push(signal) });
+    const receiverSubscription = pubsub
+      .subscribeFor(2, ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL)
+      .subscribe({ next: (signal) => receivedByReceiver.push(signal) });
+
+    try {
+      await receiverCaller.voice.signalDirectScreenShare(answerInput);
+      await sharerCaller.voice.signalDirectScreenShare({
+        type: 'candidate',
+        sharerId: 1,
+        candidate: { candidate: '' }
+      });
+
+      expect(receivedBySharer).toEqual([
+        {
+          channelId: VOICE_CHANNEL_ID,
+          senderId: 2,
+          sharerId: 1,
+          type: 'answer',
+          description: answerInput.description
+        }
+      ]);
+      expect(receivedByReceiver).toEqual([
+        {
+          channelId: VOICE_CHANNEL_ID,
+          senderId: 1,
+          sharerId: 1,
+          type: 'candidate',
+          candidate: { candidate: '' }
+        }
+      ]);
+    } finally {
+      sharerSubscription.unsubscribe();
+      receiverSubscription.unsubscribe();
+      await runtime.destroy();
+    }
+  });
+
+  test('should require the caller to be in the voice runtime before signalling', async () => {
+    const runtime = createDirectScreenShareRuntime([2, 3]);
+    runtime.startDirectScreenShare(2, 3);
+    const { caller } = await initVoiceCaller(1);
+
+    try {
+      await expect(
+        caller.voice.signalDirectScreenShare({
+          type: 'candidate',
+          sharerId: 2,
+          candidate: { candidate: '' }
+        })
+      ).rejects.toThrow('User is not in this voice channel');
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should reject signalling when there is no matching negotiation', async () => {
+    const runtime = createDirectScreenShareRuntime([1, 2]);
+    const { caller } = await initVoiceCaller(2);
+
+    try {
+      await expect(
+        caller.voice.signalDirectScreenShare(answerInput)
+      ).rejects.toThrow('Direct screen share negotiation was not found');
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should require both negotiation participants to support direct sharing', async () => {
+    const runtime = createDirectScreenShareRuntime([1, 2], [1]);
+    runtime.startDirectScreenShare(1, 2);
+    const { caller } = await initVoiceCaller(2);
+
+    try {
+      await expect(
+        caller.voice.signalDirectScreenShare(answerInput)
+      ).rejects.toThrow('Both participants must support direct screen sharing');
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should only allow the receiving participant to answer an offer', async () => {
+    const runtime = createDirectScreenShareRuntime([1, 2]);
+    runtime.startDirectScreenShare(1, 2);
+    const { caller } = await initVoiceCaller(1);
+
+    try {
+      await expect(
+        caller.voice.signalDirectScreenShare(answerInput)
+      ).rejects.toThrow('Only the receiving participant can answer an offer');
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should reject a signal from a channel member outside the negotiation', async () => {
+    const runtime = createDirectScreenShareRuntime([1, 2, 3]);
+    runtime.startDirectScreenShare(1, 2);
+    const { caller } = await initVoiceCaller(3);
+
+    try {
+      await expect(
+        caller.voice.signalDirectScreenShare({
+          type: 'candidate',
+          sharerId: 1,
+          candidate: { candidate: '' }
+        })
+      ).rejects.toThrow('User is not part of this direct screen share');
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should recheck the sharer global permission for every signal', async () => {
+    await revokeFromDefaultRole(Permission.SHARE_SCREEN);
+    const runtime = createDirectScreenShareRuntime([2, 3]);
+    runtime.startDirectScreenShare(2, 3);
+    const { caller } = await initVoiceCaller(3);
+
+    try {
+      await expect(
+        caller.voice.signalDirectScreenShare({
+          ...answerInput,
+          sharerId: 2
+        })
+      ).rejects.toThrow('Insufficient permissions');
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should recheck the sharer channel permission for every signal', async () => {
+    await grantPrivateChannelViewToDefaultRole(PRIVATE_VOICE_CHANNEL_ID);
+    const runtime = createDirectScreenShareRuntime(
+      [2, 3],
+      [2, 3],
+      PRIVATE_VOICE_CHANNEL_ID
+    );
+    runtime.startDirectScreenShare(2, 3);
+    const { caller } = await initVoiceCaller(3, PRIVATE_VOICE_CHANNEL_ID);
+
+    try {
+      await expect(
+        caller.voice.signalDirectScreenShare({
+          ...answerInput,
+          sharerId: 2
+        })
+      ).rejects.toThrow('Insufficient channel permissions');
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should require a participating sharer to stop a direct share', async () => {
+    const runtime = createDirectScreenShareRuntime([2, 3]);
+    runtime.startDirectScreenShare(2, 3);
+    const { caller } = await initVoiceCaller(1);
+
+    try {
+      await expect(caller.voice.stopDirectScreenShare({})).rejects.toThrow(
+        'User is not in this voice channel'
+      );
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should require global screen share permission to stop', async () => {
+    await revokeFromDefaultRole(Permission.SHARE_SCREEN);
+    const runtime = createDirectScreenShareRuntime([2, 3]);
+    runtime.startDirectScreenShare(2, 3);
+    const { caller } = await initVoiceCaller(2);
+
+    try {
+      await expect(caller.voice.stopDirectScreenShare({})).rejects.toThrow(
+        'Insufficient permissions'
+      );
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should require channel screen share permission to stop', async () => {
+    await grantPrivateChannelViewToDefaultRole(PRIVATE_VOICE_CHANNEL_ID);
+    const runtime = createDirectScreenShareRuntime(
+      [2, 3],
+      [2, 3],
+      PRIVATE_VOICE_CHANNEL_ID
+    );
+    runtime.startDirectScreenShare(2, 3);
+    const { caller } = await initVoiceCaller(2, PRIVATE_VOICE_CHANNEL_ID);
+
+    try {
+      await expect(caller.voice.stopDirectScreenShare({})).rejects.toThrow(
+        'Insufficient channel permissions'
+      );
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should reject stopping when there is no matching negotiation', async () => {
+    const runtime = createDirectScreenShareRuntime([1, 2]);
+    const { caller } = await initVoiceCaller(1);
+
+    try {
+      await expect(caller.voice.stopDirectScreenShare({})).rejects.toThrow(
+        'Direct screen share negotiation was not found'
+      );
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should stop the negotiation and notify both participants', async () => {
+    const runtime = createDirectScreenShareRuntime([1, 2]);
+    runtime.startDirectScreenShare(1, 2);
+    const { caller } = await initVoiceCaller(1);
+    const sharerSignals: unknown[] = [];
+    const receiverSignals: unknown[] = [];
+    const sharerSubscription = pubsub
+      .subscribeFor(1, ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL)
+      .subscribe({ next: (signal) => sharerSignals.push(signal) });
+    const receiverSubscription = pubsub
+      .subscribeFor(2, ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL)
+      .subscribe({ next: (signal) => receiverSignals.push(signal) });
+
+    try {
+      await expect(
+        caller.voice.stopDirectScreenShare({})
+      ).resolves.toBeUndefined();
+
+      expect(runtime.getDirectScreenSharePeer(1)).toBeUndefined();
+      expect(sharerSignals).toEqual([
+        {
+          channelId: VOICE_CHANNEL_ID,
+          senderId: 1,
+          sharerId: 1,
+          type: 'stop',
+          reason: 'stopped'
+        }
+      ]);
+      expect(receiverSignals).toEqual(sharerSignals);
+    } finally {
+      sharerSubscription.unsubscribe();
+      receiverSubscription.unsubscribe();
+      await runtime.destroy();
+    }
+  });
+
+  test('should stop a direct share when the channel is no longer 1:1', async () => {
+    const runtime = createDirectScreenShareRuntime([1, 2]);
+    runtime.startDirectScreenShare(1, 2);
+    const receivedBySharer: unknown[] = [];
+    const receivedByReceiver: unknown[] = [];
+    const sharerSubscription = pubsub
+      .subscribeFor(1, ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL)
+      .subscribe({ next: (signal) => receivedBySharer.push(signal) });
+    const receiverSubscription = pubsub
+      .subscribeFor(2, ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL)
+      .subscribe({ next: (signal) => receivedByReceiver.push(signal) });
+
+    try {
+      runtime.addUser(3, {
+        micMuted: false,
+        soundMuted: false,
+        supportsDirectScreenShare: true
+      });
+
+      expect(runtime.getDirectScreenSharePeer(1)).toBeUndefined();
+      const stopSignal = {
+        channelId: VOICE_CHANNEL_ID,
+        senderId: 1,
+        sharerId: 1,
+        type: 'stop',
+        reason: 'channel-not-1:1'
+      };
+      expect(receivedBySharer).toEqual([stopSignal]);
+      expect(receivedByReceiver).toEqual([stopSignal]);
+    } finally {
+      sharerSubscription.unsubscribe();
+      receiverSubscription.unsubscribe();
+      await runtime.destroy();
+    }
+  });
+
+  test('should stop a direct share when either participant leaves', async () => {
+    for (const leavingUserId of [1, 2]) {
+      const runtime = createDirectScreenShareRuntime([1, 2]);
+      runtime.startDirectScreenShare(1, 2);
+      const receivedBySharer: unknown[] = [];
+      const receivedByReceiver: unknown[] = [];
+      const sharerSubscription = pubsub
+        .subscribeFor(1, ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL)
+        .subscribe({ next: (signal) => receivedBySharer.push(signal) });
+      const receiverSubscription = pubsub
+        .subscribeFor(2, ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL)
+        .subscribe({ next: (signal) => receivedByReceiver.push(signal) });
+
+      try {
+        runtime.removeUser(leavingUserId);
+
+        expect(runtime.getDirectScreenSharePeer(1)).toBeUndefined();
+        const stopSignal = {
+          channelId: VOICE_CHANNEL_ID,
+          senderId: 1,
+          sharerId: 1,
+          type: 'stop',
+          reason: 'peer-left'
+        };
+        expect(receivedBySharer).toEqual([stopSignal]);
+        expect(receivedByReceiver).toEqual([stopSignal]);
+      } finally {
+        sharerSubscription.unsubscribe();
+        receiverSubscription.unsubscribe();
+        await runtime.destroy();
+      }
+    }
+  });
+
+  test('should rate limit all direct screen share procedures', async () => {
+    const { caller } = await initTest(1, undefined, {
+      needsPermission: async () => {}
+    });
+    const calls = [
+      () => caller.voice.startDirectScreenShare(offerInput),
+      () =>
+        caller.voice.signalDirectScreenShare({
+          type: 'candidate',
+          sharerId: 1,
+          candidate: { candidate: '' }
+        }),
+      () => caller.voice.stopDirectScreenShare({})
+    ];
+
+    for (const call of calls) {
+      for (let i = 0; i < config.rateLimiters.voiceStream.maxRequests; i++) {
+        await expect(call()).rejects.toThrow('User is not in a voice channel');
+      }
+
+      await expect(call()).rejects.toThrow(
+        'Too many requests. Please try again shortly.'
+      );
+    }
   });
 });
 

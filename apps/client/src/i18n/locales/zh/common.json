@@ -55,6 +55,7 @@
   "failedUpdateSoundState": "更新声音状态失败",
   "failedUpdateWebcamState": "更新摄像头状态失败",
   "failedUpdateScreenShareState": "更新屏幕共享状态失败",
+  "directScreenShareFailed": "无法建立直连。请停止共享，然后选择服务器 (SFU) 重新开始共享。",
   "notificationPermissionDenied": "通知权限被拒绝",
   "uploadsDisabled": "此服务器已禁用文件上传",
   "noUploadPermission": "您没有上传文件的权限",

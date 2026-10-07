@@ -5,6 +5,7 @@ import type {
   TChannel,
   TChannelUserPermissionsMap,
   TCommandsMapByPlugin,
+  TDirectScreenShareSignal,
   TExternalStream,
   TJoinedEmoji,
   TJoinedMessage,
@@ -109,6 +110,7 @@ type Events = {
     remoteId: number;
     kind: StreamKind;
   };
+  [ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL]: TDirectScreenShareSignal;
 
   [ServerEvents.PLUGIN_LOG]: TLogEntry;
   [ServerEvents.PLUGIN_COMMANDS_CHANGE]: TCommandsMapByPlugin;

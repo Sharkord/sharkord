@@ -7,7 +7,8 @@ import {
   SelectTrigger,
   SelectValue
 } from '@sharkord/ui';
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type TResolutionFpsControlProps = {
   resolution: string;
@@ -25,16 +26,22 @@ const ResolutionFpsControl = memo(
     onFramerateChange,
     disabled
   }: TResolutionFpsControlProps) => {
+    const { t } = useTranslation('settings');
+    const handleFramerateChange = useCallback(
+      (value: string) => onFramerateChange(+value),
+      [onFramerateChange]
+    );
+
     return (
       <div className="flex items-center gap-2">
-        <Label content="Resolution">
+        <Label content={t('resolutionLabel')}>
           <Select
             value={resolution}
             onValueChange={onResolutionChange}
             disabled={disabled}
           >
             <SelectTrigger className="w-40">
-              <SelectValue placeholder="Select the input device" />
+              <SelectValue placeholder={t('selectOptionPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -50,14 +57,14 @@ const ResolutionFpsControl = memo(
           </Select>
         </Label>
 
-        <Label content="Framerate">
+        <Label content={t('framerateLabel')}>
           <Select
             value={framerate.toString()}
-            onValueChange={(value) => onFramerateChange(+value)}
+            onValueChange={handleFramerateChange}
             disabled={disabled}
           >
             <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Select the input device" />
+              <SelectValue placeholder={t('selectOptionPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>

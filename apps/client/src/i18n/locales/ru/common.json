@@ -55,6 +55,7 @@
   "failedUpdateSoundState": "Не удалось обновить состояние звука",
   "failedUpdateWebcamState": "Не удалось обновить состояние камеры",
   "failedUpdateScreenShareState": "Не удалось обновить состояние демонстрации экрана",
+  "directScreenShareFailed": "Не удалось установить прямое соединение. Остановите демонстрацию и запустите её снова, выбрав Сервер (SFU).",
   "notificationPermissionDenied": "В разрешении на уведомления отказано",
   "uploadsDisabled": "Загрузка файлов отключена на этом сервере",
   "noUploadPermission": "У вас нет разрешения на загрузку файлов",

@@ -55,6 +55,7 @@
   "failedUpdateSoundState": "Aktualizace stavu zvuku se nezdařila",
   "failedUpdateWebcamState": "Aktualizace stavu kamery se nezdařila",
   "failedUpdateScreenShareState": "Aktualizace sdílení obrazovky se nezdařila",
+  "directScreenShareFailed": "Přímé spojení se nepodařilo navázat. Zastavte sdílení a spusťte ho znovu s vybraným serverem (SFU).",
   "notificationPermissionDenied": "Oprávnění k oznámením bylo zamítnuto",
   "uploadsDisabled": "Nahrávání souborů je na tomto serveru zakázáno",
   "noUploadPermission": "Nemáte oprávnění nahrávat soubory",

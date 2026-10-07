@@ -1,4 +1,8 @@
-import { ServerEvents, type StreamKind } from '@sharkord/shared';
+import {
+  ServerEvents,
+  type StreamKind,
+  type TDirectScreenShareSignal
+} from '@sharkord/shared';
 import { observable } from '@trpc/server/observable';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -88,7 +92,21 @@ const onVoiceProducerClosedRoute = protectedProcedure.subscription(
   }
 );
 
+const onDirectScreenShareSignalRoute = protectedProcedure.subscription(
+  async ({ ctx }) => {
+    if (!ctx.currentVoiceChannelId) {
+      return observable<TDirectScreenShareSignal>(() => () => {});
+    }
+
+    return ctx.pubsub.subscribeFor(
+      ctx.user.id,
+      ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL
+    );
+  }
+);
+
 export {
+  onDirectScreenShareSignalRoute,
   onUserJoinVoiceRoute,
   onUserLeaveVoiceRoute,
   onUserUpdateVoiceStateRoute,

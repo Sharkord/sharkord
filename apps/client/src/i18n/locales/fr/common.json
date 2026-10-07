@@ -55,6 +55,7 @@
   "failedUpdateSoundState": "Échec de la mise à jour du son",
   "failedUpdateWebcamState": "Échec de la mise à jour de la caméra",
   "failedUpdateScreenShareState": "Échec de la mise à jour du partage d’écran",
+  "directScreenShareFailed": "La connexion directe n'a pas pu être établie. Arrêtez le partage puis relancez-le avec Serveur (SFU) sélectionné.",
   "notificationPermissionDenied": "Autorisation de notification refusée",
   "uploadsDisabled": "Les envois de fichiers sont désactivés sur ce serveur",
   "noUploadPermission": "Vous n’avez pas la permission d’envoyer des fichiers",

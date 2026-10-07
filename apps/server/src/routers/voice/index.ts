@@ -6,6 +6,7 @@ import { consumeRoute } from './consume';
 import { createConsumerTransportRoute } from './create-consumer-transport';
 import { createProducerTransportRoute } from './create-producer-transport';
 import {
+  onDirectScreenShareSignalRoute,
   onUserJoinVoiceRoute,
   onUserLeaveVoiceRoute,
   onUserUpdateVoiceStateRoute,
@@ -24,6 +25,9 @@ import { moveUserRoute } from './move';
 import { produceRoute } from './produce';
 import { sendVoiceReactionRoute } from './send-reaction';
 import { setConsumerQualityRoute } from './set-consumer-quality';
+import { signalDirectScreenShareRoute } from './signal-direct-screen-share';
+import { startDirectScreenShareRoute } from './start-direct-screen-share';
+import { stopDirectScreenShareRoute } from './stop-direct-screen-share';
 import { updateVoiceStateRoute } from './update-state';
 
 export const voiceRouter = t.router({
@@ -41,6 +45,9 @@ export const voiceRouter = t.router({
   consume: consumeRoute,
   setConsumerQuality: setConsumerQualityRoute,
   getProducers: getProducersRoute,
+  startDirectScreenShare: startDirectScreenShareRoute,
+  signalDirectScreenShare: signalDirectScreenShareRoute,
+  stopDirectScreenShare: stopDirectScreenShareRoute,
   onJoin: onUserJoinVoiceRoute,
   onLeave: onUserLeaveVoiceRoute,
   onUpdateState: onUserUpdateVoiceStateRoute,
@@ -48,6 +55,7 @@ export const voiceRouter = t.router({
   onReaction: onUserVoiceReactionRoute,
   onNewProducer: onVoiceNewProducerRoute,
   onProducerClosed: onVoiceProducerClosedRoute,
+  onDirectScreenShareSignal: onDirectScreenShareSignalRoute,
   onAddExternalStream: onVoiceAddExternalStreamRoute,
   onUpdateExternalStream: onVoiceUpdateExternalStreamRoute,
   onRemoveExternalStream: onVoiceRemoveExternalStreamRoute

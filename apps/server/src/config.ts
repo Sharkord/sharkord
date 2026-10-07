@@ -23,6 +23,15 @@ const zRateLimiter = z.object({
   windowMs: z.coerce.number().int().positive()
 });
 
+const zIceServer = z.object({
+  urls: z.union([
+    z.string().trim().min(1).max(256),
+    z.array(z.string().trim().min(1).max(256)).min(1).max(8)
+  ]),
+  username: z.string().max(256).optional(),
+  credential: z.string().max(512).optional()
+});
+
 const zConfig = z.object({
   server: z.object({
     port: z.coerce.number().int().positive(),
@@ -65,6 +74,23 @@ const zConfig = z.object({
     port: z.coerce.number().int().positive(),
     announcedAddress: z.string(),
     maxBitrate: z.coerce.number().int().positive()
+  }),
+  peerToPeer: z.object({
+    iceServers: z.preprocess(
+      (value) => {
+        if (typeof value !== 'string') return value;
+
+        try {
+          return JSON.parse(value);
+        } catch {
+          return value;
+        }
+      },
+      z
+        .array(zIceServer)
+        .max(8)
+        .transform((servers) => JSON.stringify(servers))
+    )
   }),
   rateLimiters: z.object({
     sendAndEditMessage: zRateLimiter,
@@ -125,6 +151,9 @@ const defaultConfig: TConfig = {
     port: 40000,
     announcedAddress: '',
     maxBitrate: 30_000_000 // 30 Mbps
+  },
+  peerToPeer: {
+    iceServers: JSON.stringify([{ urls: 'stun:stun.l.google.com:19302' }])
   },
   rateLimiters: {
     sendAndEditMessage: {
@@ -276,7 +305,8 @@ const envOverridesMap: Record<string, string> = {
   'oidc.disableLocalLogin': 'SHARKORD_OIDC_DISABLE_LOCAL_LOGIN',
   'webRtc.port': 'SHARKORD_WEBRTC_PORT',
   'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS',
-  'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE'
+  'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE',
+  'peerToPeer.iceServers': 'SHARKORD_P2P_ICE_SERVERS'
 };
 
 // validated again after the overrides, otherwise an env var could put a value

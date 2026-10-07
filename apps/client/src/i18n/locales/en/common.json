@@ -55,6 +55,7 @@
   "failedUpdateSoundState": "Failed to update sound state",
   "failedUpdateWebcamState": "Failed to update webcam state",
   "failedUpdateScreenShareState": "Failed to update screen share state",
+  "directScreenShareFailed": "The direct connection could not be established. Stop sharing and start again with Server (SFU) selected.",
   "notificationPermissionDenied": "Notification permission was denied",
   "uploadsDisabled": "File uploads are disabled on this server",
   "noUploadPermission": "You do not have permission to upload files",

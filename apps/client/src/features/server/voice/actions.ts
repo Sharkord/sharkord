@@ -12,6 +12,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   getTrpcError,
   type TExternalStream,
+  type TPeerToPeerIceServer,
   type TVoiceUserState
 } from '@sharkord/shared';
 import type { RtpCapabilities } from 'mediasoup-client/types';
@@ -191,7 +192,13 @@ export const updateOwnVoiceState = (
 
 export const joinVoice = async (
   channelId: number
-): Promise<RtpCapabilities | undefined> => {
+): Promise<
+  | {
+      routerRtpCapabilities: RtpCapabilities;
+      iceServers: TPeerToPeerIceServer[];
+    }
+  | undefined
+> => {
   const state = store.getState();
   const currentChannelId = currentVoiceChannelIdSelector(state);
 
@@ -214,14 +221,19 @@ export const joinVoice = async (
   try {
     const client = getTRPCClient();
 
-    const { routerRtpCapabilities } = await client.voice.join.mutate({
-      channelId,
-      state: { micMuted, soundMuted }
-    });
+    const { routerRtpCapabilities, iceServers } =
+      await client.voice.join.mutate({
+        channelId,
+        state: {
+          micMuted,
+          soundMuted,
+          supportsDirectScreenShare: typeof RTCPeerConnection !== 'undefined'
+        }
+      });
 
     logVoice('session: joined', { channelId });
 
-    return routerRtpCapabilities;
+    return { routerRtpCapabilities, iceServers };
   } catch (error) {
     logVoiceError('session: join failed', error, { channelId });
     clearLocalVoiceSession();

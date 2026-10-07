@@ -26,6 +26,7 @@ export enum ServerEvents {
   VOICE_REMOVE_EXTERNAL_STREAM = 'voiceRemoveExternalStream',
   VOICE_NEW_PRODUCER = 'voiceNewProducer',
   VOICE_PRODUCER_CLOSED = 'voiceProducerClosed',
+  VOICE_P2P_SCREEN_SHARE_SIGNAL = 'voiceP2PScreenShareSignal',
 
   EMOJI_CREATE = 'emojiCreate',
   EMOJI_UPDATE = 'emojiUpdate',

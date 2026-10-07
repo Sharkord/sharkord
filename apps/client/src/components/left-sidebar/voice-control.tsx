@@ -31,6 +31,7 @@ const VoiceControl = memo(() => {
     toggleWebcam,
     toggleScreenShare,
     connectionStatus,
+    directScreenShareStatus,
     isScreenShareSupported
   } = useVoice();
 
@@ -64,6 +65,19 @@ const VoiceControl = memo(() => {
     }
   }, [connectionStatus, t]);
 
+  const directScreenShareStatusLabel = useMemo(() => {
+    switch (directScreenShareStatus) {
+      case 'connecting':
+        return t('directScreenShareConnecting');
+      case 'connected':
+        return t('directScreenShareConnected');
+      case 'failed':
+        return t('directScreenShareFailed');
+      case 'idle':
+        return undefined;
+    }
+  }, [directScreenShareStatus, t]);
+
   if (!voiceChannelId) {
     return null;
   }
@@ -81,6 +95,15 @@ const VoiceControl = memo(() => {
             </span>
           </div>
         </StatsPopover>
+
+        {directScreenShareStatusLabel && (
+          <div
+            role="status"
+            className="px-2 py-1 text-xs text-muted-foreground"
+          >
+            {directScreenShareStatusLabel}
+          </div>
+        )}
 
         <div className="flex items-center justify-between px-2 py-2">
           <Button

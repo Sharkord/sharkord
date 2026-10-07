@@ -43,7 +43,11 @@ const useSelectChannel = () => {
         if (!response) return;
 
         try {
-          await init(response, channel.id);
+          await init(
+            response.routerRtpCapabilities,
+            channel.id,
+            response.iceServers
+          );
         } catch {
           await leaveVoice({ reason: 'init_failed' });
 

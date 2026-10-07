@@ -22,6 +22,7 @@ import {
   VideoOff
 } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ControlToggleButton } from './control-toggle-button';
 import { ReactionsButton } from './reactions-button';
 
@@ -35,8 +36,10 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
     toggleSound,
     toggleWebcam,
     toggleScreenShare,
-    isScreenShareSupported
+    isScreenShareSupported,
+    directScreenShareStatus
   } = useVoice();
+  const { t } = useTranslation('sidebar');
   const ownVoiceState = useOwnVoiceState();
   const channelCan = useChannelCan(channelId);
   const alwaysShowControls = useAlwaysShowVoiceControls();
@@ -50,6 +53,19 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
     }),
     [channelCan]
   );
+
+  const directScreenShareStatusLabel = useMemo(() => {
+    switch (directScreenShareStatus) {
+      case 'connecting':
+        return t('directScreenShareConnecting');
+      case 'connected':
+        return t('directScreenShareConnected');
+      case 'failed':
+        return t('directScreenShareFailed');
+      case 'idle':
+        return undefined;
+    }
+  }, [directScreenShareStatus, t]);
 
   const barClass = alwaysShowControls
     ? 'relative -mt-3'
@@ -128,6 +144,14 @@ const ControlsBar = memo(({ channelId }: TControlsBarProps) => {
           </Protect>
         )}
       </div>
+      {directScreenShareStatusLabel && (
+        <span
+          role="status"
+          className="pointer-events-auto text-xs text-muted-foreground"
+        >
+          {directScreenShareStatusLabel}
+        </span>
+      )}
       <Tooltip content="Disconnect">
         <Button
           className={cn(

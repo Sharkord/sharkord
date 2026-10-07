@@ -3,7 +3,8 @@ import {
   ChannelType,
   Permission,
   ServerEvents,
-  type TBeforeVoiceJoinPayload
+  type TBeforeVoiceJoinPayload,
+  type TPeerToPeerIceServer
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -31,7 +32,8 @@ const joinVoiceRoute = rateLimitedProcedure(protectedProcedure, {
       channelId: z.number(),
       state: z.object({
         micMuted: z.boolean().default(false),
-        soundMuted: z.boolean().default(false)
+        soundMuted: z.boolean().default(false),
+        supportsDirectScreenShare: z.boolean().optional().default(false)
       })
     })
   )
@@ -113,7 +115,10 @@ const joinVoiceRoute = rateLimitedProcedure(protectedProcedure, {
     const router = runtime.getRouter();
 
     return {
-      routerRtpCapabilities: router.rtpCapabilities
+      routerRtpCapabilities: router.rtpCapabilities,
+      iceServers: JSON.parse(
+        config.peerToPeer.iceServers
+      ) as TPeerToPeerIceServer[]
     };
   });
 
