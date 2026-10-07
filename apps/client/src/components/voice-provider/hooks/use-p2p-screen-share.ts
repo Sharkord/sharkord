@@ -3,10 +3,18 @@ import { useOwnUserId } from '@/features/server/users/hooks';
 import { logVoiceError, logVoiceWarn } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TDirectScreenShareStatus, TRemoteUserStreamKinds } from '@/types';
-import { StreamKind, type TDirectScreenShareSignal } from '@sharkord/shared';
+import {
+  DIRECT_SCREEN_SHARE_MAX_ATTEMPTS,
+  StreamKind,
+  type TDirectScreenShareSignal
+} from '@sharkord/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import {
+  runDirectScreenShareAttempts,
+  waitForDirectScreenShareConnection
+} from './direct-screen-share-retry';
 
 type TDirectIceCandidate = Extract<
   TDirectScreenShareSignal,
@@ -16,11 +24,76 @@ type TDirectIceCandidate = Extract<
 type TDirectPeer = {
   connection: RTCPeerConnection;
   sharerId: number;
+  sessionId: string;
+  attempt: number;
   remoteUserId?: number;
   signalingReady: boolean;
   pendingLocalCandidates: TDirectIceCandidate[];
   pendingRemoteCandidates: TDirectIceCandidate[];
   failureReported: boolean;
+  hasConnected: boolean;
+  disconnectTimer?: ReturnType<typeof setTimeout>;
+};
+
+type TEarlyCandidateMap = Map<number, Map<string, TDirectIceCandidate[]>>;
+
+const candidateKey = (sessionId: string, attempt: number) =>
+  `${sessionId}:${attempt}`;
+
+const createDirectScreenShareAbortError = () => {
+  const error = new Error('Direct screen share attempts were aborted');
+  error.name = 'AbortError';
+  return error;
+};
+
+const queueEarlyCandidate = (
+  candidates: TEarlyCandidateMap,
+  sharerId: number,
+  sessionId: string,
+  attempt: number,
+  candidate: TDirectIceCandidate
+) => {
+  let candidatesByAttempt = candidates.get(sharerId);
+
+  if (!candidatesByAttempt) {
+    candidatesByAttempt = new Map();
+    candidates.set(sharerId, candidatesByAttempt);
+  }
+
+  const key = candidateKey(sessionId, attempt);
+  const pendingCandidates = candidatesByAttempt.get(key) ?? [];
+
+  if (pendingCandidates.length >= 50) return;
+
+  pendingCandidates.push(candidate);
+  candidatesByAttempt.set(key, pendingCandidates);
+};
+
+const takeEarlyCandidates = (
+  candidates: TEarlyCandidateMap,
+  sharerId: number,
+  sessionId: string,
+  attempt: number
+) => {
+  const candidatesByAttempt = candidates.get(sharerId);
+
+  if (!candidatesByAttempt) return [];
+
+  const pendingCandidates =
+    candidatesByAttempt.get(candidateKey(sessionId, attempt)) ?? [];
+
+  for (const key of candidatesByAttempt.keys()) {
+    if (
+      key.startsWith(`${sessionId}:`) &&
+      Number(key.split(':')[1]) <= attempt
+    ) {
+      candidatesByAttempt.delete(key);
+    }
+  }
+
+  if (candidatesByAttempt.size === 0) candidates.delete(sharerId);
+
+  return pendingCandidates;
 };
 
 type TUseP2PScreenShareParams = {
@@ -47,9 +120,10 @@ const useP2PScreenShare = ({
   const [status, setStatus] = useState<TDirectScreenShareStatus>('idle');
   const [iceServers, setIceServers] = useState<RTCIceServer[]>([]);
   const peerRef = useRef<TDirectPeer | null>(null);
-  const earlyCandidatesRef = useRef<Map<number, TDirectIceCandidate[]>>(
-    new Map()
-  );
+  const earlyCandidatesRef = useRef<TEarlyCandidateMap>(new Map());
+  const activeStartAbortControllerRef = useRef<AbortController | null>(null);
+  const activeStartSessionRef = useRef<string | null>(null);
+  const activeStartAttemptRef = useRef(0);
 
   const setDirectStatus = useCallback(
     (nextStatus: TDirectScreenShareStatus) => {
@@ -81,6 +155,9 @@ const useP2PScreenShare = ({
       peer.connection.onicecandidate = null;
       peer.connection.ontrack = null;
       peer.connection.onconnectionstatechange = null;
+      if (peer.disconnectTimer) clearTimeout(peer.disconnectTimer);
+      peer.pendingLocalCandidates.length = 0;
+      peer.pendingRemoteCandidates.length = 0;
       peer.connection.close();
 
       if (peer.remoteUserId !== undefined) {
@@ -95,8 +172,32 @@ const useP2PScreenShare = ({
     [removeRemoteUserStream]
   );
 
+  const rejectPeerAttempt = useCallback(
+    (peer: TDirectPeer, error?: unknown) => {
+      if (peerRef.current !== peer) return;
+
+      if (peer.hasConnected) {
+        failPeer(peer, error);
+        closePeer(peer);
+        return;
+      }
+
+      if (error) {
+        logVoiceWarn('screen: direct connection attempt failed', {
+          attempt: peer.attempt,
+          error
+        });
+      }
+
+      closePeer(peer);
+    },
+    [closePeer, failPeer]
+  );
+
   const sendLocalCandidate = useCallback(
     async (peer: TDirectPeer, candidate: TDirectIceCandidate) => {
+      if (peerRef.current !== peer) return;
+
       if (!peer.signalingReady || peer.remoteUserId === undefined) {
         peer.pendingLocalCandidates.push(candidate);
         return;
@@ -108,13 +209,15 @@ const useP2PScreenShare = ({
         await trpc.voice.signalDirectScreenShare.mutate({
           type: 'candidate',
           sharerId: peer.sharerId,
+          sessionId: peer.sessionId,
+          attempt: peer.attempt,
           candidate
         });
       } catch (error) {
-        failPeer(peer, error);
+        rejectPeerAttempt(peer, error);
       }
     },
-    [failPeer]
+    [rejectPeerAttempt]
   );
 
   const flushLocalCandidates = useCallback(
@@ -132,27 +235,36 @@ const useP2PScreenShare = ({
     const candidates = peer.pendingRemoteCandidates.splice(0);
 
     for (const candidate of candidates) {
+      if (peerRef.current !== peer) return;
       await peer.connection.addIceCandidate(candidate);
     }
   }, []);
 
   const createPeer = useCallback(
-    (sharerId: number, remoteUserId?: number): TDirectPeer => {
+    (
+      sharerId: number,
+      sessionId: string,
+      attempt: number,
+      remoteUserId?: number
+    ): TDirectPeer => {
       const connection = new RTCPeerConnection({ iceServers });
       const peer: TDirectPeer = {
         connection,
         sharerId,
+        sessionId,
+        attempt,
         remoteUserId,
         signalingReady: false,
         pendingLocalCandidates: [],
         pendingRemoteCandidates: [],
-        failureReported: false
+        failureReported: false,
+        hasConnected: false
       };
 
       peerRef.current = peer;
 
       connection.onicecandidate = (event) => {
-        if (!event.candidate) return;
+        if (!event.candidate || peerRef.current !== peer) return;
 
         const candidate = event.candidate.toJSON();
 
@@ -162,14 +274,14 @@ const useP2PScreenShare = ({
           ...candidate,
           candidate: candidate.candidate
         }).catch((error) => {
-          failPeer(peer, error);
+          rejectPeerAttempt(peer, error);
         });
       };
 
       connection.ontrack = (event) => {
         const remoteUserId = peer.remoteUserId;
 
-        if (remoteUserId === undefined) return;
+        if (peerRef.current !== peer || remoteUserId === undefined) return;
 
         const kind =
           event.track.kind === 'video'
@@ -179,18 +291,35 @@ const useP2PScreenShare = ({
 
         addRemoteUserStream(remoteUserId, stream, kind);
         event.track.onended = () => {
+          if (peerRef.current !== peer) return;
           removeRemoteUserStream(remoteUserId, kind);
         };
       };
 
       connection.onconnectionstatechange = () => {
+        if (peerRef.current !== peer) return;
+
         if (connection.connectionState === 'connected') {
+          if (peer.disconnectTimer) clearTimeout(peer.disconnectTimer);
+          peer.disconnectTimer = undefined;
+          peer.hasConnected = true;
           setDirectStatus('connected');
+        } else if (connection.connectionState === 'failed') {
+          rejectPeerAttempt(peer);
         } else if (
-          connection.connectionState === 'failed' ||
-          connection.connectionState === 'disconnected'
+          connection.connectionState === 'disconnected' &&
+          peer.hasConnected &&
+          !peer.disconnectTimer
         ) {
-          failPeer(peer);
+          peer.disconnectTimer = setTimeout(() => {
+            peer.disconnectTimer = undefined;
+            if (
+              peerRef.current === peer &&
+              connection.connectionState === 'disconnected'
+            ) {
+              rejectPeerAttempt(peer);
+            }
+          }, 4_000);
         }
       };
 
@@ -198,8 +327,8 @@ const useP2PScreenShare = ({
     },
     [
       addRemoteUserStream,
-      failPeer,
       iceServers,
+      rejectPeerAttempt,
       removeRemoteUserStream,
       sendLocalCandidate,
       setDirectStatus
@@ -220,75 +349,211 @@ const useP2PScreenShare = ({
         throw new Error('The current user could not be identified');
       }
 
+      activeStartAbortControllerRef.current?.abort();
+      const abortController = new AbortController();
+      const sessionId = crypto.randomUUID();
+      activeStartAbortControllerRef.current = abortController;
+      activeStartSessionRef.current = sessionId;
+      const videoTracks = stream.getVideoTracks();
+      const abortOnVideoTrackEnded = () => abortController.abort();
+
+      videoTracks.forEach((track) => {
+        track.addEventListener('ended', abortOnVideoTrackEnded, { once: true });
+      });
+
+      if (videoTracks.some((track) => track.readyState === 'ended')) {
+        abortController.abort();
+      }
+
+      let serverNegotiationMayExist = false;
+      let lastAttemptError: unknown;
+
       setDirectStatus('connecting');
 
-      let peer: TDirectPeer | undefined;
-
       try {
-        peer = createPeer(ownUserId);
+        const connected = await runDirectScreenShareAttempts(
+          async (attemptNumber) => {
+            let attemptPeer: TDirectPeer | null = null;
+            let offerSent = false;
+            let offerAcknowledged = false;
+            activeStartAttemptRef.current = attemptNumber;
 
-        for (const track of stream.getTracks()) {
-          const sender = peer.connection.addTrack(track, stream);
+            try {
+              const peer = createPeer(ownUserId, sessionId, attemptNumber);
+              attemptPeer = peer;
 
-          if (track.kind !== 'video') continue;
+              for (const track of stream.getTracks()) {
+                const sender = peer.connection.addTrack(track, stream);
 
-          const parameters = sender.getParameters();
+                if (track.kind !== 'video') continue;
 
-          if (parameters.encodings.length === 0) {
-            parameters.encodings = [{}];
-          }
+                const parameters = sender.getParameters();
 
-          parameters.encodings[0]!.maxBitrate = maxBitrateKbps * 1000;
+                if (parameters.encodings.length === 0) {
+                  parameters.encodings = [{}];
+                }
 
+                parameters.encodings[0]!.maxBitrate = maxBitrateKbps * 1000;
+
+                try {
+                  await sender.setParameters(parameters);
+                } catch (error) {
+                  logVoiceWarn('screen: direct bitrate could not be applied', {
+                    error
+                  });
+                }
+              }
+
+              const offer = await peer.connection.createOffer();
+
+              if (abortController.signal.aborted) return false;
+
+              await peer.connection.setLocalDescription(offer);
+
+              const description = peer.connection.localDescription;
+
+              if (!description?.sdp) {
+                throw new Error('The direct screen share offer was empty');
+              }
+
+              if (abortController.signal.aborted) return false;
+
+              const trpc = getTRPCClient();
+              serverNegotiationMayExist = true;
+              let peerUserId: number | undefined;
+
+              // a lost response does not mean the offer was rejected by the server.
+              // resend the same offer before moving to the next attempt.
+              for (
+                let send = 0;
+                send < 3 && peerUserId === undefined;
+                send += 1
+              ) {
+                if (abortController.signal.aborted)
+                  throw createDirectScreenShareAbortError();
+
+                try {
+                  offerSent = true;
+                  const result = await trpc.voice.startDirectScreenShare.mutate(
+                    {
+                      sessionId,
+                      attempt: attemptNumber,
+                      description: { type: 'offer', sdp: description.sdp }
+                    }
+                  );
+                  peerUserId = result.peerUserId;
+                  offerAcknowledged = true;
+                } catch (error) {
+                  if (send === 2) throw error;
+                }
+              }
+
+              if (peerRef.current !== peer || peerUserId === undefined)
+                return false;
+
+              peer.remoteUserId = peerUserId;
+              peer.signalingReady = true;
+
+              await flushLocalCandidates(peer);
+
+              const attemptConnected = await waitForDirectScreenShareConnection(
+                peer.connection,
+                undefined,
+                abortController.signal
+              );
+
+              if (!attemptConnected) {
+                lastAttemptError = new Error(
+                  `Direct screen share attempt ${attemptNumber} did not connect`
+                );
+
+                if (peerRef.current === peer) {
+                  logVoiceWarn(
+                    'screen: direct connection attempt did not connect',
+                    {
+                      attempt: attemptNumber,
+                      connectionState: peer.connection.connectionState
+                    }
+                  );
+                  closePeer(peer);
+                }
+              }
+
+              return (
+                attemptConnected &&
+                peerRef.current === peer &&
+                peer.connection.connectionState === 'connected'
+              );
+            } catch (error) {
+              if (abortController.signal.aborted) throw error;
+
+              lastAttemptError = error;
+
+              if (attemptPeer && peerRef.current === attemptPeer) {
+                logVoiceWarn('screen: direct connection attempt failed', {
+                  attempt: attemptNumber,
+                  error
+                });
+                closePeer(attemptPeer);
+              }
+
+              if (offerSent && !offerAcknowledged) throw error;
+
+              return false;
+            }
+          },
+          undefined,
+          abortController.signal
+        );
+
+        if (abortController.signal.aborted) {
+          throw createDirectScreenShareAbortError();
+        }
+
+        if (!connected) {
+          throw (
+            lastAttemptError ??
+            new Error(
+              `Direct screen share failed after ${DIRECT_SCREEN_SHARE_MAX_ATTEMPTS} attempts`
+            )
+          );
+        }
+      } catch (error) {
+        const wasAborted =
+          abortController.signal.aborted ||
+          (error instanceof Error && error.name === 'AbortError');
+        const peer = peerRef.current;
+
+        if (peer?.sharerId === ownUserId) closePeer(peer);
+
+        if (serverNegotiationMayExist) {
           try {
-            await sender.setParameters(parameters);
-          } catch (error) {
-            logVoiceWarn('screen: direct bitrate could not be applied', {
-              error
+            const trpc = getTRPCClient();
+
+            await trpc.voice.stopDirectScreenShare.mutate({
+              sessionId,
+              attempt: activeStartAttemptRef.current
             });
+          } catch (stopError) {
+            logVoiceError(
+              'screen: direct negotiation cleanup failed',
+              stopError
+            );
           }
         }
 
-        const offer = await peer.connection.createOffer();
-
-        await peer.connection.setLocalDescription(offer);
-
-        const description = peer.connection.localDescription;
-
-        if (!description?.sdp) {
-          throw new Error('The direct screen share offer was empty');
-        }
-
-        const trpc = getTRPCClient();
-        const { peerUserId } = await trpc.voice.startDirectScreenShare.mutate({
-          description: { type: 'offer', sdp: description.sdp }
+        setDirectStatus(wasAborted ? 'idle' : 'failed');
+        throw error;
+      } finally {
+        videoTracks.forEach((track) => {
+          track.removeEventListener('ended', abortOnVideoTrackEnded);
         });
 
-        peer.remoteUserId = peerUserId;
-        peer.signalingReady = true;
-
-        await flushLocalCandidates(peer);
-      } catch (error) {
-        setDirectStatus('failed');
-
-        if (peer) {
-          if (peer.remoteUserId !== undefined) {
-            try {
-              const trpc = getTRPCClient();
-
-              await trpc.voice.stopDirectScreenShare.mutate({});
-            } catch (stopError) {
-              logVoiceError(
-                'screen: direct negotiation cleanup failed',
-                stopError
-              );
-            }
-          }
-
-          closePeer(peer);
+        if (activeStartAbortControllerRef.current === abortController) {
+          activeStartAbortControllerRef.current = null;
+          activeStartSessionRef.current = null;
+          activeStartAttemptRef.current = 0;
         }
-
-        throw error;
       }
     },
     [closePeer, createPeer, flushLocalCandidates, ownUserId, setDirectStatus]
@@ -296,38 +561,65 @@ const useP2PScreenShare = ({
 
   const handleOffer = useCallback(
     async (signal: Extract<TDirectScreenShareSignal, { type: 'offer' }>) => {
-      const peer = createPeer(signal.sharerId, signal.senderId);
-      peer.pendingRemoteCandidates.push(
-        ...(earlyCandidatesRef.current.get(signal.sharerId) ?? [])
+      const peer = createPeer(
+        signal.sharerId,
+        signal.sessionId,
+        signal.attempt,
+        signal.senderId
       );
-      earlyCandidatesRef.current.delete(signal.sharerId);
+      peer.pendingRemoteCandidates.push(
+        ...takeEarlyCandidates(
+          earlyCandidatesRef.current,
+          signal.sharerId,
+          signal.sessionId,
+          signal.attempt
+        )
+      );
       setDirectStatus('connecting');
 
-      await peer.connection.setRemoteDescription(signal.description);
-      await flushRemoteCandidates(peer);
+      try {
+        await peer.connection.setRemoteDescription(signal.description);
+        if (peerRef.current !== peer) return;
 
-      const answer = await peer.connection.createAnswer();
+        await flushRemoteCandidates(peer);
+        if (peerRef.current !== peer) return;
 
-      await peer.connection.setLocalDescription(answer);
+        const answer = await peer.connection.createAnswer();
 
-      const description = peer.connection.localDescription;
+        await peer.connection.setLocalDescription(answer);
+        if (peerRef.current !== peer) return;
 
-      if (!description?.sdp) {
-        throw new Error('The direct screen share answer was empty');
+        const description = peer.connection.localDescription;
+
+        if (!description?.sdp) {
+          throw new Error('The direct screen share answer was empty');
+        }
+
+        const trpc = getTRPCClient();
+
+        await trpc.voice.signalDirectScreenShare.mutate({
+          type: 'answer',
+          sharerId: signal.sharerId,
+          sessionId: signal.sessionId,
+          attempt: signal.attempt,
+          description: { type: 'answer', sdp: description.sdp }
+        });
+
+        if (peerRef.current !== peer) return;
+
+        peer.signalingReady = true;
+        await flushLocalCandidates(peer);
+      } catch (error) {
+        rejectPeerAttempt(peer, error);
       }
-
-      const trpc = getTRPCClient();
-
-      await trpc.voice.signalDirectScreenShare.mutate({
-        type: 'answer',
-        sharerId: signal.sharerId,
-        description: { type: 'answer', sdp: description.sdp }
-      });
-
-      peer.signalingReady = true;
-      await flushLocalCandidates(peer);
     },
-    [createPeer, flushLocalCandidates, flushRemoteCandidates, setDirectStatus]
+    [
+      createPeer,
+      flushLocalCandidates,
+      flushRemoteCandidates,
+      rejectPeerAttempt,
+      setDirectStatus
+    ]
   );
 
   const handleSignal = useCallback(
@@ -337,83 +629,147 @@ const useP2PScreenShare = ({
       if (signal.type === 'stop') {
         const peer = peerRef.current;
 
+        if (
+          activeStartSessionRef.current === signal.sessionId &&
+          signal.attempt < activeStartAttemptRef.current
+        ) {
+          return;
+        }
+
+        if (
+          peer?.sharerId === signal.sharerId &&
+          (signal.sessionId !== peer.sessionId || signal.attempt < peer.attempt)
+        ) {
+          return;
+        }
+
+        if (
+          signal.sharerId === ownUserId &&
+          activeStartSessionRef.current === signal.sessionId &&
+          signal.attempt >= activeStartAttemptRef.current
+        ) {
+          activeStartAbortControllerRef.current?.abort();
+        }
+
         if (peer?.sharerId === signal.sharerId) {
           closePeer(peer);
 
           if (signal.reason === 'stopped') {
             setDirectStatus('idle');
           } else {
-            failPeer(peer);
+            setDirectStatus('failed');
           }
+        } else if (
+          !peer &&
+          activeStartSessionRef.current === signal.sessionId &&
+          signal.reason === 'stopped'
+        ) {
+          setDirectStatus('idle');
         }
 
-        earlyCandidatesRef.current.delete(signal.sharerId);
+        const early = earlyCandidatesRef.current.get(signal.sharerId);
+        for (const key of early?.keys() ?? []) {
+          if (key.startsWith(`${signal.sessionId}:`)) early?.delete(key);
+        }
+        return;
+      }
+
+      if (signal.type === 'offer') {
+        const peer = peerRef.current;
+
+        if (peer) {
+          if (peer.sharerId !== signal.sharerId) {
+            logVoiceWarn('screen: ignored offer from another direct peer', {
+              sharerId: signal.sharerId
+            });
+            return;
+          }
+
+          if (peer.sessionId !== signal.sessionId) return;
+
+          if (signal.attempt <= peer.attempt) return;
+
+          closePeer(peer);
+        }
+
+        await handleOffer(signal);
+        return;
+      }
+
+      const peer = peerRef.current;
+
+      if (!peer) {
+        if (signal.type === 'candidate') {
+          queueEarlyCandidate(
+            earlyCandidatesRef.current,
+            signal.sharerId,
+            signal.sessionId,
+            signal.attempt,
+            signal.candidate
+          );
+        }
 
         return;
       }
 
-      try {
-        if (signal.type === 'offer') {
-          if (peerRef.current) {
-            throw new Error('A direct screen share is already active');
-          }
+      if (peer.sharerId !== signal.sharerId) return;
+      if (peer.sessionId !== signal.sessionId) return;
+      if (signal.attempt < peer.attempt) return;
 
-          await handleOffer(signal);
-          return;
-        }
+      if (signal.type === 'answer') {
+        if (signal.attempt !== peer.attempt) return;
 
-        if (signal.type === 'answer') {
-          const peer = peerRef.current;
-
-          if (!peer || peer.sharerId !== signal.sharerId) return;
-
+        try {
           await peer.connection.setRemoteDescription(signal.description);
+          if (peerRef.current !== peer) return;
+
           await flushRemoteCandidates(peer);
-          return;
+        } catch (error) {
+          rejectPeerAttempt(peer, error);
         }
 
-        const peer = peerRef.current;
+        return;
+      }
 
-        if (!peer || peer.sharerId !== signal.sharerId) {
-          const candidates =
-            earlyCandidatesRef.current.get(signal.sharerId) ?? [];
+      if (signal.attempt > peer.attempt) {
+        queueEarlyCandidate(
+          earlyCandidatesRef.current,
+          signal.sharerId,
+          signal.sessionId,
+          signal.attempt,
+          signal.candidate
+        );
+        return;
+      }
 
-          candidates.push(signal.candidate);
-          earlyCandidatesRef.current.set(signal.sharerId, candidates);
+      if (!peer.connection.remoteDescription) {
+        peer.pendingRemoteCandidates.push(signal.candidate);
+        return;
+      }
 
-          return;
-        }
-
-        if (!peer.connection.remoteDescription) {
-          peer.pendingRemoteCandidates.push(signal.candidate);
-          return;
-        }
-
+      try {
         await peer.connection.addIceCandidate(signal.candidate);
       } catch (error) {
-        const peer = peerRef.current;
-
-        if (peer) {
-          failPeer(peer, error);
-        } else {
-          setDirectStatus('failed');
-          logVoiceError('screen: direct signalling failed', error);
-          toast.error(t('directScreenShareFailed'));
-        }
+        rejectPeerAttempt(peer, error);
       }
     },
     [
       closePeer,
       currentVoiceChannelId,
-      failPeer,
       flushRemoteCandidates,
       handleOffer,
-      setDirectStatus,
-      t
+      ownUserId,
+      rejectPeerAttempt,
+      setDirectStatus
     ]
   );
 
   const stop = useCallback(async () => {
+    const activeStart = activeStartAbortControllerRef.current;
+    const isStarting = activeStart !== null;
+
+    activeStart?.abort();
+
     const peer = peerRef.current;
 
     if (!peer) {
@@ -421,11 +777,18 @@ const useP2PScreenShare = ({
       return;
     }
 
-    if (peer.sharerId === ownUserId && peer.remoteUserId !== undefined) {
+    if (
+      !isStarting &&
+      peer.sharerId === ownUserId &&
+      peer.remoteUserId !== undefined
+    ) {
       try {
         const trpc = getTRPCClient();
 
-        await trpc.voice.stopDirectScreenShare.mutate({});
+        await trpc.voice.stopDirectScreenShare.mutate({
+          sessionId: peer.sessionId,
+          attempt: peer.attempt
+        });
       } catch (error) {
         logVoiceError('screen: direct stop signal failed', error);
       }
@@ -437,6 +800,11 @@ const useP2PScreenShare = ({
   }, [closePeer, ownUserId, setDirectStatus, status]);
 
   const cleanup = useCallback(() => {
+    activeStartAbortControllerRef.current?.abort();
+    activeStartAbortControllerRef.current = null;
+    activeStartSessionRef.current = null;
+    activeStartAttemptRef.current = 0;
+
     if (peerRef.current) closePeer(peerRef.current);
 
     earlyCandidatesRef.current.clear();
@@ -468,6 +836,10 @@ const useP2PScreenShare = ({
         const peer = peerRef.current;
 
         if (peer?.remoteUserId !== userId) return;
+
+        if (peer.sharerId === ownUserId) {
+          activeStartAbortControllerRef.current?.abort();
+        }
 
         closePeer(peer);
         setDirectStatus(peer.sharerId === ownUserId ? 'failed' : 'idle');

@@ -1,8 +1,8 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import type { TDialogBaseProps } from '@/components/dialogs/types';
 import { ScreenShareSettings } from '@/components/server-screens/user-settings/devices/screen-share-settings';
+import { startScreenShareFromBridge } from '@/components/voice-provider/controls-bridge';
 import { usePublicServerSettings } from '@/features/server/hooks';
-import { useVoice } from '@/features/server/voice/hooks';
 import {
   getScreenShareTransport,
   setScreenShareTransport
@@ -12,21 +12,21 @@ import {
   Button,
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle
 } from '@sharkord/ui';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 type TScreenShareSettingsDialogProps = TDialogBaseProps;
 
 const ScreenShareSettingsDialog = memo(
   ({ isOpen, close }: TScreenShareSettingsDialogProps) => {
     const { t: tDialogs } = useTranslation('dialogs');
+    const { t: tSettings } = useTranslation('settings');
     const { devices, saveDevices } = useDevices();
-    const { startScreenShare } = useVoice();
     const serverSettings = usePublicServerSettings();
     const [transport, setTransport] = useState(getScreenShareTransport);
     const maxBitrate = useMemo(
@@ -64,10 +64,12 @@ const ScreenShareSettingsDialog = memo(
       },
       []
     );
-    const handleStart = useCallback(async () => {
+    const handleStart = useCallback(() => {
       close();
-      await startScreenShare();
-    }, [close, startScreenShare]);
+      if (!startScreenShareFromBridge()) {
+        toast.error(tSettings('voiceControlsUnavailable'));
+      }
+    }, [close, tSettings]);
 
     return (
       <Dialog open={isOpen}>
@@ -78,9 +80,6 @@ const ScreenShareSettingsDialog = memo(
         >
           <DialogHeader>
             <DialogTitle>{tDialogs('screenShareSettingsTitle')}</DialogTitle>
-            <DialogDescription>
-              {tDialogs('screenShareSettingsDescription')}
-            </DialogDescription>
           </DialogHeader>
 
           <ScreenShareSettings

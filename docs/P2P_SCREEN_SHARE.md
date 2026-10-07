@@ -7,6 +7,14 @@ Sharkord supports two screen-share transports:
 
 Direct is the default choice and is remembered in the browser's local storage. The transport can be changed in **Settings → Devices**, or in the settings dialog shown before starting a screen share. A failed direct connection does not switch transports automatically. Stop sharing, select **Server (SFU)**, and start sharing again if a relay through the Sharkord SFU is acceptable.
 
+## User-confirmed UX scope
+
+Direct remains the preferred default, and the user chooses whether to use Direct or Server (SFU). A Direct failure must be reported; the client must not switch to SFU automatically. This supersedes any older issue text or design notes that describe SFU as the default or an automatic fallback.
+
+On every responsive layout, including mobile web, tapping the screen-share control in a browser that supports `navigator.mediaDevices.getDisplayMedia` must first open the pre-share settings dialog. Capture starts only after the user confirms in that dialog. When the API is unavailable, hide both the entry point and the settings dialog. Base this decision on API support, not a device-type guess.
+
+The desktop settings dialog and SFU screen sharing are confirmed working by the user. The reported transport defect is Direct/P2P. Mobile web must use the same pre-share settings flow as desktop.
+
 ## Eligibility and negotiation
 
 On voice join, a client declares whether its browser supports `RTCPeerConnection`. The server treats a missing capability field as unsupported, which keeps older clients on the existing SFU path. Direct sharing is allowed only when:

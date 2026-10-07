@@ -1,4 +1,7 @@
-import { ServerEvents } from '@sharkord/shared';
+import {
+  DIRECT_SCREEN_SHARE_MAX_ATTEMPTS,
+  ServerEvents
+} from '@sharkord/shared';
 import { z } from 'zod';
 import { config } from '../../config';
 import {
@@ -14,6 +17,8 @@ const directScreenShareSignalInput = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('answer'),
     sharerId: z.number().int().positive(),
+    sessionId: z.uuid(),
+    attempt: z.number().int().min(1).max(DIRECT_SCREEN_SHARE_MAX_ATTEMPTS),
     description: z.object({
       type: z.literal('answer'),
       sdp: z.string().trim().min(1).max(65_536)
@@ -22,6 +27,8 @@ const directScreenShareSignalInput = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('candidate'),
     sharerId: z.number().int().positive(),
+    sessionId: z.uuid(),
+    attempt: z.number().int().min(1).max(DIRECT_SCREEN_SHARE_MAX_ATTEMPTS),
     candidate: z.object({
       candidate: z.string().max(4096),
       sdpMid: z.string().max(256).nullable().optional(),
@@ -48,6 +55,15 @@ const signalDirectScreenShareRoute = rateLimitedProcedure(protectedProcedure, {
       code: 'BAD_REQUEST',
       message: 'Direct screen share negotiation was not found'
     });
+
+    invariant(
+      runtime.getDirectScreenShareAttempt(input.sharerId) === input.attempt &&
+        runtime.getDirectScreenShareSession(input.sharerId) === input.sessionId,
+      {
+        code: 'BAD_REQUEST',
+        message: 'Direct screen share signal belongs to an inactive attempt'
+      }
+    );
 
     const { receiver } = assertDirectScreenSharePair(
       runtime,
@@ -82,7 +98,9 @@ const signalDirectScreenShareRoute = rateLimitedProcedure(protectedProcedure, {
           channelId,
           senderId: ctx.user.id,
           sharerId: input.sharerId,
+          sessionId: input.sessionId,
           type: 'answer',
+          attempt: input.attempt,
           description: input.description
         }
       );
@@ -94,7 +112,9 @@ const signalDirectScreenShareRoute = rateLimitedProcedure(protectedProcedure, {
           channelId,
           senderId: ctx.user.id,
           sharerId: input.sharerId,
+          sessionId: input.sessionId,
           type: 'candidate',
+          attempt: input.attempt,
           candidate: input.candidate
         }
       );

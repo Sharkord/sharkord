@@ -1337,13 +1337,14 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   useEffect(() => {
     setVoiceControlsBridge({
       setMicMuted: setMicMutedForBridge,
-      setSoundMuted: setSoundMutedForBridge
+      setSoundMuted: setSoundMutedForBridge,
+      startScreenShare
     });
 
     return () => {
       clearVoiceControlsBridge();
     };
-  }, [setMicMutedForBridge, setSoundMutedForBridge]);
+  }, [setMicMutedForBridge, setSoundMutedForBridge, startScreenShare]);
 
   useVoiceEvents({
     consume,

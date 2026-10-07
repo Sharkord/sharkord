@@ -1,11 +1,12 @@
 type TVoiceControlsBridge = {
   setMicMuted: (muted: boolean) => Promise<void>;
   setSoundMuted: (muted: boolean) => Promise<void>;
+  startScreenShare: () => Promise<void>;
 };
 
-// Server settings screens are rendered from a top-level portal and may live
-// outside VoiceProvider. This bridge exposes live voice controls to those
-// screens without changing the existing provider tree.
+// Top-level dialogs and server settings screens may live outside VoiceProvider.
+// This bridge exposes live voice controls to those UI surfaces without changing
+// the existing provider tree.
 let voiceControlsBridge: TVoiceControlsBridge | null = null;
 
 const setVoiceControlsBridge = (bridge: TVoiceControlsBridge) => {
@@ -18,8 +19,16 @@ const clearVoiceControlsBridge = () => {
 
 const getVoiceControlsBridge = () => voiceControlsBridge;
 
+const startScreenShareFromBridge = () => {
+  if (!voiceControlsBridge) return false;
+
+  void voiceControlsBridge.startScreenShare();
+  return true;
+};
+
 export {
   clearVoiceControlsBridge,
   getVoiceControlsBridge,
-  setVoiceControlsBridge
+  setVoiceControlsBridge,
+  startScreenShareFromBridge
 };

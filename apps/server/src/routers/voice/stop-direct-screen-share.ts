@@ -1,4 +1,8 @@
-import { ChannelPermission, Permission } from '@sharkord/shared';
+import {
+  ChannelPermission,
+  DIRECT_SCREEN_SHARE_MAX_ATTEMPTS,
+  Permission
+} from '@sharkord/shared';
 import { z } from 'zod';
 import { config } from '../../config';
 import { assertDirectScreenShareParticipant } from '../../helpers/assert-direct-screen-share';
@@ -11,8 +15,13 @@ const stopDirectScreenShareRoute = rateLimitedProcedure(protectedProcedure, {
   windowMs: config.rateLimiters.voiceStream.windowMs,
   logLabel: 'stopDirectScreenShare'
 })
-  .input(z.object({}))
-  .mutation(async ({ ctx }) => {
+  .input(
+    z.object({
+      sessionId: z.uuid(),
+      attempt: z.number().int().min(1).max(DIRECT_SCREEN_SHARE_MAX_ATTEMPTS)
+    })
+  )
+  .mutation(async ({ ctx, input }) => {
     const { runtime, channelId } = await getCurrentVoiceRuntime(ctx);
 
     await ctx.needsPermission(Permission.SHARE_SCREEN);
@@ -24,6 +33,15 @@ const stopDirectScreenShareRoute = rateLimitedProcedure(protectedProcedure, {
       code: 'BAD_REQUEST',
       message: 'Direct screen share negotiation was not found'
     });
+
+    invariant(
+      runtime.getDirectScreenShareSession(ctx.user.id) === input.sessionId &&
+        runtime.getDirectScreenShareAttempt(ctx.user.id) === input.attempt,
+      {
+        code: 'BAD_REQUEST',
+        message: 'Direct screen share stop belongs to an inactive attempt'
+      }
+    );
 
     runtime.stopDirectScreenShare(ctx.user.id);
   });

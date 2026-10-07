@@ -1,4 +1,9 @@
-import { ChannelPermission, Permission, ServerEvents } from '@sharkord/shared';
+import {
+  ChannelPermission,
+  DIRECT_SCREEN_SHARE_MAX_ATTEMPTS,
+  Permission,
+  ServerEvents
+} from '@sharkord/shared';
 import { z } from 'zod';
 import { config } from '../../config';
 import {
@@ -16,6 +21,8 @@ const startDirectScreenShareRoute = rateLimitedProcedure(protectedProcedure, {
 })
   .input(
     z.object({
+      sessionId: z.uuid(),
+      attempt: z.number().int().min(1).max(DIRECT_SCREEN_SHARE_MAX_ATTEMPTS),
       description: z.object({
         type: z.literal('offer'),
         sdp: z.string().trim().min(1).max(65_536)
@@ -50,20 +57,60 @@ const startDirectScreenShareRoute = rateLimitedProcedure(protectedProcedure, {
       receiverId
     );
 
-    invariant(!runtime.hasDirectScreenShare(ctx.user.id), {
-      code: 'BAD_REQUEST',
-      message: 'A direct screen share is already active'
-    });
+    const currentReceiverId = runtime.getDirectScreenSharePeer(ctx.user.id);
 
-    invariant(!runtime.hasDirectScreenShare(receiver.userId), {
-      code: 'BAD_REQUEST',
-      message: 'A direct screen share is already active'
-    });
+    if (currentReceiverId === undefined) {
+      invariant(
+        input.attempt === 1 &&
+          !runtime.hasDirectScreenShare(ctx.user.id) &&
+          !runtime.hasDirectScreenShare(receiver.userId),
+        {
+          code: 'BAD_REQUEST',
+          message: 'A direct screen share is already active'
+        }
+      );
+    } else {
+      const currentAttempt = runtime.getDirectScreenShareAttempt(ctx.user.id);
+      const currentSession = runtime.getDirectScreenShareSession(ctx.user.id);
 
-    invariant(runtime.startDirectScreenShare(ctx.user.id, receiverId), {
-      code: 'BAD_REQUEST',
-      message: 'A direct screen share is already active'
-    });
+      if (
+        currentReceiverId === receiverId &&
+        currentSession === input.sessionId &&
+        currentAttempt === input.attempt &&
+        runtime.getPendingDirectScreenShareOffer(receiverId)?.description
+          .sdp === input.description.sdp
+      ) {
+        return { peerUserId: receiverId };
+      }
+
+      invariant(
+        currentReceiverId === receiverId &&
+          currentSession === input.sessionId &&
+          currentAttempt !== undefined &&
+          input.attempt === currentAttempt + 1,
+        {
+          code: 'BAD_REQUEST',
+          message:
+            currentReceiverId === receiverId && currentAttempt === input.attempt
+              ? 'A direct screen share is already active'
+              : 'Direct screen share retry is not valid'
+        }
+      );
+    }
+
+    invariant(
+      runtime.startDirectScreenShare(
+        ctx.user.id,
+        receiverId,
+        input.attempt,
+        input.description,
+        input.sessionId
+      ),
+      {
+        code: 'BAD_REQUEST',
+        message: 'A direct screen share is already active'
+      }
+    );
 
     ctx.pubsub.publishFor(
       receiverId,
@@ -72,7 +119,9 @@ const startDirectScreenShareRoute = rateLimitedProcedure(protectedProcedure, {
         channelId,
         senderId: ctx.user.id,
         sharerId: ctx.user.id,
+        sessionId: input.sessionId,
         type: 'offer',
+        attempt: input.attempt,
         description: input.description
       }
     );

@@ -1,7 +1,9 @@
 import {
+  DIRECT_SCREEN_SHARE_MAX_ATTEMPTS,
   ServerEvents,
   StreamKind,
   type TChannelState,
+  type TDirectScreenShareSignal,
   type TExternalStreamsMap,
   type TRemoteProducerIds,
   type TStreamQualityLayer,
@@ -105,6 +107,10 @@ const defaultUserState: TVoiceUserState = {
 };
 
 type TDirectScreenShareStopReason = 'stopped' | 'channel-not-1:1' | 'peer-left';
+type TDirectScreenShareOffer = Extract<
+  TDirectScreenShareSignal,
+  { type: 'offer' }
+>;
 
 type TTransportMap = {
   [userId: number]: WebRtcTransport<AppData>;
@@ -153,6 +159,9 @@ class VoiceRuntime {
   private consumers: TConsumerMap = {};
   private producerQualityLayers: TProducerQualityLayerMap = {};
   private directScreenSharePeers = new Map<number, number>();
+  private directScreenShareAttempts = new Map<number, number>();
+  private directScreenShareSessions = new Map<number, string>();
+  private directScreenShareOffers = new Map<number, TDirectScreenShareOffer>();
 
   private externalCounter = EXTERNAL_STREAM_ID_BASE;
   private externalStreamsInternal: {
@@ -451,10 +460,26 @@ class VoiceRuntime {
     return this.directScreenSharePeers.get(sharerId);
   };
 
+  public getDirectScreenShareAttempt = (sharerId: number) => {
+    return this.directScreenShareAttempts.get(sharerId);
+  };
+
+  public getDirectScreenShareSession = (sharerId: number) => {
+    return this.directScreenShareSessions.get(sharerId);
+  };
+
   public getDirectScreenShareSharer = (receiverId: number) => {
     return Array.from(this.directScreenSharePeers.entries()).find(
       ([, peerId]) => peerId === receiverId
     )?.[0];
+  };
+
+  public getPendingDirectScreenShareOffer = (receiverId: number) => {
+    const sharerId = this.getDirectScreenShareSharer(receiverId);
+
+    if (sharerId === undefined) return undefined;
+
+    return this.directScreenShareOffers.get(sharerId);
   };
 
   public hasDirectScreenShare = (userId: number) => {
@@ -463,11 +488,65 @@ class VoiceRuntime {
     );
   };
 
-  public startDirectScreenShare = (sharerId: number, receiverId: number) => {
-    if (this.hasDirectScreenShare(sharerId)) return false;
+  public startDirectScreenShare = (
+    sharerId: number,
+    receiverId: number,
+    attempt: number,
+    description: TDirectScreenShareOffer['description'] | undefined,
+    sessionId: string
+  ) => {
+    if (
+      !Number.isInteger(attempt) ||
+      attempt < 1 ||
+      attempt > DIRECT_SCREEN_SHARE_MAX_ATTEMPTS
+    ) {
+      return false;
+    }
+
+    const offer: TDirectScreenShareOffer | undefined = description
+      ? {
+          channelId: this.id,
+          senderId: sharerId,
+          sharerId,
+          sessionId,
+          type: 'offer',
+          attempt,
+          description
+        }
+      : undefined;
+    const storeOffer = () => {
+      if (offer) {
+        this.directScreenShareOffers.set(sharerId, offer);
+      } else {
+        this.directScreenShareOffers.delete(sharerId);
+      }
+    };
+    const currentReceiverId = this.directScreenSharePeers.get(sharerId);
+    const currentAttempt = this.directScreenShareAttempts.get(sharerId);
+    const currentSession = this.directScreenShareSessions.get(sharerId);
+
+    if (currentReceiverId !== undefined) {
+      if (
+        currentReceiverId !== receiverId ||
+        currentAttempt === undefined ||
+        currentSession !== sessionId ||
+        attempt !== currentAttempt + 1
+      ) {
+        return false;
+      }
+
+      this.directScreenShareAttempts.set(sharerId, attempt);
+      storeOffer();
+      return true;
+    }
+
+    if (attempt !== 1 || this.hasDirectScreenShare(sharerId)) return false;
     if (this.hasDirectScreenShare(receiverId)) return false;
 
     this.directScreenSharePeers.set(sharerId, receiverId);
+    this.directScreenShareAttempts.set(sharerId, attempt);
+    this.directScreenShareSessions.set(sharerId, sessionId);
+    storeOffer();
 
     return true;
   };
@@ -477,10 +556,15 @@ class VoiceRuntime {
     reason: TDirectScreenShareStopReason = 'stopped'
   ) => {
     const receiverId = this.directScreenSharePeers.get(sharerId);
+    const attempt = this.directScreenShareAttempts.get(sharerId) ?? 1;
+    const sessionId = this.directScreenShareSessions.get(sharerId);
 
-    if (receiverId === undefined) return;
+    if (receiverId === undefined || sessionId === undefined) return;
 
     this.directScreenSharePeers.delete(sharerId);
+    this.directScreenShareAttempts.delete(sharerId);
+    this.directScreenShareSessions.delete(sharerId);
+    this.directScreenShareOffers.delete(sharerId);
     pubsub.publishFor(
       [sharerId, receiverId],
       ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL,
@@ -488,7 +572,9 @@ class VoiceRuntime {
         channelId: this.id,
         senderId: sharerId,
         sharerId,
+        sessionId,
         type: 'stop',
+        attempt,
         reason
       }
     );

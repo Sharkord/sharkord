@@ -4,6 +4,7 @@ import {
   type TDirectScreenShareSignal
 } from '@sharkord/shared';
 import { observable } from '@trpc/server/observable';
+import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
 import { protectedProcedure } from '../../utils/trpc';
 
 type TVoiceProducerEvent = {
@@ -98,10 +99,24 @@ const onDirectScreenShareSignalRoute = protectedProcedure.subscription(
       return observable<TDirectScreenShareSignal>(() => () => {});
     }
 
-    return ctx.pubsub.subscribeFor(
-      ctx.user.id,
-      ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL
-    );
+    const { runtime } = await getCurrentVoiceRuntime(ctx);
+
+    return observable<TDirectScreenShareSignal>((observer) => {
+      const subscription = ctx.pubsub
+        .subscribeFor(ctx.user.id, ServerEvents.VOICE_P2P_SCREEN_SHARE_SIGNAL)
+        .subscribe({
+          next: (signal) => observer.next(signal),
+          error: (error) => observer.error(error),
+          complete: () => observer.complete()
+        });
+      const pendingOffer = runtime.getPendingDirectScreenShareOffer(
+        ctx.user.id
+      );
+
+      if (pendingOffer) observer.next(pendingOffer);
+
+      return () => subscription.unsubscribe();
+    });
   }
 );
 

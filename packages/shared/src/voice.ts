@@ -1,6 +1,8 @@
 import type { IceCandidate, IceParameters } from 'mediasoup/types';
 import type { StreamKind, TExternalStreamTracks } from './types';
 
+export const DIRECT_SCREEN_SHARE_MAX_ATTEMPTS = 10;
+
 export type { ConsumerType } from 'mediasoup/types';
 
 export type TVoiceUserState = {
@@ -21,6 +23,8 @@ export type TDirectScreenShareSignal = {
   channelId: number;
   senderId: number;
   sharerId: number;
+  sessionId: string;
+  attempt: number;
 } & (
   | {
       type: 'offer';

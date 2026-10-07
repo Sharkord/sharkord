@@ -56,7 +56,6 @@
   "searchPlaceholder": "搜索消息和文件...",
   "searchHint": "开始输入以搜索消息和文件，至少输入 2 个字符。",
   "screenShareSettingsTitle": "屏幕共享设置",
-  "screenShareSettingsDescription": "共享前选择采集质量和传输方式。只有双方都支持时才能使用直连。",
   "screenShareStart": "选择屏幕并共享",
   "soundsTitle": "声音测试",
   "playSound": "播放",

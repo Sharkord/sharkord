@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 
 /**
- * Checks if screen sharing (getDisplayMedia) is supported on the current device.
- * This API is not available on mobile browsers (iOS Safari, Android Chrome, etc.)
+ * Checks whether the current browser exposes the screen capture API.
+ * Support varies by browser and OS, so detect it at runtime.
  */
 const useScreenShareSupport = () => {
   const isSupported = useMemo(() => {

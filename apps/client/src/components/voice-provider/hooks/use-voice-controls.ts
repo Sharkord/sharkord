@@ -290,7 +290,13 @@ const useVoiceControls = ({
         // ignore
       }
 
-      logVoiceError('screen: start failed', error, { transport });
+      const wasAborted = error instanceof Error && error.name === 'AbortError';
+
+      if (!wasAborted) {
+        logVoiceError('screen: start failed', error, { transport });
+      }
+
+      if (wasAborted) return;
 
       // do not retry through the sfu. the selected transport must remain explicit.
       if (transport === 'direct') {
