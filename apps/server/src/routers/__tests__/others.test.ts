@@ -502,6 +502,32 @@ describe('others router', () => {
     expect(settingsAfterRemoval.logo).toBeNull();
   });
 
+  test('should not let a user without MANAGE_SETTINGS change the logo', async () => {
+    const { caller: admin, mockedToken: adminToken } = await initTest(1);
+
+    const logoFile = new File(['owner logo'], 'owner-logo.png', {
+      type: 'image/png'
+    });
+    const uploadResponse = await uploadFile(logoFile, adminToken);
+    const tempFile = (await uploadResponse.json()) as TTempFile;
+
+    await admin.others.changeLogo({ fileId: tempFile.id });
+
+    const { caller: user } = await initTest(2);
+
+    await expect(user.others.changeLogo({})).rejects.toThrow(
+      'Insufficient permissions'
+    );
+
+    await expect(
+      user.others.changeLogo({ fileId: 'does-not-exist' })
+    ).rejects.toThrow('Insufficient permissions');
+
+    const settings = await admin.others.getSettings();
+
+    expect(settings.logo?.originalName).toBe('owner-logo.png');
+  });
+
   test('should keep the existing logo when a replacement cannot be saved', async () => {
     const { caller, mockedToken: token } = await initTest();
 
