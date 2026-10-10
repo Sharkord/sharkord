@@ -6,6 +6,7 @@ import type {
   TJoinedRole
 } from '../tables';
 import type { TPublicServerSettings } from '../types';
+import type { TVoiceUserState } from '../voice';
 import type { PluginCapabilityType } from './capabilities';
 import type { TPluginMetadata } from './manifest';
 
@@ -23,6 +24,12 @@ export type TPluginStoreState = {
   ownUserId: number | undefined;
   selectedChannelId: number | undefined;
   currentVoiceChannelId: number | undefined;
+  /**
+   * the user's own mic and sound mute, camera and screen share. only
+   * meaningful while `currentVoiceChannelId` is set. `soundMuted` is deafen:
+   * audio a plugin plays for the call should stay silent while it is true
+   */
+  ownVoiceState: TVoiceUserState;
   publicSettings: TPublicServerSettings | undefined;
 };
 
@@ -44,6 +51,12 @@ export type TPluginActions = {
     actionName: string,
     payload?: TPayload
   ) => Promise<TResponse>;
+  /**
+   * Calls one of the plugin's own `ctx.http` routes as the signed-in user: the
+   * token is added for you, so a route registered with `auth: true` gets the
+   * caller's `userId`. `init` is a normal `fetch` init, which makes this the
+   * way to upload a file too: `{ method: 'POST', body: file }`.
+   */
   fetchPluginRoute: (
     pluginId: string,
     path: string,
@@ -69,6 +82,7 @@ export type TPluginHooks = {
   usePush: (handler: (data: unknown) => void) => void;
   useUserData: () => TPluginUserData;
   useCanUse: (type: PluginCapabilityType, name: string) => boolean;
+  usePlaybackDeviceId: () => string | undefined;
 };
 
 /**

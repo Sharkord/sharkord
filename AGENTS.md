@@ -413,6 +413,33 @@ Every new behaviour needs tests and the whole suite must pass, see [Testing](#te
   not, in code or in JSX. Use an early return, a lookup object, or an `if`/`else` assigned to a
   `let`. If the branches are what a component renders, split it into two components or pull the
   choice into a variable above the return.
+- NEVER chain off the result of a call: no `a().b`, `a()?.b().c ?? []`, and no hook call
+  followed by a property access. Call it on its own line, name or destructure what it
+  returns, then use that, with an `if` for the missing case, even when it takes more lines:
+
+  ```ts
+  // no
+  const usePlaybackDeviceId = () => useDevices().devices.playbackId;
+  const users = VoiceRuntime.findById(channelId)?.getState().users ?? [];
+
+  // yes
+  const usePlaybackDeviceId = () => {
+    const { devices } = useDevices();
+
+    return devices.playbackId;
+  };
+
+  const runtime = VoiceRuntime.findById(channelId);
+  let userIds: number[] = [];
+
+  if (runtime) {
+    const { users } = runtime.getState();
+
+    userIds = users.map(({ userId }) => userId);
+  }
+  ```
+
+  Test assertions (`expect(x).toBe(y)`) are the exception.
 - NEVER prefix a call with `void`. Write `returnToPresent();`, not `void returnToPresent();`.
   It reads as a type, adds nothing at runtime, and marks the one thing worth looking at (a
   promise nobody awaits) as deliberate instead of leaving it visible. If the promise genuinely

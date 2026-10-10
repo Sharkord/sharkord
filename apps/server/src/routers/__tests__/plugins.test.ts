@@ -49,6 +49,7 @@ import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
 import { drainActivityLogQueue } from '../../queues/activity-log';
 import * as messageMetadata from '../../queues/message-metadata';
+import { VoiceRuntime } from '../../runtimes/voice';
 import { pubsub } from '../../utils/pubsub';
 
 describe('plugins router', () => {
@@ -1862,6 +1863,32 @@ describe('plugins router', () => {
       expect(messageId).toBeGreaterThan(0);
     });
 
+    test('should hand the plugin the attachment it can read from disk', async () => {
+      const { messageId } = await attach('clip bytes');
+      const file = await attachedFile(messageId);
+      const { caller } = await initTest();
+
+      const result = await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'read-file',
+        args: { fileId: file!.id }
+      });
+
+      expect(result).toEqual({ found: true, body: 'clip bytes' });
+    });
+
+    test('should answer an unknown file id with nothing', async () => {
+      const { caller } = await initTest();
+
+      const result = await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'read-file',
+        args: { fileId: 999999 }
+      });
+
+      expect(result).toEqual({ found: false });
+    });
+
     test('should refuse more files than the server allows', async () => {
       const { caller } = await initTest();
 
@@ -2217,6 +2244,9 @@ describe('plugins router', () => {
 
   // pushes are addressed server side, so a subscriber only ever sees its own
   describe('push', () => {
+    // the seeded voice channel
+    const VOICE_CHANNEL_ID = 2;
+
     beforeEach(() => pluginManager.load('plugin-b'));
 
     const listen = (userId: number) => {
@@ -2270,6 +2300,34 @@ describe('plugins router', () => {
       await push({ target: 'users', userId: 2 });
 
       expect(target.received).toHaveLength(1);
+
+      target.stop();
+    });
+
+    test('should reach everyone in a voice channel and nobody outside it', async () => {
+      const runtime = new VoiceRuntime(VOICE_CHANNEL_ID);
+
+      runtime.addUser(2, { micMuted: false, soundMuted: false });
+
+      const inside = listen(2);
+      const outside = listen(5);
+
+      await push({ target: 'voice', channelId: VOICE_CHANNEL_ID });
+
+      expect(inside.received).toHaveLength(1);
+      expect(outside.received).toHaveLength(0);
+
+      inside.stop();
+      outside.stop();
+      await runtime.destroy();
+    });
+
+    test('should reach nobody in a voice channel no one is in', async () => {
+      const target = listen(2);
+
+      await push({ target: 'voice', channelId: VOICE_CHANNEL_ID });
+
+      expect(target.received).toHaveLength(0);
 
       target.stop();
     });

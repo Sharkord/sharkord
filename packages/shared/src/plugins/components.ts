@@ -15,7 +15,8 @@ export enum PluginSlot {
   CHANNEL_HEADER = 'channel_header',
   TOPBAR_RIGHT = 'topbar_right',
   FULL_SCREEN = 'full_screen',
-  USER_SETTINGS = 'user_settings'
+  USER_SETTINGS = 'user_settings',
+  VOICE_CONTROLS = 'voice_controls'
 }
 
 /**
@@ -45,6 +46,11 @@ export type TPluginSlotProps = {
   [PluginSlot.TOPBAR_RIGHT]: EmptyProps;
   [PluginSlot.FULL_SCREEN]: EmptyProps;
   [PluginSlot.USER_SETTINGS]: EmptyProps;
+  /**
+   * the voice channel the user is connected to. beside the camera and screen
+   * buttons, and only rendered while connected
+   */
+  [PluginSlot.VOICE_CONTROLS]: { channelId: number };
 };
 
 type EmptyProps = Record<string, never>;

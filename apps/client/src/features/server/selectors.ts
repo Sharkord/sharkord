@@ -40,7 +40,10 @@ import {
   usersMapSelector,
   usersSelector
 } from './users/selectors';
-import { voiceChannelStateSelector } from './voice/selectors';
+import {
+  ownVoiceStateSelector,
+  voiceChannelStateSelector
+} from './voice/selectors';
 
 export const connectedSelector = (state: IRootState) => state.server.connected;
 
@@ -299,6 +302,7 @@ export const mapStateToPluginState = createSelector(
     ownUserIdSelector,
     selectedChannelIdSelector,
     currentVoiceChannelIdSelector,
+    ownVoiceStateSelector,
     publicServerSettingsSelector
   ],
   (
@@ -311,6 +315,7 @@ export const mapStateToPluginState = createSelector(
     ownUserId,
     selectedChannelId,
     currentVoiceChannelId,
+    ownVoiceState,
     publicSettings
   ): TPluginStoreState => ({
     users,
@@ -322,6 +327,7 @@ export const mapStateToPluginState = createSelector(
     ownUserId,
     selectedChannelId,
     currentVoiceChannelId,
+    ownVoiceState,
     publicSettings
   })
 );

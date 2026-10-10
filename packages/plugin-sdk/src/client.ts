@@ -81,6 +81,14 @@ const useCanUseCommand = <C extends TPluginContract = TPluginContract>(
 ) => store.hooks.useCanUse(PluginCapabilityType.COMMAND, name);
 
 /**
+ * The audio output the user picked in their device settings, for
+ * `audio.setSinkId()`, so what you play comes out where the call does.
+ * `undefined` means the system default: leave the sink alone then. The device
+ * can be unplugged since it was picked, so catch a failing `setSinkId`.
+ */
+const usePlaybackDeviceId = () => store.hooks.usePlaybackDeviceId();
+
+/**
  * Reads a slice of Sharkord's state and re-renders when it changes.
  *
  * The selector must return a stable reference for unchanged state: reading a
@@ -95,6 +103,7 @@ export {
   createCallAction,
   useCanUseAction,
   useCanUseCommand,
+  usePlaybackDeviceId,
   usePush,
   useStoreSelector,
   useUserData

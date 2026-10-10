@@ -14,6 +14,12 @@ const SLICES = {
   ownUserId: 1,
   selectedChannelId: 1,
   currentVoiceChannelId: undefined,
+  ownVoiceState: {
+    micMuted: false,
+    soundMuted: false,
+    webcamEnabled: false,
+    sharingScreen: false
+  },
   publicSettings: undefined
 };
 
@@ -46,6 +52,14 @@ describe('mapStateToPluginState', () => {
     expect(after.selectedChannelId).toBe(42);
   });
 
+  // a plugin playing audio for the call has to go quiet when the user deafens
+  test('should expose the own voice state as it changes', () => {
+    const deafened = { ...SLICES.ownVoiceState, soundMuted: true };
+    const after = mapStateToPluginState(stateWith({ ownVoiceState: deafened }));
+
+    expect(after.ownVoiceState.soundMuted).toBe(true);
+  });
+
   test('should expose exactly the documented keys', () => {
     expect(Object.keys(mapStateToPluginState(stateWith())).sort()).toEqual([
       'categories',
@@ -53,6 +67,7 @@ describe('mapStateToPluginState', () => {
       'currentVoiceChannelId',
       'emojis',
       'ownUserId',
+      'ownVoiceState',
       'plugins',
       'publicSettings',
       'roles',

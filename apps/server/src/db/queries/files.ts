@@ -77,6 +77,14 @@ const getFilesByMessageId = async (messageId: number): Promise<TFile[]> =>
     .all()
     .map((row) => row.files);
 
+const getFileNameById = async (fileId: number) =>
+  db
+    .select({ name: files.name })
+    .from(files)
+    .where(eq(files.id, fileId))
+    .limit(1)
+    .get();
+
 const getFilesByUserId = async (
   userId: number,
   limit: number
@@ -193,6 +201,7 @@ const isFileOrphaned = async (fileId: number): Promise<boolean> => {
 
 export {
   getExceedingOldFiles,
+  getFileNameById,
   getFilesByMessageId,
   getFilesByUserId,
   getOrphanedFileIds,

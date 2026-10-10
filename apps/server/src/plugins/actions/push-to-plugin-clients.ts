@@ -3,6 +3,7 @@ import {
   ServerEvents,
   type TPluginPushEvent
 } from '@sharkord/shared';
+import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
 import { pubsub } from '../../utils/pubsub';
 import { getOnlineUserIds } from '../../utils/wss';
@@ -28,4 +29,25 @@ const pushToPluginClients = (
 const pushToAllPluginClients = (pluginId: string, data: unknown) =>
   pushToPluginClients(pluginId, getOnlineUserIds(), data);
 
-export { pushToAllPluginClients, pushToPluginClients };
+const pushToVoiceChannelPluginClients = (
+  pluginId: string,
+  channelId: number,
+  data: unknown
+) => {
+  const runtime = VoiceRuntime.findById(channelId);
+  let userIds: number[] = [];
+
+  if (runtime) {
+    const { users } = runtime.getState();
+
+    userIds = users.map(({ userId }) => userId);
+  }
+
+  pushToPluginClients(pluginId, userIds, data);
+};
+
+export {
+  pushToAllPluginClients,
+  pushToPluginClients,
+  pushToVoiceChannelPluginClients
+};
