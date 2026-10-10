@@ -510,5 +510,9 @@
   "pluginStorageDesc": "插件附加到消息的文件所占用的空间。插件被移除后，这些文件仍随消息保留。",
   "pluginStorageUninstalled": "已卸载",
   "pluginStorageFiles_one": "{{count}} 个文件",
-  "pluginStorageFiles_other": "{{count}} 个文件"
+  "pluginStorageFiles_other": "{{count}} 个文件",
+  "soundsLabel": "通知声音",
+  "soundsDesc": "为消息、语音频道活动和连接变化播放声音。",
+  "messageSentSoundLabel": "消息发送声音",
+  "messageSentSoundDesc": "发送消息时播放声音。"
 }

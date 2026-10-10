@@ -73,5 +73,7 @@
   "failedDeleteCategory": "Échec de la suppression de la catégorie",
   "userVolume": "Volume de l'utilisateur",
   "microphone": "Microphone",
-  "noiseSuppression": "Suppression du bruit"
+  "noiseSuppression": "Suppression du bruit",
+  "muteChannel": "Mettre le salon en sourdine",
+  "unmuteChannel": "Réactiver le salon"
 }

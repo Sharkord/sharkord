@@ -120,5 +120,6 @@
   "reconnectingAttempt": "Tentative {{attempt}} sur {{total}}",
   "reconnectingHint": "Votre session est conservée. L'application reprendra d'elle-même dès que le serveur répondra.",
   "reconnectingAbort": "Arrêter la reconnexion",
-  "removeImage": "Supprimer l'image"
+  "removeImage": "Supprimer l'image",
+  "channelMutedTooltip": "Salon en sourdine, cliquez pour le réactiver"
 }

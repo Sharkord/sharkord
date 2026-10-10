@@ -1,4 +1,5 @@
 import { createSelector } from '@reduxjs/toolkit';
+import { createCachedSelector } from 're-reselect';
 import type { IRootState } from '../store';
 
 export const appLoadingSelector = (state: IRootState) => state.app.appLoading;
@@ -74,3 +75,17 @@ export const threadSidebarDataSelector = createSelector(
 
 export const isShiftHeldSelector = (state: IRootState) =>
   state.app.modifierKeysHeldMap?.Shift ?? false;
+
+export const notificationSoundsSelector = (state: IRootState) =>
+  state.app.notificationSounds;
+
+export const messageSentSoundSelector = (state: IRootState) =>
+  state.app.messageSentSound;
+
+export const mutedChannelIdsSelector = (state: IRootState) =>
+  state.app.mutedChannelIds;
+
+export const isChannelMutedSelector = createCachedSelector(
+  [mutedChannelIdsSelector, (_: IRootState, channelId: number) => channelId],
+  (mutedChannelIds, channelId) => mutedChannelIds.includes(channelId)
+)((_, channelId) => channelId);

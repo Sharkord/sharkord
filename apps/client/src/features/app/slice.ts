@@ -1,4 +1,5 @@
 import {
+  getLocalStorageItemAsJSON,
   getLocalStorageItemAsNumber,
   getLocalStorageItemBool,
   LocalStorageKey
@@ -22,6 +23,9 @@ export interface TAppState {
   browserNotificationsForMentions: boolean;
   browserNotificationsForDms: boolean;
   browserNotificationsForReplies: boolean;
+  notificationSounds: boolean;
+  messageSentSound: boolean;
+  mutedChannelIds: number[];
   messageJumpTarget: TMessageJumpToTarget | undefined;
   voiceChatSidebarOpen: boolean;
   voiceChatChannelId: number | undefined;
@@ -60,6 +64,17 @@ const initialState: TAppState = {
     LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_REPLIES,
     false
   ),
+  notificationSounds: getLocalStorageItemBool(
+    LocalStorageKey.NOTIFICATION_SOUNDS,
+    true
+  ),
+  messageSentSound: getLocalStorageItemBool(
+    LocalStorageKey.MESSAGE_SENT_SOUND,
+    true
+  ),
+  mutedChannelIds:
+    getLocalStorageItemAsJSON<number[]>(LocalStorageKey.MUTED_CHANNEL_IDS) ??
+    [],
   messageJumpTarget: undefined,
   voiceChatSidebarOpen: getLocalStorageItemBool(
     LocalStorageKey.VOICE_CHAT_SIDEBAR_STATE,
@@ -139,6 +154,15 @@ export const appSlice = createSlice({
       action: PayloadAction<boolean>
     ) => {
       state.browserNotificationsForReplies = action.payload;
+    },
+    setNotificationSounds: (state, action: PayloadAction<boolean>) => {
+      state.notificationSounds = action.payload;
+    },
+    setMessageSentSound: (state, action: PayloadAction<boolean>) => {
+      state.messageSentSound = action.payload;
+    },
+    setMutedChannelIds: (state, action: PayloadAction<number[]>) => {
+      state.mutedChannelIds = action.payload;
     },
     setMessageJumpTarget: (
       state,

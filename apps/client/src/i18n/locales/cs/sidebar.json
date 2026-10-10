@@ -73,5 +73,7 @@
   "failedDeleteCategory": "Kategorii se odstranit nepodařilo",
   "userVolume": "Hlasitost uživatele",
   "microphone": "Mikrofon",
-  "noiseSuppression": "Potlačení šumu"
+  "noiseSuppression": "Potlačení šumu",
+  "muteChannel": "Ztlumit kanál",
+  "unmuteChannel": "Zrušit ztlumení kanálu"
 }
