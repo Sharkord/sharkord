@@ -1,4 +1,5 @@
 import type { TJoinedMessage } from '@sharkord/shared';
+import { Element, htmlToDOM, type DOMNode } from 'html-react-parser';
 import type {
   TFoundMedia,
   TFoundOpenGraph,
@@ -65,6 +66,33 @@ const getYoutubeInfo = (
   }
 
   return { isYoutube: false, videoId: undefined };
+};
+
+const collectLinkHrefs = (nodes: DOMNode[]): string[] =>
+  nodes.flatMap((node) => {
+    if (!(node instanceof Element)) return [];
+
+    const childHrefs = collectLinkHrefs(node.children as DOMNode[]);
+
+    if (node.name === 'a' && node.attribs.href) {
+      return [node.attribs.href, ...childHrefs];
+    }
+
+    return childHrefs;
+  });
+
+const extractYoutubeVideoIds = (html: string): string[] => {
+  const videoIds = new Set<string>();
+
+  for (const href of collectLinkHrefs(htmlToDOM(html))) {
+    const { videoId } = getYoutubeInfo(href);
+
+    if (videoId) {
+      videoIds.add(videoId);
+    }
+  }
+
+  return [...videoIds];
 };
 
 const hasSpecializedLinkOverride = (href: string): boolean => {
@@ -141,6 +169,7 @@ const extractMessageOpenGraph = (
 
 export {
   extractMessageOpenGraph,
+  extractYoutubeVideoIds,
   getDisplayHostname,
   getYoutubeInfo,
   getYoutubeVideoId,
