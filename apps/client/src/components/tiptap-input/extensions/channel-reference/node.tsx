@@ -1,4 +1,5 @@
 import { ChannelChip } from '@/components/channel-chip';
+import { MessageNodeType } from '@sharkord/shared';
 import { Node } from '@tiptap/core';
 import {
   NodeViewWrapper,
@@ -39,7 +40,7 @@ export const ChannelReferenceNode = Node.create({
   parseHTML() {
     return [
       {
-        tag: 'span[data-type="channel-reference"]',
+        tag: `span[data-type="${MessageNodeType.CHANNEL_REFERENCE}"]`,
         getAttrs: (dom) => {
           const channelId = (dom as HTMLElement)
             .getAttribute('data-channel-id')
@@ -55,7 +56,7 @@ export const ChannelReferenceNode = Node.create({
     return [
       'span',
       {
-        'data-type': 'channel-reference',
+        'data-type': MessageNodeType.CHANNEL_REFERENCE,
         'data-channel-id': String(node.attrs.channelId),
         class: 'channel-reference'
       }

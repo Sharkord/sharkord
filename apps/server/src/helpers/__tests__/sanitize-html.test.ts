@@ -157,6 +157,13 @@ describe('sanitize-html', () => {
     expect(sanitizeMessageHtml(input)).toBe(input);
   });
 
+  test('should preserve role mention <span> with data-role-id attribute', () => {
+    const input =
+      '<span data-type="role-mention" data-role-id="7" class="role-mention">@Gaming</span>';
+
+    expect(sanitizeMessageHtml(input)).toBe(input);
+  });
+
   test('should preserve channel reference <span> with data-channel-id attribute', () => {
     const input =
       '<span data-type="channel-reference" data-channel-id="42" class="channel-reference"></span>';

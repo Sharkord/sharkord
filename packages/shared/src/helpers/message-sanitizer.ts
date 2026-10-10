@@ -1,3 +1,5 @@
+import { MessageNodeType } from '../statics';
+
 const stripToText = (
   html: string,
   preProcess?: ((html: string) => string)[]
@@ -25,14 +27,17 @@ const removeProseMirrorArtifacts = (html: string): string =>
 const removeCommandElements = (html: string): string =>
   html.replace(/<command\b[^>]*>.*?<\/command>/gi, '');
 
+const emojiElementPattern = `<span[^>]*data-type="${MessageNodeType.EMOJI}"[^>]*>`;
+const channelReferenceElementPattern = `<span[^>]*data-type="${MessageNodeType.CHANNEL_REFERENCE}"[^>]*>`;
+
 const removeEmojiElements = (html: string): string =>
   html
-    .replace(/<span[^>]*data-type="emoji"[^>]*>.*?<\/span>/gi, '')
+    .replace(new RegExp(`${emojiElementPattern}.*?<\\/span>`, 'gi'), '')
     .replace(/<img[^>]*class="emoji-image"[^>]*\/?>/gi, '');
 
 const removeChannelReferenceElements = (html: string): string =>
   html.replace(
-    /<span[^>]*data-type="channel-reference"[^>]*>.*?<\/span>/gi,
+    new RegExp(`${channelReferenceElementPattern}.*?<\\/span>`, 'gi'),
     ''
   );
 
@@ -40,11 +45,11 @@ const hasMediaTag = (html: string): boolean =>
   /<(img|video|audio|iframe)\b/i.test(html);
 
 const hasEmojiElement = (html: string): boolean =>
-  /<span[^>]*data-type="emoji"[^>]*>/.test(html) ||
+  new RegExp(emojiElementPattern).test(html) ||
   /<img[^>]*class="emoji-image"[^>]*>/.test(html);
 
 const hasChannelReferenceElement = (html: string): boolean =>
-  /<span[^>]*data-type="channel-reference"[^>]*>/i.test(html);
+  new RegExp(channelReferenceElementPattern, 'i').test(html);
 
 const isEmptyMessage = (content: string | undefined | null): boolean => {
   if (!content) return true;

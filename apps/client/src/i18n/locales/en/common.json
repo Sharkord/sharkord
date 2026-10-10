@@ -123,5 +123,6 @@
   "reconnectingHint": "Your session is kept. The app resumes on its own once the server answers.",
   "reconnectingAbort": "Stop trying to reconnect",
   "removeImage": "Remove image",
-  "channelMutedTooltip": "Channel muted, click to unmute"
+  "channelMutedTooltip": "Channel muted, click to unmute",
+  "unknownRole": "Unknown Role"
 }
