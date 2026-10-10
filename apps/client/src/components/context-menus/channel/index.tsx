@@ -30,6 +30,10 @@ const ChannelContextMenu = memo(
     const channel = useChannelById(channelId);
 
     const canManageChannels = can(Permission.MANAGE_CHANNELS);
+    const canEditChannel = can([
+      Permission.MANAGE_CHANNELS,
+      Permission.MANAGE_CHANNEL_PERMISSIONS
+    ]);
     const isVoiceChannel = channel?.type === ChannelType.VOICE;
 
     const onOpenChat = useCallback(() => {
@@ -61,7 +65,7 @@ const ChannelContextMenu = memo(
       openServerScreen(ServerScreen.CHANNEL_SETTINGS, { channelId });
     }, [channelId]);
 
-    if (!canManageChannels && !isVoiceChannel) {
+    if (!canEditChannel && !isVoiceChannel) {
       return <>{children}</>;
     }
 
@@ -76,16 +80,18 @@ const ChannelContextMenu = memo(
               {t('openChat')}
             </ContextMenuItem>
           )}
-          {canManageChannels && (
+          {canEditChannel && (
             <>
               {isVoiceChannel && <ContextMenuSeparator />}
               <ContextMenuItem onClick={onEditClick}>
                 {t('editLabel')}
               </ContextMenuItem>
-              <ContextMenuItem variant="destructive" onClick={onDeleteClick}>
-                {t('deleteLabel')}
-              </ContextMenuItem>
             </>
+          )}
+          {canManageChannels && (
+            <ContextMenuItem variant="destructive" onClick={onDeleteClick}>
+              {t('deleteLabel')}
+            </ContextMenuItem>
           )}
         </ContextMenuContent>
       </ContextMenu>

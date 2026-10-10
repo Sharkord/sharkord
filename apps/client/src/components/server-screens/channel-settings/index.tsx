@@ -1,3 +1,5 @@
+import { useCan } from '@/features/server/hooks';
+import { Permission } from '@sharkord/shared';
 import { Settings, Shield } from 'lucide-react';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,23 +16,30 @@ type TChannelSettingsProps = TServerScreenBaseProps & {
 const ChannelSettings = memo(({ close, channelId }: TChannelSettingsProps) => {
   const { t } = useTranslation('settings');
 
-  const entries = useMemo<TSettingsEntry[]>(
-    () => [
+  const can = useCan();
+
+  const entries = useMemo<TSettingsEntry[]>(() => {
+    const all = [
       {
         id: 'general',
         label: t('generalTab'),
         icon: Settings,
-        content: <General channelId={channelId} />
+        content: <General channelId={channelId} />,
+        permission: Permission.MANAGE_CHANNELS
       },
       {
         id: 'permissions',
         label: t('permissionsTab'),
         icon: Shield,
-        content: <ChannelPermissions channelId={channelId} />
+        content: <ChannelPermissions channelId={channelId} />,
+        permission: Permission.MANAGE_CHANNEL_PERMISSIONS
       }
-    ],
-    [t, channelId]
-  );
+    ];
+
+    return all
+      .filter((entry) => can(entry.permission))
+      .map(({ id, label, icon, content }) => ({ id, label, icon, content }));
+  }, [t, can, channelId]);
 
   return (
     <SettingsShell

@@ -1,8 +1,6 @@
 import { SettingsListEditor } from '@/components/server-screens/settings-shell/list-editor';
-import {
-  useAdminChannelGeneral,
-  useAdminChannelPermissions
-} from '@/features/server/admin/hooks';
+import { useAdminChannelPermissions } from '@/features/server/admin/hooks';
+import { useChannelById } from '@/features/server/channels/hooks';
 import { ChannelPermission } from '@sharkord/shared';
 import { Alert, AlertDescription, AlertTitle, LoadingCard } from '@sharkord/ui';
 import { MessageCircleWarning, Users } from 'lucide-react';
@@ -21,7 +19,7 @@ const ChannelPermissions = memo(({ channelId }: TChannelPermissionsProps) => {
   const [selectedOverrideId, setSelectedOverrideId] = useState<
     string | undefined
   >();
-  const { channel } = useAdminChannelGeneral(channelId);
+  const channel = useChannelById(channelId);
   const { rolePermissions, userPermissions, loading, refetch } =
     useAdminChannelPermissions(channelId);
 
