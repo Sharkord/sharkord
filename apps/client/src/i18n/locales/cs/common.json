@@ -121,5 +121,6 @@
   "reconnectingHint": "Tvoje relace zůstává zachována. Aplikace se sama obnoví, jakmile server odpoví.",
   "reconnectingAbort": "Přestat se připojovat",
   "removeImage": "Odebrat obrázek",
-  "channelMutedTooltip": "Kanál je ztlumen, kliknutím zrušíte ztlumení"
+  "channelMutedTooltip": "Kanál je ztlumen, kliknutím zrušíte ztlumení",
+  "unknownRole": "Neznámá role"
 }

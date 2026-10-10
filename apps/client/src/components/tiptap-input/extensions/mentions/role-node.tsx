@@ -1,4 +1,4 @@
-import { MentionChip } from '@/components/mention-chip';
+import { RoleMentionChip } from '@/components/role-mention-chip';
 import { MessageNodeType } from '@sharkord/shared';
 import { Node } from '@tiptap/core';
 import {
@@ -8,29 +8,32 @@ import {
 } from '@tiptap/react';
 import { memo } from 'react';
 
-const MentionNodeView = memo(({ node }: NodeViewProps) => (
+const RoleMentionNodeView = memo(({ node }: NodeViewProps) => (
   <NodeViewWrapper as="span" className="mention-inline">
-    <MentionChip userId={Number(node.attrs.userId)} label={node.attrs.label} />
+    <RoleMentionChip
+      roleId={Number(node.attrs.roleId)}
+      label={node.attrs.label}
+    />
   </NodeViewWrapper>
 ));
 
-export const MentionNode = Node.create({
-  name: 'mention',
+export const RoleMentionNode = Node.create({
+  name: 'roleMention',
   group: 'inline',
   inline: true,
   atom: true,
 
   addNodeView() {
-    return ReactNodeViewRenderer(MentionNodeView, { as: 'span' });
+    return ReactNodeViewRenderer(RoleMentionNodeView, { as: 'span' });
   },
 
   addAttributes() {
     return {
-      userId: {
+      roleId: {
         default: null,
-        parseHTML: (el) => el.getAttribute('data-user-id')?.trim() || null,
+        parseHTML: (el) => el.getAttribute('data-role-id')?.trim() || null,
         renderHTML: (attrs) =>
-          attrs.userId != null ? { 'data-user-id': String(attrs.userId) } : {}
+          attrs.roleId != null ? { 'data-role-id': String(attrs.roleId) } : {}
       },
       label: {
         default: '',
@@ -44,13 +47,13 @@ export const MentionNode = Node.create({
   parseHTML() {
     return [
       {
-        tag: `span[data-type="${MessageNodeType.MENTION}"]`,
+        tag: `span[data-type="${MessageNodeType.ROLE_MENTION}"]`,
         getAttrs: (dom) => {
           const el = dom as HTMLElement;
-          const userId = el.getAttribute('data-user-id')?.trim();
+          const roleId = el.getAttribute('data-role-id')?.trim();
           const label = el.textContent?.replace(/^@/, '') ?? '';
 
-          return userId ? { userId, label } : false;
+          return roleId ? { roleId, label } : false;
         }
       }
     ];
@@ -60,9 +63,9 @@ export const MentionNode = Node.create({
     return [
       'span',
       {
-        'data-type': MessageNodeType.MENTION,
-        'data-user-id': String(node.attrs.userId),
-        class: 'mention'
+        'data-type': MessageNodeType.ROLE_MENTION,
+        'data-role-id': String(node.attrs.roleId),
+        class: 'role-mention'
       },
       `@${node.attrs.label ?? ''}`
     ];

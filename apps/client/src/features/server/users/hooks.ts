@@ -3,8 +3,10 @@ import { useSelector } from 'react-redux';
 import {
   filteredUsersSelector,
   isOwnUserSelector,
+  ownUserHasRoleSelector,
   ownUserIdSelector,
   ownUserPasswordSetSelector,
+  ownUserRoleIdsSelector,
   ownUserSelector,
   userByIdSelector,
   usernamesSelector,
@@ -38,3 +40,8 @@ export const useUserStatus = (userId: number) =>
 export const useUsernames = () => useSelector(usernamesSelector);
 
 export const useFilteredUsers = () => useSelector(filteredUsersSelector);
+
+export const useOwnUserRoleIds = () => useSelector(ownUserRoleIdsSelector);
+
+export const useOwnUserHasRole = (roleId: number) =>
+  useSelector((state: IRootState) => ownUserHasRoleSelector(state, roleId));

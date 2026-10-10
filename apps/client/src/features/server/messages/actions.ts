@@ -23,7 +23,11 @@ import {
 import { pluginMetadataByIdSelector } from '../plugins/selectors';
 import { serverSliceActions } from '../slice';
 import { SoundType } from '../types';
-import { ownUserIdSelector, userByIdSelector } from '../users/selectors';
+import {
+  ownUserIdSelector,
+  ownUserRoleIdsSelector,
+  userByIdSelector
+} from '../users/selectors';
 import { threadMessagesMapSelector } from './selectors';
 
 const sendBrowserNotification = (
@@ -173,9 +177,11 @@ export const addMessages = (
         if (isDmChannel && hasDmNotificationsEnabled) {
           sendBrowserNotification(targetMessage, channelId, true);
         } else if (notificationsForMentionsOnly) {
+          const ownRoleIds = ownUserRoleIdsSelector(state);
           const isMentioned = hasMention(
             targetMessage.content ?? null,
-            ownUserId
+            ownUserId,
+            ownRoleIds
           );
 
           if (isMentioned) {

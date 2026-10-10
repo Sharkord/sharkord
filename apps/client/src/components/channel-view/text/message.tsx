@@ -1,6 +1,10 @@
 import { openThreadSidebar } from '@/features/app/actions';
 import { useCan } from '@/features/server/hooks';
-import { useIsOwnUser, useOwnUserId } from '@/features/server/users/hooks';
+import {
+  useIsOwnUser,
+  useOwnUserId,
+  useOwnUserRoleIds
+} from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
 import {
   hasMention,
@@ -45,6 +49,7 @@ const Message = memo(
     const isFromOwnUser = useIsOwnUser(message.userId);
     const can = useCan();
     const ownUserId = useOwnUserId();
+    const ownRoleIds = useOwnUserRoleIds();
 
     const canManage = useMemo(
       () => can(Permission.MANAGE_MESSAGES) || isFromOwnUser,
@@ -52,8 +57,8 @@ const Message = memo(
     );
 
     const isMentioned = useMemo(
-      () => hasMention(message.content, ownUserId),
-      [message.content, ownUserId]
+      () => hasMention(message.content, ownUserId, ownRoleIds),
+      [message.content, ownUserId, ownRoleIds]
     );
 
     const isThreadReply = !!message.parentMessageId;

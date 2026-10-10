@@ -1,7 +1,8 @@
 import { UserAvatar } from '@/components/user-avatar';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
-import type { TJoinedPublicUser } from '@sharkord/shared';
+import type { TJoinedPublicUser, TJoinedRole } from '@sharkord/shared';
 import type { Editor } from '@tiptap/core';
+import { Shield } from 'lucide-react';
 import type { Ref } from 'react';
 import { createSuggestionRenderer } from '../create-suggestion-renderer';
 import { filterByQuery } from '../filter-by-query';
@@ -9,55 +10,88 @@ import { SuggestionList, type TSuggestionListRef } from '../suggestion-list';
 
 const MENTION_STORAGE_KEY = 'mentionUsers';
 
-type TUserListProps = {
-  items: TJoinedPublicUser[];
-  onSelect: (item: TJoinedPublicUser) => void;
+type TMentionItem =
+  | { type: 'user'; user: TJoinedPublicUser }
+  | { type: 'role'; role: TJoinedRole };
+
+type TMentionStorage = {
+  users?: TJoinedPublicUser[];
+  roles?: TJoinedRole[];
+};
+
+type TMentionListProps = {
+  items: TMentionItem[];
+  onSelect: (item: TMentionItem) => void;
   ref?: Ref<TSuggestionListRef>;
 };
 
-const getKey = (item: TJoinedPublicUser) => item.id;
+const getMentionItemName = (item: TMentionItem) =>
+  item.type === 'user' ? getRenderedUsername(item.user) : item.role.name;
 
-const renderItem = (item: TJoinedPublicUser) => (
-  <>
-    <UserAvatar userId={item.id} className="h-6 w-6 shrink-0" />
-    <span className="font-medium truncate">{getRenderedUsername(item)}</span>
-  </>
-);
+const getKey = (item: TMentionItem) =>
+  item.type === 'user' ? `user-${item.user.id}` : `role-${item.role.id}`;
 
-const UserList = ({ items, onSelect, ref }: TUserListProps) => (
+const renderItem = (item: TMentionItem) => {
+  if (item.type === 'role') {
+    return (
+      <>
+        <Shield
+          className="h-6 w-6 shrink-0 p-1"
+          style={{ color: item.role.color }}
+        />
+        <span className="font-medium truncate">{item.role.name}</span>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <UserAvatar userId={item.user.id} className="h-6 w-6 shrink-0" />
+      <span className="font-medium truncate">
+        {getRenderedUsername(item.user)}
+      </span>
+    </>
+  );
+};
+
+const MentionList = ({ items, onSelect, ref }: TMentionListProps) => (
   <SuggestionList
     ref={ref}
     items={items}
     onSelect={onSelect}
     getKey={getKey}
     renderItem={renderItem}
-    ariaLabel="Mention user"
+    ariaLabel="Mention user or role"
     className="min-w-[16rem] max-w-88"
   />
 );
 
-const getUsers = ({
+const getMentionItems = ({
   editor,
   query
 }: {
   editor: Editor;
   query: string;
-}): TJoinedPublicUser[] => {
-  const users: TJoinedPublicUser[] =
-    (
-      editor.storage as unknown as Record<
-        string,
-        { users?: TJoinedPublicUser[] }
-      >
-    )[MENTION_STORAGE_KEY]?.users ?? [];
+}): TMentionItem[] => {
+  const storage = (
+    editor.storage as unknown as Record<string, TMentionStorage>
+  )[MENTION_STORAGE_KEY];
+  const users = storage?.users ?? [];
+  const roles = storage?.roles ?? [];
 
-  return filterByQuery(users, query, getRenderedUsername);
+  const items: TMentionItem[] = [
+    ...users.map((user) => ({ type: 'user' as const, user })),
+    ...roles.map((role) => ({ type: 'role' as const, role }))
+  ];
+
+  return filterByQuery(items, query, getMentionItemName);
 };
 
 const MentionSuggestion = {
-  items: getUsers,
+  items: getMentionItems,
   allowSpaces: false,
-  render: createSuggestionRenderer(UserList, getUsers)
+  render: createSuggestionRenderer(MentionList, getMentionItems)
 };
 
-export { MENTION_STORAGE_KEY, MentionSuggestion };
+export { getMentionItemName, MENTION_STORAGE_KEY, MentionSuggestion };
+export type { TMentionItem };

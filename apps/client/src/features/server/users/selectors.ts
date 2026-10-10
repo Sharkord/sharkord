@@ -56,6 +56,18 @@ export const ownUserSelector = createSelector(
   (ownUserId, users) => users.find((user) => user.id === ownUserId)
 );
 
+const NO_ROLE_IDS: number[] = [];
+
+export const ownUserRoleIdsSelector = createSelector(
+  [ownUserSelector],
+  (ownUser) => ownUser?.roleIds ?? NO_ROLE_IDS
+);
+
+export const ownUserHasRoleSelector = createCachedSelector(
+  [ownUserRoleIdsSelector, (_: IRootState, roleId: number) => roleId],
+  (ownRoleIds, roleId) => ownRoleIds.includes(roleId)
+)((_, roleId: number) => roleId);
+
 export const userByIdSelector = createCachedSelector(
   [usersSelector, (_: IRootState, userId: number | null) => userId],
   (users, userId) => users.find((user) => user.id === userId)

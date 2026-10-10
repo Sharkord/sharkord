@@ -15,6 +15,15 @@ export const OWNER_ROLE_ID = 1;
 
 export const TYPING_MS = 300;
 
+export enum MessageNodeType {
+  MENTION = 'mention',
+  ROLE_MENTION = 'role-mention',
+  CHANNEL_REFERENCE = 'channel-reference',
+  PLUGIN_COMMAND = 'plugin-command',
+  // written by @tiptap/extension-emoji, not by our own nodes
+  EMOJI = 'emoji'
+}
+
 export enum DisconnectCode {
   UNEXPECTED = 1006,
   KICKED = 40000,
