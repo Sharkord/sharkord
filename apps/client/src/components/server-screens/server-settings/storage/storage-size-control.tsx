@@ -1,5 +1,6 @@
-import { Button, Input, Slider } from '@sharkord/ui';
+import { Button, Slider } from '@sharkord/ui';
 import { memo, useCallback, type ReactNode } from 'react';
+import { NumberInput } from './number-input';
 import { FILE_SIZE_STEP, MEGABYTE } from './presets';
 
 const clamp = (value: number, min: number, max: number) =>
@@ -33,13 +34,7 @@ const StorageSizeControl = memo(
     const valueInMb = Math.round(Number(value) / MEGABYTE);
 
     const onChangeHandler = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        const nextValue = Number(e.target.value);
-
-        if (!Number.isFinite(nextValue)) {
-          return;
-        }
-
+      (nextValue: number) => {
         onChange(clamp(nextValue * MEGABYTE, min, max));
       },
       [onChange, min, max]
@@ -59,8 +54,7 @@ const StorageSizeControl = memo(
 
         <div className="flex justify-between items-center gap-2">
           <div className="flex items-center gap-2">
-            <Input
-              type="number"
+            <NumberInput
               className="w-28"
               min={Math.ceil(min / MEGABYTE)}
               max={Math.floor(max / MEGABYTE)}
