@@ -91,7 +91,7 @@ const TiptapInput = memo(
             }
           }
         }),
-        Link.configure({
+        Link.extend({ inclusive: () => false }).configure({
           autolink: true,
           defaultProtocol: 'https',
           openOnClick: false,
