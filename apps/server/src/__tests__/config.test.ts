@@ -32,6 +32,13 @@ describe('trustedProxies default', () => {
   });
 });
 
+// an empty host is what keeps every existing deployment listening on all interfaces
+describe('host default', () => {
+  test('should be empty so the server keeps listening on every interface', () => {
+    expect(defaultConfig.server.host).toBe('');
+  });
+});
+
 describe('backupDatabase default', () => {
   test('should be on, since it is the only thing that makes a bad migration recoverable', () => {
     expect(defaultConfig.server.backupDatabase).toBe(true);
@@ -69,6 +76,16 @@ describe('env overrides are validated', () => {
     setEnv('SHARKORD_PORT', 'not-a-port');
 
     expect(applyOverrides).toThrow();
+  });
+
+  test('should set the listen host from the env', () => {
+    setEnv('SHARKORD_HOST', '127.0.0.1');
+
+    expect(applyOverrides().server.host).toBe('127.0.0.1');
+
+    setEnv('SHARKORD_HOST', '::1');
+
+    expect(applyOverrides().server.host).toBe('::1');
   });
 
   test('should turn the database backup off from the env', () => {

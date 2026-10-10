@@ -3,7 +3,7 @@ import { useChannelCan } from '@/features/server/hooks';
 import { leaveVoice } from '@/features/server/voice/actions';
 import { useVoice } from '@/features/server/voice/hooks';
 import { cn } from '@/lib/utils';
-import { ChannelPermission } from '@sharkord/shared';
+import { ChannelPermission, PluginSlot } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
 import {
   AlertTriangle,
@@ -20,6 +20,7 @@ import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExternalAudioStreams } from '../channel-view/voice/external-audio-streams';
 import { VoiceAudioStreams } from '../channel-view/voice/voice-audio-streams';
+import { PluginSlotRenderer } from '../plugin-slot-renderer';
 import { StatsPopover } from './stats-popover';
 
 const VoiceControl = memo(() => {
@@ -64,6 +65,11 @@ const VoiceControl = memo(() => {
     }
   }, [connectionStatus, t]);
 
+  const pluginSlotProps = useMemo(
+    () => (voiceChannelId ? { channelId: voiceChannelId } : undefined),
+    [voiceChannelId]
+  );
+
   if (!voiceChannelId) {
     return null;
   }
@@ -93,6 +99,10 @@ const VoiceControl = memo(() => {
           </Button>
 
           <div className="flex gap-1">
+            <PluginSlotRenderer
+              slotId={PluginSlot.VOICE_CONTROLS}
+              props={pluginSlotProps}
+            />
             <Button
               variant="ghost"
               size="icon"

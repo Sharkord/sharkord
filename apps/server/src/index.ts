@@ -13,6 +13,7 @@ import chalk from 'chalk';
 import { config, SERVER_PRIVATE_IP } from './config';
 import { loadCrons } from './crons';
 import { loadDb } from './db';
+import { getHost } from './helpers/get-host';
 import './helpers/updater';
 import { pluginManager } from './plugins';
 import { enqueueActivityLog } from './queues/activity-log';
@@ -28,7 +29,10 @@ await loadMediasoup();
 await initVoiceRuntimes();
 await loadCrons();
 
-const host = IS_PRODUCTION ? SERVER_PRIVATE_IP : 'localhost';
+const host = getHost(
+  config.server.host,
+  (IS_PRODUCTION && SERVER_PRIVATE_IP) || 'localhost'
+);
 const url = `http://${host}:${config.server.port}/`;
 
 const message = [

@@ -1,3 +1,4 @@
+import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { store } from '@/features/store';
 import { getPluginRouteUrl } from '@/helpers/get-plugin-route-url';
 import { getSessionStorageItem, SessionStorageKey } from '@/helpers/storage';
@@ -63,6 +64,12 @@ const pluginActions: TPluginActions = {
     onPluginPush(pluginId, handler)
 };
 
+const usePluginPlaybackDeviceId = () => {
+  const { devices } = useDevices();
+
+  return devices.playbackId;
+};
+
 const pluginStore: TPluginStore = {
   getState: () => mapStateToPluginState(store.getState()),
   subscribe: (listener: () => void) => store.subscribe(listener),
@@ -70,7 +77,8 @@ const pluginStore: TPluginStore = {
   hooks: {
     useUserData: usePluginUserData,
     usePush: usePluginPush,
-    useCanUse: usePluginCanUse
+    useCanUse: usePluginCanUse,
+    usePlaybackDeviceId: usePluginPlaybackDeviceId
   }
 };
 

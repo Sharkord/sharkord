@@ -1,4 +1,9 @@
+import {
+  messageSentSoundSelector,
+  notificationSoundsSelector
+} from '@/features/app/selectors';
 import { SoundType } from '@/features/server/types';
+import { store } from '@/features/store';
 
 let audioCtx: AudioContext;
 let hasAudioContext = false;
@@ -462,6 +467,14 @@ const sfxRemoteUserStoppedScreenshare = () => {
 const getSoundTypes = () => ALL_SOUND_TYPES;
 
 const playSound = async (type: SoundType) => {
+  const state = store.getState();
+  const notificationSounds = notificationSoundsSelector(state);
+  const messageSentSound = messageSentSoundSelector(state);
+
+  if (!notificationSounds) return;
+
+  if (type === SoundType.MESSAGE_SENT && !messageSentSound) return;
+
   try {
     const ctx = await ensureAudioContextRunning();
 

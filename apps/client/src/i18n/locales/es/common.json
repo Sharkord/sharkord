@@ -120,5 +120,7 @@
   "reconnectingAttempt": "Intento {{attempt}} de {{total}}",
   "reconnectingHint": "Tu sesión se mantiene. La aplicación se reanudará sola cuando el servidor responda.",
   "reconnectingAbort": "Dejar de reconectar",
-  "removeImage": "Eliminar imagen"
+  "removeImage": "Eliminar imagen",
+  "channelMutedTooltip": "Canal silenciado, haz clic para dejar de silenciarlo",
+  "unknownRole": "Rol desconocido"
 }

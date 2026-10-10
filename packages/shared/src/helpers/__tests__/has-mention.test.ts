@@ -77,4 +77,35 @@ describe('has-mention', () => {
       '<p>Hello <span class="mention" data-type="mention" data-user-id="123" data-name="user">@user</span></p>';
     expect(hasMention(content, 123)).toBe(true);
   });
+
+  test('should return true when one of the given roles is mentioned', () => {
+    const content =
+      '<p>Hey <span data-type="role-mention" data-role-id="7" class="role-mention">@Gaming</span></p>';
+    expect(hasMention(content, 123, [3, 7])).toBe(true);
+  });
+
+  test('should return false when a role the user does not have is mentioned', () => {
+    const content =
+      '<p>Hey <span data-type="role-mention" data-role-id="7">@Gaming</span></p>';
+    expect(hasMention(content, 123, [3])).toBe(false);
+    expect(hasMention(content, 123)).toBe(false);
+  });
+
+  test('should match a role mention with the attributes in either order', () => {
+    const content =
+      '<p><span data-role-id="7" data-type="role-mention">@Gaming</span></p>';
+    expect(hasMention(content, 123, [7])).toBe(true);
+  });
+
+  test('should not treat a role mention as a user mention with the same id', () => {
+    const content =
+      '<p><span data-type="role-mention" data-role-id="123">@Gaming</span></p>';
+    expect(hasMention(content, 123)).toBe(false);
+  });
+
+  test('should not treat a user mention as a role mention with the same id', () => {
+    const content =
+      '<p><span data-type="mention" data-user-id="7">@user</span></p>';
+    expect(hasMention(content, 123, [7])).toBe(false);
+  });
 });

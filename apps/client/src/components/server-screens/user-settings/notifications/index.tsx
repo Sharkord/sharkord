@@ -4,13 +4,17 @@ import {
   setBrowserNotifications,
   setBrowserNotificationsForDms,
   setBrowserNotificationsForMentions,
-  setBrowserNotificationsForReplies
+  setBrowserNotificationsForReplies,
+  setMessageSentSound,
+  setNotificationSounds
 } from '@/features/app/actions';
 import {
   useBrowserNotifications,
   useBrowserNotificationsForDms,
   useBrowserNotificationsForMentions,
-  useBrowserNotificationsForReplies
+  useBrowserNotificationsForReplies,
+  useMessageSentSound,
+  useNotificationSounds
 } from '@/features/app/hooks';
 import { Group, Switch } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
@@ -21,6 +25,8 @@ type TNotificationsValues = {
   mentions: boolean;
   dms: boolean;
   replies: boolean;
+  sounds: boolean;
+  sentSound: boolean;
 };
 
 const Notifications = memo(() => {
@@ -29,6 +35,8 @@ const Notifications = memo(() => {
   const mentions = useBrowserNotificationsForMentions();
   const dms = useBrowserNotificationsForDms();
   const replies = useBrowserNotificationsForReplies();
+  const sounds = useNotificationSounds();
+  const sentSound = useMessageSentSound();
 
   const onSave = useCallback(async (values: TNotificationsValues) => {
     // TODO: refactor this later
@@ -36,10 +44,12 @@ const Notifications = memo(() => {
     setBrowserNotificationsForMentions(values.mentions);
     setBrowserNotificationsForDms(values.dms);
     setBrowserNotificationsForReplies(values.replies);
+    setNotificationSounds(values.sounds);
+    setMessageSentSound(values.sentSound);
   }, []);
 
   const { values, onChange } = useSettingsForm<TNotificationsValues>({
-    initialValues: { all, mentions, dms, replies },
+    initialValues: { all, mentions, dms, replies, sounds, sentSound },
     onSave,
     successMessage: t('notificationsUpdated'),
     errorMessage: t('failedUpdateNotifications')
@@ -59,6 +69,14 @@ const Notifications = memo(() => {
   );
   const handleRepliesChange = useCallback(
     (value: boolean) => onChange('replies', value),
+    [onChange]
+  );
+  const handleSoundsChange = useCallback(
+    (value: boolean) => onChange('sounds', value),
+    [onChange]
+  );
+  const handleSentSoundChange = useCallback(
+    (value: boolean) => onChange('sentSound', value),
     [onChange]
   );
 
@@ -89,6 +107,19 @@ const Notifications = memo(() => {
         <Switch
           checked={values.replies}
           onCheckedChange={handleRepliesChange}
+        />
+      </Group>
+      <Group label={t('soundsLabel')} description={t('soundsDesc')}>
+        <Switch checked={values.sounds} onCheckedChange={handleSoundsChange} />
+      </Group>
+      <Group
+        label={t('messageSentSoundLabel')}
+        description={t('messageSentSoundDesc')}
+      >
+        <Switch
+          checked={values.sentSound}
+          disabled={!values.sounds}
+          onCheckedChange={handleSentSoundChange}
         />
       </Group>
     </SettingsSection>

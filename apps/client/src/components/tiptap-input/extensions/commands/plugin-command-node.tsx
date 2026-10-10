@@ -1,4 +1,4 @@
-import type { TCommandArg } from '@sharkord/shared';
+import { MessageNodeType, type TCommandArg } from '@sharkord/shared';
 import { Node } from '@tiptap/core';
 import {
   NodeViewWrapper,
@@ -334,7 +334,7 @@ export const PluginCommandNode = Node.create({
   parseHTML() {
     return [
       {
-        tag: 'span[data-type="plugin-command"]'
+        tag: `span[data-type="${MessageNodeType.PLUGIN_COMMAND}"]`
       }
     ];
   },
@@ -347,7 +347,7 @@ export const PluginCommandNode = Node.create({
     return [
       'span',
       {
-        'data-type': 'plugin-command',
+        'data-type': MessageNodeType.PLUGIN_COMMAND,
         'data-plugin-id': attrs.pluginId,
         'data-command-name': attrs.commandName,
         'data-command-args': attrs.args,

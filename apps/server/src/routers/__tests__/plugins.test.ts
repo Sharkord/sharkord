@@ -49,6 +49,7 @@ import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
 import { drainActivityLogQueue } from '../../queues/activity-log';
 import * as messageMetadata from '../../queues/message-metadata';
+import { VoiceRuntime } from '../../runtimes/voice';
 import { pubsub } from '../../utils/pubsub';
 
 describe('plugins router', () => {
@@ -1862,6 +1863,32 @@ describe('plugins router', () => {
       expect(messageId).toBeGreaterThan(0);
     });
 
+    test('should hand the plugin the attachment it can read from disk', async () => {
+      const { messageId } = await attach('clip bytes');
+      const file = await attachedFile(messageId);
+      const { caller } = await initTest();
+
+      const result = await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'read-file',
+        args: { fileId: file!.id }
+      });
+
+      expect(result).toEqual({ found: true, body: 'clip bytes' });
+    });
+
+    test('should answer an unknown file id with nothing', async () => {
+      const { caller } = await initTest();
+
+      const result = await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'read-file',
+        args: { fileId: 999999 }
+      });
+
+      expect(result).toEqual({ found: false });
+    });
+
     test('should refuse more files than the server allows', async () => {
       const { caller } = await initTest();
 
@@ -2217,6 +2244,9 @@ describe('plugins router', () => {
 
   // pushes are addressed server side, so a subscriber only ever sees its own
   describe('push', () => {
+    // the seeded voice channel
+    const VOICE_CHANNEL_ID = 2;
+
     beforeEach(() => pluginManager.load('plugin-b'));
 
     const listen = (userId: number) => {
@@ -2274,6 +2304,34 @@ describe('plugins router', () => {
       target.stop();
     });
 
+    test('should reach everyone in a voice channel and nobody outside it', async () => {
+      const runtime = new VoiceRuntime(VOICE_CHANNEL_ID);
+
+      runtime.addUser(2, { micMuted: false, soundMuted: false });
+
+      const inside = listen(2);
+      const outside = listen(5);
+
+      await push({ target: 'voice', channelId: VOICE_CHANNEL_ID });
+
+      expect(inside.received).toHaveLength(1);
+      expect(outside.received).toHaveLength(0);
+
+      inside.stop();
+      outside.stop();
+      await runtime.destroy();
+    });
+
+    test('should reach nobody in a voice channel no one is in', async () => {
+      const target = listen(2);
+
+      await push({ target: 'voice', channelId: VOICE_CHANNEL_ID });
+
+      expect(target.received).toHaveLength(0);
+
+      target.stop();
+    });
+
     test('should stop reaching a listener that unsubscribed', async () => {
       const target = listen(2);
 
@@ -2294,6 +2352,81 @@ describe('plugins router', () => {
           args: { userId: 2 }
         })
       ).rejects.toThrow('cannot exceed');
+    });
+  });
+
+  describe('voice reactions', () => {
+    // the seeded voice channel
+    const VOICE_CHANNEL_ID = 2;
+
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const react = async (args: Record<string, unknown>) => {
+      const { caller } = await initTest();
+
+      return caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'voice-react',
+        args: { channelId: VOICE_CHANNEL_ID, userId: 2, emoji: '🔊', ...args }
+      });
+    };
+
+    const withRuntime = async (run: () => Promise<void>) => {
+      const runtime = new VoiceRuntime(VOICE_CHANNEL_ID);
+
+      runtime.addUser(2, { micMuted: false, soundMuted: false });
+
+      try {
+        await run();
+      } finally {
+        await runtime.destroy();
+      }
+    };
+
+    test('should float the emoji on the user card like their own reaction', async () => {
+      await withRuntime(async () => {
+        const received: unknown[] = [];
+
+        const subscription = pubsub
+          .subscribe(ServerEvents.USER_VOICE_REACTION)
+          .subscribe({ next: (event) => received.push(event) });
+
+        await react({});
+
+        subscription.unsubscribe();
+
+        expect(received).toEqual([
+          { channelId: VOICE_CHANNEL_ID, userId: 2, emoji: '🔊' }
+        ]);
+      });
+    });
+
+    test('should refuse a user who is not in the channel', async () => {
+      await withRuntime(async () => {
+        await expect(react({ userId: 5 })).rejects.toThrow(
+          'User is not in this voice channel.'
+        );
+      });
+    });
+
+    test('should refuse a channel with no one in it', async () => {
+      await expect(react({})).rejects.toThrow('Voice runtime not found');
+    });
+
+    test('should refuse an unknown emoji', async () => {
+      await withRuntime(async () => {
+        await expect(react({ emoji: 'not an emoji' })).rejects.toThrow(
+          'Unknown emoji'
+        );
+      });
+    });
+
+    test('should refuse an empty emoji', async () => {
+      await withRuntime(async () => {
+        await expect(react({ emoji: '' })).rejects.toThrow(
+          'Emoji must be between'
+        );
+      });
     });
   });
 

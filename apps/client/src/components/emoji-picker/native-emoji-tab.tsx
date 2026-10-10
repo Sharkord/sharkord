@@ -1,10 +1,13 @@
-import type { TEmojiItem } from '@/components/tiptap-input/helpers';
+import {
+  withoutShadowedEmojis,
+  type TEmojiItem
+} from '@/components/tiptap-input/helpers';
 import { cn } from '@/lib/utils';
 import { memo, useCallback, useMemo, useState } from 'react';
 import {
   EMOJI_CATEGORIES,
-  type EmojiCategoryId,
-  getEmojisByCategory
+  getEmojisByCategory,
+  type EmojiCategoryId
 } from './emoji-data';
 import { EmojiGrid } from './emoji-grid';
 import { useRecentEmojis } from './use-recent-emojis';
@@ -49,59 +52,64 @@ const CategoryBar = memo(
 );
 
 type TNativeEmojiTabProps = {
+  customEmojis: TEmojiItem[];
   onEmojiSelect: (emoji: TEmojiItem) => void;
 };
 
-const NativeEmojiTab = memo(({ onEmojiSelect }: TNativeEmojiTabProps) => {
-  const { recentEmojis, addRecent } = useRecentEmojis();
+const NativeEmojiTab = memo(
+  ({ customEmojis, onEmojiSelect }: TNativeEmojiTabProps) => {
+    const { recentEmojis, addRecent } = useRecentEmojis();
 
-  const [activeCategory, setActiveCategory] = useState<EmojiCategoryId>(() =>
-    recentEmojis.length > 0 ? 'recent' : 'people & body'
-  );
+    const [activeCategory, setActiveCategory] = useState<EmojiCategoryId>(() =>
+      recentEmojis.length > 0 ? 'recent' : 'people & body'
+    );
 
-  const hasRecentEmojis = recentEmojis.length > 0;
+    const hasRecentEmojis = recentEmojis.length > 0;
 
-  const displayEmojis = useMemo(() => {
-    if (activeCategory === 'recent') {
-      return recentEmojis;
-    }
-    return getEmojisByCategory(activeCategory);
-  }, [activeCategory, recentEmojis]);
+    const displayEmojis = useMemo(() => {
+      const emojis =
+        activeCategory === 'recent'
+          ? recentEmojis
+          : getEmojisByCategory(activeCategory);
 
-  const handleCategorySelect = useCallback((category: EmojiCategoryId) => {
-    setActiveCategory(category);
-  }, []);
+      return withoutShadowedEmojis(emojis, customEmojis);
+    }, [activeCategory, customEmojis, recentEmojis]);
 
-  const handleEmojiSelect = useCallback(
-    (emoji: TEmojiItem) => {
-      onEmojiSelect(emoji);
-      requestAnimationFrame(() => addRecent(emoji));
-    },
-    [addRecent, onEmojiSelect]
-  );
+    const handleCategorySelect = useCallback((category: EmojiCategoryId) => {
+      setActiveCategory(category);
+    }, []);
 
-  const effectiveCategory =
-    activeCategory === 'recent' && !hasRecentEmojis
-      ? 'people & body'
-      : activeCategory;
+    const handleEmojiSelect = useCallback(
+      (emoji: TEmojiItem) => {
+        onEmojiSelect(emoji);
+        requestAnimationFrame(() => addRecent(emoji));
+      },
+      [addRecent, onEmojiSelect]
+    );
 
-  return (
-    <div className="flex flex-col h-full">
-      <CategoryBar
-        activeCategory={effectiveCategory}
-        onCategorySelect={handleCategorySelect}
-        hasRecentEmojis={hasRecentEmojis}
-      />
+    const effectiveCategory =
+      activeCategory === 'recent' && !hasRecentEmojis
+        ? 'people & body'
+        : activeCategory;
 
-      <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-        {EMOJI_CATEGORIES.find((c) => c.id === effectiveCategory)?.label}
+    return (
+      <div className="flex flex-col h-full">
+        <CategoryBar
+          activeCategory={effectiveCategory}
+          onCategorySelect={handleCategorySelect}
+          hasRecentEmojis={hasRecentEmojis}
+        />
+
+        <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
+          {EMOJI_CATEGORIES.find((c) => c.id === effectiveCategory)?.label}
+        </div>
+
+        <div className="flex-1 min-h-0">
+          <EmojiGrid emojis={displayEmojis} onSelect={handleEmojiSelect} />
+        </div>
       </div>
-
-      <div className="flex-1 min-h-0">
-        <EmojiGrid emojis={displayEmojis} onSelect={handleEmojiSelect} />
-      </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 export { NativeEmojiTab };

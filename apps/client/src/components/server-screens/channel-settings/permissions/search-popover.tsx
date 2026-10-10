@@ -1,5 +1,6 @@
 import { UserAvatar } from '@/components/user-avatar';
-import { useAdminRoles, useAdminUsers } from '@/features/server/admin/hooks';
+import { useRoles } from '@/features/server/roles/hooks';
+import { useUsers } from '@/features/server/users/hooks';
 import {
   Button,
   Input,
@@ -28,8 +29,8 @@ const SearchPopover = memo(
     const [open, setOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState<TChannelPermissionType>('role');
-    const { users } = useAdminUsers();
-    const { roles } = useAdminRoles();
+    const users = useUsers();
+    const roles = useRoles();
 
     const filteredRoles = useMemo(
       () =>

@@ -73,5 +73,7 @@
   "failedDeleteCategory": "Не удалось удалить категорию",
   "userVolume": "Громкость пользователя",
   "microphone": "Микрофон",
-  "noiseSuppression": "Шумоподавление"
+  "noiseSuppression": "Шумоподавление",
+  "muteChannel": "Заглушить канал",
+  "unmuteChannel": "Включить звук канала"
 }

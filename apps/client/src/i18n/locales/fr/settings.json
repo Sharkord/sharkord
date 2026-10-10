@@ -510,5 +510,9 @@
   "pluginStorageDesc": "Espace occupé par les fichiers joints aux messages par les plugins. Ils restent avec le message après la suppression du plugin.",
   "pluginStorageUninstalled": "Désinstallé",
   "pluginStorageFiles_one": "{{count}} fichier",
-  "pluginStorageFiles_other": "{{count}} fichiers"
+  "pluginStorageFiles_other": "{{count}} fichiers",
+  "soundsLabel": "Sons de notification",
+  "soundsDesc": "Jouer des sons pour les messages, l'activité des salons vocaux et les changements de connexion.",
+  "messageSentSoundLabel": "Son de message envoyé",
+  "messageSentSoundDesc": "Jouer un son lorsque vous envoyez un message."
 }

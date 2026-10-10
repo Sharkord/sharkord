@@ -1,4 +1,5 @@
 import { TypingDots } from '@/components/typing-dots';
+import { useIsChannelMuted } from '@/features/app/hooks';
 import {
   useChannelById,
   useChannelsByCategoryId,
@@ -66,6 +67,7 @@ const Voice = memo(
     const hasUnreadMentions = useHasUnreadMentions(channel.id);
     const currentVoiceChannelId = useCurrentVoiceChannelId();
     const someoneIsSharingScreen = useHasSharingScreenUsers(channel.id);
+    const isMuted = useIsChannelMuted(channel.id);
 
     const [isDragOver, setIsDragOver] = useState(false);
 
@@ -134,7 +136,9 @@ const Voice = memo(
             <Volume2 className="h-4 w-4" />
           )}
 
-          <span className="flex-1 truncate">{channel.name}</span>
+          <span className={cn('flex-1 truncate', { 'opacity-50': isMuted })}>
+            {channel.name}
+          </span>
 
           {unreadCount > 0 && (
             <UnreadCount count={unreadCount} hasMention={hasUnreadMentions} />
@@ -149,6 +153,7 @@ const Voice = memo(
               <VoiceUser
                 key={user.id}
                 userId={user.id}
+                channelId={channel.id}
                 user={user}
                 isOwnChannel={isOwnChannel}
               />
@@ -180,11 +185,14 @@ const Text = memo(({ channel, ...props }: TTextProps) => {
   const unreadCount = useUnreadMessagesCount(channel.id);
   const hasUnreadMessages = useHasUnreadMentions(channel.id);
   const hasTypingUsers = typingUsers.length > 0;
+  const isMuted = useIsChannelMuted(channel.id);
 
   return (
     <ItemWrapper {...props}>
       <Hash className="h-4 w-4" />
-      <span className="flex-1">{channel.name}</span>
+      <span className={cn('flex-1', { 'opacity-50': isMuted })}>
+        {channel.name}
+      </span>
       {hasTypingUsers && (
         <div className="flex items-center gap-0.5 ml-auto">
           <TypingDots className="space-x-0.5" />

@@ -73,5 +73,7 @@
   "failedDeleteCategory": "Error al eliminar la categoría",
   "userVolume": "Volumen del usuario",
   "microphone": "Micrófono",
-  "noiseSuppression": "Supresión de ruido"
+  "noiseSuppression": "Supresión de ruido",
+  "muteChannel": "Silenciar canal",
+  "unmuteChannel": "Dejar de silenciar canal"
 }

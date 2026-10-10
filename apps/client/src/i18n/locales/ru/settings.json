@@ -519,5 +519,9 @@
   "pluginStorageDesc": "Место, занятое файлами, которые плагины прикрепили к сообщениям. Они остаются с сообщением после удаления плагина.",
   "pluginStorageUninstalled": "Удалён",
   "pluginStorageFiles_one": "{{count}} файл",
-  "pluginStorageFiles_other": "{{count}} файлов"
+  "pluginStorageFiles_other": "{{count}} файлов",
+  "soundsLabel": "Звуки уведомлений",
+  "soundsDesc": "Воспроизводить звуки для сообщений, активности в голосовых каналах и изменений подключения.",
+  "messageSentSoundLabel": "Звук отправки сообщения",
+  "messageSentSoundDesc": "Воспроизводить звук при отправке сообщения."
 }

@@ -35,12 +35,16 @@ import { rolesSelector } from './roles/selectors';
 import type { TVoiceUser } from './types';
 import {
   ownUserIdSelector,
+  ownUserRoleIdsSelector,
   ownUserSelector,
   userByIdSelector,
   usersMapSelector,
   usersSelector
 } from './users/selectors';
-import { voiceChannelStateSelector } from './voice/selectors';
+import {
+  ownVoiceStateSelector,
+  voiceChannelStateSelector
+} from './voice/selectors';
 
 export const connectedSelector = (state: IRootState) => state.server.connected;
 
@@ -225,12 +229,18 @@ export const hasUnreadMentionsSelector = createCachedSelector(
     channelReadStateByIdSelector,
     channelByIdSelector,
     messagesByChannelIdSelector,
-    ownUserIdSelector
+    ownUserIdSelector,
+    ownUserRoleIdsSelector
   ],
-  (readState, channel, messages, ownUserId) => {
+  (readState, channel, messages, ownUserId, ownRoleIds) => {
     if (!channel || !messages) return false;
 
-    return hasUnreadMentionInMessages(readState, messages, ownUserId);
+    return hasUnreadMentionInMessages(
+      readState,
+      messages,
+      ownUserId,
+      ownRoleIds
+    );
   }
 )((_, channelId: number) => channelId);
 
@@ -248,14 +258,16 @@ export const categoryHasUnreadMentionsSelector = createCachedSelector(
     visibleChannelsInCategorySelector,
     channelsReadStatesSelector,
     messagesMapSelector,
-    ownUserIdSelector
+    ownUserIdSelector,
+    ownUserRoleIdsSelector
   ],
-  (channelsInCategory, readStatesMap, messagesMap, ownUserId) => {
+  (channelsInCategory, readStatesMap, messagesMap, ownUserId, ownRoleIds) => {
     return channelsInCategory.some((channel) => {
       return hasUnreadMentionInMessages(
         readStatesMap[channel.id] ?? 0,
         messagesMap[channel.id] ?? [],
-        ownUserId
+        ownUserId,
+        ownRoleIds
       );
     });
   }
@@ -299,6 +311,7 @@ export const mapStateToPluginState = createSelector(
     ownUserIdSelector,
     selectedChannelIdSelector,
     currentVoiceChannelIdSelector,
+    ownVoiceStateSelector,
     publicServerSettingsSelector
   ],
   (
@@ -311,6 +324,7 @@ export const mapStateToPluginState = createSelector(
     ownUserId,
     selectedChannelId,
     currentVoiceChannelId,
+    ownVoiceState,
     publicSettings
   ): TPluginStoreState => ({
     users,
@@ -322,6 +336,7 @@ export const mapStateToPluginState = createSelector(
     ownUserId,
     selectedChannelId,
     currentVoiceChannelId,
+    ownVoiceState,
     publicSettings
   })
 );

@@ -75,5 +75,7 @@
   "failedDeleteCategory": "Failed to delete category",
   "userVolume": "User volume",
   "microphone": "Microphone",
-  "noiseSuppression": "Noise suppression"
+  "noiseSuppression": "Noise suppression",
+  "muteChannel": "Mute Channel",
+  "unmuteChannel": "Unmute Channel"
 }

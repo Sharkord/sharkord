@@ -1,4 +1,5 @@
 import { MentionChip } from '@/components/mention-chip';
+import { MessageNodeType } from '@sharkord/shared';
 import { Node } from '@tiptap/core';
 import {
   NodeViewWrapper,
@@ -43,7 +44,7 @@ export const MentionNode = Node.create({
   parseHTML() {
     return [
       {
-        tag: 'span[data-type="mention"]',
+        tag: `span[data-type="${MessageNodeType.MENTION}"]`,
         getAttrs: (dom) => {
           const el = dom as HTMLElement;
           const userId = el.getAttribute('data-user-id')?.trim();
@@ -59,7 +60,7 @@ export const MentionNode = Node.create({
     return [
       'span',
       {
-        'data-type': 'mention',
+        'data-type': MessageNodeType.MENTION,
         'data-user-id': String(node.attrs.userId),
         class: 'mention'
       },

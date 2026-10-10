@@ -1,3 +1,5 @@
+import { readFile } from 'fs/promises';
+
 const onLoad = (ctx) => {
   // deliberately the deprecated flat form, so removing ctx.log fails a test
   // instead of silently breaking existing plugins
@@ -203,6 +205,34 @@ const onLoad = (ctx) => {
   });
 
   ctx.commands.register({
+    name: 'read-file',
+    description: 'Read a stored file back from disk',
+    args: [{ name: 'fileId', type: 'number', required: true }],
+    async executes(invokerCtx, args) {
+      const filePath = await ctx.files.getPath(args.fileId);
+
+      if (!filePath) return { found: false };
+
+      return { found: true, body: await readFile(filePath, 'utf-8') };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'voice-react',
+    description: 'Float an emoji on a voice user card',
+    args: [
+      { name: 'channelId', type: 'number', required: true },
+      { name: 'userId', type: 'number', required: true },
+      { name: 'emoji', type: 'string', required: true }
+    ],
+    async executes(invokerCtx, args) {
+      await ctx.voice.react(args.channelId, args.userId, args.emoji);
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
     name: 'send-link',
     description: 'Post a link, with or without the host looking it up',
     args: [
@@ -256,6 +286,7 @@ const onLoad = (ctx) => {
     args: [
       { name: 'target', type: 'string', required: true },
       { name: 'userId', type: 'number', required: false },
+      { name: 'channelId', type: 'number', required: false },
       { name: 'note', type: 'string', required: false }
     ],
     async executes(invokerCtx, args) {
@@ -263,6 +294,8 @@ const onLoad = (ctx) => {
 
       if (args.target === 'all') {
         ctx.push.toAll(data);
+      } else if (args.target === 'voice') {
+        ctx.push.toVoiceChannel(args.channelId, data);
       } else if (args.target === 'users') {
         ctx.push.toUsers([args.userId], data);
       } else {

@@ -122,5 +122,7 @@
   "reconnectingAttempt": "Attempt {{attempt}} of {{total}}",
   "reconnectingHint": "Your session is kept. The app resumes on its own once the server answers.",
   "reconnectingAbort": "Stop trying to reconnect",
-  "removeImage": "Remove image"
+  "removeImage": "Remove image",
+  "channelMutedTooltip": "Channel muted, click to unmute",
+  "unknownRole": "Unknown Role"
 }

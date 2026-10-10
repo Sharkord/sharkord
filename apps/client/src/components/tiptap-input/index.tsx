@@ -1,5 +1,6 @@
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { useReferenceableChannels } from '@/features/server/hooks';
+import { useRoles } from '@/features/server/roles/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
 import { TestId, type TCommandInfo } from '@sharkord/shared';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
@@ -12,6 +13,7 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
   type Ref
 } from 'react';
 import { ChannelReference } from './extensions/channel-reference';
@@ -29,11 +31,12 @@ import { SlashCommands } from './extensions/commands/slash-commands-extension';
 import { EmojiSuggestion } from './extensions/emojis/suggestions';
 import { Mention } from './extensions/mentions';
 import { MentionNode } from './extensions/mentions/node';
+import { RoleMentionNode } from './extensions/mentions/role-node';
 import {
   MENTION_STORAGE_KEY,
   MentionSuggestion
 } from './extensions/mentions/suggestion';
-import type { TEmojiItem } from './helpers';
+import { mergeEmojis, type TEmojiItem } from './helpers';
 
 type TTiptapInputHandle = {
   insertEmoji: (emoji: TEmojiItem) => void;
@@ -79,7 +82,12 @@ const TiptapInput = memo(
     onArrowUpRef.current = onArrowUp;
 
     const customEmojis = useCustomEmojis();
+    // tiptap 3 hands out a fresh copy of an extension's options on every read,
+    // so assigning a new list later never reaches setEmoji or the rendering.
+    // both hold this one array instead, and it is updated in place
+    const [emojis] = useState(() => mergeEmojis(gitHubEmojis, customEmojis));
     const users = useFilteredUsers();
+    const roles = useRoles();
     const channels = useReferenceableChannels();
 
     const extensions = useMemo(() => {
@@ -91,7 +99,7 @@ const TiptapInput = memo(
             }
           }
         }),
-        Link.configure({
+        Link.extend({ inclusive: () => false }).configure({
           autolink: true,
           defaultProtocol: 'https',
           openOnClick: false,
@@ -104,7 +112,7 @@ const TiptapInput = memo(
           }
         }),
         Emoji.configure({
-          emojis: [...gitHubEmojis, ...customEmojis],
+          emojis,
           enableEmoticons: true,
           suggestion: EmojiSuggestion,
           HTMLAttributes: {
@@ -113,9 +121,11 @@ const TiptapInput = memo(
         }),
         Mention.configure({
           users,
+          roles,
           suggestion: MentionSuggestion
         }),
         MentionNode,
+        RoleMentionNode,
         ChannelReference.configure({
           channels,
           suggestion: ChannelReferenceSuggestion
@@ -135,7 +145,7 @@ const TiptapInput = memo(
       }
 
       return exts;
-    }, [customEmojis, commands, users, channels]);
+    }, [emojis, commands, users, roles, channels]);
 
     const editor = useEditor({
       extensions,
@@ -227,29 +237,12 @@ const TiptapInput = memo(
       focus: () => editor?.commands.focus()
     }));
 
-    // keep emoji storage in sync with custom emojis from the store
-    // this ensures newly added emojis appear in autocomplete without refreshing the app
+    // keeps newly added custom emojis usable without refreshing the app
     useEffect(() => {
-      if (editor) {
-        const allEmojis = [...gitHubEmojis, ...customEmojis];
+      const allEmojis = mergeEmojis(gitHubEmojis, customEmojis);
 
-        if (editor.storage.emoji) {
-          editor.storage.emoji.emojis = allEmojis;
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const applyEmojiOptions = (extension: any) => {
-          const typed = extension;
-
-          if (typed.name === 'emoji' && typed.options) {
-            typed.options.emojis = allEmojis;
-          }
-        };
-
-        editor.extensionManager.extensions.forEach(applyEmojiOptions);
-        editor.options.extensions?.forEach(applyEmojiOptions);
-      }
-    }, [editor, customEmojis]);
+      emojis.splice(0, emojis.length, ...allEmojis);
+    }, [emojis, customEmojis]);
 
     // keep commands storage in sync with plugin commands from the store
     useEffect(() => {
@@ -262,19 +255,20 @@ const TiptapInput = memo(
       }
     }, [editor, commands]);
 
-    // keep mention users storage in sync with the users from the store
+    // keep mention storage in sync with the users and roles from the store
     useEffect(() => {
       if (editor) {
         const storage = editor.storage as unknown as Record<
           string,
-          { users?: typeof users }
+          { users?: typeof users; roles?: typeof roles }
         >;
 
         if (storage[MENTION_STORAGE_KEY]) {
           storage[MENTION_STORAGE_KEY].users = users;
+          storage[MENTION_STORAGE_KEY].roles = roles;
         }
       }
-    }, [editor, users]);
+    }, [editor, users, roles]);
 
     // keep channel reference storage in sync with the channels from the store
     useEffect(() => {

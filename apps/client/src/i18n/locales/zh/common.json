@@ -120,5 +120,7 @@
   "reconnectingAttempt": "第 {{attempt}} 次尝试，共 {{total}} 次",
   "reconnectingHint": "会话已保留。服务器恢复后应用会自动继续。",
   "reconnectingAbort": "停止重新连接",
-  "removeImage": "移除图片"
+  "removeImage": "移除图片",
+  "channelMutedTooltip": "频道已静音，点击取消静音",
+  "unknownRole": "未知角色"
 }
