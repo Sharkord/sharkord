@@ -101,7 +101,11 @@ const routeHandlers: Partial<
 };
 
 // this http server implementation is temporary and will be moved to bun server later when things are more stable
-const createHttpServer = async (port: number = config.server.port) => {
+// an empty host keeps node's default of listening on every interface
+const createHttpServer = async (
+  port: number = config.server.port,
+  host: string = config.server.host
+) => {
   return new Promise<http.Server>((resolve) => {
     const server = http.createServer(
       async (req: http.IncomingMessage, res: http.ServerResponse) => {
@@ -241,7 +245,7 @@ const createHttpServer = async (port: number = config.server.port) => {
       logger.debug('HTTP server closed');
     });
 
-    server.listen(port);
+    server.listen(port, host || undefined);
   });
 };
 
