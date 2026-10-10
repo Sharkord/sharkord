@@ -53,6 +53,7 @@ import {
   listPluginMessages,
   type TListPluginMessagesOptions
 } from './actions/read-plugin-messages';
+import { sendPluginVoiceReaction } from './actions/send-plugin-voice-reaction';
 import {
   assignPluginUserRole,
   removePluginUserRole
@@ -182,7 +183,9 @@ const createUnloadContext = ({
       getPluginVoiceRuntime(channelId).getState(),
     getProducers: (channelId: number) =>
       getPluginVoiceRuntime(channelId).listProducers(),
-    consume: (options) => consumeVoiceProducer(pluginId, scopedLogger, options)
+    consume: (options) => consumeVoiceProducer(pluginId, scopedLogger, options),
+    react: async (channelId, userId, emoji) =>
+      sendPluginVoiceReaction(channelId, userId, emoji)
   },
   messages: {
     send: async (channelId, content, options) =>

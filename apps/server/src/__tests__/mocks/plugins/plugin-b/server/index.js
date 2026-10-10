@@ -218,6 +218,21 @@ const onLoad = (ctx) => {
   });
 
   ctx.commands.register({
+    name: 'voice-react',
+    description: 'Float an emoji on a voice user card',
+    args: [
+      { name: 'channelId', type: 'number', required: true },
+      { name: 'userId', type: 'number', required: true },
+      { name: 'emoji', type: 'string', required: true }
+    ],
+    async executes(invokerCtx, args) {
+      await ctx.voice.react(args.channelId, args.userId, args.emoji);
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
     name: 'send-link',
     description: 'Post a link, with or without the host looking it up',
     args: [

@@ -16,7 +16,9 @@ export enum PluginSlot {
   TOPBAR_RIGHT = 'topbar_right',
   FULL_SCREEN = 'full_screen',
   USER_SETTINGS = 'user_settings',
-  VOICE_CONTROLS = 'voice_controls'
+  VOICE_CONTROLS = 'voice_controls',
+  VOICE_USER_CARD = 'voice_user_card',
+  VOICE_USER_ROW = 'voice_user_row'
 }
 
 /**
@@ -51,6 +53,16 @@ export type TPluginSlotProps = {
    * buttons, and only rendered while connected
    */
   [PluginSlot.VOICE_CONTROLS]: { channelId: number };
+  /**
+   * the user whose card it is, in the voice channel being viewed. renders in
+   * the top left corner of every card, so keep it small
+   */
+  [PluginSlot.VOICE_USER_CARD]: { channelId: number; userId: number };
+  /**
+   * the user of the row under a voice channel in the sidebar. renders once per
+   * user in every voice channel, so keep it cheap
+   */
+  [PluginSlot.VOICE_USER_ROW]: { channelId: number; userId: number };
 };
 
 type EmptyProps = Record<string, never>;

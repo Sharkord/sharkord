@@ -2,8 +2,8 @@ import { isTextPresentation } from '@/components/tiptap-input/helpers';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { cn } from '@/lib/utils';
 import type { TFile } from '@sharkord/shared';
-import { gitHubEmojis } from '@tiptap/extension-emoji';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { findGitHubEmoji } from './helpers';
 
 type TEmojiProps = {
   emoji: string;
@@ -15,11 +15,8 @@ type TEmojiProps = {
 const Emoji = memo(
   ({ emoji, file, className, nativeEmojiClassName }: TEmojiProps) => {
     const gitHubEmoji = useMemo(
-      () =>
-        gitHubEmojis.find(
-          (e) => e.name === emoji || e.shortcodes.includes(emoji)
-        ),
-      [emoji]
+      () => findGitHubEmoji(emoji, file),
+      [emoji, file]
     );
 
     const [failed, setFailed] = useState(false);

@@ -13,6 +13,7 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
   type Ref
 } from 'react';
 import { ChannelReference } from './extensions/channel-reference';
@@ -35,7 +36,7 @@ import {
   MENTION_STORAGE_KEY,
   MentionSuggestion
 } from './extensions/mentions/suggestion';
-import type { TEmojiItem } from './helpers';
+import { mergeEmojis, type TEmojiItem } from './helpers';
 
 type TTiptapInputHandle = {
   insertEmoji: (emoji: TEmojiItem) => void;
@@ -81,6 +82,10 @@ const TiptapInput = memo(
     onArrowUpRef.current = onArrowUp;
 
     const customEmojis = useCustomEmojis();
+    // tiptap 3 hands out a fresh copy of an extension's options on every read,
+    // so assigning a new list later never reaches setEmoji or the rendering.
+    // both hold this one array instead, and it is updated in place
+    const [emojis] = useState(() => mergeEmojis(gitHubEmojis, customEmojis));
     const users = useFilteredUsers();
     const roles = useRoles();
     const channels = useReferenceableChannels();
@@ -107,7 +112,7 @@ const TiptapInput = memo(
           }
         }),
         Emoji.configure({
-          emojis: [...gitHubEmojis, ...customEmojis],
+          emojis,
           enableEmoticons: true,
           suggestion: EmojiSuggestion,
           HTMLAttributes: {
@@ -140,7 +145,7 @@ const TiptapInput = memo(
       }
 
       return exts;
-    }, [customEmojis, commands, users, roles, channels]);
+    }, [emojis, commands, users, roles, channels]);
 
     const editor = useEditor({
       extensions,
@@ -232,29 +237,12 @@ const TiptapInput = memo(
       focus: () => editor?.commands.focus()
     }));
 
-    // keep emoji storage in sync with custom emojis from the store
-    // this ensures newly added emojis appear in autocomplete without refreshing the app
+    // keeps newly added custom emojis usable without refreshing the app
     useEffect(() => {
-      if (editor) {
-        const allEmojis = [...gitHubEmojis, ...customEmojis];
+      const allEmojis = mergeEmojis(gitHubEmojis, customEmojis);
 
-        if (editor.storage.emoji) {
-          editor.storage.emoji.emojis = allEmojis;
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const applyEmojiOptions = (extension: any) => {
-          const typed = extension;
-
-          if (typed.name === 'emoji' && typed.options) {
-            typed.options.emojis = allEmojis;
-          }
-        };
-
-        editor.extensionManager.extensions.forEach(applyEmojiOptions);
-        editor.options.extensions?.forEach(applyEmojiOptions);
-      }
-    }, [editor, customEmojis]);
+      emojis.splice(0, emojis.length, ...allEmojis);
+    }, [emojis, customEmojis]);
 
     // keep commands storage in sync with plugin commands from the store
     useEffect(() => {

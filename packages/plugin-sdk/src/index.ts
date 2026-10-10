@@ -497,6 +497,13 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
      * The handle closes itself when the producer ends or the plugin unloads.
      */
     consume(options: TConsumeOptions): Promise<TVoiceConsumerHandle>;
+    /**
+     * Floats an emoji on a user's card, the same animation as a reaction they
+     * sent themselves, and indistinguishable from one. Takes a unicode emoji,
+     * a shortcode or a custom emoji name. Throws when the user is not in the
+     * channel or the emoji is unknown.
+     */
+    react(channelId: number, userId: number, emoji: string): Promise<void>;
   };
 
   /**

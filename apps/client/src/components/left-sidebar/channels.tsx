@@ -153,6 +153,7 @@ const Voice = memo(
               <VoiceUser
                 key={user.id}
                 userId={user.id}
+                channelId={channel.id}
                 user={user}
                 isOwnChannel={isOwnChannel}
               />

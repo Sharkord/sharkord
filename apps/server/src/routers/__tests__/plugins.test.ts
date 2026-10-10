@@ -2355,6 +2355,81 @@ describe('plugins router', () => {
     });
   });
 
+  describe('voice reactions', () => {
+    // the seeded voice channel
+    const VOICE_CHANNEL_ID = 2;
+
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const react = async (args: Record<string, unknown>) => {
+      const { caller } = await initTest();
+
+      return caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'voice-react',
+        args: { channelId: VOICE_CHANNEL_ID, userId: 2, emoji: '🔊', ...args }
+      });
+    };
+
+    const withRuntime = async (run: () => Promise<void>) => {
+      const runtime = new VoiceRuntime(VOICE_CHANNEL_ID);
+
+      runtime.addUser(2, { micMuted: false, soundMuted: false });
+
+      try {
+        await run();
+      } finally {
+        await runtime.destroy();
+      }
+    };
+
+    test('should float the emoji on the user card like their own reaction', async () => {
+      await withRuntime(async () => {
+        const received: unknown[] = [];
+
+        const subscription = pubsub
+          .subscribe(ServerEvents.USER_VOICE_REACTION)
+          .subscribe({ next: (event) => received.push(event) });
+
+        await react({});
+
+        subscription.unsubscribe();
+
+        expect(received).toEqual([
+          { channelId: VOICE_CHANNEL_ID, userId: 2, emoji: '🔊' }
+        ]);
+      });
+    });
+
+    test('should refuse a user who is not in the channel', async () => {
+      await withRuntime(async () => {
+        await expect(react({ userId: 5 })).rejects.toThrow(
+          'User is not in this voice channel.'
+        );
+      });
+    });
+
+    test('should refuse a channel with no one in it', async () => {
+      await expect(react({})).rejects.toThrow('Voice runtime not found');
+    });
+
+    test('should refuse an unknown emoji', async () => {
+      await withRuntime(async () => {
+        await expect(react({ emoji: 'not an emoji' })).rejects.toThrow(
+          'Unknown emoji'
+        );
+      });
+    });
+
+    test('should refuse an empty emoji', async () => {
+      await withRuntime(async () => {
+        await expect(react({ emoji: '' })).rejects.toThrow(
+          'Emoji must be between'
+        );
+      });
+    });
+  });
+
   describe('capability permissions', () => {
     const MODERATOR_ROLE = 4;
     const MEMBER_ROLE = 2;
