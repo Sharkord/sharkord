@@ -510,5 +510,9 @@
   "pluginStorageDesc": "Místo zabrané soubory, které pluginy připojily ke zprávám. Po odstranění pluginu zůstávají u zprávy.",
   "pluginStorageUninstalled": "Odinstalováno",
   "pluginStorageFiles_one": "{{count}} soubor",
-  "pluginStorageFiles_other": "{{count}} souborů"
+  "pluginStorageFiles_other": "{{count}} souborů",
+  "soundsLabel": "Zvuky oznámení",
+  "soundsDesc": "Přehrávat zvuky pro zprávy, aktivitu v hlasových kanálech a změny připojení.",
+  "messageSentSoundLabel": "Zvuk odeslané zprávy",
+  "messageSentSoundDesc": "Přehrát zvuk, když odešlete zprávu."
 }

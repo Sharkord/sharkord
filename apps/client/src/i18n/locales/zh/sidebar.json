@@ -73,5 +73,7 @@
   "failedDeleteCategory": "删除分类失败",
   "userVolume": "用户音量",
   "microphone": "麦克风",
-  "noiseSuppression": "降噪"
+  "noiseSuppression": "降噪",
+  "muteChannel": "静音频道",
+  "unmuteChannel": "取消静音频道"
 }

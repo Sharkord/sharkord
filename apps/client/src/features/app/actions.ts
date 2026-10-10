@@ -3,6 +3,7 @@ import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
 import {
   LocalStorageKey,
   setLocalStorageItem,
+  setLocalStorageItemAsJSON,
   setLocalStorageItemBool
 } from '@/helpers/storage';
 import { i18n } from '@/i18n';
@@ -12,6 +13,7 @@ import { toast } from 'sonner';
 import { markChannelAsRead, setInfo } from '../server/actions';
 import { store } from '../store';
 import {
+  mutedChannelIdsSelector,
   pluginSlotDebugSelector,
   voiceChatChannelIdSelector,
   voiceChatSidebarDataSelector
@@ -192,6 +194,29 @@ export const setBrowserNotificationsForReplies = async (enabled: boolean) => {
   setLocalStorageItemBool(
     LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_REPLIES,
     enabled
+  );
+};
+
+export const setNotificationSounds = (enabled: boolean) => {
+  store.dispatch(appSliceActions.setNotificationSounds(enabled));
+  setLocalStorageItemBool(LocalStorageKey.NOTIFICATION_SOUNDS, enabled);
+};
+
+export const setMessageSentSound = (enabled: boolean) => {
+  store.dispatch(appSliceActions.setMessageSentSound(enabled));
+  setLocalStorageItemBool(LocalStorageKey.MESSAGE_SENT_SOUND, enabled);
+};
+
+export const toggleChannelMuted = (channelId: number) => {
+  const mutedChannelIds = mutedChannelIdsSelector(store.getState());
+  const nextMutedChannelIds = mutedChannelIds.includes(channelId)
+    ? mutedChannelIds.filter((id) => id !== channelId)
+    : [...mutedChannelIds, channelId];
+
+  store.dispatch(appSliceActions.setMutedChannelIds(nextMutedChannelIds));
+  setLocalStorageItemAsJSON(
+    LocalStorageKey.MUTED_CHANNEL_IDS,
+    nextMutedChannelIds
   );
 };
 

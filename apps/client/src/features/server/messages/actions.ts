@@ -3,6 +3,7 @@ import {
   browserNotificationsForMentionsSelector,
   browserNotificationsForRepliesSelector,
   browserNotificationsSelector,
+  isChannelMutedSelector,
   threadSidebarDataSelector
 } from '@/features/app/selectors';
 import { store } from '@/features/store';
@@ -144,8 +145,9 @@ export const addMessages = (
     );
 
     const isWindowHidden = document?.hidden;
+    const isChannelMuted = isChannelMutedSelector(state, channelId);
 
-    if (!isFromOwnUser) {
+    if (!isFromOwnUser && !isChannelMuted) {
       const isThreadReply = !!targetMessage.parentMessageId;
 
       if (isThreadReply) {

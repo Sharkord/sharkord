@@ -120,5 +120,6 @@
   "reconnectingAttempt": "Pokus {{attempt}} z {{total}}",
   "reconnectingHint": "Tvoje relace zůstává zachována. Aplikace se sama obnoví, jakmile server odpoví.",
   "reconnectingAbort": "Přestat se připojovat",
-  "removeImage": "Odebrat obrázek"
+  "removeImage": "Odebrat obrázek",
+  "channelMutedTooltip": "Kanál je ztlumen, kliknutím zrušíte ztlumení"
 }

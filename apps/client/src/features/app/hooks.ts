@@ -1,3 +1,4 @@
+import type { IRootState } from '@/features/store';
 import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import {
@@ -8,11 +9,14 @@ import {
   browserNotificationsForRepliesSelector,
   browserNotificationsSelector,
   isAutoConnectingSelector,
+  isChannelMutedSelector,
   isShiftHeldSelector,
   loadingPluginsSelector,
   messageJumpTargetSelector,
+  messageSentSoundSelector,
   modViewOpenSelector,
   modViewUserIdSelector,
+  notificationSoundsSelector,
   pluginSlotDebugSelector,
   selectedDmChannelIdSelector,
   threadSidebarDataSelector,
@@ -61,3 +65,11 @@ export const useVoiceChatSidebar = () =>
 export const usePluginSlotDebug = () => useSelector(pluginSlotDebugSelector);
 
 export const useIsShiftHeld = () => useSelector(isShiftHeldSelector);
+
+export const useNotificationSounds = () =>
+  useSelector(notificationSoundsSelector);
+
+export const useMessageSentSound = () => useSelector(messageSentSoundSelector);
+
+export const useIsChannelMuted = (channelId: number) =>
+  useSelector((state: IRootState) => isChannelMutedSelector(state, channelId));
