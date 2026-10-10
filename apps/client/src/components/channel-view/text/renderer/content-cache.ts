@@ -1,11 +1,13 @@
 import { isEmojiOnlyMessage, type TJoinedMessage } from '@sharkord/shared';
 import parse, { type DOMNode } from 'html-react-parser';
 import type { ReactNode } from 'react';
+import { extractYoutubeVideoIds } from './helpers';
 import { readFromCache, writeToCache } from './lru-cache';
 import { serializer } from './serializer';
 
 const parsedMessageCache = new Map<string, ReactNode>();
 const emojiOnlyCache = new Map<string, boolean>();
+const youtubeVideoIdsCache = new Map<string, string[]>();
 
 const hashContent = (content: string) => {
   let hash = 0;
@@ -50,4 +52,18 @@ const getIsEmojiOnly = (message: TJoinedMessage) => {
   return emojiOnly;
 };
 
-export { getIsEmojiOnly, getParsedMessageHtml };
+// embeds render below the message instead of replacing the link to avoid having invalid html
+const getYoutubeVideoIds = (message: TJoinedMessage) => {
+  const cacheKey = getMessageContentCacheKey(message);
+  const cached = readFromCache(youtubeVideoIdsCache, cacheKey);
+
+  if (cached !== undefined) return cached;
+
+  const youtubeVideoIds = extractYoutubeVideoIds(message.content ?? '');
+
+  writeToCache(youtubeVideoIdsCache, cacheKey, youtubeVideoIds);
+
+  return youtubeVideoIds;
+};
+
+export { getIsEmojiOnly, getParsedMessageHtml, getYoutubeVideoIds };
