@@ -15,7 +15,9 @@ import {
   type ChannelPermission,
   type Permission
 } from '@sharkord/shared';
+import path from 'path';
 import { channelUserCan } from '../db/queries/channels';
+import { getFileNameById } from '../db/queries/files';
 import { getMessage } from '../db/queries/messages';
 import {
   deletePluginUserData,
@@ -25,6 +27,7 @@ import {
 import { getRole, getRoles, userCan } from '../db/queries/roles';
 import { getPublicUserById, getPublicUsers } from '../db/queries/users';
 import { getPluginVoiceRuntime } from '../helpers/get-plugin-voice-runtime';
+import { PUBLIC_PATH } from '../helpers/paths';
 import { VoiceRuntime } from '../runtimes/voice';
 import { pubsub } from '../utils/pubsub';
 import { consumeVoiceProducer } from './actions/consume-voice-producer';
@@ -39,7 +42,8 @@ import {
 import { setPluginMessagePinned } from './actions/pin-plugin-message';
 import {
   pushToAllPluginClients,
-  pushToPluginClients
+  pushToPluginClients,
+  pushToVoiceChannelPluginClients
 } from './actions/push-to-plugin-clients';
 import {
   addPluginReaction,
@@ -287,7 +291,9 @@ const createContext = (deps: TContextDependencies): PluginContext => {
         pushToPluginClients(pluginId, [userId], data),
       toUsers: (userIds: number[], data: unknown) =>
         pushToPluginClients(pluginId, userIds, data),
-      toAll: (data: unknown) => pushToAllPluginClients(pluginId, data)
+      toAll: (data: unknown) => pushToAllPluginClients(pluginId, data),
+      toVoiceChannel: (channelId: number, data: unknown) =>
+        pushToVoiceChannelPluginClients(pluginId, channelId, data)
     },
     userData: {
       get: async (userId: number) => getPluginUserData(pluginId, userId),
@@ -311,6 +317,13 @@ const createContext = (deps: TContextDependencies): PluginContext => {
       update: async (channelId, values) =>
         updatePluginChannel(channelId, values),
       delete: async (channelId) => deletePluginChannel(channelId)
+    },
+    files: {
+      getPath: async (fileId: number) => {
+        const file = await getFileNameById(fileId);
+
+        return file ? path.join(PUBLIC_PATH, file.name) : undefined;
+      }
     },
     categories: {
       list: async () => listPluginCategories(),

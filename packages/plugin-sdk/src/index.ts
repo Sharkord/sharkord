@@ -686,10 +686,20 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
     remove(userId: number, roleId: number): Promise<void>;
   };
 
+  /**
+   * Sends data to the plugin's client code, received with `usePush` or
+   * `actions.onPush`. Addressed on the server: a user who is not a recipient
+   * never receives it.
+   */
   push: {
     toUser(userId: number, data: TContractPush<C>): void;
     toUsers(userIds: number[], data: TContractPush<C>): void;
     toAll(data: TContractPush<C>): void;
+    /**
+     * Everyone connected to the voice channel right now. Reaches nobody when
+     * the channel is empty, rather than throwing like the `voice` methods.
+     */
+    toVoiceChannel(channelId: number, data: TContractPush<C>): void;
   };
 
   userData: {
@@ -720,6 +730,23 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
       values: { name?: string; topic?: string | null; private?: boolean }
     ): Promise<void>;
     delete(channelId: number): Promise<void>;
+  };
+
+  /**
+   * Files the server stores: message attachments, emojis, avatars. A message
+   * from `messages.get` lists its attachments in `files`, and their ids are
+   * what this takes.
+   */
+  files: {
+    /**
+     * Where the file lives on disk, or `undefined` for an id that does not
+     * exist. Read it with `fs`, or hand the path to ffmpeg.
+     *
+     * The file is the host's: never write to it, and copy it into `dataPath`
+     * if you need it to outlive the message, since deleting the message
+     * deletes the file.
+     */
+    getPath(fileId: number): Promise<string | undefined>;
   };
 
   /** Categories are what a channel needs to be created in. */
