@@ -83,6 +83,13 @@ describe('getIpBlockKey', () => {
     expect(getIpBlockKey('1.2.3.4')).toBe('1.2.3.4');
   });
 
+  test('normalizes mapped ipv4 addresses without grouping different clients', () => {
+    expect(getIpBlockKey('::ffff:1.2.3.4')).toBe('1.2.3.4');
+    expect(getIpBlockKey('::ffff:9.9.9.9')).toBe('9.9.9.9');
+    expect(getIpBlockKey('0:0:0:0:0:ffff:102:304')).toBe('1.2.3.4');
+    expect(getIpBlockKey('::1')).toBe('::/64');
+  });
+
   test('groups ipv6 addresses by their /64', () => {
     expect(getIpBlockKey('2001:db8:1:2:aaaa::1')).toBe('2001:db8:1:2::/64');
     expect(getIpBlockKey('2001:db8:1:2:bbbb::2')).toBe('2001:db8:1:2::/64');

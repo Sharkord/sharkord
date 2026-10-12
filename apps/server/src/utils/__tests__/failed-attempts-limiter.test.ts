@@ -117,4 +117,74 @@ describe('FailedAttemptsLimiter', () => {
 
     expect(limiter.size).toBeLessThanOrEqual(10);
   });
+
+  test('keeps an existing failure count when the table is full', () => {
+    const limiter = createLimiter(2);
+
+    failTimes(limiter, 'ip-a', 2);
+    limiter.recordFailure('ip-b');
+
+    expect(limiter.recordFailure('ip-a')).toBe(1_000);
+    expect(limiter.getRetryAfterMs('ip-a')).toBe(1_000);
+    expect(limiter.size).toBe(2);
+  });
+
+  test('evicts an unblocked key instead of the oldest active block', () => {
+    const limiter = createLimiter(2);
+
+    failTimes(limiter, 'ip-a', 3);
+    limiter.recordFailure('ip-b');
+
+    expect(failTimes(limiter, 'ip-c', 3)).toBe(1_000);
+    expect(limiter.getRetryAfterMs('ip-a')).toBe(1_000);
+    expect(limiter.getRetryAfterMs('ip-c')).toBe(1_000);
+    expect(limiter.size).toBe(2);
+  });
+
+  test('reclaims expired entries before evicting a live failure count', () => {
+    const limiter = createLimiter(2);
+
+    failTimes(limiter, 'ip-a', 3);
+    limiter.recordFailure('ip-b');
+    now += 2_000;
+    limiter.recordFailure('ip-a');
+
+    limiter.recordFailure('ip-c');
+
+    expect(failTimes(limiter, 'ip-a', 2)).toBe(2_000);
+    expect(limiter.size).toBe(2);
+  });
+
+  test('preserves blocks and skips new keys when every entry is blocked', () => {
+    const limiter = createLimiter(2);
+
+    failTimes(limiter, 'ip-a', 3);
+    failTimes(limiter, 'ip-b', 3);
+
+    expect(failTimes(limiter, 'ip-c', 3)).toBe(0);
+    expect(limiter.getRetryAfterMs('ip-a')).toBe(1_000);
+    expect(limiter.getRetryAfterMs('ip-b')).toBe(1_000);
+    expect(limiter.getRetryAfterMs('ip-c')).toBe(0);
+    expect(limiter.size).toBe(2);
+
+    now += 1_000;
+
+    expect(failTimes(limiter, 'ip-c', 3)).toBe(1_000);
+    expect(limiter.getRetryAfterMs('ip-c')).toBe(1_000);
+    expect(limiter.size).toBe(2);
+  });
+
+  test('resets an expired existing entry without evicting another key', () => {
+    const limiter = createLimiter(2);
+
+    limiter.recordFailure('ip-a');
+    now += 1_000;
+    limiter.recordFailure('ip-b');
+    now += 1_000;
+
+    expect(limiter.recordFailure('ip-a')).toBe(0);
+    expect(failTimes(limiter, 'ip-b', 2)).toBe(1_000);
+    expect(failTimes(limiter, 'ip-a', 2)).toBe(1_000);
+    expect(limiter.size).toBe(2);
+  });
 });

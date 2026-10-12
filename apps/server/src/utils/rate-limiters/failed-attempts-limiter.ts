@@ -50,9 +50,14 @@ class FailedAttemptsLimiter {
 
     const now = Date.now();
 
-    this.gc(now);
-
     let entry = this.entries.get(key);
+
+    if (!entry) {
+      this.gc(now);
+
+      // preserve active blocks when no slot is available for a new key
+      if (this.entries.size >= this.maxEntries) return 0;
+    }
 
     if (!entry || this.getForgetAt(entry) <= now) {
       entry = { failures: 0, windowResetAt: 0, blockedUntil: 0, strikes: 0 };
@@ -106,10 +111,12 @@ class FailedAttemptsLimiter {
 
     if (this.entries.size < this.maxEntries) return;
 
-    const oldestKey = this.entries.keys().next().value;
+    for (const [key, entry] of this.entries) {
+      if (entry.blockedUntil <= now) {
+        this.entries.delete(key);
 
-    if (oldestKey !== undefined) {
-      this.entries.delete(oldestKey);
+        return;
+      }
     }
   };
 }

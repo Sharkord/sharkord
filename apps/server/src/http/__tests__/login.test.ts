@@ -23,7 +23,9 @@ const failLoginUntilLocked = async (
   headers?: Record<string, string>
 ) => {
   for (let i = 0; i < config.rateLimiters.loginLockout.maxFailures; i++) {
-    advanceTime(config.rateLimiters.login.windowMs);
+    if (i % config.rateLimiters.login.maxRequests === 0) {
+      advanceTime(config.rateLimiters.login.windowMs);
+    }
 
     const response = await login(
       'testowner',

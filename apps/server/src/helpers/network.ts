@@ -101,10 +101,13 @@ const isPublicIp = (ip: string): boolean => {
 const isPrivateIP = (ip: string): boolean => !isPublicIp(ip);
 
 const getIpBlockKey = (ip: string): string => {
-  const cidr = `${ip}/64`;
+  if (!ipaddr.isValid(ip)) return ip;
 
-  if (!ipaddr.IPv6.isValidCIDR(cidr)) return ip;
+  const address = ipaddr.process(ip);
 
+  if (address.kind() === 'ipv4') return address.toString();
+
+  const cidr = `${address.toString()}/64`;
   const network = ipaddr.IPv6.networkAddressFromCIDR(cidr);
 
   return `${network.toString()}/64`;
