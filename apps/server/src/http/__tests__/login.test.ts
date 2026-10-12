@@ -1,5 +1,5 @@
 import { ChannelType, sha256 } from '@sharkord/shared';
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
 import { and, eq, inArray } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { login } from '../../__tests__/helpers';
@@ -17,6 +17,34 @@ import {
   userRoles,
   users
 } from '../../db/schema';
+
+const failLoginUntilLocked = async (
+  advanceTime: (ms: number) => void,
+  headers?: Record<string, string>
+) => {
+  for (let i = 0; i < config.rateLimiters.loginLockout.maxFailures; i++) {
+    advanceTime(config.rateLimiters.login.windowMs);
+
+    const response = await login(
+      'testowner',
+      'wrongpassword',
+      undefined,
+      headers
+    );
+
+    expect(response.status).toBe(400);
+  }
+};
+
+const mockNow = () => {
+  let now = Date.now();
+
+  spyOn(Date, 'now').mockImplementation(() => now);
+
+  return (ms: number) => {
+    now += ms;
+  };
+};
 
 describe('/login', () => {
   test('should successfully login with valid credentials', async () => {
@@ -510,6 +538,79 @@ describe('/login', () => {
     );
 
     expect(differentClient.status).not.toBe(429);
+  });
+
+  test('should lock an ip out after repeated failed logins, even with the right password', async () => {
+    const advanceTime = mockNow();
+
+    await failLoginUntilLocked(advanceTime);
+
+    const locked = await login('testowner', 'password123');
+
+    expect(locked.status).toBe(429);
+    expect(Number(locked.headers.get('retry-after'))).toBe(
+      config.rateLimiters.loginLockout.blockMs / 1000
+    );
+
+    const data = await locked.json();
+
+    expect(data).toHaveProperty(
+      'error',
+      'Too many failed login attempts. Please try again later.'
+    );
+
+    advanceTime(config.rateLimiters.loginLockout.blockMs);
+
+    const afterBlock = await login('testowner', 'password123');
+
+    expect(afterBlock.status).toBe(200);
+  });
+
+  test('should double the lockout for an ip that keeps failing', async () => {
+    const advanceTime = mockNow();
+
+    await failLoginUntilLocked(advanceTime);
+
+    advanceTime(config.rateLimiters.loginLockout.blockMs);
+
+    await failLoginUntilLocked(advanceTime);
+
+    const locked = await login('testowner', 'password123');
+
+    expect(locked.status).toBe(429);
+    expect(Number(locked.headers.get('retry-after'))).toBe(
+      (config.rateLimiters.loginLockout.blockMs * 2) / 1000
+    );
+  });
+
+  test('should not lock out other clients behind a trusted proxy', async () => {
+    const advanceTime = mockNow();
+
+    await failLoginUntilLocked(advanceTime, { 'x-forwarded-for': '5.5.5.5' });
+
+    const lockedClient = await login('testowner', 'password123', undefined, {
+      'x-forwarded-for': '5.5.5.5'
+    });
+    const otherClient = await login('testowner', 'password123', undefined, {
+      'x-forwarded-for': '6.6.6.6'
+    });
+
+    expect(lockedClient.status).toBe(429);
+    expect(otherClient.status).toBe(200);
+  });
+
+  test('should lock out the whole ipv6 /64 of a failing client', async () => {
+    const advanceTime = mockNow();
+
+    await failLoginUntilLocked(advanceTime, {
+      'x-forwarded-for': '2001:db8:1:2::1'
+    });
+
+    const sameNetwork = await login('testowner', 'password123', undefined, {
+      'x-forwarded-for': '2001:db8:1:2:ffff::9'
+    });
+
+    expect(sameNetwork.status).toBe(429);
   });
 
   test('should fail with missing identity', async () => {

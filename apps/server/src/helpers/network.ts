@@ -100,4 +100,14 @@ const isPublicIp = (ip: string): boolean => {
 
 const isPrivateIP = (ip: string): boolean => !isPublicIp(ip);
 
-export { getPrivateIp, getPublicIp, isPrivateIP, isPublicIp };
+const getIpBlockKey = (ip: string): string => {
+  const cidr = `${ip}/64`;
+
+  if (!ipaddr.IPv6.isValidCIDR(cidr)) return ip;
+
+  const network = ipaddr.IPv6.networkAddressFromCIDR(cidr);
+
+  return `${network.toString()}/64`;
+};
+
+export { getIpBlockKey, getPrivateIp, getPublicIp, isPrivateIP, isPublicIp };
