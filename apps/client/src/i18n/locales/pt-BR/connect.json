@@ -1,5 +1,7 @@
 {
   "identityLabel": "Identidade",
+  "tooManyAttempts": "Muitas tentativas. Tente novamente mais tarde.",
+  "invalidCredentials": "Credenciais inválidas",
   "identityHelp": "Um identificador único para sua conta neste servidor. Você pode usar o que preferir, como um endereço de e-mail ou um nome de usuário. Isso não será compartilhado publicamente.",
   "passwordLabel": "Senha",
   "autoLoginLabel": "Entrar automaticamente",

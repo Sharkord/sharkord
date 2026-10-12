@@ -1,5 +1,7 @@
 {
   "identityLabel": "Identita",
+  "tooManyAttempts": "Troppi tentativi. Riprova più tardi.",
+  "invalidCredentials": "Credenziali non valide",
   "identityHelp": "Un identificatore univoco per il tuo account su questo server. Puoi usare cio che preferisci, ad esempio un indirizzo email o un nome utente. Non verra condiviso pubblicamente.",
   "passwordLabel": "Password",
   "autoLoginLabel": "Accesso automatico",
