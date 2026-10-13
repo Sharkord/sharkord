@@ -30,6 +30,11 @@ export type TPluginStoreState = {
    * audio a plugin plays for the call should stay silent while it is true
    */
   ownVoiceState: TVoiceUserState;
+  /**
+   * whether the user turned hotkeys on in their settings. hide controls for
+   * binding keys while it is false: a bound key does nothing then
+   */
+  hotkeysEnabled: boolean;
   publicSettings: TPublicServerSettings | undefined;
 };
 
@@ -78,11 +83,63 @@ export type TPluginUserData<
   save: (data: T) => Promise<void>;
 };
 
+/**
+ * `down` when the key goes down and `up` when it is released. A `press` action
+ * only ever receives `down`.
+ */
+export type TPluginHotkeyPhase = 'down' | 'up';
+
+export type TPluginHotkeyMode = 'press' | 'hold';
+
+/**
+ * The text a key picker shows, already translated.
+ */
+export type THotkeyInputLabels = {
+  unbound: string;
+  recording: string;
+  clear: string;
+  hint: string;
+};
+
+/**
+ * An action the user can bind a key to. `id` is unique inside your plugin and
+ * the host namespaces it for you. `label` is what the user reads in the Hotkeys
+ * settings. `mode` is `press` (default) to fire once per key press, or `hold` to
+ * also report the release.
+ */
+export type TPluginHotkeyAction = {
+  id: string;
+  label: string;
+  mode?: TPluginHotkeyMode;
+};
+
+/**
+ * Everything one bindable key needs. Spread it into the `HotkeyInput` from
+ * `@sharkord/ui` to get a control that records the key. `value` is the stored
+ * combo, `display` is the same key as the user should read it, both
+ * `undefined` while unbound. `labels` are already translated, `onChange` returns
+ * a message when the key is refused and nothing when it is taken, `onClear`
+ * removes the bind, and `error` is a problem Sharkord found with the bind.
+ */
+export type TPluginHotkeyBinding = {
+  value: string | undefined;
+  display: string | undefined;
+  labels: THotkeyInputLabels;
+  error: string | undefined;
+  onChange: (combo: string) => string | undefined;
+  onClear: () => void;
+};
+
 export type TPluginHooks = {
   usePush: (handler: (data: unknown) => void) => void;
   useUserData: () => TPluginUserData;
   useCanUse: (type: PluginCapabilityType, name: string) => boolean;
   usePlaybackDeviceId: () => string | undefined;
+  useHotkey: (
+    action: TPluginHotkeyAction,
+    handler: (phase: TPluginHotkeyPhase) => void
+  ) => void;
+  useHotkeyBinding: (id: string) => TPluginHotkeyBinding;
 };
 
 /**

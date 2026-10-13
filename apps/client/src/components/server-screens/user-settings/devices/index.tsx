@@ -1,7 +1,9 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
+import { HotkeyBindGroup } from '@/components/hotkey-input/hotkey-bind-group';
 import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { getVoiceControlsBridge } from '@/components/voice-provider/controls-bridge';
+import { useHotkeysEnabled } from '@/features/app/hooks';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { usePublicServerSettings } from '@/features/server/hooks';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
@@ -14,6 +16,7 @@ import {
   getRestrictOwnAudioSupport,
   getSuppressLocalAudioPlaybackSupport
 } from '@/helpers/get-display-media-support';
+import { CoreHotkeyAction } from '@/lib/hotkeys/actions';
 import {
   NoiseSuppression,
   Resolution,
@@ -53,6 +56,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useMicrophoneTest } from './hooks/use-microphone-test';
 import { useWebcamTest } from './hooks/use-webcam-test';
+import { MicModeGroup } from './mic-mode-group';
 import { MicrophoneTestLevelBar } from './microphone-test-level-bar';
 import { ResolutionFpsControl } from './resolution-fps-control';
 import { RestrictOwnAudioAlert } from './restrict-own-audio-alert';
@@ -66,6 +70,7 @@ const Devices = memo(() => {
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const settings = usePublicServerSettings();
   const ownVoiceState = useOwnVoiceState();
+  const hotkeysEnabled = useHotkeysEnabled();
   const {
     devices,
     saveDevices,
@@ -300,6 +305,13 @@ const Devices = memo(() => {
           </Select>
         </Group>
 
+        {hotkeysEnabled && (
+          <HotkeyBindGroup
+            actionId={CoreHotkeyAction.TOGGLE_SOUND}
+            label={t('hotkeyToggleSound')}
+          />
+        )}
+
         <Group label={t('microphoneLabel')}>
           <Select
             onValueChange={(value) => onChange('microphoneId', value)}
@@ -395,6 +407,8 @@ const Devices = memo(() => {
             </p>
           )}
         </Group>
+
+        {hotkeysEnabled && <MicModeGroup />}
 
         <Group label={t('microphoneTestLabel')}>
           <div className="flex items-center gap-2">

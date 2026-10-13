@@ -2,16 +2,10 @@ import { getErrorMessage } from '@sharkord/shared';
 import { isDebug } from './is-debug';
 import { pushVoiceDebugEvent } from './voice-debug';
 
-const logVoice = (message: string, data?: object) => {
-  pushVoiceDebugEvent('voice', message, data);
-
-  console.log('%c[VOICE]', 'color: salmon; font-weight: bold;', message, data);
-};
-
-const logVoiceWarn = (message: string, data?: object) => {
-  pushVoiceDebugEvent('warn', message, data);
-
-  console.warn('%c[VOICE]', 'color: orange; font-weight: bold;', message, data);
+type TLogger = {
+  info: (message: string, data?: object) => void;
+  warn: (message: string, data?: object) => void;
+  error: (message: string, error: unknown, data?: object) => void;
 };
 
 const getErrorCode = (error: unknown): string | undefined => {
@@ -20,27 +14,47 @@ const getErrorCode = (error: unknown): string | undefined => {
   return typeof code === 'string' ? code : undefined;
 };
 
-const logVoiceError = (message: string, error: unknown, data?: object) => {
-  const payload = {
-    ...data,
-    error: getErrorMessage(error),
-    code: getErrorCode(error)
+const getStyle = (color: string) => `color: ${color}; font-weight: bold;`;
+
+const createLogger = (
+  label: string,
+  color: string,
+  bufferPrefix = ''
+): TLogger => {
+  const tag = `%c[${label}]`;
+
+  return {
+    info: (message, data) => {
+      pushVoiceDebugEvent('voice', `${bufferPrefix}${message}`, data);
+
+      console.log(tag, getStyle(color), message, data);
+    },
+    warn: (message, data) => {
+      pushVoiceDebugEvent('warn', `${bufferPrefix}${message}`, data);
+
+      console.warn(tag, getStyle('orange'), message, data);
+    },
+    error: (message, error, data) => {
+      const payload = {
+        ...data,
+        error: getErrorMessage(error),
+        code: getErrorCode(error)
+      };
+
+      pushVoiceDebugEvent('error', `${bufferPrefix}${message}`, payload);
+
+      console.error(tag, getStyle('red'), message, payload);
+    }
   };
-
-  pushVoiceDebugEvent('error', message, payload);
-
-  console.error(
-    '%c[VOICE]',
-    'color: red; font-weight: bold;',
-    message,
-    payload
-  );
 };
+
+const voiceLogger = createLogger('VOICE', 'salmon');
+const bridgeLogger = createLogger('BRIDGE', 'teal', '[bridge] ');
 
 const logDebug = (...args: unknown[]) => {
   if (isDebug()) {
-    console.log('%c[DEBUG]', 'color: lightblue; font-weight: bold;', ...args);
+    console.log('%c[DEBUG]', getStyle('lightblue'), ...args);
   }
 };
 
-export { logDebug, logVoice, logVoiceError, logVoiceWarn };
+export { bridgeLogger, logDebug, voiceLogger };

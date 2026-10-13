@@ -1,8 +1,9 @@
+import { usePushToTalkActive } from '@/features/app/hooks';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { SoundType } from '@/features/server/types';
 import { updateOwnVoiceState } from '@/features/server/voice/actions';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
-import { logVoice, logVoiceError } from '@/helpers/browser-logger';
+import { voiceLogger } from '@/helpers/browser-logger';
 import { playSound } from '@/helpers/sounds';
 import { getTRPCClient } from '@/lib/trpc';
 import { getTrpcError } from '@sharkord/shared';
@@ -44,6 +45,7 @@ const useVoiceControls = ({
   const { t } = useTranslation('common');
   const ownVoiceState = useOwnVoiceState();
   const currentVoiceChannelId = useCurrentVoiceChannelId();
+  const isPushToTalk = usePushToTalkActive();
 
   const isTogglingMic = useRef(false);
   const isTogglingSound = useRef(false);
@@ -63,7 +65,7 @@ const useVoiceControls = ({
 
     isTogglingMic.current = true;
 
-    logVoice('mic: toggle requested', { micMuted: nextMicMuted });
+    voiceLogger.info('mic: toggle requested', { micMuted: nextMicMuted });
 
     const previousPendingMicRestoreState = pendingMicRestoreStateRef.current;
 
@@ -72,11 +74,14 @@ const useVoiceControls = ({
     }
 
     updateOwnVoiceState({ micMuted: nextMicMuted });
-    playSound(
-      nextMicMuted
-        ? SoundType.OWN_USER_MUTED_MIC
-        : SoundType.OWN_USER_UNMUTED_MIC
-    );
+
+    if (!isPushToTalk) {
+      playSound(
+        nextMicMuted
+          ? SoundType.OWN_USER_MUTED_MIC
+          : SoundType.OWN_USER_UNMUTED_MIC
+      );
+    }
 
     if (!currentVoiceChannelId) {
       isTogglingMic.current = false;
@@ -97,7 +102,7 @@ const useVoiceControls = ({
       pendingMicRestoreStateRef.current = previousPendingMicRestoreState;
 
       updateOwnVoiceState({ micMuted: !nextMicMuted });
-      logVoiceError('mic: toggle failed, rolled back', error, {
+      voiceLogger.error('mic: toggle failed, rolled back', error, {
         micMuted: nextMicMuted
       });
       toast.error(getTrpcError(error, t('common:failedUpdateMicrophoneState')));
@@ -110,7 +115,8 @@ const useVoiceControls = ({
     ownVoiceState.soundMuted,
     startMicStream,
     currentVoiceChannelId,
-    localAudioStream
+    localAudioStream,
+    isPushToTalk
   ]);
 
   const toggleSound = useCallback(async () => {
@@ -120,7 +126,7 @@ const useVoiceControls = ({
     const nextSoundMuted = !ownVoiceState.soundMuted;
     const trpc = getTRPCClient();
 
-    logVoice('sound: toggle requested', { soundMuted: nextSoundMuted });
+    voiceLogger.info('sound: toggle requested', { soundMuted: nextSoundMuted });
     const previousPendingMicRestoreState = pendingMicRestoreStateRef.current;
     const nextVoiceState: TVoiceStateUpdate = {
       soundMuted: nextSoundMuted
@@ -176,7 +182,7 @@ const useVoiceControls = ({
     } catch (error) {
       pendingMicRestoreStateRef.current = previousPendingMicRestoreState;
       updateOwnVoiceState(rollbackVoiceState);
-      logVoiceError('sound: toggle failed, rolled back', error, {
+      voiceLogger.error('sound: toggle failed, rolled back', error, {
         soundMuted: nextSoundMuted
       });
       toast.error(getTrpcError(error, t('common:failedUpdateSoundState')));
@@ -200,7 +206,7 @@ const useVoiceControls = ({
     const newState = !ownVoiceState.webcamEnabled;
     const trpc = getTRPCClient();
 
-    logVoice('webcam: toggle requested', { enabled: newState });
+    voiceLogger.info('webcam: toggle requested', { enabled: newState });
 
     updateOwnVoiceState({ webcamEnabled: newState });
 
@@ -229,7 +235,7 @@ const useVoiceControls = ({
         // ignore
       }
 
-      logVoiceError('webcam: toggle failed, rolled back', error, {
+      voiceLogger.error('webcam: toggle failed, rolled back', error, {
         enabled: newState
       });
       toast.error(getTrpcError(error, t('common:failedUpdateWebcamState')));
@@ -251,7 +257,7 @@ const useVoiceControls = ({
     const newState = !ownVoiceState.sharingScreen;
     const trpc = getTRPCClient();
 
-    logVoice('screen: toggle requested', { sharing: newState });
+    voiceLogger.info('screen: toggle requested', { sharing: newState });
 
     updateOwnVoiceState({ sharingScreen: newState });
 
@@ -294,7 +300,7 @@ const useVoiceControls = ({
         // ignore
       }
 
-      logVoiceError('screen: toggle failed, rolled back', error, {
+      voiceLogger.error('screen: toggle failed, rolled back', error, {
         sharing: newState
       });
       toast.error(

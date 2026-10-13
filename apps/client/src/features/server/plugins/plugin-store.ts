@@ -10,6 +10,7 @@ import { selectedChannelIdSelector } from '../channels/selectors';
 import { mapStateToPluginState } from '../selectors';
 import { onPluginPush } from './push-registry';
 import { usePluginCanUse } from './use-plugin-can-use';
+import { usePluginHotkey, usePluginHotkeyBinding } from './use-plugin-hotkey';
 import { usePluginPush } from './use-plugin-push';
 import { usePluginUserData } from './use-plugin-user-data';
 
@@ -78,7 +79,9 @@ const pluginStore: TPluginStore = {
     useUserData: usePluginUserData,
     usePush: usePluginPush,
     useCanUse: usePluginCanUse,
-    usePlaybackDeviceId: usePluginPlaybackDeviceId
+    usePlaybackDeviceId: usePluginPlaybackDeviceId,
+    useHotkey: usePluginHotkey,
+    useHotkeyBinding: usePluginHotkeyBinding
   }
 };
 

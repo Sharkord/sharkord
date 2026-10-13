@@ -8,16 +8,19 @@ import {
   browserNotificationsForMentionsSelector,
   browserNotificationsForRepliesSelector,
   browserNotificationsSelector,
+  hotkeysEnabledSelector,
   isAutoConnectingSelector,
   isChannelMutedSelector,
   isShiftHeldSelector,
   loadingPluginsSelector,
   messageJumpTargetSelector,
   messageSentSoundSelector,
+  micModeSelector,
   modViewOpenSelector,
   modViewUserIdSelector,
   notificationSoundsSelector,
   pluginSlotDebugSelector,
+  pushToTalkActiveSelector,
   selectedDmChannelIdSelector,
   threadSidebarDataSelector,
   voiceChatSidebarDataSelector
@@ -40,6 +43,12 @@ export const useThreadSidebar = () => useSelector(threadSidebarDataSelector);
 
 export const useAutoJoinLastChannel = () =>
   useSelector(autoJoinLastChannelSelector);
+
+export const useHotkeysEnabled = () => useSelector(hotkeysEnabledSelector);
+
+export const usePushToTalkActive = () => useSelector(pushToTalkActiveSelector);
+
+export const useMicMode = () => useSelector(micModeSelector);
 
 export const useSelectedDmChannelId = () =>
   useSelector(selectedDmChannelIdSelector);

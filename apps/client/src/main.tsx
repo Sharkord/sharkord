@@ -9,7 +9,8 @@ import { StoreDebug } from './components/debug/store-debug.tsx';
 import { DevicesProvider } from './components/devices-provider/index.tsx';
 import { DialogsProvider } from './components/dialogs/index.tsx';
 import { GlobalErrorBoundary } from './components/error-boundary/global-error-boundary.tsx';
-import { HotkeysController } from './components/hotkeys-controller/index.tsx';
+import { HotkeyBridgeController } from './components/hotkey-bridge-controller/index.tsx';
+import { KeyboardController } from './components/keyboard-controller/index.tsx';
 import { PluginsController } from './components/plugins-controller/index.tsx';
 import { AutoLoginController } from './components/routing/auto-login-controller.tsx';
 import { Routing } from './components/routing/index.tsx';
@@ -38,7 +39,8 @@ createRoot(document.getElementById('root')!).render(
         <Toaster />
         <Provider store={store}>
           <StoreDebug />
-          <HotkeysController />
+          <KeyboardController />
+          <HotkeyBridgeController />
           <DevicesProvider>
             <PluginsController />
             <DialogsProvider />

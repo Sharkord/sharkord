@@ -6,6 +6,9 @@ import type {
   TPluginActions,
   TPluginComponentsMapBySlotId,
   TPluginContract,
+  TPluginHotkeyAction,
+  TPluginHotkeyBinding,
+  TPluginHotkeyPhase,
   TPluginStore,
   TPluginStoreState,
   TPluginTabs,
@@ -89,6 +92,39 @@ const useCanUseCommand = <C extends TPluginContract = TPluginContract>(
 const usePlaybackDeviceId = () => store.hooks.usePlaybackDeviceId();
 
 /**
+ * Registers an action the user can bind a key to, in Sharkord's Hotkeys
+ * settings or with a `HotkeyInput` from `@sharkord/ui`. Keys work while the game or another app has
+ * focus, when the user runs the Sharkord Bridge. The action exists while the
+ * component using the hook is mounted, so a soundboard calls it once per sound.
+ *
+ * ```ts
+ * useHotkey({ id: `play-${sound.id}`, label: sound.name }, () => play(sound));
+ * ```
+ *
+ * `mode: 'hold'` also reports the release (`phase === 'up'`).
+ */
+const useHotkey = (
+  action: TPluginHotkeyAction,
+  handler: (phase: TPluginHotkeyPhase) => void
+) => store.hooks.useHotkey(action, handler);
+
+/**
+ * Everything one of your actions needs to be bound: the key as the user should
+ * read it (`display`, `undefined` while unbound) and the props of the
+ * `HotkeyInput` from `@sharkord/ui`, so a control to record the key is one line.
+ * It records, refuses keys the browser or OS keep and keys another action
+ * already uses, and applies as soon as the user picks.
+ *
+ * ```tsx
+ * const binding = useHotkeyBinding(id);
+ *
+ * return <HotkeyInput {...binding} />;
+ * ```
+ */
+const useHotkeyBinding = (id: string): TPluginHotkeyBinding =>
+  store.hooks.useHotkeyBinding(id);
+
+/**
  * Reads a slice of Sharkord's state and re-renders when it changes.
  *
  * The selector must return a stable reference for unchanged state: reading a
@@ -103,9 +139,18 @@ export {
   createCallAction,
   useCanUseAction,
   useCanUseCommand,
+  useHotkey,
+  useHotkeyBinding,
   usePlaybackDeviceId,
   usePush,
   useStoreSelector,
   useUserData
 };
-export type { TPluginComponentsMapBySlotId, TPluginStoreState, TPluginTabs };
+export type {
+  TPluginComponentsMapBySlotId,
+  TPluginHotkeyAction,
+  TPluginHotkeyBinding,
+  TPluginHotkeyPhase,
+  TPluginStoreState,
+  TPluginTabs
+};

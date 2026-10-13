@@ -1,10 +1,11 @@
 import {
+  getLocalStorageItem,
   getLocalStorageItemAsJSON,
   getLocalStorageItemAsNumber,
   getLocalStorageItemBool,
   LocalStorageKey
 } from '@/helpers/storage';
-import type { TDevices, TMessageJumpToTarget } from '@/types';
+import { MicMode, type TDevices, type TMessageJumpToTarget } from '@/types';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 export interface TAppState {
@@ -18,6 +19,8 @@ export interface TAppState {
   threadParentMessageId: number | undefined;
   threadChannelId: number | undefined;
   autoJoinLastChannel: boolean;
+  micMode: MicMode;
+  hotkeysEnabled: boolean;
   selectedDmChannelId: number | undefined;
   browserNotifications: boolean;
   browserNotificationsForMentions: boolean;
@@ -45,6 +48,14 @@ const initialState: TAppState = {
   threadChannelId: undefined,
   autoJoinLastChannel: getLocalStorageItemBool(
     LocalStorageKey.AUTO_JOIN_LAST_CHANNEL,
+    false
+  ),
+  micMode:
+    getLocalStorageItem(LocalStorageKey.MIC_MODE) === MicMode.PUSH_TO_TALK
+      ? MicMode.PUSH_TO_TALK
+      : MicMode.OPEN,
+  hotkeysEnabled: getLocalStorageItemBool(
+    LocalStorageKey.HOTKEYS_ENABLED,
     false
   ),
   selectedDmChannelId: undefined,
@@ -127,6 +138,12 @@ export const appSlice = createSlice({
     },
     setAutoJoinLastChannel: (state, action: PayloadAction<boolean>) => {
       state.autoJoinLastChannel = action.payload;
+    },
+    setMicMode: (state, action: PayloadAction<MicMode>) => {
+      state.micMode = action.payload;
+    },
+    setHotkeysEnabled: (state, action: PayloadAction<boolean>) => {
+      state.hotkeysEnabled = action.payload;
     },
     setIsAutoConnecting: (state, action: PayloadAction<boolean>) => {
       state.isAutoConnecting = action.payload;

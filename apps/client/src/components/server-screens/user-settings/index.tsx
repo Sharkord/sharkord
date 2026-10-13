@@ -4,6 +4,7 @@ import { Permission, PluginSlot } from '@sharkord/shared';
 import {
   Bell,
   Headphones,
+  Keyboard,
   KeyRound,
   Package,
   SlidersHorizontal,
@@ -15,6 +16,7 @@ import type { TServerScreenBaseProps } from '../screens';
 import { SettingsShell } from '../settings-shell';
 import type { TSettingsEntry } from '../settings-shell/types';
 import { Devices } from './devices';
+import { Hotkeys } from './hotkeys';
 import { Notifications } from './notifications';
 import { Others } from './others';
 import { Password } from './password';
@@ -40,6 +42,12 @@ const UserSettings = memo(({ close }: TUserSettingsProps) => {
         label: t('devicesTab'),
         icon: Headphones,
         content: <Devices />
+      },
+      {
+        id: 'hotkeys',
+        label: t('hotkeysTab'),
+        icon: Keyboard,
+        content: <Hotkeys />
       },
       {
         id: 'password',

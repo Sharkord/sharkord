@@ -1,3 +1,4 @@
+import { MicMode } from '@/types';
 import { createSelector } from '@reduxjs/toolkit';
 import { createCachedSelector } from 're-reselect';
 import type { IRootState } from '../store';
@@ -26,6 +27,14 @@ export const threadChannelIdSelector = (state: IRootState) =>
 
 export const autoJoinLastChannelSelector = (state: IRootState) =>
   state.app.autoJoinLastChannel;
+
+export const hotkeysEnabledSelector = (state: IRootState) =>
+  state.app.hotkeysEnabled;
+
+export const pushToTalkActiveSelector = (state: IRootState) =>
+  state.app.hotkeysEnabled && state.app.micMode === MicMode.PUSH_TO_TALK;
+
+export const micModeSelector = (state: IRootState) => state.app.micMode;
 
 export const selectedDmChannelIdSelector = (state: IRootState) =>
   state.app.selectedDmChannelId;
