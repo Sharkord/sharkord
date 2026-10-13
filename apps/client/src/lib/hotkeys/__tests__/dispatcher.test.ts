@@ -98,11 +98,28 @@ describe('hotkey dispatcher', () => {
 
     dispatcher.registerAction(MUTE, (phase) => calls.push(phase));
     dispatcher.setSource(fake.source);
+    fake.connect();
 
     fake.press(MUTE.id, 'down');
     fake.press(MUTE.id, 'down');
     fake.press(MUTE.id, 'up');
     fake.press(MUTE.id, 'down');
+
+    expect(calls).toEqual(['down', 'down']);
+  });
+
+  it('fires every press when the source cannot report releases', () => {
+    const dispatcher = createHotkeyDispatcher();
+    const fake = createFakeSource();
+    const calls: THotkeyPhase[] = [];
+
+    dispatcher.registerAction(MUTE, (phase) => calls.push(phase));
+    dispatcher.setSource(fake.source);
+    fake.connect(false);
+
+    fake.press(MUTE.id, 'down');
+    fake.press(MUTE.id, 'down');
+    fake.press(MUTE.id, 'up');
 
     expect(calls).toEqual(['down', 'down']);
   });
@@ -114,6 +131,7 @@ describe('hotkey dispatcher', () => {
 
     dispatcher.registerAction(PTT, (phase) => calls.push(phase));
     dispatcher.setSource(fake.source);
+    fake.connect();
 
     fake.press(PTT.id, 'up');
     fake.press(PTT.id, 'down');
@@ -135,6 +153,7 @@ describe('hotkey dispatcher', () => {
       second++;
     });
     dispatcher.setSource(fake.source);
+    fake.connect();
 
     fake.press(MUTE.id, 'down');
 
@@ -181,6 +200,18 @@ describe('hotkey dispatcher', () => {
     dispatcher.setBinding(MUTE.id);
 
     expect(dispatcher.getState().bindings).toEqual([]);
+  });
+
+  it('refuses a combo bound to an action that is not registered right now', () => {
+    const dispatcher = createHotkeyDispatcher();
+
+    dispatcher.setBinding(PTT.id, 'F13');
+    dispatcher.registerAction(MUTE, () => {});
+
+    expect(dispatcher.setBinding(MUTE.id, 'F13')).toBe(PTT.id);
+    expect(dispatcher.getState().bindings).toEqual([
+      { actionId: PTT.id, combo: 'F13' }
+    ]);
   });
 
   it('only hands binds of registered actions to the source', () => {
@@ -243,6 +274,7 @@ describe('hotkey dispatcher', () => {
 
     dispatcher.registerAction(PTT, (phase) => calls.push(phase));
     dispatcher.setSource(fake.source);
+    fake.connect();
     fake.press(PTT.id, 'down');
     dispatcher.setSource(undefined);
 

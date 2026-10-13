@@ -261,6 +261,22 @@ describe('bridge source', () => {
     expect(FakeWebSocket.instances).toHaveLength(1);
   });
 
+  it('reconnects while connected when the pairing token changed', () => {
+    const { source } = connectSource();
+    const first = lastSocket();
+
+    first.receive({ type: 'ready', v: 1, capabilities: {} });
+    setLocalStorageItem(LocalStorageKey.HOTKEY_BRIDGE_TOKEN, 'new-token');
+    source.reconnect();
+
+    expect(first.closed).toBe(true);
+    expect(FakeWebSocket.instances).toHaveLength(2);
+
+    lastSocket().open();
+
+    expect(lastSocket().sent[0]).toMatchObject({ token: 'new-token' });
+  });
+
   it('stops for good when another tab replaces it', () => {
     connectSource();
 

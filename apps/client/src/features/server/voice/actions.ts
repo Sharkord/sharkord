@@ -1,4 +1,5 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
+import { pushToTalkSelectedSelector } from '@/features/app/selectors';
 import { store } from '@/features/store';
 import { voiceLogger } from '@/helpers/browser-logger';
 import { playSound } from '@/helpers/sounds';
@@ -209,7 +210,14 @@ export const joinVoice = async (
 
   setCurrentVoiceChannelId(channelId);
 
-  const { micMuted, soundMuted } = ownVoiceStateSelector(state);
+  const { micMuted: storedMicMuted, soundMuted } = ownVoiceStateSelector(state);
+  const pushToTalkSelected = pushToTalkSelectedSelector(state);
+
+  const micMuted = storedMicMuted || pushToTalkSelected;
+
+  if (micMuted !== storedMicMuted) {
+    updateOwnVoiceState({ micMuted });
+  }
 
   voiceLogger.info('session: join requested', {
     channelId,

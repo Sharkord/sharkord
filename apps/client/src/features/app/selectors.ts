@@ -31,7 +31,7 @@ export const autoJoinLastChannelSelector = (state: IRootState) =>
 export const hotkeysEnabledSelector = (state: IRootState) =>
   state.app.hotkeysEnabled;
 
-export const pushToTalkActiveSelector = (state: IRootState) =>
+export const pushToTalkSelectedSelector = (state: IRootState) =>
   state.app.hotkeysEnabled && state.app.micMode === MicMode.PUSH_TO_TALK;
 
 export const micModeSelector = (state: IRootState) => state.app.micMode;

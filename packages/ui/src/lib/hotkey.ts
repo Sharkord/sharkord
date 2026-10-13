@@ -65,8 +65,11 @@ const comboFromKeyboardEvent = (event: KeyboardEvent) => {
   return withModifiers(event, event.code);
 };
 
-const isReservedCombo = (combo: string) =>
-  RESERVED_COMBOS.has(combo) || combo.split('+').includes('meta');
+const isReservedCombo = (combo: string) => {
+  const keys = combo.split('+');
+
+  return RESERVED_COMBOS.has(combo) || keys.includes('meta');
+};
 
 const formatKey = (key: string) => {
   const modifier = MODIFIER_LABELS[key];

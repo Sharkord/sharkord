@@ -92,6 +92,7 @@ const createBridgeSource = ({
   let replaced = false;
   let latestBindings: THotkeyBinding[] = [];
   let attempts = 0;
+  let activeToken: string | null = null;
 
   const emit = (event: THotkeySourceEvent) => {
     listeners.forEach((listener) => listener(event));
@@ -202,6 +203,8 @@ const createBridgeSource = ({
   const connect = () => {
     const token = getLocalStorageItem(LocalStorageKey.HOTKEY_BRIDGE_TOKEN);
 
+    activeToken = token;
+
     // nothing to authenticate with: saving a token in the settings tries again
     if (!token) {
       bridgeLogger.warn('no pairing token, paste it in Settings, Hotkeys');
@@ -285,7 +288,14 @@ const createBridgeSource = ({
   };
 
   const reconnect = () => {
-    if (listeners.size === 0 || status === 'connected') {
+    if (listeners.size === 0) {
+      return;
+    }
+
+    const token = getLocalStorageItem(LocalStorageKey.HOTKEY_BRIDGE_TOKEN);
+
+    // a working connection is kept unless it was paired with another token
+    if (status === 'connected' && token === activeToken) {
       return;
     }
 

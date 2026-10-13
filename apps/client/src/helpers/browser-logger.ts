@@ -14,23 +14,27 @@ const getErrorCode = (error: unknown): string | undefined => {
   return typeof code === 'string' ? code : undefined;
 };
 
+type TLogSink = typeof pushVoiceDebugEvent;
+
 const getStyle = (color: string) => `color: ${color}; font-weight: bold;`;
+
+const skipSink: TLogSink = () => {};
 
 const createLogger = (
   label: string,
   color: string,
-  bufferPrefix = ''
+  sink: TLogSink = skipSink
 ): TLogger => {
   const tag = `%c[${label}]`;
 
   return {
     info: (message, data) => {
-      pushVoiceDebugEvent('voice', `${bufferPrefix}${message}`, data);
+      sink('voice', message, data);
 
       console.log(tag, getStyle(color), message, data);
     },
     warn: (message, data) => {
-      pushVoiceDebugEvent('warn', `${bufferPrefix}${message}`, data);
+      sink('warn', message, data);
 
       console.warn(tag, getStyle('orange'), message, data);
     },
@@ -41,15 +45,15 @@ const createLogger = (
         code: getErrorCode(error)
       };
 
-      pushVoiceDebugEvent('error', `${bufferPrefix}${message}`, payload);
+      sink('error', message, payload);
 
       console.error(tag, getStyle('red'), message, payload);
     }
   };
 };
 
-const voiceLogger = createLogger('VOICE', 'salmon');
-const bridgeLogger = createLogger('BRIDGE', 'teal', '[bridge] ');
+const voiceLogger = createLogger('VOICE', 'salmon', pushVoiceDebugEvent);
+const bridgeLogger = createLogger('BRIDGE', 'teal');
 
 const logDebug = (...args: unknown[]) => {
   if (isDebug()) {

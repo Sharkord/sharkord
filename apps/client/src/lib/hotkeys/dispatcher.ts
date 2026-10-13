@@ -127,7 +127,13 @@ const createHotkeyDispatcher = () => {
       return;
     }
 
-    if (phase === 'down') {
+    // without key releases a down never clears, so tracking it would swallow
+    // every press after the first
+    if (!capabilities.keyUp) {
+      if (phase === 'up') {
+        return;
+      }
+    } else if (phase === 'down') {
       if (held.has(actionId)) {
         return;
       }
@@ -255,11 +261,11 @@ const createHotkeyDispatcher = () => {
 
   const setBinding = (actionId: string, combo?: string) => {
     const owner = combo
-      ? findBindingOwner(bindings, [...actions.values()], actionId, combo)
+      ? findBindingOwner(bindings, actionId, combo)
       : undefined;
 
     if (owner) {
-      return owner.id;
+      return owner.actionId;
     }
 
     const others = bindings.filter((bind) => bind.actionId !== actionId);

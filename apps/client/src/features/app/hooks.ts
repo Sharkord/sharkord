@@ -1,4 +1,5 @@
 import type { IRootState } from '@/features/store';
+import { useHotkeyState } from '@/hooks/use-hotkeys';
 import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import {
@@ -20,7 +21,7 @@ import {
   modViewUserIdSelector,
   notificationSoundsSelector,
   pluginSlotDebugSelector,
-  pushToTalkActiveSelector,
+  pushToTalkSelectedSelector,
   selectedDmChannelIdSelector,
   threadSidebarDataSelector,
   voiceChatSidebarDataSelector
@@ -46,7 +47,12 @@ export const useAutoJoinLastChannel = () =>
 
 export const useHotkeysEnabled = () => useSelector(hotkeysEnabledSelector);
 
-export const usePushToTalkActive = () => useSelector(pushToTalkActiveSelector);
+export const usePushToTalkActive = () => {
+  const pushToTalkSelected = useSelector(pushToTalkSelectedSelector);
+  const { status, capabilities } = useHotkeyState();
+
+  return pushToTalkSelected && status === 'connected' && capabilities.keyUp;
+};
 
 export const useMicMode = () => useSelector(micModeSelector);
 
