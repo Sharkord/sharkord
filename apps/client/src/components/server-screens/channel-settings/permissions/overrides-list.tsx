@@ -1,7 +1,7 @@
 import { SettingsSection } from '@/components/server-screens/settings-shell/section';
+import { UserAvatar } from '@/components/user-avatar';
 import { useRoleById } from '@/features/server/roles/hooks';
 import { useUserById } from '@/features/server/users/hooks';
-import { getInitialsFromName } from '@/helpers/get-initials-from-name';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import type {
@@ -9,7 +9,7 @@ import type {
   TChannelUserPermission
 } from '@sharkord/shared';
 import { getTrpcError } from '@sharkord/shared';
-import { Avatar, AvatarFallback, Separator } from '@sharkord/ui';
+import { Separator } from '@sharkord/ui';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -77,11 +77,11 @@ const UserItem = memo(
         )}
       >
         <div className="flex items-center gap-2">
-          <Avatar className="h-5 w-5">
-            <AvatarFallback className="text-[10px]">
-              {getInitialsFromName(user.name)}
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            userId={userId}
+            className="h-5 w-5"
+            showStatusBadge={false}
+          />
           <span>{user.name}</span>
         </div>
       </button>
