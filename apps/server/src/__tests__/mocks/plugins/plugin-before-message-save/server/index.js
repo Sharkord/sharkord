@@ -39,6 +39,32 @@ const onLoad = (ctx) => {
     }
   });
 
+  ctx.hooks.onBeforeReaction(async ({ emoji }) => {
+    if (emoji === 'no_entry') {
+      return { reject: 'That reaction is not allowed' };
+    }
+  });
+
+  ctx.hooks.onBeforeProfileUpdate(async ({ name }) => {
+    if (name.includes('rejectme')) {
+      return { reject: 'That name is not allowed' };
+    }
+
+    if (name.includes('renameme')) {
+      return { update: { name: 'renamed-by-plugin', bio: 'set by plugin' } };
+    }
+
+    if (name.includes('blankme')) {
+      return { update: { name: '   ' } };
+    }
+  });
+
+  ctx.hooks.onBeforeChannelDelete(async ({ name }) => {
+    if (name.includes('protected')) {
+      return { reject: 'This channel is protected' };
+    }
+  });
+
   ctx.hooks.onBeforeLogin(async ({ identity }) => {
     if (identity === 'blockedidentity') {
       return { reject: 'This account is not allowed to sign in' };

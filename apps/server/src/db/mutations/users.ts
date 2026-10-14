@@ -145,6 +145,10 @@ const createUser = async ({
 
   eventBus.emit('user:created', { userId, username });
 
+  if (inviteCode) {
+    eventBus.emit('invite:used', { code: inviteCode, userId });
+  }
+
   return userId;
 };
 

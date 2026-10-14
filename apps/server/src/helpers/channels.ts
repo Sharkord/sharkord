@@ -3,6 +3,7 @@ import {
   ChannelType,
   type TBeforeChannelCreatePayload,
   type TBeforeChannelCreateUpdate,
+  type TBeforeChannelDeletePayload,
   type TChannel
 } from '@sharkord/shared';
 import { desc, eq } from 'drizzle-orm';
@@ -207,6 +208,28 @@ const updateChannel = async (
 
 const deleteChannel = async (channelId: number, userId: number | null) => {
   await assertNotDirectMessage(channelId, 'delete');
+
+  const channel = await db
+    .select({ name: channels.name, type: channels.type })
+    .from(channels)
+    .where(eq(channels.id, channelId))
+    .limit(1)
+    .get();
+
+  invariant(channel, {
+    code: 'NOT_FOUND',
+    message: 'Channel not found'
+  });
+
+  await runHook<TBeforeChannelDeletePayload, never>({
+    entries: pluginManager.getHooks('beforeChannelDelete'),
+    payload: {
+      channelId,
+      name: channel.name,
+      type: channel.type,
+      userId: userId ?? undefined
+    }
+  });
 
   const removedChannel = await db
     .delete(channels)

@@ -326,7 +326,10 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       userId: ctx.userId,
       pluginId: null,
       content: targetContent,
-      textContent: plainText
+      textContent: plainText,
+      parentMessageId: message.parentMessageId,
+      replyToMessageId: message.replyToMessageId,
+      fileIds: savedFileIds
     });
 
     return message.id;

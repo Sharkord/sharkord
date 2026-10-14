@@ -3,9 +3,12 @@ import type {
   CommandDefinition,
   TActionContract,
   TBeforeChannelCreateHook,
+  TBeforeChannelDeleteHook,
   TBeforeFileSaveHook,
   TBeforeLoginHook,
   TBeforeMessageSaveHook,
+  TBeforeProfileUpdateHook,
+  TBeforeReactionHook,
   TBeforeVoiceJoinHook,
   TCategory,
   TChannel,
@@ -31,7 +34,8 @@ import type {
   TPluginTab,
   TPluginTabs,
   TStreamQualityLayer,
-  TVoiceProducerInfo
+  TVoiceProducerInfo,
+  TVoiceUserState
 } from '@sharkord/shared';
 import {
   ChannelPermission,
@@ -148,6 +152,7 @@ export type ServerEvent =
   | 'voice:runtime_closed'
   | 'voice:producer_added'
   | 'voice:producer_removed'
+  | 'voice:state_updated'
   | 'setting:set'
   | 'reaction:added'
   | 'reaction:removed'
@@ -169,7 +174,10 @@ export type ServerEvent =
   | 'role:created'
   | 'role:updated'
   | 'role:deleted'
-  | 'user:updated';
+  | 'user:updated'
+  | 'invite:created'
+  | 'invite:used'
+  | 'emoji:created';
 
 /** What each event hands its handler. */
 export interface EventPayloads {
@@ -189,6 +197,10 @@ export interface EventPayloads {
     userId: number;
     channelId: number;
   };
+  /**
+   * `parentMessageId` is set for a thread reply and `replyToMessageId` for an
+   * inline reply. `fileIds` are the attachments, for `files.getPath`.
+   */
   'message:created': {
     messageId: number;
     channelId: number;
@@ -196,6 +208,9 @@ export interface EventPayloads {
     pluginId: string | null;
     content: string;
     textContent: string;
+    parentMessageId: number | null;
+    replyToMessageId: number | null;
+    fileIds: number[];
   };
   'message:updated': {
     messageId: number;
@@ -307,6 +322,22 @@ export interface EventPayloads {
     userId: number;
     username: string;
   };
+  'invite:created': {
+    inviteId: number;
+    code: string;
+    creatorId: number;
+    roleId: number | null;
+  };
+  /** someone registered with the invite, who is now `userId` */
+  'invite:used': {
+    code: string;
+    userId: number;
+  };
+  'emoji:created': {
+    emojiId: number;
+    name: string;
+    userId: number;
+  };
   'voice:runtime_initialized': {
     channelId: number;
   };
@@ -331,6 +362,15 @@ export interface EventPayloads {
     kind: StreamKind;
     producerId: string;
   };
+  /**
+   * A user in the channel muted, deafened, or turned their camera or screen
+   * share on or off. `state` is the whole state after the change.
+   */
+  'voice:state_updated': {
+    channelId: number;
+    userId: number;
+    state: TVoiceUserState;
+  };
   'setting:set': {
     key: string;
     value: unknown;
@@ -343,7 +383,7 @@ export interface EventPayloads {
 type SettingValueType<T extends TPluginSettingDefinition> =
   T['type'] extends 'string'
     ? string
-    : T['type'] extends 'number'
+    : T['type'] extends 'number' | 'channel' | 'role'
       ? number
       : T['type'] extends 'boolean'
         ? boolean
@@ -622,6 +662,9 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
     onBeforeChannelCreate(handler: TBeforeChannelCreateHook): void;
     onBeforeVoiceJoin(handler: TBeforeVoiceJoinHook): void;
     onBeforeLogin(handler: TBeforeLoginHook): void;
+    onBeforeReaction(handler: TBeforeReactionHook): void;
+    onBeforeProfileUpdate(handler: TBeforeProfileUpdateHook): void;
+    onBeforeChannelDelete(handler: TBeforeChannelDeleteHook): void;
   };
 
   /**
@@ -683,12 +726,26 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
   };
 
   /**
-   * Role membership. Plugins may never touch the owner role or the roles of
-   * anyone who holds it.
+   * Roles and their membership. Plugins may never touch the owner role or the
+   * roles of anyone who holds it.
    */
   roles: {
     list(): Promise<TJoinedRole[]>;
     get(roleId: number): Promise<TJoinedRole | undefined>;
+    /**
+     * White unless `color` says otherwise, and with no permissions unless
+     * `permissions` grants some. A server holds at most 100 roles.
+     */
+    create(input: {
+      name: string;
+      color?: string;
+      permissions?: Permission[];
+    }): Promise<TJoinedRole>;
+    /** `permissions` replaces the role's whole list, it does not add to it */
+    update(
+      roleId: number,
+      values: { name?: string; color?: string; permissions?: Permission[] }
+    ): Promise<TJoinedRole>;
     assign(userId: number, roleId: number): Promise<void>;
     remove(userId: number, roleId: number): Promise<void>;
   };
@@ -707,6 +764,29 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
      * the channel is empty, rather than throwing like the `voice` methods.
      */
     toVoiceChannel(channelId: number, data: TContractPush<C>): void;
+  };
+
+  /**
+   * Server-wide key value storage, owned by the plugin and removed with it. The
+   * place for polls, reminders, counters and anything else that is not about
+   * one user. Values are JSON, so anything `JSON.stringify` keeps survives.
+   *
+   * Keep keys structured (`poll:42`, `reminder:1700000000:7`) so `list` can
+   * read one kind back by its prefix.
+   */
+  storage: {
+    get<T = unknown>(key: string): Promise<T | undefined>;
+    set(key: string, value: unknown): Promise<void>;
+    delete(key: string): Promise<void>;
+    /**
+     * Ordered by key. `limit` defaults to 100, and `after` is the last key of
+     * the previous page, so a second call passes the last key it received.
+     */
+    list(options?: {
+      prefix?: string;
+      limit?: number;
+      after?: string;
+    }): Promise<{ key: string; value: unknown }[]>;
   };
 
   userData: {
@@ -786,6 +866,7 @@ export interface UnloadPluginContext extends Pick<
   | 'error'
   | 'voice'
   | 'messages'
+  | 'storage'
   | 'ui'
 > {}
 
@@ -872,9 +953,12 @@ export type {
   CommandDefinition,
   TActionContract,
   TBeforeChannelCreateHook,
+  TBeforeChannelDeleteHook,
   TBeforeFileSaveHook,
   TBeforeLoginHook,
   TBeforeMessageSaveHook,
+  TBeforeProfileUpdateHook,
+  TBeforeReactionHook,
   TBeforeVoiceJoinHook,
   TCategory,
   TChannel,

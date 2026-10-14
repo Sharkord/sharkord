@@ -1,3 +1,4 @@
+import type { EventPayloads } from '@sharkord/plugin-sdk';
 import {
   ChannelPermission,
   DEFAULT_MESSAGES_LIMIT,
@@ -18,6 +19,7 @@ import {
   rolePermissions,
   settings
 } from '../../db/schema';
+import { eventBus } from '../../plugins/event-bus';
 
 describe('messages router', () => {
   test('should throw when user lacks permissions (edit - not own message)', async () => {
@@ -2624,5 +2626,74 @@ describe('messages router', () => {
         files: [uploaded.id]
       })
     ).rejects.toThrow('File uploads are disabled on this server');
+  });
+
+  describe('message:created payload', () => {
+    const listen = () => {
+      const seen: EventPayloads['message:created'][] = [];
+
+      const unregister = eventBus.register(
+        'test-plugin',
+        'message:created',
+        (payload) => {
+          seen.push(payload);
+        }
+      );
+
+      return { seen, unregister };
+    };
+
+    test('should carry the thread parent and the attachments', async () => {
+      const { caller, mockedToken } = await initTest();
+
+      const response = await uploadFile(
+        new File(['file one'], 'one.txt', { type: 'text/plain' }),
+        mockedToken
+      );
+      const temp = (await response.json()) as { id: string };
+
+      const { seen, unregister } = listen();
+
+      const messageId = await caller.messages.send({
+        channelId: 1,
+        content: 'Thread reply with a file',
+        files: [temp.id],
+        parentMessageId: 1
+      });
+
+      await Bun.sleep(0);
+      unregister();
+
+      const attached = await tdb
+        .select({ fileId: messageFiles.fileId })
+        .from(messageFiles)
+        .where(eq(messageFiles.messageId, messageId));
+
+      expect(seen).toHaveLength(1);
+      expect(seen[0]!.parentMessageId).toBe(1);
+      expect(seen[0]!.replyToMessageId).toBeNull();
+      expect(seen[0]!.fileIds).toEqual(attached.map(({ fileId }) => fileId));
+      expect(seen[0]!.fileIds).toHaveLength(1);
+    });
+
+    test('should carry the inline reply target', async () => {
+      const { caller } = await initTest();
+      const { seen, unregister } = listen();
+
+      await caller.messages.send({
+        channelId: 1,
+        content: 'Inline reply',
+        files: [],
+        replyToMessageId: 2
+      });
+
+      await Bun.sleep(0);
+      unregister();
+
+      expect(seen).toHaveLength(1);
+      expect(seen[0]!.parentMessageId).toBeNull();
+      expect(seen[0]!.replyToMessageId).toBe(2);
+      expect(seen[0]!.fileIds).toEqual([]);
+    });
   });
 });

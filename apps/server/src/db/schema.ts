@@ -582,6 +582,17 @@ const pluginUserData = sqliteTable(
   ]
 );
 
+const pluginStorage = sqliteTable(
+  'plugin_storage',
+  {
+    pluginId: text('plugin_id').notNull(),
+    key: text('key').notNull(),
+    value: text('value', { mode: 'json' }).notNull(),
+    updatedAt: integer('updated_at').notNull()
+  },
+  (t) => [primaryKey({ columns: [t.pluginId, t.key] })]
+);
+
 const pluginCapabilities = sqliteTable(
   'plugin_capabilities',
   {
@@ -634,6 +645,7 @@ export {
   pluginCapabilities,
   pluginCapabilityRoles,
   pluginData,
+  pluginStorage,
   pluginUserData,
   rolePermissions,
   roles,

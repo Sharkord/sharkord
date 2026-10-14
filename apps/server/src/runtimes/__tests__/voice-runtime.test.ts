@@ -301,3 +301,58 @@ describe('VoiceRuntime producer events', () => {
     ]);
   });
 });
+
+describe('VoiceRuntime state events', () => {
+  test('should announce the whole state after a change', async () => {
+    const runtime = createRuntime();
+    const seen: unknown[] = [];
+
+    runtime.addUser(3, { micMuted: false, soundMuted: false });
+
+    const unregister = eventBus.register(
+      'test-plugin',
+      'voice:state_updated',
+      (payload) => {
+        seen.push(payload);
+      }
+    );
+
+    runtime.updateUserState(3, { micMuted: true });
+
+    await Bun.sleep(0);
+    unregister();
+
+    expect(seen).toEqual([
+      {
+        channelId: runtime.id,
+        userId: 3,
+        state: {
+          micMuted: true,
+          soundMuted: false,
+          webcamEnabled: false,
+          sharingScreen: false
+        }
+      }
+    ]);
+  });
+
+  test('should stay quiet for a user who is not in the channel', async () => {
+    const runtime = createRuntime();
+    const seen: unknown[] = [];
+
+    const unregister = eventBus.register(
+      'test-plugin',
+      'voice:state_updated',
+      (payload) => {
+        seen.push(payload);
+      }
+    );
+
+    runtime.updateUserState(3, { micMuted: true });
+
+    await Bun.sleep(0);
+    unregister();
+
+    expect(seen).toEqual([]);
+  });
+});

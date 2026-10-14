@@ -1,6 +1,7 @@
 import type { TTempFile } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { initTest, uploadFile } from '../../__tests__/helpers';
+import { eventBus } from '../../plugins/event-bus';
 
 describe('emojis router', () => {
   test('should throw when user lacks permissions (add)', async () => {
@@ -336,5 +337,32 @@ describe('emojis router', () => {
     const { caller } = await initTest();
 
     await expect(caller.emojis.add([])).rejects.toThrow();
+  });
+
+  test('should announce every new emoji to plugins', async () => {
+    const { caller, mockedToken } = await initTest();
+    const seen: { name: string; userId: number }[] = [];
+
+    const file = new File(['emoji content'], 'emoji.png', {
+      type: 'image/png'
+    });
+
+    const uploadResponse = await uploadFile(file, mockedToken);
+    const uploadData = (await uploadResponse.json()) as TTempFile;
+
+    const unregister = eventBus.register(
+      'test-plugin',
+      'emoji:created',
+      ({ name, userId }) => {
+        seen.push({ name, userId });
+      }
+    );
+
+    await caller.emojis.add([{ fileId: uploadData.id, name: 'announced' }]);
+
+    await Bun.sleep(0);
+    unregister();
+
+    expect(seen).toEqual([{ name: 'announced', userId: 1 }]);
   });
 });

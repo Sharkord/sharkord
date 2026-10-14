@@ -41,6 +41,20 @@ const onLoad = async (ctx) => {
         { value: 'balanced', label: 'Balanced' },
         { value: 'thorough', label: 'Thorough' }
       ]
+    },
+    {
+      key: 'logChannel',
+      name: 'Log channel',
+      description: 'Where the plugin posts its log',
+      type: 'channel',
+      defaultValue: 0
+    },
+    {
+      key: 'modRole',
+      name: 'Moderator role',
+      description: 'Who counts as a moderator',
+      type: 'role',
+      defaultValue: 0
     }
   ]);
 

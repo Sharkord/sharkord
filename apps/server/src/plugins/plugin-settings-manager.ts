@@ -1,13 +1,17 @@
 import type { PluginSettings } from '@sharkord/plugin-sdk';
 import {
   getSettingValueError,
+  isReferenceSetting,
   isSecretSetting,
   type TPluginSettingDefinition,
   type TPluginSettingsResponse
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
+import { getRole } from '../db/queries/roles';
 import { pluginData } from '../db/schema';
+import { invariant } from '../utils/invariant';
+import { getPluginChannel } from './actions/write-plugin-channels';
 import { eventBus } from './event-bus';
 import type { PluginLogger } from './plugin-logger';
 import type { PluginStateStore } from './plugin-state-store';
@@ -65,6 +69,32 @@ class PluginSettingsManager {
     }
 
     return merged;
+  };
+
+  // `0` is the unset default and points at nothing
+  private assertReferenceExists = async (
+    definition: TPluginSettingDefinition,
+    value: number
+  ) => {
+    if (value === 0) return;
+
+    if (definition.type === 'channel') {
+      const channel = await getPluginChannel(value);
+
+      invariant(channel && !channel.isDm, {
+        code: 'NOT_FOUND',
+        message: 'Channel not found.'
+      });
+
+      return;
+    }
+
+    const role = await getRole(value);
+
+    invariant(role, {
+      code: 'NOT_FOUND',
+      message: 'Role not found.'
+    });
   };
 
   private setValue = async (pluginId: string, key: string, value: unknown) => {
@@ -194,6 +224,10 @@ class PluginSettingsManager {
 
     if (valueError) {
       throw new Error(valueError);
+    }
+
+    if (isReferenceSetting(definition)) {
+      await this.assertReferenceExists(definition, value as number);
     }
 
     await this.setValue(pluginId, key, value);

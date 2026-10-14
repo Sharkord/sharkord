@@ -153,3 +153,55 @@ export type TBeforeLoginPayload = {
 export type TBeforeLoginHook = (
   payload: TBeforeLoginPayload
 ) => Promise<TPluginGateResult>;
+
+export type TBeforeReactionPayload = {
+  messageId: number;
+  channelId: number;
+  userId: number;
+  emoji: string;
+};
+
+/**
+ * Runs before a user adds a reaction. A gate only. `emoji` is a unicode emoji
+ * or a custom emoji name, as the user sent it. Removing a reaction is never
+ * gated, and neither are the plugin's own reactions.
+ */
+export type TBeforeReactionHook = (
+  payload: TBeforeReactionPayload
+) => Promise<TPluginGateResult>;
+
+export type TBeforeProfileUpdatePayload = {
+  userId: number;
+  name: string;
+  bio: string | undefined;
+};
+
+export type TBeforeProfileUpdateUpdate = {
+  name?: string;
+  bio?: string;
+};
+
+/**
+ * Runs before a user saves their name or bio. Where nickname rules belong. A
+ * replacement is validated like the user's own input, so a name that is blank
+ * or too long is refused. Avatars and banners go through `onBeforeFileSave`.
+ */
+export type TBeforeProfileUpdateHook = (
+  payload: TBeforeProfileUpdatePayload
+) => Promise<TPluginHookResult<TBeforeProfileUpdateUpdate>>;
+
+/** `userId` is absent when a plugin is deleting the channel. */
+export type TBeforeChannelDeletePayload = {
+  channelId: number;
+  name: string;
+  type: string;
+  userId?: number;
+};
+
+/**
+ * Runs before a channel is deleted, whether a person or a plugin is deleting
+ * it. A gate only, for protecting channels that must not go away.
+ */
+export type TBeforeChannelDeleteHook = (
+  payload: TBeforeChannelDeletePayload
+) => Promise<TPluginGateResult>;

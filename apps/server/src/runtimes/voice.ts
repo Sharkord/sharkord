@@ -488,6 +488,12 @@ class VoiceRuntime {
     if (!user) return;
 
     user.state = { ...user.state, ...newState };
+
+    eventBus.emit('voice:state_updated', {
+      channelId: this.id,
+      userId,
+      state: { ...user.state }
+    });
   };
 
   public getRouter = (): Router<AppData> => {

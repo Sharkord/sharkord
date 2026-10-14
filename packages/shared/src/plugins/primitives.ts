@@ -19,3 +19,9 @@ export type TPluginPushEvent = {
 };
 
 export const PLUGIN_PUSH_MAX_BYTES = 64 * 1024; // 64 kb
+
+export const PLUGIN_STORAGE_KEY_MAX_LENGTH = 256;
+
+export const PLUGIN_STORAGE_VALUE_MAX_BYTES = 64 * 1024; // 64 kb
+
+export const PLUGIN_STORAGE_LIST_MAX_LIMIT = 1000;

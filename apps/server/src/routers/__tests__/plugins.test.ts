@@ -25,7 +25,7 @@ import {
 } from '../../__tests__/mocks';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
 import { getChannelsReadStatesForUser } from '../../db/queries/channels';
-import { getUserRoleIds } from '../../db/queries/roles';
+import { getRole, getUserRoleIds } from '../../db/queries/roles';
 import {
   activityLog,
   categories,
@@ -35,8 +35,10 @@ import {
   messageReactions,
   messages,
   pluginData,
+  pluginStorage,
   pluginUserData,
   rolePermissions,
+  roles,
   userRoles,
   users
 } from '../../db/schema';
@@ -750,6 +752,75 @@ describe('plugins router', () => {
           value: 'test'
         })
       ).rejects.toThrow();
+    });
+
+    describe('channel and role settings', () => {
+      beforeEach(() => pluginManager.load('plugin-with-settings'));
+
+      const update = async (key: string, value: string | number) => {
+        const { caller } = await initTest();
+
+        await caller.plugins.updateSetting({
+          pluginId: 'plugin-with-settings',
+          key,
+          value
+        });
+
+        const result = await caller.plugins.getSettings({
+          pluginId: 'plugin-with-settings'
+        });
+
+        return result.values[key];
+      };
+
+      test('should start unset', async () => {
+        const { caller } = await initTest();
+
+        const result = await caller.plugins.getSettings({
+          pluginId: 'plugin-with-settings'
+        });
+
+        expect(result.values.logChannel).toBe(0);
+        expect(result.values.modRole).toBe(0);
+      });
+
+      test('should store a channel that exists', async () => {
+        expect(await update('logChannel', 1)).toBe(1);
+      });
+
+      test('should store a role that exists', async () => {
+        expect(await update('modRole', 4)).toBe(4);
+      });
+
+      test('should accept clearing back to unset', async () => {
+        await update('logChannel', 1);
+
+        expect(await update('logChannel', 0)).toBe(0);
+      });
+
+      test('should refuse a channel that does not exist', async () => {
+        await expect(update('logChannel', 9999)).rejects.toThrow(
+          'Channel not found.'
+        );
+      });
+
+      test('should refuse a DM channel', async () => {
+        await expect(update('logChannel', 3)).rejects.toThrow(
+          'Channel not found.'
+        );
+      });
+
+      test('should refuse a role that does not exist', async () => {
+        await expect(update('modRole', 9999)).rejects.toThrow(
+          'Role not found.'
+        );
+      });
+
+      test('should refuse a value that is not an id', async () => {
+        await expect(update('logChannel', 'general')).rejects.toThrow(
+          "Setting 'logChannel' expects a number, received string"
+        );
+      });
     });
   });
 
@@ -1557,6 +1628,120 @@ describe('plugins router', () => {
         'This account is not allowed to sign in'
       );
     });
+
+    test('should let a plugin refuse a reaction', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.messages.toggleReaction({ messageId: 1, emoji: 'no_entry' })
+      ).rejects.toThrow('That reaction is not allowed');
+
+      expect(
+        await tdb
+          .select()
+          .from(messageReactions)
+          .where(eq(messageReactions.emoji, 'no_entry'))
+      ).toHaveLength(0);
+    });
+
+    test('should store a reaction the plugin allows', async () => {
+      const { caller } = await initTest();
+
+      await caller.messages.toggleReaction({ messageId: 1, emoji: 'thumbsup' });
+
+      expect(
+        await tdb
+          .select()
+          .from(messageReactions)
+          .where(eq(messageReactions.emoji, 'thumbsup'))
+      ).toHaveLength(1);
+    });
+
+    // a refused emoji that is already there can still be taken back
+    test('should never gate removing a reaction', async () => {
+      const { caller } = await initTest();
+
+      await tdb.insert(messageReactions).values({
+        messageId: 1,
+        emoji: 'no_entry',
+        userId: 1,
+        createdAt: Date.now()
+      });
+
+      await caller.messages.toggleReaction({ messageId: 1, emoji: 'no_entry' });
+
+      expect(
+        await tdb
+          .select()
+          .from(messageReactions)
+          .where(eq(messageReactions.emoji, 'no_entry'))
+      ).toHaveLength(0);
+    });
+
+    test('should let a plugin rewrite a profile as it is saved', async () => {
+      const { caller } = await initTest();
+
+      await caller.users.update({ name: 'renameme', profileColor: '#ffffff' });
+
+      const user = await tdb.select().from(users).where(eq(users.id, 1)).get();
+
+      expect(user!.name).toBe('renamed-by-plugin');
+      expect(user!.bio).toBe('set by plugin');
+    });
+
+    test('should let a plugin refuse a profile', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.users.update({ name: 'rejectme', profileColor: '#ffffff' })
+      ).rejects.toThrow('That name is not allowed');
+
+      const user = await tdb.select().from(users).where(eq(users.id, 1)).get();
+
+      expect(user!.name).not.toBe('rejectme');
+    });
+
+    test('should refuse a profile a plugin left without a name', async () => {
+      const { caller } = await initTest();
+
+      await expect(
+        caller.users.update({ name: 'blankme', profileColor: '#ffffff' })
+      ).rejects.toThrow('replaced this profile with an invalid name or bio');
+    });
+
+    test('should let a plugin refuse deleting a channel', async () => {
+      const { caller } = await initTest();
+
+      const channelId = await caller.channels.add({
+        name: 'protected-room',
+        type: ChannelType.TEXT,
+        categoryId: 1
+      });
+
+      await expect(caller.channels.delete({ channelId })).rejects.toThrow(
+        'This channel is protected'
+      );
+
+      expect(
+        await tdb.select().from(channels).where(eq(channels.id, channelId))
+      ).toHaveLength(1);
+    });
+
+    test('should delete a channel the plugin does not protect', async () => {
+      const { caller } = await initTest();
+
+      const channelId = await caller.channels.add({
+        name: 'disposable',
+        type: ChannelType.TEXT,
+        categoryId: 1
+      });
+
+      await caller.channels.delete({ channelId });
+
+      expect(
+        await tdb.select().from(channels).where(eq(channels.id, channelId))
+      ).toHaveLength(0);
+    });
   });
 
   describe('permissions and roles', () => {
@@ -1646,6 +1831,121 @@ describe('plugins router', () => {
           pluginId: 'plugin-b',
           commandName: 'grant-role',
           args: { userId: 2, roleId: 9999 }
+        })
+      ).rejects.toThrow('Role not found');
+    });
+
+    const runRole = async (
+      commandName: 'create-role' | 'update-role',
+      args: Record<string, unknown>
+    ) => {
+      const { caller } = await initTest();
+
+      return (await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName,
+        args
+      })) as { id: number; name: string; color: string; permissions: string[] };
+    };
+
+    test('should let a plugin create a role', async () => {
+      const role = await runRole('create-role', {
+        input: JSON.stringify({
+          name: 'Level 10',
+          color: '#ff0000',
+          permissions: [Permission.SEND_MESSAGES]
+        })
+      });
+
+      const stored = await getRole(role.id);
+
+      expect(stored!.name).toBe('Level 10');
+      expect(stored!.color).toBe('#ff0000');
+      expect(stored!.permissions).toEqual([Permission.SEND_MESSAGES]);
+      expect(role.permissions).toEqual([Permission.SEND_MESSAGES]);
+    });
+
+    test('should create a white role without permissions by default', async () => {
+      const role = await runRole('create-role', {
+        input: JSON.stringify({ name: 'Plain' })
+      });
+
+      const stored = await getRole(role.id);
+
+      expect(stored!.color).toBe('#ffffff');
+      expect(stored!.permissions).toEqual([]);
+    });
+
+    test('should refuse a role with an invalid color', async () => {
+      await expect(
+        runRole('create-role', {
+          input: JSON.stringify({ name: 'Bad', color: 'red' })
+        })
+      ).rejects.toThrow('Invalid hex color');
+    });
+
+    test('should refuse a role past the server limit', async () => {
+      const seededRoles = await tdb.select({ id: roles.id }).from(roles);
+
+      await tdb.insert(roles).values(
+        Array.from({ length: 100 - seededRoles.length }, (_, index) => ({
+          name: `Filler ${index}`,
+          isDefault: false,
+          isPersistent: false,
+          createdAt: Date.now()
+        }))
+      );
+
+      await expect(
+        runRole('create-role', { input: JSON.stringify({ name: 'One more' }) })
+      ).rejects.toThrow('cannot have more than 100 roles');
+    });
+
+    test('should let a plugin update a role and replace its permissions', async () => {
+      await runRole('update-role', {
+        roleId: MODERATOR_ROLE_ID,
+        values: JSON.stringify({
+          name: 'Mods',
+          permissions: [Permission.PIN_MESSAGES]
+        })
+      });
+
+      const stored = await getRole(MODERATOR_ROLE_ID);
+
+      expect(stored!.name).toBe('Mods');
+      expect(stored!.permissions).toEqual([Permission.PIN_MESSAGES]);
+    });
+
+    test('should keep the permissions a plugin update leaves out', async () => {
+      const before = await getRole(MODERATOR_ROLE_ID);
+
+      await runRole('update-role', {
+        roleId: MODERATOR_ROLE_ID,
+        values: JSON.stringify({ color: '#00ff00' })
+      });
+
+      const stored = await getRole(MODERATOR_ROLE_ID);
+
+      expect(stored!.color).toBe('#00ff00');
+      expect(stored!.permissions.sort()).toEqual(before!.permissions.sort());
+    });
+
+    test('should refuse to update the owner role', async () => {
+      await expect(
+        runRole('update-role', {
+          roleId: OWNER_ROLE_ID,
+          values: JSON.stringify({ name: 'Taken' })
+        })
+      ).rejects.toThrow('Plugins cannot change the owner role.');
+
+      expect((await getRole(OWNER_ROLE_ID))!.name).not.toBe('Taken');
+    });
+
+    test('should refuse to update a role that does not exist', async () => {
+      await expect(
+        runRole('update-role', {
+          roleId: 9999,
+          values: JSON.stringify({ name: 'Ghost' })
         })
       ).rejects.toThrow('Role not found');
     });
@@ -2135,6 +2435,165 @@ describe('plugins router', () => {
       await expect(
         caller.plugins.getUserData({ pluginId: 'plugin-b' })
       ).rejects.toThrow('Insufficient permissions');
+    });
+  });
+
+  describe('storage', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const run = async (commandName: string, args: Record<string, unknown>) => {
+      const { caller } = await initTest();
+
+      return (await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName,
+        args
+      })) as {
+        value?: unknown;
+        entries?: { key: string; value: unknown }[];
+      };
+    };
+
+    const set = (key: string, value: unknown) =>
+      run('storage-set', { key, value: JSON.stringify(value) });
+
+    const list = async (options?: Record<string, unknown>) => {
+      const result = await run(
+        'storage-list',
+        options ? { options: JSON.stringify(options) } : {}
+      );
+
+      return result.entries;
+    };
+
+    test('should store and read back a value', async () => {
+      await set('poll:1', { question: 'Pizza?', votes: [1, 2] });
+
+      expect((await run('storage-get', { key: 'poll:1' })).value).toEqual({
+        question: 'Pizza?',
+        votes: [1, 2]
+      });
+    });
+
+    test('should overwrite a value stored under the same key', async () => {
+      await set('counter', 1);
+      await set('counter', 2);
+
+      expect((await run('storage-get', { key: 'counter' })).value).toBe(2);
+      expect(
+        await tdb
+          .select()
+          .from(pluginStorage)
+          .where(eq(pluginStorage.key, 'counter'))
+      ).toHaveLength(1);
+    });
+
+    test('should answer undefined for a key that was never stored', async () => {
+      expect((await run('storage-get', { key: 'missing' })).value).toBe(
+        undefined
+      );
+    });
+
+    test('should delete a value', async () => {
+      await set('poll:1', 'gone soon');
+      await run('storage-delete', { key: 'poll:1' });
+
+      expect((await run('storage-get', { key: 'poll:1' })).value).toBe(
+        undefined
+      );
+    });
+
+    test('should list one prefix, ordered by key', async () => {
+      await set('poll:2', 'b');
+      await set('reminder:1', 'other');
+      await set('poll:1', 'a');
+
+      expect(await list({ prefix: 'poll:' })).toEqual([
+        { key: 'poll:1', value: 'a' },
+        { key: 'poll:2', value: 'b' }
+      ]);
+    });
+
+    // a prefix is a range, not a LIKE pattern, so its characters are literal
+    test('should treat a prefix literally', async () => {
+      await set('a%b', 1);
+      await set('axb', 2);
+
+      expect(await list({ prefix: 'a%' })).toEqual([{ key: 'a%b', value: 1 }]);
+    });
+
+    test('should page with limit and after', async () => {
+      await set('k:1', 1);
+      await set('k:2', 2);
+      await set('k:3', 3);
+
+      const firstPage = await list({ prefix: 'k:', limit: 2 });
+
+      expect(firstPage!.map(({ key }) => key)).toEqual(['k:1', 'k:2']);
+
+      const secondPage = await list({ prefix: 'k:', limit: 2, after: 'k:2' });
+
+      expect(secondPage!.map(({ key }) => key)).toEqual(['k:3']);
+    });
+
+    test('should list everything without options', async () => {
+      await set('b', 2);
+      await set('a', 1);
+
+      expect(await list()).toEqual([
+        { key: 'a', value: 1 },
+        { key: 'b', value: 2 }
+      ]);
+    });
+
+    test('should keep plugins apart', async () => {
+      await tdb.insert(pluginStorage).values({
+        pluginId: 'plugin-a',
+        key: 'secret',
+        value: 'not yours',
+        updatedAt: Date.now()
+      });
+
+      expect((await run('storage-get', { key: 'secret' })).value).toBe(
+        undefined
+      );
+      expect(await list()).toEqual([]);
+    });
+
+    test('should refuse a limit out of range', async () => {
+      await expect(list({ limit: 0 })).rejects.toThrow(
+        'The limit must be between 1 and 1000.'
+      );
+      await expect(list({ limit: 1001 })).rejects.toThrow(
+        'The limit must be between 1 and 1000.'
+      );
+    });
+
+    test('should refuse a key over the length cap', async () => {
+      await expect(set('k'.repeat(257), 1)).rejects.toThrow(
+        'Storage keys must be between 1 and 256 characters.'
+      );
+    });
+
+    test('should refuse a value over the size cap', async () => {
+      await expect(set('big', 'x'.repeat(70_000))).rejects.toThrow(
+        'cannot exceed'
+      );
+
+      expect(await tdb.select().from(pluginStorage)).toHaveLength(0);
+    });
+
+    test('should go when the plugin is uninstalled', async () => {
+      await set('poll:1', 'a');
+
+      await pluginManager.removePlugin('plugin-b');
+
+      expect(
+        await tdb
+          .select()
+          .from(pluginStorage)
+          .where(eq(pluginStorage.pluginId, 'plugin-b'))
+      ).toHaveLength(0);
     });
   });
 

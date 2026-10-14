@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
 import { invites, roles } from '../../db/schema';
+import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
@@ -73,6 +74,13 @@ const addInviteRoute = rateLimitedProcedure(protectedProcedure, {
     invariant(invite, {
       code: 'CONFLICT',
       message: 'An invite with this code already exists'
+    });
+
+    eventBus.emit('invite:created', {
+      inviteId: invite.id,
+      code: invite.code,
+      creatorId: ctx.user.id,
+      roleId: invite.roleId
     });
 
     enqueueActivityLog({

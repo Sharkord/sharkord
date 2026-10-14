@@ -27,6 +27,7 @@ import { watch } from 'fs';
 import fs from 'fs/promises';
 import path from 'path';
 import { pathToFileURL } from 'url';
+import { deleteAllPluginStorage } from '../db/mutations/plugin-storage';
 import { deletePluginCapabilities } from '../db/queries/plugin-capabilities';
 import { deleteAllPluginUserData } from '../db/queries/plugin-user-data';
 import { getSettings } from '../db/queries/server';
@@ -670,6 +671,12 @@ class PluginManager {
           this.hooksManager.register('beforeVoiceJoin', pluginId, handler),
         registerBeforeLogin: (handler) =>
           this.hooksManager.register('beforeLogin', pluginId, handler),
+        registerBeforeReaction: (handler) =>
+          this.hooksManager.register('beforeReaction', pluginId, handler),
+        registerBeforeProfileUpdate: (handler) =>
+          this.hooksManager.register('beforeProfileUpdate', pluginId, handler),
+        registerBeforeChannelDelete: (handler) =>
+          this.hooksManager.register('beforeChannelDelete', pluginId, handler),
         registerHttpRoute: (method, routePath, handler, options) =>
           this.httpRouteRegistry.register(
             pluginId,
@@ -855,6 +862,7 @@ class PluginManager {
 
     await deletePluginCapabilities(pluginId);
     await deleteAllPluginUserData(pluginId);
+    await deleteAllPluginStorage(pluginId);
     await this.stateStore.remove(pluginId);
 
     // nothing on disk to attribute them to any more

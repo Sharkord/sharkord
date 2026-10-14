@@ -17,6 +17,7 @@ import {
   userRoles,
   users
 } from '../../db/schema';
+import { eventBus } from '../../plugins/event-bus';
 
 describe('/login', () => {
   test('should successfully login with valid credentials', async () => {
@@ -259,6 +260,45 @@ describe('/login', () => {
       .get();
 
     expect(updatedInvite?.uses).toBe(1);
+  });
+
+  test('should announce the invite a new user registered with', async () => {
+    await tdb.insert(invites).values({
+      code: 'ANNOUNCEDINVITE',
+      creatorId: 1,
+      maxUses: 5,
+      uses: 0,
+      createdAt: Date.now()
+    });
+
+    const seen: { code: string; userId: number }[] = [];
+
+    const unregister = eventBus.register(
+      'test-plugin',
+      'invite:used',
+      (payload) => {
+        seen.push(payload);
+      }
+    );
+
+    const response = await login(
+      'announceduser',
+      'password123',
+      'ANNOUNCEDINVITE'
+    );
+
+    await Bun.sleep(0);
+    unregister();
+
+    expect(response.status).toBe(200);
+
+    const user = await tdb
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.identity, 'announceduser'))
+      .get();
+
+    expect(seen).toEqual([{ code: 'ANNOUNCEDINVITE', userId: user!.id }]);
   });
 
   test('should not let concurrent registrations exceed maxUses', async () => {

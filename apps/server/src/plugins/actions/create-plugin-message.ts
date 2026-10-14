@@ -177,7 +177,10 @@ const createPluginMessage = async (
     userId: null,
     pluginId,
     content: sanitizedContent,
-    textContent: getPlainTextFromHtml(sanitizedContent)
+    textContent: getPlainTextFromHtml(sanitizedContent),
+    parentMessageId: message.parentMessageId,
+    replyToMessageId: message.replyToMessageId,
+    fileIds
   });
 
   return { messageId: message.id };

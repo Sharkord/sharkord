@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { initTest } from '../../__tests__/helpers';
+import { eventBus } from '../../plugins/event-bus';
 
 describe('invites router', () => {
   test('should throw when user lacks permissions (getAll)', async () => {
@@ -240,5 +241,27 @@ describe('invites router', () => {
 
     expect(inviteWithoutRole).toBeDefined();
     expect(inviteWithoutRole!.role).toBeNull();
+  });
+
+  test('should announce a new invite to plugins', async () => {
+    const { caller } = await initTest();
+    const seen: unknown[] = [];
+
+    const unregister = eventBus.register(
+      'test-plugin',
+      'invite:created',
+      (payload) => {
+        seen.push(payload);
+      }
+    );
+
+    const invite = await caller.invites.add({ code: 'announced', roleId: 4 });
+
+    await Bun.sleep(0);
+    unregister();
+
+    expect(seen).toEqual([
+      { inviteId: invite.id, code: 'announced', creatorId: 1, roleId: 4 }
+    ]);
   });
 });

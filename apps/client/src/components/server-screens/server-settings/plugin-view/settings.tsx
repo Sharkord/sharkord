@@ -1,5 +1,7 @@
 import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
+import { useReferenceableChannels } from '@/features/server/hooks';
+import { useRoles } from '@/features/server/roles/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TPluginSettingDefinition } from '@sharkord/shared';
 import {
@@ -17,6 +19,50 @@ import { memo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 type TPluginSettingValues = Record<string, unknown>;
+
+type TReferenceSelectProps = {
+  value: unknown;
+  onSelect: (selected: string) => void;
+};
+
+type TReferenceOptionsSelectProps = TReferenceSelectProps & {
+  options: { id: number; name: string }[];
+};
+
+const ReferenceSelect = memo(
+  ({ value, onSelect, options }: TReferenceOptionsSelectProps) => {
+    const { t } = useTranslation('settings');
+
+    return (
+      <Select value={value ? String(value) : ''} onValueChange={onSelect}>
+        <SelectTrigger className="max-w-xs">
+          <SelectValue placeholder={t('secretUnsetPlaceholder')} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.id} value={String(option.id)}>
+              {option.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+);
+
+const ChannelSelect = memo(({ value, onSelect }: TReferenceSelectProps) => {
+  const channels = useReferenceableChannels();
+
+  return (
+    <ReferenceSelect value={value} onSelect={onSelect} options={channels} />
+  );
+});
+
+const RoleSelect = memo(({ value, onSelect }: TReferenceSelectProps) => {
+  const roles = useRoles();
+
+  return <ReferenceSelect value={value} onSelect={onSelect} options={roles} />;
+});
 
 type TSettingFieldProps = {
   definition: TPluginSettingDefinition;
@@ -44,6 +90,11 @@ const SettingField = memo(
 
     const handleSelect = useCallback(
       (selected: string) => onChange(definition.key, selected),
+      [onChange, definition.key]
+    );
+
+    const handleReferenceSelect = useCallback(
+      (selected: string) => onChange(definition.key, Number(selected)),
       [onChange, definition.key]
     );
 
@@ -99,6 +150,10 @@ const SettingField = memo(
           </SelectContent>
         </Select>
       );
+    } else if (definition.type === 'channel') {
+      field = <ChannelSelect value={value} onSelect={handleReferenceSelect} />;
+    } else if (definition.type === 'role') {
+      field = <RoleSelect value={value} onSelect={handleReferenceSelect} />;
     }
 
     return (

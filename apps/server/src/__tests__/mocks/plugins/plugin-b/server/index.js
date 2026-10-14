@@ -115,6 +115,72 @@ const onLoad = (ctx) => {
     }
   });
 
+  ctx.commands.register({
+    name: 'create-role',
+    description: 'Create a role from a JSON input',
+    args: [{ name: 'input', type: 'string', required: true }],
+    async executes(invokerCtx, args) {
+      return ctx.roles.create(JSON.parse(args.input));
+    }
+  });
+
+  ctx.commands.register({
+    name: 'update-role',
+    description: 'Update a role from JSON values',
+    args: [
+      { name: 'roleId', type: 'number', required: true },
+      { name: 'values', type: 'string', required: true }
+    ],
+    async executes(invokerCtx, args) {
+      return ctx.roles.update(args.roleId, JSON.parse(args.values));
+    }
+  });
+
+  ctx.commands.register({
+    name: 'storage-set',
+    description: 'Store a JSON value under a key',
+    args: [
+      { name: 'key', type: 'string', required: true },
+      { name: 'value', type: 'string', required: true }
+    ],
+    async executes(invokerCtx, args) {
+      await ctx.storage.set(args.key, JSON.parse(args.value));
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'storage-get',
+    description: 'Read the value stored under a key',
+    args: [{ name: 'key', type: 'string', required: true }],
+    async executes(invokerCtx, args) {
+      return { value: await ctx.storage.get(args.key) };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'storage-delete',
+    description: 'Delete the value stored under a key',
+    args: [{ name: 'key', type: 'string', required: true }],
+    async executes(invokerCtx, args) {
+      await ctx.storage.delete(args.key);
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'storage-list',
+    description: 'List stored entries from JSON options',
+    args: [{ name: 'options', type: 'string', required: false }],
+    async executes(invokerCtx, args) {
+      const options = args.options ? JSON.parse(args.options) : undefined;
+
+      return { entries: await ctx.storage.list(options) };
+    }
+  });
+
   // declares its own default access, so an unconfigured capability is not public
   ctx.commands.register({
     name: 'admin-sum',

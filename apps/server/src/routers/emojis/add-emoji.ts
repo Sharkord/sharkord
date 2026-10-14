@@ -6,6 +6,7 @@ import { publishEmoji } from '../../db/publishers';
 import { getUniqueEmojiName } from '../../db/queries/emojis';
 import { emojis } from '../../db/schema';
 import { fileManager } from '../../helpers/file-manager';
+import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
@@ -62,6 +63,11 @@ const addEmojiRoute = rateLimitedProcedure(protectedProcedure, {
 
     for (const emoji of createdEmojis) {
       publishEmoji(emoji.id, 'create');
+      eventBus.emit('emoji:created', {
+        emojiId: emoji.id,
+        name: emoji.name,
+        userId: ctx.userId
+      });
       enqueueActivityLog({
         type: ActivityLogType.CREATED_EMOJI,
         userId: ctx.user.id,
