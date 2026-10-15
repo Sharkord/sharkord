@@ -555,15 +555,13 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
     /**
      * Mutes a user for everyone, the way a moderator would, or lifts it. Their
      * audio is stopped on the server, so a modified client cannot get around
-     * it, and they cannot unmute themselves until it is lifted. It lasts while
-     * the channel's runtime does, rejoining included. Lifting it leaves them
-     * muted: they unmute themselves when they are ready.
+     * it, and they cannot unmute themselves until it is lifted. It covers
+     * every voice channel, so switching channels does not escape it, and it
+     * can be set while the user is not in voice. It lasts until lifted or the
+     * server restarts. Lifting it leaves them muted: they unmute themselves
+     * when they are ready.
      */
-    setServerMute(
-      channelId: number,
-      userId: number,
-      muted: boolean
-    ): Promise<void>;
+    setServerMute(userId: number, muted: boolean): Promise<void>;
     /**
      * Floats an emoji on a user's card, the same animation as a reaction they
      * sent themselves, and indistinguishable from one. Takes a unicode emoji,

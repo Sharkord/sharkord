@@ -6,6 +6,7 @@ import {
   unpublishHiddenChannelFromUser
 } from '../db/publishers';
 import { userCan } from '../db/queries/roles';
+import { getPublicUserById } from '../db/queries/users';
 import { channels } from '../db/schema';
 import { VoiceRuntime } from '../runtimes/voice';
 import { invariant } from '../utils/invariant';
@@ -104,22 +105,24 @@ const disconnectVoiceUser = async (userId: number) => {
   await unpublishHiddenChannelFromUser(userId, runtime.id);
 };
 
-const setVoiceServerMute = async (
-  channelId: number,
-  userId: number,
-  muted: boolean
-) => {
-  const runtime = VoiceRuntime.findById(channelId);
+const setVoiceServerMute = async (userId: number, muted: boolean) => {
+  const user = await getPublicUserById(userId);
 
-  invariant(runtime && runtime.getUser(userId), {
+  invariant(user, {
     code: 'NOT_FOUND',
-    message: 'User is not in this voice channel.'
+    message: 'User not found'
   });
 
-  runtime.setServerMuted(userId, muted);
+  VoiceRuntime.setServerMuted(userId, muted);
+
+  const runtime = VoiceRuntime.findRuntimeByUserId(userId);
+
+  if (!runtime) return;
+
+  runtime.syncServerMute(userId);
 
   pubsub.publish(ServerEvents.USER_VOICE_STATE_UPDATE, {
-    channelId,
+    channelId: runtime.id,
     userId,
     state: runtime.getUserState(userId)
   });

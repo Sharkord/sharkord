@@ -63,6 +63,12 @@ const useVoiceControls = ({
       return;
     }
 
+    if (ownVoiceState.serverMuted && !nextMicMuted) {
+      toast.error(t('mutedByModerator'));
+
+      return;
+    }
+
     isTogglingMic.current = true;
 
     voiceLogger.info('mic: toggle requested', { micMuted: nextMicMuted });
@@ -113,6 +119,7 @@ const useVoiceControls = ({
     t,
     ownVoiceState.micMuted,
     ownVoiceState.soundMuted,
+    ownVoiceState.serverMuted,
     startMicStream,
     currentVoiceChannelId,
     localAudioStream,
@@ -146,7 +153,10 @@ const useVoiceControls = ({
     } else {
       const pendingMicRestoreState = pendingMicRestoreStateRef.current;
 
-      if (pendingMicRestoreState?.shouldRestoreOnUndeafen) {
+      if (
+        pendingMicRestoreState?.shouldRestoreOnUndeafen &&
+        !ownVoiceState.serverMuted
+      ) {
         nextVoiceState.micMuted = pendingMicRestoreState.previousMicMuted;
       }
 
@@ -193,6 +203,7 @@ const useVoiceControls = ({
     t,
     ownVoiceState.soundMuted,
     ownVoiceState.micMuted,
+    ownVoiceState.serverMuted,
     currentVoiceChannelId,
     localAudioStream,
     startMicStream

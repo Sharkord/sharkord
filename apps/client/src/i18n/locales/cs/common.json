@@ -132,5 +132,6 @@
   "commandArgOptional": "volitelné",
   "commandArgYes": "Ano",
   "commandArgNo": "Ne",
-  "commandArgMissing": "/{{commandName}} potřebuje hodnotu pro {{argName}}."
+  "commandArgMissing": "/{{commandName}} potřebuje hodnotu pro {{argName}}.",
+  "mutedByModerator": "Moderátor vám vypnul mikrofon."
 }

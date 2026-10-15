@@ -754,7 +754,8 @@ describe('voice router', () => {
     test('should refuse unmuting while a moderator has the user muted', async () => {
       const { runtime, caller } = await joinVoiceChannelTwo(2);
 
-      runtime.setServerMuted(2, true);
+      VoiceRuntime.setServerMuted(2, true);
+      runtime.syncServerMute(2);
 
       try {
         await expect(
@@ -770,7 +771,8 @@ describe('voice router', () => {
     test('should still let a muted user change everything else', async () => {
       const { runtime, caller } = await joinVoiceChannelTwo(2);
 
-      runtime.setServerMuted(2, true);
+      VoiceRuntime.setServerMuted(2, true);
+      runtime.syncServerMute(2);
 
       try {
         await caller.voice.updateState({ soundMuted: true });
@@ -787,8 +789,10 @@ describe('voice router', () => {
     test('should let the user unmute once the mute is lifted', async () => {
       const { runtime, caller } = await joinVoiceChannelTwo(2);
 
-      runtime.setServerMuted(2, true);
-      runtime.setServerMuted(2, false);
+      VoiceRuntime.setServerMuted(2, true);
+      runtime.syncServerMute(2);
+      VoiceRuntime.setServerMuted(2, false);
+      runtime.syncServerMute(2);
 
       try {
         await caller.voice.updateState({ micMuted: false });

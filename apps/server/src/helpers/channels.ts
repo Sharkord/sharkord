@@ -207,6 +207,23 @@ const updateChannel = async (
   });
 };
 
+type TChannelToDelete = { id: number; name: string; type: string };
+
+const runBeforeChannelDeleteHook = async (
+  channel: TChannelToDelete,
+  userId: number | null
+) => {
+  await runHook<TBeforeChannelDeletePayload, never>({
+    entries: pluginManager.getHooks('beforeChannelDelete'),
+    payload: {
+      channelId: channel.id,
+      name: channel.name,
+      type: channel.type,
+      userId: userId ?? undefined
+    }
+  });
+};
+
 const deleteChannel = async (channelId: number, userId: number | null) => {
   await assertNotDirectMessage(channelId, 'delete');
 
@@ -222,15 +239,7 @@ const deleteChannel = async (channelId: number, userId: number | null) => {
     message: 'Channel not found'
   });
 
-  await runHook<TBeforeChannelDeletePayload, never>({
-    entries: pluginManager.getHooks('beforeChannelDelete'),
-    payload: {
-      channelId,
-      name: channel.name,
-      type: channel.type,
-      userId: userId ?? undefined
-    }
-  });
+  await runBeforeChannelDeleteHook({ id: channelId, ...channel }, userId);
 
   const removedChannel = await db
     .delete(channels)
@@ -348,6 +357,7 @@ export {
   deleteChannel,
   MAX_REORDERED_CHANNELS,
   reorderChannels,
+  runBeforeChannelDeleteHook,
   updateChannel,
   zChannelName,
   zChannelTopic

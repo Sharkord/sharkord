@@ -372,12 +372,13 @@ describe('VoiceRuntime server mute', () => {
     runtime.addUser(3, { micMuted: false, soundMuted: false });
     runtime.addProducer(3, StreamKind.AUDIO, producer as unknown as Producer);
 
-    runtime.setServerMuted(3, true);
+    VoiceRuntime.setServerMuted(3, true);
+    runtime.syncServerMute(3);
 
     await Bun.sleep(0);
 
     expect(producer.paused).toBe(true);
-    expect(runtime.isServerMuted(3)).toBe(true);
+    expect(VoiceRuntime.isServerMuted(3)).toBe(true);
     expect(runtime.getUserState(3)).toMatchObject({
       micMuted: true,
       serverMuted: true
@@ -392,13 +393,15 @@ describe('VoiceRuntime server mute', () => {
     runtime.addUser(3, { micMuted: false, soundMuted: false });
     runtime.addProducer(3, StreamKind.AUDIO, producer as unknown as Producer);
 
-    runtime.setServerMuted(3, true);
-    runtime.setServerMuted(3, false);
+    VoiceRuntime.setServerMuted(3, true);
+    runtime.syncServerMute(3);
+    VoiceRuntime.setServerMuted(3, false);
+    runtime.syncServerMute(3);
 
     await Bun.sleep(0);
 
     expect(producer.paused).toBe(false);
-    expect(runtime.isServerMuted(3)).toBe(false);
+    expect(VoiceRuntime.isServerMuted(3)).toBe(false);
     expect(runtime.getUserState(3)).toMatchObject({
       micMuted: true,
       serverMuted: false
@@ -410,7 +413,8 @@ describe('VoiceRuntime server mute', () => {
     const producer = createProducerStub();
 
     runtime.addUser(3, { micMuted: false, soundMuted: false });
-    runtime.setServerMuted(3, true);
+    VoiceRuntime.setServerMuted(3, true);
+    runtime.syncServerMute(3);
     runtime.addProducer(3, StreamKind.AUDIO, producer as unknown as Producer);
 
     await Bun.sleep(0);
@@ -423,7 +427,8 @@ describe('VoiceRuntime server mute', () => {
     const producer = createProducerStub();
 
     runtime.addUser(3, { micMuted: false, soundMuted: false });
-    runtime.setServerMuted(3, true);
+    VoiceRuntime.setServerMuted(3, true);
+    runtime.syncServerMute(3);
     runtime.addProducer(3, StreamKind.VIDEO, producer as unknown as Producer);
 
     await Bun.sleep(0);
@@ -431,11 +436,40 @@ describe('VoiceRuntime server mute', () => {
     expect(producer.paused).toBe(false);
   });
 
+  test('should apply the mute in whichever channel the user joins', () => {
+    const runtime = createRuntime();
+    const otherRuntime = createRuntime();
+
+    runtime.addUser(3, { micMuted: false, soundMuted: false });
+    VoiceRuntime.setServerMuted(3, true);
+    runtime.syncServerMute(3);
+    runtime.removeUser(3);
+    otherRuntime.addUser(3, { micMuted: false, soundMuted: false });
+
+    expect(otherRuntime.getUserState(3)).toMatchObject({
+      micMuted: true,
+      serverMuted: true
+    });
+  });
+
+  test('should mute a user who joins after the mute was set', () => {
+    const runtime = createRuntime();
+
+    VoiceRuntime.setServerMuted(3, true);
+    runtime.addUser(3, { micMuted: false, soundMuted: false });
+
+    expect(runtime.getUserState(3)).toMatchObject({
+      micMuted: true,
+      serverMuted: true
+    });
+  });
+
   test('should keep the mute when the user leaves and rejoins', () => {
     const runtime = createRuntime();
 
     runtime.addUser(3, { micMuted: false, soundMuted: false });
-    runtime.setServerMuted(3, true);
+    VoiceRuntime.setServerMuted(3, true);
+    runtime.syncServerMute(3);
     runtime.removeUser(3);
     runtime.addUser(3, { micMuted: false, soundMuted: false });
 

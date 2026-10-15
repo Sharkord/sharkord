@@ -132,5 +132,6 @@
   "commandArgOptional": "необязательно",
   "commandArgYes": "Да",
   "commandArgNo": "Нет",
-  "commandArgMissing": "/{{commandName}}: укажите значение для {{argName}}."
+  "commandArgMissing": "/{{commandName}}: укажите значение для {{argName}}.",
+  "mutedByModerator": "Модератор отключил вам микрофон."
 }

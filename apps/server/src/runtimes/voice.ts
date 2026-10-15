@@ -151,7 +151,8 @@ class VoiceRuntime {
   private screenAudioProducers: TProducerMap = {};
   private consumers: TConsumerMap = {};
   private producerQualityLayers: TProducerQualityLayerMap = {};
-  private serverMutedUserIds = new Set<number>();
+
+  private static serverMutedUserIds = new Set<number>();
 
   private externalCounter = EXTERNAL_STREAM_ID_BASE;
   private externalStreamsInternal: {
@@ -177,6 +178,21 @@ class VoiceRuntime {
     }
 
     return undefined;
+  };
+
+  public static isServerMuted = (userId: number): boolean =>
+    VoiceRuntime.serverMutedUserIds.has(userId);
+
+  public static setServerMuted = (userId: number, muted: boolean): void => {
+    if (muted) {
+      VoiceRuntime.serverMutedUserIds.add(userId);
+    } else {
+      VoiceRuntime.serverMutedUserIds.delete(userId);
+    }
+  };
+
+  public static clearServerMutesForTests = (): void => {
+    VoiceRuntime.serverMutedUserIds.clear();
   };
 
   public static getVoiceMap = (): TVoiceMap => {
@@ -413,7 +429,10 @@ class VoiceRuntime {
       state: {
         ...defaultUserState,
         ...state,
-        ...(this.isServerMuted(userId) && { micMuted: true, serverMuted: true })
+        ...(VoiceRuntime.isServerMuted(userId) && {
+          micMuted: true,
+          serverMuted: true
+        })
       }
     });
 
@@ -500,17 +519,13 @@ class VoiceRuntime {
     });
   };
 
-  public isServerMuted = (userId: number) =>
-    this.serverMutedUserIds.has(userId);
-
-  public setServerMuted = (userId: number, muted: boolean) => {
+  public syncServerMute = (userId: number) => {
+    const muted = VoiceRuntime.isServerMuted(userId);
     const producer = this.audioProducers[userId];
 
     if (muted) {
-      this.serverMutedUserIds.add(userId);
       this.updateUserState(userId, { micMuted: true, serverMuted: true });
     } else {
-      this.serverMutedUserIds.delete(userId);
       this.updateUserState(userId, { serverMuted: false });
     }
 
@@ -685,7 +700,7 @@ class VoiceRuntime {
     } else if (type === StreamKind.AUDIO) {
       this.audioProducers[userId] = producer;
 
-      if (this.isServerMuted(userId)) {
+      if (VoiceRuntime.isServerMuted(userId)) {
         this.setProducerPaused(producer, true);
       }
     } else if (type === StreamKind.SCREEN) {

@@ -24,6 +24,12 @@ const UserControl = memo(() => {
     openServerScreen(ServerScreen.USER_SETTINGS);
   }, []);
 
+  let micTitle = ownVoiceState.micMuted ? t('unmuteMic') : t('muteMic');
+
+  if (ownVoiceState.serverMuted) {
+    micTitle = t('common:mutedByModerator');
+  }
+
   if (!ownPublicUser) return null;
 
   return (
@@ -59,9 +65,11 @@ const UserControl = memo(() => {
               : 'text-muted-foreground hover:text-foreground'
           )}
           onClick={toggleMic}
-          title={ownVoiceState.micMuted ? t('unmuteMic') : t('muteMic')}
+          title={micTitle}
           disabled={
-            !channelCan(ChannelPermission.SPEAK) || ownVoiceState.soundMuted
+            !channelCan(ChannelPermission.SPEAK) ||
+            ownVoiceState.soundMuted ||
+            ownVoiceState.serverMuted
           }
         >
           {ownVoiceState.micMuted ? (

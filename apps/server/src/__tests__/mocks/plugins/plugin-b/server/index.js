@@ -217,12 +217,11 @@ const onLoad = (ctx) => {
     name: 'voice-mute',
     description: 'Server mute or unmute a user',
     args: [
-      { name: 'channelId', type: 'number', required: true },
       { name: 'userId', type: 'number', required: true },
       { name: 'muted', type: 'boolean', required: true }
     ],
     async executes(invokerCtx, args) {
-      await ctx.voice.setServerMute(args.channelId, args.userId, args.muted);
+      await ctx.voice.setServerMute(args.userId, args.muted);
 
       return { ok: true };
     }

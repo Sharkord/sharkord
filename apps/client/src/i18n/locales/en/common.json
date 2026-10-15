@@ -134,5 +134,6 @@
   "commandArgOptional": "optional",
   "commandArgYes": "Yes",
   "commandArgNo": "No",
-  "commandArgMissing": "/{{commandName}} needs a value for {{argName}}."
+  "commandArgMissing": "/{{commandName}} needs a value for {{argName}}.",
+  "mutedByModerator": "You were muted by a moderator."
 }

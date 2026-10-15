@@ -1784,6 +1784,28 @@ describe('plugins router', () => {
       ).toHaveLength(1);
     });
 
+    test('should let a plugin refuse deleting the category of a protected channel', async () => {
+      const { caller } = await initTest();
+
+      const categoryId = await caller.categories.add({ name: 'Archive' });
+      const channelId = await caller.channels.add({
+        name: 'protected-room',
+        type: ChannelType.TEXT,
+        categoryId
+      });
+
+      await expect(caller.categories.delete({ categoryId })).rejects.toThrow(
+        'This channel is protected'
+      );
+
+      expect(
+        await tdb.select().from(categories).where(eq(categories.id, categoryId))
+      ).toHaveLength(1);
+      expect(
+        await tdb.select().from(channels).where(eq(channels.id, channelId))
+      ).toHaveLength(1);
+    });
+
     test('should delete a channel the plugin does not protect', async () => {
       const { caller } = await initTest();
 
@@ -3014,46 +3036,43 @@ describe('plugins router', () => {
           .subscribe({ next: (event) => received.push(event) });
 
         await run('voice-mute', {
-          channelId: VOICE_CHANNEL_ID,
           userId: 2,
           muted: true
         });
 
         subscription.unsubscribe();
 
-        expect(runtime.isServerMuted(2)).toBe(true);
+        expect(VoiceRuntime.isServerMuted(2)).toBe(true);
         expect(runtime.getUserState(2).micMuted).toBe(true);
         expect(received.at(-1)!.state.serverMuted).toBe(true);
       });
     });
 
     test('should lift a server mute', async () => {
-      await withUserInVoice(async (runtime) => {
+      await withUserInVoice(async () => {
         await run('voice-mute', {
-          channelId: VOICE_CHANNEL_ID,
           userId: 2,
           muted: true
         });
         await run('voice-mute', {
-          channelId: VOICE_CHANNEL_ID,
           userId: 2,
           muted: false
         });
 
-        expect(runtime.isServerMuted(2)).toBe(false);
+        expect(VoiceRuntime.isServerMuted(2)).toBe(false);
       });
     });
 
-    test('should refuse muting a user who is not in the channel', async () => {
-      await withUserInVoice(async () => {
-        await expect(
-          run('voice-mute', {
-            channelId: VOICE_CHANNEL_ID,
-            userId: 5,
-            muted: true
-          })
-        ).rejects.toThrow('User is not in this voice channel.');
-      });
+    test('should mute a user who is not in voice yet', async () => {
+      await run('voice-mute', { userId: 3, muted: true });
+
+      expect(VoiceRuntime.isServerMuted(3)).toBe(true);
+    });
+
+    test('should refuse muting a user who does not exist', async () => {
+      await expect(
+        run('voice-mute', { userId: 999, muted: true })
+      ).rejects.toThrow('User not found');
     });
   });
 

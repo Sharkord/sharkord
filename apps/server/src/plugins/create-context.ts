@@ -217,8 +217,7 @@ const createUnloadContext = ({
       await moveVoiceUser(userId, channelId);
     },
     disconnect: async (userId) => disconnectVoiceUser(userId),
-    setServerMute: async (channelId, userId, muted) =>
-      setVoiceServerMute(channelId, userId, muted)
+    setServerMute: async (userId, muted) => setVoiceServerMute(userId, muted)
   },
   storage: {
     get: async <T = unknown>(key: string) =>
