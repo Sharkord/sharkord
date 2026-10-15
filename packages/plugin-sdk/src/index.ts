@@ -604,7 +604,7 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
          * after the message text, in this order. Each one is a `name` from that
          * export and the `props` it receives. Every client that can read the
          * message receives the props, so they are not a place for secrets. At
-         * most 5 components and 8 KB.
+         * most 5 components and 16 KB.
          */
         components?: TPluginMessageComponent[];
       }

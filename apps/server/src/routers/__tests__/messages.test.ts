@@ -2684,7 +2684,7 @@ describe('messages router', () => {
         channelId: 1,
         content: 'Inline reply',
         files: [],
-        replyToMessageId: 2
+        replyToMessageId: 1
       });
 
       await Bun.sleep(0);
@@ -2692,7 +2692,7 @@ describe('messages router', () => {
 
       expect(seen).toHaveLength(1);
       expect(seen[0]!.parentMessageId).toBeNull();
-      expect(seen[0]!.replyToMessageId).toBe(2);
+      expect(seen[0]!.replyToMessageId).toBe(1);
       expect(seen[0]!.fileIds).toEqual([]);
     });
   });

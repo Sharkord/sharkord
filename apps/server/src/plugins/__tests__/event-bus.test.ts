@@ -155,7 +155,10 @@ describe('event-bus', () => {
         userId: 3,
         pluginId: null,
         content: 'test message',
-        textContent: 'test message'
+        textContent: 'test message',
+        parentMessageId: null,
+        replyToMessageId: null,
+        fileIds: []
       });
     });
 

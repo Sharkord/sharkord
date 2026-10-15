@@ -4,6 +4,7 @@ import {
   DEFAULT_LOCALE,
   OWNER_ROLE_ID,
   Permission,
+  PLUGIN_MESSAGE_COMPONENTS_MAX_BYTES,
   PluginCapabilityMode,
   PluginCapabilityType,
   PluginSlot,
@@ -2894,7 +2895,12 @@ describe('plugins router', () => {
 
     test('should refuse components over the size cap', async () => {
       await expect(
-        sendComponents([{ name: 'poll', props: { blob: 'x'.repeat(9000) } }])
+        sendComponents([
+          {
+            name: 'poll',
+            props: { blob: 'x'.repeat(PLUGIN_MESSAGE_COMPONENTS_MAX_BYTES) }
+          }
+        ])
       ).rejects.toThrow('cannot exceed');
     });
   });

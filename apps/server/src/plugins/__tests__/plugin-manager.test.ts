@@ -878,7 +878,9 @@ export { onLoad, onUnload };
         'maxRetries',
         'enabled',
         'apiKey',
-        'mode'
+        'mode',
+        'logChannel',
+        'modRole'
       ]);
       expect(settings.values.greeting).toBe('Hello!');
       expect(settings.values.maxRetries).toBe(3);

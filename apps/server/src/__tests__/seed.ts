@@ -18,7 +18,7 @@
  *   categories        2    Text Channels, Voice Channels
  *   channels          5    1 General (text), Voice, DM Channel, Private Voice,
  *                          Restricted Text
- *   messages          2    both in channel 1
+ *   messages          2    1 in General (channel 1), 2 in the DM channel
  *   directMessages    1    the DM pair backing "DM Channel"
  *   channelRolePermissions
  *                     1    the default role may view channel 5
