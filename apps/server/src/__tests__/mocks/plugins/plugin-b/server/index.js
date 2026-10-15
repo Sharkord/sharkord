@@ -116,6 +116,171 @@ const onLoad = (ctx) => {
   });
 
   ctx.commands.register({
+    name: 'echo-optional',
+    description: 'Echo two optional arguments back',
+    args: [
+      { name: 'label', type: 'string' },
+      { name: 'count', type: 'number' }
+    ],
+    async executes(invokerCtx, args) {
+      return { label: args.label ?? null, count: args.count ?? null };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'whisper',
+    description: 'Answer only the user who asked',
+    args: [{ name: 'text', type: 'string', required: true }],
+    ephemeral: true,
+    async executes(invokerCtx, args) {
+      return `only you: ${args.text}`;
+    }
+  });
+
+  ctx.commands.register({
+    name: 'whisper-fail',
+    description: 'An ephemeral command that fails',
+    ephemeral: true,
+    async executes() {
+      throw new Error('whispered failure');
+    }
+  });
+
+  ctx.commands.register({
+    name: 'send-components',
+    description: 'Send a message carrying components from a JSON list',
+    args: [
+      { name: 'channelId', type: 'number', required: true },
+      { name: 'components', type: 'string', required: true }
+    ],
+    async executes(invokerCtx, args) {
+      return ctx.messages.send(args.channelId, '<p>poll</p>', {
+        components: JSON.parse(args.components)
+      });
+    }
+  });
+
+  ctx.commands.register({
+    name: 'set-components',
+    description: 'Replace the components of a message from JSON',
+    args: [
+      { name: 'messageId', type: 'number', required: true },
+      { name: 'components', type: 'string', required: true }
+    ],
+    async executes(invokerCtx, args) {
+      await ctx.messages.setComponents(
+        args.messageId,
+        JSON.parse(args.components)
+      );
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'edit-text',
+    description: 'Edit the text of a message',
+    args: [{ name: 'messageId', type: 'number', required: true }],
+    async executes(invokerCtx, args) {
+      await ctx.messages.edit(args.messageId, '<p>poll edited</p>');
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'voice-move',
+    description: 'Move a user to another voice channel',
+    args: [
+      { name: 'userId', type: 'number', required: true },
+      { name: 'channelId', type: 'number', required: true }
+    ],
+    async executes(invokerCtx, args) {
+      await ctx.voice.move(args.userId, args.channelId);
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'voice-disconnect',
+    description: 'Take a user out of voice',
+    args: [{ name: 'userId', type: 'number', required: true }],
+    async executes(invokerCtx, args) {
+      await ctx.voice.disconnect(args.userId);
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'voice-mute',
+    description: 'Server mute or unmute a user',
+    args: [
+      { name: 'channelId', type: 'number', required: true },
+      { name: 'userId', type: 'number', required: true },
+      { name: 'muted', type: 'boolean', required: true }
+    ],
+    async executes(invokerCtx, args) {
+      await ctx.voice.setServerMute(args.channelId, args.userId, args.muted);
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'create-invite',
+    description: 'Create an invite from a JSON input',
+    args: [{ name: 'input', type: 'string', required: true }],
+    async executes(invokerCtx, args) {
+      return ctx.invites.create(JSON.parse(args.input));
+    }
+  });
+
+  ctx.commands.register({
+    name: 'create-emoji',
+    description: 'Add an emoji from text bytes',
+    args: [
+      { name: 'name', type: 'string', required: true },
+      { name: 'fileName', type: 'string', required: true },
+      { name: 'userId', type: 'number', required: true }
+    ],
+    async executes(invokerCtx, args) {
+      return ctx.emojis.create({
+        name: args.name,
+        fileName: args.fileName,
+        data: new TextEncoder().encode('emoji bytes'),
+        userId: args.userId
+      });
+    }
+  });
+
+  ctx.commands.register({
+    name: 'delete-emoji',
+    description: 'Delete an emoji',
+    args: [{ name: 'emojiId', type: 'number', required: true }],
+    async executes(invokerCtx, args) {
+      await ctx.emojis.delete(args.emojiId);
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
+    name: 'reorder-channels',
+    description: 'Reorder channels from a JSON list of ids',
+    args: [
+      { name: 'categoryId', type: 'number', required: true },
+      { name: 'channelIds', type: 'string', required: true }
+    ],
+    async executes(invokerCtx, args) {
+      await ctx.channels.reorder(args.categoryId, JSON.parse(args.channelIds));
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
     name: 'create-role',
     description: 'Create a role from a JSON input',
     args: [{ name: 'input', type: 'string', required: true }],

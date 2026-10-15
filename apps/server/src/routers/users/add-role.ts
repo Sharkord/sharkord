@@ -2,10 +2,10 @@ import { Permission } from '@sharkord/shared';
 import { z } from 'zod';
 import { getRole } from '../../db/queries/roles';
 import { assertCanActOnUser } from '../../helpers/assert-can-act-on-user';
+import { assertCanModifyOwnerRole } from '../../helpers/assert-can-modify-owner-role';
 import { assignRole } from '../../helpers/user-roles';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
-import { assertCanModifyOwnerRole } from './assert-can-modify-owner-role';
 
 const addRoleRoute = protectedProcedure
   .input(

@@ -53,7 +53,7 @@ export type TPluginSettingDefinition = {
   /** used until an admin saves something, so a plugin always reads a value */
   defaultValue: string | number | boolean;
   /** required for `enum`, ignored otherwise */
-  options?: TPluginSettingOption[];
+  options?: readonly TPluginSettingOption[];
 };
 
 export type TPluginSettingsResponse = {

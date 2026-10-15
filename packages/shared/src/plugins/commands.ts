@@ -61,6 +61,10 @@ export type TInvokerContext = {
  * A slash command. Users type `/name` in chat, and both the invocation and what
  * `executes` returns render as a chip in the channel, so the answer is public.
  *
+ * `ephemeral: true` makes it private instead: nothing is stored in the channel,
+ * and only the user who ran it sees the answer. For help, errors and
+ * confirmations that would be noise to everyone else.
+ *
  * ```ts
  * ctx.commands.register({
  *   name: 'roll',
@@ -79,6 +83,7 @@ export interface CommandDefinition<TArgs = void> {
   description?: string;
   args?: TCommandArg[];
   requires?: Permission;
+  ephemeral?: boolean;
   executes(ctx: TInvokerContext, args: TArgs): Promise<unknown>;
 }
 
@@ -91,6 +96,8 @@ export interface ActionDefinition<TPayload = void> {
 
 export type TCommandInfo = {
   pluginId: string;
+  pluginName: string;
+  pluginLogo?: string;
   name: string;
   description?: string;
   args?: CommandDefinition<unknown>['args'];
@@ -113,6 +120,15 @@ export type RegisteredAction = {
   name: string;
   description?: string;
   action: ActionDefinition<unknown>;
+};
+
+/** The answer to an ephemeral command, sent only to the user who ran it. */
+export type TPluginEphemeralResponse = {
+  pluginId: string;
+  commandName: string;
+  channelId: number;
+  status: 'completed' | 'failed';
+  response: string;
 };
 
 export const zParsedDomCommand = z.object({

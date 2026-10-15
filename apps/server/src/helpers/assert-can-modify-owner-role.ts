@@ -1,6 +1,6 @@
 import { OWNER_ROLE_ID } from '@sharkord/shared';
-import { getUserRoleIds } from '../../db/queries/roles';
-import { invariant } from '../../utils/invariant';
+import { getUserRoleIds } from '../db/queries/roles';
+import { invariant } from '../utils/invariant';
 
 const assertCanModifyOwnerRole = async (
   actorUserId: number,

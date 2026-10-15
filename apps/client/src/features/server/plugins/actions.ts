@@ -3,12 +3,15 @@ import { logDebug } from '@/helpers/browser-logger';
 import { getPluginBundleUrl } from '@/helpers/get-plugin-bundle-url';
 import { i18n } from '@/i18n';
 import {
+  parseMessageComponentsExport,
   parsePluginTabs,
   PluginSlot,
   type TCommandsMapByPlugin,
   type TPluginCapabilityAccessRule,
   type TPluginComponentsMap,
   type TPluginComponentsMapBySlotId,
+  type TPluginEphemeralResponse,
+  type TPluginMessageComponentsByPlugin,
   type TPluginMetadata,
   type TPluginTabsMap
 } from '@sharkord/shared';
@@ -28,6 +31,23 @@ export const setPluginComponents = (components: TPluginComponentsMap) =>
 export const setPluginCapabilityAccess = (
   rules: TPluginCapabilityAccessRule[]
 ) => store.dispatch(serverSliceActions.setPluginCapabilityAccess(rules));
+
+export const showPluginEphemeralResponse = ({
+  commandName,
+  status,
+  response
+}: TPluginEphemeralResponse) => {
+  const title = `/${commandName}`;
+  const options = { description: response || undefined };
+
+  if (status === 'failed') {
+    toast.error(title, options);
+
+    return;
+  }
+
+  toast(title, options);
+};
 
 export const setPluginTabs = (tabs: TPluginTabsMap) =>
   store.dispatch(serverSliceActions.setPluginTabs(tabs));
@@ -69,6 +89,7 @@ export const loadPluginTabs = async (pluginId: string) => {
 export const processPluginComponents = async (pluginIds: string[]) => {
   const componentsMap: TPluginComponentsMap = {};
   const tabsMap: TPluginTabsMap = {};
+  const messageComponentsMap: TPluginMessageComponentsByPlugin = {};
 
   const loadPlugin = async (pluginId: string) => {
     const slots: TPluginComponentsMapBySlotId = {};
@@ -97,6 +118,9 @@ export const processPluginComponents = async (pluginIds: string[]) => {
     }
 
     tabsMap[pluginId] = parsePluginTabsAndWarn(pluginId, mod?.tabs);
+    messageComponentsMap[pluginId] = parseMessageComponentsExport(
+      mod?.messageComponents
+    );
 
     return slots;
   };
@@ -119,6 +143,9 @@ export const processPluginComponents = async (pluginIds: string[]) => {
   });
 
   setPluginTabs(tabsMap);
+  store.dispatch(
+    serverSliceActions.setPluginMessageComponents(messageComponentsMap)
+  );
 
   return componentsMap;
 };

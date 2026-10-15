@@ -73,6 +73,7 @@ const SearchResultMessageCard = memo(
                   message={message}
                   disableReactions
                   disableFiles
+                  disablePluginComponents
                 />
               </div>
             </div>

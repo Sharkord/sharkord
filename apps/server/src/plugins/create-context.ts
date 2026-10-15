@@ -28,6 +28,12 @@ import { getRole, getRoles, userCan } from '../db/queries/roles';
 import { getPublicUserById, getPublicUsers } from '../db/queries/users';
 import { getPluginVoiceRuntime } from '../helpers/get-plugin-voice-runtime';
 import { PUBLIC_PATH } from '../helpers/paths';
+import {
+  disconnectVoiceUser,
+  loadVoiceMoveDestination,
+  moveVoiceUser,
+  setVoiceServerMute
+} from '../helpers/voice-moderation';
 import { VoiceRuntime } from '../runtimes/voice';
 import { pubsub } from '../utils/pubsub';
 import { consumeVoiceProducer } from './actions/consume-voice-producer';
@@ -60,6 +66,7 @@ import {
   type TListPluginMessagesOptions
 } from './actions/read-plugin-messages';
 import { sendPluginVoiceReaction } from './actions/send-plugin-voice-reaction';
+import { setPluginMessageComponents } from './actions/set-plugin-message-components';
 import {
   assignPluginUserRole,
   removePluginUserRole
@@ -73,9 +80,15 @@ import {
   getPluginChannel,
   listPluginCategories,
   listPluginChannels,
+  reorderPluginChannels,
   updatePluginCategory,
   updatePluginChannel
 } from './actions/write-plugin-channels';
+import {
+  createPluginEmoji,
+  deletePluginEmoji
+} from './actions/write-plugin-emojis';
+import { createPluginInvite } from './actions/write-plugin-invites';
 import {
   createPluginRole,
   updatePluginRole
@@ -198,7 +211,14 @@ const createUnloadContext = ({
       getPluginVoiceRuntime(channelId).listProducers(),
     consume: (options) => consumeVoiceProducer(pluginId, scopedLogger, options),
     react: async (channelId, userId, emoji) =>
-      sendPluginVoiceReaction(channelId, userId, emoji)
+      sendPluginVoiceReaction(channelId, userId, emoji),
+    move: async (userId, channelId) => {
+      await loadVoiceMoveDestination(channelId);
+      await moveVoiceUser(userId, channelId);
+    },
+    disconnect: async (userId) => disconnectVoiceUser(userId),
+    setServerMute: async (channelId, userId, muted) =>
+      setVoiceServerMute(channelId, userId, muted)
   },
   storage: {
     get: async <T = unknown>(key: string) =>
@@ -216,7 +236,8 @@ const createUnloadContext = ({
         parentMessageId: options?.parentMessageId,
         replyToMessageId: options?.replyToMessageId,
         files: options?.files,
-        previews: options?.previews
+        previews: options?.previews,
+        components: options?.components
       }),
     edit: async (messageId, content, options) =>
       editPluginMessage({
@@ -225,6 +246,8 @@ const createUnloadContext = ({
         content,
         previews: options?.previews
       }),
+    setComponents: async (messageId, components) =>
+      setPluginMessageComponents(pluginId, messageId, components),
     delete: async (messageId) => deletePluginMessage({ pluginId, messageId }),
     get: async (messageId: number) => getMessage(messageId),
     list: async (options: TListPluginMessagesOptions) =>
@@ -344,7 +367,16 @@ const createContext = (deps: TContextDependencies): PluginContext => {
       create: async (input) => createPluginChannel(input),
       update: async (channelId, values) =>
         updatePluginChannel(channelId, values),
-      delete: async (channelId) => deletePluginChannel(channelId)
+      delete: async (channelId) => deletePluginChannel(channelId),
+      reorder: async (categoryId, channelIds) =>
+        reorderPluginChannels(categoryId, channelIds)
+    },
+    invites: {
+      create: async (input) => createPluginInvite(input)
+    },
+    emojis: {
+      create: async (input) => createPluginEmoji(pluginId, input),
+      delete: async (emojiId) => deletePluginEmoji(emojiId)
     },
     files: {
       getPath: async (fileId: number) => {

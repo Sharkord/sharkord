@@ -11,6 +11,16 @@ import { createCachedSelector } from 're-reselect';
 // every unrelated dispatch
 const DEFAULT_TABS: TPluginTab[] = [];
 
+export const pluginMessageComponentsSelector = (state: IRootState) =>
+  state.server.pluginMessageComponents;
+
+export const pluginMessageComponentSelector = createCachedSelector(
+  pluginMessageComponentsSelector,
+  (_: IRootState, pluginId: string) => pluginId,
+  (_: IRootState, _pluginId: string, name: string) => name,
+  (messageComponents, pluginId, name) => messageComponents[pluginId]?.[name]
+)((_state, pluginId, name) => `${pluginId}:${name}`);
+
 export const pluginsMetadataSelector = (state: IRootState) =>
   state.server.pluginsMetadata;
 

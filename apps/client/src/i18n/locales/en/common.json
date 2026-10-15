@@ -124,5 +124,15 @@
   "reconnectingAbort": "Stop trying to reconnect",
   "removeImage": "Remove image",
   "channelMutedTooltip": "Channel muted, click to unmute",
-  "unknownRole": "Unknown Role"
+  "unknownRole": "Unknown Role",
+  "runCommand": "Run command",
+  "commandStatusPending": "Pending",
+  "commandStatusCompleted": "Completed",
+  "commandStatusFailed": "Failed",
+  "commandResponse": "Response",
+  "commandArgRequired": "required",
+  "commandArgOptional": "optional",
+  "commandArgYes": "Yes",
+  "commandArgNo": "No",
+  "commandArgMissing": "/{{commandName}} needs a value for {{argName}}."
 }

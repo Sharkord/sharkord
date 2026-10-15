@@ -6,6 +6,7 @@ import {
   flatCommandsSelector,
   fullscreenPluginIdsSelector,
   pluginComponentsBySlotSelector,
+  pluginMessageComponentSelector,
   pluginMetadataByIdSelector,
   pluginNamesSelector,
   pluginSlotIdsSelector,
@@ -13,6 +14,11 @@ import {
 } from './selectors';
 
 export const usePluginCommands = () => useSelector(commandsSelector);
+
+export const usePluginMessageComponent = (pluginId: string, name: string) =>
+  useSelector((state: IRootState) =>
+    pluginMessageComponentSelector(state, pluginId, name)
+  );
 
 export const useFlatPluginCommands = () => useSelector(flatCommandsSelector);
 

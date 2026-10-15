@@ -25,6 +25,12 @@ const createProducerStub = () => {
     close: () => {
       stub.closed = true;
       handlers.forEach((handler) => handler());
+    },
+    pause: async () => {
+      stub.paused = true;
+    },
+    resume: async () => {
+      stub.paused = false;
     }
   };
 
@@ -330,7 +336,8 @@ describe('VoiceRuntime state events', () => {
           micMuted: true,
           soundMuted: false,
           webcamEnabled: false,
-          sharingScreen: false
+          sharingScreen: false,
+          serverMuted: false
         }
       }
     ]);
@@ -354,5 +361,87 @@ describe('VoiceRuntime state events', () => {
     unregister();
 
     expect(seen).toEqual([]);
+  });
+});
+
+describe('VoiceRuntime server mute', () => {
+  test('should mute the user and pause the audio they are sending', async () => {
+    const runtime = createRuntime();
+    const producer = createProducerStub();
+
+    runtime.addUser(3, { micMuted: false, soundMuted: false });
+    runtime.addProducer(3, StreamKind.AUDIO, producer as unknown as Producer);
+
+    runtime.setServerMuted(3, true);
+
+    await Bun.sleep(0);
+
+    expect(producer.paused).toBe(true);
+    expect(runtime.isServerMuted(3)).toBe(true);
+    expect(runtime.getUserState(3)).toMatchObject({
+      micMuted: true,
+      serverMuted: true
+    });
+  });
+
+  // the user unmutes themselves once they are ready, as after any mute
+  test('should resume the audio but leave the mic muted when lifted', async () => {
+    const runtime = createRuntime();
+    const producer = createProducerStub();
+
+    runtime.addUser(3, { micMuted: false, soundMuted: false });
+    runtime.addProducer(3, StreamKind.AUDIO, producer as unknown as Producer);
+
+    runtime.setServerMuted(3, true);
+    runtime.setServerMuted(3, false);
+
+    await Bun.sleep(0);
+
+    expect(producer.paused).toBe(false);
+    expect(runtime.isServerMuted(3)).toBe(false);
+    expect(runtime.getUserState(3)).toMatchObject({
+      micMuted: true,
+      serverMuted: false
+    });
+  });
+
+  test('should pause audio a muted user starts sending later', async () => {
+    const runtime = createRuntime();
+    const producer = createProducerStub();
+
+    runtime.addUser(3, { micMuted: false, soundMuted: false });
+    runtime.setServerMuted(3, true);
+    runtime.addProducer(3, StreamKind.AUDIO, producer as unknown as Producer);
+
+    await Bun.sleep(0);
+
+    expect(producer.paused).toBe(true);
+  });
+
+  test('should leave a muted user video alone', async () => {
+    const runtime = createRuntime();
+    const producer = createProducerStub();
+
+    runtime.addUser(3, { micMuted: false, soundMuted: false });
+    runtime.setServerMuted(3, true);
+    runtime.addProducer(3, StreamKind.VIDEO, producer as unknown as Producer);
+
+    await Bun.sleep(0);
+
+    expect(producer.paused).toBe(false);
+  });
+
+  test('should keep the mute when the user leaves and rejoins', () => {
+    const runtime = createRuntime();
+
+    runtime.addUser(3, { micMuted: false, soundMuted: false });
+    runtime.setServerMuted(3, true);
+    runtime.removeUser(3);
+    runtime.addUser(3, { micMuted: false, soundMuted: false });
+
+    expect(runtime.getUserState(3)).toMatchObject({
+      micMuted: true,
+      serverMuted: true
+    });
   });
 });

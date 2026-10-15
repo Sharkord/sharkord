@@ -35,10 +35,20 @@ const onPushRoute = protectedProcedure.subscription(async ({ ctx }) => {
   return ctx.pubsub.subscribeFor(ctx.user.id, ServerEvents.PLUGIN_PUSH);
 });
 
+const onEphemeralResponseRoute = protectedProcedure.subscription(
+  async ({ ctx }) => {
+    return ctx.pubsub.subscribeFor(
+      ctx.user.id,
+      ServerEvents.PLUGIN_EPHEMERAL_RESPONSE
+    );
+  }
+);
+
 export {
   onCapabilityAccessChangeRoute,
   onCommandsChangeRoute,
   onComponentsChangeRoute,
+  onEphemeralResponseRoute,
   onMetadataChangeRoute,
   onPluginLogRoute,
   onPushRoute

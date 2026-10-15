@@ -1,6 +1,10 @@
 import { ChannelPermission, ChannelType, ServerEvents } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
-import { createFakeSocket, initTest } from '../../__tests__/helpers';
+import {
+  createFakeSocket,
+  initTest,
+  sendMessage
+} from '../../__tests__/helpers';
 import { getChannelsReadStatesForUser } from '../../db/queries/channels';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { pubsub } from '../../utils/pubsub';
@@ -885,7 +889,7 @@ describe('channels router', () => {
     const { caller: caller2 } = await initTest(2);
 
     // user 1 sends a root message
-    const parentId = await caller1.messages.send({
+    const parentId = await sendMessage(caller1, {
       channelId: 2,
       content: 'Root message',
       files: []
@@ -923,7 +927,7 @@ describe('channels router', () => {
     const { caller: caller1 } = await initTest(1);
 
     // user 1 sends a root message
-    const parentId = await caller1.messages.send({
+    const parentId = await sendMessage(caller1, {
       channelId: 2,
       content: 'Root 1',
       files: []
@@ -954,7 +958,7 @@ describe('channels router', () => {
     const { caller: caller1 } = await initTest(1);
     const { caller: caller2 } = await initTest(2);
 
-    const parentId = await caller1.messages.send({
+    const parentId = await sendMessage(caller1, {
       channelId: 2,
       content: 'Root message',
       files: []

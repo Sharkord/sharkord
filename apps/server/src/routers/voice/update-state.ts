@@ -1,6 +1,7 @@
 import { ChannelPermission, ServerEvents } from '@sharkord/shared';
 import { z } from 'zod';
 import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
+import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const updateVoiceStateRoute = protectedProcedure
@@ -34,6 +35,14 @@ const updateVoiceStateRoute = protectedProcedure
     if (!canShareScreen) {
       delete validatedInput.sharingScreen;
     }
+
+    invariant(
+      validatedInput.micMuted !== false || !runtime.isServerMuted(ctx.user.id),
+      {
+        code: 'FORBIDDEN',
+        message: 'You were muted by a moderator.'
+      }
+    );
 
     runtime.updateUserState(ctx.user.id, {
       ...validatedInput

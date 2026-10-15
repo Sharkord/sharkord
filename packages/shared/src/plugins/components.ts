@@ -100,6 +100,41 @@ export type TPluginComponentsMap = {
   [pluginId: string]: TPluginComponentsMapBySlotId;
 };
 
+/**
+ * One component a plugin attaches to its own message with `messages.send`.
+ * `name` is a key of the plugin's `messageComponents` export.
+ */
+export type TPluginMessageComponent = {
+  name: string;
+  props?: Record<string, unknown>;
+};
+
+/** What a message component receives: its message, and the props it was sent with. */
+export type TPluginMessageComponentProps = {
+  messageId: number;
+  channelId: number;
+  props: Record<string, unknown>;
+};
+
+/**
+ * What a plugin's `client/index.js` exports as `messageComponents`, keyed by
+ * the `name` its messages use. Only messages the plugin sent itself render
+ * them, so no other plugin's message ever reaches these.
+ *
+ * ```tsx
+ * export const messageComponents: TPluginMessageComponentsMap = {
+ *   poll: ({ messageId, props }) => <Poll messageId={messageId} {...props} />
+ * };
+ * ```
+ */
+export type TPluginMessageComponentsMap = {
+  [name: string]: TPluginReactComponent<TPluginMessageComponentProps>;
+};
+
+export type TPluginMessageComponentsByPlugin = {
+  [pluginId: string]: TPluginMessageComponentsMap;
+};
+
 /** One tab in the plugin's own view, beside Settings, Commands and Logs. */
 export type TPluginTab = {
   /** unique within the plugin, and not one of the reserved built-in ids */
@@ -158,4 +193,16 @@ export const parsePluginTabs = (value: unknown): TPluginTab[] => {
 
     return true;
   });
+};
+
+export const parseMessageComponentsExport = (
+  value: unknown
+): TPluginMessageComponentsMap => {
+  if (!value || typeof value !== 'object') return {};
+
+  return Object.fromEntries(
+    Object.entries(value).filter(([, component]) =>
+      isRenderableComponent(component)
+    )
+  );
 };

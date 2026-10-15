@@ -9,6 +9,8 @@ import type {
   TPluginHotkeyAction,
   TPluginHotkeyBinding,
   TPluginHotkeyPhase,
+  TPluginMessageComponentProps,
+  TPluginMessageComponentsMap,
   TPluginStore,
   TPluginStoreState,
   TPluginTabs,
@@ -151,6 +153,8 @@ export type {
   TPluginHotkeyAction,
   TPluginHotkeyBinding,
   TPluginHotkeyPhase,
+  TPluginMessageComponentProps,
+  TPluginMessageComponentsMap,
   TPluginStoreState,
   TPluginTabs
 };

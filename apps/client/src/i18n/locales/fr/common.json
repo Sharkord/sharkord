@@ -122,5 +122,15 @@
   "reconnectingAbort": "Arrêter la reconnexion",
   "removeImage": "Supprimer l'image",
   "channelMutedTooltip": "Salon en sourdine, cliquez pour le réactiver",
-  "unknownRole": "Rôle inconnu"
+  "unknownRole": "Rôle inconnu",
+  "runCommand": "Exécuter la commande",
+  "commandStatusPending": "En attente",
+  "commandStatusCompleted": "Terminée",
+  "commandStatusFailed": "Échouée",
+  "commandResponse": "Réponse",
+  "commandArgRequired": "obligatoire",
+  "commandArgOptional": "facultatif",
+  "commandArgYes": "Oui",
+  "commandArgNo": "Non",
+  "commandArgMissing": "/{{commandName}} a besoin d'une valeur pour {{argName}}."
 }

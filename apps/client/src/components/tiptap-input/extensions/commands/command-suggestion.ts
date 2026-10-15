@@ -28,6 +28,7 @@ const getCommands = ({
       (command) =>
         command.name.toLowerCase().includes(normalizedQuery) ||
         command.pluginId.toLowerCase().startsWith(normalizedQuery) ||
+        command.pluginName.toLowerCase().startsWith(normalizedQuery) ||
         command.description?.toLowerCase().includes(normalizedQuery)
     )
     .sort((a, b) => {

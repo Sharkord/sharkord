@@ -8,7 +8,7 @@ import {
 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
-import { initTest, uploadFile } from '../../__tests__/helpers';
+import { initTest, sendMessage, uploadFile } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
 import { config } from '../../config';
 import {
@@ -76,7 +76,7 @@ describe('messages router', () => {
   test('should clear pin metadata when unpinning', async () => {
     const { caller } = await initTest();
 
-    const messageId = await caller.messages.send({
+    const messageId = await sendMessage(caller, {
       channelId: 1,
       content: 'pin me'
     });
@@ -120,7 +120,7 @@ describe('messages router', () => {
     const { caller: caller1 } = await initTest(1);
     const { caller: caller2 } = await initTest(2);
 
-    const messageId = await caller1.messages.send({
+    const messageId = await sendMessage(caller1, {
       channelId: 1,
       content: 'pin me'
     });
@@ -224,7 +224,7 @@ describe('messages router', () => {
   test('should search messages and message files', async () => {
     const { caller } = await initTest(1);
 
-    const messageId = await caller.messages.send({
+    const messageId = await sendMessage(caller, {
       channelId: 1,
       content: 'Needle message from search test',
       files: []
@@ -283,7 +283,7 @@ describe('messages router', () => {
       permissions: [ChannelPermission.SEND_MESSAGES]
     });
 
-    const messageId = await owner.messages.send({
+    const messageId = await sendMessage(owner, {
       channelId: 1,
       content: 'ultra-secret-search-term',
       files: []
@@ -428,13 +428,13 @@ describe('messages router', () => {
       permissions: [ChannelPermission.SEND_MESSAGES]
     });
 
-    const privateMessageId = await owner.messages.send({
+    const privateMessageId = await sendMessage(owner, {
       channelId: 1,
       content: 'scope-token private',
       files: []
     });
 
-    const publicMessageId = await owner.messages.send({
+    const publicMessageId = await sendMessage(owner, {
       channelId: 2,
       content: 'scope-token public',
       files: []
@@ -569,7 +569,7 @@ describe('messages router', () => {
   test('should flag a search that fills the file limit as truncated', async () => {
     const { caller } = await initTest(1);
 
-    const messageId = await caller.messages.send({
+    const messageId = await sendMessage(caller, {
       channelId: 1,
       content: 'nothing here matches the term'
     });
@@ -608,7 +608,7 @@ describe('messages router', () => {
   test('should match non ascii messages and file names regardless of case', async () => {
     const { caller } = await initTest(1);
 
-    const messageId = await caller.messages.send({
+    const messageId = await sendMessage(caller, {
       channelId: 1,
       content: 'Отчёт за МАРТ готов',
       files: []
@@ -649,7 +649,7 @@ describe('messages router', () => {
   test('should treat glob wildcards in the query literally', async () => {
     const { caller } = await initTest(1);
 
-    const literalMessageId = await caller.messages.send({
+    const literalMessageId = await sendMessage(caller, {
       channelId: 1,
       content: 'wild a*b?c[d] card',
       files: []
@@ -683,19 +683,19 @@ describe('messages router', () => {
   test('should get pinned messages from channel', async () => {
     const { caller } = await initTest();
 
-    const firstMessageId = await caller.messages.send({
+    const firstMessageId = await sendMessage(caller, {
       channelId: 1,
       content: 'Pinned message 1',
       files: []
     });
 
-    const secondMessageId = await caller.messages.send({
+    const secondMessageId = await sendMessage(caller, {
       channelId: 1,
       content: 'Not pinned message',
       files: []
     });
 
-    const thirdMessageId = await caller.messages.send({
+    const thirdMessageId = await sendMessage(caller, {
       channelId: 1,
       content: 'Pinned message 2',
       files: []
@@ -945,7 +945,7 @@ describe('messages router', () => {
     const { caller } = await initTest();
     const { maxRequests } = config.rateLimiters.getMessages;
 
-    const parentId = await caller.messages.send({
+    const parentId = await sendMessage(caller, {
       channelId: 1,
       content: 'Thread parent',
       files: []
@@ -1016,7 +1016,7 @@ describe('messages router', () => {
   test('should accept a message exactly at the maximum', async () => {
     const { caller } = await initTest();
 
-    const messageId = await caller.messages.send({
+    const messageId = await sendMessage(caller, {
       channelId: 1,
       content: 'a'.repeat(MESSAGE_MAX_LENGTH),
       files: []
@@ -1028,7 +1028,7 @@ describe('messages router', () => {
   test('should reject an edit longer than the maximum', async () => {
     const { caller } = await initTest();
 
-    const messageId = await caller.messages.send({
+    const messageId = await sendMessage(caller, {
       channelId: 1,
       content: 'short enough',
       files: []
@@ -1403,7 +1403,7 @@ describe('messages router', () => {
 
     for (let i = 0; i < 10; i++) {
       sentMessageIds.push(
-        await caller.messages.send({
+        await sendMessage(caller, {
           channelId: 2,
           content: `Message ${i + 1}`,
           files: []
@@ -1451,7 +1451,7 @@ describe('messages router', () => {
 
     for (let i = 0; i < 30; i++) {
       sentMessageIds.push(
-        await caller.messages.send({
+        await sendMessage(caller, {
           channelId: 2,
           content: `Message ${i + 1}`,
           files: []
@@ -1485,7 +1485,7 @@ describe('messages router', () => {
 
     for (let i = 0; i < 40; i++) {
       sentMessageIds.push(
-        await caller.messages.send({
+        await sendMessage(caller, {
           channelId: 2,
           content: `Message ${i + 1}`,
           files: []
@@ -1520,7 +1520,7 @@ describe('messages router', () => {
   test('should throw when targetMessageId is not in channel', async () => {
     const { caller } = await initTest();
 
-    const messageInChannelOne = await caller.messages.send({
+    const messageInChannelOne = await sendMessage(caller, {
       channelId: 1,
       content: 'Message in channel 1',
       files: []
@@ -1620,7 +1620,7 @@ describe('messages router', () => {
     const temp1 = (await response1.json()) as { id: string };
     const temp2 = (await response2.json()) as { id: string };
 
-    const messageId = await caller.messages.send({
+    const messageId = await sendMessage(caller, {
       channelId: 1,
       content: 'Message at the attachment limit',
       files: [temp1.id, temp2.id]
@@ -1722,7 +1722,7 @@ describe('messages router', () => {
   test('should rate limit excessive edit message attempts', async () => {
     const { caller } = await initTest(1);
 
-    const messageId = await caller.messages.send({
+    const messageId = await sendMessage(caller, {
       channelId: 1,
       content: 'Message to edit',
       files: []
@@ -1746,7 +1746,7 @@ describe('messages router', () => {
   test('should send a thread reply to a root message', async () => {
     const { caller } = await initTest();
 
-    const parentId = await caller.messages.send({
+    const parentId = await sendMessage(caller, {
       channelId: 1,
       content: 'Parent message',
       files: []
@@ -1773,13 +1773,13 @@ describe('messages router', () => {
   test('should send an inline reply and include reply preview', async () => {
     const { caller } = await initTest();
 
-    const targetMessageId = await caller.messages.send({
+    const targetMessageId = await sendMessage(caller, {
       channelId: 1,
       content: 'Original message',
       files: []
     });
 
-    const inlineReplyId = await caller.messages.send({
+    const inlineReplyId = await sendMessage(caller, {
       channelId: 1,
       content: 'Inline reply',
       files: [],
@@ -1819,7 +1819,7 @@ describe('messages router', () => {
   test('should throw when sending an inline reply to a message in a different channel', async () => {
     const { caller } = await initTest();
 
-    const targetMessageId = await caller.messages.send({
+    const targetMessageId = await sendMessage(caller, {
       channelId: 1,
       content: 'Message in channel 1',
       files: []
@@ -1838,13 +1838,13 @@ describe('messages router', () => {
   test('should clear inline reply reference when target message is deleted', async () => {
     const { caller } = await initTest();
 
-    const targetMessageId = await caller.messages.send({
+    const targetMessageId = await sendMessage(caller, {
       channelId: 1,
       content: 'Soon deleted',
       files: []
     });
 
-    const inlineReplyId = await caller.messages.send({
+    const inlineReplyId = await sendMessage(caller, {
       channelId: 1,
       content: 'Reply to deleted message',
       files: [],
@@ -1864,7 +1864,7 @@ describe('messages router', () => {
   test('should clear replyToMessageId for multiple messages referencing the deleted message', async () => {
     const { caller } = await initTest();
 
-    const targetMessageId = await caller.messages.send({
+    const targetMessageId = await sendMessage(caller, {
       channelId: 1,
       content: 'Widely replied-to message',
       files: []
@@ -1910,13 +1910,13 @@ describe('messages router', () => {
   test('should not affect messages with no reply reference when a message is deleted', async () => {
     const { caller } = await initTest();
 
-    const targetMessageId = await caller.messages.send({
+    const targetMessageId = await sendMessage(caller, {
       channelId: 1,
       content: 'Message to delete',
       files: []
     });
 
-    const unrelatedMessageId = await caller.messages.send({
+    const unrelatedMessageId = await sendMessage(caller, {
       channelId: 1,
       content: 'Unrelated message',
       files: []
@@ -1935,7 +1935,7 @@ describe('messages router', () => {
   test('should not include thread replies in channel messages', async () => {
     const { caller } = await initTest();
 
-    const parentId = await caller.messages.send({
+    const parentId = await sendMessage(caller, {
       channelId: 2,
       content: 'Root message',
       files: []
@@ -1969,7 +1969,7 @@ describe('messages router', () => {
   test('should include reply count on root messages', async () => {
     const { caller } = await initTest();
 
-    const parentId = await caller.messages.send({
+    const parentId = await sendMessage(caller, {
       channelId: 2,
       content: 'Root with replies',
       files: []
@@ -2011,7 +2011,7 @@ describe('messages router', () => {
   test('should return empty thread for message with no replies', async () => {
     const { caller } = await initTest();
 
-    const parentId = await caller.messages.send({
+    const parentId = await sendMessage(caller, {
       channelId: 1,
       content: 'No replies here',
       files: []
@@ -2043,7 +2043,7 @@ describe('messages router', () => {
   test('should throw when sending a reply to a message in a different channel', async () => {
     const { caller } = await initTest();
 
-    const parentId = await caller.messages.send({
+    const parentId = await sendMessage(caller, {
       channelId: 1,
       content: 'Message in channel 1',
       files: []
@@ -2062,13 +2062,13 @@ describe('messages router', () => {
   test('should throw when replying to a thread reply (nested threads)', async () => {
     const { caller } = await initTest();
 
-    const parentId = await caller.messages.send({
+    const parentId = await sendMessage(caller, {
       channelId: 1,
       content: 'Root message',
       files: []
     });
 
-    const replyId = await caller.messages.send({
+    const replyId = await sendMessage(caller, {
       channelId: 1,
       content: 'First-level reply',
       files: [],
@@ -2102,13 +2102,13 @@ describe('messages router', () => {
   test('should throw when getting thread for a reply message', async () => {
     const { caller } = await initTest();
 
-    const parentId = await caller.messages.send({
+    const parentId = await sendMessage(caller, {
       channelId: 1,
       content: 'Root message',
       files: []
     });
 
-    const replyId = await caller.messages.send({
+    const replyId = await sendMessage(caller, {
       channelId: 1,
       content: 'Reply message',
       files: [],
@@ -2127,7 +2127,7 @@ describe('messages router', () => {
   test('should paginate thread messages', async () => {
     const { caller } = await initTest();
 
-    const parentId = await caller.messages.send({
+    const parentId = await sendMessage(caller, {
       channelId: 1,
       content: 'Root for pagination',
       files: []
@@ -2185,7 +2185,7 @@ describe('messages router', () => {
   test('should return thread messages in ascending order (oldest first)', async () => {
     const { caller } = await initTest();
 
-    const parentId = await caller.messages.send({
+    const parentId = await sendMessage(caller, {
       channelId: 1,
       content: 'Root message',
       files: []
@@ -2218,13 +2218,13 @@ describe('messages router', () => {
   test('should delete a thread reply', async () => {
     const { caller } = await initTest();
 
-    const parentId = await caller.messages.send({
+    const parentId = await sendMessage(caller, {
       channelId: 1,
       content: 'Root message',
       files: []
     });
 
-    const replyId = await caller.messages.send({
+    const replyId = await sendMessage(caller, {
       channelId: 1,
       content: 'Reply to delete',
       files: [],
@@ -2245,13 +2245,13 @@ describe('messages router', () => {
   test('should update reply count after deleting a thread reply', async () => {
     const { caller } = await initTest();
 
-    const parentId = await caller.messages.send({
+    const parentId = await sendMessage(caller, {
       channelId: 2,
       content: 'Root message',
       files: []
     });
 
-    const replyId = await caller.messages.send({
+    const replyId = await sendMessage(caller, {
       channelId: 2,
       content: 'Reply 1',
       files: [],
@@ -2551,7 +2551,7 @@ describe('messages router', () => {
     });
 
     // user 1 sends a root message and a thread reply
-    const parentId = await caller1.messages.send({
+    const parentId = await sendMessage(caller1, {
       channelId: 1,
       content: 'Root for thread perm test',
       files: []
@@ -2654,7 +2654,7 @@ describe('messages router', () => {
 
       const { seen, unregister } = listen();
 
-      const messageId = await caller.messages.send({
+      const messageId = await sendMessage(caller, {
         channelId: 1,
         content: 'Thread reply with a file',
         files: [temp.id],

@@ -520,7 +520,8 @@ class FileManager {
   public async savePluginFile(
     pluginId: string,
     originalName: string,
-    data: Uint8Array
+    data: Uint8Array,
+    type: FileSaveType = FileSaveType.MESSAGE
   ): Promise<TFile> {
     const stagingPath = path.join(
       TMP_PATH,
@@ -540,7 +541,7 @@ class FileManager {
       return await this.persistTempFile(
         tempFile,
         { userId: null, pluginId },
-        FileSaveType.MESSAGE
+        type
       );
     } catch (error) {
       await this.removeTemporaryFile(tempFile.id);

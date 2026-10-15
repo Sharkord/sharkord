@@ -750,6 +750,56 @@ describe('voice router', () => {
     });
   });
 
+  describe('server mute', () => {
+    test('should refuse unmuting while a moderator has the user muted', async () => {
+      const { runtime, caller } = await joinVoiceChannelTwo(2);
+
+      runtime.setServerMuted(2, true);
+
+      try {
+        await expect(
+          caller.voice.updateState({ micMuted: false })
+        ).rejects.toThrow('You were muted by a moderator.');
+
+        expect(runtime.getUserState(2).micMuted).toBe(true);
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should still let a muted user change everything else', async () => {
+      const { runtime, caller } = await joinVoiceChannelTwo(2);
+
+      runtime.setServerMuted(2, true);
+
+      try {
+        await caller.voice.updateState({ soundMuted: true });
+
+        expect(runtime.getUserState(2)).toMatchObject({
+          micMuted: true,
+          soundMuted: true
+        });
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should let the user unmute once the mute is lifted', async () => {
+      const { runtime, caller } = await joinVoiceChannelTwo(2);
+
+      runtime.setServerMuted(2, true);
+      runtime.setServerMuted(2, false);
+
+      try {
+        await caller.voice.updateState({ micMuted: false });
+
+        expect(runtime.getUserState(2).micMuted).toBe(false);
+      } finally {
+        await runtime.destroy();
+      }
+    });
+  });
+
   describe('sendReaction', () => {
     test('should broadcast the reaction to every listener', async () => {
       const { runtime, caller } = await joinVoiceChannelTwo(1);

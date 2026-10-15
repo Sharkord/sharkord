@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
-import { initTest, login, uploadFile } from '../../__tests__/helpers';
+import {
+  initTest,
+  login,
+  sendMessage,
+  uploadFile
+} from '../../__tests__/helpers';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
 import { loadCrons } from '../../crons';
 import { cleanupFiles } from '../../crons/cleanup-files';
@@ -37,7 +42,7 @@ const uploadToMessage = async (
 
   const { caller } = await initTest();
 
-  const messageId = await caller.messages.send({
+  const messageId = await sendMessage(caller, {
     content: 'Message with file',
     channelId: 1,
     files: [tempFile.id]
@@ -131,7 +136,7 @@ describe('/public', () => {
     for (let i = 0; i < 2; i++) {
       const { caller } = await initTest();
 
-      const messageId = await caller.messages.send({
+      const messageId = await sendMessage(caller, {
         content: 'Message with file',
         channelId: 1,
         files: [filesToCreate[i]!.tempFile!.id]
@@ -406,7 +411,7 @@ describe('/public', () => {
       token
     );
 
-    const messageId = await caller.messages.send({
+    const messageId = await sendMessage(caller, {
       content: 'Message with private file',
       channelId,
       files: [tempFile.id]
@@ -453,7 +458,7 @@ describe('/public', () => {
       token
     );
 
-    const messageId = await caller.messages.send({
+    const messageId = await sendMessage(caller, {
       content: 'Message with public file',
       channelId,
       files: [tempFile.id]
@@ -1101,7 +1106,7 @@ describe('/public', () => {
       token
     );
 
-    const messageId = await caller.messages.send({
+    const messageId = await sendMessage(caller, {
       content: 'Message with file',
       channelId,
       files: [tempFile.id]

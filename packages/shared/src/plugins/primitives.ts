@@ -20,6 +20,12 @@ export type TPluginPushEvent = {
 
 export const PLUGIN_PUSH_MAX_BYTES = 64 * 1024; // 64 kb
 
+export const PLUGIN_MESSAGE_COMPONENTS_MAX_BYTES = 16 * 1024; // 16 kb
+
+export const PLUGIN_MESSAGE_COMPONENTS_MAX = 5;
+
+export const PLUGIN_MESSAGE_COMPONENT_NAME_MAX_LENGTH = 64;
+
 export const PLUGIN_STORAGE_KEY_MAX_LENGTH = 256;
 
 export const PLUGIN_STORAGE_VALUE_MAX_BYTES = 64 * 1024; // 64 kb

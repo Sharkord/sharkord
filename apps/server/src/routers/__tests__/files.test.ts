@@ -1,7 +1,12 @@
 import type { TTempFile } from '@sharkord/shared';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import fs from 'fs/promises';
-import { initTest, login, uploadFile } from '../../__tests__/helpers';
+import {
+  initTest,
+  login,
+  sendMessage,
+  uploadFile
+} from '../../__tests__/helpers';
 import { fileManager } from '../../helpers/file-manager';
 
 describe('files router', () => {
@@ -24,13 +29,13 @@ describe('files router', () => {
     const { caller } = await initTest();
 
     // a file only message: removing its file removes the message itself
-    const fileOnlyMessageId = await caller.messages.send({
+    const fileOnlyMessageId = await sendMessage(caller, {
       channelId: 1,
       content: '',
       files: [tempFile.id]
     });
 
-    const replyId = await caller.messages.send({
+    const replyId = await sendMessage(caller, {
       channelId: 1,
       content: 'Replying to the file message',
       files: [],
@@ -59,13 +64,13 @@ describe('files router', () => {
   test('should update the parent reply count when a thread reply loses its last file', async () => {
     const { caller } = await initTest();
 
-    const parentId = await caller.messages.send({
+    const parentId = await sendMessage(caller, {
       channelId: 1,
       content: 'Thread parent',
       files: []
     });
 
-    const threadReplyId = await caller.messages.send({
+    const threadReplyId = await sendMessage(caller, {
       channelId: 1,
       content: '',
       files: [tempFile.id],

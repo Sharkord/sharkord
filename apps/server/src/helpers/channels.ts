@@ -6,9 +6,10 @@ import {
   type TBeforeChannelDeletePayload,
   type TChannel
 } from '@sharkord/shared';
-import { desc, eq } from 'drizzle-orm';
+import { asc, desc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db';
+import { reorderPositions } from '../db/mutations/positions';
 import { publishChannel } from '../db/publishers';
 import { isDirectMessageChannel } from '../db/queries/dms';
 import { categories, channels } from '../db/schema';
@@ -261,9 +262,92 @@ const deleteChannel = async (channelId: number, userId: number | null) => {
   });
 };
 
+const MAX_REORDERED_CHANNELS = 500;
+
+const reorderChannels = async (
+  categoryId: number,
+  channelIds: number[],
+  userId: number | null
+) => {
+  invariant(channelIds.length <= MAX_REORDERED_CHANNELS, {
+    code: 'BAD_REQUEST',
+    message: `At most ${MAX_REORDERED_CHANNELS} channels can be reordered at once.`
+  });
+
+  const [category, requestedChannels] = await Promise.all([
+    db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(eq(categories.id, categoryId))
+      .limit(1)
+      .get(),
+    db
+      .select({
+        id: channels.id,
+        categoryId: channels.categoryId,
+        isDm: channels.isDm
+      })
+      .from(channels)
+      .where(inArray(channels.id, channelIds))
+  ]);
+
+  invariant(category, {
+    code: 'NOT_FOUND',
+    message: 'Category not found'
+  });
+
+  invariant(
+    requestedChannels.every((channel) => !channel.isDm),
+    {
+      code: 'FORBIDDEN',
+      message: 'Cannot move DM channels into a category'
+    }
+  );
+
+  const movedChannelIds = requestedChannels
+    .filter((channel) => channel.categoryId !== categoryId)
+    .map((channel) => channel.id);
+
+  if (movedChannelIds.length > 0) {
+    await db
+      .update(channels)
+      .set({ categoryId, updatedAt: Date.now() })
+      .where(inArray(channels.id, movedChannelIds));
+  }
+
+  const existingCategoryChannels = await db
+    .select({ id: channels.id })
+    .from(channels)
+    .where(eq(channels.categoryId, categoryId))
+    .orderBy(asc(channels.position), asc(channels.id));
+
+  const nextChannelOrder = await reorderPositions(
+    channels,
+    existingCategoryChannels.map((channel) => channel.id),
+    channelIds
+  );
+
+  nextChannelOrder.forEach((channelId) => {
+    publishChannel(channelId, 'update');
+  });
+
+  if (nextChannelOrder.length > 0) {
+    enqueueActivityLog({
+      type: ActivityLogType.REORDERED_CHANNELS,
+      userId,
+      details: {
+        categoryId,
+        channelIds: nextChannelOrder
+      }
+    });
+  }
+};
+
 export {
   createChannel,
   deleteChannel,
+  MAX_REORDERED_CHANNELS,
+  reorderChannels,
   updateChannel,
   zChannelName,
   zChannelTopic

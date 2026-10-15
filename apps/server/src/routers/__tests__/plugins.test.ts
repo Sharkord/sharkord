@@ -10,6 +10,7 @@ import {
   ServerEvents,
   type TInvokerContext,
   type TPluginCapabilityAccessRule,
+  type TPluginEphemeralResponse,
   type TPluginInfo,
   type TPluginPushEvent
 } from '@sharkord/shared';
@@ -17,20 +18,23 @@ import { beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
-import { initTest } from '../../__tests__/helpers';
+import { initTest, sendMessage } from '../../__tests__/helpers';
 import {
   loadMockedPlugins,
   mockPluginDownload,
   resetPluginMocks
 } from '../../__tests__/mocks';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
+import * as publishers from '../../db/publishers';
 import { getChannelsReadStatesForUser } from '../../db/queries/channels';
 import { getRole, getUserRoleIds } from '../../db/queries/roles';
 import {
   activityLog,
   categories,
   channels,
+  emojis,
   files,
+  invites,
   messageFiles,
   messageReactions,
   messages,
@@ -47,6 +51,7 @@ import {
   canUseCapability,
   getCapabilityAccessRules
 } from '../../helpers/plugin-capability-access';
+import { hasVoiceMoveGrant } from '../../helpers/voice-move-grants';
 import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
 import { drainActivityLogQueue } from '../../queues/activity-log';
@@ -232,6 +237,18 @@ describe('plugins router', () => {
   });
 
   describe('getCommands', () => {
+    test('should name the plugin each command belongs to', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-b');
+
+      const commands = await caller.plugins.getCommands({});
+      const [command] = commands['plugin-b']!;
+
+      expect(command!.pluginName).toBe('plugin-b');
+      expect(command!.pluginLogo).toBe('https://example.com/logo.png');
+    });
+
     test('should throw when user lacks permissions', async () => {
       const { caller } = await initTest(2);
 
@@ -1391,6 +1408,45 @@ describe('plugins router', () => {
       expect(message.id).toBe(messageId);
       expect(message.content).toContain('data-status="completed"');
       expect(message.content).toContain('&quot;result&quot;: 5');
+    });
+
+    // a blank argument is sent as an empty token so the ones after it keep
+    // their position, and it must reach the plugin as absent, not as 0 or ''
+    test('should treat a blank argument as absent and keep the next in place', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-b');
+      await caller.messages.send({
+        channelId: 1,
+        content: '<p>/echo-optional "" 5</p>',
+        files: []
+      });
+
+      await Bun.sleep(50);
+
+      const message = await getLastMessage(caller);
+
+      expect(message.content).toContain('data-status="completed"');
+      expect(message.content).toContain('&quot;label&quot;: null');
+      expect(message.content).toContain('&quot;count&quot;: 5');
+    });
+
+    test('should treat a blank number as absent rather than 0', async () => {
+      const { caller } = await initTest();
+
+      await pluginManager.load('plugin-b');
+      await caller.messages.send({
+        channelId: 1,
+        content: '<p>/echo-optional label ""</p>',
+        files: []
+      });
+
+      await Bun.sleep(50);
+
+      const message = await getLastMessage(caller);
+
+      expect(message.content).toContain('&quot;label&quot;: &quot;label&quot;');
+      expect(message.content).toContain('&quot;count&quot;: null');
     });
 
     test('should leave a normal message alone when it is not a command', async () => {
@@ -2597,6 +2653,536 @@ describe('plugins router', () => {
     });
   });
 
+  describe('ephemeral commands', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const listen = (userId: number) => {
+      const received: TPluginEphemeralResponse[] = [];
+
+      const subscription = pubsub
+        .subscribeFor(userId, ServerEvents.PLUGIN_EPHEMERAL_RESPONSE)
+        .subscribe({ next: (event) => received.push(event) });
+
+      return { received, subscription };
+    };
+
+    test('should answer only the invoker and store nothing', async () => {
+      const { caller } = await initTest();
+      const before = await tdb.select({ id: messages.id }).from(messages);
+      const invoker = listen(1);
+      const bystander = listen(2);
+
+      const messageId = await caller.messages.send({
+        channelId: 1,
+        content: '<p>/whisper hello</p>',
+        files: []
+      });
+
+      // the command deliberately runs after the mutation returns
+      await Bun.sleep(50);
+
+      invoker.subscription.unsubscribe();
+      bystander.subscription.unsubscribe();
+
+      expect(messageId).toBeNull();
+      expect(await tdb.select({ id: messages.id }).from(messages)).toHaveLength(
+        before.length
+      );
+      expect(invoker.received).toEqual([
+        {
+          pluginId: 'plugin-b',
+          commandName: 'whisper',
+          channelId: 1,
+          status: 'completed',
+          response: 'only you: hello'
+        }
+      ]);
+      expect(bystander.received).toEqual([]);
+    });
+
+    test('should tell the invoker privately when it fails', async () => {
+      const { caller } = await initTest();
+      const invoker = listen(1);
+
+      await caller.messages.send({
+        channelId: 1,
+        content: '<p>/whisper-fail</p>',
+        files: []
+      });
+
+      await Bun.sleep(50);
+      invoker.subscription.unsubscribe();
+
+      expect(invoker.received).toHaveLength(1);
+      expect(invoker.received[0]!.status).toBe('failed');
+      expect(invoker.received[0]!.response).toContain('whispered failure');
+    });
+
+    test('should log the run like any other command', async () => {
+      const { caller } = await initTest();
+
+      await caller.messages.send({
+        channelId: 1,
+        content: '<p>/whisper logged</p>',
+        files: []
+      });
+
+      await Bun.sleep(50);
+      await drainActivityLogQueue();
+
+      const logs = await tdb
+        .select()
+        .from(activityLog)
+        .where(eq(activityLog.type, ActivityLogType.EXECUTED_PLUGIN_COMMAND));
+
+      expect(logs).toHaveLength(1);
+    });
+  });
+
+  describe('message components', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const run = async (commandName: string, args: Record<string, unknown>) => {
+      const { caller } = await initTest();
+
+      return (await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName,
+        args
+      })) as { messageId?: number };
+    };
+
+    const sendComponents = async (components: unknown) => {
+      const { messageId } = await run('send-components', {
+        channelId: 1,
+        components: JSON.stringify(components)
+      });
+
+      return messageId!;
+    };
+
+    const storedMessage = async (messageId: number) =>
+      tdb.select().from(messages).where(eq(messages.id, messageId)).get();
+
+    const poll = { name: 'poll', props: { options: ['Yes', 'No'] } };
+
+    test('should store the components with the message', async () => {
+      const messageId = await sendComponents([poll]);
+
+      expect((await storedMessage(messageId))!.pluginComponents).toEqual([
+        poll
+      ]);
+    });
+
+    test('should hand the components to clients with the message', async () => {
+      const messageId = await sendComponents([poll]);
+      const { caller } = await initTest();
+
+      const message = await caller.messages.getOne({ messageId });
+
+      expect(message.pluginComponents).toEqual([poll]);
+      expect(message.pluginId).toBe('plugin-b');
+    });
+
+    // stored complete, so a client never has to default it
+    test('should store empty props for a component sent without them', async () => {
+      const messageId = await sendComponents([{ name: 'banner' }]);
+
+      expect((await storedMessage(messageId))!.pluginComponents).toEqual([
+        { name: 'banner', props: {} }
+      ]);
+    });
+
+    test('should leave a message sent without components without any', async () => {
+      const { caller } = await initTest();
+
+      const { messageId } = (await caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'attach',
+        args: { channelId: 1, name: 'note.txt', body: 'hello' }
+      })) as { messageId: number };
+
+      expect((await storedMessage(messageId))!.pluginComponents).toBeNull();
+    });
+
+    test('should replace the components without marking the message edited', async () => {
+      const messageId = await sendComponents([poll]);
+      const updated = { name: 'poll', props: { options: ['Yes'] } };
+
+      await run('set-components', {
+        messageId,
+        components: JSON.stringify([updated])
+      });
+
+      const message = await storedMessage(messageId);
+
+      expect(message!.pluginComponents).toEqual([updated]);
+      expect(message!.editedAt).toBeNull();
+    });
+
+    test('should tell clients the components changed', async () => {
+      const messageId = await sendComponents([poll]);
+      const publish = spyOn(publishers, 'publishMessage');
+
+      await run('set-components', {
+        messageId,
+        components: JSON.stringify([poll])
+      });
+
+      expect(publish).toHaveBeenCalledWith(messageId, 1, 'update');
+    });
+
+    test('should remove the components with null', async () => {
+      const messageId = await sendComponents([poll]);
+
+      await run('set-components', { messageId, components: 'null' });
+
+      expect((await storedMessage(messageId))!.pluginComponents).toBeNull();
+    });
+
+    test('should keep the components when the text is edited', async () => {
+      const messageId = await sendComponents([poll]);
+
+      await run('edit-text', { messageId });
+
+      expect((await storedMessage(messageId))!.pluginComponents).toEqual([
+        poll
+      ]);
+    });
+
+    test('should refuse changing the components of another message', async () => {
+      await expect(
+        run('set-components', {
+          messageId: 1,
+          components: JSON.stringify([poll])
+        })
+      ).rejects.toThrow('You do not have permission to edit this message');
+    });
+
+    test('should refuse changing the components of a missing message', async () => {
+      await expect(
+        run('set-components', {
+          messageId: 999999,
+          components: JSON.stringify([poll])
+        })
+      ).rejects.toThrow('Message not found');
+    });
+
+    test('should refuse components that are not a list', async () => {
+      await expect(sendComponents(poll)).rejects.toThrow(
+        'Message components must be a list.'
+      );
+    });
+
+    test('should refuse more components than the cap', async () => {
+      await expect(
+        sendComponents(Array.from({ length: 6 }, () => poll))
+      ).rejects.toThrow('A message can carry at most 5 components.');
+    });
+
+    test('should refuse a component without a name', async () => {
+      await expect(sendComponents([{ props: {} }])).rejects.toThrow(
+        'Every message component needs a name of 1 to 64 characters.'
+      );
+    });
+
+    test('should refuse props that are not an object', async () => {
+      await expect(
+        sendComponents([{ name: 'poll', props: [1, 2] }])
+      ).rejects.toThrow('Message component props must be a JSON object.');
+    });
+
+    test('should refuse components over the size cap', async () => {
+      await expect(
+        sendComponents([{ name: 'poll', props: { blob: 'x'.repeat(9000) } }])
+      ).rejects.toThrow('cannot exceed');
+    });
+  });
+
+  describe('voice moderation', () => {
+    const VOICE_CHANNEL_ID = 2;
+    const PRIVATE_VOICE_CHANNEL_ID = 4;
+
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const run = async (commandName: string, args: Record<string, unknown>) => {
+      const { caller } = await initTest();
+
+      return caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName,
+        args
+      });
+    };
+
+    const withUserInVoice = async (
+      run: (runtime: VoiceRuntime) => Promise<void>
+    ) => {
+      const runtime = new VoiceRuntime(VOICE_CHANNEL_ID);
+
+      runtime.addUser(2, { micMuted: false, soundMuted: false });
+
+      try {
+        await run(runtime);
+      } finally {
+        await runtime.destroy();
+      }
+    };
+
+    test('should move a user to another voice channel', async () => {
+      await withUserInVoice(async () => {
+        const received: unknown[] = [];
+
+        const subscription = pubsub
+          .subscribeFor(2, ServerEvents.USER_VOICE_MOVED)
+          .subscribe({ next: (event) => received.push(event) });
+
+        await run('voice-move', {
+          userId: 2,
+          channelId: PRIVATE_VOICE_CHANNEL_ID
+        });
+
+        subscription.unsubscribe();
+
+        expect(received).toEqual([
+          {
+            channelId: PRIVATE_VOICE_CHANNEL_ID,
+            fromChannelId: VOICE_CHANNEL_ID
+          }
+        ]);
+        expect(hasVoiceMoveGrant(2, PRIVATE_VOICE_CHANNEL_ID)).toBe(true);
+      });
+    });
+
+    test('should refuse moving into a channel that is not a voice channel', async () => {
+      await withUserInVoice(async () => {
+        await expect(
+          run('voice-move', { userId: 2, channelId: 1 })
+        ).rejects.toThrow('Channel is not a voice channel');
+      });
+    });
+
+    test('should refuse moving a user who is not in voice', async () => {
+      await expect(
+        run('voice-move', { userId: 2, channelId: VOICE_CHANNEL_ID })
+      ).rejects.toThrow('User is not in a voice channel');
+    });
+
+    test('should refuse moving a user into the channel they are in', async () => {
+      await withUserInVoice(async () => {
+        await expect(
+          run('voice-move', { userId: 2, channelId: VOICE_CHANNEL_ID })
+        ).rejects.toThrow('User is already in that channel');
+      });
+    });
+
+    test('should disconnect a user and tell everyone', async () => {
+      await withUserInVoice(async (runtime) => {
+        const received: unknown[] = [];
+
+        const subscription = pubsub
+          .subscribe(ServerEvents.USER_LEAVE_VOICE)
+          .subscribe({ next: (event) => received.push(event) });
+
+        await run('voice-disconnect', { userId: 2 });
+
+        subscription.unsubscribe();
+
+        expect(runtime.getUser(2)).toBeUndefined();
+        expect(received).toEqual([{ channelId: VOICE_CHANNEL_ID, userId: 2 }]);
+      });
+    });
+
+    test('should refuse disconnecting a user who is not in voice', async () => {
+      await expect(run('voice-disconnect', { userId: 2 })).rejects.toThrow(
+        'User is not in a voice channel'
+      );
+    });
+
+    test('should server mute a user and tell everyone', async () => {
+      await withUserInVoice(async (runtime) => {
+        const received: { state: { serverMuted: boolean } }[] = [];
+
+        const subscription = pubsub
+          .subscribe(ServerEvents.USER_VOICE_STATE_UPDATE)
+          .subscribe({ next: (event) => received.push(event) });
+
+        await run('voice-mute', {
+          channelId: VOICE_CHANNEL_ID,
+          userId: 2,
+          muted: true
+        });
+
+        subscription.unsubscribe();
+
+        expect(runtime.isServerMuted(2)).toBe(true);
+        expect(runtime.getUserState(2).micMuted).toBe(true);
+        expect(received.at(-1)!.state.serverMuted).toBe(true);
+      });
+    });
+
+    test('should lift a server mute', async () => {
+      await withUserInVoice(async (runtime) => {
+        await run('voice-mute', {
+          channelId: VOICE_CHANNEL_ID,
+          userId: 2,
+          muted: true
+        });
+        await run('voice-mute', {
+          channelId: VOICE_CHANNEL_ID,
+          userId: 2,
+          muted: false
+        });
+
+        expect(runtime.isServerMuted(2)).toBe(false);
+      });
+    });
+
+    test('should refuse muting a user who is not in the channel', async () => {
+      await withUserInVoice(async () => {
+        await expect(
+          run('voice-mute', {
+            channelId: VOICE_CHANNEL_ID,
+            userId: 5,
+            muted: true
+          })
+        ).rejects.toThrow('User is not in this voice channel.');
+      });
+    });
+  });
+
+  describe('invites, emojis and channel order', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const run = async (commandName: string, args: Record<string, unknown>) => {
+      const { caller } = await initTest();
+
+      return caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName,
+        args
+      });
+    };
+
+    test('should create an invite attributed to the given user', async () => {
+      const invite = (await run('create-invite', {
+        input: JSON.stringify({ creatorId: 2, code: 'plugin-made', maxUses: 1 })
+      })) as { id: number };
+
+      const stored = await tdb
+        .select()
+        .from(invites)
+        .where(eq(invites.id, invite.id))
+        .get();
+
+      expect(stored!.code).toBe('plugin-made');
+      expect(stored!.creatorId).toBe(2);
+      expect(stored!.maxUses).toBe(1);
+    });
+
+    test('should refuse an invite for the owner role', async () => {
+      await expect(
+        run('create-invite', {
+          input: JSON.stringify({ creatorId: 2, roleId: OWNER_ROLE_ID })
+        })
+      ).rejects.toThrow('Plugins cannot create invites for the owner role.');
+    });
+
+    test('should refuse an invite for a user who does not exist', async () => {
+      await expect(
+        run('create-invite', { input: JSON.stringify({ creatorId: 9999 }) })
+      ).rejects.toThrow('User not found');
+    });
+
+    test('should add an emoji attributed to the given user', async () => {
+      const emoji = (await run('create-emoji', {
+        name: 'plugin_emoji',
+        fileName: 'shark.png',
+        userId: 2
+      })) as { id: number; name: string };
+
+      const stored = await tdb
+        .select()
+        .from(emojis)
+        .where(eq(emojis.id, emoji.id))
+        .get();
+      const file = await tdb
+        .select()
+        .from(files)
+        .where(eq(files.id, stored!.fileId))
+        .get();
+
+      expect(stored!.name).toBe('plugin_emoji');
+      expect(stored!.userId).toBe(2);
+      expect(file!.pluginId).toBe('plugin-b');
+    });
+
+    test('should refuse an emoji that is not an image', async () => {
+      await expect(
+        run('create-emoji', { name: 'notes', fileName: 'notes.txt', userId: 2 })
+      ).rejects.toThrow('An emoji must be an image.');
+    });
+
+    test('should refuse an emoji for a user who does not exist', async () => {
+      await expect(
+        run('create-emoji', {
+          name: 'ghost',
+          fileName: 'ghost.png',
+          userId: 9999
+        })
+      ).rejects.toThrow('User not found');
+    });
+
+    test('should delete an emoji', async () => {
+      const emoji = (await run('create-emoji', {
+        name: 'short_lived',
+        fileName: 'short.png',
+        userId: 2
+      })) as { id: number };
+
+      await run('delete-emoji', { emojiId: emoji.id });
+
+      expect(
+        await tdb.select().from(emojis).where(eq(emojis.id, emoji.id))
+      ).toHaveLength(0);
+    });
+
+    test('should reorder the channels of a category', async () => {
+      await run('reorder-channels', {
+        categoryId: 2,
+        channelIds: JSON.stringify([4, 2])
+      });
+
+      const ordered = await tdb
+        .select({ id: channels.id })
+        .from(channels)
+        .where(eq(channels.categoryId, 2))
+        .orderBy(channels.position);
+
+      expect(ordered.map(({ id }) => id)).toEqual([4, 2]);
+    });
+
+    test('should refuse reordering into a category that does not exist', async () => {
+      await expect(
+        run('reorder-channels', {
+          categoryId: 9999,
+          channelIds: JSON.stringify([2])
+        })
+      ).rejects.toThrow('Category not found');
+    });
+
+    test('should refuse reordering more channels than the cap', async () => {
+      await expect(
+        run('reorder-channels', {
+          categoryId: 2,
+          channelIds: JSON.stringify(
+            Array.from({ length: 501 }, (_, index) => index + 1)
+          )
+        })
+      ).rejects.toThrow('At most 500 channels can be reordered at once.');
+    });
+  });
+
   describe('pinning and reacting', () => {
     beforeEach(() => pluginManager.load('plugin-b'));
 
@@ -2642,7 +3228,7 @@ describe('plugins router', () => {
     test('should refuse to pin a thread message', async () => {
       const { caller } = await initTest();
 
-      const reply = await caller.messages.send({
+      const reply = await sendMessage(caller, {
         channelId: 1,
         content: '<p>reply</p>',
         parentMessageId: 1,
@@ -3916,7 +4502,7 @@ describe('plugin commands in messages', () => {
 
     // the <script> is stripped by sanitizeMessageHtml, so a parser reading the
     // raw input would see different text than what gets stored and displayed
-    const messageId = await caller.messages.send({
+    const messageId = await sendMessage(caller, {
       channelId: 1,
       content: '<p>/test-command hello<script>ignored</script></p>',
       files: []

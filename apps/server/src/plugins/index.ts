@@ -268,9 +268,13 @@ class PluginManager {
     const allCommands: TCommandsMapByPlugin = {};
 
     for (const [pluginId, commands] of this.commandRegistry.getByPlugin()) {
+      const manifest = this.loadedManifests.get(pluginId);
+
       allCommands[pluginId] = Array.from(commands.values()).map(
         ({ name, description, args }) => ({
           pluginId,
+          pluginName: manifest?.name ?? pluginId,
+          pluginLogo: manifest?.logo,
           name,
           description,
           args

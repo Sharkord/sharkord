@@ -1,4 +1,5 @@
 import {
+  getErrorMessage,
   ServerEvents,
   StreamKind,
   type TChannelState,
@@ -100,7 +101,8 @@ const defaultUserState: TVoiceUserState = {
   micMuted: false,
   soundMuted: false,
   webcamEnabled: false,
-  sharingScreen: false
+  sharingScreen: false,
+  serverMuted: false
 };
 
 type TTransportMap = {
@@ -149,6 +151,7 @@ class VoiceRuntime {
   private screenAudioProducers: TProducerMap = {};
   private consumers: TConsumerMap = {};
   private producerQualityLayers: TProducerQualityLayerMap = {};
+  private serverMutedUserIds = new Set<number>();
 
   private externalCounter = EXTERNAL_STREAM_ID_BASE;
   private externalStreamsInternal: {
@@ -409,7 +412,8 @@ class VoiceRuntime {
       userId,
       state: {
         ...defaultUserState,
-        ...state
+        ...state,
+        ...(this.isServerMuted(userId) && { micMuted: true, serverMuted: true })
       }
     });
 
@@ -493,6 +497,34 @@ class VoiceRuntime {
       channelId: this.id,
       userId,
       state: { ...user.state }
+    });
+  };
+
+  public isServerMuted = (userId: number) =>
+    this.serverMutedUserIds.has(userId);
+
+  public setServerMuted = (userId: number, muted: boolean) => {
+    const producer = this.audioProducers[userId];
+
+    if (muted) {
+      this.serverMutedUserIds.add(userId);
+      this.updateUserState(userId, { micMuted: true, serverMuted: true });
+    } else {
+      this.serverMutedUserIds.delete(userId);
+      this.updateUserState(userId, { serverMuted: false });
+    }
+
+    if (producer) this.setProducerPaused(producer, muted);
+  };
+
+  private setProducerPaused = (producer: Producer, paused: boolean) => {
+    const change = paused ? producer.pause() : producer.resume();
+
+    change.catch((error) => {
+      logger.error(
+        `Failed to ${paused ? 'pause' : 'resume'} producer ${producer.id}: %s`,
+        getErrorMessage(error)
+      );
     });
   };
 
@@ -652,6 +684,10 @@ class VoiceRuntime {
       this.videoProducers[userId] = producer;
     } else if (type === StreamKind.AUDIO) {
       this.audioProducers[userId] = producer;
+
+      if (this.isServerMuted(userId)) {
+        this.setProducerPaused(producer, true);
+      }
     } else if (type === StreamKind.SCREEN) {
       this.screenProducers[userId] = producer;
     } else if (type === StreamKind.SCREEN_AUDIO) {

@@ -20,6 +20,14 @@ const escapeAttribute = (value: string) =>
 const toAttribute = (name: string, value: string | undefined) =>
   value === undefined ? '' : ` ${name}="${escapeAttribute(value)}"`;
 
+const stringifyCommandResponse = (response: unknown): string => {
+  if (response === undefined) return '';
+
+  if (typeof response === 'string') return response;
+
+  return JSON.stringify(response, null, 2);
+};
+
 const toDomCommand = (
   command: RegisteredCommand & {
     imageUrl?: string;
@@ -39,12 +47,7 @@ const toDomCommand = (
       return { name: argDef.name, value: argValue, status: command.status };
     }) || [];
 
-  const responseString =
-    command.response !== undefined
-      ? typeof command.response === 'string'
-        ? command.response
-        : JSON.stringify(command.response, null, 2)
-      : '';
+  const responseString = stringifyCommandResponse(command.response);
 
   const attributes = [
     toAttribute('data-plugin-id', command.pluginId),
@@ -84,4 +87,4 @@ const parseDomCommand = (domElement: TCommandElement): TParsedDomCommand => {
   });
 };
 
-export { parseDomCommand, toDomCommand };
+export { parseDomCommand, stringifyCommandResponse, toDomCommand };
