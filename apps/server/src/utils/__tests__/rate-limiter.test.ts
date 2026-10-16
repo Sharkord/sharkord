@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { config } from '../../config';
 import { FixedWindowRateLimiter } from '../rate-limiters';
 
 describe('FixedWindowRateLimiter', () => {
@@ -167,5 +168,22 @@ describe('FixedWindowRateLimiter', () => {
     }
 
     expect(limiter.size).toBeLessThanOrEqual(10);
+  });
+
+  test('allows every request when rate limiters are disabled in the config', () => {
+    const limiter = new FixedWindowRateLimiter({
+      maxRequests: 1,
+      windowMs: 10_000
+    });
+
+    config.rateLimiters.enabled = false;
+
+    try {
+      limiter.consume('127.0.0.1');
+
+      expect(limiter.consume('127.0.0.1').allowed).toBe(true);
+    } finally {
+      config.rateLimiters.enabled = true;
+    }
   });
 });

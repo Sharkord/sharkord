@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { config } from '../../config';
 import { FailedAttemptsLimiter } from '../rate-limiters/failed-attempts-limiter';
 
 describe('FailedAttemptsLimiter', () => {
@@ -106,6 +107,19 @@ describe('FailedAttemptsLimiter', () => {
 
     expect(failTimes(limiter, '1.2.3.4', 3)).toBe(0);
     expect(limiter.getRetryAfterMs('1.2.3.4')).toBe(0);
+  });
+
+  test('never blocks an ip when rate limiters are disabled in the config', () => {
+    const limiter = createLimiter();
+
+    config.rateLimiters.enabled = false;
+
+    try {
+      expect(failTimes(limiter, '1.2.3.4', 3)).toBe(0);
+      expect(limiter.getRetryAfterMs('1.2.3.4')).toBe(0);
+    } finally {
+      config.rateLimiters.enabled = true;
+    }
   });
 
   test('never grows past maxEntries', () => {
