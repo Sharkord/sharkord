@@ -12,7 +12,7 @@ import { useIsShiftHeld } from '@/features/app/hooks';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { getTRPCClient } from '@/lib/trpc';
-import { Permission, PluginSlot, TestId } from '@sharkord/shared';
+import { Permission, PluginSlot } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
 import {
   MessageSquareText,
@@ -180,7 +180,6 @@ const MessageActions = memo(
             icon={MessageSquareText}
             onClick={onReplyClick}
             title={t('replyInThread')}
-            data-testid={TestId.MESSAGE_REPLY_IN_THREAD}
           />
         )}
         {canManage && (
@@ -201,7 +200,6 @@ const MessageActions = memo(
               className={isShiftHeld ? 'text-destructive' : ''}
               onClick={onDeleteClick}
               title={t('deleteMessageTitle')}
-              data-testid={TestId.MESSAGE_DELETE}
             />
           </>
         )}

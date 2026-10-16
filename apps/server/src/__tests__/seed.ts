@@ -10,12 +10,10 @@
  * Seeded for unit and integration tests:
  *
  *   settings          1    server name "Test Server", secret token TEST_SECRET_TOKEN
- *   users             8    1 testowner (owner), 2 testuser (low permissions, used for
- *                          every "lacks permission" case), usera, userb, testmoderator,
- *                          6 userc, 7 userd and 8 usere (plain members, so a thread can
- *                          have more distinct repliers than the six avatars it shows)
+ *   users             5    1 testowner (owner), 2 testuser (low permissions, used for
+ *                          every "lacks permission" case), usera, userb, testmoderator
  *   roles             4    Owner (id 1), Member, Guest, Moderator
- *   userRoles         8    one per user, plus the moderator's extra role
+ *   userRoles         5    one per user, plus the moderator's extra role
  *   rolePermissions  32    the default permission sets for the roles above
  *   categories        2    Text Channels, Voice Channels
  *   channels          5    1 General (text), Voice, DM Channel, Private Voice,
@@ -332,8 +330,6 @@ const seedTestDb = async (
   const directMessage: TDirectMessage = {
     userOneId: insertedUserA!.id,
     userTwoId: insertedUserB!.id,
-    userOneClosedAt: null,
-    userTwoClosedAt: null,
     channelId: 3,
     createdAt: firstStart
   };
@@ -453,40 +449,15 @@ const seedTestDb = async (
     createdAt: firstStart
   });
 
-  const extraMembers = ['C', 'D', 'E'].map(
-    (letter): TIUser => ({
-      name: `User ${letter}`,
-      identity: `user${letter.toLowerCase()}`,
-      password: hashedPassword,
-      avatarId: null,
-      bannerId: null,
-      bio: null,
-      createdAt: firstStart
-    })
-  );
-
-  const insertedExtraMembers = await db
-    .insert(users)
-    .values(extraMembers)
-    .returning();
-
-  await db.insert(userRoles).values(
-    insertedExtraMembers.map((member) => ({
-      userId: member.id,
-      roleId: insertedDefaultRole!.id,
-      createdAt: firstStart
-    }))
-  );
-
   if (e2e) {
     const allUsers = [
       insertedOwner!,
       insertedUser!,
       insertedUserA!,
-      insertedUserB!,
-      ...insertedExtraMembers
+      insertedUserB!
     ];
 
+    // add logins for all users to test login history and last seen related features
     const loginsData = allUsers.map((user) => ({
       userId: user.id,
       timestamp: Date.now(),
@@ -495,6 +466,8 @@ const seedTestDb = async (
 
     await db.insert(logins).values(loginsData);
 
+    // for e2e we seed additional data specific to e2e tests, to avoid polluting the unit test database with too much data that is only relevant for e2e tests
+    // but keeping the same base mocks that we also use in integration tests to ensure consistency between unit, integration and e2e tests
     await seedE2E(db);
   }
 

@@ -47,6 +47,7 @@
   "failedReorderCategories": "Falha ao reordenar categorias",
   "failedMoveUser": "Falha ao mover usuário",
   "directMessages": "Mensagens Diretas",
+  "failedLoadDMs": "Falha ao carregar mensagens diretas",
   "couldNotOpenDM": "Não foi possível abrir a mensagem direta",
   "noDMsYet": "Nenhuma mensagem direta ainda",
   "startNewConversation": "Iniciar nova conversa",
@@ -76,13 +77,5 @@
   "microphone": "Microfone",
   "noiseSuppression": "Supressão de ruído",
   "muteChannel": "Silenciar canal",
-  "unmuteChannel": "Reativar canal",
-  "threads": "Tópicos",
-  "openThreads": "Abrir tópicos",
-  "closeThreads": "Fechar tópicos",
-  "noFollowedThreads": "Os tópicos que você segue aparecerão aqui",
-  "failedLoadThreads": "Falha ao carregar os tópicos",
-  "loadMoreThreads": "Carregar mais",
-  "closeConversation": "Fechar conversa",
-  "couldNotCloseDM": "Não foi possível fechar a mensagem direta"
+  "unmuteChannel": "Reativar canal"
 }

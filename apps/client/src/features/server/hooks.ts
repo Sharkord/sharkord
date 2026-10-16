@@ -1,11 +1,9 @@
-import type { TConversation } from '@/types';
 import { ChannelPermission, Permission } from '@sharkord/shared';
 import { useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import type { IRootState } from '../store';
 import { useChannelById, useChannelPermissionsById } from './channels/hooks';
 import { channelReadStateByIdSelector } from './channels/selectors';
-import { getConversationKey } from './helpers';
 import {
   activeFullscreenPluginIdSelector,
   categoryHasUnreadMentionsSelector,
@@ -29,7 +27,8 @@ import {
   serverIdSelector,
   serverNameSelector,
   totalUnreadCountSelector,
-  typingUsersByConversationKeySelector,
+  typingUsersByChannelIdSelector,
+  typingUsersByThreadIdSelector,
   userRolesSelector,
   userSettingsPluginsSelector,
   voiceUsersByChannelIdSelector,
@@ -129,13 +128,15 @@ export const useHasVisibleChannelsInCategory = (categoryId: number) =>
 export const useUserRoles = (userId: number) =>
   useSelector((state: IRootState) => userRolesSelector(state, userId));
 
-export const useTypingUsers = (conversation: TConversation) => {
-  const conversationKey = getConversationKey(conversation);
-
-  return useSelector((state: IRootState) =>
-    typingUsersByConversationKeySelector(state, conversationKey)
+export const useTypingUsersByChannelId = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    typingUsersByChannelIdSelector(state, channelId)
   );
-};
+
+export const useTypingUsersByThreadId = (parentMessageId: number) =>
+  useSelector((state: IRootState) =>
+    typingUsersByThreadIdSelector(state, parentMessageId)
+  );
 
 export const useVoiceUsersByChannelId = (channelId: number) =>
   useSelector((state: IRootState) =>

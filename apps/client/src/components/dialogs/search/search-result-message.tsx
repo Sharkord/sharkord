@@ -1,7 +1,9 @@
 import { useMessageAuthorName } from '@/components/channel-view/text/hooks/use-message-author-name';
 import { MessageRenderer } from '@/components/channel-view/text/renderer';
-import { MessageAuthorAvatar } from '@/components/message-author-avatar';
+import { PluginAvatar } from '@/components/plugin-avatar';
 import { RelativeTime } from '@/components/relative-time';
+import { UserAvatar } from '@/components/user-avatar';
+import { usePluginMetadata } from '@/features/server/plugins/hooks';
 import type { TMessageJumpToTarget } from '@/types';
 import { TestId } from '@sharkord/shared';
 import { IconButton, Tooltip } from '@sharkord/ui';
@@ -18,6 +20,8 @@ type TSearchResultMessageCardProps = {
 const SearchResultMessageCard = memo(
   ({ message, onJump }: TSearchResultMessageCardProps) => {
     const { t } = useTranslation('dialogs');
+    const isPluginMessage = !!message.pluginId;
+    const plugin = usePluginMetadata(message.pluginId);
     const authorName = useMessageAuthorName(message);
 
     const handleJump = useCallback(() => {
@@ -31,11 +35,15 @@ const SearchResultMessageCard = memo(
     return (
       <div className="w-full overflow-hidden rounded-lg border border-border bg-card px-3 py-2 text-left">
         <div className="flex min-w-0 items-start gap-3">
-          <MessageAuthorAvatar
-            userId={message.userId}
-            pluginId={message.pluginId}
-            className="h-7 w-7"
-          />
+          {isPluginMessage ? (
+            <PluginAvatar
+              name={plugin?.name}
+              avatarUrl={plugin?.avatarUrl}
+              className="h-7 w-7"
+            />
+          ) : (
+            <UserAvatar userId={message.userId!} className="h-7 w-7" />
+          )}
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span className="max-w-55 truncate font-medium text-foreground">

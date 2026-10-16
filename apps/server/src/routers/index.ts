@@ -9,14 +9,12 @@ import { messagesRouter } from './messages';
 import { othersRouter } from './others';
 import { pluginsRouter } from './plugins';
 import { rolesRouter } from './roles';
-import { threadsRouter } from './threads';
 import { usersRouter } from './users';
 import { voiceRouter } from './voice';
 
 const appRouter = t.router({
   others: othersRouter,
   messages: messagesRouter,
-  threads: threadsRouter,
   users: usersRouter,
   channels: channelsRouter,
   dms: dmsRouter,

@@ -24,34 +24,4 @@ const withSecondClient = async (
   }
 };
 
-const withClients = async (
-  browser: Browser,
-  identities: string[],
-  run: (pages: Page[]) => Promise<void>
-) => {
-  const contexts = await Promise.all(
-    identities.map(() => browser.newContext())
-  );
-
-  try {
-    const pages = await Promise.all(
-      contexts.map((context) => context.newPage())
-    );
-
-    for (const [index, page] of pages.entries()) {
-      await loginAs(page, identities[index]!, 'password123');
-    }
-
-    await run(pages);
-  } finally {
-    await Promise.all(
-      contexts.map((context) =>
-        context.close().catch(() => {
-          // already gone, nothing to clean up
-        })
-      )
-    );
-  }
-};
-
-export { withClients, withSecondClient };
+export { withSecondClient };

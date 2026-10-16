@@ -2097,7 +2097,7 @@ describe('plugins router', () => {
       expect(result.channel).toBe('General');
       expect(result.category).toBe('Text Channels');
       expect(result.role).toBe('Owner');
-      expect(result.userCount).toBe(8);
+      expect(result.userCount).toBe(5);
     });
 
     test('should answer undefined for ids that do not exist', async () => {

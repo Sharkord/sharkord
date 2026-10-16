@@ -5,7 +5,6 @@ import {
   LocalStorageKey,
   setLocalStorageItemAsJSON
 } from '@/helpers/storage';
-import type { TConversation } from '@/types';
 import { isEmptyMessage } from '@sharkord/shared';
 
 // defines the key for a draft message, channel/chat id
@@ -49,22 +48,15 @@ const setDraftMessage = (draftKey: TDraftMessageKey, message: string) => {
   saveDraftsToStorage(drafts);
 };
 
-const getConversationDraftKey = ({
-  channelId,
-  parentMessageId
-}: TConversation): TDraftMessageKey => {
+const getChannelDraftKey = (channelId: number): TDraftMessageKey => {
   const state = store.getState();
   const ownUserId = ownUserIdSelector(state);
-
-  if (parentMessageId) {
-    return `th-${parentMessageId}-${ownUserId}`;
-  }
 
   return `ch-${channelId}-${ownUserId}`;
 };
 
 export {
-  getConversationDraftKey,
+  getChannelDraftKey,
   getDraftMessage,
   loadDraftsFromStorage,
   setDraftMessage

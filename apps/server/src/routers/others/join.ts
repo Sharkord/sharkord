@@ -13,12 +13,10 @@ import {
   getChannelsForUser,
   getChannelsReadStatesForUser
 } from '../../db/queries/channels';
-import { getDirectMessageConversations } from '../../db/queries/dms';
 import { getEmojis } from '../../db/queries/emojis';
 import { hasUserJoinedBefore } from '../../db/queries/logins';
 import { getRoles } from '../../db/queries/roles';
 import { getPublicSettings, getSettings } from '../../db/queries/server';
-import { getFollowedThreadsForUser } from '../../db/queries/threads';
 import { getPublicUsers } from '../../db/queries/users';
 import { categories, users } from '../../db/schema';
 import { getCapabilityAccessRules } from '../../helpers/plugin-capability-access';
@@ -97,8 +95,7 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
       publicSettings,
       pluginsMetadata,
       hasJoinedBefore,
-      pluginCapabilityAccess,
-      directMessages
+      pluginCapabilityAccess
     ] = await Promise.all([
       db.select().from(categories),
       getChannelsForUser(ctx.user.id), // filter channels based on permissions and DM participation
@@ -110,14 +107,8 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
       getPublicSettings(),
       pluginManager.getActivePluginMetadata(),
       hasUserJoinedBefore(ctx.user.id),
-      getCapabilityAccessRules(),
-      getDirectMessageConversations(ctx.user.id)
+      getCapabilityAccessRules()
     ]);
-
-    const followedThreads = await getFollowedThreadsForUser(
-      ctx.user.id,
-      channelsForUser.map(({ id }) => id)
-    );
 
     const showWelcomeDialog = settings.showWelcomeDialog && !hasJoinedBefore;
 
@@ -181,8 +172,6 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
       publicSettings,
       channelPermissions,
       readStates,
-      followedThreads,
-      directMessages,
       commands: pluginManager.getCommands(),
       pluginIdsWithComponents: pluginManager.getPluginIdsWithComponents(),
       pluginCapabilityAccess,

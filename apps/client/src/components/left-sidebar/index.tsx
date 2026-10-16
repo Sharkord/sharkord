@@ -5,7 +5,6 @@ import {
   usePublicServerSettings,
   useServerName
 } from '@/features/server/hooks';
-import { useThreadsOpen } from '@/features/server/threads/hooks';
 import { LocalStorageKey } from '@/helpers/storage';
 import { cn } from '@/lib/utils';
 import { TestId } from '@sharkord/shared';
@@ -16,8 +15,6 @@ import { DmButton } from './direct-messages/dm-button';
 import { useFollowVoiceMove, useRestoreLastSelectedChannel } from './hooks';
 import { PluginButtons } from './plugin-buttons';
 import { ServerDropdownMenu } from './server-dropdown';
-import { Threads } from './threads';
-import { ThreadsButton } from './threads/threads-button';
 import { UserControl } from './user-control';
 import { VoiceControl } from './voice-control';
 
@@ -32,19 +29,10 @@ type TLeftSidebarProps = {
 const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
   const serverName = useServerName();
   const dmsOpen = useDmsOpen();
-  const threadsOpen = useThreadsOpen();
   const publicSettings = usePublicServerSettings();
 
   useRestoreLastSelectedChannel();
   useFollowVoiceMove();
-
-  let content = <Categories />;
-
-  if (threadsOpen) {
-    content = <Threads />;
-  } else if (dmsOpen) {
-    content = <DirectMessages />;
-  }
 
   return (
     <ResizableSidebar
@@ -68,12 +56,11 @@ const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
           <ServerDropdownMenu />
         </div>
       </div>
-      <div className="space-y-0.5 border-b border-border px-2 py-2">
-        {publicSettings?.directMessagesEnabled && <DmButton />}
-        <ThreadsButton />
-      </div>
+      {publicSettings?.directMessagesEnabled && <DmButton />}
       <PluginButtons />
-      <div className="flex-1 overflow-y-auto">{content}</div>
+      <div className="flex-1 overflow-y-auto">
+        {dmsOpen ? <DirectMessages /> : <Categories />}
+      </div>
       <VoiceControl />
       <UserControl />
     </ResizableSidebar>

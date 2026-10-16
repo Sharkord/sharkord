@@ -45,6 +45,7 @@
   "failedReorderCategories": "Не удалось изменить порядок категорий",
   "failedMoveUser": "Не удалось переместить пользователя",
   "directMessages": "Личные сообщения",
+  "failedLoadDMs": "Не удалось загрузить личные сообщения",
   "couldNotOpenDM": "Не удалось открыть личные сообщения",
   "noDMsYet": "Пока нет личных сообщений",
   "startNewConversation": "Начать новый разговор",
@@ -74,13 +75,5 @@
   "microphone": "Микрофон",
   "noiseSuppression": "Шумоподавление",
   "muteChannel": "Заглушить канал",
-  "unmuteChannel": "Включить звук канала",
-  "threads": "Ветки",
-  "openThreads": "Открыть ветки",
-  "closeThreads": "Закрыть ветки",
-  "noFollowedThreads": "Здесь появятся ветки, которые вы отслеживаете",
-  "failedLoadThreads": "Не удалось загрузить ветки",
-  "loadMoreThreads": "Загрузить ещё",
-  "closeConversation": "Закрыть беседу",
-  "couldNotCloseDM": "Не удалось закрыть личное сообщение"
+  "unmuteChannel": "Включить звук канала"
 }

@@ -29,7 +29,6 @@ import { parseCommandArgs } from '../../helpers/parse-command-args';
 import { canUseCapability } from '../../helpers/plugin-capability-access';
 import { runBeforeMessageSaveHooks } from '../../helpers/run-before-message-save-hooks';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
-import { followThreadOnReply } from '../../helpers/threads';
 import { logger } from '../../logger';
 import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
@@ -362,13 +361,6 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
     });
 
     commandExecutor?.(message.id);
-
-    if (message.parentMessageId) {
-      await followThreadOnReply({
-        ...message,
-        parentMessageId: message.parentMessageId
-      });
-    }
 
     publishMessage(message.id, input.channelId, 'create');
 

@@ -2124,7 +2124,7 @@ describe('messages router', () => {
     ).rejects.toThrow('Cannot get thread for a reply message');
   });
 
-  test('should paginate thread messages from the newest reply backwards', async () => {
+  test('should paginate thread messages', async () => {
     const { caller } = await initTest();
 
     const parentId = await sendMessage(caller, {
@@ -2151,11 +2151,11 @@ describe('messages router', () => {
     expect(firstPage.messages.length).toBe(5);
     expect(firstPage.nextCursor).not.toBeNull();
     expect(firstPage.messages.map((message) => message.content)).toEqual([
-      'Thread reply 10',
-      'Thread reply 9',
-      'Thread reply 8',
-      'Thread reply 7',
-      'Thread reply 6'
+      'Thread reply 1',
+      'Thread reply 2',
+      'Thread reply 3',
+      'Thread reply 4',
+      'Thread reply 5'
     ]);
 
     const secondPage = await caller.messages.getThread({
@@ -2165,11 +2165,11 @@ describe('messages router', () => {
     });
 
     expect(secondPage.messages.map((message) => message.content)).toEqual([
-      'Thread reply 5',
-      'Thread reply 4',
-      'Thread reply 3',
-      'Thread reply 2',
-      'Thread reply 1'
+      'Thread reply 6',
+      'Thread reply 7',
+      'Thread reply 8',
+      'Thread reply 9',
+      'Thread reply 10'
     ]);
 
     // no overlap between pages
@@ -2182,7 +2182,7 @@ describe('messages router', () => {
     expect(intersection.length).toBe(0);
   });
 
-  test('should return thread messages newest first, like channel messages', async () => {
+  test('should return thread messages in ascending order (oldest first)', async () => {
     const { caller } = await initTest();
 
     const parentId = await sendMessage(caller, {
@@ -2209,7 +2209,7 @@ describe('messages router', () => {
     expect(thread.messages.length).toBe(3);
 
     for (let i = 1; i < thread.messages.length; i++) {
-      expect(thread.messages[i]!.createdAt).toBeLessThanOrEqual(
+      expect(thread.messages[i]!.createdAt).toBeGreaterThanOrEqual(
         thread.messages[i - 1]!.createdAt
       );
     }

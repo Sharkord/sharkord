@@ -4,7 +4,6 @@ export enum ServerEvents {
   MESSAGE_DELETE = 'messageDelete',
   MESSAGE_TYPING = 'messageTyping',
   THREAD_REPLY_COUNT_UPDATE = 'threadReplyCountUpdate',
-  THREAD_FOLLOW_UPDATE = 'threadFollowUpdate',
 
   USER_JOIN = 'userJoin',
   USER_LEAVE = 'userLeave',
@@ -54,7 +53,7 @@ export enum ServerEvents {
   CATEGORY_UPDATE = 'categoryUpdate',
   CATEGORY_DELETE = 'categoryDelete',
 
-  DM_CONVERSATION_UPDATE = 'dmConversationUpdate'
+  DM_CONVERSATION_OPEN = 'dmConversationOpen'
 }
 
 export type TNewMessage = {

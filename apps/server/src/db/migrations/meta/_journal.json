@@ -267,27 +267,6 @@
       "when": 1792007744877,
       "tag": "0037_plugin_message_components",
       "breakpoints": true
-    },
-    {
-      "idx": 38,
-      "version": "6",
-      "when": 1792151973688,
-      "tag": "0038_thread_followers",
-      "breakpoints": true
-    },
-    {
-      "idx": 39,
-      "version": "6",
-      "when": 1792167041814,
-      "tag": "0039_direct_message_closed_at",
-      "breakpoints": true
-    },
-    {
-      "idx": 40,
-      "version": "6",
-      "when": 1792170075899,
-      "tag": "0040_thread_reply_order_index",
-      "breakpoints": true
     }
   ]
 }

@@ -97,18 +97,8 @@ export type TRemoteStreams = {
   };
 };
 
-export type TConversation = {
-  channelId: number;
-  parentMessageId?: number;
-};
-
-export type TConversationKey = `channel:${number}` | `thread:${number}`;
-
-export type TThreadTarget = Required<TConversation>;
-
 export type TMessageJumpToTarget = {
   channelId: number;
-  parentMessageId?: number;
   messageId: number;
   isDm: boolean;
   highlightTime?: number;

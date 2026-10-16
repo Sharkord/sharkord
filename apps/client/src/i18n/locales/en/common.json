@@ -135,11 +135,5 @@
   "commandArgYes": "Yes",
   "commandArgNo": "No",
   "commandArgMissing": "/{{commandName}} needs a value for {{argName}}.",
-  "mutedByModerator": "You were muted by a moderator.",
-  "followThread": "Follow Thread",
-  "unfollowThread": "Unfollow Thread",
-  "failedUpdateThreadFollow": "Failed to update thread follow",
-  "selectThreadPrompt": "Select a thread to read it.",
-  "loadingMessage": "Loading message...",
-  "failedLoadParentMessage": "Failed to load the original message"
+  "mutedByModerator": "You were muted by a moderator."
 }

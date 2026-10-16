@@ -133,11 +133,5 @@
   "commandArgYes": "Sì",
   "commandArgNo": "No",
   "commandArgMissing": "/{{commandName}} richiede un valore per {{argName}}.",
-  "mutedByModerator": "Sei stato silenziato da un moderatore.",
-  "followThread": "Segui thread",
-  "unfollowThread": "Smetti di seguire il thread",
-  "failedUpdateThreadFollow": "Impossibile aggiornare il follow del thread",
-  "selectThreadPrompt": "Seleziona un thread da leggere.",
-  "loadingMessage": "Caricamento del messaggio...",
-  "failedLoadParentMessage": "Impossibile caricare il messaggio originale"
+  "mutedByModerator": "Sei stato silenziato da un moderatore."
 }
