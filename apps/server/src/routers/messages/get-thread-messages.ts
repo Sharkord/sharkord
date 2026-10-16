@@ -1,16 +1,15 @@
 import {
   DEFAULT_MESSAGES_LIMIT,
   zMessagesCursor,
-  type TMessage,
-  type TMessagesCursor
+  type TMessage
 } from '@sharkord/shared';
-import { and, asc, eq, gt, or } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
-import { joinMessagesWithRelations } from '../../db/queries/messages';
+import { getMessagesPage } from '../../db/queries/messages';
 import { messages } from '../../db/schema';
-import { assertChannelAccess } from '../../helpers/assert-channel-access';
+import { loadThreadParent } from '../../helpers/threads';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
 
@@ -23,6 +22,7 @@ const getThreadMessagesRoute = rateLimitedProcedure(protectedProcedure, {
     z.object({
       parentMessageId: z.number(),
       cursor: zMessagesCursor.nullish(),
+      targetMessageId: z.number().nullish(),
       limit: z
         .number()
         .int()
@@ -33,73 +33,30 @@ const getThreadMessagesRoute = rateLimitedProcedure(protectedProcedure, {
   )
   .meta({ infinite: true })
   .query(async ({ ctx, input }) => {
-    const { parentMessageId, cursor, limit } = input;
+    const { parentMessageId, cursor, limit, targetMessageId } = input;
 
-    const parentMessage = await db
-      .select({
-        id: messages.id,
-        channelId: messages.channelId,
-        parentMessageId: messages.parentMessageId
-      })
-      .from(messages)
-      .where(eq(messages.id, parentMessageId))
-      .limit(1)
-      .get();
+    await loadThreadParent(ctx, parentMessageId);
 
-    invariant(parentMessage, {
-      code: 'NOT_FOUND',
-      message: 'Parent message not found'
-    });
+    const where = eq(messages.parentMessageId, parentMessageId);
 
-    invariant(!parentMessage.parentMessageId, {
-      code: 'BAD_REQUEST',
-      message: 'Cannot get thread for a reply message'
-    });
+    let target: Pick<TMessage, 'createdAt'> | undefined;
 
-    await assertChannelAccess(ctx, parentMessage.channelId);
+    if (targetMessageId) {
+      const targetMessage = await db
+        .select({ createdAt: messages.createdAt })
+        .from(messages)
+        .where(and(eq(messages.id, targetMessageId), where))
+        .get();
 
-    const rows: TMessage[] = await db
-      .select()
-      .from(messages)
-      .where(
-        cursor
-          ? and(
-              eq(messages.parentMessageId, parentMessageId),
-              or(
-                gt(messages.createdAt, cursor.createdAt),
-                and(
-                  eq(messages.createdAt, cursor.createdAt),
-                  gt(messages.id, cursor.id)
-                )
-              )
-            )
-          : eq(messages.parentMessageId, parentMessageId)
-      )
-      .orderBy(asc(messages.createdAt), asc(messages.id))
-      .limit(limit + 1);
+      invariant(targetMessage, {
+        code: 'NOT_FOUND',
+        message: 'Target message not found'
+      });
 
-    let nextCursor: TMessagesCursor | null = null;
-
-    if (rows.length > limit) {
-      rows.pop();
-
-      const lastReturnedMessage = rows.at(-1);
-
-      nextCursor = lastReturnedMessage
-        ? {
-            createdAt: lastReturnedMessage.createdAt,
-            id: lastReturnedMessage.id
-          }
-        : null;
+      target = targetMessage;
     }
 
-    if (rows.length === 0) {
-      return { messages: [], nextCursor };
-    }
-
-    const messagesWithRelations = await joinMessagesWithRelations(rows);
-
-    return { messages: messagesWithRelations, nextCursor };
+    return getMessagesPage({ where, cursor, limit, target });
   });
 
 export { getThreadMessagesRoute };

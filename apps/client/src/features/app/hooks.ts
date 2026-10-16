@@ -23,6 +23,7 @@ import {
   pluginSlotDebugSelector,
   pushToTalkSelectedSelector,
   selectedDmChannelIdSelector,
+  selectedThreadSelector,
   threadSidebarDataSelector,
   voiceChatSidebarDataSelector
 } from './selectors';
@@ -58,6 +59,8 @@ export const useMicMode = () => useSelector(micModeSelector);
 
 export const useSelectedDmChannelId = () =>
   useSelector(selectedDmChannelIdSelector);
+
+export const useSelectedThread = () => useSelector(selectedThreadSelector);
 
 export const useBrowserNotifications = () =>
   useSelector(browserNotificationsSelector);

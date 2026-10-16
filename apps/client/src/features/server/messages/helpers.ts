@@ -1,11 +1,17 @@
+import type { TConversationKey } from '@/types';
+
 const messageHighlightTimeouts = new WeakMap<Element, NodeJS.Timeout>();
 
-export const getMessagesContainer = () =>
-  document.querySelector('[data-messages-container]');
+export const getMessagesContainer = (conversationKey: TConversationKey) =>
+  document.querySelector(`[data-messages-container="${conversationKey}"]`);
 
-export const findMessageElement = (messageId: number) =>
-  getMessagesContainer()?.querySelector(`[data-message-id="${messageId}"]`) ??
-  null;
+export const findMessageElement = (
+  conversationKey: TConversationKey,
+  messageId: number
+) =>
+  getMessagesContainer(conversationKey)?.querySelector(
+    `[data-message-id="${messageId}"]`
+  ) ?? null;
 
 export const nextFrame = () =>
   new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -35,18 +41,19 @@ export const highlightMessageElement = async (
 };
 
 export const waitForMessageElement = (
+  conversationKey: TConversationKey,
   messageId: number,
   timeoutMs = 3000
 ): Promise<Element | null> =>
   new Promise((resolve) => {
-    const existing = findMessageElement(messageId);
+    const existing = findMessageElement(conversationKey, messageId);
 
     if (existing) {
       resolve(existing);
       return;
     }
 
-    const container = getMessagesContainer();
+    const container = getMessagesContainer(conversationKey);
 
     if (!container) {
       resolve(null);
@@ -54,7 +61,7 @@ export const waitForMessageElement = (
     }
 
     const observer = new MutationObserver(() => {
-      const element = findMessageElement(messageId);
+      const element = findMessageElement(conversationKey, messageId);
 
       if (element) {
         observer.disconnect();

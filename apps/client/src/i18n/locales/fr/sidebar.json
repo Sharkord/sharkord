@@ -45,7 +45,6 @@
   "failedReorderCategories": "Échec du réordonnancement des catégories",
   "failedMoveUser": "Échec du déplacement de l'utilisateur",
   "directMessages": "Messages privés",
-  "failedLoadDMs": "Échec du chargement des messages privés",
   "couldNotOpenDM": "Impossible d'ouvrir le message privé",
   "noDMsYet": "Aucun message privé pour l'instant",
   "startNewConversation": "Démarrer une nouvelle conversation",
@@ -75,5 +74,13 @@
   "microphone": "Microphone",
   "noiseSuppression": "Suppression du bruit",
   "muteChannel": "Mettre le salon en sourdine",
-  "unmuteChannel": "Réactiver le salon"
+  "unmuteChannel": "Réactiver le salon",
+  "threads": "Fils",
+  "openThreads": "Ouvrir les fils",
+  "closeThreads": "Fermer les fils",
+  "noFollowedThreads": "Les fils que vous suivez apparaîtront ici",
+  "failedLoadThreads": "Impossible de charger les fils",
+  "loadMoreThreads": "Charger plus",
+  "closeConversation": "Fermer la conversation",
+  "couldNotCloseDM": "Impossible de fermer le message privé"
 }

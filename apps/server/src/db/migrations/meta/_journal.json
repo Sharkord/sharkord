@@ -267,6 +267,13 @@
       "when": 1792007744877,
       "tag": "0037_plugin_message_components",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "6",
+      "when": 1792174265715,
+      "tag": "0038_threads_and_dm_close",
+      "breakpoints": true
     }
   ]
 }

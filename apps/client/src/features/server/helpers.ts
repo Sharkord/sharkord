@@ -1,6 +1,9 @@
+import type { TConversation, TConversationKey } from '@/types';
 import {
   ChannelPermission,
   hasMention,
+  type TDirectMessageConversation,
+  type TFollowedThread,
   type TJoinedMessage
 } from '@sharkord/shared';
 import type { channelPermissionsSelector } from './channels/selectors';
@@ -115,8 +118,72 @@ const mergeMessagesChronologically = (
   return merged;
 };
 
+const getConversationKey = ({
+  channelId,
+  parentMessageId
+}: TConversation): TConversationKey =>
+  parentMessageId ? `thread:${parentMessageId}` : `channel:${channelId}`;
+
+const getMessageConversation = (
+  message: Pick<TJoinedMessage, 'channelId' | 'parentMessageId'>
+): TConversation => ({
+  channelId: message.channelId,
+  parentMessageId: message.parentMessageId ?? undefined
+});
+
+const compareFollowedThreads = (a: TFollowedThread, b: TFollowedThread) =>
+  b.lastReplyAt - a.lastReplyAt || b.parentMessageId - a.parentMessageId;
+
+const upsertFollowedThread = (
+  threads: TFollowedThread[],
+  parentMessageId: number,
+  thread: TFollowedThread | null,
+  hasMorePages: boolean
+) => {
+  const remaining = threads.filter(
+    (other) => other.parentMessageId !== parentMessageId
+  );
+
+  if (!thread) return remaining;
+
+  const index = remaining.findIndex(
+    (other) => compareFollowedThreads(thread, other) < 0
+  );
+
+  if (index === -1) {
+    return hasMorePages ? remaining : [...remaining, thread];
+  }
+
+  return [...remaining.slice(0, index), thread, ...remaining.slice(index)];
+};
+
+const upsertDirectMessage = (
+  conversations: TDirectMessageConversation[],
+  conversation: TDirectMessageConversation
+) => {
+  const remaining = conversations.filter(
+    (other) => other.channelId !== conversation.channelId
+  );
+
+  const index = remaining.findIndex(
+    (other) => other.lastMessageAt <= conversation.lastMessageAt
+  );
+
+  if (index === -1) return [...remaining, conversation];
+
+  return [
+    ...remaining.slice(0, index),
+    conversation,
+    ...remaining.slice(index)
+  ];
+};
+
 export {
   canViewChannel,
+  getConversationKey,
+  getMessageConversation,
   hasUnreadMentionInMessages,
-  mergeMessagesChronologically
+  mergeMessagesChronologically,
+  upsertDirectMessage,
+  upsertFollowedThread
 };

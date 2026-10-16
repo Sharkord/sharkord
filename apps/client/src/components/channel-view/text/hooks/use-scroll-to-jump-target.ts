@@ -6,6 +6,7 @@ const DEFAULT_HIGHLIGHT_TIME = 8000;
 
 const useScrollToJumpTarget = (
   channelId: number,
+  parentMessageId: number | undefined,
   scrollToMessage: (messageId: number, highlightTime?: number) => Promise<void>
 ) => {
   const messageJumpTarget = useMessageJumpTarget();
@@ -15,6 +16,7 @@ const useScrollToJumpTarget = (
     if (
       !messageJumpTarget ||
       messageJumpTarget.channelId !== channelId ||
+      messageJumpTarget.parentMessageId !== parentMessageId ||
       isJumpingToMessage.current
     ) {
       return;
@@ -30,7 +32,7 @@ const useScrollToJumpTarget = (
       setMessageJumpTarget(undefined);
       isJumpingToMessage.current = false;
     });
-  }, [channelId, scrollToMessage, messageJumpTarget]);
+  }, [channelId, parentMessageId, scrollToMessage, messageJumpTarget]);
 };
 
 export { useScrollToJumpTarget };

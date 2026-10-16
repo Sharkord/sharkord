@@ -133,5 +133,11 @@
   "commandArgYes": "Ano",
   "commandArgNo": "Ne",
   "commandArgMissing": "/{{commandName}} potřebuje hodnotu pro {{argName}}.",
-  "mutedByModerator": "Moderátor vám vypnul mikrofon."
+  "mutedByModerator": "Moderátor vám vypnul mikrofon.",
+  "followThread": "Sledovat vlákno",
+  "unfollowThread": "Přestat sledovat vlákno",
+  "failedUpdateThreadFollow": "Nepodařilo se změnit sledování vlákna",
+  "selectThreadPrompt": "Vyberte vlákno, které chcete číst.",
+  "loadingMessage": "Načítání zprávy...",
+  "failedLoadParentMessage": "Nepodařilo se načíst původní zprávu"
 }

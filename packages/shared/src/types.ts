@@ -188,11 +188,38 @@ export type TChannelUserPermissionsMap = Record<
 
 export type TReadStateMap = Record<number, number>;
 
+export type TThreadReadState = {
+  unreadCount: number;
+  hasUnreadMention: boolean;
+};
+
+export type TFollowedThreadsMap = Record<number, TThreadReadState>;
+
+export type TThreadSummary = {
+  replyCount: number;
+  replyUserIds: number[];
+};
+
+export type TFollowedThread = TThreadSummary & {
+  parentMessageId: number;
+  channelId: number;
+  userId: number | null;
+  pluginId: string | null;
+  content: string | null;
+  lastReplyAt: number;
+};
+
+export type TThreadFollowUpdate = TThreadReadState & {
+  parentMessageId: number;
+  channelId: number;
+  thread: TFollowedThread | null;
+};
+
 export type TDirectMessageConversation = {
   channelId: number;
   userId: number;
-  unreadCount: number;
   lastMessageAt: number;
+  closedAt: number | null;
 };
 
 // createdAt alone is not unique, two messages sent in the same millisecond

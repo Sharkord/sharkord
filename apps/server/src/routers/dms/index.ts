@@ -1,19 +1,19 @@
 import { ServerEvents } from '@sharkord/shared';
 import { protectedProcedure, t } from '../../utils/trpc';
-import { getDirectMessagesRoute } from './get-direct-messages';
+import { closeDirectMessageRoute } from './close-direct-message';
 import { openDirectMessageRoute } from './open-direct-message';
 
-const onDmConversationOpenRoute = protectedProcedure.subscription(
+const onDmConversationUpdateRoute = protectedProcedure.subscription(
   async ({ ctx }) => {
     return ctx.pubsub.subscribeFor(
       ctx.userId,
-      ServerEvents.DM_CONVERSATION_OPEN
+      ServerEvents.DM_CONVERSATION_UPDATE
     );
   }
 );
 
 export const dmsRouter = t.router({
-  get: getDirectMessagesRoute,
   open: openDirectMessageRoute,
-  onConversationOpen: onDmConversationOpenRoute
+  close: closeDirectMessageRoute,
+  onConversationUpdate: onDmConversationUpdateRoute
 });

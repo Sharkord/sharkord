@@ -133,5 +133,11 @@
   "commandArgYes": "是",
   "commandArgNo": "否",
   "commandArgMissing": "/{{commandName}} 需要为 {{argName}} 提供一个值。",
-  "mutedByModerator": "你已被管理员禁言。"
+  "mutedByModerator": "你已被管理员禁言。",
+  "followThread": "关注话题",
+  "unfollowThread": "取消关注话题",
+  "failedUpdateThreadFollow": "更新话题关注失败",
+  "selectThreadPrompt": "选择一个话题进行阅读。",
+  "loadingMessage": "正在加载消息...",
+  "failedLoadParentMessage": "加载原始消息失败"
 }

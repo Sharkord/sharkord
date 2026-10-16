@@ -11,6 +11,7 @@ import { getSettings } from '../../db/queries/server';
 import { channels, messageFiles, messages } from '../../db/schema';
 import { fileManager } from '../../helpers/file-manager';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
+import { followThreadOnReply } from '../../helpers/threads';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
 import { invariant } from '../../utils/invariant';
 import { eventBus } from '../event-bus';
@@ -173,6 +174,13 @@ const createPluginMessage = async (
 
     return created;
   });
+
+  if (message.parentMessageId) {
+    await followThreadOnReply({
+      ...message,
+      parentMessageId: message.parentMessageId
+    });
+  }
 
   publishMessage(message.id, channelId, 'create');
 

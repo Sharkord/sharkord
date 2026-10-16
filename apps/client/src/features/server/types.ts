@@ -27,11 +27,7 @@ export enum SoundType {
 }
 
 export type TMessagesMap = {
-  [channelId: number]: TJoinedMessage[];
-};
-
-export type TThreadMessagesMap = {
-  [parentMessageId: number]: TJoinedMessage[];
+  [conversationKey: string]: TJoinedMessage[];
 };
 
 export type TDisconnectInfo = {

@@ -9,14 +9,18 @@ const NEWEST_MOCK_MESSAGE = 1000;
 // other's, which would let a jump land in the wrong channel
 const LIVE_MESSAGES_NEWEST = 2300;
 
-const messageItems = (page: Page): Locator =>
-  page.getByTestId(TestId.MESSAGE_ITEM);
+// a scope is the whole page, or one part of it such as an open thread, which has its own
+// messages and composer next to the channel's
+type TScope = Page | Locator;
 
-const messageByText = (page: Page, content: string): Locator =>
-  messageItems(page).filter({ hasText: content });
+const messageItems = (scope: TScope): Locator =>
+  scope.getByTestId(TestId.MESSAGE_ITEM);
 
-const composeEditor = (page: Page): Locator =>
-  page.getByTestId(TestId.MESSAGE_COMPOSE_EDITOR).first();
+const messageByText = (scope: TScope, content: string): Locator =>
+  messageItems(scope).filter({ hasText: content });
+
+const composeEditor = (scope: TScope): Locator =>
+  scope.getByTestId(TestId.MESSAGE_COMPOSE_EDITOR).first();
 
 const getMockMessageNumbers = async (page: Page): Promise<number[]> =>
   (await messageItems(page).allTextContents())
@@ -43,8 +47,8 @@ const waitForNewestMockMessage = async (
     .toBeGreaterThanOrEqual(newest);
 };
 
-const sendMessage = async (page: Page, content: string) => {
-  const editor = composeEditor(page);
+const sendMessage = async (scope: TScope, content: string) => {
+  const editor = composeEditor(scope);
 
   await expect(editor).toBeVisible();
   await editor.click();
@@ -66,7 +70,7 @@ const sendMessage = async (page: Page, content: string) => {
 
   // the editor clearing is the send being accepted, the message appearing is the server
   // having taken it. waiting for both keeps the caller off a fixed delay
-  await expect(messageByText(page, content)).toHaveCount(1);
+  await expect(messageByText(scope, content)).toHaveCount(1);
 };
 
 export {

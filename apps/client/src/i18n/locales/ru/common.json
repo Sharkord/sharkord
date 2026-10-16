@@ -133,5 +133,11 @@
   "commandArgYes": "Да",
   "commandArgNo": "Нет",
   "commandArgMissing": "/{{commandName}}: укажите значение для {{argName}}.",
-  "mutedByModerator": "Модератор отключил вам микрофон."
+  "mutedByModerator": "Модератор отключил вам микрофон.",
+  "followThread": "Отслеживать ветку",
+  "unfollowThread": "Не отслеживать ветку",
+  "failedUpdateThreadFollow": "Не удалось изменить отслеживание ветки",
+  "selectThreadPrompt": "Выберите ветку, чтобы прочитать её.",
+  "loadingMessage": "Загрузка сообщения...",
+  "failedLoadParentMessage": "Не удалось загрузить исходное сообщение"
 }

@@ -1,3 +1,4 @@
+import type { TConversationKey } from '@/types';
 import { createSelector } from '@reduxjs/toolkit';
 import {
   OWNER_ROLE_ID,
@@ -7,7 +8,11 @@ import {
   type TPluginStoreState
 } from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
-import { hotkeysEnabledSelector } from '../app/selectors';
+import {
+  hotkeysEnabledSelector,
+  selectedThreadSelector,
+  threadSidebarDataSelector
+} from '../app/selectors';
 import type { IRootState } from '../store';
 import { categoriesSelector } from './categories/selectors';
 import {
@@ -21,11 +26,14 @@ import {
   selectedChannelIdSelector
 } from './channels/selectors';
 import { emojisSelector } from './emojis/selectors';
-import { canViewChannel, hasUnreadMentionInMessages } from './helpers';
+import {
+  canViewChannel,
+  getConversationKey,
+  hasUnreadMentionInMessages
+} from './helpers';
 import {
   messagesByChannelIdSelector,
   messagesMapSelector,
-  threadTypingMapSelector,
   typingMapSelector
 } from './messages/selectors';
 import {
@@ -33,6 +41,7 @@ import {
   pluginsMetadataSelector
 } from './plugins/selectors';
 import { rolesSelector } from './roles/selectors';
+import { threadsOpenSelector } from './threads/selectors';
 import type { TVoiceUser } from './types';
 import {
   ownUserIdSelector,
@@ -148,33 +157,19 @@ export const userRolesSelector = createCachedSelector(
   }
 )((_, userId: number) => userId);
 
-const createTypingUsersSelector = (
-  typingMap: (state: IRootState) => Record<number, number[]>,
-  keyPrefix: string
-) =>
-  createCachedSelector(
-    [
-      typingMap,
-      (_: IRootState, key: number) => key,
-      ownUserIdSelector,
-      usersMapSelector
-    ],
-    (map, key, ownUserId, usersMap) =>
-      (map[key] ?? (DEFAULT_ARRAY as number[]))
-        .filter((id) => id !== ownUserId)
-        .map((id) => usersMap[id])
-        .filter((user) => !!user)
-  )((_, key: number) => `${keyPrefix}-${key}`);
-
-export const typingUsersByChannelIdSelector = createTypingUsersSelector(
-  typingMapSelector,
-  'channel'
-);
-
-export const typingUsersByThreadIdSelector = createTypingUsersSelector(
-  threadTypingMapSelector,
-  'thread'
-);
+export const typingUsersByConversationKeySelector = createCachedSelector(
+  [
+    typingMapSelector,
+    (_: IRootState, conversationKey: TConversationKey) => conversationKey,
+    ownUserIdSelector,
+    usersMapSelector
+  ],
+  (typingMap, conversationKey, ownUserId, usersMap) =>
+    (typingMap[conversationKey] ?? (DEFAULT_ARRAY as number[]))
+      .filter((id) => id !== ownUserId)
+      .map((id) => usersMap[id])
+      .filter((user) => !!user)
+)((_, conversationKey: TConversationKey) => conversationKey);
 
 export const hasSharingScreenUsersSelector = createCachedSelector(
   [voiceChannelStateSelector],
@@ -268,7 +263,7 @@ export const categoryHasUnreadMentionsSelector = createCachedSelector(
     return channelsInCategory.some((channel) => {
       return hasUnreadMentionInMessages(
         readStatesMap[channel.id] ?? 0,
-        messagesMap[channel.id] ?? [],
+        messagesMap[getConversationKey({ channelId: channel.id })] ?? [],
         ownUserId,
         ownRoleIds
       );
@@ -446,3 +441,21 @@ export const userSettingsPluginsSelector = createSelector(
     return plugins.length > 0 ? plugins : DEFAULT_USER_SETTINGS_PLUGINS;
   }
 );
+
+// no need to cache this as it is only used from actions
+// if in the future you need to use this in a performance-critical path, memoize it
+export const isThreadOpenSelector = (
+  state: IRootState,
+  parentMessageId: number
+) => {
+  const threadSidebar = threadSidebarDataSelector(state);
+  const threadsOpen = threadsOpenSelector(state);
+  const selectedThread = selectedThreadSelector(state);
+
+  const isInSidebar =
+    threadSidebar.isOpen && threadSidebar.parentMessageId === parentMessageId;
+  const isInMainView =
+    threadsOpen && selectedThread?.parentMessageId === parentMessageId;
+
+  return isInSidebar || isInMainView;
+};
