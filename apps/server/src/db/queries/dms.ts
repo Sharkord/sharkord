@@ -3,11 +3,16 @@ import { TRPCError } from '@trpc/server';
 import { and, eq, inArray, max, or } from 'drizzle-orm';
 import { db } from '..';
 import { channels, directMessages, messages } from '../schema';
-import { getChannelsReadStatesForUser } from './channels';
 import { getSettings } from './server';
 
 const normalizePair = (a: number, b: number): [number, number] =>
   a < b ? [a, b] : [b, a];
+
+const getClosedAtKey = (
+  dm: { userOneId: number },
+  userId: number
+): 'userOneClosedAt' | 'userTwoClosedAt' =>
+  dm.userOneId === userId ? 'userOneClosedAt' : 'userTwoClosedAt';
 
 // returns the DM channel between the two users
 const getDirectMessageChannel = async (
@@ -46,16 +51,23 @@ const getDirectMessageChannelIdsForUser = async (
 };
 
 // returns all DM channels the user is a participant in along with metadata
+// channelId narrows it to one conversation, for the routes that change one
 const getDirectMessageConversations = async (
-  userId: number
+  userId: number,
+  channelId?: number
 ): Promise<TDirectMessageConversation[]> => {
   const rows = await db
     .select()
     .from(directMessages)
     .where(
-      or(
-        eq(directMessages.userOneId, userId),
-        eq(directMessages.userTwoId, userId)
+      and(
+        or(
+          eq(directMessages.userOneId, userId),
+          eq(directMessages.userTwoId, userId)
+        ),
+        channelId === undefined
+          ? undefined
+          : eq(directMessages.channelId, channelId)
       )
     );
 
@@ -65,17 +77,14 @@ const getDirectMessageConversations = async (
 
   const channelIds = rows.map((row) => row.channelId);
 
-  const [lastMessageRows, unreadMapRaw] = await Promise.all([
-    db
-      .select({
-        channelId: messages.channelId,
-        lastMessageAt: max(messages.createdAt)
-      })
-      .from(messages)
-      .where(inArray(messages.channelId, channelIds))
-      .groupBy(messages.channelId),
-    getChannelsReadStatesForUser(userId)
-  ]);
+  const lastMessageRows = await db
+    .select({
+      channelId: messages.channelId,
+      lastMessageAt: max(messages.createdAt)
+    })
+    .from(messages)
+    .where(inArray(messages.channelId, channelIds))
+    .groupBy(messages.channelId);
 
   const lastMessageMap = new Map<number, number>();
 
@@ -91,8 +100,8 @@ const getDirectMessageConversations = async (
     return {
       channelId: row.channelId,
       userId: otherUserId,
-      unreadCount: unreadMapRaw[row.channelId] ?? 0,
-      lastMessageAt
+      lastMessageAt,
+      closedAt: row[getClosedAtKey(row, userId)]
     };
   });
 
@@ -188,6 +197,7 @@ const getDirectMessageChannelParticipantIds = async (
 
 export {
   assertDmChannel,
+  getClosedAtKey,
   getDirectMessageChannel,
   getDirectMessageChannelIdsForUser,
   getDirectMessageChannelParticipantIds,

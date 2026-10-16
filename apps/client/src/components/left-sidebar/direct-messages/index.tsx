@@ -2,7 +2,7 @@ import { UnreadCount } from '@/components/unread-count';
 import { UserAvatar } from '@/components/user-avatar';
 import { setSelectedDmChannelId } from '@/features/app/actions';
 import { useSelectedDmChannelId } from '@/features/app/hooks';
-import { useChannels } from '@/features/server/channels/hooks';
+import { useVisibleDirectMessages } from '@/features/server/dms/hooks';
 import { useUnreadMessagesCount } from '@/features/server/hooks';
 import {
   useOwnUserId,
@@ -13,90 +13,85 @@ import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
+  getTrpcError,
   TestId,
   type TDirectMessageConversation
 } from '@sharkord/shared';
-import { Spinner } from '@sharkord/ui';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { IconButton } from '@sharkord/ui';
+import { X } from 'lucide-react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { SectionHeader } from '../section-header';
 import { SearchUserDropdown } from './search-user-dropdown';
 
 type TDirectMessageItemProps = {
   dm: TDirectMessageConversation;
   selected: boolean;
-  onSelect: () => void;
 };
 
-const DirectMessageItem = memo(
-  ({ dm, selected, onSelect }: TDirectMessageItemProps) => {
-    const user = useUserById(dm.userId);
-    const unreadCount = useUnreadMessagesCount(dm.channelId);
+const DirectMessageItem = memo(({ dm, selected }: TDirectMessageItemProps) => {
+  const { t } = useTranslation('sidebar');
+  const user = useUserById(dm.userId);
+  const unreadCount = useUnreadMessagesCount(dm.channelId);
 
-    if (!user) {
-      return null;
+  const onSelect = useCallback(() => {
+    setSelectedDmChannelId(dm.channelId);
+  }, [dm.channelId]);
+
+  const onClose = useCallback(async () => {
+    try {
+      const trpc = getTRPCClient();
+
+      await trpc.dms.close.mutate({ channelId: dm.channelId });
+
+      if (selected) setSelectedDmChannelId(undefined);
+    } catch (error) {
+      toast.error(getTrpcError(error, t('couldNotCloseDM')));
     }
+  }, [dm.channelId, selected, t]);
 
-    return (
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <div
+      data-testid={TestId.DM_ITEM}
+      className={cn(
+        'group flex w-full items-center rounded text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+        selected && 'bg-accent text-accent-foreground'
+      )}
+    >
       <button
-        data-testid={TestId.DM_ITEM}
         type="button"
-        className={cn(
-          'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-          selected && 'bg-accent text-accent-foreground'
-        )}
+        className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5"
         onClick={onSelect}
       >
         <UserAvatar userId={user.id} className="h-6 w-6" showUserPopover />
         <span className="truncate flex-1 text-left">{user.name}</span>
         <UnreadCount count={unreadCount} />
       </button>
-    );
-  }
-);
+      <IconButton
+        icon={X}
+        variant="ghost"
+        size="sm"
+        title={t('closeConversation')}
+        onClick={onClose}
+        data-testid={TestId.DM_CLOSE}
+        className="mr-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+      />
+    </div>
+  );
+});
 
 const DirectMessages = memo(() => {
   const { t } = useTranslation('sidebar');
-  const [loading, setLoading] = useState(true);
-  const [conversations, setConversations] = useState<
-    TDirectMessageConversation[]
-  >([]);
+  const conversations = useVisibleDirectMessages();
   const [query, setQuery] = useState('');
   const users = useUsers();
-  const channels = useChannels();
   const ownUserId = useOwnUserId();
   const selectedDmChannelId = useSelectedDmChannelId();
-
-  const fetchConversations = useCallback(async () => {
-    const trpc = getTRPCClient();
-
-    setLoading(true);
-
-    try {
-      const items = await trpc.dms.get.query();
-
-      setConversations(items);
-    } catch {
-      toast.error(t('failedLoadDMs'));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-
-  useEffect(() => {
-    fetchConversations();
-  }, [channels.length, fetchConversations]);
-
-  // subscribe to new conversations being opened, when a new conversation is opened we refetch the list of conversations
-  useEffect(() => {
-    const trpc = getTRPCClient();
-
-    const sub = trpc.dms.onConversationOpen.subscribe(undefined, {
-      onData: () => fetchConversations()
-    });
-
-    return () => sub.unsubscribe();
-  }, [fetchConversations]);
 
   const usersToStartDm = useMemo(() => {
     const directMessageUserIds = new Set(conversations.map((dm) => dm.userId));
@@ -119,49 +114,38 @@ const DirectMessages = memo(() => {
         const result = await trpc.dms.open.mutate({ userId });
 
         setSelectedDmChannelId(result.channelId);
-        await fetchConversations();
       } catch {
         toast.error(t('couldNotOpenDM'));
       }
     },
-    [fetchConversations, t]
+    [t]
   );
 
   return (
     <div className="flex-1 overflow-y-auto p-2">
-      <div className="mb-1 flex items-center justify-between px-2 py-1">
-        <span className="text-xs font-semibold text-muted-foreground">
-          {t('directMessages')}
-        </span>
+      <SectionHeader title={t('directMessages')}>
         <SearchUserDropdown
           query={query}
           setQuery={setQuery}
           usersToStartDm={usersToStartDm}
           onStartDm={onStartDm}
         />
-      </div>
+      </SectionHeader>
 
-      {loading ? (
-        <div className="flex h-24 items-center justify-center">
-          <Spinner size="sm" />
-        </div>
-      ) : (
-        <div className="space-y-0.5">
-          {conversations.map((dm) => (
-            <DirectMessageItem
-              key={dm.channelId}
-              dm={dm}
-              selected={selectedDmChannelId === dm.channelId}
-              onSelect={() => setSelectedDmChannelId(dm.channelId)}
-            />
-          ))}
-          {conversations.length === 0 && (
-            <div className="px-2 py-4 text-xs text-muted-foreground">
-              {t('noDMsYet')}
-            </div>
-          )}
-        </div>
-      )}
+      <div className="space-y-0.5">
+        {conversations.map((dm) => (
+          <DirectMessageItem
+            key={dm.channelId}
+            dm={dm}
+            selected={selectedDmChannelId === dm.channelId}
+          />
+        ))}
+        {conversations.length === 0 && (
+          <div className="px-2 py-4 text-xs text-muted-foreground">
+            {t('noDMsYet')}
+          </div>
+        )}
+      </div>
     </div>
   );
 });

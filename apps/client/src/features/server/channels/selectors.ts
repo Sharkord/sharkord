@@ -6,6 +6,7 @@ import type { IRootState } from '@/features/store';
 import { createSelector } from '@reduxjs/toolkit';
 import { ChannelType, type TChannel } from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
+import { threadsOpenSelector } from '../threads/selectors';
 
 const DEFAULT_OBJECT = {};
 
@@ -101,12 +102,14 @@ export const isChannelTextVisibleByIdSelector = (
     return false;
   }
 
+  const threadsOpen = threadsOpenSelector(state);
+
   if (channel.isDm) {
     const dmsOpen = dmsOpenSelector(state);
     const selectedDmChannelId = selectedDmChannelIdSelector(state);
     const isSelected = selectedDmChannelId === channelId;
 
-    return dmsOpen && isSelected;
+    return dmsOpen && isSelected && !threadsOpen;
   }
 
   if (channel.type === ChannelType.VOICE) {
@@ -119,7 +122,7 @@ export const isChannelTextVisibleByIdSelector = (
   const selectedChannelId = selectedChannelIdSelector(state);
   const isSelected = selectedChannelId === channelId;
 
-  return isSelected;
+  return isSelected && !threadsOpen;
 };
 
 export const channelPermissionsByIdSelector = (

@@ -1,6 +1,9 @@
 import { TextChannel } from '@/components/channel-view/text';
 import { VoiceChannel } from '@/components/channel-view/voice';
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
+import { ThreadContent } from '@/components/thread-sidebar/thread-content';
+import { setSelectedThread } from '@/features/app/actions';
+import { useSelectedThread } from '@/features/app/hooks';
 import {
   useSelectedChannelId,
   useSelectedChannelType
@@ -9,10 +12,11 @@ import {
   useActiveFullscreenPluginId,
   useServerName
 } from '@/features/server/hooks';
+import { useThreadsOpen } from '@/features/server/threads/hooks';
 import { ChannelType, PluginSlot } from '@sharkord/shared';
 import { Alert, AlertDescription } from '@sharkord/ui';
 import { AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 type TContentWrapperProps = {
@@ -27,6 +31,10 @@ const ContentWrapper = memo(
     const selectedChannelType = useSelectedChannelType();
     const serverName = useServerName();
     const activeFullscreenPluginId = useActiveFullscreenPluginId();
+    const threadsOpen = useThreadsOpen();
+    const selectedThread = useSelectedThread();
+
+    const onCloseThread = useCallback(() => setSelectedThread(undefined), []);
 
     if (activeFullscreenPluginId) {
       return (
@@ -42,6 +50,31 @@ const ContentWrapper = memo(
     }
 
     let content;
+
+    if (threadsOpen) {
+      if (selectedThread) {
+        content = (
+          <ThreadContent
+            key={selectedThread.parentMessageId}
+            parentMessageId={selectedThread.parentMessageId}
+            channelId={selectedThread.channelId}
+            onClose={onCloseThread}
+          />
+        );
+      } else {
+        content = (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            {t('selectThreadPrompt')}
+          </div>
+        );
+      }
+
+      return (
+        <main className="flex flex-1 flex-col bg-background relative min-w-0 min-h-0">
+          {content}
+        </main>
+      );
+    }
 
     if (isDmMode) {
       if (selectedDmChannelId) {

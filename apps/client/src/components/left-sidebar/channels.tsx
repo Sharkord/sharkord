@@ -11,7 +11,7 @@ import {
   useChannelCan,
   useHasSharingScreenUsers,
   useHasUnreadMentions,
-  useTypingUsersByChannelId,
+  useTypingUsers,
   useUnreadMessagesCount,
   useVoiceUsersByChannelId
 } from '@/features/server/hooks';
@@ -181,7 +181,7 @@ type TTextProps = Omit<TItemWrapperProps, 'children'> & {
 };
 
 const Text = memo(({ channel, ...props }: TTextProps) => {
-  const typingUsers = useTypingUsersByChannelId(channel.id);
+  const typingUsers = useTypingUsers({ channelId: channel.id });
   const unreadCount = useUnreadMessagesCount(channel.id);
   const hasUnreadMessages = useHasUnreadMentions(channel.id);
   const hasTypingUsers = typingUsers.length > 0;

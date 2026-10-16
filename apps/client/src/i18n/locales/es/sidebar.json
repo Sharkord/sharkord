@@ -45,7 +45,6 @@
   "failedReorderCategories": "Error al reordenar las categorías",
   "failedMoveUser": "Error al mover al usuario",
   "directMessages": "Mensajes directos",
-  "failedLoadDMs": "Error al cargar los mensajes directos",
   "couldNotOpenDM": "No se pudo abrir el mensaje directo",
   "noDMsYet": "Aún no hay mensajes directos",
   "startNewConversation": "Iniciar nueva conversación",
@@ -75,5 +74,13 @@
   "microphone": "Micrófono",
   "noiseSuppression": "Supresión de ruido",
   "muteChannel": "Silenciar canal",
-  "unmuteChannel": "Dejar de silenciar canal"
+  "unmuteChannel": "Dejar de silenciar canal",
+  "threads": "Hilos",
+  "openThreads": "Abrir hilos",
+  "closeThreads": "Cerrar hilos",
+  "noFollowedThreads": "Los hilos que sigues aparecerán aquí",
+  "failedLoadThreads": "No se pudieron cargar los hilos",
+  "loadMoreThreads": "Cargar más",
+  "closeConversation": "Cerrar conversación",
+  "couldNotCloseDM": "No se pudo cerrar el mensaje directo"
 }

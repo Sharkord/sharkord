@@ -4,9 +4,21 @@ import type {
   TJoinedMessageReaction,
   TMessage,
   TMessageReaction,
-  TMessageReplyPreview
+  TMessageReplyPreview,
+  TMessagesCursor
 } from '@sharkord/shared';
-import { and, count, desc, eq, inArray, notExists } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lt,
+  notExists,
+  or,
+  type SQL
+} from 'drizzle-orm';
 import { db } from '..';
 import { attachFileToken, signFile } from '../../helpers/files-crypto';
 import {
@@ -17,6 +29,7 @@ import {
   messages
 } from '../schema';
 import { getSettings } from './server';
+import { getThreadSummaries } from './threads';
 
 const getReplyPreviewByMessageId = async (rows: TMessage[]) => {
   const replyToMessageIds = [
@@ -168,19 +181,12 @@ const getMessage = async (
 
   if (!joined) return undefined;
 
-  let replyCount = 0;
+  // a reply cannot have a thread of its own, so skip lookup
+  if (message.parentMessageId) return joined;
 
-  if (!message.parentMessageId) {
-    const replyCountRow = await db
-      .select({ count: count() })
-      .from(messages)
-      .where(eq(messages.parentMessageId, messageId))
-      .get();
+  const getThreadSummary = await getThreadSummaries([messageId]);
 
-    replyCount = replyCountRow?.count ?? 0;
-  }
-
-  return { ...joined, replyCount };
+  return { ...joined, ...getThreadSummary(messageId) };
 };
 
 const getNonDirectMessagesFromUserId = async (
@@ -221,10 +227,121 @@ const getReaction = async (
     )
     .get();
 
+const JUMP_CONTEXT_LIMIT = 20;
+
+type TMessagesPageOptions = {
+  where: SQL | undefined;
+  cursor: TMessagesCursor | null | undefined;
+  limit: number;
+  target?: Pick<TMessage, 'createdAt'>;
+};
+
+// one page of a conversation, newest first. where selects the conversation (a channel's root
+// messages or a thread's replies) and target is a message the caller already validated as
+// part of it. channels and threads page the same way, so their routes only differ in those
+const getMessagesPage = async ({
+  where,
+  cursor,
+  limit,
+  target
+}: TMessagesPageOptions) => {
+  let rows: TMessage[];
+  let nextCursor: TMessagesCursor | null = null;
+  // true when a jump window stops short of the newest message, so the client knows its list
+  // is not contiguous with the present and must offer a way back
+  let hasNewer = false;
+
+  if (target) {
+    // a window around the target rather than everything since it: linking to a message from
+    // a year ago used to load a year of history, joined with files, reactions and reply
+    // previews, in one response
+    const [olderMessages, newerMessages] = await Promise.all([
+      db
+        .select()
+        .from(messages)
+        .where(and(where, lt(messages.createdAt, target.createdAt)))
+        .orderBy(desc(messages.createdAt), desc(messages.id))
+        .limit(JUMP_CONTEXT_LIMIT + 1),
+      // ascending, so the window is anchored at the target and grows towards the present.
+      // ordering this half descending takes the newest messages in the channel instead,
+      // which leaves the target outside its own window once the limit bites
+      db
+        .select()
+        .from(messages)
+        .where(and(where, gte(messages.createdAt, target.createdAt)))
+        .orderBy(asc(messages.createdAt), asc(messages.id))
+        .limit(limit + 1)
+    ]);
+
+    hasNewer = newerMessages.length > limit;
+
+    if (hasNewer) newerMessages.pop();
+
+    newerMessages.reverse();
+
+    const hasOlder = olderMessages.length > JUMP_CONTEXT_LIMIT;
+
+    if (hasOlder) olderMessages.pop();
+
+    rows = [...newerMessages, ...olderMessages];
+
+    const oldestReturnedMessage = rows.at(-1);
+
+    // the window paginates upward from its own oldest row, so the client does not have to
+    // keep the conversation's page-1 cursor, which points somewhere else entirely
+    nextCursor =
+      hasOlder && oldestReturnedMessage
+        ? {
+            createdAt: oldestReturnedMessage.createdAt,
+            id: oldestReturnedMessage.id
+          }
+        : null;
+  } else {
+    rows = await db
+      .select()
+      .from(messages)
+      .where(
+        cursor
+          ? and(
+              where,
+              or(
+                lt(messages.createdAt, cursor.createdAt),
+                and(
+                  eq(messages.createdAt, cursor.createdAt),
+                  lt(messages.id, cursor.id)
+                )
+              )
+            )
+          : where
+      )
+      .orderBy(desc(messages.createdAt), desc(messages.id))
+      .limit(limit + 1);
+
+    if (rows.length > limit) {
+      rows.pop();
+
+      const lastReturnedMessage = rows.at(-1);
+
+      nextCursor = lastReturnedMessage
+        ? {
+            createdAt: lastReturnedMessage.createdAt,
+            id: lastReturnedMessage.id
+          }
+        : null;
+    }
+  }
+
+  const joinedMessages =
+    rows.length > 0 ? await joinMessagesWithRelations(rows) : [];
+
+  return { messages: joinedMessages, nextCursor, hasNewer };
+};
+
 export {
   attachFileToken,
   getMessage,
   getMessageByFileId,
+  getMessagesPage,
   getNonDirectMessagesFromUserId,
   getReaction,
   joinMessagesWithRelations

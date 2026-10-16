@@ -17,6 +17,7 @@ import {
 } from '../../helpers/load-message-for-write';
 import { runBeforeMessageSaveHooks } from '../../helpers/run-before-message-save-hooks';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
+import { followThreadOnEdit } from '../../helpers/threads';
 import { eventBus } from '../../plugins/event-bus';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
 import { invariant } from '../../utils/invariant';
@@ -79,6 +80,16 @@ const editMessageRoute = rateLimitedProcedure(protectedProcedure, {
         editedBy: ctx.user.id
       })
       .where(eq(messages.id, input.messageId));
+
+    if (message.parentMessageId) {
+      await followThreadOnEdit({
+        id: input.messageId,
+        parentMessageId: message.parentMessageId,
+        channelId: message.channelId,
+        userId: message.userId,
+        content: sanitizedContent
+      });
+    }
 
     publishMessage(input.messageId, message.channelId, 'update');
     enqueueProcessMetadata(sanitizedContent, input.messageId);

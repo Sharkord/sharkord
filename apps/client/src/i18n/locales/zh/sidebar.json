@@ -45,7 +45,6 @@
   "failedReorderCategories": "重新排序分类失败",
   "failedMoveUser": "移动用户失败",
   "directMessages": "私信",
-  "failedLoadDMs": "加载私信失败",
   "couldNotOpenDM": "无法打开私信",
   "noDMsYet": "暂无私信",
   "startNewConversation": "开始新对话",
@@ -75,5 +74,13 @@
   "microphone": "麦克风",
   "noiseSuppression": "降噪",
   "muteChannel": "静音频道",
-  "unmuteChannel": "取消静音频道"
+  "unmuteChannel": "取消静音频道",
+  "threads": "话题",
+  "openThreads": "打开话题",
+  "closeThreads": "关闭话题",
+  "noFollowedThreads": "你关注的话题会显示在这里",
+  "failedLoadThreads": "加载话题失败",
+  "loadMoreThreads": "加载更多",
+  "closeConversation": "关闭会话",
+  "couldNotCloseDM": "无法关闭私信"
 }

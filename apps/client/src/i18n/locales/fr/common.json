@@ -133,5 +133,11 @@
   "commandArgYes": "Oui",
   "commandArgNo": "Non",
   "commandArgMissing": "/{{commandName}} a besoin d'une valeur pour {{argName}}.",
-  "mutedByModerator": "Un modérateur vous a rendu muet."
+  "mutedByModerator": "Un modérateur vous a rendu muet.",
+  "followThread": "Suivre le fil",
+  "unfollowThread": "Ne plus suivre le fil",
+  "failedUpdateThreadFollow": "Impossible de mettre à jour le suivi du fil",
+  "selectThreadPrompt": "Sélectionnez un fil pour le lire.",
+  "loadingMessage": "Chargement du message...",
+  "failedLoadParentMessage": "Impossible de charger le message d'origine"
 }
