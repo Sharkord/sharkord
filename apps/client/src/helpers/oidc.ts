@@ -17,7 +17,10 @@ const getOidcHandoffCode = () =>
 const startOidcLogin = () => {
   suppressOidcAutoRedirect();
 
-  window.location.href = `${getUrlFromServer()}/oidc/login`;
+  const invite = new URLSearchParams(window.location.search).get('invite');
+  const query = invite ? `?${new URLSearchParams({ invite })}` : '';
+
+  window.location.href = `${getUrlFromServer()}/oidc/login${query}`;
 };
 
 export {
