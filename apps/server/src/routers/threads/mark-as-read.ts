@@ -31,7 +31,7 @@ const markThreadAsReadRoute = rateLimitedProcedure(protectedProcedure, {
 
     const updated = await db
       .update(threadFollowers)
-      .set({ lastReadMessageId: latestReply.id })
+      .set({ lastReadMessageId: latestReply.id, hasUnreadMention: false })
       .where(
         and(
           eq(threadFollowers.userId, ctx.userId),

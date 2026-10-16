@@ -1,9 +1,9 @@
-import { MessageNodeType } from '@sharkord/shared';
-import { and, eq, inArray, lt } from 'drizzle-orm';
+import { getMentions } from '@sharkord/shared';
+import { and, eq, gt, inArray, lt, ne, or, type SQL } from 'drizzle-orm';
 import { db } from '../db';
 import { publishThreadFollowers } from '../db/publishers';
 import { getLatestThreadReply } from '../db/queries/threads';
-import { messages, threadFollowers, users } from '../db/schema';
+import { messages, threadFollowers, userRoles, users } from '../db/schema';
 import { invariant } from '../utils/invariant';
 import type { Context } from '../utils/trpc';
 import { assertChannelAccess } from './assert-channel-access';
@@ -17,33 +17,13 @@ type TThreadReply = {
   createdAt: number;
 };
 
-const SPAN_TAG_PATTERN = /<span\b[^>]*>/g;
-const USER_ID_ATTRIBUTE_PATTERN = /\bdata-user-id="(\d+)"/;
-
-// role mentions are left out on purpose, they would make a whole role follow the thread
-const getMentionedUserIds = (content: string) => {
-  const userIds = new Set<number>();
-
-  for (const [tag] of content.matchAll(SPAN_TAG_PATTERN)) {
-    if (!tag.includes(`data-type="${MessageNodeType.MENTION}"`)) continue;
-
-    const match = tag.match(USER_ID_ATTRIBUTE_PATTERN);
-
-    if (match) userIds.add(Number(match[1]));
-  }
-
-  return [...userIds];
-};
-
-const getExistingMentionedUserIds = async (content: string | null) => {
-  const mentionedUserIds = getMentionedUserIds(content ?? '');
-
-  if (mentionedUserIds.length === 0) return [];
+const getExistingUserIds = async (userIds: number[]) => {
+  if (userIds.length === 0) return [];
 
   const rows = await db
     .select({ id: users.id })
     .from(users)
-    .where(inArray(users.id, mentionedUserIds));
+    .where(inArray(users.id, userIds));
 
   return rows.map(({ id }) => id);
 };
@@ -77,6 +57,8 @@ const loadThreadParent = async (ctx: Context, parentMessageId: number) => {
 };
 
 const followThreadOnReply = async (reply: TThreadReply) => {
+  const mentions = getMentions(reply.content);
+
   const [parentMessage, earlierReply, mentionedUserIds] = await Promise.all([
     db
       .select({ userId: messages.userId })
@@ -95,7 +77,7 @@ const followThreadOnReply = async (reply: TThreadReply) => {
       )
       .limit(1)
       .get(),
-    getExistingMentionedUserIds(reply.content)
+    getExistingUserIds(mentions.userIds)
   ]);
 
   const pulledInUserIds = new Set(mentionedUserIds);
@@ -108,6 +90,24 @@ const followThreadOnReply = async (reply: TThreadReply) => {
 
   if (reply.userId) {
     pulledInUserIds.delete(reply.userId);
+  }
+
+  const mentionedFollowers: SQL[] = [];
+
+  if (mentionedUserIds.length > 0) {
+    mentionedFollowers.push(inArray(threadFollowers.userId, mentionedUserIds));
+  }
+
+  if (mentions.roleIds.length > 0) {
+    mentionedFollowers.push(
+      inArray(
+        threadFollowers.userId,
+        db
+          .select({ userId: userRoles.userId })
+          .from(userRoles)
+          .where(inArray(userRoles.roleId, mentions.roleIds))
+      )
+    );
   }
 
   const now = Date.now();
@@ -146,8 +146,22 @@ const followThreadOnReply = async (reply: TThreadReply) => {
         })
         .onConflictDoUpdate({
           target: [threadFollowers.userId, threadFollowers.parentMessageId],
-          set: { lastReadMessageId: reply.id }
+          set: { lastReadMessageId: reply.id, hasUnreadMention: false }
         })
+        .run();
+    }
+
+    // after the inserts, so the users this reply pulled in are flagged too
+    if (mentionedFollowers.length > 0) {
+      tx.update(threadFollowers)
+        .set({ hasUnreadMention: true })
+        .where(
+          and(
+            eq(threadFollowers.parentMessageId, reply.parentMessageId),
+            reply.userId ? ne(threadFollowers.userId, reply.userId) : undefined,
+            or(...mentionedFollowers)
+          )
+        )
         .run();
     }
   });
@@ -155,10 +169,115 @@ const followThreadOnReply = async (reply: TThreadReply) => {
   await publishThreadFollowers(reply.parentMessageId, reply.channelId);
 };
 
+const refreshThreadFollowers = async (
+  parentMessageId: number,
+  channelId: number
+) => {
+  db.transaction((tx) => {
+    const followers = tx
+      .select({
+        userId: threadFollowers.userId,
+        lastReadMessageId: threadFollowers.lastReadMessageId
+      })
+      .from(threadFollowers)
+      .where(eq(threadFollowers.parentMessageId, parentMessageId))
+      .all();
+
+    if (followers.length === 0) return;
+
+    const oldestReadMessageId = Math.min(
+      ...followers.map(({ lastReadMessageId }) => lastReadMessageId ?? 0)
+    );
+
+    const unreadReplies = tx
+      .select({
+        id: messages.id,
+        userId: messages.userId,
+        content: messages.content
+      })
+      .from(messages)
+      .where(
+        and(
+          eq(messages.parentMessageId, parentMessageId),
+          gt(messages.id, oldestReadMessageId)
+        )
+      )
+      .all();
+
+    const mentioningReplies = [];
+
+    for (const reply of unreadReplies) {
+      const { userIds, roleIds } = getMentions(reply.content);
+
+      if (userIds.length > 0 || roleIds.length > 0) {
+        mentioningReplies.push({
+          id: reply.id,
+          userId: reply.userId,
+          userIds,
+          roleIds
+        });
+      }
+    }
+
+    const mentionedUserIds: number[] = [];
+
+    if (mentioningReplies.length > 0) {
+      const followerRoles = tx
+        .select({ userId: userRoles.userId, roleId: userRoles.roleId })
+        .from(userRoles)
+        .where(
+          inArray(
+            userRoles.userId,
+            followers.map(({ userId }) => userId)
+          )
+        )
+        .all();
+
+      const followerRoleKeys = new Set(
+        followerRoles.map(({ userId, roleId }) => `${userId}:${roleId}`)
+      );
+
+      for (const { userId, lastReadMessageId } of followers) {
+        const isMentioned = mentioningReplies.some(
+          (reply) =>
+            reply.id > (lastReadMessageId ?? 0) &&
+            reply.userId !== userId &&
+            (reply.userIds.includes(userId) ||
+              reply.roleIds.some((roleId) =>
+                followerRoleKeys.has(`${userId}:${roleId}`)
+              ))
+        );
+
+        if (isMentioned) mentionedUserIds.push(userId);
+      }
+    }
+
+    tx.update(threadFollowers)
+      .set({ hasUnreadMention: false })
+      .where(eq(threadFollowers.parentMessageId, parentMessageId))
+      .run();
+
+    if (mentionedUserIds.length > 0) {
+      tx.update(threadFollowers)
+        .set({ hasUnreadMention: true })
+        .where(
+          and(
+            eq(threadFollowers.parentMessageId, parentMessageId),
+            inArray(threadFollowers.userId, mentionedUserIds)
+          )
+        )
+        .run();
+    }
+  });
+
+  await publishThreadFollowers(parentMessageId, channelId);
+};
+
 // an edit can mention someone new, who then follows like any other mention, and can add or
 // drop a mention of a follower, whose badge has to be worked out again
 const followThreadOnEdit = async (reply: Omit<TThreadReply, 'createdAt'>) => {
-  const mentionedUserIds = await getExistingMentionedUserIds(reply.content);
+  const { userIds } = getMentions(reply.content);
+  const mentionedUserIds = await getExistingUserIds(userIds);
   const pulledInUserIds = mentionedUserIds.filter(
     (userId) => userId !== reply.userId
   );
@@ -181,7 +300,12 @@ const followThreadOnEdit = async (reply: Omit<TThreadReply, 'createdAt'>) => {
       .onConflictDoNothing();
   }
 
-  await publishThreadFollowers(reply.parentMessageId, reply.channelId);
+  await refreshThreadFollowers(reply.parentMessageId, reply.channelId);
 };
 
-export { followThreadOnEdit, followThreadOnReply, loadThreadParent };
+export {
+  followThreadOnEdit,
+  followThreadOnReply,
+  loadThreadParent,
+  refreshThreadFollowers
+};

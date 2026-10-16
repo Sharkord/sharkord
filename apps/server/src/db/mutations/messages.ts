@@ -1,11 +1,8 @@
 import { eq } from 'drizzle-orm';
 import { db } from '..';
+import { refreshThreadFollowers } from '../../helpers/threads';
 import { eventBus } from '../../plugins/event-bus';
-import {
-  publishMessageDelete,
-  publishReplyCount,
-  publishThreadFollowers
-} from '../publishers';
+import { publishMessageDelete, publishReplyCount } from '../publishers';
 import { getFilesByMessageId } from '../queries/files';
 import { messages } from '../schema';
 import { removeFile } from './files';
@@ -27,8 +24,8 @@ const deleteMessage = async (message: TDeletableMessage) => {
 
   if (message.parentMessageId) {
     publishReplyCount(message.parentMessageId, message.channelId);
-    // a deleted reply may have been unread, so the counts are recomputed
-    publishThreadFollowers(message.parentMessageId, message.channelId);
+    // a deleted reply may have been unread, or the mention that made a badge red
+    await refreshThreadFollowers(message.parentMessageId, message.channelId);
   }
 
   eventBus.emit('message:deleted', {

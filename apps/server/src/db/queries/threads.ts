@@ -4,24 +4,9 @@ import type {
   TMessagesCursor,
   TThreadSummary
 } from '@sharkord/shared';
-import {
-  and,
-  count,
-  desc,
-  eq,
-  gt,
-  inArray,
-  isNull,
-  lt,
-  ne,
-  or,
-  sql
-} from 'drizzle-orm';
-import { alias } from 'drizzle-orm/sqlite-core';
+import { and, count, desc, eq, inArray, lt, or, sql } from 'drizzle-orm';
 import { db } from '..';
-import { messages, threadFollowers, userRoles } from '../schema';
-
-const replies = alias(messages, 'replies');
+import { messages, threadFollowers } from '../schema';
 
 const THREAD_SUMMARY_USERS_LIMIT = 6;
 
@@ -74,20 +59,24 @@ const getThreadSummaries = async (parentMessageIds: number[]) => {
     summaries.get(parentMessageId) ?? { replyCount: 0, replyUserIds: [] };
 };
 
-const unreadRepliesJoin = and(
-  eq(replies.parentMessageId, threadFollowers.parentMessageId),
-  or(isNull(replies.userId), ne(replies.userId, threadFollowers.userId)),
-  gt(replies.id, sql`coalesce(${threadFollowers.lastReadMessageId}, 0)`)
-);
+// the badge shows 99+ past 99, so counting further only costs time on threads a follower never
+// opens, where unread replies pile up without bound
+const UNREAD_COUNT_LIMIT = 100;
 
-const unreadRepliesMentionFollower = sql<number>`coalesce(max(
-  ${replies.content} LIKE '%data-user-id="' || ${threadFollowers.userId} || '"%'
-  OR EXISTS (
-    SELECT 1 FROM ${userRoles}
-    WHERE ${userRoles.userId} = ${threadFollowers.userId}
-      AND ${replies.content} LIKE '%data-role-id="' || ${userRoles.roleId} || '"%'
+// the outer columns are written out by hand: drizzle leaves them unqualified in a single table
+// select, where they would resolve to the subquery's own messages columns instead
+const followerUnreadCount = sql<number>`(
+  SELECT count(*) FROM (
+    SELECT 1 FROM messages AS unread_replies
+    WHERE unread_replies.parent_message_id = thread_followers.parent_message_id
+      AND unread_replies.id > coalesce(thread_followers.last_read_message_id, 0)
+      AND (
+        unread_replies.user_id IS NULL
+        OR unread_replies.user_id <> thread_followers.user_id
+      )
+    LIMIT ${UNREAD_COUNT_LIMIT}
   )
-), 0)`.mapWith(Boolean);
+)`.mapWith(Number);
 
 const getLatestThreadReply = async (parentMessageId: number) =>
   db
@@ -102,13 +91,11 @@ const getThreadUnreadCountsByFollower = async (parentMessageId: number) =>
   db
     .select({
       userId: threadFollowers.userId,
-      unreadCount: count(replies.id),
-      hasUnreadMention: unreadRepliesMentionFollower
+      unreadCount: followerUnreadCount,
+      hasUnreadMention: threadFollowers.hasUnreadMention
     })
     .from(threadFollowers)
-    .leftJoin(replies, unreadRepliesJoin)
-    .where(eq(threadFollowers.parentMessageId, parentMessageId))
-    .groupBy(threadFollowers.userId);
+    .where(eq(threadFollowers.parentMessageId, parentMessageId));
 
 const getFollowedThreadsForUser = async (
   userId: number,
@@ -119,8 +106,8 @@ const getFollowedThreadsForUser = async (
   const rows = await db
     .select({
       parentMessageId: threadFollowers.parentMessageId,
-      unreadCount: count(replies.id),
-      hasUnreadMention: unreadRepliesMentionFollower
+      unreadCount: followerUnreadCount,
+      hasUnreadMention: threadFollowers.hasUnreadMention
     })
     .from(threadFollowers)
     .innerJoin(
@@ -130,9 +117,7 @@ const getFollowedThreadsForUser = async (
         inArray(messages.channelId, channelIds)
       )
     )
-    .leftJoin(replies, unreadRepliesJoin)
-    .where(eq(threadFollowers.userId, userId))
-    .groupBy(threadFollowers.parentMessageId);
+    .where(eq(threadFollowers.userId, userId));
 
   const followedThreads: TFollowedThreadsMap = {};
 

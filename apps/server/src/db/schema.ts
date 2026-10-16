@@ -523,6 +523,9 @@ const threadFollowers = sqliteTable(
       .notNull()
       .references(() => messages.id, { onDelete: 'cascade' }),
     lastReadMessageId: integer('last_read_message_id'),
+    hasUnreadMention: integer('has_unread_mention', { mode: 'boolean' })
+      .notNull()
+      .default(false),
     lastReplyAt: integer('last_reply_at').notNull(),
     createdAt: integer('created_at').notNull()
   },

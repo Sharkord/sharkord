@@ -44,7 +44,7 @@ const setThreadFollowRoute = rateLimitedProcedure(protectedProcedure, {
         })
         .onConflictDoUpdate({
           target: [threadFollowers.userId, threadFollowers.parentMessageId],
-          set: { lastReadMessageId }
+          set: { lastReadMessageId, hasUnreadMention: false }
         });
     } else {
       await db

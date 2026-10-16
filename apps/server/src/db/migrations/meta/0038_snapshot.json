@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "c07d7779-6350-4826-ae49-ec1a8746f398",
+  "id": "e45d4d25-7203-41b3-a7d2-3ea6b48ddd64",
   "prevId": "4e65e4a0-5160-49be-8087-e95620222a5b",
   "tables": {
     "activity_log": {
@@ -593,6 +593,20 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "user_one_closed_at": {
+          "name": "user_one_closed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "user_two_closed_at": {
+          "name": "user_two_closed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "created_at": {
@@ -1570,6 +1584,14 @@
           ],
           "isUnique": false
         },
+        "messages_parent_created_idx": {
+          "name": "messages_parent_created_idx",
+          "columns": [
+            "parent_message_id",
+            "created_at"
+          ],
+          "isUnique": false
+        },
         "messages_reply_to_idx": {
           "name": "messages_reply_to_idx",
           "columns": [
@@ -2456,6 +2478,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "has_unread_mention": {
+          "name": "has_unread_mention",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         },
         "last_reply_at": {
           "name": "last_reply_at",

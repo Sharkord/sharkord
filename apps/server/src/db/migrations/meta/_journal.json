@@ -271,22 +271,8 @@
     {
       "idx": 38,
       "version": "6",
-      "when": 1792151973688,
-      "tag": "0038_thread_followers",
-      "breakpoints": true
-    },
-    {
-      "idx": 39,
-      "version": "6",
-      "when": 1792167041814,
-      "tag": "0039_direct_message_closed_at",
-      "breakpoints": true
-    },
-    {
-      "idx": 40,
-      "version": "6",
-      "when": 1792170075899,
-      "tag": "0040_thread_reply_order_index",
+      "when": 1792174265715,
+      "tag": "0038_threads_and_dm_close",
       "breakpoints": true
     }
   ]

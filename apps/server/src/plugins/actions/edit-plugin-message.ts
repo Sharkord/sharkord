@@ -4,6 +4,7 @@ import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { messages } from '../../db/schema';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
+import { followThreadOnEdit } from '../../helpers/threads';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
 import { invariant } from '../../utils/invariant';
 import { eventBus } from '../event-bus';
@@ -39,6 +40,16 @@ const editPluginMessage = async (
       editedBy: null
     })
     .where(eq(messages.id, messageId));
+
+  if (message.parentMessageId) {
+    await followThreadOnEdit({
+      id: messageId,
+      parentMessageId: message.parentMessageId,
+      channelId: message.channelId,
+      userId: null,
+      content: sanitizedContent
+    });
+  }
 
   publishMessage(messageId, message.channelId, 'update');
   if (previews) enqueueProcessMetadata(sanitizedContent, messageId);

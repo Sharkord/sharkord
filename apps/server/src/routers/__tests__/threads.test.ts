@@ -5,11 +5,14 @@ import {
   initTest,
   sendMessage
 } from '../../__tests__/helpers';
+import { tdb } from '../../__tests__/setup';
+import { messages } from '../../db/schema';
 import { pubsub } from '../../utils/pubsub';
 import { handleSocketClose } from '../../utils/wss';
 
-// plugin authored replies go through the same followThreadOnReply as send-message, the
-// plugin harness is not set up here, so only the user path is exercised
+// plugin authored replies, edits and deletes go through the same followThreadOnReply,
+// followThreadOnEdit and refreshThreadFollowers as the user routes, the plugin harness is not
+// set up here, so only the user paths are exercised
 
 const mention = (userId: number) =>
   `<p><span data-type="mention" data-user-id="${userId}" class="mention">@user</span> hi</p>`;
@@ -1370,5 +1373,129 @@ describe('thread behaviour', () => {
     await expect(
       caller.messages.getThread({ parentMessageId: parentId })
     ).rejects.toThrow('Parent message not found');
+  });
+
+  test('mention attributes typed as plain text are not a mention', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller3 } = await initTest(3);
+
+    const parentId = await root(caller3);
+
+    await reply(
+      caller1,
+      parentId,
+      `<p>data-type="mention" data-user-id="3" data-role-id="${MEMBER_ROLE_ID}"</p>`
+    );
+
+    expect(await getReadState(3, parentId)).toEqual({
+      unreadCount: 1,
+      hasUnreadMention: false
+    });
+  });
+
+  test('a span carrying a user id without the mention type is not a mention', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller3 } = await initTest(3);
+
+    const parentId = await root(caller3);
+
+    await reply(caller1, parentId, '<p><span data-user-id="3">hi</span></p>');
+
+    expect(await getReadState(3, parentId)).toEqual({
+      unreadCount: 1,
+      hasUnreadMention: false
+    });
+  });
+
+  test('deleting the only unread reply that mentions a follower clears their badge', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller3 } = await initTest(3);
+
+    const parentId = await root(caller3);
+
+    await reply(caller1, parentId);
+
+    const mentionId = await reply(caller1, parentId, mention(3));
+
+    await caller1.messages.delete({ messageId: mentionId });
+
+    expect(await getReadState(3, parentId)).toEqual({
+      unreadCount: 1,
+      hasUnreadMention: false
+    });
+  });
+
+  test('deleting one of two unread replies that mention a follower keeps their badge red', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller3 } = await initTest(3);
+
+    const parentId = await root(caller3);
+    const firstMentionId = await reply(caller1, parentId, mention(3));
+
+    await reply(caller1, parentId, roleMention(MEMBER_ROLE_ID));
+    await caller1.messages.delete({ messageId: firstMentionId });
+
+    expect(await getReadState(3, parentId)).toEqual({
+      unreadCount: 1,
+      hasUnreadMention: true
+    });
+  });
+
+  test('editing away the only unread mention of a follower clears their badge', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller3 } = await initTest(3);
+
+    const parentId = await root(caller3);
+    const mentionId = await reply(caller1, parentId, mention(3));
+
+    await caller1.messages.edit({
+      messageId: mentionId,
+      content: '<p>Reply</p>'
+    });
+
+    expect(await getReadState(3, parentId)).toEqual({
+      unreadCount: 1,
+      hasUnreadMention: false
+    });
+  });
+
+  test('a follower who replies has read the mention before their reply', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller3 } = await initTest(3);
+
+    const parentId = await root(caller3);
+
+    await reply(caller1, parentId, mention(3));
+    await reply(caller3, parentId);
+
+    expect(await getReadState(3, parentId)).toEqual({
+      unreadCount: 0,
+      hasUnreadMention: false
+    });
+  });
+
+  test('the unread count stops at 100, past what the badge shows', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller3 } = await initTest(3);
+
+    const parentId = await root(caller3);
+
+    // the first reply goes through the route so the parent's author follows the thread, the
+    // rest are inserted directly since the send rate limit would stop them
+    await reply(caller1, parentId);
+
+    const now = Date.now();
+
+    await tdb.insert(messages).values(
+      Array.from({ length: 104 }, (_, index) => ({
+        channelId: 1,
+        userId: 1,
+        parentMessageId: parentId,
+        content: '<p>Reply</p>',
+        createdAt: now + index
+      }))
+    );
+
+    expect(await getUnreadCount(3, parentId)).toBe(100);
   });
 });
