@@ -1,11 +1,22 @@
 import { FixedWindowRateLimiter } from '.';
+import { FailedAttemptsLimiter } from './failed-attempts-limiter';
 
-const trackedRateLimiters = new Set<FixedWindowRateLimiter>();
+const trackedRateLimiters = new Set<{ clear: () => void }>();
 
 const createRateLimiter = (
   options: ConstructorParameters<typeof FixedWindowRateLimiter>[0]
 ) => {
   const limiter = new FixedWindowRateLimiter(options);
+
+  trackedRateLimiters.add(limiter);
+
+  return limiter;
+};
+
+const createFailedAttemptsLimiter = (
+  options: ConstructorParameters<typeof FailedAttemptsLimiter>[0]
+) => {
+  const limiter = new FailedAttemptsLimiter(options);
 
   trackedRateLimiters.add(limiter);
 
@@ -28,6 +39,7 @@ const clearRateLimitersForTests = () => {
 
 export {
   clearRateLimitersForTests,
+  createFailedAttemptsLimiter,
   createRateLimiter,
   FixedWindowRateLimiter,
   getClientRateLimitKey,

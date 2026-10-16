@@ -1,5 +1,7 @@
 {
   "identityLabel": "Identita",
+  "tooManyAttempts": "Příliš mnoho pokusů. Zkuste to prosím znovu později.",
+  "invalidCredentials": "Nesprávné přihlašovací údaje",
   "identityHelp": "Unikátní identifikátor pro váš účet na tomto serveru. Použijte cokoliv se vám líbí, ať už email nebo uživatelské jméno. Tento údaj nebude vidět veřejně.",
   "passwordLabel": "Heslo",
   "autoLoginLabel": "Přihlašovat automaticky",

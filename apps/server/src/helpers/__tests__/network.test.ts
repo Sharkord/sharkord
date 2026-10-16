@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { isPrivateIP, isPublicIp } from '../network';
+import { getIpBlockKey, isPrivateIP, isPublicIp } from '../network';
 
 // this predicate is the whole of the link preview's ssrf defence: everything it calls public
 // gets fetched by the server, from the server's own network position
@@ -75,5 +75,28 @@ describe('isPublicIp', () => {
     for (const address of malformedAddresses) {
       expect(isPublicIp(address), JSON.stringify(address)).toBe(false);
     }
+  });
+});
+
+describe('getIpBlockKey', () => {
+  test('keeps an ipv4 address as it is', () => {
+    expect(getIpBlockKey('1.2.3.4')).toBe('1.2.3.4');
+  });
+
+  test('normalizes mapped ipv4 addresses without grouping different clients', () => {
+    expect(getIpBlockKey('::ffff:1.2.3.4')).toBe('1.2.3.4');
+    expect(getIpBlockKey('::ffff:9.9.9.9')).toBe('9.9.9.9');
+    expect(getIpBlockKey('0:0:0:0:0:ffff:102:304')).toBe('1.2.3.4');
+    expect(getIpBlockKey('::1')).toBe('::/64');
+  });
+
+  test('groups ipv6 addresses by their /64', () => {
+    expect(getIpBlockKey('2001:db8:1:2:aaaa::1')).toBe('2001:db8:1:2::/64');
+    expect(getIpBlockKey('2001:db8:1:2:bbbb::2')).toBe('2001:db8:1:2::/64');
+    expect(getIpBlockKey('2001:db8:1:3::1')).toBe('2001:db8:1:3::/64');
+  });
+
+  test('returns anything unparseable unchanged', () => {
+    expect(getIpBlockKey('unknown')).toBe('unknown');
   });
 });

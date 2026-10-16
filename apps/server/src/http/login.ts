@@ -18,15 +18,23 @@ import { getServerToken, getSettings } from '../db/queries/server';
 import { getUserByIdentity } from '../db/queries/users';
 import { users } from '../db/schema';
 import { getWsInfo } from '../helpers/get-ws-info';
+import { getIpBlockKey } from '../helpers/network';
 import { isLocalLoginDisabled } from '../helpers/oidc/settings';
 import { safeCompare } from '../helpers/safe-compare';
 import { logger } from '../logger';
 import { pluginManager } from '../plugins';
 import { runHook } from '../plugins/run-hook';
 import { enqueueActivityLog } from '../queues/activity-log';
-import { createRateLimiter } from '../utils/rate-limiters/rate-limiter';
+import {
+  createFailedAttemptsLimiter,
+  createRateLimiter
+} from '../utils/rate-limiters/rate-limiter';
 import { HttpValidationError } from './errors';
-import { enforceHttpRateLimit, getJsonBody } from './helpers';
+import {
+  enforceHttpRateLimit,
+  getJsonBody,
+  sendTooManyRequests
+} from './helpers';
 
 const zBody = z.object({
   identity: z
@@ -46,7 +54,25 @@ const loginRateLimiter = createRateLimiter({
   windowMs: config.rateLimiters.login.windowMs
 });
 
+const loginLockout = createFailedAttemptsLimiter(
+  config.rateLimiters.loginLockout
+);
+
 const GENERIC_LOGIN_ERROR = 'Invalid credentials';
+
+const invalidCredentialsError = (lockoutKey: string | undefined) => {
+  if (lockoutKey) {
+    const blockMs = loginLockout.recordFailure(lockoutKey);
+
+    if (blockMs > 0) {
+      logger.warn(
+        `${chalk.dim('[Auth]')} Blocked login attempts from ${lockoutKey} for ${Math.ceil(blockMs / 60_000)} minutes after repeated failures.`
+      );
+    }
+  }
+
+  return new HttpValidationError('identity', GENERIC_LOGIN_ERROR);
+};
 
 let dummyArgon2HashPromise: Promise<string> | null = null;
 const getDummyArgon2Hash = (): Promise<string> => {
@@ -65,6 +91,25 @@ const loginRouteHandler = async (
   req: http.IncomingMessage,
   res: http.ServerResponse
 ) => {
+  const connectionInfo = getWsInfo(undefined, req);
+  const lockoutKey = connectionInfo?.ip
+    ? getIpBlockKey(connectionInfo.ip)
+    : undefined;
+
+  if (lockoutKey) {
+    const retryAfterMs = loginLockout.getRetryAfterMs(lockoutKey);
+
+    if (retryAfterMs > 0) {
+      sendTooManyRequests(
+        res,
+        retryAfterMs,
+        'Too many failed login attempts. Please try again later.'
+      );
+
+      return;
+    }
+  }
+
   const data = zBody.parse(await getJsonBody(req));
 
   if (data.identity === DELETED_USER_IDENTITY_AND_NAME) {
@@ -80,7 +125,6 @@ const loginRouteHandler = async (
 
   const settings = await getSettings();
   let existingUser = await getUserByIdentity(data.identity);
-  const connectionInfo = getWsInfo(undefined, req);
 
   await runHook<TBeforeLoginPayload, never>({
     entries: pluginManager.getHooks('beforeLogin'),
@@ -118,7 +162,7 @@ const loginRouteHandler = async (
         `${chalk.dim('[Auth]')} Login attempt for unknown identity blocked. (reason: ${result.error}, IP: ${connectionInfo?.ip || 'unknown'})`
       );
 
-      throw new HttpValidationError('identity', GENERIC_LOGIN_ERROR);
+      throw invalidCredentialsError(lockoutKey);
     }
 
     // only consume the invite when one was actually accepted
@@ -189,7 +233,7 @@ const loginRouteHandler = async (
       `${chalk.dim('[Auth]')} Failed login attempt for user "${existingUser.identity}" due to invalid password. (IP: ${connectionInfo?.ip || 'unknown'})`
     );
 
-    throw new HttpValidationError('identity', GENERIC_LOGIN_ERROR);
+    throw invalidCredentialsError(lockoutKey);
   }
 
   if (existingUser.banned) {

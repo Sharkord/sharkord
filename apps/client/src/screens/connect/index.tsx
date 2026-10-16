@@ -37,7 +37,7 @@ import { useOidcLogin } from './hooks/use-oidc-login';
 
 const Connect = memo(() => {
   const { t } = useTranslation('connect');
-  const { values, r, setErrors, onChange } = useForm<{
+  const { values, errors, r, setErrors, onChange } = useForm<{
     identity: string;
     password: string;
     autoLogin: boolean;
@@ -49,6 +49,17 @@ const Connect = memo(() => {
 
   const [loading, setLoading] = useState(false);
   const info = useInfo();
+
+  const identityError = useMemo(() => {
+    switch (errors.identity) {
+      case 'tooManyAttempts':
+        return t('tooManyAttempts');
+      case 'Invalid credentials':
+        return t('invalidCredentials');
+      default:
+        return errors.identity;
+    }
+  }, [errors.identity, t]);
 
   const inviteCode = useMemo(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -90,6 +101,11 @@ const Connect = memo(() => {
           invite: inviteCode
         })
       });
+
+      if (response.status === 429) {
+        setErrors({ identity: 'tooManyAttempts' });
+        return;
+      }
 
       if (!response.ok) {
         const data = await response.json();
@@ -193,6 +209,7 @@ const Connect = memo(() => {
               <Group label={t('identityLabel')} help={t('identityHelp')}>
                 <Input
                   {...r('identity')}
+                  error={identityError}
                   autoComplete="username"
                   data-testid={TestId.CONNECT_IDENTITY_INPUT}
                 />
