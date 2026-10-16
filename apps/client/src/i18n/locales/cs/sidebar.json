@@ -45,7 +45,6 @@
   "failedReorderCategories": "Nepodařilo se změnit pořadí kategorií",
   "failedMoveUser": "Nepodařilo se přesunout uživatele",
   "directMessages": "Přímé zprávy",
-  "failedLoadDMs": "Nepodařilo se načíst přímé zprávy",
   "couldNotOpenDM": "Nepodařilo se otevřít přímou zprávu",
   "noDMsYet": "Zatím žádné přímé zprávy",
   "startNewConversation": "Zahájit novou konverzaci",
@@ -75,5 +74,13 @@
   "microphone": "Mikrofon",
   "noiseSuppression": "Potlačení šumu",
   "muteChannel": "Ztlumit kanál",
-  "unmuteChannel": "Zrušit ztlumení kanálu"
+  "unmuteChannel": "Zrušit ztlumení kanálu",
+  "threads": "Vlákna",
+  "openThreads": "Otevřít vlákna",
+  "closeThreads": "Zavřít vlákna",
+  "noFollowedThreads": "Zde se zobrazí vlákna, která sledujete",
+  "failedLoadThreads": "Nepodařilo se načíst vlákna",
+  "loadMoreThreads": "Načíst další",
+  "closeConversation": "Zavřít konverzaci",
+  "couldNotCloseDM": "Nepodařilo se zavřít přímou zprávu"
 }

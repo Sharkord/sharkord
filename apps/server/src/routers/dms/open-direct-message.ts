@@ -3,8 +3,15 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
-import { publishChannelPermissions } from '../../db/publishers';
-import { getDirectMessageChannel, normalizePair } from '../../db/queries/dms';
+import {
+  publishChannelPermissions,
+  publishDirectMessageConversation
+} from '../../db/publishers';
+import {
+  getClosedAtKey,
+  getDirectMessageChannel,
+  normalizePair
+} from '../../db/queries/dms';
 import { getSettings } from '../../db/queries/server';
 import { channels, directMessages, users } from '../../db/schema';
 import { invariant } from '../../utils/invariant';
@@ -53,6 +60,17 @@ const openDirectMessageRoute = rateLimitedProcedure(protectedProcedure, {
     const existing = await getDirectMessageChannel(userOneId, userTwoId);
 
     if (existing) {
+      const closedAtKey = getClosedAtKey(existing, ctx.userId);
+
+      if (existing[closedAtKey] !== null) {
+        await db
+          .update(directMessages)
+          .set({ [closedAtKey]: null })
+          .where(eq(directMessages.channelId, existing.channelId));
+
+        await publishDirectMessageConversation(ctx.userId, existing.channelId);
+      }
+
       return { channelId: existing.channelId };
     }
 
@@ -75,11 +93,13 @@ const openDirectMessageRoute = rateLimitedProcedure(protectedProcedure, {
           .returning()
           .get();
 
+        // the other user only sees the conversation once a message arrives
         tx.insert(directMessages)
           .values({
             channelId: newChannel.id,
             userOneId,
             userTwoId,
+            [getClosedAtKey({ userOneId }, input.userId)]: now,
             createdAt: now
           })
           .run();
@@ -102,9 +122,12 @@ const openDirectMessageRoute = rateLimitedProcedure(protectedProcedure, {
     const participants = [userOneId, userTwoId];
 
     ctx.pubsub.publishFor(participants, ServerEvents.CHANNEL_CREATE, channel);
-    ctx.pubsub.publishFor(participants, ServerEvents.DM_CONVERSATION_OPEN, {
-      channelId: channel.id
-    });
+
+    await Promise.all(
+      participants.map((userId) =>
+        publishDirectMessageConversation(userId, channel.id)
+      )
+    );
 
     await publishChannelPermissions(participants);
 

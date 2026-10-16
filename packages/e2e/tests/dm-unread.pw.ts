@@ -1,7 +1,7 @@
-import type { Page } from '@playwright/test';
 import { TestId } from '@sharkord/shared';
 import { expect, loginAs, test } from './fixtures';
 import { openChannel } from './helpers/channels';
+import { dmItem, openDmPanel, startDmWith } from './helpers/dms';
 import { sendMessage } from './helpers/messages';
 
 // the seeded conversation belongs to user a and user b, and sessions.pw.ts kicks one and takes
@@ -13,13 +13,6 @@ const READER = {
 };
 
 const RUN_ID = Date.now().toString().slice(-8);
-
-const dmItem = (page: Page, name: string) =>
-  page.getByTestId(TestId.DM_ITEM).filter({ hasText: name });
-
-const openDmPanel = async (page: Page) => {
-  await page.getByTestId(TestId.DM_TOGGLE).click();
-};
 
 // dms.test.ts covers the read state itself: the count clears for a participant and stays clear
 // until a newer message arrives. what only a browser shows is the badge following it, which is
@@ -36,11 +29,7 @@ test('a dm badge clears when the conversation is opened and stays clear', async 
 
     await loginAs(sender, 'testowner', 'password123');
 
-    await sender
-      .getByTestId(TestId.MEMBER_ITEM)
-      .filter({ hasText: READER.name })
-      .click();
-    await sender.getByTestId(TestId.USER_POPOVER_DM).click();
+    await startDmWith(sender, READER.name);
 
     await expect(
       sender.getByTestId(TestId.MESSAGE_COMPOSE_EDITOR)

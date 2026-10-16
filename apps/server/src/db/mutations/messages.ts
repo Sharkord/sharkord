@@ -1,7 +1,11 @@
 import { eq } from 'drizzle-orm';
 import { db } from '..';
 import { eventBus } from '../../plugins/event-bus';
-import { publishMessage, publishReplyCount } from '../publishers';
+import {
+  publishMessageDelete,
+  publishReplyCount,
+  publishThreadFollowers
+} from '../publishers';
 import { getFilesByMessageId } from '../queries/files';
 import { messages } from '../schema';
 import { removeFile } from './files';
@@ -19,10 +23,12 @@ const deleteMessage = async (message: TDeletableMessage) => {
 
   await Promise.all(attachedFiles.map((file) => removeFile(file.id)));
 
-  publishMessage(message.id, message.channelId, 'delete');
+  publishMessageDelete(message);
 
   if (message.parentMessageId) {
     publishReplyCount(message.parentMessageId, message.channelId);
+    // a deleted reply may have been unread, so the counts are recomputed
+    publishThreadFollowers(message.parentMessageId, message.channelId);
   }
 
   eventBus.emit('message:deleted', {

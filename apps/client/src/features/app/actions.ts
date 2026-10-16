@@ -7,7 +7,11 @@ import {
   setLocalStorageItemBool
 } from '@/helpers/storage';
 import { i18n } from '@/i18n';
-import { MicMode, type TMessageJumpToTarget } from '@/types';
+import {
+  MicMode,
+  type TMessageJumpToTarget,
+  type TThreadTarget
+} from '@/types';
 import type { TServerInfo } from '@sharkord/shared';
 import { toast } from 'sonner';
 import { markChannelAsRead, setInfo } from '../server/actions';
@@ -136,6 +140,7 @@ export const resetApp = () => {
       channelId: undefined
     })
   );
+  store.dispatch(appSliceActions.setSelectedThread(undefined));
 };
 
 export const setAutoJoinLastChannel = (autoJoin: boolean) => {
@@ -157,6 +162,14 @@ export const setHotkeysEnabled = (enabled: boolean) => {
 
   if (!enabled) {
     setMicMode(MicMode.OPEN);
+  }
+};
+
+export const setSelectedThread = (thread: TThreadTarget | undefined) => {
+  store.dispatch(appSliceActions.setSelectedThread(thread));
+
+  if (thread) {
+    closeThreadSidebar();
   }
 };
 

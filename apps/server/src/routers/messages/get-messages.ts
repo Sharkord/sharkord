@@ -1,32 +1,18 @@
 import {
   DEFAULT_MESSAGES_LIMIT,
   zMessagesCursor,
-  type TMessage,
-  type TMessagesCursor
+  type TMessage
 } from '@sharkord/shared';
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  gte,
-  inArray,
-  isNull,
-  lt,
-  or
-} from 'drizzle-orm';
-import { alias } from 'drizzle-orm/sqlite-core';
+import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
-import { joinMessagesWithRelations } from '../../db/queries/messages';
+import { getMessagesPage } from '../../db/queries/messages';
+import { getThreadSummaries } from '../../db/queries/threads';
 import { channels, messages } from '../../db/schema';
 import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
-
-const JUMP_CONTEXT_LIMIT = 20;
 
 const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
   maxRequests: config.rateLimiters.getMessages.maxRequests,
@@ -65,22 +51,16 @@ const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
       message: 'Channel not found'
     });
 
-    const baseWhere = and(
+    const where = and(
       eq(messages.channelId, channelId),
       isNull(messages.parentMessageId)
     );
 
-    let rows: TMessage[];
-    let nextCursor: TMessagesCursor | null = null;
-    // true when a jump window stops short of the newest message, so the client knows its list
-    // is not contiguous with the present and must offer a way back
-    let hasNewer = false;
+    let target: Pick<TMessage, 'createdAt'> | undefined;
 
     if (targetMessageId) {
-      // fetch all messages from newest down to (and including) the target
       const targetMessage = await db
         .select({
-          id: messages.id,
           createdAt: messages.createdAt,
           parentMessageId: messages.parentMessageId
         })
@@ -103,124 +83,22 @@ const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
         message: 'Target message must be a root message'
       });
 
-      // a window around the target rather than everything since it: linking to a message from
-      // a year ago used to load a year of history, joined with files, reactions and reply
-      // previews, in one response
-      const [olderMessages, newerMessages] = await Promise.all([
-        db
-          .select()
-          .from(messages)
-          .where(
-            and(baseWhere, lt(messages.createdAt, targetMessage.createdAt))
-          )
-          .orderBy(desc(messages.createdAt), desc(messages.id))
-          .limit(JUMP_CONTEXT_LIMIT + 1),
-        // ascending, so the window is anchored at the target and grows towards the present.
-        // ordering this half descending takes the newest messages in the channel instead,
-        // which leaves the target outside its own window once the limit bites
-        db
-          .select()
-          .from(messages)
-          .where(
-            and(baseWhere, gte(messages.createdAt, targetMessage.createdAt))
-          )
-          .orderBy(asc(messages.createdAt), asc(messages.id))
-          .limit(limit + 1)
-      ]);
-
-      hasNewer = newerMessages.length > limit;
-
-      if (hasNewer) newerMessages.pop();
-
-      newerMessages.reverse();
-
-      const hasOlder = olderMessages.length > JUMP_CONTEXT_LIMIT;
-
-      if (hasOlder) olderMessages.pop();
-
-      rows = [...newerMessages, ...olderMessages];
-
-      const oldestReturnedMessage = rows.at(-1);
-
-      // the window paginates upward from its own oldest row, so the client does not have to
-      // keep the channel's page-1 cursor, which points somewhere else entirely
-      nextCursor =
-        hasOlder && oldestReturnedMessage
-          ? {
-              createdAt: oldestReturnedMessage.createdAt,
-              id: oldestReturnedMessage.id
-            }
-          : null;
-    } else {
-      // standard cursor-based pagination
-      rows = await db
-        .select()
-        .from(messages)
-        .where(
-          cursor
-            ? and(
-                baseWhere,
-                or(
-                  lt(messages.createdAt, cursor.createdAt),
-                  and(
-                    eq(messages.createdAt, cursor.createdAt),
-                    lt(messages.id, cursor.id)
-                  )
-                )
-              )
-            : baseWhere
-        )
-        .orderBy(desc(messages.createdAt), desc(messages.id))
-        .limit(limit + 1);
-
-      if (rows.length > limit) {
-        rows.pop();
-
-        const lastReturnedMessage = rows.at(-1);
-
-        nextCursor = lastReturnedMessage
-          ? {
-              createdAt: lastReturnedMessage.createdAt,
-              id: lastReturnedMessage.id
-            }
-          : null;
-      }
+      target = targetMessage;
     }
 
-    if (rows.length === 0) {
-      return { messages: [], nextCursor, hasNewer };
-    }
+    const page = await getMessagesPage({ where, cursor, limit, target });
 
-    const messagesWithRelations = await joinMessagesWithRelations(rows);
-
-    const messageIds = rows.map((m) => m.id);
-    const replies = alias(messages, 'replies');
-
-    const replyCountRows = await db
-      .select({
-        parentMessageId: replies.parentMessageId,
-        count: count()
-      })
-      .from(replies)
-      .where(inArray(replies.parentMessageId, messageIds))
-      .groupBy(replies.parentMessageId);
-
-    const replyCountByMessage = replyCountRows.reduce<Record<number, number>>(
-      (acc, r) => {
-        if (r.parentMessageId !== null) {
-          acc[r.parentMessageId] = r.count;
-        }
-        return acc;
-      },
-      {}
+    const getThreadSummary = await getThreadSummaries(
+      page.messages.map((message) => message.id)
     );
 
-    const messagesWithReplyCounts = messagesWithRelations.map((msg) => ({
-      ...msg,
-      replyCount: replyCountByMessage[msg.id] ?? 0
-    }));
-
-    return { messages: messagesWithReplyCounts, nextCursor, hasNewer };
+    return {
+      ...page,
+      messages: page.messages.map((message) => ({
+        ...message,
+        ...getThreadSummary(message.id)
+      }))
+    };
   });
 
 export { getMessagesRoute };

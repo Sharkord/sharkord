@@ -11,11 +11,14 @@ import { memo, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 const ONE_MINUTE = 60_000;
 const ONE_HOUR = 60 * ONE_MINUTE;
+const ONE_DAY = 24 * ONE_HOUR;
+const ONE_WEEK = 7 * ONE_DAY;
 const DEFAULT_FORMAT = 'PPpp'; // eg: 12 August 2022, 14:30
 
 type TRelativeTimeProps = {
   date: Date | string;
   interval?: number;
+  compact?: boolean;
   children: (relativeTime: string) => ReactNode;
 };
 
@@ -29,6 +32,42 @@ const getFormattedTime = (d: Date, dateLocale: Locale): string => {
   }
 
   return format(d, DEFAULT_FORMAT, { locale: dateLocale });
+};
+
+const formatUnit = (value: number, unit: string, localeCode: string) =>
+  new Intl.NumberFormat(localeCode, {
+    style: 'unit',
+    unit,
+    unitDisplay: 'narrow'
+  }).format(value);
+
+const getCompactTime = (d: Date, dateLocale: Locale): string => {
+  const localeCode = dateLocale.code ?? 'en-US';
+  const elapsed = Math.max(0, Date.now() - d.getTime());
+
+  if (elapsed < ONE_HOUR) {
+    return formatUnit(
+      Math.max(1, Math.floor(elapsed / ONE_MINUTE)),
+      'minute',
+      localeCode
+    );
+  }
+
+  if (elapsed < ONE_DAY) {
+    return formatUnit(Math.floor(elapsed / ONE_HOUR), 'hour', localeCode);
+  }
+
+  if (elapsed < ONE_WEEK) {
+    return formatUnit(Math.floor(elapsed / ONE_DAY), 'day', localeCode);
+  }
+
+  const isThisYear = d.getFullYear() === new Date().getFullYear();
+
+  return new Intl.DateTimeFormat(localeCode, {
+    month: 'short',
+    day: 'numeric',
+    year: isThisYear ? undefined : 'numeric'
+  }).format(d);
 };
 
 const getUpdateInterval = (date: Date): number | null => {
@@ -53,6 +92,7 @@ const RelativeTime = memo(
   ({
     date,
     interval, // optional override
+    compact = false,
     children
   }: TRelativeTimeProps) => {
     const dateLocale = useDateLocale();
@@ -79,7 +119,9 @@ const RelativeTime = memo(
       return () => clearInterval(timer);
     }, [interval, parsedDate]);
 
-    return children(getFormattedTime(parsedDate, dateLocale));
+    const formatTime = compact ? getCompactTime : getFormattedTime;
+
+    return children(formatTime(parsedDate, dateLocale));
   }
 );
 

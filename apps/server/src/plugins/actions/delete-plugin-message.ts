@@ -1,7 +1,11 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../../db';
 import { removeFile } from '../../db/mutations/files';
-import { publishMessage, publishReplyCount } from '../../db/publishers';
+import {
+  publishMessageDelete,
+  publishReplyCount,
+  publishThreadFollowers
+} from '../../db/publishers';
 import { getFilesByMessageId } from '../../db/queries/files';
 import { messages } from '../../db/schema';
 import { eventBus } from '../event-bus';
@@ -31,10 +35,12 @@ const deletePluginMessage = async (
 
   await db.delete(messages).where(eq(messages.id, messageId));
 
-  publishMessage(messageId, message.channelId, 'delete');
+  publishMessageDelete({ ...message, id: messageId });
 
   if (message.parentMessageId) {
     publishReplyCount(message.parentMessageId, message.channelId);
+    // a deleted reply may have been unread, so the counts are recomputed
+    publishThreadFollowers(message.parentMessageId, message.channelId);
   }
 
   eventBus.emit('message:deleted', {

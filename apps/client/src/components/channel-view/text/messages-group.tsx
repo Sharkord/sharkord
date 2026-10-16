@@ -1,7 +1,5 @@
-import { PluginAvatar } from '@/components/plugin-avatar';
+import { MessageAuthorAvatar } from '@/components/message-author-avatar';
 import { RelativeTime } from '@/components/relative-time';
-import { UserAvatar } from '@/components/user-avatar';
-import { usePluginMetadata } from '@/features/server/plugins/hooks';
 import { useIsOwnUser, useUserById } from '@/features/server/users/hooks';
 import { cn } from '@/lib/utils';
 import {
@@ -40,7 +38,6 @@ const MessagesGroup = memo(
     onEditComplete
   }: TMessagesGroupProps) => {
     const firstMessage = group[0];
-    const pluginMetadata = usePluginMetadata(firstMessage.pluginId);
     const user = useUserById(firstMessage.userId);
     const date = new Date(firstMessage.createdAt);
     const isOwnUser = useIsOwnUser(firstMessage.userId);
@@ -53,15 +50,12 @@ const MessagesGroup = memo(
 
     const groupContent = (
       <div className="flex min-w-0 max-w-dvw gap-1 pl-2 pt-2 pr-2">
-        {isPluginMessage ? (
-          <PluginAvatar
-            name={pluginMetadata?.name}
-            avatarUrl={pluginMetadata?.avatarUrl}
-            className="h-10 w-10"
-          />
-        ) : (
-          <UserAvatar userId={user!.id} className="h-10 w-10" showUserPopover />
-        )}
+        <MessageAuthorAvatar
+          userId={firstMessage.userId}
+          pluginId={firstMessage.pluginId}
+          className="h-10 w-10"
+          showUserPopover
+        />
         <div className="flex min-w-0 flex-col w-full">
           <div className="flex gap-2 items-baseline pl-1 select-none">
             <span

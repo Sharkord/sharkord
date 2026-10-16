@@ -39,9 +39,8 @@ describe('dms router', () => {
     expect(second.channelId).toBe(first.channelId);
   });
 
-  test('should list direct message conversations', async () => {
+  test('should send direct message conversations on join', async () => {
     const { caller: caller1 } = await initTest(1);
-    const { caller: caller2 } = await initTest(2);
 
     const { channelId } = await caller1.dms.open({ userId: 2 });
 
@@ -51,15 +50,76 @@ describe('dms router', () => {
       files: []
     });
 
-    const list1 = await caller1.dms.get();
-    const list2 = await caller2.dms.get();
+    const { initialData: data1 } = await initTest(1);
+    const { initialData: data2 } = await initTest(2);
 
-    expect(
-      list1.some((dm) => dm.channelId === channelId && dm.userId === 2)
-    ).toBe(true);
-    expect(
-      list2.some((dm) => dm.channelId === channelId && dm.userId === 1)
-    ).toBe(true);
+    expect(data1.directMessages).toContainEqual(
+      expect.objectContaining({ channelId, userId: 2 })
+    );
+    expect(data2.directMessages).toContainEqual(
+      expect.objectContaining({ channelId, userId: 1 })
+    );
+  });
+
+  test('should order conversations by their latest message', async () => {
+    const { caller } = await initTest(1);
+
+    const { channelId: firstChannelId } = await caller.dms.open({ userId: 2 });
+    const { channelId: secondChannelId } = await caller.dms.open({
+      userId: 4
+    });
+
+    await Bun.sleep(2);
+
+    await caller.messages.send({
+      channelId: firstChannelId,
+      content: 'bump',
+      files: []
+    });
+
+    const { initialData } = await initTest(1);
+    const channelIds = initialData.directMessages.map((dm) => dm.channelId);
+
+    expect(channelIds.indexOf(firstChannelId)).toBeLessThan(
+      channelIds.indexOf(secondChannelId)
+    );
+  });
+
+  test('should tell each participant about a new conversation under the other name', async () => {
+    const { caller } = await initTest(1);
+
+    const events: { userId: number; payload: unknown }[] = [];
+
+    const subscriptions = [1, 2].map((userId) =>
+      pubsub
+        .subscribeFor(userId, ServerEvents.DM_CONVERSATION_UPDATE)
+        .subscribe({ next: (payload) => events.push({ userId, payload }) })
+    );
+
+    const { channelId } = await caller.dms.open({ userId: 2 });
+
+    subscriptions.forEach((subscription) => subscription.unsubscribe());
+
+    expect(events).toEqual([
+      {
+        userId: 1,
+        payload: {
+          channelId,
+          userId: 2,
+          lastMessageAt: expect.any(Number),
+          closedAt: null
+        }
+      },
+      {
+        userId: 2,
+        payload: {
+          channelId,
+          userId: 1,
+          lastMessageAt: expect.any(Number),
+          closedAt: expect.any(Number)
+        }
+      }
+    ]);
   });
 
   test('should reject creating direct message with self', async () => {
@@ -70,7 +130,7 @@ describe('dms router', () => {
     );
   });
 
-  test('should reject open and list when direct messages are disabled', async () => {
+  test('should reject opening a conversation when direct messages are disabled', async () => {
     const { caller } = await initTest(1);
 
     await tdb
@@ -81,10 +141,6 @@ describe('dms router', () => {
       .execute();
 
     await expect(caller.dms.open({ userId: 2 })).rejects.toThrow(
-      'Direct messages are disabled on this server'
-    );
-
-    await expect(caller.dms.get()).rejects.toThrow(
       'Direct messages are disabled on this server'
     );
   });
@@ -211,5 +267,261 @@ describe('dms router', () => {
     await expect(
       participant.messages.get({ channelId: dmChannelId })
     ).resolves.toBeDefined();
+  });
+
+  describe('closing a conversation', () => {
+    const getConversation = async (userId: number, channelId: number) => {
+      const { initialData } = await initTest(userId);
+
+      return initialData.directMessages.find(
+        (dm) => dm.channelId === channelId
+      );
+    };
+
+    const isVisible = (dm: {
+      closedAt: number | null;
+      lastMessageAt: number;
+    }) => dm.closedAt === null || dm.lastMessageAt > dm.closedAt;
+
+    test('should keep a new conversation hidden for the other user until a message arrives', async () => {
+      const { caller } = await initTest(1);
+
+      const { channelId } = await caller.dms.open({ userId: 2 });
+
+      expect(isVisible((await getConversation(1, channelId))!)).toBe(true);
+      expect(isVisible((await getConversation(2, channelId))!)).toBe(false);
+
+      await Bun.sleep(2);
+
+      await caller.messages.send({ channelId, content: 'hi', files: [] });
+
+      expect(isVisible((await getConversation(2, channelId))!)).toBe(true);
+    });
+
+    test('should hide a conversation for the caller only', async () => {
+      const { caller: caller1 } = await initTest(1);
+      const { caller: caller2 } = await initTest(2);
+
+      const { channelId } = await caller1.dms.open({ userId: 2 });
+
+      await caller1.messages.send({ channelId, content: 'hi', files: [] });
+      await caller2.dms.close({ channelId });
+
+      expect(isVisible((await getConversation(2, channelId))!)).toBe(false);
+      expect(isVisible((await getConversation(1, channelId))!)).toBe(true);
+    });
+
+    test('should bring a closed conversation back on a new message, history intact', async () => {
+      const { caller: caller1 } = await initTest(1);
+      const { caller: caller2 } = await initTest(2);
+
+      const { channelId } = await caller1.dms.open({ userId: 2 });
+
+      await caller1.messages.send({ channelId, content: 'first', files: [] });
+      await caller2.dms.close({ channelId });
+
+      await Bun.sleep(2);
+
+      await caller1.messages.send({ channelId, content: 'second', files: [] });
+
+      expect(isVisible((await getConversation(2, channelId))!)).toBe(true);
+
+      const { messages } = await caller2.messages.get({ channelId });
+
+      expect(messages.map((message) => message.content)).toEqual([
+        'second',
+        'first'
+      ]);
+    });
+
+    test('should bring a closed conversation back when the caller opens it again', async () => {
+      const { caller } = await initTest(1);
+
+      const { channelId } = await caller.dms.open({ userId: 2 });
+
+      await caller.dms.close({ channelId });
+
+      expect((await getConversation(1, channelId))!.closedAt).not.toBeNull();
+
+      const reopened = await caller.dms.open({ userId: 2 });
+
+      expect(reopened.channelId).toBe(channelId);
+      expect((await getConversation(1, channelId))!.closedAt).toBeNull();
+    });
+
+    test('should mark a closed conversation as read', async () => {
+      const { caller: caller1 } = await initTest(1);
+      const { caller: caller2 } = await initTest(2);
+
+      const { channelId } = await caller1.dms.open({ userId: 2 });
+
+      await caller1.messages.send({ channelId, content: 'unread', files: [] });
+
+      expect(
+        (await getChannelsReadStatesForUser(2, channelId))[channelId]
+      ).toBe(1);
+
+      await caller2.dms.close({ channelId });
+
+      expect(
+        (await getChannelsReadStatesForUser(2, channelId))[channelId]
+      ).toBe(0);
+    });
+
+    test('should publish the closed conversation to the caller', async () => {
+      const { caller } = await initTest(1);
+
+      const { channelId } = await caller.dms.open({ userId: 2 });
+
+      const events: unknown[] = [];
+
+      const subscription = pubsub
+        .subscribeFor(1, ServerEvents.DM_CONVERSATION_UPDATE)
+        .subscribe({ next: (payload) => events.push(payload) });
+
+      await caller.dms.close({ channelId });
+
+      subscription.unsubscribe();
+
+      expect(events).toEqual([
+        {
+          channelId,
+          userId: 2,
+          lastMessageAt: expect.any(Number),
+          closedAt: expect.any(Number)
+        }
+      ]);
+    });
+
+    test('should throw when the conversation does not exist', async () => {
+      const { caller } = await initTest(1);
+
+      await expect(caller.dms.close({ channelId: 999999 })).rejects.toThrow(
+        'Conversation not found'
+      );
+    });
+
+    test('should throw when the caller is not part of the conversation', async () => {
+      const { caller } = await initTest(1);
+
+      // channel 3 is the dm between users 3 and 4
+      await expect(caller.dms.close({ channelId: 3 })).rejects.toThrow(
+        'Conversation not found'
+      );
+    });
+
+    test('should throw when direct messages are disabled', async () => {
+      const { caller } = await initTest(3);
+
+      await tdb
+        .update(settings)
+        .set({ directMessagesEnabled: false })
+        .execute();
+
+      await expect(caller.dms.close({ channelId: 3 })).rejects.toThrow(
+        'Direct messages are disabled on this server'
+      );
+    });
+
+    test('should reject an input without a channel', async () => {
+      const { caller } = await initTest(1);
+
+      // @ts-expect-error testing invalid input
+      await expect(caller.dms.close({})).rejects.toThrow();
+    });
+  });
+});
+
+describe('direct message visibility', () => {
+  const getConversation = async (userId: number, channelId: number) => {
+    const { initialData } = await initTest(userId);
+
+    return initialData.directMessages.find((dm) => dm.channelId === channelId);
+  };
+
+  const isVisible = (dm: { closedAt: number | null; lastMessageAt: number }) =>
+    dm.closedAt === null || dm.lastMessageAt > dm.closedAt;
+
+  test('the other user opening an empty conversation through + shows it for them', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    const { channelId } = await caller1.dms.open({ userId: 2 });
+
+    expect(isVisible((await getConversation(2, channelId))!)).toBe(false);
+
+    const reopened = await caller2.dms.open({ userId: 1 });
+
+    expect(reopened.channelId).toBe(channelId);
+    expect(isVisible((await getConversation(2, channelId))!)).toBe(true);
+  });
+
+  test('reopening a closed conversation keeps every earlier message', async () => {
+    const { caller } = await initTest(1);
+
+    const { channelId } = await caller.dms.open({ userId: 2 });
+
+    await caller.messages.send({ channelId, content: 'before', files: [] });
+    await caller.dms.close({ channelId });
+    await caller.dms.open({ userId: 2 });
+
+    const { messages } = await caller.messages.get({ channelId });
+
+    expect(messages.map((message) => message.content)).toEqual(['before']);
+  });
+
+  test('a thread reply in a closed conversation brings it back', async () => {
+    const { caller: caller1 } = await initTest(1);
+    const { caller: caller2 } = await initTest(2);
+
+    const { channelId } = await caller1.dms.open({ userId: 2 });
+
+    const parentId = await caller1.messages.send({
+      channelId,
+      content: 'parent',
+      files: []
+    });
+
+    await caller2.dms.close({ channelId });
+    await Bun.sleep(2);
+
+    await caller1.messages.send({
+      channelId,
+      content: 'reply',
+      files: [],
+      parentMessageId: parentId!
+    });
+
+    expect(isVisible((await getConversation(2, channelId))!)).toBe(true);
+  });
+
+  test('closing one conversation leaves the caller other conversations alone', async () => {
+    const { caller } = await initTest(1);
+
+    const { channelId: firstChannelId } = await caller.dms.open({ userId: 2 });
+    const { channelId: secondChannelId } = await caller.dms.open({ userId: 4 });
+
+    await caller.dms.close({ channelId: firstChannelId });
+
+    expect(isVisible((await getConversation(1, secondChannelId))!)).toBe(true);
+  });
+
+  test('closing a conversation twice keeps it closed', async () => {
+    const { caller } = await initTest(1);
+
+    const { channelId } = await caller.dms.open({ userId: 2 });
+
+    await caller.dms.close({ channelId });
+    await caller.dms.close({ channelId });
+
+    expect(isVisible((await getConversation(1, channelId))!)).toBe(false);
+  });
+
+  test('closing a regular channel id is refused', async () => {
+    const { caller } = await initTest(1);
+
+    await expect(caller.dms.close({ channelId: 1 })).rejects.toThrow(
+      'Conversation not found'
+    );
   });
 });

@@ -1,17 +1,22 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
 import { getLocalStorageItemBool, LocalStorageKey } from '@/helpers/storage';
+import type { TConversation, TConversationKey } from '@/types';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type {
   TCategory,
   TChannel,
   TChannelUserPermissionsMap,
   TCommandsMapByPlugin,
+  TDirectMessageConversation,
   TExternalStream,
   TExternalStreamsMap,
+  TFollowedThread,
+  TFollowedThreadsMap,
   TJoinedEmoji,
   TJoinedMessage,
   TJoinedPublicUser,
   TJoinedRole,
+  TMessagesCursor,
   TPluginCapabilityAccessRule,
   TPluginComponentsMap,
   TPluginMessageComponentsByPlugin,
@@ -21,16 +26,23 @@ import type {
   TPublicServerSettings,
   TReadStateMap,
   TServerInfo,
+  TThreadFollowUpdate,
+  TThreadReadState,
+  TThreadSummary,
   TVoiceMap,
   TVoiceUserState
 } from '@sharkord/shared';
 import { DEFAULT_MESSAGES_LIMIT } from '@sharkord/shared';
-import { mergeMessagesChronologically } from './helpers';
+import {
+  getConversationKey,
+  mergeMessagesChronologically,
+  upsertDirectMessage,
+  upsertFollowedThread
+} from './helpers';
 import type {
   TDisconnectInfo,
   TMessagesMap,
   TReconnectState,
-  TThreadMessagesMap,
   TVoiceReaction
 } from './types';
 import { MAX_VOICE_REACTIONS_PER_USER } from './voice/statics';
@@ -51,18 +63,14 @@ export interface IServerState {
   // it lives here rather than in the subscription because joining the new room needs the voice provider context
   voiceMoveTargetChannelId: number | undefined;
   messagesMap: TMessagesMap;
-  detachedChannels: Record<number, boolean>;
-  threadMessagesMap: TThreadMessagesMap;
+  detachedConversations: { [conversationKey: string]: boolean };
   users: TJoinedPublicUser[];
   roles: TJoinedRole[];
   publicSettings: TPublicServerSettings | undefined;
   info: TServerInfo | undefined;
   loadingInfo: boolean;
   typingMap: {
-    [channelId: number]: number[];
-  };
-  threadTypingMap: {
-    [parentMessageId: number]: number[];
+    [conversationKey: string]: number[];
   };
   voiceMap: TVoiceMap;
   voiceReactions: {
@@ -75,6 +83,10 @@ export interface IServerState {
   readStatesMap: {
     [channelId: number]: number | undefined;
   };
+  followedThreads: TFollowedThreadsMap;
+  followedThreadsList: TFollowedThread[];
+  followedThreadsCursor: TMessagesCursor | null;
+  directMessages: TDirectMessageConversation[];
   pluginsMetadata: TPluginMetadata[];
   pluginCommands: TCommandsMapByPlugin;
   hideNonVideoParticipants: boolean;
@@ -87,6 +99,7 @@ export interface IServerState {
   pluginCapabilityAccess: TPluginCapabilityAccessRule[];
   activeFullscreenPluginId: string | undefined;
   dmsOpen: boolean;
+  threadsOpen: boolean;
 }
 
 const initialState: IServerState = {
@@ -104,15 +117,13 @@ const initialState: IServerState = {
   currentVoiceChannelId: undefined,
   voiceMoveTargetChannelId: undefined,
   messagesMap: {},
-  detachedChannels: {},
-  threadMessagesMap: {},
+  detachedConversations: {},
   users: [],
   roles: [],
   publicSettings: undefined,
   info: undefined,
   loadingInfo: false,
   typingMap: {},
-  threadTypingMap: {},
   voiceMap: {},
   voiceReactions: {},
   externalStreamsMap: {},
@@ -126,6 +137,10 @@ const initialState: IServerState = {
   pinnedCard: undefined,
   channelPermissions: {},
   readStatesMap: {},
+  followedThreads: {},
+  followedThreadsList: [],
+  followedThreadsCursor: null,
+  directMessages: [],
   pluginsMetadata: [],
   pluginCommands: {},
   hideNonVideoParticipants: getLocalStorageItemBool(
@@ -146,6 +161,7 @@ const initialState: IServerState = {
   pluginCapabilityAccess: [],
   activeFullscreenPluginId: undefined,
   dmsOpen: false,
+  threadsOpen: false,
   hideOwnScreenShare: getLocalStorageItemBool(
     LocalStorageKey.HIDE_OWN_SCREEN_SHARE,
     false
@@ -197,6 +213,8 @@ export const serverSlice = createSlice({
         externalStreamsMap: TExternalStreamsMap;
         channelPermissions: TChannelUserPermissionsMap;
         readStates: TReadStateMap;
+        followedThreads: TFollowedThreadsMap;
+        directMessages: TDirectMessageConversation[];
         pluginsMetadata: TPluginMetadata[];
       }>
     ) => {
@@ -215,24 +233,26 @@ export const serverSlice = createSlice({
       state.serverId = action.payload.serverId;
       state.channelPermissions = action.payload.channelPermissions;
       state.readStatesMap = action.payload.readStates;
+      state.followedThreads = action.payload.followedThreads;
+      state.directMessages = action.payload.directMessages;
       state.pluginsMetadata = action.payload.pluginsMetadata;
     },
     addMessages: (
       state,
       action: PayloadAction<{
-        channelId: number;
+        conversationKey: TConversationKey;
         messages: TJoinedMessage[];
         isLive?: boolean;
       }>
     ) => {
-      const { channelId, messages, isLive } = action.payload;
+      const { conversationKey, messages, isLive } = action.payload;
 
-      // a detached channel shows a window that stops short of the present, so appending a live
-      // message would put the very gap this window exists to avoid back into the list. it
+      // a detached conversation shows a window that stops short of the present, so appending a
+      // live message would put the very gap this window exists to avoid back into the list. it
       // arrives with the rest when the user returns to the present
-      if (isLive && state.detachedChannels[channelId]) return;
+      if (isLive && state.detachedConversations[conversationKey]) return;
 
-      const existing = state.messagesMap[channelId] ?? [];
+      const existing = state.messagesMap[conversationKey] ?? [];
 
       // dedupe against the incoming batch rather than the loaded history: the
       // set is the size of what just arrived, usually one message, instead of
@@ -250,16 +270,19 @@ export const serverSlice = createSlice({
           ? messages
           : messages.filter((m) => incomingIds.has(m.id));
 
-      state.messagesMap[channelId] = mergeMessagesChronologically(
+      state.messagesMap[conversationKey] = mergeMessagesChronologically(
         existing,
         filtered
       );
     },
     updateMessage: (
       state,
-      action: PayloadAction<{ channelId: number; message: TJoinedMessage }>
+      action: PayloadAction<{
+        conversationKey: TConversationKey;
+        message: TJoinedMessage;
+      }>
     ) => {
-      const messages = state.messagesMap[action.payload.channelId];
+      const messages = state.messagesMap[action.payload.conversationKey];
 
       if (!messages) return;
 
@@ -271,15 +294,19 @@ export const serverSlice = createSlice({
 
       messages[messageIndex] = action.payload.message;
     },
-    updateReplyCount: (
+    updateThreadSummary: (
       state,
-      action: PayloadAction<{
-        channelId: number;
-        messageId: number;
-        replyCount: number;
-      }>
+      action: PayloadAction<
+        TThreadSummary & {
+          channelId: number;
+          messageId: number;
+        }
+      >
     ) => {
-      const messages = state.messagesMap[action.payload.channelId];
+      const messages =
+        state.messagesMap[
+          getConversationKey({ channelId: action.payload.channelId })
+        ];
 
       if (!messages) return;
 
@@ -288,173 +315,123 @@ export const serverSlice = createSlice({
       if (!message) return;
 
       message.replyCount = action.payload.replyCount;
+      message.replyUserIds = action.payload.replyUserIds;
     },
     deleteMessage: (
       state,
-      action: PayloadAction<{ channelId: number; messageId: number }>
+      action: PayloadAction<{
+        conversation: TConversation;
+        messageId: number;
+      }>
     ) => {
-      const messages = state.messagesMap[action.payload.channelId];
+      const { conversation, messageId } = action.payload;
+      const conversationKey = getConversationKey(conversation);
+
+      // a deleted parent takes its thread with it: the server cascades the replies and the
+      // followers away, nothing will update these entries again
+      delete state.messagesMap[
+        getConversationKey({
+          channelId: conversation.channelId,
+          parentMessageId: messageId
+        })
+      ];
+      delete state.followedThreads[messageId];
+      state.followedThreadsList = upsertFollowedThread(
+        state.followedThreadsList,
+        messageId,
+        null,
+        false
+      );
+
+      const messages = state.messagesMap[conversationKey];
 
       if (!messages) return;
 
-      const remaining = messages.filter(
-        (m) => m.id !== action.payload.messageId
-      );
+      const remaining = messages.filter((m) => m.id !== messageId);
 
       remaining.forEach((message) => {
-        if (message.replyToMessageId === action.payload.messageId) {
+        if (message.replyToMessageId === messageId) {
           message.replyToMessageId = null;
           message.replyTo = null;
         }
       });
 
-      state.messagesMap[action.payload.channelId] = remaining;
+      state.messagesMap[conversationKey] = remaining;
     },
 
-    // THREAD MESSAGES ------------------------------------------------------------
-
-    addThreadMessages: (
-      state,
-      action: PayloadAction<{
-        parentMessageId: number;
-        messages: TJoinedMessage[];
-      }>
-    ) => {
-      const { parentMessageId, messages } = action.payload;
-      const existing = state.threadMessagesMap[parentMessageId] ?? [];
-
-      const existingIds = new Set(existing.map((m) => m.id));
-      const filtered = messages.filter((m) => !existingIds.has(m.id));
-
-      state.threadMessagesMap[parentMessageId] = mergeMessagesChronologically(
-        existing,
-        filtered
-      );
-    },
-    updateThreadMessage: (
-      state,
-      action: PayloadAction<{
-        parentMessageId: number;
-        message: TJoinedMessage;
-      }>
-    ) => {
-      const messages = state.threadMessagesMap[action.payload.parentMessageId];
-
-      if (!messages) return;
-
-      const messageIndex = messages.findIndex(
-        (message) => message.id === action.payload.message.id
-      );
-
-      if (messageIndex === -1) return;
-
-      messages[messageIndex] = action.payload.message;
-    },
-    deleteThreadMessage: (
-      state,
-      action: PayloadAction<{
-        parentMessageId: number;
-        messageId: number;
-      }>
-    ) => {
-      const messages = state.threadMessagesMap[action.payload.parentMessageId];
-
-      if (!messages) return;
-
-      state.threadMessagesMap[action.payload.parentMessageId] = messages.filter(
-        (m) => m.id !== action.payload.messageId
-      );
-    },
     // used by the jump-to-message path when the window it fetched does not reach the newest
     // message. merging a bounded window into what the channel already holds would leave a gap
     // in the middle of the rendered list with nothing telling the user
-    setChannelMessages: (
+    setConversationMessages: (
       state,
       action: PayloadAction<{
-        channelId: number;
+        conversationKey: TConversationKey;
         messages: TJoinedMessage[];
         detached: boolean;
       }>
     ) => {
-      const { channelId, messages, detached } = action.payload;
+      const { conversationKey, messages, detached } = action.payload;
 
-      state.messagesMap[channelId] = messages;
+      state.messagesMap[conversationKey] = messages;
 
       if (detached) {
-        state.detachedChannels[channelId] = true;
+        state.detachedConversations[conversationKey] = true;
       } else {
-        delete state.detachedChannels[channelId];
+        delete state.detachedConversations[conversationKey];
       }
     },
 
-    trimChannelMessages: (state, action: PayloadAction<number>) => {
+    trimConversationMessages: (
+      state,
+      action: PayloadAction<TConversationKey>
+    ) => {
+      const conversationKey = action.payload;
+
       // a detached window is dropped outright rather than trimmed: keeping its newest page
-      // would leave the channel holding a slice of old history that the next mount's page-1
-      // fetch would merge into, reopening the gap
-      if (state.detachedChannels[action.payload]) {
-        delete state.messagesMap[action.payload];
-        delete state.detachedChannels[action.payload];
+      // would leave the conversation holding a slice of old history that the next mount's
+      // page-1 fetch would merge into, reopening the gap
+      if (state.detachedConversations[conversationKey]) {
+        delete state.messagesMap[conversationKey];
+        delete state.detachedConversations[conversationKey];
 
         return;
       }
 
-      const messages = state.messagesMap[action.payload];
+      const messages = state.messagesMap[conversationKey];
 
       if (!messages || messages.length <= DEFAULT_MESSAGES_LIMIT) return;
 
-      state.messagesMap[action.payload] = messages.slice(
+      state.messagesMap[conversationKey] = messages.slice(
         -DEFAULT_MESSAGES_LIMIT
       );
     },
 
-    clearThreadMessages: (state, action: PayloadAction<number>) => {
-      delete state.threadMessagesMap[action.payload];
-    },
-
-    clearTypingUsers: (state, action: PayloadAction<number>) => {
-      delete state.typingMap[action.payload];
-    },
     addTypingUser: (
       state,
-      action: PayloadAction<{ channelId: number; userId: number }>
+      action: PayloadAction<{
+        conversationKey: TConversationKey;
+        userId: number;
+      }>
     ) => {
-      const { channelId, userId } = action.payload;
-      const typingUsers = state.typingMap[channelId] || [];
+      const { conversationKey, userId } = action.payload;
+      const typingUsers = state.typingMap[conversationKey] || [];
 
       if (!typingUsers.includes(userId)) {
         typingUsers.push(userId);
-        state.typingMap[channelId] = typingUsers;
+        state.typingMap[conversationKey] = typingUsers;
       }
     },
     removeTypingUser: (
       state,
-      action: PayloadAction<{ channelId: number; userId: number }>
+      action: PayloadAction<{
+        conversationKey: TConversationKey;
+        userId: number;
+      }>
     ) => {
-      const { channelId, userId } = action.payload;
-      const typingUsers = state.typingMap[channelId] || [];
+      const { conversationKey, userId } = action.payload;
+      const typingUsers = state.typingMap[conversationKey] || [];
 
-      state.typingMap[channelId] = typingUsers.filter((id) => id !== userId);
-    },
-    addThreadTypingUser: (
-      state,
-      action: PayloadAction<{ parentMessageId: number; userId: number }>
-    ) => {
-      const { parentMessageId, userId } = action.payload;
-      const typingUsers = state.threadTypingMap[parentMessageId] || [];
-
-      if (!typingUsers.includes(userId)) {
-        typingUsers.push(userId);
-        state.threadTypingMap[parentMessageId] = typingUsers;
-      }
-    },
-    removeThreadTypingUser: (
-      state,
-      action: PayloadAction<{ parentMessageId: number; userId: number }>
-    ) => {
-      const { parentMessageId, userId } = action.payload;
-      const typingUsers = state.threadTypingMap[parentMessageId] || [];
-
-      state.threadTypingMap[parentMessageId] = typingUsers.filter(
+      state.typingMap[conversationKey] = typingUsers.filter(
         (id) => id !== userId
       );
     },
@@ -516,18 +493,6 @@ export const serverSlice = createSlice({
           }));
       }
 
-      // remove user from thread messages and reactions
-      for (const parentId in state.threadMessagesMap) {
-        state.threadMessagesMap[parentId] = state.threadMessagesMap[parentId]
-          .filter((m) => m.userId !== userId)
-          .map((m) => ({
-            ...m,
-            reactions: m.reactions.filter(
-              (reaction) => reaction.userId !== userId
-            )
-          }));
-      }
-
       // remove user from emojis
       state.emojis = state.emojis.filter((e) => e.userId !== userId);
     },
@@ -565,21 +530,6 @@ export const serverSlice = createSlice({
             )
           })
         );
-      }
-
-      // reassign thread messages and reactions
-      for (const parentId in state.threadMessagesMap) {
-        state.threadMessagesMap[parentId] = state.threadMessagesMap[
-          parentId
-        ].map((m) => ({
-          ...m,
-          userId: m.userId === userId ? deletedUserId : m.userId,
-          reactions: m.reactions.map((reaction) =>
-            reaction.userId === userId
-              ? { ...reaction, userId: deletedUserId }
-              : reaction
-          )
-        }));
       }
 
       // reassign emojis
@@ -656,6 +606,9 @@ export const serverSlice = createSlice({
       state.channels = state.channels.filter(
         (c) => c.id !== action.payload.channelId
       );
+      state.directMessages = state.directMessages.filter(
+        (dm) => dm.channelId !== action.payload.channelId
+      );
     },
     setSelectedChannelId: (
       state,
@@ -665,6 +618,7 @@ export const serverSlice = createSlice({
 
       if (action.payload) {
         state.activeFullscreenPluginId = undefined;
+        state.threadsOpen = false;
       }
     },
     setCurrentVoiceChannelId: (
@@ -684,6 +638,66 @@ export const serverSlice = createSlice({
       action: PayloadAction<TChannelUserPermissionsMap>
     ) => {
       state.channelPermissions = action.payload;
+    },
+    applyThreadFollowUpdate: (
+      state,
+      action: PayloadAction<TThreadFollowUpdate>
+    ) => {
+      const { parentMessageId, unreadCount, hasUnreadMention, thread } =
+        action.payload;
+
+      if (thread) {
+        state.followedThreads[parentMessageId] = {
+          unreadCount,
+          hasUnreadMention
+        };
+      } else {
+        delete state.followedThreads[parentMessageId];
+      }
+
+      state.followedThreadsList = upsertFollowedThread(
+        state.followedThreadsList,
+        parentMessageId,
+        thread,
+        state.followedThreadsCursor !== null
+      );
+    },
+    setThreadReadState: (
+      state,
+      action: PayloadAction<TThreadReadState & { parentMessageId: number }>
+    ) => {
+      const { parentMessageId, unreadCount, hasUnreadMention } = action.payload;
+
+      if (!(parentMessageId in state.followedThreads)) return;
+
+      state.followedThreads[parentMessageId] = {
+        unreadCount,
+        hasUnreadMention
+      };
+    },
+    setFollowedThreadsPage: (
+      state,
+      action: PayloadAction<{
+        threads: TFollowedThread[];
+        nextCursor: TMessagesCursor | null;
+        append: boolean;
+      }>
+    ) => {
+      const { threads, nextCursor, append } = action.payload;
+
+      if (append) {
+        const loadedIds = new Set(
+          state.followedThreadsList.map((thread) => thread.parentMessageId)
+        );
+
+        state.followedThreadsList.push(
+          ...threads.filter((thread) => !loadedIds.has(thread.parentMessageId))
+        );
+      } else {
+        state.followedThreadsList = threads;
+      }
+
+      state.followedThreadsCursor = nextCursor;
     },
     setChannelReadState: (
       state,
@@ -951,12 +965,43 @@ export const serverSlice = createSlice({
 
     // OTHERS ------------------------------------------------------------
 
+    upsertDirectMessage: (
+      state,
+      action: PayloadAction<TDirectMessageConversation>
+    ) => {
+      state.directMessages = upsertDirectMessage(
+        state.directMessages,
+        action.payload
+      );
+    },
+    // only moves a conversation the list already has, a dm channel that is not in it yet
+    // arrives through its own open event
+    setDirectMessageActivity: (
+      state,
+      action: PayloadAction<{ channelId: number; lastMessageAt: number }>
+    ) => {
+      const { channelId, lastMessageAt } = action.payload;
+      const conversation = state.directMessages.find(
+        (dm) => dm.channelId === channelId
+      );
+
+      if (!conversation || conversation.lastMessageAt >= lastMessageAt) return;
+
+      state.directMessages = upsertDirectMessage(state.directMessages, {
+        ...conversation,
+        lastMessageAt
+      });
+    },
+    setThreadsOpen: (state, action: PayloadAction<boolean>) => {
+      state.threadsOpen = action.payload;
+    },
     setDmsOpen: (state, action: PayloadAction<boolean>) => {
       state.dmsOpen = action.payload;
 
       if (action.payload) {
         state.selectedChannelId = undefined;
         state.activeFullscreenPluginId = undefined;
+        state.threadsOpen = false;
       }
     }
   }

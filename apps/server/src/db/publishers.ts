@@ -4,7 +4,7 @@ import {
   ServerEvents,
   type TChannelUserPermissionsMap
 } from '@sharkord/shared';
-import { count, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '.';
 import { getCapabilityAccessRules } from '../helpers/plugin-capability-access';
 import { logger } from '../logger';
@@ -15,32 +15,41 @@ import {
   getAllChannelUserPermissions,
   getChannelsForUser
 } from './queries/channels';
+import { getDirectMessageConversations } from './queries/dms';
 import { getEmojiById } from './queries/emojis';
 import { getMessage } from './queries/messages';
 import { getRole } from './queries/roles';
 import { getPublicSettings } from './queries/server';
+import {
+  getFollowedThread,
+  getThreadSummaries,
+  getThreadUnreadCountsByFollower
+} from './queries/threads';
 import { getAllUserIds, getPublicUserById } from './queries/users';
-import { categories, channels, messages } from './schema';
+import { categories, channels } from './schema';
+
+const publishMessageDelete = async (message: {
+  id: number;
+  channelId: number;
+  parentMessageId: number | null;
+}) => {
+  const affectedUserIds = await getAffectedOnlineUserIdsForChannel(
+    message.channelId,
+    ChannelPermission.VIEW_CHANNEL
+  );
+
+  pubsub.publishFor(affectedUserIds, ServerEvents.MESSAGE_DELETE, {
+    messageId: message.id,
+    channelId: message.channelId,
+    parentMessageId: message.parentMessageId
+  });
+};
 
 const publishMessage = async (
   messageId: number,
   channelId: number,
-  type: 'create' | 'update' | 'delete'
+  type: 'create' | 'update'
 ) => {
-  if (type === 'delete') {
-    const affectedUserIds = await getAffectedOnlineUserIdsForChannel(
-      channelId,
-      ChannelPermission.VIEW_CHANNEL
-    );
-
-    pubsub.publishFor(affectedUserIds, ServerEvents.MESSAGE_DELETE, {
-      messageId: messageId,
-      channelId: channelId
-    });
-
-    return;
-  }
-
   const message = await getMessage(messageId);
 
   if (!message) return;
@@ -370,11 +379,7 @@ const publishReplyCount = async (
   parentMessageId: number,
   channelId: number
 ) => {
-  const replyCountRow = await db
-    .select({ count: count() })
-    .from(messages)
-    .where(eq(messages.parentMessageId, parentMessageId))
-    .get();
+  const getThreadSummary = await getThreadSummaries([parentMessageId]);
 
   const affectedUserIds = await getAffectedOnlineUserIdsForChannel(
     channelId,
@@ -384,8 +389,51 @@ const publishReplyCount = async (
   pubsub.publishFor(affectedUserIds, ServerEvents.THREAD_REPLY_COUNT_UPDATE, {
     messageId: parentMessageId,
     channelId,
-    replyCount: replyCountRow?.count ?? 0
+    ...getThreadSummary(parentMessageId)
   });
+};
+
+const publishDirectMessageConversation = async (
+  userId: number,
+  channelId: number
+) => {
+  const [conversation] = await getDirectMessageConversations(userId, channelId);
+
+  if (!conversation) return;
+
+  pubsub.publishFor(userId, ServerEvents.DM_CONVERSATION_UPDATE, conversation);
+};
+
+const publishThreadFollowers = async (
+  parentMessageId: number,
+  channelId: number
+) => {
+  const [unreadCounts, viewerIds] = await Promise.all([
+    getThreadUnreadCountsByFollower(parentMessageId),
+    getAffectedOnlineUserIdsForChannel(
+      channelId,
+      ChannelPermission.VIEW_CHANNEL
+    )
+  ]);
+
+  const viewers = new Set(viewerIds);
+  const [firstFollower] = unreadCounts;
+
+  if (!firstFollower) return;
+
+  const thread = await getFollowedThread(firstFollower.userId, parentMessageId);
+
+  for (const { userId, unreadCount, hasUnreadMention } of unreadCounts) {
+    if (!viewers.has(userId)) continue;
+
+    pubsub.publishFor(userId, ServerEvents.THREAD_FOLLOW_UPDATE, {
+      parentMessageId,
+      channelId,
+      unreadCount,
+      hasUnreadMention,
+      thread
+    });
+  }
 };
 
 export {
@@ -395,12 +443,15 @@ export {
   publishChannelAccessChange,
   publishChannelListChange,
   publishChannelPermissions,
+  publishDirectMessageConversation,
   publishEmoji,
   publishHiddenChannelToUser,
   publishMessage,
+  publishMessageDelete,
   publishReplyCount,
   publishRole,
   publishSettings,
+  publishThreadFollowers,
   publishUser,
   unpublishHiddenChannelFromUser
 };

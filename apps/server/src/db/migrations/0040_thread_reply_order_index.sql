@@ -1,0 +1,1 @@
+CREATE INDEX `messages_parent_created_idx` ON `messages` (`parent_message_id`,`created_at`);

@@ -1,4 +1,5 @@
 import { ResizableSidebar } from '@/components/resizable-sidebar';
+import { closeThreadSidebar } from '@/features/app/actions';
 import { useThreadSidebar } from '@/features/app/hooks';
 import { LocalStorageKey } from '@/helpers/storage';
 import { memo } from 'react';
@@ -22,7 +23,12 @@ const ThreadContentWrapper = memo(() => {
   }
 
   return (
-    <ThreadContent parentMessageId={parentMessageId} channelId={channelId} />
+    <ThreadContent
+      key={parentMessageId}
+      parentMessageId={parentMessageId}
+      channelId={channelId}
+      onClose={closeThreadSidebar}
+    />
   );
 });
 
