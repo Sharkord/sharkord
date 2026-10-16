@@ -23,11 +23,8 @@ const SLICES = {
   publicSettings: undefined
 };
 
-// the plugin state also reads the user's hotkeys setting from the app slice
-const APP = { hotkeysEnabled: false };
-
 const stateWith = (overrides: Record<string, unknown> = {}) =>
-  ({ server: { ...SLICES, ...overrides }, app: APP }) as unknown as IRootState;
+  ({ server: { ...SLICES, ...overrides } }) as unknown as IRootState;
 
 describe('mapStateToPluginState', () => {
   // plugins read state through getState, and the standard react integration
@@ -69,7 +66,6 @@ describe('mapStateToPluginState', () => {
       'channels',
       'currentVoiceChannelId',
       'emojis',
-      'hotkeysEnabled',
       'ownUserId',
       'ownVoiceState',
       'plugins',

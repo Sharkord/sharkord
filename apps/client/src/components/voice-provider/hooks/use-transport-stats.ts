@@ -1,4 +1,4 @@
-import { voiceLogger } from '@/helpers/browser-logger';
+import { logVoice, logVoiceError } from '@/helpers/browser-logger';
 import type { AppData, Producer, Transport } from 'mediasoup-client/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -237,9 +237,7 @@ const useTransportStats = () => {
         intervalRef.current = null;
       }
 
-      voiceLogger.info('stats: monitoring stopped', {
-        reason: 'transports closed'
-      });
+      logVoice('stats: monitoring stopped', { reason: 'transports closed' });
       return;
     }
 
@@ -346,7 +344,7 @@ const useTransportStats = () => {
           intervalRef.current = null;
         }
 
-        voiceLogger.info('stats: monitoring stopped', {
+        logVoice('stats: monitoring stopped', {
           reason: 'all transports closed'
         });
         return;
@@ -401,7 +399,7 @@ const useTransportStats = () => {
         consumer: consumerStats
       };
     } catch (error) {
-      voiceLogger.error('stats: collection failed', error);
+      logVoiceError('stats: collection failed', error);
     }
   }, [parseTransportStats, parseScreenShareStats]);
 
@@ -483,9 +481,7 @@ const useTransportStats = () => {
     consumerTransportRef.current = null;
     screenShareProducerRef.current = null;
 
-    voiceLogger.info('stats: monitoring stopped', {
-      reason: 'session teardown'
-    });
+    logVoice('stats: monitoring stopped', { reason: 'session teardown' });
   }, []);
 
   const resetStats = useCallback(() => {
@@ -506,11 +502,11 @@ const useTransportStats = () => {
 
     previousScreenShareStatsRef.current = null;
 
-    voiceLogger.info('stats: reset');
+    logVoice('stats: reset');
   }, []);
 
   const printStats = useCallback(() => {
-    voiceLogger.info('stats: current', { stats });
+    logVoice('stats: current', { stats });
   }, [stats]);
 
   useEffect(() => {

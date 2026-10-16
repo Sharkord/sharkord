@@ -1,16 +1,10 @@
 import {
-  getLocalStorageItem,
   getLocalStorageItemAsJSON,
   getLocalStorageItemAsNumber,
   getLocalStorageItemBool,
   LocalStorageKey
 } from '@/helpers/storage';
-import {
-  MicMode,
-  type TDevices,
-  type TMessageJumpToTarget,
-  type TThreadTarget
-} from '@/types';
+import type { TDevices, TMessageJumpToTarget } from '@/types';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 export interface TAppState {
@@ -24,10 +18,7 @@ export interface TAppState {
   threadParentMessageId: number | undefined;
   threadChannelId: number | undefined;
   autoJoinLastChannel: boolean;
-  micMode: MicMode;
-  hotkeysEnabled: boolean;
   selectedDmChannelId: number | undefined;
-  selectedThread: TThreadTarget | undefined;
   browserNotifications: boolean;
   browserNotificationsForMentions: boolean;
   browserNotificationsForDms: boolean;
@@ -56,16 +47,7 @@ const initialState: TAppState = {
     LocalStorageKey.AUTO_JOIN_LAST_CHANNEL,
     false
   ),
-  micMode:
-    getLocalStorageItem(LocalStorageKey.MIC_MODE) === MicMode.PUSH_TO_TALK
-      ? MicMode.PUSH_TO_TALK
-      : MicMode.OPEN,
-  hotkeysEnabled: getLocalStorageItemBool(
-    LocalStorageKey.HOTKEYS_ENABLED,
-    false
-  ),
   selectedDmChannelId: undefined,
-  selectedThread: undefined,
   browserNotifications: getLocalStorageItemBool(
     LocalStorageKey.BROWSER_NOTIFICATIONS,
     false
@@ -146,12 +128,6 @@ export const appSlice = createSlice({
     setAutoJoinLastChannel: (state, action: PayloadAction<boolean>) => {
       state.autoJoinLastChannel = action.payload;
     },
-    setMicMode: (state, action: PayloadAction<MicMode>) => {
-      state.micMode = action.payload;
-    },
-    setHotkeysEnabled: (state, action: PayloadAction<boolean>) => {
-      state.hotkeysEnabled = action.payload;
-    },
     setIsAutoConnecting: (state, action: PayloadAction<boolean>) => {
       state.isAutoConnecting = action.payload;
     },
@@ -160,12 +136,6 @@ export const appSlice = createSlice({
       action: PayloadAction<number | undefined>
     ) => {
       state.selectedDmChannelId = action.payload;
-    },
-    setSelectedThread: (
-      state,
-      action: PayloadAction<TThreadTarget | undefined>
-    ) => {
-      state.selectedThread = action.payload;
     },
     setBrowserNotifications: (state, action: PayloadAction<boolean>) => {
       state.browserNotifications = action.payload;

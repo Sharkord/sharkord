@@ -5,7 +5,7 @@
  *   bun run seed:mock                      medium, deterministic
  *   bun run seed:mock -- --size large      more of everything
  *   bun run seed:mock -- --seed 42         a different cast of characters
- *   bun run seed:mock -- --counting 0      skip the numbered #counting channel and its thread
+ *   bun run seed:mock -- --counting 0      skip the numbered #counting channel
  *
  * Only ever touches apps/server/data, the directory the dev server uses (see
  * helpers/paths.ts). It refuses to run against anything else, which is the whole reason
@@ -56,7 +56,6 @@ import {
   rolePermissions,
   roles,
   settings,
-  threadFollowers,
   userRoles,
   users
 } from '../src/db/schema';
@@ -71,17 +70,6 @@ const DEFAULT_SEED = 1337;
 // the #counting channel is the same size whatever --size is, since its whole job is being
 // long enough to scroll through
 const COUNTING_MESSAGES = 10_000;
-
-// a numbered thread inside #counting, long enough to need several pages in the sidebar
-const COUNTING_THREAD_REPLIES = 1_000;
-
-// how far from the bottom of #counting the thread's parent sits, so its replies can be
-// spread over real time between the parent and now instead of landing in the future
-const COUNTING_THREAD_PARENT_OFFSET = 200;
-
-// the admin follows the counting thread with this many replies unread, so the threads
-// entry in the sidebar has a badge to show
-const COUNTING_THREAD_UNREAD = 10;
 
 // one insert per row is unusably slow past a few hundred messages, and sqlite has a hard
 // limit on bound parameters, so everything large goes in batches
@@ -540,7 +528,6 @@ const seedCountingChannel = async (
   now: number,
   count: number,
   userIds: number[],
-  ownerId: number,
   categoryId: number,
   position: number
 ) => {
@@ -601,76 +588,11 @@ const seedCountingChannel = async (
 
   rows.reverse();
 
-  const messageIds: number[] = [];
-
   for (const batch of chunk(rows, BATCH_SIZE)) {
-    const inserted = await db
-      .insert(messages)
-      .values(batch)
-      .returning({ id: messages.id });
-
-    messageIds.push(...inserted.map((row) => row.id));
+    await db.insert(messages).values(batch);
   }
 
-  const parentIndex = Math.max(0, rows.length - COUNTING_THREAD_PARENT_OFFSET);
-  const parentId = messageIds[parentIndex]!;
-
-  const threadReplies = await seedCountingThread(
-    db,
-    now,
-    channel!.id,
-    { id: parentId, createdAt: rows[parentIndex]!.createdAt },
-    userIds,
-    ownerId
-  );
-
-  return {
-    channelId: channel!.id,
-    count: rows.length,
-    threadParent: parentIndex,
-    threadReplies
-  };
-};
-
-const seedCountingThread = async (
-  db: BunSQLiteDatabase,
-  now: number,
-  channelId: number,
-  parent: { id: number; createdAt: number },
-  userIds: number[],
-  ownerId: number
-) => {
-  const step = (now - parent.createdAt) / (COUNTING_THREAD_REPLIES + 1);
-
-  const rows = Array.from({ length: COUNTING_THREAD_REPLIES }, (_, index) => ({
-    channelId,
-    parentMessageId: parent.id,
-    userId: faker.helpers.arrayElement(userIds),
-    content: `<p>${index}</p>`,
-    metadata: null,
-    createdAt: Math.floor(parent.createdAt + (index + 1) * step)
-  }));
-
-  const replyIds: number[] = [];
-
-  for (const batch of chunk(rows, BATCH_SIZE)) {
-    const inserted = await db
-      .insert(messages)
-      .values(batch)
-      .returning({ id: messages.id });
-
-    replyIds.push(...inserted.map((row) => row.id));
-  }
-
-  await db.insert(threadFollowers).values({
-    userId: ownerId,
-    parentMessageId: parent.id,
-    lastReadMessageId: replyIds.at(-COUNTING_THREAD_UNREAD - 1) ?? null,
-    lastReplyAt: rows.at(-1)?.createdAt ?? parent.createdAt,
-    createdAt: now
-  });
-
-  return rows.length;
+  return { channelId: channel!.id, count: rows.length };
 };
 
 const seedMessages = async (
@@ -931,7 +853,6 @@ const run = async () => {
           now,
           counting,
           userIds,
-          ownerId,
           firstCategoryId,
           nextPosition
         )
@@ -956,10 +877,7 @@ const run = async () => {
       `  messages   ${messageCount}`,
       `  dms        ${dmCount}`,
       ...(countingChannel
-        ? [
-            `  #counting  ${countingChannel.count} numbered messages`,
-            `             thread on message ${countingChannel.threadParent} with ${countingChannel.threadReplies} numbered replies, admin follows it with ${COUNTING_THREAD_UNREAD} unread`
-          ]
+        ? [`  #counting  ${countingChannel.count} numbered messages`]
         : []),
       '',
       '  log in as  admin',

@@ -8,7 +8,6 @@
 - Focus on Quality of Life (QoL) improvements and bug fixes
 - Extend the plugin SDK
 - Improve documentation and developer experience
-- Desktop app
 
 ## Medium Term Goals
 

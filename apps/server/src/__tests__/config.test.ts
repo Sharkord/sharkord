@@ -94,12 +94,6 @@ describe('env overrides are validated', () => {
     expect(applyOverrides().server.backupDatabase).toBe(false);
   });
 
-  test('should turn the rate limiters off from the env', () => {
-    setEnv('SHARKORD_RATE_LIMITERS_ENABLED', 'false');
-
-    expect(applyOverrides().rateLimiters.enabled).toBe(false);
-  });
-
   test('should reject a port outside the allowed range', () => {
     setEnv('SHARKORD_PORT', '-1');
 

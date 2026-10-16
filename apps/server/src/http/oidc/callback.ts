@@ -10,7 +10,6 @@ import { resolveOidcUser, type TOidcClaims } from '../../helpers/oidc/user';
 import { logger } from '../../logger';
 import {
   clearStateCookie,
-  getStateCookieInvite,
   guardOidcRoute,
   hasStateCookie,
   redirectWithError
@@ -99,11 +98,7 @@ const completeOidcCallback = async (
   });
 
   const { claims, userInfoFailed } = await collectClaims(oidcConfig, tokens);
-  const { user } = await resolveOidcUser(claims, {
-    userInfoFailed,
-    ip,
-    inviteCode: getStateCookieInvite(req, stateParam)
-  });
+  const { user } = await resolveOidcUser(claims, { userInfoFailed, ip });
 
   if (user.banned) {
     throw new OidcCallbackError(

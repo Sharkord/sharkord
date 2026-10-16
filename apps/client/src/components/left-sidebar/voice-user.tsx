@@ -16,7 +16,6 @@ import {
   VolumeX
 } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { PluginSlotRenderer } from '../plugin-slot-renderer';
 import { UserPopover } from '../user-popover';
 import { VOICE_USER_DND_MIME } from './helpers';
@@ -31,7 +30,6 @@ type TVoiceUserProps = {
 
 const VoiceUser = memo(
   ({ user, channelId, isOwnChannel = false }: TVoiceUserProps) => {
-    const { t } = useTranslation('common');
     const isOwnUser = useIsOwnUser(user.id);
     const { isMuted } = useStreamVolumeControl({
       type: 'user',
@@ -43,7 +41,6 @@ const VoiceUser = memo(
     const can = useCan();
     const shouldShowMuteIndicator = isOwnChannel && !isOwnUser && isMuted;
     const canMove = !isOwnUser && can(Permission.MOVE_MEMBERS);
-    const micTitle = user.state.serverMuted ? t('mutedByModerator') : undefined;
 
     const pluginSlotProps = useMemo(
       () => ({ channelId, userId: user.id }),
@@ -88,14 +85,9 @@ const VoiceUser = memo(
             <VolumeX className="h-3 w-3 text-red-500" />
           )}
 
-          <div title={micTitle}>
+          <div>
             {user.state.micMuted ? (
-              <MicOff
-                className={cn(
-                  'h-3 w-3',
-                  user.state.serverMuted ? 'text-orange-500' : 'text-red-500'
-                )}
-              />
+              <MicOff className="h-3 w-3 text-red-500" />
             ) : (
               <Mic className="h-3 w-3 text-green-500" />
             )}

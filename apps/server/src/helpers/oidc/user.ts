@@ -8,7 +8,6 @@ import {
 import { randomBytes } from 'crypto';
 import { createUser, linkOidcSub } from '../../db/mutations/users';
 import { publishUser } from '../../db/publishers';
-import { isInviteValid } from '../../db/queries/invites';
 import { getSettings } from '../../db/queries/server';
 import { getUserByIdentity, getUserByOidcSub } from '../../db/queries/users';
 import { enqueueActivityLog } from '../../queues/activity-log';
@@ -94,11 +93,7 @@ const assertSameIssuer = async (
 
 const resolveOidcUser = async (
   claims: TOidcClaims,
-  {
-    userInfoFailed,
-    ip,
-    inviteCode
-  }: { userInfoFailed: boolean; ip?: string; inviteCode?: string }
+  { userInfoFailed, ip }: { userInfoFailed: boolean; ip?: string }
 ): Promise<{ user: TJoinedUser; created: boolean }> => {
   const sub = getSubject(claims);
   const issuer = getIssuer(claims);
@@ -142,28 +137,21 @@ const resolveOidcUser = async (
     return { user: linked, created: false };
   }
 
-  const [settings, { invite }] = await Promise.all([
-    getSettings(),
-    isInviteValid(inviteCode)
-  ]);
+  const settings = await getSettings();
 
-  if (!settings.allowNewUsers && !invite) {
+  if (!settings.allowNewUsers) {
     throw new OidcCallbackError(
       OidcError.REGISTRATION_CLOSED,
       `Refusing to register "${identity}" through OIDC: new user registrations are disabled`
     );
   }
 
-  const usedInviteCode = invite ? inviteCode : undefined;
-
   const userId = await createUser({
     identity,
     hashedPassword: (await createUnusablePasswordHash()).toString(),
     name: getDisplayName(claims),
     oidcSub: sub,
-    oidcIssuer: issuer,
-    inviteCode: usedInviteCode,
-    inviteRoleId: invite?.roleId ?? null
+    oidcIssuer: issuer
   });
 
   const created = await getUserByOidcSub(sub);
@@ -175,18 +163,9 @@ const resolveOidcUser = async (
   enqueueActivityLog({
     type: ActivityLogType.USER_CREATED,
     userId,
-    details: { inviteCode: usedInviteCode, username: created.name },
+    details: { inviteCode: undefined, username: created.name },
     ip
   });
-
-  if (usedInviteCode) {
-    enqueueActivityLog({
-      type: ActivityLogType.USED_INVITE,
-      userId,
-      details: { code: usedInviteCode },
-      ip
-    });
-  }
 
   const picture = getStringClaim(claims, 'picture');
 

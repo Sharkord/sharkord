@@ -122,22 +122,5 @@
   "reconnectingAbort": "Dejar de reconectar",
   "removeImage": "Eliminar imagen",
   "channelMutedTooltip": "Canal silenciado, haz clic para dejar de silenciarlo",
-  "unknownRole": "Rol desconocido",
-  "runCommand": "Ejecutar comando",
-  "commandStatusPending": "Pendiente",
-  "commandStatusCompleted": "Completado",
-  "commandStatusFailed": "Fallido",
-  "commandResponse": "Respuesta",
-  "commandArgRequired": "obligatorio",
-  "commandArgOptional": "opcional",
-  "commandArgYes": "Sí",
-  "commandArgNo": "No",
-  "commandArgMissing": "/{{commandName}} necesita un valor para {{argName}}.",
-  "mutedByModerator": "Un moderador te ha silenciado.",
-  "followThread": "Seguir hilo",
-  "unfollowThread": "Dejar de seguir hilo",
-  "failedUpdateThreadFollow": "No se pudo actualizar el seguimiento del hilo",
-  "selectThreadPrompt": "Selecciona un hilo para leerlo.",
-  "loadingMessage": "Cargando mensaje...",
-  "failedLoadParentMessage": "No se pudo cargar el mensaje original"
+  "unknownRole": "Rol desconocido"
 }

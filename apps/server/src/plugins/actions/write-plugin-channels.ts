@@ -10,7 +10,6 @@ import {
 import {
   createChannel,
   deleteChannel,
-  reorderChannels,
   updateChannel,
   type TCreateChannel,
   type TUpdateChannel
@@ -26,9 +25,6 @@ const updatePluginChannel = (channelId: number, values: TUpdateChannel) =>
 
 const deletePluginChannel = (channelId: number) =>
   deleteChannel(channelId, PLUGIN_ACTOR);
-
-const reorderPluginChannels = (categoryId: number, channelIds: number[]) =>
-  reorderChannels(categoryId, channelIds, PLUGIN_ACTOR);
 
 const createPluginCategory = (name: string): Promise<TCategory> =>
   createCategory(name, PLUGIN_ACTOR);
@@ -75,7 +71,6 @@ export {
   getPluginChannel,
   listPluginCategories,
   listPluginChannels,
-  reorderPluginChannels,
   updatePluginCategory,
   updatePluginChannel
 };

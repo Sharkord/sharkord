@@ -122,22 +122,5 @@
   "reconnectingAbort": "停止重新连接",
   "removeImage": "移除图片",
   "channelMutedTooltip": "频道已静音，点击取消静音",
-  "unknownRole": "未知角色",
-  "runCommand": "运行命令",
-  "commandStatusPending": "等待中",
-  "commandStatusCompleted": "已完成",
-  "commandStatusFailed": "失败",
-  "commandResponse": "响应",
-  "commandArgRequired": "必填",
-  "commandArgOptional": "可选",
-  "commandArgYes": "是",
-  "commandArgNo": "否",
-  "commandArgMissing": "/{{commandName}} 需要为 {{argName}} 提供一个值。",
-  "mutedByModerator": "你已被管理员禁言。",
-  "followThread": "关注话题",
-  "unfollowThread": "取消关注话题",
-  "failedUpdateThreadFollow": "更新话题关注失败",
-  "selectThreadPrompt": "选择一个话题进行阅读。",
-  "loadingMessage": "正在加载消息...",
-  "failedLoadParentMessage": "加载原始消息失败"
+  "unknownRole": "未知角色"
 }

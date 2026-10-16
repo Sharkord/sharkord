@@ -1,66 +1,38 @@
 import {
   DELETED_USER_IDENTITY_AND_NAME,
   HEX_COLOR_REGEX,
-  MAX_USER_NAME_LENGTH,
-  type TBeforeProfileUpdatePayload,
-  type TBeforeProfileUpdateUpdate
+  MAX_USER_NAME_LENGTH
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { publishUser } from '../../db/publishers';
 import { users } from '../../db/schema';
-import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
-import { runHook } from '../../plugins/run-hook';
-import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
-
-const zName = z
-  .string()
-  .trim()
-  .min(1)
-  .max(MAX_USER_NAME_LENGTH)
-  .refine((val) => val !== DELETED_USER_IDENTITY_AND_NAME, {
-    message: 'Protected username'
-  });
-
-const zBio = z.string().max(160).optional();
 
 const updateUserRoute = protectedProcedure
   .input(
     z.object({
-      name: zName,
+      name: z
+        .string()
+        .trim()
+        .min(1)
+        .max(MAX_USER_NAME_LENGTH)
+        .refine((val) => val !== DELETED_USER_IDENTITY_AND_NAME, {
+          message: 'Protected username'
+        }),
       profileColor: z.string().regex(HEX_COLOR_REGEX, 'Invalid hex color'),
-      bio: zBio
+      bio: z.string().max(160).optional()
     })
   )
   .mutation(async ({ ctx, input }) => {
-    const { name, bio } = await runHook<
-      TBeforeProfileUpdatePayload,
-      TBeforeProfileUpdateUpdate
-    >({
-      entries: pluginManager.getHooks('beforeProfileUpdate'),
-      payload: { userId: ctx.userId, name: input.name, bio: input.bio },
-      normalize: (payload, pluginId) => {
-        const parsedName = zName.safeParse(payload.name);
-        const parsedBio = zBio.safeParse(payload.bio);
-
-        invariant(parsedName.success && parsedBio.success, {
-          code: 'BAD_REQUEST',
-          message: `Plugin '${pluginId}' replaced this profile with an invalid name or bio.`
-        });
-
-        return { ...payload, name: parsedName.data, bio: parsedBio.data };
-      }
-    });
-
     const updatedUser = await db
       .update(users)
       .set({
-        name,
+        name: input.name,
         profileColor: input.profileColor,
-        bio: bio ?? null
+        bio: input.bio ?? null
       })
       .where(eq(users.id, ctx.userId))
       .returning()

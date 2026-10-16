@@ -6,7 +6,7 @@ import {
 import { toggleDialog } from '@/features/dialogs/actions';
 import { memo, useCallback, useEffect } from 'react';
 
-const KeyboardController = memo(() => {
+const HotkeysController = memo(() => {
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'F4') {
       togglePluginSlotDebug();
@@ -58,4 +58,4 @@ const KeyboardController = memo(() => {
   return null;
 });
 
-export { KeyboardController };
+export { HotkeysController };

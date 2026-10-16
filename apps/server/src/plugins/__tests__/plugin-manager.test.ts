@@ -878,9 +878,7 @@ export { onLoad, onUnload };
         'maxRetries',
         'enabled',
         'apiKey',
-        'mode',
-        'logChannel',
-        'modRole'
+        'mode'
       ]);
       expect(settings.values.greeting).toBe('Hello!');
       expect(settings.values.maxRetries).toBe(3);
@@ -1249,10 +1247,7 @@ export { onLoad, onUnload };
         userId: 1,
         pluginId: null,
         content: 'test message',
-        textContent: 'test message',
-        parentMessageId: null,
-        replyToMessageId: null,
-        fileIds: []
+        textContent: 'test message'
       });
 
       // the plugin-with-events tracks event counts via its get-counts command
@@ -1276,10 +1271,7 @@ export { onLoad, onUnload };
         userId: 1,
         pluginId: null,
         content: 'test',
-        textContent: 'test',
-        parentMessageId: null,
-        replyToMessageId: null,
-        fileIds: []
+        textContent: 'test'
       });
 
       // get count
@@ -1301,10 +1293,7 @@ export { onLoad, onUnload };
         userId: 1,
         pluginId: null,
         content: 'test2',
-        textContent: 'test2',
-        parentMessageId: null,
-        replyToMessageId: null,
-        fileIds: []
+        textContent: 'test2'
       });
 
       // since the plugin is unloaded, we can't query it, but we can verify

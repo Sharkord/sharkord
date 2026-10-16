@@ -5,7 +5,6 @@ import type {
   TChannel,
   TChannelUserPermissionsMap,
   TCommandsMapByPlugin,
-  TDirectMessageConversation,
   TExternalStream,
   TJoinedEmoji,
   TJoinedMessage,
@@ -13,12 +12,9 @@ import type {
   TJoinedRole,
   TLogEntry,
   TPluginCapabilityAccessRule,
-  TPluginEphemeralResponse,
   TPluginMetadata,
   TPluginPushEvent,
   TPublicServerSettings,
-  TThreadFollowUpdate,
-  TThreadSummary,
   TVoiceUserState
 } from '@sharkord/shared';
 import type { Unsubscribable } from '@trpc/server/observable';
@@ -31,18 +27,17 @@ type Events = {
   [ServerEvents.MESSAGE_DELETE]: {
     messageId: number;
     channelId: number;
-    parentMessageId: number | null;
   };
   [ServerEvents.MESSAGE_TYPING]: {
     channelId: number;
     userId: number;
     parentMessageId?: number;
   };
-  [ServerEvents.THREAD_REPLY_COUNT_UPDATE]: TThreadSummary & {
+  [ServerEvents.THREAD_REPLY_COUNT_UPDATE]: {
     messageId: number;
     channelId: number;
+    replyCount: number;
   };
-  [ServerEvents.THREAD_FOLLOW_UPDATE]: TThreadFollowUpdate;
 
   [ServerEvents.USER_JOIN]: TJoinedPublicUser;
   [ServerEvents.USER_LEAVE]: number;
@@ -120,7 +115,6 @@ type Events = {
   [ServerEvents.PLUGIN_COMPONENTS_CHANGE]: string[]; // list of plugin ids that have components enabled
   [ServerEvents.PLUGIN_CAPABILITY_ACCESS_CHANGE]: TPluginCapabilityAccessRule[];
   [ServerEvents.PLUGIN_PUSH]: TPluginPushEvent;
-  [ServerEvents.PLUGIN_EPHEMERAL_RESPONSE]: TPluginEphemeralResponse;
   [ServerEvents.PLUGIN_METADATA_CHANGE]: TPluginMetadata[];
 
   [ServerEvents.EMOJI_CREATE]: TJoinedEmoji;
@@ -137,7 +131,7 @@ type Events = {
   [ServerEvents.CATEGORY_UPDATE]: TCategory;
   [ServerEvents.CATEGORY_DELETE]: number;
 
-  [ServerEvents.DM_CONVERSATION_UPDATE]: TDirectMessageConversation;
+  [ServerEvents.DM_CONVERSATION_OPEN]: { channelId: number };
 };
 
 class PubSub {

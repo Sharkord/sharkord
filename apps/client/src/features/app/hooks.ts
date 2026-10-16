@@ -1,5 +1,4 @@
 import type { IRootState } from '@/features/store';
-import { useHotkeyState } from '@/hooks/use-hotkeys';
 import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import {
@@ -9,21 +8,17 @@ import {
   browserNotificationsForMentionsSelector,
   browserNotificationsForRepliesSelector,
   browserNotificationsSelector,
-  hotkeysEnabledSelector,
   isAutoConnectingSelector,
   isChannelMutedSelector,
   isShiftHeldSelector,
   loadingPluginsSelector,
   messageJumpTargetSelector,
   messageSentSoundSelector,
-  micModeSelector,
   modViewOpenSelector,
   modViewUserIdSelector,
   notificationSoundsSelector,
   pluginSlotDebugSelector,
-  pushToTalkSelectedSelector,
   selectedDmChannelIdSelector,
-  selectedThreadSelector,
   threadSidebarDataSelector,
   voiceChatSidebarDataSelector
 } from './selectors';
@@ -46,21 +41,8 @@ export const useThreadSidebar = () => useSelector(threadSidebarDataSelector);
 export const useAutoJoinLastChannel = () =>
   useSelector(autoJoinLastChannelSelector);
 
-export const useHotkeysEnabled = () => useSelector(hotkeysEnabledSelector);
-
-export const usePushToTalkActive = () => {
-  const pushToTalkSelected = useSelector(pushToTalkSelectedSelector);
-  const { status, capabilities } = useHotkeyState();
-
-  return pushToTalkSelected && status === 'connected' && capabilities.keyUp;
-};
-
-export const useMicMode = () => useSelector(micModeSelector);
-
 export const useSelectedDmChannelId = () =>
   useSelector(selectedDmChannelIdSelector);
-
-export const useSelectedThread = () => useSelector(selectedThreadSelector);
 
 export const useBrowserNotifications = () =>
   useSelector(browserNotificationsSelector);

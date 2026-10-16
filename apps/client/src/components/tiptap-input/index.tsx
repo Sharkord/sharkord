@@ -9,7 +9,6 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import {
   memo,
-  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -79,8 +78,6 @@ const TiptapInput = memo(
 
     readOnlyRef.current = readOnly;
     onSubmitRef.current = onSubmit;
-
-    const submit = useCallback(() => onSubmitRef.current?.(), []);
     onCancelRef.current = onCancel;
     onArrowUpRef.current = onArrowUp;
 
@@ -134,7 +131,7 @@ const TiptapInput = memo(
           suggestion: ChannelReferenceSuggestion
         }),
         ChannelReferenceNode,
-        PluginCommandNode.configure({ onSubmit: submit })
+        PluginCommandNode
       ];
 
       if (commands) {
@@ -148,7 +145,7 @@ const TiptapInput = memo(
       }
 
       return exts;
-    }, [emojis, commands, users, roles, channels, submit]);
+    }, [emojis, commands, users, roles, channels]);
 
     const editor = useEditor({
       extensions,

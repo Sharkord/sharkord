@@ -1,14 +1,13 @@
 import { logDebug } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
-import type { TJoinedMessage, TThreadSummary } from '@sharkord/shared';
-import { getMessageConversation } from '../helpers';
+import type { TJoinedMessage } from '@sharkord/shared';
 import { handleSubscriptionError } from '../subscription-error';
 import {
   addMessages,
   addTypingUser,
   deleteMessage,
   updateMessage,
-  updateThreadSummary
+  updateReplyCount
 } from './actions';
 
 const subscribeToMessages = () => {
@@ -17,7 +16,7 @@ const subscribeToMessages = () => {
   const onMessageSub = trpc.messages.onNew.subscribe(undefined, {
     onData: (message: TJoinedMessage) => {
       logDebug('[EVENTS] messages.onNew', { message });
-      addMessages(getMessageConversation(message), [message], true);
+      addMessages(message.channelId, [message], true);
     },
     onError: handleSubscriptionError('onMessage')
   });
@@ -25,22 +24,15 @@ const subscribeToMessages = () => {
   const onMessageUpdateSub = trpc.messages.onUpdate.subscribe(undefined, {
     onData: (message: TJoinedMessage) => {
       logDebug('[EVENTS] messages.onUpdate', { message });
-      updateMessage(message);
+      updateMessage(message.channelId, message);
     },
     onError: handleSubscriptionError('onMessageUpdate')
   });
 
   const onMessageDeleteSub = trpc.messages.onDelete.subscribe(undefined, {
-    onData: ({ messageId, channelId, parentMessageId }) => {
-      logDebug('[EVENTS] messages.onDelete', {
-        messageId,
-        channelId,
-        parentMessageId
-      });
-      deleteMessage(
-        getMessageConversation({ channelId, parentMessageId }),
-        messageId
-      );
+    onData: ({ messageId, channelId }) => {
+      logDebug('[EVENTS] messages.onDelete', { messageId, channelId });
+      deleteMessage(channelId, messageId);
     },
     onError: handleSubscriptionError('onMessageDelete')
   });
@@ -60,7 +52,7 @@ const subscribeToMessages = () => {
         channelId,
         parentMessageId
       });
-      addTypingUser({ channelId, parentMessageId }, userId);
+      addTypingUser(channelId, userId, parentMessageId);
     },
     onError: handleSubscriptionError('onMessageTyping')
   });
@@ -70,22 +62,18 @@ const subscribeToMessages = () => {
       onData: ({
         messageId,
         channelId,
-        replyCount,
-        replyUserIds
-      }: TThreadSummary & {
+        replyCount
+      }: {
         messageId: number;
         channelId: number;
+        replyCount: number;
       }) => {
         logDebug('[EVENTS] messages.onThreadReplyCountUpdate', {
           messageId,
           channelId,
-          replyCount,
-          replyUserIds
+          replyCount
         });
-        updateThreadSummary(channelId, messageId, {
-          replyCount,
-          replyUserIds
-        });
+        updateReplyCount(channelId, messageId, replyCount);
       },
       onError: handleSubscriptionError('onThreadReplyCountUpdate')
     });

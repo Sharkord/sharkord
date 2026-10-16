@@ -3,18 +3,14 @@
  *
  * `secret` is write only: it renders as a password field and its value is never
  * sent back to the client, so an admin can replace it but not read it. `enum`
- * renders a select and requires `options`. `channel` and `role` render a picker
- * of the server's channels or roles and store the picked id, with `0` meaning
- * none picked yet.
+ * renders a select and requires `options`.
  */
 export type TPluginSettingType =
   | 'string'
   | 'number'
   | 'boolean'
   | 'secret'
-  | 'enum'
-  | 'channel'
-  | 'role';
+  | 'enum';
 
 /** One choice of an `enum` setting: `value` is stored, `label` is shown. */
 export type TPluginSettingOption = {
@@ -53,7 +49,7 @@ export type TPluginSettingDefinition = {
   /** used until an admin saves something, so a plugin always reads a value */
   defaultValue: string | number | boolean;
   /** required for `enum`, ignored otherwise */
-  options?: readonly TPluginSettingOption[];
+  options?: TPluginSettingOption[];
 };
 
 export type TPluginSettingsResponse = {
@@ -64,9 +60,6 @@ export type TPluginSettingsResponse = {
 
 const isSecretSetting = (definition: TPluginSettingDefinition) =>
   definition.type === 'secret';
-
-const isReferenceSetting = (definition: TPluginSettingDefinition) =>
-  definition.type === 'channel' || definition.type === 'role';
 
 const getSettingValueError = (
   definition: TPluginSettingDefinition,
@@ -82,13 +75,7 @@ const getSettingValueError = (
     return undefined;
   }
 
-  let expected: string = definition.type;
-
-  if (isSecretSetting(definition)) {
-    expected = 'string';
-  } else if (isReferenceSetting(definition)) {
-    expected = 'number';
-  }
+  const expected = definition.type === 'secret' ? 'string' : definition.type;
 
   if (typeof value !== expected) {
     return `Setting '${definition.key}' expects a ${expected}, received ${typeof value}.`;
@@ -97,4 +84,4 @@ const getSettingValueError = (
   return undefined;
 };
 
-export { getSettingValueError, isReferenceSetting, isSecretSetting };
+export { getSettingValueError, isSecretSetting };

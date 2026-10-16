@@ -122,22 +122,5 @@
   "reconnectingAbort": "Arrêter la reconnexion",
   "removeImage": "Supprimer l'image",
   "channelMutedTooltip": "Salon en sourdine, cliquez pour le réactiver",
-  "unknownRole": "Rôle inconnu",
-  "runCommand": "Exécuter la commande",
-  "commandStatusPending": "En attente",
-  "commandStatusCompleted": "Terminée",
-  "commandStatusFailed": "Échouée",
-  "commandResponse": "Réponse",
-  "commandArgRequired": "obligatoire",
-  "commandArgOptional": "facultatif",
-  "commandArgYes": "Oui",
-  "commandArgNo": "Non",
-  "commandArgMissing": "/{{commandName}} a besoin d'une valeur pour {{argName}}.",
-  "mutedByModerator": "Un modérateur vous a rendu muet.",
-  "followThread": "Suivre le fil",
-  "unfollowThread": "Ne plus suivre le fil",
-  "failedUpdateThreadFollow": "Impossible de mettre à jour le suivi du fil",
-  "selectThreadPrompt": "Sélectionnez un fil pour le lire.",
-  "loadingMessage": "Chargement du message...",
-  "failedLoadParentMessage": "Impossible de charger le message d'origine"
+  "unknownRole": "Rôle inconnu"
 }

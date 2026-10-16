@@ -3,8 +3,7 @@ import {
   PluginCapabilityMode,
   PluginCapabilityType,
   type TActivityLogDetailsMap,
-  type TMessageMetadata,
-  type TPluginMessageComponent
+  type TMessageMetadata
 } from '@sharkord/shared';
 import { sql } from 'drizzle-orm';
 import {
@@ -268,9 +267,6 @@ const messages = sqliteTable(
       onDelete: 'cascade'
     }),
     pluginId: text('plugin_id'),
-    pluginComponents: text('plugin_components', {
-      mode: 'json'
-    }).$type<TPluginMessageComponent[] | null>(),
     channelId: integer('channel_id')
       .notNull()
       .references(() => channels.id, { onDelete: 'cascade' }),
@@ -306,7 +302,6 @@ const messages = sqliteTable(
       t.createdAt
     ),
     index('messages_parent_idx').on(t.parentMessageId),
-    index('messages_parent_created_idx').on(t.parentMessageId, t.createdAt),
     index('messages_reply_to_idx').on(t.replyToMessageId),
     index('messages_parent_channel_id_idx').on(
       t.parentMessageId,
@@ -513,33 +508,6 @@ const channelReadStates = sqliteTable(
   ]
 );
 
-const threadFollowers = sqliteTable(
-  'thread_followers',
-  {
-    userId: integer('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    parentMessageId: integer('parent_message_id')
-      .notNull()
-      .references(() => messages.id, { onDelete: 'cascade' }),
-    lastReadMessageId: integer('last_read_message_id'),
-    hasUnreadMention: integer('has_unread_mention', { mode: 'boolean' })
-      .notNull()
-      .default(false),
-    lastReplyAt: integer('last_reply_at').notNull(),
-    createdAt: integer('created_at').notNull()
-  },
-  (t) => [
-    primaryKey({ columns: [t.userId, t.parentMessageId] }),
-    index('thread_followers_parent_idx').on(t.parentMessageId),
-    index('thread_followers_user_last_reply_idx').on(
-      t.userId,
-      t.lastReplyAt,
-      t.parentMessageId
-    )
-  ]
-);
-
 const directMessages = sqliteTable(
   'direct_messages',
   {
@@ -552,8 +520,6 @@ const directMessages = sqliteTable(
     userTwoId: integer('user_two_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    userOneClosedAt: integer('user_one_closed_at'),
-    userTwoClosedAt: integer('user_two_closed_at'),
     createdAt: integer('created_at').notNull()
   },
   (t) => [
@@ -616,17 +582,6 @@ const pluginUserData = sqliteTable(
   ]
 );
 
-const pluginStorage = sqliteTable(
-  'plugin_storage',
-  {
-    pluginId: text('plugin_id').notNull(),
-    key: text('key').notNull(),
-    value: text('value', { mode: 'json' }).notNull(),
-    updatedAt: integer('updated_at').notNull()
-  },
-  (t) => [primaryKey({ columns: [t.pluginId, t.key] })]
-);
-
 const pluginCapabilities = sqliteTable(
   'plugin_capabilities',
   {
@@ -679,12 +634,10 @@ export {
   pluginCapabilities,
   pluginCapabilityRoles,
   pluginData,
-  pluginStorage,
   pluginUserData,
   rolePermissions,
   roles,
   settings,
-  threadFollowers,
   userRoles,
   users
 };

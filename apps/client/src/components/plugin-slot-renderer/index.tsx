@@ -1,13 +1,16 @@
+import { usePluginSlotDebug } from '@/features/app/hooks';
 import { useCan, useHiddenPluginComponents } from '@/features/server/hooks';
 import { usePluginComponentsBySlot } from '@/features/server/plugins/hooks';
+import { PluginIdContext } from '@/features/server/plugins/plugin-id-context';
 import {
   Permission,
-  PluginSlot,
+  type PluginSlot,
   type TPluginReactComponent,
   type TPluginSlotProps
 } from '@sharkord/shared';
 import { memo } from 'react';
-import { PluginComponentFrame } from './plugin-component-frame';
+import { ErrorBoundary } from './error-boundary';
+import { PlugSlotDebugWrapper } from './plugin-slot-debug-wrapper';
 
 type TPluginSlotRendererProps<S extends PluginSlot> = {
   slotId: S;
@@ -21,14 +24,13 @@ const PluginSlotRenderer = memo(
     onlyPluginId,
     props
   }: TPluginSlotRendererProps<S>) => {
+    const debug = usePluginSlotDebug();
     const pluginComponentsBySlot = usePluginComponentsBySlot(slotId);
     const hiddenComponents = useHiddenPluginComponents();
 
     const can = useCan();
 
-    // the connect screen renders before anyone has signed in, so nobody can
-    // hold the permission there yet
-    if (slotId !== PluginSlot.CONNECT_SCREEN && !can(Permission.USE_PLUGINS)) {
+    if (!can(Permission.USE_PLUGINS)) {
       return null;
     }
 
@@ -52,14 +54,28 @@ const PluginSlotRenderer = memo(
           TPluginSlotProps[S]
         >;
 
+        const rendered = (
+          <PluginIdContext.Provider value={pluginId}>
+            <Component {...props!} />
+          </PluginIdContext.Provider>
+        );
+
+        const wrappedContent = debug ? (
+          <PlugSlotDebugWrapper pluginId={pluginId} slotId={slotId}>
+            {rendered}
+          </PlugSlotDebugWrapper>
+        ) : (
+          rendered
+        );
+
         return (
-          <PluginComponentFrame
+          <ErrorBoundary
             pluginId={pluginId}
             slotId={slotId}
             key={`${pluginId}-${index}`}
           >
-            <Component {...props!} />
-          </PluginComponentFrame>
+            {wrappedContent}
+          </ErrorBoundary>
         );
       })
     );

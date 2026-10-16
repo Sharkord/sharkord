@@ -1,14 +1,13 @@
 import { getPlainTextFromHtml, isEmptyMessage } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
+import { pluginManager } from '..';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { messages } from '../../db/schema';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
-import { followThreadOnEdit } from '../../helpers/threads';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
 import { invariant } from '../../utils/invariant';
 import { eventBus } from '../event-bus';
-import { loadOwnPluginMessage } from './load-own-plugin-message';
 
 type TEditPluginMessageOptions = {
   pluginId: string;
@@ -22,7 +21,30 @@ const editPluginMessage = async (
 ): Promise<void> => {
   const { pluginId, messageId, content, previews = true } = options;
 
-  const message = await loadOwnPluginMessage(pluginId, messageId, 'edit');
+  invariant(pluginManager.isEnabled(pluginId), {
+    code: 'FORBIDDEN',
+    message: 'Plugin is not enabled.'
+  });
+
+  const message = await db
+    .select({
+      pluginId: messages.pluginId,
+      channelId: messages.channelId
+    })
+    .from(messages)
+    .where(eq(messages.id, messageId))
+    .limit(1)
+    .get();
+
+  invariant(message, {
+    code: 'NOT_FOUND',
+    message: 'Message not found'
+  });
+
+  invariant(message.pluginId === pluginId, {
+    code: 'FORBIDDEN',
+    message: 'You do not have permission to edit this message'
+  });
 
   const sanitizedContent = sanitizeMessageHtml(content);
 
@@ -40,16 +62,6 @@ const editPluginMessage = async (
       editedBy: null
     })
     .where(eq(messages.id, messageId));
-
-  if (message.parentMessageId) {
-    await followThreadOnEdit({
-      id: messageId,
-      parentMessageId: message.parentMessageId,
-      channelId: message.channelId,
-      userId: null,
-      content: sanitizedContent
-    });
-  }
 
   publishMessage(messageId, message.channelId, 'update');
   if (previews) enqueueProcessMetadata(sanitizedContent, messageId);

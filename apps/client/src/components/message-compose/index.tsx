@@ -6,7 +6,6 @@ import type { TEmojiItem } from '@/components/tiptap-input/helpers';
 import { LocalStorageKey } from '@/helpers/storage';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 
-import { findMissingRequiredCommandArg } from '@/components/tiptap-input/extensions/commands/helpers';
 import { useChannelById } from '@/features/server/channels/hooks';
 import {
   useCan,
@@ -174,14 +173,6 @@ const MessageCompose = memo(
 
       if (message.length > MESSAGE_MAX_LENGTH) {
         toast.error(t('messageTooLong', { max: MESSAGE_MAX_LENGTH }));
-
-        return;
-      }
-
-      const missingArg = findMissingRequiredCommandArg(message);
-
-      if (missingArg) {
-        toast.error(t('commandArgMissing', missingArg));
 
         return;
       }

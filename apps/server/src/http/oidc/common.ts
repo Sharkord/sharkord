@@ -112,33 +112,16 @@ const getCookie = (
   return undefined;
 };
 
-const NO_INVITE = '1';
-
-const getStateCookie = (req: http.IncomingMessage, state: string) =>
-  getCookie(req, `${OIDC_STATE_COOKIE_PREFIX}${state}`);
-
 const hasStateCookie = (req: http.IncomingMessage, state: string): boolean =>
-  !!getStateCookie(req, state);
-
-const getStateCookieInvite = (
-  req: http.IncomingMessage,
-  state: string
-): string | undefined => {
-  const value = getStateCookie(req, state);
-
-  return value && value !== NO_INVITE ? value : undefined;
-};
+  getCookie(req, `${OIDC_STATE_COOKIE_PREFIX}${state}`) === '1';
 
 const buildStateCookie = (
   req: http.IncomingMessage,
   state: string,
-  maxAgeSeconds: number,
-  inviteCode?: string
+  maxAgeSeconds: number
 ) => {
-  const value = maxAgeSeconds === 0 ? '' : (inviteCode ?? NO_INVITE);
-
   const attributes = [
-    `${OIDC_STATE_COOKIE_PREFIX}${state}=${value}`,
+    `${OIDC_STATE_COOKIE_PREFIX}${state}=${maxAgeSeconds === 0 ? '' : '1'}`,
     'HttpOnly',
     'SameSite=Lax',
     'Path=/',
@@ -157,7 +140,6 @@ export {
   buildStateCookie,
   clearStateCookie,
   getCookie,
-  getStateCookieInvite,
   guardOidcRoute,
   hasStateCookie,
   OIDC_STATE_COOKIE_PREFIX,

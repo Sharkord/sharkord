@@ -3,12 +3,9 @@ import type {
   CommandDefinition,
   TActionContract,
   TBeforeChannelCreateHook,
-  TBeforeChannelDeleteHook,
   TBeforeFileSaveHook,
   TBeforeLoginHook,
   TBeforeMessageSaveHook,
-  TBeforeProfileUpdateHook,
-  TBeforeReactionHook,
   TBeforeVoiceJoinHook,
   TCategory,
   TChannel,
@@ -19,18 +16,13 @@ import type {
   TContractCommands,
   TContractPush,
   TContractUserData,
-  TInvite,
   TInvokerContext,
-  TJoinedEmoji,
   TJoinedMessage,
   TJoinedPublicUser,
   TJoinedRole,
   TPluginActions,
   TPluginComponentsMapBySlotId,
   TPluginContract,
-  TPluginMessageComponent,
-  TPluginMessageComponentProps,
-  TPluginMessageComponentsMap,
   TPluginSettingDefinition,
   TPluginSlotProps,
   TPluginSlotRequirements,
@@ -39,8 +31,7 @@ import type {
   TPluginTab,
   TPluginTabs,
   TStreamQualityLayer,
-  TVoiceProducerInfo,
-  TVoiceUserState
+  TVoiceProducerInfo
 } from '@sharkord/shared';
 import {
   ChannelPermission,
@@ -157,7 +148,6 @@ export type ServerEvent =
   | 'voice:runtime_closed'
   | 'voice:producer_added'
   | 'voice:producer_removed'
-  | 'voice:state_updated'
   | 'setting:set'
   | 'reaction:added'
   | 'reaction:removed'
@@ -179,10 +169,7 @@ export type ServerEvent =
   | 'role:created'
   | 'role:updated'
   | 'role:deleted'
-  | 'user:updated'
-  | 'invite:created'
-  | 'invite:used'
-  | 'emoji:created';
+  | 'user:updated';
 
 /** What each event hands its handler. */
 export interface EventPayloads {
@@ -202,10 +189,6 @@ export interface EventPayloads {
     userId: number;
     channelId: number;
   };
-  /**
-   * `parentMessageId` is set for a thread reply and `replyToMessageId` for an
-   * inline reply. `fileIds` are the attachments, for `files.getPath`.
-   */
   'message:created': {
     messageId: number;
     channelId: number;
@@ -213,9 +196,6 @@ export interface EventPayloads {
     pluginId: string | null;
     content: string;
     textContent: string;
-    parentMessageId: number | null;
-    replyToMessageId: number | null;
-    fileIds: number[];
   };
   'message:updated': {
     messageId: number;
@@ -327,22 +307,6 @@ export interface EventPayloads {
     userId: number;
     username: string;
   };
-  'invite:created': {
-    inviteId: number;
-    code: string;
-    creatorId: number;
-    roleId: number | null;
-  };
-  /** someone registered with the invite, who is now `userId` */
-  'invite:used': {
-    code: string;
-    userId: number;
-  };
-  'emoji:created': {
-    emojiId: number;
-    name: string;
-    userId: number;
-  };
   'voice:runtime_initialized': {
     channelId: number;
   };
@@ -367,15 +331,6 @@ export interface EventPayloads {
     kind: StreamKind;
     producerId: string;
   };
-  /**
-   * A user in the channel muted, deafened, or turned their camera or screen
-   * share on or off. `state` is the whole state after the change.
-   */
-  'voice:state_updated': {
-    channelId: number;
-    userId: number;
-    state: TVoiceUserState;
-  };
   'setting:set': {
     key: string;
     value: unknown;
@@ -388,7 +343,7 @@ export interface EventPayloads {
 type SettingValueType<T extends TPluginSettingDefinition> =
   T['type'] extends 'string'
     ? string
-    : T['type'] extends 'number' | 'channel' | 'role'
+    : T['type'] extends 'number'
       ? number
       : T['type'] extends 'boolean'
         ? boolean
@@ -543,26 +498,6 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
      */
     consume(options: TConsumeOptions): Promise<TVoiceConsumerHandle>;
     /**
-     * Sends a user to another voice channel, as a moderator moving them would.
-     * Their client makes the switch, so it lands a moment later, and they need
-     * neither the JOIN permission nor sight of the channel: a move can pull
-     * someone into a private channel, which is then revealed to them. Throws
-     * when the user is not in a voice channel or already in that one.
-     */
-    move(userId: number, channelId: number): Promise<void>;
-    /** Takes a user out of whatever voice channel they are in. */
-    disconnect(userId: number): Promise<void>;
-    /**
-     * Mutes a user for everyone, the way a moderator would, or lifts it. Their
-     * audio is stopped on the server, so a modified client cannot get around
-     * it, and they cannot unmute themselves until it is lifted. It covers
-     * every voice channel, so switching channels does not escape it, and it
-     * can be set while the user is not in voice. It lasts until lifted or the
-     * server restarts. Lifting it leaves them muted: they unmute themselves
-     * when they are ready.
-     */
-    setServerMute(userId: number, muted: boolean): Promise<void>;
-    /**
      * Floats an emoji on a user's card, the same animation as a reaction they
      * sent themselves, and indistinguishable from one. Takes a unicode emoji,
      * a shortcode or a custom emoji name. Throws when the user is not in the
@@ -597,14 +532,6 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
          * you would rather the server not fetch the url at all.
          */
         previews?: boolean;
-        /**
-         * Components from your client bundle's `messageComponents`, rendered
-         * after the message text, in this order. Each one is a `name` from that
-         * export and the `props` it receives. Every client that can read the
-         * message receives the props, so they are not a place for secrets. At
-         * most 5 components and 16 KB.
-         */
-        components?: TPluginMessageComponent[];
       }
     ): Promise<{ messageId: number }>;
     /**
@@ -616,15 +543,6 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
       messageId: number,
       content: string,
       options?: { previews?: boolean }
-    ): Promise<void>;
-    /**
-     * Replaces the components of one of your own messages, or removes them
-     * with `null`. Not an edit of what the message says, so it leaves no
-     * "edited" mark: the way to update a poll's counts on every vote.
-     */
-    setComponents(
-      messageId: number,
-      components: TPluginMessageComponent[] | null
     ): Promise<void>;
     delete(messageId: number): Promise<void>;
     get(messageId: number): Promise<TJoinedMessage | undefined>;
@@ -668,11 +586,6 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
        * is public; either way a server owner can override the access per role.
        */
       requires?: Permission;
-      /**
-       * Answers only the user who ran it, with nothing stored in the channel.
-       * For help, errors and confirmations everyone else does not need to see.
-       */
-      ephemeral?: boolean;
       executes: (
         ctx: TInvokerContext,
         args: TContractCommands<C>[K]['args']
@@ -709,9 +622,6 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
     onBeforeChannelCreate(handler: TBeforeChannelCreateHook): void;
     onBeforeVoiceJoin(handler: TBeforeVoiceJoinHook): void;
     onBeforeLogin(handler: TBeforeLoginHook): void;
-    onBeforeReaction(handler: TBeforeReactionHook): void;
-    onBeforeProfileUpdate(handler: TBeforeProfileUpdateHook): void;
-    onBeforeChannelDelete(handler: TBeforeChannelDeleteHook): void;
   };
 
   /**
@@ -773,26 +683,12 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
   };
 
   /**
-   * Roles and their membership. Plugins may never touch the owner role or the
-   * roles of anyone who holds it.
+   * Role membership. Plugins may never touch the owner role or the roles of
+   * anyone who holds it.
    */
   roles: {
     list(): Promise<TJoinedRole[]>;
     get(roleId: number): Promise<TJoinedRole | undefined>;
-    /**
-     * White unless `color` says otherwise, and with no permissions unless
-     * `permissions` grants some. A server holds at most 100 roles.
-     */
-    create(input: {
-      name: string;
-      color?: string;
-      permissions?: Permission[];
-    }): Promise<TJoinedRole>;
-    /** `permissions` replaces the role's whole list, it does not add to it */
-    update(
-      roleId: number,
-      values: { name?: string; color?: string; permissions?: Permission[] }
-    ): Promise<TJoinedRole>;
     assign(userId: number, roleId: number): Promise<void>;
     remove(userId: number, roleId: number): Promise<void>;
   };
@@ -811,29 +707,6 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
      * the channel is empty, rather than throwing like the `voice` methods.
      */
     toVoiceChannel(channelId: number, data: TContractPush<C>): void;
-  };
-
-  /**
-   * Server-wide key value storage, owned by the plugin and removed with it. The
-   * place for polls, reminders, counters and anything else that is not about
-   * one user. Values are JSON, so anything `JSON.stringify` keeps survives.
-   *
-   * Keep keys structured (`poll:42`, `reminder:1700000000:7`) so `list` can
-   * read one kind back by its prefix.
-   */
-  storage: {
-    get<T = unknown>(key: string): Promise<T | undefined>;
-    set(key: string, value: unknown): Promise<void>;
-    delete(key: string): Promise<void>;
-    /**
-     * Ordered by key. `limit` defaults to 100, and `after` is the last key of
-     * the previous page, so a second call passes the last key it received.
-     */
-    list(options?: {
-      prefix?: string;
-      limit?: number;
-      after?: string;
-    }): Promise<{ key: string; value: unknown }[]>;
   };
 
   userData: {
@@ -864,49 +737,6 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
       values: { name?: string; topic?: string | null; private?: boolean }
     ): Promise<void>;
     delete(channelId: number): Promise<void>;
-    /**
-     * Puts `channelIds` in that order at the top of the category. A channel
-     * from another category is moved into it, and the ones you leave out keep
-     * their order after yours.
-     */
-    reorder(categoryId: number, channelIds: number[]): Promise<void>;
-  };
-
-  /**
-   * Invites are attributed to a user, `creatorId`, since every invite has one:
-   * usually whoever asked the plugin for it.
-   */
-  invites: {
-    /**
-     * `maxUses` 0 means unlimited, and `code` is random unless you pick one.
-     * `roleId` is given to whoever registers with it, and cannot be the owner
-     * role.
-     */
-    create(input: {
-      creatorId: number;
-      code?: string;
-      maxUses?: number;
-      expiresAt?: number | null;
-      roleId?: number;
-    }): Promise<TInvite>;
-  };
-
-  /**
-   * Custom emojis. Like invites, one is attributed to a user, `userId`, usually
-   * whoever asked the plugin to add it.
-   */
-  emojis: {
-    /**
-     * `fileName` is what the image is called, and its extension has to be an
-     * image's. A taken `name` gets a number added, so read the returned name.
-     */
-    create(input: {
-      name: string;
-      fileName: string;
-      data: Uint8Array;
-      userId: number;
-    }): Promise<TJoinedEmoji>;
-    delete(emojiId: number): Promise<void>;
   };
 
   /**
@@ -956,7 +786,6 @@ export interface UnloadPluginContext extends Pick<
   | 'error'
   | 'voice'
   | 'messages'
-  | 'storage'
   | 'ui'
 > {}
 
@@ -1043,12 +872,9 @@ export type {
   CommandDefinition,
   TActionContract,
   TBeforeChannelCreateHook,
-  TBeforeChannelDeleteHook,
   TBeforeFileSaveHook,
   TBeforeLoginHook,
   TBeforeMessageSaveHook,
-  TBeforeProfileUpdateHook,
-  TBeforeReactionHook,
   TBeforeVoiceJoinHook,
   TCategory,
   TChannel,
@@ -1058,9 +884,6 @@ export type {
   TPluginActions,
   TPluginComponentsMapBySlotId,
   TPluginContract,
-  TPluginMessageComponent,
-  TPluginMessageComponentProps,
-  TPluginMessageComponentsMap,
   TPluginSlotProps,
   TPluginSlotRequirements,
   TPluginStore,

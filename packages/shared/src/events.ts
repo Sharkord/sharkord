@@ -4,7 +4,6 @@ export enum ServerEvents {
   MESSAGE_DELETE = 'messageDelete',
   MESSAGE_TYPING = 'messageTyping',
   THREAD_REPLY_COUNT_UPDATE = 'threadReplyCountUpdate',
-  THREAD_FOLLOW_UPDATE = 'threadFollowUpdate',
 
   USER_JOIN = 'userJoin',
   USER_LEAVE = 'userLeave',
@@ -48,13 +47,12 @@ export enum ServerEvents {
   PLUGIN_CAPABILITY_ACCESS_CHANGE = 'pluginCapabilityAccessChange',
   PLUGIN_METADATA_CHANGE = 'pluginMetadataChange',
   PLUGIN_PUSH = 'pluginPush',
-  PLUGIN_EPHEMERAL_RESPONSE = 'pluginEphemeralResponse',
 
   CATEGORY_CREATE = 'categoryCreate',
   CATEGORY_UPDATE = 'categoryUpdate',
   CATEGORY_DELETE = 'categoryDelete',
 
-  DM_CONVERSATION_UPDATE = 'dmConversationUpdate'
+  DM_CONVERSATION_OPEN = 'dmConversationOpen'
 }
 
 export type TNewMessage = {

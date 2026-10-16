@@ -7,12 +7,8 @@ import {
 } from '@tiptap/react';
 import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
-import {
-  safeJsonParse,
-  serializePluginCommandText,
-  type TPluginCommandValues
-} from './helpers';
+
+type TPluginCommandValues = Record<string, string>;
 
 type TPluginCommandAttrs = {
   pluginId: string;
@@ -21,15 +17,67 @@ type TPluginCommandAttrs = {
   values: string;
 };
 
-type TPluginCommandOptions = {
-  onSubmit?: () => void;
+const safeJsonParse = <T,>(raw: unknown, fallback: T): T => {
+  if (typeof raw !== 'string' || !raw) {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+};
+
+const serializeArgToken = (value: string): string => {
+  if (value.length === 0) {
+    return '""';
+  }
+
+  if (/^[^\s"'\\]+$/.test(value)) {
+    return value;
+  }
+
+  const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+  return `"${escaped}"`;
+};
+
+const serializePluginCommandText = (
+  commandName: string,
+  argDefs: TCommandArg[],
+  values: TPluginCommandValues
+): string => {
+  const tokens: string[] = [`/${commandName}`];
+
+  for (const arg of argDefs) {
+    const raw = values[arg.name];
+
+    if (raw === undefined || raw === '') {
+      continue;
+    }
+
+    if (arg.type === 'number') {
+      tokens.push(raw);
+      continue;
+    }
+
+    if (arg.type === 'boolean') {
+      tokens.push(raw === 'true' ? 'true' : 'false');
+      continue;
+    }
+
+    tokens.push(serializeArgToken(raw));
+  }
+
+  return tokens.join(' ');
 };
 
 type TCommandArgInputProps = {
   arg: TCommandArg;
   value: string;
   onValueChange: (name: string, value: string) => void;
-  handleKeyNavigation: (
+  handleTabNavigation: (
     event: ReactKeyboardEvent<HTMLInputElement | HTMLSelectElement>
   ) => boolean;
 };
@@ -39,10 +87,8 @@ const CommandArgInput = memo(
     arg,
     value,
     onValueChange,
-    handleKeyNavigation
+    handleTabNavigation
   }: TCommandArgInputProps) => {
-    const { t } = useTranslation('common');
-
     const handleChange = useCallback(
       (event: ChangeEvent<HTMLSelectElement | HTMLInputElement>) =>
         onValueChange(arg.name, event.target.value),
@@ -51,7 +97,7 @@ const CommandArgInput = memo(
 
     const handleKeyDown = useCallback(
       (event: ReactKeyboardEvent<HTMLSelectElement | HTMLInputElement>) => {
-        if (handleKeyNavigation(event)) return;
+        if (handleTabNavigation(event)) return;
 
         if (
           event.key === 'Escape' &&
@@ -62,20 +108,12 @@ const CommandArgInput = memo(
 
         event.stopPropagation();
       },
-      [handleKeyNavigation]
+      [handleTabNavigation]
     );
-
-    const requirement = arg.required
-      ? t('commandArgRequired')
-      : t('commandArgOptional');
-    const placeholder = arg.description ?? requirement;
 
     if (arg.type === 'boolean') {
       return (
-        <label
-          className="inline-flex items-center gap-1 rounded bg-background px-1.5 py-0.5"
-          title={arg.description}
-        >
+        <label className="inline-flex items-center gap-1 rounded bg-background px-1.5 py-0.5">
           <span className="text-[10px] text-muted-foreground">{arg.name}</span>
           <select
             className="h-5 rounded border bg-background px-1 text-[11px]"
@@ -83,24 +121,21 @@ const CommandArgInput = memo(
             onChange={handleChange}
             onKeyDown={handleKeyDown}
           >
-            <option value="">{requirement}</option>
-            <option value="true">{t('commandArgYes')}</option>
-            <option value="false">{t('commandArgNo')}</option>
+            <option value="">-</option>
+            <option value="true">true</option>
+            <option value="false">false</option>
           </select>
         </label>
       );
     }
 
     return (
-      <label
-        className="inline-flex items-center gap-1 rounded bg-background px-1.5 py-0.5"
-        title={arg.description}
-      >
+      <label className="inline-flex items-center gap-1 rounded bg-background px-1.5 py-0.5">
         <span className="text-[10px] text-muted-foreground">{arg.name}</span>
         <input
           type={arg.type === 'number' ? 'number' : 'text'}
           value={value}
-          placeholder={placeholder}
+          placeholder={arg.required ? 'required' : 'optional'}
           className="h-5 min-w-18 rounded border bg-background px-1 text-[11px]"
           onChange={handleChange}
           onKeyDown={handleKeyDown}
@@ -111,7 +146,7 @@ const CommandArgInput = memo(
 );
 
 const PluginCommandNodeView = memo(
-  ({ node, updateAttributes, editor, getPos, extension }: NodeViewProps) => {
+  ({ node, updateAttributes, editor, getPos }: NodeViewProps) => {
     const attrs = node.attrs as TPluginCommandAttrs;
     const wrapperRef = useRef<HTMLSpanElement | null>(null);
 
@@ -151,15 +186,10 @@ const PluginCommandNodeView = memo(
       editor.chain().focus().run();
     };
 
-    const handleKeyNavigation = (
+    const handleTabNavigation = (
       event: ReactKeyboardEvent<HTMLInputElement | HTMLSelectElement>
     ) => {
-      const isEnter =
-        event.key === 'Enter' &&
-        !event.shiftKey &&
-        !event.nativeEvent.isComposing;
-
-      if (event.key !== 'Tab' && !isEnter) {
+      if (event.key !== 'Tab') {
         return false;
       }
 
@@ -183,26 +213,6 @@ const PluginCommandNodeView = memo(
 
       event.preventDefault();
 
-      const isLast = currentIndex === controls.length - 1;
-
-      if (isEnter) {
-        if (!isLast) {
-          controls[currentIndex + 1]?.focus();
-
-          return true;
-        }
-
-        const { onSubmit } = extension.options as TPluginCommandOptions;
-
-        if (onSubmit) {
-          onSubmit();
-        } else {
-          focusEditorAfterNode();
-        }
-
-        return true;
-      }
-
       if (event.shiftKey) {
         if (currentIndex > 0) {
           controls[currentIndex - 1]?.focus();
@@ -213,10 +223,10 @@ const PluginCommandNodeView = memo(
         return true;
       }
 
-      if (isLast) {
-        focusEditorAfterNode();
-      } else {
+      if (currentIndex < controls.length - 1) {
         controls[currentIndex + 1]?.focus();
+      } else {
+        focusEditorAfterNode();
       }
 
       return true;
@@ -268,7 +278,7 @@ const PluginCommandNodeView = memo(
             arg={arg}
             value={values[arg.name] ?? ''}
             onValueChange={setValue}
-            handleKeyNavigation={handleKeyNavigation}
+            handleTabNavigation={handleTabNavigation}
           />
         ))}
       </NodeViewWrapper>
@@ -281,10 +291,6 @@ export const PluginCommandNode = Node.create({
   group: 'inline',
   inline: true,
   atom: true,
-
-  addOptions(): TPluginCommandOptions {
-    return { onSubmit: undefined };
-  },
 
   addNodeView() {
     return ReactNodeViewRenderer(PluginCommandNodeView, { as: 'span' });

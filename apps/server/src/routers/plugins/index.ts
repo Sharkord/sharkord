@@ -3,7 +3,6 @@ import {
   onCapabilityAccessChangeRoute,
   onCommandsChangeRoute,
   onComponentsChangeRoute,
-  onEphemeralResponseRoute,
   onMetadataChangeRoute,
   onPluginLogRoute,
   onPushRoute
@@ -29,7 +28,6 @@ export const pluginsRouter = t.router({
   toggle: togglePluginRoute,
   onLog: onPluginLogRoute,
   onPush: onPushRoute,
-  onEphemeralResponse: onEphemeralResponseRoute,
   getLogs: getPluginLogsRoute,
   getCommands: getCommandsRoute,
   getCapabilities: getCapabilitiesRoute,

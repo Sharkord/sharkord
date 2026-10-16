@@ -122,22 +122,5 @@
   "reconnectingAbort": "Прекратить переподключение",
   "removeImage": "Удалить изображение",
   "channelMutedTooltip": "Канал заглушён, нажмите, чтобы включить звук",
-  "unknownRole": "Неизвестная роль",
-  "runCommand": "Выполнить команду",
-  "commandStatusPending": "Ожидание",
-  "commandStatusCompleted": "Выполнено",
-  "commandStatusFailed": "Ошибка",
-  "commandResponse": "Ответ",
-  "commandArgRequired": "обязательно",
-  "commandArgOptional": "необязательно",
-  "commandArgYes": "Да",
-  "commandArgNo": "Нет",
-  "commandArgMissing": "/{{commandName}}: укажите значение для {{argName}}.",
-  "mutedByModerator": "Модератор отключил вам микрофон.",
-  "followThread": "Отслеживать ветку",
-  "unfollowThread": "Не отслеживать ветку",
-  "failedUpdateThreadFollow": "Не удалось изменить отслеживание ветки",
-  "selectThreadPrompt": "Выберите ветку, чтобы прочитать её.",
-  "loadingMessage": "Загрузка сообщения...",
-  "failedLoadParentMessage": "Не удалось загрузить исходное сообщение"
+  "unknownRole": "Неизвестная роль"
 }

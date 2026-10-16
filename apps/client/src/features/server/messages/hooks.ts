@@ -1,21 +1,18 @@
 import type { IRootState } from '@/features/store';
 import { getTRPCClient } from '@/lib/trpc';
-import type { TConversation, TConversationKey } from '@/types';
 import {
   DEFAULT_MESSAGES_LIMIT,
-  getTrpcError,
   type TJoinedMessage,
   type TMessagesCursor
 } from '@sharkord/shared';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { toast } from 'sonner';
-import { getConversationKey } from '../helpers';
 import {
   addMessages,
-  setConversationMessages,
-  trimConversationMessages
+  addThreadMessages,
+  clearThreadMessages,
+  setChannelMessages,
+  trimChannelMessages
 } from './actions';
 import {
   findMessageElement,
@@ -23,16 +20,15 @@ import {
   waitForMessageElement
 } from './helpers';
 import {
-  isConversationDetachedSelector,
-  messagesByConversationKeySelector,
-  parentMessageByIdSelector
+  isChannelDetachedSelector,
+  messagesByChannelIdSelector,
+  parentMessageByIdSelector,
+  threadMessagesByParentIdSelector
 } from './selectors';
 
-export const useMessagesByConversationKey = (
-  conversationKey: TConversationKey
-) =>
+export const useMessagesByChannelId = (channelId: number) =>
   useSelector((state: IRootState) =>
-    messagesByConversationKeySelector(state, conversationKey)
+    messagesByChannelIdSelector(state, channelId)
   );
 
 export type TMessageGroup = {
@@ -107,42 +103,36 @@ type TFetchPage = (
   cursor: TMessagesCursor | null
 ) => Promise<{ nextCursor: TMessagesCursor | null }>;
 
-// both routes return the same newest-first page, a thread only differs in which one is asked
-const fetchConversationPage = async (
-  { channelId, parentMessageId }: TConversation,
-  input: {
-    cursor: TMessagesCursor | null;
-    limit: number;
-    targetMessageId?: number;
-  }
-) => {
+// fetch a page of channel messages from the server
+const fetchChannelMessagesPage = async (input: {
+  channelId: number;
+  cursor: TMessagesCursor | null;
+  limit: number;
+  targetMessageId?: number;
+}) => {
   const trpcClient = getTRPCClient();
 
-  if (parentMessageId) {
-    return trpcClient.messages.getThread.query({ parentMessageId, ...input });
-  }
-
-  return trpcClient.messages.get.query({ channelId, ...input });
+  return trpcClient.messages.get.query(input);
 };
 
 // reverse (newest-first -> oldest-first) and store messages
 // messages are merged chronologically by the reducer regardless of which end a page came
 // from, so there is no ordering option to pass here
-const storeConversationMessages = (
-  conversation: TConversation,
-  rawPage: TJoinedMessage[]
-) => {
+const storeChannelMessages = (channelId: number, rawPage: TJoinedMessage[]) => {
   const page = [...rawPage].reverse();
 
-  addMessages(conversation, page);
+  addMessages(channelId, page);
 };
 
 const usePaginatedMessages = (
   messages: TJoinedMessage[],
-  fetchPage: TFetchPage
+  fetchPage: TFetchPage,
+  options?: { initialLoading?: boolean }
 ) => {
   const [fetching, setFetching] = useState(false);
-  const [loading, setLoading] = useState(messages.length === 0);
+  const [loading, setLoading] = useState(
+    options?.initialLoading ?? messages.length === 0
+  );
   const [cursor, setCursor] = useState<TMessagesCursor | null>(null);
   const [hasMore, setHasMore] = useState(true);
 
@@ -202,34 +192,26 @@ const usePaginatedMessages = (
   };
 };
 
-// a channel or a thread (pass parentMessageId)
-export const useConversationMessages = (
-  channelId: number,
-  parentMessageId?: number
-) => {
-  const conversation = useMemo(
-    () => ({ channelId, parentMessageId }),
-    [channelId, parentMessageId]
-  );
-  const conversationKey = getConversationKey(conversation);
-  const messages = useMessagesByConversationKey(conversationKey);
+export const useMessages = (channelId: number) => {
+  const messages = useMessagesByChannelId(channelId);
   const inited = useRef(false);
   const detachedFromPresent = useSelector((state: IRootState) =>
-    isConversationDetachedSelector(state, conversationKey)
+    isChannelDetachedSelector(state, channelId)
   );
 
   const fetchPage = useCallback(
     async (cursorToFetch: TMessagesCursor | null) => {
-      const { messages: rawPage, nextCursor } = await fetchConversationPage(
-        conversation,
-        { cursor: cursorToFetch, limit: DEFAULT_MESSAGES_LIMIT }
-      );
+      const { messages: rawPage, nextCursor } = await fetchChannelMessagesPage({
+        channelId,
+        cursor: cursorToFetch,
+        limit: DEFAULT_MESSAGES_LIMIT
+      });
 
-      storeConversationMessages(conversation, rawPage);
+      storeChannelMessages(channelId, rawPage);
 
       return { nextCursor };
     },
-    [conversation]
+    [channelId]
   );
 
   const paginated = usePaginatedMessages(messages, fetchPage);
@@ -242,14 +224,14 @@ export const useConversationMessages = (
     inited.current = true;
   }, [paginated]);
 
-  useEffect(() => () => trimConversationMessages(conversation), [conversation]);
+  useEffect(() => () => trimChannelMessages(channelId), [channelId]);
 
   const { applyCursor } = paginated;
 
   const scrollToMessage = useCallback(
     async (messageId: number, highlightTime = 4000) => {
       // check if the message is already rendered in the messages container
-      const existing = findMessageElement(conversationKey, messageId);
+      const existing = findMessageElement(messageId);
 
       if (existing) {
         highlightMessageElement(existing, highlightTime);
@@ -261,7 +243,8 @@ export const useConversationMessages = (
         messages: rawPage,
         nextCursor,
         hasNewer
-      } = await fetchConversationPage(conversation, {
+      } = await fetchChannelMessagesPage({
+        channelId,
         cursor: null,
         limit: DEFAULT_MESSAGES_LIMIT,
         targetMessageId: messageId
@@ -271,36 +254,37 @@ export const useConversationMessages = (
         // the window stops short of the newest message, so merging it into the channel's
         // existing list would put a gap in the middle of what is rendered. replace instead and
         // let the banner offer the way back to the present
-        setConversationMessages(conversation, [...rawPage].reverse(), true);
+        setChannelMessages(channelId, [...rawPage].reverse(), true);
         applyCursor(nextCursor);
       } else if (detachedFromPresent) {
         // this window does reach the present, but the list it would merge into is an older
         // detached window, so merging splices two disjoint stretches of history together and
         // leaves the channel detached with no way back. replace and reattach instead
-        setConversationMessages(conversation, [...rawPage].reverse(), false);
+        setChannelMessages(channelId, [...rawPage].reverse(), false);
         applyCursor(nextCursor);
       } else {
-        storeConversationMessages(conversation, rawPage);
+        storeChannelMessages(channelId, rawPage);
       }
 
-      const element = await waitForMessageElement(conversationKey, messageId);
+      const element = await waitForMessageElement(messageId);
 
       if (element) {
         highlightMessageElement(element, highlightTime);
       }
     },
-    [conversation, conversationKey, applyCursor, detachedFromPresent]
+    [channelId, applyCursor, detachedFromPresent]
   );
 
   const returnToPresent = useCallback(async () => {
-    const { messages: rawPage, nextCursor } = await fetchConversationPage(
-      conversation,
-      { cursor: null, limit: DEFAULT_MESSAGES_LIMIT }
-    );
+    const { messages: rawPage, nextCursor } = await fetchChannelMessagesPage({
+      channelId,
+      cursor: null,
+      limit: DEFAULT_MESSAGES_LIMIT
+    });
 
-    setConversationMessages(conversation, [...rawPage].reverse(), false);
+    setChannelMessages(channelId, [...rawPage].reverse(), false);
     applyCursor(nextCursor);
-  }, [conversation, applyCursor]);
+  }, [channelId, applyCursor]);
 
   return {
     ...paginated,
@@ -310,39 +294,52 @@ export const useConversationMessages = (
   };
 };
 
-export const useParentMessage = (messageId: number, channelId: number) => {
-  const { t } = useTranslation('common');
-  const storedMessage = useSelector((state: IRootState) =>
-    parentMessageByIdSelector(state, messageId, channelId)
+export const useThreadMessagesByParentId = (parentMessageId: number) =>
+  useSelector((state: IRootState) =>
+    threadMessagesByParentIdSelector(state, parentMessageId)
   );
-  const [fetchedMessage, setFetchedMessage] = useState<TJoinedMessage>();
 
-  // the threads view opens a thread without loading its channel, so the parent is fetched
-  // on its own. it is not kept live, edits to it show once the thread is reopened
+export const useThreadMessages = (parentMessageId: number) => {
+  const messages = useThreadMessagesByParentId(parentMessageId);
+
+  const fetchPage = useCallback(
+    async (cursorToFetch: TMessagesCursor | null) => {
+      const trpcClient = getTRPCClient();
+
+      const { messages: page, nextCursor } =
+        await trpcClient.messages.getThread.query({
+          parentMessageId,
+          cursor: cursorToFetch,
+          limit: DEFAULT_MESSAGES_LIMIT
+        });
+
+      addThreadMessages(parentMessageId, page);
+
+      return { nextCursor };
+    },
+    [parentMessageId]
+  );
+
+  const paginated = usePaginatedMessages(messages, fetchPage, {
+    initialLoading: true
+  });
+
+  // fetch fresh data every time the thread is opened
   useEffect(() => {
-    if (storedMessage) return;
+    clearThreadMessages(parentMessageId);
+    paginated.reset();
+    paginated.fetchMessages(null);
+  }, [parentMessageId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    let cancelled = false;
-
-    const fetchParentMessage = async () => {
-      try {
-        const trpc = getTRPCClient();
-        const message = await trpc.messages.getOne.query({ messageId });
-
-        if (!cancelled) setFetchedMessage(message);
-      } catch (error) {
-        toast.error(getTrpcError(error, t('failedLoadParentMessage')));
-      }
-    };
-
-    fetchParentMessage();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [storedMessage, messageId, t]);
-
-  if (storedMessage) return storedMessage;
-
-  return fetchedMessage?.id === messageId ? fetchedMessage : undefined;
+  return paginated;
 };
+
+export const useParentMessage = (
+  messageId: number | undefined,
+  channelId: number | undefined
+) =>
+  useSelector((state: IRootState) =>
+    messageId && channelId
+      ? parentMessageByIdSelector(state, messageId, channelId)
+      : undefined
+  );

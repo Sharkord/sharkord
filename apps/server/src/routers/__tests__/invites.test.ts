@@ -1,9 +1,5 @@
-import { OWNER_ROLE_ID, Permission } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { initTest } from '../../__tests__/helpers';
-import { tdb } from '../../__tests__/setup';
-import { invites, rolePermissions } from '../../db/schema';
-import { eventBus } from '../../plugins/event-bus';
 
 describe('invites router', () => {
   test('should throw when user lacks permissions (getAll)', async () => {
@@ -244,89 +240,5 @@ describe('invites router', () => {
 
     expect(inviteWithoutRole).toBeDefined();
     expect(inviteWithoutRole!.role).toBeNull();
-  });
-
-  test('should announce a new invite to plugins', async () => {
-    const { caller } = await initTest();
-    const seen: unknown[] = [];
-
-    const unregister = eventBus.register(
-      'test-plugin',
-      'invite:created',
-      (payload) => {
-        seen.push(payload);
-      }
-    );
-
-    const invite = await caller.invites.add({ code: 'announced', roleId: 4 });
-
-    await Bun.sleep(0);
-    unregister();
-
-    expect(seen).toEqual([
-      { inviteId: invite.id, code: 'announced', creatorId: 1, roleId: 4 }
-    ]);
-  });
-
-  // an invite hands its role to whoever registers with it, so attaching one is
-  // held to the rules of assigning it
-  describe('invite roles', () => {
-    const GUEST_ROLE_ID = 3;
-    const MODERATOR_ROLE_ID = 4;
-    const MODERATOR_USER_ID = 5;
-
-    const grant = (roleId: number, permission: Permission) =>
-      tdb.insert(rolePermissions).values({
-        roleId,
-        permission,
-        createdAt: Date.now()
-      });
-
-    test('should let the owner create an invite for the owner role', async () => {
-      const { caller } = await initTest();
-
-      const invite = await caller.invites.add({ roleId: OWNER_ROLE_ID });
-
-      expect(invite.roleId).toBe(OWNER_ROLE_ID);
-    });
-
-    test('should refuse the owner role to anyone else who manages invites', async () => {
-      await grant(MODERATOR_ROLE_ID, Permission.MANAGE_INVITES);
-
-      const { caller } = await initTest(MODERATOR_USER_ID);
-
-      await expect(
-        caller.invites.add({ roleId: OWNER_ROLE_ID })
-      ).rejects.toThrow(
-        'Only users with the owner role can assign the owner role'
-      );
-
-      expect(await tdb.select().from(invites)).toHaveLength(0);
-    });
-
-    test('should refuse a role with permissions the creator lacks', async () => {
-      await grant(MODERATOR_ROLE_ID, Permission.MANAGE_INVITES);
-      await grant(GUEST_ROLE_ID, Permission.MANAGE_PLUGINS);
-
-      const { caller } = await initTest(MODERATOR_USER_ID);
-
-      await expect(
-        caller.invites.add({ roleId: GUEST_ROLE_ID })
-      ).rejects.toThrow(
-        'You cannot create an invite for a role with permissions that you do not have.'
-      );
-
-      expect(await tdb.select().from(invites)).toHaveLength(0);
-    });
-
-    test('should allow a role whose permissions the creator holds', async () => {
-      await grant(MODERATOR_ROLE_ID, Permission.MANAGE_INVITES);
-
-      const { caller } = await initTest(MODERATOR_USER_ID);
-
-      const invite = await caller.invites.add({ roleId: MODERATOR_ROLE_ID });
-
-      expect(invite.roleId).toBe(MODERATOR_ROLE_ID);
-    });
   });
 });

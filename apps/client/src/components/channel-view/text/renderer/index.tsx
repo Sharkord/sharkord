@@ -1,5 +1,4 @@
 import { ErrorBoundary } from '@/components/error-boundary';
-import { PluginMessageComponents } from '@/components/plugin-message-components';
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { RelativeTime } from '@/components/relative-time';
 import { requestConfirmation } from '@/features/dialogs/actions';
@@ -31,16 +30,10 @@ type TMessageRendererProps = {
   message: TJoinedMessage;
   disableFiles?: boolean;
   disableReactions?: boolean;
-  disablePluginComponents?: boolean;
 };
 
 const MessageRenderer = memo(
-  ({
-    message,
-    disableFiles,
-    disableReactions,
-    disablePluginComponents
-  }: TMessageRendererProps) => {
+  ({ message, disableFiles, disableReactions }: TMessageRendererProps) => {
     const { t } = useTranslation();
     const ownUserId = useOwnUserId();
     const editedByUser = useUserById(message.editedBy ?? -1);
@@ -136,17 +129,6 @@ const MessageRenderer = memo(
             </Tooltip>
           )}
         </div>
-
-        {message.pluginId &&
-          message.pluginComponents &&
-          !disablePluginComponents && (
-            <PluginMessageComponents
-              pluginId={message.pluginId}
-              messageId={message.id}
-              channelId={message.channelId}
-              components={message.pluginComponents}
-            />
-          )}
 
         {youtubeVideoIds.map((videoId) => (
           <YoutubeOverride key={videoId} videoId={videoId} />

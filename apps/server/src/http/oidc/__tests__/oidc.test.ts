@@ -27,9 +27,7 @@ import {
   activityLog,
   channelReadStates,
   files,
-  invites,
   oidcTransactions,
-  roles,
   settings,
   userRoles,
   users
@@ -66,14 +64,8 @@ const getHandoffCode = (target: URL) =>
 
 // walks the redirects a browser would follow: our login route, the provider's authorization
 // endpoint, then back into our callback carrying the state cookie
-const runOidcFlow = async (
-  options: { cookie?: string; invite?: string } = {}
-) => {
-  const query = options.invite
-    ? `?invite=${encodeURIComponent(options.invite)}`
-    : '';
-
-  const loginResponse = await fetch(`${testsBaseUrl}/oidc/login${query}`, {
+const runOidcFlow = async (options: { cookie?: string } = {}) => {
+  const loginResponse = await fetch(`${testsBaseUrl}/oidc/login`, {
     redirect: 'manual'
   });
 
@@ -1098,128 +1090,6 @@ describe('registrations through the provider', () => {
       .all();
 
     expect(logs).toHaveLength(1);
-  });
-});
-
-describe('registrations through the provider with an invite', () => {
-  const getInviteUses = async () =>
-    (
-      await tdb
-        .select()
-        .from(invites)
-        .where(eq(invites.code, 'OIDCINVITE'))
-        .get()
-    )?.uses;
-
-  const getCreatedUser = () =>
-    tdb.select().from(users).where(eq(users.oidcSub, 'oidc-subject-1')).get();
-
-  test('should register and log the invite while new users are disabled', async () => {
-    await tdb.update(settings).set({ allowNewUsers: false });
-    await tdb.insert(invites).values({
-      code: 'OIDCINVITE',
-      creatorId: 1,
-      createdAt: Date.now()
-    });
-
-    const { error } = await runOidcFlow({ invite: 'OIDCINVITE' });
-
-    const created = await getCreatedUser();
-    const logs = await tdb
-      .select()
-      .from(activityLog)
-      .where(eq(activityLog.type, ActivityLogType.USED_INVITE))
-      .all();
-
-    expect(error).toBeNull();
-    expect(created).toBeDefined();
-    expect(await getInviteUses()).toBe(1);
-    expect(logs).toHaveLength(1);
-    expect(logs[0]!.userId).toBe(created!.id);
-  });
-
-  test('should assign the role the invite carries', async () => {
-    const guest = await tdb
-      .select()
-      .from(roles)
-      .where(eq(roles.name, 'Guest'))
-      .get();
-
-    await tdb.update(settings).set({ allowNewUsers: false });
-    await tdb.insert(invites).values({
-      code: 'OIDCINVITE',
-      creatorId: 1,
-      roleId: guest!.id,
-      createdAt: Date.now()
-    });
-
-    await runOidcFlow({ invite: 'OIDCINVITE' });
-
-    const created = await getCreatedUser();
-    const assigned = await tdb
-      .select()
-      .from(userRoles)
-      .where(eq(userRoles.userId, created!.id))
-      .all();
-
-    expect(assigned.map((row) => row.roleId)).toContain(guest!.id);
-  });
-
-  test('should refuse an expired invite while new users are disabled', async () => {
-    await tdb.update(settings).set({ allowNewUsers: false });
-    await tdb.insert(invites).values({
-      code: 'OIDCINVITE',
-      creatorId: 1,
-      expiresAt: Date.now() - 1000,
-      createdAt: Date.now()
-    });
-
-    const { error } = await runOidcFlow({ invite: 'OIDCINVITE' });
-
-    expect(error).toBe(OidcError.REGISTRATION_CLOSED);
-    expect(await getCreatedUser()).toBeUndefined();
-    expect(await getInviteUses()).toBe(0);
-  });
-
-  test('should still consume a valid invite while new users are enabled', async () => {
-    await tdb.insert(invites).values({
-      code: 'OIDCINVITE',
-      creatorId: 1,
-      createdAt: Date.now()
-    });
-
-    const { error } = await runOidcFlow({ invite: 'OIDCINVITE' });
-
-    expect(error).toBeNull();
-    expect(await getInviteUses()).toBe(1);
-  });
-
-  test('should not consume an invite when signing in to an existing account', async () => {
-    await signIn();
-    await tdb.insert(invites).values({
-      code: 'OIDCINVITE',
-      creatorId: 1,
-      createdAt: Date.now()
-    });
-
-    const { error } = await runOidcFlow({ invite: 'OIDCINVITE' });
-
-    expect(error).toBeNull();
-    expect(await getInviteUses()).toBe(0);
-  });
-
-  test('should keep a code that is not a valid invite code out of the state cookie', async () => {
-    for (const invite of ['code;Domain=evil.example', 'a'.repeat(65)]) {
-      const response = await fetch(
-        `${testsBaseUrl}/oidc/login?invite=${encodeURIComponent(invite)}`,
-        { redirect: 'manual' }
-      );
-
-      const [setCookie] = response.headers.getSetCookie();
-
-      expect(setCookie).not.toContain('evil.example');
-      expect(getStateCookie(response).split('=')[1]).toBe('1');
-    }
   });
 });
 

@@ -1,11 +1,8 @@
 import type {
   TBeforeChannelCreateHook,
-  TBeforeChannelDeleteHook,
   TBeforeFileSaveHook,
   TBeforeLoginHook,
   TBeforeMessageSaveHook,
-  TBeforeProfileUpdateHook,
-  TBeforeReactionHook,
   TBeforeVoiceJoinHook
 } from '@sharkord/shared';
 import { HOOK_EXECUTION_TIMEOUT_MS, withTimeout } from './execution-timeout';
@@ -16,9 +13,6 @@ type THookHandlers = {
   beforeChannelCreate: TBeforeChannelCreateHook;
   beforeVoiceJoin: TBeforeVoiceJoinHook;
   beforeLogin: TBeforeLoginHook;
-  beforeReaction: TBeforeReactionHook;
-  beforeProfileUpdate: TBeforeProfileUpdateHook;
-  beforeChannelDelete: TBeforeChannelDeleteHook;
 };
 
 type THookName = keyof THookHandlers;

@@ -1,7 +1,5 @@
 import type { IRootState } from '@/features/store';
-import type { TConversationKey } from '@/types';
 import { createCachedSelector } from 're-reselect';
-import { getConversationKey } from '../helpers';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const DEFAULT_ARRAY: any[] = [];
@@ -11,16 +9,21 @@ export const messagesMapSelector = (state: IRootState) =>
 
 export const typingMapSelector = (state: IRootState) => state.server.typingMap;
 
-export const messagesByConversationKeySelector = (
-  state: IRootState,
-  conversationKey: TConversationKey
-) => state.server.messagesMap[conversationKey] || DEFAULT_ARRAY;
-
 export const messagesByChannelIdSelector = (
   state: IRootState,
   channelId: number
-) =>
-  messagesByConversationKeySelector(state, getConversationKey({ channelId }));
+) => state.server.messagesMap[channelId] || DEFAULT_ARRAY;
+
+export const threadMessagesMapSelector = (state: IRootState) =>
+  state.server.threadMessagesMap;
+
+export const threadMessagesByParentIdSelector = (
+  state: IRootState,
+  parentMessageId: number
+) => state.server.threadMessagesMap[parentMessageId] || DEFAULT_ARRAY;
+
+export const threadTypingMapSelector = (state: IRootState) =>
+  state.server.threadTypingMap;
 
 export const parentMessageByIdSelector = createCachedSelector(
   [
@@ -31,7 +34,7 @@ export const parentMessageByIdSelector = createCachedSelector(
   (messages, messageId) => messages.find((m) => m.id === messageId)
 )((_, messageId: number) => messageId);
 
-export const isConversationDetachedSelector = (
+export const isChannelDetachedSelector = (
   state: IRootState,
-  conversationKey: TConversationKey
-) => !!state.server.detachedConversations[conversationKey];
+  channelId: number
+) => !!state.server.detachedChannels[channelId];

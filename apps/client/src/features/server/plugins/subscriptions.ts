@@ -6,8 +6,7 @@ import {
   setPluginCapabilityAccess,
   setPluginCommands,
   setPluginComponents,
-  setPluginsMetadata,
-  showPluginEphemeralResponse
+  setPluginsMetadata
 } from './actions';
 import { dispatchPluginPush } from './push-registry';
 
@@ -66,22 +65,8 @@ const subscribeToPlugins = () => {
     onError: handleSubscriptionError('onPush')
   });
 
-  const onEphemeralResponseSub = trpc.plugins.onEphemeralResponse.subscribe(
-    undefined,
-    {
-      onData: (data) => {
-        logDebug('[EVENTS] plugins.onEphemeralResponse', {
-          pluginId: data.pluginId
-        });
-        showPluginEphemeralResponse(data);
-      },
-      onError: handleSubscriptionError('onEphemeralResponse')
-    }
-  );
-
   return () => {
     onCapabilityAccessChangeSub.unsubscribe();
-    onEphemeralResponseSub.unsubscribe();
     onPushSub.unsubscribe();
     onCommandsChangeSub.unsubscribe();
     onComponentsChangeSub.unsubscribe();

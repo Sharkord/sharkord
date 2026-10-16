@@ -1,1 +1,0 @@
-ALTER TABLE `messages` ADD `plugin_components` text;

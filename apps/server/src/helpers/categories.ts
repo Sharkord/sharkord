@@ -8,7 +8,6 @@ import { eventBus } from '../plugins/event-bus';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { VoiceRuntime } from '../runtimes/voice';
 import { invariant } from '../utils/invariant';
-import { runBeforeChannelDeleteHook } from './channels';
 
 const zCategoryName = z.string().min(1).max(32);
 
@@ -92,13 +91,9 @@ const updateCategory = async (
 const deleteCategory = async (categoryId: number, userId: number | null) => {
   // the rows cascade, but the clients and the voice runtimes do not
   const categoryChannels = await db
-    .select({ id: channels.id, name: channels.name, type: channels.type })
+    .select({ id: channels.id })
     .from(channels)
     .where(eq(channels.categoryId, categoryId));
-
-  for (const channel of categoryChannels) {
-    await runBeforeChannelDeleteHook(channel, userId);
-  }
 
   const removedCategory = await db
     .delete(categories)

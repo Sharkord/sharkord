@@ -9,11 +9,8 @@ import {
   MessageSaveType,
   Permission,
   PluginCapabilityType,
-  ServerEvents,
   STORAGE_MAX_FILES_PER_MESSAGE,
-  stringifyCommandResponse,
-  toDomCommand,
-  type TPluginEphemeralResponse
+  toDomCommand
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -29,7 +26,6 @@ import { parseCommandArgs } from '../../helpers/parse-command-args';
 import { canUseCapability } from '../../helpers/plugin-capability-access';
 import { runBeforeMessageSaveHooks } from '../../helpers/run-before-message-save-hooks';
 import { sanitizeMessageHtml } from '../../helpers/sanitize-html';
-import { followThreadOnReply } from '../../helpers/threads';
 import { logger } from '../../logger';
 import { pluginManager } from '../../plugins';
 import { eventBus } from '../../plugins/event-bus';
@@ -192,66 +188,9 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
         if (canRunCommand) {
           const argsObject: Record<string, unknown> = {};
 
-          // an empty token holds the place of an argument left blank, so the
-          // ones after it keep their position
           foundCommand.args?.forEach((argDef, index) => {
-            const value = args[index];
-
-            if (value !== undefined && value !== '') {
-              argsObject[argDef.name] = value;
-            }
+            if (index < args.length) argsObject[argDef.name] = args[index];
           });
-
-          const logCommandRun = () => {
-            enqueueActivityLog({
-              type: ActivityLogType.EXECUTED_PLUGIN_COMMAND,
-              userId: ctx.user.id,
-              details: {
-                pluginId: foundCommand.pluginId,
-                commandName: foundCommand.name,
-                args: argsObject
-              }
-            });
-          };
-
-          // nothing is stored, so the answer goes to the invoker alone
-          if (foundCommand.command.ephemeral) {
-            const publishResponse = (
-              status: TPluginEphemeralResponse['status'],
-              response: unknown
-            ) => {
-              ctx.pubsub.publishFor(
-                ctx.user.id,
-                ServerEvents.PLUGIN_EPHEMERAL_RESPONSE,
-                {
-                  pluginId: foundCommand.pluginId,
-                  commandName: foundCommand.name,
-                  channelId: input.channelId,
-                  status,
-                  response: stringifyCommandResponse(response)
-                }
-              );
-            };
-
-            pluginManager
-              .executeCommand(
-                foundCommand.pluginId,
-                foundCommand.name,
-                getInvokerCtxFromTrpcCtx(ctx, {
-                  source: 'chat',
-                  channelId: input.channelId,
-                  parentMessageId: input.parentMessageId
-                }),
-                argsObject
-              )
-              .then((response) => publishResponse('completed', response))
-              .catch((error) =>
-                publishResponse('failed', error?.message || 'Unknown error')
-              )
-              .finally(logCommandRun);
-
-            return null;
-          }
 
           const pluginLogo = pluginManager.getPluginLogo(foundCommand.pluginId);
 
@@ -313,7 +252,17 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
                   getErrorMessage(error)
                 )
               )
-              .finally(logCommandRun);
+              .finally(() => {
+                enqueueActivityLog({
+                  type: ActivityLogType.EXECUTED_PLUGIN_COMMAND,
+                  userId: ctx.user.id,
+                  details: {
+                    pluginId: foundCommand.pluginId,
+                    commandName: foundCommand.name,
+                    args: argsObject
+                  }
+                });
+              });
           };
         }
       }
@@ -363,13 +312,6 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
 
     commandExecutor?.(message.id);
 
-    if (message.parentMessageId) {
-      await followThreadOnReply({
-        ...message,
-        parentMessageId: message.parentMessageId
-      });
-    }
-
     publishMessage(message.id, input.channelId, 'create');
 
     if (input.parentMessageId) {
@@ -384,10 +326,7 @@ const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
       userId: ctx.userId,
       pluginId: null,
       content: targetContent,
-      textContent: plainText,
-      parentMessageId: message.parentMessageId,
-      replyToMessageId: message.replyToMessageId,
-      fileIds: savedFileIds
+      textContent: plainText
     });
 
     return message.id;

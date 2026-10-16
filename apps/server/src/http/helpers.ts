@@ -105,18 +105,13 @@ const enforceHttpRateLimit = (
     `[Rate Limiter HTTP] ${options.route} rate limited for key "${key}"`
   );
 
-  sendTooManyRequests(res, rateLimit.retryAfterMs, options.message);
+  res.setHeader(
+    'Retry-After',
+    getRateLimitRetrySeconds(rateLimit.retryAfterMs)
+  );
+  sendJsonError(res, 429, options.message);
 
   return false;
-};
-
-const sendTooManyRequests = (
-  res: http.ServerResponse,
-  retryAfterMs: number,
-  message: string
-) => {
-  res.setHeader('Retry-After', getRateLimitRetrySeconds(retryAfterMs));
-  sendJsonError(res, 429, message);
 };
 
 const applyCorsHeaders = (
@@ -534,7 +529,6 @@ export {
   sendJsonError,
   sendJsonFieldErrors,
   sendNotModified,
-  sendTooManyRequests,
   supportedHttpMethods
 };
 export type { HttpRouteHandler, TSupportedHttpMethod };

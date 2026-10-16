@@ -32,17 +32,11 @@ const MessageReplyPreviewWrapper = memo(
 
       setMessageJumpTarget({
         channelId: message.channelId,
-        parentMessageId: message.parentMessageId ?? undefined,
         messageId: message.replyToMessageId,
         isDm: !!channel?.isDm,
         highlightTime: 2000
       });
-    }, [
-      message.replyToMessageId,
-      message.channelId,
-      message.parentMessageId,
-      channel?.isDm
-    ]);
+    }, [message.replyToMessageId, message.channelId, channel?.isDm]);
 
     const replyTargetAuthorName = useMemo(() => {
       if (replyTargetPlugin) {

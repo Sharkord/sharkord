@@ -47,6 +47,7 @@
   "failedReorderCategories": "Failed to reorder categories",
   "failedMoveUser": "Failed to move user",
   "directMessages": "Direct Messages",
+  "failedLoadDMs": "Failed to load direct messages",
   "couldNotOpenDM": "Could not open direct message",
   "noDMsYet": "No direct messages yet",
   "startNewConversation": "Start new conversation",
@@ -76,13 +77,5 @@
   "microphone": "Microphone",
   "noiseSuppression": "Noise suppression",
   "muteChannel": "Mute Channel",
-  "unmuteChannel": "Unmute Channel",
-  "threads": "Threads",
-  "openThreads": "Open Threads",
-  "closeThreads": "Close Threads",
-  "noFollowedThreads": "Threads you follow will show up here",
-  "failedLoadThreads": "Failed to load threads",
-  "loadMoreThreads": "Load more",
-  "closeConversation": "Close conversation",
-  "couldNotCloseDM": "Could not close direct message"
+  "unmuteChannel": "Unmute Channel"
 }

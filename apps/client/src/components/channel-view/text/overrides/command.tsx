@@ -1,4 +1,3 @@
-import { usePluginMetadata } from '@/features/server/plugins/hooks';
 import { type TParsedDomCommand } from '@sharkord/shared';
 import {
   CheckCircle2,
@@ -8,29 +7,27 @@ import {
   Terminal,
   XCircle
 } from 'lucide-react';
-import { memo, useCallback, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { memo, useCallback, useState } from 'react';
 import { OverrideLayout } from './layout';
 
 type TCommandOverrideProps = {
   command: TParsedDomCommand;
 };
 
-const formatValue = (value: unknown): string =>
-  typeof value === 'string' ? value : JSON.stringify(value);
-
-const isFilled = (value: unknown) =>
-  value !== undefined && value !== null && value !== '';
-
 const CommandOverride = memo(({ command }: TCommandOverrideProps) => {
-  const { t } = useTranslation('common');
   const [isExpanded, setIsExpanded] = useState(false);
-  const pluginMetadata = usePluginMetadata(command.pluginId);
 
-  const filledArgs = useMemo(
-    () => command.args.filter((arg) => isFilled(arg.value)),
-    [command.args]
-  );
+  const formatValue = useCallback((value: unknown): string => {
+    if (value === undefined || value === null || value === '') {
+      return 'undefined';
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    return JSON.stringify(value);
+  }, []);
 
   const toggleExpanded = useCallback(
     () => setIsExpanded((expanded) => !expanded),
@@ -54,14 +51,14 @@ const CommandOverride = memo(({ command }: TCommandOverrideProps) => {
   const getStatusText = useCallback(() => {
     switch (command.status) {
       case 'completed':
-        return t('commandStatusCompleted');
+        return 'Completed';
       case 'failed':
-        return t('commandStatusFailed');
+        return 'Failed';
       case 'pending':
       default:
-        return t('commandStatusPending');
+        return 'Pending';
     }
-  }, [command.status, t]);
+  }, [command.status]);
 
   return (
     <OverrideLayout>
@@ -92,12 +89,12 @@ const CommandOverride = memo(({ command }: TCommandOverrideProps) => {
           </div>
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {pluginMetadata?.name ?? command.pluginId}
+            {command.pluginId}
           </div>
 
-          {filledArgs.length > 0 && (
+          {command.args.length > 0 && (
             <div className="mt-0.5 flex flex-col gap-1 rounded-md bg-background/50 px-2 py-1.5">
-              {filledArgs.map((arg, index) => (
+              {command.args.map((arg, index) => (
                 <div key={index} className="flex items-baseline gap-2">
                   <span className="shrink-0 text-xs font-medium text-muted-foreground">
                     {arg.name}:
@@ -122,7 +119,7 @@ const CommandOverride = memo(({ command }: TCommandOverrideProps) => {
                   <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
                 )}
                 <span className="text-xs font-medium text-muted-foreground">
-                  {t('commandResponse')}
+                  Response
                 </span>
               </button>
 

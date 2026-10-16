@@ -47,11 +47,6 @@ export enum ScreenCursor {
   NEVER = 'never'
 }
 
-export enum MicMode {
-  OPEN = 'open',
-  PUSH_TO_TALK = 'push-to-talk'
-}
-
 export enum NoiseSuppression {
   NONE = 'none',
   STANDARD = 'standard',
@@ -97,18 +92,8 @@ export type TRemoteStreams = {
   };
 };
 
-export type TConversation = {
-  channelId: number;
-  parentMessageId?: number;
-};
-
-export type TConversationKey = `channel:${number}` | `thread:${number}`;
-
-export type TThreadTarget = Required<TConversation>;
-
 export type TMessageJumpToTarget = {
   channelId: number;
-  parentMessageId?: number;
   messageId: number;
   isDm: boolean;
   highlightTime?: number;
