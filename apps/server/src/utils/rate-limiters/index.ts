@@ -1,3 +1,4 @@
+import { config } from '../../config';
 import { IS_DEVELOPMENT, IS_TEST } from '../env';
 
 type TFixedWindowRateLimiterOptions = {
@@ -21,7 +22,9 @@ type TRateLimitEntry = {
 const EVICTION_RATIO = 0.1;
 
 const isRateLimitingBypassed = () =>
-  (IS_DEVELOPMENT && !IS_TEST) || (IS_TEST && !!globalThis.disableRateLimiting);
+  !config.rateLimiters.enabled ||
+  (IS_DEVELOPMENT && !IS_TEST) ||
+  (IS_TEST && !!globalThis.disableRateLimiting);
 
 // this is a pretty basic implementation of a fixed window rate limiter, but for now it's better than nothing
 class FixedWindowRateLimiter {
