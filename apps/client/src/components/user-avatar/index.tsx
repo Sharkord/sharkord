@@ -1,12 +1,11 @@
 import { useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
-import { getInitialsFromName } from '@/helpers/get-initials-from-name';
-import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { cn } from '@/lib/utils';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import { UserStatus } from '@sharkord/shared';
 import { Avatar, AvatarFallback } from '@sharkord/ui';
-import { memo } from 'react';
+import { blobatarUri } from 'blobatar/uri';
+import { memo, useMemo } from 'react';
 import { UserPopover } from '../user-popover';
 import { UserStatusBadge } from '../user-status';
 
@@ -27,6 +26,13 @@ const UserAvatar = memo(
     onClick
   }: TUserAvatarProps) => {
     const user = useUserById(userId);
+    const fallbackSrc = useMemo(
+      () =>
+        userId === null
+          ? undefined
+          : blobatarUri(String(userId), { background: false }),
+      [userId]
+    );
 
     if (!user) return null;
 
@@ -34,8 +40,8 @@ const UserAvatar = memo(
       <div className="relative size-fit" onClick={onClick}>
         <Avatar className={cn('size-8 bg-muted', className)}>
           <AvatarImage src={getFileUrl(user.avatar)} key={user.avatarId} />
-          <AvatarFallback className="bg-muted text-xs">
-            {getInitialsFromName(getRenderedUsername(user))}
+          <AvatarFallback>
+            <img src={fallbackSrc} alt="" className="size-full" />
           </AvatarFallback>
         </Avatar>
         {showStatusBadge && (

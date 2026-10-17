@@ -1,16 +1,13 @@
+import { UserAvatar } from '@/components/user-avatar';
 import { useServerName } from '@/features/server/hooks';
 import { useOwnPublicUser } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
-import { getInitialsFromName } from '@/helpers/get-initials-from-name';
 import { uploadImage } from '@/helpers/upload-file';
 import { useFilePicker } from '@/hooks/use-file-picker';
 import { useForm } from '@/hooks/use-form';
 import { getTRPCClient } from '@/lib/trpc';
-import { AvatarImage } from '@radix-ui/react-avatar';
 import { DEFAULT_PROFILE_COLOR, getTrpcError } from '@sharkord/shared';
 import {
-  Avatar,
-  AvatarFallback,
   Button,
   Dialog,
   DialogContent,
@@ -124,8 +121,6 @@ const WelcomeProfileSetupDialog = memo(
 
     if (!ownPublicUser) return null;
 
-    const previewName = values.name.trim() || ownPublicUser.name;
-
     return (
       <Dialog open={isOpen}>
         <DialogContent close={close} className="max-w-lg">
@@ -187,15 +182,11 @@ const WelcomeProfileSetupDialog = memo(
                   className="relative group cursor-pointer w-20 h-20"
                   onClick={onAvatarClick}
                 >
-                  <Avatar className="h-20 w-20 rounded-full bg-muted border-4 border-card transition-opacity group-hover:opacity-40">
-                    <AvatarImage
-                      src={getFileUrl(ownPublicUser.avatar)}
-                      key={ownPublicUser.avatarId}
-                    />
-                    <AvatarFallback className="text-base">
-                      {getInitialsFromName(previewName)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    userId={ownPublicUser.id}
+                    showStatusBadge={false}
+                    className="h-20 w-20 rounded-full bg-muted border-4 border-card transition-opacity group-hover:opacity-40"
+                  />
 
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
                     <div className="bg-black/50 rounded-full p-2">
