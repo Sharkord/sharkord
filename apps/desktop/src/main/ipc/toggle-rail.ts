@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BridgeChannel } from '../../shared/bridge-channels';
 import { defineIpc } from './define-ipc';
-import { handleIpc } from './handle-ipc';
+import { anySender, handleIpc } from './handle-ipc';
 import type { TIpcContext } from './types';
 
 const toggleRailCall = defineIpc({
@@ -11,11 +11,13 @@ const toggleRailCall = defineIpc({
 });
 
 const registerToggleRail = ({ controller }: TIpcContext) => {
-  handleIpc(toggleRailCall, () => {
-    const { railVisible } = controller.getState();
-
-    controller.setRailHidden(railVisible);
-  });
+  handleIpc(
+    toggleRailCall,
+    () => {
+      controller.toggleRail();
+    },
+    anySender
+  );
 };
 
 export { registerToggleRail, toggleRailCall };

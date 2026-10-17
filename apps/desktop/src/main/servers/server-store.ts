@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
 import { dirname } from 'path';
 import type { TServer } from '../../shared/types';
 
@@ -45,8 +45,12 @@ const readStore = (filePath: string): TStore => {
 
 const writeStore = (filePath: string, store: TStore) => {
   mkdirSync(dirname(filePath), { recursive: true });
-  writeFileSync(filePath, JSON.stringify(store, null, 2));
+
+  // renamed into place so a crash mid-write cannot leave a corrupt file behind
+  const tempPath = `${filePath}.tmp`;
+
+  writeFileSync(tempPath, JSON.stringify(store, null, 2));
+  renameSync(tempPath, filePath);
 };
 
 export { readStore, writeStore };
-export type { TStore };

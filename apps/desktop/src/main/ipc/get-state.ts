@@ -11,8 +11,8 @@ const getStateCall = defineIpc({
   result: z.custom<TServersState>()
 });
 
-const registerGetState = ({ controller }: TIpcContext) => {
-  handleIpc(getStateCall, () => controller.getState());
+const registerGetState = ({ controller, isShell }: TIpcContext) => {
+  handleIpc(getStateCall, () => controller.getState(), isShell);
 };
 
 export { getStateCall, registerGetState };

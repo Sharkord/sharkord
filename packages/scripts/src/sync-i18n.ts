@@ -34,38 +34,22 @@ const missingTranslationsReport: {
   }[];
 }[] = [];
 
-for (const i18nPath of i18nPaths) {
+const checkApp = async (i18nPath: string) => {
   const i18nLocalesPath = path.join(i18nPath, 'locales');
   const enLocalePath = path.join(i18nLocalesPath, 'en');
   const app = path.relative(projectRoot, i18nPath);
 
-  const otherLocales: string[] = [];
-
   const entries = await fs.readdir(i18nLocalesPath, { withFileTypes: true });
 
-  for (const entry of entries) {
-    if (entry.isDirectory() && entry.name !== 'en') {
-      otherLocales.push(entry.name);
-    }
-  }
+  const otherLocales = entries
+    .filter((entry) => entry.isDirectory() && entry.name !== 'en')
+    .map((entry) => entry.name);
 
   const glob = new Glob(`${enLocalePath}/*.json`);
 
-  const enFiles: {
-    name: string;
-    path: string;
-  }[] = [];
-
-  for await (const file of glob.scan('.')) {
-    enFiles.push({
-      name: path.basename(file, '.json'),
-      path: file
-    });
-  }
-
-  for (const { name, path: filePath } of enFiles) {
-    const content = await Bun.file(filePath).json();
-    const flattenedContent = flatten(content);
+  for await (const filePath of glob.scan('.')) {
+    const name = path.basename(filePath, '.json');
+    const flattenedContent = flatten(await Bun.file(filePath).json());
 
     for (const locale of otherLocales) {
       const otherLocaleFilePath = path.join(
@@ -94,6 +78,10 @@ for (const i18nPath of i18nPaths) {
       }
     }
   }
+};
+
+for (const i18nPath of i18nPaths) {
+  await checkApp(i18nPath);
 }
 
 if (missingTranslationsReport.length > 0) {

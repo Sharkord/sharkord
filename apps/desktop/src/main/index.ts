@@ -54,9 +54,17 @@ const start = () => {
   );
 
   const requestRemove = (server: TServer) =>
-    confirmRemoveServer(win, controller, views, server);
+    confirmRemoveServer(win, controller, server);
 
-  registerIpc({ controller, requestRemove });
+  registerIpc({
+    controller,
+    requestRemove,
+    shellContents: shellView.webContents
+  });
+
+  shellView.webContents.on('did-start-loading', () => {
+    controller.setOverlay(false);
+  });
 
   controller.sync();
 

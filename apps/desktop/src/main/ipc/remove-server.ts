@@ -10,15 +10,23 @@ const removeServerCall = defineIpc({
   result: z.void()
 });
 
-const registerRemoveServer = ({ controller, requestRemove }: TIpcContext) => {
-  handleIpc(removeServerCall, async (id) => {
-    const { servers } = controller.getState();
-    const server = servers.find((candidate) => candidate.id === id);
+const registerRemoveServer = ({
+  controller,
+  requestRemove,
+  isShell
+}: TIpcContext) => {
+  handleIpc(
+    removeServerCall,
+    async (id) => {
+      const { servers } = controller.getState();
+      const server = servers.find((candidate) => candidate.id === id);
 
-    if (server) {
-      await requestRemove(server);
-    }
-  });
+      if (server) {
+        await requestRemove(server);
+      }
+    },
+    isShell
+  );
 };
 
 export { registerRemoveServer, removeServerCall };

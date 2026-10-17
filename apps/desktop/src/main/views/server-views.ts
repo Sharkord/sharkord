@@ -1,5 +1,6 @@
 import type { TDesktopConfirmOptions } from '@sharkord/shared';
 import {
+  desktopCapturer,
   ipcMain,
   session,
   shell,
@@ -19,6 +20,7 @@ type TLayout = {
 
 const ALLOWED_PERMISSIONS = new Set([
   'media',
+  'display-capture',
   'notifications',
   'fullscreen',
   'clipboard-sanitized-write'
@@ -97,6 +99,18 @@ const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
         isSameOrigin(requestingOrigin, contents.getURL())
     );
 
+    serverSession.setDisplayMediaRequestHandler(
+      async (_request, callback) => {
+        const sources = await desktopCapturer.getSources({
+          types: ['screen', 'window']
+        });
+        const [source] = sources;
+
+        callback(source ? { video: source } : {});
+      },
+      { useSystemPicker: true }
+    );
+
     const view = new WebContentsView({
       webPreferences: {
         session: serverSession,
@@ -111,6 +125,15 @@ const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
       openExternal(url);
 
       return { action: 'deny' };
+    });
+
+    view.webContents.on('will-navigate', (event, url) => {
+      if (isSameOrigin(url, view.webContents.getURL())) {
+        return;
+      }
+
+      event.preventDefault();
+      openExternal(url);
     });
 
     win.contentView.addChildView(view);
@@ -171,6 +194,13 @@ const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
   const setLayout = (next: TLayout) => {
     const wasFull = layoutState.fullShell;
 
+    if (
+      next.railVisible === layoutState.railVisible &&
+      next.fullShell === layoutState.fullShell
+    ) {
+      return;
+    }
+
     layoutState = next;
     layout();
 
@@ -205,25 +235,50 @@ const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
         return;
       }
 
+      const { webContents } = view;
+
       nextRequestId += 1;
 
       const requestId = nextRequestId;
+
+      const finish = (answer: boolean | null) => {
+        ipcMain.removeListener(BridgeChannel.CONFIRM_RESPONSE, onResponse);
+
+        webContents.removeListener('destroyed', onGone);
+        webContents.removeListener('render-process-gone', onGone);
+        webContents.removeListener('did-start-navigation', onNavigate);
+
+        resolve(answer);
+      };
+
+      const onGone = () => finish(null);
+
+      const onNavigate = (
+        _event: unknown,
+        _url: string,
+        _isInPlace: boolean,
+        isMainFrame: boolean
+      ) => {
+        if (isMainFrame) {
+          finish(null);
+        }
+      };
 
       const onResponse = (
         event: IpcMainEvent,
         responseId: number,
         answer: boolean | null
       ) => {
-        if (responseId !== requestId || event.sender !== view.webContents) {
-          return;
+        if (responseId === requestId && event.sender === webContents) {
+          finish(answer);
         }
-
-        ipcMain.removeListener(BridgeChannel.CONFIRM_RESPONSE, onResponse);
-        resolve(answer);
       };
 
       ipcMain.on(BridgeChannel.CONFIRM_RESPONSE, onResponse);
-      view.webContents.send(BridgeChannel.CONFIRM_REQUEST, requestId, options);
+      webContents.once('destroyed', onGone);
+      webContents.once('render-process-gone', onGone);
+      webContents.on('did-start-navigation', onNavigate);
+      webContents.send(BridgeChannel.CONFIRM_REQUEST, requestId, options);
     });
   };
 

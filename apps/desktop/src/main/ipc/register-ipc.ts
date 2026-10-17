@@ -1,3 +1,4 @@
+import type { WebContents } from 'electron';
 import { registerAddServer } from './add-server';
 import { registerGetRailVisible } from './get-rail-visible';
 import { registerGetState } from './get-state';
@@ -9,7 +10,16 @@ import { registerSetRailHidden } from './set-rail-hidden';
 import { registerToggleRail } from './toggle-rail';
 import type { TIpcContext } from './types';
 
-const registerIpc = (context: TIpcContext) => {
+type TRegisterIpcOptions = Omit<TIpcContext, 'isShell'> & {
+  shellContents: WebContents;
+};
+
+const registerIpc = ({ shellContents, ...rest }: TRegisterIpcOptions) => {
+  const context: TIpcContext = {
+    ...rest,
+    isShell: (sender) => sender === shellContents
+  };
+
   registerGetState(context);
   registerAddServer(context);
   registerSelectServer(context);

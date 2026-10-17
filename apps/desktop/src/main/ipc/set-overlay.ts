@@ -10,10 +10,14 @@ const setOverlayCall = defineIpc({
   result: z.void()
 });
 
-const registerSetOverlay = ({ controller }: TIpcContext) => {
-  handleIpc(setOverlayCall, (open) => {
-    controller.setOverlay(open);
-  });
+const registerSetOverlay = ({ controller, isShell }: TIpcContext) => {
+  handleIpc(
+    setOverlayCall,
+    (open) => {
+      controller.setOverlay(open);
+    },
+    isShell
+  );
 };
 
 export { registerSetOverlay, setOverlayCall };

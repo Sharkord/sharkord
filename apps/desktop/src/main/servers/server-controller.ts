@@ -1,3 +1,4 @@
+import type { TDesktopConfirmOptions } from '@sharkord/shared';
 import type {
   TAddServerError,
   TServer,
@@ -7,6 +8,11 @@ import type { TServerViews } from '../views/server-views';
 import { fetchServer } from './fetch-server';
 import { normalizeServerUrl } from './normalize-server-url';
 import { readStore, writeStore } from './server-store';
+
+const isSameServer = (first: TServer, second: TServer) =>
+  first.name === second.name &&
+  first.url === second.url &&
+  first.iconUrl === second.iconUrl;
 
 const createServerController = (
   filePath: string,
@@ -73,7 +79,23 @@ const createServerController = (
       }
     }
 
-    servers = servers.map((server) => latestById.get(server.id) ?? server);
+    let changed = false;
+
+    servers = servers.map((server) => {
+      const latest = latestById.get(server.id);
+
+      if (!latest || isSameServer(latest, server)) {
+        return server;
+      }
+
+      changed = true;
+
+      return latest;
+    });
+
+    if (!changed) {
+      return;
+    }
 
     save();
     sync();
@@ -109,6 +131,20 @@ const createServerController = (
 
     save();
     sync();
+  };
+
+  const toggleRail = () => {
+    setRailHidden(getState().railVisible);
+  };
+
+  const confirm = async (
+    options: TDesktopConfirmOptions
+  ): Promise<boolean | null> => {
+    if (!selectedId || adding) {
+      return null;
+    }
+
+    return views.requestConfirmation(selectedId, options);
   };
 
   const add = async (input: string): Promise<TAddServerError | null> => {
@@ -171,6 +207,8 @@ const createServerController = (
     setAdding,
     setOverlay,
     setRailHidden,
+    toggleRail,
+    confirm,
     add,
     remove
   };

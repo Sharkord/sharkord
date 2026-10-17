@@ -10,10 +10,14 @@ const setAddingCall = defineIpc({
   result: z.void()
 });
 
-const registerSetAdding = ({ controller }: TIpcContext) => {
-  handleIpc(setAddingCall, (adding) => {
-    controller.setAdding(adding);
-  });
+const registerSetAdding = ({ controller, isShell }: TIpcContext) => {
+  handleIpc(
+    setAddingCall,
+    (adding) => {
+      controller.setAdding(adding);
+    },
+    isShell
+  );
 };
 
 export { registerSetAdding, setAddingCall };

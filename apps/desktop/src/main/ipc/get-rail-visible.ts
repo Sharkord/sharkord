@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BridgeChannel } from '../../shared/bridge-channels';
 import { defineIpc } from './define-ipc';
-import { handleIpc } from './handle-ipc';
+import { anySender, handleIpc } from './handle-ipc';
 import type { TIpcContext } from './types';
 
 const getRailVisibleCall = defineIpc({
@@ -11,11 +11,15 @@ const getRailVisibleCall = defineIpc({
 });
 
 const registerGetRailVisible = ({ controller }: TIpcContext) => {
-  handleIpc(getRailVisibleCall, () => {
-    const { railVisible } = controller.getState();
+  handleIpc(
+    getRailVisibleCall,
+    () => {
+      const { railVisible } = controller.getState();
 
-    return railVisible;
-  });
+      return railVisible;
+    },
+    anySender
+  );
 };
 
 export { getRailVisibleCall, registerGetRailVisible };

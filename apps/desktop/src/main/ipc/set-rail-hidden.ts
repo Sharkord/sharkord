@@ -10,10 +10,14 @@ const setRailHiddenCall = defineIpc({
   result: z.void()
 });
 
-const registerSetRailHidden = ({ controller }: TIpcContext) => {
-  handleIpc(setRailHiddenCall, (hidden) => {
-    controller.setRailHidden(hidden);
-  });
+const registerSetRailHidden = ({ controller, isShell }: TIpcContext) => {
+  handleIpc(
+    setRailHiddenCall,
+    (hidden) => {
+      controller.setRailHidden(hidden);
+    },
+    isShell
+  );
 };
 
 export { registerSetRailHidden, setRailHiddenCall };

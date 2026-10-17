@@ -33,10 +33,15 @@ const AddServerForm = memo(({ canCancel, onCancel }: TAddServerFormProps) => {
 
     setBusy(true);
 
-    const result = await window.desktop.addServer(input);
+    try {
+      const result = await window.desktop.addServer(input);
 
-    setBusy(false);
-    setError(result);
+      setError(result);
+    } catch {
+      setError('unreachable');
+    } finally {
+      setBusy(false);
+    }
   }, [busy, input]);
 
   const errorMessage = error ? t(ERROR_KEYS[error]) : undefined;

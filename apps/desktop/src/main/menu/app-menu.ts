@@ -57,7 +57,7 @@ const buildServersMenu = ({
           : i18n.t('menu.showServerList'),
         accelerator: 'CmdOrCtrl+B',
         enabled: servers.length > 0,
-        click: () => controller.setRailHidden(railVisible)
+        click: () => controller.toggleRail()
       },
       {
         label: i18n.t('menu.removeCurrentServer'),

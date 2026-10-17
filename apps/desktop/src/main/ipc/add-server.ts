@@ -13,8 +13,8 @@ const addServerCall = defineIpc({
   result: z.custom<TAddServerError | null>()
 });
 
-const registerAddServer = ({ controller }: TIpcContext) => {
-  handleIpc(addServerCall, (input) => controller.add(input));
+const registerAddServer = ({ controller, isShell }: TIpcContext) => {
+  handleIpc(addServerCall, (input) => controller.add(input), isShell);
 };
 
 export { addServerCall, registerAddServer };

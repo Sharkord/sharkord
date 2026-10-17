@@ -33,6 +33,10 @@ const TopBar = memo(({ onToggleRightSidebar, isOpen }: TTopBarProps) => {
     isVisible: isServerListVisible,
     toggle: toggleServerList
   } = useDesktopServerList();
+  const ServerListIcon = isServerListVisible ? PanelLeftClose : PanelLeft;
+  const serverListLabel = isServerListVisible
+    ? t('closeServerList')
+    : t('openServerList');
 
   return (
     <div className="hidden lg:grid h-12 w-full grid-cols-[1fr_minmax(320px,1.4fr)_1fr] items-center border-b border-border bg-card px-4 transition-all duration-300 ease-in-out gap-2">
@@ -44,19 +48,11 @@ const TopBar = memo(({ onToggleRightSidebar, isOpen }: TTopBarProps) => {
             onClick={toggleServerList}
             className="h-7 px-2 transition-all duration-200 ease-in-out"
           >
-            {isServerListVisible ? (
-              <Tooltip content={t('closeServerList')}>
-                <div>
-                  <PanelLeftClose className="w-4 h-4 transition-transform duration-200 ease-in-out" />
-                </div>
-              </Tooltip>
-            ) : (
-              <Tooltip content={t('openServerList')}>
-                <div>
-                  <PanelLeft className="w-4 h-4 transition-transform duration-200 ease-in-out" />
-                </div>
-              </Tooltip>
-            )}
+            <Tooltip content={serverListLabel}>
+              <div>
+                <ServerListIcon className="w-4 h-4 transition-transform duration-200 ease-in-out" />
+              </div>
+            </Tooltip>
           </Button>
         )}
       </div>

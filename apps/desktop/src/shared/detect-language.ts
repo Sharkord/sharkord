@@ -2,7 +2,7 @@ import {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALES,
   type TLocale
-} from '@sharkord/shared/src/statics/supported-locales';
+} from '@sharkord/shared';
 
 const getLanguage = (locale: string) => {
   const [language] = locale.toLowerCase().split('-');

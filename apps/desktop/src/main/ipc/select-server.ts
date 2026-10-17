@@ -10,10 +10,14 @@ const selectServerCall = defineIpc({
   result: z.void()
 });
 
-const registerSelectServer = ({ controller }: TIpcContext) => {
-  handleIpc(selectServerCall, (id) => {
-    controller.select(id);
-  });
+const registerSelectServer = ({ controller, isShell }: TIpcContext) => {
+  handleIpc(
+    selectServerCall,
+    (id) => {
+      controller.select(id);
+    },
+    isShell
+  );
 };
 
 export { registerSelectServer, selectServerCall };
