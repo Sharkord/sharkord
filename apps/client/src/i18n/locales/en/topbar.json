@@ -3,6 +3,8 @@
   "openVoiceChat": "Open Voice Chat",
   "closeMembersSidebar": "Close Members Sidebar",
   "openMembersSidebar": "Open Members Sidebar",
+  "closeServerList": "Close Server List",
+  "openServerList": "Open Server List",
   "searchContent": "Search for content...",
   "voiceOptions": "Voice Options",
   "hideNonVideoParticipants": "Hide non-video participants",

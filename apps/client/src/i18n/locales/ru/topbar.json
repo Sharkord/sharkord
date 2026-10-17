@@ -3,6 +3,8 @@
   "openVoiceChat": "Открыть голосовой чат",
   "closeMembersSidebar": "Закрыть боковую панель участников",
   "openMembersSidebar": "Открыть боковую панель участников",
+  "closeServerList": "Закрыть список серверов",
+  "openServerList": "Открыть список серверов",
   "searchContent": "Поиск по содержимому...",
   "voiceOptions": "Опции голосового управления",
   "hideNonVideoParticipants": "Скрыть участников без видео",

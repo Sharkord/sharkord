@@ -1,0 +1,30 @@
+{
+  "welcomeTitle": "Vítejte v Sharkordu",
+  "addServerTitle": "Přidat server",
+  "addServerDescription": "Zadejte adresu serveru, ke kterému se chcete připojit.",
+  "connect": "Připojit",
+  "connecting": "Připojování...",
+  "cancel": "Zrušit",
+  "addServerTooltip": "Přidat server",
+  "hideServerList": "Skrýt seznam serverů",
+  "removeServer": "Odebrat server",
+  "errors": {
+    "invalidUrl": "Toto není platná adresa serveru.",
+    "unreachable": "Na této adrese se nepodařilo najít server Sharkord.",
+    "duplicate": "Tento server jste již přidali."
+  },
+  "menu": {
+    "servers": "Servery",
+    "addServer": "Přidat server...",
+    "hideServerList": "Skrýt seznam serverů",
+    "showServerList": "Zobrazit seznam serverů",
+    "removeCurrentServer": "Odebrat aktuální server...",
+    "toggleMenuBar": "Přepnout panel nabídek"
+  },
+  "removeDialog": {
+    "title": "Odebrat server",
+    "message": "Odebrat {{name}}? Na tomto zařízení budete z tohoto serveru odhlášeni.",
+    "confirm": "Odebrat",
+    "cancel": "Zrušit"
+  }
+}

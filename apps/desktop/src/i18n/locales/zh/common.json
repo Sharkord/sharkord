@@ -1,0 +1,30 @@
+{
+  "welcomeTitle": "欢迎使用 Sharkord",
+  "addServerTitle": "添加服务器",
+  "addServerDescription": "输入你要连接的服务器地址。",
+  "connect": "连接",
+  "connecting": "连接中...",
+  "cancel": "取消",
+  "addServerTooltip": "添加服务器",
+  "hideServerList": "隐藏服务器列表",
+  "removeServer": "移除服务器",
+  "errors": {
+    "invalidUrl": "这不是有效的服务器地址。",
+    "unreachable": "在该地址找不到 Sharkord 服务器。",
+    "duplicate": "你已经添加过此服务器。"
+  },
+  "menu": {
+    "servers": "服务器",
+    "addServer": "添加服务器...",
+    "hideServerList": "隐藏服务器列表",
+    "showServerList": "显示服务器列表",
+    "removeCurrentServer": "移除当前服务器...",
+    "toggleMenuBar": "切换菜单栏"
+  },
+  "removeDialog": {
+    "title": "移除服务器",
+    "message": "移除 {{name}}？你将在此设备上退出该服务器。",
+    "confirm": "移除",
+    "cancel": "取消"
+  }
+}

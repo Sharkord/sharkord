@@ -1,3 +1,4 @@
+export * from './desktop';
 export * from './events';
 export * from './extensions';
 export * from './helpers';

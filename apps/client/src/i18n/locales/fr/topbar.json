@@ -3,6 +3,8 @@
   "openVoiceChat": "Ouvrir le chat vocal",
   "closeMembersSidebar": "Fermer le panneau latéral des membres",
   "openMembersSidebar": "Ouvrir le panneau latéral des membres",
+  "closeServerList": "Fermer la liste des serveurs",
+  "openServerList": "Ouvrir la liste des serveurs",
   "searchContent": "Recherche de contenu...",
   "voiceOptions": "Options vocales",
   "hideNonVideoParticipants": "Masquer les participants non-vidéo",

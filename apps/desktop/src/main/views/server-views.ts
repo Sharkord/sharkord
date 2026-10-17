@@ -1,0 +1,239 @@
+import type { TDesktopConfirmOptions } from '@sharkord/shared';
+import {
+  ipcMain,
+  session,
+  shell,
+  WebContentsView,
+  type BrowserWindow,
+  type IpcMainEvent
+} from 'electron';
+import path from 'path';
+import { BridgeChannel } from '../../shared/bridge-channels';
+import { RAIL_WIDTH } from '../../shared/constants';
+import type { TServer } from '../../shared/types';
+
+type TLayout = {
+  railVisible: boolean;
+  fullShell: boolean;
+};
+
+const ALLOWED_PERMISSIONS = new Set([
+  'media',
+  'notifications',
+  'fullscreen',
+  'clipboard-sanitized-write'
+]);
+
+const getPartition = (id: string) => `persist:server-${id}`;
+
+const isSameOrigin = (first: string, second: string) => {
+  try {
+    const firstUrl = new URL(first);
+    const secondUrl = new URL(second);
+
+    return firstUrl.origin === secondUrl.origin;
+  } catch {
+    return false;
+  }
+};
+
+const openExternal = (url: string) => {
+  // anything but http(s) could launch arbitrary local handlers
+  if (!/^https?:\/\//i.test(url)) {
+    return;
+  }
+
+  shell.openExternal(url).catch(console.error);
+};
+
+// the shell is a view of its own so it can be drawn over the server views
+const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
+  const views = new Map<string, WebContentsView>();
+  let activeId: string | null = null;
+  let layoutState: TLayout = { railVisible: false, fullShell: false };
+  let nextRequestId = 0;
+
+  const layout = () => {
+    const { width, height } = win.getContentBounds();
+    const inset = layoutState.railVisible ? RAIL_WIDTH : 0;
+
+    for (const view of views.values()) {
+      view.setBounds({
+        x: inset,
+        y: 0,
+        width: Math.max(width - inset, 0),
+        height
+      });
+    }
+
+    if (layoutState.fullShell) {
+      shellView.setBounds({ x: 0, y: 0, width, height });
+      shellView.setVisible(true);
+    } else {
+      shellView.setBounds({ x: 0, y: 0, width: inset, height });
+      shellView.setVisible(inset > 0);
+    }
+  };
+
+  const createView = (server: TServer) => {
+    // one partition per server keeps logins and storage isolated from each other
+    const serverSession = session.fromPartition(getPartition(server.id));
+
+    // compared with the page that is open and not with the address that was added,
+    // a server may redirect elsewhere, as the dev server does to its web client
+    serverSession.setPermissionRequestHandler(
+      (contents, permission, callback, details) => {
+        callback(
+          ALLOWED_PERMISSIONS.has(permission) &&
+            isSameOrigin(details.requestingUrl, contents.getURL())
+        );
+      }
+    );
+
+    serverSession.setPermissionCheckHandler(
+      (contents, permission, requestingOrigin) =>
+        contents !== null &&
+        ALLOWED_PERMISSIONS.has(permission) &&
+        isSameOrigin(requestingOrigin, contents.getURL())
+    );
+
+    const view = new WebContentsView({
+      webPreferences: {
+        session: serverSession,
+        preload: path.join(__dirname, '../preload/server-view.js'),
+        sandbox: true,
+        contextIsolation: true,
+        nodeIntegration: false
+      }
+    });
+
+    view.webContents.setWindowOpenHandler(({ url }) => {
+      openExternal(url);
+
+      return { action: 'deny' };
+    });
+
+    win.contentView.addChildView(view);
+    win.contentView.addChildView(shellView);
+
+    view.webContents.loadURL(server.url).catch(() => {});
+
+    return view;
+  };
+
+  const show = (server: TServer) => {
+    let view = views.get(server.id);
+
+    if (!view) {
+      view = createView(server);
+
+      views.set(server.id, view);
+      layout();
+    }
+
+    for (const [id, other] of views) {
+      other.setVisible(id === server.id);
+    }
+
+    // sync runs on every change, only a switch of server may take the keyboard
+    if (activeId !== server.id) {
+      activeId = server.id;
+      view.webContents.focus();
+    }
+  };
+
+  const hideAll = () => {
+    activeId = null;
+
+    for (const view of views.values()) {
+      view.setVisible(false);
+    }
+  };
+
+  const remove = (id: string) => {
+    const view = views.get(id);
+
+    if (view) {
+      win.contentView.removeChildView(view);
+      view.webContents.close();
+      views.delete(id);
+    }
+
+    if (activeId === id) {
+      activeId = null;
+    }
+
+    const serverSession = session.fromPartition(getPartition(id));
+
+    serverSession.clearStorageData().catch(console.error);
+  };
+
+  const setLayout = (next: TLayout) => {
+    const wasFull = layoutState.fullShell;
+
+    layoutState = next;
+    layout();
+
+    for (const view of views.values()) {
+      view.webContents.send(
+        BridgeChannel.RAIL_VISIBLE_CHANGED,
+        next.railVisible
+      );
+    }
+
+    if (next.fullShell && !wasFull) {
+      shellView.webContents.focus();
+    }
+
+    const active = activeId ? views.get(activeId) : undefined;
+
+    if (!next.fullShell && wasFull && active) {
+      active.webContents.focus();
+    }
+  };
+
+  const requestConfirmation = (
+    id: string,
+    options: TDesktopConfirmOptions
+  ): Promise<boolean | null> => {
+    return new Promise((resolve) => {
+      const view = views.get(id);
+
+      if (!view) {
+        resolve(null);
+
+        return;
+      }
+
+      nextRequestId += 1;
+
+      const requestId = nextRequestId;
+
+      const onResponse = (
+        event: IpcMainEvent,
+        responseId: number,
+        answer: boolean | null
+      ) => {
+        if (responseId !== requestId || event.sender !== view.webContents) {
+          return;
+        }
+
+        ipcMain.removeListener(BridgeChannel.CONFIRM_RESPONSE, onResponse);
+        resolve(answer);
+      };
+
+      ipcMain.on(BridgeChannel.CONFIRM_RESPONSE, onResponse);
+      view.webContents.send(BridgeChannel.CONFIRM_REQUEST, requestId, options);
+    });
+  };
+
+  win.contentView.addChildView(shellView);
+  win.on('resize', layout);
+
+  return { show, hideAll, remove, setLayout, requestConfirmation };
+};
+
+type TServerViews = ReturnType<typeof createServerViews>;
+
+export { createServerViews, getPartition };
+export type { TServerViews };

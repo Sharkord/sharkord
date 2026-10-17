@@ -1,0 +1,30 @@
+{
+  "welcomeTitle": "Te damos la bienvenida a Sharkord",
+  "addServerTitle": "Añadir un servidor",
+  "addServerDescription": "Introduce la dirección del servidor al que quieres conectarte.",
+  "connect": "Conectar",
+  "connecting": "Conectando...",
+  "cancel": "Cancelar",
+  "addServerTooltip": "Añadir un servidor",
+  "hideServerList": "Ocultar la lista de servidores",
+  "removeServer": "Quitar servidor",
+  "errors": {
+    "invalidUrl": "Esta no es una dirección de servidor válida.",
+    "unreachable": "No se pudo encontrar un servidor Sharkord en esa dirección.",
+    "duplicate": "Ya has añadido este servidor."
+  },
+  "menu": {
+    "servers": "Servidores",
+    "addServer": "Añadir servidor...",
+    "hideServerList": "Ocultar lista de servidores",
+    "showServerList": "Mostrar lista de servidores",
+    "removeCurrentServer": "Quitar servidor actual...",
+    "toggleMenuBar": "Alternar barra de menú"
+  },
+  "removeDialog": {
+    "title": "Quitar servidor",
+    "message": "¿Quitar {{name}}? Se cerrará tu sesión en este servidor en este dispositivo.",
+    "confirm": "Quitar",
+    "cancel": "Cancelar"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "welcomeTitle": "Добро пожаловать в Sharkord",
+  "addServerTitle": "Добавить сервер",
+  "addServerDescription": "Введите адрес сервера, к которому хотите подключиться.",
+  "connect": "Подключиться",
+  "connecting": "Подключение...",
+  "cancel": "Отмена",
+  "addServerTooltip": "Добавить сервер",
+  "hideServerList": "Скрыть список серверов",
+  "removeServer": "Удалить сервер",
+  "errors": {
+    "invalidUrl": "Это недействительный адрес сервера.",
+    "unreachable": "Не удалось найти сервер Sharkord по этому адресу.",
+    "duplicate": "Вы уже добавили этот сервер."
+  },
+  "menu": {
+    "servers": "Серверы",
+    "addServer": "Добавить сервер...",
+    "hideServerList": "Скрыть список серверов",
+    "showServerList": "Показать список серверов",
+    "removeCurrentServer": "Удалить текущий сервер...",
+    "toggleMenuBar": "Показать/скрыть строку меню"
+  },
+  "removeDialog": {
+    "title": "Удалить сервер",
+    "message": "Удалить {{name}}? Вы выйдете из этого сервера на этом устройстве.",
+    "confirm": "Удалить",
+    "cancel": "Отмена"
+  }
+}

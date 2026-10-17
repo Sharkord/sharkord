@@ -3,9 +3,15 @@ import {
   useIsCurrentVoiceChannelSelected
 } from '@/features/server/channels/hooks';
 import { usePublicServerSettings } from '@/features/server/hooks';
+import { useDesktopServerList } from '@/hooks/use-desktop-server-list';
 import { PluginSlot } from '@sharkord/shared';
 import { Button, Tooltip } from '@sharkord/ui';
-import { PanelRight, PanelRightClose } from 'lucide-react';
+import {
+  PanelLeft,
+  PanelLeftClose,
+  PanelRight,
+  PanelRightClose
+} from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PluginSlotRenderer } from '../plugin-slot-renderer';
@@ -22,10 +28,38 @@ const TopBar = memo(({ onToggleRightSidebar, isOpen }: TTopBarProps) => {
   const isCurrentVoiceChannelSelected = useIsCurrentVoiceChannelSelected();
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const settings = usePublicServerSettings();
+  const {
+    isDesktop,
+    isVisible: isServerListVisible,
+    toggle: toggleServerList
+  } = useDesktopServerList();
 
   return (
     <div className="hidden lg:grid h-12 w-full grid-cols-[1fr_minmax(320px,1.4fr)_1fr] items-center border-b border-border bg-card px-4 transition-all duration-300 ease-in-out gap-2">
-      <div className="flex min-w-0 items-center gap-2" />
+      <div className="flex min-w-0 items-center gap-2">
+        {isDesktop && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleServerList}
+            className="h-7 px-2 transition-all duration-200 ease-in-out"
+          >
+            {isServerListVisible ? (
+              <Tooltip content={t('closeServerList')}>
+                <div>
+                  <PanelLeftClose className="w-4 h-4 transition-transform duration-200 ease-in-out" />
+                </div>
+              </Tooltip>
+            ) : (
+              <Tooltip content={t('openServerList')}>
+                <div>
+                  <PanelLeft className="w-4 h-4 transition-transform duration-200 ease-in-out" />
+                </div>
+              </Tooltip>
+            )}
+          </Button>
+        )}
+      </div>
 
       <div className="flex items-center justify-center">
         {settings?.enableSearch && <ServerSearch />}
