@@ -5,6 +5,8 @@ enum BridgeChannel {
   RAIL_VISIBLE_CHANGED = 'rail:visible-changed',
   SET_UNREAD = 'unread:set',
   SET_CONNECTION_STATE = 'connection:set',
+  START_SYSTEM_AUDIO = 'system-audio:start',
+  STOP_SYSTEM_AUDIO = 'system-audio:stop',
   CONFIRM_REQUEST = 'confirm:request',
   CONFIRM_RESPONSE = 'confirm:response'
 }

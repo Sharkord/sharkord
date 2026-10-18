@@ -48,5 +48,8 @@
     "zod": "^4.3.5"
   },
   "description": "Sharkord desktop app",
-  "desktopName": "sharkord.desktop"
+  "desktopName": "sharkord.desktop",
+  "dependencies": {
+    "@vencord/venmic": "7.2.3"
+  }
 }

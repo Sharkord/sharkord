@@ -45,6 +45,8 @@ const bridge: TDesktopBridge = {
   setConnectionState: (state) => {
     ipcRenderer.send(BridgeChannel.SET_CONNECTION_STATE, state);
   },
+  startSystemAudio: () => ipcRenderer.invoke(BridgeChannel.START_SYSTEM_AUDIO),
+  stopSystemAudio: () => ipcRenderer.invoke(BridgeChannel.STOP_SYSTEM_AUDIO),
   setConfirmationHandler: (handler) => {
     confirmationHandler = handler;
 

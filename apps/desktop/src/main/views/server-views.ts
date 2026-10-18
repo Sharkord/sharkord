@@ -17,6 +17,10 @@ import { z } from 'zod';
 import { BridgeChannel } from '../../shared/bridge-channels';
 import { RAIL_WIDTH } from '../../shared/constants';
 import type { TServer, TServerStatus } from '../../shared/types';
+import {
+  startSystemAudio,
+  stopSystemAudio
+} from '../screen-share/system-audio';
 
 type TPageState = 'loading' | 'loaded' | 'error';
 
@@ -143,10 +147,17 @@ const createServerViews = (
           return;
         }
 
-        callback({
-          video: source,
-          audio: request.audioRequested ? 'loopback' : undefined
-        });
+        // loopback records everything playing, only windows has it, linux uses the virtual microphone
+        const canLoopback = process.platform === 'win32';
+
+        // electron rejects an audio key that is present but undefined
+        if (request.audioRequested && canLoopback) {
+          callback({ video: source, audio: 'loopback' });
+
+          return;
+        }
+
+        callback({ video: source });
       },
       { useSystemPicker: true }
     );
@@ -196,6 +207,8 @@ const createServerViews = (
 
         pageStates.set(server.id, 'loading');
         connectionStates.delete(server.id);
+
+        stopSystemAudio(server.id);
         changed();
       }
     );
@@ -219,7 +232,20 @@ const createServerViews = (
 
     view.webContents.on('render-process-gone', () => {
       pageStates.set(server.id, 'error');
+      stopSystemAudio(server.id);
       changed();
+    });
+
+    view.webContents.on('destroyed', () => {
+      stopSystemAudio(server.id);
+    });
+
+    view.webContents.ipc.handle(BridgeChannel.START_SYSTEM_AUDIO, () =>
+      startSystemAudio(server.id)
+    );
+
+    view.webContents.ipc.handle(BridgeChannel.STOP_SYSTEM_AUDIO, () => {
+      stopSystemAudio(server.id);
     });
 
     view.webContents.setWindowOpenHandler(({ url }) => {

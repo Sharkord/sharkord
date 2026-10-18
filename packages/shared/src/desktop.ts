@@ -26,6 +26,8 @@ export type TDesktopBridge = {
   openSettings: () => Promise<void>;
   setUnreadState: (state: TDesktopUnreadState) => void;
   setConnectionState: (state: TDesktopConnectionState) => void;
+  startSystemAudio: () => Promise<boolean>;
+  stopSystemAudio: () => Promise<void>;
   setConfirmationHandler: (
     handler: (options: TDesktopConfirmOptions) => Promise<boolean>
   ) => () => void;

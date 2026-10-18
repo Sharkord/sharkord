@@ -18,6 +18,10 @@ import { playSound } from '@/helpers/sounds';
 
 import { voiceLogger } from '@/helpers/browser-logger';
 import {
+  getDesktopSystemAudioTrack,
+  stopDesktopSystemAudio
+} from '@/helpers/desktop-system-audio';
+import {
   getRestrictOwnAudioSupport,
   getSuppressLocalAudioPlaybackSupport
 } from '@/helpers/get-display-media-support';
@@ -850,6 +854,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   const stopScreenShareStream = useCallback(() => {
     voiceLogger.info('screen: stopping');
 
+    stopDesktopSystemAudio();
+
     localScreenShareStream?.getTracks().forEach((track) => {
       voiceLogger.info('screen: stopping track', {
         trackId: track.id,
@@ -915,6 +921,14 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       const stream = await navigator.mediaDevices.getDisplayMedia(
         displayMediaConstraints
       );
+
+      if (stream.getAudioTracks().length === 0) {
+        const systemAudioTrack = await getDesktopSystemAudioTrack();
+
+        if (systemAudioTrack) {
+          stream.addTrack(systemAudioTrack);
+        }
+      }
 
       voiceLogger.info('screen: stream obtained', {
         videoTrackId: stream.getVideoTracks()[0]?.id,
@@ -1046,6 +1060,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
         videoTrack.onended = () => {
           voiceLogger.info('screen: track ended, cleaning up');
+          stopDesktopSystemAudio();
 
           stream.getTracks().forEach((track) => {
             track.stop();

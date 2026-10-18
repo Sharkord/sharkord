@@ -7,6 +7,8 @@ export default defineConfig({
   main: {
     build: {
       rollupOptions: {
+        // a native addon that finds its prebuilt binary relative to its own package folder
+        external: ['@vencord/venmic'],
         output: { format: 'cjs', entryFileNames: 'index.js' }
       }
     }

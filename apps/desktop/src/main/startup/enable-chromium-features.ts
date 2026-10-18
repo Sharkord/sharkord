@@ -1,24 +1,18 @@
 import { app } from 'electron';
 
-// windows has loopback audio built in, macos (13+) and linux (pulseaudio) need these
-const SYSTEM_AUDIO_CAPTURE = [
-  'MacLoopbackAudioForScreenShare',
-  'PulseaudioLoopbackForScreenShare'
-];
-
-// va-api encode and decode on linux, names this chromium does not know are ignored
+// va-api encode and decode on linux, checked against the feature names in electron's chromium
 const HARDWARE_VIDEO_CODECS = [
   'AcceleratedVideoEncoder',
-  'VaapiVideoEncoder',
   'AcceleratedVideoDecodeLinuxGL',
   'AcceleratedVideoDecodeLinuxZeroCopyGL',
   'VaapiIgnoreDriverChecks'
 ];
 
 const enableChromiumFeatures = () => {
-  const features = [...SYSTEM_AUDIO_CAPTURE, ...HARDWARE_VIDEO_CODECS];
-
-  app.commandLine.appendSwitch('enable-features', features.join(','));
+  app.commandLine.appendSwitch(
+    'enable-features',
+    HARDWARE_VIDEO_CODECS.join(',')
+  );
 };
 
 export { enableChromiumFeatures };
