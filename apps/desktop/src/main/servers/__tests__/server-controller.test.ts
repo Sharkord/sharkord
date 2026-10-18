@@ -1,3 +1,4 @@
+import type { TDesktopUnreadState } from '@sharkord/shared';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
@@ -30,7 +31,8 @@ const createFakeViews = () => {
     shown: [] as string[],
     hidden: 0,
     removed: [] as string[],
-    layouts: [] as { railVisible: boolean; fullShell: boolean }[]
+    layouts: [] as { railVisible: boolean; fullShell: boolean }[],
+    unread: {} as Record<string, TDesktopUnreadState>
   };
 
   const views = {
@@ -38,7 +40,8 @@ const createFakeViews = () => {
     hideAll: () => calls.hidden++,
     remove: (id: string) => calls.removed.push(id),
     setLayout: (layout: { railVisible: boolean; fullShell: boolean }) =>
-      calls.layouts.push(layout)
+      calls.layouts.push(layout),
+    getUnread: () => calls.unread
   } as unknown as TServerViews;
 
   return { views, calls };
@@ -87,7 +90,19 @@ describe('server controller', () => {
       servers: [],
       selectedId: null,
       adding: false,
-      railVisible: false
+      railVisible: false,
+      unread: {}
+    });
+  });
+
+  test('notify publishes the unread state of the views', () => {
+    const { controller, calls } = create();
+
+    calls.unread = { first: { count: 3, mentioned: true } };
+    controller.notify();
+
+    expect(states.at(-1)?.unread).toEqual({
+      first: { count: 3, mentioned: true }
     });
   });
 

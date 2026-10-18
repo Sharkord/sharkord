@@ -1,6 +1,6 @@
 import { TestId } from '@sharkord/shared';
-import { cn } from '@sharkord/ui';
 import { memo } from 'react';
+import { cn } from '../lib/utils';
 
 type TUnreadCountProps = {
   count: number;

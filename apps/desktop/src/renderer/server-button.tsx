@@ -1,3 +1,4 @@
+import type { TDesktopUnreadState } from '@sharkord/shared';
 import {
   Avatar,
   AvatarFallback,
@@ -6,7 +7,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  UnreadCount
 } from '@sharkord/ui';
 import { Trash2Icon } from 'lucide-react';
 import { memo, useCallback, useState, type MouseEvent } from 'react';
@@ -17,12 +19,13 @@ import type { TServer } from '../shared/types';
 type TServerButtonProps = {
   server: TServer;
   selected: boolean;
+  unread: TDesktopUnreadState | undefined;
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
 };
 
 const ServerButton = memo(
-  ({ server, selected, onSelect, onRemove }: TServerButtonProps) => {
+  ({ server, selected, unread, onSelect, onRemove }: TServerButtonProps) => {
     const { t } = useTranslation();
     const [menuOpen, setMenuOpen] = useState(false);
 
@@ -66,6 +69,7 @@ const ServerButton = memo(
           <DropdownMenuTrigger asChild>
             <button
               type="button"
+              className="relative"
               title={server.name}
               onClick={handleClick}
               onContextMenu={handleContextMenu}
@@ -81,6 +85,13 @@ const ServerButton = memo(
                   <img src={defaultLogo} alt="" className="size-full p-1.5" />
                 </AvatarFallback>
               </Avatar>
+              {unread && (
+                <UnreadCount
+                  count={unread.count}
+                  hasMention={unread.mentioned}
+                  className="ring-sidebar absolute -right-1 -bottom-1 ring-4"
+                />
+              )}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="right" align="start">

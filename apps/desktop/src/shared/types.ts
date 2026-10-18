@@ -1,3 +1,5 @@
+import type { TDesktopUnreadState } from '@sharkord/shared';
+
 type TServer = {
   id: string;
   name: string;
@@ -10,6 +12,7 @@ type TServersState = {
   selectedId: string | null;
   adding: boolean;
   railVisible: boolean;
+  unread: Record<string, TDesktopUnreadState>;
 };
 
 type TAddServerError = 'invalid-url' | 'unreachable' | 'duplicate';

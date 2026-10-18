@@ -1,4 +1,7 @@
-import type { TDesktopConfirmOptions } from '@sharkord/shared';
+import type {
+  TDesktopConfirmOptions,
+  TDesktopUnreadState
+} from '@sharkord/shared';
 import {
   desktopCapturer,
   ipcMain,
@@ -9,6 +12,7 @@ import {
   type IpcMainEvent
 } from 'electron';
 import path from 'path';
+import { z } from 'zod';
 import { BridgeChannel } from '../../shared/bridge-channels';
 import { RAIL_WIDTH } from '../../shared/constants';
 import type { TServer } from '../../shared/types';
@@ -25,6 +29,11 @@ const ALLOWED_PERMISSIONS = new Set([
   'fullscreen',
   'clipboard-sanitized-write'
 ]);
+
+const unreadStateSchema = z.object({
+  count: z.number().int().min(0),
+  mentioned: z.boolean()
+});
 
 const getPartition = (id: string) => `persist:server-${id}`;
 
@@ -49,8 +58,13 @@ const openExternal = (url: string) => {
 };
 
 // the shell is a view of its own so it can be drawn over the server views
-const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
+const createServerViews = (
+  win: BrowserWindow,
+  shellView: WebContentsView,
+  onUnreadChange: () => void
+) => {
   const views = new Map<string, WebContentsView>();
+  const unread = new Map<string, TDesktopUnreadState>();
   let activeId: string | null = null;
   let layoutState: TLayout = { railVisible: false, fullShell: false };
   let nextRequestId = 0;
@@ -132,6 +146,17 @@ const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
       }
     });
 
+    view.webContents.ipc.on(BridgeChannel.SET_UNREAD, (_event, state) => {
+      const parsed = unreadStateSchema.safeParse(state);
+
+      if (!parsed.success) {
+        return;
+      }
+
+      unread.set(server.id, parsed.data);
+      onUnreadChange();
+    });
+
     view.webContents.setWindowOpenHandler(({ url }) => {
       openExternal(url);
 
@@ -193,6 +218,8 @@ const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
       views.delete(id);
     }
 
+    unread.delete(id);
+
     if (activeId === id) {
       activeId = null;
     }
@@ -232,6 +259,8 @@ const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
       active.webContents.focus();
     }
   };
+
+  const getUnread = () => Object.fromEntries(unread);
 
   const isBackgroundThrottled = () => backgroundThrottled;
 
@@ -312,6 +341,7 @@ const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
     remove,
     setLayout,
     requestConfirmation,
+    getUnread,
     isBackgroundThrottled,
     setBackgroundThrottled
   };

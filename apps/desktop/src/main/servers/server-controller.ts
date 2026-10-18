@@ -45,7 +45,8 @@ const createServerController = (
     servers,
     selectedId,
     adding,
-    railVisible: servers.length > 0 && !railHidden
+    railVisible: servers.length > 0 && !railHidden,
+    unread: views.getUnread()
   });
 
   const applyLayout = (state: TServersState) => {
@@ -68,6 +69,10 @@ const createServerController = (
     }
 
     onChange(state);
+  };
+
+  const notify = () => {
+    onChange(getState());
   };
 
   const refresh = async () => {
@@ -207,6 +212,7 @@ const createServerController = (
   return {
     getState,
     sync,
+    notify,
     select,
     setAdding,
     setOverlay,

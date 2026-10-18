@@ -271,27 +271,58 @@ export const categoryHasUnreadMentionsSelector = createCachedSelector(
   }
 )((_, categoryId: number) => categoryId);
 
-export const totalUnreadCountSelector = createSelector(
+export const visibleChannelsSelector = createSelector(
   [
     channelsSelector,
-    channelsReadStatesSelector,
     channelPermissionsSelector,
     isOwnUserOwnerSelector,
     currentVoiceChannelIdSelector
   ],
-  (channels, readStates, channelPermissions, isOwner, currentVoiceChannelId) =>
-    channels.reduce((total, channel) => {
-      const isVisible =
+  (channels, channelPermissions, isOwner, currentVoiceChannelId) =>
+    channels.filter(
+      (channel) =>
         channel.isDm ||
         canViewChannel(
           channel,
           channelPermissions,
           isOwner,
           currentVoiceChannelId
-        );
+        )
+    )
+);
 
-      return isVisible ? total + (readStates[channel.id] ?? 0) : total;
-    }, 0)
+export const totalUnreadCountSelector = createSelector(
+  [visibleChannelsSelector, channelsReadStatesSelector],
+  (channels, readStates) =>
+    channels.reduce(
+      (total, channel) => total + (readStates[channel.id] ?? 0),
+      0
+    )
+);
+
+export const totalHasUnreadMentionsSelector = createSelector(
+  [
+    visibleChannelsSelector,
+    channelsReadStatesSelector,
+    messagesMapSelector,
+    ownUserIdSelector,
+    ownUserRoleIdsSelector
+  ],
+  (channels, readStates, messagesMap, ownUserId, ownRoleIds) =>
+    channels.some((channel) => {
+      const unreadCount = readStates[channel.id] ?? 0;
+
+      if (channel.isDm) {
+        return unreadCount > 0;
+      }
+
+      return hasUnreadMentionInMessages(
+        unreadCount,
+        messagesMap[getConversationKey({ channelId: channel.id })] ?? [],
+        ownUserId,
+        ownRoleIds
+      );
+    })
 );
 
 // memoized because plugins are told to read this through the store's getState,

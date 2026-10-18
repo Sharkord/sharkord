@@ -21,6 +21,10 @@
     "removeCurrentServer": "Odebrat aktuální server...",
     "toggleMenuBar": "Přepnout panel nabídek"
   },
+  "tray": {
+    "show": "Zobrazit Sharkord",
+    "quit": "Ukončit Sharkord"
+  },
   "removeDialog": {
     "title": "Odebrat server",
     "message": "Odebrat {{name}}? Na tomto zařízení budete z tohoto serveru odhlášeni.",

@@ -38,6 +38,9 @@ const bridge: TDesktopBridge = {
     };
   },
   toggleServerList: () => ipcRenderer.invoke(BridgeChannel.TOGGLE_RAIL),
+  setUnreadState: (state) => {
+    ipcRenderer.send(BridgeChannel.SET_UNREAD, state);
+  },
   setConfirmationHandler: (handler) => {
     confirmationHandler = handler;
 

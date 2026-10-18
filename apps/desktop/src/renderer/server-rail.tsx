@@ -1,3 +1,4 @@
+import type { TDesktopUnreadState } from '@sharkord/shared';
 import { Button, Separator } from '@sharkord/ui';
 import { PanelLeftCloseIcon, PlusIcon } from 'lucide-react';
 import { memo } from 'react';
@@ -9,6 +10,7 @@ import { ServerButton } from './server-button';
 type TServerRailProps = {
   servers: TServer[];
   selectedId: string | null;
+  unread: Record<string, TDesktopUnreadState>;
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
   onAdd: () => void;
@@ -19,6 +21,7 @@ const ServerRail = memo(
   ({
     servers,
     selectedId,
+    unread,
     onSelect,
     onRemove,
     onAdd,
@@ -36,6 +39,7 @@ const ServerRail = memo(
             key={server.id}
             server={server}
             selected={server.id === selectedId}
+            unread={unread[server.id]}
             onSelect={onSelect}
             onRemove={onRemove}
           />

@@ -28,6 +28,7 @@ import {
   referenceableChannelsSelector,
   serverIdSelector,
   serverNameSelector,
+  totalHasUnreadMentionsSelector,
   totalUnreadCountSelector,
   typingUsersByConversationKeySelector,
   userRolesSelector,
@@ -49,6 +50,9 @@ export const useServerId = () => useSelector(serverIdSelector);
 export const useServerName = () => useSelector(serverNameSelector);
 
 export const useTotalUnreadCount = () => useSelector(totalUnreadCountSelector);
+
+export const useTotalHasUnreadMentions = () =>
+  useSelector(totalHasUnreadMentionsSelector);
 
 export const usePublicServerSettings = () =>
   useSelector(publicServerSettingsSelector);

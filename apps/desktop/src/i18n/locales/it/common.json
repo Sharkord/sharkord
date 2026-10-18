@@ -21,6 +21,10 @@
     "removeCurrentServer": "Rimuovi server corrente...",
     "toggleMenuBar": "Mostra/nascondi barra dei menu"
   },
+  "tray": {
+    "show": "Mostra Sharkord",
+    "quit": "Esci da Sharkord"
+  },
   "removeDialog": {
     "title": "Rimuovi server",
     "message": "Rimuovere {{name}}? Verrai disconnesso da questo server su questo dispositivo.",

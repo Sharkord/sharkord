@@ -12,8 +12,13 @@ import { confirmRemoveServer } from './servers/confirm-remove-server';
 import { createServerController } from './servers/server-controller';
 import { disableBackgroundThrottling } from './startup/disable-background-throttling';
 import { enableChromiumFeatures } from './startup/enable-chromium-features';
+import { createTray, type TAppTray } from './tray/create-tray';
 import { createServerViews } from './views/server-views';
 import { createShellView } from './views/shell-view';
+
+// kept at module level so the tray is not garbage collected
+let tray: TAppTray | undefined;
+let isQuitting = false;
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -33,7 +38,7 @@ const createWindow = () => {
 const start = () => {
   const win = createWindow();
   const shellView = createShellView();
-  const views = createServerViews(win, shellView);
+  const views = createServerViews(win, shellView, () => controller.notify());
   const performanceOverlay = createPerformanceOverlay(win);
   const userData = app.getPath('userData');
 
@@ -42,6 +47,7 @@ const start = () => {
     views,
     (state) => {
       shellView.webContents.send(IpcChannel.STATE_CHANGED, state);
+      tray?.setUnread(state.unread);
       Menu.setApplicationMenu(
         buildAppMenu({
           state,
@@ -72,13 +78,30 @@ const start = () => {
 
   controller.sync();
 
-  app.on('second-instance', () => {
+  const showWindow = () => {
     if (win.isMinimized()) {
       win.restore();
     }
 
+    win.show();
     win.focus();
-  });
+  };
+
+  // macos keeps its own dock behaviour, the other platforms hide to the tray on close
+  if (process.platform !== 'darwin') {
+    tray = createTray(icon, showWindow);
+
+    win.on('close', (event) => {
+      if (isQuitting) {
+        return;
+      }
+
+      event.preventDefault();
+      win.hide();
+    });
+  }
+
+  app.on('second-instance', showWindow);
 };
 
 enableChromiumFeatures();
@@ -96,6 +119,10 @@ if (hasLock) {
 
     await initI18n();
     start();
+  });
+  app.on('before-quit', () => {
+    isQuitting = true;
+    tray?.destroy();
   });
   app.on('window-all-closed', () => app.quit());
 } else {

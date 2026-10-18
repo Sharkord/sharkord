@@ -21,6 +21,10 @@
     "removeCurrentServer": "移除当前服务器...",
     "toggleMenuBar": "切换菜单栏"
   },
+  "tray": {
+    "show": "显示 Sharkord",
+    "quit": "退出 Sharkord"
+  },
   "removeDialog": {
     "title": "移除服务器",
     "message": "移除 {{name}}？你将在此设备上退出该服务器。",

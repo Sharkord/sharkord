@@ -43,7 +43,7 @@ const App = memo(() => {
     return null;
   }
 
-  const { servers, selectedId, adding, railVisible } = state;
+  const { servers, selectedId, adding, railVisible, unread } = state;
   const hasServers = servers.length > 0;
   const showForm = adding || !hasServers;
   const mainClass = cn(
@@ -57,6 +57,7 @@ const App = memo(() => {
         <ServerRail
           servers={servers}
           selectedId={selectedId}
+          unread={unread}
           onSelect={handleSelect}
           onRemove={handleRemove}
           onAdd={handleAdd}
