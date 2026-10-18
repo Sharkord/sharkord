@@ -5,7 +5,14 @@ import type { TServer } from '../../shared/types';
 type TStore = {
   servers: TServer[];
   railHidden: boolean;
+  selectedId: string | null;
 };
+
+const createEmptyStore = (): TStore => ({
+  servers: [],
+  railHidden: false,
+  selectedId: null
+});
 
 const isServer = (value: unknown): value is TServer => {
   if (typeof value !== 'object' || value === null) {
@@ -28,18 +35,22 @@ const readStore = (filePath: string): TStore => {
     const parsed: unknown = JSON.parse(raw);
 
     if (typeof parsed !== 'object' || parsed === null) {
-      return { servers: [], railHidden: false };
+      return createEmptyStore();
     }
 
-    const { servers, railHidden } = parsed as Record<string, unknown>;
+    const { servers, railHidden, selectedId } = parsed as Record<
+      string,
+      unknown
+    >;
 
     return {
       servers: Array.isArray(servers) ? servers.filter(isServer) : [],
-      railHidden: railHidden === true
+      railHidden: railHidden === true,
+      selectedId: typeof selectedId === 'string' ? selectedId : null
     };
   } catch {
     // a missing or corrupt file just means a fresh start
-    return { servers: [], railHidden: false };
+    return createEmptyStore();
   }
 };
 

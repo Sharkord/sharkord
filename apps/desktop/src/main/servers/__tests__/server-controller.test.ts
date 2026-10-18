@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { mkdtempSync, rmSync } from 'fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
 import type { TServer, TServersState } from '../../../shared/types';
@@ -350,7 +350,45 @@ describe('server controller', () => {
     const state = second.controller.getState();
 
     expect(state.servers.map((server) => server.id)).toEqual(['one', 'two']);
-    expect(state.selectedId).toBe('one');
+    expect(state.selectedId).toBe('two');
+  });
+
+  test('the last selected server is selected again after a restart', async () => {
+    const first = create();
+
+    await first.controller.add(startServer('one', 'One'));
+    await first.controller.add(startServer('two', 'Two'));
+    first.controller.select('one');
+
+    const second = create();
+
+    expect(second.controller.getState().selectedId).toBe('one');
+  });
+
+  test('the server selected after a removal is selected again after a restart', async () => {
+    const first = create();
+
+    await first.controller.add(startServer('one', 'One'));
+    await first.controller.add(startServer('two', 'Two'));
+    first.controller.remove('two');
+
+    const second = create();
+
+    expect(second.controller.getState().selectedId).toBe('one');
+  });
+
+  test('a saved selection of a server that no longer exists falls back to the first server', async () => {
+    const first = create();
+
+    await first.controller.add(startServer('one', 'One'));
+
+    const saved = JSON.parse(readFileSync(filePath, 'utf8'));
+
+    writeFileSync(filePath, JSON.stringify({ ...saved, selectedId: 'gone' }));
+
+    const second = create();
+
+    expect(second.controller.getState().selectedId).toBe('one');
   });
 
   test('a server renamed after it was added shows its new name after a restart', async () => {

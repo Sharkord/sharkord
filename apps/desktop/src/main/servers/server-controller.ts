@@ -28,12 +28,16 @@ const createServerController = (
   let overlay = false;
 
   const save = () => {
-    writeStore(filePath, { servers, railHidden });
+    writeStore(filePath, { servers, railHidden, selectedId });
   };
 
+  // the saved id may point at a server that is gone if the file was edited by hand
+  const restored = servers.find(({ id }) => id === stored.selectedId);
   const [first] = servers;
 
-  if (first) {
+  if (restored) {
+    selectedId = restored.id;
+  } else if (first) {
     selectedId = first.id;
   }
 
@@ -111,6 +115,7 @@ const createServerController = (
     selectedId = id;
     adding = false;
 
+    save();
     sync();
   };
 
@@ -171,11 +176,10 @@ const createServerController = (
     }
 
     servers = [...servers, server];
-
-    save();
-
     selectedId = server.id;
     adding = false;
+
+    save();
 
     sync();
 
@@ -185,8 +189,6 @@ const createServerController = (
   const remove = (id: string) => {
     servers = servers.filter((candidate) => candidate.id !== id);
 
-    save();
-
     views.remove(id);
 
     if (selectedId === id) {
@@ -194,6 +196,8 @@ const createServerController = (
 
       selectedId = next ? next.id : null;
     }
+
+    save();
 
     sync();
   };

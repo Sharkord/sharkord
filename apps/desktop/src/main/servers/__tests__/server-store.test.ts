@@ -33,49 +33,101 @@ describe('server store', () => {
   });
 
   test('starts empty and visible when nothing was saved yet', () => {
-    expect(readStore(filePath)).toEqual({ servers: [], railHidden: false });
+    expect(readStore(filePath)).toEqual({
+      servers: [],
+      railHidden: false,
+      selectedId: null
+    });
   });
 
   test('returns saved servers in order', () => {
-    writeStore(filePath, { servers: [SERVER, OTHER], railHidden: false });
+    writeStore(filePath, {
+      servers: [SERVER, OTHER],
+      railHidden: false,
+      selectedId: null
+    });
 
     expect(readStore(filePath).servers).toEqual([SERVER, OTHER]);
   });
 
   test('remembers that the server list was hidden', () => {
-    writeStore(filePath, { servers: [SERVER], railHidden: true });
+    writeStore(filePath, {
+      servers: [SERVER],
+      railHidden: true,
+      selectedId: null
+    });
 
     expect(readStore(filePath).railHidden).toBe(true);
+  });
+
+  test('remembers the selected server', () => {
+    writeStore(filePath, {
+      servers: [SERVER, OTHER],
+      railHidden: false,
+      selectedId: OTHER.id
+    });
+
+    expect(readStore(filePath).selectedId).toBe(OTHER.id);
+  });
+
+  test('ignores a selected server that is not a string', () => {
+    writeFileSync(
+      filePath,
+      JSON.stringify({ servers: [SERVER], selectedId: 5 })
+    );
+
+    expect(readStore(filePath).selectedId).toBeNull();
   });
 
   test('creates missing parent folders when saving', () => {
     const nested = path.join(dir, 'a', 'b', 'servers.json');
 
-    writeStore(nested, { servers: [SERVER], railHidden: false });
+    writeStore(nested, {
+      servers: [SERVER],
+      railHidden: false,
+      selectedId: null
+    });
 
     expect(readStore(nested).servers).toEqual([SERVER]);
   });
 
   test('a later save replaces the earlier one', () => {
-    writeStore(filePath, { servers: [SERVER, OTHER], railHidden: true });
-    writeStore(filePath, { servers: [OTHER], railHidden: false });
+    writeStore(filePath, {
+      servers: [SERVER, OTHER],
+      railHidden: true,
+      selectedId: null
+    });
+    writeStore(filePath, {
+      servers: [OTHER],
+      railHidden: false,
+      selectedId: null
+    });
 
     expect(readStore(filePath)).toEqual({
       servers: [OTHER],
-      railHidden: false
+      railHidden: false,
+      selectedId: null
     });
   });
 
   test('starts fresh for a corrupt file', () => {
     writeFileSync(filePath, '{not json');
 
-    expect(readStore(filePath)).toEqual({ servers: [], railHidden: false });
+    expect(readStore(filePath)).toEqual({
+      servers: [],
+      railHidden: false,
+      selectedId: null
+    });
   });
 
   test('starts fresh when the file is not an object', () => {
     writeFileSync(filePath, JSON.stringify([SERVER]));
 
-    expect(readStore(filePath)).toEqual({ servers: [], railHidden: false });
+    expect(readStore(filePath)).toEqual({
+      servers: [],
+      railHidden: false,
+      selectedId: null
+    });
   });
 
   test('drops entries that are not servers', () => {
