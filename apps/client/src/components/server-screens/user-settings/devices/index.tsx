@@ -16,10 +16,12 @@ import {
   getRestrictOwnAudioSupport,
   getSuppressLocalAudioPlaybackSupport
 } from '@/helpers/get-display-media-support';
+import { isDesktopApp } from '@/helpers/is-desktop-app';
 import { CoreHotkeyAction } from '@/lib/hotkeys/actions';
 import {
   NoiseSuppression,
   Resolution,
+  ScreenContentHint,
   ScreenCursor,
   VideoCodec,
   type TDeviceSettings
@@ -583,6 +585,14 @@ const Devices = memo(() => {
           />
         </Group>
         <Group label={t('screenSharingLabel')}>
+          {!isDesktopApp() && (
+            <Alert variant="default">
+              <Info />
+              <AlertDescription>
+                {t('screenSharingDesktopAppHint')}
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="flex">
             <ResolutionFpsControl
               framerate={values.screenFramerate}
@@ -636,6 +646,32 @@ const Devices = memo(() => {
                   </SelectItem>
                   <SelectItem value={ScreenCursor.NEVER}>
                     {t('screenCursorNever')}
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Group>
+
+          <Group
+            label={t('screenContentHintLabel')}
+            description={t('screenContentHintDescription')}
+          >
+            <Select
+              value={values.screenContentHint ?? ScreenContentHint.DETAIL}
+              onValueChange={(value) =>
+                onChange('screenContentHint', value as ScreenContentHint)
+              }
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value={ScreenContentHint.DETAIL}>
+                    {t('screenContentHintDetail')}
+                  </SelectItem>
+                  <SelectItem value={ScreenContentHint.MOTION}>
+                    {t('screenContentHintMotion')}
                   </SelectItem>
                 </SelectGroup>
               </SelectContent>

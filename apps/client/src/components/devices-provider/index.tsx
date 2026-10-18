@@ -1,6 +1,7 @@
 import { MICROPHONE_GATE_DEFAULT_THRESHOLD_DB } from '@/helpers/audio-gate';
 import { voiceLogger } from '@/helpers/browser-logger';
 import { getRestrictOwnAudioSupport } from '@/helpers/get-display-media-support';
+import { isDesktopApp } from '@/helpers/is-desktop-app';
 import {
   getLocalStorageItemAsJSON,
   LocalStorageKey,
@@ -9,6 +10,7 @@ import {
 import {
   NoiseSuppression,
   Resolution,
+  ScreenContentHint,
   ScreenCursor,
   VideoCodec,
   type TDeviceSettings
@@ -41,12 +43,13 @@ const getDefaultDeviceSettings = (): TDeviceSettings => ({
   restrictOwnAudio: getRestrictOwnAudioSupport(),
   suppressLocalAudioPlayback: false,
   mirrorOwnVideo: false,
-  simulcastEnabled: true,
+  simulcastEnabled: !isDesktopApp(),
   screenResolution: Resolution['720p'],
   screenFramerate: 30,
-  screenCodec: VideoCodec.AUTO,
+  screenCodec: isDesktopApp() ? VideoCodec.H264 : VideoCodec.AUTO,
   screenBitrate: DEFAULT_BITRATE,
-  screenCursor: ScreenCursor.ALWAYS
+  screenCursor: ScreenCursor.ALWAYS,
+  screenContentHint: ScreenContentHint.DETAIL
 });
 
 const resolveDeviceId = (

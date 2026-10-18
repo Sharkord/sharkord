@@ -10,6 +10,8 @@ import { registerIpc } from './ipc/register-ipc';
 import { buildAppMenu } from './menu/app-menu';
 import { confirmRemoveServer } from './servers/confirm-remove-server';
 import { createServerController } from './servers/server-controller';
+import { disableBackgroundThrottling } from './startup/disable-background-throttling';
+import { enableChromiumFeatures } from './startup/enable-chromium-features';
 import { createServerViews } from './views/server-views';
 import { createShellView } from './views/shell-view';
 
@@ -47,6 +49,8 @@ const start = () => {
           win,
           requestRemove,
           togglePerformanceOverlay: performanceOverlay.toggle,
+          isBackgroundThrottled: views.isBackgroundThrottled(),
+          setBackgroundThrottled: views.setBackgroundThrottled,
           resetApp: () => confirmAndResetApp(win, controller)
         })
       );
@@ -77,6 +81,8 @@ const start = () => {
   });
 };
 
+enableChromiumFeatures();
+disableBackgroundThrottling();
 wipeUserDataIfRequested();
 
 const hasLock = app.requestSingleInstanceLock();

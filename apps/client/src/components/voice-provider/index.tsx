@@ -932,7 +932,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           settings: videoTrack.getSettings()
         });
 
-        videoTrack.contentHint = 'detail';
+        videoTrack.contentHint = devices.screenContentHint;
 
         let preferredCodec: RtpCodecCapability | undefined;
 
@@ -1141,6 +1141,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     devices.restrictOwnAudio,
     devices.suppressLocalAudioPlayback,
     devices.screenCursor,
+    devices.screenContentHint,
     simulcastEnabled
   ]);
 

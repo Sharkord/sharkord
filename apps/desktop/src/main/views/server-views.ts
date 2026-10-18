@@ -54,6 +54,7 @@ const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
   let activeId: string | null = null;
   let layoutState: TLayout = { railVisible: false, fullShell: false };
   let nextRequestId = 0;
+  let backgroundThrottled = true;
 
   const layout = () => {
     const { width, height } = win.getContentBounds();
@@ -100,13 +101,22 @@ const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
     );
 
     serverSession.setDisplayMediaRequestHandler(
-      async (_request, callback) => {
+      async (request, callback) => {
         const sources = await desktopCapturer.getSources({
           types: ['screen', 'window']
         });
         const [source] = sources;
 
-        callback(source ? { video: source } : {});
+        if (!source) {
+          callback({});
+
+          return;
+        }
+
+        callback({
+          video: source,
+          audio: request.audioRequested ? 'loopback' : undefined
+        });
       },
       { useSystemPicker: true }
     );
@@ -117,7 +127,8 @@ const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
         preload: path.join(__dirname, '../preload/server-view.js'),
         sandbox: true,
         contextIsolation: true,
-        nodeIntegration: false
+        nodeIntegration: false,
+        backgroundThrottling: backgroundThrottled
       }
     });
 
@@ -222,6 +233,16 @@ const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
     }
   };
 
+  const isBackgroundThrottled = () => backgroundThrottled;
+
+  const setBackgroundThrottled = (value: boolean) => {
+    backgroundThrottled = value;
+
+    for (const view of views.values()) {
+      view.webContents.setBackgroundThrottling(value);
+    }
+  };
+
   const requestConfirmation = (
     id: string,
     options: TDesktopConfirmOptions
@@ -285,7 +306,15 @@ const createServerViews = (win: BrowserWindow, shellView: WebContentsView) => {
   win.contentView.addChildView(shellView);
   win.on('resize', layout);
 
-  return { show, hideAll, remove, setLayout, requestConfirmation };
+  return {
+    show,
+    hideAll,
+    remove,
+    setLayout,
+    requestConfirmation,
+    isBackgroundThrottled,
+    setBackgroundThrottled
+  };
 };
 
 type TServerViews = ReturnType<typeof createServerViews>;

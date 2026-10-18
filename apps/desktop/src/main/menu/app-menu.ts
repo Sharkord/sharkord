@@ -15,6 +15,8 @@ type TAppMenuOptions = {
   win: BrowserWindow;
   requestRemove: (server: TServer) => Promise<void>;
   togglePerformanceOverlay: () => void;
+  isBackgroundThrottled: boolean;
+  setBackgroundThrottled: (value: boolean) => void;
   resetApp: () => Promise<void>;
 };
 
@@ -84,6 +86,8 @@ const buildServersMenu = ({
 
 const buildDevMenu = ({
   togglePerformanceOverlay,
+  isBackgroundThrottled,
+  setBackgroundThrottled,
   resetApp
 }: TAppMenuOptions): MenuItemConstructorOptions => ({
   label: 'Dev',
@@ -92,6 +96,12 @@ const buildDevMenu = ({
       label: 'Toggle Performance Overlay',
       accelerator: 'CmdOrCtrl+Shift+D',
       click: togglePerformanceOverlay
+    },
+    {
+      label: 'Throttle Hidden Server Views',
+      type: 'checkbox',
+      checked: isBackgroundThrottled,
+      click: (item) => setBackgroundThrottled(item.checked)
     },
     { type: 'separator' },
     {
