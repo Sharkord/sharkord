@@ -15,6 +15,8 @@ type TServerStatus = 'idle' | 'error' | TDesktopConnectionState;
 type TDesktopSettings = {
   connectAllOnStartup: boolean;
   throttleHiddenServers: boolean;
+  autoStart: boolean;
+  startToTray: boolean;
 };
 
 type TServersState = {

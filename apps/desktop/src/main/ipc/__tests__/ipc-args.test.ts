@@ -57,6 +57,9 @@ describe('ipc request arguments', () => {
     expect(args.safeParse([{ throttleHiddenServers: false }]).success).toBe(
       true
     );
+    expect(
+      args.safeParse([{ autoStart: true, startToTray: true }]).success
+    ).toBe(true);
     expect(args.safeParse([{}]).success).toBe(true);
     expect(args.safeParse([{ connectAllOnStartup: 'yes' }]).success).toBe(
       false

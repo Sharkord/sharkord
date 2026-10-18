@@ -2,7 +2,7 @@ import { Button, Group, SettingsSection, Switch } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TDesktopSettings } from '../../shared/types';
-import { canToggleMenuBar } from '../platform';
+import { canToggleMenuBar, hasTray } from '../platform';
 
 type TGeneralSettingsProps = {
   settings: TDesktopSettings;
@@ -13,6 +13,14 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
 
   const handleConnectAllChange = useCallback((checked: boolean) => {
     window.desktop.updateSettings({ connectAllOnStartup: checked });
+  }, []);
+
+  const handleAutoStartChange = useCallback((checked: boolean) => {
+    window.desktop.updateSettings({ autoStart: checked });
+  }, []);
+
+  const handleStartToTrayChange = useCallback((checked: boolean) => {
+    window.desktop.updateSettings({ startToTray: checked });
   }, []);
 
   const handleThrottleChange = useCallback((checked: boolean) => {
@@ -30,6 +38,26 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
   return (
     <>
       <SettingsSection title={t('settings.general')}>
+        <Group
+          label={t('settings.autoStart')}
+          description={t('settings.autoStartDescription')}
+        >
+          <Switch
+            checked={settings.autoStart}
+            onCheckedChange={handleAutoStartChange}
+          />
+        </Group>
+        {hasTray && (
+          <Group
+            label={t('settings.startToTray')}
+            description={t('settings.startToTrayDescription')}
+          >
+            <Switch
+              checked={settings.startToTray}
+              onCheckedChange={handleStartToTrayChange}
+            />
+          </Group>
+        )}
         <Group
           label={t('settings.connectAllOnStartup')}
           description={t('settings.connectAllOnStartupDescription')}

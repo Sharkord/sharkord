@@ -9,11 +9,18 @@ type TStore = {
   settings: TDesktopSettings;
 };
 
+const DEFAULT_SETTINGS: TDesktopSettings = {
+  connectAllOnStartup: false,
+  throttleHiddenServers: true,
+  autoStart: false,
+  startToTray: false
+};
+
 const createEmptyStore = (): TStore => ({
   servers: [],
   railHidden: false,
   selectedId: null,
-  settings: { connectAllOnStartup: false, throttleHiddenServers: true }
+  settings: DEFAULT_SETTINGS
 });
 
 const parseSettings = (value: unknown): TDesktopSettings => {
@@ -24,7 +31,9 @@ const parseSettings = (value: unknown): TDesktopSettings => {
 
   return {
     connectAllOnStartup: candidate.connectAllOnStartup === true,
-    throttleHiddenServers: candidate.throttleHiddenServers !== false
+    throttleHiddenServers: candidate.throttleHiddenServers !== false,
+    autoStart: candidate.autoStart === true,
+    startToTray: candidate.startToTray === true
   };
 };
 
@@ -79,4 +88,4 @@ const writeStore = (filePath: string, store: TStore) => {
   renameSync(tempPath, filePath);
 };
 
-export { readStore, writeStore };
+export { DEFAULT_SETTINGS, readStore, writeStore };

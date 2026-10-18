@@ -42,6 +42,10 @@
   "settings": {
     "title": "Ajustes de escritorio",
     "general": "General",
+    "autoStart": "Abrir al iniciar",
+    "autoStartDescription": "Inicia Sharkord automáticamente al iniciar sesión en tu ordenador.",
+    "startToTray": "Iniciar minimizado en la bandeja",
+    "startToTrayDescription": "Se abre en segundo plano al iniciar la aplicación, sin mostrar la ventana. Ábrela de nuevo desde el icono de la bandeja.",
     "connectAllOnStartup": "Conectar a todos los servidores al iniciar",
     "connectAllOnStartupDescription": "Carga todos los servidores en segundo plano al abrir la aplicación, para recibir contadores de no leídos y notificaciones de todos ellos. Usa más memoria.",
     "performance": "Rendimiento",

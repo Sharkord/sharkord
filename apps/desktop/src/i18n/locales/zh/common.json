@@ -42,6 +42,10 @@
   "settings": {
     "title": "桌面设置",
     "general": "常规",
+    "autoStart": "开机时打开",
+    "autoStartDescription": "登录电脑时自动启动 Sharkord。",
+    "startToTray": "启动时最小化到托盘",
+    "startToTrayDescription": "应用启动时在后台打开，不显示窗口。可通过托盘图标重新打开。",
     "connectAllOnStartup": "启动时连接所有服务器",
     "connectAllOnStartupDescription": "应用打开时在后台加载所有服务器，以便接收所有服务器的未读计数和通知。会占用更多内存。",
     "performance": "性能",

@@ -10,6 +10,7 @@ import type {
 } from '../../../shared/types';
 import type { TServerViews } from '../../views/server-views';
 import { createServerController } from '../server-controller';
+import { DEFAULT_SETTINGS } from '../server-store';
 
 type TStub = ReturnType<typeof Bun.serve>;
 
@@ -114,7 +115,7 @@ describe('server controller', () => {
       adding: false,
       pendingAddress: null,
       settingsOpen: false,
-      settings: { connectAllOnStartup: false, throttleHiddenServers: true },
+      settings: DEFAULT_SETTINGS,
       railVisible: false,
       unread: {},
       statuses: {}
@@ -232,15 +233,15 @@ describe('server controller', () => {
     first.controller.updateSettings({ connectAllOnStartup: true });
 
     expect(states.at(-1)?.settings).toEqual({
-      connectAllOnStartup: true,
-      throttleHiddenServers: true
+      ...DEFAULT_SETTINGS,
+      connectAllOnStartup: true
     });
 
     const second = create();
 
     expect(second.controller.getState().settings).toEqual({
-      connectAllOnStartup: true,
-      throttleHiddenServers: true
+      ...DEFAULT_SETTINGS,
+      connectAllOnStartup: true
     });
   });
 

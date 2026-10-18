@@ -42,6 +42,10 @@
   "settings": {
     "title": "Paramètres du bureau",
     "general": "Général",
+    "autoStart": "Ouvrir au démarrage",
+    "autoStartDescription": "Lance Sharkord automatiquement lorsque vous ouvrez une session sur votre ordinateur.",
+    "startToTray": "Démarrer réduit dans la zone de notification",
+    "startToTrayDescription": "S'ouvre en arrière-plan au démarrage de l'application, sans afficher la fenêtre. Rouvrez-la depuis l'icône de la zone de notification.",
     "connectAllOnStartup": "Se connecter à tous les serveurs au démarrage",
     "connectAllOnStartupDescription": "Charge tous les serveurs en arrière-plan à l'ouverture de l'application, pour recevoir les compteurs de non lus et les notifications de chacun. Utilise plus de mémoire.",
     "performance": "Performances",

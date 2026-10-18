@@ -42,6 +42,10 @@
   "settings": {
     "title": "Nastavení aplikace",
     "general": "Obecné",
+    "autoStart": "Otevřít při spuštění",
+    "autoStartDescription": "Spustí Sharkord automaticky po přihlášení k počítači.",
+    "startToTray": "Spouštět minimalizovaně do lišty",
+    "startToTrayDescription": "Při spuštění se aplikace otevře na pozadí bez zobrazení okna. Okno znovu otevřete ikonou v oznamovací oblasti.",
     "connectAllOnStartup": "Připojit ke všem serverům při spuštění",
     "connectAllOnStartupDescription": "Při otevření aplikace načte všechny servery na pozadí, takže dostáváte počty nepřečtených zpráv a oznámení ze všech. Využívá více paměti.",
     "performance": "Výkon",

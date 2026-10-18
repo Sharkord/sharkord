@@ -42,6 +42,10 @@
   "settings": {
     "title": "Desktop settings",
     "general": "General",
+    "autoStart": "Open on startup",
+    "autoStartDescription": "Start Sharkord automatically when you log in to your computer.",
+    "startToTray": "Start minimized to tray",
+    "startToTrayDescription": "Open in the background when the app starts, without showing the window. Open it again from the tray icon.",
     "connectAllOnStartup": "Connect to all servers on startup",
     "connectAllOnStartupDescription": "Load every server in the background when the app opens, so you get unread counts and notifications from all of them. Uses more memory.",
     "performance": "Performance",

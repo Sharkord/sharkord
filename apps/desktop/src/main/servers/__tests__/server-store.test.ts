@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
 import type { TServer } from '../../../shared/types';
-import { readStore, writeStore } from '../server-store';
+import { DEFAULT_SETTINGS, readStore, writeStore } from '../server-store';
 
 const SERVER: TServer = {
   id: 'abc',
@@ -37,7 +37,7 @@ describe('server store', () => {
       servers: [],
       railHidden: false,
       selectedId: null,
-      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
+      settings: DEFAULT_SETTINGS
     });
   });
 
@@ -46,7 +46,7 @@ describe('server store', () => {
       servers: [SERVER, OTHER],
       railHidden: false,
       selectedId: null,
-      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
+      settings: DEFAULT_SETTINGS
     });
 
     expect(readStore(filePath).servers).toEqual([SERVER, OTHER]);
@@ -57,7 +57,7 @@ describe('server store', () => {
       servers: [SERVER],
       railHidden: true,
       selectedId: null,
-      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
+      settings: DEFAULT_SETTINGS
     });
 
     expect(readStore(filePath).railHidden).toBe(true);
@@ -68,7 +68,7 @@ describe('server store', () => {
       servers: [SERVER, OTHER],
       railHidden: false,
       selectedId: OTHER.id,
-      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
+      settings: DEFAULT_SETTINGS
     });
 
     expect(readStore(filePath).selectedId).toBe(OTHER.id);
@@ -88,12 +88,19 @@ describe('server store', () => {
       servers: [SERVER],
       railHidden: false,
       selectedId: null,
-      settings: { connectAllOnStartup: true, throttleHiddenServers: false }
+      settings: {
+        connectAllOnStartup: true,
+        throttleHiddenServers: false,
+        autoStart: true,
+        startToTray: true
+      }
     });
 
     expect(readStore(filePath).settings).toEqual({
       connectAllOnStartup: true,
-      throttleHiddenServers: false
+      throttleHiddenServers: false,
+      autoStart: true,
+      startToTray: true
     });
   });
 
@@ -102,13 +109,29 @@ describe('server store', () => {
       filePath,
       JSON.stringify({
         servers: [SERVER],
-        settings: { connectAllOnStartup: 'yes', throttleHiddenServers: 0 }
+        settings: {
+          connectAllOnStartup: 'yes',
+          throttleHiddenServers: 0,
+          autoStart: 1,
+          startToTray: 'true'
+        }
       })
     );
 
     expect(readStore(filePath).settings).toEqual({
       connectAllOnStartup: false,
-      throttleHiddenServers: true
+      throttleHiddenServers: true,
+      autoStart: false,
+      startToTray: false
+    });
+  });
+
+  test('a fresh start has auto start and start to tray off and throttling on', () => {
+    expect(readStore(filePath).settings).toEqual({
+      connectAllOnStartup: false,
+      throttleHiddenServers: true,
+      autoStart: false,
+      startToTray: false
     });
   });
 
@@ -119,7 +142,7 @@ describe('server store', () => {
       servers: [SERVER],
       railHidden: false,
       selectedId: null,
-      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
+      settings: DEFAULT_SETTINGS
     });
 
     expect(readStore(nested).servers).toEqual([SERVER]);
@@ -130,20 +153,20 @@ describe('server store', () => {
       servers: [SERVER, OTHER],
       railHidden: true,
       selectedId: null,
-      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
+      settings: DEFAULT_SETTINGS
     });
     writeStore(filePath, {
       servers: [OTHER],
       railHidden: false,
       selectedId: null,
-      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
+      settings: DEFAULT_SETTINGS
     });
 
     expect(readStore(filePath)).toEqual({
       servers: [OTHER],
       railHidden: false,
       selectedId: null,
-      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
+      settings: DEFAULT_SETTINGS
     });
   });
 
@@ -154,7 +177,7 @@ describe('server store', () => {
       servers: [],
       railHidden: false,
       selectedId: null,
-      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
+      settings: DEFAULT_SETTINGS
     });
   });
 
@@ -165,7 +188,7 @@ describe('server store', () => {
       servers: [],
       railHidden: false,
       selectedId: null,
-      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
+      settings: DEFAULT_SETTINGS
     });
   });
 

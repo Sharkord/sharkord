@@ -14,9 +14,12 @@ import { confirmRemoveServer } from './servers/confirm-remove-server';
 import { createServerController } from './servers/server-controller';
 import { disableBackgroundThrottling } from './startup/disable-background-throttling';
 import { enableChromiumFeatures } from './startup/enable-chromium-features';
+import { setAutoStart } from './startup/set-auto-start';
 import { createTray, type TAppTray } from './tray/create-tray';
 import { createServerViews } from './views/server-views';
 import { createShellView } from './views/shell-view';
+
+const hasTray = process.platform !== 'darwin';
 
 // kept at module level so the tray is not garbage collected
 let tray: TAppTray | undefined;
@@ -32,7 +35,8 @@ const createWindow = () => {
     minWidth: 800,
     minHeight: 500,
     backgroundColor: '#1a1a1a',
-    icon
+    icon,
+    show: false
   });
 
   win.setMenuBarVisibility(false);
@@ -49,13 +53,22 @@ const start = () => {
     win.setMenuBarVisibility(!win.isMenuBarVisible());
   };
   const userData = app.getPath('userData');
+  let appliedAutoStart: boolean | undefined;
 
   const controller = createServerController(
     path.join(userData, 'servers.json'),
     views,
     (state) => {
       shellView.webContents.send(IpcChannel.STATE_CHANGED, state);
+
       tray?.setUnread(state.unread);
+
+      if (state.settings.autoStart !== appliedAutoStart) {
+        appliedAutoStart = state.settings.autoStart;
+
+        setAutoStart(appliedAutoStart);
+      }
+
       Menu.setApplicationMenu(
         buildAppMenu({
           state,
@@ -88,6 +101,10 @@ const start = () => {
 
   const { settings } = controller.getState();
 
+  if (!hasTray || !settings.startToTray) {
+    win.show();
+  }
+
   if (settings.connectAllOnStartup) {
     controller.loadAll();
   }
@@ -101,8 +118,7 @@ const start = () => {
     win.focus();
   };
 
-  // macos keeps its own dock behaviour, the other platforms hide to the tray on close
-  if (process.platform !== 'darwin') {
+  if (hasTray) {
     tray = createTray(icon, showWindow);
 
     win.on('close', (event) => {
