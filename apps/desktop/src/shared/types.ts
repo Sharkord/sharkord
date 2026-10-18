@@ -21,6 +21,7 @@ type TServersState = {
   servers: TServer[];
   selectedId: string | null;
   adding: boolean;
+  pendingAddress: string | null;
   settingsOpen: boolean;
   settings: TDesktopSettings;
   railVisible: boolean;

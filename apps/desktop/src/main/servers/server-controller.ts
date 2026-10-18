@@ -27,6 +27,7 @@ const createServerController = (
   let selectedId: string | null = null;
   let settings = stored.settings;
   let adding = false;
+  let pendingAddress: string | null = null;
   let settingsOpen = false;
   let overlay = false;
 
@@ -50,6 +51,7 @@ const createServerController = (
     servers,
     selectedId,
     adding,
+    pendingAddress,
     settingsOpen,
     settings,
     railVisible: servers.length > 0 && !railHidden,
@@ -150,6 +152,7 @@ const createServerController = (
 
     selectedId = id;
     adding = false;
+    pendingAddress = null;
     settingsOpen = false;
 
     save();
@@ -158,10 +161,28 @@ const createServerController = (
 
   const setAdding = (value: boolean) => {
     adding = value;
+    pendingAddress = null;
 
     if (value) {
       settingsOpen = false;
     }
+
+    sync();
+  };
+
+  const openAddServer = (input: string) => {
+    const origin = normalizeServerUrl(input);
+    const existing = servers.find(({ url }) => url === origin);
+
+    if (existing) {
+      select(existing.id);
+
+      return;
+    }
+
+    adding = true;
+    pendingAddress = input;
+    settingsOpen = false;
 
     sync();
   };
@@ -237,6 +258,7 @@ const createServerController = (
     servers = [...servers, server];
     selectedId = server.id;
     adding = false;
+    pendingAddress = null;
 
     save();
 
@@ -270,6 +292,7 @@ const createServerController = (
     loadAll,
     select,
     setAdding,
+    openAddServer,
     setSettingsOpen,
     updateSettings,
     setOverlay,

@@ -52,6 +52,7 @@ const App = memo(() => {
     servers,
     selectedId,
     adding,
+    pendingAddress,
     settingsOpen,
     settings,
     railVisible,
@@ -86,7 +87,12 @@ const App = memo(() => {
       ) : (
         <main className={mainClass}>
           {showForm && (
-            <AddServerForm canCancel={hasServers} onCancel={handleCancelAdd} />
+            <AddServerForm
+              key={pendingAddress ?? ''}
+              initialInput={pendingAddress}
+              canCancel={hasServers}
+              onCancel={handleCancelAdd}
+            />
           )}
         </main>
       )}

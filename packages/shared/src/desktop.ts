@@ -30,3 +30,10 @@ export type TDesktopBridge = {
     handler: (options: TDesktopConfirmOptions) => Promise<boolean>
   ) => () => void;
 };
+
+export const DESKTOP_PROTOCOL = 'sharkord';
+
+export const DESKTOP_ADD_SERVER_ACTION = 'add-server';
+
+export const getDesktopAddServerLink = (serverUrl: string) =>
+  `${DESKTOP_PROTOCOL}://${DESKTOP_ADD_SERVER_ACTION}?url=${encodeURIComponent(serverUrl)}`;

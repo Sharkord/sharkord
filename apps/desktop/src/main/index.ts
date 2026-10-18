@@ -3,6 +3,8 @@ import path from 'path';
 import icon from '../../build/icon.png?asset';
 import { IpcChannel } from '../shared/constants';
 import type { TServer } from '../shared/types';
+import { findDeepLink, parseDeepLink } from './deep-links/parse-deep-link';
+import { registerProtocol } from './deep-links/register-protocol';
 import { createPerformanceOverlay } from './dev/performance-overlay';
 import { confirmAndResetApp, wipeUserDataIfRequested } from './dev/reset-app';
 import { initI18n } from './i18n';
@@ -19,6 +21,9 @@ import { createShellView } from './views/shell-view';
 // kept at module level so the tray is not garbage collected
 let tray: TAppTray | undefined;
 let isQuitting = false;
+
+let handleDeepLink: ((link: string) => void) | undefined;
+let pendingDeepLink = findDeepLink(process.argv);
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -110,7 +115,31 @@ const start = () => {
     });
   }
 
-  app.on('second-instance', showWindow);
+  handleDeepLink = (link) => {
+    const deepLink = parseDeepLink(link);
+
+    if (!deepLink) {
+      return;
+    }
+
+    showWindow();
+    controller.openAddServer(deepLink.serverUrl);
+  };
+
+  if (pendingDeepLink) {
+    handleDeepLink(pendingDeepLink);
+    pendingDeepLink = undefined;
+  }
+
+  app.on('second-instance', (_event, argv) => {
+    showWindow();
+
+    const link = findDeepLink(argv);
+
+    if (link && handleDeepLink) {
+      handleDeepLink(link);
+    }
+  });
 };
 
 enableChromiumFeatures();
@@ -120,6 +149,21 @@ wipeUserDataIfRequested();
 const hasLock = app.requestSingleInstanceLock();
 
 if (hasLock) {
+  registerProtocol();
+
+  // macos delivers links through this event, also before the app is ready
+  app.on('open-url', (event, link) => {
+    event.preventDefault();
+
+    if (handleDeepLink) {
+      handleDeepLink(link);
+
+      return;
+    }
+
+    pendingDeepLink = link;
+  });
+
   app.on('ready', async () => {
     // a packaged mac app gets its icon from the bundle, this covers dev runs
     if (process.platform === 'darwin') {

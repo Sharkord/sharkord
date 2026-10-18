@@ -112,6 +112,7 @@ describe('server controller', () => {
       servers: [],
       selectedId: null,
       adding: false,
+      pendingAddress: null,
       settingsOpen: false,
       settings: { connectAllOnStartup: false, throttleHiddenServers: true },
       railVisible: false,
@@ -259,6 +260,59 @@ describe('server controller', () => {
     const second = create();
 
     expect(second.calls.throttled).toEqual([false]);
+  });
+
+  test('a link to a new server opens the add screen with its address filled in', async () => {
+    const { controller, calls } = create();
+
+    await controller.add(startServer('one', 'One'));
+    controller.setSettingsOpen(true);
+    controller.openAddServer('https://chat.example.com');
+
+    const state = controller.getState();
+
+    expect(state.adding).toBe(true);
+    expect(state.settingsOpen).toBe(false);
+    expect(state.pendingAddress).toBe('https://chat.example.com');
+    expect(state.servers.map(({ id }) => id)).toEqual(['one']);
+    expect(calls.layouts.at(-1)).toEqual({
+      railVisible: true,
+      fullShell: true
+    });
+  });
+
+  test('a link to a server that is already added opens it', async () => {
+    const { controller } = create();
+    const firstUrl = startServer('one', 'One');
+
+    await controller.add(firstUrl);
+    await controller.add(startServer('two', 'Two'));
+    controller.openAddServer(`${firstUrl}/some/page`);
+
+    const state = controller.getState();
+
+    expect(state.selectedId).toBe('one');
+    expect(state.adding).toBe(false);
+    expect(state.pendingAddress).toBeNull();
+  });
+
+  test('leaving the add screen forgets the address from a link', () => {
+    const { controller } = create();
+
+    controller.openAddServer('https://chat.example.com');
+    controller.setAdding(false);
+
+    expect(controller.getState().pendingAddress).toBeNull();
+  });
+
+  test('adding the server from a link forgets its address', async () => {
+    const { controller } = create();
+    const url = startServer('one', 'One');
+
+    controller.openAddServer(url);
+    await controller.add(url);
+
+    expect(controller.getState().pendingAddress).toBeNull();
   });
 
   test('notify publishes the unread state of the views', () => {

@@ -4,6 +4,10 @@ directories:
   buildResources: build
 files:
   - out/**
+protocols:
+  - name: Sharkord
+    schemes:
+      - sharkord
 mac:
   category: public.app-category.social-networking
   target: dmg
