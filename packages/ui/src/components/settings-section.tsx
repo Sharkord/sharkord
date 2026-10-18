@@ -1,11 +1,11 @@
+import { memo, type ReactNode } from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle
-} from '@sharkord/ui';
-import { memo, type ReactNode } from 'react';
+} from './card';
 
 type TSettingsSectionProps = {
   title: ReactNode;

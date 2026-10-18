@@ -1,29 +1,22 @@
-import {
-  Menu,
-  type BrowserWindow,
-  type MenuItemConstructorOptions
-} from 'electron';
+import { Menu, type MenuItemConstructorOptions } from 'electron';
+import { getServerShortcut, SHORTCUTS } from '../../shared/shortcuts';
 import type { TServer, TServersState } from '../../shared/types';
 import { i18n } from '../i18n';
 import type { TServerController } from '../servers/server-controller';
 
-const MAX_SHORTCUT_SERVERS = 9;
-
 type TAppMenuOptions = {
   state: TServersState;
   controller: TServerController;
-  win: BrowserWindow;
+  toggleMenuBar: () => void;
   requestRemove: (server: TServer) => Promise<void>;
   togglePerformanceOverlay: () => void;
-  isBackgroundThrottled: boolean;
-  setBackgroundThrottled: (value: boolean) => void;
   resetApp: () => Promise<void>;
 };
 
 const buildServersMenu = ({
   state,
   controller,
-  win,
+  toggleMenuBar,
   requestRemove
 }: TAppMenuOptions): MenuItemConstructorOptions => {
   const { servers, selectedId, adding, railVisible } = state;
@@ -34,8 +27,7 @@ const buildServersMenu = ({
       label: server.name,
       type: 'radio',
       checked: server.id === selectedId && !adding,
-      accelerator:
-        index < MAX_SHORTCUT_SERVERS ? `CmdOrCtrl+${index + 1}` : undefined,
+      accelerator: getServerShortcut(index),
       click: () => controller.select(server.id)
     })
   );
@@ -47,7 +39,7 @@ const buildServersMenu = ({
     submenu: [
       {
         label: i18n.t('menu.addServer'),
-        accelerator: 'CmdOrCtrl+Shift+N',
+        accelerator: SHORTCUTS.addServer,
         click: () => controller.setAdding(true)
       },
       { type: 'separator' },
@@ -57,7 +49,7 @@ const buildServersMenu = ({
         label: railVisible
           ? i18n.t('menu.hideServerList')
           : i18n.t('menu.showServerList'),
-        accelerator: 'CmdOrCtrl+B',
+        accelerator: SHORTCUTS.toggleServerList,
         enabled: servers.length > 0,
         click: () => controller.toggleRail()
       },
@@ -73,10 +65,10 @@ const buildServersMenu = ({
       { type: 'separator' },
       {
         label: i18n.t('menu.toggleMenuBar'),
-        accelerator: 'CmdOrCtrl+Shift+M',
+        accelerator: SHORTCUTS.toggleMenuBar,
         // the macos menu bar belongs to the system and cannot be hidden
         enabled: !isMac,
-        click: () => win.setMenuBarVisibility(!win.isMenuBarVisible())
+        click: toggleMenuBar
       },
       { type: 'separator' },
       isMac ? { role: 'close' } : { role: 'quit' }
@@ -85,23 +77,21 @@ const buildServersMenu = ({
 };
 
 const buildDevMenu = ({
+  controller,
   togglePerformanceOverlay,
-  isBackgroundThrottled,
-  setBackgroundThrottled,
   resetApp
 }: TAppMenuOptions): MenuItemConstructorOptions => ({
   label: 'Dev',
   submenu: [
     {
-      label: 'Toggle Performance Overlay',
-      accelerator: 'CmdOrCtrl+Shift+D',
-      click: togglePerformanceOverlay
+      label: 'Desktop Settings...',
+      click: () => controller.setSettingsOpen(true)
     },
+    { type: 'separator' },
     {
-      label: 'Throttle Hidden Server Views',
-      type: 'checkbox',
-      checked: isBackgroundThrottled,
-      click: (item) => setBackgroundThrottled(item.checked)
+      label: 'Toggle Performance Overlay',
+      accelerator: SHORTCUTS.togglePerformanceOverlay,
+      click: togglePerformanceOverlay
     },
     { type: 'separator' },
     {

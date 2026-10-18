@@ -1,6 +1,7 @@
 import type { TDesktopConfirmOptions } from '@sharkord/shared';
 import type {
   TAddServerError,
+  TDesktopSettings,
   TServer,
   TServersState
 } from '../../shared/types';
@@ -24,11 +25,15 @@ const createServerController = (
   let servers = stored.servers;
   let railHidden = stored.railHidden;
   let selectedId: string | null = null;
+  let settings = stored.settings;
   let adding = false;
+  let settingsOpen = false;
   let overlay = false;
 
+  views.setBackgroundThrottled(settings.throttleHiddenServers);
+
   const save = () => {
-    writeStore(filePath, { servers, railHidden, selectedId });
+    writeStore(filePath, { servers, railHidden, selectedId, settings });
   };
 
   // the saved id may point at a server that is gone if the file was edited by hand
@@ -45,14 +50,23 @@ const createServerController = (
     servers,
     selectedId,
     adding,
+    settingsOpen,
+    settings,
     railVisible: servers.length > 0 && !railHidden,
-    unread: views.getUnread()
+    unread: views.getUnread(),
+    statuses: Object.fromEntries(
+      servers.map(({ id }) => [id, views.getStatus(id)])
+    )
   });
 
   const applyLayout = (state: TServersState) => {
     views.setLayout({
       railVisible: state.railVisible,
-      fullShell: state.adding || state.servers.length === 0 || overlay
+      fullShell:
+        state.adding ||
+        state.settingsOpen ||
+        state.servers.length === 0 ||
+        overlay
     });
   };
 
@@ -62,7 +76,7 @@ const createServerController = (
 
     applyLayout(state);
 
-    if (selected && !adding) {
+    if (selected && !adding && !settingsOpen) {
       views.show(selected);
     } else {
       views.hideAll();
@@ -110,6 +124,23 @@ const createServerController = (
     sync();
   };
 
+  // one server at a time, starting with the selected one, so startup is not a burst of page loads
+  const loadAll = async () => {
+    const selected = servers.find(({ id }) => id === selectedId);
+
+    if (selected) {
+      await views.load(selected);
+    }
+
+    let next = servers.find(({ id }) => !views.has(id));
+
+    while (next) {
+      await views.load(next);
+
+      next = servers.find(({ id }) => !views.has(id));
+    }
+  };
+
   const select = (id: string) => {
     const exists = servers.some((candidate) => candidate.id === id);
 
@@ -119,6 +150,7 @@ const createServerController = (
 
     selectedId = id;
     adding = false;
+    settingsOpen = false;
 
     save();
     sync();
@@ -127,7 +159,29 @@ const createServerController = (
   const setAdding = (value: boolean) => {
     adding = value;
 
+    if (value) {
+      settingsOpen = false;
+    }
+
     sync();
+  };
+
+  const setSettingsOpen = (value: boolean) => {
+    settingsOpen = value;
+
+    if (value) {
+      adding = false;
+    }
+
+    sync();
+  };
+
+  const updateSettings = (patch: Partial<TDesktopSettings>) => {
+    settings = { ...settings, ...patch };
+
+    views.setBackgroundThrottled(settings.throttleHiddenServers);
+    save();
+    notify();
   };
 
   const setOverlay = (value: boolean) => {
@@ -213,8 +267,11 @@ const createServerController = (
     getState,
     sync,
     notify,
+    loadAll,
     select,
     setAdding,
+    setSettingsOpen,
+    updateSettings,
     setOverlay,
     setRailHidden,
     toggleRail,

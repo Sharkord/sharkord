@@ -3,7 +3,11 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
-import type { TServer, TServersState } from '../../../shared/types';
+import type {
+  TServer,
+  TServersState,
+  TServerStatus
+} from '../../../shared/types';
 import type { TServerViews } from '../../views/server-views';
 import { createServerController } from '../server-controller';
 
@@ -32,16 +36,34 @@ const createFakeViews = () => {
     hidden: 0,
     removed: [] as string[],
     layouts: [] as { railVisible: boolean; fullShell: boolean }[],
-    unread: {} as Record<string, TDesktopUnreadState>
+    unread: {} as Record<string, TDesktopUnreadState>,
+    statuses: {} as Record<string, TServerStatus>,
+    loaded: [] as string[],
+    pendingLoads: [] as (() => void)[],
+    throttled: [] as boolean[]
   };
 
+  const opened = new Set<string>();
+
   const views = {
-    show: (server: TServer) => calls.shown.push(server.id),
+    show: (server: TServer) => {
+      opened.add(server.id);
+      calls.shown.push(server.id);
+    },
+    load: (server: TServer) => {
+      opened.add(server.id);
+      calls.loaded.push(server.id);
+
+      return new Promise<void>((resolve) => calls.pendingLoads.push(resolve));
+    },
+    has: (id: string) => opened.has(id),
+    getStatus: (id: string) => calls.statuses[id] ?? 'idle',
     hideAll: () => calls.hidden++,
     remove: (id: string) => calls.removed.push(id),
     setLayout: (layout: { railVisible: boolean; fullShell: boolean }) =>
       calls.layouts.push(layout),
-    getUnread: () => calls.unread
+    getUnread: () => calls.unread,
+    setBackgroundThrottled: (value: boolean) => calls.throttled.push(value)
   } as unknown as TServerViews;
 
   return { views, calls };
@@ -90,9 +112,153 @@ describe('server controller', () => {
       servers: [],
       selectedId: null,
       adding: false,
+      settingsOpen: false,
+      settings: { connectAllOnStartup: false, throttleHiddenServers: true },
       railVisible: false,
-      unread: {}
+      unread: {},
+      statuses: {}
     });
+  });
+
+  test('every server is listed with the status of its view', async () => {
+    const { controller, calls } = create();
+
+    await controller.add(startServer('one', 'One'));
+    await controller.add(startServer('two', 'Two'));
+    calls.statuses = { one: 'error' };
+
+    expect(controller.getState().statuses).toEqual({
+      one: 'error',
+      two: 'idle'
+    });
+  });
+
+  test('loading all servers starts with the selected one and loads the rest one at a time', async () => {
+    const first = create();
+
+    await first.controller.add(startServer('one', 'One'));
+    await first.controller.add(startServer('two', 'Two'));
+    await first.controller.add(startServer('three', 'Three'));
+
+    const { controller, calls } = create();
+    const finishNextLoad = async () => {
+      const [resolve] = calls.pendingLoads.splice(0, 1);
+
+      resolve?.();
+      await Bun.sleep(0);
+    };
+
+    const done = controller.loadAll();
+
+    expect(calls.loaded).toEqual(['three']);
+
+    await finishNextLoad();
+    expect(calls.loaded).toEqual(['three', 'one']);
+
+    await finishNextLoad();
+    expect(calls.loaded).toEqual(['three', 'one', 'two']);
+
+    await finishNextLoad();
+    await done;
+    expect(calls.loaded).toEqual(['three', 'one', 'two']);
+  });
+
+  test('loading all servers skips servers that are already open', async () => {
+    const { controller, calls } = create();
+
+    await controller.add(startServer('one', 'One'));
+    await controller.add(startServer('two', 'Two'));
+
+    const done = controller.loadAll();
+
+    expect(calls.loaded).toEqual(['two']);
+
+    calls.pendingLoads.splice(0, 1)[0]?.();
+    await done;
+
+    expect(calls.loaded).toEqual(['two']);
+  });
+
+  test('opening the settings hides the server views and fills the window with the shell', async () => {
+    const { controller, calls } = create();
+
+    await controller.add(startServer('one', 'One'));
+    controller.setSettingsOpen(true);
+
+    expect(controller.getState().settingsOpen).toBe(true);
+    expect(calls.hidden).toBeGreaterThan(0);
+    expect(calls.layouts.at(-1)).toEqual({
+      railVisible: true,
+      fullShell: true
+    });
+
+    controller.setSettingsOpen(false);
+
+    expect(calls.shown.at(-1)).toBe('one');
+    expect(calls.layouts.at(-1)).toEqual({
+      railVisible: true,
+      fullShell: false
+    });
+  });
+
+  test('opening the settings leaves the add screen and opening the add screen closes the settings', async () => {
+    const { controller } = create();
+
+    await controller.add(startServer('one', 'One'));
+    controller.setAdding(true);
+    controller.setSettingsOpen(true);
+
+    expect(controller.getState().adding).toBe(false);
+
+    controller.setAdding(true);
+
+    expect(controller.getState().settingsOpen).toBe(false);
+  });
+
+  test('selecting a server closes the settings', async () => {
+    const { controller } = create();
+
+    await controller.add(startServer('one', 'One'));
+    controller.setSettingsOpen(true);
+    controller.select('one');
+
+    expect(controller.getState().settingsOpen).toBe(false);
+  });
+
+  test('changed settings are announced and come back after a restart', () => {
+    const first = create();
+
+    first.controller.updateSettings({ connectAllOnStartup: true });
+
+    expect(states.at(-1)?.settings).toEqual({
+      connectAllOnStartup: true,
+      throttleHiddenServers: true
+    });
+
+    const second = create();
+
+    expect(second.controller.getState().settings).toEqual({
+      connectAllOnStartup: true,
+      throttleHiddenServers: true
+    });
+  });
+
+  test('the views are throttled by default when the app starts', () => {
+    const { calls } = create();
+
+    expect(calls.throttled).toEqual([true]);
+  });
+
+  test('turning off throttling applies to the views and is kept after a restart', () => {
+    const first = create();
+
+    first.controller.updateSettings({ throttleHiddenServers: false });
+
+    expect(first.calls.throttled.at(-1)).toBe(false);
+
+    const second = create();
+
+    expect(second.calls.throttled).toEqual([false]);
   });
 
   test('notify publishes the unread state of the views', () => {

@@ -8,6 +8,14 @@
   "addServerTooltip": "Aggiungi un server",
   "hideServerList": "Nascondi l'elenco dei server",
   "removeServer": "Rimuovi server",
+  "serverStatus": {
+    "idle": "In attesa di connessione",
+    "connecting": "Connessione...",
+    "connected": "Connesso",
+    "signed-out": "Disconnesso dall'account",
+    "disconnected": "Disconnesso",
+    "error": "Impossibile caricare, selezionalo per riprovare"
+  },
   "errors": {
     "invalidUrl": "Questo non è un indirizzo di server valido.",
     "unreachable": "Impossibile raggiungere un server Sharkord a questo indirizzo.",
@@ -30,5 +38,28 @@
     "message": "Rimuovere {{name}}? Verrai disconnesso da questo server su questo dispositivo.",
     "confirm": "Rimuovi",
     "cancel": "Annulla"
+  },
+  "settings": {
+    "title": "Impostazioni desktop",
+    "general": "Generale",
+    "connectAllOnStartup": "Connetti a tutti i server all'avvio",
+    "connectAllOnStartupDescription": "Carica tutti i server in background all'apertura dell'app, così ricevi i contatori dei non letti e le notifiche da ognuno. Usa più memoria.",
+    "performance": "Prestazioni",
+    "throttleHiddenServers": "Limita i server nascosti",
+    "throttleHiddenServersDescription": "Rallenta timer e rendering dei server che non stai guardando. Risparmia CPU e batteria, disattivalo se i server in background non funzionano bene.",
+    "performanceOverlay": "Overlay prestazioni",
+    "performanceOverlayDescription": "Mostra l'uso di memoria e CPU dell'app in una piccola finestra.",
+    "togglePerformanceOverlay": "Attiva/disattiva overlay prestazioni",
+    "menuBar": "Barra dei menu",
+    "menuBarDescription": "Mostra o nasconde la barra dei menu della finestra. Puoi anche usare Ctrl+Maiusc+M.",
+    "shortcuts": "Scorciatoie da tastiera",
+    "shortcutsDescription": "Scorciatoie che funzionano ovunque nell'app desktop.",
+    "shortcut": {
+      "selectServer": "Passa al server da 1 a 9",
+      "addServer": "Aggiungi un server",
+      "toggleServerList": "Mostra o nascondi l'elenco dei server",
+      "toggleMenuBar": "Mostra o nascondi la barra dei menu",
+      "togglePerformanceOverlay": "Attiva/disattiva l'overlay prestazioni"
+    }
   }
 }

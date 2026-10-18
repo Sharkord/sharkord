@@ -1,4 +1,7 @@
-import type { TDesktopUnreadState } from '@sharkord/shared';
+import type {
+  TDesktopConnectionState,
+  TDesktopUnreadState
+} from '@sharkord/shared';
 
 type TServer = {
   id: string;
@@ -7,12 +10,22 @@ type TServer = {
   iconUrl: string | null;
 };
 
+type TServerStatus = 'idle' | 'error' | TDesktopConnectionState;
+
+type TDesktopSettings = {
+  connectAllOnStartup: boolean;
+  throttleHiddenServers: boolean;
+};
+
 type TServersState = {
   servers: TServer[];
   selectedId: string | null;
   adding: boolean;
+  settingsOpen: boolean;
+  settings: TDesktopSettings;
   railVisible: boolean;
   unread: Record<string, TDesktopUnreadState>;
+  statuses: Record<string, TServerStatus>;
 };
 
 type TAddServerError = 'invalid-url' | 'unreachable' | 'duplicate';
@@ -26,6 +39,10 @@ type TDesktopApi = {
   selectServer: (id: string) => Promise<void>;
   setAdding: (adding: boolean) => Promise<void>;
   setRailHidden: (hidden: boolean) => Promise<void>;
+  setSettingsOpen: (open: boolean) => Promise<void>;
+  updateSettings: (settings: Partial<TDesktopSettings>) => Promise<void>;
+  togglePerformanceOverlay: () => Promise<void>;
+  toggleMenuBar: () => Promise<void>;
 };
 
 type TProcessGroup = 'Main' | 'Renderer' | 'GPU' | 'Utility' | 'Other';
@@ -44,9 +61,11 @@ type TPerformanceOverlayApi = {
 export type {
   TAddServerError,
   TDesktopApi,
+  TDesktopSettings,
   TPerformanceOverlayApi,
   TProcessGroup,
   TProcessUsage,
   TServer,
-  TServersState
+  TServersState,
+  TServerStatus
 };

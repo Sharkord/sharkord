@@ -8,6 +8,14 @@
   "addServerTooltip": "Add a server",
   "hideServerList": "Hide the server list",
   "removeServer": "Remove server",
+  "serverStatus": {
+    "idle": "Waiting to connect",
+    "connecting": "Connecting...",
+    "connected": "Connected",
+    "signed-out": "Signed out",
+    "disconnected": "Disconnected",
+    "error": "Could not load, select it to retry"
+  },
   "errors": {
     "invalidUrl": "That is not a valid server address.",
     "unreachable": "Could not reach a Sharkord server at that address.",
@@ -30,5 +38,28 @@
     "message": "Remove {{name}}? You will be signed out of this server on this device.",
     "confirm": "Remove",
     "cancel": "Cancel"
+  },
+  "settings": {
+    "title": "Desktop settings",
+    "general": "General",
+    "connectAllOnStartup": "Connect to all servers on startup",
+    "connectAllOnStartupDescription": "Load every server in the background when the app opens, so you get unread counts and notifications from all of them. Uses more memory.",
+    "performance": "Performance",
+    "throttleHiddenServers": "Throttle hidden servers",
+    "throttleHiddenServersDescription": "Slow down timers and rendering of servers you are not looking at. Saves CPU and battery, turn it off if background servers misbehave.",
+    "performanceOverlay": "Performance overlay",
+    "performanceOverlayDescription": "Show memory and CPU usage of the app in a small window.",
+    "togglePerformanceOverlay": "Toggle performance overlay",
+    "menuBar": "Menu bar",
+    "menuBarDescription": "Show or hide the window menu bar. You can also use Ctrl+Shift+M.",
+    "shortcuts": "Keyboard shortcuts",
+    "shortcutsDescription": "Shortcuts that work anywhere in the desktop app.",
+    "shortcut": {
+      "selectServer": "Switch to server 1 to 9",
+      "addServer": "Add a server",
+      "toggleServerList": "Show or hide the server list",
+      "toggleMenuBar": "Show or hide the menu bar",
+      "togglePerformanceOverlay": "Toggle the performance overlay"
+    }
   }
 }

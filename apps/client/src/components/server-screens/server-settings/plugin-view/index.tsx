@@ -1,4 +1,3 @@
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useCan } from '@/features/server/hooks';
 import { loadPluginTabs } from '@/features/server/plugins/actions';
 import {
@@ -17,6 +16,7 @@ import {
   AlertDescription,
   AlertTitle,
   LoadingCard,
+  SettingsSection,
   Tabs,
   TabsContent,
   TabsList,

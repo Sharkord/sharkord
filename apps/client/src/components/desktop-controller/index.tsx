@@ -1,5 +1,6 @@
 import { requestConfirmation } from '@/features/dialogs/actions';
 import {
+  useDesktopConnectionState,
   useTotalHasUnreadMentions,
   useTotalUnreadCount
 } from '@/features/server/hooks';
@@ -10,6 +11,7 @@ const DesktopController = memo(() => {
   const desktopApi = useDesktopApi();
   const unreadCount = useTotalUnreadCount();
   const hasUnreadMentions = useTotalHasUnreadMentions();
+  const connectionState = useDesktopConnectionState();
 
   useEffect(() => {
     if (!desktopApi) {
@@ -29,6 +31,14 @@ const DesktopController = memo(() => {
       mentioned: hasUnreadMentions
     });
   }, [desktopApi, unreadCount, hasUnreadMentions]);
+
+  useEffect(() => {
+    if (!desktopApi) {
+      return;
+    }
+
+    desktopApi.setConnectionState(connectionState);
+  }, [desktopApi, connectionState]);
 
   return null;
 });

@@ -4,7 +4,7 @@ import { DevChannel } from '../../shared/dev-channels';
 import { summarizeMetrics } from './summarize-metrics';
 
 const OVERLAY_WIDTH = 280;
-const OVERLAY_HEIGHT = 210;
+const OVERLAY_HEIGHT = 240;
 const OVERLAY_MARGIN = 16;
 const REFRESH_MS = 1000;
 

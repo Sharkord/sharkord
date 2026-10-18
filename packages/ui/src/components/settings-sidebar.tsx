@@ -1,10 +1,18 @@
-import { cn } from '@/lib/utils';
 import { TestId } from '@sharkord/shared';
-import { Separator, Tooltip } from '@sharkord/ui';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, type LucideIcon } from 'lucide-react';
+import { memo, useCallback, type ReactNode } from 'react';
+import { cn } from '../lib/utils';
+import { Separator } from './separator';
+import { Tooltip } from './tooltip';
 
-import { memo, useCallback } from 'react';
-import type { TSettingsEntry } from './types';
+type TSettingsEntry = {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  content: ReactNode;
+  logo?: string;
+  error?: string;
+};
 
 type TSidebarEntryProps = {
   entry: TSettingsEntry;
@@ -105,3 +113,4 @@ const SettingsSidebar = memo(
 );
 
 export { SettingsSidebar };
+export type { TSettingsEntry };

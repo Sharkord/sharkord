@@ -3,6 +3,7 @@ import { memo, useCallback, useEffect, useState } from 'react';
 import type { TServersState } from '../shared/types';
 import { AddServerForm } from './add-server-form';
 import { ServerRail } from './server-rail';
+import { SettingsPage } from './settings';
 
 const App = memo(() => {
   const [state, setState] = useState<TServersState | null>(null);
@@ -35,6 +36,10 @@ const App = memo(() => {
     window.desktop.setAdding(false);
   }, []);
 
+  const handleCloseSettings = useCallback(() => {
+    window.desktop.setSettingsOpen(false);
+  }, []);
+
   const handleHideRail = useCallback(() => {
     window.desktop.setRailHidden(true);
   }, []);
@@ -43,9 +48,18 @@ const App = memo(() => {
     return null;
   }
 
-  const { servers, selectedId, adding, railVisible, unread } = state;
+  const {
+    servers,
+    selectedId,
+    adding,
+    settingsOpen,
+    settings,
+    railVisible,
+    unread,
+    statuses
+  } = state;
   const hasServers = servers.length > 0;
-  const showForm = adding || !hasServers;
+  const showForm = !settingsOpen && (adding || !hasServers);
   const mainClass = cn(
     'flex flex-1 items-center justify-center',
     showForm && 'bg-background'
@@ -58,17 +72,24 @@ const App = memo(() => {
           servers={servers}
           selectedId={selectedId}
           unread={unread}
+          statuses={statuses}
           onSelect={handleSelect}
           onRemove={handleRemove}
           onAdd={handleAdd}
           onHide={handleHideRail}
         />
       )}
-      <main className={mainClass}>
-        {showForm && (
-          <AddServerForm canCancel={hasServers} onCancel={handleCancelAdd} />
-        )}
-      </main>
+      {settingsOpen ? (
+        <main className="min-w-0 flex-1">
+          <SettingsPage settings={settings} onClose={handleCloseSettings} />
+        </main>
+      ) : (
+        <main className={mainClass}>
+          {showForm && (
+            <AddServerForm canCancel={hasServers} onCancel={handleCancelAdd} />
+          )}
+        </main>
+      )}
     </div>
   );
 });

@@ -1,6 +1,5 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { HotkeyBindGroup } from '@/components/hotkey-input/hotkey-bind-group';
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { getVoiceControlsBridge } from '@/components/voice-provider/controls-bridge';
 import { useHotkeysEnabled } from '@/features/app/hooks';
@@ -41,6 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
   Separator,
+  SettingsSection,
   Slider,
   Switch
 } from '@sharkord/ui';

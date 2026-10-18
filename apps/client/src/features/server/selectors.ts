@@ -4,12 +4,16 @@ import {
   OWNER_ROLE_ID,
   PluginCapabilityType,
   PluginSlot,
+  type TDesktopConnectionState,
   type TJoinedRole,
   type TPluginStoreState
 } from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
 import {
+  appLoadingSelector,
   hotkeysEnabledSelector,
+  isAutoConnectingSelector,
+  loadingPluginsSelector,
   selectedThreadSelector,
   threadSidebarDataSelector
 } from '../app/selectors';
@@ -29,7 +33,8 @@ import { emojisSelector } from './emojis/selectors';
 import {
   canViewChannel,
   getConversationKey,
-  hasUnreadMentionInMessages
+  hasUnreadMentionInMessages,
+  isFatalDisconnect
 } from './helpers';
 import {
   messagesByChannelIdSelector,
@@ -298,6 +303,39 @@ export const totalUnreadCountSelector = createSelector(
       (total, channel) => total + (readStates[channel.id] ?? 0),
       0
     )
+);
+
+export const desktopConnectionStateSelector = createSelector(
+  [
+    connectedSelector,
+    appLoadingSelector,
+    loadingPluginsSelector,
+    isAutoConnectingSelector,
+    reconnectingSelector,
+    disconnectInfoSelector
+  ],
+  (
+    connected,
+    appLoading,
+    loadingPlugins,
+    isAutoConnecting,
+    reconnecting,
+    disconnectInfo
+  ): TDesktopConnectionState => {
+    if (connected) {
+      return 'connected';
+    }
+
+    if (appLoading || loadingPlugins || isAutoConnecting || reconnecting) {
+      return 'connecting';
+    }
+
+    if (isFatalDisconnect(disconnectInfo)) {
+      return 'disconnected';
+    }
+
+    return 'signed-out';
+  }
 );
 
 export const totalHasUnreadMentionsSelector = createSelector(

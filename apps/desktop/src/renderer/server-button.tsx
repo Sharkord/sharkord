@@ -7,25 +7,33 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-  UnreadCount
+  DropdownMenuTrigger
 } from '@sharkord/ui';
 import { Trash2Icon } from 'lucide-react';
 import { memo, useCallback, useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import defaultLogo from '../../build/icon.png';
-import type { TServer } from '../shared/types';
+import type { TServer, TServerStatus } from '../shared/types';
+import { ServerStatusBadge } from './server-status-badge';
 
 type TServerButtonProps = {
   server: TServer;
   selected: boolean;
   unread: TDesktopUnreadState | undefined;
+  status: TServerStatus;
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
 };
 
 const ServerButton = memo(
-  ({ server, selected, unread, onSelect, onRemove }: TServerButtonProps) => {
+  ({
+    server,
+    selected,
+    unread,
+    status,
+    onSelect,
+    onRemove
+  }: TServerButtonProps) => {
     const { t } = useTranslation();
     const [menuOpen, setMenuOpen] = useState(false);
 
@@ -56,6 +64,10 @@ const ServerButton = memo(
     }, [onRemove, server.id]);
 
     const shapeClass = selected ? 'rounded-2xl' : 'rounded-full';
+    const isConnected = status === 'connected';
+    const title = isConnected
+      ? server.name
+      : `${server.name} (${t(`serverStatus.${status}`)})`;
 
     return (
       <div className="group relative flex w-full justify-center">
@@ -70,14 +82,15 @@ const ServerButton = memo(
             <button
               type="button"
               className="relative"
-              title={server.name}
+              title={title}
               onClick={handleClick}
               onContextMenu={handleContextMenu}
             >
               <Avatar
                 className={cn(
-                  'size-12 transition-[border-radius] group-hover:rounded-2xl',
-                  shapeClass
+                  'size-12 transition-[border-radius,opacity,filter] group-hover:rounded-2xl',
+                  shapeClass,
+                  !isConnected && 'opacity-50 grayscale group-hover:opacity-80'
                 )}
               >
                 <AvatarImage src={server.iconUrl ?? undefined} />
@@ -85,13 +98,7 @@ const ServerButton = memo(
                   <img src={defaultLogo} alt="" className="size-full p-1.5" />
                 </AvatarFallback>
               </Avatar>
-              {unread && (
-                <UnreadCount
-                  count={unread.count}
-                  hasMention={unread.mentioned}
-                  className="ring-sidebar absolute -right-1 -bottom-1 ring-4"
-                />
-              )}
+              <ServerStatusBadge status={status} unread={unread} />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="right" align="start">

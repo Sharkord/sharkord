@@ -4,13 +4,14 @@ import { PanelLeftCloseIcon, PlusIcon } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RAIL_WIDTH } from '../shared/constants';
-import type { TServer } from '../shared/types';
+import type { TServer, TServerStatus } from '../shared/types';
 import { ServerButton } from './server-button';
 
 type TServerRailProps = {
   servers: TServer[];
   selectedId: string | null;
   unread: Record<string, TDesktopUnreadState>;
+  statuses: Record<string, TServerStatus>;
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
   onAdd: () => void;
@@ -22,6 +23,7 @@ const ServerRail = memo(
     servers,
     selectedId,
     unread,
+    statuses,
     onSelect,
     onRemove,
     onAdd,
@@ -40,6 +42,7 @@ const ServerRail = memo(
             server={server}
             selected={server.id === selectedId}
             unread={unread[server.id]}
+            status={statuses[server.id]}
             onSelect={onSelect}
             onRemove={onRemove}
           />

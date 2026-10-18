@@ -36,7 +36,8 @@ describe('server store', () => {
     expect(readStore(filePath)).toEqual({
       servers: [],
       railHidden: false,
-      selectedId: null
+      selectedId: null,
+      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
     });
   });
 
@@ -44,7 +45,8 @@ describe('server store', () => {
     writeStore(filePath, {
       servers: [SERVER, OTHER],
       railHidden: false,
-      selectedId: null
+      selectedId: null,
+      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
     });
 
     expect(readStore(filePath).servers).toEqual([SERVER, OTHER]);
@@ -54,7 +56,8 @@ describe('server store', () => {
     writeStore(filePath, {
       servers: [SERVER],
       railHidden: true,
-      selectedId: null
+      selectedId: null,
+      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
     });
 
     expect(readStore(filePath).railHidden).toBe(true);
@@ -64,7 +67,8 @@ describe('server store', () => {
     writeStore(filePath, {
       servers: [SERVER, OTHER],
       railHidden: false,
-      selectedId: OTHER.id
+      selectedId: OTHER.id,
+      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
     });
 
     expect(readStore(filePath).selectedId).toBe(OTHER.id);
@@ -79,13 +83,43 @@ describe('server store', () => {
     expect(readStore(filePath).selectedId).toBeNull();
   });
 
+  test('remembers the desktop settings', () => {
+    writeStore(filePath, {
+      servers: [SERVER],
+      railHidden: false,
+      selectedId: null,
+      settings: { connectAllOnStartup: true, throttleHiddenServers: false }
+    });
+
+    expect(readStore(filePath).settings).toEqual({
+      connectAllOnStartup: true,
+      throttleHiddenServers: false
+    });
+  });
+
+  test('falls back to the default settings for missing or invalid values', () => {
+    writeFileSync(
+      filePath,
+      JSON.stringify({
+        servers: [SERVER],
+        settings: { connectAllOnStartup: 'yes', throttleHiddenServers: 0 }
+      })
+    );
+
+    expect(readStore(filePath).settings).toEqual({
+      connectAllOnStartup: false,
+      throttleHiddenServers: true
+    });
+  });
+
   test('creates missing parent folders when saving', () => {
     const nested = path.join(dir, 'a', 'b', 'servers.json');
 
     writeStore(nested, {
       servers: [SERVER],
       railHidden: false,
-      selectedId: null
+      selectedId: null,
+      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
     });
 
     expect(readStore(nested).servers).toEqual([SERVER]);
@@ -95,18 +129,21 @@ describe('server store', () => {
     writeStore(filePath, {
       servers: [SERVER, OTHER],
       railHidden: true,
-      selectedId: null
+      selectedId: null,
+      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
     });
     writeStore(filePath, {
       servers: [OTHER],
       railHidden: false,
-      selectedId: null
+      selectedId: null,
+      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
     });
 
     expect(readStore(filePath)).toEqual({
       servers: [OTHER],
       railHidden: false,
-      selectedId: null
+      selectedId: null,
+      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
     });
   });
 
@@ -116,7 +153,8 @@ describe('server store', () => {
     expect(readStore(filePath)).toEqual({
       servers: [],
       railHidden: false,
-      selectedId: null
+      selectedId: null,
+      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
     });
   });
 
@@ -126,7 +164,8 @@ describe('server store', () => {
     expect(readStore(filePath)).toEqual({
       servers: [],
       railHidden: false,
-      selectedId: null
+      selectedId: null,
+      settings: { connectAllOnStartup: false, throttleHiddenServers: true }
     });
   });
 

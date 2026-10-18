@@ -8,6 +8,14 @@
   "addServerTooltip": "Adicionar um servidor",
   "hideServerList": "Ocultar a lista de servidores",
   "removeServer": "Remover servidor",
+  "serverStatus": {
+    "idle": "Aguardando conexão",
+    "connecting": "Conectando...",
+    "connected": "Conectado",
+    "signed-out": "Sessão encerrada",
+    "disconnected": "Desconectado",
+    "error": "Não foi possível carregar, selecione para tentar novamente"
+  },
   "errors": {
     "invalidUrl": "Este não é um endereço de servidor válido.",
     "unreachable": "Não foi possível encontrar um servidor Sharkord nesse endereço.",
@@ -30,5 +38,28 @@
     "message": "Remover {{name}}? Você será desconectado deste servidor neste dispositivo.",
     "confirm": "Remover",
     "cancel": "Cancelar"
+  },
+  "settings": {
+    "title": "Configurações do desktop",
+    "general": "Geral",
+    "connectAllOnStartup": "Conectar a todos os servidores ao iniciar",
+    "connectAllOnStartupDescription": "Carrega todos os servidores em segundo plano quando o aplicativo abre, para receber contagens de não lidas e notificações de todos eles. Usa mais memória.",
+    "performance": "Desempenho",
+    "throttleHiddenServers": "Limitar servidores ocultos",
+    "throttleHiddenServersDescription": "Reduz timers e renderização dos servidores que não estão visíveis. Economiza CPU e bateria; desative se os servidores em segundo plano se comportarem mal.",
+    "performanceOverlay": "Sobreposição de desempenho",
+    "performanceOverlayDescription": "Mostra o uso de memória e CPU do aplicativo numa pequena janela.",
+    "togglePerformanceOverlay": "Alternar sobreposição de desempenho",
+    "menuBar": "Barra de menus",
+    "menuBarDescription": "Mostra ou oculta a barra de menus da janela. Você também pode usar Ctrl+Shift+M.",
+    "shortcuts": "Atalhos de teclado",
+    "shortcutsDescription": "Atalhos que funcionam em qualquer lugar do aplicativo desktop.",
+    "shortcut": {
+      "selectServer": "Mudar para o servidor 1 a 9",
+      "addServer": "Adicionar um servidor",
+      "toggleServerList": "Mostrar ou ocultar a lista de servidores",
+      "toggleMenuBar": "Mostrar ou ocultar a barra de menus",
+      "togglePerformanceOverlay": "Alternar a sobreposição de desempenho"
+    }
   }
 }

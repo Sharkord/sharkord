@@ -1,11 +1,10 @@
 import { ControlledHotkeyInput } from '@/components/hotkey-input/controlled-hotkey-input';
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { usePluginNames } from '@/features/server/plugins/hooks';
 import { useHotkeyState } from '@/hooks/use-hotkeys';
 import { getHotkeyActionGroup, HotkeyGroup } from '@/lib/hotkeys/actions';
 import { findConflictLabel } from '@/lib/hotkeys/bindings';
 import type { THotkeyAction } from '@/lib/hotkeys/types';
-import { Group } from '@sharkord/ui';
+import { Group, SettingsSection } from '@sharkord/ui';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { bindingsFromRecord } from './helpers';

@@ -40,6 +40,9 @@ const start = () => {
   const shellView = createShellView();
   const views = createServerViews(win, shellView, () => controller.notify());
   const performanceOverlay = createPerformanceOverlay(win);
+  const toggleMenuBar = () => {
+    win.setMenuBarVisibility(!win.isMenuBarVisible());
+  };
   const userData = app.getPath('userData');
 
   const controller = createServerController(
@@ -52,11 +55,9 @@ const start = () => {
         buildAppMenu({
           state,
           controller,
-          win,
+          toggleMenuBar,
           requestRemove,
           togglePerformanceOverlay: performanceOverlay.toggle,
-          isBackgroundThrottled: views.isBackgroundThrottled(),
-          setBackgroundThrottled: views.setBackgroundThrottled,
           resetApp: () => confirmAndResetApp(win, controller)
         })
       );
@@ -69,6 +70,8 @@ const start = () => {
   registerIpc({
     controller,
     requestRemove,
+    togglePerformanceOverlay: performanceOverlay.toggle,
+    toggleMenuBar,
     shellContents: shellView.webContents
   });
 
@@ -77,6 +80,12 @@ const start = () => {
   });
 
   controller.sync();
+
+  const { settings } = controller.getState();
+
+  if (settings.connectAllOnStartup) {
+    controller.loadAll();
+  }
 
   const showWindow = () => {
     if (win.isMinimized()) {

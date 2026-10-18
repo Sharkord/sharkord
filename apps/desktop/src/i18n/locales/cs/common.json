@@ -8,6 +8,14 @@
   "addServerTooltip": "Přidat server",
   "hideServerList": "Skrýt seznam serverů",
   "removeServer": "Odebrat server",
+  "serverStatus": {
+    "idle": "Čeká na připojení",
+    "connecting": "Připojování...",
+    "connected": "Připojeno",
+    "signed-out": "Odhlášeno",
+    "disconnected": "Odpojeno",
+    "error": "Nelze načíst, vyberte jej pro nový pokus"
+  },
   "errors": {
     "invalidUrl": "Toto není platná adresa serveru.",
     "unreachable": "Na této adrese se nepodařilo najít server Sharkord.",
@@ -30,5 +38,28 @@
     "message": "Odebrat {{name}}? Na tomto zařízení budete z tohoto serveru odhlášeni.",
     "confirm": "Odebrat",
     "cancel": "Zrušit"
+  },
+  "settings": {
+    "title": "Nastavení aplikace",
+    "general": "Obecné",
+    "connectAllOnStartup": "Připojit ke všem serverům při spuštění",
+    "connectAllOnStartupDescription": "Při otevření aplikace načte všechny servery na pozadí, takže dostáváte počty nepřečtených zpráv a oznámení ze všech. Využívá více paměti.",
+    "performance": "Výkon",
+    "throttleHiddenServers": "Omezovat skryté servery",
+    "throttleHiddenServersDescription": "Zpomalí časovače a vykreslování serverů, které právě nesledujete. Šetří procesor a baterii, vypněte, pokud servery na pozadí nefungují správně.",
+    "performanceOverlay": "Překryv výkonu",
+    "performanceOverlayDescription": "Zobrazí využití paměti a procesoru aplikací v malém okně.",
+    "togglePerformanceOverlay": "Přepnout překryv výkonu",
+    "menuBar": "Panel nabídek",
+    "menuBarDescription": "Zobrazí nebo skryje panel nabídek okna. Můžete také použít Ctrl+Shift+M.",
+    "shortcuts": "Klávesové zkratky",
+    "shortcutsDescription": "Zkratky, které fungují kdekoli v desktopové aplikaci.",
+    "shortcut": {
+      "selectServer": "Přepnout na server 1 až 9",
+      "addServer": "Přidat server",
+      "toggleServerList": "Zobrazit nebo skrýt seznam serverů",
+      "toggleMenuBar": "Zobrazit nebo skrýt panel nabídek",
+      "togglePerformanceOverlay": "Přepnout překryv výkonu"
+    }
   }
 }

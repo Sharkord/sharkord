@@ -38,8 +38,12 @@ const bridge: TDesktopBridge = {
     };
   },
   toggleServerList: () => ipcRenderer.invoke(BridgeChannel.TOGGLE_RAIL),
+  openSettings: () => ipcRenderer.invoke(BridgeChannel.OPEN_SETTINGS),
   setUnreadState: (state) => {
     ipcRenderer.send(BridgeChannel.SET_UNREAD, state);
+  },
+  setConnectionState: (state) => {
+    ipcRenderer.send(BridgeChannel.SET_CONNECTION_STATE, state);
   },
   setConfirmationHandler: (handler) => {
     confirmationHandler = handler;

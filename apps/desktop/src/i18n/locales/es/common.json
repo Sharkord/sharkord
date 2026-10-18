@@ -8,6 +8,14 @@
   "addServerTooltip": "Añadir un servidor",
   "hideServerList": "Ocultar la lista de servidores",
   "removeServer": "Quitar servidor",
+  "serverStatus": {
+    "idle": "Esperando para conectar",
+    "connecting": "Conectando...",
+    "connected": "Conectado",
+    "signed-out": "Sesión cerrada",
+    "disconnected": "Desconectado",
+    "error": "No se pudo cargar, selecciónalo para reintentar"
+  },
   "errors": {
     "invalidUrl": "Esta no es una dirección de servidor válida.",
     "unreachable": "No se pudo encontrar un servidor Sharkord en esa dirección.",
@@ -30,5 +38,28 @@
     "message": "¿Quitar {{name}}? Se cerrará tu sesión en este servidor en este dispositivo.",
     "confirm": "Quitar",
     "cancel": "Cancelar"
+  },
+  "settings": {
+    "title": "Ajustes de escritorio",
+    "general": "General",
+    "connectAllOnStartup": "Conectar a todos los servidores al iniciar",
+    "connectAllOnStartupDescription": "Carga todos los servidores en segundo plano al abrir la aplicación, para recibir contadores de no leídos y notificaciones de todos ellos. Usa más memoria.",
+    "performance": "Rendimiento",
+    "throttleHiddenServers": "Limitar servidores ocultos",
+    "throttleHiddenServersDescription": "Ralentiza los temporizadores y el renderizado de los servidores que no estás viendo. Ahorra CPU y batería; desactívalo si los servidores en segundo plano fallan.",
+    "performanceOverlay": "Superposición de rendimiento",
+    "performanceOverlayDescription": "Muestra el uso de memoria y CPU de la aplicación en una pequeña ventana.",
+    "togglePerformanceOverlay": "Alternar superposición de rendimiento",
+    "menuBar": "Barra de menús",
+    "menuBarDescription": "Muestra u oculta la barra de menús de la ventana. También puedes usar Ctrl+Shift+M.",
+    "shortcuts": "Atajos de teclado",
+    "shortcutsDescription": "Atajos que funcionan en cualquier parte de la aplicación de escritorio.",
+    "shortcut": {
+      "selectServer": "Cambiar al servidor 1 a 9",
+      "addServer": "Añadir un servidor",
+      "toggleServerList": "Mostrar u ocultar la lista de servidores",
+      "toggleMenuBar": "Mostrar u ocultar la barra de menús",
+      "togglePerformanceOverlay": "Alternar la superposición de rendimiento"
+    }
   }
 }

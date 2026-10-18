@@ -8,6 +8,14 @@
   "addServerTooltip": "Ajouter un serveur",
   "hideServerList": "Masquer la liste des serveurs",
   "removeServer": "Retirer le serveur",
+  "serverStatus": {
+    "idle": "En attente de connexion",
+    "connecting": "Connexion...",
+    "connected": "Connecté",
+    "signed-out": "Déconnecté du compte",
+    "disconnected": "Déconnecté",
+    "error": "Impossible de charger, sélectionnez-le pour réessayer"
+  },
   "errors": {
     "invalidUrl": "Ce n'est pas une adresse de serveur valide.",
     "unreachable": "Impossible de joindre un serveur Sharkord à cette adresse.",
@@ -30,5 +38,28 @@
     "message": "Retirer {{name}} ? Vous serez déconnecté de ce serveur sur cet appareil.",
     "confirm": "Retirer",
     "cancel": "Annuler"
+  },
+  "settings": {
+    "title": "Paramètres du bureau",
+    "general": "Général",
+    "connectAllOnStartup": "Se connecter à tous les serveurs au démarrage",
+    "connectAllOnStartupDescription": "Charge tous les serveurs en arrière-plan à l'ouverture de l'application, pour recevoir les compteurs de non lus et les notifications de chacun. Utilise plus de mémoire.",
+    "performance": "Performances",
+    "throttleHiddenServers": "Limiter les serveurs masqués",
+    "throttleHiddenServersDescription": "Ralentit les minuteurs et le rendu des serveurs que vous ne regardez pas. Économise le processeur et la batterie, désactivez-le si les serveurs en arrière-plan fonctionnent mal.",
+    "performanceOverlay": "Superposition des performances",
+    "performanceOverlayDescription": "Affiche l'utilisation de la mémoire et du processeur de l'application dans une petite fenêtre.",
+    "togglePerformanceOverlay": "Afficher ou masquer la superposition",
+    "menuBar": "Barre de menus",
+    "menuBarDescription": "Affiche ou masque la barre de menus de la fenêtre. Vous pouvez aussi utiliser Ctrl+Maj+M.",
+    "shortcuts": "Raccourcis clavier",
+    "shortcutsDescription": "Raccourcis disponibles partout dans l'application de bureau.",
+    "shortcut": {
+      "selectServer": "Passer au serveur 1 à 9",
+      "addServer": "Ajouter un serveur",
+      "toggleServerList": "Afficher ou masquer la liste des serveurs",
+      "toggleMenuBar": "Afficher ou masquer la barre de menus",
+      "togglePerformanceOverlay": "Afficher ou masquer la superposition des performances"
+    }
   }
 }

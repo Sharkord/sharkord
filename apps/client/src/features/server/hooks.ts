@@ -11,6 +11,7 @@ import {
   categoryHasUnreadMentionsSelector,
   categoryUnreadMessagesCountSelector,
   connectedSelector,
+  desktopConnectionStateSelector,
   disconnectInfoSelector,
   dmsOpenSelector,
   hasSharingScreenUsersSelector,
@@ -50,6 +51,9 @@ export const useServerId = () => useSelector(serverIdSelector);
 export const useServerName = () => useSelector(serverNameSelector);
 
 export const useTotalUnreadCount = () => useSelector(totalUnreadCountSelector);
+
+export const useDesktopConnectionState = () =>
+  useSelector(desktopConnectionStateSelector);
 
 export const useTotalHasUnreadMentions = () =>
   useSelector(totalHasUnreadMentionsSelector);

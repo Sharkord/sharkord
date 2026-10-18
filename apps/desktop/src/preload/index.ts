@@ -26,7 +26,11 @@ const api: TDesktopApi = {
   setOverlay: (open) => invoke(IpcChannel.SET_OVERLAY, open),
   selectServer: (id) => invoke(IpcChannel.SELECT_SERVER, id),
   setAdding: (adding) => invoke(IpcChannel.SET_ADDING, adding),
-  setRailHidden: (hidden) => invoke(IpcChannel.SET_RAIL_HIDDEN, hidden)
+  setRailHidden: (hidden) => invoke(IpcChannel.SET_RAIL_HIDDEN, hidden),
+  setSettingsOpen: (open) => invoke(IpcChannel.SET_SETTINGS_OPEN, open),
+  updateSettings: (settings) => invoke(IpcChannel.UPDATE_SETTINGS, settings),
+  togglePerformanceOverlay: () => invoke(IpcChannel.TOGGLE_PERFORMANCE_OVERLAY),
+  toggleMenuBar: () => invoke(IpcChannel.TOGGLE_MENU_BAR)
 };
 
 contextBridge.exposeInMainWorld('desktop', api);

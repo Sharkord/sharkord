@@ -1,18 +1,32 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
 import { dirname } from 'path';
-import type { TServer } from '../../shared/types';
+import type { TDesktopSettings, TServer } from '../../shared/types';
 
 type TStore = {
   servers: TServer[];
   railHidden: boolean;
   selectedId: string | null;
+  settings: TDesktopSettings;
 };
 
 const createEmptyStore = (): TStore => ({
   servers: [],
   railHidden: false,
-  selectedId: null
+  selectedId: null,
+  settings: { connectAllOnStartup: false, throttleHiddenServers: true }
 });
+
+const parseSettings = (value: unknown): TDesktopSettings => {
+  const candidate =
+    typeof value === 'object' && value !== null
+      ? (value as Record<string, unknown>)
+      : {};
+
+  return {
+    connectAllOnStartup: candidate.connectAllOnStartup === true,
+    throttleHiddenServers: candidate.throttleHiddenServers !== false
+  };
+};
 
 const isServer = (value: unknown): value is TServer => {
   if (typeof value !== 'object' || value === null) {
@@ -38,7 +52,7 @@ const readStore = (filePath: string): TStore => {
       return createEmptyStore();
     }
 
-    const { servers, railHidden, selectedId } = parsed as Record<
+    const { servers, railHidden, selectedId, settings } = parsed as Record<
       string,
       unknown
     >;
@@ -46,7 +60,8 @@ const readStore = (filePath: string): TStore => {
     return {
       servers: Array.isArray(servers) ? servers.filter(isServer) : [],
       railHidden: railHidden === true,
-      selectedId: typeof selectedId === 'string' ? selectedId : null
+      selectedId: typeof selectedId === 'string' ? selectedId : null,
+      settings: parseSettings(settings)
     };
   } catch {
     // a missing or corrupt file just means a fresh start

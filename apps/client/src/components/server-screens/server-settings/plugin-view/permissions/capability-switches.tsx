@@ -1,10 +1,9 @@
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import {
   PluginCapabilityMode,
   PluginCapabilityType,
   type TPluginCapability
 } from '@sharkord/shared';
-import { Button, Label, Switch } from '@sharkord/ui';
+import { Button, Label, SettingsSection, Switch } from '@sharkord/ui';
 import { RotateCcw } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
