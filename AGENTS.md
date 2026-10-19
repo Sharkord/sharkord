@@ -391,7 +391,7 @@ parameterized selectors do not evict each other. Rules:
 
 ### Translations
 
-If you add new user-facing strings, you need to make sure you add them to ALL supported languages. To do this, navigate to the scripts package and run the following command:
+If you add new user-facing strings, you need to make sure you add them to ALL supported languages. To do this, navigate to the scripts package and run the following command (it covers both the client and the desktop app, whose locales are in `apps/desktop/src/i18n/locales/`):
 
 ```bash
 bun run synci18n

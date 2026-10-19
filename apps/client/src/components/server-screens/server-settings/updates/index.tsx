@@ -1,4 +1,3 @@
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useAdminUpdates } from '@/features/server/admin/hooks';
 import {
   Alert,
@@ -6,7 +5,8 @@ import {
   AlertTitle,
   Button,
   Group,
-  LoadingCard
+  LoadingCard,
+  SettingsSection
 } from '@sharkord/ui';
 import { ArrowUpCircle, CheckCircle, Download, X } from 'lucide-react';
 import { memo } from 'react';

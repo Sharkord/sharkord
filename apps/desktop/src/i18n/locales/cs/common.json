@@ -1,0 +1,69 @@
+{
+  "welcomeTitle": "Vítejte v Sharkordu",
+  "addServerTitle": "Přidat server",
+  "addServerDescription": "Zadejte adresu serveru, ke kterému se chcete připojit.",
+  "connect": "Připojit",
+  "connecting": "Připojování...",
+  "cancel": "Zrušit",
+  "addServerTooltip": "Přidat server",
+  "hideServerList": "Skrýt seznam serverů",
+  "removeServer": "Odebrat server",
+  "serverStatus": {
+    "idle": "Čeká na připojení",
+    "connecting": "Připojování...",
+    "connected": "Připojeno",
+    "signed-out": "Odhlášeno",
+    "disconnected": "Odpojeno",
+    "error": "Nelze načíst, vyberte jej pro nový pokus"
+  },
+  "errors": {
+    "invalidUrl": "Toto není platná adresa serveru.",
+    "unreachable": "Na této adrese se nepodařilo najít server Sharkord.",
+    "duplicate": "Tento server jste již přidali."
+  },
+  "menu": {
+    "servers": "Servery",
+    "addServer": "Přidat server...",
+    "hideServerList": "Skrýt seznam serverů",
+    "showServerList": "Zobrazit seznam serverů",
+    "removeCurrentServer": "Odebrat aktuální server...",
+    "toggleMenuBar": "Přepnout panel nabídek"
+  },
+  "tray": {
+    "show": "Zobrazit Sharkord",
+    "quit": "Ukončit Sharkord"
+  },
+  "removeDialog": {
+    "title": "Odebrat server",
+    "message": "Odebrat {{name}}? Na tomto zařízení budete z tohoto serveru odhlášeni.",
+    "confirm": "Odebrat",
+    "cancel": "Zrušit"
+  },
+  "settings": {
+    "title": "Nastavení aplikace",
+    "general": "Obecné",
+    "autoStart": "Otevřít při spuštění",
+    "autoStartDescription": "Spustí Sharkord automaticky po přihlášení k počítači.",
+    "startToTray": "Spouštět minimalizovaně do lišty",
+    "startToTrayDescription": "Při spuštění se aplikace otevře na pozadí bez zobrazení okna. Okno znovu otevřete ikonou v oznamovací oblasti.",
+    "connectAllOnStartup": "Připojit ke všem serverům při spuštění",
+    "connectAllOnStartupDescription": "Při otevření aplikace načte všechny servery na pozadí, takže dostáváte počty nepřečtených zpráv a oznámení ze všech. Využívá více paměti.",
+    "performance": "Výkon",
+    "throttleHiddenServers": "Omezovat skryté servery",
+    "throttleHiddenServersDescription": "Zpomalí časovače a vykreslování serverů, které právě nesledujete. Šetří procesor a baterii, vypněte, pokud servery na pozadí nefungují správně.",
+    "performanceOverlay": "Překryv výkonu",
+    "performanceOverlayDescription": "Zobrazí využití paměti a procesoru aplikací v malém okně.",
+    "togglePerformanceOverlay": "Přepnout překryv výkonu",
+    "menuBar": "Panel nabídek",
+    "menuBarDescription": "Zobrazí nebo skryje panel nabídek okna. Můžete také použít Ctrl+Shift+M.",
+    "shortcuts": "Klávesové zkratky",
+    "shortcutsDescription": "Zkratky, které fungují kdekoli v desktopové aplikaci.",
+    "shortcut": {
+      "selectServer": "Přepnout na server 1 až 9",
+      "addServer": "Přidat server",
+      "toggleServerList": "Zobrazit nebo skrýt seznam serverů",
+      "toggleMenuBar": "Zobrazit nebo skrýt panel nabídek",
+      "togglePerformanceOverlay": "Přepnout překryv výkonu"
+    }
+  }
+}

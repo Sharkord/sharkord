@@ -226,6 +226,15 @@ export const setBrowserNotificationsForReplies = async (enabled: boolean) => {
   );
 };
 
+export const setPluginNotifications = async (enabled: boolean) => {
+  if (enabled) {
+    await assertNotificationsPermission();
+  }
+
+  store.dispatch(appSliceActions.setPluginNotifications(enabled));
+  setLocalStorageItemBool(LocalStorageKey.PLUGIN_NOTIFICATIONS, enabled);
+};
+
 export const setNotificationSounds = (enabled: boolean) => {
   store.dispatch(appSliceActions.setNotificationSounds(enabled));
   setLocalStorageItemBool(LocalStorageKey.NOTIFICATION_SOUNDS, enabled);

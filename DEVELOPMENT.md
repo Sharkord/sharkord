@@ -16,6 +16,20 @@
 Development data is stored in `apps/server/data`, including the database and uploaded files.
 Delete that folder if you want a clean reset.
 
+## Desktop app
+
+`apps/desktop` is an Electron shell with a server rail. Each server is loaded from its own
+host in an isolated session, so it always runs the client version that server ships.
+
+```bash
+cd apps/desktop
+bun dev
+```
+
+Servers added in the app are stored in the Electron user data folder as `servers.json`. If
+Electron says it failed to install, run `node install.js` inside its package folder to
+download the binary.
+
 ## Mock data
 
 To start from a server that looks used rather than empty, stop the dev server and run:

@@ -82,10 +82,17 @@ beforeEach(() => {
   }) as unknown as typeof setTimeout);
 
   setLocalStorageItem(LocalStorageKey.HOTKEY_BRIDGE_TOKEN, 'secret');
+
+  // the source reports window focus to the bridge, a test page never has focus
+  globalThis.window = new EventTarget() as never;
+  globalThis.document = { hasFocus: () => false } as never;
 });
 
 afterEach(() => {
   restoreStorage();
+
+  delete (globalThis as { window?: unknown }).window;
+  delete (globalThis as { document?: unknown }).document;
 
   Object.defineProperty(globalThis, 'WebSocket', {
     configurable: true,

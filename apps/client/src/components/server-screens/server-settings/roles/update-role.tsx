@@ -1,4 +1,3 @@
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient } from '@/lib/trpc';
@@ -17,6 +16,7 @@ import {
   IconButton,
   Input,
   Separator,
+  SettingsSection,
   Switch,
   Tooltip
 } from '@sharkord/ui';

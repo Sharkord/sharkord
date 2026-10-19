@@ -127,6 +127,18 @@ const createBridgeSource = ({
     socket.send(JSON.stringify({ type: 'bindings', bindings }));
   };
 
+  const sendFocus = () => {
+    if (!socket || !ready) {
+      return;
+    }
+
+    socket.send(JSON.stringify({ type: 'focus' }));
+  };
+
+  const handleWindowFocus = () => {
+    sendFocus();
+  };
+
   const scheduleRetry = (delay: number) => {
     retryTimer = setTimeout(connect, delay);
   };
@@ -193,6 +205,10 @@ const createBridgeSource = ({
       attempts = 0;
       retryDelay = MIN_RETRY_MS;
       emitStatus(message.status, message.capabilities);
+
+      if (document.hasFocus()) {
+        sendFocus();
+      }
 
       return;
     }
@@ -283,6 +299,7 @@ const createBridgeSource = ({
   const stop = () => {
     clearTimeout(retryTimer);
     dropSocket();
+    window.removeEventListener('focus', handleWindowFocus);
 
     status = 'disconnected';
   };
@@ -312,6 +329,7 @@ const createBridgeSource = ({
     listeners.add(listener);
 
     if (listeners.size === 1) {
+      window.addEventListener('focus', handleWindowFocus);
       begin();
     }
 

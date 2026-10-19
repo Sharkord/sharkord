@@ -7,7 +7,8 @@
     "packages/*"
   ],
   "trustedDependencies": [
-    "mediasoup"
+    "mediasoup",
+    "electron"
   ],
   "scripts": {
     "test": "bun run --filter '*' test",

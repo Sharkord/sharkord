@@ -28,6 +28,7 @@ export enum LocalStorageKey {
   CHAT_INPUT_HEIGHT_VH = 'sharkord-chat-input-height-vh',
   THREAD_INPUT_HEIGHT_VH = 'sharkord-thread-input-height-vh',
   BROWSER_NOTIFICATIONS_FOR_REPLIES = 'sharkord-browser-notifications-for-replies',
+  PLUGIN_NOTIFICATIONS = 'sharkord-plugin-notifications',
   LANGUAGE = 'sharkord-language',
   PLUGIN_SLOT_DEBUG = 'sharkord-plugin-slot-debug',
   HIDE_OWN_SCREEN_SHARE = 'sharkord-hide-own-screen-share',

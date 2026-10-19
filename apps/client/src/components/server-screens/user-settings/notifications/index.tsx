@@ -1,4 +1,3 @@
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import {
   setBrowserNotifications,
@@ -6,7 +5,8 @@ import {
   setBrowserNotificationsForMentions,
   setBrowserNotificationsForReplies,
   setMessageSentSound,
-  setNotificationSounds
+  setNotificationSounds,
+  setPluginNotifications
 } from '@/features/app/actions';
 import {
   useBrowserNotifications,
@@ -14,9 +14,12 @@ import {
   useBrowserNotificationsForMentions,
   useBrowserNotificationsForReplies,
   useMessageSentSound,
-  useNotificationSounds
+  useNotificationSounds,
+  usePluginNotifications
 } from '@/features/app/hooks';
-import { Group, Switch } from '@sharkord/ui';
+import { assertNotificationsPermission } from '@/helpers/assert-notifications-permission';
+import { notify } from '@/lib/notifications';
+import { Button, Group, SettingsSection, Switch } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -25,6 +28,7 @@ type TNotificationsValues = {
   mentions: boolean;
   dms: boolean;
   replies: boolean;
+  plugins: boolean;
   sounds: boolean;
   sentSound: boolean;
 };
@@ -35,6 +39,7 @@ const Notifications = memo(() => {
   const mentions = useBrowserNotificationsForMentions();
   const dms = useBrowserNotificationsForDms();
   const replies = useBrowserNotificationsForReplies();
+  const plugins = usePluginNotifications();
   const sounds = useNotificationSounds();
   const sentSound = useMessageSentSound();
 
@@ -44,12 +49,13 @@ const Notifications = memo(() => {
     setBrowserNotificationsForMentions(values.mentions);
     setBrowserNotificationsForDms(values.dms);
     setBrowserNotificationsForReplies(values.replies);
+    setPluginNotifications(values.plugins);
     setNotificationSounds(values.sounds);
     setMessageSentSound(values.sentSound);
   }, []);
 
   const { values, onChange } = useSettingsForm<TNotificationsValues>({
-    initialValues: { all, mentions, dms, replies, sounds, sentSound },
+    initialValues: { all, mentions, dms, replies, plugins, sounds, sentSound },
     onSave,
     successMessage: t('notificationsUpdated'),
     errorMessage: t('failedUpdateNotifications')
@@ -71,6 +77,10 @@ const Notifications = memo(() => {
     (value: boolean) => onChange('replies', value),
     [onChange]
   );
+  const handlePluginsChange = useCallback(
+    (value: boolean) => onChange('plugins', value),
+    [onChange]
+  );
   const handleSoundsChange = useCallback(
     (value: boolean) => onChange('sounds', value),
     [onChange]
@@ -79,6 +89,19 @@ const Notifications = memo(() => {
     (value: boolean) => onChange('sentSound', value),
     [onChange]
   );
+
+  const handleSendTest = useCallback(async () => {
+    const granted = await assertNotificationsPermission();
+
+    if (!granted) {
+      return;
+    }
+
+    notify({
+      title: t('testNotificationTitle'),
+      body: t('testNotificationBody')
+    });
+  }, [t]);
 
   return (
     <SettingsSection
@@ -109,6 +132,15 @@ const Notifications = memo(() => {
           onCheckedChange={handleRepliesChange}
         />
       </Group>
+      <Group
+        label={t('pluginNotificationsLabel')}
+        description={t('pluginNotificationsDesc')}
+      >
+        <Switch
+          checked={values.plugins}
+          onCheckedChange={handlePluginsChange}
+        />
+      </Group>
       <Group label={t('soundsLabel')} description={t('soundsDesc')}>
         <Switch checked={values.sounds} onCheckedChange={handleSoundsChange} />
       </Group>
@@ -121,6 +153,14 @@ const Notifications = memo(() => {
           disabled={!values.sounds}
           onCheckedChange={handleSentSoundChange}
         />
+      </Group>
+      <Group
+        label={t('testNotificationLabel')}
+        description={t('testNotificationDesc')}
+      >
+        <Button variant="outline" className="w-fit" onClick={handleSendTest}>
+          {t('sendTestNotification')}
+        </Button>
       </Group>
     </SettingsSection>
   );
