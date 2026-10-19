@@ -1,12 +1,13 @@
-import { app, BrowserWindow, Menu } from 'electron';
+import { app, BrowserWindow, globalShortcut, Menu } from 'electron';
 import path from 'path';
 import icon from '../../build/icon.png?asset';
-import { IpcChannel } from '../shared/constants';
+import { APP_ID, IpcChannel } from '../shared/constants';
 import type { TServer } from '../shared/types';
 import { findDeepLink, parseDeepLink } from './deep-links/parse-deep-link';
 import { registerProtocol } from './deep-links/register-protocol';
 import { createPerformanceOverlay } from './dev/performance-overlay';
 import { confirmAndResetApp, wipeUserDataIfRequested } from './dev/reset-app';
+import { setActiveHotkeyServer } from './hotkeys/global-hotkeys';
 import { initI18n } from './i18n';
 import { registerIpc } from './ipc/register-ipc';
 import { buildAppMenu } from './menu/app-menu';
@@ -15,6 +16,7 @@ import { createServerController } from './servers/server-controller';
 import { disableBackgroundThrottling } from './startup/disable-background-throttling';
 import { enableChromiumFeatures } from './startup/enable-chromium-features';
 import { setAutoStart } from './startup/set-auto-start';
+import { writeDesktopEntry } from './startup/write-desktop-entry';
 import { createTray, type TAppTray } from './tray/create-tray';
 import { createServerViews } from './views/server-views';
 import { createShellView } from './views/shell-view';
@@ -70,6 +72,7 @@ const start = () => {
       shellView.webContents.send(IpcChannel.STATE_CHANGED, state);
 
       tray?.setUnread(state.unread);
+      setActiveHotkeyServer(state.selectedId);
 
       if (state.settings.autoStart !== appliedAutoStart) {
         appliedAutoStart = state.settings.autoStart;
@@ -169,6 +172,7 @@ const start = () => {
 enableChromiumFeatures();
 disableBackgroundThrottling();
 wipeUserDataIfRequested();
+writeDesktopEntry(icon);
 
 const hasLock = app.requestSingleInstanceLock();
 
@@ -190,7 +194,7 @@ if (hasLock) {
 
   app.on('ready', async () => {
     if (process.platform === 'win32') {
-      app.setAppUserModelId('com.sharkord.desktop');
+      app.setAppUserModelId(APP_ID);
     }
 
     // a packaged mac app gets its icon from the bundle, this covers dev runs
@@ -201,10 +205,16 @@ if (hasLock) {
     await initI18n();
     start();
   });
+
   app.on('before-quit', () => {
     isQuitting = true;
     tray?.destroy();
   });
+
+  app.on('will-quit', () => {
+    globalShortcut.unregisterAll();
+  });
+
   app.on('window-all-closed', () => app.quit());
 } else {
   app.quit();

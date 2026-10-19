@@ -25,9 +25,9 @@
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react-swc": "^4.1.0",
-    "electron": "^38.0.0",
-    "electron-builder": "^26.0.0",
-    "electron-vite": "^4.0.0",
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^6.0.0",
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-unused-imports": "^4.1.4",
@@ -48,7 +48,7 @@
     "zod": "^4.3.5"
   },
   "description": "Sharkord desktop app",
-  "desktopName": "sharkord.desktop",
+  "desktopName": "com.sharkord.desktop.desktop",
   "dependencies": {
     "@vencord/venmic": "7.2.3"
   }

@@ -10,7 +10,7 @@ import { DesktopController } from './components/desktop-controller/index.tsx';
 import { DevicesProvider } from './components/devices-provider/index.tsx';
 import { DialogsProvider } from './components/dialogs/index.tsx';
 import { GlobalErrorBoundary } from './components/error-boundary/global-error-boundary.tsx';
-import { HotkeyBridgeController } from './components/hotkey-bridge-controller/index.tsx';
+import { HotkeySourceController } from './components/hotkey-source-controller/index.tsx';
 import { KeyboardController } from './components/keyboard-controller/index.tsx';
 import { NotificationsController } from './components/notifications-controller';
 import { PluginsController } from './components/plugins-controller/index.tsx';
@@ -42,7 +42,7 @@ createRoot(document.getElementById('root')!).render(
         <Provider store={store}>
           <StoreDebug />
           <KeyboardController />
-          <HotkeyBridgeController />
+          <HotkeySourceController />
           <DesktopController />
           <NotificationsController />
           <DevicesProvider>

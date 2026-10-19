@@ -2,6 +2,7 @@ import { app } from 'electron';
 import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import os from 'os';
 import path from 'path';
+import { getDesktopExec } from './get-launch-command';
 
 const getLinuxAutostartFile = () => {
   const configDir =
@@ -20,9 +21,6 @@ const setLinuxAutoStart = (enabled: boolean) => {
     return;
   }
 
-  // an appimage runs from a temporary mount, the os has to start the image itself
-  const executable = process.env.APPIMAGE ?? process.execPath;
-
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(
     file,
@@ -30,7 +28,7 @@ const setLinuxAutoStart = (enabled: boolean) => {
       '[Desktop Entry]',
       'Type=Application',
       'Name=Sharkord',
-      `Exec="${executable}"`,
+      `Exec=${getDesktopExec()}`,
       'X-GNOME-Autostart-enabled=true',
       ''
     ].join('\n')

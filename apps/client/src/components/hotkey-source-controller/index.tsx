@@ -1,10 +1,20 @@
 import { useHotkeysEnabled } from '@/features/app/hooks';
 import { useServerId, useServerName } from '@/features/server/hooks';
+import { isDesktopApp } from '@/helpers/is-desktop-app';
 import { createBridgeSource } from '@/lib/hotkeys/bridge-source';
+import { createDesktopSource } from '@/lib/hotkeys/desktop-source';
 import { hotkeys } from '@/lib/hotkeys/dispatcher';
 import { memo, useEffect } from 'react';
 
-const HotkeyBridgeController = memo(() => {
+const createSource = (serverId: string, serverName: string) => {
+  if (isDesktopApp()) {
+    return createDesktopSource();
+  }
+
+  return createBridgeSource({ serverId, serverName });
+};
+
+const HotkeySourceController = memo(() => {
   const serverId = useServerId();
   const serverName = useServerName();
   const hotkeysEnabled = useHotkeysEnabled();
@@ -14,9 +24,7 @@ const HotkeyBridgeController = memo(() => {
       return;
     }
 
-    hotkeys.setSource(
-      createBridgeSource({ serverId, serverName: serverName ?? '' })
-    );
+    hotkeys.setSource(createSource(serverId, serverName ?? ''));
 
     return () => {
       hotkeys.setSource(undefined);
@@ -26,4 +34,4 @@ const HotkeyBridgeController = memo(() => {
   return null;
 });
 
-export { HotkeyBridgeController };
+export { HotkeySourceController };

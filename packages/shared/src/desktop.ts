@@ -19,6 +19,16 @@ export type TDesktopConnectionState =
   | 'signed-out'
   | 'disconnected';
 
+export type TDesktopHotkeyBinding = {
+  actionId: string;
+  combo: string;
+};
+
+export type TDesktopHotkeyError = {
+  actionId: string;
+  reason: 'unsupported' | 'taken';
+};
+
 export type TDesktopBridge = {
   getServerListVisible: () => Promise<boolean>;
   onServerListVisibleChange: (
@@ -31,6 +41,10 @@ export type TDesktopBridge = {
   startSystemAudio: () => Promise<boolean>;
   stopSystemAudio: () => Promise<void>;
   showNotification: (notification: TAppNotification) => void;
+  setHotkeys: (
+    bindings: TDesktopHotkeyBinding[]
+  ) => Promise<TDesktopHotkeyError[]>;
+  onHotkey: (listener: (actionId: string) => void) => () => void;
   onNotificationClick: (
     listener: (target: TNotificationTarget) => void
   ) => () => void;

@@ -51,6 +51,19 @@ const bridge: TDesktopBridge = {
   },
   startSystemAudio: () => ipcRenderer.invoke(BridgeChannel.START_SYSTEM_AUDIO),
   stopSystemAudio: () => ipcRenderer.invoke(BridgeChannel.STOP_SYSTEM_AUDIO),
+  setHotkeys: (bindings) =>
+    ipcRenderer.invoke(BridgeChannel.SET_HOTKEYS, bindings),
+  onHotkey: (listener) => {
+    const handler = (_event: IpcRendererEvent, actionId: string) => {
+      listener(actionId);
+    };
+
+    ipcRenderer.on(BridgeChannel.HOTKEY_PRESSED, handler);
+
+    return () => {
+      ipcRenderer.removeListener(BridgeChannel.HOTKEY_PRESSED, handler);
+    };
+  },
   showNotification: (notification) => {
     ipcRenderer.send(BridgeChannel.SHOW_NOTIFICATION, notification);
   },

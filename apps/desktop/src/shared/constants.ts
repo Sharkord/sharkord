@@ -1,5 +1,9 @@
 const RAIL_WIDTH = 72;
 
+// also written as appId in electron-builder.yml and as desktopName (plus .desktop) in package.json,
+// which cannot import it. windows toasts and linux portals know the app by this id
+const APP_ID = 'com.sharkord.desktop';
+
 enum IpcChannel {
   GET_STATE = 'servers:get-state',
   STATE_CHANGED = 'servers:state-changed',
@@ -15,4 +19,4 @@ enum IpcChannel {
   TOGGLE_MENU_BAR = 'window:toggle-menu-bar'
 }
 
-export { IpcChannel, RAIL_WIDTH };
+export { APP_ID, IpcChannel, RAIL_WIDTH };

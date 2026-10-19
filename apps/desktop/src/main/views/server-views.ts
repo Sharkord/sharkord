@@ -17,6 +17,10 @@ import { z } from 'zod';
 import { BridgeChannel } from '../../shared/bridge-channels';
 import { RAIL_WIDTH } from '../../shared/constants';
 import type { TServer, TServerStatus } from '../../shared/types';
+import {
+  clearServerHotkeys,
+  setServerHotkeys
+} from '../hotkeys/global-hotkeys';
 import { notificationSchema } from '../notifications/notification-schema';
 import { showNotification } from '../notifications/show-notification';
 import {
@@ -53,6 +57,15 @@ const connectionStateSchema = z.enum([
 
 const ERR_ABORTED = -3;
 const LOAD_TIMEOUT_MS = 15_000;
+
+const hotkeyBindingsSchema = z
+  .array(
+    z.object({
+      actionId: z.string().min(1).max(200),
+      combo: z.string().min(1).max(100)
+    })
+  )
+  .max(100);
 
 const getPartition = (id: string) => `persist:server-${id}`;
 
@@ -203,8 +216,8 @@ const createServerViews = (
 
     view.webContents.on(
       'did-start-navigation',
-      (_event, _url, isInPlace, isMainFrame) => {
-        if (!isMainFrame || isInPlace) {
+      ({ isMainFrame, isSameDocument }) => {
+        if (!isMainFrame || isSameDocument) {
           return;
         }
 
@@ -212,6 +225,7 @@ const createServerViews = (
         connectionStates.delete(server.id);
 
         stopSystemAudio(server.id);
+        clearServerHotkeys(server.id);
         changed();
       }
     );
@@ -235,13 +249,31 @@ const createServerViews = (
 
     view.webContents.on('render-process-gone', () => {
       pageStates.set(server.id, 'error');
+
       stopSystemAudio(server.id);
+      clearServerHotkeys(server.id);
       changed();
     });
 
     view.webContents.on('destroyed', () => {
       stopSystemAudio(server.id);
+      clearServerHotkeys(server.id);
     });
+
+    view.webContents.ipc.handle(
+      BridgeChannel.SET_HOTKEYS,
+      (_event, payload) => {
+        const parsed = hotkeyBindingsSchema.safeParse(payload);
+
+        if (!parsed.success) {
+          return [];
+        }
+
+        return setServerHotkeys(server.id, parsed.data, (actionId) => {
+          view.webContents.send(BridgeChannel.HOTKEY_PRESSED, actionId);
+        });
+      }
+    );
 
     view.webContents.ipc.handle(BridgeChannel.START_SYSTEM_AUDIO, () =>
       startSystemAudio(server.id)
@@ -491,12 +523,7 @@ const createServerViews = (
 
       const onGone = () => finish(null);
 
-      const onNavigate = (
-        _event: unknown,
-        _url: string,
-        _isInPlace: boolean,
-        isMainFrame: boolean
-      ) => {
+      const onNavigate = ({ isMainFrame }: { isMainFrame: boolean }) => {
         if (isMainFrame) {
           finish(null);
         }
