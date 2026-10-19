@@ -11,6 +11,8 @@ import { appSliceActions } from '@/features/app/slice';
 import { store } from '@/features/store';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { playSound } from '@/helpers/sounds';
+import { i18n } from '@/i18n';
+import { notify } from '@/lib/notifications';
 import type { TConversation } from '@/types';
 import {
   getPlainTextFromHtml,
@@ -37,15 +39,11 @@ import {
   userByIdSelector
 } from '../users/selectors';
 
-const sendBrowserNotification = (
+const sendMessageNotification = (
   message: TJoinedMessage,
   channelId: number,
   isDm = false
 ) => {
-  if (!('Notification' in window) || Notification.permission !== 'granted') {
-    return;
-  }
-
   const state = store.getState();
 
   const user = userByIdSelector(state, message.userId);
@@ -61,13 +59,28 @@ const sendBrowserNotification = (
   const textContent = getPlainTextFromHtml(message.content ?? '');
 
   const title = isDm
-    ? `${authorName} (DM)`
-    : `${authorName} in #${channel?.name ?? 'unknown'}`;
+    ? i18n.t('common:notificationTitleDm', { author: authorName })
+    : i18n.t('common:notificationTitleChannel', {
+        author: authorName,
+        channel: channel.name
+      });
 
-  const body = textContent ? textContent : 'Sent an attachment';
-  const icon = user?.avatar ? getFileUrl(user.avatar) : undefined;
+  const body = textContent
+    ? textContent
+    : i18n.t('common:notificationSentAttachment');
+  const icon = user.avatar ? getFileUrl(user.avatar) : undefined;
 
-  new Notification(title, { body, icon });
+  notify({
+    title,
+    body,
+    icon,
+    target: {
+      channelId,
+      messageId: message.id,
+      parentMessageId: message.parentMessageId ?? undefined,
+      isDm
+    }
+  });
 };
 
 const typingTimeouts: { [key: string]: NodeJS.Timeout } = {};
@@ -173,20 +186,20 @@ export const addMessages = (
           browserNotificationsForRepliesSelector(state);
 
         if (isDmChannel && hasDmNotificationsEnabled) {
-          sendBrowserNotification(targetMessage, channelId, true);
+          sendMessageNotification(targetMessage, channelId, true);
         } else if (notificationsForMentionsOnly) {
           if (isMentioned) {
-            sendBrowserNotification(targetMessage, channelId);
+            sendMessageNotification(targetMessage, channelId);
           }
         } else if (hasBrowserNotificationsEnabled) {
-          sendBrowserNotification(targetMessage, channelId);
+          sendMessageNotification(targetMessage, channelId);
         } else if (hasRepliesNotificationsEnabled) {
           const isReplyToOwnMessage =
             !!targetMessage.replyToMessageId &&
             targetMessage.replyTo?.userId === ownUserId;
 
           if (isReplyToOwnMessage) {
-            sendBrowserNotification(targetMessage, channelId);
+            sendMessageNotification(targetMessage, channelId);
           }
         }
       }

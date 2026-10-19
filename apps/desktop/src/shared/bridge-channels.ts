@@ -7,6 +7,8 @@ enum BridgeChannel {
   SET_CONNECTION_STATE = 'connection:set',
   START_SYSTEM_AUDIO = 'system-audio:start',
   STOP_SYSTEM_AUDIO = 'system-audio:stop',
+  SHOW_NOTIFICATION = 'notification:show',
+  NOTIFICATION_CLICKED = 'notification:clicked',
   CONFIRM_REQUEST = 'confirm:request',
   CONFIRM_RESPONSE = 'confirm:response'
 }

@@ -1,3 +1,5 @@
+import type { TAppNotification, TNotificationTarget } from './notifications';
+
 export type TDesktopConfirmOptions = {
   title?: string;
   message?: string;
@@ -28,6 +30,10 @@ export type TDesktopBridge = {
   setConnectionState: (state: TDesktopConnectionState) => void;
   startSystemAudio: () => Promise<boolean>;
   stopSystemAudio: () => Promise<void>;
+  showNotification: (notification: TAppNotification) => void;
+  onNotificationClick: (
+    listener: (target: TNotificationTarget) => void
+  ) => () => void;
   setConfirmationHandler: (
     handler: (options: TDesktopConfirmOptions) => Promise<boolean>
   ) => () => void;

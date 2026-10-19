@@ -1,4 +1,8 @@
-import type { TDesktopBridge, TDesktopConfirmOptions } from '@sharkord/shared';
+import type {
+  TDesktopBridge,
+  TDesktopConfirmOptions,
+  TNotificationTarget
+} from '@sharkord/shared';
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import { BridgeChannel } from '../shared/bridge-channels';
 
@@ -47,6 +51,20 @@ const bridge: TDesktopBridge = {
   },
   startSystemAudio: () => ipcRenderer.invoke(BridgeChannel.START_SYSTEM_AUDIO),
   stopSystemAudio: () => ipcRenderer.invoke(BridgeChannel.STOP_SYSTEM_AUDIO),
+  showNotification: (notification) => {
+    ipcRenderer.send(BridgeChannel.SHOW_NOTIFICATION, notification);
+  },
+  onNotificationClick: (listener) => {
+    const handler = (_event: IpcRendererEvent, target: TNotificationTarget) => {
+      listener(target);
+    };
+
+    ipcRenderer.on(BridgeChannel.NOTIFICATION_CLICKED, handler);
+
+    return () => {
+      ipcRenderer.removeListener(BridgeChannel.NOTIFICATION_CLICKED, handler);
+    };
+  },
   setConfirmationHandler: (handler) => {
     confirmationHandler = handler;
 

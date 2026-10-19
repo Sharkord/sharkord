@@ -15,7 +15,9 @@ import {
   useMessageSentSound,
   useNotificationSounds
 } from '@/features/app/hooks';
-import { Group, SettingsSection, Switch } from '@sharkord/ui';
+import { assertNotificationsPermission } from '@/helpers/assert-notifications-permission';
+import { notify } from '@/lib/notifications';
+import { Button, Group, SettingsSection, Switch } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -79,6 +81,19 @@ const Notifications = memo(() => {
     [onChange]
   );
 
+  const handleSendTest = useCallback(async () => {
+    const granted = await assertNotificationsPermission();
+
+    if (!granted) {
+      return;
+    }
+
+    notify({
+      title: t('testNotificationTitle'),
+      body: t('testNotificationBody')
+    });
+  }, [t]);
+
   return (
     <SettingsSection
       title={t('notificationsTitle')}
@@ -120,6 +135,14 @@ const Notifications = memo(() => {
           disabled={!values.sounds}
           onCheckedChange={handleSentSoundChange}
         />
+      </Group>
+      <Group
+        label={t('testNotificationLabel')}
+        description={t('testNotificationDesc')}
+      >
+        <Button variant="outline" className="w-fit" onClick={handleSendTest}>
+          {t('sendTestNotification')}
+        </Button>
       </Group>
     </SettingsSection>
   );

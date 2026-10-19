@@ -17,6 +17,8 @@ import { z } from 'zod';
 import { BridgeChannel } from '../../shared/bridge-channels';
 import { RAIL_WIDTH } from '../../shared/constants';
 import type { TServer, TServerStatus } from '../../shared/types';
+import { notificationSchema } from '../notifications/notification-schema';
+import { showNotification } from '../notifications/show-notification';
 import {
   startSystemAudio,
   stopSystemAudio
@@ -78,7 +80,8 @@ const openExternal = (url: string) => {
 const createServerViews = (
   win: BrowserWindow,
   shellView: WebContentsView,
-  onChange: () => void
+  onChange: () => void,
+  onNotificationClick: (serverId: string) => void
 ) => {
   const views = new Map<string, WebContentsView>();
   const unread = new Map<string, TDesktopUnreadState>();
@@ -247,6 +250,30 @@ const createServerViews = (
     view.webContents.ipc.handle(BridgeChannel.STOP_SYSTEM_AUDIO, () => {
       stopSystemAudio(server.id);
     });
+
+    view.webContents.ipc.on(
+      BridgeChannel.SHOW_NOTIFICATION,
+      (_event, payload) => {
+        const parsed = notificationSchema.safeParse(payload);
+
+        if (!parsed.success) {
+          return;
+        }
+
+        const notification = parsed.data;
+
+        showNotification(notification, serverSession, () => {
+          onNotificationClick(server.id);
+
+          if (notification.target) {
+            view.webContents.send(
+              BridgeChannel.NOTIFICATION_CLICKED,
+              notification.target
+            );
+          }
+        }).catch(console.error);
+      }
+    );
 
     view.webContents.setWindowOpenHandler(({ url }) => {
       openExternal(url);

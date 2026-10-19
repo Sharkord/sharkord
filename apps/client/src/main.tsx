@@ -12,6 +12,7 @@ import { DialogsProvider } from './components/dialogs/index.tsx';
 import { GlobalErrorBoundary } from './components/error-boundary/global-error-boundary.tsx';
 import { HotkeyBridgeController } from './components/hotkey-bridge-controller/index.tsx';
 import { KeyboardController } from './components/keyboard-controller/index.tsx';
+import { NotificationsController } from './components/notifications-controller';
 import { PluginsController } from './components/plugins-controller/index.tsx';
 import { AutoLoginController } from './components/routing/auto-login-controller.tsx';
 import { Routing } from './components/routing/index.tsx';
@@ -43,6 +44,7 @@ createRoot(document.getElementById('root')!).render(
           <KeyboardController />
           <HotkeyBridgeController />
           <DesktopController />
+          <NotificationsController />
           <DevicesProvider>
             <PluginsController />
             <DialogsProvider />

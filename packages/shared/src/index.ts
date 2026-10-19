@@ -3,6 +3,7 @@ export * from './events';
 export * from './extensions';
 export * from './helpers';
 export * from './logs';
+export * from './notifications';
 export * from './plugins';
 export * from './statics';
 export * from './tables';

@@ -47,7 +47,15 @@ const createWindow = () => {
 const start = () => {
   const win = createWindow();
   const shellView = createShellView();
-  const views = createServerViews(win, shellView, () => controller.notify());
+  const views = createServerViews(
+    win,
+    shellView,
+    () => controller.notify(),
+    (serverId) => {
+      showWindow();
+      controller.select(serverId);
+    }
+  );
   const performanceOverlay = createPerformanceOverlay(win);
   const toggleMenuBar = () => {
     win.setMenuBarVisibility(!win.isMenuBarVisible());
@@ -181,6 +189,10 @@ if (hasLock) {
   });
 
   app.on('ready', async () => {
+    if (process.platform === 'win32') {
+      app.setAppUserModelId('com.sharkord.desktop');
+    }
+
     // a packaged mac app gets its icon from the bundle, this covers dev runs
     if (process.platform === 'darwin') {
       app.dock?.setIcon(icon);
