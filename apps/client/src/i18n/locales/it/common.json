@@ -59,6 +59,7 @@
   "notificationTitleDm": "{{author}} (MD)",
   "notificationTitleChannel": "{{author}} in #{{channel}}",
   "notificationSentAttachment": "Ha inviato un allegato",
+  "pluginNotificationTitle": "{{plugin}}: {{title}}",
   "uploadsDisabled": "I caricamenti di file sono disabilitati su questo server",
   "noUploadPermission": "Non hai il permesso di caricare file",
   "serverUpdateInitiated": "Aggiornamento del server avviato",

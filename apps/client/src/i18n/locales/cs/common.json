@@ -59,6 +59,7 @@
   "notificationTitleDm": "{{author}} (SZ)",
   "notificationTitleChannel": "{{author}} v #{{channel}}",
   "notificationSentAttachment": "Poslal(a) přílohu",
+  "pluginNotificationTitle": "{{plugin}}: {{title}}",
   "uploadsDisabled": "Nahrávání souborů je na tomto serveru zakázáno",
   "noUploadPermission": "Nemáte oprávnění nahrávat soubory",
   "serverUpdateInitiated": "Aktualizace serveru zahájena",

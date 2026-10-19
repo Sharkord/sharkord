@@ -59,6 +59,7 @@
   "notificationTitleDm": "{{author}} (MP)",
   "notificationTitleChannel": "{{author}} dans #{{channel}}",
   "notificationSentAttachment": "A envoyé une pièce jointe",
+  "pluginNotificationTitle": "{{plugin}} : {{title}}",
   "uploadsDisabled": "Les envois de fichiers sont désactivés sur ce serveur",
   "noUploadPermission": "Vous n’avez pas la permission d’envoyer des fichiers",
   "serverUpdateInitiated": "Mise à jour du serveur lancée",

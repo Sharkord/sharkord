@@ -1,33 +1,12 @@
-type TPushHandler = (data: unknown) => void;
+import {
+  createPluginHandlerRegistry,
+  type TPluginHandler
+} from './plugin-handler-registry';
 
-const handlers = new Map<string, Set<TPushHandler>>();
+const pushRegistry = createPluginHandlerRegistry('push');
 
-const onPluginPush = (pluginId: string, handler: TPushHandler) => {
-  const existing = handlers.get(pluginId) ?? new Set<TPushHandler>();
-
-  existing.add(handler);
-  handlers.set(pluginId, existing);
-
-  return () => {
-    const current = handlers.get(pluginId);
-
-    if (!current) return;
-
-    current.delete(handler);
-
-    if (current.size === 0) handlers.delete(pluginId);
-  };
-};
-
-const dispatchPluginPush = (pluginId: string, data: unknown) => {
-  handlers.get(pluginId)?.forEach((handler) => {
-    try {
-      handler(data);
-    } catch (error) {
-      console.error(`Plugin ${pluginId} push handler failed:`, error);
-    }
-  });
-};
+const onPluginPush = pushRegistry.on;
+const dispatchPluginPush = pushRegistry.dispatch;
 
 export { dispatchPluginPush, onPluginPush };
-export type { TPushHandler };
+export type { TPluginHandler as TPushHandler };

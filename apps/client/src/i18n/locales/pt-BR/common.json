@@ -59,6 +59,7 @@
   "notificationTitleDm": "{{author}} (DM)",
   "notificationTitleChannel": "{{author}} em #{{channel}}",
   "notificationSentAttachment": "Enviou um anexo",
+  "pluginNotificationTitle": "{{plugin}}: {{title}}",
   "uploadsDisabled": "O envio de arquivos está desativado neste servidor",
   "noUploadPermission": "Você não tem permissão para enviar arquivos",
   "serverUpdateInitiated": "Atualização do servidor iniciada",

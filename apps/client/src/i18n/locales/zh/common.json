@@ -59,6 +59,7 @@
   "notificationTitleDm": "{{author}}（私信）",
   "notificationTitleChannel": "{{author}} 在 #{{channel}}",
   "notificationSentAttachment": "发送了一个附件",
+  "pluginNotificationTitle": "{{plugin}}：{{title}}",
   "uploadsDisabled": "此服务器已禁用文件上传",
   "noUploadPermission": "您没有上传文件的权限",
   "serverUpdateInitiated": "服务器更新已启动",

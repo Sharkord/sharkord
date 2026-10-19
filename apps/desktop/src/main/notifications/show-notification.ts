@@ -6,6 +6,12 @@ const ICON_TIMEOUT_MS = 2_000;
 const visible = new Set<Notification>();
 
 const loadIcon = async (url: string, session: Session) => {
+  if (url.startsWith('data:')) {
+    const image = nativeImage.createFromDataURL(url);
+
+    return image.isEmpty() ? undefined : image;
+  }
+
   try {
     const response = await session.fetch(url, {
       signal: AbortSignal.timeout(ICON_TIMEOUT_MS)

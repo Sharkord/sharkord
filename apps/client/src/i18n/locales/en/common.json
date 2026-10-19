@@ -59,6 +59,7 @@
   "notificationTitleDm": "{{author}} (DM)",
   "notificationTitleChannel": "{{author}} in #{{channel}}",
   "notificationSentAttachment": "Sent an attachment",
+  "pluginNotificationTitle": "{{plugin}}: {{title}}",
   "uploadsDisabled": "File uploads are disabled on this server",
   "noUploadPermission": "You do not have permission to upload files",
   "serverUpdateInitiated": "Server update initiated",

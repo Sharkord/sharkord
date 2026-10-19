@@ -32,6 +32,7 @@ export interface TAppState {
   browserNotificationsForMentions: boolean;
   browserNotificationsForDms: boolean;
   browserNotificationsForReplies: boolean;
+  pluginNotifications: boolean;
   notificationSounds: boolean;
   messageSentSound: boolean;
   mutedChannelIds: number[];
@@ -80,6 +81,10 @@ const initialState: TAppState = {
   ),
   browserNotificationsForReplies: getLocalStorageItemBool(
     LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_REPLIES,
+    false
+  ),
+  pluginNotifications: getLocalStorageItemBool(
+    LocalStorageKey.PLUGIN_NOTIFICATIONS,
     false
   ),
   notificationSounds: getLocalStorageItemBool(
@@ -184,6 +189,9 @@ export const appSlice = createSlice({
       action: PayloadAction<boolean>
     ) => {
       state.browserNotificationsForReplies = action.payload;
+    },
+    setPluginNotifications: (state, action: PayloadAction<boolean>) => {
+      state.pluginNotifications = action.payload;
     },
     setNotificationSounds: (state, action: PayloadAction<boolean>) => {
       state.notificationSounds = action.payload;

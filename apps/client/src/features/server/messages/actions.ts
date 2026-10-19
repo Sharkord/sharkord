@@ -75,6 +75,7 @@ const sendMessageNotification = (
     body,
     icon,
     target: {
+      type: 'message',
       channelId,
       messageId: message.id,
       parentMessageId: message.parentMessageId ?? undefined,

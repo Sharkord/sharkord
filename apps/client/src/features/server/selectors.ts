@@ -2,6 +2,8 @@ import type { TConversationKey } from '@/types';
 import { createSelector } from '@reduxjs/toolkit';
 import {
   OWNER_ROLE_ID,
+  Permission,
+  PLUGIN_NOTIFICATIONS_CAPABILITY,
   PluginCapabilityType,
   PluginSlot,
   type TDesktopConnectionState,
@@ -438,6 +440,29 @@ export const hiddenPluginComponentsSelector = createSelector(
     return hidden.length > 0 ? hidden : DEFAULT_HIDDEN_COMPONENTS;
   }
 );
+
+export const canReceivePluginNotificationsSelector = createCachedSelector(
+  [
+    ownUserRolesSelector,
+    isOwnUserOwnerSelector,
+    (state: IRootState, pluginId: string) =>
+      canUsePluginCapabilitySelector(
+        state,
+        pluginId,
+        PluginCapabilityType.NOTIFICATION,
+        PLUGIN_NOTIFICATIONS_CAPABILITY
+      )
+  ],
+  (ownUserRoles, isOwner, canUseCapability) => {
+    if (isOwner) return true;
+
+    const canUsePlugins = ownUserRoles.some((role) =>
+      role.permissions.includes(Permission.USE_PLUGINS)
+    );
+
+    return canUsePlugins && canUseCapability;
+  }
+)((_: IRootState, pluginId: string) => pluginId);
 
 export const canUsePluginCapabilitySelector = createCachedSelector(
   [
