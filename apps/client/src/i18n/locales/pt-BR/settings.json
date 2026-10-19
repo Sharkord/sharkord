@@ -130,6 +130,7 @@
   "screenContentHintDetail": "Nitidez",
   "screenContentHintMotion": "Fluidez",
   "maxBitrateLabel": "Taxa de Bits Máxima",
+  "screenShareAdvanced": "Avançado",
   "screenSharingNote": "Essas configurações de compartilhamento de tela são baseadas no melhor esforço e podem não ser suportadas em todas as plataformas ou navegadores, o que significa que em alguns casos a resolução, taxa de quadros ou codec real usado pode ser diferente dos selecionados. No fim das contas, cabe ao navegador lidar com o fluxo de compartilhamento da melhor maneira possível, com base no desempenho do sistema e condições da rede.",
   "deviceSettingsSaved": "Configurações do dispositivo salvas",
   "serverInfoTitle": "Informações do Servidor",

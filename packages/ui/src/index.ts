@@ -9,6 +9,7 @@ export * from './components/card';
 export * from './components/color-picker';
 export * from './components/context-menu';
 export * from './components/date-picker';
+export * from './components/details-section';
 export * from './components/dialog';
 export * from './components/dropdown-menu';
 export * from './components/group';

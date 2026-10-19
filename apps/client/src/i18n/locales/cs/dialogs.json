@@ -93,5 +93,10 @@
   "pluginInstallDocsNote": "Více informací naleznete v dokumentaci:",
   "pluginInstallConfirmBtn": "Nainstalovat rozšíření",
   "pluginInstallConfirmCountdown": "Čekejte ({{seconds}}s)",
-  "searchTruncated": "Zobrazují se pouze nejnovější shody. Upřesněte hledání pro zúžení výsledků."
+  "searchTruncated": "Zobrazují se pouze nejnovější shody. Upřesněte hledání pro zúžení výsledků.",
+  "screenShareTitle": "Sdílet obrazovku",
+  "screenShareMessage": "Potom vyberete obrazovku nebo okno, které chcete sdílet.",
+  "shareSystemAudio": "Sdílet zvuk systému",
+  "additionalScreenShareSettings": "Další nastavení sdílení obrazovky",
+  "screenShareConfirm": "Pokračovat"
 }

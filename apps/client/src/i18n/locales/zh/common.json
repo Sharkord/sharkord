@@ -106,6 +106,8 @@
   "searchResults": "搜索结果（{{count}}）",
   "wasReactedBy": "{{reacters}} 做出了反应。",
   "andMore": "以及其他 {{count}} 人",
+  "typeAMessage": "输入消息...",
+  "messageChannel": "发送消息到“{{name}}”",
   "toggleParticipants": "显示/隐藏参与者",
   "sendVoiceReaction": "发送表情反应",
   "failedSendVoiceReaction": "发送表情反应失败",

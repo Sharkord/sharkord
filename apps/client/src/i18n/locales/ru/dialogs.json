@@ -93,5 +93,10 @@
   "pluginInstallDocsNote": "Подробнее читайте в документации:",
   "pluginInstallConfirmBtn": "Установить плагин",
   "pluginInstallConfirmCountdown": "Подождите ({{seconds}}s)",
-  "searchTruncated": "Показаны только самые свежие совпадения. Уточните запрос, чтобы сузить поиск."
+  "searchTruncated": "Показаны только самые свежие совпадения. Уточните запрос, чтобы сузить поиск.",
+  "screenShareTitle": "Демонстрация экрана",
+  "screenShareMessage": "Далее вы выберете экран или окно для демонстрации.",
+  "shareSystemAudio": "Транслировать системный звук",
+  "additionalScreenShareSettings": "Дополнительные настройки демонстрации экрана",
+  "screenShareConfirm": "Продолжить"
 }

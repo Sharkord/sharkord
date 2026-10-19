@@ -1,15 +1,25 @@
+import { useDevices } from '@/components/devices-provider/hooks/use-devices';
+import { hasUnsavedChanges } from '@/components/server-screens/settings-shell/helpers';
 import { usePushToTalkActive } from '@/features/app/hooks';
+import { requestScreenShareOptions } from '@/features/dialogs/actions';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { SoundType } from '@/features/server/types';
 import { updateOwnVoiceState } from '@/features/server/voice/actions';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
 import { voiceLogger } from '@/helpers/browser-logger';
+import { isDesktopApp } from '@/helpers/is-desktop-app';
 import { playSound } from '@/helpers/sounds';
 import { getTRPCClient } from '@/lib/trpc';
+import type { TDeviceSettings } from '@/types';
 import { getTrpcError } from '@sharkord/shared';
 import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+
+type TScreenShareOptions = {
+  settings: TDeviceSettings;
+  systemAudio: boolean;
+};
 
 type TPendingMicRestoreState = {
   previousMicMuted: boolean;
@@ -30,7 +40,9 @@ type TUseVoiceControlsParams = {
   startWebcamStream: () => Promise<void>;
   stopWebcamStream: () => void;
 
-  startScreenShareStream: () => Promise<MediaStreamTrack>;
+  startScreenShareStream: (
+    options?: TScreenShareOptions
+  ) => Promise<MediaStreamTrack>;
   stopScreenShareStream: () => void;
 };
 
@@ -51,6 +63,7 @@ const useVoiceControls = ({
   const isTogglingSound = useRef(false);
   const isTogglingWebcam = useRef(false);
   const isTogglingScreenShare = useRef(false);
+  const { devices, saveDevices } = useDevices();
   const pendingMicRestoreStateRef = useRef<TPendingMicRestoreState | null>(
     null
   );
@@ -267,6 +280,26 @@ const useVoiceControls = ({
 
     const newState = !ownVoiceState.sharingScreen;
     const trpc = getTRPCClient();
+    let screenShareOptions: TScreenShareOptions | undefined;
+
+    if (newState && isDesktopApp()) {
+      const chosen = await requestScreenShareOptions({ settings: devices });
+
+      if (!chosen) {
+        isTogglingScreenShare.current = false;
+
+        return;
+      }
+
+      if (hasUnsavedChanges(chosen, devices)) {
+        saveDevices(chosen);
+      }
+
+      screenShareOptions = {
+        settings: chosen,
+        systemAudio: chosen.shareSystemAudio
+      };
+    }
 
     voiceLogger.info('screen: toggle requested', { sharing: newState });
 
@@ -280,7 +313,7 @@ const useVoiceControls = ({
 
     try {
       if (newState) {
-        const video = await startScreenShareStream();
+        const video = await startScreenShareStream(screenShareOptions);
 
         // handle native screen share end
         video.onended = async () => {
@@ -323,6 +356,8 @@ const useVoiceControls = ({
   }, [
     t,
     ownVoiceState.sharingScreen,
+    devices,
+    saveDevices,
     startScreenShareStream,
     stopScreenShareStream
   ]);
@@ -336,3 +371,4 @@ const useVoiceControls = ({
 };
 
 export { useVoiceControls };
+export type { TScreenShareOptions };

@@ -106,6 +106,8 @@
   "searchResults": "Výsledky hledání ({{count}})",
   "wasReactedBy": "reagovali {{reacters}}.",
   "andMore": "a dalších {{count}}",
+  "typeAMessage": "Napište zprávu...",
+  "messageChannel": "Zpráva do „{{name}}“",
   "toggleParticipants": "Zobrazit/skrýt účastníky",
   "sendVoiceReaction": "Odeslat reakci",
   "failedSendVoiceReaction": "Nepodařilo se odeslat reakci",

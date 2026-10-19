@@ -1,4 +1,5 @@
 import { Dialog } from '@/components/dialogs/dialogs';
+import type { TDeviceSettings } from '@/types';
 import type { TDesktopConfirmOptions, TGenericObject } from '@sharkord/shared';
 import { store } from '../store';
 import { dialogInfoSelector } from './selectors';
@@ -109,4 +110,25 @@ export const requestTextInput = async ({
 
 export const resetDialogs = () => {
   store.dispatch(dialogSliceActions.resetDialogs());
+};
+
+// the desktop app has no browser picker with an audio checkbox, so it asks before the os picker opens
+export const requestScreenShareOptions = async ({
+  settings
+}: {
+  settings: TDeviceSettings;
+}): Promise<TDeviceSettings | null> => {
+  return new Promise((resolve) => {
+    openDialog(Dialog.SCREEN_SHARE_OPTIONS, {
+      settings,
+      onConfirm: (chosen: TDeviceSettings) => {
+        closeDialogs();
+        resolve(chosen);
+      },
+      onCancel: () => {
+        closeDialogs();
+        resolve(null);
+      }
+    });
+  });
 };

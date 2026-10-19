@@ -35,6 +35,8 @@
   "resolution": "Rozlišení: {{width}}x{{height}}",
   "frameRate": "Snímková frekvence: {{fps}} fps",
   "bitrate": "Datový tok: {{bitrate}}/s",
+  "simulcastLayers": "Vrstvy simulcastu: {{count}}",
+  "simulcastLayer": "Vrstva {{layer}}",
   "framesEncoded": "Zakódované snímky: {{frames}}",
   "qualityLimited": "Kvalita omezena: {{reason}}",
   "sessionTotals": "Celkem za relaci",

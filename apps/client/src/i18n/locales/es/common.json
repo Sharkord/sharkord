@@ -106,6 +106,8 @@
   "searchResults": "Resultados de búsqueda ({{count}})",
   "wasReactedBy": "ha sido reaccionado por {{reacters}}.",
   "andMore": "y {{count}} más",
+  "typeAMessage": "Escribe un mensaje...",
+  "messageChannel": "Mensaje en \"{{name}}\"",
   "toggleParticipants": "Mostrar/ocultar participantes",
   "sendVoiceReaction": "Enviar una reacción",
   "failedSendVoiceReaction": "No se pudo enviar la reacción",

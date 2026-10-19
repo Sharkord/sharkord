@@ -106,6 +106,8 @@
   "searchResults": "Результаты поиска ({{count}})",
   "wasReactedBy": "на это отреагировали {{reacters}}.",
   "andMore": "и еще {{count}}",
+  "typeAMessage": "Введите сообщение...",
+  "messageChannel": "Сообщение в «{{name}}»",
   "toggleParticipants": "Показать/скрыть участников",
   "sendVoiceReaction": "Отправить реакцию",
   "failedSendVoiceReaction": "Не удалось отправить реакцию",

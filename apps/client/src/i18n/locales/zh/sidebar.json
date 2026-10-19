@@ -35,6 +35,8 @@
   "resolution": "分辨率：{{width}}x{{height}}",
   "frameRate": "帧率：{{fps}} fps",
   "bitrate": "码率：{{bitrate}}/s",
+  "simulcastLayers": "联播层数：{{count}}",
+  "simulcastLayer": "第 {{layer}} 层",
   "framesEncoded": "已编码帧：{{frames}}",
   "qualityLimited": "质量受限：{{reason}}",
   "sessionTotals": "本次会话总计",
