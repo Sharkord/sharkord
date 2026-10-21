@@ -50,6 +50,24 @@ const revokeFromDefaultRole = async (permission: Permission) =>
       )
     );
 
+// the seeded private voice channel grants nothing to the default role, so view has to be
+// allowed for the update-state guard to let the caller through at all
+const allowViewOnPrivateVoiceChannel = async () => {
+  const defaultRole = await tdb
+    .select({ id: roles.id })
+    .from(roles)
+    .where(eq(roles.isDefault, true))
+    .get();
+
+  await tdb.insert(channelRolePermissions).values({
+    channelId: PRIVATE_VOICE_CHANNEL_ID,
+    roleId: defaultRole!.id,
+    permission: ChannelPermission.VIEW_CHANNEL,
+    allow: true,
+    createdAt: Date.now()
+  });
+};
+
 describe('voice router', () => {
   test('should rate limit excessive voice join attempts', async () => {
     const { caller } = await initTest(1);
@@ -707,19 +725,7 @@ describe('voice router', () => {
     // anything to do on a private one. view has to be granted or the guard would refuse the
     // whole call and the dropped fields would prove nothing
     test('should drop the fields the user has no channel permission for', async () => {
-      const defaultRole = await tdb
-        .select({ id: roles.id })
-        .from(roles)
-        .where(eq(roles.isDefault, true))
-        .get();
-
-      await tdb.insert(channelRolePermissions).values({
-        channelId: PRIVATE_VOICE_CHANNEL_ID,
-        roleId: defaultRole!.id,
-        permission: ChannelPermission.VIEW_CHANNEL,
-        allow: true,
-        createdAt: Date.now()
-      });
+      await allowViewOnPrivateVoiceChannel();
 
       const runtime = new VoiceRuntime(PRIVATE_VOICE_CHANNEL_ID);
 
@@ -743,6 +749,38 @@ describe('voice router', () => {
           webcamEnabled: false,
           sharingScreen: false,
           soundMuted: true
+        });
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    // a revoked permission has to leave a running stream stoppable, otherwise the user
+    // is stuck publishing a camera the server already refuses to start again
+    test('should accept stopping a stream the user can no longer start', async () => {
+      await allowViewOnPrivateVoiceChannel();
+
+      const runtime = new VoiceRuntime(PRIVATE_VOICE_CHANNEL_ID);
+
+      runtime.addUser(2, { micMuted: false, soundMuted: false });
+      runtime.updateUserState(2, {
+        webcamEnabled: true,
+        sharingScreen: true
+      });
+
+      const { caller } = await initTest(2, undefined, {
+        currentVoiceChannelId: PRIVATE_VOICE_CHANNEL_ID
+      });
+
+      try {
+        await caller.voice.updateState({
+          webcamEnabled: false,
+          sharingScreen: false
+        });
+
+        expect(runtime.getUserState(2)).toMatchObject({
+          webcamEnabled: false,
+          sharingScreen: false
         });
       } finally {
         await runtime.destroy();
