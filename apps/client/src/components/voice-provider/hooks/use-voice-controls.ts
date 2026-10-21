@@ -1,13 +1,14 @@
 import { usePushToTalkActive } from '@/features/app/hooks';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
+import { useChannelCan } from '@/features/server/hooks';
 import { SoundType } from '@/features/server/types';
 import { updateOwnVoiceState } from '@/features/server/voice/actions';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
 import { voiceLogger } from '@/helpers/browser-logger';
 import { playSound } from '@/helpers/sounds';
 import { getTRPCClient } from '@/lib/trpc';
-import { getTrpcError } from '@sharkord/shared';
-import { useCallback, useRef } from 'react';
+import { ChannelPermission, getTrpcError } from '@sharkord/shared';
+import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -46,6 +47,8 @@ const useVoiceControls = ({
   const ownVoiceState = useOwnVoiceState();
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const isPushToTalk = usePushToTalkActive();
+  const channelCan = useChannelCan(currentVoiceChannelId);
+  const canUseWebcam = channelCan(ChannelPermission.WEBCAM);
 
   const isTogglingMic = useRef(false);
   const isTogglingSound = useRef(false);
@@ -215,7 +218,6 @@ const useVoiceControls = ({
     isTogglingWebcam.current = true;
 
     const newState = !ownVoiceState.webcamEnabled;
-    const trpc = getTRPCClient();
 
     voiceLogger.info('webcam: toggle requested', { enabled: newState });
 
@@ -228,6 +230,8 @@ const useVoiceControls = ({
     );
 
     try {
+      const trpc = getTRPCClient();
+
       if (newState) {
         await startWebcamStream();
       } else {
@@ -238,9 +242,17 @@ const useVoiceControls = ({
         webcamEnabled: newState
       });
     } catch (error) {
+      // a start that failed after the device was opened leaves the camera publishing,
+      // so release the capture before rolling the state back
+      if (newState) {
+        stopWebcamStream();
+      }
+
       updateOwnVoiceState({ webcamEnabled: false });
 
       try {
+        const trpc = getTRPCClient();
+
         await trpc.voice.updateState.mutate({ webcamEnabled: false });
       } catch {
         // ignore
@@ -260,6 +272,21 @@ const useVoiceControls = ({
     startWebcamStream,
     stopWebcamStream
   ]);
+
+  // a revoked permission never reaches the runtime on its own, so a camera that is
+  // already publishing has to be stopped from this side when the channel loses WEBCAM
+  useEffect(() => {
+    if (canUseWebcam) return;
+    if (!ownVoiceState.webcamEnabled) return;
+
+    voiceLogger.info('webcam: channel permission revoked, stopping');
+
+    toggleWebcam().catch((error) => {
+      voiceLogger.error('webcam: failed to stop after permission was revoked', {
+        error
+      });
+    });
+  }, [canUseWebcam, ownVoiceState.webcamEnabled, toggleWebcam]);
 
   const toggleScreenShare = useCallback(async () => {
     if (isTogglingScreenShare.current) return;
@@ -303,6 +330,11 @@ const useVoiceControls = ({
         sharingScreen: newState
       });
     } catch (error) {
+      // the capture keeps running if the start failed after the user picked a source
+      if (newState) {
+        stopScreenShareStream();
+      }
+
       updateOwnVoiceState({ sharingScreen: false });
 
       try {
