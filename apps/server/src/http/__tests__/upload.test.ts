@@ -1,4 +1,9 @@
-import { Permission, UploadHeaders, type TTempFile } from '@sharkord/shared';
+import {
+  Permission,
+  UploadHeaders,
+  UploadPurpose,
+  type TTempFile
+} from '@sharkord/shared';
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
 import fs from 'fs/promises';
@@ -16,6 +21,22 @@ const getMockFile = (content: string): File => {
 
   return new File([blob], 'test-upload.txt', { type: 'text/plain' });
 };
+
+const getMockImage = (): File => {
+  const blob = new Blob(['fake image bytes'], { type: 'image/png' });
+
+  return new File([blob], 'avatar.png', { type: 'image/png' });
+};
+
+const revokeUploadFilesFromDefaultRole = async () =>
+  tdb
+    .delete(rolePermissions)
+    .where(
+      and(
+        eq(rolePermissions.roleId, 2),
+        eq(rolePermissions.permission, Permission.UPLOAD_FILES)
+      )
+    );
 
 describe('/upload', () => {
   let token: string;
@@ -99,19 +120,60 @@ describe('/upload', () => {
     const response = await login('testuser', 'password123');
     const data: any = await response.json();
 
-    await tdb
-      .delete(rolePermissions)
-      .where(
-        and(
-          eq(rolePermissions.roleId, 2),
-          eq(rolePermissions.permission, Permission.UPLOAD_FILES)
-        )
-      );
+    await revokeUploadFilesFromDefaultRole();
 
     const file = getMockFile('no permission to upload this');
     const uploadResponse = await uploadFile(file, data.token);
 
     expect(uploadResponse.status).toBe(403);
+  });
+
+  // a profile image never becomes a message attachment, and attaching one still needs
+  // UPLOAD_FILES on send-message, so the role permission must not block the upload
+  test('should allow a profile image from a user without UPLOAD_FILES', async () => {
+    const response = await login('testuser', 'password123');
+    const data: any = await response.json();
+
+    await revokeUploadFilesFromDefaultRole();
+
+    const uploadResponse = await uploadFile(getMockImage(), data.token, {
+      [UploadHeaders.PURPOSE]: UploadPurpose.PROFILE_IMAGE
+    });
+
+    expect(uploadResponse.status).toBe(200);
+
+    const tempFile = (await uploadResponse.json()) as TTempFile;
+
+    expect(tempFile.userId).toBe(2);
+  });
+
+  test('should reject a message upload that declares its purpose', async () => {
+    const response = await login('testuser', 'password123');
+    const data: any = await response.json();
+
+    await revokeUploadFilesFromDefaultRole();
+
+    const uploadResponse = await uploadFile(
+      getMockFile('explicit message upload without permission'),
+      data.token,
+      {
+        [UploadHeaders.PURPOSE]: UploadPurpose.MESSAGE
+      }
+    );
+
+    expect(uploadResponse.status).toBe(403);
+  });
+
+  test('should reject an unknown upload purpose', async () => {
+    const uploadResponse = await uploadFile(
+      getMockFile('unknown purpose'),
+      token,
+      {
+        [UploadHeaders.PURPOSE]: 'not-a-purpose'
+      }
+    );
+
+    expect(uploadResponse.status).toBe(400);
   });
 
   test('should rate limit excessive upload attempts', async () => {
