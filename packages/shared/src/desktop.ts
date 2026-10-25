@@ -53,6 +53,37 @@ export type TDesktopBridge = {
   ) => () => void;
 };
 
+// must match exactly between the desktop app and a server's client
+// this will be changed in the future for a better versioning scheme
+export const DESKTOP_BRIDGE_VERSION = 1;
+
+// this should NEVER change, it is how every client and desktop app of any version find
+export type TDesktopEntry = {
+  version: number;
+  connect: (clientVersion: number) => TDesktopBridge | undefined;
+};
+
+// server-outdated: the server's client is older than the desktop app,
+// app-outdated: the desktop app is older than the server's client
+export const DESKTOP_MISMATCHES = ['server-outdated', 'app-outdated'] as const;
+
+export type TDesktopMismatch = (typeof DESKTOP_MISMATCHES)[number];
+
+export const getDesktopMismatch = (
+  desktopVersion: number,
+  clientVersion: number
+): TDesktopMismatch | undefined => {
+  if (clientVersion < desktopVersion) {
+    return 'server-outdated';
+  }
+
+  if (clientVersion > desktopVersion) {
+    return 'app-outdated';
+  }
+
+  return undefined;
+};
+
 export const DESKTOP_PROTOCOL = 'sharkord';
 
 export const DESKTOP_ADD_SERVER_ACTION = 'add-server';

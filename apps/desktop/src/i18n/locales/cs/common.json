@@ -14,7 +14,9 @@
     "connected": "Připojeno",
     "signed-out": "Odhlášeno",
     "disconnected": "Odpojeno",
-    "error": "Nelze načíst, vyberte jej pro nový pokus"
+    "error": "Nelze načíst, vyberte jej pro nový pokus",
+    "server-outdated": "Tento server používá starší verzi Sharkordu, funkce desktopové aplikace jsou vypnuté, dokud nebude aktualizován",
+    "app-outdated": "Tento server vyžaduje novější aplikaci Sharkord, funkce desktopové aplikace jsou vypnuté, dokud ji neaktualizujete"
   },
   "errors": {
     "invalidUrl": "Toto není platná adresa serveru.",

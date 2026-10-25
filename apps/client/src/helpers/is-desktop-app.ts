@@ -1,5 +1,7 @@
+import { getDesktopApi } from './desktop-api';
+
 const isDesktopApp = () => {
-  return window.sharkordDesktop !== undefined;
+  return getDesktopApi() !== undefined;
 };
 
 export { isDesktopApp };

@@ -14,7 +14,9 @@
     "connected": "Connecté",
     "signed-out": "Déconnecté du compte",
     "disconnected": "Déconnecté",
-    "error": "Impossible de charger, sélectionnez-le pour réessayer"
+    "error": "Impossible de charger, sélectionnez-le pour réessayer",
+    "server-outdated": "Ce serveur utilise une version plus ancienne de Sharkord, les fonctions de bureau sont désactivées jusqu'à sa mise à jour",
+    "app-outdated": "Ce serveur nécessite une application Sharkord plus récente, les fonctions de bureau sont désactivées jusqu'à votre mise à jour"
   },
   "errors": {
     "invalidUrl": "Ce n'est pas une adresse de serveur valide.",

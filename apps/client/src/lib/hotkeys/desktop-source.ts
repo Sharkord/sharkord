@@ -1,4 +1,5 @@
 import { bridgeLogger } from '@/helpers/browser-logger';
+import { getDesktopApi } from '@/helpers/desktop-api';
 import { i18n } from '@/i18n';
 import type { TDesktopHotkeyError } from '@sharkord/shared';
 import type {
@@ -26,7 +27,7 @@ const createDesktopSource = (): THotkeySource => {
   };
 
   const register = async (bindings: THotkeyBinding[]) => {
-    const desktopApi = window.sharkordDesktop;
+    const desktopApi = getDesktopApi();
 
     if (!desktopApi) {
       return;
@@ -44,7 +45,7 @@ const createDesktopSource = (): THotkeySource => {
   };
 
   const start = () => {
-    const desktopApi = window.sharkordDesktop;
+    const desktopApi = getDesktopApi();
 
     if (!desktopApi) {
       emit({ type: 'status', status: 'failed', capabilities: CAPABILITIES });

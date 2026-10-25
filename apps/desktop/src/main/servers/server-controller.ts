@@ -1,4 +1,5 @@
 import type { TDesktopConfirmOptions } from '@sharkord/shared';
+import { isMismatchStatus } from '../../shared/is-mismatch-status';
 import type {
   TAddServerError,
   TDesktopSettings,
@@ -37,7 +38,6 @@ const createServerController = (
     writeStore(filePath, { servers, railHidden, selectedId, settings });
   };
 
-  // the saved id may point at a server that is gone if the file was edited by hand
   const restored = servers.find(({ id }) => id === stored.selectedId);
   const [first] = servers;
 
@@ -47,6 +47,9 @@ const createServerController = (
     selectedId = first.id;
   }
 
+  const isSelectedMismatched = () =>
+    selectedId !== null && isMismatchStatus(views.getStatus(selectedId));
+
   const getState = (): TServersState => ({
     servers,
     selectedId,
@@ -54,7 +57,7 @@ const createServerController = (
     pendingAddress,
     settingsOpen,
     settings,
-    railVisible: servers.length > 0 && !railHidden,
+    railVisible: servers.length > 0 && (!railHidden || isSelectedMismatched()),
     unread: views.getUnread(),
     statuses: Object.fromEntries(
       servers.map(({ id }) => [id, views.getStatus(id)])
@@ -88,7 +91,10 @@ const createServerController = (
   };
 
   const notify = () => {
-    onChange(getState());
+    const state = getState();
+
+    applyLayout(state);
+    onChange(state);
   };
 
   const refresh = async () => {

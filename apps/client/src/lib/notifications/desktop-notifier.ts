@@ -1,9 +1,10 @@
+import { getDesktopApi } from '@/helpers/desktop-api';
 import type { TNotifier } from './types';
 
 export const desktopNotifier: TNotifier = {
   requestPermission: async () => true,
   show: (notification) => {
-    const desktopApi = window.sharkordDesktop;
+    const desktopApi = getDesktopApi();
 
     if (!desktopApi) {
       return;
@@ -12,7 +13,7 @@ export const desktopNotifier: TNotifier = {
     desktopApi.showNotification(notification);
   },
   onClick: (listener) => {
-    const desktopApi = window.sharkordDesktop;
+    const desktopApi = getDesktopApi();
 
     if (!desktopApi) {
       return () => {};

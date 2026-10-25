@@ -1,4 +1,5 @@
 import { voiceLogger } from './browser-logger';
+import { getDesktopApi } from './desktop-api';
 import { sleep } from './sleep';
 
 // from https://github.com/Vencord/venmic
@@ -28,7 +29,7 @@ const findVirtualMicId = async () => {
 };
 
 const getDesktopSystemAudioTrack = async () => {
-  const desktopApi = window.sharkordDesktop;
+  const desktopApi = getDesktopApi();
 
   if (!desktopApi) {
     return undefined;
@@ -74,7 +75,7 @@ const getDesktopSystemAudioTrack = async () => {
 };
 
 const stopDesktopSystemAudio = () => {
-  const desktopApi = window.sharkordDesktop;
+  const desktopApi = getDesktopApi();
 
   if (!desktopApi) {
     return;

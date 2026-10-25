@@ -14,7 +14,9 @@
     "connected": "Connected",
     "signed-out": "Signed out",
     "disconnected": "Disconnected",
-    "error": "Could not load, select it to retry"
+    "error": "Could not load, select it to retry",
+    "server-outdated": "This server runs an older Sharkord version, desktop features are off until it is updated",
+    "app-outdated": "This server needs a newer Sharkord app, desktop features are off until you update"
   },
   "errors": {
     "invalidUrl": "That is not a valid server address.",

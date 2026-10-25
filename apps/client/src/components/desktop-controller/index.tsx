@@ -4,11 +4,11 @@ import {
   useTotalHasUnreadMentions,
   useTotalUnreadCount
 } from '@/features/server/hooks';
-import { useDesktopApi } from '@/hooks/use-desktop-api';
+import { getDesktopApi } from '@/helpers/desktop-api';
 import { memo, useEffect } from 'react';
 
 const DesktopController = memo(() => {
-  const desktopApi = useDesktopApi();
+  const desktopApi = getDesktopApi();
   const unreadCount = useTotalUnreadCount();
   const hasUnreadMentions = useTotalHasUnreadMentions();
   const connectionState = useDesktopConnectionState();

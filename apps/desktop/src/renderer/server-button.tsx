@@ -1,4 +1,4 @@
-import type { TDesktopUnreadState } from '@sharkord/shared';
+import type { TDesktopMismatch, TDesktopUnreadState } from '@sharkord/shared';
 import {
   Avatar,
   AvatarFallback,
@@ -13,8 +13,14 @@ import { Trash2Icon } from 'lucide-react';
 import { memo, useCallback, useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import defaultLogo from '../../build/icon.png';
+import { isMismatchStatus } from '../shared/is-mismatch-status';
 import type { TServer, TServerStatus } from '../shared/types';
 import { ServerStatusBadge } from './server-status-badge';
+
+const MISMATCH_RING_CLASSES: Record<TDesktopMismatch, string> = {
+  'server-outdated': 'ring-amber-500',
+  'app-outdated': 'ring-sky-500'
+};
 
 type TServerButtonProps = {
   server: TServer;
@@ -65,6 +71,14 @@ const ServerButton = memo(
 
     const shapeClass = selected ? 'rounded-2xl' : 'rounded-full';
     const isConnected = status === 'connected';
+
+    const isDimmed = !isConnected && !isMismatchStatus(status);
+    const mismatchRingClass = isMismatchStatus(status)
+      ? cn(
+          'ring-offset-sidebar ring-2 ring-offset-2',
+          MISMATCH_RING_CLASSES[status]
+        )
+      : undefined;
     const title = isConnected
       ? server.name
       : `${server.name} (${t(`serverStatus.${status}`)})`;
@@ -90,7 +104,8 @@ const ServerButton = memo(
                 className={cn(
                   'size-12 transition-[border-radius,opacity,filter] group-hover:rounded-2xl',
                   shapeClass,
-                  !isConnected && 'opacity-50 grayscale group-hover:opacity-80'
+                  isDimmed && 'opacity-50 grayscale group-hover:opacity-80',
+                  mismatchRingClass
                 )}
               >
                 <AvatarImage src={server.iconUrl ?? undefined} />

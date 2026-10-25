@@ -14,7 +14,9 @@
     "connected": "Conectado",
     "signed-out": "Sessão encerrada",
     "disconnected": "Desconectado",
-    "error": "Não foi possível carregar, selecione para tentar novamente"
+    "error": "Não foi possível carregar, selecione para tentar novamente",
+    "server-outdated": "Este servidor usa uma versão mais antiga do Sharkord, os recursos de desktop ficam desativados até ele ser atualizado",
+    "app-outdated": "Este servidor precisa de um app Sharkord mais recente, os recursos de desktop ficam desativados até você atualizar"
   },
   "errors": {
     "invalidUrl": "Este não é um endereço de servidor válido.",

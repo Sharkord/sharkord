@@ -374,6 +374,35 @@ describe('server controller', () => {
     expect(controller.getState().railVisible).toBe(true);
   });
 
+  test('a hidden server list shows while the selected server does not match the app', async () => {
+    const { controller, calls } = create();
+
+    await controller.add(startServer('one', 'One'));
+    controller.setRailHidden(true);
+
+    calls.statuses.one = 'server-outdated';
+    controller.notify();
+
+    expect(controller.getState().railVisible).toBe(true);
+    expect(calls.layouts.at(-1)?.railVisible).toBe(true);
+  });
+
+  test('a hidden server list hides again once the selected server matches', async () => {
+    const { controller, calls } = create();
+
+    await controller.add(startServer('one', 'One'));
+    controller.setRailHidden(true);
+
+    calls.statuses.one = 'app-outdated';
+    controller.notify();
+
+    calls.statuses.one = 'connected';
+    controller.notify();
+
+    expect(controller.getState().railVisible).toBe(false);
+    expect(calls.layouts.at(-1)?.railVisible).toBe(false);
+  });
+
   test('a hidden server list stays hidden when more servers are added', async () => {
     const { controller } = create();
 

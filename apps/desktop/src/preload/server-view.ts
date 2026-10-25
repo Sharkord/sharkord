@@ -1,7 +1,10 @@
-import type {
-  TDesktopBridge,
-  TDesktopConfirmOptions,
-  TNotificationTarget
+import {
+  DESKTOP_BRIDGE_VERSION,
+  getDesktopMismatch,
+  type TDesktopBridge,
+  type TDesktopConfirmOptions,
+  type TDesktopEntry,
+  type TNotificationTarget
 } from '@sharkord/shared';
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import { BridgeChannel } from '../shared/bridge-channels';
@@ -89,4 +92,25 @@ const bridge: TDesktopBridge = {
   }
 };
 
-contextBridge.exposeInMainWorld('sharkordDesktop', bridge);
+const entry: TDesktopEntry = {
+  version: DESKTOP_BRIDGE_VERSION,
+  connect: (clientVersion) => {
+    if (!Number.isInteger(clientVersion)) {
+      return undefined;
+    }
+
+    const mismatch = getDesktopMismatch(DESKTOP_BRIDGE_VERSION, clientVersion);
+
+    if (mismatch) {
+      ipcRenderer.send(BridgeChannel.CLIENT_MISMATCH, mismatch);
+
+      return undefined;
+    }
+
+    ipcRenderer.send(BridgeChannel.CLIENT_CONNECTED);
+
+    return bridge;
+  }
+};
+
+contextBridge.exposeInMainWorld('sharkordDesktop', entry);

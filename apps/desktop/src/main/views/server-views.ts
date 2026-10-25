@@ -1,7 +1,9 @@
-import type {
-  TDesktopConfirmOptions,
-  TDesktopConnectionState,
-  TDesktopUnreadState
+import {
+  DESKTOP_MISMATCHES,
+  type TDesktopConfirmOptions,
+  type TDesktopConnectionState,
+  type TDesktopMismatch,
+  type TDesktopUnreadState
 } from '@sharkord/shared';
 import {
   desktopCapturer,
@@ -55,6 +57,8 @@ const connectionStateSchema = z.enum([
   'disconnected'
 ]);
 
+const mismatchSchema = z.enum(DESKTOP_MISMATCHES);
+
 const ERR_ABORTED = -3;
 const LOAD_TIMEOUT_MS = 15_000;
 
@@ -100,6 +104,8 @@ const createServerViews = (
   const unread = new Map<string, TDesktopUnreadState>();
   const pageStates = new Map<string, TPageState>();
   const connectionStates = new Map<string, TDesktopConnectionState>();
+  const connectedClients = new Set<string>();
+  const mismatches = new Map<string, TDesktopMismatch>();
   const waiters = new Set<() => void>();
   let activeId: string | null = null;
   let layoutState: TLayout = { railVisible: false, fullShell: false };
@@ -189,6 +195,22 @@ const createServerViews = (
       }
     });
 
+    view.webContents.ipc.on(BridgeChannel.CLIENT_CONNECTED, () => {
+      connectedClients.add(server.id);
+      changed();
+    });
+
+    view.webContents.ipc.on(BridgeChannel.CLIENT_MISMATCH, (_event, value) => {
+      const parsed = mismatchSchema.safeParse(value);
+
+      if (!parsed.success) {
+        return;
+      }
+
+      mismatches.set(server.id, parsed.data);
+      changed();
+    });
+
     view.webContents.ipc.on(BridgeChannel.SET_UNREAD, (_event, state) => {
       const parsed = unreadStateSchema.safeParse(state);
 
@@ -223,6 +245,8 @@ const createServerViews = (
 
         pageStates.set(server.id, 'loading');
         connectionStates.delete(server.id);
+        connectedClients.delete(server.id);
+        mismatches.delete(server.id);
 
         stopSystemAudio(server.id);
         clearServerHotkeys(server.id);
@@ -345,6 +369,17 @@ const createServerViews = (
       return 'connecting';
     }
 
+    const mismatch = mismatches.get(id);
+
+    if (mismatch) {
+      return mismatch;
+    }
+
+    // a page that never connects, like a server from before the desktop app, never reports its state either
+    if (!connectedClients.has(id)) {
+      return 'connected';
+    }
+
     return connectionStates.get(id) ?? 'connecting';
   };
 
@@ -439,6 +474,8 @@ const createServerViews = (
     unread.delete(id);
     pageStates.delete(id);
     connectionStates.delete(id);
+    connectedClients.delete(id);
+    mismatches.delete(id);
     // releases anything still waiting on this server to settle
     changed();
 

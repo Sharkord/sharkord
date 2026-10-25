@@ -14,7 +14,9 @@
     "connected": "Conectado",
     "signed-out": "Sesión cerrada",
     "disconnected": "Desconectado",
-    "error": "No se pudo cargar, selecciónalo para reintentar"
+    "error": "No se pudo cargar, selecciónalo para reintentar",
+    "server-outdated": "Este servidor usa una versión anterior de Sharkord, las funciones de escritorio están desactivadas hasta que se actualice",
+    "app-outdated": "Este servidor necesita una versión más reciente de la app de Sharkord, las funciones de escritorio están desactivadas hasta que la actualices"
   },
   "errors": {
     "invalidUrl": "Esta no es una dirección de servidor válida.",

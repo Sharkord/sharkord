@@ -1,8 +1,8 @@
+import { getDesktopApi } from '@/helpers/desktop-api';
 import { useCallback, useEffect, useState } from 'react';
-import { useDesktopApi } from './use-desktop-api';
 
 export const useDesktopServerList = () => {
-  const desktopApi = useDesktopApi();
+  const desktopApi = getDesktopApi();
   const isDesktop = desktopApi !== undefined;
   const [isVisible, setIsVisible] = useState(false);
 

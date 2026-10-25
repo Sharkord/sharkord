@@ -1,5 +1,6 @@
 import type {
   TDesktopConnectionState,
+  TDesktopMismatch,
   TDesktopUnreadState
 } from '@sharkord/shared';
 
@@ -10,7 +11,11 @@ type TServer = {
   iconUrl: string | null;
 };
 
-type TServerStatus = 'idle' | 'error' | TDesktopConnectionState;
+type TServerStatus =
+  | 'idle'
+  | 'error'
+  | TDesktopConnectionState
+  | TDesktopMismatch;
 
 type TDesktopSettings = {
   connectAllOnStartup: boolean;

@@ -3,7 +3,7 @@ import {
   useIsCurrentVoiceChannelSelected
 } from '@/features/server/channels/hooks';
 import { usePublicServerSettings } from '@/features/server/hooks';
-import { useDesktopApi } from '@/hooks/use-desktop-api';
+import { getDesktopApi } from '@/helpers/desktop-api';
 import { useDesktopServerList } from '@/hooks/use-desktop-server-list';
 import { PluginSlot } from '@sharkord/shared';
 import { Button, Tooltip } from '@sharkord/ui';
@@ -35,7 +35,7 @@ const TopBar = memo(({ onToggleRightSidebar, isOpen }: TTopBarProps) => {
     isVisible: isServerListVisible,
     toggle: toggleServerList
   } = useDesktopServerList();
-  const desktopApi = useDesktopApi();
+  const desktopApi = getDesktopApi();
   const ServerListIcon = isServerListVisible ? PanelLeftClose : PanelLeft;
   const serverListLabel = isServerListVisible
     ? t('closeServerList')

@@ -1,4 +1,6 @@
 enum BridgeChannel {
+  CLIENT_CONNECTED = 'client:connected',
+  CLIENT_MISMATCH = 'client:mismatch',
   GET_RAIL_VISIBLE = 'rail:get-visible',
   TOGGLE_RAIL = 'rail:toggle',
   OPEN_SETTINGS = 'settings:open',

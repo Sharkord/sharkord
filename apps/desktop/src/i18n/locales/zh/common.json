@@ -14,7 +14,9 @@
     "connected": "已连接",
     "signed-out": "已退出登录",
     "disconnected": "已断开连接",
-    "error": "无法加载，选择它以重试"
+    "error": "无法加载，选择它以重试",
+    "server-outdated": "此服务器运行的是较旧的 Sharkord 版本，在其更新之前桌面功能已关闭",
+    "app-outdated": "此服务器需要更新的 Sharkord 应用，在你更新之前桌面功能已关闭"
   },
   "errors": {
     "invalidUrl": "这不是有效的服务器地址。",

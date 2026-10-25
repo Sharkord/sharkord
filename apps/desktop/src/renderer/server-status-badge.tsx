@@ -2,23 +2,30 @@ import type { TDesktopUnreadState } from '@sharkord/shared';
 import { cn, Spinner, UnreadCount } from '@sharkord/ui';
 import {
   CircleAlertIcon,
+  CircleArrowUpIcon,
   LogInIcon,
+  TriangleAlertIcon,
   UnplugIcon,
   type LucideIcon
 } from 'lucide-react';
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 import type { TServerStatus } from '../shared/types';
-
-const BADGE_CLASS =
-  'bg-sidebar ring-sidebar absolute -right-1 -bottom-1 flex size-5 items-center justify-center rounded-full ring-4';
 
 const STATUS_ICONS: Partial<
   Record<TServerStatus, { icon: LucideIcon; className: string }>
 > = {
   'signed-out': { icon: LogInIcon, className: 'text-muted-foreground' },
   disconnected: { icon: UnplugIcon, className: 'text-amber-500' },
-  error: { icon: CircleAlertIcon, className: 'text-red-500' }
+  error: { icon: CircleAlertIcon, className: 'text-red-500' },
+  'server-outdated': { icon: TriangleAlertIcon, className: 'text-amber-500' },
+  'app-outdated': { icon: CircleArrowUpIcon, className: 'text-sky-500' }
 };
+
+const Badge = memo(({ children }: { children: ReactNode }) => (
+  <span className="bg-sidebar ring-sidebar absolute -right-1 -bottom-1 flex size-5 items-center justify-center rounded-full ring-4">
+    {children}
+  </span>
+));
 
 type TServerStatusBadgeProps = {
   status: TServerStatus;
@@ -43,9 +50,9 @@ const ServerStatusBadge = memo(
 
     if (status === 'connecting') {
       return (
-        <span className={BADGE_CLASS}>
+        <Badge>
           <Spinner size="xxs" className="size-3.5" />
-        </span>
+        </Badge>
       );
     }
 
@@ -58,9 +65,9 @@ const ServerStatusBadge = memo(
     const { icon: Icon, className } = statusIcon;
 
     return (
-      <span className={BADGE_CLASS}>
+      <Badge>
         <Icon className={cn('size-3.5', className)} />
-      </span>
+      </Badge>
     );
   }
 );
