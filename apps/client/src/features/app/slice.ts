@@ -69,7 +69,7 @@ const initialState: TAppState = {
   selectedThread: undefined,
   browserNotifications: getLocalStorageItemBool(
     LocalStorageKey.BROWSER_NOTIFICATIONS,
-    false
+    true
   ),
   browserNotificationsForMentions: getLocalStorageItemBool(
     LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_MENTIONS,
@@ -85,7 +85,7 @@ const initialState: TAppState = {
   ),
   pluginNotifications: getLocalStorageItemBool(
     LocalStorageKey.PLUGIN_NOTIFICATIONS,
-    false
+    true
   ),
   notificationSounds: getLocalStorageItemBool(
     LocalStorageKey.NOTIFICATION_SOUNDS,

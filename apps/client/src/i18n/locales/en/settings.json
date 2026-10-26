@@ -56,7 +56,7 @@
   "dmNotificationsDesc": "Send a notification for every new direct message.",
   "repliesNotificationsLabel": "Replies to Me",
   "repliesNotificationsDesc": "Send a notification when someone replies to your message. Ignored if 'All Messages' is enabled.",
-  "pluginNotificationsLabel": "Plugin notifications",
+  "pluginNotificationsLabel": "Plugin Notifications",
   "pluginNotificationsDesc": "Let plugins on this server send you notifications, for example when something you follow in them changes.",
   "devicesTitle": "Devices",
   "devicesDesc": "Manage your peripheral devices and their settings.",
