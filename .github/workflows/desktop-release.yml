@@ -1,0 +1,119 @@
+name: Desktop Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Desktop version bump"
+        required: true
+        type: choice
+        options:
+          - none
+          - patch
+          - minor
+          - major
+        default: "none"
+
+permissions:
+  contents: write
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compute next version
+        id: next
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          current=$(jq -r .version apps/desktop/package.json)
+          IFS=. read -r major minor patch <<< "$current"
+
+          case "$BUMP" in
+            major) next="$((major + 1)).0.0" ;;
+            minor) next="$major.$((minor + 1)).0" ;;
+            patch) next="$major.$minor.$((patch + 1))" ;;
+            *) next="$current" ;;
+          esac
+
+          if git ls-remote --exit-code --tags origin "refs/tags/desktop-v$next" > /dev/null; then
+            echo "desktop-v$next is already released"
+            exit 1
+          fi
+
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: [ci, version]
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --filter '@sharkord/desktop'
+
+      - name: Set version
+        working-directory: apps/desktop
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          bun -e "const pkg = await Bun.file('package.json').json(); pkg.version = process.env.VERSION; await Bun.write('package.json', JSON.stringify(pkg, null, 2) + '\n');"
+
+      - name: Build and publish
+        working-directory: apps/desktop
+        env:
+          GH_TOKEN: ${{ secrets.DESKTOP_RELEASE_TOKEN }}
+          # unsigned until signing certificates are set up
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: bun run package --publish always
+
+  release:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Identify user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit version bump
+        if: ${{ inputs.bump != 'none' }}
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          jq --arg version "$VERSION" '.version = $version' apps/desktop/package.json > package.tmp
+          mv package.tmp apps/desktop/package.json
+          git add apps/desktop/package.json
+          git commit -m "chore: bump desktop version to $VERSION"
+
+      - name: Create Git tag
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: git tag -a "desktop-v$VERSION" -m "Desktop release v$VERSION"
+
+      - name: Push commit and tag
+        run: git push --follow-tags
