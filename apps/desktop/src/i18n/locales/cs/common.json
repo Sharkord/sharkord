@@ -10,6 +10,7 @@
   "removeServer": "Odebrat server",
   "serverStatus": {
     "idle": "Čeká na připojení",
+    "loading": "Načítání",
     "connecting": "Připojování...",
     "connected": "Připojeno",
     "signed-out": "Odhlášeno",
@@ -60,8 +61,8 @@
     "togglePerformanceOverlay": "Přepnout překryv výkonu",
     "menuBar": "Panel nabídek",
     "menuBarDescription": "Zobrazí nebo skryje panel nabídek okna. Můžete také použít Ctrl+Shift+M.",
-    "shortcuts": "Klávesové zkratky",
-    "shortcutsDescription": "Zkratky, které fungují kdekoli v desktopové aplikaci.",
+    "shortcuts": "Zkratky",
+    "shortcutsDescription": "Globální zkratky pro samotnou desktopovou aplikaci.",
     "shortcut": {
       "selectServer": "Přepnout na server 1 až 9",
       "addServer": "Přidat server",
@@ -124,5 +125,11 @@
   "updateNotification": {
     "title": "Je dostupná aktualizace",
     "body": "Vyšel Sharkord {{version}}. Kliknutím otevřete nastavení aktualizací."
+  },
+  "serverPlaceholder": {
+    "loading": "Připojování k {{name}}...",
+    "errorTitle": "Nelze se připojit k {{name}}",
+    "errorDescription": "Server neodpovídá. Ověřte, že je online, a zkuste to znovu.",
+    "retry": "Zkusit znovu"
   }
 }

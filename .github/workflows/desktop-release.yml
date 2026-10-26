@@ -18,8 +18,6 @@ permissions:
   contents: write
 
 jobs:
-  ci:
-    uses: ./.github/workflows/ci.yml
 
   version:
     runs-on: ubuntu-latest
@@ -44,12 +42,19 @@ jobs:
             *) next="$current" ;;
           esac
 
+          # the tag the release job pushes to this repo, not a release in Sharkord/sharkord-desktop
           if git ls-remote --exit-code --tags origin "refs/tags/desktop-v$next" > /dev/null; then
-            echo "desktop-v$next is already released"
+            echo "this repo already has the tag desktop-v$next, bump the version or delete the tag"
             exit 1
           fi
 
           echo "version=$next" >> "$GITHUB_OUTPUT"
+
+  # after the version check, which takes seconds, so a version that cannot be
+  # released stops the run before the tests start
+  ci:
+    needs: version
+    uses: ./.github/workflows/ci.yml
 
   build:
     needs: [ci, version]

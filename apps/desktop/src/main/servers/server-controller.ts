@@ -67,6 +67,16 @@ const createServerController = (
     )
   });
 
+  const isSelectedUnloaded = () => {
+    if (selectedId === null) {
+      return false;
+    }
+
+    const status = views.getStatus(selectedId);
+
+    return status === 'loading' || status === 'error';
+  };
+
   const applyLayout = (state: TServersState) => {
     views.setLayout({
       railVisible: state.railVisible,
@@ -74,7 +84,8 @@ const createServerController = (
         state.adding ||
         state.settingsOpen ||
         state.servers.length === 0 ||
-        overlay
+        overlay ||
+        isSelectedUnloaded()
     });
   };
 
@@ -166,6 +177,16 @@ const createServerController = (
 
     save();
     sync();
+  };
+
+  const retry = (id: string) => {
+    const server = servers.find((candidate) => candidate.id === id);
+
+    if (!server) {
+      return;
+    }
+
+    views.reload(server);
   };
 
   const setAdding = (value: boolean) => {
@@ -301,6 +322,7 @@ const createServerController = (
     notify,
     loadAll,
     select,
+    retry,
     setAdding,
     openAddServer,
     setSettingsOpen,

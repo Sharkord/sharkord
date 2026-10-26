@@ -10,6 +10,7 @@ import { registerInstallUpdate } from './install-update';
 import { registerOpenAppFolder } from './open-app-folder';
 import { registerOpenSettings } from './open-settings';
 import { registerRemoveServer } from './remove-server';
+import { registerRetryServer } from './retry-server';
 import { registerSelectServer } from './select-server';
 import { registerSetAdding } from './set-adding';
 import { registerSetOverlay } from './set-overlay';
@@ -34,6 +35,7 @@ const registerIpc = ({ shellContents, ...rest }: TRegisterIpcOptions) => {
   registerGetState(context);
   registerAddServer(context);
   registerSelectServer(context);
+  registerRetryServer(context);
   registerRemoveServer(context);
   registerSetAdding(context);
   registerSetOverlay(context);

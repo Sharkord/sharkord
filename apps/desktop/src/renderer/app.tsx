@@ -2,6 +2,7 @@ import { cn } from '@sharkord/ui';
 import { memo, useCallback, useEffect, useState } from 'react';
 import type { TServersState } from '../shared/types';
 import { AddServerForm } from './add-server-form';
+import { ServerPlaceholder } from './server-placeholder';
 import { ServerRail } from './server-rail';
 import { SettingsPage } from './settings';
 
@@ -62,9 +63,17 @@ const App = memo(() => {
   } = state;
   const hasServers = servers.length > 0;
   const showForm = !settingsOpen && (adding || !hasServers);
+  const selectedServer = servers.find(({ id }) => id === selectedId);
+  const selectedStatus = selectedServer
+    ? statuses[selectedServer.id]
+    : undefined;
+  const isSelectedUnloaded =
+    selectedStatus === 'loading' || selectedStatus === 'error';
+  const showPlaceholder =
+    !settingsOpen && !showForm && !!selectedServer && isSelectedUnloaded;
   const mainClass = cn(
     'flex flex-1 items-center justify-center',
-    showForm && 'bg-background'
+    (showForm || showPlaceholder) && 'bg-background'
   );
 
   return (
@@ -97,6 +106,12 @@ const App = memo(() => {
               initialInput={pendingAddress}
               canCancel={hasServers}
               onCancel={handleCancelAdd}
+            />
+          )}
+          {showPlaceholder && selectedServer && (
+            <ServerPlaceholder
+              server={selectedServer}
+              failed={selectedStatus === 'error'}
             />
           )}
         </main>

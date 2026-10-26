@@ -10,6 +10,7 @@ import type { installUpdateCall } from './install-update';
 import type { openAppFolderCall } from './open-app-folder';
 import type { openSettingsCall } from './open-settings';
 import type { removeServerCall } from './remove-server';
+import type { retryServerCall } from './retry-server';
 import type { selectServerCall } from './select-server';
 import type { setAddingCall } from './set-adding';
 import type { setOverlayCall } from './set-overlay';
@@ -24,6 +25,7 @@ type TIpcCalls =
   | typeof getStateCall
   | typeof addServerCall
   | typeof selectServerCall
+  | typeof retryServerCall
   | typeof removeServerCall
   | typeof setAddingCall
   | typeof setOverlayCall

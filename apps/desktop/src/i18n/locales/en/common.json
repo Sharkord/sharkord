@@ -10,6 +10,7 @@
   "removeServer": "Remove server",
   "serverStatus": {
     "idle": "Waiting to connect",
+    "loading": "Loading",
     "connecting": "Connecting...",
     "connected": "Connected",
     "signed-out": "Signed out",
@@ -60,8 +61,8 @@
     "togglePerformanceOverlay": "Toggle performance overlay",
     "menuBar": "Menu bar",
     "menuBarDescription": "Show or hide the window menu bar. You can also use Ctrl+Shift+M.",
-    "shortcuts": "Keyboard shortcuts",
-    "shortcutsDescription": "Shortcuts that work anywhere in the desktop app.",
+    "shortcuts": "Shortcuts",
+    "shortcutsDescription": "Global shortcuts for the desktop app itself.",
     "shortcut": {
       "selectServer": "Switch to server 1 to 9",
       "addServer": "Add a server",
@@ -124,5 +125,11 @@
   "updateNotification": {
     "title": "Update available",
     "body": "Sharkord {{version}} is out. Click to open the update settings."
+  },
+  "serverPlaceholder": {
+    "loading": "Connecting to {{name}}...",
+    "errorTitle": "Could not reach {{name}}",
+    "errorDescription": "The server is not responding. Check that it is online and try again.",
+    "retry": "Try again"
   }
 }

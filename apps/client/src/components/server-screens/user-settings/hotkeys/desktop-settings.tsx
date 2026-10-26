@@ -21,10 +21,7 @@ const DesktopSettings = memo(({ values, onChange }: TDesktopSettingsProps) => {
       title={t('hotkeysDesktopTitle')}
       description={t('hotkeysDesktopDesc')}
     >
-      <Group
-        label={t('hotkeysEnableLabel')}
-        description={t('hotkeysDesktopEnableDesc')}
-      >
+      <Group label={t('hotkeysEnableLabel')}>
         <Switch
           checked={values.enabled}
           onCheckedChange={handleEnabledChange}

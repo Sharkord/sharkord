@@ -10,6 +10,7 @@
   "removeServer": "Remover servidor",
   "serverStatus": {
     "idle": "Aguardando conexão",
+    "loading": "Carregando",
     "connecting": "Conectando...",
     "connected": "Conectado",
     "signed-out": "Sessão encerrada",
@@ -60,8 +61,8 @@
     "togglePerformanceOverlay": "Alternar sobreposição de desempenho",
     "menuBar": "Barra de menus",
     "menuBarDescription": "Mostra ou oculta a barra de menus da janela. Você também pode usar Ctrl+Shift+M.",
-    "shortcuts": "Atalhos de teclado",
-    "shortcutsDescription": "Atalhos que funcionam em qualquer lugar do aplicativo desktop.",
+    "shortcuts": "Atalhos",
+    "shortcutsDescription": "Atalhos globais do próprio aplicativo desktop.",
     "shortcut": {
       "selectServer": "Mudar para o servidor 1 a 9",
       "addServer": "Adicionar um servidor",
@@ -124,5 +125,11 @@
   "updateNotification": {
     "title": "Atualização disponível",
     "body": "O Sharkord {{version}} saiu. Clique para abrir as configurações de atualização."
+  },
+  "serverPlaceholder": {
+    "loading": "Conectando a {{name}}...",
+    "errorTitle": "Não foi possível acessar {{name}}",
+    "errorDescription": "O servidor não está respondendo. Verifique se ele está online e tente novamente.",
+    "retry": "Tentar novamente"
   }
 }

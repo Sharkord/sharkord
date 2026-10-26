@@ -41,7 +41,8 @@ const createFakeViews = () => {
     statuses: {} as Record<string, TServerStatus>,
     loaded: [] as string[],
     pendingLoads: [] as (() => void)[],
-    throttled: [] as boolean[]
+    throttled: [] as boolean[],
+    reloaded: [] as string[]
   };
 
   const opened = new Set<string>();
@@ -58,6 +59,7 @@ const createFakeViews = () => {
       return new Promise<void>((resolve) => calls.pendingLoads.push(resolve));
     },
     has: (id: string) => opened.has(id),
+    reload: (server: TServer) => calls.reloaded.push(server.id),
     getStatus: (id: string) => calls.statuses[id] ?? 'idle',
     hideAll: () => calls.hidden++,
     remove: (id: string) => calls.removed.push(id),
@@ -387,6 +389,42 @@ describe('server controller', () => {
 
     controller.setRailHidden(false);
     expect(controller.getState().railVisible).toBe(true);
+  });
+
+  test('the shell covers the selected server until its page has loaded', async () => {
+    const { controller, calls } = create();
+
+    await controller.add(startServer('one', 'One'));
+
+    calls.statuses.one = 'loading';
+    controller.notify();
+    expect(calls.layouts.at(-1)?.fullShell).toBe(true);
+
+    calls.statuses.one = 'connected';
+    controller.notify();
+    expect(calls.layouts.at(-1)?.fullShell).toBe(false);
+  });
+
+  test('the shell covers the selected server when its page failed to load', async () => {
+    const { controller, calls } = create();
+
+    await controller.add(startServer('one', 'One'));
+
+    calls.statuses.one = 'error';
+    controller.notify();
+
+    expect(calls.layouts.at(-1)?.fullShell).toBe(true);
+  });
+
+  test('retrying reloads that server and ignores unknown ids', async () => {
+    const { controller, calls } = create();
+
+    await controller.add(startServer('one', 'One'));
+
+    controller.retry('one');
+    controller.retry('missing');
+
+    expect(calls.reloaded).toEqual(['one']);
   });
 
   test('a hidden server list shows while the selected server does not match the app', async () => {

@@ -11,6 +11,7 @@ enum IpcChannel {
   REMOVE_SERVER = 'servers:remove',
   SET_OVERLAY = 'servers:set-overlay',
   SELECT_SERVER = 'servers:select',
+  RETRY_SERVER = 'servers:retry',
   SET_ADDING = 'servers:set-adding',
   SET_RAIL_HIDDEN = 'servers:set-rail-hidden',
   SET_SETTINGS_OPEN = 'settings:set-open',

@@ -10,6 +10,7 @@ import { installUpdateCall } from '../install-update';
 import { openAppFolderCall } from '../open-app-folder';
 import { openSettingsCall } from '../open-settings';
 import { removeServerCall } from '../remove-server';
+import { retryServerCall } from '../retry-server';
 import { selectServerCall } from '../select-server';
 import { setAddingCall } from '../set-adding';
 import { setOverlayCall } from '../set-overlay';
@@ -42,7 +43,8 @@ describe('ipc request arguments', () => {
 
   test.each([
     ['select server', selectServerCall],
-    ['remove server', removeServerCall]
+    ['remove server', removeServerCall],
+    ['retry server', retryServerCall]
   ])('%s takes a single server id', (_name, call) => {
     expect(call.args.safeParse(['abc']).success).toBe(true);
     expect(call.args.safeParse([1]).success).toBe(false);

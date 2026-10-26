@@ -13,6 +13,7 @@ type TServer = {
 
 type TServerStatus =
   | 'idle'
+  | 'loading'
   | 'error'
   | TDesktopConnectionState
   | TDesktopMismatch;
@@ -66,6 +67,7 @@ type TDesktopApi = {
   removeServer: (id: string) => Promise<void>;
   setOverlay: (open: boolean) => Promise<void>;
   selectServer: (id: string) => Promise<void>;
+  retryServer: (id: string) => Promise<void>;
   setAdding: (adding: boolean) => Promise<void>;
   setRailHidden: (hidden: boolean) => Promise<void>;
   setSettingsOpen: (open: boolean) => Promise<void>;

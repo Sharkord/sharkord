@@ -10,6 +10,7 @@
   "removeServer": "Retirer le serveur",
   "serverStatus": {
     "idle": "En attente de connexion",
+    "loading": "Chargement",
     "connecting": "Connexion...",
     "connected": "Connecté",
     "signed-out": "Déconnecté du compte",
@@ -60,8 +61,8 @@
     "togglePerformanceOverlay": "Afficher ou masquer la superposition",
     "menuBar": "Barre de menus",
     "menuBarDescription": "Affiche ou masque la barre de menus de la fenêtre. Vous pouvez aussi utiliser Ctrl+Maj+M.",
-    "shortcuts": "Raccourcis clavier",
-    "shortcutsDescription": "Raccourcis disponibles partout dans l'application de bureau.",
+    "shortcuts": "Raccourcis",
+    "shortcutsDescription": "Raccourcis globaux de l'application de bureau elle-même.",
     "shortcut": {
       "selectServer": "Passer au serveur 1 à 9",
       "addServer": "Ajouter un serveur",
@@ -124,5 +125,11 @@
   "updateNotification": {
     "title": "Mise à jour disponible",
     "body": "Sharkord {{version}} est sorti. Cliquez pour ouvrir les paramètres de mise à jour."
+  },
+  "serverPlaceholder": {
+    "loading": "Connexion à {{name}}...",
+    "errorTitle": "Impossible de joindre {{name}}",
+    "errorDescription": "Le serveur ne répond pas. Vérifiez qu'il est en ligne et réessayez.",
+    "retry": "Réessayer"
   }
 }

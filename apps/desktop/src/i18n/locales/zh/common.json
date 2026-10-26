@@ -10,6 +10,7 @@
   "removeServer": "移除服务器",
   "serverStatus": {
     "idle": "等待连接",
+    "loading": "正在加载",
     "connecting": "正在连接...",
     "connected": "已连接",
     "signed-out": "已退出登录",
@@ -60,8 +61,8 @@
     "togglePerformanceOverlay": "切换性能浮层",
     "menuBar": "菜单栏",
     "menuBarDescription": "显示或隐藏窗口菜单栏。也可以使用 Ctrl+Shift+M。",
-    "shortcuts": "键盘快捷键",
-    "shortcutsDescription": "在桌面应用中任何位置都可使用的快捷键。",
+    "shortcuts": "快捷键",
+    "shortcutsDescription": "桌面应用本身的全局快捷键。",
     "shortcut": {
       "selectServer": "切换到第 1 至 9 个服务器",
       "addServer": "添加服务器",
@@ -124,5 +125,11 @@
   "updateNotification": {
     "title": "有可用更新",
     "body": "Sharkord {{version}} 已发布。点击打开更新设置。"
+  },
+  "serverPlaceholder": {
+    "loading": "正在连接 {{name}}...",
+    "errorTitle": "无法连接 {{name}}",
+    "errorDescription": "服务器没有响应。请确认它在线后重试。",
+    "retry": "重试"
   }
 }

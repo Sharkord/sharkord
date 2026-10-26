@@ -25,6 +25,7 @@ const api: TDesktopApi = {
   removeServer: (id) => invoke(IpcChannel.REMOVE_SERVER, id),
   setOverlay: (open) => invoke(IpcChannel.SET_OVERLAY, open),
   selectServer: (id) => invoke(IpcChannel.SELECT_SERVER, id),
+  retryServer: (id) => invoke(IpcChannel.RETRY_SERVER, id),
   setAdding: (adding) => invoke(IpcChannel.SET_ADDING, adding),
   setRailHidden: (hidden) => invoke(IpcChannel.SET_RAIL_HIDDEN, hidden),
   setSettingsOpen: (open) => invoke(IpcChannel.SET_SETTINGS_OPEN, open),

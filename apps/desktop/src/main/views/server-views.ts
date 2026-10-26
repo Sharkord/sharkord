@@ -61,6 +61,8 @@ const connectionStateSchema = z.enum([
 const mismatchSchema = z.enum(DESKTOP_MISMATCHES);
 
 const ERR_ABORTED = -3;
+// the dark background of the client, shown until its page paints instead of white
+const VIEW_BACKGROUND = '#0a0a0a';
 const LOAD_TIMEOUT_MS = 15_000;
 
 const hotkeyBindingsSchema = z
@@ -352,6 +354,7 @@ const createServerViews = (
       openExternal(url);
     });
 
+    view.setBackgroundColor(VIEW_BACKGROUND);
     win.contentView.addChildView(view);
     win.contentView.addChildView(shellView);
 
@@ -372,7 +375,7 @@ const createServerViews = (
     }
 
     if (pageState !== 'loaded') {
-      return 'connecting';
+      return 'loading';
     }
 
     const mismatch = mismatches.get(id);
@@ -419,7 +422,9 @@ const createServerViews = (
       };
 
       const check = () => {
-        if (getStatus(id) !== 'connecting') {
+        const status = getStatus(id);
+
+        if (status !== 'loading' && status !== 'connecting') {
           finish();
         }
       };
@@ -441,6 +446,17 @@ const createServerViews = (
   };
 
   const has = (id: string) => views.has(id);
+
+  const reload = (server: TServer) => {
+    const view = views.get(server.id);
+
+    if (!view) {
+      return;
+    }
+
+    // the address and not reload(), a page that never loaded has nothing to reload
+    view.webContents.loadURL(server.url).catch(() => {});
+  };
 
   const show = (server: TServer) => {
     const view = getOrCreateView(server);
@@ -597,6 +613,7 @@ const createServerViews = (
     show,
     load,
     has,
+    reload,
     getStatus,
     hideAll,
     remove,

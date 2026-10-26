@@ -48,7 +48,7 @@ const ServerStatusBadge = memo(
       );
     }
 
-    if (status === 'connecting') {
+    if (status === 'loading' || status === 'connecting') {
       return (
         <Badge>
           <Spinner size="xxs" className="size-3.5" />

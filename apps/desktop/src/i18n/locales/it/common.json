@@ -10,6 +10,7 @@
   "removeServer": "Rimuovi server",
   "serverStatus": {
     "idle": "In attesa di connessione",
+    "loading": "Caricamento",
     "connecting": "Connessione...",
     "connected": "Connesso",
     "signed-out": "Disconnesso dall'account",
@@ -60,8 +61,8 @@
     "togglePerformanceOverlay": "Attiva/disattiva overlay prestazioni",
     "menuBar": "Barra dei menu",
     "menuBarDescription": "Mostra o nasconde la barra dei menu della finestra. Puoi anche usare Ctrl+Maiusc+M.",
-    "shortcuts": "Scorciatoie da tastiera",
-    "shortcutsDescription": "Scorciatoie che funzionano ovunque nell'app desktop.",
+    "shortcuts": "Scorciatoie",
+    "shortcutsDescription": "Scorciatoie globali dell'app desktop stessa.",
     "shortcut": {
       "selectServer": "Passa al server da 1 a 9",
       "addServer": "Aggiungi un server",
@@ -124,5 +125,11 @@
   "updateNotification": {
     "title": "Aggiornamento disponibile",
     "body": "È uscito Sharkord {{version}}. Fai clic per aprire le impostazioni degli aggiornamenti."
+  },
+  "serverPlaceholder": {
+    "loading": "Connessione a {{name}}...",
+    "errorTitle": "Impossibile raggiungere {{name}}",
+    "errorDescription": "Il server non risponde. Verifica che sia online e riprova.",
+    "retry": "Riprova"
   }
 }
