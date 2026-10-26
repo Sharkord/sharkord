@@ -47,6 +47,7 @@ const createWindow = () => {
     minWidth: 800,
     minHeight: 500,
     backgroundColor: '#1a1a1a',
+    title: 'Sharkord',
     icon,
     show: false
   });

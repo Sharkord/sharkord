@@ -263,6 +263,10 @@ const createServerViews = (
     );
 
     view.webContents.on('did-finish-load', () => {
+      if (pageStates.get(server.id) === 'error') {
+        return;
+      }
+
       pageStates.set(server.id, 'loaded');
       changed();
     });
