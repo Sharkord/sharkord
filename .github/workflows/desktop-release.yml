@@ -51,26 +51,10 @@ jobs:
 
           echo "version=$next" >> "$GITHUB_OUTPUT"
 
-  draft:
-    needs: [ci, version]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create draft release
-        env:
-          GH_TOKEN: ${{ secrets.DESKTOP_RELEASE_TOKEN }}
-          TAG: v${{ needs.version.outputs.version }}
-        run: |
-          # a rerun finds the draft from the failed run, only the list shows drafts
-          if gh release list --repo Sharkord/sharkord-desktop --json tagName --jq '.[].tagName' | grep -qx "$TAG"; then
-            echo "$TAG already has a release"
-            exit 0
-          fi
-
-          gh release create "$TAG" --repo Sharkord/sharkord-desktop --draft --title "$TAG" --notes ""
-
   build:
-    needs: [version, draft]
+    needs: [ci, version]
     strategy:
+      # one platform failing should not cancel the others, rerun the failed one
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -97,16 +81,54 @@ jobs:
         run: |
           bun -e "const pkg = await Bun.file('package.json').json(); pkg.version = process.env.VERSION; await Bun.write('package.json', JSON.stringify(pkg, null, 2) + '\n');"
 
-      - name: Build and publish
+      # only builds, the publish job puts every platform into one release. the
+      # latest*.yml files the updater reads are still written next to the installers
+      - name: Build
         working-directory: apps/desktop
         env:
-          GH_TOKEN: ${{ secrets.DESKTOP_RELEASE_TOKEN }}
           # unsigned until signing certificates are set up
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: bun run package --publish always
+        run: bun run package --publish never
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          if-no-files-found: error
+          path: |
+            apps/desktop/dist/*.AppImage
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.dmg
+            apps/desktop/dist/*.zip
+            apps/desktop/dist/*.blockmap
+            apps/desktop/dist/latest*.yml
+
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-*
+          path: release
+          merge-multiple: true
+
+      - name: Publish draft release
+        env:
+          GH_TOKEN: ${{ secrets.DESKTOP_RELEASE_TOKEN }}
+          REPO: Sharkord/sharkord-desktop
+          TAG: v${{ needs.version.outputs.version }}
+        run: |
+          # a rerun after a failed upload refills the same draft instead of adding another
+          if gh release list --repo "$REPO" --json tagName --jq '.[].tagName' | grep -qx "$TAG"; then
+            gh release upload "$TAG" release/* --repo "$REPO" --clobber
+          else
+            gh release create "$TAG" release/* --repo "$REPO" --draft --title "$TAG" --notes ""
+          fi
 
   release:
-    needs: [version, build]
+    needs: [version, publish]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
