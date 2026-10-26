@@ -51,10 +51,27 @@ jobs:
 
           echo "version=$next" >> "$GITHUB_OUTPUT"
 
-  build:
+  draft:
     needs: [ci, version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ secrets.DESKTOP_RELEASE_TOKEN }}
+          TAG: v${{ needs.version.outputs.version }}
+        run: |
+          # a rerun finds the draft from the failed run, only the list shows drafts
+          if gh release list --repo Sharkord/sharkord-desktop --json tagName --jq '.[].tagName' | grep -qx "$TAG"; then
+            echo "$TAG already has a release"
+            exit 0
+          fi
+
+          gh release create "$TAG" --repo Sharkord/sharkord-desktop --draft --title "$TAG" --notes ""
+
+  build:
+    needs: [version, draft]
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
