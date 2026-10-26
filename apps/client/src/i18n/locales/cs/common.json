@@ -145,5 +145,8 @@
   "failedUpdateThreadFollow": "Nepodařilo se změnit sledování vlákna",
   "selectThreadPrompt": "Vyberte vlákno, které chcete číst.",
   "loadingMessage": "Načítání zprávy...",
-  "failedLoadParentMessage": "Nepodařilo se načíst původní zprávu"
+  "failedLoadParentMessage": "Nepodařilo se načíst původní zprávu",
+  "updateServerConfirmTitle": "Aktualizovat server?",
+  "updateServerConfirmMessage": "Stáhne a nainstaluje nejnovější verzi serveru. Server se během toho restartuje, což způsobí krátký výpadek.",
+  "updateServerConfirmLabel": "Aktualizovat"
 }

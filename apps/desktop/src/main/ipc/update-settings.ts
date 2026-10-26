@@ -12,7 +12,8 @@ const updateSettingsCall = defineIpc({
         connectAllOnStartup: z.boolean(),
         throttleHiddenServers: z.boolean(),
         autoStart: z.boolean(),
-        startToTray: z.boolean()
+        startToTray: z.boolean(),
+        autoUpdate: z.boolean()
       })
       .partial()
   ]),

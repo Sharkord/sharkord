@@ -50,6 +50,8 @@
     "startToTrayDescription": "Abre em segundo plano quando o aplicativo inicia, sem mostrar a janela. Abra-a novamente pelo ícone da bandeja.",
     "connectAllOnStartup": "Conectar a todos os servidores ao iniciar",
     "connectAllOnStartupDescription": "Carrega todos os servidores em segundo plano quando o aplicativo abre, para receber contagens de não lidas e notificações de todos eles. Usa mais memória.",
+    "autoUpdate": "Instalar atualizações automaticamente",
+    "autoUpdateDescription": "Baixa novas versões do app em segundo plano e pede para reiniciar quando uma estiver pronta.",
     "performance": "Desempenho",
     "throttleHiddenServers": "Limitar servidores ocultos",
     "throttleHiddenServersDescription": "Reduz timers e renderização dos servidores que não estão visíveis. Economiza CPU e bateria; desative se os servidores em segundo plano se comportarem mal.",
@@ -66,6 +68,61 @@
       "toggleServerList": "Mostrar ou ocultar a lista de servidores",
       "toggleMenuBar": "Mostrar ou ocultar a barra de menus",
       "togglePerformanceOverlay": "Alternar a sobreposição de desempenho"
-    }
+    },
+    "updates": "Atualizações",
+    "updatesDescription": "Mantenha o app Sharkord atualizado.",
+    "currentVersion": "Versão atual",
+    "updateStatus": {
+      "unsupported": {
+        "title": "Atualizações indisponíveis",
+        "description": "Esta versão do app não consegue se atualizar sozinha. Baixe novas versões na página de lançamentos."
+      },
+      "idle": {
+        "title": "Ainda não verificado",
+        "description": "Verifique se saiu uma versão mais recente do app."
+      },
+      "checking": {
+        "title": "Procurando atualizações",
+        "description": "Procurando uma versão mais recente do app."
+      },
+      "up-to-date": {
+        "title": "Você está atualizado",
+        "description": "Você está usando a versão mais recente do app."
+      },
+      "available": {
+        "title": "Atualização disponível",
+        "description": "A versão {{version}} está pronta para baixar."
+      },
+      "downloading": {
+        "title": "Baixando atualização",
+        "description": "Baixando a versão {{version}}, {{percent}}%."
+      },
+      "ready": {
+        "title": "Atualização pronta",
+        "description": "A versão {{version}} foi baixada. Reinicie o app para instalar."
+      },
+      "error": {
+        "title": "Falha ao procurar atualizações",
+        "description": "Não foi possível procurar atualizações. Verifique sua conexão e tente novamente."
+      }
+    },
+    "checkForUpdates": "Procurar atualizações",
+    "downloadUpdate": "Baixar atualização",
+    "installUpdate": "Reiniciar e atualizar",
+    "latestVersion": "Versão mais recente",
+    "unknownVersion": "Desconhecida",
+    "appFolder": "Pasta do app",
+    "appFolderDescription": "Onde o app guarda seus servidores, logins e configurações.",
+    "openAppFolder": "Abrir pasta do app"
+  },
+  "updateDialog": {
+    "title": "Atualização pronta",
+    "message": "O Sharkord {{version}} foi baixado. Reinicie agora para instalar, ou ele será instalado na próxima vez que você sair.",
+    "restart": "Reiniciar agora",
+    "later": "Mais tarde"
+  },
+  "updateNotification": {
+    "title": "Atualização disponível",
+    "body": "O Sharkord {{version}} saiu. Clique para abrir as configurações de atualização."
   }
 }

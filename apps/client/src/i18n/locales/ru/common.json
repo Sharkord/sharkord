@@ -145,5 +145,8 @@
   "failedUpdateThreadFollow": "Не удалось изменить отслеживание ветки",
   "selectThreadPrompt": "Выберите ветку, чтобы прочитать её.",
   "loadingMessage": "Загрузка сообщения...",
-  "failedLoadParentMessage": "Не удалось загрузить исходное сообщение"
+  "failedLoadParentMessage": "Не удалось загрузить исходное сообщение",
+  "updateServerConfirmTitle": "Обновить сервер?",
+  "updateServerConfirmMessage": "Будет загружена и установлена последняя версия сервера. Во время процесса сервер перезапустится, что вызовет кратковременный простой.",
+  "updateServerConfirmLabel": "Обновить"
 }

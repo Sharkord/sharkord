@@ -145,5 +145,8 @@
   "failedUpdateThreadFollow": "Impossible de mettre à jour le suivi du fil",
   "selectThreadPrompt": "Sélectionnez un fil pour le lire.",
   "loadingMessage": "Chargement du message...",
-  "failedLoadParentMessage": "Impossible de charger le message d'origine"
+  "failedLoadParentMessage": "Impossible de charger le message d'origine",
+  "updateServerConfirmTitle": "Mettre à jour le serveur ?",
+  "updateServerConfirmMessage": "Télécharge et installe la dernière version du serveur. Le serveur redémarre pendant l'opération, ce qui entraîne une courte interruption.",
+  "updateServerConfirmLabel": "Mettre à jour"
 }

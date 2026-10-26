@@ -1,7 +1,13 @@
 import type { WebContents } from 'electron';
 import { registerAddServer } from './add-server';
+import { registerCheckForUpdates } from './check-for-updates';
+import { registerDownloadUpdate } from './download-update';
+import { registerGetAppFolder } from './get-app-folder';
 import { registerGetRailVisible } from './get-rail-visible';
 import { registerGetState } from './get-state';
+import { registerGetUpdateState } from './get-update-state';
+import { registerInstallUpdate } from './install-update';
+import { registerOpenAppFolder } from './open-app-folder';
 import { registerOpenSettings } from './open-settings';
 import { registerRemoveServer } from './remove-server';
 import { registerSelectServer } from './select-server';
@@ -39,6 +45,12 @@ const registerIpc = ({ shellContents, ...rest }: TRegisterIpcOptions) => {
   registerOpenSettings(context);
   registerTogglePerformanceOverlay(context);
   registerToggleMenuBar(context);
+  registerGetUpdateState(context);
+  registerCheckForUpdates(context);
+  registerDownloadUpdate(context);
+  registerInstallUpdate(context);
+  registerGetAppFolder(context);
+  registerOpenAppFolder(context);
 };
 
 export { registerIpc };

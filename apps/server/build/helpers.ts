@@ -14,7 +14,6 @@ const rootPckJson = path.join(rootCwd, 'package.json');
 const serverPckJson = path.join(rootCwd, 'apps', 'server', 'package.json');
 const clientPckJson = path.join(rootCwd, 'apps', 'client', 'package.json');
 
-const desktopPckJson = path.join(rootCwd, 'apps', 'desktop', 'package.json');
 const sharedPckJson = path.join(rootCwd, 'packages', 'shared', 'package.json');
 const e2ePckJson = path.join(rootCwd, 'packages', 'e2e', 'package.json');
 const pluginSdkPckJson = path.join(
@@ -109,12 +108,12 @@ const getMediasoupVersion = async () => {
   return serverPkg.dependencies['mediasoup'].replace('^', '');
 };
 
+// the desktop app is versioned on its own, see .github/workflows/desktop-release.yml
 const patchPackageJsons = async (newVersion: string) => {
   const packageJsonPaths = [
     rootPckJson,
     serverPckJson,
     clientPckJson,
-    desktopPckJson,
     sharedPckJson,
     e2ePckJson,
     pluginSdkPckJson,

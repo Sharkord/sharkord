@@ -145,5 +145,8 @@
   "failedUpdateThreadFollow": "Failed to update thread follow",
   "selectThreadPrompt": "Select a thread to read it.",
   "loadingMessage": "Loading message...",
-  "failedLoadParentMessage": "Failed to load the original message"
+  "failedLoadParentMessage": "Failed to load the original message",
+  "updateServerConfirmTitle": "Update the server?",
+  "updateServerConfirmMessage": "This downloads and installs the latest version of the server. The server restarts during the process, which causes a short downtime.",
+  "updateServerConfirmLabel": "Update"
 }

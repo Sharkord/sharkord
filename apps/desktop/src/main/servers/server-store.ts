@@ -13,7 +13,8 @@ const DEFAULT_SETTINGS: TDesktopSettings = {
   connectAllOnStartup: false,
   throttleHiddenServers: true,
   autoStart: false,
-  startToTray: false
+  startToTray: false,
+  autoUpdate: true
 };
 
 const createEmptyStore = (): TStore => ({
@@ -33,7 +34,8 @@ const parseSettings = (value: unknown): TDesktopSettings => {
     connectAllOnStartup: candidate.connectAllOnStartup === true,
     throttleHiddenServers: candidate.throttleHiddenServers !== false,
     autoStart: candidate.autoStart === true,
-    startToTray: candidate.startToTray === true
+    startToTray: candidate.startToTray === true,
+    autoUpdate: candidate.autoUpdate !== false
   };
 };
 

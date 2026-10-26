@@ -1,7 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 import { addServerCall } from '../add-server';
+import { checkForUpdatesCall } from '../check-for-updates';
+import { downloadUpdateCall } from '../download-update';
+import { getAppFolderCall } from '../get-app-folder';
 import { getRailVisibleCall } from '../get-rail-visible';
 import { getStateCall } from '../get-state';
+import { getUpdateStateCall } from '../get-update-state';
+import { installUpdateCall } from '../install-update';
+import { openAppFolderCall } from '../open-app-folder';
 import { openSettingsCall } from '../open-settings';
 import { removeServerCall } from '../remove-server';
 import { selectServerCall } from '../select-server';
@@ -22,7 +28,13 @@ describe('ipc request arguments', () => {
     ['toggle rail', toggleRailCall],
     ['open settings', openSettingsCall],
     ['toggle performance overlay', togglePerformanceOverlayCall],
-    ['toggle menu bar', toggleMenuBarCall]
+    ['toggle menu bar', toggleMenuBarCall],
+    ['get update state', getUpdateStateCall],
+    ['check for updates', checkForUpdatesCall],
+    ['download update', downloadUpdateCall],
+    ['install update', installUpdateCall],
+    ['get app folder', getAppFolderCall],
+    ['open app folder', openAppFolderCall]
   ])('%s takes no arguments', (_name, call) => {
     expect(call.args.safeParse([]).success).toBe(true);
     expect(call.args.safeParse(['extra']).success).toBe(false);
@@ -60,6 +72,7 @@ describe('ipc request arguments', () => {
     expect(
       args.safeParse([{ autoStart: true, startToTray: true }]).success
     ).toBe(true);
+    expect(args.safeParse([{ autoUpdate: false }]).success).toBe(true);
     expect(args.safeParse([{}]).success).toBe(true);
     expect(args.safeParse([{ connectAllOnStartup: 'yes' }]).success).toBe(
       false

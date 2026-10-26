@@ -403,6 +403,25 @@ This command will output a list of missing translations, including the language,
 
 Every new behaviour needs tests and the whole suite must pass, see [Testing](#testing).
 
+### Desktop bridge version
+
+The desktop app and a server's client only get desktop features together when their
+`DESKTOP_BRIDGE_VERSION` (`packages/shared/src/desktop.ts`) matches exactly, any other pair
+runs that server as a plain website in the app. If your change touches the bridge, bump it
+by one:
+
+- `TDesktopBridge`: adding, removing or renaming a method, or changing what it takes or
+  returns, including every type it sends or receives (`TDesktopUnreadState`,
+  `TAppNotification`, `TDesktopHotkeyBinding`, ...).
+- The preload that implements it (`apps/desktop/src/preload/server-view.ts`) or what the
+  main process accepts from it (the bridge schemas in `apps/desktop/src/main/views/`).
+- What a value means, even when its shape stays the same.
+
+Bump once per branch: if it is already higher than on `development`, leave it. Never change
+`TDesktopEntry` or `getDesktopMismatch`, they are how every version finds out whether it
+matches. The shell's own IPC (`IpcChannel`, `window.desktop`) is not the bridge and needs no
+bump.
+
 ## Style
 
 - Never use dashes (—) in code, comments, UI strings or commit messages.

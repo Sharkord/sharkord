@@ -1,19 +1,26 @@
 import { SettingsLayout, type TSettingsEntry } from '@sharkord/ui';
-import { Keyboard, SlidersHorizontal } from 'lucide-react';
-import { memo, useMemo, useState } from 'react';
+import { Keyboard, RefreshCw, SlidersHorizontal } from 'lucide-react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { TDesktopSettings } from '../../shared/types';
+import type { TDesktopSettings, TSettingsTab } from '../../shared/types';
 import { GeneralSettings } from './general-settings';
 import { ShortcutsSettings } from './shortcuts-settings';
+import { UpdatesSettings } from './updates-settings';
 
 type TSettingsPageProps = {
   settings: TDesktopSettings;
+  tab: TSettingsTab;
   onClose: () => void;
 };
 
-const SettingsPage = memo(({ settings, onClose }: TSettingsPageProps) => {
+const SettingsPage = memo(({ settings, tab, onClose }: TSettingsPageProps) => {
   const { t } = useTranslation();
-  const [selectedId, setSelectedId] = useState('general');
+  const [selectedId, setSelectedId] = useState<string>(tab);
+
+  // the main process can open the settings on a tab while they are already showing
+  useEffect(() => {
+    setSelectedId(tab);
+  }, [tab]);
 
   const entries = useMemo<TSettingsEntry[]>(
     () => [
@@ -28,6 +35,12 @@ const SettingsPage = memo(({ settings, onClose }: TSettingsPageProps) => {
         label: t('settings.shortcuts'),
         icon: Keyboard,
         content: <ShortcutsSettings />
+      },
+      {
+        id: 'updates',
+        label: t('settings.updates'),
+        icon: RefreshCw,
+        content: <UpdatesSettings settings={settings} />
       }
     ],
     [t, settings]

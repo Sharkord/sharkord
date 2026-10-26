@@ -22,7 +22,10 @@ type TDesktopSettings = {
   throttleHiddenServers: boolean;
   autoStart: boolean;
   startToTray: boolean;
+  autoUpdate: boolean;
 };
+
+type TSettingsTab = 'general' | 'shortcuts' | 'updates';
 
 type TServersState = {
   servers: TServer[];
@@ -30,6 +33,7 @@ type TServersState = {
   adding: boolean;
   pendingAddress: string | null;
   settingsOpen: boolean;
+  settingsTab: TSettingsTab;
   settings: TDesktopSettings;
   railVisible: boolean;
   unread: Record<string, TDesktopUnreadState>;
@@ -37,6 +41,23 @@ type TServersState = {
 };
 
 type TAddServerError = 'invalid-url' | 'unreachable' | 'duplicate';
+
+type TUpdateStatus =
+  | 'unsupported'
+  | 'idle'
+  | 'checking'
+  | 'up-to-date'
+  | 'available'
+  | 'downloading'
+  | 'ready'
+  | 'error';
+
+type TUpdateState = {
+  currentVersion: string;
+  status: TUpdateStatus;
+  latestVersion: string | null;
+  percent: number;
+};
 
 type TDesktopApi = {
   getState: () => Promise<TServersState>;
@@ -51,6 +72,13 @@ type TDesktopApi = {
   updateSettings: (settings: Partial<TDesktopSettings>) => Promise<void>;
   togglePerformanceOverlay: () => Promise<void>;
   toggleMenuBar: () => Promise<void>;
+  getUpdateState: () => Promise<TUpdateState>;
+  onUpdateStateChange: (listener: (state: TUpdateState) => void) => () => void;
+  checkForUpdates: () => Promise<void>;
+  downloadUpdate: () => Promise<void>;
+  installUpdate: () => Promise<void>;
+  getAppFolder: () => Promise<string>;
+  openAppFolder: () => Promise<void>;
 };
 
 type TProcessGroup = 'Main' | 'Renderer' | 'GPU' | 'Utility' | 'Other';
@@ -75,5 +103,8 @@ export type {
   TProcessUsage,
   TServer,
   TServersState,
-  TServerStatus
+  TServerStatus,
+  TSettingsTab,
+  TUpdateState,
+  TUpdateStatus
 };

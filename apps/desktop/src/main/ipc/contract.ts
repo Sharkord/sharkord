@@ -1,7 +1,13 @@
 import type { z } from 'zod';
 import type { addServerCall } from './add-server';
+import type { checkForUpdatesCall } from './check-for-updates';
+import type { downloadUpdateCall } from './download-update';
+import type { getAppFolderCall } from './get-app-folder';
 import type { getRailVisibleCall } from './get-rail-visible';
 import type { getStateCall } from './get-state';
+import type { getUpdateStateCall } from './get-update-state';
+import type { installUpdateCall } from './install-update';
+import type { openAppFolderCall } from './open-app-folder';
 import type { openSettingsCall } from './open-settings';
 import type { removeServerCall } from './remove-server';
 import type { selectServerCall } from './select-server';
@@ -28,7 +34,13 @@ type TIpcCalls =
   | typeof updateSettingsCall
   | typeof openSettingsCall
   | typeof togglePerformanceOverlayCall
-  | typeof toggleMenuBarCall;
+  | typeof toggleMenuBarCall
+  | typeof getUpdateStateCall
+  | typeof checkForUpdatesCall
+  | typeof downloadUpdateCall
+  | typeof installUpdateCall
+  | typeof getAppFolderCall
+  | typeof openAppFolderCall;
 
 type TIpcChannel = TIpcCalls['channel'];
 type TIpcCallOf<C extends TIpcChannel> = Extract<TIpcCalls, { channel: C }>;

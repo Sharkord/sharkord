@@ -574,5 +574,8 @@
   "hotkeysSaved": "快捷键设置已保存",
   "failedSaveHotkeys": "保存快捷键设置失败",
   "hotkeysBridgeFailed": "未找到，已停止尝试",
-  "hotkeysBridgeRetry": "尝试连接"
+  "hotkeysBridgeRetry": "尝试连接",
+  "updateCheckingTitle": "正在检查更新",
+  "updateCheckingDesc": "正在查找更新版本的 Sharkord。",
+  "checkForUpdatesBtn": "检查更新"
 }

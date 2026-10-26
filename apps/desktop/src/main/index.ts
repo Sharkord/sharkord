@@ -3,6 +3,7 @@ import path from 'path';
 import icon from '../../build/icon.png?asset';
 import { APP_ID, IpcChannel } from '../shared/constants';
 import type { TServer } from '../shared/types';
+import { getAppFolder, openAppFolder } from './app-folder/open-app-folder';
 import { findDeepLink, parseDeepLink } from './deep-links/parse-deep-link';
 import { registerProtocol } from './deep-links/register-protocol';
 import { createPerformanceOverlay } from './dev/performance-overlay';
@@ -18,6 +19,15 @@ import { enableChromiumFeatures } from './startup/enable-chromium-features';
 import { setAutoStart } from './startup/set-auto-start';
 import { writeDesktopEntry } from './startup/write-desktop-entry';
 import { createTray, type TAppTray } from './tray/create-tray';
+import {
+  checkForUpdates,
+  downloadUpdate,
+  getUpdateState,
+  installUpdate,
+  onUpdateStateChange,
+  setAutoUpdateEnabled,
+  startAutoUpdater
+} from './updater/auto-updater';
 import { createServerViews } from './views/server-views';
 import { createShellView } from './views/shell-view';
 
@@ -49,6 +59,7 @@ const createWindow = () => {
 const start = () => {
   const win = createWindow();
   const shellView = createShellView();
+
   const views = createServerViews(
     win,
     shellView,
@@ -58,12 +69,17 @@ const start = () => {
       controller.select(serverId);
     }
   );
+
   const performanceOverlay = createPerformanceOverlay(win);
+
   const toggleMenuBar = () => {
     win.setMenuBarVisibility(!win.isMenuBarVisible());
   };
+
   const userData = app.getPath('userData');
+
   let appliedAutoStart: boolean | undefined;
+  let appliedAutoUpdate: boolean | undefined;
 
   const controller = createServerController(
     path.join(userData, 'servers.json'),
@@ -78,6 +94,12 @@ const start = () => {
         appliedAutoStart = state.settings.autoStart;
 
         setAutoStart(appliedAutoStart);
+      }
+
+      if (state.settings.autoUpdate !== appliedAutoUpdate) {
+        appliedAutoUpdate = state.settings.autoUpdate;
+
+        setAutoUpdateEnabled(appliedAutoUpdate);
       }
 
       Menu.setApplicationMenu(
@@ -101,7 +123,19 @@ const start = () => {
     requestRemove,
     togglePerformanceOverlay: performanceOverlay.toggle,
     toggleMenuBar,
+    getAppFolder,
+    openAppFolder,
+    updater: {
+      getState: getUpdateState,
+      check: checkForUpdates,
+      download: downloadUpdate,
+      install: installUpdate
+    },
     shellContents: shellView.webContents
+  });
+
+  onUpdateStateChange((state) => {
+    shellView.webContents.send(IpcChannel.UPDATE_STATE_CHANGED, state);
   });
 
   shellView.webContents.on('did-start-loading', () => {
@@ -129,6 +163,14 @@ const start = () => {
     win.focus();
   };
 
+  startAutoUpdater({
+    onOpenUpdates: () => {
+      showWindow();
+
+      controller.setSettingsOpen(true, 'updates');
+    }
+  });
+
   if (hasTray) {
     tray = createTray(icon, showWindow);
 
@@ -155,6 +197,7 @@ const start = () => {
 
   if (pendingDeepLink) {
     handleDeepLink(pendingDeepLink);
+
     pendingDeepLink = undefined;
   }
 
@@ -203,6 +246,7 @@ if (hasLock) {
     }
 
     await initI18n();
+
     start();
   });
 

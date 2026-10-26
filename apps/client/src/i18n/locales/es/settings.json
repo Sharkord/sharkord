@@ -574,5 +574,8 @@
   "hotkeysSaved": "Ajustes de atajos guardados",
   "failedSaveHotkeys": "No se pudieron guardar los ajustes de atajos",
   "hotkeysBridgeFailed": "No encontrado, se dejó de intentar",
-  "hotkeysBridgeRetry": "Intentar conectar"
+  "hotkeysBridgeRetry": "Intentar conectar",
+  "updateCheckingTitle": "Buscando actualizaciones",
+  "updateCheckingDesc": "Buscando una versión más reciente de Sharkord.",
+  "checkForUpdatesBtn": "Buscar actualizaciones"
 }

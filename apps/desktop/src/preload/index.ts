@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import type { TIpcArgs, TIpcChannel, TIpcResult } from '../main/ipc/contract';
 import { IpcChannel } from '../shared/constants';
-import type { TDesktopApi, TServersState } from '../shared/types';
+import type { TDesktopApi, TServersState, TUpdateState } from '../shared/types';
 
 const invoke = <C extends TIpcChannel>(
   channel: C,
@@ -30,7 +30,24 @@ const api: TDesktopApi = {
   setSettingsOpen: (open) => invoke(IpcChannel.SET_SETTINGS_OPEN, open),
   updateSettings: (settings) => invoke(IpcChannel.UPDATE_SETTINGS, settings),
   togglePerformanceOverlay: () => invoke(IpcChannel.TOGGLE_PERFORMANCE_OVERLAY),
-  toggleMenuBar: () => invoke(IpcChannel.TOGGLE_MENU_BAR)
+  toggleMenuBar: () => invoke(IpcChannel.TOGGLE_MENU_BAR),
+  getUpdateState: () => invoke(IpcChannel.GET_UPDATE_STATE),
+  onUpdateStateChange: (listener) => {
+    const handler = (_event: IpcRendererEvent, state: TUpdateState) => {
+      listener(state);
+    };
+
+    ipcRenderer.on(IpcChannel.UPDATE_STATE_CHANGED, handler);
+
+    return () => {
+      ipcRenderer.removeListener(IpcChannel.UPDATE_STATE_CHANGED, handler);
+    };
+  },
+  checkForUpdates: () => invoke(IpcChannel.CHECK_FOR_UPDATES),
+  downloadUpdate: () => invoke(IpcChannel.DOWNLOAD_UPDATE),
+  installUpdate: () => invoke(IpcChannel.INSTALL_UPDATE),
+  getAppFolder: () => invoke(IpcChannel.GET_APP_FOLDER),
+  openAppFolder: () => invoke(IpcChannel.OPEN_APP_FOLDER)
 };
 
 contextBridge.exposeInMainWorld('desktop', api);

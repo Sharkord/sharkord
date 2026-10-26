@@ -82,11 +82,10 @@ export const useAdminUpdates = () => {
 
   const update = useCallback(async () => {
     const answer = await requestConfirmation({
-      title: 'Are you sure you want to update the server?',
-      message:
-        'This will download and install the latest version of the server. The server will be restarted during the process, which may cause temporary downtime.',
-      confirmLabel: 'Update',
-      cancelLabel: 'Cancel'
+      title: t('updateServerConfirmTitle'),
+      message: t('updateServerConfirmMessage'),
+      confirmLabel: t('updateServerConfirmLabel'),
+      cancelLabel: t('cancel')
     });
 
     if (!answer) return;

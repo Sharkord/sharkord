@@ -1,6 +1,7 @@
 import { Menu, type MenuItemConstructorOptions } from 'electron';
 import { getServerShortcut, SHORTCUTS } from '../../shared/shortcuts';
 import type { TServer, TServersState } from '../../shared/types';
+import { openAppFolder } from '../app-folder/open-app-folder';
 import { i18n } from '../i18n';
 import type { TServerController } from '../servers/server-controller';
 
@@ -92,6 +93,10 @@ const buildDevMenu = ({
       label: 'Toggle Performance Overlay',
       accelerator: SHORTCUTS.togglePerformanceOverlay,
       click: togglePerformanceOverlay
+    },
+    {
+      label: 'Open App Folder',
+      click: openAppFolder
     },
     { type: 'separator' },
     {

@@ -92,7 +92,8 @@ describe('server store', () => {
         connectAllOnStartup: true,
         throttleHiddenServers: false,
         autoStart: true,
-        startToTray: true
+        startToTray: true,
+        autoUpdate: false
       }
     });
 
@@ -100,7 +101,8 @@ describe('server store', () => {
       connectAllOnStartup: true,
       throttleHiddenServers: false,
       autoStart: true,
-      startToTray: true
+      startToTray: true,
+      autoUpdate: false
     });
   });
 
@@ -113,7 +115,8 @@ describe('server store', () => {
           connectAllOnStartup: 'yes',
           throttleHiddenServers: 0,
           autoStart: 1,
-          startToTray: 'true'
+          startToTray: 'true',
+          autoUpdate: 0
         }
       })
     );
@@ -122,16 +125,18 @@ describe('server store', () => {
       connectAllOnStartup: false,
       throttleHiddenServers: true,
       autoStart: false,
-      startToTray: false
+      startToTray: false,
+      autoUpdate: true
     });
   });
 
-  test('a fresh start has auto start and start to tray off and throttling on', () => {
+  test('a fresh start has auto start and start to tray off, throttling and auto update on', () => {
     expect(readStore(filePath).settings).toEqual({
       connectAllOnStartup: false,
       throttleHiddenServers: true,
       autoStart: false,
-      startToTray: false
+      startToTray: false,
+      autoUpdate: true
     });
   });
 

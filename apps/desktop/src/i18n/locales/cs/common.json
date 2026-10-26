@@ -50,6 +50,8 @@
     "startToTrayDescription": "Při spuštění se aplikace otevře na pozadí bez zobrazení okna. Okno znovu otevřete ikonou v oznamovací oblasti.",
     "connectAllOnStartup": "Připojit ke všem serverům při spuštění",
     "connectAllOnStartupDescription": "Při otevření aplikace načte všechny servery na pozadí, takže dostáváte počty nepřečtených zpráv a oznámení ze všech. Využívá více paměti.",
+    "autoUpdate": "Instalovat aktualizace automaticky",
+    "autoUpdateDescription": "Stahovat nové verze aplikace na pozadí a nabídnout restart, jakmile bude některá připravena.",
     "performance": "Výkon",
     "throttleHiddenServers": "Omezovat skryté servery",
     "throttleHiddenServersDescription": "Zpomalí časovače a vykreslování serverů, které právě nesledujete. Šetří procesor a baterii, vypněte, pokud servery na pozadí nefungují správně.",
@@ -66,6 +68,61 @@
       "toggleServerList": "Zobrazit nebo skrýt seznam serverů",
       "toggleMenuBar": "Zobrazit nebo skrýt panel nabídek",
       "togglePerformanceOverlay": "Přepnout překryv výkonu"
-    }
+    },
+    "updates": "Aktualizace",
+    "updatesDescription": "Udržujte aplikaci Sharkord aktuální.",
+    "currentVersion": "Aktuální verze",
+    "updateStatus": {
+      "unsupported": {
+        "title": "Aktualizace nejsou dostupné",
+        "description": "Toto sestavení aplikace se neumí samo aktualizovat. Nové verze stahujte ze stránky vydání."
+      },
+      "idle": {
+        "title": "Zatím nezkontrolováno",
+        "description": "Zkontrolujte, zda vyšla novější verze aplikace."
+      },
+      "checking": {
+        "title": "Hledání aktualizací",
+        "description": "Hledá se novější verze aplikace."
+      },
+      "up-to-date": {
+        "title": "Máte aktuální verzi",
+        "description": "Používáte nejnovější verzi aplikace."
+      },
+      "available": {
+        "title": "Je dostupná aktualizace",
+        "description": "Verzi {{version}} lze stáhnout."
+      },
+      "downloading": {
+        "title": "Stahování aktualizace",
+        "description": "Stahuje se verze {{version}}, {{percent}} %."
+      },
+      "ready": {
+        "title": "Aktualizace je připravena",
+        "description": "Verze {{version}} je stažená. Restartujte aplikaci pro instalaci."
+      },
+      "error": {
+        "title": "Kontrola aktualizací selhala",
+        "description": "Aktualizace se nepodařilo zkontrolovat. Ověřte připojení a zkuste to znovu."
+      }
+    },
+    "checkForUpdates": "Zkontrolovat aktualizace",
+    "downloadUpdate": "Stáhnout aktualizaci",
+    "installUpdate": "Restartovat a aktualizovat",
+    "latestVersion": "Nejnovější verze",
+    "unknownVersion": "Neznámá",
+    "appFolder": "Složka aplikace",
+    "appFolderDescription": "Kde aplikace uchovává vaše servery, přihlášení a nastavení.",
+    "openAppFolder": "Otevřít složku aplikace"
+  },
+  "updateDialog": {
+    "title": "Aktualizace je připravena",
+    "message": "Sharkord {{version}} byl stažen. Restartujte nyní pro instalaci, jinak se nainstaluje při příštím ukončení.",
+    "restart": "Restartovat nyní",
+    "later": "Později"
+  },
+  "updateNotification": {
+    "title": "Je dostupná aktualizace",
+    "body": "Vyšel Sharkord {{version}}. Kliknutím otevřete nastavení aktualizací."
   }
 }

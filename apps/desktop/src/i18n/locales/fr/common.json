@@ -50,6 +50,8 @@
     "startToTrayDescription": "S'ouvre en arrière-plan au démarrage de l'application, sans afficher la fenêtre. Rouvrez-la depuis l'icône de la zone de notification.",
     "connectAllOnStartup": "Se connecter à tous les serveurs au démarrage",
     "connectAllOnStartupDescription": "Charge tous les serveurs en arrière-plan à l'ouverture de l'application, pour recevoir les compteurs de non lus et les notifications de chacun. Utilise plus de mémoire.",
+    "autoUpdate": "Installer les mises à jour automatiquement",
+    "autoUpdateDescription": "Télécharge les nouvelles versions de l'application en arrière-plan et propose de redémarrer dès qu'une est prête.",
     "performance": "Performances",
     "throttleHiddenServers": "Limiter les serveurs masqués",
     "throttleHiddenServersDescription": "Ralentit les minuteurs et le rendu des serveurs que vous ne regardez pas. Économise le processeur et la batterie, désactivez-le si les serveurs en arrière-plan fonctionnent mal.",
@@ -66,6 +68,61 @@
       "toggleServerList": "Afficher ou masquer la liste des serveurs",
       "toggleMenuBar": "Afficher ou masquer la barre de menus",
       "togglePerformanceOverlay": "Afficher ou masquer la superposition des performances"
-    }
+    },
+    "updates": "Mises à jour",
+    "updatesDescription": "Gardez l'application Sharkord à jour.",
+    "currentVersion": "Version actuelle",
+    "updateStatus": {
+      "unsupported": {
+        "title": "Mises à jour indisponibles",
+        "description": "Cette version de l'application ne peut pas se mettre à jour seule. Téléchargez les nouvelles versions depuis la page des versions."
+      },
+      "idle": {
+        "title": "Pas encore vérifié",
+        "description": "Vérifiez si une version plus récente de l'application est disponible."
+      },
+      "checking": {
+        "title": "Recherche de mises à jour",
+        "description": "Recherche d'une version plus récente de l'application."
+      },
+      "up-to-date": {
+        "title": "Vous êtes à jour",
+        "description": "Vous utilisez la dernière version de l'application."
+      },
+      "available": {
+        "title": "Mise à jour disponible",
+        "description": "La version {{version}} est prête à être téléchargée."
+      },
+      "downloading": {
+        "title": "Téléchargement de la mise à jour",
+        "description": "Téléchargement de la version {{version}}, {{percent}} %."
+      },
+      "ready": {
+        "title": "Mise à jour prête",
+        "description": "La version {{version}} est téléchargée. Redémarrez l'application pour l'installer."
+      },
+      "error": {
+        "title": "Échec de la recherche",
+        "description": "Impossible de rechercher les mises à jour. Vérifiez votre connexion et réessayez."
+      }
+    },
+    "checkForUpdates": "Rechercher des mises à jour",
+    "downloadUpdate": "Télécharger la mise à jour",
+    "installUpdate": "Redémarrer et mettre à jour",
+    "latestVersion": "Dernière version",
+    "unknownVersion": "Inconnue",
+    "appFolder": "Dossier de l'application",
+    "appFolderDescription": "Là où l'application conserve vos serveurs, connexions et paramètres.",
+    "openAppFolder": "Ouvrir le dossier de l'application"
+  },
+  "updateDialog": {
+    "title": "Mise à jour prête",
+    "message": "Sharkord {{version}} a été téléchargé. Redémarrez maintenant pour l'installer, ou il sera installé la prochaine fois que vous quitterez.",
+    "restart": "Redémarrer maintenant",
+    "later": "Plus tard"
+  },
+  "updateNotification": {
+    "title": "Mise à jour disponible",
+    "body": "Sharkord {{version}} est sorti. Cliquez pour ouvrir les paramètres de mise à jour."
   }
 }

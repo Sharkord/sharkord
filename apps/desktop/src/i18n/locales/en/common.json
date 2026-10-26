@@ -50,6 +50,8 @@
     "startToTrayDescription": "Open in the background when the app starts, without showing the window. Open it again from the tray icon.",
     "connectAllOnStartup": "Connect to all servers on startup",
     "connectAllOnStartupDescription": "Load every server in the background when the app opens, so you get unread counts and notifications from all of them. Uses more memory.",
+    "autoUpdate": "Install updates automatically",
+    "autoUpdateDescription": "Download new versions of the app in the background and ask to restart once one is ready.",
     "performance": "Performance",
     "throttleHiddenServers": "Throttle hidden servers",
     "throttleHiddenServersDescription": "Slow down timers and rendering of servers you are not looking at. Saves CPU and battery, turn it off if background servers misbehave.",
@@ -66,6 +68,61 @@
       "toggleServerList": "Show or hide the server list",
       "toggleMenuBar": "Show or hide the menu bar",
       "togglePerformanceOverlay": "Toggle the performance overlay"
-    }
+    },
+    "updates": "Updates",
+    "updatesDescription": "Keep the Sharkord app up to date.",
+    "currentVersion": "Current version",
+    "updateStatus": {
+      "unsupported": {
+        "title": "Updates unavailable",
+        "description": "This build of the app cannot update itself. Download new versions from the releases page."
+      },
+      "idle": {
+        "title": "Not checked yet",
+        "description": "Check whether a newer version of the app is out."
+      },
+      "checking": {
+        "title": "Checking for updates",
+        "description": "Looking for a newer version of the app."
+      },
+      "up-to-date": {
+        "title": "You are up to date",
+        "description": "You are running the latest version of the app."
+      },
+      "available": {
+        "title": "Update available",
+        "description": "Version {{version}} is ready to download."
+      },
+      "downloading": {
+        "title": "Downloading update",
+        "description": "Downloading version {{version}}, {{percent}}%."
+      },
+      "ready": {
+        "title": "Update ready",
+        "description": "Version {{version}} is downloaded. Restart the app to install it."
+      },
+      "error": {
+        "title": "Update check failed",
+        "description": "Could not check for updates. Check your connection and try again."
+      }
+    },
+    "checkForUpdates": "Check for updates",
+    "downloadUpdate": "Download update",
+    "installUpdate": "Restart and update",
+    "latestVersion": "Latest version",
+    "unknownVersion": "Unknown",
+    "appFolder": "App folder",
+    "appFolderDescription": "Where the app keeps your servers, logins and settings.",
+    "openAppFolder": "Open app folder"
+  },
+  "updateDialog": {
+    "title": "Update ready",
+    "message": "Sharkord {{version}} has been downloaded. Restart now to install it, or it will be installed the next time you quit.",
+    "restart": "Restart now",
+    "later": "Later"
+  },
+  "updateNotification": {
+    "title": "Update available",
+    "body": "Sharkord {{version}} is out. Click to open the update settings."
   }
 }

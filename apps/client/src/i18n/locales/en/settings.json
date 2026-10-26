@@ -574,5 +574,8 @@
   "hotkeysSaved": "Hotkey settings saved",
   "failedSaveHotkeys": "Failed to save hotkey settings",
   "hotkeysBridgeFailed": "Not found, stopped trying",
-  "hotkeysBridgeRetry": "Try to connect"
+  "hotkeysBridgeRetry": "Try to connect",
+  "updateCheckingTitle": "Checking for updates",
+  "updateCheckingDesc": "Looking for a newer version of Sharkord.",
+  "checkForUpdatesBtn": "Check for updates"
 }

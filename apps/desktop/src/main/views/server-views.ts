@@ -29,6 +29,7 @@ import {
   startSystemAudio,
   stopSystemAudio
 } from '../screen-share/system-audio';
+import { checkForUpdates } from '../updater/auto-updater';
 
 type TPageState = 'loading' | 'loaded' | 'error';
 
@@ -209,6 +210,11 @@ const createServerViews = (
 
       mismatches.set(server.id, parsed.data);
       changed();
+
+      // the server already ships a newer client, an update is likely out
+      if (parsed.data === 'app-outdated') {
+        checkForUpdates();
+      }
     });
 
     view.webContents.ipc.on(BridgeChannel.SET_UNREAD, (_event, state) => {

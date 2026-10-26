@@ -574,5 +574,8 @@
   "hotkeysSaved": "Configurações de atalhos salvas",
   "failedSaveHotkeys": "Falha ao salvar as configurações de atalhos",
   "hotkeysBridgeFailed": "Não encontrado, parou de tentar",
-  "hotkeysBridgeRetry": "Tentar conectar"
+  "hotkeysBridgeRetry": "Tentar conectar",
+  "updateCheckingTitle": "Procurando atualizações",
+  "updateCheckingDesc": "Procurando uma versão mais recente do Sharkord.",
+  "checkForUpdatesBtn": "Procurar atualizações"
 }

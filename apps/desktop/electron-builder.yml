@@ -10,7 +10,10 @@ protocols:
       - sharkord
 mac:
   category: public.app-category.social-networking
-  target: dmg
+  # the zip is what the auto updater downloads on macos
+  target:
+    - dmg
+    - zip
 linux:
   category: Network
   target: AppImage
@@ -18,3 +21,11 @@ linux:
   syncDesktopName: true
 win:
   target: nsis
+# desktop releases live in their own repo, the server updater reads the latest
+# release of Sharkord/sharkord and would pick up a desktop one there
+publish:
+  provider: github
+  owner: Sharkord
+  repo: sharkord-desktop
+  releaseType: draft
+  updaterCacheDirName: sharkord-app-updater

@@ -4,7 +4,8 @@ import type {
   TAddServerError,
   TDesktopSettings,
   TServer,
-  TServersState
+  TServersState,
+  TSettingsTab
 } from '../../shared/types';
 import type { TServerViews } from '../views/server-views';
 import { fetchServer } from './fetch-server';
@@ -30,6 +31,7 @@ const createServerController = (
   let adding = false;
   let pendingAddress: string | null = null;
   let settingsOpen = false;
+  let settingsTab: TSettingsTab = 'general';
   let overlay = false;
 
   views.setBackgroundThrottled(settings.throttleHiddenServers);
@@ -56,6 +58,7 @@ const createServerController = (
     adding,
     pendingAddress,
     settingsOpen,
+    settingsTab,
     settings,
     railVisible: servers.length > 0 && (!railHidden || isSelectedMismatched()),
     unread: views.getUnread(),
@@ -193,8 +196,9 @@ const createServerController = (
     sync();
   };
 
-  const setSettingsOpen = (value: boolean) => {
+  const setSettingsOpen = (value: boolean, tab: TSettingsTab = 'general') => {
     settingsOpen = value;
+    settingsTab = tab;
 
     if (value) {
       adding = false;

@@ -1,12 +1,17 @@
 {
   "name": "@sharkord/desktop",
+  "productName": "sharkord-app",
   "private": true,
-  "version": "0.0.27",
+  "version": "0.1.0",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "package": "electron-vite build && electron-builder",
+    "package:dev": "bun run package --publish never",
+    "package:dev-linux": "bun run package --linux --publish never",
+    "package:dev-win": "bun run package --win --publish never",
+    "package:dev-mac": "bun run package --mac --publish never",
     "test": "ELECTRON_OVERRIDE_DIST_PATH=. bun test",
     "lint": "eslint ./src --ext ts,tsx",
     "lint:fix": "eslint ./src --ext ts,tsx --report-unused-disable-directives --fix",
@@ -50,6 +55,9 @@
   "description": "Sharkord desktop app",
   "desktopName": "com.sharkord.desktop.desktop",
   "dependencies": {
+    "electron-updater": "^6.8.11"
+  },
+  "optionalDependencies": {
     "@vencord/venmic": "7.2.3"
   }
 }

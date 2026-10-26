@@ -115,6 +115,7 @@ describe('server controller', () => {
       adding: false,
       pendingAddress: null,
       settingsOpen: false,
+      settingsTab: 'general',
       settings: DEFAULT_SETTINGS,
       railVisible: false,
       unread: {},
@@ -181,6 +182,19 @@ describe('server controller', () => {
     expect(calls.loaded).toEqual(['two']);
   });
 
+  test('the settings can open on a given tab and go back to the first one next time', async () => {
+    const { controller } = create();
+
+    await controller.add(startServer('one', 'One'));
+
+    controller.setSettingsOpen(true, 'updates');
+    expect(controller.getState().settingsTab).toBe('updates');
+
+    controller.setSettingsOpen(false);
+    controller.setSettingsOpen(true);
+    expect(controller.getState().settingsTab).toBe('general');
+  });
+
   test('opening the settings hides the server views and fills the window with the shell', async () => {
     const { controller, calls } = create();
 
@@ -188,6 +202,7 @@ describe('server controller', () => {
     controller.setSettingsOpen(true);
 
     expect(controller.getState().settingsOpen).toBe(true);
+    expect(controller.getState().settingsTab).toBe('general');
     expect(calls.hidden).toBeGreaterThan(0);
     expect(calls.layouts.at(-1)).toEqual({
       railVisible: true,

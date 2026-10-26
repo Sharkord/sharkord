@@ -574,5 +574,8 @@
   "hotkeysSaved": "Impostazioni delle scorciatoie salvate",
   "failedSaveHotkeys": "Impossibile salvare le impostazioni delle scorciatoie",
   "hotkeysBridgeFailed": "Non trovato, tentativi interrotti",
-  "hotkeysBridgeRetry": "Prova a connettere"
+  "hotkeysBridgeRetry": "Prova a connettere",
+  "updateCheckingTitle": "Ricerca aggiornamenti",
+  "updateCheckingDesc": "Ricerca di una versione più recente di Sharkord.",
+  "checkForUpdatesBtn": "Cerca aggiornamenti"
 }

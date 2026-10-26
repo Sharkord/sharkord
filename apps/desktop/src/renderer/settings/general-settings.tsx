@@ -3,6 +3,7 @@ import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TDesktopSettings } from '../../shared/types';
 import { canToggleMenuBar, hasTray } from '../platform';
+import { AppFolderSettings } from './app-folder-settings';
 
 type TGeneralSettingsProps = {
   settings: TDesktopSettings;
@@ -67,6 +68,7 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
             onCheckedChange={handleConnectAllChange}
           />
         </Group>
+
         {canToggleMenuBar && (
           <Group
             label={t('settings.menuBar')}
@@ -105,6 +107,7 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
           </Button>
         </Group>
       </SettingsSection>
+      <AppFolderSettings />
     </>
   );
 });

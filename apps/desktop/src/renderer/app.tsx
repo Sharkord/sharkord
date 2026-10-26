@@ -54,6 +54,7 @@ const App = memo(() => {
     adding,
     pendingAddress,
     settingsOpen,
+    settingsTab,
     settings,
     railVisible,
     unread,
@@ -82,7 +83,11 @@ const App = memo(() => {
       )}
       {settingsOpen ? (
         <main className="min-w-0 flex-1">
-          <SettingsPage settings={settings} onClose={handleCloseSettings} />
+          <SettingsPage
+            settings={settings}
+            tab={settingsTab}
+            onClose={handleCloseSettings}
+          />
         </main>
       ) : (
         <main className={mainClass}>

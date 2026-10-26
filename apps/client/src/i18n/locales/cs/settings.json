@@ -574,5 +574,8 @@
   "hotkeysSaved": "Nastavení klávesových zkratek uloženo",
   "failedSaveHotkeys": "Nepodařilo se uložit nastavení klávesových zkratek",
   "hotkeysBridgeFailed": "Nenalezeno, přestalo se zkoušet",
-  "hotkeysBridgeRetry": "Zkusit připojit"
+  "hotkeysBridgeRetry": "Zkusit připojit",
+  "updateCheckingTitle": "Hledání aktualizací",
+  "updateCheckingDesc": "Hledá se novější verze Sharkordu.",
+  "checkForUpdatesBtn": "Zkontrolovat aktualizace"
 }

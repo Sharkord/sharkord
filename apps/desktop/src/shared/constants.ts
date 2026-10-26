@@ -16,7 +16,14 @@ enum IpcChannel {
   SET_SETTINGS_OPEN = 'settings:set-open',
   UPDATE_SETTINGS = 'settings:update',
   TOGGLE_PERFORMANCE_OVERLAY = 'dev:toggle-performance-overlay',
-  TOGGLE_MENU_BAR = 'window:toggle-menu-bar'
+  TOGGLE_MENU_BAR = 'window:toggle-menu-bar',
+  GET_UPDATE_STATE = 'updates:get-state',
+  UPDATE_STATE_CHANGED = 'updates:state-changed',
+  CHECK_FOR_UPDATES = 'updates:check',
+  DOWNLOAD_UPDATE = 'updates:download',
+  INSTALL_UPDATE = 'updates:install',
+  GET_APP_FOLDER = 'app-folder:get',
+  OPEN_APP_FOLDER = 'app-folder:open'
 }
 
 export { APP_ID, IpcChannel, RAIL_WIDTH };
