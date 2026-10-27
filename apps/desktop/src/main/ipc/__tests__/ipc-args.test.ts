@@ -76,6 +76,7 @@ describe('ipc request arguments', () => {
       args.safeParse([{ autoStart: true, startToTray: true }]).success
     ).toBe(true);
     expect(args.safeParse([{ autoUpdate: false }]).success).toBe(true);
+    expect(args.safeParse([{ dynamicTrayIcon: false }]).success).toBe(true);
     expect(args.safeParse([{}]).success).toBe(true);
     expect(args.safeParse([{ connectAllOnStartup: 'yes' }]).success).toBe(
       false

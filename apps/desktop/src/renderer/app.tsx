@@ -11,15 +11,24 @@ const App = memo(() => {
   const [state, setState] = useState<TServersState | null>(null);
 
   useEffect(() => {
-    const load = async () => {
-      const initial = await window.desktop.getState();
+    let isPushed = false;
 
-      setState(initial);
-    };
+    const unsubscribe = window.desktop.onStateChange((pushed) => {
+      isPushed = true;
 
-    load();
+      setState(pushed);
+    });
 
-    return window.desktop.onStateChange(setState);
+    window.desktop
+      .getState()
+      .then((initial) => {
+        if (!isPushed) {
+          setState(initial);
+        }
+      })
+      .catch(console.error);
+
+    return unsubscribe;
   }, []);
 
   const handleSelect = useCallback((id: string) => {

@@ -20,7 +20,7 @@ const buildServersMenu = ({
   toggleMenuBar,
   requestRemove
 }: TAppMenuOptions): MenuItemConstructorOptions => {
-  const { servers, selectedId, adding, railVisible } = state;
+  const { servers, selectedId, adding, railVisible, railLocked } = state;
   const current = servers.find((server) => server.id === selectedId);
 
   const serverItems: MenuItemConstructorOptions[] = servers.map(
@@ -51,7 +51,7 @@ const buildServersMenu = ({
           ? i18n.t('menu.hideServerList')
           : i18n.t('menu.showServerList'),
         accelerator: SHORTCUTS.toggleServerList,
-        enabled: servers.length > 0,
+        enabled: servers.length > 0 && !railLocked,
         click: () => controller.toggleRail()
       },
       {
@@ -110,13 +110,15 @@ const getAppMenuKey = ({
   servers,
   selectedId,
   adding,
-  railVisible
+  railVisible,
+  railLocked
 }: TServersState) =>
   JSON.stringify({
     servers: servers.map(({ id, name }) => [id, name]),
     selectedId,
     adding,
-    railVisible
+    railVisible,
+    railLocked
   });
 
 const buildAppMenu = (options: TAppMenuOptions) => {

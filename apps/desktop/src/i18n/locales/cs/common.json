@@ -73,6 +73,8 @@
     "closeToTrayDescription": "Po zavření okna nechat Sharkord běžet v oznamovací oblasti. Vypněte, pokud vaše prostředí oznamovací oblast nemá.",
     "startToTray": "Spouštět minimalizovaně do lišty",
     "startToTrayDescription": "Když se Sharkord otevře po přihlášení, nechat ho v oznamovací oblasti bez zobrazení okna. Znovu ho otevřete ikonou v oznamovací oblasti.",
+    "dynamicTrayIcon": "Logo serveru jako ikona aplikace",
+    "dynamicTrayIconDescription": "Zobrazí logo serveru, který si prohlížíte, na ikoně v oznamovací oblasti a na ikoně okna místo ikony Sharkordu.",
     "connectAllOnStartup": "Připojit ke všem serverům při spuštění",
     "connectAllOnStartupDescription": "Při otevření aplikace načte všechny servery na pozadí, takže dostáváte počty nepřečtených zpráv a oznámení ze všech. Využívá více paměti.",
     "autoUpdate": "Instalovat aktualizace automaticky",

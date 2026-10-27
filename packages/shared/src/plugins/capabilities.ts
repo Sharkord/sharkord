@@ -4,6 +4,7 @@ export enum PluginCapabilityType {
   COMMAND = 'command',
   ACTION = 'action',
   COMPONENT = 'component',
+  /** named by method and registered path, e.g. 'GET /hello' */
   HTTP_ROUTE = 'http_route',
   NOTIFICATION = 'notification'
 }

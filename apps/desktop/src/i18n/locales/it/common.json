@@ -73,6 +73,8 @@
     "closeToTrayDescription": "Lascia Sharkord in esecuzione nell'area di notifica quando chiudi la finestra. Disattivalo se il tuo desktop non ha un'area di notifica.",
     "startToTray": "Avvia ridotto nell'area di notifica",
     "startToTrayDescription": "Quando Sharkord si apre all'accesso, tienilo nell'area di notifica senza mostrare la finestra. Riaprilo dall'icona nell'area di notifica.",
+    "dynamicTrayIcon": "Logo del server come icona dell'app",
+    "dynamicTrayIconDescription": "Mostra il logo del server che stai guardando sulle icone della barra delle applicazioni e della finestra, al posto di quella di Sharkord.",
     "connectAllOnStartup": "Connetti a tutti i server all'avvio",
     "connectAllOnStartupDescription": "Carica tutti i server in background all'apertura dell'app, così ricevi i contatori dei non letti e le notifiche da ognuno. Usa più memoria.",
     "autoUpdate": "Installa gli aggiornamenti automaticamente",

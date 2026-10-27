@@ -73,6 +73,8 @@
     "closeToTrayDescription": "Mantener Sharkord en la bandeja del sistema al cerrar la ventana. Desactívalo si tu escritorio no tiene bandeja.",
     "startToTray": "Iniciar minimizado en la bandeja",
     "startToTrayDescription": "Cuando Sharkord se abra al iniciar sesión, mantenerlo en la bandeja sin mostrar la ventana. Vuelve a abrirlo desde el icono de la bandeja.",
+    "dynamicTrayIcon": "Logo del servidor como icono de la app",
+    "dynamicTrayIconDescription": "Muestra el logo del servidor que estás viendo en los iconos de la bandeja y de la ventana, en lugar del de Sharkord.",
     "connectAllOnStartup": "Conectar a todos los servidores al iniciar",
     "connectAllOnStartupDescription": "Carga todos los servidores en segundo plano al abrir la aplicación, para recibir contadores de no leídos y notificaciones de todos ellos. Usa más memoria.",
     "autoUpdate": "Instalar actualizaciones automáticamente",

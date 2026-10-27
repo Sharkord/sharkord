@@ -11,15 +11,25 @@ export const useDesktopServerList = () => {
       return;
     }
 
-    const load = async () => {
-      const visible = await desktopApi.getServerListVisible();
+    // a pushed change can land first, the initial read must not put it back
+    let isPushed = false;
 
-      setIsVisible(visible);
-    };
+    const unsubscribe = desktopApi.onServerListVisibleChange((pushed) => {
+      isPushed = true;
 
-    load();
+      setIsVisible(pushed);
+    });
 
-    return desktopApi.onServerListVisibleChange(setIsVisible);
+    desktopApi
+      .getServerListVisible()
+      .then((visible) => {
+        if (!isPushed) {
+          setIsVisible(visible);
+        }
+      })
+      .catch(console.error);
+
+    return unsubscribe;
   }, [desktopApi]);
 
   const toggle = useCallback(() => {

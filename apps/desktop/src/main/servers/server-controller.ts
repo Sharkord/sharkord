@@ -69,6 +69,7 @@ const createServerController = (
     settingsTab,
     settings,
     railVisible: servers.length > 0 && (!railHidden || isSelectedMismatched()),
+    railLocked: isSelectedMismatched(),
     unread: views.getUnread(),
     statuses: Object.fromEntries(
       servers.map(({ id }) => [id, views.getStatus(id)])
@@ -265,7 +266,7 @@ const createServerController = (
   };
 
   const toggleRail = () => {
-    setRailHidden(getState().railVisible);
+    setRailHidden(!railHidden);
   };
 
   const add = async (input: string): Promise<TAddServerError | null> => {

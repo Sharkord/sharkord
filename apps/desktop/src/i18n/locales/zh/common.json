@@ -73,6 +73,8 @@
     "closeToTrayDescription": "关闭窗口后让 Sharkord 继续在托盘中运行。如果你的桌面没有托盘，请关闭此项。",
     "startToTray": "启动时最小化到托盘",
     "startToTrayDescription": "Sharkord 在登录时打开时，保留在托盘中而不显示窗口。可以通过托盘图标再次打开。",
+    "dynamicTrayIcon": "使用服务器标志作为应用图标",
+    "dynamicTrayIconDescription": "在托盘和窗口图标上显示你正在查看的服务器的标志，而不是 Sharkord 的图标。",
     "connectAllOnStartup": "启动时连接所有服务器",
     "connectAllOnStartupDescription": "应用打开时在后台加载所有服务器，以便接收所有服务器的未读计数和通知。会占用更多内存。",
     "autoUpdate": "自动安装更新",

@@ -28,6 +28,10 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
     window.desktop.updateSettings({ startToTray: checked });
   }, []);
 
+  const handleDynamicTrayIconChange = useCallback((checked: boolean) => {
+    window.desktop.updateSettings({ dynamicTrayIcon: checked });
+  }, []);
+
   const handleThrottleChange = useCallback((checked: boolean) => {
     window.desktop.updateSettings({ throttleHiddenServers: checked });
   }, []);
@@ -71,6 +75,17 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
             <Switch
               checked={settings.startToTray}
               onCheckedChange={handleStartToTrayChange}
+            />
+          </Group>
+        )}
+        {hasTray && (
+          <Group
+            label={t('settings.dynamicTrayIcon')}
+            description={t('settings.dynamicTrayIconDescription')}
+          >
+            <Switch
+              checked={settings.dynamicTrayIcon}
+              onCheckedChange={handleDynamicTrayIconChange}
             />
           </Group>
         )}

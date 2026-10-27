@@ -73,6 +73,8 @@
     "closeToTrayDescription": "Garder Sharkord dans la zone de notification à la fermeture de la fenêtre. Désactivez-le si votre bureau n'a pas de zone de notification.",
     "startToTray": "Démarrer réduit dans la zone de notification",
     "startToTrayDescription": "Quand Sharkord s'ouvre à la connexion, le garder dans la zone de notification sans afficher la fenêtre. Rouvrez-le depuis l'icône de la zone de notification.",
+    "dynamicTrayIcon": "Logo du serveur comme icône de l'application",
+    "dynamicTrayIconDescription": "Affiche le logo du serveur que vous consultez sur les icônes de la zone de notification et de la fenêtre, à la place de celle de Sharkord.",
     "connectAllOnStartup": "Se connecter à tous les serveurs au démarrage",
     "connectAllOnStartupDescription": "Charge tous les serveurs en arrière-plan à l'ouverture de l'application, pour recevoir les compteurs de non lus et les notifications de chacun. Utilise plus de mémoire.",
     "autoUpdate": "Installer les mises à jour automatiquement",

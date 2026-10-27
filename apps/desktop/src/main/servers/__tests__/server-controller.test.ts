@@ -130,6 +130,7 @@ describe('server controller', () => {
       settingsTab: 'general',
       settings: DEFAULT_SETTINGS,
       railVisible: false,
+      railLocked: false,
       unread: {},
       statuses: {}
     });
@@ -399,6 +400,40 @@ describe('server controller', () => {
 
     controller.setRailHidden(false);
     expect(controller.getState().railVisible).toBe(true);
+  });
+
+  test('toggling the server list hides it and shows it again', async () => {
+    const { controller } = create();
+
+    await controller.add(startServer('one', 'One'));
+
+    controller.toggleRail();
+    expect(controller.getState().railVisible).toBe(false);
+
+    controller.toggleRail();
+    expect(controller.getState().railVisible).toBe(true);
+  });
+
+  test('a mismatched server holds the list open and reports it as locked', async () => {
+    const { controller, calls } = create();
+
+    await controller.add(startServer('one', 'One'));
+    calls.statuses.one = 'app-outdated';
+
+    controller.setRailHidden(true);
+
+    const locked = controller.getState();
+
+    expect(locked.railVisible).toBe(true);
+    expect(locked.railLocked).toBe(true);
+
+    // the hidden choice is remembered, the list closes once the mismatch is gone
+    calls.statuses.one = 'connected';
+
+    const matched = controller.getState();
+
+    expect(matched.railVisible).toBe(false);
+    expect(matched.railLocked).toBe(false);
   });
 
   test('the shell covers the selected server until its page has loaded', async () => {

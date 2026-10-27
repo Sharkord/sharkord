@@ -98,6 +98,7 @@ describe('server store', () => {
         autoStart: true,
         closeToTray: true,
         startToTray: true,
+        dynamicTrayIcon: false,
         autoUpdate: false
       },
       mediaAllowedIds: []
@@ -109,6 +110,7 @@ describe('server store', () => {
       autoStart: true,
       closeToTray: true,
       startToTray: true,
+      dynamicTrayIcon: false,
       autoUpdate: false
     });
   });
@@ -124,6 +126,7 @@ describe('server store', () => {
           autoStart: 1,
           closeToTray: 'yes',
           startToTray: 'true',
+          dynamicTrayIcon: 'no',
           autoUpdate: 0
         }
       })
@@ -135,19 +138,33 @@ describe('server store', () => {
       autoStart: false,
       closeToTray: DEFAULT_SETTINGS.closeToTray,
       startToTray: false,
+      dynamicTrayIcon: true,
       autoUpdate: true
     });
   });
 
-  test('a fresh start has auto start and start to tray off, throttling and auto update on', () => {
+  test('a fresh start has auto start and start to tray off, throttling, the server logo icon and auto update on', () => {
     expect(readStore(filePath).settings).toEqual({
       connectAllOnStartup: false,
       throttleHiddenServers: true,
       autoStart: false,
       closeToTray: process.platform === 'win32',
       startToTray: false,
+      dynamicTrayIcon: true,
       autoUpdate: true
     });
+  });
+
+  test('the server logo icon turned off is kept', () => {
+    writeFileSync(
+      filePath,
+      JSON.stringify({
+        servers: [SERVER],
+        settings: { dynamicTrayIcon: false }
+      })
+    );
+
+    expect(readStore(filePath).settings.dynamicTrayIcon).toBe(false);
   });
 
   test('closing to the tray is on by default only on windows, where a tray always exists', () => {

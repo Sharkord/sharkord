@@ -14,6 +14,7 @@ const updateSettingsCall = defineIpc({
         autoStart: z.boolean(),
         closeToTray: z.boolean(),
         startToTray: z.boolean(),
+        dynamicTrayIcon: z.boolean(),
         autoUpdate: z.boolean()
       })
       .partial()

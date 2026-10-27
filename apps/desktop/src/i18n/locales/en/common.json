@@ -73,6 +73,8 @@
     "closeToTrayDescription": "Keep Sharkord running in the tray when you close the window. Turn it off if your desktop has no tray.",
     "startToTray": "Start minimized to tray",
     "startToTrayDescription": "When Sharkord opens at login, keep it in the tray without showing the window. Open it again from the tray icon.",
+    "dynamicTrayIcon": "Server logo as the app icon",
+    "dynamicTrayIconDescription": "Show the logo of the server you are viewing on the tray and window icons instead of the Sharkord one.",
     "connectAllOnStartup": "Connect to all servers on startup",
     "connectAllOnStartupDescription": "Load every server in the background when the app opens, so you get unread counts and notifications from all of them. Uses more memory.",
     "autoUpdate": "Install updates automatically",

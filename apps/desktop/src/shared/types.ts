@@ -24,6 +24,7 @@ type TDesktopSettings = {
   autoStart: boolean;
   closeToTray: boolean;
   startToTray: boolean;
+  dynamicTrayIcon: boolean;
   autoUpdate: boolean;
 };
 
@@ -38,6 +39,7 @@ type TServersState = {
   settingsTab: TSettingsTab;
   settings: TDesktopSettings;
   railVisible: boolean;
+  railLocked: boolean;
   unread: Record<string, TDesktopUnreadState>;
   statuses: Record<string, TServerStatus>;
 };

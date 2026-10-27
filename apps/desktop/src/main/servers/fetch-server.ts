@@ -22,7 +22,7 @@ const getIconUrl = (origin: string, logo: TServerInfo['logo']) => {
     return url;
   }
 
-  return `${url}?accessToken=${logo._accessToken}`;
+  return `${url}?accessToken=${encodeURIComponent(logo._accessToken)}`;
 };
 
 // the app passes electron's net.fetch, which goes through chromium like the server views

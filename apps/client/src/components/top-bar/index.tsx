@@ -57,32 +57,32 @@ const TopBar = memo(({ onToggleRightSidebar, isOpen }: TTopBarProps) => {
     >
       <div className="flex min-w-0 items-center gap-2">
         {isDesktop && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleServerList}
-            className="h-7 px-2 transition-all duration-200 ease-in-out"
-          >
-            <Tooltip content={serverListLabel}>
-              <div>
-                <ServerListIcon className="w-4 h-4 transition-transform duration-200 ease-in-out" />
-              </div>
-            </Tooltip>
-          </Button>
-        )}
-        {isDesktop && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleOpenDesktopSettings}
-            className="h-7 px-2 transition-all duration-200 ease-in-out"
-          >
-            <Tooltip content={t('desktopSettings')}>
-              <div>
-                <Settings className="w-4 h-4" />
-              </div>
-            </Tooltip>
-          </Button>
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleServerList}
+              className="h-7 px-2 transition-all duration-200 ease-in-out"
+            >
+              <Tooltip content={serverListLabel}>
+                <div>
+                  <ServerListIcon className="w-4 h-4 transition-transform duration-200 ease-in-out" />
+                </div>
+              </Tooltip>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenDesktopSettings}
+              className="h-7 px-2 transition-all duration-200 ease-in-out"
+            >
+              <Tooltip content={t('desktopSettings')}>
+                <div>
+                  <Settings className="w-4 h-4" />
+                </div>
+              </Tooltip>
+            </Button>
+          </>
         )}
       </div>
 

@@ -1,4 +1,11 @@
-import { app, BrowserWindow, globalShortcut, Menu, net } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  globalShortcut,
+  Menu,
+  nativeImage,
+  net
+} from 'electron';
 import path from 'path';
 // unpacked from the asar, the tray, notifications and the linux icon copy read it from disk
 import icon from '../../build/icon.png?asset&asarUnpack';
@@ -20,6 +27,7 @@ import { createSourcePicker } from './screen-share/source-picker';
 import { confirmMediaAccess } from './servers/confirm-media-access';
 import { confirmRemoveServer } from './servers/confirm-remove-server';
 import { createServerController } from './servers/server-controller';
+import { createServerIcon } from './servers/server-icon';
 import { disableBackgroundThrottling } from './startup/disable-background-throttling';
 import { enableChromiumFeatures } from './startup/enable-chromium-features';
 import { setAutoStart, wasLaunchedAtLogin } from './startup/set-auto-start';
@@ -90,6 +98,38 @@ const start = () => {
 
   const userData = app.getPath('userData');
 
+  const showWindow = () => {
+    if (win.isMinimized()) {
+      win.restore();
+    }
+
+    win.show();
+    win.focus();
+  };
+
+  if (hasTray) {
+    tray = createTray(icon, showWindow);
+
+    win.on('close', (event) => {
+      const { settings: current } = controller.getState();
+
+      if (isQuitting || !current.closeToTray) {
+        return;
+      }
+
+      event.preventDefault();
+      win.hide();
+    });
+  }
+
+  const selectServerIcon = createServerIcon({
+    fallback: nativeImage.createFromPath(icon),
+    apply: (image) => {
+      tray?.setIcon(image);
+      win.setIcon(image);
+    }
+  });
+
   let appliedAutoStart: boolean | undefined;
   let appliedAutoUpdate: boolean | undefined;
   let appliedMenuKey: string | undefined;
@@ -102,6 +142,14 @@ const start = () => {
 
       tray?.setUnread(state.unread);
       setActiveHotkeyServer(views.getVoiceServerId() ?? state.selectedId);
+
+      if (hasTray) {
+        const iconServer = state.settings.dynamicTrayIcon
+          ? state.servers.find(({ id }) => id === state.selectedId)
+          : undefined;
+
+        selectServerIcon(iconServer);
+      }
 
       if (state.settings.autoStart !== appliedAutoStart) {
         appliedAutoStart = state.settings.autoStart;
@@ -182,15 +230,6 @@ const start = () => {
     controller.loadAll();
   }
 
-  const showWindow = () => {
-    if (win.isMinimized()) {
-      win.restore();
-    }
-
-    win.show();
-    win.focus();
-  };
-
   startAutoUpdater({
     onOpenUpdates: () => {
       showWindow();
@@ -198,21 +237,6 @@ const start = () => {
       controller.setSettingsOpen(true, 'updates');
     }
   });
-
-  if (hasTray) {
-    tray = createTray(icon, showWindow);
-
-    win.on('close', (event) => {
-      const { settings: current } = controller.getState();
-
-      if (isQuitting || !current.closeToTray) {
-        return;
-      }
-
-      event.preventDefault();
-      win.hide();
-    });
-  }
 
   handleDeepLink = (link) => {
     const deepLink = parseDeepLink(link);

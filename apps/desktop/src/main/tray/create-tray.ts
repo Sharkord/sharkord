@@ -10,17 +10,22 @@ import {
   type TTrayIndicator
 } from './helpers';
 
-const createTray = (iconPath: string, showWindow: () => void) => {
-  const source = nativeImage.createFromPath(iconPath);
-  const base = source.resize({ width: TRAY_ICON_SIZE, height: TRAY_ICON_SIZE });
+const buildImages = (
+  base: NativeImage
+): Record<TTrayIndicator, NativeImage> => {
+  const sized = base.resize({ width: TRAY_ICON_SIZE, height: TRAY_ICON_SIZE });
 
-  const images: Record<TTrayIndicator, NativeImage> = {
-    none: base,
-    unread: withDot(base, WHITE),
-    mention: withDot(base, RED)
+  return {
+    none: sized,
+    unread: withDot(sized, WHITE),
+    mention: withDot(sized, RED)
   };
+};
 
-  const tray = new Tray(base);
+const createTray = (iconPath: string, showWindow: () => void) => {
+  let images = buildImages(nativeImage.createFromPath(iconPath));
+
+  const tray = new Tray(images.none);
 
   let indicator: TTrayIndicator = 'none';
 
@@ -45,11 +50,17 @@ const createTray = (iconPath: string, showWindow: () => void) => {
     tray.setImage(images[next]);
   };
 
+  const setIcon = (base: NativeImage) => {
+    images = buildImages(base);
+
+    tray.setImage(images[indicator]);
+  };
+
   const destroy = () => {
     tray.destroy();
   };
 
-  return { setUnread, destroy };
+  return { setUnread, setIcon, destroy };
 };
 
 type TAppTray = ReturnType<typeof createTray>;

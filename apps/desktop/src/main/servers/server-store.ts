@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS: TDesktopSettings = {
   autoStart: false,
   closeToTray: process.platform === 'win32',
   startToTray: false,
+  dynamicTrayIcon: true,
   autoUpdate: true
 };
 
@@ -42,6 +43,7 @@ const parseSettings = (value: unknown): TDesktopSettings => {
         ? candidate.closeToTray
         : DEFAULT_SETTINGS.closeToTray,
     startToTray: candidate.startToTray === true,
+    dynamicTrayIcon: candidate.dynamicTrayIcon !== false,
     autoUpdate: candidate.autoUpdate !== false
   };
 };

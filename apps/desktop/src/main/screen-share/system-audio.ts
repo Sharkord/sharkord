@@ -59,6 +59,10 @@ const startSystemAudio = (id: string) => {
     return false;
   }
 
+  if (ownerId !== null && ownerId !== id) {
+    return false;
+  }
+
   const linked = bay.link({
     include: [],
     // recording streams, our own microphone among them, are not system audio
