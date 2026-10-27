@@ -30,7 +30,12 @@
     "hideServerList": "Skrýt seznam serverů",
     "showServerList": "Zobrazit seznam serverů",
     "removeCurrentServer": "Odebrat aktuální server...",
-    "toggleMenuBar": "Přepnout panel nabídek"
+    "toggleMenuBar": "Přepnout panel nabídek",
+    "advanced": "Pokročilé",
+    "desktopSettings": "Nastavení aplikace...",
+    "togglePerformanceOverlay": "Přepnout přehled výkonu",
+    "openAppFolder": "Otevřít složku aplikace",
+    "resetApp": "Obnovit aplikaci..."
   },
   "tray": {
     "show": "Zobrazit Sharkord",
@@ -42,13 +47,32 @@
     "confirm": "Odebrat",
     "cancel": "Zrušit"
   },
+  "resetDialog": {
+    "title": "Obnovit aplikaci?",
+    "message": "Tímto se odhlásíte ze všech serverů a z tohoto zařízení se smažou všechny uložené servery a nastavení. Aplikace se poté restartuje.",
+    "confirm": "Obnovit",
+    "cancel": "Zrušit"
+  },
+  "mediaDialog": {
+    "title": "Povolit serveru {{name}} používat mikrofon a kameru?",
+    "message": "{{name}} chce používat váš mikrofon a kameru, například pro připojení do hlasového kanálu. Jakmile to povolíte, u tohoto serveru se už znovu ptát nebudeme.",
+    "allow": "Povolit",
+    "deny": "Zamítnout"
+  },
+  "sourcePicker": {
+    "title": "Vyberte, co sdílet",
+    "screens": "Obrazovky",
+    "windows": "Okna"
+  },
   "settings": {
     "title": "Nastavení aplikace",
     "general": "Obecné",
     "autoStart": "Otevřít při spuštění",
     "autoStartDescription": "Spustí Sharkord automaticky po přihlášení k počítači.",
+    "closeToTray": "Zavřít do oznamovací oblasti",
+    "closeToTrayDescription": "Po zavření okna nechat Sharkord běžet v oznamovací oblasti. Vypněte, pokud vaše prostředí oznamovací oblast nemá.",
     "startToTray": "Spouštět minimalizovaně do lišty",
-    "startToTrayDescription": "Při spuštění se aplikace otevře na pozadí bez zobrazení okna. Okno znovu otevřete ikonou v oznamovací oblasti.",
+    "startToTrayDescription": "Když se Sharkord otevře po přihlášení, nechat ho v oznamovací oblasti bez zobrazení okna. Znovu ho otevřete ikonou v oznamovací oblasti.",
     "connectAllOnStartup": "Připojit ke všem serverům při spuštění",
     "connectAllOnStartupDescription": "Při otevření aplikace načte všechny servery na pozadí, takže dostáváte počty nepřečtených zpráv a oznámení ze všech. Využívá více paměti.",
     "autoUpdate": "Instalovat aktualizace automaticky",

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { addServerCall } from '../add-server';
+import { answerSourcePickCall } from '../answer-source-pick';
 import { checkForUpdatesCall } from '../check-for-updates';
 import { downloadUpdateCall } from '../download-update';
 import { getAppFolderCall } from '../get-app-folder';
@@ -81,6 +82,17 @@ describe('ipc request arguments', () => {
     );
     expect(args.safeParse([{ unknown: true }]).success).toBe(false);
     expect(args.safeParse([]).success).toBe(false);
+  });
+
+  test('answering a source pick takes the request id and a source id or nothing', () => {
+    const { args } = answerSourcePickCall;
+
+    expect(args.safeParse([1, 'screen:0:0']).success).toBe(true);
+    expect(args.safeParse([1, null]).success).toBe(true);
+    expect(args.safeParse([1.5, 'screen:0:0']).success).toBe(false);
+    expect(args.safeParse([1, 'a'.repeat(501)]).success).toBe(false);
+    expect(args.safeParse([1]).success).toBe(false);
+    expect(args.safeParse(['1', null]).success).toBe(false);
   });
 
   test('add server takes an address of reasonable length', () => {

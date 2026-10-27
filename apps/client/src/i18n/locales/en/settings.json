@@ -537,6 +537,7 @@
   "hotkeysDesktopDesc": "The desktop app registers your hotkeys with the system, so they work while another window is focused.",
   "hotkeyErrorUnsupported": "This key can't be used as a system hotkey.",
   "hotkeyErrorTaken": "Another app is already using this key combination.",
+  "hotkeyErrorNeedsModifier": "Keys that type text need Ctrl, Alt or Super held to be a system hotkey.",
   "hotkeysBridgeStatusLabel": "Status",
   "hotkeysBridgeDisconnected": "Not running",
   "hotkeysBridgeConnecting": "Connecting",

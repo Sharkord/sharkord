@@ -1140,6 +1140,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           throw new Error('No video track obtained for screen share');
         }
       } catch (error) {
+        stopDesktopSystemAudio();
+
         localScreenShareAudioProducer.current?.close();
         localScreenShareAudioProducer.current = undefined;
         localScreenShareProducer.current?.close();

@@ -30,7 +30,12 @@
     "hideServerList": "Ocultar lista de servidores",
     "showServerList": "Mostrar lista de servidores",
     "removeCurrentServer": "Quitar servidor actual...",
-    "toggleMenuBar": "Alternar barra de menú"
+    "toggleMenuBar": "Alternar barra de menú",
+    "advanced": "Avanzado",
+    "desktopSettings": "Ajustes de escritorio...",
+    "togglePerformanceOverlay": "Alternar superposición de rendimiento",
+    "openAppFolder": "Abrir carpeta de la aplicación",
+    "resetApp": "Restablecer la aplicación..."
   },
   "tray": {
     "show": "Mostrar Sharkord",
@@ -42,13 +47,32 @@
     "confirm": "Quitar",
     "cancel": "Cancelar"
   },
+  "resetDialog": {
+    "title": "¿Restablecer la aplicación?",
+    "message": "Esto cerrará tu sesión en todos los servidores y borrará todos los servidores y ajustes guardados en este dispositivo. Después, la aplicación se reiniciará.",
+    "confirm": "Restablecer",
+    "cancel": "Cancelar"
+  },
+  "mediaDialog": {
+    "title": "¿Permitir que {{name}} use tu micrófono y tu cámara?",
+    "message": "{{name}} quiere usar tu micrófono y tu cámara, por ejemplo para unirte a un canal de voz. Una vez que lo permitas, no se te volverá a preguntar para este servidor.",
+    "allow": "Permitir",
+    "deny": "Denegar"
+  },
+  "sourcePicker": {
+    "title": "Elige qué compartir",
+    "screens": "Pantallas",
+    "windows": "Ventanas"
+  },
   "settings": {
     "title": "Ajustes de escritorio",
     "general": "General",
     "autoStart": "Abrir al iniciar",
     "autoStartDescription": "Inicia Sharkord automáticamente al iniciar sesión en tu ordenador.",
+    "closeToTray": "Cerrar a la bandeja",
+    "closeToTrayDescription": "Mantener Sharkord en la bandeja del sistema al cerrar la ventana. Desactívalo si tu escritorio no tiene bandeja.",
     "startToTray": "Iniciar minimizado en la bandeja",
-    "startToTrayDescription": "Se abre en segundo plano al iniciar la aplicación, sin mostrar la ventana. Ábrela de nuevo desde el icono de la bandeja.",
+    "startToTrayDescription": "Cuando Sharkord se abra al iniciar sesión, mantenerlo en la bandeja sin mostrar la ventana. Vuelve a abrirlo desde el icono de la bandeja.",
     "connectAllOnStartup": "Conectar a todos los servidores al iniciar",
     "connectAllOnStartupDescription": "Carga todos los servidores en segundo plano al abrir la aplicación, para recibir contadores de no leídos y notificaciones de todos ellos. Usa más memoria.",
     "autoUpdate": "Instalar actualizaciones automáticamente",

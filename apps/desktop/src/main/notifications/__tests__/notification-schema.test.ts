@@ -65,38 +65,56 @@ describe('notification schema', () => {
     ).toBe(false);
   });
 
-  test('rejects inline icons that are not images or are too large', () => {
-    expect(
-      notificationSchema.safeParse({
-        ...VALID,
-        icon: 'data:text/html;base64,PGgxPmhpPC9oMT4='
-      }).success
-    ).toBe(false);
-    expect(
-      notificationSchema.safeParse({
-        ...VALID,
-        icon: `data:image/png;base64,${'A'.repeat(600_000)}`
-      }).success
-    ).toBe(false);
+  test('leaves out inline icons that are not images or are too large', () => {
+    const notImage = notificationSchema.parse({
+      ...VALID,
+      icon: 'data:text/html;base64,PGgxPmhpPC9oMT4='
+    });
+    const tooLarge = notificationSchema.parse({
+      ...VALID,
+      icon: `data:image/png;base64,${'A'.repeat(600_000)}`
+    });
+
+    expect(notImage.icon).toBeUndefined();
+    expect(notImage.title).toBe(VALID.title);
+    expect(tooLarge.icon).toBeUndefined();
   });
 
-  test('rejects icons that are not web addresses', () => {
-    expect(
-      notificationSchema.safeParse({ ...VALID, icon: 'file:///etc/passwd' })
-        .success
-    ).toBe(false);
-    expect(
-      notificationSchema.safeParse({ ...VALID, icon: 'not a url' }).success
-    ).toBe(false);
+  test('leaves out icons that are not web addresses', () => {
+    const file = notificationSchema.parse({
+      ...VALID,
+      icon: 'file:///etc/passwd'
+    });
+    const blob = notificationSchema.parse({
+      ...VALID,
+      icon: 'blob:https://chat.example.com/1234'
+    });
+
+    expect(file.icon).toBeUndefined();
+    expect(blob.icon).toBeUndefined();
+    expect(blob.body).toBe(VALID.body);
   });
 
-  test('rejects text longer than a notification can sensibly show', () => {
-    expect(
-      notificationSchema.safeParse({ ...VALID, title: 'a'.repeat(201) }).success
-    ).toBe(false);
-    expect(
-      notificationSchema.safeParse({ ...VALID, body: 'a'.repeat(1001) }).success
-    ).toBe(false);
+  test('cuts text longer than a notification can sensibly show', () => {
+    const { title, body } = notificationSchema.parse({
+      ...VALID,
+      title: 'a'.repeat(500),
+      body: 'b'.repeat(5000)
+    });
+
+    expect(title).toBe(`${'a'.repeat(199)}…`);
+    expect(body).toBe(`${'b'.repeat(999)}…`);
+  });
+
+  test('keeps text that fits as it is', () => {
+    const { title, body } = notificationSchema.parse({
+      ...VALID,
+      title: 'a'.repeat(200),
+      body: 'b'.repeat(1000)
+    });
+
+    expect(title).toBe('a'.repeat(200));
+    expect(body).toBe('b'.repeat(1000));
   });
 
   test('rejects a target without a channel or a message', () => {

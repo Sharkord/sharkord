@@ -1,4 +1,4 @@
-import { pluginNotificationsSelector } from '@/features/app/selectors';
+import { notifyPluginsSelector } from '@/features/app/selectors';
 import { store } from '@/features/store';
 import { logDebug } from '@/helpers/browser-logger';
 import { getPluginBundleUrl } from '@/helpers/get-plugin-bundle-url';
@@ -7,6 +7,7 @@ import { notify } from '@/lib/notifications';
 import {
   parseMessageComponentsExport,
   parsePluginTabs,
+  PLUGIN_NOTIFICATION_DATA_MAX_LENGTH,
   PluginSlot,
   type TCommandsMapByPlugin,
   type TPluginCapabilityAccessRule,
@@ -163,11 +164,21 @@ export const sendPluginNotification = (
   { title, body, icon, data }: TPluginNotification
 ) => {
   const state = store.getState();
-  const isEnabled = pluginNotificationsSelector(state);
+  const isEnabled = notifyPluginsSelector(state);
   const plugin = pluginMetadataByIdSelector(state, pluginId);
   const canReceive = canReceivePluginNotificationsSelector(state, pluginId);
 
   if (!isEnabled || !plugin || !canReceive) {
+    return;
+  }
+
+  const serializedData = data === undefined ? '' : JSON.stringify(data);
+
+  if (serializedData.length > PLUGIN_NOTIFICATION_DATA_MAX_LENGTH) {
+    logDebug(
+      `plugin ${pluginId} sent notification data over the size limit, not shown`
+    );
+
     return;
   }
 

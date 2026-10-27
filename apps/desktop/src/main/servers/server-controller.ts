@@ -1,4 +1,3 @@
-import type { TDesktopConfirmOptions } from '@sharkord/shared';
 import { isMismatchStatus } from '../../shared/is-mismatch-status';
 import type {
   TAddServerError,
@@ -8,7 +7,7 @@ import type {
   TSettingsTab
 } from '../../shared/types';
 import type { TServerViews } from '../views/server-views';
-import { fetchServer } from './fetch-server';
+import { fetchServer, type TFetch } from './fetch-server';
 import { normalizeServerUrl } from './normalize-server-url';
 import { readStore, writeStore } from './server-store';
 
@@ -20,7 +19,8 @@ const isSameServer = (first: TServer, second: TServer) =>
 const createServerController = (
   filePath: string,
   views: TServerViews,
-  onChange: (state: TServersState) => void
+  onChange: (state: TServersState) => void,
+  fetchUrl: TFetch
 ) => {
   const stored = readStore(filePath);
 
@@ -28,16 +28,24 @@ const createServerController = (
   let railHidden = stored.railHidden;
   let selectedId: string | null = null;
   let settings = stored.settings;
+  let mediaAllowedIds = stored.mediaAllowedIds;
   let adding = false;
   let pendingAddress: string | null = null;
   let settingsOpen = false;
   let settingsTab: TSettingsTab = 'general';
   let overlay = false;
+  let sourcePickerOpen = false;
 
   views.setBackgroundThrottled(settings.throttleHiddenServers);
 
   const save = () => {
-    writeStore(filePath, { servers, railHidden, selectedId, settings });
+    writeStore(filePath, {
+      servers,
+      railHidden,
+      selectedId,
+      settings,
+      mediaAllowedIds
+    });
   };
 
   const restored = servers.find(({ id }) => id === stored.selectedId);
@@ -85,6 +93,7 @@ const createServerController = (
         state.settingsOpen ||
         state.servers.length === 0 ||
         overlay ||
+        sourcePickerOpen ||
         isSelectedUnloaded()
     });
   };
@@ -113,29 +122,29 @@ const createServerController = (
 
   const refresh = async () => {
     const fetched = await Promise.all(
-      servers.map((server) => fetchServer(server.url))
+      servers.map((server) => fetchServer(server.url, fetchUrl))
     );
 
-    const latestById = new Map<string, TServer>();
+    const latestByUrl = new Map<string, TServer>();
 
     for (const latest of fetched) {
       if (latest) {
-        latestById.set(latest.id, latest);
+        latestByUrl.set(latest.url, latest);
       }
     }
 
     let changed = false;
 
     servers = servers.map((server) => {
-      const latest = latestById.get(server.id);
+      const latest = latestByUrl.get(server.url);
 
-      if (!latest || isSameServer(latest, server)) {
+      if (!latest || latest.id !== server.id || isSameServer(latest, server)) {
         return server;
       }
 
       changed = true;
 
-      return latest;
+      return { ...server, name: latest.name, iconUrl: latest.iconUrl };
     });
 
     if (!changed) {
@@ -242,6 +251,12 @@ const createServerController = (
     applyLayout(getState());
   };
 
+  const setSourcePickerOpen = (value: boolean) => {
+    sourcePickerOpen = value;
+
+    applyLayout(getState());
+  };
+
   const setRailHidden = (value: boolean) => {
     railHidden = value;
 
@@ -253,16 +268,6 @@ const createServerController = (
     setRailHidden(getState().railVisible);
   };
 
-  const confirm = async (
-    options: TDesktopConfirmOptions
-  ): Promise<boolean | null> => {
-    if (!selectedId || adding) {
-      return null;
-    }
-
-    return views.requestConfirmation(selectedId, options);
-  };
-
   const add = async (input: string): Promise<TAddServerError | null> => {
     const origin = normalizeServerUrl(input);
 
@@ -270,7 +275,7 @@ const createServerController = (
       return 'invalid-url';
     }
 
-    const server = await fetchServer(origin);
+    const server = await fetchServer(origin, fetchUrl);
 
     if (!server) {
       return 'unreachable';
@@ -298,8 +303,21 @@ const createServerController = (
     return null;
   };
 
+  const isMediaAllowed = (id: string) => mediaAllowedIds.includes(id);
+
+  const allowMedia = (id: string) => {
+    if (isMediaAllowed(id) || !servers.some((server) => server.id === id)) {
+      return;
+    }
+
+    mediaAllowedIds = [...mediaAllowedIds, id];
+
+    save();
+  };
+
   const remove = (id: string) => {
     servers = servers.filter((candidate) => candidate.id !== id);
+    mediaAllowedIds = mediaAllowedIds.filter((allowedId) => allowedId !== id);
 
     views.remove(id);
 
@@ -328,11 +346,13 @@ const createServerController = (
     setSettingsOpen,
     updateSettings,
     setOverlay,
+    setSourcePickerOpen,
     setRailHidden,
     toggleRail,
-    confirm,
     add,
-    remove
+    remove,
+    isMediaAllowed,
+    allowMedia
   };
 };
 

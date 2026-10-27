@@ -1,13 +1,5 @@
 import type { TAppNotification, TNotificationTarget } from './notifications';
 
-export type TDesktopConfirmOptions = {
-  title?: string;
-  message?: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  variant?: 'danger' | 'info';
-};
-
 export type TDesktopUnreadState = {
   count: number;
   mentioned: boolean;
@@ -26,7 +18,7 @@ export type TDesktopHotkeyBinding = {
 
 export type TDesktopHotkeyError = {
   actionId: string;
-  reason: 'unsupported' | 'taken';
+  reason: 'unsupported' | 'needs-modifier' | 'taken';
 };
 
 export type TDesktopBridge = {
@@ -38,6 +30,7 @@ export type TDesktopBridge = {
   openSettings: () => Promise<void>;
   setUnreadState: (state: TDesktopUnreadState) => void;
   setConnectionState: (state: TDesktopConnectionState) => void;
+  setVoiceActive: (active: boolean) => void;
   startSystemAudio: () => Promise<boolean>;
   stopSystemAudio: () => Promise<void>;
   showNotification: (notification: TAppNotification) => void;
@@ -47,9 +40,6 @@ export type TDesktopBridge = {
   onHotkey: (listener: (actionId: string) => void) => () => void;
   onNotificationClick: (
     listener: (target: TNotificationTarget) => void
-  ) => () => void;
-  setConfirmationHandler: (
-    handler: (options: TDesktopConfirmOptions) => Promise<boolean>
   ) => () => void;
 };
 

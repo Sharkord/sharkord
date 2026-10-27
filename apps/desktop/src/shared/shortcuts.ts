@@ -1,6 +1,6 @@
 const SHORTCUTS = {
   addServer: 'CmdOrCtrl+Shift+N',
-  toggleServerList: 'CmdOrCtrl+B',
+  toggleServerList: 'CmdOrCtrl+Shift+B',
   toggleMenuBar: 'CmdOrCtrl+Shift+M',
   togglePerformanceOverlay: 'CmdOrCtrl+Shift+D'
 } as const;

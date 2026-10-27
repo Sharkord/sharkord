@@ -77,34 +77,47 @@ const buildServersMenu = ({
   };
 };
 
-const buildDevMenu = ({
+const buildAdvancedMenu = ({
   controller,
   togglePerformanceOverlay,
   resetApp
 }: TAppMenuOptions): MenuItemConstructorOptions => ({
-  label: 'Dev',
+  label: i18n.t('menu.advanced'),
   submenu: [
     {
-      label: 'Desktop Settings...',
+      label: i18n.t('menu.desktopSettings'),
       click: () => controller.setSettingsOpen(true)
     },
     { type: 'separator' },
     {
-      label: 'Toggle Performance Overlay',
+      label: i18n.t('menu.togglePerformanceOverlay'),
       accelerator: SHORTCUTS.togglePerformanceOverlay,
       click: togglePerformanceOverlay
     },
     {
-      label: 'Open App Folder',
+      label: i18n.t('menu.openAppFolder'),
       click: openAppFolder
     },
     { type: 'separator' },
     {
-      label: 'Reset App...',
+      label: i18n.t('menu.resetApp'),
       click: resetApp
     }
   ]
 });
+
+const getAppMenuKey = ({
+  servers,
+  selectedId,
+  adding,
+  railVisible
+}: TServersState) =>
+  JSON.stringify({
+    servers: servers.map(({ id, name }) => [id, name]),
+    selectedId,
+    adding,
+    railVisible
+  });
 
 const buildAppMenu = (options: TAppMenuOptions) => {
   const template: MenuItemConstructorOptions[] = [
@@ -114,7 +127,7 @@ const buildAppMenu = (options: TAppMenuOptions) => {
     { role: 'windowMenu' }
   ];
 
-  template.push(buildDevMenu(options));
+  template.push(buildAdvancedMenu(options));
 
   if (process.platform === 'darwin') {
     template.unshift({ role: 'appMenu' });
@@ -123,4 +136,4 @@ const buildAppMenu = (options: TAppMenuOptions) => {
   return Menu.buildFromTemplate(template);
 };
 
-export { buildAppMenu };
+export { buildAppMenu, getAppMenuKey };

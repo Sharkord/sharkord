@@ -30,7 +30,12 @@
     "hideServerList": "隐藏服务器列表",
     "showServerList": "显示服务器列表",
     "removeCurrentServer": "移除当前服务器...",
-    "toggleMenuBar": "切换菜单栏"
+    "toggleMenuBar": "切换菜单栏",
+    "advanced": "高级",
+    "desktopSettings": "桌面设置...",
+    "togglePerformanceOverlay": "切换性能浮层",
+    "openAppFolder": "打开应用文件夹",
+    "resetApp": "重置应用..."
   },
   "tray": {
     "show": "显示 Sharkord",
@@ -42,13 +47,32 @@
     "confirm": "移除",
     "cancel": "取消"
   },
+  "resetDialog": {
+    "title": "重置应用？",
+    "message": "这会让你退出所有服务器，并删除此设备上保存的所有服务器和设置。之后应用会重新启动。",
+    "confirm": "重置",
+    "cancel": "取消"
+  },
+  "mediaDialog": {
+    "title": "允许 {{name}} 使用你的麦克风和摄像头吗？",
+    "message": "{{name}} 想使用你的麦克风和摄像头，例如用于加入语音频道。允许后，此服务器不会再次询问。",
+    "allow": "允许",
+    "deny": "拒绝"
+  },
+  "sourcePicker": {
+    "title": "选择要共享的内容",
+    "screens": "屏幕",
+    "windows": "窗口"
+  },
   "settings": {
     "title": "桌面设置",
     "general": "常规",
     "autoStart": "开机时打开",
     "autoStartDescription": "登录电脑时自动启动 Sharkord。",
+    "closeToTray": "关闭时最小化到托盘",
+    "closeToTrayDescription": "关闭窗口后让 Sharkord 继续在托盘中运行。如果你的桌面没有托盘，请关闭此项。",
     "startToTray": "启动时最小化到托盘",
-    "startToTrayDescription": "应用启动时在后台打开，不显示窗口。可通过托盘图标重新打开。",
+    "startToTrayDescription": "Sharkord 在登录时打开时，保留在托盘中而不显示窗口。可以通过托盘图标再次打开。",
     "connectAllOnStartup": "启动时连接所有服务器",
     "connectAllOnStartupDescription": "应用打开时在后台加载所有服务器，以便接收所有服务器的未读计数和通知。会占用更多内存。",
     "autoUpdate": "自动安装更新",

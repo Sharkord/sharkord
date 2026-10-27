@@ -13,7 +13,7 @@ type TServerHotkeys = {
 const servers = new Map<string, TServerHotkeys>();
 const registered = new Set<string>();
 
-// only the server selected in the rail holds its keys, the others leave them free for other apps
+// only one server holds its keys, the others leave them free for other apps
 let activeServerId: string | null = null;
 
 const press = (accelerator: string) => {
@@ -67,28 +67,34 @@ const setServerHotkeys = (
   bindings: TDesktopHotkeyBinding[],
   onPress: (actionId: string) => void
 ): TDesktopHotkeyError[] => {
-  const withAccelerators = bindings.map((binding) => ({
-    ...binding,
-    accelerator: comboToAccelerator(binding.combo)
-  }));
+  const errors: TDesktopHotkeyError[] = [];
+  const withAccelerators = bindings.map((binding) => {
+    const result = comboToAccelerator(binding.combo);
+
+    if ('error' in result) {
+      errors.push({ actionId: binding.actionId, reason: result.error });
+
+      return { ...binding, accelerator: undefined };
+    }
+
+    return { ...binding, accelerator: result.accelerator };
+  });
 
   servers.set(serverId, { bindings: withAccelerators, onPress });
   sync();
 
-  return withAccelerators.flatMap(
-    ({ actionId, accelerator }): TDesktopHotkeyError[] => {
-      if (!accelerator) {
-        return [{ actionId, reason: 'unsupported' }];
-      }
-
-      // a server in the background holds no keys, so nothing can be taken from it yet
-      if (serverId === activeServerId && !registered.has(accelerator)) {
-        return [{ actionId, reason: 'taken' }];
-      }
-
-      return [];
+  for (const { actionId, accelerator } of withAccelerators) {
+    // a server in the background holds no keys, so nothing can be taken from it yet
+    if (
+      accelerator &&
+      serverId === activeServerId &&
+      !registered.has(accelerator)
+    ) {
+      errors.push({ actionId, reason: 'taken' });
     }
-  );
+  }
+
+  return errors;
 };
 
 const clearServerHotkeys = (serverId: string) => {

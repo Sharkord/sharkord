@@ -30,7 +30,12 @@
     "hideServerList": "Nascondi elenco server",
     "showServerList": "Mostra elenco server",
     "removeCurrentServer": "Rimuovi server corrente...",
-    "toggleMenuBar": "Mostra/nascondi barra dei menu"
+    "toggleMenuBar": "Mostra/nascondi barra dei menu",
+    "advanced": "Avanzate",
+    "desktopSettings": "Impostazioni desktop...",
+    "togglePerformanceOverlay": "Mostra o nascondi overlay prestazioni",
+    "openAppFolder": "Apri cartella dell'app",
+    "resetApp": "Reimposta app..."
   },
   "tray": {
     "show": "Mostra Sharkord",
@@ -42,13 +47,32 @@
     "confirm": "Rimuovi",
     "cancel": "Annulla"
   },
+  "resetDialog": {
+    "title": "Reimpostare l'app?",
+    "message": "Verrai disconnesso da tutti i server e verranno eliminati tutti i server e le impostazioni salvati su questo dispositivo. L'app verrà poi riavviata.",
+    "confirm": "Reimposta",
+    "cancel": "Annulla"
+  },
+  "mediaDialog": {
+    "title": "Consentire a {{name}} di usare microfono e fotocamera?",
+    "message": "{{name}} vuole usare il tuo microfono e la tua fotocamera, per esempio per entrare in un canale vocale. Una volta consentito, non te lo chiederemo più per questo server.",
+    "allow": "Consenti",
+    "deny": "Nega"
+  },
+  "sourcePicker": {
+    "title": "Scegli cosa condividere",
+    "screens": "Schermi",
+    "windows": "Finestre"
+  },
   "settings": {
     "title": "Impostazioni desktop",
     "general": "Generale",
     "autoStart": "Apri all'avvio",
     "autoStartDescription": "Avvia Sharkord automaticamente quando accedi al computer.",
+    "closeToTray": "Chiudi nell'area di notifica",
+    "closeToTrayDescription": "Lascia Sharkord in esecuzione nell'area di notifica quando chiudi la finestra. Disattivalo se il tuo desktop non ha un'area di notifica.",
     "startToTray": "Avvia ridotto nell'area di notifica",
-    "startToTrayDescription": "Si apre in background all'avvio dell'app, senza mostrare la finestra. Riaprila dall'icona nell'area di notifica.",
+    "startToTrayDescription": "Quando Sharkord si apre all'accesso, tienilo nell'area di notifica senza mostrare la finestra. Riaprilo dall'icona nell'area di notifica.",
     "connectAllOnStartup": "Connetti a tutti i server all'avvio",
     "connectAllOnStartupDescription": "Carica tutti i server in background all'apertura dell'app, così ricevi i contatori dei non letti e le notifiche da ognuno. Usa più memoria.",
     "autoUpdate": "Installa gli aggiornamenti automaticamente",

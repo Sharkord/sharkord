@@ -5,6 +5,7 @@ import { AddServerForm } from './add-server-form';
 import { ServerPlaceholder } from './server-placeholder';
 import { ServerRail } from './server-rail';
 import { SettingsPage } from './settings';
+import { SourcePicker } from './source-picker';
 
 const App = memo(() => {
   const [state, setState] = useState<TServersState | null>(null);
@@ -116,6 +117,7 @@ const App = memo(() => {
           )}
         </main>
       )}
+      <SourcePicker />
     </div>
   );
 });

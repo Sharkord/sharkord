@@ -37,7 +37,8 @@ describe('server store', () => {
       servers: [],
       railHidden: false,
       selectedId: null,
-      settings: DEFAULT_SETTINGS
+      settings: DEFAULT_SETTINGS,
+      mediaAllowedIds: []
     });
   });
 
@@ -46,7 +47,8 @@ describe('server store', () => {
       servers: [SERVER, OTHER],
       railHidden: false,
       selectedId: null,
-      settings: DEFAULT_SETTINGS
+      settings: DEFAULT_SETTINGS,
+      mediaAllowedIds: []
     });
 
     expect(readStore(filePath).servers).toEqual([SERVER, OTHER]);
@@ -57,7 +59,8 @@ describe('server store', () => {
       servers: [SERVER],
       railHidden: true,
       selectedId: null,
-      settings: DEFAULT_SETTINGS
+      settings: DEFAULT_SETTINGS,
+      mediaAllowedIds: []
     });
 
     expect(readStore(filePath).railHidden).toBe(true);
@@ -68,7 +71,8 @@ describe('server store', () => {
       servers: [SERVER, OTHER],
       railHidden: false,
       selectedId: OTHER.id,
-      settings: DEFAULT_SETTINGS
+      settings: DEFAULT_SETTINGS,
+      mediaAllowedIds: []
     });
 
     expect(readStore(filePath).selectedId).toBe(OTHER.id);
@@ -92,15 +96,18 @@ describe('server store', () => {
         connectAllOnStartup: true,
         throttleHiddenServers: false,
         autoStart: true,
+        closeToTray: true,
         startToTray: true,
         autoUpdate: false
-      }
+      },
+      mediaAllowedIds: []
     });
 
     expect(readStore(filePath).settings).toEqual({
       connectAllOnStartup: true,
       throttleHiddenServers: false,
       autoStart: true,
+      closeToTray: true,
       startToTray: true,
       autoUpdate: false
     });
@@ -115,6 +122,7 @@ describe('server store', () => {
           connectAllOnStartup: 'yes',
           throttleHiddenServers: 0,
           autoStart: 1,
+          closeToTray: 'yes',
           startToTray: 'true',
           autoUpdate: 0
         }
@@ -125,6 +133,7 @@ describe('server store', () => {
       connectAllOnStartup: false,
       throttleHiddenServers: true,
       autoStart: false,
+      closeToTray: DEFAULT_SETTINGS.closeToTray,
       startToTray: false,
       autoUpdate: true
     });
@@ -135,9 +144,49 @@ describe('server store', () => {
       connectAllOnStartup: false,
       throttleHiddenServers: true,
       autoStart: false,
+      closeToTray: process.platform === 'win32',
       startToTray: false,
       autoUpdate: true
     });
+  });
+
+  test('closing to the tray is on by default only on windows, where a tray always exists', () => {
+    expect(DEFAULT_SETTINGS.closeToTray).toBe(process.platform === 'win32');
+  });
+
+  test('a closing to the tray turned off is kept, also on windows', () => {
+    writeFileSync(
+      filePath,
+      JSON.stringify({ servers: [SERVER], settings: { closeToTray: false } })
+    );
+
+    expect(readStore(filePath).settings.closeToTray).toBe(false);
+  });
+
+  test('remembers the servers allowed to use the microphone and camera', () => {
+    writeStore(filePath, {
+      servers: [SERVER, OTHER],
+      railHidden: false,
+      selectedId: null,
+      settings: DEFAULT_SETTINGS,
+      mediaAllowedIds: [OTHER.id]
+    });
+
+    expect(readStore(filePath).mediaAllowedIds).toEqual([OTHER.id]);
+  });
+
+  test('drops media grants that are not server ids and starts without any', () => {
+    expect(readStore(filePath).mediaAllowedIds).toEqual([]);
+
+    writeFileSync(
+      filePath,
+      JSON.stringify({
+        servers: [SERVER],
+        mediaAllowedIds: [SERVER.id, 5, null]
+      })
+    );
+
+    expect(readStore(filePath).mediaAllowedIds).toEqual([SERVER.id]);
   });
 
   test('creates missing parent folders when saving', () => {
@@ -147,7 +196,8 @@ describe('server store', () => {
       servers: [SERVER],
       railHidden: false,
       selectedId: null,
-      settings: DEFAULT_SETTINGS
+      settings: DEFAULT_SETTINGS,
+      mediaAllowedIds: []
     });
 
     expect(readStore(nested).servers).toEqual([SERVER]);
@@ -158,20 +208,23 @@ describe('server store', () => {
       servers: [SERVER, OTHER],
       railHidden: true,
       selectedId: null,
-      settings: DEFAULT_SETTINGS
+      settings: DEFAULT_SETTINGS,
+      mediaAllowedIds: []
     });
     writeStore(filePath, {
       servers: [OTHER],
       railHidden: false,
       selectedId: null,
-      settings: DEFAULT_SETTINGS
+      settings: DEFAULT_SETTINGS,
+      mediaAllowedIds: []
     });
 
     expect(readStore(filePath)).toEqual({
       servers: [OTHER],
       railHidden: false,
       selectedId: null,
-      settings: DEFAULT_SETTINGS
+      settings: DEFAULT_SETTINGS,
+      mediaAllowedIds: []
     });
   });
 
@@ -182,7 +235,8 @@ describe('server store', () => {
       servers: [],
       railHidden: false,
       selectedId: null,
-      settings: DEFAULT_SETTINGS
+      settings: DEFAULT_SETTINGS,
+      mediaAllowedIds: []
     });
   });
 
@@ -193,7 +247,8 @@ describe('server store', () => {
       servers: [],
       railHidden: false,
       selectedId: null,
-      settings: DEFAULT_SETTINGS
+      settings: DEFAULT_SETTINGS,
+      mediaAllowedIds: []
     });
   });
 

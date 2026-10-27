@@ -4,6 +4,9 @@ directories:
   buildResources: build
 files:
   - out/**
+# the app icon, read from disk by the tray and copied into the linux icon theme
+asarUnpack:
+  - out/main/chunks/*.png
 protocols:
   - name: Sharkord
     schemes:

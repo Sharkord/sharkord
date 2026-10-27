@@ -7,12 +7,14 @@ type TStore = {
   railHidden: boolean;
   selectedId: string | null;
   settings: TDesktopSettings;
+  mediaAllowedIds: string[];
 };
 
 const DEFAULT_SETTINGS: TDesktopSettings = {
   connectAllOnStartup: false,
   throttleHiddenServers: true,
   autoStart: false,
+  closeToTray: process.platform === 'win32',
   startToTray: false,
   autoUpdate: true
 };
@@ -21,7 +23,8 @@ const createEmptyStore = (): TStore => ({
   servers: [],
   railHidden: false,
   selectedId: null,
-  settings: DEFAULT_SETTINGS
+  settings: DEFAULT_SETTINGS,
+  mediaAllowedIds: []
 });
 
 const parseSettings = (value: unknown): TDesktopSettings => {
@@ -34,6 +37,10 @@ const parseSettings = (value: unknown): TDesktopSettings => {
     connectAllOnStartup: candidate.connectAllOnStartup === true,
     throttleHiddenServers: candidate.throttleHiddenServers !== false,
     autoStart: candidate.autoStart === true,
+    closeToTray:
+      typeof candidate.closeToTray === 'boolean'
+        ? candidate.closeToTray
+        : DEFAULT_SETTINGS.closeToTray,
     startToTray: candidate.startToTray === true,
     autoUpdate: candidate.autoUpdate !== false
   };
@@ -63,16 +70,17 @@ const readStore = (filePath: string): TStore => {
       return createEmptyStore();
     }
 
-    const { servers, railHidden, selectedId, settings } = parsed as Record<
-      string,
-      unknown
-    >;
+    const { servers, railHidden, selectedId, settings, mediaAllowedIds } =
+      parsed as Record<string, unknown>;
 
     return {
       servers: Array.isArray(servers) ? servers.filter(isServer) : [],
       railHidden: railHidden === true,
       selectedId: typeof selectedId === 'string' ? selectedId : null,
-      settings: parseSettings(settings)
+      settings: parseSettings(settings),
+      mediaAllowedIds: Array.isArray(mediaAllowedIds)
+        ? mediaAllowedIds.filter((id): id is string => typeof id === 'string')
+        : []
     };
   } catch {
     // a missing or corrupt file just means a fresh start

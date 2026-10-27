@@ -30,7 +30,12 @@
     "hideServerList": "Hide Server List",
     "showServerList": "Show Server List",
     "removeCurrentServer": "Remove Current Server...",
-    "toggleMenuBar": "Toggle Menu Bar"
+    "toggleMenuBar": "Toggle Menu Bar",
+    "advanced": "Advanced",
+    "desktopSettings": "Desktop Settings...",
+    "togglePerformanceOverlay": "Toggle Performance Overlay",
+    "openAppFolder": "Open App Folder",
+    "resetApp": "Reset App..."
   },
   "tray": {
     "show": "Show Sharkord",
@@ -42,13 +47,32 @@
     "confirm": "Remove",
     "cancel": "Cancel"
   },
+  "resetDialog": {
+    "title": "Reset the app?",
+    "message": "This signs you out of every server and deletes all saved servers and settings on this device. The app restarts afterwards.",
+    "confirm": "Reset",
+    "cancel": "Cancel"
+  },
+  "mediaDialog": {
+    "title": "Allow {{name}} to use your microphone and camera?",
+    "message": "{{name}} wants to use your microphone and camera, for example to join a voice channel. Once you allow it, you will not be asked again for this server.",
+    "allow": "Allow",
+    "deny": "Deny"
+  },
+  "sourcePicker": {
+    "title": "Choose what to share",
+    "screens": "Screens",
+    "windows": "Windows"
+  },
   "settings": {
     "title": "Desktop settings",
     "general": "General",
     "autoStart": "Open on startup",
     "autoStartDescription": "Start Sharkord automatically when you log in to your computer.",
+    "closeToTray": "Close to tray",
+    "closeToTrayDescription": "Keep Sharkord running in the tray when you close the window. Turn it off if your desktop has no tray.",
     "startToTray": "Start minimized to tray",
-    "startToTrayDescription": "Open in the background when the app starts, without showing the window. Open it again from the tray icon.",
+    "startToTrayDescription": "When Sharkord opens at login, keep it in the tray without showing the window. Open it again from the tray icon.",
     "connectAllOnStartup": "Connect to all servers on startup",
     "connectAllOnStartupDescription": "Load every server in the background when the app opens, so you get unread counts and notifications from all of them. Uses more memory.",
     "autoUpdate": "Install updates automatically",

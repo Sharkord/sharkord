@@ -537,6 +537,7 @@
   "hotkeysDesktopDesc": "Настольное приложение регистрирует горячие клавиши в системе, поэтому они работают, даже когда активно другое окно.",
   "hotkeyErrorUnsupported": "Эту клавишу нельзя использовать как системную горячую клавишу.",
   "hotkeyErrorTaken": "Это сочетание клавиш уже использует другое приложение.",
+  "hotkeyErrorNeedsModifier": "Клавиши, которые вводят текст, можно назначить системной горячей клавишей только вместе с Ctrl, Alt или Super.",
   "hotkeysBridgeStatusLabel": "Статус",
   "hotkeysBridgeDisconnected": "Не запущен",
   "hotkeysBridgeConnecting": "Подключение",

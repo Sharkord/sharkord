@@ -537,6 +537,7 @@
   "hotkeysDesktopDesc": "Desktopová aplikace registruje zkratky v systému, takže fungují i v jiném aktivním okně.",
   "hotkeyErrorUnsupported": "Tuto klávesu nelze použít jako systémovou zkratku.",
   "hotkeyErrorTaken": "Tuto kombinaci kláves už používá jiná aplikace.",
+  "hotkeyErrorNeedsModifier": "Klávesy, které píšou text, potřebují jako systémová zkratka podržený Ctrl, Alt nebo Super.",
   "hotkeysBridgeStatusLabel": "Stav",
   "hotkeysBridgeDisconnected": "Neběží",
   "hotkeysBridgeConnecting": "Připojování",

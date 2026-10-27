@@ -537,6 +537,7 @@
   "hotkeysDesktopDesc": "桌面应用会向系统注册你的快捷键，因此在其他窗口处于焦点时也能使用。",
   "hotkeyErrorUnsupported": "此按键无法用作系统快捷键。",
   "hotkeyErrorTaken": "其他应用已在使用此组合键。",
+  "hotkeyErrorNeedsModifier": "会输入文字的按键需要同时按住 Ctrl、Alt 或 Super 才能作为系统快捷键。",
   "hotkeysBridgeStatusLabel": "状态",
   "hotkeysBridgeDisconnected": "未运行",
   "hotkeysBridgeConnecting": "连接中",

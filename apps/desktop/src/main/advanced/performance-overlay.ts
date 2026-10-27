@@ -1,6 +1,6 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
-import { DevChannel } from '../../shared/dev-channels';
+import { AdvancedChannel } from '../../shared/advanced-channels';
 import { summarizeMetrics } from './summarize-metrics';
 
 const OVERLAY_WIDTH = 280;
@@ -33,7 +33,7 @@ const createPerformanceOverlay = (parent: BrowserWindow) => {
 
     const usage = summarizeMetrics(app.getAppMetrics());
 
-    overlay.webContents.send(DevChannel.METRICS_UPDATED, usage);
+    overlay.webContents.send(AdvancedChannel.METRICS_UPDATED, usage);
   };
 
   const open = () => {

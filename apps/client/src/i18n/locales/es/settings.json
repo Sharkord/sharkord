@@ -537,6 +537,7 @@
   "hotkeysDesktopDesc": "La aplicación de escritorio registra tus atajos en el sistema, así funcionan mientras otra ventana está en primer plano.",
   "hotkeyErrorUnsupported": "Esta tecla no se puede usar como atajo del sistema.",
   "hotkeyErrorTaken": "Otra aplicación ya está usando esta combinación de teclas.",
+  "hotkeyErrorNeedsModifier": "Las teclas que escriben texto necesitan Ctrl, Alt o Super pulsado para ser un atajo del sistema.",
   "hotkeysBridgeStatusLabel": "Estado",
   "hotkeysBridgeDisconnected": "No se está ejecutando",
   "hotkeysBridgeConnecting": "Conectando",

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
-import { DevChannel } from '../shared/dev-channels';
+import { AdvancedChannel } from '../shared/advanced-channels';
 import type { TPerformanceOverlayApi, TProcessUsage } from '../shared/types';
 
 const api: TPerformanceOverlayApi = {
@@ -8,10 +8,10 @@ const api: TPerformanceOverlayApi = {
       listener(usage);
     };
 
-    ipcRenderer.on(DevChannel.METRICS_UPDATED, handler);
+    ipcRenderer.on(AdvancedChannel.METRICS_UPDATED, handler);
 
     return () => {
-      ipcRenderer.removeListener(DevChannel.METRICS_UPDATED, handler);
+      ipcRenderer.removeListener(AdvancedChannel.METRICS_UPDATED, handler);
     };
   }
 };

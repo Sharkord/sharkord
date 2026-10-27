@@ -1,9 +1,9 @@
 import {
-  browserNotificationsForDmsSelector,
-  browserNotificationsForMentionsSelector,
-  browserNotificationsForRepliesSelector,
-  browserNotificationsSelector,
   isChannelMutedSelector,
+  notifyAllMessagesSelector,
+  notifyDmsSelector,
+  notifyMentionsOnlySelector,
+  notifyRepliesSelector,
   selectedThreadSelector,
   threadSidebarDataSelector
 } from '@/features/app/selectors';
@@ -133,9 +133,8 @@ export const addMessages = (
   if (isSubscriptionMessage && messages.length > 0) {
     const state = store.getState();
     const ownUserId = ownUserIdSelector(state);
-    const hasBrowserNotificationsEnabled = browserNotificationsSelector(state);
-    const notificationsForMentionsOnly =
-      browserNotificationsForMentionsSelector(state);
+    const notifiesAllMessages = notifyAllMessagesSelector(state);
+    const notificationsForMentionsOnly = notifyMentionsOnlySelector(state);
     const targetMessage = messages[0];
     const isFromOwnUser =
       targetMessage.userId && ownUserId === targetMessage.userId;
@@ -181,10 +180,8 @@ export const addMessages = (
       }
 
       if (isNotifiable && !isMessageOnScreen) {
-        const hasDmNotificationsEnabled =
-          browserNotificationsForDmsSelector(state);
-        const hasRepliesNotificationsEnabled =
-          browserNotificationsForRepliesSelector(state);
+        const hasDmNotificationsEnabled = notifyDmsSelector(state);
+        const hasRepliesNotificationsEnabled = notifyRepliesSelector(state);
 
         if (isDmChannel && hasDmNotificationsEnabled) {
           sendMessageNotification(targetMessage, channelId, true);
@@ -192,7 +189,7 @@ export const addMessages = (
           if (isMentioned) {
             sendMessageNotification(targetMessage, channelId);
           }
-        } else if (hasBrowserNotificationsEnabled) {
+        } else if (notifiesAllMessages) {
           sendMessageNotification(targetMessage, channelId);
         } else if (hasRepliesNotificationsEnabled) {
           const isReplyToOwnMessage =

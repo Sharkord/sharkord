@@ -8,6 +8,8 @@ type TServerInfo = {
 
 const FETCH_TIMEOUT_MS = 5_000;
 
+type TFetch = (url: string, init?: RequestInit) => Promise<Response>;
+
 const getIconUrl = (origin: string, logo: TServerInfo['logo']) => {
   if (!logo) {
     return null;
@@ -23,9 +25,14 @@ const getIconUrl = (origin: string, logo: TServerInfo['logo']) => {
   return `${url}?accessToken=${logo._accessToken}`;
 };
 
-const fetchServer = async (origin: string): Promise<TServer | null> => {
+// the app passes electron's net.fetch, which goes through chromium like the server views
+// do, so a system proxy and the os certificate store apply here too
+const fetchServer = async (
+  origin: string,
+  fetchUrl: TFetch
+): Promise<TServer | null> => {
   try {
-    const response = await fetch(`${origin}/info`, {
+    const response = await fetchUrl(`${origin}/info`, {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
     });
 
@@ -51,3 +58,4 @@ const fetchServer = async (origin: string): Promise<TServer | null> => {
 };
 
 export { fetchServer };
+export type { TFetch };

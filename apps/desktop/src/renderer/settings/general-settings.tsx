@@ -20,6 +20,10 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
     window.desktop.updateSettings({ autoStart: checked });
   }, []);
 
+  const handleCloseToTrayChange = useCallback((checked: boolean) => {
+    window.desktop.updateSettings({ closeToTray: checked });
+  }, []);
+
   const handleStartToTrayChange = useCallback((checked: boolean) => {
     window.desktop.updateSettings({ startToTray: checked });
   }, []);
@@ -49,6 +53,17 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
           />
         </Group>
         {hasTray && (
+          <Group
+            label={t('settings.closeToTray')}
+            description={t('settings.closeToTrayDescription')}
+          >
+            <Switch
+              checked={settings.closeToTray}
+              onCheckedChange={handleCloseToTrayChange}
+            />
+          </Group>
+        )}
+        {hasTray && settings.closeToTray && (
           <Group
             label={t('settings.startToTray')}
             description={t('settings.startToTrayDescription')}

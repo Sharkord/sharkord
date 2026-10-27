@@ -537,6 +537,7 @@
   "hotkeysDesktopDesc": "L'app desktop registra le scorciatoie nel sistema, così funzionano anche quando è attiva un'altra finestra.",
   "hotkeyErrorUnsupported": "Questo tasto non può essere usato come scorciatoia di sistema.",
   "hotkeyErrorTaken": "Un'altra app sta già usando questa combinazione di tasti.",
+  "hotkeyErrorNeedsModifier": "I tasti che scrivono testo richiedono Ctrl, Alt o Super premuti per essere una scorciatoia di sistema.",
   "hotkeysBridgeStatusLabel": "Stato",
   "hotkeysBridgeDisconnected": "Non in esecuzione",
   "hotkeysBridgeConnecting": "Connessione in corso",

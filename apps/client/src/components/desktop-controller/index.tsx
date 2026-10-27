@@ -1,4 +1,4 @@
-import { requestConfirmation } from '@/features/dialogs/actions';
+import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import {
   useDesktopConnectionState,
   useTotalHasUnreadMentions,
@@ -12,14 +12,8 @@ const DesktopController = memo(() => {
   const unreadCount = useTotalUnreadCount();
   const hasUnreadMentions = useTotalHasUnreadMentions();
   const connectionState = useDesktopConnectionState();
-
-  useEffect(() => {
-    if (!desktopApi) {
-      return;
-    }
-
-    return desktopApi.setConfirmationHandler(requestConfirmation);
-  }, [desktopApi]);
+  const currentVoiceChannelId = useCurrentVoiceChannelId();
+  const isInVoice = currentVoiceChannelId !== undefined;
 
   useEffect(() => {
     if (!desktopApi) {
@@ -39,6 +33,14 @@ const DesktopController = memo(() => {
 
     desktopApi.setConnectionState(connectionState);
   }, [desktopApi, connectionState]);
+
+  useEffect(() => {
+    if (!desktopApi) {
+      return;
+    }
+
+    desktopApi.setVoiceActive(isInVoice);
+  }, [desktopApi, isInVoice]);
 
   return null;
 });

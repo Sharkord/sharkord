@@ -181,58 +181,49 @@ export const setSelectedDmChannelId = (channelId: number | undefined) => {
   }
 };
 
-export const setBrowserNotifications = async (enabled: boolean) => {
+export const setNotifyAllMessages = async (enabled: boolean) => {
   if (enabled) {
     await assertNotificationsPermission();
   }
 
-  store.dispatch(appSliceActions.setBrowserNotifications(enabled));
-  setLocalStorageItemBool(LocalStorageKey.BROWSER_NOTIFICATIONS, enabled);
+  store.dispatch(appSliceActions.setNotifyAllMessages(enabled));
+  setLocalStorageItemBool(LocalStorageKey.NOTIFY_ALL_MESSAGES, enabled);
 };
 
-export const setBrowserNotificationsForMentions = async (enabled: boolean) => {
+export const setNotifyMentionsOnly = async (enabled: boolean) => {
   if (enabled) {
     await assertNotificationsPermission();
   }
 
-  store.dispatch(appSliceActions.setBrowserNotificationsForMentions(enabled));
-  setLocalStorageItemBool(
-    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_MENTIONS,
-    enabled
-  );
+  store.dispatch(appSliceActions.setNotifyMentionsOnly(enabled));
+  setLocalStorageItemBool(LocalStorageKey.NOTIFY_MENTIONS_ONLY, enabled);
 };
 
-export const setBrowserNotificationsForDms = async (enabled: boolean) => {
+export const setNotifyDms = async (enabled: boolean) => {
   if (enabled) {
     await assertNotificationsPermission();
   }
 
-  store.dispatch(appSliceActions.setBrowserNotificationsForDms(enabled));
-  setLocalStorageItemBool(
-    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_DMS,
-    enabled
-  );
+  store.dispatch(appSliceActions.setNotifyDms(enabled));
+  setLocalStorageItemBool(LocalStorageKey.NOTIFY_DMS, enabled);
 };
 
-export const setBrowserNotificationsForReplies = async (enabled: boolean) => {
+export const setNotifyReplies = async (enabled: boolean) => {
   if (enabled) {
     await assertNotificationsPermission();
   }
 
-  store.dispatch(appSliceActions.setBrowserNotificationsForReplies(enabled));
-  setLocalStorageItemBool(
-    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_REPLIES,
-    enabled
-  );
+  store.dispatch(appSliceActions.setNotifyReplies(enabled));
+  setLocalStorageItemBool(LocalStorageKey.NOTIFY_REPLIES, enabled);
 };
 
-export const setPluginNotifications = async (enabled: boolean) => {
+export const setNotifyPlugins = async (enabled: boolean) => {
   if (enabled) {
     await assertNotificationsPermission();
   }
 
-  store.dispatch(appSliceActions.setPluginNotifications(enabled));
-  setLocalStorageItemBool(LocalStorageKey.PLUGIN_NOTIFICATIONS, enabled);
+  store.dispatch(appSliceActions.setNotifyPlugins(enabled));
+  setLocalStorageItemBool(LocalStorageKey.NOTIFY_PLUGINS, enabled);
 };
 
 export const setNotificationSounds = (enabled: boolean) => {

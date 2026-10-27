@@ -1,5 +1,6 @@
 import type { WebContents } from 'electron';
 import { registerAddServer } from './add-server';
+import { registerAnswerSourcePick } from './answer-source-pick';
 import { registerCheckForUpdates } from './check-for-updates';
 import { registerDownloadUpdate } from './download-update';
 import { registerGetAppFolder } from './get-app-folder';
@@ -53,6 +54,7 @@ const registerIpc = ({ shellContents, ...rest }: TRegisterIpcOptions) => {
   registerInstallUpdate(context);
   registerGetAppFolder(context);
   registerOpenAppFolder(context);
+  registerAnswerSourcePick(context);
 };
 
 export { registerIpc };

@@ -4,6 +4,8 @@ import os from 'os';
 import path from 'path';
 import { getDesktopExec } from './get-launch-command';
 
+const AUTOSTART_FLAG = '--autostart';
+
 const getLinuxAutostartFile = () => {
   const configDir =
     process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), '.config');
@@ -28,7 +30,7 @@ const setLinuxAutoStart = (enabled: boolean) => {
       '[Desktop Entry]',
       'Type=Application',
       'Name=Sharkord',
-      `Exec=${getDesktopExec()}`,
+      `Exec=${getDesktopExec()} ${AUTOSTART_FLAG}`,
       'X-GNOME-Autostart-enabled=true',
       ''
     ].join('\n')
@@ -47,10 +49,12 @@ const setAutoStart = (enabled: boolean) => {
       return;
     }
 
-    app.setLoginItemSettings({ openAtLogin: enabled });
+    app.setLoginItemSettings({ openAtLogin: enabled, args: [AUTOSTART_FLAG] });
   } catch (error) {
     console.error('failed to update auto start', error);
   }
 };
 
-export { setAutoStart };
+const wasLaunchedAtLogin = () => process.argv.includes(AUTOSTART_FLAG);
+
+export { setAutoStart, wasLaunchedAtLogin };

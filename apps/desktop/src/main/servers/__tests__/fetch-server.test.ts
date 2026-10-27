@@ -27,7 +27,7 @@ describe('fetchServer', () => {
       Response.json({ serverId: 'abc', name: 'Home', logo: null })
     );
 
-    expect(await fetchServer(origin)).toEqual({
+    expect(await fetchServer(origin, fetch)).toEqual({
       id: 'abc',
       name: 'Home',
       url: origin,
@@ -44,7 +44,7 @@ describe('fetchServer', () => {
       })
     );
 
-    const server = await fetchServer(origin);
+    const server = await fetchServer(origin, fetch);
 
     expect(server?.iconUrl).toBe(`${origin}/public/my%20logo.png`);
   });
@@ -58,7 +58,7 @@ describe('fetchServer', () => {
       })
     );
 
-    const server = await fetchServer(origin);
+    const server = await fetchServer(origin, fetch);
 
     expect(server?.iconUrl).toBe(
       `${origin}/public/logo.png?accessToken=secret`
@@ -68,19 +68,19 @@ describe('fetchServer', () => {
   test('is null when the address answers with an error', async () => {
     const origin = startServer(() => new Response('nope', { status: 500 }));
 
-    expect(await fetchServer(origin)).toBeNull();
+    expect(await fetchServer(origin, fetch)).toBeNull();
   });
 
   test('is null when the address is not a sharkord server', async () => {
     const origin = startServer(() => Response.json({ hello: 'world' }));
 
-    expect(await fetchServer(origin)).toBeNull();
+    expect(await fetchServer(origin, fetch)).toBeNull();
   });
 
   test('is null when the response is not json', async () => {
     const origin = startServer(() => new Response('<html></html>'));
 
-    expect(await fetchServer(origin)).toBeNull();
+    expect(await fetchServer(origin, fetch)).toBeNull();
   });
 
   test('is null when nothing is listening', async () => {
@@ -88,6 +88,6 @@ describe('fetchServer', () => {
 
     await stubs[0]?.stop(true);
 
-    expect(await fetchServer(origin)).toBeNull();
+    expect(await fetchServer(origin, fetch)).toBeNull();
   });
 });

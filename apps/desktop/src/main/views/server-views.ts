@@ -1,18 +1,16 @@
 import {
   DESKTOP_MISMATCHES,
-  type TDesktopConfirmOptions,
   type TDesktopConnectionState,
   type TDesktopMismatch,
   type TDesktopUnreadState
 } from '@sharkord/shared';
 import {
   desktopCapturer,
-  ipcMain,
   session,
   shell,
   WebContentsView,
   type BrowserWindow,
-  type IpcMainEvent
+  type DesktopCapturerSource
 } from 'electron';
 import path from 'path';
 import { z } from 'zod';
@@ -29,7 +27,7 @@ import {
   startSystemAudio,
   stopSystemAudio
 } from '../screen-share/system-audio';
-import { checkForUpdates } from '../updater/auto-updater';
+import { checkForUpdatesIfStale } from '../updater/auto-updater';
 
 type TPageState = 'loading' | 'loaded' | 'error';
 
@@ -64,6 +62,10 @@ const ERR_ABORTED = -3;
 // the dark background of the client, shown until its page paints instead of white
 const VIEW_BACKGROUND = '#0a0a0a';
 const LOAD_TIMEOUT_MS = 15_000;
+const THUMBNAIL_SIZE = { width: 320, height: 180 };
+// the client asks for system audio right after the share starts, outside this window it is refused
+// ponytail: a time window, tie it to the capture's lifetime if a page needs it later on
+const SYSTEM_AUDIO_WINDOW_MS = 15_000;
 
 const hotkeyBindingsSchema = z
   .array(
@@ -96,12 +98,25 @@ const openExternal = (url: string) => {
   shell.openExternal(url).catch(console.error);
 };
 
+type TServerViewsOptions = {
+  onChange: () => void;
+  onNotificationClick: (serverId: string) => void;
+  isMediaAllowed: (serverId: string) => boolean;
+  requestMediaAccess: (server: TServer) => Promise<boolean>;
+  pickSource: (sources: DesktopCapturerSource[]) => Promise<string | null>;
+};
+
 // the shell is a view of its own so it can be drawn over the server views
 const createServerViews = (
   win: BrowserWindow,
   shellView: WebContentsView,
-  onChange: () => void,
-  onNotificationClick: (serverId: string) => void
+  {
+    onChange,
+    onNotificationClick,
+    isMediaAllowed,
+    requestMediaAccess,
+    pickSource
+  }: TServerViewsOptions
 ) => {
   const views = new Map<string, WebContentsView>();
   const unread = new Map<string, TDesktopUnreadState>();
@@ -110,9 +125,11 @@ const createServerViews = (
   const connectedClients = new Set<string>();
   const mismatches = new Map<string, TDesktopMismatch>();
   const waiters = new Set<() => void>();
+  const displayCaptureAt = new Map<string, number>();
+  // insertion ordered, the last one joined voice most recently
+  const voiceServerIds = new Set<string>();
   let activeId: string | null = null;
   let layoutState: TLayout = { railVisible: false, fullShell: false };
-  let nextRequestId = 0;
   let backgroundThrottled = true;
 
   const layout = () => {
@@ -145,32 +162,76 @@ const createServerViews = (
     // a server may redirect elsewhere, as the dev server does to its web client
     serverSession.setPermissionRequestHandler(
       (contents, permission, callback, details) => {
-        callback(
+        const isAllowed =
           ALLOWED_PERMISSIONS.has(permission) &&
-            isSameOrigin(details.requestingUrl, contents.getURL())
-        );
+          isSameOrigin(details.requestingUrl, contents.getURL());
+
+        if (!isAllowed) {
+          callback(false);
+
+          return;
+        }
+
+        if (permission === 'media') {
+          const answerMediaRequest = async () => {
+            try {
+              const isGranted = await requestMediaAccess(server);
+
+              callback(isGranted);
+            } catch {
+              callback(false);
+            }
+          };
+
+          answerMediaRequest();
+
+          return;
+        }
+
+        callback(true);
       }
     );
 
     serverSession.setPermissionCheckHandler(
-      (contents, permission, requestingOrigin) =>
-        contents !== null &&
-        ALLOWED_PERMISSIONS.has(permission) &&
-        isSameOrigin(requestingOrigin, contents.getURL())
+      (contents, permission, requestingOrigin) => {
+        if (
+          contents === null ||
+          !ALLOWED_PERMISSIONS.has(permission) ||
+          !isSameOrigin(requestingOrigin, contents.getURL())
+        ) {
+          return false;
+        }
+
+        if (permission === 'media') {
+          return isMediaAllowed(server.id);
+        }
+
+        return true;
+      }
     );
 
     serverSession.setDisplayMediaRequestHandler(
       async (request, callback) => {
         const sources = await desktopCapturer.getSources({
-          types: ['screen', 'window']
+          types: ['screen', 'window'],
+          thumbnailSize: THUMBNAIL_SIZE
         });
-        const [source] = sources;
+
+        let source: DesktopCapturerSource | undefined = sources[0];
+
+        if (sources.length > 1) {
+          const sourceId = await pickSource(sources);
+
+          source = sources.find(({ id }) => id === sourceId);
+        }
 
         if (!source) {
           callback({});
 
           return;
         }
+
+        displayCaptureAt.set(server.id, Date.now());
 
         // loopback records everything playing, only windows has it, linux uses the virtual microphone
         const canLoopback = process.platform === 'win32';
@@ -215,7 +276,7 @@ const createServerViews = (
 
       // the server already ships a newer client, an update is likely out
       if (parsed.data === 'app-outdated') {
-        checkForUpdates();
+        checkForUpdatesIfStale();
       }
     });
 
@@ -255,6 +316,8 @@ const createServerViews = (
         connectionStates.delete(server.id);
         connectedClients.delete(server.id);
         mismatches.delete(server.id);
+        voiceServerIds.delete(server.id);
+        displayCaptureAt.delete(server.id);
 
         stopSystemAudio(server.id);
         clearServerHotkeys(server.id);
@@ -285,6 +348,7 @@ const createServerViews = (
 
     view.webContents.on('render-process-gone', () => {
       pageStates.set(server.id, 'error');
+      voiceServerIds.delete(server.id);
 
       stopSystemAudio(server.id);
       clearServerHotkeys(server.id);
@@ -311,9 +375,32 @@ const createServerViews = (
       }
     );
 
-    view.webContents.ipc.handle(BridgeChannel.START_SYSTEM_AUDIO, () =>
-      startSystemAudio(server.id)
-    );
+    view.webContents.ipc.handle(BridgeChannel.START_SYSTEM_AUDIO, () => {
+      const capturedAt = displayCaptureAt.get(server.id);
+
+      if (
+        capturedAt === undefined ||
+        Date.now() - capturedAt > SYSTEM_AUDIO_WINDOW_MS
+      ) {
+        return false;
+      }
+
+      return startSystemAudio(server.id);
+    });
+
+    view.webContents.ipc.on(BridgeChannel.SET_VOICE_ACTIVE, (_event, value) => {
+      if (typeof value !== 'boolean') {
+        return;
+      }
+
+      voiceServerIds.delete(server.id);
+
+      if (value) {
+        voiceServerIds.add(server.id);
+      }
+
+      onChange();
+    });
 
     view.webContents.ipc.handle(BridgeChannel.STOP_SYSTEM_AUDIO, () => {
       stopSystemAudio(server.id);
@@ -475,7 +562,7 @@ const createServerViews = (
       view.webContents.focus();
 
       if (getStatus(server.id) === 'error') {
-        view.webContents.reload();
+        reload(server);
       }
     }
   };
@@ -502,6 +589,8 @@ const createServerViews = (
     connectionStates.delete(id);
     connectedClients.delete(id);
     mismatches.delete(id);
+    voiceServerIds.delete(id);
+    displayCaptureAt.delete(id);
     // releases anything still waiting on this server to settle
     changed();
 
@@ -547,67 +636,18 @@ const createServerViews = (
 
   const getUnread = () => Object.fromEntries(unread);
 
+  const getVoiceServerId = () => {
+    const ids = [...voiceServerIds];
+
+    return ids.at(-1) ?? null;
+  };
+
   const setBackgroundThrottled = (value: boolean) => {
     backgroundThrottled = value;
 
     for (const view of views.values()) {
       view.webContents.setBackgroundThrottling(value);
     }
-  };
-
-  const requestConfirmation = (
-    id: string,
-    options: TDesktopConfirmOptions
-  ): Promise<boolean | null> => {
-    return new Promise((resolve) => {
-      const view = views.get(id);
-
-      if (!view) {
-        resolve(null);
-
-        return;
-      }
-
-      const { webContents } = view;
-
-      nextRequestId += 1;
-
-      const requestId = nextRequestId;
-
-      const finish = (answer: boolean | null) => {
-        ipcMain.removeListener(BridgeChannel.CONFIRM_RESPONSE, onResponse);
-
-        webContents.removeListener('destroyed', onGone);
-        webContents.removeListener('render-process-gone', onGone);
-        webContents.removeListener('did-start-navigation', onNavigate);
-
-        resolve(answer);
-      };
-
-      const onGone = () => finish(null);
-
-      const onNavigate = ({ isMainFrame }: { isMainFrame: boolean }) => {
-        if (isMainFrame) {
-          finish(null);
-        }
-      };
-
-      const onResponse = (
-        event: IpcMainEvent,
-        responseId: number,
-        answer: boolean | null
-      ) => {
-        if (responseId === requestId && event.sender === webContents) {
-          finish(answer);
-        }
-      };
-
-      ipcMain.on(BridgeChannel.CONFIRM_RESPONSE, onResponse);
-      webContents.once('destroyed', onGone);
-      webContents.once('render-process-gone', onGone);
-      webContents.on('did-start-navigation', onNavigate);
-      webContents.send(BridgeChannel.CONFIRM_REQUEST, requestId, options);
-    });
   };
 
   win.contentView.addChildView(shellView);
@@ -622,8 +662,8 @@ const createServerViews = (
     hideAll,
     remove,
     setLayout,
-    requestConfirmation,
     getUnread,
+    getVoiceServerId,
     setBackgroundThrottled
   };
 };

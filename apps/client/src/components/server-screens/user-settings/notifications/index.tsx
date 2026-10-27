@@ -1,21 +1,21 @@
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import {
-  setBrowserNotifications,
-  setBrowserNotificationsForDms,
-  setBrowserNotificationsForMentions,
-  setBrowserNotificationsForReplies,
   setMessageSentSound,
   setNotificationSounds,
-  setPluginNotifications
+  setNotifyAllMessages,
+  setNotifyDms,
+  setNotifyMentionsOnly,
+  setNotifyPlugins,
+  setNotifyReplies
 } from '@/features/app/actions';
 import {
-  useBrowserNotifications,
-  useBrowserNotificationsForDms,
-  useBrowserNotificationsForMentions,
-  useBrowserNotificationsForReplies,
   useMessageSentSound,
   useNotificationSounds,
-  usePluginNotifications
+  useNotifyAllMessages,
+  useNotifyDms,
+  useNotifyMentionsOnly,
+  useNotifyPlugins,
+  useNotifyReplies
 } from '@/features/app/hooks';
 import { assertNotificationsPermission } from '@/helpers/assert-notifications-permission';
 import { notify } from '@/lib/notifications';
@@ -35,21 +35,21 @@ type TNotificationsValues = {
 
 const Notifications = memo(() => {
   const { t } = useTranslation('settings');
-  const all = useBrowserNotifications();
-  const mentions = useBrowserNotificationsForMentions();
-  const dms = useBrowserNotificationsForDms();
-  const replies = useBrowserNotificationsForReplies();
-  const plugins = usePluginNotifications();
+  const all = useNotifyAllMessages();
+  const mentions = useNotifyMentionsOnly();
+  const dms = useNotifyDms();
+  const replies = useNotifyReplies();
+  const plugins = useNotifyPlugins();
   const sounds = useNotificationSounds();
   const sentSound = useMessageSentSound();
 
   const onSave = useCallback(async (values: TNotificationsValues) => {
     // TODO: refactor this later
-    setBrowserNotifications(values.all);
-    setBrowserNotificationsForMentions(values.mentions);
-    setBrowserNotificationsForDms(values.dms);
-    setBrowserNotificationsForReplies(values.replies);
-    setPluginNotifications(values.plugins);
+    setNotifyAllMessages(values.all);
+    setNotifyMentionsOnly(values.mentions);
+    setNotifyDms(values.dms);
+    setNotifyReplies(values.replies);
+    setNotifyPlugins(values.plugins);
     setNotificationSounds(values.sounds);
     setMessageSentSound(values.sentSound);
   }, []);

@@ -1,6 +1,6 @@
 import { Dialog } from '@/components/dialogs/dialogs';
 import type { TDeviceSettings } from '@/types';
-import type { TDesktopConfirmOptions, TGenericObject } from '@sharkord/shared';
+import type { TGenericObject } from '@sharkord/shared';
 import { store } from '../store';
 import { dialogInfoSelector } from './selectors';
 import { dialogSliceActions } from './slice';
@@ -44,7 +44,12 @@ export const requestConfirmation = async ({
   variant = 'info',
   onConfirm,
   onCancel
-}: TDesktopConfirmOptions & {
+}: {
+  title?: string;
+  message?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  variant?: 'danger' | 'info';
   onConfirm?: () => void;
   onCancel?: () => void;
 }): Promise<boolean> => {

@@ -2,33 +2,11 @@ import {
   DESKTOP_BRIDGE_VERSION,
   getDesktopMismatch,
   type TDesktopBridge,
-  type TDesktopConfirmOptions,
   type TDesktopEntry,
   type TNotificationTarget
 } from '@sharkord/shared';
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import { BridgeChannel } from '../shared/bridge-channels';
-
-type TConfirmationHandler = (
-  options: TDesktopConfirmOptions
-) => Promise<boolean>;
-
-let confirmationHandler: TConfirmationHandler | null = null;
-
-ipcRenderer.on(
-  BridgeChannel.CONFIRM_REQUEST,
-  async (
-    _event: IpcRendererEvent,
-    requestId: number,
-    options: TDesktopConfirmOptions
-  ) => {
-    const answer = confirmationHandler
-      ? await confirmationHandler(options)
-      : null;
-
-    ipcRenderer.send(BridgeChannel.CONFIRM_RESPONSE, requestId, answer);
-  }
-);
 
 const bridge: TDesktopBridge = {
   getServerListVisible: () =>
@@ -51,6 +29,9 @@ const bridge: TDesktopBridge = {
   },
   setConnectionState: (state) => {
     ipcRenderer.send(BridgeChannel.SET_CONNECTION_STATE, state);
+  },
+  setVoiceActive: (active) => {
+    ipcRenderer.send(BridgeChannel.SET_VOICE_ACTIVE, active);
   },
   startSystemAudio: () => ipcRenderer.invoke(BridgeChannel.START_SYSTEM_AUDIO),
   stopSystemAudio: () => ipcRenderer.invoke(BridgeChannel.STOP_SYSTEM_AUDIO),
@@ -80,24 +61,19 @@ const bridge: TDesktopBridge = {
     return () => {
       ipcRenderer.removeListener(BridgeChannel.NOTIFICATION_CLICKED, handler);
     };
-  },
-  setConfirmationHandler: (handler) => {
-    confirmationHandler = handler;
-
-    return () => {
-      if (confirmationHandler === handler) {
-        confirmationHandler = null;
-      }
-    };
   }
 };
+
+let isClaimed = false;
 
 const entry: TDesktopEntry = {
   version: DESKTOP_BRIDGE_VERSION,
   connect: (clientVersion) => {
-    if (!Number.isInteger(clientVersion)) {
+    if (isClaimed || !Number.isInteger(clientVersion)) {
       return undefined;
     }
+
+    isClaimed = true;
 
     const mismatch = getDesktopMismatch(DESKTOP_BRIDGE_VERSION, clientVersion);
 

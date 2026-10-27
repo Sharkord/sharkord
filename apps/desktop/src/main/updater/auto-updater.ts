@@ -4,6 +4,12 @@ import type { TUpdateState } from '../../shared/types';
 import { i18n } from '../i18n';
 
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+const STALE_CHECK_MS = 10 * 60 * 1000;
+const BUSY_STATUSES = new Set<TUpdateState['status']>([
+  'checking',
+  'downloading',
+  'ready'
+]);
 
 // unpackaged dev runs have no update feed, and on linux only the appimage can update itself
 const canUpdate = () =>
@@ -17,6 +23,7 @@ let notifiedVersion: string | undefined;
 let availableNotification: Notification | undefined;
 let openUpdates: () => void = () => {};
 let enabled = true;
+let lastCheckAt = 0;
 let state: TUpdateState = {
   currentVersion: app.getVersion(),
   status: canUpdate() ? 'idle' : 'unsupported',
@@ -43,14 +50,24 @@ const onUpdateStateChange = (listener: (state: TUpdateState) => void) => {
 };
 
 const checkForUpdates = () => {
-  if (!canUpdate()) {
+  if (!canUpdate() || BUSY_STATUSES.has(state.status)) {
     return;
   }
+
+  lastCheckAt = Date.now();
 
   autoUpdater.checkForUpdates().catch((error) => {
     console.error('update check failed', error);
     setState({ status: 'error' });
   });
+};
+
+const checkForUpdatesIfStale = () => {
+  if (Date.now() - lastCheckAt < STALE_CHECK_MS) {
+    return;
+  }
+
+  checkForUpdates();
 };
 
 const downloadUpdate = () => {
@@ -178,6 +195,7 @@ const setAutoUpdateEnabled = (value: boolean) => {
 
 export {
   checkForUpdates,
+  checkForUpdatesIfStale,
   downloadUpdate,
   getUpdateState,
   installUpdate,

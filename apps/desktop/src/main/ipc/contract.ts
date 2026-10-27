@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 import type { addServerCall } from './add-server';
+import type { answerSourcePickCall } from './answer-source-pick';
 import type { checkForUpdatesCall } from './check-for-updates';
 import type { downloadUpdateCall } from './download-update';
 import type { getAppFolderCall } from './get-app-folder';
@@ -42,7 +43,8 @@ type TIpcCalls =
   | typeof downloadUpdateCall
   | typeof installUpdateCall
   | typeof getAppFolderCall
-  | typeof openAppFolderCall;
+  | typeof openAppFolderCall
+  | typeof answerSourcePickCall;
 
 type TIpcChannel = TIpcCalls['channel'];
 type TIpcCallOf<C extends TIpcChannel> = Extract<TIpcCalls, { channel: C }>;

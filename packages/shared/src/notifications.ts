@@ -29,3 +29,5 @@ export type TPluginNotification = {
   icon?: string;
   data?: unknown;
 };
+
+export const PLUGIN_NOTIFICATION_DATA_MAX_LENGTH = 4096; // 4 KB max length for plugin notification data

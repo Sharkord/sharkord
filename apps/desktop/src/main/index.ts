@@ -1,22 +1,28 @@
-import { app, BrowserWindow, globalShortcut, Menu } from 'electron';
+import { app, BrowserWindow, globalShortcut, Menu, net } from 'electron';
 import path from 'path';
-import icon from '../../build/icon.png?asset';
+// unpacked from the asar, the tray, notifications and the linux icon copy read it from disk
+import icon from '../../build/icon.png?asset&asarUnpack';
 import { APP_ID, IpcChannel } from '../shared/constants';
 import type { TServer } from '../shared/types';
+import { createPerformanceOverlay } from './advanced/performance-overlay';
+import {
+  confirmAndResetApp,
+  wipeUserDataIfRequested
+} from './advanced/reset-app';
 import { getAppFolder, openAppFolder } from './app-folder/open-app-folder';
 import { findDeepLink, parseDeepLink } from './deep-links/parse-deep-link';
 import { registerProtocol } from './deep-links/register-protocol';
-import { createPerformanceOverlay } from './dev/performance-overlay';
-import { confirmAndResetApp, wipeUserDataIfRequested } from './dev/reset-app';
 import { setActiveHotkeyServer } from './hotkeys/global-hotkeys';
 import { initI18n } from './i18n';
 import { registerIpc } from './ipc/register-ipc';
-import { buildAppMenu } from './menu/app-menu';
+import { buildAppMenu, getAppMenuKey } from './menu/app-menu';
+import { createSourcePicker } from './screen-share/source-picker';
+import { confirmMediaAccess } from './servers/confirm-media-access';
 import { confirmRemoveServer } from './servers/confirm-remove-server';
 import { createServerController } from './servers/server-controller';
 import { disableBackgroundThrottling } from './startup/disable-background-throttling';
 import { enableChromiumFeatures } from './startup/enable-chromium-features';
-import { setAutoStart } from './startup/set-auto-start';
+import { setAutoStart, wasLaunchedAtLogin } from './startup/set-auto-start';
 import { writeDesktopEntry } from './startup/write-desktop-entry';
 import { createTray, type TAppTray } from './tray/create-tray';
 import {
@@ -61,15 +67,20 @@ const start = () => {
   const win = createWindow();
   const shellView = createShellView();
 
-  const views = createServerViews(
-    win,
-    shellView,
-    () => controller.notify(),
-    (serverId) => {
+  const sourcePicker = createSourcePicker(shellView.webContents, (open) =>
+    controller.setSourcePickerOpen(open)
+  );
+
+  const views = createServerViews(win, shellView, {
+    onChange: () => controller.notify(),
+    onNotificationClick: (serverId) => {
       showWindow();
       controller.select(serverId);
-    }
-  );
+    },
+    isMediaAllowed: (serverId) => controller.isMediaAllowed(serverId),
+    requestMediaAccess: (server) => confirmMediaAccess(win, controller, server),
+    pickSource: sourcePicker.pick
+  });
 
   const performanceOverlay = createPerformanceOverlay(win);
 
@@ -81,6 +92,7 @@ const start = () => {
 
   let appliedAutoStart: boolean | undefined;
   let appliedAutoUpdate: boolean | undefined;
+  let appliedMenuKey: string | undefined;
 
   const controller = createServerController(
     path.join(userData, 'servers.json'),
@@ -89,7 +101,7 @@ const start = () => {
       shellView.webContents.send(IpcChannel.STATE_CHANGED, state);
 
       tray?.setUnread(state.unread);
-      setActiveHotkeyServer(state.selectedId);
+      setActiveHotkeyServer(views.getVoiceServerId() ?? state.selectedId);
 
       if (state.settings.autoStart !== appliedAutoStart) {
         appliedAutoStart = state.settings.autoStart;
@@ -103,17 +115,24 @@ const start = () => {
         setAutoUpdateEnabled(appliedAutoUpdate);
       }
 
-      Menu.setApplicationMenu(
-        buildAppMenu({
-          state,
-          controller,
-          toggleMenuBar,
-          requestRemove,
-          togglePerformanceOverlay: performanceOverlay.toggle,
-          resetApp: () => confirmAndResetApp(win, controller)
-        })
-      );
-    }
+      const menuKey = getAppMenuKey(state);
+
+      if (menuKey !== appliedMenuKey) {
+        appliedMenuKey = menuKey;
+
+        Menu.setApplicationMenu(
+          buildAppMenu({
+            state,
+            controller,
+            toggleMenuBar,
+            requestRemove,
+            togglePerformanceOverlay: performanceOverlay.toggle,
+            resetApp: () => confirmAndResetApp(win, controller)
+          })
+        );
+      }
+    },
+    net.fetch
   );
 
   const requestRemove = (server: TServer) =>
@@ -132,6 +151,7 @@ const start = () => {
       download: downloadUpdate,
       install: installUpdate
     },
+    sourcePicker,
     shellContents: shellView.webContents
   });
 
@@ -141,13 +161,20 @@ const start = () => {
 
   shellView.webContents.on('did-start-loading', () => {
     controller.setOverlay(false);
+    sourcePicker.cancel();
   });
 
   controller.sync();
 
   const { settings } = controller.getState();
 
-  if (!hasTray || !settings.startToTray) {
+  const startsHidden =
+    hasTray &&
+    settings.closeToTray &&
+    settings.startToTray &&
+    wasLaunchedAtLogin();
+
+  if (!startsHidden) {
     win.show();
   }
 
@@ -176,7 +203,9 @@ const start = () => {
     tray = createTray(icon, showWindow);
 
     win.on('close', (event) => {
-      if (isQuitting) {
+      const { settings: current } = controller.getState();
+
+      if (isQuitting || !current.closeToTray) {
         return;
       }
 
@@ -216,7 +245,6 @@ const start = () => {
 enableChromiumFeatures();
 disableBackgroundThrottling();
 wipeUserDataIfRequested();
-writeDesktopEntry(icon);
 
 const hasLock = app.requestSingleInstanceLock();
 
@@ -245,6 +273,8 @@ if (hasLock) {
     if (process.platform === 'darwin') {
       app.dock?.setIcon(icon);
     }
+
+    writeDesktopEntry(icon);
 
     await initI18n();
 

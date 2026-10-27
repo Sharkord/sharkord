@@ -1,5 +1,6 @@
 import type { WebContents } from 'electron';
 import type { TServer, TUpdateState } from '../../shared/types';
+import type { TSourcePicker } from '../screen-share/source-picker';
 import type { TServerController } from '../servers/server-controller';
 
 type TIpcContext = {
@@ -15,6 +16,7 @@ type TIpcContext = {
     download: () => void;
     install: () => void;
   };
+  sourcePicker: TSourcePicker;
   // the server views run remote pages, only the shell may manage servers
   isShell: (sender: WebContents) => boolean;
 };

@@ -1,7 +1,12 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import type { TIpcArgs, TIpcChannel, TIpcResult } from '../main/ipc/contract';
 import { IpcChannel } from '../shared/constants';
-import type { TDesktopApi, TServersState, TUpdateState } from '../shared/types';
+import type {
+  TDesktopApi,
+  TServersState,
+  TSourcePickRequest,
+  TUpdateState
+} from '../shared/types';
 
 const invoke = <C extends TIpcChannel>(
   channel: C,
@@ -48,7 +53,20 @@ const api: TDesktopApi = {
   downloadUpdate: () => invoke(IpcChannel.DOWNLOAD_UPDATE),
   installUpdate: () => invoke(IpcChannel.INSTALL_UPDATE),
   getAppFolder: () => invoke(IpcChannel.GET_APP_FOLDER),
-  openAppFolder: () => invoke(IpcChannel.OPEN_APP_FOLDER)
+  openAppFolder: () => invoke(IpcChannel.OPEN_APP_FOLDER),
+  onSourcePickRequest: (listener) => {
+    const handler = (_event: IpcRendererEvent, request: TSourcePickRequest) => {
+      listener(request);
+    };
+
+    ipcRenderer.on(IpcChannel.SOURCE_PICK_REQUESTED, handler);
+
+    return () => {
+      ipcRenderer.removeListener(IpcChannel.SOURCE_PICK_REQUESTED, handler);
+    };
+  },
+  answerSourcePick: (requestId, sourceId) =>
+    invoke(IpcChannel.ANSWER_SOURCE_PICK, requestId, sourceId)
 };
 
 contextBridge.exposeInMainWorld('desktop', api);

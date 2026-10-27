@@ -1,3 +1,4 @@
+import { isDesktopApp } from '@/helpers/is-desktop-app';
 import {
   getLocalStorageItem,
   getLocalStorageItemAsJSON,
@@ -28,11 +29,11 @@ export interface TAppState {
   hotkeysEnabled: boolean;
   selectedDmChannelId: number | undefined;
   selectedThread: TThreadTarget | undefined;
-  browserNotifications: boolean;
-  browserNotificationsForMentions: boolean;
-  browserNotificationsForDms: boolean;
-  browserNotificationsForReplies: boolean;
-  pluginNotifications: boolean;
+  notifyAllMessages: boolean;
+  notifyMentionsOnly: boolean;
+  notifyDms: boolean;
+  notifyReplies: boolean;
+  notifyPlugins: boolean;
   notificationSounds: boolean;
   messageSentSound: boolean;
   mutedChannelIds: number[];
@@ -67,25 +68,25 @@ const initialState: TAppState = {
   ),
   selectedDmChannelId: undefined,
   selectedThread: undefined,
-  browserNotifications: getLocalStorageItemBool(
-    LocalStorageKey.BROWSER_NOTIFICATIONS,
-    true
+  notifyAllMessages: getLocalStorageItemBool(
+    LocalStorageKey.NOTIFY_ALL_MESSAGES,
+    isDesktopApp()
   ),
-  browserNotificationsForMentions: getLocalStorageItemBool(
-    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_MENTIONS,
+  notifyMentionsOnly: getLocalStorageItemBool(
+    LocalStorageKey.NOTIFY_MENTIONS_ONLY,
     false
   ),
-  browserNotificationsForDms: getLocalStorageItemBool(
-    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_DMS,
-    false
+  notifyDms: getLocalStorageItemBool(
+    LocalStorageKey.NOTIFY_DMS,
+    isDesktopApp()
   ),
-  browserNotificationsForReplies: getLocalStorageItemBool(
-    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_REPLIES,
-    false
+  notifyReplies: getLocalStorageItemBool(
+    LocalStorageKey.NOTIFY_REPLIES,
+    isDesktopApp()
   ),
-  pluginNotifications: getLocalStorageItemBool(
-    LocalStorageKey.PLUGIN_NOTIFICATIONS,
-    true
+  notifyPlugins: getLocalStorageItemBool(
+    LocalStorageKey.NOTIFY_PLUGINS,
+    isDesktopApp()
   ),
   notificationSounds: getLocalStorageItemBool(
     LocalStorageKey.NOTIFICATION_SOUNDS,
@@ -172,26 +173,20 @@ export const appSlice = createSlice({
     ) => {
       state.selectedThread = action.payload;
     },
-    setBrowserNotifications: (state, action: PayloadAction<boolean>) => {
-      state.browserNotifications = action.payload;
+    setNotifyAllMessages: (state, action: PayloadAction<boolean>) => {
+      state.notifyAllMessages = action.payload;
     },
-    setBrowserNotificationsForMentions: (
-      state,
-      action: PayloadAction<boolean>
-    ) => {
-      state.browserNotificationsForMentions = action.payload;
+    setNotifyMentionsOnly: (state, action: PayloadAction<boolean>) => {
+      state.notifyMentionsOnly = action.payload;
     },
-    setBrowserNotificationsForDms: (state, action: PayloadAction<boolean>) => {
-      state.browserNotificationsForDms = action.payload;
+    setNotifyDms: (state, action: PayloadAction<boolean>) => {
+      state.notifyDms = action.payload;
     },
-    setBrowserNotificationsForReplies: (
-      state,
-      action: PayloadAction<boolean>
-    ) => {
-      state.browserNotificationsForReplies = action.payload;
+    setNotifyReplies: (state, action: PayloadAction<boolean>) => {
+      state.notifyReplies = action.payload;
     },
-    setPluginNotifications: (state, action: PayloadAction<boolean>) => {
-      state.pluginNotifications = action.payload;
+    setNotifyPlugins: (state, action: PayloadAction<boolean>) => {
+      state.notifyPlugins = action.payload;
     },
     setNotificationSounds: (state, action: PayloadAction<boolean>) => {
       state.notificationSounds = action.payload;

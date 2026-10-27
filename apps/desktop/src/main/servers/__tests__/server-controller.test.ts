@@ -16,6 +16,8 @@ type TStub = ReturnType<typeof Bun.serve>;
 
 const stubs: TStub[] = [];
 const names = new Map<string, string>();
+// the id a stub answers with, when it no longer is the one it was started with
+const reportedIds = new Map<string, string>();
 
 const startServer = (serverId: string, name: string) => {
   names.set(serverId, name);
@@ -23,7 +25,11 @@ const startServer = (serverId: string, name: string) => {
   const stub = Bun.serve({
     port: 0,
     fetch: () =>
-      Response.json({ serverId, name: names.get(serverId), logo: null })
+      Response.json({
+        serverId: reportedIds.get(serverId) ?? serverId,
+        name: names.get(serverId),
+        logo: null
+      })
   });
 
   stubs.push(stub);
@@ -85,8 +91,11 @@ describe('server controller', () => {
 
   const create = () => {
     const { views, calls } = createFakeViews();
-    const controller = createServerController(filePath, views, (state) =>
-      states.push(state)
+    const controller = createServerController(
+      filePath,
+      views,
+      (state) => states.push(state),
+      fetch
     );
 
     return { controller, calls };
@@ -105,6 +114,7 @@ describe('server controller', () => {
 
     stubs.length = 0;
     names.clear();
+    reportedIds.clear();
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -544,6 +554,25 @@ describe('server controller', () => {
     });
   });
 
+  test('the shell covers the window while the screen share picker is open, even when a menu closes', async () => {
+    const { controller, calls } = create();
+
+    await controller.add(startServer('one', 'One'));
+
+    controller.setSourcePickerOpen(true);
+    controller.setOverlay(false);
+    expect(calls.layouts.at(-1)).toEqual({
+      railVisible: true,
+      fullShell: true
+    });
+
+    controller.setSourcePickerOpen(false);
+    expect(calls.layouts.at(-1)).toEqual({
+      railVisible: true,
+      fullShell: false
+    });
+  });
+
   test('opening a menu does not touch the selected server', async () => {
     const { controller, calls } = create();
 
@@ -722,6 +751,69 @@ describe('server controller', () => {
     );
 
     expect(second.controller.getState().servers[0]?.name).toBe('New name');
+  });
+
+  test('a server that starts answering with the id of another server never takes its place', async () => {
+    const first = create();
+    const legitUrl = startServer('legit', 'Legit');
+    const evilUrl = startServer('evil', 'Evil');
+
+    await first.controller.add(legitUrl);
+    await first.controller.add(evilUrl);
+
+    reportedIds.set('evil', 'legit');
+    names.set('evil', 'Renamed');
+    // a rename of the real server shows when the refresh after the restart is done
+    names.set('legit', 'Legit renamed');
+
+    const second = create();
+
+    await waitFor(() =>
+      states.some((state) =>
+        state.servers.some(({ name }) => name === 'Legit renamed')
+      )
+    );
+
+    expect(second.controller.getState().servers).toEqual([
+      { id: 'legit', name: 'Legit renamed', url: legitUrl, iconUrl: null },
+      { id: 'evil', name: 'Evil', url: evilUrl, iconUrl: null }
+    ]);
+  });
+
+  test('a server allowed to use the microphone and camera stays allowed after a restart', async () => {
+    const first = create();
+
+    await first.controller.add(startServer('one', 'One'));
+    await first.controller.add(startServer('two', 'Two'));
+
+    expect(first.controller.isMediaAllowed('one')).toBe(false);
+
+    first.controller.allowMedia('one');
+
+    const second = create();
+
+    expect(second.controller.isMediaAllowed('one')).toBe(true);
+    expect(second.controller.isMediaAllowed('two')).toBe(false);
+  });
+
+  test('removing a server forgets that it was allowed to use the microphone and camera', async () => {
+    const first = create();
+
+    await first.controller.add(startServer('one', 'One'));
+    first.controller.allowMedia('one');
+    first.controller.remove('one');
+
+    const second = create();
+
+    expect(second.controller.isMediaAllowed('one')).toBe(false);
+  });
+
+  test('media access is never granted to a server that was not added', () => {
+    const { controller } = create();
+
+    controller.allowMedia('unknown');
+
+    expect(controller.isMediaAllowed('unknown')).toBe(false);
   });
 
   test('every change is announced with the new state', async () => {

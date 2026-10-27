@@ -537,6 +537,7 @@
   "hotkeysDesktopDesc": "O aplicativo desktop registra seus atalhos no sistema, então eles funcionam enquanto outra janela está em foco.",
   "hotkeyErrorUnsupported": "Esta tecla não pode ser usada como atalho do sistema.",
   "hotkeyErrorTaken": "Outro aplicativo já está usando esta combinação de teclas.",
+  "hotkeyErrorNeedsModifier": "Teclas que digitam texto precisam de Ctrl, Alt ou Super pressionado para ser um atalho do sistema.",
   "hotkeysBridgeStatusLabel": "Status",
   "hotkeysBridgeDisconnected": "Não está em execução",
   "hotkeysBridgeConnecting": "Conectando",

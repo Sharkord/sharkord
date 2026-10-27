@@ -149,7 +149,7 @@ const useHotkeyBinding = (id: string): TPluginHotkeyBinding =>
  *
  * Nothing shows, without an error, when the user has not turned on plugin
  * notifications, when none of their roles may receive this plugin's
- * notifications, or when the plugin sent more than 5 in 10 seconds.
+ * notifications, or when the plugin sent more than 5 in 5 seconds.
  */
 const useNotify = (): ((notification: TPluginNotification) => void) =>
   store.hooks.useNotify();

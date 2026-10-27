@@ -30,7 +30,12 @@
     "hideServerList": "Masquer la liste des serveurs",
     "showServerList": "Afficher la liste des serveurs",
     "removeCurrentServer": "Retirer le serveur actuel...",
-    "toggleMenuBar": "Afficher/masquer la barre de menus"
+    "toggleMenuBar": "Afficher/masquer la barre de menus",
+    "advanced": "Avancé",
+    "desktopSettings": "Paramètres de l'application...",
+    "togglePerformanceOverlay": "Afficher ou masquer l'overlay de performances",
+    "openAppFolder": "Ouvrir le dossier de l'application",
+    "resetApp": "Réinitialiser l'application..."
   },
   "tray": {
     "show": "Afficher Sharkord",
@@ -42,13 +47,32 @@
     "confirm": "Retirer",
     "cancel": "Annuler"
   },
+  "resetDialog": {
+    "title": "Réinitialiser l'application ?",
+    "message": "Vous serez déconnecté de tous les serveurs et tous les serveurs et paramètres enregistrés sur cet appareil seront supprimés. L'application redémarrera ensuite.",
+    "confirm": "Réinitialiser",
+    "cancel": "Annuler"
+  },
+  "mediaDialog": {
+    "title": "Autoriser {{name}} à utiliser votre micro et votre caméra ?",
+    "message": "{{name}} veut utiliser votre micro et votre caméra, par exemple pour rejoindre un salon vocal. Une fois autorisé, la question ne vous sera plus posée pour ce serveur.",
+    "allow": "Autoriser",
+    "deny": "Refuser"
+  },
+  "sourcePicker": {
+    "title": "Choisissez ce que vous partagez",
+    "screens": "Écrans",
+    "windows": "Fenêtres"
+  },
   "settings": {
     "title": "Paramètres du bureau",
     "general": "Général",
     "autoStart": "Ouvrir au démarrage",
     "autoStartDescription": "Lance Sharkord automatiquement lorsque vous ouvrez une session sur votre ordinateur.",
+    "closeToTray": "Fermer dans la zone de notification",
+    "closeToTrayDescription": "Garder Sharkord dans la zone de notification à la fermeture de la fenêtre. Désactivez-le si votre bureau n'a pas de zone de notification.",
     "startToTray": "Démarrer réduit dans la zone de notification",
-    "startToTrayDescription": "S'ouvre en arrière-plan au démarrage de l'application, sans afficher la fenêtre. Rouvrez-la depuis l'icône de la zone de notification.",
+    "startToTrayDescription": "Quand Sharkord s'ouvre à la connexion, le garder dans la zone de notification sans afficher la fenêtre. Rouvrez-le depuis l'icône de la zone de notification.",
     "connectAllOnStartup": "Se connecter à tous les serveurs au démarrage",
     "connectAllOnStartupDescription": "Charge tous les serveurs en arrière-plan à l'ouverture de l'application, pour recevoir les compteurs de non lus et les notifications de chacun. Utilise plus de mémoire.",
     "autoUpdate": "Installer les mises à jour automatiquement",

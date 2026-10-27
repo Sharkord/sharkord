@@ -1,5 +1,6 @@
 import { app, dialog, session, type BrowserWindow } from 'electron';
 import { rmSync } from 'fs';
+import { i18n } from '../i18n';
 import type { TServerController } from '../servers/server-controller';
 import { getPartition } from '../views/server-views';
 
@@ -24,12 +25,11 @@ const confirmAndResetApp = async (
 ) => {
   const { response } = await dialog.showMessageBox(win, {
     type: 'warning',
-    buttons: ['Reset', 'Cancel'],
+    buttons: [i18n.t('resetDialog.confirm'), i18n.t('resetDialog.cancel')],
     defaultId: 1,
     cancelId: 1,
-    message: 'Reset the app?',
-    detail:
-      'This signs you out of every server and deletes all saved servers and settings on this device. The app restarts afterwards.'
+    message: i18n.t('resetDialog.title'),
+    detail: i18n.t('resetDialog.message')
   });
 
   if (response !== 0) {

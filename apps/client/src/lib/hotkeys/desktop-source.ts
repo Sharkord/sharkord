@@ -13,6 +13,7 @@ const CAPABILITIES: THotkeyCapabilities = { keyUp: false };
 
 const ERROR_KEYS: Record<TDesktopHotkeyError['reason'], string> = {
   unsupported: 'settings:hotkeyErrorUnsupported',
+  'needs-modifier': 'settings:hotkeyErrorNeedsModifier',
   taken: 'settings:hotkeyErrorTaken'
 };
 

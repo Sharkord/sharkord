@@ -537,6 +537,7 @@
   "hotkeysDesktopDesc": "L'application de bureau enregistre vos raccourcis auprès du système, ils fonctionnent donc même quand une autre fenêtre est active.",
   "hotkeyErrorUnsupported": "Cette touche ne peut pas servir de raccourci système.",
   "hotkeyErrorTaken": "Une autre application utilise déjà cette combinaison de touches.",
+  "hotkeyErrorNeedsModifier": "Les touches qui saisissent du texte doivent être combinées avec Ctrl, Alt ou Super pour servir de raccourci système.",
   "hotkeysBridgeStatusLabel": "Statut",
   "hotkeysBridgeDisconnected": "Non lancé",
   "hotkeysBridgeConnecting": "Connexion",

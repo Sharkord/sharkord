@@ -22,6 +22,7 @@ type TDesktopSettings = {
   connectAllOnStartup: boolean;
   throttleHiddenServers: boolean;
   autoStart: boolean;
+  closeToTray: boolean;
   startToTray: boolean;
   autoUpdate: boolean;
 };
@@ -60,6 +61,18 @@ type TUpdateState = {
   percent: number;
 };
 
+type TPickableSource = {
+  id: string;
+  name: string;
+  kind: 'screen' | 'window';
+  thumbnail: string;
+};
+
+type TSourcePickRequest = {
+  requestId: number;
+  sources: TPickableSource[];
+};
+
 type TDesktopApi = {
   getState: () => Promise<TServersState>;
   onStateChange: (listener: (state: TServersState) => void) => () => void;
@@ -81,6 +94,13 @@ type TDesktopApi = {
   installUpdate: () => Promise<void>;
   getAppFolder: () => Promise<string>;
   openAppFolder: () => Promise<void>;
+  onSourcePickRequest: (
+    listener: (request: TSourcePickRequest) => void
+  ) => () => void;
+  answerSourcePick: (
+    requestId: number,
+    sourceId: string | null
+  ) => Promise<void>;
 };
 
 type TProcessGroup = 'Main' | 'Renderer' | 'GPU' | 'Utility' | 'Other';
@@ -101,12 +121,14 @@ export type {
   TDesktopApi,
   TDesktopSettings,
   TPerformanceOverlayApi,
+  TPickableSource,
   TProcessGroup,
   TProcessUsage,
   TServer,
   TServersState,
   TServerStatus,
   TSettingsTab,
+  TSourcePickRequest,
   TUpdateState,
   TUpdateStatus
 };
