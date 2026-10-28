@@ -28,13 +28,13 @@ const getMockImage = (): File => {
   return new File([blob], 'avatar.png', { type: 'image/png' });
 };
 
-const revokeUploadFilesFromDefaultRole = async () =>
+const revokeFromDefaultRole = async (permission: Permission) =>
   tdb
     .delete(rolePermissions)
     .where(
       and(
         eq(rolePermissions.roleId, 2),
-        eq(rolePermissions.permission, Permission.UPLOAD_FILES)
+        eq(rolePermissions.permission, permission)
       )
     );
 
@@ -120,7 +120,7 @@ describe('/upload', () => {
     const response = await login('testuser', 'password123');
     const data: any = await response.json();
 
-    await revokeUploadFilesFromDefaultRole();
+    await revokeFromDefaultRole(Permission.UPLOAD_FILES);
 
     const file = getMockFile('no permission to upload this');
     const uploadResponse = await uploadFile(file, data.token);
@@ -128,13 +128,14 @@ describe('/upload', () => {
     expect(uploadResponse.status).toBe(403);
   });
 
-  // a profile image never becomes a message attachment, and attaching one still needs
-  // UPLOAD_FILES on send-message, so the role permission must not block the upload
+  // a profile image is gated by SET_PROFILE_IMAGE, so losing UPLOAD_FILES must not
+  // also take away the ability to change an avatar, and sending it as an attachment
+  // is still refused on send-message
   test('should allow a profile image from a user without UPLOAD_FILES', async () => {
     const response = await login('testuser', 'password123');
     const data: any = await response.json();
 
-    await revokeUploadFilesFromDefaultRole();
+    await revokeFromDefaultRole(Permission.UPLOAD_FILES);
 
     const uploadResponse = await uploadFile(getMockImage(), data.token, {
       [UploadHeaders.PURPOSE]: UploadPurpose.PROFILE_IMAGE
@@ -151,7 +152,7 @@ describe('/upload', () => {
     const response = await login('testuser', 'password123');
     const data: any = await response.json();
 
-    await revokeUploadFilesFromDefaultRole();
+    await revokeFromDefaultRole(Permission.UPLOAD_FILES);
 
     const uploadResponse = await uploadFile(
       getMockFile('explicit message upload without permission'),
@@ -162,6 +163,26 @@ describe('/upload', () => {
     );
 
     expect(uploadResponse.status).toBe(403);
+  });
+
+  test('should reject a profile image without SET_PROFILE_IMAGE', async () => {
+    const response = await login('testuser', 'password123');
+    const data: any = await response.json();
+
+    await revokeFromDefaultRole(Permission.SET_PROFILE_IMAGE);
+
+    const uploadResponse = await uploadFile(getMockImage(), data.token, {
+      [UploadHeaders.PURPOSE]: UploadPurpose.PROFILE_IMAGE
+    });
+
+    expect(uploadResponse.status).toBe(403);
+
+    const body: any = await uploadResponse.json();
+
+    expect(body).toHaveProperty(
+      'error',
+      'You do not have permission to change your profile image'
+    );
   });
 
   test('should reject an unknown upload purpose', async () => {

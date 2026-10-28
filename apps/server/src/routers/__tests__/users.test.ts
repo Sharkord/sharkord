@@ -4,6 +4,8 @@ import {
   OWNER_ROLE_ID,
   Permission,
   ServerEvents,
+  UploadHeaders,
+  UploadPurpose,
   type TTempFile
 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
@@ -33,6 +35,16 @@ import {
   users
 } from '../../db/schema';
 import { pubsub } from '../../utils/pubsub';
+
+const revokeFromDefaultRole = async (permission: Permission) =>
+  tdb
+    .delete(rolePermissions)
+    .where(
+      and(
+        eq(rolePermissions.roleId, 2),
+        eq(rolePermissions.permission, permission)
+      )
+    );
 
 describe('users router', () => {
   test('should throw when user lacks permissions (getAll)', async () => {
@@ -606,6 +618,33 @@ describe('users router', () => {
     expect(userInfo!.user.avatarId).toBeNull();
   });
 
+  test('should refuse an avatar change without SET_PROFILE_IMAGE', async () => {
+    const { caller, mockedToken } = await initTest(2);
+
+    const file = new File(['avatar content'], 'avatar.png', {
+      type: 'image/png'
+    });
+
+    const uploadResponse = await uploadFile(file, mockedToken, {
+      [UploadHeaders.PURPOSE]: UploadPurpose.PROFILE_IMAGE
+    });
+    const uploadData = (await uploadResponse.json()) as TTempFile;
+
+    await revokeFromDefaultRole(Permission.SET_PROFILE_IMAGE);
+
+    await expect(
+      caller.users.changeAvatar({ fileId: uploadData.id })
+    ).rejects.toThrow('Insufficient permissions');
+  });
+
+  test('should still allow clearing an avatar without SET_PROFILE_IMAGE', async () => {
+    const { caller } = await initTest(2);
+
+    await revokeFromDefaultRole(Permission.SET_PROFILE_IMAGE);
+
+    await caller.users.changeAvatar({});
+  });
+
   test('should enforce configured avatar size limit', async () => {
     const { caller, mockedToken } = await initTest();
 
@@ -674,6 +713,25 @@ describe('users router', () => {
 
     expect(userInfo).toBeDefined();
     expect(userInfo!.user.bannerId).toBeNull();
+  });
+
+  test('should refuse a banner change without SET_PROFILE_IMAGE', async () => {
+    const { caller, mockedToken } = await initTest(2);
+
+    const file = new File(['banner content'], 'banner.png', {
+      type: 'image/png'
+    });
+
+    const uploadResponse = await uploadFile(file, mockedToken, {
+      [UploadHeaders.PURPOSE]: UploadPurpose.PROFILE_IMAGE
+    });
+    const uploadData = (await uploadResponse.json()) as TTempFile;
+
+    await revokeFromDefaultRole(Permission.SET_PROFILE_IMAGE);
+
+    await expect(
+      caller.users.changeBanner({ fileId: uploadData.id })
+    ).rejects.toThrow('Insufficient permissions');
   });
 
   test('should enforce configured banner size limit', async () => {

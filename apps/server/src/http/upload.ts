@@ -78,14 +78,23 @@ const uploadFileRouteHandler = async (
     return;
   }
 
-  // a profile image never becomes a message attachment, and attaching one still needs
-  // UPLOAD_FILES on send-message, so the same role permission must not block it here
-  if (
-    purpose !== UploadPurpose.PROFILE_IMAGE &&
-    !(await userCan(user.id, Permission.UPLOAD_FILES))
-  ) {
+  // profile images are not message attachments, so they are gated by their own
+  // permission instead of UPLOAD_FILES, which keeps a role that cannot share files
+  // from also losing the ability to change an avatar or banner
+  const isProfileImage = purpose === UploadPurpose.PROFILE_IMAGE;
+  const requiredPermission = isProfileImage
+    ? Permission.SET_PROFILE_IMAGE
+    : Permission.UPLOAD_FILES;
+
+  if (!(await userCan(user.id, requiredPermission))) {
     req.resume();
-    sendJsonError(res, 403, 'You do not have permission to upload files');
+    sendJsonError(
+      res,
+      403,
+      isProfileImage
+        ? 'You do not have permission to change your profile image'
+        : 'You do not have permission to upload files'
+    );
     return;
   }
 
