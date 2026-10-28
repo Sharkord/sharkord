@@ -41,6 +41,8 @@
   "autoJoinLastChannelDesc": "Automaticky se připojit k poslednímu navštívenému textovému kanálu.",
   "freezeAnimatedAvatarsLabel": "Zastavit animované avatary",
   "freezeAnimatedAvatarsDesc": "Zobrazovat animované avatary jako statický obrázek a přehrávat je jen při najetí myší.",
+  "convertAsciiEmojiLabel": "Převádět emotikony na emodži při psaní",
+  "convertAsciiEmojiDesc": "Převádět textové emotikony jako \":3\" a \"<3\" na emodži.",
   "languageLabel": "Jazyk",
   "languageDesc": "Vyberte jazyk ve kterém se Sharkord zobrazuje.",
   "notificationsTitle": "Upozornění",

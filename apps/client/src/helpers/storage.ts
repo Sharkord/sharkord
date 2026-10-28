@@ -40,7 +40,8 @@ export enum LocalStorageKey {
   HOTKEY_BRIDGE_TOKEN = 'sharkord-hotkey-bridge-token',
   MIC_MODE = 'sharkord-mic-mode',
   HOTKEYS_ENABLED = 'sharkord-hotkeys-enabled',
-  FREEZE_ANIMATED_AVATARS = 'sharkord-freeze-animated-avatars'
+  FREEZE_ANIMATED_AVATARS = 'sharkord-freeze-animated-avatars',
+  CONVERT_ASCII_EMOJI = 'sharkord-convert-ascii-emoji'
 }
 
 export enum SessionStorageKey {

@@ -41,6 +41,8 @@
   "autoJoinLastChannelDesc": "Ricollegati automaticamente all'ultimo canale testuale alla connessione.",
   "freezeAnimatedAvatarsLabel": "Blocca gli avatar animati",
   "freezeAnimatedAvatarsDesc": "Mostra gli avatar animati come immagine statica e riproducili solo al passaggio del mouse.",
+  "convertAsciiEmojiLabel": "Converti le emoticon in emoji mentre digiti",
+  "convertAsciiEmojiDesc": "Converti le emoticon testuali come \":3\" e \"<3\" in emoji.",
   "languageLabel": "Lingua interfaccia",
   "languageDesc": "Imposta la lingua di visualizzazione dell'interfaccia.",
   "notificationsTitle": "Notifiche",

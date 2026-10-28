@@ -26,6 +26,7 @@ export interface TAppState {
   threadChannelId: number | undefined;
   autoJoinLastChannel: boolean;
   freezeAnimatedAvatars: boolean;
+  convertAsciiEmoji: boolean;
   micMode: MicMode;
   hotkeysEnabled: boolean;
   selectedDmChannelId: number | undefined;
@@ -62,6 +63,10 @@ const initialState: TAppState = {
   freezeAnimatedAvatars: getLocalStorageItemBool(
     LocalStorageKey.FREEZE_ANIMATED_AVATARS,
     false
+  ),
+  convertAsciiEmoji: getLocalStorageItemBool(
+    LocalStorageKey.CONVERT_ASCII_EMOJI,
+    true
   ),
   micMode:
     getLocalStorageItem(LocalStorageKey.MIC_MODE) === MicMode.PUSH_TO_TALK
@@ -158,6 +163,9 @@ export const appSlice = createSlice({
     },
     setFreezeAnimatedAvatars: (state, action: PayloadAction<boolean>) => {
       state.freezeAnimatedAvatars = action.payload;
+    },
+    setConvertAsciiEmoji: (state, action: PayloadAction<boolean>) => {
+      state.convertAsciiEmoji = action.payload;
     },
     setMicMode: (state, action: PayloadAction<MicMode>) => {
       state.micMode = action.payload;
