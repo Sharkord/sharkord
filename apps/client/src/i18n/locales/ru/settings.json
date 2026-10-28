@@ -40,6 +40,8 @@
   "othersDesc": "Общие настройки, связанные с Sharkord.",
   "autoJoinLastChannelLabel": "Автоматическое подключение к последнему каналу",
   "autoJoinLastChannelDesc": "Автоматическое подключение к последнему текстовому каналу при подключении.",
+  "convertAsciiEmojiLabel": "Преобразовывать смайлики в эмодзи при вводе",
+  "convertAsciiEmojiDesc": "Преобразовывать текстовые смайлики вроде \":3\" и \"<3\" в эмодзи.",
   "languageLabel": "Язык интерфейса",
   "languageDesc": "Установите язык для интерфейса.",
   "notificationsTitle": "Уведомления",

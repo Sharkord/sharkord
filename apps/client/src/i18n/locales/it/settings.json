@@ -39,6 +39,8 @@
   "othersDesc": "Impostazioni generali relative al comportamento di Sharkord.",
   "autoJoinLastChannelLabel": "Rientra automaticamente nell'ultimo canale",
   "autoJoinLastChannelDesc": "Ricollegati automaticamente all'ultimo canale testuale alla connessione.",
+  "convertAsciiEmojiLabel": "Converti le emoticon in emoji mentre digiti",
+  "convertAsciiEmojiDesc": "Converti le emoticon testuali come \":3\" e \"<3\" in emoji.",
   "languageLabel": "Lingua interfaccia",
   "languageDesc": "Imposta la lingua di visualizzazione dell'interfaccia.",
   "notificationsTitle": "Notifiche",

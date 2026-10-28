@@ -9,6 +9,7 @@ import {
   browserNotificationsForMentionsSelector,
   browserNotificationsForRepliesSelector,
   browserNotificationsSelector,
+  convertAsciiEmojiSelector,
   hotkeysEnabledSelector,
   isAutoConnectingSelector,
   isChannelMutedSelector,
@@ -45,6 +46,9 @@ export const useThreadSidebar = () => useSelector(threadSidebarDataSelector);
 
 export const useAutoJoinLastChannel = () =>
   useSelector(autoJoinLastChannelSelector);
+
+export const useConvertAsciiEmoji = () =>
+  useSelector(convertAsciiEmojiSelector);
 
 export const useHotkeysEnabled = () => useSelector(hotkeysEnabledSelector);
 

@@ -149,6 +149,12 @@ export const setAutoJoinLastChannel = (autoJoin: boolean) => {
   setLocalStorageItemBool(LocalStorageKey.AUTO_JOIN_LAST_CHANNEL, autoJoin);
 };
 
+export const setConvertAsciiEmoji = (convert: boolean) => {
+  store.dispatch(appSliceActions.setConvertAsciiEmoji(convert));
+
+  setLocalStorageItemBool(LocalStorageKey.CONVERT_ASCII_EMOJI, convert);
+};
+
 export const setMicMode = (micMode: MicMode) => {
   store.dispatch(appSliceActions.setMicMode(micMode));
 
