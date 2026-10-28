@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { toPortalTrigger } from '../portal-shortcuts';
+import { toPortalTrigger } from '../accelerator-to-portal-trigger';
 
 describe('portal trigger', () => {
   test('names modifiers the way the portal does and lowercases letters', () => {
