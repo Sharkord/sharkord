@@ -1,4 +1,4 @@
-import { bridgeLogger } from '@/helpers/browser-logger';
+import { desktopLogger } from '@/helpers/browser-logger';
 import { getDesktopApi } from '@/helpers/desktop-api';
 import { i18n } from '@/i18n';
 import type { TDesktopHotkeyError } from '@sharkord/shared';
@@ -9,12 +9,16 @@ import type {
   THotkeySourceEvent
 } from './types';
 
-const CAPABILITIES: THotkeyCapabilities = { keyUp: false };
+const NO_CAPABILITIES: THotkeyCapabilities = {
+  keyUp: false,
+  systemManaged: false
+};
 
 const ERROR_KEYS: Record<TDesktopHotkeyError['reason'], string> = {
   unsupported: 'settings:hotkeyErrorUnsupported',
   'needs-modifier': 'settings:hotkeyErrorNeedsModifier',
-  taken: 'settings:hotkeyErrorTaken'
+  taken: 'settings:hotkeyErrorTaken',
+  declined: 'settings:hotkeyErrorDeclined'
 };
 
 const createDesktopSource = (): THotkeySource => {
@@ -22,9 +26,30 @@ const createDesktopSource = (): THotkeySource => {
 
   let latestBindings: THotkeyBinding[] = [];
   let unsubscribeHotkeys: (() => void) | undefined;
+  let unsubscribeErrors: (() => void) | undefined;
+  let inactiveActionIds = new Set<string>();
 
   const emit = (event: THotkeySourceEvent) => {
     listeners.forEach((listener) => listener(event));
+  };
+
+  const emitErrors = (errors: TDesktopHotkeyError[]) => {
+    errors.forEach(({ actionId, reason }) => {
+      emit({ type: 'error', actionId, reason: i18n.t(ERROR_KEYS[reason]) });
+    });
+  };
+
+  const handleInactive = (errors: TDesktopHotkeyError[]) => {
+    const next = new Set(errors.map(({ actionId }) => actionId));
+
+    inactiveActionIds.forEach((actionId) => {
+      if (!next.has(actionId)) {
+        emit({ type: 'error-cleared', actionId });
+      }
+    });
+
+    inactiveActionIds = next;
+    emitErrors(errors);
   };
 
   const register = async (bindings: THotkeyBinding[]) => {
@@ -37,34 +62,51 @@ const createDesktopSource = (): THotkeySource => {
     try {
       const errors = await desktopApi.setHotkeys(bindings);
 
-      errors.forEach(({ actionId, reason }) => {
-        emit({ type: 'error', actionId, reason: i18n.t(ERROR_KEYS[reason]) });
-      });
+      emitErrors(errors);
     } catch (error) {
-      bridgeLogger.error('the desktop app could not register hotkeys', error);
+      desktopLogger.error('the desktop app could not register hotkeys', error);
     }
   };
 
-  const start = () => {
+  const start = async () => {
     const desktopApi = getDesktopApi();
 
     if (!desktopApi) {
-      emit({ type: 'status', status: 'failed', capabilities: CAPABILITIES });
+      emit({ type: 'status', status: 'failed', capabilities: NO_CAPABILITIES });
 
       return;
     }
 
-    unsubscribeHotkeys = desktopApi.onHotkey((actionId) => {
-      emit({ type: 'hotkey', actionId, phase: 'down' });
+    unsubscribeHotkeys = desktopApi.onHotkey((actionId, phase) => {
+      emit({ type: 'hotkey', actionId, phase });
     });
 
-    emit({ type: 'status', status: 'connected', capabilities: CAPABILITIES });
+    unsubscribeErrors = desktopApi.onHotkeyErrors(handleInactive);
+
+    let capabilities = NO_CAPABILITIES;
+
+    try {
+      capabilities = await desktopApi.getHotkeyCapabilities();
+    } catch (error) {
+      desktopLogger.error('could not read the hotkey capabilities', error);
+    }
+
+    if (listeners.size === 0) {
+      return;
+    }
+
+    emit({ type: 'status', status: 'connected', capabilities });
   };
 
   const stop = () => {
     if (unsubscribeHotkeys) {
       unsubscribeHotkeys();
       unsubscribeHotkeys = undefined;
+    }
+
+    if (unsubscribeErrors) {
+      unsubscribeErrors();
+      unsubscribeErrors = undefined;
     }
 
     register([]);

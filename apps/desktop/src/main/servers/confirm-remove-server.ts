@@ -1,5 +1,6 @@
-import { dialog, type BrowserWindow } from 'electron';
+import type { BrowserWindow } from 'electron';
 import type { TServer } from '../../shared/types';
+import { showConfirmDialog } from '../dialogs/show-confirm-dialog';
 import { i18n } from '../i18n';
 import type { TServerController } from './server-controller';
 
@@ -8,19 +9,15 @@ const confirmRemoveServer = async (
   controller: TServerController,
   server: TServer
 ) => {
-  const confirmLabel = i18n.t('removeDialog.confirm');
-  const cancelLabel = i18n.t('removeDialog.cancel');
-
-  const { response } = await dialog.showMessageBox(win, {
+  const isConfirmed = await showConfirmDialog(win, {
     type: 'warning',
-    buttons: [confirmLabel, cancelLabel],
-    defaultId: 1,
-    cancelId: 1,
     message: i18n.t('removeDialog.title'),
-    detail: i18n.t('removeDialog.message', { name: server.name })
+    detail: i18n.t('removeDialog.message', { name: server.name }),
+    confirmLabel: i18n.t('removeDialog.confirm'),
+    cancelLabel: i18n.t('removeDialog.cancel')
   });
 
-  if (response === 0) {
+  if (isConfirmed) {
     controller.remove(server.id);
   }
 };

@@ -41,6 +41,7 @@
     "show": "显示 Sharkord",
     "quit": "退出 Sharkord"
   },
+  "hotkeyDescription": "Sharkord 快捷键：{{shortcut}}",
   "removeDialog": {
     "title": "移除服务器",
     "message": "移除 {{name}}？你将在此设备上退出该服务器。",

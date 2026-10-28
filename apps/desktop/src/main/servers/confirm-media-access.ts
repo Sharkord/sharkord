@@ -1,5 +1,6 @@
-import { dialog, type BrowserWindow } from 'electron';
+import type { BrowserWindow } from 'electron';
 import type { TServer } from '../../shared/types';
+import { showConfirmDialog } from '../dialogs/show-confirm-dialog';
 import { i18n } from '../i18n';
 import type { TServerController } from './server-controller';
 
@@ -10,20 +11,17 @@ const askMediaAccess = async (
   controller: TServerController,
   server: TServer
 ) => {
-  const allowLabel = i18n.t('mediaDialog.allow');
-  const denyLabel = i18n.t('mediaDialog.deny');
-
   try {
-    const { response } = await dialog.showMessageBox(win, {
+    const isAllowed = await showConfirmDialog(win, {
       type: 'question',
-      buttons: [allowLabel, denyLabel],
-      defaultId: 0,
-      cancelId: 1,
       message: i18n.t('mediaDialog.title', { name: server.name }),
-      detail: i18n.t('mediaDialog.message', { name: server.name })
+      detail: i18n.t('mediaDialog.message', { name: server.name }),
+      confirmLabel: i18n.t('mediaDialog.allow'),
+      cancelLabel: i18n.t('mediaDialog.deny'),
+      focusConfirm: true
     });
 
-    if (response === 0) {
+    if (isAllowed) {
       controller.allowMedia(server.id);
 
       return true;

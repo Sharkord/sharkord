@@ -8,13 +8,10 @@ const HARDWARE_VIDEO_CODECS = [
   'VaapiIgnoreDriverChecks'
 ];
 
-// wayland gives global shortcuts only through the desktop portal, x11, windows and macos ignore it
-const GLOBAL_SHORTCUTS = ['GlobalShortcutsPortal'];
-
 const enableChromiumFeatures = () => {
   app.commandLine.appendSwitch(
     'enable-features',
-    [...HARDWARE_VIDEO_CODECS, ...GLOBAL_SHORTCUTS].join(',')
+    HARDWARE_VIDEO_CODECS.join(',')
   );
 };
 

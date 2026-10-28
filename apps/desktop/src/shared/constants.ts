@@ -1,6 +1,6 @@
 const RAIL_WIDTH = 72;
 
-const APP_ID = 'com.sharkord.desktop';
+const APP_ID = 'com.sharkord.Sharkord';
 
 enum IpcChannel {
   GET_STATE = 'servers:get-state',

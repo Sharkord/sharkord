@@ -1,6 +1,7 @@
-import { app, dialog, Notification } from 'electron';
+import { app, Notification } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import type { TUpdateState } from '../../shared/types';
+import { showConfirmDialog } from '../dialogs/show-confirm-dialog';
 import { i18n } from '../i18n';
 
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
@@ -97,20 +98,17 @@ const promptRestart = async (version: string) => {
 
   promptedVersion = version;
 
-  const restart = i18n.t('updateDialog.restart');
-  const later = i18n.t('updateDialog.later');
-
   // no parent window, it may be hidden in the tray and the prompt would not show
-  const { response } = await dialog.showMessageBox({
+  const isConfirmed = await showConfirmDialog(undefined, {
     type: 'info',
-    buttons: [restart, later],
-    defaultId: 0,
-    cancelId: 1,
     message: i18n.t('updateDialog.title'),
-    detail: i18n.t('updateDialog.message', { version })
+    detail: i18n.t('updateDialog.message', { version }),
+    confirmLabel: i18n.t('updateDialog.restart'),
+    cancelLabel: i18n.t('updateDialog.later'),
+    focusConfirm: true
   });
 
-  if (response === 0) {
+  if (isConfirmed) {
     installUpdate();
   }
 };

@@ -16,9 +16,18 @@ export type TDesktopHotkeyBinding = {
   combo: string;
 };
 
+export type TDesktopHotkeyPhase = 'down' | 'up';
+
+// systemManaged: the desktop environment owns the keys (wayland), the user approves and
+// changes them in its own settings
+export type TDesktopHotkeyCapabilities = {
+  keyUp: boolean;
+  systemManaged: boolean;
+};
+
 export type TDesktopHotkeyError = {
   actionId: string;
-  reason: 'unsupported' | 'needs-modifier' | 'taken';
+  reason: 'unsupported' | 'needs-modifier' | 'taken' | 'declined';
 };
 
 export type TDesktopBridge = {
@@ -37,7 +46,13 @@ export type TDesktopBridge = {
   setHotkeys: (
     bindings: TDesktopHotkeyBinding[]
   ) => Promise<TDesktopHotkeyError[]>;
-  onHotkey: (listener: (actionId: string) => void) => () => void;
+  getHotkeyCapabilities: () => Promise<TDesktopHotkeyCapabilities>;
+  onHotkey: (
+    listener: (actionId: string, phase: TDesktopHotkeyPhase) => void
+  ) => () => void;
+  onHotkeyErrors: (
+    listener: (errors: TDesktopHotkeyError[]) => void
+  ) => () => void;
   onNotificationClick: (
     listener: (target: TNotificationTarget) => void
   ) => () => void;

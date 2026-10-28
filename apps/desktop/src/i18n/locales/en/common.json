@@ -41,6 +41,7 @@
     "show": "Show Sharkord",
     "quit": "Quit Sharkord"
   },
+  "hotkeyDescription": "Sharkord hotkey: {{shortcut}}",
   "removeDialog": {
     "title": "Remove server",
     "message": "Remove {{name}}? You will be signed out of this server on this device.",

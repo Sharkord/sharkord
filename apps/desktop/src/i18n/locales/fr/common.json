@@ -41,6 +41,7 @@
     "show": "Afficher Sharkord",
     "quit": "Quitter Sharkord"
   },
+  "hotkeyDescription": "Raccourci Sharkord : {{shortcut}}",
   "removeDialog": {
     "title": "Retirer le serveur",
     "message": "Retirer {{name}} ? Vous serez déconnecté de ce serveur sur cet appareil.",

@@ -19,6 +19,7 @@ import { RAIL_WIDTH } from '../../shared/constants';
 import type { TServer, TServerStatus } from '../../shared/types';
 import {
   clearServerHotkeys,
+  getHotkeyCapabilities,
   setServerHotkeys
 } from '../hotkeys/global-hotkeys';
 import { notificationSchema } from '../notifications/notification-schema';
@@ -369,10 +370,26 @@ const createServerViews = (
           return [];
         }
 
-        return setServerHotkeys(server.id, parsed.data, (actionId) => {
-          view.webContents.send(BridgeChannel.HOTKEY_PRESSED, actionId);
-        });
+        return setServerHotkeys(
+          server.id,
+          parsed.data,
+          (actionId, phase) => {
+            view.webContents.send(
+              BridgeChannel.HOTKEY_PRESSED,
+              actionId,
+              phase
+            );
+          },
+          (errors) => {
+            view.webContents.send(BridgeChannel.HOTKEY_ERRORS, errors);
+          }
+        );
       }
+    );
+
+    view.webContents.ipc.handle(
+      BridgeChannel.GET_HOTKEY_CAPABILITIES,
+      getHotkeyCapabilities
     );
 
     view.webContents.ipc.handle(BridgeChannel.START_SYSTEM_AUDIO, () => {

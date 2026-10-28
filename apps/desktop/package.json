@@ -53,8 +53,9 @@
     "zod": "^4.3.5"
   },
   "description": "Sharkord desktop app",
-  "desktopName": "com.sharkord.desktop.desktop",
+  "desktopName": "com.sharkord.Sharkord.desktop",
   "dependencies": {
+    "dbus-next": "0.10.2",
     "electron-updater": "^6.8.11"
   },
   "optionalDependencies": {

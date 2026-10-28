@@ -54,6 +54,8 @@ const createLogger = (
 
 const voiceLogger = createLogger('VOICE', 'salmon', pushVoiceDebugEvent);
 const bridgeLogger = createLogger('BRIDGE', 'teal');
+const hotkeysLogger = createLogger('HOTKEYS', 'plum');
+const desktopLogger = createLogger('DESKTOP', 'khaki');
 
 const logDebug = (...args: unknown[]) => {
   if (isDebug()) {
@@ -61,4 +63,4 @@ const logDebug = (...args: unknown[]) => {
   }
 };
 
-export { bridgeLogger, logDebug, voiceLogger };
+export { bridgeLogger, desktopLogger, hotkeysLogger, logDebug, voiceLogger };

@@ -1,5 +1,6 @@
-import { app, dialog, session, type BrowserWindow } from 'electron';
+import { app, session, type BrowserWindow } from 'electron';
 import { rmSync } from 'fs';
+import { showConfirmDialog } from '../dialogs/show-confirm-dialog';
 import { i18n } from '../i18n';
 import type { TServerController } from '../servers/server-controller';
 import { getPartition } from '../views/server-views';
@@ -23,16 +24,15 @@ const confirmAndResetApp = async (
   win: BrowserWindow,
   controller: TServerController
 ) => {
-  const { response } = await dialog.showMessageBox(win, {
+  const isConfirmed = await showConfirmDialog(win, {
     type: 'warning',
-    buttons: [i18n.t('resetDialog.confirm'), i18n.t('resetDialog.cancel')],
-    defaultId: 1,
-    cancelId: 1,
     message: i18n.t('resetDialog.title'),
-    detail: i18n.t('resetDialog.message')
+    detail: i18n.t('resetDialog.message'),
+    confirmLabel: i18n.t('resetDialog.confirm'),
+    cancelLabel: i18n.t('resetDialog.cancel')
   });
 
-  if (response !== 0) {
+  if (!isConfirmed) {
     return;
   }
 

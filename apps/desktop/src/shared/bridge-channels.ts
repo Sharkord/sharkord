@@ -12,7 +12,9 @@ enum BridgeChannel {
   STOP_SYSTEM_AUDIO = 'system-audio:stop',
   SHOW_NOTIFICATION = 'notification:show',
   SET_HOTKEYS = 'hotkeys:set',
+  GET_HOTKEY_CAPABILITIES = 'hotkeys:get-capabilities',
   HOTKEY_PRESSED = 'hotkeys:pressed',
+  HOTKEY_ERRORS = 'hotkeys:errors',
   NOTIFICATION_CLICKED = 'notification:clicked'
 }
 

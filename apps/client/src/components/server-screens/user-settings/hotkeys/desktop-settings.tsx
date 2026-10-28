@@ -1,4 +1,12 @@
-import { Group, SettingsSection, Switch } from '@sharkord/ui';
+import { useHotkeyState } from '@/hooks/use-hotkeys';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Group,
+  SettingsSection,
+  Switch
+} from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { THotkeysOnChange, THotkeysValues } from './types';
@@ -10,6 +18,7 @@ type TDesktopSettingsProps = {
 
 const DesktopSettings = memo(({ values, onChange }: TDesktopSettingsProps) => {
   const { t } = useTranslation('settings');
+  const { capabilities } = useHotkeyState();
 
   const handleEnabledChange = useCallback(
     (enabled: boolean) => onChange('enabled', enabled),
@@ -27,6 +36,12 @@ const DesktopSettings = memo(({ values, onChange }: TDesktopSettingsProps) => {
           onCheckedChange={handleEnabledChange}
         />
       </Group>
+      {values.enabled && capabilities.systemManaged && (
+        <Alert variant="info">
+          <AlertTitle>{t('hotkeysSystemManagedTitle')}</AlertTitle>
+          <AlertDescription>{t('hotkeysSystemManagedDesc')}</AlertDescription>
+        </Alert>
+      )}
     </SettingsSection>
   );
 });

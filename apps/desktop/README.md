@@ -37,11 +37,11 @@ Quit the app and delete this folder to reset it.
 
 Packaged builds only, written by the auto updater.
 
-| Platform | Location                                                                                   |
-| -------- | ------------------------------------------------------------------------------------------ |
-| Linux    | `~/.cache/sharkord-app-updater`                                                            |
-| Windows  | `%LOCALAPPDATA%\sharkord-app-updater`                                                      |
-| macOS    | `~/Library/Caches/sharkord-app-updater` and `~/Library/Caches/com.sharkord.desktop.ShipIt` |
+| Platform | Location                                                                                    |
+| -------- | ------------------------------------------------------------------------------------------- |
+| Linux    | `~/.cache/sharkord-app-updater`                                                             |
+| Windows  | `%LOCALAPPDATA%\sharkord-app-updater`                                                       |
+| macOS    | `~/Library/Caches/sharkord-app-updater` and `~/Library/Caches/com.sharkord.Sharkord.ShipIt` |
 
 ### Installed app
 
@@ -55,7 +55,7 @@ Packaged builds only, written by the auto updater.
 
 | Platform | What                                         | Location                                                                    |
 | -------- | -------------------------------------------- | --------------------------------------------------------------------------- |
-| Linux    | launcher entry, icon and `sharkord://` links | `~/.local/share/applications/com.sharkord.desktop.desktop`                  |
+| Linux    | launcher entry, icon and `sharkord://` links | `~/.local/share/applications/com.sharkord.Sharkord.desktop`                 |
 | Linux    | default handler for `sharkord://`            | `~/.config/mimeapps.list`                                                   |
 | Linux    | open on startup                              | `~/.config/autostart/sharkord.desktop`                                      |
 | Windows  | `sharkord://` handler                        | registry, `HKEY_CURRENT_USER\Software\Classes\sharkord`                     |

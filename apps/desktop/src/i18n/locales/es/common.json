@@ -41,6 +41,7 @@
     "show": "Mostrar Sharkord",
     "quit": "Salir de Sharkord"
   },
+  "hotkeyDescription": "Atajo de Sharkord: {{shortcut}}",
   "removeDialog": {
     "title": "Quitar servidor",
     "message": "¿Quitar {{name}}? Se cerrará tu sesión en este servidor en este dispositivo.",

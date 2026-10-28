@@ -14,7 +14,7 @@ const DEFAULT_SETTINGS: TDesktopSettings = {
   connectAllOnStartup: false,
   throttleHiddenServers: true,
   autoStart: false,
-  closeToTray: process.platform === 'win32',
+  closeToTray: true,
   startToTray: false,
   dynamicTrayIcon: true,
   autoUpdate: true
@@ -38,10 +38,7 @@ const parseSettings = (value: unknown): TDesktopSettings => {
     connectAllOnStartup: candidate.connectAllOnStartup === true,
     throttleHiddenServers: candidate.throttleHiddenServers !== false,
     autoStart: candidate.autoStart === true,
-    closeToTray:
-      typeof candidate.closeToTray === 'boolean'
-        ? candidate.closeToTray
-        : DEFAULT_SETTINGS.closeToTray,
+    closeToTray: candidate.closeToTray !== false,
     startToTray: candidate.startToTray === true,
     dynamicTrayIcon: candidate.dynamicTrayIcon !== false,
     autoUpdate: candidate.autoUpdate !== false

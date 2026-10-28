@@ -3,6 +3,8 @@ import {
   getDesktopMismatch,
   type TDesktopBridge,
   type TDesktopEntry,
+  type TDesktopHotkeyError,
+  type TDesktopHotkeyPhase,
   type TNotificationTarget
 } from '@sharkord/shared';
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
@@ -37,15 +39,35 @@ const bridge: TDesktopBridge = {
   stopSystemAudio: () => ipcRenderer.invoke(BridgeChannel.STOP_SYSTEM_AUDIO),
   setHotkeys: (bindings) =>
     ipcRenderer.invoke(BridgeChannel.SET_HOTKEYS, bindings),
+  getHotkeyCapabilities: () =>
+    ipcRenderer.invoke(BridgeChannel.GET_HOTKEY_CAPABILITIES),
   onHotkey: (listener) => {
-    const handler = (_event: IpcRendererEvent, actionId: string) => {
-      listener(actionId);
+    const handler = (
+      _event: IpcRendererEvent,
+      actionId: string,
+      phase: TDesktopHotkeyPhase
+    ) => {
+      listener(actionId, phase);
     };
 
     ipcRenderer.on(BridgeChannel.HOTKEY_PRESSED, handler);
 
     return () => {
       ipcRenderer.removeListener(BridgeChannel.HOTKEY_PRESSED, handler);
+    };
+  },
+  onHotkeyErrors: (listener) => {
+    const handler = (
+      _event: IpcRendererEvent,
+      errors: TDesktopHotkeyError[]
+    ) => {
+      listener(errors);
+    };
+
+    ipcRenderer.on(BridgeChannel.HOTKEY_ERRORS, handler);
+
+    return () => {
+      ipcRenderer.removeListener(BridgeChannel.HOTKEY_ERRORS, handler);
     };
   },
   showNotification: (notification) => {

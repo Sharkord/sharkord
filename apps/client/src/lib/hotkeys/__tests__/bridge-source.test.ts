@@ -120,7 +120,7 @@ describe('bridge source', () => {
       {
         type: 'status',
         status: 'connecting',
-        capabilities: { keyUp: false }
+        capabilities: { keyUp: false, systemManaged: false }
       }
     ]);
   });
@@ -147,13 +147,13 @@ describe('bridge source', () => {
     lastSocket().receive({
       type: 'ready',
       v: 1,
-      capabilities: { keyUp: true }
+      capabilities: { keyUp: true, systemManaged: false }
     });
 
     expect(events[events.length - 1]).toEqual({
       type: 'status',
       status: 'connected',
-      capabilities: { keyUp: true }
+      capabilities: { keyUp: true, systemManaged: false }
     });
   });
 
