@@ -79,12 +79,13 @@ beforeAll(async () => {
     hostname: '127.0.0.1',
     port: 0,
     socket: {
+      // the connection stays open: closing it short of the declared length raced fetch, which
+      // could reject on the early close before the header check ever ran. afterAll closes it
       data(socket) {
         socket.write(
           `HTTP/1.1 200 OK\r\nContent-Length: ${MAX_DOWNLOAD_BYTES + 1}\r\n\r\n`
         );
         socket.write(CHUNK.subarray(0, 16));
-        socket.end();
       }
     }
   });
