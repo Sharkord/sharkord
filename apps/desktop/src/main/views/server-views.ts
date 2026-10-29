@@ -1,4 +1,5 @@
 import {
+  DESKTOP_CONNECTION_STATES,
   DESKTOP_MISMATCHES,
   type TDesktopConnectionState,
   type TDesktopMismatch,
@@ -50,12 +51,7 @@ const unreadStateSchema = z.object({
   mentioned: z.boolean()
 });
 
-const connectionStateSchema = z.enum([
-  'connecting',
-  'connected',
-  'signed-out',
-  'disconnected'
-]);
+const connectionStateSchema = z.enum(DESKTOP_CONNECTION_STATES);
 
 const mismatchSchema = z.enum(DESKTOP_MISMATCHES);
 
@@ -320,6 +316,7 @@ const createServerViews = (
         }
 
         pageStates.set(server.id, 'loading');
+        unread.delete(server.id);
         connectionStates.delete(server.id);
         connectedClients.delete(server.id);
         mismatches.delete(server.id);
@@ -355,6 +352,7 @@ const createServerViews = (
 
     view.webContents.on('render-process-gone', () => {
       pageStates.set(server.id, 'error');
+      unread.delete(server.id);
       voiceServerIds.delete(server.id);
 
       stopSystemAudio(server.id);
@@ -443,7 +441,8 @@ const createServerViews = (
         showNotification(notification, serverSession, () => {
           onNotificationClick(server.id);
 
-          if (notification.target) {
+          // the server may have been removed while the notification was up
+          if (notification.target && !view.webContents.isDestroyed()) {
             view.webContents.send(
               BridgeChannel.NOTIFICATION_CLICKED,
               notification.target

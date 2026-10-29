@@ -1,5 +1,4 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
-import { hasUnsavedChanges } from '@/components/server-screens/settings-shell/helpers';
 import { usePushToTalkActive } from '@/features/app/hooks';
 import { requestScreenShareOptions } from '@/features/dialogs/actions';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
@@ -291,9 +290,7 @@ const useVoiceControls = ({
         return;
       }
 
-      if (hasUnsavedChanges(chosen, devices)) {
-        saveDevices(chosen);
-      }
+      saveDevices(chosen);
 
       screenShareOptions = {
         settings: chosen,

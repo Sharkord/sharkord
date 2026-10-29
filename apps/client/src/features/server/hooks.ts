@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import type { IRootState } from '../store';
 import { useChannelById, useChannelPermissionsById } from './channels/hooks';
 import { channelReadStateByIdSelector } from './channels/selectors';
-import { getConversationKey } from './helpers';
+import { getConversationKey, rolesCan } from './helpers';
 import {
   activeFullscreenPluginIdSelector,
   categoryHasUnreadMentionsSelector,
@@ -84,23 +84,8 @@ export const useCan = () => {
 
   // TODO: maybe this can can recieve both Permission and ChannelPermission?
   const can = useCallback(
-    (permission: Permission | Permission[]) => {
-      if (isOwner) return true;
-
-      const permissionsToCheck = Array.isArray(permission)
-        ? permission
-        : [permission];
-
-      for (const role of ownUserRoles) {
-        for (const perm of role.permissions) {
-          if (permissionsToCheck.includes(perm)) {
-            return true;
-          }
-        }
-      }
-
-      return false;
-    },
+    (permission: Permission | Permission[]) =>
+      rolesCan(ownUserRoles, isOwner, permission),
     [ownUserRoles, isOwner]
   );
 

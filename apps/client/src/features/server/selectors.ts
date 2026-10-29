@@ -36,7 +36,8 @@ import {
   canViewChannel,
   getConversationKey,
   hasUnreadMentionInMessages,
-  isFatalDisconnect
+  isFatalDisconnect,
+  rolesCan
 } from './helpers';
 import {
   messagesByChannelIdSelector,
@@ -453,15 +454,8 @@ export const canReceivePluginNotificationsSelector = createCachedSelector(
         PLUGIN_NOTIFICATIONS_CAPABILITY
       )
   ],
-  (ownUserRoles, isOwner, canUseCapability) => {
-    if (isOwner) return true;
-
-    const canUsePlugins = ownUserRoles.some((role) =>
-      role.permissions.includes(Permission.USE_PLUGINS)
-    );
-
-    return canUsePlugins && canUseCapability;
-  }
+  (ownUserRoles, isOwner, canUseCapability) =>
+    rolesCan(ownUserRoles, isOwner, Permission.USE_PLUGINS) && canUseCapability
 )((_: IRootState, pluginId: string) => pluginId);
 
 export const canUsePluginCapabilitySelector = createCachedSelector(

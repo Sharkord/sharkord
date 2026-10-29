@@ -5,11 +5,15 @@ export type TDesktopUnreadState = {
   mentioned: boolean;
 };
 
+export const DESKTOP_CONNECTION_STATES = [
+  'connecting',
+  'connected',
+  'signed-out',
+  'disconnected'
+] as const;
+
 export type TDesktopConnectionState =
-  | 'connecting'
-  | 'connected'
-  | 'signed-out'
-  | 'disconnected';
+  (typeof DESKTOP_CONNECTION_STATES)[number];
 
 export type TDesktopHotkeyBinding = {
   actionId: string;
@@ -25,9 +29,19 @@ export type TDesktopHotkeyCapabilities = {
   systemManaged: boolean;
 };
 
+export const DESKTOP_HOTKEY_ERROR_REASONS = [
+  'unsupported',
+  'needs-modifier',
+  'taken',
+  'declined'
+] as const;
+
+export type TDesktopHotkeyErrorReason =
+  (typeof DESKTOP_HOTKEY_ERROR_REASONS)[number];
+
 export type TDesktopHotkeyError = {
   actionId: string;
-  reason: 'unsupported' | 'needs-modifier' | 'taken' | 'declined';
+  reason: TDesktopHotkeyErrorReason;
 };
 
 export type TDesktopBridge = {

@@ -3,9 +3,11 @@ import {
   ChannelPermission,
   DisconnectCode,
   hasMention,
+  type Permission,
   type TDirectMessageConversation,
   type TFollowedThread,
-  type TJoinedMessage
+  type TJoinedMessage,
+  type TJoinedRole
 } from '@sharkord/shared';
 import type { channelPermissionsSelector } from './channels/selectors';
 import type { TDisconnectInfo } from './types';
@@ -180,6 +182,22 @@ const upsertDirectMessage = (
   ];
 };
 
+const rolesCan = (
+  roles: TJoinedRole[],
+  isOwner: boolean,
+  permission: Permission | Permission[]
+) => {
+  if (isOwner) return true;
+
+  const permissionsToCheck = Array.isArray(permission)
+    ? permission
+    : [permission];
+
+  return roles.some((role) =>
+    role.permissions.some((perm) => permissionsToCheck.includes(perm))
+  );
+};
+
 const isFatalDisconnect = (
   info: TDisconnectInfo | undefined
 ): info is TDisconnectInfo =>
@@ -196,6 +214,7 @@ export {
   hasUnreadMentionInMessages,
   isFatalDisconnect,
   mergeMessagesChronologically,
+  rolesCan,
   upsertDirectMessage,
   upsertFollowedThread
 };

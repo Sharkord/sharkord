@@ -1,24 +1,13 @@
 import { z } from 'zod';
 import { IpcChannel } from '../../shared/constants';
+import { desktopSettingsSchema } from '../../shared/desktop-settings';
 import { defineIpc } from './define-ipc';
 import { handleIpc } from './handle-ipc';
 import type { TIpcContext } from './types';
 
 const updateSettingsCall = defineIpc({
   channel: IpcChannel.UPDATE_SETTINGS,
-  args: z.tuple([
-    z
-      .strictObject({
-        connectAllOnStartup: z.boolean(),
-        throttleHiddenServers: z.boolean(),
-        autoStart: z.boolean(),
-        closeToTray: z.boolean(),
-        startToTray: z.boolean(),
-        dynamicTrayIcon: z.boolean(),
-        autoUpdate: z.boolean()
-      })
-      .partial()
-  ]),
+  args: z.tuple([desktopSettingsSchema.partial()]),
   result: z.void()
 });
 

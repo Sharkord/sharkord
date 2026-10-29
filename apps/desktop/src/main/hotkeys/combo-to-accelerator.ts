@@ -1,3 +1,4 @@
+import type { TDesktopHotkeyErrorReason } from '@sharkord/shared';
 const MODIFIERS: Record<string, string> = {
   ctrl: 'Control',
   alt: 'Alt',
@@ -85,7 +86,12 @@ const keyToAccelerator = (code: string) => {
 
 type TComboResult =
   | { accelerator: string }
-  | { error: 'unsupported' | 'needs-modifier' };
+  | {
+      error: Extract<
+        TDesktopHotkeyErrorReason,
+        'unsupported' | 'needs-modifier'
+      >;
+    };
 
 const comboToAccelerator = (combo: string): TComboResult => {
   const parts = combo.split('+');

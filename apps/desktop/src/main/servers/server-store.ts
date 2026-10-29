@@ -1,6 +1,11 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
 import { dirname } from 'path';
-import type { TDesktopSettings, TServer } from '../../shared/types';
+import { z } from 'zod';
+import {
+  DEFAULT_SETTINGS,
+  type TDesktopSettings
+} from '../../shared/desktop-settings';
+import type { TServer } from '../../shared/types';
 
 type TStore = {
   servers: TServer[];
@@ -10,15 +15,12 @@ type TStore = {
   mediaAllowedIds: string[];
 };
 
-const DEFAULT_SETTINGS: TDesktopSettings = {
-  connectAllOnStartup: false,
-  throttleHiddenServers: true,
-  autoStart: false,
-  closeToTray: true,
-  startToTray: false,
-  dynamicTrayIcon: true,
-  autoUpdate: true
-};
+const serverSchema: z.ZodType<TServer> = z.object({
+  id: z.string(),
+  name: z.string(),
+  url: z.string(),
+  iconUrl: z.string().nullable()
+});
 
 const createEmptyStore = (): TStore => ({
   servers: [],
@@ -28,36 +30,36 @@ const createEmptyStore = (): TStore => ({
   mediaAllowedIds: []
 });
 
+// one invalid value only resets that setting, not every other one with it
 const parseSettings = (value: unknown): TDesktopSettings => {
   const candidate =
     typeof value === 'object' && value !== null
       ? (value as Record<string, unknown>)
       : {};
 
-  return {
-    connectAllOnStartup: candidate.connectAllOnStartup === true,
-    throttleHiddenServers: candidate.throttleHiddenServers !== false,
-    autoStart: candidate.autoStart === true,
-    closeToTray: candidate.closeToTray !== false,
-    startToTray: candidate.startToTray === true,
-    dynamicTrayIcon: candidate.dynamicTrayIcon !== false,
-    autoUpdate: candidate.autoUpdate !== false
-  };
-};
+  const settings = { ...DEFAULT_SETTINGS };
 
-const isServer = (value: unknown): value is TServer => {
-  if (typeof value !== 'object' || value === null) {
-    return false;
+  for (const key of Object.keys(settings) as (keyof TDesktopSettings)[]) {
+    const stored = candidate[key];
+
+    if (typeof stored === 'boolean') {
+      settings[key] = stored;
+    }
   }
 
-  const candidate = value as Record<string, unknown>;
+  return settings;
+};
 
-  return (
-    typeof candidate.id === 'string' &&
-    typeof candidate.name === 'string' &&
-    typeof candidate.url === 'string' &&
-    (typeof candidate.iconUrl === 'string' || candidate.iconUrl === null)
-  );
+const keepValid = <T>(value: unknown, schema: z.ZodType<T>): T[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    const parsed = schema.safeParse(item);
+
+    return parsed.success ? [parsed.data] : [];
+  });
 };
 
 const readStore = (filePath: string): TStore => {
@@ -73,13 +75,11 @@ const readStore = (filePath: string): TStore => {
       parsed as Record<string, unknown>;
 
     return {
-      servers: Array.isArray(servers) ? servers.filter(isServer) : [],
+      servers: keepValid(servers, serverSchema),
       railHidden: railHidden === true,
       selectedId: typeof selectedId === 'string' ? selectedId : null,
       settings: parseSettings(settings),
-      mediaAllowedIds: Array.isArray(mediaAllowedIds)
-        ? mediaAllowedIds.filter((id): id is string => typeof id === 'string')
-        : []
+      mediaAllowedIds: keepValid(mediaAllowedIds, z.string())
     };
   } catch {
     // a missing or corrupt file just means a fresh start

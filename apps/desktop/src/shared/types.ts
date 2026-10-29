@@ -3,6 +3,7 @@ import type {
   TDesktopMismatch,
   TDesktopUnreadState
 } from '@sharkord/shared';
+import type { TDesktopSettings } from './desktop-settings';
 
 type TServer = {
   id: string;
@@ -17,16 +18,6 @@ type TServerStatus =
   | 'error'
   | TDesktopConnectionState
   | TDesktopMismatch;
-
-type TDesktopSettings = {
-  connectAllOnStartup: boolean;
-  throttleHiddenServers: boolean;
-  autoStart: boolean;
-  closeToTray: boolean;
-  startToTray: boolean;
-  dynamicTrayIcon: boolean;
-  autoUpdate: boolean;
-};
 
 type TSettingsTab = 'general' | 'shortcuts' | 'updates';
 

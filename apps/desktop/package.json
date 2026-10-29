@@ -16,8 +16,8 @@
     "lint": "eslint ./src --ext ts,tsx",
     "lint:fix": "eslint ./src --ext ts,tsx --report-unused-disable-directives --fix",
     "check-types": "tsc --noEmit",
-    "format": "prettier --write \"**/*.ts*\" --config ./.prettierrc.json",
-    "format:check": "prettier --check \"**/*.ts*\" --config ./.prettierrc.json",
+    "format": "prettier --write \"**/*.ts*\"",
+    "format:check": "prettier --check \"**/*.ts*\"",
     "magic": "bun --bun run lint:fix && bun --bun run format && bun --bun run check-types"
   },
   "devDependencies": {
@@ -41,8 +41,6 @@
     "i18next": "^25.8.14",
     "i18next-resources-to-backend": "^1.2.1",
     "lucide-react": "^0.544.0",
-    "prettier": "^3.4.2",
-    "prettier-plugin-organize-imports": "^4.0.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-i18next": "^16.5.6",
