@@ -38,6 +38,9 @@ jobs:
           restore-keys: |
             playwright-${{ runner.os }}-
 
+      - name: Mediasoup worker
+        uses: ./.github/actions/mediasoup-worker
+
       - name: Install dependencies
         run: bun install
         env:

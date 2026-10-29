@@ -9,6 +9,9 @@ runs:
       with:
         bun-version: 1.3.14
 
+    - name: Mediasoup worker
+      uses: ./.github/actions/mediasoup-worker
+
     - name: Install dependencies
       shell: bash
       run: bun install --frozen-lockfile

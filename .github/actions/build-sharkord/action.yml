@@ -19,6 +19,9 @@ runs:
       with:
         bun-version: ${{ inputs.bun_version }}
 
+    - name: Mediasoup worker
+      uses: ./.github/actions/mediasoup-worker
+
     - name: Install dependencies
       shell: bash
       run: bun install
