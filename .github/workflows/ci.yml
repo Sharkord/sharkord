@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
   workflow_call:
 
-# separate jobs run in parallel, the run takes as long as the slowest one instead of the sum
 jobs:
   checks:
     name: Format, Lint & Typecheck
