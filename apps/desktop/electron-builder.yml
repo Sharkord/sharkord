@@ -1,19 +1,31 @@
 appId: com.sharkord.Sharkord
 productName: Sharkord
+extraMetadata:
+  name: sharkord-app
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 directories:
   buildResources: build
 files:
   - out/**
 npmRebuild: false
-# the app icon, read from disk by the tray and copied into the linux icon theme
 asarUnpack:
   - out/main/chunks/*.png
 protocols:
   - name: Sharkord
     schemes:
       - sharkord
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  onlyLoadAppFromAsar: true
 mac:
   category: public.app-category.social-networking
+  extendInfo:
+    NSMicrophoneUsageDescription:
+      Sharkord uses the microphone for voice channels.
+    NSCameraUsageDescription:
+      Sharkord uses the camera for video in voice channels.
   # the zip is what the auto updater downloads on macos
   target:
     - dmg

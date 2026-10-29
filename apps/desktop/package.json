@@ -53,6 +53,8 @@
     "zod": "^4.3.5"
   },
   "description": "Sharkord desktop app",
+  "author": "Sharkord",
+  "homepage": "https://sharkord.com",
   "desktopName": "com.sharkord.Sharkord.desktop",
   "dependencies": {
     "dbus-next": "0.10.2",
