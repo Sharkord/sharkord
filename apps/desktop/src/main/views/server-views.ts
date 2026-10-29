@@ -213,17 +213,23 @@ const createServerViews = (
 
     serverSession.setDisplayMediaRequestHandler(
       async (request, callback) => {
-        const sources = await desktopCapturer.getSources({
-          types: ['screen', 'window'],
-          thumbnailSize: THUMBNAIL_SIZE
-        });
+        let source: DesktopCapturerSource | undefined;
 
-        let source: DesktopCapturerSource | undefined = sources[0];
+        try {
+          const sources = await desktopCapturer.getSources({
+            types: ['screen', 'window'],
+            thumbnailSize: THUMBNAIL_SIZE
+          });
 
-        if (sources.length > 1) {
-          const sourceId = await pickSource(sources);
+          [source] = sources;
 
-          source = sources.find(({ id }) => id === sourceId);
+          if (sources.length > 1) {
+            const sourceId = await pickSource(sources);
+
+            source = sources.find(({ id }) => id === sourceId);
+          }
+        } catch (error) {
+          console.warn('screen share: no source was picked', error);
         }
 
         if (!source) {

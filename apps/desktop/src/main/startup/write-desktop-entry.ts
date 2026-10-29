@@ -8,6 +8,9 @@ import { getDesktopExec } from './get-launch-command';
 
 const ICON_SIZE = 512;
 
+// marks the entry as the app's own, anything without it came from an installer and is left alone
+const GENERATED_MARKER = 'X-Sharkord-Generated=true';
+
 const getDataDir = () =>
   process.env.XDG_DATA_HOME ?? path.join(os.homedir(), '.local', 'share');
 
@@ -37,12 +40,30 @@ const installIcon = (iconPath: string) => {
   );
 };
 
+// appimage integrators like AppManager or AppImageLauncher install a visible entry under this
+// same name, overwriting it with a hidden one would take the app out of the menu
+const isInstalledByOthers = (file: string) => {
+  try {
+    const current = readFileSync(file, 'utf8');
+
+    return !current.includes(GENERATED_MARKER);
+  } catch {
+    return false;
+  }
+};
+
 const writeDesktopEntry = (iconPath: string) => {
   if (process.platform !== 'linux') {
     return;
   }
 
   if (app.isPackaged && !process.env.APPIMAGE) {
+    return;
+  }
+
+  const file = path.join(getDataDir(), 'applications', `${APP_ID}.desktop`);
+
+  if (isInstalledByOthers(file)) {
     return;
   }
 
@@ -54,15 +75,13 @@ const writeDesktopEntry = (iconPath: string) => {
     `Icon=${APP_ID}`,
     'NoDisplay=true',
     `MimeType=x-scheme-handler/${DESKTOP_PROTOCOL};`,
+    GENERATED_MARKER,
     ''
   ].join('\n');
 
   try {
     installIcon(iconPath);
-    writeIfChanged(
-      path.join(getDataDir(), 'applications', `${APP_ID}.desktop`),
-      content
-    );
+    writeIfChanged(file, content);
   } catch (error) {
     console.error('failed to write the desktop entry', error);
   }

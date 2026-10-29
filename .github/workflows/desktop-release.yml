@@ -49,8 +49,6 @@ jobs:
 
           echo "version=$next" >> "$GITHUB_OUTPUT"
 
-  # after the version check, which takes seconds, so a version that cannot be
-  # released stops the run before the tests start
   ci:
     needs: version
     uses: ./.github/workflows/ci.yml
@@ -58,10 +56,9 @@ jobs:
   build:
     needs: [ci, version]
     strategy:
-      # one platform failing should not cancel the others, rerun the failed one
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -85,8 +82,6 @@ jobs:
         run: |
           bun -e "const pkg = await Bun.file('package.json').json(); pkg.version = process.env.VERSION; await Bun.write('package.json', JSON.stringify(pkg, null, 2) + '\n');"
 
-      # only builds, the publish job puts every platform into one release. the
-      # latest*.yml files the updater reads are still written next to the installers
       - name: Build
         working-directory: apps/desktop
         env:

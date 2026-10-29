@@ -303,17 +303,17 @@ const useVoiceControls = ({
 
     voiceLogger.info('screen: toggle requested', { sharing: newState });
 
-    updateOwnVoiceState({ sharingScreen: newState });
-
-    playSound(
-      newState
-        ? SoundType.OWN_USER_STARTED_SCREENSHARE
-        : SoundType.OWN_USER_STOPPED_SCREENSHARE
-    );
+    if (!newState) {
+      updateOwnVoiceState({ sharingScreen: false });
+      playSound(SoundType.OWN_USER_STOPPED_SCREENSHARE);
+    }
 
     try {
       if (newState) {
         const video = await startScreenShareStream(screenShareOptions);
+
+        updateOwnVoiceState({ sharingScreen: true });
+        playSound(SoundType.OWN_USER_STARTED_SCREENSHARE);
 
         // handle native screen share end
         video.onended = async () => {
@@ -342,6 +342,12 @@ const useVoiceControls = ({
         await trpc.voice.updateState.mutate({ sharingScreen: false });
       } catch {
         // ignore
+      }
+
+      if (error instanceof DOMException && error.name === 'NotAllowedError') {
+        voiceLogger.info('screen: picker dismissed');
+
+        return;
       }
 
       voiceLogger.error('screen: toggle failed, rolled back', error, {
