@@ -1122,6 +1122,101 @@ describe('users router', () => {
     expect(deletedUser).toBeUndefined();
   });
 
+  describe('deleteOwn', () => {
+    test('should delete your own account after checking the password', async () => {
+      const { caller } = await initTest(2);
+
+      await caller.users.deleteOwn({ password: 'password123' });
+
+      const deletedUser = await tdb
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, 2))
+        .get();
+
+      expect(deletedUser).toBeUndefined();
+    });
+
+    test('should keep your messages under the deleted user unless wiped', async () => {
+      const { caller } = await initTest(3);
+
+      await caller.users.deleteOwn({ password: 'password123' });
+
+      const message = await tdb
+        .select({ userId: messages.userId })
+        .from(messages)
+        .where(eq(messages.id, 2))
+        .get();
+      const placeholder = await tdb
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.identity, DELETED_USER_IDENTITY_AND_NAME))
+        .get();
+
+      expect(message?.userId).toBe(placeholder!.id);
+    });
+
+    test('should remove your messages when wiped', async () => {
+      const { caller } = await initTest(3);
+
+      await caller.users.deleteOwn({ password: 'password123', wipe: true });
+
+      const message = await tdb
+        .select({ id: messages.id })
+        .from(messages)
+        .where(eq(messages.id, 2))
+        .get();
+
+      expect(message).toBeUndefined();
+    });
+
+    test('should refuse a wrong or missing password', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.users.deleteOwn({ password: 'not-the-password' })
+      ).rejects.toThrow('Password is incorrect');
+      await expect(caller.users.deleteOwn({})).rejects.toThrow(
+        'Password is incorrect'
+      );
+
+      const user = await tdb
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, 2))
+        .get();
+
+      expect(user).toBeDefined();
+    });
+
+    test('should not ask an sso account for a password', async () => {
+      await tdb
+        .update(users)
+        .set({ passwordSet: false })
+        .where(eq(users.id, 2));
+
+      const { caller } = await initTest(2);
+
+      await caller.users.deleteOwn({});
+
+      const user = await tdb
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, 2))
+        .get();
+
+      expect(user).toBeUndefined();
+    });
+
+    test('should refuse the server owner', async () => {
+      const { caller } = await initTest(1);
+
+      await expect(
+        caller.users.deleteOwn({ password: 'password123' })
+      ).rejects.toThrow("The server owner's account can't be deleted.");
+    });
+  });
+
   test('should throw when trying to delete yourself', async () => {
     const { caller } = await initTest();
 

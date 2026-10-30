@@ -554,5 +554,14 @@
   "hotkeysSaved": "Configurações de atalhos salvas",
   "failedSaveHotkeys": "Falha ao salvar as configurações de atalhos",
   "hotkeysBridgeFailed": "Não encontrado, parou de tentar",
-  "hotkeysBridgeRetry": "Tentar conectar"
+  "hotkeysBridgeRetry": "Tentar conectar",
+  "deleteAccountTab": "Excluir conta",
+  "deleteAccountTitle": "Excluir conta",
+  "deleteAccountDesc": "Remove sua conta deste servidor. Não dá para desfazer.",
+  "deleteAccountWipeLabel": "Excluir minhas mensagens também",
+  "deleteAccountWipeDesc": "Desligado, suas mensagens ficam como Usuário excluído. Ligado, suas mensagens, reações e envios são removidos.",
+  "deleteAccountKeepMsg": "Sua conta será excluída e suas mensagens ficarão como Usuário excluído. Não dá para desfazer.",
+  "deleteAccountWipeMsg": "Sua conta e tudo o que você publicou serão excluídos. Não dá para desfazer.",
+  "failedDeleteAccount": "Não foi possível excluir sua conta",
+  "deleteAccountBtn": "Excluir conta"
 }
