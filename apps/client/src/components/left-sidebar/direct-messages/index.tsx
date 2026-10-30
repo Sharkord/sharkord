@@ -1,3 +1,4 @@
+import { UnreadCount } from '@/components/unread-count';
 import { UserAvatar } from '@/components/user-avatar';
 import { setSelectedDmChannelId } from '@/features/app/actions';
 import { useSelectedDmChannelId } from '@/features/app/hooks';
@@ -16,7 +17,7 @@ import {
   TestId,
   type TDirectMessageConversation
 } from '@sharkord/shared';
-import { IconButton, UnreadCount } from '@sharkord/ui';
+import { IconButton } from '@sharkord/ui';
 import { X } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

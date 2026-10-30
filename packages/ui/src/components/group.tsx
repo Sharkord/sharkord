@@ -42,9 +42,7 @@ const Group = memo(
             {helpComponent}
           </div>
           {description && (
-            <span className="text-xs text-muted-foreground mt-0.5">
-              {description}
-            </span>
+            <span className="text-sm text-muted-foreground">{description}</span>
           )}
         </div>
         <div className="flex flex-col gap-2">{children}</div>

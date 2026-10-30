@@ -11,9 +11,6 @@ declare global {
     };
     DEBUG?: boolean;
 
-    // only set when the client runs inside the desktop app
-    sharkordDesktop?: import('@sharkord/shared').TDesktopEntry;
-
     // plugin store exposed for plugins to use imperatively
     __SHARKORD_STORE__: import('@sharkord/shared').TPluginStore;
 

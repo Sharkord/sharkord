@@ -1,6 +1,7 @@
 import { MessageAuthorAvatar } from '@/components/message-author-avatar';
 import { RelativeTime } from '@/components/relative-time';
 import { ThreadRepliesSummary } from '@/components/thread-replies-summary';
+import { UnreadCount } from '@/components/unread-count';
 import { setSelectedThread } from '@/features/app/actions';
 import { useSelectedThread } from '@/features/app/hooks';
 import { useThreadReadState } from '@/features/server/threads/hooks';
@@ -11,7 +12,6 @@ import {
   TestId,
   type TFollowedThread
 } from '@sharkord/shared';
-import { UnreadCount } from '@sharkord/ui';
 import { memo, useCallback, useMemo } from 'react';
 import { useMessageAuthorName } from '../../channel-view/text/hooks/use-message-author-name';
 

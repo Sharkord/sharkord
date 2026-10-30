@@ -1,8 +1,9 @@
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { setAutoJoinLastChannel } from '@/features/app/actions';
 import { useAutoJoinLastChannel } from '@/features/app/hooks';
-import { Group, SettingsSection, Switch } from '@sharkord/ui';
+import { Group, Switch } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 

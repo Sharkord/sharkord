@@ -5,10 +5,11 @@ import {
   useUnreadMessagesCount
 } from '@/features/server/hooks';
 import { cn } from '@/lib/utils';
-import { Button, Tooltip, UnreadCount } from '@sharkord/ui';
+import { Button, Tooltip } from '@sharkord/ui';
 import { MessageSquare } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { UnreadCount } from '../unread-count';
 import { VoiceOptionsController } from './voice-options-controller';
 import { VolumeController } from './volume-controller';
 

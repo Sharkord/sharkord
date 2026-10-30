@@ -13,7 +13,6 @@
   "inviteCode": "Kód pozvánky: {{code}}",
   "connectError": "K serveru se připojit nepodařilo: {{message}}",
   "oidcBtn": "Přihlásit se přes SSO",
-  "addToDesktopApp": "Přidat do desktopové aplikace",
   "oidcCompleting": "Dokončuje se přihlášení",
   "oidcError": {
     "access_denied": "Poskytovatel identity přihlášení odmítl.",

@@ -1,10 +1,11 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { UserAvatar } from '@/components/user-avatar';
 import { useRoleById } from '@/features/server/roles/hooks';
 import { useUserById } from '@/features/server/users/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { ChannelPermission, getTrpcError } from '@sharkord/shared';
-import { CardTitle, IconButton, SettingsSection, Tooltip } from '@sharkord/ui';
+import { CardTitle, IconButton, Tooltip } from '@sharkord/ui';
 import { Trash2, X } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';

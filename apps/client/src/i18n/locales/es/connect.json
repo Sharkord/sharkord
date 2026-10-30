@@ -13,7 +13,6 @@
   "inviteCode": "Código de invitación: {{code}}",
   "connectError": "No se pudo conectar: {{message}}",
   "oidcBtn": "Iniciar sesión con SSO",
-  "addToDesktopApp": "Añadir a la aplicación de escritorio",
   "oidcCompleting": "Completando el inicio de sesión",
   "oidcError": {
     "access_denied": "Tu proveedor de identidad rechazó el inicio de sesión.",

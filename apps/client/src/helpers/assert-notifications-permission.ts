@@ -1,15 +1,16 @@
 import { i18n } from '@/i18n';
-import { requestNotificationPermission } from '@/lib/notifications';
 import { toast } from 'sonner';
 
 const assertNotificationsPermission = async () => {
-  const granted = await requestNotificationPermission();
+  if ('Notification' in window) {
+    const permission = await Notification.requestPermission();
 
-  if (!granted) {
-    toast.error(i18n.t('common:notificationPermissionDenied'));
+    if (permission !== 'granted') {
+      toast.error(i18n.t('common:notificationPermissionDenied'));
+
+      return;
+    }
   }
-
-  return granted;
 };
 
 export { assertNotificationsPermission };

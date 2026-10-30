@@ -1,9 +1,10 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import {
   PluginCapabilityMode,
   PluginCapabilityType,
   type TPluginCapability
 } from '@sharkord/shared';
-import { Button, Label, SettingsSection, Switch } from '@sharkord/ui';
+import { Button, Label, Switch } from '@sharkord/ui';
 import { RotateCcw } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,11 +19,7 @@ const SECTIONS = [
   { type: PluginCapabilityType.COMMAND, key: 'pluginCapabilityCommands' },
   { type: PluginCapabilityType.ACTION, key: 'pluginCapabilityActions' },
   { type: PluginCapabilityType.HTTP_ROUTE, key: 'pluginCapabilityHttpRoutes' },
-  { type: PluginCapabilityType.COMPONENT, key: 'pluginCapabilityComponents' },
-  {
-    type: PluginCapabilityType.NOTIFICATION,
-    key: 'pluginCapabilityNotifications'
-  }
+  { type: PluginCapabilityType.COMPONENT, key: 'pluginCapabilityComponents' }
 ];
 
 type TCapabilityRowProps = {

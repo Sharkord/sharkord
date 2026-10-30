@@ -1,7 +1,8 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { useAdminCategoryGeneral } from '@/features/server/admin/hooks';
 import { getTRPCClient } from '@/lib/trpc';
-import { Group, Input, LoadingCard, SettingsSection } from '@sharkord/ui';
+import { Group, Input, LoadingCard } from '@sharkord/ui';
 import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 

@@ -93,10 +93,5 @@
   "pluginInstallDocsNote": "For more details, read the docs at:",
   "pluginInstallConfirmBtn": "Install Plugin",
   "pluginInstallConfirmCountdown": "Wait ({{seconds}}s)",
-  "searchTruncated": "Showing the most recent matches only. Refine your search to narrow it down.",
-  "screenShareTitle": "Share your screen",
-  "screenShareMessage": "You will pick the screen or window to share next.",
-  "shareSystemAudio": "Share system audio",
-  "additionalScreenShareSettings": "Additional screen share settings",
-  "screenShareConfirm": "Continue"
+  "searchTruncated": "Showing the most recent matches only. Refine your search to narrow it down."
 }

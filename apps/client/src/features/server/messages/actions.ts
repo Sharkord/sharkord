@@ -1,9 +1,9 @@
 import {
+  browserNotificationsForDmsSelector,
+  browserNotificationsForMentionsSelector,
+  browserNotificationsForRepliesSelector,
+  browserNotificationsSelector,
   isChannelMutedSelector,
-  notifyAllMessagesSelector,
-  notifyDmsSelector,
-  notifyMentionsOnlySelector,
-  notifyRepliesSelector,
   selectedThreadSelector,
   threadSidebarDataSelector
 } from '@/features/app/selectors';
@@ -11,8 +11,6 @@ import { appSliceActions } from '@/features/app/slice';
 import { store } from '@/features/store';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { playSound } from '@/helpers/sounds';
-import { i18n } from '@/i18n';
-import { notify } from '@/lib/notifications';
 import type { TConversation } from '@/types';
 import {
   getPlainTextFromHtml,
@@ -39,11 +37,15 @@ import {
   userByIdSelector
 } from '../users/selectors';
 
-const sendMessageNotification = (
+const sendBrowserNotification = (
   message: TJoinedMessage,
   channelId: number,
   isDm = false
 ) => {
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
+    return;
+  }
+
   const state = store.getState();
 
   const user = userByIdSelector(state, message.userId);
@@ -59,29 +61,13 @@ const sendMessageNotification = (
   const textContent = getPlainTextFromHtml(message.content ?? '');
 
   const title = isDm
-    ? i18n.t('common:notificationTitleDm', { author: authorName })
-    : i18n.t('common:notificationTitleChannel', {
-        author: authorName,
-        channel: channel.name
-      });
+    ? `${authorName} (DM)`
+    : `${authorName} in #${channel?.name ?? 'unknown'}`;
 
-  const body = textContent
-    ? textContent
-    : i18n.t('common:notificationSentAttachment');
-  const icon = user.avatar ? getFileUrl(user.avatar) : undefined;
+  const body = textContent ? textContent : 'Sent an attachment';
+  const icon = user?.avatar ? getFileUrl(user.avatar) : undefined;
 
-  notify({
-    title,
-    body,
-    icon,
-    target: {
-      type: 'message',
-      channelId,
-      messageId: message.id,
-      parentMessageId: message.parentMessageId ?? undefined,
-      isDm
-    }
-  });
+  new Notification(title, { body, icon });
 };
 
 const typingTimeouts: { [key: string]: NodeJS.Timeout } = {};
@@ -133,8 +119,9 @@ export const addMessages = (
   if (isSubscriptionMessage && messages.length > 0) {
     const state = store.getState();
     const ownUserId = ownUserIdSelector(state);
-    const notifiesAllMessages = notifyAllMessagesSelector(state);
-    const notificationsForMentionsOnly = notifyMentionsOnlySelector(state);
+    const hasBrowserNotificationsEnabled = browserNotificationsSelector(state);
+    const notificationsForMentionsOnly =
+      browserNotificationsForMentionsSelector(state);
     const targetMessage = messages[0];
     const isFromOwnUser =
       targetMessage.userId && ownUserId === targetMessage.userId;
@@ -180,24 +167,26 @@ export const addMessages = (
       }
 
       if (isNotifiable && !isMessageOnScreen) {
-        const hasDmNotificationsEnabled = notifyDmsSelector(state);
-        const hasRepliesNotificationsEnabled = notifyRepliesSelector(state);
+        const hasDmNotificationsEnabled =
+          browserNotificationsForDmsSelector(state);
+        const hasRepliesNotificationsEnabled =
+          browserNotificationsForRepliesSelector(state);
 
         if (isDmChannel && hasDmNotificationsEnabled) {
-          sendMessageNotification(targetMessage, channelId, true);
+          sendBrowserNotification(targetMessage, channelId, true);
         } else if (notificationsForMentionsOnly) {
           if (isMentioned) {
-            sendMessageNotification(targetMessage, channelId);
+            sendBrowserNotification(targetMessage, channelId);
           }
-        } else if (notifiesAllMessages) {
-          sendMessageNotification(targetMessage, channelId);
+        } else if (hasBrowserNotificationsEnabled) {
+          sendBrowserNotification(targetMessage, channelId);
         } else if (hasRepliesNotificationsEnabled) {
           const isReplyToOwnMessage =
             !!targetMessage.replyToMessageId &&
             targetMessage.replyTo?.userId === ownUserId;
 
           if (isReplyToOwnMessage) {
-            sendMessageNotification(targetMessage, channelId);
+            sendBrowserNotification(targetMessage, channelId);
           }
         }
       }

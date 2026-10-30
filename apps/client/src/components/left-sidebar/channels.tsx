@@ -33,12 +33,12 @@ import {
   TestId,
   getTrpcError
 } from '@sharkord/shared';
-import { UnreadCount } from '@sharkord/ui';
 import { Hash, Volume2 } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ChannelContextMenu } from '../context-menus/channel';
+import { UnreadCount } from '../unread-count';
 import { ExternalStream } from './external-stream';
 import {
   VOICE_USER_DND_MIME,

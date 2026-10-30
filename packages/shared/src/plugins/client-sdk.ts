@@ -1,8 +1,4 @@
 import type {
-  TPluginNotification,
-  TPluginNotificationTarget
-} from '../notifications';
-import type {
   TCategory,
   TChannel,
   TJoinedEmoji,
@@ -77,17 +73,6 @@ export type TPluginActions = {
     data: Record<string, unknown>
   ) => Promise<void>;
   onPush: (pluginId: string, handler: (data: unknown) => void) => () => void;
-  /**
-   * Shows a system notification from the plugin. Nothing shows when the user
-   * turned plugin notifications off, when one of their roles may not receive
-   * this plugin's notifications, or when the plugin sends too many at once.
-   */
-  notify: (pluginId: string, notification: TPluginNotification) => void;
-  /** the `data` of a clicked notification this plugin sent */
-  onNotificationClick: (
-    pluginId: string,
-    handler: (data: TPluginNotificationTarget['data']) => void
-  ) => () => void;
 };
 
 export type TPluginUserData<
@@ -155,8 +140,6 @@ export type TPluginHooks = {
     handler: (phase: TPluginHotkeyPhase) => void
   ) => void;
   useHotkeyBinding: (id: string) => TPluginHotkeyBinding;
-  useNotify: () => (notification: TPluginNotification) => void;
-  useNotificationClick: (handler: (data: unknown) => void) => void;
 };
 
 /**

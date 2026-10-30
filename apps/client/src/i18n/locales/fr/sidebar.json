@@ -35,8 +35,6 @@
   "resolution": "Résolution : {{width}}x{{height}}",
   "frameRate": "Taux de rafraîchissement : {{fps}} fps",
   "bitrate": "Débit : {{bitrate}}/s",
-  "simulcastLayers": "Couches simulcast : {{count}}",
-  "simulcastLayer": "Couche {{layer}}",
   "framesEncoded": "Images encodées : {{frames}}",
   "qualityLimited": "Qualité limitée : {{reason}}",
   "sessionTotals": "Totaux de la session",

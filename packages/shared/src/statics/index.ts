@@ -2,7 +2,6 @@ export * from './locales';
 export * from './metrics';
 export * from './permissions';
 export * from './storage';
-export * from './supported-locales';
 export * from './upload';
 
 export const DEFAULT_MESSAGES_LIMIT = 100;

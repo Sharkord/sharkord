@@ -35,8 +35,6 @@
   "resolution": "Разрешение: {{width}}x{{height}}",
   "frameRate": "Частота кадров: {{fps}} fps",
   "bitrate": "Битрейт: {{bitrate}}/s",
-  "simulcastLayers": "Слои simulcast: {{count}}",
-  "simulcastLayer": "Слой {{layer}}",
   "framesEncoded": "Кадров закодировано: {{frames}}",
   "qualityLimited": "Ограниченное качество: {{reason}}",
   "sessionTotals": "Итоги сеанса",

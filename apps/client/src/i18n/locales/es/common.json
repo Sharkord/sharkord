@@ -56,10 +56,6 @@
   "failedUpdateWebcamState": "Error al actualizar el estado de la cámara",
   "failedUpdateScreenShareState": "Error al actualizar el estado de la pantalla compartida",
   "notificationPermissionDenied": "Permiso de notificaciones denegado",
-  "notificationTitleDm": "{{author}} (MD)",
-  "notificationTitleChannel": "{{author}} en #{{channel}}",
-  "notificationSentAttachment": "Envió un archivo adjunto",
-  "pluginNotificationTitle": "{{plugin}}: {{title}}",
   "uploadsDisabled": "Las subidas de archivos están deshabilitadas en este servidor",
   "noUploadPermission": "No tienes permiso para subir archivos",
   "serverUpdateInitiated": "Actualización del servidor iniciada",
@@ -110,8 +106,6 @@
   "searchResults": "Resultados de búsqueda ({{count}})",
   "wasReactedBy": "ha sido reaccionado por {{reacters}}.",
   "andMore": "y {{count}} más",
-  "typeAMessage": "Escribe un mensaje...",
-  "messageChannel": "Mensaje en \"{{name}}\"",
   "toggleParticipants": "Mostrar/ocultar participantes",
   "sendVoiceReaction": "Enviar una reacción",
   "failedSendVoiceReaction": "No se pudo enviar la reacción",
@@ -145,8 +139,5 @@
   "failedUpdateThreadFollow": "No se pudo actualizar el seguimiento del hilo",
   "selectThreadPrompt": "Selecciona un hilo para leerlo.",
   "loadingMessage": "Cargando mensaje...",
-  "failedLoadParentMessage": "No se pudo cargar el mensaje original",
-  "updateServerConfirmTitle": "¿Actualizar el servidor?",
-  "updateServerConfirmMessage": "Descarga e instala la última versión del servidor. El servidor se reinicia durante el proceso, lo que causa una breve interrupción.",
-  "updateServerConfirmLabel": "Actualizar"
+  "failedLoadParentMessage": "No se pudo cargar el mensaje original"
 }

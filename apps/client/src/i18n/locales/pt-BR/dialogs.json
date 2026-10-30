@@ -93,10 +93,5 @@
   "pluginInstallDocsNote": "Para mais detalhes, leia a documentação em:",
   "pluginInstallConfirmBtn": "Instalar Plugin",
   "pluginInstallConfirmCountdown": "Aguarde ({{seconds}}s)",
-  "searchTruncated": "Mostrando apenas as correspondências mais recentes. Refine sua busca para restringi-la.",
-  "screenShareTitle": "Compartilhar a tela",
-  "screenShareMessage": "Em seguida você vai escolher a tela ou janela para compartilhar.",
-  "shareSystemAudio": "Compartilhar o áudio do sistema",
-  "additionalScreenShareSettings": "Configurações adicionais de compartilhamento de tela",
-  "screenShareConfirm": "Continuar"
+  "searchTruncated": "Mostrando apenas as correspondências mais recentes. Refine sua busca para restringi-la."
 }

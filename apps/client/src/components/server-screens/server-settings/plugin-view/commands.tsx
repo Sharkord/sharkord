@@ -1,4 +1,5 @@
 import { SettingsListEditor } from '@/components/server-screens/settings-shell/list-editor';
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import {
   useCurrentVoiceChannelId,
   useSelectedChannelId
@@ -8,7 +9,7 @@ import { useOwnUserId } from '@/features/server/users/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { getTrpcError, type TCommandInfo } from '@sharkord/shared';
-import { Button, Group, SettingsSection } from '@sharkord/ui';
+import { Button, Group } from '@sharkord/ui';
 import { Play, Terminal } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

@@ -19,6 +19,15 @@ Closes #
 
 <!-- What changed and why. Keep it to what a reviewer needs in order to read the diff. -->
 
+## Checklist
+
+- [ ] References an issue that has already been discussed
+- [ ] Targets the `development` branch
+- [ ] Covers one feature or fix, not several
+- [ ] `bun run magic` passes (format, types, lint)
+- [ ] `bun run test` passes
+- [ ] Tests added or updated where the change needed them
+
 ## Additional Context
 
 <!-- Optional. Screenshots, related issues, anything that helps the reviewer. -->

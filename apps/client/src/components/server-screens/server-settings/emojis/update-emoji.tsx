@@ -1,15 +1,10 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TJoinedEmoji } from '@sharkord/shared';
-import {
-  Group,
-  IconButton,
-  Input,
-  SettingsSection,
-  Tooltip
-} from '@sharkord/ui';
+import { Group, IconButton, Input, Tooltip } from '@sharkord/ui';
 import { filesize } from 'filesize';
 import { Trash2, X } from 'lucide-react';
 import { memo, useCallback } from 'react';

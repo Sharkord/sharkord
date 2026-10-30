@@ -2,20 +2,14 @@ import type { TConversationKey } from '@/types';
 import { createSelector } from '@reduxjs/toolkit';
 import {
   OWNER_ROLE_ID,
-  Permission,
-  PLUGIN_NOTIFICATIONS_CAPABILITY,
   PluginCapabilityType,
   PluginSlot,
-  type TDesktopConnectionState,
   type TJoinedRole,
   type TPluginStoreState
 } from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
 import {
-  appLoadingSelector,
   hotkeysEnabledSelector,
-  isAutoConnectingSelector,
-  loadingPluginsSelector,
   selectedThreadSelector,
   threadSidebarDataSelector
 } from '../app/selectors';
@@ -35,9 +29,7 @@ import { emojisSelector } from './emojis/selectors';
 import {
   canViewChannel,
   getConversationKey,
-  hasUnreadMentionInMessages,
-  isFatalDisconnect,
-  rolesCan
+  hasUnreadMentionInMessages
 } from './helpers';
 import {
   messagesByChannelIdSelector,
@@ -279,91 +271,27 @@ export const categoryHasUnreadMentionsSelector = createCachedSelector(
   }
 )((_, categoryId: number) => categoryId);
 
-export const visibleChannelsSelector = createSelector(
+export const totalUnreadCountSelector = createSelector(
   [
     channelsSelector,
+    channelsReadStatesSelector,
     channelPermissionsSelector,
     isOwnUserOwnerSelector,
     currentVoiceChannelIdSelector
   ],
-  (channels, channelPermissions, isOwner, currentVoiceChannelId) =>
-    channels.filter(
-      (channel) =>
+  (channels, readStates, channelPermissions, isOwner, currentVoiceChannelId) =>
+    channels.reduce((total, channel) => {
+      const isVisible =
         channel.isDm ||
         canViewChannel(
           channel,
           channelPermissions,
           isOwner,
           currentVoiceChannelId
-        )
-    )
-);
+        );
 
-export const totalUnreadCountSelector = createSelector(
-  [visibleChannelsSelector, channelsReadStatesSelector],
-  (channels, readStates) =>
-    channels.reduce(
-      (total, channel) => total + (readStates[channel.id] ?? 0),
-      0
-    )
-);
-
-export const desktopConnectionStateSelector = createSelector(
-  [
-    connectedSelector,
-    appLoadingSelector,
-    loadingPluginsSelector,
-    isAutoConnectingSelector,
-    reconnectingSelector,
-    disconnectInfoSelector
-  ],
-  (
-    connected,
-    appLoading,
-    loadingPlugins,
-    isAutoConnecting,
-    reconnecting,
-    disconnectInfo
-  ): TDesktopConnectionState => {
-    if (connected) {
-      return 'connected';
-    }
-
-    if (appLoading || loadingPlugins || isAutoConnecting || reconnecting) {
-      return 'connecting';
-    }
-
-    if (isFatalDisconnect(disconnectInfo)) {
-      return 'disconnected';
-    }
-
-    return 'signed-out';
-  }
-);
-
-export const totalHasUnreadMentionsSelector = createSelector(
-  [
-    visibleChannelsSelector,
-    channelsReadStatesSelector,
-    messagesMapSelector,
-    ownUserIdSelector,
-    ownUserRoleIdsSelector
-  ],
-  (channels, readStates, messagesMap, ownUserId, ownRoleIds) =>
-    channels.some((channel) => {
-      const unreadCount = readStates[channel.id] ?? 0;
-
-      if (channel.isDm) {
-        return unreadCount > 0;
-      }
-
-      return hasUnreadMentionInMessages(
-        unreadCount,
-        messagesMap[getConversationKey({ channelId: channel.id })] ?? [],
-        ownUserId,
-        ownRoleIds
-      );
-    })
+      return isVisible ? total + (readStates[channel.id] ?? 0) : total;
+    }, 0)
 );
 
 // memoized because plugins are told to read this through the store's getState,
@@ -441,22 +369,6 @@ export const hiddenPluginComponentsSelector = createSelector(
     return hidden.length > 0 ? hidden : DEFAULT_HIDDEN_COMPONENTS;
   }
 );
-
-export const canReceivePluginNotificationsSelector = createCachedSelector(
-  [
-    ownUserRolesSelector,
-    isOwnUserOwnerSelector,
-    (state: IRootState, pluginId: string) =>
-      canUsePluginCapabilitySelector(
-        state,
-        pluginId,
-        PluginCapabilityType.NOTIFICATION,
-        PLUGIN_NOTIFICATIONS_CAPABILITY
-      )
-  ],
-  (ownUserRoles, isOwner, canUseCapability) =>
-    rolesCan(ownUserRoles, isOwner, Permission.USE_PLUGINS) && canUseCapability
-)((_: IRootState, pluginId: string) => pluginId);
 
 export const canUsePluginCapabilitySelector = createCachedSelector(
   [

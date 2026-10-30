@@ -1,8 +1,9 @@
-import type { Database } from 'bun:sqlite';
+import { Database } from 'bun:sqlite';
 import { afterAll, afterEach, beforeAll, beforeEach, mock } from 'bun:test';
 import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import fs from 'fs/promises';
 import path from 'path';
+import { migrateDatabase } from '../db/migrate';
 import { DATA_PATH } from '../helpers/paths';
 import { clearVoiceMoveGrantsForTests } from '../helpers/voice-move-grants';
 import { createHttpServer } from '../http';
@@ -13,16 +14,19 @@ import { VoiceRuntime } from '../runtimes/voice';
 import { loadMediasoup } from '../utils/mediasoup';
 import { clearRateLimitersForTests } from '../utils/rate-limiters/rate-limiter';
 import { clearUserSocketsForTests } from '../utils/wss';
-import { createTestSqlite, setTestDb } from './mock-db';
+import { DRIZZLE_PATH, setTestDb } from './mock-db';
+import { seedTestDb } from './seed';
 
 /**
  * Global test setup - creates a fresh isolated database before each test.
  * This ensures tests don't interfere with each other.
  *
  * The database is:
- * 1. Copied in-memory from the template mock-db.ts migrated and seeded once (fast, isolated)
- * 2. Set as the mocked db (via setTestDb)
- * 3. Cleaned up after the test
+ * 1. Created in-memory (fast, isolated)
+ * 2. Migrated (applies schema)
+ * 3. Seeded (with test data)
+ * 4. Set as the mocked db (via setTestDb)
+ * 5. Cleaned up after the test
  */
 
 const DISABLE_CONSOLE = true;
@@ -102,11 +106,15 @@ beforeEach(async () => {
     }
   }
 
-  sqlite = createTestSqlite();
+  sqlite = new Database(':memory:', { create: true, strict: true });
+
   tdb = drizzle({ client: sqlite });
 
   // updates the mocked db to use this new test database
   setTestDb(tdb);
+
+  await migrateDatabase(sqlite, tdb, DRIZZLE_PATH);
+  await seedTestDb(tdb);
 });
 
 afterEach(async () => {

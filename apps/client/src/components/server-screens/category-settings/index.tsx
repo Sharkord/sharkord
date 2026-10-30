@@ -1,9 +1,9 @@
-import { type TSettingsEntry } from '@sharkord/ui';
 import { Settings } from 'lucide-react';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TServerScreenBaseProps } from '../screens';
 import { SettingsShell } from '../settings-shell';
+import type { TSettingsEntry } from '../settings-shell/types';
 import { General } from './general';
 
 type TCategorySettingsProps = TServerScreenBaseProps & {

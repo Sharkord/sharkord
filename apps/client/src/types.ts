@@ -47,11 +47,6 @@ export enum ScreenCursor {
   NEVER = 'never'
 }
 
-export enum ScreenContentHint {
-  DETAIL = 'detail',
-  MOTION = 'motion'
-}
-
 export enum MicMode {
   OPEN = 'open',
   PUSH_TO_TALK = 'push-to-talk'
@@ -85,7 +80,6 @@ export type TDeviceSettings = {
   screenCodec: VideoCodec;
   screenBitrate: number;
   screenCursor: ScreenCursor;
-  screenContentHint: ScreenContentHint;
 };
 
 export type TRemoteUserStreamKinds =

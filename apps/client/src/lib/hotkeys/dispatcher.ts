@@ -1,4 +1,4 @@
-import { hotkeysLogger } from '@/helpers/browser-logger';
+import { bridgeLogger } from '@/helpers/browser-logger';
 import {
   getLocalStorageItemAsJSON,
   LocalStorageKey,
@@ -17,10 +17,7 @@ import type {
   THotkeyStatus
 } from './types';
 
-const DEFAULT_CAPABILITIES: THotkeyCapabilities = {
-  keyUp: false,
-  systemManaged: false
-};
+const DEFAULT_CAPABILITIES: THotkeyCapabilities = { keyUp: false };
 const DEFAULT_ERRORS: Record<string, string> = {};
 
 const isBinding = (value: unknown): value is THotkeyBinding => {
@@ -113,7 +110,7 @@ const createHotkeyDispatcher = () => {
         // plugin handlers are third party: one throwing must not starve the rest
         handler(phase);
       } catch (error) {
-        hotkeysLogger.error('a handler failed', error, { actionId });
+        bridgeLogger.error('a handler failed', error, { actionId });
       }
     });
   };
@@ -122,7 +119,7 @@ const createHotkeyDispatcher = () => {
     const action = actions.get(actionId);
 
     if (!action) {
-      hotkeysLogger.warn('event for an action that is not registered', {
+      bridgeLogger.warn('event for an action that is not registered', {
         actionId,
         phase
       });
@@ -150,7 +147,7 @@ const createHotkeyDispatcher = () => {
       return;
     }
 
-    hotkeysLogger.info('hotkey', { actionId, phase });
+    bridgeLogger.info('hotkey', { actionId, phase });
     callHandlers(actionId, phase);
   };
 
@@ -163,7 +160,7 @@ const createHotkeyDispatcher = () => {
       const action = actions.get(actionId);
 
       if (action && action.mode === 'hold') {
-        hotkeysLogger.info('released a held hotkey', { actionId });
+        bridgeLogger.info('released a held hotkey', { actionId });
         callHandlers(actionId, 'up');
       }
     });
@@ -177,25 +174,12 @@ const createHotkeyDispatcher = () => {
     }
 
     if (event.type === 'error') {
-      hotkeysLogger.warn('the hotkey source could not bind a hotkey', {
+      bridgeLogger.warn('the bridge could not bind a hotkey', {
         actionId: event.actionId,
         reason: event.reason
       });
 
       errors = { ...errors, [event.actionId]: event.reason };
-      emit();
-
-      return;
-    }
-
-    if (event.type === 'error-cleared') {
-      if (!errors[event.actionId]) {
-        return;
-      }
-
-      const { [event.actionId]: _cleared, ...rest } = errors;
-
-      errors = rest;
       emit();
 
       return;
@@ -227,7 +211,7 @@ const createHotkeyDispatcher = () => {
     capabilities = DEFAULT_CAPABILITIES;
     errors = DEFAULT_ERRORS;
 
-    hotkeysLogger.info(next ? 'source attached' : 'source detached');
+    bridgeLogger.info(next ? 'source attached' : 'source detached');
 
     if (next) {
       unsubscribeSource = next.subscribe(handleSourceEvent);
@@ -245,7 +229,7 @@ const createHotkeyDispatcher = () => {
 
       handlers.set(action.id, set);
       actions.set(action.id, action);
-      hotkeysLogger.info('action registered', {
+      bridgeLogger.info('action registered', {
         id: action.id,
         mode: action.mode
       });
@@ -270,7 +254,7 @@ const createHotkeyDispatcher = () => {
       handlers.delete(action.id);
       actions.delete(action.id);
       held.delete(action.id);
-      hotkeysLogger.info('action unregistered', { id: action.id });
+      bridgeLogger.info('action unregistered', { id: action.id });
       commit();
     };
   };
@@ -292,10 +276,7 @@ const createHotkeyDispatcher = () => {
       errors = rest;
     }
 
-    hotkeysLogger.info(combo ? 'bind set' : 'bind cleared', {
-      actionId,
-      combo
-    });
+    bridgeLogger.info(combo ? 'bind set' : 'bind cleared', { actionId, combo });
     saveBindings(combo ? [...others, { actionId, combo }] : others);
 
     return undefined;
@@ -304,7 +285,7 @@ const createHotkeyDispatcher = () => {
   const setBindings = (next: THotkeyBinding[]) => {
     errors = DEFAULT_ERRORS;
 
-    hotkeysLogger.info('binds saved', { count: next.length });
+    bridgeLogger.info('binds saved', { count: next.length });
     saveBindings(next);
   };
 
