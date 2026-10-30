@@ -29,11 +29,13 @@ const updateVoiceStateRoute = protectedProcedure
       delete validatedInput.micMuted;
     }
 
-    if (!canUseWebcam) {
+    // only starting a stream needs the permission: a webcam or screen share that is
+    // already running has to stay stoppable after the permission is taken away
+    if (!canUseWebcam && validatedInput.webcamEnabled) {
       delete validatedInput.webcamEnabled;
     }
 
-    if (!canShareScreen) {
+    if (!canShareScreen && validatedInput.sharingScreen) {
       delete validatedInput.sharingScreen;
     }
 
