@@ -39,6 +39,8 @@
   "othersDesc": "与 Sharkord 行为相关的常规设置。",
   "autoJoinLastChannelLabel": "自动加入上次频道",
   "autoJoinLastChannelDesc": "连接时自动重新加入上次所在的文字频道。",
+  "convertAsciiEmojiLabel": "输入时将颜文字转换为 emoji",
+  "convertAsciiEmojiDesc": "将 \":3\"、\"<3\" 等文字颜文字转换为 emoji。",
   "languageLabel": "界面语言",
   "languageDesc": "设置界面显示语言。",
   "notificationsTitle": "通知",

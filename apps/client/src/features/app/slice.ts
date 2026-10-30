@@ -24,6 +24,7 @@ export interface TAppState {
   threadParentMessageId: number | undefined;
   threadChannelId: number | undefined;
   autoJoinLastChannel: boolean;
+  convertAsciiEmoji: boolean;
   micMode: MicMode;
   hotkeysEnabled: boolean;
   selectedDmChannelId: number | undefined;
@@ -55,6 +56,10 @@ const initialState: TAppState = {
   autoJoinLastChannel: getLocalStorageItemBool(
     LocalStorageKey.AUTO_JOIN_LAST_CHANNEL,
     false
+  ),
+  convertAsciiEmoji: getLocalStorageItemBool(
+    LocalStorageKey.CONVERT_ASCII_EMOJI,
+    true
   ),
   micMode:
     getLocalStorageItem(LocalStorageKey.MIC_MODE) === MicMode.PUSH_TO_TALK
@@ -145,6 +150,9 @@ export const appSlice = createSlice({
     },
     setAutoJoinLastChannel: (state, action: PayloadAction<boolean>) => {
       state.autoJoinLastChannel = action.payload;
+    },
+    setConvertAsciiEmoji: (state, action: PayloadAction<boolean>) => {
+      state.convertAsciiEmoji = action.payload;
     },
     setMicMode: (state, action: PayloadAction<MicMode>) => {
       state.micMode = action.payload;

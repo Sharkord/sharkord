@@ -39,6 +39,8 @@
   "othersDesc": "General settings related to Sharkord's behavior.",
   "autoJoinLastChannelLabel": "Auto-Join Last Channel",
   "autoJoinLastChannelDesc": "Automatically rejoin the last text channel on connect.",
+  "convertAsciiEmojiLabel": "Convert Emoticons to Emoji as You Type",
+  "convertAsciiEmojiDesc": "Convert text emoticons such as \":3\" and \"<3\" into emoji.",
   "languageLabel": "Interface Language",
   "languageDesc": "Set the display language for the interface.",
   "notificationsTitle": "Notifications",

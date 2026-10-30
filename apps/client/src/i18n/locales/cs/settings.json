@@ -39,6 +39,8 @@
   "othersDesc": "Nastavení chování Sharkordu.",
   "autoJoinLastChannelLabel": "Připojovat k poslednímu kanálu",
   "autoJoinLastChannelDesc": "Automaticky se připojit k poslednímu navštívenému textovému kanálu.",
+  "convertAsciiEmojiLabel": "Převádět emotikony na emodži při psaní",
+  "convertAsciiEmojiDesc": "Převádět textové emotikony jako \":3\" a \"<3\" na emodži.",
   "languageLabel": "Jazyk",
   "languageDesc": "Vyberte jazyk ve kterém se Sharkord zobrazuje.",
   "notificationsTitle": "Upozornění",
