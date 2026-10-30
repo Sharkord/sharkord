@@ -108,6 +108,7 @@ const getMediasoupVersion = async () => {
   return serverPkg.dependencies['mediasoup'].replace('^', '');
 };
 
+// the desktop app is versioned on its own, see .github/workflows/desktop-release.yml
 const patchPackageJsons = async (newVersion: string) => {
   const packageJsonPaths = [
     rootPckJson,

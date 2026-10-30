@@ -1,6 +1,7 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { HotkeyBindGroup } from '@/components/hotkey-input/hotkey-bind-group';
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
+import { ResolutionFpsControl } from '@/components/resolution-fps-control';
+import { ScreenShareSettings } from '@/components/screen-share-settings';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { getVoiceControlsBridge } from '@/components/voice-provider/controls-bridge';
 import { useHotkeysEnabled } from '@/features/app/hooks';
@@ -12,25 +13,14 @@ import {
   getNoiseGateWorkletAvailabilitySnapshot,
   subscribeNoiseGateWorkletAvailability
 } from '@/helpers/audio-worklet/noise-gate-worklet';
-import {
-  getRestrictOwnAudioSupport,
-  getSuppressLocalAudioPlaybackSupport
-} from '@/helpers/get-display-media-support';
+import { isDesktopApp } from '@/helpers/is-desktop-app';
 import { CoreHotkeyAction } from '@/lib/hotkeys/actions';
-import {
-  NoiseSuppression,
-  Resolution,
-  ScreenCursor,
-  VideoCodec,
-  type TDeviceSettings
-} from '@/types';
-import { DEFAULT_BITRATE } from '@sharkord/shared';
+import { NoiseSuppression, Resolution, type TDeviceSettings } from '@/types';
 import {
   Alert,
   AlertDescription,
   Button,
   Group,
-  Label,
   LoadingCard,
   Select,
   SelectContent,
@@ -39,16 +29,14 @@ import {
   SelectTrigger,
   SelectValue,
   Separator,
-  Slider,
+  SettingsSection,
   Switch
 } from '@sharkord/ui';
-import { filesize } from 'filesize';
 import { Info } from 'lucide-react';
 import {
   memo,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useSyncExternalStore
 } from 'react';
@@ -58,9 +46,6 @@ import { useMicrophoneTest } from './hooks/use-microphone-test';
 import { useWebcamTest } from './hooks/use-webcam-test';
 import { MicModeGroup } from './mic-mode-group';
 import { MicrophoneTestLevelBar } from './microphone-test-level-bar';
-import { ResolutionFpsControl } from './resolution-fps-control';
-import { RestrictOwnAudioAlert } from './restrict-own-audio-alert';
-import { SuppressLocalAudioPlaybackAlert } from './suppress-local-audio-playback-alert';
 import { SupressionHelp } from './supression-help';
 
 const DEFAULT_NAME = 'default';
@@ -96,14 +81,6 @@ const Devices = memo(() => {
     getNoiseGateWorkletAvailabilitySnapshot
   );
   const isNoiseGateAvailable = noiseGateWorkletAvailability.available;
-  const isRestrictOwnAudioSupported = useMemo(
-    () => getRestrictOwnAudioSupport(),
-    []
-  );
-  const isSuppressLocalAudioPlaybackSupported = useMemo(
-    () => getSuppressLocalAudioPlaybackSupport(),
-    []
-  );
 
   const {
     testAudioRef,
@@ -252,11 +229,6 @@ const Devices = memo(() => {
   );
   const hasDefaultVideoOption = videoDevices.some(
     (device) => device?.deviceId === DEFAULT_NAME
-  );
-
-  const maxBitrate = useMemo(
-    () => (settings?.webRtcMaxBitrate ? settings.webRtcMaxBitrate / 1000 : 0),
-    [settings?.webRtcMaxBitrate]
   );
 
   useEffect(() => {
@@ -583,123 +555,15 @@ const Devices = memo(() => {
           />
         </Group>
         <Group label={t('screenSharingLabel')}>
-          <div className="flex">
-            <ResolutionFpsControl
-              framerate={values.screenFramerate}
-              resolution={values.screenResolution}
-              onFramerateChange={(value) => onChange('screenFramerate', value)}
-              onResolutionChange={(value) =>
-                onChange('screenResolution', value as Resolution)
-              }
-            />
-
-            <div className="ml-2">
-              <Select
-                value={values.screenCodec ?? VideoCodec.AUTO}
-                onValueChange={(value) =>
-                  onChange('screenCodec', value as VideoCodec)
-                }
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder={t('selectCodecPlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value={VideoCodec.AUTO}>Auto</SelectItem>
-                    <SelectItem value={VideoCodec.VP8}>VP8</SelectItem>
-                    <SelectItem value={VideoCodec.VP9}>VP9</SelectItem>
-                    <SelectItem value={VideoCodec.H264}>H264</SelectItem>
-                    <SelectItem value={VideoCodec.AV1}>AV1</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <Group label={t('screenCursorLabel')}>
-            <Select
-              value={values.screenCursor ?? ScreenCursor.ALWAYS}
-              onValueChange={(value) =>
-                onChange('screenCursor', value as ScreenCursor)
-              }
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value={ScreenCursor.ALWAYS}>
-                    {t('screenCursorAlways')}
-                  </SelectItem>
-                  <SelectItem value={ScreenCursor.MOTION}>
-                    {t('screenCursorMotion')}
-                  </SelectItem>
-                  <SelectItem value={ScreenCursor.NEVER}>
-                    {t('screenCursorNever')}
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Group>
-
-          <div className="flex flex-col gap-2">
-            <Label>{t('maxBitrateLabel')}</Label>
-
-            <Slider
-              className="max-w-96"
-              min={200}
-              max={maxBitrate}
-              step={100}
-              value={[values.screenBitrate ?? DEFAULT_BITRATE]}
-              onValueChange={([value]) => onChange('screenBitrate', value)}
-              rightSlot={
-                <span className="text-sm text-muted-foreground w-20 text-right">
-                  {filesize((values.screenBitrate ?? DEFAULT_BITRATE) * 125, {
-                    bits: true
-                  })}
-                  /s
-                </span>
-              }
-            />
-          </div>
-
-          <Group
-            label={t('restrictOwnAudioLabel')}
-            description={t('restrictOwnAudioDesc')}
-          >
-            {isRestrictOwnAudioSupported ? (
-              <Switch
-                checked={!!values.restrictOwnAudio}
-                disabled={!isRestrictOwnAudioSupported}
-                onCheckedChange={(checked) =>
-                  onChange('restrictOwnAudio', checked)
-                }
-              />
-            ) : (
-              <RestrictOwnAudioAlert
-                isSupported={isRestrictOwnAudioSupported}
-              />
-            )}
-          </Group>
-
-          <Group
-            label={t('suppressLocalAudioPlaybackLabel')}
-            description={t('suppressLocalAudioPlaybackDesc')}
-          >
-            {isSuppressLocalAudioPlaybackSupported ? (
-              <Switch
-                checked={!!values.suppressLocalAudioPlayback}
-                disabled={!isSuppressLocalAudioPlaybackSupported}
-                onCheckedChange={(checked) =>
-                  onChange('suppressLocalAudioPlayback', checked)
-                }
-              />
-            ) : (
-              <SuppressLocalAudioPlaybackAlert
-                isSupported={isSuppressLocalAudioPlaybackSupported}
-              />
-            )}
-          </Group>
+          {!isDesktopApp() && (
+            <Alert variant="default">
+              <Info />
+              <AlertDescription>
+                {t('screenSharingDesktopAppHint')}
+              </AlertDescription>
+            </Alert>
+          )}
+          <ScreenShareSettings values={values} onChange={onChange} />
 
           <span className="text-sm text-muted-foreground">
             {t('screenSharingNote')}

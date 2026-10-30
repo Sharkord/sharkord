@@ -1,5 +1,5 @@
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
-import {
+import type {
   activityLog,
   categories,
   channelReadStates,

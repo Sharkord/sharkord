@@ -56,6 +56,10 @@
   "failedUpdateWebcamState": "Failed to update webcam state",
   "failedUpdateScreenShareState": "Failed to update screen share state",
   "notificationPermissionDenied": "Notification permission was denied",
+  "notificationTitleDm": "{{author}} (DM)",
+  "notificationTitleChannel": "{{author}} in #{{channel}}",
+  "notificationSentAttachment": "Sent an attachment",
+  "pluginNotificationTitle": "{{plugin}}: {{title}}",
   "uploadsDisabled": "File uploads are disabled on this server",
   "noUploadPermission": "You do not have permission to upload files",
   "serverUpdateInitiated": "Server update initiated",
@@ -141,5 +145,8 @@
   "failedUpdateThreadFollow": "Failed to update thread follow",
   "selectThreadPrompt": "Select a thread to read it.",
   "loadingMessage": "Loading message...",
-  "failedLoadParentMessage": "Failed to load the original message"
+  "failedLoadParentMessage": "Failed to load the original message",
+  "updateServerConfirmTitle": "Update the server?",
+  "updateServerConfirmMessage": "This downloads and installs the latest version of the server. The server restarts during the process, which causes a short downtime.",
+  "updateServerConfirmLabel": "Update"
 }

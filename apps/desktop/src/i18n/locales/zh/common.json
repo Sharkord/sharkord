@@ -1,0 +1,168 @@
+{
+  "welcomeTitle": "欢迎使用 Sharkord",
+  "addServerTitle": "添加服务器",
+  "addServerDescription": "输入你要连接的服务器地址。",
+  "connect": "连接",
+  "connecting": "连接中...",
+  "cancel": "取消",
+  "addServerTooltip": "添加服务器",
+  "hideServerList": "隐藏服务器列表",
+  "removeServer": "移除服务器",
+  "serverStatus": {
+    "idle": "等待连接",
+    "loading": "正在加载",
+    "connecting": "正在连接...",
+    "connected": "已连接",
+    "signed-out": "已退出登录",
+    "disconnected": "已断开连接",
+    "error": "无法加载，选择它以重试",
+    "server-outdated": "此服务器运行的是较旧的 Sharkord 版本，在其更新之前桌面功能已关闭",
+    "app-outdated": "此服务器需要更新的 Sharkord 应用，在你更新之前桌面功能已关闭"
+  },
+  "errors": {
+    "invalidUrl": "这不是有效的服务器地址。",
+    "unreachable": "在该地址找不到 Sharkord 服务器。",
+    "duplicate": "你已经添加过此服务器。"
+  },
+  "menu": {
+    "servers": "服务器",
+    "addServer": "添加服务器...",
+    "hideServerList": "隐藏服务器列表",
+    "showServerList": "显示服务器列表",
+    "removeCurrentServer": "移除当前服务器...",
+    "toggleMenuBar": "切换菜单栏",
+    "advanced": "高级",
+    "desktopSettings": "桌面设置...",
+    "togglePerformanceOverlay": "切换性能浮层",
+    "openAppFolder": "打开应用文件夹",
+    "resetApp": "重置应用..."
+  },
+  "tray": {
+    "show": "显示 Sharkord",
+    "quit": "退出 Sharkord"
+  },
+  "hotkeyDescription": "Sharkord 快捷键：{{shortcut}}",
+  "removeDialog": {
+    "title": "移除服务器",
+    "message": "移除 {{name}}？你将在此设备上退出该服务器。",
+    "confirm": "移除",
+    "cancel": "取消"
+  },
+  "resetDialog": {
+    "title": "重置应用？",
+    "message": "这会让你退出所有服务器，并删除此设备上保存的所有服务器和设置。之后应用会重新启动。",
+    "confirm": "重置",
+    "cancel": "取消"
+  },
+  "mediaDialog": {
+    "title": "允许 {{name}} 使用你的麦克风和摄像头吗？",
+    "message": "{{name}} 想使用你的麦克风和摄像头，例如用于加入语音频道。允许后，此服务器不会再次询问。",
+    "allow": "允许",
+    "deny": "拒绝"
+  },
+  "sourcePicker": {
+    "title": "选择要共享的内容",
+    "screens": "屏幕",
+    "windows": "窗口"
+  },
+  "settings": {
+    "title": "桌面设置",
+    "general": "常规",
+    "autoStart": "开机时打开",
+    "autoStartDescription": "登录电脑时自动启动 Sharkord。",
+    "closeToTray": "关闭时最小化到托盘",
+    "closeToTrayDescription": "关闭窗口后让 Sharkord 继续在托盘中运行。如果你的桌面没有托盘，请关闭此项。",
+    "startToTray": "启动时最小化到托盘",
+    "startToTrayDescription": "Sharkord 在登录时打开时，保留在托盘中而不显示窗口。可以通过托盘图标再次打开。",
+    "dynamicTrayIcon": "使用服务器标志作为应用图标",
+    "dynamicTrayIconDescription": "在托盘和窗口图标上显示你正在查看的服务器的标志，而不是 Sharkord 的图标。",
+    "connectAllOnStartup": "启动时连接所有服务器",
+    "connectAllOnStartupDescription": "应用打开时在后台加载所有服务器，以便接收所有服务器的未读计数和通知。会占用更多内存。",
+    "autoUpdate": "自动安装更新",
+    "autoUpdateDescription": "在后台下载应用的新版本，并在准备就绪时提示重启。",
+    "performance": "性能",
+    "throttleHiddenServers": "限制隐藏的服务器",
+    "throttleHiddenServersDescription": "降低你未查看的服务器的计时器和渲染频率。节省 CPU 和电量；如果后台服务器工作异常，请关闭此项。",
+    "performanceOverlay": "性能浮层",
+    "performanceOverlayDescription": "在小窗口中显示应用的内存和 CPU 使用情况。",
+    "togglePerformanceOverlay": "切换性能浮层",
+    "menuBar": "菜单栏",
+    "menuBarDescription": "显示或隐藏窗口菜单栏。也可以使用 Ctrl+Shift+M。",
+    "shortcuts": "快捷键",
+    "shortcutsDescription": "桌面应用本身的全局快捷键。",
+    "shortcut": {
+      "selectServer": "切换到第 1 至 9 个服务器",
+      "addServer": "添加服务器",
+      "toggleServerList": "显示或隐藏服务器列表",
+      "toggleMenuBar": "显示或隐藏菜单栏",
+      "togglePerformanceOverlay": "切换性能浮层"
+    },
+    "updates": "更新",
+    "updatesDescription": "让 Sharkord 应用保持最新。",
+    "currentVersion": "当前版本",
+    "updateStatus": {
+      "unsupported": {
+        "title": "无法更新",
+        "description": "此版本的应用无法自动更新。请从发布页面下载新版本。"
+      },
+      "idle": {
+        "title": "尚未检查",
+        "description": "检查是否有更新版本的应用。"
+      },
+      "checking": {
+        "title": "正在检查更新",
+        "description": "正在查找更新版本的应用。"
+      },
+      "up-to-date": {
+        "title": "已是最新版本",
+        "description": "你正在使用最新版本的应用。"
+      },
+      "available": {
+        "title": "有可用更新",
+        "description": "版本 {{version}} 可以下载。",
+        "manualDescription": "版本 {{version}} 已发布。在 macOS 上请下载并手动安装。"
+      },
+      "downloading": {
+        "title": "正在下载更新",
+        "description": "正在下载版本 {{version}}，{{percent}}%。"
+      },
+      "ready": {
+        "title": "更新已就绪",
+        "description": "版本 {{version}} 已下载。重启应用即可安装。"
+      },
+      "error": {
+        "title": "检查更新失败",
+        "description": "无法检查更新。请检查网络连接后重试。"
+      }
+    },
+    "checkForUpdates": "检查更新",
+    "downloadUpdate": "下载更新",
+    "installUpdate": "重启并更新",
+    "latestVersion": "最新版本",
+    "unknownVersion": "未知",
+    "appFolder": "应用文件夹",
+    "appFolderDescription": "应用保存服务器、登录信息和设置的位置。",
+    "openAppFolder": "打开应用文件夹"
+  },
+  "updateDialog": {
+    "title": "更新已就绪",
+    "message": "Sharkord {{version}} 已下载。立即重启以安装，或在下次退出时自动安装。",
+    "restart": "立即重启",
+    "later": "稍后"
+  },
+  "manualUpdateDialog": {
+    "title": "有可用更新",
+    "message": "Sharkord {{version}} 已发布。macOS 版应用暂时无法自动更新，请下载新版本并手动安装。",
+    "download": "下载"
+  },
+  "updateNotification": {
+    "title": "有可用更新",
+    "body": "Sharkord {{version}} 已发布。点击打开更新设置。"
+  },
+  "serverPlaceholder": {
+    "loading": "正在连接 {{name}}...",
+    "errorTitle": "无法连接 {{name}}",
+    "errorDescription": "服务器没有响应。请确认它在线后重试。",
+    "retry": "重试"
+  }
+}

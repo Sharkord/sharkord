@@ -1,10 +1,13 @@
+import { notifyPluginsSelector } from '@/features/app/selectors';
 import { store } from '@/features/store';
 import { logDebug } from '@/helpers/browser-logger';
 import { getPluginBundleUrl } from '@/helpers/get-plugin-bundle-url';
 import { i18n } from '@/i18n';
+import { notify } from '@/lib/notifications';
 import {
   parseMessageComponentsExport,
   parsePluginTabs,
+  PLUGIN_NOTIFICATION_DATA_MAX_LENGTH,
   PluginSlot,
   type TCommandsMapByPlugin,
   type TPluginCapabilityAccessRule,
@@ -13,11 +16,17 @@ import {
   type TPluginEphemeralResponse,
   type TPluginMessageComponentsByPlugin,
   type TPluginMetadata,
+  type TPluginNotification,
   type TPluginTabsMap
 } from '@sharkord/shared';
 import { toast } from 'sonner';
+import { canReceivePluginNotificationsSelector } from '../selectors';
 import { serverSliceActions } from '../slice';
-import { pluginVersionByIdSelector } from './selectors';
+import { takePluginNotificationSlot } from './plugin-notification-rate-limit';
+import {
+  pluginMetadataByIdSelector,
+  pluginVersionByIdSelector
+} from './selectors';
 
 export const setPluginsMetadata = (pluginsMetadata: TPluginMetadata[]) =>
   store.dispatch(serverSliceActions.setPluginsMetadata(pluginsMetadata));
@@ -148,4 +157,42 @@ export const processPluginComponents = async (pluginIds: string[]) => {
   );
 
   return componentsMap;
+};
+
+export const sendPluginNotification = (
+  pluginId: string,
+  { title, body, icon, data }: TPluginNotification
+) => {
+  const state = store.getState();
+  const isEnabled = notifyPluginsSelector(state);
+  const plugin = pluginMetadataByIdSelector(state, pluginId);
+  const canReceive = canReceivePluginNotificationsSelector(state, pluginId);
+
+  if (!isEnabled || !plugin || !canReceive) {
+    return;
+  }
+
+  const serializedData = data === undefined ? '' : JSON.stringify(data);
+
+  if (serializedData.length > PLUGIN_NOTIFICATION_DATA_MAX_LENGTH) {
+    logDebug(
+      `plugin ${pluginId} sent notification data over the size limit, not shown`
+    );
+
+    return;
+  }
+
+  if (!takePluginNotificationSlot(pluginId, Date.now())) {
+    return;
+  }
+
+  notify({
+    title: i18n.t('common:pluginNotificationTitle', {
+      plugin: plugin.name,
+      title
+    }),
+    body,
+    icon,
+    target: { type: 'plugin', pluginId, data }
+  });
 };

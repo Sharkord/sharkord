@@ -42,17 +42,19 @@ export const selectedDmChannelIdSelector = (state: IRootState) =>
 export const selectedThreadSelector = (state: IRootState) =>
   state.app.selectedThread;
 
-export const browserNotificationsSelector = (state: IRootState) =>
-  state.app.browserNotifications;
+export const notifyAllMessagesSelector = (state: IRootState) =>
+  state.app.notifyAllMessages;
 
-export const browserNotificationsForMentionsSelector = (state: IRootState) =>
-  state.app.browserNotificationsForMentions;
+export const notifyMentionsOnlySelector = (state: IRootState) =>
+  state.app.notifyMentionsOnly;
 
-export const browserNotificationsForDmsSelector = (state: IRootState) =>
-  state.app.browserNotificationsForDms;
+export const notifyDmsSelector = (state: IRootState) => state.app.notifyDms;
 
-export const browserNotificationsForRepliesSelector = (state: IRootState) =>
-  state.app.browserNotificationsForReplies;
+export const notifyRepliesSelector = (state: IRootState) =>
+  state.app.notifyReplies;
+
+export const notifyPluginsSelector = (state: IRootState) =>
+  state.app.notifyPlugins;
 
 export const messageJumpTargetSelector = (state: IRootState) =>
   state.app.messageJumpTarget;

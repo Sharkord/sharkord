@@ -13,6 +13,7 @@
   "inviteCode": "邀请码：{{code}}",
   "connectError": "连接失败：{{message}}",
   "oidcBtn": "使用 SSO 登录",
+  "addToDesktopApp": "添加到桌面应用",
   "oidcCompleting": "正在完成登录",
   "oidcError": {
     "access_denied": "你的身份提供商拒绝了此次登录。",

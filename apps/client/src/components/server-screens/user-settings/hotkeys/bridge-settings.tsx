@@ -1,8 +1,15 @@
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useHotkeyState } from '@/hooks/use-hotkeys';
 import { hotkeys } from '@/lib/hotkeys/dispatcher';
 import type { THotkeyStatus } from '@/lib/hotkeys/types';
-import { Badge, Button, Group, Input, Separator, Switch } from '@sharkord/ui';
+import {
+  Badge,
+  Button,
+  Group,
+  Input,
+  Separator,
+  SettingsSection,
+  Switch
+} from '@sharkord/ui';
 import { memo, useCallback, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BridgeIntro } from './bridge-intro';

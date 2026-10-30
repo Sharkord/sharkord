@@ -1,8 +1,7 @@
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import type { TJoinedRole } from '@sharkord/shared';
-import { IconButton, Tooltip } from '@sharkord/ui';
+import { IconButton, SettingsSection, Tooltip } from '@sharkord/ui';
 import { Plus } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';

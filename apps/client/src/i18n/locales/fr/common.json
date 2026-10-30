@@ -56,6 +56,10 @@
   "failedUpdateWebcamState": "Échec de la mise à jour de la caméra",
   "failedUpdateScreenShareState": "Échec de la mise à jour du partage d’écran",
   "notificationPermissionDenied": "Autorisation de notification refusée",
+  "notificationTitleDm": "{{author}} (MP)",
+  "notificationTitleChannel": "{{author}} dans #{{channel}}",
+  "notificationSentAttachment": "A envoyé une pièce jointe",
+  "pluginNotificationTitle": "{{plugin}} : {{title}}",
   "uploadsDisabled": "Les envois de fichiers sont désactivés sur ce serveur",
   "noUploadPermission": "Vous n’avez pas la permission d’envoyer des fichiers",
   "serverUpdateInitiated": "Mise à jour du serveur lancée",
@@ -106,6 +110,8 @@
   "searchResults": "Résultats de la recherche ({{count}})",
   "wasReactedBy": "{{reacters}} a réagi.",
   "andMore": "et {{count}} autres",
+  "typeAMessage": "Écrivez un message...",
+  "messageChannel": "Message dans « {{name}} »",
   "toggleParticipants": "Afficher/masquer les participants",
   "sendVoiceReaction": "Envoyer une réaction",
   "failedSendVoiceReaction": "Échec de l'envoi de la réaction",
@@ -139,5 +145,8 @@
   "failedUpdateThreadFollow": "Impossible de mettre à jour le suivi du fil",
   "selectThreadPrompt": "Sélectionnez un fil pour le lire.",
   "loadingMessage": "Chargement du message...",
-  "failedLoadParentMessage": "Impossible de charger le message d'origine"
+  "failedLoadParentMessage": "Impossible de charger le message d'origine",
+  "updateServerConfirmTitle": "Mettre à jour le serveur ?",
+  "updateServerConfirmMessage": "Télécharge et installe la dernière version du serveur. Le serveur redémarre pendant l'opération, ce qui entraîne une courte interruption.",
+  "updateServerConfirmLabel": "Mettre à jour"
 }

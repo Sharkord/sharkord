@@ -2,7 +2,7 @@ import { usePushToTalkActive } from '@/features/app/hooks';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { ownVoiceStateSelector } from '@/features/server/voice/selectors';
 import { store } from '@/features/store';
-import { bridgeLogger } from '@/helpers/browser-logger';
+import { hotkeysLogger } from '@/helpers/browser-logger';
 import { useHotkeyAction } from '@/hooks/use-hotkeys';
 import { CoreHotkeyAction } from '@/lib/hotkeys/actions';
 import type { THotkeyPhase } from '@/lib/hotkeys/types';
@@ -76,7 +76,7 @@ const useVoiceHotkeys = ({
   const handleToggleMic = useCallback(() => {
     // push to talk owns the mic, a toggle would fight it
     if (isPushToTalk) {
-      bridgeLogger.info('toggle mic ignored, push to talk is on');
+      hotkeysLogger.info('toggle mic ignored, push to talk is on');
 
       return;
     }

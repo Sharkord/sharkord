@@ -1,8 +1,7 @@
 import { Dialog } from '@/components/dialogs/dialogs';
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { openDialog } from '@/features/dialogs/actions';
 import { useAdminInvites } from '@/features/server/admin/hooks';
-import { Button, LoadingCard } from '@sharkord/ui';
+import { Button, LoadingCard, SettingsSection } from '@sharkord/ui';
 import { Plus } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';

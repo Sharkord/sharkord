@@ -56,6 +56,10 @@
   "failedUpdateWebcamState": "更新摄像头状态失败",
   "failedUpdateScreenShareState": "更新屏幕共享状态失败",
   "notificationPermissionDenied": "通知权限被拒绝",
+  "notificationTitleDm": "{{author}}（私信）",
+  "notificationTitleChannel": "{{author}} 在 #{{channel}}",
+  "notificationSentAttachment": "发送了一个附件",
+  "pluginNotificationTitle": "{{plugin}}：{{title}}",
   "uploadsDisabled": "此服务器已禁用文件上传",
   "noUploadPermission": "您没有上传文件的权限",
   "serverUpdateInitiated": "服务器更新已启动",
@@ -106,6 +110,8 @@
   "searchResults": "搜索结果（{{count}}）",
   "wasReactedBy": "{{reacters}} 做出了反应。",
   "andMore": "以及其他 {{count}} 人",
+  "typeAMessage": "输入消息...",
+  "messageChannel": "发送消息到“{{name}}”",
   "toggleParticipants": "显示/隐藏参与者",
   "sendVoiceReaction": "发送表情反应",
   "failedSendVoiceReaction": "发送表情反应失败",
@@ -139,5 +145,8 @@
   "failedUpdateThreadFollow": "更新话题关注失败",
   "selectThreadPrompt": "选择一个话题进行阅读。",
   "loadingMessage": "正在加载消息...",
-  "failedLoadParentMessage": "加载原始消息失败"
+  "failedLoadParentMessage": "加载原始消息失败",
+  "updateServerConfirmTitle": "更新服务器？",
+  "updateServerConfirmMessage": "这将下载并安装最新版本的服务器。服务器会在此过程中重启，导致短暂停机。",
+  "updateServerConfirmLabel": "更新"
 }

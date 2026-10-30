@@ -12,8 +12,8 @@
     "db:gen": "bunx drizzle-kit generate --dialect sqlite --schema ./src/db/schema.ts --out ./src/db/migrations",
     "db:check": "bunx drizzle-kit check --dialect sqlite --out ./src/db/migrations",
     "seed:mock": "bun ./scripts/seed-mock.ts",
-    "format": "prettier --write \"**/*.ts*\" --config ./.prettierrc.json",
-    "format:check": "prettier --check \"**/*.ts*\" --config ./.prettierrc.json",
+    "format": "prettier --write \"**/*.ts*\"",
+    "format:check": "prettier --check \"**/*.ts*\"",
     "lint": "eslint ./src/**/*.ts --ext ts --report-unused-disable-directives",
     "lint:fix": "eslint ./src/**/*.ts --ext ts --report-unused-disable-directives --fix",
     "check-types": "tsc --noEmit",
@@ -34,9 +34,7 @@
     "drizzle-kit": "^0.31.5",
     "eslint": "^8.56.0",
     "eslint-plugin-unused-imports": "^4.1.4",
-    "jose": "^6.2.10",
-    "prettier": "^3.5.3",
-    "prettier-plugin-organize-imports": "^4.1.0"
+    "jose": "^6.2.10"
   },
   "peerDependencies": {
     "typescript": "^5"

@@ -1,4 +1,3 @@
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { useAdminStorage } from '@/features/server/admin/hooks';
 import { getTRPCClient } from '@/lib/trpc';
@@ -37,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
   Separator,
+  SettingsSection,
   Slider,
   Switch
 } from '@sharkord/ui';

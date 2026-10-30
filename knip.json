@@ -15,6 +15,20 @@
       "project": ["src/**/*.{ts,tsx}"],
       "ignore": ["dist/**", "public/**"]
     },
+    "apps/desktop": {
+      "entry": [
+        "src/main/index.ts",
+        "src/preload/index.ts",
+        "src/preload/server-view.ts",
+        "src/preload/performance.ts",
+        "src/renderer/main.tsx",
+        "src/renderer/performance-main.tsx",
+        "src/**/__tests__/**/*.test.ts",
+        "electron.vite.config.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignoreDependencies": ["tailwindcss"]
+    },
     "packages/shared": {
       "entry": ["src/**/*.ts"],
       "project": ["src/**/*.ts"]

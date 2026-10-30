@@ -1,6 +1,7 @@
 import { HotkeyBindGroup } from '@/components/hotkey-input/hotkey-bind-group';
 import { setMicMode } from '@/features/app/actions';
 import { useMicMode } from '@/features/app/hooks';
+import { isDesktopApp } from '@/helpers/is-desktop-app';
 import { useHotkeyState } from '@/hooks/use-hotkeys';
 import { CoreHotkeyAction } from '@/lib/hotkeys/actions';
 import { MicMode } from '@/types';
@@ -22,9 +23,10 @@ const MicModeGroup = memo(() => {
   const { status, capabilities } = useHotkeyState();
 
   const bridgeCannotReleaseKeys = status === 'connected' && !capabilities.keyUp;
-  const description = bridgeCannotReleaseKeys
-    ? t('micModePushToTalkUnsupported')
-    : undefined;
+  const unsupportedReason = isDesktopApp()
+    ? t('micModePushToTalkUnsupportedDesktop')
+    : t('micModePushToTalkUnsupported');
+  const description = bridgeCannotReleaseKeys ? unsupportedReason : undefined;
 
   const handleChange = useCallback((value: string) => {
     setMicMode(value as MicMode);
