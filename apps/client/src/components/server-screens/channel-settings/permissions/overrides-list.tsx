@@ -1,3 +1,4 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useRoleById } from '@/features/server/roles/hooks';
 import { useUserById } from '@/features/server/users/hooks';
 import { getInitialsFromName } from '@/helpers/get-initials-from-name';
@@ -8,12 +9,7 @@ import type {
   TChannelUserPermission
 } from '@sharkord/shared';
 import { getTrpcError } from '@sharkord/shared';
-import {
-  Avatar,
-  AvatarFallback,
-  Separator,
-  SettingsSection
-} from '@sharkord/ui';
+import { Avatar, AvatarFallback, Separator } from '@sharkord/ui';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';

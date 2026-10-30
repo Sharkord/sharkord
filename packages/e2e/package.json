@@ -9,8 +9,8 @@
     "test:mocked": "bun run seed:e2e && RUN_MOCK=true bunx playwright test mocked.pw.ts",
     "test:headed": "bun run seed:e2e && bunx playwright test --headed",
     "test:flaky": "bun run seed:e2e && bunx playwright test --repeat-each=2 --retries=5",
-    "format": "prettier --write \"**/*.*.ts*\"",
-    "format:check": "prettier --check \"**/*.*.ts*\"",
+    "format": "prettier --write \"**/*.*.ts*\" --config ./.prettierrc.json",
+    "format:check": "prettier --check \"**/*.*.ts*\" --config ./.prettierrc.json",
     "lint": "eslint ./tests/**/*.ts --ext ts --report-unused-disable-directives",
     "lint:fix": "eslint ./tests/**/*.ts --ext ts --report-unused-disable-directives --fix",
     "check-types": "tsc --noEmit",
@@ -28,6 +28,8 @@
     "typescript": "^5",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "eslint": "^8.56.0",
-    "eslint-plugin-unused-imports": "^4.1.4"
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "prettier": "^3.5.3",
+    "prettier-plugin-organize-imports": "^4.1.0"
   }
 }

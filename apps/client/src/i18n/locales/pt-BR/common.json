@@ -56,10 +56,6 @@
   "failedUpdateWebcamState": "Falha ao atualizar o estado da webcam",
   "failedUpdateScreenShareState": "Falha ao atualizar o estado do compartilhamento de tela",
   "notificationPermissionDenied": "A permissão de notificação foi negada",
-  "notificationTitleDm": "{{author}} (DM)",
-  "notificationTitleChannel": "{{author}} em #{{channel}}",
-  "notificationSentAttachment": "Enviou um anexo",
-  "pluginNotificationTitle": "{{plugin}}: {{title}}",
   "uploadsDisabled": "O envio de arquivos está desativado neste servidor",
   "noUploadPermission": "Você não tem permissão para enviar arquivos",
   "serverUpdateInitiated": "Atualização do servidor iniciada",
@@ -145,8 +141,5 @@
   "failedUpdateThreadFollow": "Falha ao atualizar o acompanhamento do tópico",
   "selectThreadPrompt": "Selecione um tópico para lê-lo.",
   "loadingMessage": "Carregando mensagem...",
-  "failedLoadParentMessage": "Falha ao carregar a mensagem original",
-  "updateServerConfirmTitle": "Atualizar o servidor?",
-  "updateServerConfirmMessage": "Baixa e instala a versão mais recente do servidor. O servidor reinicia durante o processo, o que causa uma breve indisponibilidade.",
-  "updateServerConfirmLabel": "Atualizar"
+  "failedLoadParentMessage": "Falha ao carregar a mensagem original"
 }

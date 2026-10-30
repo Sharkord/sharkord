@@ -5,6 +5,10 @@ import { useSelector } from 'react-redux';
 import {
   appLoadingSelector,
   autoJoinLastChannelSelector,
+  browserNotificationsForDmsSelector,
+  browserNotificationsForMentionsSelector,
+  browserNotificationsForRepliesSelector,
+  browserNotificationsSelector,
   hotkeysEnabledSelector,
   isAutoConnectingSelector,
   isChannelMutedSelector,
@@ -16,11 +20,6 @@ import {
   modViewOpenSelector,
   modViewUserIdSelector,
   notificationSoundsSelector,
-  notifyAllMessagesSelector,
-  notifyDmsSelector,
-  notifyMentionsOnlySelector,
-  notifyPluginsSelector,
-  notifyRepliesSelector,
   pluginSlotDebugSelector,
   pushToTalkSelectedSelector,
   selectedDmChannelIdSelector,
@@ -63,20 +62,20 @@ export const useSelectedDmChannelId = () =>
 
 export const useSelectedThread = () => useSelector(selectedThreadSelector);
 
-export const useNotifyAllMessages = () =>
-  useSelector(notifyAllMessagesSelector);
+export const useBrowserNotifications = () =>
+  useSelector(browserNotificationsSelector);
 
-export const useNotifyMentionsOnly = () =>
-  useSelector(notifyMentionsOnlySelector);
+export const useBrowserNotificationsForMentions = () =>
+  useSelector(browserNotificationsForMentionsSelector);
 
-export const useNotifyDms = () => useSelector(notifyDmsSelector);
+export const useBrowserNotificationsForDms = () =>
+  useSelector(browserNotificationsForDmsSelector);
 
 export const useMessageJumpTarget = () =>
   useSelector(messageJumpTargetSelector);
 
-export const useNotifyReplies = () => useSelector(notifyRepliesSelector);
-
-export const useNotifyPlugins = () => useSelector(notifyPluginsSelector);
+export const useBrowserNotificationsForReplies = () =>
+  useSelector(browserNotificationsForRepliesSelector);
 
 export const useVoiceChatSidebar = () =>
   useSelector(voiceChatSidebarDataSelector);

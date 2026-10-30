@@ -3,7 +3,6 @@ import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { connect } from '@/features/server/actions';
 import { useInfo } from '@/features/server/hooks';
 import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
-import { isDesktopApp } from '@/helpers/is-desktop-app';
 import {
   getLocalStorageItem,
   getLocalStorageItemBool,
@@ -15,7 +14,7 @@ import {
   setSessionStorageItem
 } from '@/helpers/storage';
 import { useForm } from '@/hooks/use-form';
-import { getDesktopAddServerLink, PluginSlot, TestId } from '@sharkord/shared';
+import { PluginSlot, TestId } from '@sharkord/shared';
 import {
   Alert,
   AlertDescription,
@@ -156,11 +155,6 @@ const Connect = memo(() => {
     }
   }, [onChange, values.autoLogin]);
 
-  const desktopLink = useMemo(
-    () => getDesktopAddServerLink(getUrlFromServer()),
-    []
-  );
-
   const logoSrc = useMemo(() => {
     if (info?.logo) {
       return getFileUrl(info.logo);
@@ -296,15 +290,6 @@ const Connect = memo(() => {
           </div>
         </CardContent>
       </Card>
-
-      {!isDesktopApp() && (
-        <a
-          href={desktopLink}
-          className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-        >
-          {t('addToDesktopApp')}
-        </a>
-      )}
 
       <div className="flex justify-center items-center gap-2 text-xs text-muted-foreground select-none">
         <span>v{VITE_APP_VERSION}</span>

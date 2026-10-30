@@ -1,7 +1,6 @@
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { useCan, useUserSettingsPlugins } from '@/features/server/hooks';
 import { Permission, PluginSlot } from '@sharkord/shared';
-import { type TSettingsEntry } from '@sharkord/ui';
 import {
   Bell,
   Headphones,
@@ -15,6 +14,7 @@ import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TServerScreenBaseProps } from '../screens';
 import { SettingsShell } from '../settings-shell';
+import type { TSettingsEntry } from '../settings-shell/types';
 import { Devices } from './devices';
 import { Hotkeys } from './hotkeys';
 import { Notifications } from './notifications';

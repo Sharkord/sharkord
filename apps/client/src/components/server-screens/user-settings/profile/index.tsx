@@ -1,4 +1,5 @@
 import { ImagePicker } from '@/components/image-picker';
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { UserAvatar } from '@/components/user-avatar';
 import { useOwnPublicUser } from '@/features/server/users/hooks';
@@ -11,7 +12,6 @@ import {
   Group,
   ImageSwatchPicker,
   Input,
-  SettingsSection,
   Textarea
 } from '@sharkord/ui';
 import { memo, useCallback } from 'react';

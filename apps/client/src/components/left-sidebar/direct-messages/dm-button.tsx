@@ -3,7 +3,7 @@ import { useDirectMessagesUnreadCount } from '@/features/server/channels/hooks';
 import { useDmsOpen } from '@/features/server/hooks';
 import { useThreadsOpen } from '@/features/server/threads/hooks';
 import { TestId } from '@sharkord/shared';
-import { cn, Tooltip, UnreadCount } from '@sharkord/ui';
+import { cn, Tooltip } from '@sharkord/ui';
 import { MessageCircleMore, X } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,7 +36,11 @@ const DmButton = memo(() => {
         <MessageCircleMore className="h-4 w-4" />
         <span className="flex-1 text-left">{t('directMessages')}</span>
         {isActive && <X className="h-4 w-4" />}
-        <UnreadCount count={directMessagesUnreadCount} />
+        {directMessagesUnreadCount > 0 && (
+          <div className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
+            {directMessagesUnreadCount > 99 ? '99+' : directMessagesUnreadCount}
+          </div>
+        )}
       </button>
     </Tooltip>
   );

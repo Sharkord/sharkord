@@ -1,3 +1,4 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { usePluginsEnabled } from '@/features/server/hooks';
 import { getTRPCClient } from '@/lib/trpc';
@@ -11,7 +12,6 @@ import {
   Button,
   IconButton,
   LoadingCard,
-  SettingsSection,
   Switch,
   Tooltip
 } from '@sharkord/ui';

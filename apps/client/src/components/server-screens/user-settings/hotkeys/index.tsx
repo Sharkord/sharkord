@@ -1,6 +1,5 @@
 import { setHotkeysEnabled } from '@/features/app/actions';
 import { useHotkeysEnabled } from '@/features/app/hooks';
-import { isDesktopApp } from '@/helpers/is-desktop-app';
 import {
   getLocalStorageItem,
   LocalStorageKey,
@@ -12,7 +11,6 @@ import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsForm } from '../../settings-shell/use-settings-form';
 import { BridgeSettings } from './bridge-settings';
-import { DesktopSettings } from './desktop-settings';
 import { bindingsFromRecord, bindingsToRecord } from './helpers';
 import { HotkeyGroups } from './hotkey-groups';
 import type { THotkeysValues } from './types';
@@ -53,11 +51,7 @@ const Hotkeys = memo(() => {
 
   return (
     <div className="space-y-4">
-      {isDesktopApp() ? (
-        <DesktopSettings values={values} onChange={onChange} />
-      ) : (
-        <BridgeSettings values={values} onChange={onChange} />
-      )}
+      <BridgeSettings values={values} onChange={onChange} />
       {values.enabled && <HotkeyGroups values={values} onChange={onChange} />}
     </div>
   );

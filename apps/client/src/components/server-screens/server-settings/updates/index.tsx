@@ -1,11 +1,14 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useAdminUpdates } from '@/features/server/admin/hooks';
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
   Button,
-  SettingsSection,
-  UpdatePanel,
-  type TUpdatePanelProps
+  Group,
+  LoadingCard
 } from '@sharkord/ui';
-import { CircleCheck, CircleSlash, Download, RefreshCw } from 'lucide-react';
+import { ArrowUpCircle, CheckCircle, Download, X } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -17,63 +20,70 @@ const Updates = memo(() => {
     latestVersion,
     currentVersion,
     canUpdate,
-    refetch,
     update
   } = useAdminUpdates();
 
-  let panel: Omit<TUpdatePanelProps, 'versions'>;
-
   if (loading) {
-    panel = {
-      tone: 'muted',
-      icon: RefreshCw,
-      busy: true,
-      title: t('updateCheckingTitle'),
-      description: t('updateCheckingDesc')
-    };
-  } else if (!canUpdate) {
-    panel = {
-      tone: 'warning',
-      icon: CircleSlash,
-      title: t('updatesNotSupportedTitle'),
-      description: t('updatesNotSupportedDesc')
-    };
-  } else if (hasUpdate) {
-    panel = {
-      tone: 'info',
-      icon: Download,
-      title: t('updateAvailableTitle'),
-      description: t('updateAvailableDesc', { version: latestVersion }),
-      action: <Button onClick={update}>{t('updateServerBtn')}</Button>
-    };
-  } else {
-    panel = {
-      tone: 'success',
-      icon: CircleCheck,
-      title: t('upToDateTitle'),
-      description: t('upToDateDesc'),
-      action: (
-        <Button variant="outline" onClick={refetch}>
-          {t('checkForUpdatesBtn')}
-        </Button>
-      )
-    };
+    return <LoadingCard className="h-[600px]" />;
   }
 
-  const versions = [
-    {
-      label: t('currentVersionLabel'),
-      value: currentVersion ? `v${currentVersion}` : t('unknownVersion')
-    },
-    {
-      label: t('latestVersionLabel'),
-      value: latestVersion ? `v${latestVersion}` : t('unknownVersion')
-    }
-  ];
+  let status = (
+    <Alert variant="info">
+      <CheckCircle />
+      <AlertTitle>{t('upToDateTitle')}</AlertTitle>
+      <AlertDescription>{t('upToDateDesc')}</AlertDescription>
+    </Alert>
+  );
+
+  if (!canUpdate) {
+    status = (
+      <Alert variant="destructive">
+        <X />
+        <AlertTitle>{t('updatesNotSupportedTitle')}</AlertTitle>
+        <AlertDescription>{t('updatesNotSupportedDesc')}</AlertDescription>
+      </Alert>
+    );
+  } else if (hasUpdate) {
+    status = (
+      <Alert>
+        <Download />
+        <AlertTitle>{t('updateAvailableTitle')}</AlertTitle>
+        <AlertDescription>
+          {t('updateAvailableDesc', { version: latestVersion })}
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
-    <SettingsSection title={t('updatesTitle')} description={t('updatesDesc')}>
-      <UpdatePanel {...panel} versions={versions} />
+    <SettingsSection
+      title={t('updatesTitle')}
+      description={t('updatesDesc')}
+      action={
+        <Button onClick={update} disabled={!hasUpdate || !canUpdate}>
+          {t('updateServerBtn')}
+        </Button>
+      }
+    >
+      <Group label={t('currentVersionLabel')}>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <CheckCircle className="h-4 w-4" />
+          <span className="font-mono">
+            {currentVersion || t('unknownVersion')}
+          </span>
+        </div>
+      </Group>
+
+      <Group label={t('latestVersionLabel')}>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <ArrowUpCircle className="h-4 w-4" />
+          <span className="font-mono">
+            {latestVersion || t('unknownVersion')}
+          </span>
+        </div>
+      </Group>
+
+      {status}
     </SettingsSection>
   );
 });

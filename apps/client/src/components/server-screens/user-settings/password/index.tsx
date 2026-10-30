@@ -1,3 +1,4 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { useOwnUserPasswordSet } from '@/features/server/users/hooks';
 import { cleanup, getTRPCClient } from '@/lib/trpc';
@@ -6,8 +7,7 @@ import {
   AlertDescription,
   AlertTitle,
   Group,
-  Input,
-  SettingsSection
+  Input
 } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';

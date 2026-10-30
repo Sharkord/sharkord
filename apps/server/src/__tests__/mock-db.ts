@@ -22,7 +22,6 @@ import { seedTestDb } from './seed';
  */
 
 let tdb: BunSQLiteDatabase;
-let template: Uint8Array;
 
 const initDb = async () => {
   const sqlite = new Database(':memory:', { create: true, strict: true });
@@ -32,21 +31,7 @@ const initDb = async () => {
   await migrateDatabase(sqlite, tdb, DRIZZLE_PATH);
   await seedTestDb(tdb);
 
-  // taken before any test writes to it
-  template = sqlite.serialize();
-
   return tdb;
-};
-
-// every test gets its own copy of the database migrated and seeded once above. running the
-// migrations and the seed again took about 25ms per test, a copy takes microseconds
-const createTestSqlite = () => {
-  const sqlite = Database.deserialize(template, { strict: true });
-
-  // pragmas belong to the connection, the copy does not carry the one migrate turned on
-  sqlite.run('PRAGMA foreign_keys = ON;');
-
-  return sqlite;
 };
 
 await initDb();
@@ -75,4 +60,4 @@ const setTestDb = (newDb: BunSQLiteDatabase) => {
 
 const getTestDb = () => tdb;
 
-export { createTestSqlite, DRIZZLE_PATH, getTestDb, setTestDb };
+export { DRIZZLE_PATH, getTestDb, setTestDb };

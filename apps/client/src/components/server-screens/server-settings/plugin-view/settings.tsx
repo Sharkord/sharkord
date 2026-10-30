@@ -1,3 +1,4 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { useReferenceableChannels } from '@/features/server/hooks';
 import { useRoles } from '@/features/server/roles/hooks';
@@ -11,7 +12,6 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  SettingsSection,
   Switch,
   Textarea
 } from '@sharkord/ui';

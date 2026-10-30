@@ -1,7 +1,8 @@
+import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { StatePanel } from '@/components/server-screens/settings-shell/state-panel';
 import { cn } from '@/lib/utils';
 import type { TPluginInfo } from '@sharkord/shared';
-import { Button, Input, SettingsSection } from '@sharkord/ui';
+import { Button, Input } from '@sharkord/ui';
 import { AlertCircle, Package, RefreshCw, Search } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';

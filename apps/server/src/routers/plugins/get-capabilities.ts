@@ -1,7 +1,6 @@
 import {
   OWNER_ROLE_ID,
   Permission,
-  PLUGIN_NOTIFICATIONS_CAPABILITY,
   PluginCapabilityMode,
   PluginCapabilityType,
   type TPluginCapability,
@@ -118,19 +117,8 @@ const getCapabilitiesRoute = protectedProcedure
       resolve(PluginCapabilityType.COMPONENT, name)
     );
 
-    const notifications = resolve(
-      PluginCapabilityType.NOTIFICATION,
-      PLUGIN_NOTIFICATIONS_CAPABILITY
-    );
-
     return {
-      capabilities: [
-        ...commands,
-        ...actions,
-        ...httpRoutes,
-        ...components,
-        notifications
-      ]
+      capabilities: [...commands, ...actions, ...httpRoutes, ...components]
     };
   });
 

@@ -181,49 +181,49 @@ export const setSelectedDmChannelId = (channelId: number | undefined) => {
   }
 };
 
-export const setNotifyAllMessages = async (enabled: boolean) => {
+export const setBrowserNotifications = async (enabled: boolean) => {
   if (enabled) {
     await assertNotificationsPermission();
   }
 
-  store.dispatch(appSliceActions.setNotifyAllMessages(enabled));
-  setLocalStorageItemBool(LocalStorageKey.NOTIFY_ALL_MESSAGES, enabled);
+  store.dispatch(appSliceActions.setBrowserNotifications(enabled));
+  setLocalStorageItemBool(LocalStorageKey.BROWSER_NOTIFICATIONS, enabled);
 };
 
-export const setNotifyMentionsOnly = async (enabled: boolean) => {
+export const setBrowserNotificationsForMentions = async (enabled: boolean) => {
   if (enabled) {
     await assertNotificationsPermission();
   }
 
-  store.dispatch(appSliceActions.setNotifyMentionsOnly(enabled));
-  setLocalStorageItemBool(LocalStorageKey.NOTIFY_MENTIONS_ONLY, enabled);
+  store.dispatch(appSliceActions.setBrowserNotificationsForMentions(enabled));
+  setLocalStorageItemBool(
+    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_MENTIONS,
+    enabled
+  );
 };
 
-export const setNotifyDms = async (enabled: boolean) => {
+export const setBrowserNotificationsForDms = async (enabled: boolean) => {
   if (enabled) {
     await assertNotificationsPermission();
   }
 
-  store.dispatch(appSliceActions.setNotifyDms(enabled));
-  setLocalStorageItemBool(LocalStorageKey.NOTIFY_DMS, enabled);
+  store.dispatch(appSliceActions.setBrowserNotificationsForDms(enabled));
+  setLocalStorageItemBool(
+    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_DMS,
+    enabled
+  );
 };
 
-export const setNotifyReplies = async (enabled: boolean) => {
+export const setBrowserNotificationsForReplies = async (enabled: boolean) => {
   if (enabled) {
     await assertNotificationsPermission();
   }
 
-  store.dispatch(appSliceActions.setNotifyReplies(enabled));
-  setLocalStorageItemBool(LocalStorageKey.NOTIFY_REPLIES, enabled);
-};
-
-export const setNotifyPlugins = async (enabled: boolean) => {
-  if (enabled) {
-    await assertNotificationsPermission();
-  }
-
-  store.dispatch(appSliceActions.setNotifyPlugins(enabled));
-  setLocalStorageItemBool(LocalStorageKey.NOTIFY_PLUGINS, enabled);
+  store.dispatch(appSliceActions.setBrowserNotificationsForReplies(enabled));
+  setLocalStorageItemBool(
+    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_REPLIES,
+    enabled
+  );
 };
 
 export const setNotificationSounds = (enabled: boolean) => {

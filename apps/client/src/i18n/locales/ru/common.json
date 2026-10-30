@@ -56,10 +56,6 @@
   "failedUpdateWebcamState": "Не удалось обновить состояние камеры",
   "failedUpdateScreenShareState": "Не удалось обновить состояние демонстрации экрана",
   "notificationPermissionDenied": "В разрешении на уведомления отказано",
-  "notificationTitleDm": "{{author}} (ЛС)",
-  "notificationTitleChannel": "{{author}} в #{{channel}}",
-  "notificationSentAttachment": "Отправил(а) вложение",
-  "pluginNotificationTitle": "{{plugin}}: {{title}}",
   "uploadsDisabled": "Загрузка файлов отключена на этом сервере",
   "noUploadPermission": "У вас нет разрешения на загрузку файлов",
   "serverUpdateInitiated": "Обновление сервера запущено",
@@ -110,8 +106,6 @@
   "searchResults": "Результаты поиска ({{count}})",
   "wasReactedBy": "на это отреагировали {{reacters}}.",
   "andMore": "и еще {{count}}",
-  "typeAMessage": "Введите сообщение...",
-  "messageChannel": "Сообщение в «{{name}}»",
   "toggleParticipants": "Показать/скрыть участников",
   "sendVoiceReaction": "Отправить реакцию",
   "failedSendVoiceReaction": "Не удалось отправить реакцию",
@@ -145,8 +139,5 @@
   "failedUpdateThreadFollow": "Не удалось изменить отслеживание ветки",
   "selectThreadPrompt": "Выберите ветку, чтобы прочитать её.",
   "loadingMessage": "Загрузка сообщения...",
-  "failedLoadParentMessage": "Не удалось загрузить исходное сообщение",
-  "updateServerConfirmTitle": "Обновить сервер?",
-  "updateServerConfirmMessage": "Будет загружена и установлена последняя версия сервера. Во время процесса сервер перезапустится, что вызовет кратковременный простой.",
-  "updateServerConfirmLabel": "Обновить"
+  "failedLoadParentMessage": "Не удалось загрузить исходное сообщение"
 }
