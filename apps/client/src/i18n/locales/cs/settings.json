@@ -580,5 +580,14 @@
   "hotkeysBridgeRetry": "Zkusit připojit",
   "updateCheckingTitle": "Hledání aktualizací",
   "updateCheckingDesc": "Hledá se novější verze Sharkordu.",
-  "checkForUpdatesBtn": "Zkontrolovat aktualizace"
+  "checkForUpdatesBtn": "Zkontrolovat aktualizace",
+  "deleteAccountTab": "Smazat účet",
+  "deleteAccountTitle": "Smazat účet",
+  "deleteAccountDesc": "Odstraní tvůj účet z tohoto serveru. Nelze to vrátit.",
+  "deleteAccountWipeLabel": "Smazat i moje zprávy",
+  "deleteAccountWipeDesc": "Vypnuto, tvoje zprávy zůstanou jako Smazaný uživatel. Zapnuto, zprávy, reakce a nahrané soubory se odstraní.",
+  "deleteAccountKeepMsg": "Tvůj účet bude smazán a zprávy zůstanou jako Smazaný uživatel. Nelze to vrátit.",
+  "deleteAccountWipeMsg": "Tvůj účet a vše, co jsi zveřejnil, bude smazáno. Nelze to vrátit.",
+  "failedDeleteAccount": "Účet se nepodařilo smazat",
+  "deleteAccountBtn": "Smazat účet"
 }

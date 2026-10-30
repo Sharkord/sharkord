@@ -580,5 +580,14 @@
   "hotkeysBridgeRetry": "尝试连接",
   "updateCheckingTitle": "正在检查更新",
   "updateCheckingDesc": "正在查找更新版本的 Sharkord。",
-  "checkForUpdatesBtn": "检查更新"
+  "checkForUpdatesBtn": "检查更新",
+  "deleteAccountTab": "删除账户",
+  "deleteAccountTitle": "删除账户",
+  "deleteAccountDesc": "从此服务器删除你的账户，无法撤销。",
+  "deleteAccountWipeLabel": "同时删除我的消息",
+  "deleteAccountWipeDesc": "关闭时，你的消息会保留并显示为已删除用户。开启时，你的消息、表情回应和上传都会被删除。",
+  "deleteAccountKeepMsg": "你的账户将被删除，消息会保留并显示为已删除用户。此操作无法撤销。",
+  "deleteAccountWipeMsg": "你的账户和你发布的所有内容都将被删除。此操作无法撤销。",
+  "failedDeleteAccount": "无法删除你的账户",
+  "deleteAccountBtn": "删除账户"
 }

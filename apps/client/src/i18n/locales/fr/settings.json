@@ -580,5 +580,14 @@
   "hotkeysBridgeRetry": "Essayer de se connecter",
   "updateCheckingTitle": "Recherche de mises à jour",
   "updateCheckingDesc": "Recherche d'une version plus récente de Sharkord.",
-  "checkForUpdatesBtn": "Rechercher des mises à jour"
+  "checkForUpdatesBtn": "Rechercher des mises à jour",
+  "deleteAccountTab": "Supprimer le compte",
+  "deleteAccountTitle": "Supprimer le compte",
+  "deleteAccountDesc": "Supprime votre compte de ce serveur. C'est définitif.",
+  "deleteAccountWipeLabel": "Supprimer aussi mes messages",
+  "deleteAccountWipeDesc": "Désactivé, vos messages restent sous Utilisateur supprimé. Activé, vos messages, réactions et envois sont supprimés.",
+  "deleteAccountKeepMsg": "Votre compte sera supprimé et vos messages resteront sous Utilisateur supprimé. C'est définitif.",
+  "deleteAccountWipeMsg": "Votre compte et tout ce que vous avez publié seront supprimés. C'est définitif.",
+  "failedDeleteAccount": "Impossible de supprimer votre compte",
+  "deleteAccountBtn": "Supprimer le compte"
 }

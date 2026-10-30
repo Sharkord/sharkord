@@ -49,7 +49,7 @@ describe('tests setup', () => {
     ]);
 
     expect(userRolesResults.length).toBe(8);
-    expect(rolePermissionsResults.length).toBe(32);
+    expect(rolePermissionsResults.length).toBe(34);
   });
 
   test('should seed the channel permission rows that disagree with each other', async () => {

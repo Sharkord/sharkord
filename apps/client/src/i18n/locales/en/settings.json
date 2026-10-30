@@ -580,5 +580,14 @@
   "hotkeysBridgeRetry": "Try to connect",
   "updateCheckingTitle": "Checking for updates",
   "updateCheckingDesc": "Looking for a newer version of Sharkord.",
-  "checkForUpdatesBtn": "Check for updates"
+  "checkForUpdatesBtn": "Check for updates",
+  "deleteAccountTab": "Delete Account",
+  "deleteAccountTitle": "Delete Account",
+  "deleteAccountDesc": "Removes your account from this server. You can't undo it.",
+  "deleteAccountWipeLabel": "Delete my messages too",
+  "deleteAccountWipeDesc": "Off, your messages stay and show as Deleted User. On, your messages, reactions and uploads are removed.",
+  "deleteAccountKeepMsg": "Your account will be deleted and your messages will stay as Deleted User. This can't be undone.",
+  "deleteAccountWipeMsg": "Your account and everything you posted will be deleted. This can't be undone.",
+  "failedDeleteAccount": "Couldn't delete your account",
+  "deleteAccountBtn": "Delete Account"
 }

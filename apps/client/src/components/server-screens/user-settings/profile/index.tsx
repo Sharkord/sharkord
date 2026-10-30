@@ -5,7 +5,7 @@ import { useOwnPublicUser } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import type { TPickedImage } from '@/hooks/use-pick-image';
 import { getTRPCClient } from '@/lib/trpc';
-import { DEFAULT_PROFILE_COLOR } from '@sharkord/shared';
+import { DEFAULT_PROFILE_COLOR, UploadPurpose } from '@sharkord/shared';
 import {
   ColorPicker,
   Group,
@@ -90,6 +90,7 @@ const Profile = memo(() => {
           currentUrl={getFileUrl(ownPublicUser.avatar)}
           draft={values.avatar}
           onChange={handleAvatarChange}
+          purpose={UploadPurpose.PROFILE_IMAGE}
           fallback={
             <UserAvatar
               userId={ownPublicUser.id}
@@ -106,6 +107,7 @@ const Profile = memo(() => {
           currentUrl={getFileUrl(ownPublicUser.banner)}
           draft={values.banner}
           onChange={handleBannerChange}
+          purpose={UploadPurpose.PROFILE_IMAGE}
         />
 
         <Group label={t('profileColorLabel')}>

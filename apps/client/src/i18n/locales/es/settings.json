@@ -580,5 +580,14 @@
   "hotkeysBridgeRetry": "Intentar conectar",
   "updateCheckingTitle": "Buscando actualizaciones",
   "updateCheckingDesc": "Buscando una versión más reciente de Sharkord.",
-  "checkForUpdatesBtn": "Buscar actualizaciones"
+  "checkForUpdatesBtn": "Buscar actualizaciones",
+  "deleteAccountTab": "Eliminar cuenta",
+  "deleteAccountTitle": "Eliminar cuenta",
+  "deleteAccountDesc": "Elimina tu cuenta de este servidor. No se puede deshacer.",
+  "deleteAccountWipeLabel": "Eliminar también mis mensajes",
+  "deleteAccountWipeDesc": "Apagado, tus mensajes se quedan como Usuario eliminado. Encendido, se eliminan tus mensajes, reacciones y archivos.",
+  "deleteAccountKeepMsg": "Tu cuenta se eliminará y tus mensajes quedarán como Usuario eliminado. No se puede deshacer.",
+  "deleteAccountWipeMsg": "Tu cuenta y todo lo que publicaste se eliminarán. No se puede deshacer.",
+  "failedDeleteAccount": "No se pudo eliminar tu cuenta",
+  "deleteAccountBtn": "Eliminar cuenta"
 }
