@@ -1,5 +1,6 @@
 import { usePickImage, type TPickedImage } from '@/hooks/use-pick-image';
 import { cn } from '@/lib/utils';
+import type { UploadPurpose } from '@sharkord/shared';
 import { Button, buttonVariants, Group } from '@sharkord/ui';
 import { Upload } from 'lucide-react';
 import { memo, useCallback, type ReactNode } from 'react';
@@ -14,6 +15,7 @@ type TImagePickerProps = {
   description?: string;
   className?: string;
   fallback?: ReactNode;
+  purpose?: UploadPurpose;
 };
 
 const ImagePicker = memo(
@@ -24,16 +26,17 @@ const ImagePicker = memo(
     onChange,
     description,
     className,
-    fallback
+    fallback,
+    purpose
   }: TImagePickerProps) => {
     const { t } = useTranslation('common');
     const pickImage = usePickImage();
 
     const handlePick = useCallback(async () => {
-      const picked = await pickImage();
+      const picked = await pickImage(purpose);
 
       if (picked) onChange(picked);
-    }, [pickImage, onChange]);
+    }, [pickImage, onChange, purpose]);
 
     const handleRemove = useCallback(() => onChange(null), [onChange]);
 

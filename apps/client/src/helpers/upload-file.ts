@@ -1,4 +1,4 @@
-import { UploadHeaders, type TTempFile } from '@sharkord/shared';
+import { UploadHeaders, UploadPurpose, type TTempFile } from '@sharkord/shared';
 import i18next from 'i18next';
 import { toast } from 'sonner';
 import { getUrlFromServer } from './get-file-url';
@@ -9,12 +9,15 @@ import { getSessionStorageItem, SessionStorageKey } from './storage';
 // before sanitizing
 const encodeFileName = (name: string) => encodeURIComponent(name.trim());
 
-const uploadImage = async (file: File): Promise<TTempFile | undefined> => {
+const uploadImage = async (
+  file: File,
+  purpose?: UploadPurpose
+): Promise<TTempFile | undefined> => {
   if (!file.type.startsWith('image/')) {
     throw new Error(i18next.t('onlyImageFilesAllowed', { ns: 'common' }));
   }
 
-  return uploadFile(file);
+  return uploadFile(file, { purpose });
 };
 
 type TUploadProgress = {
@@ -25,6 +28,7 @@ type TUploadProgress = {
 
 type TUploadFileOptions = {
   onProgress?: (progress: TUploadProgress) => void;
+  purpose?: UploadPurpose;
 };
 
 const uploadFile = async (file: File, options?: TUploadFileOptions) => {
@@ -45,6 +49,10 @@ const uploadFile = async (file: File, options?: TUploadFileOptions) => {
       UploadHeaders.TOKEN,
       getSessionStorageItem(SessionStorageKey.TOKEN) ?? ''
     );
+
+    if (options?.purpose) {
+      xhr.setRequestHeader(UploadHeaders.PURPOSE, options.purpose);
+    }
 
     if (options?.onProgress) {
       xhr.upload.addEventListener('progress', (e) => {
