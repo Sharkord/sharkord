@@ -119,7 +119,8 @@
       },
       "available": {
         "title": "有可用更新",
-        "description": "版本 {{version}} 可以下载。"
+        "description": "版本 {{version}} 可以下载。",
+        "manualDescription": "版本 {{version}} 已发布。在 macOS 上请下载并手动安装。"
       },
       "downloading": {
         "title": "正在下载更新",
@@ -148,6 +149,11 @@
     "message": "Sharkord {{version}} 已下载。立即重启以安装，或在下次退出时自动安装。",
     "restart": "立即重启",
     "later": "稍后"
+  },
+  "manualUpdateDialog": {
+    "title": "有可用更新",
+    "message": "Sharkord {{version}} 已发布。macOS 版应用暂时无法自动更新，请下载新版本并手动安装。",
+    "download": "下载"
   },
   "updateNotification": {
     "title": "有可用更新",

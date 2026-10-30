@@ -119,7 +119,8 @@
       },
       "available": {
         "title": "Mise à jour disponible",
-        "description": "La version {{version}} est prête à être téléchargée."
+        "description": "La version {{version}} est prête à être téléchargée.",
+        "manualDescription": "La version {{version}} est disponible. Sur macOS, téléchargez-la et installez-la manuellement."
       },
       "downloading": {
         "title": "Téléchargement de la mise à jour",
@@ -148,6 +149,11 @@
     "message": "Sharkord {{version}} a été téléchargé. Redémarrez maintenant pour l'installer, ou il sera installé la prochaine fois que vous quitterez.",
     "restart": "Redémarrer maintenant",
     "later": "Plus tard"
+  },
+  "manualUpdateDialog": {
+    "title": "Mise à jour disponible",
+    "message": "Sharkord {{version}} est disponible. L'application macOS ne peut pas encore se mettre à jour seule, téléchargez la nouvelle version et installez-la manuellement.",
+    "download": "Télécharger"
   },
   "updateNotification": {
     "title": "Mise à jour disponible",

@@ -52,6 +52,7 @@ type TUpdateState = {
   status: TUpdateStatus;
   latestVersion: string | null;
   percent: number;
+  manual: boolean;
 };
 
 type TPickableSource = {

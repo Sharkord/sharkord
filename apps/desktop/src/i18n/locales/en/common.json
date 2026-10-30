@@ -119,7 +119,8 @@
       },
       "available": {
         "title": "Update available",
-        "description": "Version {{version}} is ready to download."
+        "description": "Version {{version}} is ready to download.",
+        "manualDescription": "Version {{version}} is out. On macOS, download it and install it manually."
       },
       "downloading": {
         "title": "Downloading update",
@@ -148,6 +149,11 @@
     "message": "Sharkord {{version}} has been downloaded. Restart now to install it, or it will be installed the next time you quit.",
     "restart": "Restart now",
     "later": "Later"
+  },
+  "manualUpdateDialog": {
+    "title": "Update available",
+    "message": "Sharkord {{version}} is out. The macOS app can't update itself yet, download the new version and install it manually.",
+    "download": "Download"
   },
   "updateNotification": {
     "title": "Update available",

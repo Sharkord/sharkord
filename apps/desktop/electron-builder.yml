@@ -19,6 +19,7 @@ electronFuses:
   enableNodeOptionsEnvironmentVariable: false
   enableNodeCliInspectArguments: false
   onlyLoadAppFromAsar: true
+  resetAdHocDarwinSignature: true
 mac:
   category: public.app-category.social-networking
   extendInfo:
@@ -26,9 +27,13 @@ mac:
       Sharkord uses the microphone for voice channels.
     NSCameraUsageDescription:
       Sharkord uses the camera for video in voice channels.
+    NSAudioCaptureUsageDescription:
+      Sharkord captures system audio when you share your screen with sound.
   target:
-    - dmg
-    - zip
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
 linux:
   category: Network
   target: AppImage

@@ -119,7 +119,8 @@
       },
       "available": {
         "title": "Je dostupná aktualizace",
-        "description": "Verzi {{version}} lze stáhnout."
+        "description": "Verzi {{version}} lze stáhnout.",
+        "manualDescription": "Vyšla verze {{version}}. Na macOS ji stáhněte a nainstalujte ručně."
       },
       "downloading": {
         "title": "Stahování aktualizace",
@@ -148,6 +149,11 @@
     "message": "Sharkord {{version}} byl stažen. Restartujte nyní pro instalaci, jinak se nainstaluje při příštím ukončení.",
     "restart": "Restartovat nyní",
     "later": "Později"
+  },
+  "manualUpdateDialog": {
+    "title": "Je dostupná aktualizace",
+    "message": "Vyšel Sharkord {{version}}. Aplikace pro macOS se zatím neumí aktualizovat sama, stáhněte novou verzi a nainstalujte ji ručně.",
+    "download": "Stáhnout"
   },
   "updateNotification": {
     "title": "Je dostupná aktualizace",

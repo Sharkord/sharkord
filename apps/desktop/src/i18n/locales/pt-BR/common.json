@@ -119,7 +119,8 @@
       },
       "available": {
         "title": "Atualização disponível",
-        "description": "A versão {{version}} está pronta para baixar."
+        "description": "A versão {{version}} está pronta para baixar.",
+        "manualDescription": "A versão {{version}} foi lançada. No macOS, baixe e instale manualmente."
       },
       "downloading": {
         "title": "Baixando atualização",
@@ -148,6 +149,11 @@
     "message": "O Sharkord {{version}} foi baixado. Reinicie agora para instalar, ou ele será instalado na próxima vez que você sair.",
     "restart": "Reiniciar agora",
     "later": "Mais tarde"
+  },
+  "manualUpdateDialog": {
+    "title": "Atualização disponível",
+    "message": "O Sharkord {{version}} foi lançado. O app para macOS ainda não consegue se atualizar sozinho, baixe a nova versão e instale manualmente.",
+    "download": "Baixar"
   },
   "updateNotification": {
     "title": "Atualização disponível",

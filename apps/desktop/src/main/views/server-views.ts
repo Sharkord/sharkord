@@ -207,49 +207,49 @@ const createServerViews = (
       }
     );
 
-    serverSession.setDisplayMediaRequestHandler(
-      async (request, callback) => {
-        let source: DesktopCapturerSource | undefined;
+    // no useSystemPicker: on macos 15+ it replaces this handler, and the loopback audio with it
+    serverSession.setDisplayMediaRequestHandler(async (request, callback) => {
+      let source: DesktopCapturerSource | undefined;
 
-        try {
-          const sources = await desktopCapturer.getSources({
-            types: ['screen', 'window'],
-            thumbnailSize: THUMBNAIL_SIZE
-          });
+      try {
+        const sources = await desktopCapturer.getSources({
+          types: ['screen', 'window'],
+          thumbnailSize: THUMBNAIL_SIZE
+        });
 
-          [source] = sources;
+        [source] = sources;
 
-          if (sources.length > 1) {
-            const sourceId = await pickSource(sources);
+        if (sources.length > 1) {
+          const sourceId = await pickSource(sources);
 
-            source = sources.find(({ id }) => id === sourceId);
-          }
-        } catch (error) {
-          console.warn('screen share: no source was picked', error);
+          source = sources.find(({ id }) => id === sourceId);
         }
+      } catch (error) {
+        console.warn('screen share: no source was picked', error);
+      }
 
-        if (!source) {
-          callback({});
+      if (!source) {
+        callback({});
 
-          return;
-        }
+        return;
+      }
 
-        displayCaptureAt.set(server.id, Date.now());
+      displayCaptureAt.set(server.id, Date.now());
 
-        // loopback records everything playing, only windows has it, linux uses the virtual microphone
-        const canLoopback = process.platform === 'win32';
+      // loopback records everything playing on windows and macos 14.2+ (which needs
+      // NSAudioCaptureUsageDescription or the track arrives silent), linux uses the virtual microphone
+      const canLoopback =
+        process.platform === 'win32' || process.platform === 'darwin';
 
-        // electron rejects an audio key that is present but undefined
-        if (request.audioRequested && canLoopback) {
-          callback({ video: source, audio: 'loopback' });
+      // electron rejects an audio key that is present but undefined
+      if (request.audioRequested && canLoopback) {
+        callback({ video: source, audio: 'loopback' });
 
-          return;
-        }
+        return;
+      }
 
-        callback({ video: source });
-      },
-      { useSystemPicker: true }
-    );
+      callback({ video: source });
+    });
 
     const view = new WebContentsView({
       webPreferences: {

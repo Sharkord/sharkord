@@ -16,6 +16,21 @@ releases work.
 
 None of them publish anything. The output goes to `dist/`.
 
+### macOS builds are unsigned
+
+There is no Apple Developer ID yet, so the mac builds are only signed ad hoc.
+That has three consequences:
+
+- Gatekeeper blocks the first launch of a downloaded copy. Open it from System
+  Settings, Privacy & Security, Open Anyway, or clear the quarantine flag with
+  `xattr -dr com.apple.quarantine /Applications/Sharkord.app`.
+- The app cannot update itself, Squirrel.Mac only installs an update signed like
+  the running app. It reports new versions and links to the release instead.
+- Every release ships `arm64` (Apple Silicon) and `x64` (Intel) builds, pick the
+  one that matches the Mac.
+
+Sharing the screen with sound needs macOS 14.2 or later.
+
 ### User data
 
 Holds `servers.json` (the server list, the selected server, whether the server

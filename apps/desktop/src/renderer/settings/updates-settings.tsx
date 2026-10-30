@@ -60,8 +60,19 @@ const UpdatesSettings = memo(({ settings }: TUpdatesSettingsProps) => {
     return null;
   }
 
-  const { status, currentVersion, latestVersion, percent } = state;
+  const { status, currentVersion, latestVersion, percent, manual } = state;
   const { tone, icon, busy } = STATUS_LOOKS[status];
+
+  let description = t(`settings.updateStatus.${status}.description`, {
+    version: latestVersion,
+    percent
+  });
+
+  if (status === 'available' && manual) {
+    description = t('settings.updateStatus.available.manualDescription', {
+      version: latestVersion
+    });
+  }
 
   let latest = latestVersion
     ? `v${latestVersion}`
@@ -86,10 +97,7 @@ const UpdatesSettings = memo(({ settings }: TUpdatesSettingsProps) => {
         icon={icon}
         busy={busy}
         title={t(`settings.updateStatus.${status}.title`)}
-        description={t(`settings.updateStatus.${status}.description`, {
-          version: latestVersion,
-          percent
-        })}
+        description={description}
         progress={status === 'downloading' ? percent : undefined}
         action={<UpdateAction status={status} />}
         versions={versions}
