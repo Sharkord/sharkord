@@ -11,6 +11,7 @@ import type {
   TPluginHotkeyPhase,
   TPluginMessageComponentProps,
   TPluginMessageComponentsMap,
+  TPluginNotification,
   TPluginStore,
   TPluginStoreState,
   TPluginTabs,
@@ -127,6 +128,44 @@ const useHotkeyBinding = (id: string): TPluginHotkeyBinding =>
   store.hooks.useHotkeyBinding(id);
 
 /**
+ * Returns a function that shows a system notification from your plugin: a
+ * browser notification on the web, a native one in the desktop app.
+ *
+ * ```ts
+ * const notify = useNotify();
+ *
+ * notify({
+ *   title: 'Build finished',
+ *   body: 'main passed in 4 minutes',
+ *   icon: 'data:image/png;base64,...',
+ *   data: { buildId: 42 }
+ * });
+ * ```
+ *
+ * The title is shown after your plugin's name. `icon` is an http(s) address,
+ * for example one of your own routes, or a `data:image/...` url for an image
+ * you generated. `blob:` urls are not supported. `data` comes back to
+ * `useNotificationClick`, keep it small: it is capped at 4 KB.
+ *
+ * Nothing shows, without an error, when the user has not turned on plugin
+ * notifications, when none of their roles may receive this plugin's
+ * notifications, or when the plugin sent more than 5 in 5 seconds.
+ */
+const useNotify = (): ((notification: TPluginNotification) => void) =>
+  store.hooks.useNotify();
+
+/**
+ * Runs when the user clicks one of your notifications, with the `data` you
+ * sent it. The window is already in front by then.
+ *
+ * ```ts
+ * useNotificationClick((data) => openBuild((data as { buildId: number }).buildId));
+ * ```
+ */
+const useNotificationClick = (handler: (data: unknown) => void) =>
+  store.hooks.useNotificationClick(handler);
+
+/**
  * Reads a slice of Sharkord's state and re-renders when it changes.
  *
  * The selector must return a stable reference for unchanged state: reading a
@@ -143,6 +182,8 @@ export {
   useCanUseCommand,
   useHotkey,
   useHotkeyBinding,
+  useNotificationClick,
+  useNotify,
   usePlaybackDeviceId,
   usePush,
   useStoreSelector,
@@ -155,6 +196,7 @@ export type {
   TPluginHotkeyPhase,
   TPluginMessageComponentProps,
   TPluginMessageComponentsMap,
+  TPluginNotification,
   TPluginStoreState,
   TPluginTabs
 };

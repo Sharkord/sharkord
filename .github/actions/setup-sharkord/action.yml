@@ -1,0 +1,19 @@
+name: Setup Sharkord
+description: Install Bun and the workspace dependencies. Requires checkout before use.
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: 1.3.14
+
+    - name: Mediasoup worker
+      uses: ./.github/actions/mediasoup-worker
+
+    - name: Install dependencies
+      shell: bash
+      run: bun install --frozen-lockfile
+      env:
+        ELECTRON_SKIP_BINARY_DOWNLOAD: 1

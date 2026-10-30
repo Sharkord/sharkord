@@ -9,6 +9,7 @@ type THotkeyStatus = 'disconnected' | 'connecting' | 'connected' | 'failed';
 
 type THotkeyCapabilities = {
   keyUp: boolean;
+  systemManaged: boolean;
 };
 
 type THotkeyAction = {
@@ -31,7 +32,8 @@ type THotkeySourceEvent =
       status: THotkeyStatus;
       capabilities: THotkeyCapabilities;
     }
-  | { type: 'error'; actionId: string; reason: string };
+  | { type: 'error'; actionId: string; reason: string }
+  | { type: 'error-cleared'; actionId: string };
 
 type THotkeySource = {
   reconnect: () => void;

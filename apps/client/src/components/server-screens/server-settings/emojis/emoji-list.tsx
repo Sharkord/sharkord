@@ -1,7 +1,12 @@
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { getFileUrl } from '@/helpers/get-file-url';
 import type { TJoinedEmoji } from '@sharkord/shared';
-import { IconButton, Input, Spinner, Tooltip } from '@sharkord/ui';
+import {
+  IconButton,
+  Input,
+  SettingsSection,
+  Spinner,
+  Tooltip
+} from '@sharkord/ui';
 import { Plus, Search } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

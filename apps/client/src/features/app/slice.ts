@@ -1,3 +1,4 @@
+import { isDesktopApp } from '@/helpers/is-desktop-app';
 import {
   getLocalStorageItem,
   getLocalStorageItemAsJSON,
@@ -28,10 +29,11 @@ export interface TAppState {
   hotkeysEnabled: boolean;
   selectedDmChannelId: number | undefined;
   selectedThread: TThreadTarget | undefined;
-  browserNotifications: boolean;
-  browserNotificationsForMentions: boolean;
-  browserNotificationsForDms: boolean;
-  browserNotificationsForReplies: boolean;
+  notifyAllMessages: boolean;
+  notifyMentionsOnly: boolean;
+  notifyDms: boolean;
+  notifyReplies: boolean;
+  notifyPlugins: boolean;
   notificationSounds: boolean;
   messageSentSound: boolean;
   mutedChannelIds: number[];
@@ -66,21 +68,25 @@ const initialState: TAppState = {
   ),
   selectedDmChannelId: undefined,
   selectedThread: undefined,
-  browserNotifications: getLocalStorageItemBool(
-    LocalStorageKey.BROWSER_NOTIFICATIONS,
+  notifyAllMessages: getLocalStorageItemBool(
+    LocalStorageKey.NOTIFY_ALL_MESSAGES,
+    isDesktopApp()
+  ),
+  notifyMentionsOnly: getLocalStorageItemBool(
+    LocalStorageKey.NOTIFY_MENTIONS_ONLY,
     false
   ),
-  browserNotificationsForMentions: getLocalStorageItemBool(
-    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_MENTIONS,
-    false
+  notifyDms: getLocalStorageItemBool(
+    LocalStorageKey.NOTIFY_DMS,
+    isDesktopApp()
   ),
-  browserNotificationsForDms: getLocalStorageItemBool(
-    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_DMS,
-    false
+  notifyReplies: getLocalStorageItemBool(
+    LocalStorageKey.NOTIFY_REPLIES,
+    isDesktopApp()
   ),
-  browserNotificationsForReplies: getLocalStorageItemBool(
-    LocalStorageKey.BROWSER_NOTIFICATIONS_FOR_REPLIES,
-    false
+  notifyPlugins: getLocalStorageItemBool(
+    LocalStorageKey.NOTIFY_PLUGINS,
+    isDesktopApp()
   ),
   notificationSounds: getLocalStorageItemBool(
     LocalStorageKey.NOTIFICATION_SOUNDS,
@@ -167,23 +173,20 @@ export const appSlice = createSlice({
     ) => {
       state.selectedThread = action.payload;
     },
-    setBrowserNotifications: (state, action: PayloadAction<boolean>) => {
-      state.browserNotifications = action.payload;
+    setNotifyAllMessages: (state, action: PayloadAction<boolean>) => {
+      state.notifyAllMessages = action.payload;
     },
-    setBrowserNotificationsForMentions: (
-      state,
-      action: PayloadAction<boolean>
-    ) => {
-      state.browserNotificationsForMentions = action.payload;
+    setNotifyMentionsOnly: (state, action: PayloadAction<boolean>) => {
+      state.notifyMentionsOnly = action.payload;
     },
-    setBrowserNotificationsForDms: (state, action: PayloadAction<boolean>) => {
-      state.browserNotificationsForDms = action.payload;
+    setNotifyDms: (state, action: PayloadAction<boolean>) => {
+      state.notifyDms = action.payload;
     },
-    setBrowserNotificationsForReplies: (
-      state,
-      action: PayloadAction<boolean>
-    ) => {
-      state.browserNotificationsForReplies = action.payload;
+    setNotifyReplies: (state, action: PayloadAction<boolean>) => {
+      state.notifyReplies = action.payload;
+    },
+    setNotifyPlugins: (state, action: PayloadAction<boolean>) => {
+      state.notifyPlugins = action.payload;
     },
     setNotificationSounds: (state, action: PayloadAction<boolean>) => {
       state.notificationSounds = action.payload;

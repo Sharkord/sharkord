@@ -1,9 +1,8 @@
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { useOwnUserPasswordSet } from '@/features/server/users/hooks';
 import { getTRPCClient } from '@/lib/trpc';
 import { getTrpcError } from '@sharkord/shared';
-import { Button, Group, Input, Switch } from '@sharkord/ui';
+import { Button, Group, Input, SettingsSection, Switch } from '@sharkord/ui';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';

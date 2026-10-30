@@ -8,7 +8,7 @@ on:
 jobs:
   ci:
     name: Run E2E Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repository
@@ -26,7 +26,7 @@ jobs:
             ~/.bun/install/cache
             node_modules
             packages/e2e/node_modules
-          key: bun-${{ runner.os }}-${{ hashFiles('**/bun.lockb') }}
+          key: bun-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             bun-${{ runner.os }}-
 
@@ -34,12 +34,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('**/bun.lockb') }}
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             playwright-${{ runner.os }}-
 
+      - name: Mediasoup worker
+        uses: ./.github/actions/mediasoup-worker
+
       - name: Install dependencies
         run: bun install
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
 
       - name: Install Playwright browsers
         working-directory: packages/e2e

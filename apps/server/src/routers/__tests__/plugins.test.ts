@@ -5,6 +5,7 @@ import {
   OWNER_ROLE_ID,
   Permission,
   PLUGIN_MESSAGE_COMPONENTS_MAX_BYTES,
+  PLUGIN_NOTIFICATIONS_CAPABILITY,
   PluginCapabilityMode,
   PluginCapabilityType,
   PluginSlot,
@@ -3625,6 +3626,45 @@ describe('plugins router', () => {
       expect(
         capabilities.some((c) => c.type === PluginCapabilityType.ACTION)
       ).toBe(true);
+    });
+
+    test('should list a notification capability for every plugin, open to everyone by default', async () => {
+      const { caller } = await initTest();
+      const { capabilities } = await caller.plugins.getCapabilities({
+        pluginId: 'plugin-b'
+      });
+
+      const notifications = capabilities.filter(
+        (c) => c.type === PluginCapabilityType.NOTIFICATION
+      );
+
+      expect(notifications).toHaveLength(1);
+      expect(notifications[0]!.name).toBe(PLUGIN_NOTIFICATIONS_CAPABILITY);
+      expect(notifications[0]!.configured).toBe(false);
+      expect(notifications[0]!.mode).toBe(PluginCapabilityMode.PUBLIC);
+    });
+
+    test('should report a restricted notification capability with its roles', async () => {
+      const { caller } = await initTest();
+
+      await caller.plugins.setCapabilityAccess({
+        pluginId: 'plugin-b',
+        type: PluginCapabilityType.NOTIFICATION,
+        name: PLUGIN_NOTIFICATIONS_CAPABILITY,
+        mode: PluginCapabilityMode.RESTRICTED,
+        roleIds: [MODERATOR_ROLE]
+      });
+
+      const { capabilities } = await caller.plugins.getCapabilities({
+        pluginId: 'plugin-b'
+      });
+      const notifications = capabilities.find(
+        (c) => c.type === PluginCapabilityType.NOTIFICATION
+      );
+
+      expect(notifications!.configured).toBe(true);
+      expect(notifications!.mode).toBe(PluginCapabilityMode.RESTRICTED);
+      expect(notifications!.roleIds).toEqual([MODERATOR_ROLE]);
     });
 
     // every test above configures one capability on one plugin. these are about

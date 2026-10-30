@@ -1,4 +1,3 @@
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TLogEntry } from '@sharkord/shared';
 import {
@@ -6,7 +5,8 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
+  SettingsSection
 } from '@sharkord/ui';
 import { AlertCircle, Bug, Info } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';

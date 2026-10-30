@@ -1,6 +1,6 @@
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { cn } from '@/lib/utils';
 import type { TJoinedRole } from '@sharkord/shared';
+import { SettingsSection } from '@sharkord/ui';
 import { Globe } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';

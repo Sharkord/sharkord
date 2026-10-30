@@ -1,0 +1,168 @@
+{
+  "welcomeTitle": "Benvenuto in Sharkord",
+  "addServerTitle": "Aggiungi un server",
+  "addServerDescription": "Inserisci l'indirizzo del server a cui vuoi connetterti.",
+  "connect": "Connetti",
+  "connecting": "Connessione...",
+  "cancel": "Annulla",
+  "addServerTooltip": "Aggiungi un server",
+  "hideServerList": "Nascondi l'elenco dei server",
+  "removeServer": "Rimuovi server",
+  "serverStatus": {
+    "idle": "In attesa di connessione",
+    "loading": "Caricamento",
+    "connecting": "Connessione...",
+    "connected": "Connesso",
+    "signed-out": "Disconnesso dall'account",
+    "disconnected": "Disconnesso",
+    "error": "Impossibile caricare, selezionalo per riprovare",
+    "server-outdated": "Questo server usa una versione precedente di Sharkord, le funzioni desktop sono disattivate finché non viene aggiornato",
+    "app-outdated": "Questo server richiede un'app Sharkord più recente, le funzioni desktop sono disattivate finché non aggiorni"
+  },
+  "errors": {
+    "invalidUrl": "Questo non è un indirizzo di server valido.",
+    "unreachable": "Impossibile raggiungere un server Sharkord a questo indirizzo.",
+    "duplicate": "Hai già aggiunto questo server."
+  },
+  "menu": {
+    "servers": "Server",
+    "addServer": "Aggiungi server...",
+    "hideServerList": "Nascondi elenco server",
+    "showServerList": "Mostra elenco server",
+    "removeCurrentServer": "Rimuovi server corrente...",
+    "toggleMenuBar": "Mostra/nascondi barra dei menu",
+    "advanced": "Avanzate",
+    "desktopSettings": "Impostazioni desktop...",
+    "togglePerformanceOverlay": "Mostra o nascondi overlay prestazioni",
+    "openAppFolder": "Apri cartella dell'app",
+    "resetApp": "Reimposta app..."
+  },
+  "tray": {
+    "show": "Mostra Sharkord",
+    "quit": "Esci da Sharkord"
+  },
+  "hotkeyDescription": "Scorciatoia di Sharkord: {{shortcut}}",
+  "removeDialog": {
+    "title": "Rimuovi server",
+    "message": "Rimuovere {{name}}? Verrai disconnesso da questo server su questo dispositivo.",
+    "confirm": "Rimuovi",
+    "cancel": "Annulla"
+  },
+  "resetDialog": {
+    "title": "Reimpostare l'app?",
+    "message": "Verrai disconnesso da tutti i server e verranno eliminati tutti i server e le impostazioni salvati su questo dispositivo. L'app verrà poi riavviata.",
+    "confirm": "Reimposta",
+    "cancel": "Annulla"
+  },
+  "mediaDialog": {
+    "title": "Consentire a {{name}} di usare microfono e fotocamera?",
+    "message": "{{name}} vuole usare il tuo microfono e la tua fotocamera, per esempio per entrare in un canale vocale. Una volta consentito, non te lo chiederemo più per questo server.",
+    "allow": "Consenti",
+    "deny": "Nega"
+  },
+  "sourcePicker": {
+    "title": "Scegli cosa condividere",
+    "screens": "Schermi",
+    "windows": "Finestre"
+  },
+  "settings": {
+    "title": "Impostazioni desktop",
+    "general": "Generale",
+    "autoStart": "Apri all'avvio",
+    "autoStartDescription": "Avvia Sharkord automaticamente quando accedi al computer.",
+    "closeToTray": "Chiudi nell'area di notifica",
+    "closeToTrayDescription": "Lascia Sharkord in esecuzione nell'area di notifica quando chiudi la finestra. Disattivalo se il tuo desktop non ha un'area di notifica.",
+    "startToTray": "Avvia ridotto nell'area di notifica",
+    "startToTrayDescription": "Quando Sharkord si apre all'accesso, tienilo nell'area di notifica senza mostrare la finestra. Riaprilo dall'icona nell'area di notifica.",
+    "dynamicTrayIcon": "Logo del server come icona dell'app",
+    "dynamicTrayIconDescription": "Mostra il logo del server che stai guardando sulle icone della barra delle applicazioni e della finestra, al posto di quella di Sharkord.",
+    "connectAllOnStartup": "Connetti a tutti i server all'avvio",
+    "connectAllOnStartupDescription": "Carica tutti i server in background all'apertura dell'app, così ricevi i contatori dei non letti e le notifiche da ognuno. Usa più memoria.",
+    "autoUpdate": "Installa gli aggiornamenti automaticamente",
+    "autoUpdateDescription": "Scarica le nuove versioni dell'app in background e chiede di riavviare quando una è pronta.",
+    "performance": "Prestazioni",
+    "throttleHiddenServers": "Limita i server nascosti",
+    "throttleHiddenServersDescription": "Rallenta timer e rendering dei server che non stai guardando. Risparmia CPU e batteria, disattivalo se i server in background non funzionano bene.",
+    "performanceOverlay": "Overlay prestazioni",
+    "performanceOverlayDescription": "Mostra l'uso di memoria e CPU dell'app in una piccola finestra.",
+    "togglePerformanceOverlay": "Attiva/disattiva overlay prestazioni",
+    "menuBar": "Barra dei menu",
+    "menuBarDescription": "Mostra o nasconde la barra dei menu della finestra. Puoi anche usare Ctrl+Maiusc+M.",
+    "shortcuts": "Scorciatoie",
+    "shortcutsDescription": "Scorciatoie globali dell'app desktop stessa.",
+    "shortcut": {
+      "selectServer": "Passa al server da 1 a 9",
+      "addServer": "Aggiungi un server",
+      "toggleServerList": "Mostra o nascondi l'elenco dei server",
+      "toggleMenuBar": "Mostra o nascondi la barra dei menu",
+      "togglePerformanceOverlay": "Attiva/disattiva l'overlay prestazioni"
+    },
+    "updates": "Aggiornamenti",
+    "updatesDescription": "Mantieni aggiornata l'app Sharkord.",
+    "currentVersion": "Versione attuale",
+    "updateStatus": {
+      "unsupported": {
+        "title": "Aggiornamenti non disponibili",
+        "description": "Questa build dell'app non può aggiornarsi da sola. Scarica le nuove versioni dalla pagina dei rilasci."
+      },
+      "idle": {
+        "title": "Non ancora controllato",
+        "description": "Controlla se è uscita una versione più recente dell'app."
+      },
+      "checking": {
+        "title": "Ricerca aggiornamenti",
+        "description": "Ricerca di una versione più recente dell'app."
+      },
+      "up-to-date": {
+        "title": "Sei aggiornato",
+        "description": "Stai usando l'ultima versione dell'app."
+      },
+      "available": {
+        "title": "Aggiornamento disponibile",
+        "description": "La versione {{version}} è pronta da scaricare.",
+        "manualDescription": "È disponibile la versione {{version}}. Su macOS, scaricala e installala manualmente."
+      },
+      "downloading": {
+        "title": "Download dell'aggiornamento",
+        "description": "Download della versione {{version}}, {{percent}}%."
+      },
+      "ready": {
+        "title": "Aggiornamento pronto",
+        "description": "La versione {{version}} è stata scaricata. Riavvia l'app per installarla."
+      },
+      "error": {
+        "title": "Controllo aggiornamenti non riuscito",
+        "description": "Impossibile cercare aggiornamenti. Controlla la connessione e riprova."
+      }
+    },
+    "checkForUpdates": "Cerca aggiornamenti",
+    "downloadUpdate": "Scarica aggiornamento",
+    "installUpdate": "Riavvia e aggiorna",
+    "latestVersion": "Ultima versione",
+    "unknownVersion": "Sconosciuta",
+    "appFolder": "Cartella dell'app",
+    "appFolderDescription": "Dove l'app conserva i tuoi server, accessi e impostazioni.",
+    "openAppFolder": "Apri la cartella dell'app"
+  },
+  "updateDialog": {
+    "title": "Aggiornamento pronto",
+    "message": "Sharkord {{version}} è stato scaricato. Riavvia ora per installarlo, oppure verrà installato alla prossima chiusura.",
+    "restart": "Riavvia ora",
+    "later": "Più tardi"
+  },
+  "manualUpdateDialog": {
+    "title": "Aggiornamento disponibile",
+    "message": "È disponibile Sharkord {{version}}. L'app per macOS non può ancora aggiornarsi da sola, scarica la nuova versione e installala manualmente.",
+    "download": "Scarica"
+  },
+  "updateNotification": {
+    "title": "Aggiornamento disponibile",
+    "body": "È uscito Sharkord {{version}}. Fai clic per aprire le impostazioni degli aggiornamenti."
+  },
+  "serverPlaceholder": {
+    "loading": "Connessione a {{name}}...",
+    "errorTitle": "Impossibile raggiungere {{name}}",
+    "errorDescription": "Il server non risponde. Verifica che sia online e riprova.",
+    "retry": "Riprova"
+  }
+}

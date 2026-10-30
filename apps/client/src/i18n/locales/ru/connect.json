@@ -13,6 +13,7 @@
   "inviteCode": "Код приглашения: {{code}}",
   "connectError": "Не удалось подключиться: {{message}}",
   "oidcBtn": "Войти через SSO",
+  "addToDesktopApp": "Добавить в настольное приложение",
   "oidcCompleting": "Завершение входа",
   "oidcError": {
     "access_denied": "Ваш поставщик учётных записей отклонил вход.",

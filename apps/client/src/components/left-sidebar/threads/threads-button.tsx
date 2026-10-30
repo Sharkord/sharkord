@@ -1,11 +1,10 @@
-import { UnreadCount } from '@/components/unread-count';
 import { setThreadsOpen } from '@/features/server/threads/actions';
 import {
   useFollowedThreadsReadState,
   useThreadsOpen
 } from '@/features/server/threads/hooks';
 import { TestId } from '@sharkord/shared';
-import { cn, Tooltip } from '@sharkord/ui';
+import { cn, Tooltip, UnreadCount } from '@sharkord/ui';
 import { MessageSquareText, X } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
