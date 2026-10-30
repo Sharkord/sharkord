@@ -5,12 +5,13 @@ import { useSelector } from 'react-redux';
 import type { IRootState } from '../store';
 import { useChannelById, useChannelPermissionsById } from './channels/hooks';
 import { channelReadStateByIdSelector } from './channels/selectors';
-import { getConversationKey } from './helpers';
+import { getConversationKey, rolesCan } from './helpers';
 import {
   activeFullscreenPluginIdSelector,
   categoryHasUnreadMentionsSelector,
   categoryUnreadMessagesCountSelector,
   connectedSelector,
+  desktopConnectionStateSelector,
   disconnectInfoSelector,
   dmsOpenSelector,
   hasSharingScreenUsersSelector,
@@ -28,6 +29,7 @@ import {
   referenceableChannelsSelector,
   serverIdSelector,
   serverNameSelector,
+  totalHasUnreadMentionsSelector,
   totalUnreadCountSelector,
   typingUsersByConversationKeySelector,
   userRolesSelector,
@@ -49,6 +51,12 @@ export const useServerId = () => useSelector(serverIdSelector);
 export const useServerName = () => useSelector(serverNameSelector);
 
 export const useTotalUnreadCount = () => useSelector(totalUnreadCountSelector);
+
+export const useDesktopConnectionState = () =>
+  useSelector(desktopConnectionStateSelector);
+
+export const useTotalHasUnreadMentions = () =>
+  useSelector(totalHasUnreadMentionsSelector);
 
 export const usePublicServerSettings = () =>
   useSelector(publicServerSettingsSelector);
@@ -76,23 +84,8 @@ export const useCan = () => {
 
   // TODO: maybe this can can recieve both Permission and ChannelPermission?
   const can = useCallback(
-    (permission: Permission | Permission[]) => {
-      if (isOwner) return true;
-
-      const permissionsToCheck = Array.isArray(permission)
-        ? permission
-        : [permission];
-
-      for (const role of ownUserRoles) {
-        for (const perm of role.permissions) {
-          if (permissionsToCheck.includes(perm)) {
-            return true;
-          }
-        }
-      }
-
-      return false;
-    },
+    (permission: Permission | Permission[]) =>
+      rolesCan(ownUserRoles, isOwner, permission),
     [ownUserRoles, isOwner]
   );
 

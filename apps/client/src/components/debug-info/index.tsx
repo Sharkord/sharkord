@@ -1,5 +1,23 @@
+import { getDesktopApi } from '@/helpers/desktop-api';
 import { useStrictEffect } from '@/hooks/use-strict-effect';
+import { DESKTOP_BRIDGE_VERSION, getDesktopMismatch } from '@sharkord/shared';
 import { memo } from 'react';
+
+const getDesktopStatus = () => {
+  const entry = window.sharkordDesktop;
+
+  if (!entry) {
+    return 'not running in the desktop app';
+  }
+
+  if (getDesktopApi()) {
+    return `connected, desktop features available (bridge v${DESKTOP_BRIDGE_VERSION})`;
+  }
+
+  const mismatch = getDesktopMismatch(entry.version, DESKTOP_BRIDGE_VERSION);
+
+  return `not connected (${mismatch ?? 'refused'}), desktop features unavailable (app bridge v${entry.version}, client bridge v${DESKTOP_BRIDGE_VERSION})`;
+};
 
 const DebugInfo = memo(() => {
   useStrictEffect(() => {
@@ -16,6 +34,11 @@ const DebugInfo = memo(() => {
       '%cEnvironment: %s',
       'font-size: 16px; font-weight: bold;',
       import.meta.env.MODE
+    );
+    console.log(
+      '%cDesktop app: %s',
+      'font-size: 16px; font-weight: bold;',
+      getDesktopStatus()
     );
     console.log(
       '%cThis is a open source project, feel free to contribute: https://github.com/Sharkord/sharkord',

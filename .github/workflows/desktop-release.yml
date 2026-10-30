@@ -1,0 +1,161 @@
+name: Desktop Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Desktop version bump"
+        required: true
+        type: choice
+        options:
+          - none
+          - patch
+          - minor
+          - major
+        default: "none"
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compute next version
+        id: next
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          current=$(jq -r .version apps/desktop/package.json)
+          IFS=. read -r major minor patch <<< "$current"
+
+          case "$BUMP" in
+            major) next="$((major + 1)).0.0" ;;
+            minor) next="$major.$((minor + 1)).0" ;;
+            patch) next="$major.$minor.$((patch + 1))" ;;
+            *) next="$current" ;;
+          esac
+
+          # the tag the release job pushes to this repo, not a release in Sharkord/sharkord-desktop
+          if git ls-remote --exit-code --tags origin "refs/tags/desktop-v$next" > /dev/null; then
+            echo "this repo already has the tag desktop-v$next, bump the version or delete the tag"
+            exit 1
+          fi
+
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+
+  ci:
+    needs: version
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    needs: [ci, version]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: 1.3.14
+
+      - name: Mediasoup worker
+        if: runner.os == 'Linux'
+        uses: ./.github/actions/mediasoup-worker
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --filter '@sharkord/desktop'
+
+      - name: Set version
+        working-directory: apps/desktop
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          bun -e "const pkg = await Bun.file('package.json').json(); pkg.version = process.env.VERSION; await Bun.write('package.json', JSON.stringify(pkg, null, 2) + '\n');"
+
+      - name: Build
+        working-directory: apps/desktop
+        env:
+          # unsigned until signing certificates are set up
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: bun run package --publish never
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          if-no-files-found: error
+          path: |
+            apps/desktop/dist/*.AppImage
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.dmg
+            apps/desktop/dist/*.zip
+            apps/desktop/dist/*.blockmap
+            apps/desktop/dist/latest*.yml
+
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-*
+          path: release
+          merge-multiple: true
+
+      - name: Publish draft release
+        env:
+          GH_TOKEN: ${{ secrets.DESKTOP_RELEASE_TOKEN }}
+          REPO: Sharkord/sharkord-desktop
+          TAG: v${{ needs.version.outputs.version }}
+        run: |
+          # a rerun after a failed upload refills the same draft instead of adding another
+          if gh release list --repo "$REPO" --json tagName --jq '.[].tagName' | grep -qx "$TAG"; then
+            gh release upload "$TAG" release/* --repo "$REPO" --clobber
+          else
+            gh release create "$TAG" release/* --repo "$REPO" --draft --title "$TAG" --notes ""
+          fi
+
+  release:
+    needs: [version, publish]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Identify user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit version bump
+        if: ${{ inputs.bump != 'none' }}
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          jq --arg version "$VERSION" '.version = $version' apps/desktop/package.json > package.tmp
+          mv package.tmp apps/desktop/package.json
+          git add apps/desktop/package.json
+          git commit -m "chore: bump desktop version to $VERSION"
+
+      - name: Create Git tag
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: git tag -a "desktop-v$VERSION" -m "Desktop release v$VERSION"
+
+      - name: Push commit and tag
+        run: git push --follow-tags

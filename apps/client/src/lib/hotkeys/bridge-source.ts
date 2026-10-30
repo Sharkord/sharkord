@@ -13,7 +13,10 @@ const PROTOCOL_VERSION = 1;
 const MIN_RETRY_MS = 1000;
 const MAX_RETRY_MS = 10000;
 const MAX_ATTEMPTS = 10;
-const NO_CAPABILITIES: THotkeyCapabilities = { keyUp: false };
+const NO_CAPABILITIES: THotkeyCapabilities = {
+  keyUp: false,
+  systemManaged: false
+};
 
 type TBridgeIdentity = {
   serverId: string;
@@ -29,7 +32,7 @@ const parseCapabilities = (value: unknown): THotkeyCapabilities => {
 
   const { keyUp } = value as Record<string, unknown>;
 
-  return { keyUp: keyUp === true };
+  return { keyUp: keyUp === true, systemManaged: false };
 };
 
 // the bridge is a separate process we do not control, so every field is checked
@@ -127,6 +130,18 @@ const createBridgeSource = ({
     socket.send(JSON.stringify({ type: 'bindings', bindings }));
   };
 
+  const sendFocus = () => {
+    if (!socket || !ready) {
+      return;
+    }
+
+    socket.send(JSON.stringify({ type: 'focus' }));
+  };
+
+  const handleWindowFocus = () => {
+    sendFocus();
+  };
+
   const scheduleRetry = (delay: number) => {
     retryTimer = setTimeout(connect, delay);
   };
@@ -193,6 +208,10 @@ const createBridgeSource = ({
       attempts = 0;
       retryDelay = MIN_RETRY_MS;
       emitStatus(message.status, message.capabilities);
+
+      if (document.hasFocus()) {
+        sendFocus();
+      }
 
       return;
     }
@@ -283,6 +302,7 @@ const createBridgeSource = ({
   const stop = () => {
     clearTimeout(retryTimer);
     dropSocket();
+    window.removeEventListener('focus', handleWindowFocus);
 
     status = 'disconnected';
   };
@@ -312,6 +332,7 @@ const createBridgeSource = ({
     listeners.add(listener);
 
     if (listeners.size === 1) {
+      window.addEventListener('focus', handleWindowFocus);
       begin();
     }
 

@@ -13,6 +13,7 @@
   "inviteCode": "Code d'invitation : {{code}}",
   "connectError": "Impossible de se connecter : {{message}}",
   "oidcBtn": "Se connecter avec SSO",
+  "addToDesktopApp": "Ajouter à l'application de bureau",
   "oidcCompleting": "Finalisation de la connexion",
   "oidcError": {
     "access_denied": "Votre fournisseur d'identité a refusé la connexion.",

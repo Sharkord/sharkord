@@ -1,6 +1,7 @@
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { useCan, useUserSettingsPlugins } from '@/features/server/hooks';
 import { Permission, PluginSlot } from '@sharkord/shared';
+import { type TSettingsEntry } from '@sharkord/ui';
 import {
   Bell,
   Headphones,
@@ -8,13 +9,14 @@ import {
   KeyRound,
   Package,
   SlidersHorizontal,
+  Trash2,
   User
 } from 'lucide-react';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TServerScreenBaseProps } from '../screens';
 import { SettingsShell } from '../settings-shell';
-import type { TSettingsEntry } from '../settings-shell/types';
+import { DeleteAccount } from './delete-account';
 import { Devices } from './devices';
 import { Hotkeys } from './hotkeys';
 import { Notifications } from './notifications';
@@ -66,6 +68,12 @@ const UserSettings = memo(({ close }: TUserSettingsProps) => {
         label: t('othersTab'),
         icon: SlidersHorizontal,
         content: <Others />
+      },
+      {
+        id: 'delete-account',
+        label: t('deleteAccountTab'),
+        icon: Trash2,
+        content: <DeleteAccount />
       }
     ],
     [t]

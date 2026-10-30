@@ -8,9 +8,13 @@ import { prepareMessageHtml, UploadHeaders } from '@sharkord/shared';
 import { setSelectedChannelId } from '../channels/actions';
 import { selectedChannelIdSelector } from '../channels/selectors';
 import { mapStateToPluginState } from '../selectors';
+import { sendPluginNotification } from './actions';
+import { onPluginNotificationClick } from './notification-click-registry';
 import { onPluginPush } from './push-registry';
 import { usePluginCanUse } from './use-plugin-can-use';
 import { usePluginHotkey, usePluginHotkeyBinding } from './use-plugin-hotkey';
+import { usePluginNotificationClick } from './use-plugin-notification-click';
+import { usePluginNotify } from './use-plugin-notify';
 import { usePluginPush } from './use-plugin-push';
 import { usePluginUserData } from './use-plugin-user-data';
 
@@ -62,7 +66,12 @@ const pluginActions: TPluginActions = {
     await trpc.plugins.setUserData.mutate({ pluginId, data });
   },
   onPush: (pluginId: string, handler: (data: unknown) => void) =>
-    onPluginPush(pluginId, handler)
+    onPluginPush(pluginId, handler),
+  notify: (pluginId, notification) => {
+    sendPluginNotification(pluginId, notification);
+  },
+  onNotificationClick: (pluginId, handler) =>
+    onPluginNotificationClick(pluginId, handler)
 };
 
 const usePluginPlaybackDeviceId = () => {
@@ -81,7 +90,9 @@ const pluginStore: TPluginStore = {
     useCanUse: usePluginCanUse,
     usePlaybackDeviceId: usePluginPlaybackDeviceId,
     useHotkey: usePluginHotkey,
-    useHotkeyBinding: usePluginHotkeyBinding
+    useHotkeyBinding: usePluginHotkeyBinding,
+    useNotify: usePluginNotify,
+    useNotificationClick: usePluginNotificationClick
   }
 };
 

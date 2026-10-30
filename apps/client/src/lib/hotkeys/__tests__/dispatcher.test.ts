@@ -43,14 +43,14 @@ const createFakeSource = () => {
     emit({
       type: 'status',
       status: 'connected',
-      capabilities: { keyUp }
+      capabilities: { keyUp, systemManaged: false }
     });
 
   const disconnect = () =>
     emit({
       type: 'status',
       status: 'disconnected',
-      capabilities: { keyUp: false }
+      capabilities: { keyUp: false, systemManaged: false }
     });
 
   const lastSent = () => sent[sent.length - 1];
@@ -249,7 +249,8 @@ describe('hotkey dispatcher', () => {
     ]);
     expect(dispatcher.getState().status).toBe('connected');
     expect(dispatcher.getState().capabilities).toEqual({
-      keyUp: false
+      keyUp: false,
+      systemManaged: false
     });
   });
 
@@ -295,6 +296,19 @@ describe('hotkey dispatcher', () => {
     dispatcher.setBinding(MUTE.id, 'ctrl+KeyN');
 
     expect(dispatcher.getState().errors).toEqual({});
+  });
+
+  it('drops an error the source reports as fixed and keeps the others', () => {
+    const dispatcher = createHotkeyDispatcher();
+    const fake = createFakeSource();
+
+    dispatcher.registerAction(MUTE, () => {});
+    dispatcher.setSource(fake.source);
+    fake.emit({ type: 'error', actionId: MUTE.id, reason: 'not active' });
+    fake.emit({ type: 'error', actionId: 'other', reason: 'not active' });
+    fake.emit({ type: 'error-cleared', actionId: MUTE.id });
+
+    expect(dispatcher.getState().errors).toEqual({ other: 'not active' });
   });
 
   it('notifies subscribers with a new state snapshot on change', () => {

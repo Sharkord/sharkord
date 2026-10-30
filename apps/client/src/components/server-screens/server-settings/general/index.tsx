@@ -1,11 +1,17 @@
 import { ImagePicker } from '@/components/image-picker';
-import { SettingsSection } from '@/components/server-screens/settings-shell/section';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { useAdminGeneral } from '@/features/server/admin/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import type { TPickedImage } from '@/hooks/use-pick-image';
 import { getTRPCClient } from '@/lib/trpc';
-import { Group, Input, LoadingCard, Switch, Textarea } from '@sharkord/ui';
+import {
+  Group,
+  Input,
+  LoadingCard,
+  SettingsSection,
+  Switch,
+  Textarea
+} from '@sharkord/ui';
 import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 

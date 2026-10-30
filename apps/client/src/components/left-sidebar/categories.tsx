@@ -11,14 +11,13 @@ import {
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Permission, TestId } from '@sharkord/shared';
-import { IconButton } from '@sharkord/ui';
+import { IconButton, UnreadCount } from '@sharkord/ui';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CategoryContextMenu } from '../context-menus/category';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
-import { UnreadCount } from '../unread-count';
 import { Channels } from './channels';
 import { categoryDndId } from './helpers';
 import { useCategoryExpanded } from './hooks';

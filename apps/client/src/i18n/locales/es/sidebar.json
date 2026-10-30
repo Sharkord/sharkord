@@ -35,6 +35,8 @@
   "resolution": "Resolución: {{width}}x{{height}}",
   "frameRate": "Fotogramas: {{fps}} fps",
   "bitrate": "Tasa de bits: {{bitrate}}/s",
+  "simulcastLayers": "Capas de simulcast: {{count}}",
+  "simulcastLayer": "Capa {{layer}}",
   "framesEncoded": "Fotogramas codificados: {{frames}}",
   "qualityLimited": "Calidad limitada: {{reason}}",
   "sessionTotals": "Totales de la sesión",

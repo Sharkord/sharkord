@@ -101,7 +101,11 @@ const sendMessage = async (caller: TCaller, input: TSendMessageInput) => {
   return messageId;
 };
 
-const uploadFile = async (file: File, token: string) =>
+const uploadFile = async (
+  file: File,
+  token: string,
+  extraHeaders: Record<string, string> = {}
+) =>
   fetch(`${testsBaseUrl}/upload`, {
     method: 'POST',
     headers: {
@@ -109,7 +113,8 @@ const uploadFile = async (file: File, token: string) =>
       [UploadHeaders.TYPE]: file.type,
       [UploadHeaders.CONTENT_LENGTH]: file.size.toString(),
       [UploadHeaders.ORIGINAL_NAME]: encodeURIComponent(file.name),
-      [UploadHeaders.TOKEN]: token
+      [UploadHeaders.TOKEN]: token,
+      ...extraHeaders
     },
     body: file
   });
