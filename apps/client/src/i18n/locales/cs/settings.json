@@ -39,6 +39,8 @@
   "othersDesc": "Nastavení chování Sharkordu.",
   "autoJoinLastChannelLabel": "Připojovat k poslednímu kanálu",
   "autoJoinLastChannelDesc": "Automaticky se připojit k poslednímu navštívenému textovému kanálu.",
+  "freezeAnimatedAvatarsLabel": "Zastavit animované avatary",
+  "freezeAnimatedAvatarsDesc": "Zobrazovat animované avatary jako statický obrázek a přehrávat je jen při najetí myší.",
   "languageLabel": "Jazyk",
   "languageDesc": "Vyberte jazyk ve kterém se Sharkord zobrazuje.",
   "notificationsTitle": "Upozornění",
