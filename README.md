@@ -20,6 +20,9 @@
 
 Sharkord is a self-hosted communication platform that brings the most important Discord-like features to your own infrastructure. Voice, video, and screen sharing without the bloat or surveillance.
 
+### [Download Desktop App](https://github.com/Sharkord/sharkord-desktop/releases/latest)
+### [Download Server](https://github.com/Sharkord/sharkord/releases/latest)
+
 ## Screenshots
 
 ![Sharkord Screenshot](https://i.imgur.com/urO9vKC.png)
