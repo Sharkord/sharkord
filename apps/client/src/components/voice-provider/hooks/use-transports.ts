@@ -472,32 +472,33 @@ const useTransports = ({
           remoteExternalStreamIds
         });
 
-        remoteAudioIds.forEach((remoteId) => {
-          consume(remoteId, StreamKind.AUDIO, rtpCapabilities);
-        });
+        for (const remoteId of remoteAudioIds) {
+          await consume(remoteId, StreamKind.AUDIO, rtpCapabilities);
+        }
 
-        remoteVideoIds.forEach((remoteId) => {
-          consume(remoteId, StreamKind.VIDEO, rtpCapabilities);
-        });
+        for (const remoteId of remoteVideoIds) {
+          await consume(remoteId, StreamKind.VIDEO, rtpCapabilities);
+        }
 
-        remoteScreenIds.forEach((remoteId) => {
-          consume(remoteId, StreamKind.SCREEN, rtpCapabilities);
-        });
+        for (const remoteId of remoteScreenIds) {
+          await consume(remoteId, StreamKind.SCREEN, rtpCapabilities);
+        }
 
-        remoteScreenAudioIds.forEach((remoteId) => {
-          consume(remoteId, StreamKind.SCREEN_AUDIO, rtpCapabilities);
-        });
+        for (const remoteId of remoteScreenAudioIds) {
+          await consume(remoteId, StreamKind.SCREEN_AUDIO, rtpCapabilities);
+        }
 
-        remoteExternalStreamIds.forEach((streamId: number) => {
+        for (const streamId of remoteExternalStreamIds) {
           const tracks = externalStreamTracks?.[streamId];
 
           if (tracks?.audio !== false) {
-            consume(streamId, StreamKind.EXTERNAL_AUDIO, rtpCapabilities);
+            await consume(streamId, StreamKind.EXTERNAL_AUDIO, rtpCapabilities);
           }
+
           if (tracks?.video !== false) {
-            consume(streamId, StreamKind.EXTERNAL_VIDEO, rtpCapabilities);
+            await consume(streamId, StreamKind.EXTERNAL_VIDEO, rtpCapabilities);
           }
-        });
+        }
       } catch (error) {
         voiceLogger.error(
           'session: consuming existing producers failed',

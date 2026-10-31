@@ -1224,12 +1224,16 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           throw new Error('Failed to load device RTP capabilities');
         }
 
-        deviceRtpCapabilities.current = recvRtpCapabilities;
-
         await createProducerTransport(device);
         await createConsumerTransport(device);
-        await consumeExistingProducers(recvRtpCapabilities);
+
+        // start the microphone before consuming so firefox has an active
+        // getUserMedia capture when the recv transport gathers candidates
         await startMicStream();
+
+        deviceRtpCapabilities.current = recvRtpCapabilities;
+
+        await consumeExistingProducers(recvRtpCapabilities);
 
         startMonitoring(producerTransport.current, consumerTransport.current);
         setConnectionStatus(ConnectionStatus.CONNECTED);
