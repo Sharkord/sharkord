@@ -1,3 +1,4 @@
+import { useFreezeAnimatedAvatars } from '@/features/app/hooks';
 import { useUserById } from '@/features/server/users/hooks';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getInitialsFromName } from '@/helpers/get-initials-from-name';
@@ -9,6 +10,7 @@ import { Avatar, AvatarFallback } from '@sharkord/ui';
 import { memo } from 'react';
 import { UserPopover } from '../user-popover';
 import { UserStatusBadge } from '../user-status';
+import { FrozenAvatarImage } from './frozen-avatar-image';
 
 type TUserAvatarProps = {
   userId: number | null;
@@ -27,13 +29,22 @@ const UserAvatar = memo(
     onClick
   }: TUserAvatarProps) => {
     const user = useUserById(userId);
+    const freezeAnimatedAvatars = useFreezeAnimatedAvatars();
 
     if (!user) return null;
 
+    const avatarUrl = getFileUrl(user.avatar);
+    const frozen = freezeAnimatedAvatars && !!avatarUrl;
+
     const content = (
-      <div className="relative size-fit" onClick={onClick}>
+      <div className="group/avatar relative size-fit" onClick={onClick}>
         <Avatar className={cn('size-8 bg-muted', className)}>
-          <AvatarImage src={getFileUrl(user.avatar)} key={user.avatarId} />
+          <AvatarImage
+            src={avatarUrl}
+            key={user.avatarId}
+            className={cn(frozen && 'invisible group-hover/avatar:visible')}
+          />
+          {frozen && <FrozenAvatarImage src={avatarUrl} />}
           <AvatarFallback className="bg-muted text-xs">
             {getInitialsFromName(getRenderedUsername(user))}
           </AvatarFallback>

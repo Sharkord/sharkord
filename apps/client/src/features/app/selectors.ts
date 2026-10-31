@@ -28,6 +28,9 @@ export const threadChannelIdSelector = (state: IRootState) =>
 export const autoJoinLastChannelSelector = (state: IRootState) =>
   state.app.autoJoinLastChannel;
 
+export const freezeAnimatedAvatarsSelector = (state: IRootState) =>
+  state.app.freezeAnimatedAvatars;
+
 export const hotkeysEnabledSelector = (state: IRootState) =>
   state.app.hotkeysEnabled;
 

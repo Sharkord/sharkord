@@ -149,6 +149,12 @@ export const setAutoJoinLastChannel = (autoJoin: boolean) => {
   setLocalStorageItemBool(LocalStorageKey.AUTO_JOIN_LAST_CHANNEL, autoJoin);
 };
 
+export const setFreezeAnimatedAvatars = (freeze: boolean) => {
+  store.dispatch(appSliceActions.setFreezeAnimatedAvatars(freeze));
+
+  setLocalStorageItemBool(LocalStorageKey.FREEZE_ANIMATED_AVATARS, freeze);
+};
+
 export const setMicMode = (micMode: MicMode) => {
   store.dispatch(appSliceActions.setMicMode(micMode));
 
