@@ -556,6 +556,8 @@
   "micModePushToTalk": "Apertar para falar",
   "micModePushToTalkUnsupported": "O bridge conectado não detecta quando uma tecla é solta, então apertar para falar não está disponível.",
   "micModePushToTalkUnsupportedDesktop": "O aplicativo desktop só detecta quando as teclas são pressionadas, não quando são soltas, então o pressionar para falar não está disponível.",
+  "searchHotkeysPlaceholder": "Pesquisar atalhos...",
+  "hotkeysNoResults": "Nenhum atalho encontrado.",
   "hotkeysGroupCore": "Sharkord",
   "hotkeyToggleMic": "Ligar ou silenciar microfone",
   "hotkeyToggleSound": "Ligar ou desligar o áudio",

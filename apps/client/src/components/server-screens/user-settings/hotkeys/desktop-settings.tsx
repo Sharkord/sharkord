@@ -7,23 +7,12 @@ import {
   SettingsSection,
   Switch
 } from '@sharkord/ui';
-import { memo, useCallback } from 'react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { THotkeysOnChange, THotkeysValues } from './types';
 
-type TDesktopSettingsProps = {
-  values: THotkeysValues;
-  onChange: THotkeysOnChange;
-};
-
-const DesktopSettings = memo(({ values, onChange }: TDesktopSettingsProps) => {
+const DesktopSettings = memo(() => {
   const { t } = useTranslation('settings');
   const { capabilities } = useHotkeyState();
-
-  const handleEnabledChange = useCallback(
-    (enabled: boolean) => onChange('enabled', enabled),
-    [onChange]
-  );
 
   return (
     <SettingsSection
@@ -31,12 +20,9 @@ const DesktopSettings = memo(({ values, onChange }: TDesktopSettingsProps) => {
       description={t('hotkeysDesktopDesc')}
     >
       <Group label={t('hotkeysEnableLabel')}>
-        <Switch
-          checked={values.enabled}
-          onCheckedChange={handleEnabledChange}
-        />
+        <Switch checked disabled />
       </Group>
-      {values.enabled && capabilities.systemManaged && (
+      {capabilities.systemManaged && (
         <Alert variant="info">
           <AlertTitle>{t('hotkeysSystemManagedTitle')}</AlertTitle>
           <AlertDescription>{t('hotkeysSystemManagedDesc')}</AlertDescription>

@@ -556,6 +556,8 @@
   "micModePushToTalk": "按键说话",
   "micModePushToTalkUnsupported": "当前连接的 Bridge 无法检测按键释放，因此无法使用按键说话。",
   "micModePushToTalkUnsupportedDesktop": "桌面应用只能检测按键按下，无法检测松开，因此按键说话不可用。",
+  "searchHotkeysPlaceholder": "搜索快捷键...",
+  "hotkeysNoResults": "未找到快捷键。",
   "hotkeysGroupCore": "Sharkord",
   "hotkeyToggleMic": "开启或关闭麦克风",
   "hotkeyToggleSound": "开启或关闭耳机静音",

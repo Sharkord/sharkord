@@ -556,6 +556,8 @@
   "micModePushToTalk": "Push to talk",
   "micModePushToTalkUnsupported": "Připojený bridge nedokáže zjistit uvolnění kláves, proto je push to talk nedostupný.",
   "micModePushToTalkUnsupportedDesktop": "Desktopová aplikace rozpozná jen stisk kláves, ne jejich uvolnění, takže funkce Stiskni a mluv není dostupná.",
+  "searchHotkeysPlaceholder": "Hledat klávesové zkratky...",
+  "hotkeysNoResults": "Nebyly nalezeny žádné klávesové zkratky.",
   "hotkeysGroupCore": "Sharkord",
   "hotkeyToggleMic": "Zapnout/vypnout mikrofon",
   "hotkeyToggleSound": "Zapnout/vypnout ztlumení zvuku",

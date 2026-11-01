@@ -556,6 +556,8 @@
   "micModePushToTalk": "Push to talk",
   "micModePushToTalkUnsupported": "Le bridge connecté ne détecte pas le relâchement des touches, le push to talk est donc indisponible.",
   "micModePushToTalkUnsupportedDesktop": "L'application de bureau ne détecte que l'appui sur les touches, pas leur relâchement : l'appuyer pour parler n'est pas disponible.",
+  "searchHotkeysPlaceholder": "Rechercher des raccourcis...",
+  "hotkeysNoResults": "Aucun raccourci trouvé.",
   "hotkeysGroupCore": "Sharkord",
   "hotkeyToggleMic": "Activer ou couper le microphone",
   "hotkeyToggleSound": "Activer ou désactiver la sourdine",

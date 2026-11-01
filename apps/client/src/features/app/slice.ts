@@ -62,10 +62,9 @@ const initialState: TAppState = {
     getLocalStorageItem(LocalStorageKey.MIC_MODE) === MicMode.PUSH_TO_TALK
       ? MicMode.PUSH_TO_TALK
       : MicMode.OPEN,
-  hotkeysEnabled: getLocalStorageItemBool(
-    LocalStorageKey.HOTKEYS_ENABLED,
-    false
-  ),
+  hotkeysEnabled:
+    isDesktopApp() ||
+    getLocalStorageItemBool(LocalStorageKey.HOTKEYS_ENABLED, false),
   selectedDmChannelId: undefined,
   selectedThread: undefined,
   notifyAllMessages: getLocalStorageItemBool(
