@@ -42,6 +42,29 @@ body:
     validations:
       required: true
 
+  - type: dropdown
+    id: client
+    attributes:
+      label: Where does it happen?
+      options:
+        - In the browser
+        - In the desktop app
+        - In both the browser and the desktop app
+        - Server only, not in a client
+    validations:
+      required: true
+
+  - type: textarea
+    id: desktop
+    attributes:
+      label: Desktop App
+      description: Only if it happens in the desktop app. Its version is in Settings, Updates.
+      placeholder: |
+        - Desktop app version: v0.1.8
+        - OS and version: macOS 26.1, Windows 11 24H2, Ubuntu 26.04...
+        - Architecture: x64, Apple silicon (arm64)...
+        - Linux only: Wayland or X11, AppImage or other
+
   - type: textarea
     id: environment
     attributes:
