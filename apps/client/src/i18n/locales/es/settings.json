@@ -553,6 +553,8 @@
   "micModePushToTalk": "Pulsar para hablar",
   "micModePushToTalkUnsupported": "El bridge conectado no detecta cuándo se suelta una tecla, así que pulsar para hablar no está disponible.",
   "micModePushToTalkUnsupportedDesktop": "La aplicación de escritorio solo detecta cuando se pulsan las teclas, no cuando se sueltan, así que pulsar para hablar no está disponible.",
+  "searchHotkeysPlaceholder": "Buscar atajos...",
+  "hotkeysNoResults": "No se encontraron atajos.",
   "hotkeysGroupCore": "Sharkord",
   "hotkeyToggleMic": "Activar o silenciar micrófono",
   "hotkeyToggleSound": "Activar o desactivar ensordecimiento",

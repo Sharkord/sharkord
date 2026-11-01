@@ -74,6 +74,13 @@ export type TDesktopBridge = {
 
 // must match exactly between the desktop app and a server's client
 // this will be changed in the future for a better versioning scheme
+// a bump splits every desktop app from every server on another version, so only bump when
+// there is no way around it. if a change can stay compatible without being super hacky, do
+// that instead and list the cleanup it leaves behind below, so it ships with the next bump
+//
+// pending for version 2:
+// - remove 'needs-modifier' from DESKTOP_HOTKEY_ERROR_REASONS and its client translation,
+//   the desktop app no longer sends it but version 1 apps still do
 export const DESKTOP_BRIDGE_VERSION = 1;
 
 // this should NEVER change, it is how every client and desktop app of any version find

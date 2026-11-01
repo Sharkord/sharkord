@@ -553,6 +553,8 @@
   "micModePushToTalk": "Push to talk",
   "micModePushToTalkUnsupported": "Подключенный bridge не определяет отпускание клавиш, поэтому push to talk недоступен.",
   "micModePushToTalkUnsupportedDesktop": "Настольное приложение распознаёт только нажатие клавиш, но не отпускание, поэтому режим «нажми и говори» недоступен.",
+  "searchHotkeysPlaceholder": "Поиск горячих клавиш...",
+  "hotkeysNoResults": "Горячие клавиши не найдены.",
   "hotkeysGroupCore": "Sharkord",
   "hotkeyToggleMic": "Включить или выключить микрофон",
   "hotkeyToggleSound": "Включить или выключить звук",

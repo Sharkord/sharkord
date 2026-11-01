@@ -553,6 +553,8 @@
   "micModePushToTalk": "Push to talk",
   "micModePushToTalkUnsupported": "The connected bridge cannot detect key releases, so push to talk is unavailable.",
   "micModePushToTalkUnsupportedDesktop": "The desktop app can only detect key presses, not releases, so push to talk is unavailable.",
+  "searchHotkeysPlaceholder": "Search hotkeys...",
+  "hotkeysNoResults": "No hotkeys found.",
   "hotkeysGroupCore": "Sharkord",
   "hotkeyToggleMic": "Toggle microphone",
   "hotkeyToggleSound": "Toggle deafen",
