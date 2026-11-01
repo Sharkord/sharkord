@@ -1,7 +1,7 @@
 import type { TLogin } from '@sharkord/shared';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray, ne } from 'drizzle-orm';
 import { db } from '..';
-import { logins } from '../schema';
+import { logins, users } from '../schema';
 
 const getLastLogins = async (userId: number, limit = 10): Promise<TLogin[]> =>
   db
@@ -22,4 +22,18 @@ const hasUserJoinedBefore = async (userId: number): Promise<boolean> => {
   return !!login;
 };
 
-export { getLastLogins, hasUserJoinedBefore };
+const getUsersSharingIp = async (userId: number, limit: number) => {
+  const userIps = db
+    .selectDistinct({ ip: logins.ip })
+    .from(logins)
+    .where(eq(logins.userId, userId));
+
+  return db
+    .selectDistinct({ id: users.id, name: users.name })
+    .from(logins)
+    .innerJoin(users, eq(users.id, logins.userId))
+    .where(and(inArray(logins.ip, userIps), ne(logins.userId, userId)))
+    .limit(limit);
+};
+
+export { getLastLogins, getUsersSharingIp, hasUserJoinedBefore };

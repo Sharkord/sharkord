@@ -1,4 +1,6 @@
 import {
+  Alert,
+  AlertDescription,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -10,6 +12,7 @@ import {
   AutoFocus,
   Input
 } from '@sharkord/ui';
+import { AlertCircleIcon } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TDialogBaseProps } from '../types';
@@ -19,6 +22,7 @@ type TTextInputDialogProps = TDialogBaseProps & {
   onConfirm?: (text: string | undefined) => void;
   title?: string;
   message?: string;
+  warning?: string;
   confirmLabel?: string;
   cancelLabel?: string;
   allowEmpty?: boolean;
@@ -34,6 +38,7 @@ const TextInputDialog = memo(
     onConfirm,
     title,
     message,
+    warning,
     confirmLabel,
     cancelLabel,
     allowEmpty,
@@ -60,6 +65,12 @@ const TextInputDialog = memo(
               <AlertDialogDescription>{message}</AlertDialogDescription>
             )}
           </AlertDialogHeader>
+          {warning && (
+            <Alert variant="warning" className="py-2">
+              <AlertCircleIcon className="h-4 w-4" />
+              <AlertDescription className="text-xs">{warning}</AlertDescription>
+            </Alert>
+          )}
           <AutoFocus>
             <Input
               value={value}

@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 
 export type TAdminUser = TRouterOutputs['users']['getAll'][number];
 export type TAdminUserInfo = TRouterOutputs['users']['getInfo']['user'];
+export type TSharedIp = TRouterOutputs['users']['getInfo']['sharedIp'];
 
 export const useAdminGeneral = () => {
   const [loading, setLoading] = useState(true);
@@ -343,6 +344,10 @@ export const useAdminUserInfo = (userId: number) => {
   const [logins, setLogins] = useState<TLogin[]>([]);
   const [files, setFiles] = useState<TFile[]>([]);
   const [messages, setMessages] = useState<TMessage[]>([]);
+  const [sharedIp, setSharedIp] = useState<TSharedIp>({
+    users: [],
+    hasMore: false
+  });
   const [storage, setStorage] = useState<TStorageData & { quota: number }>({
     userId,
     fileCount: 0,
@@ -354,7 +359,7 @@ export const useAdminUserInfo = (userId: number) => {
     setLoading(true);
 
     const trpc = getTRPCClient();
-    const { user, logins, files, messages, storage } =
+    const { user, logins, files, messages, storage, sharedIp } =
       await trpc.users.getInfo.query({
         userId
       });
@@ -365,6 +370,7 @@ export const useAdminUserInfo = (userId: number) => {
     setFiles(files);
     setMessages(messages);
     setStorage(storage);
+    setSharedIp(sharedIp);
   }, [userId]);
 
   useEffect(() => {
@@ -378,7 +384,8 @@ export const useAdminUserInfo = (userId: number) => {
     storage,
     refetch: fetchUser,
     loading,
-    messages
+    messages,
+    sharedIp
   };
 };
 

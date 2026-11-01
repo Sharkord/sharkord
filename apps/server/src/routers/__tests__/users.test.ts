@@ -158,6 +158,48 @@ describe('users router', () => {
     expect(info.user.id).toBe(2);
   });
 
+  test('should list the users that share an ip with the user', async () => {
+    const createdAt = Date.now();
+
+    await tdb.insert(logins).values([
+      { userId: 2, ip: '10.0.0.1', createdAt },
+      { userId: 2, ip: '10.0.0.2', createdAt },
+      { userId: 3, ip: '10.0.0.1', createdAt },
+      { userId: 3, ip: '10.0.0.2', createdAt },
+      { userId: 4, ip: '10.0.0.3', createdAt }
+    ]);
+
+    const { caller } = await initTest();
+
+    const info = await caller.users.getInfo({
+      userId: 2
+    });
+
+    expect(info.sharedIp.users.map(({ id }) => id)).toEqual([3]);
+    expect(info.sharedIp.hasMore).toBe(false);
+  });
+
+  test('should cap the users that share an ip and flag that there are more', async () => {
+    const createdAt = Date.now();
+
+    await tdb.insert(logins).values(
+      [2, 3, 4, 5, 6, 7, 8].map((userId) => ({
+        userId,
+        ip: '10.0.0.1',
+        createdAt
+      }))
+    );
+
+    const { caller } = await initTest();
+
+    const info = await caller.users.getInfo({
+      userId: 2
+    });
+
+    expect(info.sharedIp.users.length).toBe(5);
+    expect(info.sharedIp.hasMore).toBe(true);
+  });
+
   test('should include user storage info', async () => {
     const { caller } = await initTest();
     const now = Date.now();
@@ -265,18 +307,21 @@ describe('users router', () => {
     });
 
     // insert a login record for user 1 so we can verify ip and location are hidden
-    await tdb.insert(logins).values({
-      userId: 1,
-      ip: '192.168.1.1',
-      city: 'Gondomar',
-      region: 'Porto',
-      country: 'PT',
-      loc: '41.1833,-8.6333',
-      org: 'MEO',
-      postal: '10001',
-      timezone: 'Europe/Lisbon',
-      createdAt: Date.now()
-    });
+    await tdb.insert(logins).values([
+      {
+        userId: 1,
+        ip: '192.168.1.1',
+        city: 'Gondomar',
+        region: 'Porto',
+        country: 'PT',
+        loc: '41.1833,-8.6333',
+        org: 'MEO',
+        postal: '10001',
+        timezone: 'Europe/Lisbon',
+        createdAt: Date.now()
+      },
+      { userId: 3, ip: '192.168.1.1', createdAt: Date.now() }
+    ]);
 
     const { caller } = await initTest(2);
 
@@ -298,6 +343,8 @@ describe('users router', () => {
       expect(login.ip).toBeNull();
       expect(login.loc).toBeNull();
     });
+
+    expect(info.sharedIp).toEqual({ users: [], hasMore: false });
   });
 
   test('should throw when getting info for non-existing user', async () => {
