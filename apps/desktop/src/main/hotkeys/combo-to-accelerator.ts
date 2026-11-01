@@ -59,13 +59,6 @@ const PATTERN_KEYS: [RegExp, (match: RegExpMatchArray) => string][] = [
   [/^(F(?:[1-9]|1[0-9]|2[0-4]))$/, ([, key]) => key!]
 ];
 
-// keys that type nothing, so holding one system wide takes no text from other apps
-const STANDALONE_KEY_REGEX =
-  /^(F(?:[1-9]|1[0-9]|2[0-4])|Media.+|Audio.+|PrintScreen|ScrollLock)$/;
-
-// shift alone still types, only these keep a combo out of what other apps receive as text
-const TEXT_SAFE_MODIFIERS = new Set(['ctrl', 'alt', 'meta']);
-
 const keyToAccelerator = (code: string) => {
   const named = NAMED_KEYS[code];
 
@@ -86,12 +79,7 @@ const keyToAccelerator = (code: string) => {
 
 type TComboResult =
   | { accelerator: string }
-  | {
-      error: Extract<
-        TDesktopHotkeyErrorReason,
-        'unsupported' | 'needs-modifier'
-      >;
-    };
+  | { error: Extract<TDesktopHotkeyErrorReason, 'unsupported'> };
 
 const comboToAccelerator = (combo: string): TComboResult => {
   const parts = combo.split('+');
@@ -111,15 +99,6 @@ const comboToAccelerator = (combo: string): TComboResult => {
 
   if (!key) {
     return { error: 'unsupported' };
-  }
-
-  const isStandalone = STANDALONE_KEY_REGEX.test(code);
-  const hasTextSafeModifier = parts.some((part) =>
-    TEXT_SAFE_MODIFIERS.has(part)
-  );
-
-  if (!isStandalone && !hasTextSafeModifier) {
-    return { error: 'needs-modifier' };
   }
 
   return { accelerator: [...modifiers, key].join('+') };

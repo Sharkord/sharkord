@@ -4,8 +4,9 @@ import { useHotkeyState } from '@/hooks/use-hotkeys';
 import { getHotkeyActionGroup, HotkeyGroup } from '@/lib/hotkeys/actions';
 import { findConflictLabel } from '@/lib/hotkeys/bindings';
 import type { THotkeyAction } from '@/lib/hotkeys/types';
-import { Group, SettingsSection } from '@sharkord/ui';
-import { memo, useCallback, useMemo } from 'react';
+import { Group, Input, SettingsSection } from '@sharkord/ui';
+import { Search } from 'lucide-react';
+import { memo, useCallback, useMemo, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { bindingsFromRecord } from './helpers';
 import type { THotkeysOnChange, THotkeysValues } from './types';
@@ -39,6 +40,72 @@ const HotkeyRow = memo(
           findConflict={handleConflict}
         />
       </Group>
+    );
+  }
+);
+
+type THotkeySectionProps = {
+  title: string;
+  actions: THotkeyAction[];
+  bindings: Record<string, string>;
+  errors: Record<string, string>;
+  onBindChange: (actionId: string, combo?: string) => void;
+  findConflict: (actionId: string, combo: string) => string | undefined;
+};
+
+const HotkeySection = memo(
+  ({
+    title,
+    actions,
+    bindings,
+    errors,
+    onBindChange,
+    findConflict
+  }: THotkeySectionProps) => {
+    const { t } = useTranslation('settings');
+    const [search, setSearch] = useState('');
+
+    const filteredActions = useMemo(() => {
+      const query = search.trim().toLowerCase();
+
+      return actions.filter(({ label }) => label.toLowerCase().includes(query));
+    }, [actions, search]);
+
+    const handleSearchChange = useCallback(
+      (event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value),
+      []
+    );
+
+    return (
+      <SettingsSection title={title}>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder={t('searchHotkeysPlaceholder')}
+            value={search}
+            onChange={handleSearchChange}
+            className="pl-9"
+          />
+        </div>
+        <div className="max-h-96 space-y-4 overflow-y-auto">
+          {filteredActions.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              {t('hotkeysNoResults')}
+            </div>
+          ) : (
+            filteredActions.map((action) => (
+              <HotkeyRow
+                key={action.id}
+                action={action}
+                value={bindings[action.id]}
+                error={errors[action.id]}
+                onBindChange={onBindChange}
+                findConflict={findConflict}
+              />
+            ))
+          )}
+        </div>
+      </SettingsSection>
     );
   }
 );
@@ -88,25 +155,19 @@ const HotkeyGroups = memo(({ values, onChange }: THotkeyGroupsProps) => {
   return (
     <>
       {groups.map(([group, list]) => (
-        <SettingsSection
+        <HotkeySection
           key={group}
           title={
             group === HotkeyGroup.CORE
               ? t('hotkeysGroupCore')
               : (pluginNames[group] ?? group)
           }
-        >
-          {list.map((action) => (
-            <HotkeyRow
-              key={action.id}
-              action={action}
-              value={bindings[action.id]}
-              error={errors[action.id]}
-              onBindChange={handleBindChange}
-              findConflict={findConflict}
-            />
-          ))}
-        </SettingsSection>
+          actions={list}
+          bindings={bindings}
+          errors={errors}
+          onBindChange={handleBindChange}
+          findConflict={findConflict}
+        />
       ))}
     </>
   );

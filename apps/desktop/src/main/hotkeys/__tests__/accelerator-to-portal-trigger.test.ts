@@ -13,10 +13,15 @@ describe('portal trigger', () => {
     expect(toPortalTrigger('Control+Esc')).toBe('CTRL+Escape');
     expect(toPortalTrigger('Alt+PageUp')).toBe('ALT+Page_Up');
     expect(toPortalTrigger('Control+`')).toBe('CTRL+grave');
-    expect(toPortalTrigger('Alt+num7')).toBe('ALT+KP_7');
-    expect(toPortalTrigger('Control+numadd')).toBe('CTRL+KP_Add');
     expect(toPortalTrigger('MediaPlayPause')).toBe('XF86AudioPlay');
     expect(toPortalTrigger('VolumeMute')).toBe('XF86AudioMute');
+  });
+
+  test('holds num on keypad keys so they stay apart from the top row', () => {
+    expect(toPortalTrigger('num7')).toBe('NUM+KP_7');
+    expect(toPortalTrigger('Alt+num7')).toBe('ALT+NUM+KP_7');
+    expect(toPortalTrigger('Control+numadd')).toBe('CTRL+NUM+KP_Add');
+    expect(toPortalTrigger('numdec')).toBe('NUM+KP_Decimal');
   });
 
   test('suggests nothing for keys or modifiers it has no name for', () => {

@@ -87,6 +87,12 @@ const toPortalTrigger = (accelerator: string) => {
     return undefined;
   }
 
+  // kde reads KP_7 as the plain 7 of the top row, only the NUM modifier keeps it on the
+  // keypad. the spec defines NUM as num lock, which the keypad digits need held anyway
+  if (keysym.startsWith('KP_')) {
+    modifiers.push('NUM');
+  }
+
   return [...modifiers, keysym].join('+');
 };
 

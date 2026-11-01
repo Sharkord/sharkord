@@ -553,6 +553,8 @@
   "micModePushToTalk": "Push to talk",
   "micModePushToTalkUnsupported": "Il bridge connesso non rileva il rilascio dei tasti, quindi il push to talk non è disponibile.",
   "micModePushToTalkUnsupportedDesktop": "L'app desktop rileva solo la pressione dei tasti, non il rilascio, quindi il premi per parlare non è disponibile.",
+  "searchHotkeysPlaceholder": "Cerca scorciatoie...",
+  "hotkeysNoResults": "Nessuna scorciatoia trovata.",
   "hotkeysGroupCore": "Sharkord",
   "hotkeyToggleMic": "Attiva o silenzia il microfono",
   "hotkeyToggleSound": "Attiva o disattiva l'audio in uscita",
