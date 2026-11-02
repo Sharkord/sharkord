@@ -10,6 +10,8 @@ const MAX_IP_CANDIDATES = 20;
 const MAX_HEADER_LENGTH = 2048;
 const IPV4_MAPPED_PREFIX_BITS = 96;
 
+const DESKTOP_VERSION_REGEX = /sharkord-app\/([\w.-]{1,32})/;
+
 const getHeaderValue = (
   headers: http.IncomingHttpHeaders,
   name: string
@@ -279,8 +281,14 @@ const getWsInfo = (
 
   let os: string | undefined;
   let device: string | undefined;
+  let browser: string | undefined;
+  let desktopVersion: string | undefined;
 
   if (userAgent) {
+    const desktopMatch = userAgent.match(DESKTOP_VERSION_REGEX);
+
+    desktopVersion = desktopMatch?.[1];
+
     try {
       const result = new UAParser(userAgent).getResult();
 
@@ -294,12 +302,18 @@ const getWsInfo = (
             .join(' ')
             .trim() || undefined
         : 'Desktop';
+
+      browser = result.browser.name
+        ? [result.browser.name, result.browser.version]
+            .filter(Boolean)
+            .join(' ')
+        : undefined;
     } catch {
       // agent parsing failed, ignore and proceed with undefined values
     }
   }
 
-  return { ip, os, device, userAgent };
+  return { ip, os, device, browser, desktopVersion, userAgent };
 };
 
 export { getForwardedIp, getWsInfo, isTrustedProxyAddress };

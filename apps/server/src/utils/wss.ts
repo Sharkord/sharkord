@@ -72,6 +72,21 @@ const disconnectUser = (
 
 const getOnlineUserIds = (): number[] => Array.from(userSockets.keys());
 
+const getOnlineUserIdsByIp = (ip: string): number[] => {
+  const userIds: number[] = [];
+
+  for (const [userId, sockets] of userSockets) {
+    for (const socket of sockets) {
+      if (socket.session?.ip === ip) {
+        userIds.push(userId);
+        break;
+      }
+    }
+  }
+
+  return userIds;
+};
+
 const getUserWsCount = (userId: number): number =>
   userSockets.get(userId)?.size ?? 0;
 
@@ -301,6 +316,7 @@ export {
   createWsServer,
   disconnectUser,
   getOnlineUserIds,
+  getOnlineUserIdsByIp,
   getUserIp,
   getUserWsCount,
   handleSocketClose,

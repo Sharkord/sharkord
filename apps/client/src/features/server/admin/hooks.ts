@@ -2,6 +2,7 @@ import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient, type TRouterOutputs } from '@/lib/trpc';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
+  getTrpcError,
   parseTrpcErrors,
   type TCategory,
   type TChannel,
@@ -27,6 +28,7 @@ import { toast } from 'sonner';
 
 export type TAdminUser = TRouterOutputs['users']['getAll'][number];
 export type TAdminUserInfo = TRouterOutputs['users']['getInfo']['user'];
+export type TAdminUserSession = TRouterOutputs['users']['getSessions'][number];
 
 export const useAdminGeneral = () => {
   const [loading, setLoading] = useState(true);
@@ -379,6 +381,35 @@ export const useAdminUserInfo = (userId: number) => {
     refetch: fetchUser,
     loading,
     messages
+  };
+};
+
+export const useAdminUserSessions = (userId: number) => {
+  const { t } = useTranslation('settings');
+  const [loading, setLoading] = useState(true);
+  const [sessions, setSessions] = useState<TAdminUserSession[]>([]);
+
+  const fetchSessions = useCallback(async () => {
+    try {
+      const trpc = getTRPCClient();
+      const sessions = await trpc.users.getSessions.query({ userId });
+
+      setSessions(sessions);
+    } catch (error) {
+      toast.error(getTrpcError(error, t('failedLoadSessions')));
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, t]);
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
+
+  return {
+    sessions,
+    refetch: fetchSessions,
+    loading
   };
 };
 

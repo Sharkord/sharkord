@@ -14,10 +14,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  Tooltip
 } from '@sharkord/ui';
 import { format, formatDistanceToNow } from 'date-fns';
-import { MoreVertical, Trash2, UserCog } from 'lucide-react';
+import { MonitorSmartphone, MoreVertical, Trash2, UserCog } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -98,7 +99,7 @@ const TableUser = memo(({ user, refetch }: TTableUserProps) => {
           </span>
         </div>
 
-        <div className="flex items-center text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
           <span
             className={cn('capitalize text-xs', {
               'text-green-500': status === UserStatus.ONLINE,
@@ -107,6 +108,16 @@ const TableUser = memo(({ user, refetch }: TTableUserProps) => {
           >
             {status}
           </span>
+          {user.sessionCount > 1 && (
+            <Tooltip
+              content={t('usersSessionCount', { count: user.sessionCount })}
+            >
+              <span className="flex items-center gap-0.5 text-xs">
+                <MonitorSmartphone className="h-3 w-3" />
+                {user.sessionCount}
+              </span>
+            </Tooltip>
+          )}
         </div>
 
         <div className="flex items-center justify-center">

@@ -21,7 +21,7 @@ const enqueueLogin = (userId: number, info: TConnectionInfo | undefined) => {
       callback?.();
       return;
     }
-    const { ip, ...rest } = info;
+    const { ip, os, device, userAgent } = info;
     const ipInfo = ip ? await getIpInfo(ip) : undefined;
 
     await db
@@ -29,7 +29,9 @@ const enqueueLogin = (userId: number, info: TConnectionInfo | undefined) => {
       .values({
         userId,
         ip,
-        ...rest,
+        os,
+        device,
+        userAgent,
         ...ipInfo,
         createdAt: Date.now()
       })

@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { config } from '../../config';
 import { db } from '../../db';
 import { channels } from '../../db/schema';
+import { markVoiceSession } from '../../helpers/mark-voice-session';
 import {
   consumeVoiceMoveGrant,
   hasVoiceMoveGrant
@@ -102,6 +103,7 @@ const joinVoiceRoute = rateLimitedProcedure(protectedProcedure, {
     const state = runtime.getUserState(ctx.user.id);
 
     ctx.currentVoiceChannelId = channel.id;
+    markVoiceSession(ctx, channel.id);
     ctx.pubsub.publish(ServerEvents.USER_JOIN_VOICE, {
       channelId: input.channelId,
       userId: ctx.user.id,
