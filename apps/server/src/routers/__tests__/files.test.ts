@@ -1,4 +1,8 @@
-import type { TTempFile } from '@sharkord/shared';
+import {
+  FILE_TOKEN_REFRESH_GRACE_MS,
+  FILE_TOKEN_REFRESH_MAX_FILES,
+  type TTempFile
+} from '@sharkord/shared';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import fs from 'fs/promises';
 import {
@@ -7,7 +11,11 @@ import {
   sendMessage,
   uploadFile
 } from '../../__tests__/helpers';
+import { tdb } from '../../__tests__/setup';
+import { getSettings } from '../../db/queries/server';
+import { settings } from '../../db/schema';
 import { fileManager } from '../../helpers/file-manager';
+import { generateFileToken, verifyFileToken } from '../../helpers/files-crypto';
 
 describe('files router', () => {
   let tempFile: TTempFile;
@@ -136,5 +144,104 @@ describe('files router', () => {
     );
 
     expect(await fs.exists(tempFile.path)).toBe(true);
+  });
+});
+
+describe('files.refreshTokens', () => {
+  const fileId = 1;
+
+  const signedFile = (expiresAt: number) => ({
+    id: fileId,
+    token: generateFileToken(fileId, expiresAt),
+    expiresAt
+  });
+
+  beforeEach(async () => {
+    await tdb.update(settings).set({
+      storageSignedUrlsEnabled: true,
+      storageSignedUrlsTtlSeconds: 3600
+    });
+
+    // loads the server secret the tokens are signed with
+    await getSettings();
+  });
+
+  test('should exchange a valid token for a fresh one', async () => {
+    const { caller } = await initTest(2);
+    const before = Date.now();
+
+    const [refreshed] = await caller.files.refreshTokens({
+      files: [signedFile(before + 60_000)]
+    });
+
+    expect(refreshed!.id).toBe(fileId);
+    expect(refreshed!.expiresAt).toBeGreaterThanOrEqual(before + 3600_000);
+    expect(
+      verifyFileToken(fileId, refreshed!.token, refreshed!.expiresAt)
+    ).toBe(true);
+  });
+
+  test('should refresh a token that expired within the grace window', async () => {
+    const { caller } = await initTest(2);
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [signedFile(Date.now() - 60_000)]
+    });
+
+    expect(refreshed.length).toBe(1);
+  });
+
+  test('should drop a token that expired past the grace window', async () => {
+    const { caller } = await initTest(2);
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [signedFile(Date.now() - FILE_TOKEN_REFRESH_GRACE_MS - 60_000)]
+    });
+
+    expect(refreshed).toEqual([]);
+  });
+
+  test('should drop a token with an invalid signature', async () => {
+    const { caller } = await initTest(2);
+    const expiresAt = Date.now() + 60_000;
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [
+        {
+          id: fileId + 1,
+          token: generateFileToken(fileId, expiresAt),
+          expiresAt
+        },
+        { ...signedFile(expiresAt), expiresAt: expiresAt + 1 }
+      ]
+    });
+
+    expect(refreshed).toEqual([]);
+  });
+
+  test('should return nothing when signed urls are disabled', async () => {
+    const { caller } = await initTest(2);
+
+    await tdb.update(settings).set({ storageSignedUrlsEnabled: false });
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [signedFile(Date.now() + 60_000)]
+    });
+
+    expect(refreshed).toEqual([]);
+  });
+
+  test('should reject more files than the limit', async () => {
+    const { caller } = await initTest(2);
+    const file = signedFile(Date.now() + 60_000);
+
+    await expect(
+      caller.files.refreshTokens({
+        files: Array.from(
+          { length: FILE_TOKEN_REFRESH_MAX_FILES + 1 },
+          () => file
+        )
+      })
+    ).rejects.toThrow();
   });
 });

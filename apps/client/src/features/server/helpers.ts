@@ -5,8 +5,11 @@ import {
   hasMention,
   type Permission,
   type TDirectMessageConversation,
+  type TFile,
   type TFollowedThread,
+  type TJoinedEmoji,
   type TJoinedMessage,
+  type TJoinedPublicUser,
   type TJoinedRole
 } from '@sharkord/shared';
 import type { channelPermissionsSelector } from './channels/selectors';
@@ -207,8 +210,42 @@ const isFatalDisconnect = (
     info.code === DisconnectCode.BANNED ||
     info.code === DisconnectCode.SERVER_SHUTDOWN);
 
+const forEachSignedFile = (
+  {
+    users,
+    emojis,
+    messagesMap
+  }: {
+    users: readonly TJoinedPublicUser[];
+    emojis: readonly TJoinedEmoji[];
+    messagesMap: Record<string, readonly TJoinedMessage[]>;
+  },
+  callback: (file: TFile) => void
+) => {
+  const visit = (file: TFile | null) => {
+    if (file?._accessToken) {
+      callback(file);
+    }
+  };
+
+  users.forEach(({ avatar, banner }) => {
+    visit(avatar);
+    visit(banner);
+  });
+
+  emojis.forEach(({ file }) => visit(file));
+
+  Object.values(messagesMap).forEach((messages) => {
+    messages.forEach(({ files, reactions }) => {
+      files.forEach(visit);
+      reactions.forEach(({ file }) => visit(file));
+    });
+  });
+};
+
 export {
   canViewChannel,
+  forEachSignedFile,
   getConversationKey,
   getMessageConversation,
   hasUnreadMentionInMessages,

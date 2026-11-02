@@ -21,6 +21,7 @@ import {
   currentVoiceChannelIdSelector,
   isChannelTextVisibleByIdSelector
 } from './channels/selectors';
+import { startFileTokenRefresh, stopFileTokenRefresh } from './files/actions';
 import {
   processPluginComponents,
   setPluginCapabilityAccess,
@@ -114,6 +115,7 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
 
   store.dispatch(serverSliceActions.setInitialData(data));
 
+  startFileTokenRefresh();
   setPluginCommands(data.commands);
   setPluginCapabilityAccess(data.pluginCapabilityAccess);
 
@@ -129,6 +131,7 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
 };
 
 export const disconnectFromServer = () => {
+  stopFileTokenRefresh();
   cleanup();
   unsubscribeFromServer?.();
 };

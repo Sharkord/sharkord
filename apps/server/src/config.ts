@@ -100,7 +100,8 @@ const zConfig = z.object({
     pluginExecute: zRateLimiter,
     pluginInstall: zRateLimiter,
     pluginRoute: zRateLimiter,
-    oidc: zRateLimiter
+    oidc: zRateLimiter,
+    refreshFileTokens: zRateLimiter
   })
 });
 
@@ -239,6 +240,10 @@ const defaultConfig: TConfig = {
     },
     oidc: {
       maxRequests: 30,
+      windowMs: 60_000
+    },
+    refreshFileTokens: {
+      maxRequests: 10,
       windowMs: 60_000
     }
   }

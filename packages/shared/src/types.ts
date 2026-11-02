@@ -245,6 +245,12 @@ export type TDirectMessageConversation = {
   closedAt: number | null;
 };
 
+export type TFileAccessToken = {
+  id: number;
+  token: string;
+  expiresAt: number;
+};
+
 // createdAt alone is not unique, two messages sent in the same millisecond
 // would straddle a page boundary and the second would never be returned
 export type TMessagesCursor = {
