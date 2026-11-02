@@ -8,5 +8,7 @@ export type TConnectionInfo = {
   ip?: string;
   os?: string;
   device?: string;
+  browser?: string;
+  desktopVersion?: string;
   userAgent?: string;
 };

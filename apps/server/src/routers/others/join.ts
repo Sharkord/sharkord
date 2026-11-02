@@ -4,6 +4,7 @@ import {
   UserStatus,
   zLocale
 } from '@sharkord/shared';
+import { randomUUIDv7 } from 'bun';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '../../config';
@@ -22,6 +23,7 @@ import { getFollowedThreadsForUser } from '../../db/queries/threads';
 import { getPublicUsers } from '../../db/queries/users';
 import { categories, users } from '../../db/schema';
 import { getCapabilityAccessRules } from '../../helpers/plugin-capability-access';
+import { resolveSessionLocation } from '../../helpers/resolve-session-location';
 import { safeCompare } from '../../helpers/safe-compare';
 import { shouldAskServerPassword } from '../../helpers/should-ask-server-password';
 import { logger } from '../../logger';
@@ -42,7 +44,8 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
     z.object({
       handshakeHash: z.string(),
       password: z.string().optional(),
-      locale: zLocale.optional()
+      locale: zLocale.optional(),
+      clientVersion: z.string().max(32).optional()
     })
   )
   .query(async ({ input, ctx }) => {
@@ -85,6 +88,27 @@ const joinServerRoute = rateLimitedProcedure(publicProcedure, {
     ctx.setWsUserId(ctx.user.id);
 
     if (input.locale) ctx.locale = input.locale;
+
+    const ownWs = ctx.getOwnWs();
+
+    if (ownWs) {
+      ownWs.session = {
+        id: randomUUIDv7(),
+        connectedAt: Date.now(),
+        lastActiveAt: Date.now(),
+        voiceChannelId: null,
+        ip: connectionInfo?.ip ?? null,
+        location: null,
+        os: connectionInfo?.os ?? null,
+        device: connectionInfo?.device ?? null,
+        browser: connectionInfo?.browser ?? null,
+        userAgent: connectionInfo?.userAgent ?? null,
+        clientVersion: input.clientVersion ?? null,
+        desktopVersion: connectionInfo?.desktopVersion ?? null
+      };
+
+      resolveSessionLocation(ownWs.session);
+    }
 
     const [
       allCategories,
