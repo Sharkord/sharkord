@@ -508,7 +508,14 @@ describe('getWsInfo - return value', () => {
     const result = getWsInfo(undefined, req);
     const keys = Object.keys(result!).sort();
 
-    expect(keys).toEqual(['device', 'ip', 'os', 'userAgent']);
+    expect(keys).toEqual([
+      'browser',
+      'desktopVersion',
+      'device',
+      'ip',
+      'os',
+      'userAgent'
+    ]);
   });
 });
 
