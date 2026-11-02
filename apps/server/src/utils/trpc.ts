@@ -78,6 +78,16 @@ const authMiddleware = t.middleware(async ({ ctx, next }) => {
   return next();
 });
 
+const sessionActivityMiddleware = t.middleware(async ({ ctx, next }) => {
+  const ws = ctx.getOwnWs();
+
+  if (ws?.session) {
+    ws.session.lastActiveAt = Date.now();
+  }
+
+  return next();
+});
+
 type TRateLimitedProcedureOptions = {
   maxRequests: number;
   windowMs: number;
@@ -134,7 +144,8 @@ const rateLimitedProcedure = (
 // it prevents users that only are connected to the wss but did not join the server from accessing protected procedures
 const protectedProcedure = t.procedure
   .use(timingMiddleware)
-  .use(authMiddleware);
+  .use(authMiddleware)
+  .use(sessionActivityMiddleware);
 
 const publicProcedure = t.procedure.use(timingMiddleware);
 

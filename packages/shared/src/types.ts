@@ -109,6 +109,29 @@ export type TConnectionParams = {
   token: string;
 };
 
+export type TUserSessionLocation = {
+  city: string | null;
+  region: string | null;
+  country: string | null;
+  org: string | null;
+  timezone: string | null;
+};
+
+export type TUserSession = {
+  id: string;
+  connectedAt: number;
+  lastActiveAt: number;
+  voiceChannelId: number | null;
+  ip: string | null;
+  location: TUserSessionLocation | null;
+  os: string | null;
+  device: string | null;
+  browser: string | null;
+  userAgent: string | null;
+  clientVersion: string | null;
+  desktopVersion: string | null;
+};
+
 export type TTempFile = {
   id: string;
   originalName: string;

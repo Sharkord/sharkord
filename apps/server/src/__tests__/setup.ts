@@ -73,6 +73,16 @@ let tdb: BunSQLiteDatabase;
 let sqlite: Database | null = null;
 let testsBaseUrl: string;
 
+// bun's node:http server drops a pooled keep alive socket on its own timer, and with tests
+// firing requests back to back the next fetch lands on the dead socket as an ECONNRESET
+const originalFetch = globalThis.fetch;
+
+globalThis.fetch = Object.assign(
+  (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) =>
+    originalFetch(input, { ...init, keepalive: false }),
+  originalFetch
+);
+
 beforeAll(async () => {
   const server = await createHttpServer(0);
   const address = server.address();

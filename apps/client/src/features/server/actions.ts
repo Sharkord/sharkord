@@ -96,7 +96,8 @@ export const joinServer = async (handshakeHash: string, password?: string) => {
   const data = await trpc.others.joinServer.query({
     handshakeHash,
     password,
-    locale: i18n.resolvedLanguage as TLocale
+    locale: i18n.resolvedLanguage as TLocale,
+    clientVersion: VITE_APP_VERSION
   });
 
   logDebug('joinServer', data);
