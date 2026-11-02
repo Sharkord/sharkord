@@ -10,15 +10,11 @@ const generateFileToken = (fileId: number, expiresAt: number): string => {
   return hmac.digest('hex');
 };
 
-const verifyFileToken = (
+const verifyFileSignature = (
   fileId: number,
   providedToken: string,
   expiresAt: number
 ): boolean => {
-  if (Date.now() > expiresAt) {
-    return false;
-  }
-
   const expectedToken = generateFileToken(fileId, expiresAt);
 
   if (expectedToken.length !== providedToken.length) {
@@ -29,6 +25,18 @@ const verifyFileToken = (
     Buffer.from(expectedToken),
     Buffer.from(providedToken)
   );
+};
+
+const verifyFileToken = (
+  fileId: number,
+  providedToken: string,
+  expiresAt: number
+): boolean => {
+  if (Date.now() > expiresAt) {
+    return false;
+  }
+
+  return verifyFileSignature(fileId, providedToken, expiresAt);
 };
 
 const attachFileToken = (
@@ -58,4 +66,10 @@ const signFile = (
   return attachFileToken(file, enabled, ttl);
 };
 
-export { attachFileToken, generateFileToken, signFile, verifyFileToken };
+export {
+  attachFileToken,
+  generateFileToken,
+  signFile,
+  verifyFileSignature,
+  verifyFileToken
+};
