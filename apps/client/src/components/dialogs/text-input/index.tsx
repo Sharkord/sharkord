@@ -16,6 +16,7 @@ import { AlertCircleIcon } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TDialogBaseProps } from '../types';
+import { WarningUser } from './warning-user';
 
 type TTextInputDialogProps = TDialogBaseProps & {
   onCancel?: () => void;
@@ -23,6 +24,7 @@ type TTextInputDialogProps = TDialogBaseProps & {
   title?: string;
   message?: string;
   warning?: string;
+  warningUserIds?: number[];
   confirmLabel?: string;
   cancelLabel?: string;
   allowEmpty?: boolean;
@@ -39,6 +41,7 @@ const TextInputDialog = memo(
     title,
     message,
     warning,
+    warningUserIds,
     confirmLabel,
     cancelLabel,
     allowEmpty,
@@ -68,7 +71,12 @@ const TextInputDialog = memo(
           {warning && (
             <Alert variant="warning" className="py-2">
               <AlertCircleIcon className="h-4 w-4" />
-              <AlertDescription className="text-xs">{warning}</AlertDescription>
+              <AlertDescription className="text-xs">
+                {warning}
+                {warningUserIds?.map((userId) => (
+                  <WarningUser key={userId} userId={userId} />
+                ))}
+              </AlertDescription>
             </Alert>
           )}
           <AutoFocus>

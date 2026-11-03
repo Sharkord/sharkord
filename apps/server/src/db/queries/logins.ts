@@ -1,7 +1,7 @@
 import type { TLogin } from '@sharkord/shared';
 import { and, desc, eq, inArray, ne } from 'drizzle-orm';
 import { db } from '..';
-import { logins, users } from '../schema';
+import { logins } from '../schema';
 
 const getLastLogins = async (userId: number, limit = 10): Promise<TLogin[]> =>
   db
@@ -29,9 +29,8 @@ const getUsersSharingIp = async (userId: number, limit: number) => {
     .where(eq(logins.userId, userId));
 
   return db
-    .selectDistinct({ id: users.id, name: users.name })
+    .selectDistinct({ id: logins.userId })
     .from(logins)
-    .innerJoin(users, eq(users.id, logins.userId))
     .where(and(inArray(logins.ip, userIps), ne(logins.userId, userId)))
     .limit(limit);
 };

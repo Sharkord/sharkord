@@ -99,19 +99,18 @@ const Header = memo(() => {
     let warning: string | undefined;
 
     if (sharedIp.users.length > 0) {
-      const sharedIpNames = sharedIp.users.map(({ name }) => name);
-      const names = sharedIpNames.join(', ');
       const warningKey = sharedIp.hasMore
         ? 'banSharedIpWarningMore'
         : 'banSharedIpWarning';
 
-      warning = t(warningKey, { names, count: sharedIp.users.length });
+      warning = t(warningKey, { count: sharedIp.users.length });
     }
 
     const reason = await requestTextInput({
       title: t('banTitle'),
       message: t('banMsg'),
       warning,
+      warningUserIds: sharedIp.users.map(({ id }) => id),
       confirmLabel: t('banConfirm'),
       allowEmpty: true
     });
