@@ -39,6 +39,8 @@
   "othersDesc": "Ajustes generales relacionados con el comportamiento de Sharkord.",
   "autoJoinLastChannelLabel": "Unirse automáticamente al último canal",
   "autoJoinLastChannelDesc": "Unirse automáticamente al último canal de texto al conectarse.",
+  "freezeAnimatedAvatarsLabel": "Congelar avatares animados",
+  "freezeAnimatedAvatarsDesc": "Muestra los avatares animados como una imagen fija y solo los reproduce al pasar el ratón.",
   "languageLabel": "Idioma de la interfaz",
   "languageDesc": "Establece el idioma de visualización de la interfaz.",
   "notificationsTitle": "Notificaciones",

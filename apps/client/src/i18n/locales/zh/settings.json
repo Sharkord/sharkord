@@ -39,6 +39,8 @@
   "othersDesc": "与 Sharkord 行为相关的常规设置。",
   "autoJoinLastChannelLabel": "自动加入上次频道",
   "autoJoinLastChannelDesc": "连接时自动重新加入上次所在的文字频道。",
+  "freezeAnimatedAvatarsLabel": "冻结动态头像",
+  "freezeAnimatedAvatarsDesc": "将动态头像显示为静态图片，仅在鼠标悬停时播放。",
   "languageLabel": "界面语言",
   "languageDesc": "设置界面显示语言。",
   "notificationsTitle": "通知",

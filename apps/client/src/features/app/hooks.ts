@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import {
   appLoadingSelector,
   autoJoinLastChannelSelector,
+  freezeAnimatedAvatarsSelector,
   hotkeysEnabledSelector,
   isAutoConnectingSelector,
   isChannelMutedSelector,
@@ -46,6 +47,9 @@ export const useThreadSidebar = () => useSelector(threadSidebarDataSelector);
 
 export const useAutoJoinLastChannel = () =>
   useSelector(autoJoinLastChannelSelector);
+
+export const useFreezeAnimatedAvatars = () =>
+  useSelector(freezeAnimatedAvatarsSelector);
 
 export const useHotkeysEnabled = () => useSelector(hotkeysEnabledSelector);
 

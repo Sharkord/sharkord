@@ -39,6 +39,8 @@
   "othersDesc": "Paramètres généraux liés au comportement de Sharkord.",
   "autoJoinLastChannelLabel": "Rejoindre automatiquement le dernier salon",
   "autoJoinLastChannelDesc": "Rejoindre automatiquement le dernier salon textuel à la connexion.",
+  "freezeAnimatedAvatarsLabel": "Figer les avatars animés",
+  "freezeAnimatedAvatarsDesc": "Afficher les avatars animés comme une image fixe et ne les animer qu'au survol.",
   "languageLabel": "Langue de l'interface",
   "languageDesc": "Définissez la langue d'affichage de l'interface.",
   "notificationsTitle": "Notifications",
