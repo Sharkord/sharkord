@@ -1,4 +1,4 @@
-FROM oven/bun:1.3.14
+FROM oven/bun:1.4.4
 
 ARG TARGETARCH
 ENV RUNNING_IN_DOCKER=true
