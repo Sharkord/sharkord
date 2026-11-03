@@ -29,6 +29,7 @@ import { toast } from 'sonner';
 import { Protect } from '../protect';
 import { RoleBadge } from '../role-badge';
 import { UserAvatar } from '../user-avatar';
+import { UserBanner } from '../user-banner';
 import { UserStatusBadge } from '../user-status';
 
 type TUserPopoverProps = {
@@ -83,11 +84,9 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
             </div>
           )}
           {user.banner ? (
-            <div
-              className="h-24 w-full rounded-t-md bg-cover bg-center bg-no-repeat"
-              style={{
-                backgroundImage: `url("${getFileUrl(user.banner)}")`
-              }}
+            <UserBanner
+              src={getFileUrl(user.banner)}
+              className="h-24 w-full rounded-t-md"
             />
           ) : (
             <div

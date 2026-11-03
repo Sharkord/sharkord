@@ -8,9 +8,9 @@ import { AvatarImage } from '@radix-ui/react-avatar';
 import { UserStatus } from '@sharkord/shared';
 import { Avatar, AvatarFallback } from '@sharkord/ui';
 import { memo } from 'react';
+import { FrozenImage } from '../frozen-image';
 import { UserPopover } from '../user-popover';
 import { UserStatusBadge } from '../user-status';
-import { FrozenAvatarImage } from './frozen-avatar-image';
 
 type TUserAvatarProps = {
   userId: number | null;
@@ -44,7 +44,12 @@ const UserAvatar = memo(
             key={user.avatarId}
             className={cn(frozen && 'invisible group-hover/avatar:visible')}
           />
-          {frozen && <FrozenAvatarImage src={avatarUrl} />}
+          {frozen && (
+            <FrozenImage
+              src={avatarUrl}
+              className="absolute inset-0 size-full group-hover/avatar:invisible"
+            />
+          )}
           <AvatarFallback className="bg-muted text-xs">
             {getInitialsFromName(getRenderedUsername(user))}
           </AvatarFallback>
