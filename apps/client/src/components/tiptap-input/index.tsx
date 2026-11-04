@@ -4,6 +4,7 @@ import { useReferenceableChannels } from '@/features/server/hooks';
 import { useRoles } from '@/features/server/roles/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
 import { TestId, type TCommandInfo } from '@sharkord/shared';
+import { isNodeEmpty } from '@tiptap/core';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import Link from '@tiptap/extension-link';
 import { EditorContent, useEditor } from '@tiptap/react';
@@ -173,7 +174,7 @@ const TiptapInput = memo(
           attributes: {
             'data-testid': TestId.MESSAGE_COMPOSE_EDITOR
           },
-          handleKeyDown: (_view, event) => {
+          handleKeyDown: (view, event) => {
             // block all input when readOnly
             if (readOnlyRef.current) {
               event.preventDefault();
@@ -206,7 +207,7 @@ const TiptapInput = memo(
             }
 
             if (event.key === 'ArrowUp') {
-              if (editor.isEmpty && onArrowUpRef.current) {
+              if (isNodeEmpty(view.state.doc) && onArrowUpRef.current) {
                 event.preventDefault();
                 onArrowUpRef.current();
                 return true;
