@@ -137,6 +137,7 @@ const createServerViews = (
   let activeId: string | null = null;
   let layoutState: TLayout = { railVisible: false, fullShell: false };
   let backgroundThrottled = true;
+  let spellcheckEnabled = true;
 
   const layout = () => {
     const { width, height } = win.getContentBounds();
@@ -163,6 +164,8 @@ const createServerViews = (
   const createView = (server: TServer) => {
     // one partition per server keeps logins and storage isolated from each other
     const serverSession = session.fromPartition(getPartition(server.id));
+
+    serverSession.setSpellCheckerEnabled(spellcheckEnabled);
 
     // compared with the page that is open and not with the address that was added,
     // a server may redirect elsewhere, as the dev server does to its web client
@@ -752,6 +755,14 @@ const createServerViews = (
     }
   };
 
+  const setSpellcheckEnabled = (value: boolean) => {
+    spellcheckEnabled = value;
+
+    for (const view of views.values()) {
+      view.webContents.session.setSpellCheckerEnabled(value);
+    }
+  };
+
   win.contentView.addChildView(shellView);
   win.on('resize', layout);
 
@@ -766,7 +777,8 @@ const createServerViews = (
     setLayout,
     getUnread,
     getVoiceServerId,
-    setBackgroundThrottled
+    setBackgroundThrottled,
+    setSpellcheckEnabled
   };
 };
 

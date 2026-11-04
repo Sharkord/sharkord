@@ -82,6 +82,8 @@
     "autoUpdate": "Instalar actualizaciones automáticamente",
     "autoUpdateDescription": "Descarga nuevas versiones de la app en segundo plano y pide reiniciar cuando una esté lista.",
     "performance": "Rendimiento",
+    "spellcheck": "Corrector ortográfico",
+    "spellcheckDescription": "Subraya las palabras mal escritas mientras escribes. Desactívalo si escribes en un idioma que el diccionario no conoce.",
     "throttleHiddenServers": "Limitar servidores ocultos",
     "throttleHiddenServersDescription": "Ralentiza los temporizadores y el renderizado de los servidores que no estás viendo. Ahorra CPU y batería; desactívalo si los servidores en segundo plano fallan.",
     "performanceOverlay": "Superposición de rendimiento",
