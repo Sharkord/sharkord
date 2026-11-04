@@ -35,6 +35,7 @@
     "desktopSettings": "Nastavení aplikace...",
     "togglePerformanceOverlay": "Přepnout přehled výkonu",
     "openAppFolder": "Otevřít složku aplikace",
+    "openLogsFolder": "Otevřít složku s logy",
     "resetApp": "Obnovit aplikaci..."
   },
   "tray": {
@@ -86,6 +87,9 @@
     "performanceOverlay": "Překryv výkonu",
     "performanceOverlayDescription": "Zobrazí využití paměti a procesoru aplikací v malém okně.",
     "togglePerformanceOverlay": "Přepnout překryv výkonu",
+    "screenShare": "Sdílení obrazovky",
+    "captureAllAudioOutputs": "Zachytávat zvuk ze všech výstupů",
+    "captureAllAudioOutputsDescription": "Sdílet i aplikace, které hrají přes virtuální výstup, například EasyEffects nebo filter chain. Zapněte, pokud diváci z vašeho streamu nic neslyší.",
     "menuBar": "Panel nabídek",
     "menuBarDescription": "Zobrazí nebo skryje panel nabídek okna. Můžete také použít Ctrl+Shift+M.",
     "shortcuts": "Zkratky",
@@ -142,7 +146,10 @@
     "unknownVersion": "Neznámá",
     "appFolder": "Složka aplikace",
     "appFolderDescription": "Kde aplikace uchovává vaše servery, přihlášení a nastavení.",
-    "openAppFolder": "Otevřít složku aplikace"
+    "openAppFolder": "Otevřít složku aplikace",
+    "logsFolder": "Složka s logy",
+    "logsFolderDescription": "Soubory s logy aplikace. Při nahlášení problému přiložte main.log.",
+    "openLogsFolder": "Otevřít složku s logy"
   },
   "updateDialog": {
     "title": "Aktualizace je připravena",

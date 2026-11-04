@@ -1,8 +1,10 @@
+import { useConvertAsciiEmoji } from '@/features/app/hooks';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { useReferenceableChannels } from '@/features/server/hooks';
 import { useRoles } from '@/features/server/roles/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
 import { TestId, type TCommandInfo } from '@sharkord/shared';
+import { isNodeEmpty } from '@tiptap/core';
 import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import Link from '@tiptap/extension-link';
 import { EditorContent, useEditor } from '@tiptap/react';
@@ -85,6 +87,7 @@ const TiptapInput = memo(
     onArrowUpRef.current = onArrowUp;
 
     const customEmojis = useCustomEmojis();
+    const convertAsciiEmoji = useConvertAsciiEmoji();
     // tiptap 3 hands out a fresh copy of an extension's options on every read,
     // so assigning a new list later never reaches setEmoji or the rendering.
     // both hold this one array instead, and it is updated in place
@@ -116,7 +119,7 @@ const TiptapInput = memo(
         }),
         Emoji.configure({
           emojis,
-          enableEmoticons: true,
+          enableEmoticons: convertAsciiEmoji,
           suggestion: EmojiSuggestion,
           HTMLAttributes: {
             class: 'emoji-image'
@@ -148,84 +151,90 @@ const TiptapInput = memo(
       }
 
       return exts;
-    }, [emojis, commands, users, roles, channels, submit]);
+    }, [emojis, commands, users, roles, channels, submit, convertAsciiEmoji]);
 
-    const editor = useEditor({
-      extensions,
-      content: value,
-      editable: !disabled,
-      onUpdate: ({ editor }) => {
-        const html = editor.getHTML();
+    // the emoticon input rule is baked into the Emoji extension at creation,
+    // so the editor is recreated when the setting flips. content: value
+    // restores the draft, which every caller controls through value
+    const editor = useEditor(
+      {
+        extensions,
+        content: value,
+        editable: !disabled,
+        onUpdate: ({ editor }) => {
+          const html = editor.getHTML();
 
-        onChange?.(html);
+          onChange?.(html);
 
-        if (!editor.isEmpty) {
-          onTyping?.();
-        }
-      },
-      editorProps: {
-        attributes: {
-          'data-testid': TestId.MESSAGE_COMPOSE_EDITOR
+          if (!editor.isEmpty) {
+            onTyping?.();
+          }
         },
-        handleKeyDown: (_view, event) => {
-          // block all input when readOnly
-          if (readOnlyRef.current) {
-            event.preventDefault();
-            return true;
-          }
-
-          const suggestionElement = document.querySelector('.bg-popover');
-          const hasSuggestions =
-            suggestionElement && document.body.contains(suggestionElement);
-
-          if (event.key === 'Enter') {
-            if (event.shiftKey) {
-              return false;
-            }
-
-            // if suggestions are active, don't handle Enter - let the suggestion handle it
-            if (hasSuggestions) {
-              return false;
-            }
-
-            event.preventDefault();
-            onSubmitRef.current?.();
-            return true;
-          }
-
-          if (event.key === 'Escape') {
-            event.preventDefault();
-            onCancelRef.current?.();
-            return true;
-          }
-
-          if (event.key === 'ArrowUp') {
-            if (editor.isEmpty && onArrowUpRef.current) {
+        editorProps: {
+          attributes: {
+            'data-testid': TestId.MESSAGE_COMPOSE_EDITOR
+          },
+          handleKeyDown: (view, event) => {
+            // block all input when readOnly
+            if (readOnlyRef.current) {
               event.preventDefault();
-              onArrowUpRef.current();
               return true;
             }
+
+            const suggestionElement = document.querySelector('.bg-popover');
+            const hasSuggestions =
+              suggestionElement && document.body.contains(suggestionElement);
+
+            if (event.key === 'Enter') {
+              if (event.shiftKey) {
+                return false;
+              }
+
+              // if suggestions are active, don't handle Enter - let the suggestion handle it
+              if (hasSuggestions) {
+                return false;
+              }
+
+              event.preventDefault();
+              onSubmitRef.current?.();
+              return true;
+            }
+
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              onCancelRef.current?.();
+              return true;
+            }
+
+            if (event.key === 'ArrowUp') {
+              if (isNodeEmpty(view.state.doc) && onArrowUpRef.current) {
+                event.preventDefault();
+                onArrowUpRef.current();
+                return true;
+              }
+              return false;
+            }
+
             return false;
-          }
+          },
+          handleClickOn: (_view, _pos, _node, _nodePos, event) => {
+            const target = event.target as HTMLElement;
 
-          return false;
-        },
-        handleClickOn: (_view, _pos, _node, _nodePos, event) => {
-          const target = event.target as HTMLElement;
+            // prevents clicking on links inside the edit from opening them in the browser
+            if (target.tagName === 'A') {
+              event.preventDefault();
 
-          // prevents clicking on links inside the edit from opening them in the browser
-          if (target.tagName === 'A') {
-            event.preventDefault();
+              return true;
+            }
 
-            return true;
-          }
-
-          return false;
-        },
-        handlePaste: () => !!readOnlyRef.current,
-        handleDrop: () => readOnlyRef.current
-      }
-    });
+            return false;
+          },
+          handlePaste: () => !!readOnlyRef.current,
+          handleDrop: () => readOnlyRef.current
+        }
+      },
+      [convertAsciiEmoji]
+    );
 
     const handleEmojiSelect = (emoji: TEmojiItem) => {
       if (disabled || readOnly) return;

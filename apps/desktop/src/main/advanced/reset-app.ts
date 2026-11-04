@@ -2,10 +2,13 @@ import { app, session, type BrowserWindow } from 'electron';
 import { rmSync } from 'fs';
 import { showConfirmDialog } from '../dialogs/show-confirm-dialog';
 import { i18n } from '../i18n';
+import { createLogger } from '../logs/logger';
 import type { TServerController } from '../servers/server-controller';
 import { getPartition } from '../views/server-views';
 
 const RESET_FLAG = '--reset-app-data';
+
+const logger = createLogger('reset-app');
 
 // runs before electron opens its own files, a file that cannot be deleted is left behind
 const wipeUserDataIfRequested = () => {
@@ -16,6 +19,7 @@ const wipeUserDataIfRequested = () => {
   try {
     rmSync(app.getPath('userData'), { recursive: true, force: true });
   } catch (error) {
+    // not the file logger, it is not set up yet and its file is in the folder being wiped
     console.error(error);
   }
 };
@@ -51,6 +55,8 @@ const confirmAndResetApp = async (
       await appSession.clearAuthCache();
     })
   );
+
+  logger.info('resetting the app data and relaunching');
 
   const args = process.argv.slice(1).filter((arg) => arg !== RESET_FLAG);
 

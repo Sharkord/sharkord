@@ -10,6 +10,8 @@ type TIpcContext = {
   toggleMenuBar: () => void;
   getAppFolder: () => string;
   openAppFolder: () => Promise<void>;
+  getLogsFolder: () => string;
+  openLogsFolder: () => Promise<void>;
   updater: {
     getState: () => TUpdateState;
     check: () => void;

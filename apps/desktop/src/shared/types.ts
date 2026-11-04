@@ -88,6 +88,8 @@ type TDesktopApi = {
   installUpdate: () => Promise<void>;
   getAppFolder: () => Promise<string>;
   openAppFolder: () => Promise<void>;
+  getLogsFolder: () => Promise<string>;
+  openLogsFolder: () => Promise<void>;
   onSourcePickRequest: (
     listener: (request: TSourcePickRequest) => void
   ) => () => void;

@@ -31,6 +31,9 @@ export const autoJoinLastChannelSelector = (state: IRootState) =>
 export const freezeAnimatedAvatarsSelector = (state: IRootState) =>
   state.app.freezeAnimatedAvatars;
 
+export const convertAsciiEmojiSelector = (state: IRootState) =>
+  state.app.convertAsciiEmoji;
+
 export const hotkeysEnabledSelector = (state: IRootState) =>
   state.app.hotkeysEnabled;
 

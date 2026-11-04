@@ -5,6 +5,7 @@ import type {
   TDesktopHotkeyPhase
 } from '@sharkord/shared';
 import { globalShortcut } from 'electron';
+import { createLogger } from '../logs/logger';
 import { comboToAccelerator } from './combo-to-accelerator';
 import {
   isPortalShortcutsPlatform,
@@ -22,6 +23,8 @@ type TServerHotkeys = {
 };
 
 const usesPortal = isPortalShortcutsPlatform();
+
+const logger = createLogger('hotkeys');
 
 const servers = new Map<string, TServerHotkeys>();
 const registered = new Set<string>();
@@ -97,9 +100,11 @@ const sync = () => {
         globalShortcut.register(accelerator, () => press(accelerator, 'down'))
       ) {
         registered.add(accelerator);
+      } else {
+        logger.warn('hotkey is taken by another app', { accelerator });
       }
     } catch (error) {
-      console.error('failed to register a hotkey', accelerator, error);
+      logger.error('failed to register a hotkey', accelerator, error);
     }
   }
 };
@@ -138,6 +143,13 @@ const setServerHotkeys = (
       errors.push({ actionId, reason: 'taken' });
     }
   }
+
+  logger.info('hotkeys set', {
+    serverId,
+    count: bindings.length,
+    usesPortal,
+    errors
+  });
 
   return errors;
 };

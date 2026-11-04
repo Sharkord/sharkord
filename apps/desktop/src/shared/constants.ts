@@ -23,6 +23,8 @@ enum IpcChannel {
   INSTALL_UPDATE = 'updates:install',
   GET_APP_FOLDER = 'app-folder:get',
   OPEN_APP_FOLDER = 'app-folder:open',
+  GET_LOGS_FOLDER = 'logs-folder:get',
+  OPEN_LOGS_FOLDER = 'logs-folder:open',
   SOURCE_PICK_REQUESTED = 'screen-share:pick-requested',
   ANSWER_SOURCE_PICK = 'screen-share:answer-pick'
 }

@@ -97,6 +97,7 @@
   "screenShareTitle": "Share your screen",
   "screenShareMessage": "You will pick the screen or window to share next.",
   "shareSystemAudio": "Share system audio",
+  "shareSystemAudioAllNote": "Sharkord shares all audio playing on your computer, even if you only pick a single window. Mute anything you do not want others to hear.",
   "additionalScreenShareSettings": "Additional screen share settings",
   "screenShareConfirm": "Continue"
 }

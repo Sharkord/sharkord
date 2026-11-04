@@ -56,9 +56,10 @@
   "desktopName": "com.sharkord.Sharkord.desktop",
   "dependencies": {
     "dbus-next": "0.10.2",
+    "electron-log": "5.4.4",
     "electron-updater": "^6.8.11"
   },
   "optionalDependencies": {
-    "@vencord/venmic": "7.2.3"
+    "@vencord/venmic": "7.2.5"
   }
 }
