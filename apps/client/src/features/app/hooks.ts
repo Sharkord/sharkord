@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import {
   appLoadingSelector,
   autoJoinLastChannelSelector,
+  convertAsciiEmojiSelector,
   freezeAnimatedAvatarsSelector,
   hotkeysEnabledSelector,
   isAutoConnectingSelector,
@@ -50,6 +51,9 @@ export const useAutoJoinLastChannel = () =>
 
 export const useFreezeAnimatedAvatars = () =>
   useSelector(freezeAnimatedAvatarsSelector);
+
+export const useConvertAsciiEmoji = () =>
+  useSelector(convertAsciiEmojiSelector);
 
 export const useHotkeysEnabled = () => useSelector(hotkeysEnabledSelector);
 
