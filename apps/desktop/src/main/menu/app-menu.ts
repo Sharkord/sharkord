@@ -3,6 +3,7 @@ import { getServerShortcut, SHORTCUTS } from '../../shared/shortcuts';
 import type { TServer, TServersState } from '../../shared/types';
 import { openAppFolder } from '../app-folder/open-app-folder';
 import { i18n } from '../i18n';
+import { openLogsFolder } from '../logs/open-logs-folder';
 import type { TServerController } from '../servers/server-controller';
 
 type TAppMenuOptions = {
@@ -97,6 +98,10 @@ const buildAdvancedMenu = ({
     {
       label: i18n.t('menu.openAppFolder'),
       click: openAppFolder
+    },
+    {
+      label: i18n.t('menu.openLogsFolder'),
+      click: openLogsFolder
     },
     { type: 'separator' },
     {

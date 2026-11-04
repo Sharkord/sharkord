@@ -54,6 +54,8 @@ const api: TDesktopApi = {
   installUpdate: () => invoke(IpcChannel.INSTALL_UPDATE),
   getAppFolder: () => invoke(IpcChannel.GET_APP_FOLDER),
   openAppFolder: () => invoke(IpcChannel.OPEN_APP_FOLDER),
+  getLogsFolder: () => invoke(IpcChannel.GET_LOGS_FOLDER),
+  openLogsFolder: () => invoke(IpcChannel.OPEN_LOGS_FOLDER),
   onSourcePickRequest: (listener) => {
     const handler = (_event: IpcRendererEvent, request: TSourcePickRequest) => {
       listener(request);

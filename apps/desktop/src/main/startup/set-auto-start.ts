@@ -2,7 +2,10 @@ import { app } from 'electron';
 import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import os from 'os';
 import path from 'path';
+import { createLogger } from '../logs/logger';
 import { getDesktopExec } from './get-launch-command';
+
+const logger = createLogger('auto-start');
 
 const AUTOSTART_FLAG = '--autostart';
 
@@ -46,12 +49,16 @@ const setAutoStart = (enabled: boolean) => {
     if (process.platform === 'linux') {
       setLinuxAutoStart(enabled);
 
+      logger.info('auto start updated', { enabled });
+
       return;
     }
 
     app.setLoginItemSettings({ openAtLogin: enabled, args: [AUTOSTART_FLAG] });
+
+    logger.info('auto start updated', { enabled });
   } catch (error) {
-    console.error('failed to update auto start', error);
+    logger.error('failed to update auto start', error);
   }
 };
 

@@ -1,7 +1,10 @@
 import { session, type NativeImage } from 'electron';
 import type { TServer } from '../../shared/types';
 import { loadImage } from '../images/load-image';
+import { createLogger } from '../logs/logger';
 import { getPartition } from '../views/server-views';
+
+const logger = createLogger('server-icon');
 
 type TCreateServerIconOptions = {
   fallback: NativeImage;
@@ -51,7 +54,9 @@ const createServerIcon = ({ fallback, apply }: TCreateServerIconOptions) => {
     }
 
     apply(fallback);
-    load(server.id, url).catch(console.error);
+    load(server.id, url).catch((error) => {
+      logger.error('failed to load a server icon', error);
+    });
   };
 };
 
