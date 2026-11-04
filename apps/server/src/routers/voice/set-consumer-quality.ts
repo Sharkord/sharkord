@@ -1,4 +1,4 @@
-import { StreamKind } from '@sharkord/shared';
+import { RateLimiter, StreamKind } from '@sharkord/shared';
 import { z } from 'zod';
 import { getSettings } from '../../db/queries/server';
 import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
@@ -6,6 +6,9 @@ import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const setConsumerQualityRoute = protectedProcedure
+  .meta({
+    rateLimit: RateLimiter.VOICE_STREAM
+  })
   .input(
     z.object({
       remoteId: z.number(),

@@ -1,14 +1,17 @@
-import { getPlainTextFromHtml, type TFile } from '@sharkord/shared';
+import {
+  getPlainTextFromHtml,
+  RateLimiter,
+  type TFile
+} from '@sharkord/shared';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { config } from '../../config';
 import { db } from '../../db';
 import { getChannelsForUser } from '../../db/queries/channels';
 import { getSettings } from '../../db/queries/server';
 import { channels, files, messageFiles, messages } from '../../db/schema';
 import { attachFileToken } from '../../helpers/files-crypto';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
 // this search is pretty basic and it CAN be optimized, however it might not be worth it
 // some things things we can do:
@@ -45,11 +48,8 @@ const buildCaseInsensitiveGlob = (value: string) => {
   return `*${pattern}*`;
 };
 
-const searchMessagesRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.search.maxRequests,
-  windowMs: config.rateLimiters.search.windowMs,
-  logLabel: 'search'
-})
+const searchMessagesRoute = protectedProcedure
+  .meta({ rateLimit: RateLimiter.SEARCH })
   .input(
     z.object({
       query: z

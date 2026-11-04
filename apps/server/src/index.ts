@@ -14,6 +14,7 @@ import { config, SERVER_PRIVATE_IP } from './config';
 import { loadCrons } from './crons';
 import { loadDb } from './db';
 import { getHost } from './helpers/get-host';
+import { loadRateLimits } from './helpers/rate-limits';
 import './helpers/updater';
 import { pluginManager } from './plugins';
 import { enqueueActivityLog } from './queues/activity-log';
@@ -23,6 +24,7 @@ import { loadMediasoup } from './utils/mediasoup';
 import { printDebug } from './utils/print-debug';
 
 await loadDb();
+await loadRateLimits();
 await pluginManager.init();
 await createServers();
 await loadMediasoup();

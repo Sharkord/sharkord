@@ -1,6 +1,7 @@
 import {
   ChannelPermission,
   Permission,
+  RateLimiter,
   REACTION_EMOJI_MAX_LENGTH,
   ServerEvents,
   StreamKind
@@ -9,12 +10,12 @@ import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
 import { initTest } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
-import { config } from '../../config';
 import {
   channelRolePermissions,
   rolePermissions,
   roles
 } from '../../db/schema';
+import { getRateLimit } from '../../helpers/rate-limits';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { pubsub } from '../../utils/pubsub';
 
@@ -896,7 +897,7 @@ describe('voice router', () => {
       try {
         for (
           let i = 0;
-          i < config.rateLimiters.voiceReaction.maxRequests;
+          i < getRateLimit(RateLimiter.VOICE_REACTION).maxRequests;
           i++
         ) {
           await caller.voice

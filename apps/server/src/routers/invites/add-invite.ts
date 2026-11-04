@@ -1,16 +1,11 @@
 import { Permission } from '@sharkord/shared';
-import { config } from '../../config';
 import { getRole } from '../../db/queries/roles';
 import { assertCanModifyOwnerRole } from '../../helpers/assert-can-modify-owner-role';
 import { createInvite, zCreateInvite } from '../../helpers/invites';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const addInviteRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.adminCreate.maxRequests,
-  windowMs: config.rateLimiters.adminCreate.windowMs,
-  logLabel: 'addInvite'
-})
+const addInviteRoute = protectedProcedure
   .input(zCreateInvite)
   .mutation(async ({ input, ctx }) => {
     await ctx.needsPermission(Permission.MANAGE_INVITES);

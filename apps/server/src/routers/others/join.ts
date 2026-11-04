@@ -1,5 +1,6 @@
 import {
   ActivityLogType,
+  RateLimiter,
   ServerEvents,
   UserStatus,
   zLocale
@@ -7,7 +8,6 @@ import {
 import { randomUUIDv7 } from 'bun';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { config } from '../../config';
 import { db } from '../../db';
 import {
   getAllChannelUserPermissions,
@@ -33,13 +33,10 @@ import { enqueueActivityLog } from '../../queues/activity-log';
 import { enqueueLogin } from '../../queues/logins';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
-import { publicProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { publicProcedure } from '../../utils/trpc';
 
-const joinServerRoute = rateLimitedProcedure(publicProcedure, {
-  maxRequests: config.rateLimiters.joinServer.maxRequests,
-  windowMs: config.rateLimiters.joinServer.windowMs,
-  logLabel: 'joinServer'
-})
+const joinServerRoute = publicProcedure
+  .meta({ rateLimit: RateLimiter.JOIN_SERVER })
   .input(
     z.object({
       handshakeHash: z.string(),

@@ -2,11 +2,11 @@ import {
   getPlainTextFromHtml,
   isEmptyMessage,
   MESSAGE_MAX_LENGTH,
-  MessageSaveType
+  MessageSaveType,
+  RateLimiter
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { config } from '../../config';
 import { db } from '../../db';
 import { publishMessage } from '../../db/publishers';
 import { getSettings } from '../../db/queries/server';
@@ -21,13 +21,10 @@ import { followThreadOnEdit } from '../../helpers/threads';
 import { eventBus } from '../../plugins/event-bus';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const editMessageRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.sendAndEditMessage.maxRequests,
-  windowMs: config.rateLimiters.sendAndEditMessage.windowMs,
-  logLabel: 'editMessage'
-})
+const editMessageRoute = protectedProcedure
+  .meta({ rateLimit: RateLimiter.SEND_MESSAGE })
   .input(
     z.object({
       messageId: z.number(),

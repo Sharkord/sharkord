@@ -4,7 +4,10 @@ import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import os from 'os';
 import path from 'path';
 import { APP_ID } from '../../shared/constants';
+import { createLogger } from '../logs/logger';
 import { getDesktopExec } from './get-launch-command';
+
+const logger = createLogger('desktop-entry');
 
 const ICON_SIZE = 512;
 
@@ -83,7 +86,7 @@ const writeDesktopEntry = (iconPath: string) => {
     installIcon(iconPath);
     writeIfChanged(file, content);
   } catch (error) {
-    console.error('failed to write the desktop entry', error);
+    logger.error('failed to write the desktop entry', error);
   }
 };
 

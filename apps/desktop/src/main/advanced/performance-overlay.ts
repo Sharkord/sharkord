@@ -1,7 +1,10 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
 import { AdvancedChannel } from '../../shared/advanced-channels';
+import { createLogger } from '../logs/logger';
 import { summarizeMetrics } from './summarize-metrics';
+
+const logger = createLogger('performance-overlay');
 
 const OVERLAY_WIDTH = 280;
 const OVERLAY_HEIGHT = 240;
@@ -12,14 +15,18 @@ const loadOverlay = (overlay: BrowserWindow) => {
   const devUrl = process.env.ELECTRON_RENDERER_URL;
 
   if (devUrl) {
-    overlay.loadURL(`${devUrl}/performance.html`).catch(console.error);
+    overlay.loadURL(`${devUrl}/performance.html`).catch((error) => {
+      logger.error('failed to load the overlay', error);
+    });
 
     return;
   }
 
   const file = path.join(__dirname, '../renderer/performance.html');
 
-  overlay.loadFile(file).catch(console.error);
+  overlay.loadFile(file).catch((error) => {
+    logger.error('failed to load the overlay', error);
+  });
 };
 
 const createPerformanceOverlay = (parent: BrowserWindow) => {

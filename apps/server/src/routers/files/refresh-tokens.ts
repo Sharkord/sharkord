@@ -4,20 +4,15 @@ import {
   type TFileAccessToken
 } from '@sharkord/shared';
 import { z } from 'zod';
-import { config } from '../../config';
 import { getSettings } from '../../db/queries/server';
 import {
   generateFileToken,
   verifyFileSignature
 } from '../../helpers/files-crypto';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
 // a valid signature proves the caller was already handed this file, so no access check is needed
-const refreshTokensRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.refreshFileTokens.maxRequests,
-  windowMs: config.rateLimiters.refreshFileTokens.windowMs,
-  logLabel: 'refreshFileTokens'
-})
+const refreshTokensRoute = protectedProcedure
   .input(
     z.object({
       files: z

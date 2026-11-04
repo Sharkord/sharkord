@@ -1,4 +1,4 @@
-import { ChannelType, sha256 } from '@sharkord/shared';
+import { ChannelType, RateLimiter, sha256 } from '@sharkord/shared';
 import { describe, expect, spyOn, test } from 'bun:test';
 import { and, eq, inArray } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
@@ -17,15 +17,16 @@ import {
   userRoles,
   users
 } from '../../db/schema';
+import { getLoginLockout, getRateLimit } from '../../helpers/rate-limits';
 import { eventBus } from '../../plugins/event-bus';
 
 const failLoginUntilLocked = async (
   advanceTime: (ms: number) => void,
   headers?: Record<string, string>
 ) => {
-  for (let i = 0; i < config.rateLimiters.loginLockout.maxFailures; i++) {
-    if (i % config.rateLimiters.login.maxRequests === 0) {
-      advanceTime(config.rateLimiters.login.windowMs);
+  for (let i = 0; i < getLoginLockout().maxFailures; i++) {
+    if (i % getRateLimit(RateLimiter.LOGIN).maxRequests === 0) {
+      advanceTime(getRateLimit(RateLimiter.LOGIN).windowMs);
     }
 
     const response = await login(
@@ -519,9 +520,9 @@ describe('/login', () => {
   });
 
   test('should rate limit /login on its own limiter', async () => {
-    // this used to borrow config.rateLimiters.joinServer, so tuning the join limit silently
-    // retuned brute-force protection on the password endpoint
-    const attempts = config.rateLimiters.login.maxRequests;
+    // login has its own limit, so tuning the join limit cannot retune brute-force
+    // protection on the password endpoint
+    const attempts = getRateLimit(RateLimiter.LOGIN).maxRequests;
 
     for (let i = 0; i < attempts; i++) {
       await login('testowner', 'wrongpassword');
@@ -541,7 +542,7 @@ describe('/login', () => {
     config.server.trustedProxies = [];
 
     try {
-      const attempts = config.rateLimiters.login.maxRequests;
+      const attempts = getRateLimit(RateLimiter.LOGIN).maxRequests;
 
       for (let i = 0; i < attempts; i++) {
         await login('testowner', 'wrongpassword', undefined, {
@@ -562,7 +563,7 @@ describe('/login', () => {
   });
 
   test('should key the /login limiter per client behind a trusted loopback proxy', async () => {
-    const attempts = config.rateLimiters.login.maxRequests;
+    const attempts = getRateLimit(RateLimiter.LOGIN).maxRequests;
 
     for (let i = 0; i < attempts; i++) {
       await login('testowner', 'wrongpassword', undefined, {
@@ -591,7 +592,7 @@ describe('/login', () => {
 
     expect(locked.status).toBe(429);
     expect(Number(locked.headers.get('retry-after'))).toBe(
-      config.rateLimiters.loginLockout.blockMs / 1000
+      getLoginLockout().blockMs / 1000
     );
 
     const data = await locked.json();
@@ -601,7 +602,7 @@ describe('/login', () => {
       'Too many failed login attempts. Please try again later.'
     );
 
-    advanceTime(config.rateLimiters.loginLockout.blockMs);
+    advanceTime(getLoginLockout().blockMs);
 
     const afterBlock = await login('testowner', 'password123');
 
@@ -613,7 +614,7 @@ describe('/login', () => {
 
     await failLoginUntilLocked(advanceTime);
 
-    advanceTime(config.rateLimiters.loginLockout.blockMs);
+    advanceTime(getLoginLockout().blockMs);
 
     await failLoginUntilLocked(advanceTime);
 
@@ -621,7 +622,7 @@ describe('/login', () => {
 
     expect(locked.status).toBe(429);
     expect(Number(locked.headers.get('retry-after'))).toBe(
-      (config.rateLimiters.loginLockout.blockMs * 2) / 1000
+      (getLoginLockout().blockMs * 2) / 1000
     );
   });
 

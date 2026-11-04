@@ -35,6 +35,7 @@
     "desktopSettings": "Desktop Settings...",
     "togglePerformanceOverlay": "Toggle Performance Overlay",
     "openAppFolder": "Open App Folder",
+    "openLogsFolder": "Open Logs Folder",
     "resetApp": "Reset App..."
   },
   "tray": {
@@ -81,11 +82,16 @@
     "autoUpdate": "Install updates automatically",
     "autoUpdateDescription": "Download new versions of the app in the background and ask to restart once one is ready.",
     "performance": "Performance",
+    "spellcheck": "Spellcheck",
+    "spellcheckDescription": "Underline misspelled words while typing. Turn it off if you write in a language the dictionary doesn't know.",
     "throttleHiddenServers": "Throttle hidden servers",
     "throttleHiddenServersDescription": "Slow down timers and rendering of servers you are not looking at. Saves CPU and battery, turn it off if background servers misbehave.",
     "performanceOverlay": "Performance overlay",
     "performanceOverlayDescription": "Show memory and CPU usage of the app in a small window.",
     "togglePerformanceOverlay": "Toggle performance overlay",
+    "screenShare": "Screen share",
+    "captureAllAudioOutputs": "Capture audio from all outputs",
+    "captureAllAudioOutputsDescription": "Also share apps that play through a virtual output, such as EasyEffects or a filter chain. Turn it on if viewers hear nothing from your stream.",
     "menuBar": "Menu bar",
     "menuBarDescription": "Show or hide the window menu bar. You can also use Ctrl+Shift+M.",
     "shortcuts": "Shortcuts",
@@ -142,7 +148,10 @@
     "unknownVersion": "Unknown",
     "appFolder": "App folder",
     "appFolderDescription": "Where the app keeps your servers, logins and settings.",
-    "openAppFolder": "Open app folder"
+    "openAppFolder": "Open app folder",
+    "logsFolder": "Logs folder",
+    "logsFolderDescription": "The app's log files. Attach main.log when you report a problem.",
+    "openLogsFolder": "Open logs folder"
   },
   "updateDialog": {
     "title": "Update ready",

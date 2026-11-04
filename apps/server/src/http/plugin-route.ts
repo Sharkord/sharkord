@@ -1,10 +1,10 @@
 import { PluginCapabilityMode, PluginCapabilityType } from '@sharkord/shared';
 import type http from 'http';
-import { config } from '../config';
 import { getCapabilityAccess } from '../db/queries/plugin-capabilities';
 import { getUserByToken } from '../db/queries/users';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { canUseResolvedCapability } from '../helpers/plugin-capability-access';
+import { getRateLimit } from '../helpers/rate-limits';
 import {
   getRouteKey,
   type TPluginHttpRoute
@@ -17,8 +17,8 @@ import {
 } from './helpers';
 
 const pluginRouteRateLimiter = createRateLimiter({
-  maxRequests: config.rateLimiters.pluginRoute.maxRequests,
-  windowMs: config.rateLimiters.pluginRoute.windowMs
+  getLimit: () => getRateLimit(),
+  maxEntries: 100_000
 });
 
 const runPluginRoute = async (
@@ -31,7 +31,7 @@ const runPluginRoute = async (
     pluginRouteRateLimiter,
     getWsInfo(undefined, req)?.ip,
     {
-      route: `/plugins${route.path}`,
+      route: `${route.method} /plugins/${route.pluginId}${route.path}`,
       message: 'Too many requests. Please try again shortly.'
     }
   );

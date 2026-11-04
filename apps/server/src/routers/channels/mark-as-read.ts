@@ -1,14 +1,9 @@
 import { z } from 'zod';
-import { config } from '../../config';
 import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { markChannelAsRead } from '../../helpers/mark-channel-as-read';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const markAsReadRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.markAsRead.maxRequests,
-  windowMs: config.rateLimiters.markAsRead.windowMs,
-  logLabel: 'markAsRead'
-})
+const markAsReadRoute = protectedProcedure
   .input(
     z.object({
       channelId: z.number()

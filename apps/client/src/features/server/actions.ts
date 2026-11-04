@@ -12,6 +12,7 @@ import {
   type TServerInfo
 } from '@sharkord/shared';
 import { TRPCClientError } from '@trpc/client';
+import { throttle } from 'lodash-es';
 import { toast } from 'sonner';
 import { appSliceActions } from '../app/slice';
 import { openDialog } from '../dialogs/actions';
@@ -297,6 +298,23 @@ export const markChannelAsRead = async (
       );
     }
   }
+};
+
+const MARK_AS_READ_THROTTLE_MS = 2_000;
+const markAsReadThrottles = new Map<number, () => void>();
+
+export const markVisibleChannelAsRead = (channelId: number) => {
+  let markAsRead = markAsReadThrottles.get(channelId);
+
+  if (!markAsRead) {
+    markAsRead = throttle(() => {
+      markChannelAsRead(channelId, true);
+    }, MARK_AS_READ_THROTTLE_MS);
+
+    markAsReadThrottles.set(channelId, markAsRead);
+  }
+
+  markAsRead();
 };
 
 window.useToken = async (token: string) => {

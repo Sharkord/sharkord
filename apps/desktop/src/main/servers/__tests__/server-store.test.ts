@@ -99,7 +99,9 @@ describe('server store', () => {
         closeToTray: true,
         startToTray: true,
         dynamicTrayIcon: false,
-        autoUpdate: false
+        autoUpdate: false,
+        captureAllAudioOutputs: true,
+        spellcheck: false
       },
       mediaAllowedIds: []
     });
@@ -111,7 +113,9 @@ describe('server store', () => {
       closeToTray: true,
       startToTray: true,
       dynamicTrayIcon: false,
-      autoUpdate: false
+      autoUpdate: false,
+      captureAllAudioOutputs: true,
+      spellcheck: false
     });
   });
 
@@ -127,7 +131,9 @@ describe('server store', () => {
           closeToTray: 'yes',
           startToTray: 'true',
           dynamicTrayIcon: 'no',
-          autoUpdate: 0
+          autoUpdate: 0,
+          captureAllAudioOutputs: 'yes',
+          spellcheck: 'no'
         }
       })
     );
@@ -139,11 +145,13 @@ describe('server store', () => {
       closeToTray: true,
       startToTray: false,
       dynamicTrayIcon: true,
-      autoUpdate: true
+      autoUpdate: true,
+      captureAllAudioOutputs: false,
+      spellcheck: true
     });
   });
 
-  test('a fresh start has auto start and start to tray off, throttling, closing to the tray, the server logo icon and auto update on', () => {
+  test('a fresh start has auto start and start to tray off, throttling, closing to the tray, the server logo icon and auto update on, capturing all audio outputs off, spellcheck on', () => {
     expect(readStore(filePath).settings).toEqual({
       connectAllOnStartup: false,
       throttleHiddenServers: true,
@@ -151,7 +159,9 @@ describe('server store', () => {
       closeToTray: true,
       startToTray: false,
       dynamicTrayIcon: true,
-      autoUpdate: true
+      autoUpdate: true,
+      captureAllAudioOutputs: false,
+      spellcheck: true
     });
   });
 

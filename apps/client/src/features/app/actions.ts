@@ -155,6 +155,12 @@ export const setFreezeAnimatedAvatars = (freeze: boolean) => {
   setLocalStorageItemBool(LocalStorageKey.FREEZE_ANIMATED_AVATARS, freeze);
 };
 
+export const setConvertAsciiEmoji = (convert: boolean) => {
+  store.dispatch(appSliceActions.setConvertAsciiEmoji(convert));
+
+  setLocalStorageItemBool(LocalStorageKey.CONVERT_ASCII_EMOJI, convert);
+};
+
 export const setMicMode = (micMode: MicMode) => {
   store.dispatch(appSliceActions.setMicMode(micMode));
 

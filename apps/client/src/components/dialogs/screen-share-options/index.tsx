@@ -17,6 +17,7 @@ import {
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TDialogBaseProps } from '../types';
+import { AllAudioNote } from './all-audio-note';
 
 type TScreenShareOptionsDialogProps = TDialogBaseProps & {
   settings: TDeviceSettings;
@@ -67,6 +68,7 @@ const ScreenShareOptionsDialog = memo(
             />
             <Label htmlFor="share-system-audio">{t('shareSystemAudio')}</Label>
           </div>
+          {values.shareSystemAudio && <AllAudioNote />}
           <DetailsSection title={t('additionalScreenShareSettings')}>
             <ScreenShareSettings values={values} onChange={handleChange} />
           </DetailsSection>

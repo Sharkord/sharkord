@@ -18,8 +18,7 @@ describe('FixedWindowRateLimiter', () => {
 
   test('allows requests until max, then blocks', () => {
     const limiter = new FixedWindowRateLimiter({
-      maxRequests: 3,
-      windowMs: 10_000
+      getLimit: () => ({ maxRequests: 3, windowMs: 10_000 })
     });
 
     expect(limiter.consume('127.0.0.1')).toEqual({
@@ -49,8 +48,7 @@ describe('FixedWindowRateLimiter', () => {
 
   test('resets counter after the time window expires', () => {
     const limiter = new FixedWindowRateLimiter({
-      maxRequests: 1,
-      windowMs: 5_000
+      getLimit: () => ({ maxRequests: 1, windowMs: 5_000 })
     });
 
     expect(limiter.consume('1.2.3.4').allowed).toBe(true);
@@ -69,8 +67,7 @@ describe('FixedWindowRateLimiter', () => {
 
   test('tracks limits independently per key', () => {
     const limiter = new FixedWindowRateLimiter({
-      maxRequests: 1,
-      windowMs: 60_000
+      getLimit: () => ({ maxRequests: 1, windowMs: 60_000 })
     });
 
     expect(limiter.consume('ip-a').allowed).toBe(true);
@@ -80,8 +77,7 @@ describe('FixedWindowRateLimiter', () => {
 
   test('clear removes all tracked keys', () => {
     const limiter = new FixedWindowRateLimiter({
-      maxRequests: 1,
-      windowMs: 60_000
+      getLimit: () => ({ maxRequests: 1, windowMs: 60_000 })
     });
 
     limiter.consume('ip-a');
@@ -98,8 +94,7 @@ describe('FixedWindowRateLimiter', () => {
 
   test('evicts to stay within maxEntries', () => {
     const limiter = new FixedWindowRateLimiter({
-      maxRequests: 2,
-      windowMs: 60_000,
+      getLimit: () => ({ maxRequests: 2, windowMs: 60_000 }),
       maxEntries: 2
     });
 
@@ -118,8 +113,7 @@ describe('FixedWindowRateLimiter', () => {
 
   test('reclaims expired entries and leaves live ones alone', () => {
     const limiter = new FixedWindowRateLimiter({
-      maxRequests: 1,
-      windowMs: 50,
+      getLimit: () => ({ maxRequests: 1, windowMs: 50 }),
       maxEntries: 3
     });
 
@@ -138,8 +132,7 @@ describe('FixedWindowRateLimiter', () => {
 
   test('evicts a batch when full instead of a single entry', () => {
     const limiter = new FixedWindowRateLimiter({
-      maxRequests: 1,
-      windowMs: 60_000,
+      getLimit: () => ({ maxRequests: 1, windowMs: 60_000 }),
       maxEntries: 20
     });
 
@@ -158,8 +151,7 @@ describe('FixedWindowRateLimiter', () => {
 
   test('never grows past maxEntries', () => {
     const limiter = new FixedWindowRateLimiter({
-      maxRequests: 1,
-      windowMs: 60_000,
+      getLimit: () => ({ maxRequests: 1, windowMs: 60_000 }),
       maxEntries: 10
     });
 
@@ -172,18 +164,35 @@ describe('FixedWindowRateLimiter', () => {
 
   test('allows every request when rate limiters are disabled in the config', () => {
     const limiter = new FixedWindowRateLimiter({
-      maxRequests: 1,
-      windowMs: 10_000
+      getLimit: () => ({ maxRequests: 1, windowMs: 10_000 })
     });
 
-    config.rateLimiters.enabled = false;
+    config.server.rateLimitersEnabled = false;
 
     try {
       limiter.consume('127.0.0.1');
 
       expect(limiter.consume('127.0.0.1').allowed).toBe(true);
     } finally {
-      config.rateLimiters.enabled = true;
+      config.server.rateLimitersEnabled = true;
     }
+  });
+
+  test('applies a changed limit to the next request without a restart', () => {
+    let limit = { maxRequests: 1, windowMs: 10_000 };
+
+    const limiter = new FixedWindowRateLimiter({ getLimit: () => limit });
+
+    limiter.consume('127.0.0.1');
+
+    expect(limiter.consume('127.0.0.1').allowed).toBe(false);
+
+    limit = { maxRequests: 3, windowMs: 10_000 };
+
+    expect(limiter.consume('127.0.0.1')).toEqual({
+      allowed: true,
+      remaining: 1,
+      retryAfterMs: 0
+    });
   });
 });

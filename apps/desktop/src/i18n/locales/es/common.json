@@ -35,6 +35,7 @@
     "desktopSettings": "Ajustes de escritorio...",
     "togglePerformanceOverlay": "Alternar superposición de rendimiento",
     "openAppFolder": "Abrir carpeta de la aplicación",
+    "openLogsFolder": "Abrir carpeta de registros",
     "resetApp": "Restablecer la aplicación..."
   },
   "tray": {
@@ -81,11 +82,16 @@
     "autoUpdate": "Instalar actualizaciones automáticamente",
     "autoUpdateDescription": "Descarga nuevas versiones de la app en segundo plano y pide reiniciar cuando una esté lista.",
     "performance": "Rendimiento",
+    "spellcheck": "Corrector ortográfico",
+    "spellcheckDescription": "Subraya las palabras mal escritas mientras escribes. Desactívalo si escribes en un idioma que el diccionario no conoce.",
     "throttleHiddenServers": "Limitar servidores ocultos",
     "throttleHiddenServersDescription": "Ralentiza los temporizadores y el renderizado de los servidores que no estás viendo. Ahorra CPU y batería; desactívalo si los servidores en segundo plano fallan.",
     "performanceOverlay": "Superposición de rendimiento",
     "performanceOverlayDescription": "Muestra el uso de memoria y CPU de la aplicación en una pequeña ventana.",
     "togglePerformanceOverlay": "Alternar superposición de rendimiento",
+    "screenShare": "Compartir pantalla",
+    "captureAllAudioOutputs": "Capturar audio de todas las salidas",
+    "captureAllAudioOutputsDescription": "Comparte también las aplicaciones que suenan a través de una salida virtual, como EasyEffects o una cadena de filtros. Actívalo si los espectadores no oyen nada de tu transmisión.",
     "menuBar": "Barra de menús",
     "menuBarDescription": "Muestra u oculta la barra de menús de la ventana. También puedes usar Ctrl+Shift+M.",
     "shortcuts": "Atajos",
@@ -142,7 +148,10 @@
     "unknownVersion": "Desconocida",
     "appFolder": "Carpeta de la app",
     "appFolderDescription": "Donde la app guarda tus servidores, sesiones y ajustes.",
-    "openAppFolder": "Abrir carpeta de la app"
+    "openAppFolder": "Abrir carpeta de la app",
+    "logsFolder": "Carpeta de registros",
+    "logsFolderDescription": "Los archivos de registro de la app. Adjunta main.log cuando informes de un problema.",
+    "openLogsFolder": "Abrir carpeta de registros"
   },
   "updateDialog": {
     "title": "Actualización lista",

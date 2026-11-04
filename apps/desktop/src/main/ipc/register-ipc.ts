@@ -10,11 +10,13 @@ import {
 } from './check-for-updates';
 import { downloadUpdateCall, registerDownloadUpdate } from './download-update';
 import { getAppFolderCall, registerGetAppFolder } from './get-app-folder';
+import { getLogsFolderCall, registerGetLogsFolder } from './get-logs-folder';
 import { getRailVisibleCall, registerGetRailVisible } from './get-rail-visible';
 import { getStateCall, registerGetState } from './get-state';
 import { getUpdateStateCall, registerGetUpdateState } from './get-update-state';
 import { installUpdateCall, registerInstallUpdate } from './install-update';
 import { openAppFolderCall, registerOpenAppFolder } from './open-app-folder';
+import { openLogsFolderCall, registerOpenLogsFolder } from './open-logs-folder';
 import { openSettingsCall, registerOpenSettings } from './open-settings';
 import { registerRemoveServer, removeServerCall } from './remove-server';
 import { registerRetryServer, retryServerCall } from './retry-server';
@@ -58,6 +60,8 @@ const IPC_ROUTES = [
   [installUpdateCall, registerInstallUpdate],
   [getAppFolderCall, registerGetAppFolder],
   [openAppFolderCall, registerOpenAppFolder],
+  [getLogsFolderCall, registerGetLogsFolder],
+  [openLogsFolderCall, registerOpenLogsFolder],
   [answerSourcePickCall, registerAnswerSourcePick]
 ] as const;
 

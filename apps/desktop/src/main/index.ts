@@ -22,6 +22,8 @@ import { registerProtocol } from './deep-links/register-protocol';
 import { setActiveHotkeyServer } from './hotkeys/global-hotkeys';
 import { initI18n } from './i18n';
 import { registerIpc } from './ipc/register-ipc';
+import { getLogsFolder, initLogger } from './logs/logger';
+import { openLogsFolder } from './logs/open-logs-folder';
 import { buildAppMenu, getAppMenuKey } from './menu/app-menu';
 import { createSourcePicker } from './screen-share/source-picker';
 import { confirmMediaAccess } from './servers/confirm-media-access';
@@ -87,7 +89,12 @@ const start = () => {
     },
     isMediaAllowed: (serverId) => controller.isMediaAllowed(serverId),
     requestMediaAccess: (server) => confirmMediaAccess(win, controller, server),
-    pickSource: sourcePicker.pick
+    pickSource: sourcePicker.pick,
+    shouldCaptureAllAudioOutputs: () => {
+      const { settings } = controller.getState();
+
+      return settings.captureAllAudioOutputs;
+    }
   });
 
   const performanceOverlay = createPerformanceOverlay(win);
@@ -193,6 +200,8 @@ const start = () => {
     toggleMenuBar,
     getAppFolder,
     openAppFolder,
+    getLogsFolder,
+    openLogsFolder,
     updater: {
       getState: getUpdateState,
       check: checkForUpdates,
@@ -273,6 +282,7 @@ wipeUserDataIfRequested();
 const hasLock = app.requestSingleInstanceLock();
 
 if (hasLock) {
+  initLogger();
   registerProtocol();
 
   // macos delivers links through this event, also before the app is ready

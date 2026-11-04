@@ -11,9 +11,9 @@ import net from 'net';
 import path from 'path';
 import { login, uploadFile } from '../../__tests__/helpers';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
-import { config } from '../../config';
 import { rolePermissions, settings, users } from '../../db/schema';
 import { TMP_PATH } from '../../helpers/paths';
+import { getRateLimit } from '../../helpers/rate-limits';
 import { sanitizeFileName } from '../helpers';
 
 const getMockFile = (content: string): File => {
@@ -198,7 +198,7 @@ describe('/upload', () => {
   });
 
   test('should rate limit excessive upload attempts', async () => {
-    const { maxRequests } = config.rateLimiters.upload;
+    const { maxRequests } = getRateLimit();
     const statuses: number[] = [];
 
     for (let i = 0; i < maxRequests + 1; i++) {

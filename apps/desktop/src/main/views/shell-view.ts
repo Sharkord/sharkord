@@ -1,5 +1,8 @@
 import { WebContentsView } from 'electron';
 import path from 'path';
+import { createLogger } from '../logs/logger';
+
+const logger = createLogger('shell');
 
 const createShellView = () => {
   const view = new WebContentsView({
@@ -16,11 +19,15 @@ const createShellView = () => {
   const devUrl = process.env.ELECTRON_RENDERER_URL;
 
   if (devUrl) {
-    view.webContents.loadURL(devUrl).catch(console.error);
+    view.webContents.loadURL(devUrl).catch((error) => {
+      logger.error('failed to load the shell', error);
+    });
   } else {
     const file = path.join(__dirname, '../renderer/index.html');
 
-    view.webContents.loadFile(file).catch(console.error);
+    view.webContents.loadFile(file).catch((error) => {
+      logger.error('failed to load the shell', error);
+    });
   }
 
   return view;

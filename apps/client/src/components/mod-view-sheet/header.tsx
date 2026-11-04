@@ -26,7 +26,7 @@ import { useModViewContext } from './context';
 const Header = memo(() => {
   const { t } = useTranslation('settings');
   const ownUserId = useOwnUserId();
-  const { user, refetch } = useModViewContext();
+  const { user, refetch, sharedIp } = useModViewContext();
   const status = useUserStatus(user.id);
   const userRoles = useUserRoles(user.id);
   const isDeletedUser = user.identity === DELETED_USER_IDENTITY_AND_NAME;
@@ -96,9 +96,21 @@ const Header = memo(() => {
 
     const trpc = getTRPCClient();
 
+    let warning: string | undefined;
+
+    if (sharedIp.users.length > 0) {
+      const warningKey = sharedIp.hasMore
+        ? 'banSharedIpWarningMore'
+        : 'banSharedIpWarning';
+
+      warning = t(warningKey, { count: sharedIp.users.length });
+    }
+
     const reason = await requestTextInput({
       title: t('banTitle'),
       message: t('banMsg'),
+      warning,
+      warningUserIds: sharedIp.users.map(({ id }) => id),
       confirmLabel: t('banConfirm'),
       allowEmpty: true
     });
@@ -118,7 +130,7 @@ const Header = memo(() => {
     } finally {
       refetch();
     }
-  }, [user.id, refetch, isDeletedUser, t]);
+  }, [user.id, refetch, isDeletedUser, sharedIp, t]);
 
   const onUnban = useCallback(async () => {
     if (isDeletedUser) {

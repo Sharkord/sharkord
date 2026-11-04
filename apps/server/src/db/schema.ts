@@ -4,7 +4,8 @@ import {
   PluginCapabilityType,
   type TActivityLogDetailsMap,
   type TMessageMetadata,
-  type TPluginMessageComponent
+  type TPluginMessageComponent,
+  type TRateLimiters
 } from '@sharkord/shared';
 import { sql } from 'drizzle-orm';
 import {
@@ -109,7 +110,10 @@ const settings = sqliteTable(
       'storage_image_optimization_quality'
     )
       .notNull()
-      .default(80)
+      .default(80),
+    rateLimiters: text('rate_limiters', {
+      mode: 'json'
+    }).$type<TRateLimiters>()
   },
   (t) => [
     index('settings_server_idx').on(t.serverId),

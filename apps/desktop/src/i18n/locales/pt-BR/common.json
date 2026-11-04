@@ -35,6 +35,7 @@
     "desktopSettings": "Configurações do desktop...",
     "togglePerformanceOverlay": "Alternar sobreposição de desempenho",
     "openAppFolder": "Abrir pasta do aplicativo",
+    "openLogsFolder": "Abrir pasta de logs",
     "resetApp": "Redefinir aplicativo..."
   },
   "tray": {
@@ -81,11 +82,16 @@
     "autoUpdate": "Instalar atualizações automaticamente",
     "autoUpdateDescription": "Baixa novas versões do app em segundo plano e pede para reiniciar quando uma estiver pronta.",
     "performance": "Desempenho",
+    "spellcheck": "Corretor ortográfico",
+    "spellcheckDescription": "Sublinha palavras com erros enquanto você digita. Desative se você escreve em um idioma que o dicionário não conhece.",
     "throttleHiddenServers": "Limitar servidores ocultos",
     "throttleHiddenServersDescription": "Reduz timers e renderização dos servidores que não estão visíveis. Economiza CPU e bateria; desative se os servidores em segundo plano se comportarem mal.",
     "performanceOverlay": "Sobreposição de desempenho",
     "performanceOverlayDescription": "Mostra o uso de memória e CPU do aplicativo numa pequena janela.",
     "togglePerformanceOverlay": "Alternar sobreposição de desempenho",
+    "screenShare": "Compartilhamento de tela",
+    "captureAllAudioOutputs": "Capturar áudio de todas as saídas",
+    "captureAllAudioOutputsDescription": "Compartilha também os apps que tocam por uma saída virtual, como EasyEffects ou uma cadeia de filtros. Ative se os espectadores não ouvirem nada da sua transmissão.",
     "menuBar": "Barra de menus",
     "menuBarDescription": "Mostra ou oculta a barra de menus da janela. Você também pode usar Ctrl+Shift+M.",
     "shortcuts": "Atalhos",
@@ -142,7 +148,10 @@
     "unknownVersion": "Desconhecida",
     "appFolder": "Pasta do app",
     "appFolderDescription": "Onde o app guarda seus servidores, logins e configurações.",
-    "openAppFolder": "Abrir pasta do app"
+    "openAppFolder": "Abrir pasta do app",
+    "logsFolder": "Pasta de logs",
+    "logsFolderDescription": "Os arquivos de log do app. Anexe o main.log ao relatar um problema.",
+    "openLogsFolder": "Abrir pasta de logs"
   },
   "updateDialog": {
     "title": "Atualização pronta",
