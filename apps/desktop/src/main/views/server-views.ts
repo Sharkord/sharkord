@@ -764,7 +764,12 @@ const createServerViews = (
   };
 
   win.contentView.addChildView(shellView);
+
   win.on('resize', layout);
+  win.on('maximize', layout);
+  win.on('unmaximize', layout);
+  win.on('enter-full-screen', layout);
+  win.on('leave-full-screen', layout);
 
   return {
     show,
