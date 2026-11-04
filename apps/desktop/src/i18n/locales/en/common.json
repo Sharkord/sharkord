@@ -82,6 +82,8 @@
     "autoUpdate": "Install updates automatically",
     "autoUpdateDescription": "Download new versions of the app in the background and ask to restart once one is ready.",
     "performance": "Performance",
+    "spellcheck": "Spellcheck",
+    "spellcheckDescription": "Underline misspelled words while typing. Turn it off if you write in a language the dictionary doesn't know.",
     "throttleHiddenServers": "Throttle hidden servers",
     "throttleHiddenServersDescription": "Slow down timers and rendering of servers you are not looking at. Saves CPU and battery, turn it off if background servers misbehave.",
     "performanceOverlay": "Performance overlay",

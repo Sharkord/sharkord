@@ -82,6 +82,8 @@
     "autoUpdate": "Installa gli aggiornamenti automaticamente",
     "autoUpdateDescription": "Scarica le nuove versioni dell'app in background e chiede di riavviare quando una è pronta.",
     "performance": "Prestazioni",
+    "spellcheck": "Controllo ortografico",
+    "spellcheckDescription": "Sottolinea le parole errate mentre scrivi. Disattivalo se scrivi in una lingua che il dizionario non conosce.",
     "throttleHiddenServers": "Limita i server nascosti",
     "throttleHiddenServersDescription": "Rallenta timer e rendering dei server che non stai guardando. Risparmia CPU e batteria, disattivalo se i server in background non funzionano bene.",
     "performanceOverlay": "Overlay prestazioni",

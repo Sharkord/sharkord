@@ -32,6 +32,10 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
     window.desktop.updateSettings({ dynamicTrayIcon: checked });
   }, []);
 
+  const handleSpellcheckChange = useCallback((checked: boolean) => {
+    window.desktop.updateSettings({ spellcheck: checked });
+  }, []);
+
   const handleThrottleChange = useCallback((checked: boolean) => {
     window.desktop.updateSettings({ throttleHiddenServers: checked });
   }, []);
@@ -118,6 +122,15 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
           <Switch
             checked={settings.connectAllOnStartup}
             onCheckedChange={handleConnectAllChange}
+          />
+        </Group>
+        <Group
+          label={t('settings.spellcheck')}
+          description={t('settings.spellcheckDescription')}
+        >
+          <Switch
+            checked={settings.spellcheck}
+            onCheckedChange={handleSpellcheckChange}
           />
         </Group>
 

@@ -10,7 +10,8 @@ const desktopSettingsSchema = z.strictObject({
   startToTray: z.boolean(),
   dynamicTrayIcon: z.boolean(),
   autoUpdate: z.boolean(),
-  captureAllAudioOutputs: z.boolean()
+  captureAllAudioOutputs: z.boolean(),
+  spellcheck: z.boolean()
 });
 
 type TDesktopSettings = z.infer<typeof desktopSettingsSchema>;
@@ -23,7 +24,8 @@ const DEFAULT_SETTINGS: TDesktopSettings = {
   startToTray: false,
   dynamicTrayIcon: true,
   autoUpdate: true,
-  captureAllAudioOutputs: false
+  captureAllAudioOutputs: false,
+  spellcheck: true
 };
 
 export { DEFAULT_SETTINGS, desktopSettingsSchema };

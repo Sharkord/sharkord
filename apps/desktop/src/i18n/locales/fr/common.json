@@ -82,6 +82,8 @@
     "autoUpdate": "Installer les mises à jour automatiquement",
     "autoUpdateDescription": "Télécharge les nouvelles versions de l'application en arrière-plan et propose de redémarrer dès qu'une est prête.",
     "performance": "Performances",
+    "spellcheck": "Correcteur orthographique",
+    "spellcheckDescription": "Souligne les mots mal orthographiés pendant la saisie. Désactivez-le si vous écrivez dans une langue que le dictionnaire ne connaît pas.",
     "throttleHiddenServers": "Limiter les serveurs masqués",
     "throttleHiddenServersDescription": "Ralentit les minuteurs et le rendu des serveurs que vous ne regardez pas. Économise le processeur et la batterie, désactivez-le si les serveurs en arrière-plan fonctionnent mal.",
     "performanceOverlay": "Superposition des performances",

@@ -82,6 +82,8 @@
     "autoUpdate": "Instalovat aktualizace automaticky",
     "autoUpdateDescription": "Stahovat nové verze aplikace na pozadí a nabídnout restart, jakmile bude některá připravena.",
     "performance": "Výkon",
+    "spellcheck": "Kontrola pravopisu",
+    "spellcheckDescription": "Podtrhává chybně napsaná slova při psaní. Vypněte, pokud píšete v jazyce, který slovník nezná.",
     "throttleHiddenServers": "Omezovat skryté servery",
     "throttleHiddenServersDescription": "Zpomalí časovače a vykreslování serverů, které právě nesledujete. Šetří procesor a baterii, vypněte, pokud servery na pozadí nefungují správně.",
     "performanceOverlay": "Překryv výkonu",
