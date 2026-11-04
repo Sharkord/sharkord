@@ -1,0 +1,1 @@
+ALTER TABLE `settings` ADD `rate_limiters` text;

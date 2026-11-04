@@ -64,8 +64,9 @@ Conventions:
   (`ctx.needsPermission` / `ctx.needsChannelPermission`).
 - Use `invariant(condition, { code, message })` from `utils/invariant` instead of throwing
   `TRPCError` by hand. Messages are user-facing — write them that way.
-- Use `protectedProcedure`; wrap in `rateLimitedProcedure` for anything a user can spam,
-  with limits from `config.rateLimiters`.
+- Use `protectedProcedure`. Every procedure is rate limited by the global limit from the
+  server settings; add `.meta({ rateLimit: RateLimiter.X })` only when the route needs a
+  different one (see the security check order below).
 - Imports are auto-organized by prettier — don't hand-sort.
 - **ALWAYS** use modern ES6+ syntax: `const`/`let`, arrow functions, destructuring, template literals, etc.
 
@@ -106,9 +107,13 @@ them have passed.
 
 1. **Authentication** — build the route on `protectedProcedure`. Only use
    `publicProcedure` when the endpoint is genuinely pre-auth, and say why in a comment.
-2. **Rate limiting** — wrap in `rateLimitedProcedure` with limits from
-   `config.rateLimiters` for anything a user can spam or use to probe (writes, uploads,
-   searches, anything touching auth or invites).
+2. **Rate limiting** — the global limit applies to every procedure automatically, each
+   route in its own bucket. Add an override (`.meta({ rateLimit: RateLimiter.X })`, a new
+   `RateLimiter` entry in `packages/shared` if none fits) only when the global would be
+   wrong for the route: it checks a secret (passwords, tokens), every request is seen by
+   other users (messages, sounds), it is expensive (search), or normal use exceeds the
+   global by design (typing, push-to-talk). The limits themselves are edited in the server
+   settings, never hardcoded.
 3. **Input validation** — `.input(z.object({ ... }))`. Validate shape _and_ bounds
    (lengths, ranges, enums) here, not later in the handler.
 4. **Global permission** — `ctx.needsPermission(Permission.X)` for the action itself.

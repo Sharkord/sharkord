@@ -96,7 +96,7 @@ const enforceHttpRateLimit = (
     return true;
   }
 
-  const key = getClientRateLimitKey(ip);
+  const key = `${options.route}:${getClientRateLimitKey(ip)}`;
   const rateLimit = limiter.consume(key);
 
   if (rateLimit.allowed) return true;

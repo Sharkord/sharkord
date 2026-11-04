@@ -1,7 +1,11 @@
-import { ActivityLogType, OWNER_ROLE_ID, sha256 } from '@sharkord/shared';
+import {
+  ActivityLogType,
+  OWNER_ROLE_ID,
+  RateLimiter,
+  sha256
+} from '@sharkord/shared';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { config } from '../../config';
 import { db } from '../../db';
 import { publishUser } from '../../db/publishers';
 import { getSettings } from '../../db/queries/server';
@@ -9,13 +13,10 @@ import { userRoles } from '../../db/schema';
 import { safeCompare } from '../../helpers/safe-compare';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const useSecretTokenRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.useSecretToken.maxRequests,
-  windowMs: config.rateLimiters.useSecretToken.windowMs,
-  logLabel: 'useSecretToken'
-})
+const useSecretTokenRoute = protectedProcedure
+  .meta({ rateLimit: RateLimiter.USE_SECRET_TOKEN })
   .input(
     z.object({
       token: z.string()

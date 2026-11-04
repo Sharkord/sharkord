@@ -1,19 +1,16 @@
 import {
   Permission,
+  RateLimiter,
   REACTION_EMOJI_MAX_LENGTH,
   ServerEvents
 } from '@sharkord/shared';
 import { z } from 'zod';
-import { config } from '../../config';
 import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
 import { resolveKnownEmojiFileId } from '../../helpers/resolve-known-emoji-file-id';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const sendVoiceReactionRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.voiceReaction.maxRequests,
-  windowMs: config.rateLimiters.voiceReaction.windowMs,
-  logLabel: 'sendVoiceReaction'
-})
+const sendVoiceReactionRoute = protectedProcedure
+  .meta({ rateLimit: RateLimiter.VOICE_REACTION })
   .input(
     z.object({
       emoji: z.string().min(1).max(REACTION_EMOJI_MAX_LENGTH)

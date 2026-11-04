@@ -1,13 +1,8 @@
 import { Permission } from '@sharkord/shared';
-import { config } from '../../config';
 import { createRole } from '../../helpers/roles';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const addRoleRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.adminCreate.maxRequests,
-  windowMs: config.rateLimiters.adminCreate.windowMs,
-  logLabel: 'addRole'
-}).mutation(async ({ ctx }) => {
+const addRoleRoute = protectedProcedure.mutation(async ({ ctx }) => {
   await ctx.needsPermission(Permission.MANAGE_ROLES);
 
   const role = await createRole(

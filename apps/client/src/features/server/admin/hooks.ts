@@ -18,6 +18,7 @@ import {
   type TMessage,
   type TPluginInfo,
   type TPluginStorageUsage,
+  type TRateLimiters,
   type TStorageData,
   type TStorageSettings,
   type TTrpcErrors
@@ -276,6 +277,32 @@ export const useAdminStorage = () => {
     refetch: fetchStorageSettings,
     loading
   };
+};
+
+export const useAdminRateLimits = () => {
+  const [loading, setLoading] = useState(true);
+  const [rateLimits, setRateLimits] = useState<TRateLimiters | undefined>(
+    undefined
+  );
+  const [enabledInConfig, setEnabledInConfig] = useState(true);
+
+  const fetchRateLimits = useCallback(async () => {
+    setLoading(true);
+
+    const trpc = getTRPCClient();
+    const { rateLimits, enabledInConfig } =
+      await trpc.others.getRateLimits.query();
+
+    setRateLimits(rateLimits);
+    setEnabledInConfig(enabledInConfig);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchRateLimits();
+  }, [fetchRateLimits]);
+
+  return { rateLimits, enabledInConfig, refetch: fetchRateLimits, loading };
 };
 
 export const useAdminUsers = () => {

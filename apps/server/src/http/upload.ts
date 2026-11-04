@@ -7,12 +7,12 @@ import {
 import fs from 'fs';
 import http from 'http';
 import z from 'zod';
-import { config } from '../config';
 import { userCan } from '../db/queries/roles';
 import { getSettings } from '../db/queries/server';
 import { getUserByToken } from '../db/queries/users';
 import { fileManager } from '../helpers/file-manager';
 import { getWsInfo } from '../helpers/get-ws-info';
+import { getRateLimit } from '../helpers/rate-limits';
 import { logger } from '../logger';
 import { createRateLimiter } from '../utils/rate-limiters/rate-limiter';
 import {
@@ -29,8 +29,7 @@ const zHeaders = z.object({
 });
 
 const uploadRateLimiter = createRateLimiter({
-  maxRequests: config.rateLimiters.upload.maxRequests,
-  windowMs: config.rateLimiters.upload.windowMs
+  getLimit: () => getRateLimit()
 });
 
 const uploadFileRouteHandler = async (

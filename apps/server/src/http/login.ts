@@ -1,6 +1,7 @@
 import {
   ActivityLogType,
   DELETED_USER_IDENTITY_AND_NAME,
+  RateLimiter,
   sha256,
   type TBeforeLoginPayload
 } from '@sharkord/shared';
@@ -9,7 +10,6 @@ import { eq } from 'drizzle-orm';
 import http from 'http';
 import jwt from 'jsonwebtoken';
 import z from 'zod';
-import { config } from '../config';
 import { db } from '../db';
 import { createUser } from '../db/mutations/users';
 import { publishUser } from '../db/publishers';
@@ -20,6 +20,7 @@ import { users } from '../db/schema';
 import { getWsInfo } from '../helpers/get-ws-info';
 import { getIpBlockKey } from '../helpers/network';
 import { isLocalLoginDisabled } from '../helpers/oidc/settings';
+import { getLoginLockout, getRateLimit } from '../helpers/rate-limits';
 import { safeCompare } from '../helpers/safe-compare';
 import { logger } from '../logger';
 import { pluginManager } from '../plugins';
@@ -50,13 +51,12 @@ const zBody = z.object({
 });
 
 const loginRateLimiter = createRateLimiter({
-  maxRequests: config.rateLimiters.login.maxRequests,
-  windowMs: config.rateLimiters.login.windowMs
+  getLimit: () => getRateLimit(RateLimiter.LOGIN)
 });
 
-const loginLockout = createFailedAttemptsLimiter(
-  config.rateLimiters.loginLockout
-);
+const loginLockout = createFailedAttemptsLimiter({
+  getLimit: () => getLoginLockout()
+});
 
 const GENERIC_LOGIN_ERROR = 'Invalid credentials';
 

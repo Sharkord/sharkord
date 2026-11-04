@@ -1,4 +1,9 @@
-import { Permission, ServerEvents, StreamKind } from '@sharkord/shared';
+import {
+  Permission,
+  RateLimiter,
+  ServerEvents,
+  StreamKind
+} from '@sharkord/shared';
 import z from 'zod';
 import { logger } from '../../logger';
 import { VoiceRuntime } from '../../runtimes/voice';
@@ -6,6 +11,9 @@ import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const closeProducerRoute = protectedProcedure
+  .meta({
+    rateLimit: RateLimiter.VOICE_STATE
+  })
   .input(
     z.object({
       kind: z.enum(StreamKind)

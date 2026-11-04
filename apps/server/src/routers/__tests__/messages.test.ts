@@ -10,7 +10,6 @@ import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
 import { initTest, sendMessage, uploadFile } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
-import { config } from '../../config';
 import {
   files,
   messageFiles,
@@ -19,6 +18,7 @@ import {
   rolePermissions,
   settings
 } from '../../db/schema';
+import { getRateLimit } from '../../helpers/rate-limits';
 import { eventBus } from '../../plugins/event-bus';
 
 describe('messages router', () => {
@@ -943,7 +943,7 @@ describe('messages router', () => {
 
   test('should rate limit excessive thread fetches', async () => {
     const { caller } = await initTest();
-    const { maxRequests } = config.rateLimiters.getMessages;
+    const { maxRequests } = getRateLimit();
 
     const parentId = await sendMessage(caller, {
       channelId: 1,

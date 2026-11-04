@@ -8,10 +8,12 @@ describe('FailedAttemptsLimiter', () => {
 
   const createLimiter = (maxEntries?: number) =>
     new FailedAttemptsLimiter({
-      maxFailures: 3,
-      windowMs: 2_000,
-      blockMs: 1_000,
-      maxBlockMs: 4_000,
+      getLimit: () => ({
+        maxFailures: 3,
+        windowMs: 2_000,
+        blockMs: 1_000,
+        maxBlockMs: 4_000
+      }),
       maxEntries
     });
 
@@ -112,13 +114,13 @@ describe('FailedAttemptsLimiter', () => {
   test('never blocks an ip when rate limiters are disabled in the config', () => {
     const limiter = createLimiter();
 
-    config.rateLimiters.enabled = false;
+    config.server.rateLimitersEnabled = false;
 
     try {
       expect(failTimes(limiter, '1.2.3.4', 3)).toBe(0);
       expect(limiter.getRetryAfterMs('1.2.3.4')).toBe(0);
     } finally {
-      config.rateLimiters.enabled = true;
+      config.server.rateLimitersEnabled = true;
     }
   });
 

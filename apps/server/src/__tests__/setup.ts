@@ -1,9 +1,11 @@
+import { DEFAULT_RATE_LIMITERS } from '@sharkord/shared';
 import type { Database } from 'bun:sqlite';
 import { afterAll, afterEach, beforeAll, beforeEach, mock } from 'bun:test';
 import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import fs from 'fs/promises';
 import path from 'path';
 import { DATA_PATH } from '../helpers/paths';
+import { setRateLimits } from '../helpers/rate-limits';
 import { clearVoiceMoveGrantsForTests } from '../helpers/voice-move-grants';
 import { createHttpServer } from '../http';
 import { pluginManager } from '../plugins';
@@ -100,6 +102,7 @@ beforeEach(async () => {
   testLogs.length = 0;
 
   clearRateLimitersForTests();
+  setRateLimits(DEFAULT_RATE_LIMITERS);
   clearVoiceMoveGrantsForTests();
   VoiceRuntime.clearServerMutesForTests();
   clearUserSocketsForTests();

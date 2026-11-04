@@ -5,20 +5,15 @@ import {
   zPluginId
 } from '@sharkord/shared';
 import z from 'zod';
-import { config } from '../../config';
 import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { getInvokerCtxFromTrpcCtx } from '../../helpers/get-invoker-ctx-from-trpc-ctx';
 import { canUseCapability } from '../../helpers/plugin-capability-access';
 import { pluginManager } from '../../plugins';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const executeCommandRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.pluginExecute.maxRequests,
-  windowMs: config.rateLimiters.pluginExecute.windowMs,
-  logLabel: 'executeCommand'
-})
+const executeCommandRoute = protectedProcedure
   .input(
     z.object({
       pluginId: zPluginId,
