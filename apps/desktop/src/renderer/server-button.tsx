@@ -69,8 +69,9 @@ const ServerButton = memo(
       onRemove(server.id);
     }, [onRemove, server.id]);
 
-    const shapeClass = selected ? 'rounded-2xl' : 'rounded-full';
     const isConnected = status === 'connected';
+    const hasUnread = !!unread && (unread.count > 0 || unread.mentioned);
+    const pillClass = hasUnread ? 'h-2 group-hover:h-5' : 'h-0 group-hover:h-5';
 
     const isDimmed = !isConnected && !isMismatchStatus(status);
     const mismatchRingClass = isMismatchStatus(status)
@@ -88,7 +89,7 @@ const ServerButton = memo(
         <span
           className={cn(
             'bg-foreground absolute top-1/2 left-0 w-1 -translate-y-1/2 rounded-r-full transition-all',
-            selected ? 'h-10' : 'h-2 group-hover:h-5'
+            selected ? 'h-10' : pillClass
           )}
         />
         <DropdownMenu open={menuOpen} onOpenChange={handleOpenChange}>
@@ -102,14 +103,13 @@ const ServerButton = memo(
             >
               <Avatar
                 className={cn(
-                  'size-12 transition-[border-radius,opacity,filter] group-hover:rounded-2xl',
-                  shapeClass,
+                  'size-12 rounded-2xl transition-[opacity,filter]',
                   isDimmed && 'opacity-50 grayscale group-hover:opacity-80',
                   mismatchRingClass
                 )}
               >
                 <AvatarImage src={server.iconUrl ?? undefined} />
-                <AvatarFallback className={cn('bg-card', shapeClass)}>
+                <AvatarFallback className="bg-card rounded-2xl">
                   <img src={defaultLogo} alt="" className="size-full p-1.5" />
                 </AvatarFallback>
               </Avatar>
