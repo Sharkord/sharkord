@@ -21,7 +21,7 @@ import {
   type TJoinedMessage,
   type TThreadSummary
 } from '@sharkord/shared';
-import { markChannelAsRead } from '../actions';
+import { markVisibleChannelAsRead } from '../actions';
 import {
   channelByIdSelector,
   isChannelTextVisibleByIdSelector
@@ -204,7 +204,7 @@ export const addMessages = (
     }
 
     if (isChannelTextVisible && !isFromOwnUser && !isThreadReply) {
-      markChannelAsRead(channelId, true);
+      markVisibleChannelAsRead(channelId);
     }
   }
 };

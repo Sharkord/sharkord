@@ -1,7 +1,7 @@
 import { OidcError } from '@sharkord/shared';
 import type http from 'http';
-import { config } from '../../config';
 import { isOidcEnabled } from '../../helpers/oidc/settings';
+import { getRateLimit } from '../../helpers/rate-limits';
 import { logger } from '../../logger';
 import {
   createRateLimiter,
@@ -13,8 +13,7 @@ import { getPublicOrigin, isSecureRequest, sendJsonError } from '../helpers';
 const OIDC_STATE_COOKIE_PREFIX = 'sharkord_oidc_state_';
 
 const oidcRateLimiter = createRateLimiter({
-  maxRequests: config.rateLimiters.oidc.maxRequests,
-  windowMs: config.rateLimiters.oidc.windowMs
+  getLimit: () => getRateLimit()
 });
 
 const redirectWithError = (
@@ -44,7 +43,7 @@ const consumeRateLimit = (ip: string | undefined, route: string) => {
     return { allowed: true, retryAfterMs: 0 };
   }
 
-  return oidcRateLimiter.consume(getClientRateLimitKey(ip));
+  return oidcRateLimiter.consume(`${route}:${getClientRateLimitKey(ip)}`);
 };
 
 const guardOidcRoute = (

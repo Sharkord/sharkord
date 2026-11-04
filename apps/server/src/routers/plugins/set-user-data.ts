@@ -1,16 +1,11 @@
 import { Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
-import { config } from '../../config';
 import { setPluginUserData } from '../../db/queries/plugin-user-data';
 import { pluginManager } from '../../plugins';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const setUserDataRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.pluginExecute.maxRequests,
-  windowMs: config.rateLimiters.pluginExecute.windowMs,
-  logLabel: 'setPluginUserData'
-})
+const setUserDataRoute = protectedProcedure
   .input(
     z.object({
       pluginId: zPluginId,

@@ -1,4 +1,4 @@
-import { ChannelPermission, ServerEvents } from '@sharkord/shared';
+import { ChannelPermission, RateLimiter, ServerEvents } from '@sharkord/shared';
 import { z } from 'zod';
 import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
 import { VoiceRuntime } from '../../runtimes/voice';
@@ -6,6 +6,9 @@ import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
 const updateVoiceStateRoute = protectedProcedure
+  .meta({
+    rateLimit: RateLimiter.VOICE_STATE
+  })
   .input(
     z.object({
       micMuted: z.boolean().optional(),

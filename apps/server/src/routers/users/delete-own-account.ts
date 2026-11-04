@@ -1,23 +1,19 @@
-import { DisconnectCode, OWNER_ROLE_ID } from '@sharkord/shared';
+import { DisconnectCode, OWNER_ROLE_ID, RateLimiter } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { config } from '../../config';
 import { db } from '../../db';
 import { getUserRoleIds } from '../../db/queries/roles';
 import { users } from '../../db/schema';
 import { deleteUserAccount } from '../../helpers/delete-user-account';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
 const SOCKET_CLOSE_DELAY_MS = 1000;
 
 // someone deleting their own account. an account with a password confirms with it, so a session
 // left open on a shared computer cannot do it. one made through sso has none to ask for
-const deleteOwnAccountRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.updatePassword.maxRequests,
-  windowMs: config.rateLimiters.updatePassword.windowMs,
-  logLabel: 'deleteOwnAccount'
-})
+const deleteOwnAccountRoute = protectedProcedure
+  .meta({ rateLimit: RateLimiter.PASSWORD })
   .input(
     z.object({
       password: z.string().max(128).optional(),

@@ -281,6 +281,13 @@
       "when": 1793216525337,
       "tag": "0039_grant_set_profile_image",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "6",
+      "when": 1793752183410,
+      "tag": "0040_settings_rate_limiters",
+      "breakpoints": true
     }
   ]
 }

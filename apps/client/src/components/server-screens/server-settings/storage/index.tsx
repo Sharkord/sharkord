@@ -43,8 +43,8 @@ import {
 import { filesize } from 'filesize';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { NumberInput } from '../number-input';
 import { DiskMetrics } from './metrics';
-import { NumberInput } from './number-input';
 import { PluginStorageUsage } from './plugin-usage';
 import {
   MAX_AVATAR_SIZE_PRESETS,

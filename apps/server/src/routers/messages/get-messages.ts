@@ -5,20 +5,15 @@ import {
 } from '@sharkord/shared';
 import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
-import { config } from '../../config';
 import { db } from '../../db';
 import { getMessagesPage } from '../../db/queries/messages';
 import { getThreadSummaries } from '../../db/queries/threads';
 import { channels, messages } from '../../db/schema';
 import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.getMessages.maxRequests,
-  windowMs: config.rateLimiters.getMessages.windowMs,
-  logLabel: 'getMessages'
-})
+const getMessagesRoute = protectedProcedure
   .input(
     z.object({
       channelId: z.number(),
@@ -32,7 +27,6 @@ const getMessagesRoute = rateLimitedProcedure(protectedProcedure, {
         .default(DEFAULT_MESSAGES_LIMIT)
     })
   )
-  .meta({ infinite: true })
   .query(async ({ ctx, input }) => {
     await assertChannelAccess(ctx, input.channelId);
 

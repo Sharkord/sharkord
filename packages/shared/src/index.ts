@@ -5,6 +5,7 @@ export * from './helpers';
 export * from './logs';
 export * from './notifications';
 export * from './plugins';
+export * from './rate-limiters';
 export * from './statics';
 export * from './tables';
 export * from './test-ids';

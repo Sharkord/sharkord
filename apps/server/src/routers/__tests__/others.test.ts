@@ -1,7 +1,12 @@
 import {
   ActivityLogType,
+  DEFAULT_RATE_LIMITERS,
   Permission,
+  RATE_LIMIT_MIN_GLOBAL_REQUESTS,
+  RATE_LIMIT_MIN_WINDOW_MS,
+  RateLimiter,
   STORAGE_MAX_FILES_PER_MESSAGE,
+  type TRateLimiters,
   type TTempFile
 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
@@ -14,9 +19,12 @@ import {
 } from '../../__tests__/helpers';
 import { TEST_SECRET_TOKEN } from '../../__tests__/seed';
 import { tdb } from '../../__tests__/setup';
+import { config } from '../../config';
 import { getSettings } from '../../db/queries/server';
 import { activityLog, rolePermissions } from '../../db/schema';
+import { getRateLimit, getRateLimits } from '../../helpers/rate-limits';
 import { pluginManager } from '../../plugins';
+import { drainActivityLogQueue } from '../../queues/activity-log';
 import { drainLoginsQueue } from '../../queues/logins';
 
 describe('others router', () => {
@@ -456,8 +464,9 @@ describe('others router', () => {
 
   test('should rate limit repeated secret token attempts', async () => {
     const { caller } = await initTest(2);
+    const { maxRequests } = getRateLimit(RateLimiter.USE_SECRET_TOKEN);
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < maxRequests; i++) {
       await expect(
         caller.others.useSecretToken({ token: 'invalid-token' })
       ).rejects.toThrow('Invalid secret token');
@@ -568,5 +577,220 @@ describe('others router', () => {
         handshakeHash: ''
       })
     ).rejects.toThrow('Too many requests. Please try again shortly.');
+  });
+
+  describe('rate limits', () => {
+    const withOverride = (
+      rateLimiter: RateLimiter,
+      maxRequests: number
+    ): TRateLimiters => ({
+      ...DEFAULT_RATE_LIMITERS,
+      overrides: {
+        ...DEFAULT_RATE_LIMITERS.overrides,
+        [rateLimiter]: { maxRequests, windowMs: 60_000 }
+      }
+    });
+
+    test('should return the defaults when nothing was saved', async () => {
+      const { caller } = await initTest(1);
+
+      expect(await caller.others.getRateLimits()).toEqual({
+        rateLimits: DEFAULT_RATE_LIMITERS,
+        enabledInConfig: true
+      });
+    });
+
+    test('should report when config.ini has the limits turned off', async () => {
+      const { caller } = await initTest(1);
+
+      config.server.rateLimitersEnabled = false;
+
+      try {
+        const { enabledInConfig } = await caller.others.getRateLimits();
+
+        expect(enabledInConfig).toBe(false);
+      } finally {
+        config.server.rateLimitersEnabled = true;
+      }
+    });
+
+    test('should stop limiting once the limits are turned off', async () => {
+      const { caller } = await initTest(1);
+
+      await caller.others.updateRateLimits({
+        ...withOverride(RateLimiter.SIGNAL_TYPING, 1),
+        enabled: false
+      });
+
+      await caller.messages.signalTyping({ channelId: 1 });
+
+      await expect(
+        caller.messages.signalTyping({ channelId: 1 })
+      ).resolves.toBeUndefined();
+    });
+
+    test('should persist the new limits and serve them back', async () => {
+      const { caller } = await initTest(1);
+      const rateLimits = withOverride(RateLimiter.SEARCH, 3);
+
+      await caller.others.updateRateLimits(rateLimits);
+
+      const settings = await getSettings();
+
+      expect(settings.rateLimiters).toEqual(rateLimits);
+      const { rateLimits: served } = await caller.others.getRateLimits();
+
+      expect(served).toEqual(rateLimits);
+      expect(getRateLimits()).toEqual(rateLimits);
+    });
+
+    test('should apply a new override to the next request', async () => {
+      const { caller } = await initTest(1);
+
+      await caller.others.updateRateLimits(
+        withOverride(RateLimiter.SIGNAL_TYPING, 1)
+      );
+
+      await caller.messages.signalTyping({ channelId: 1 });
+
+      await expect(
+        caller.messages.signalTyping({ channelId: 1 })
+      ).rejects.toThrow('Too many requests. Please try again shortly.');
+    });
+
+    test('should apply the global limit to a route without an override', async () => {
+      const { caller } = await initTest(1);
+
+      await caller.others.updateRateLimits({
+        ...DEFAULT_RATE_LIMITERS,
+        global: {
+          maxRequests: RATE_LIMIT_MIN_GLOBAL_REQUESTS,
+          windowMs: 60_000
+        }
+      });
+
+      // the update itself was the first request on its own route, the rest use another
+      for (let i = 0; i < RATE_LIMIT_MIN_GLOBAL_REQUESTS; i++) {
+        await caller.others.getRateLimits();
+      }
+
+      await expect(caller.others.getRateLimits()).rejects.toThrow(
+        'Too many requests. Please try again shortly.'
+      );
+
+      // each route counts on its own, so exhausting one leaves the others usable
+      await expect(caller.others.getSettings()).resolves.toBeDefined();
+    });
+
+    test('should let an override allow more than the global limit', async () => {
+      const { caller } = await initTest(1);
+
+      await caller.others.updateRateLimits({
+        ...withOverride(RateLimiter.SIGNAL_TYPING, 50),
+        global: {
+          maxRequests: RATE_LIMIT_MIN_GLOBAL_REQUESTS,
+          windowMs: 60_000
+        }
+      });
+
+      for (let i = 0; i < 50; i++) {
+        await caller.messages.signalTyping({ channelId: 1 });
+      }
+
+      await expect(
+        caller.messages.signalTyping({ channelId: 1 })
+      ).rejects.toThrow('Too many requests. Please try again shortly.');
+    });
+
+    test('should log the change in the activity log', async () => {
+      const { caller } = await initTest(1);
+      const rateLimits = withOverride(RateLimiter.SEARCH, 3);
+
+      await caller.others.updateRateLimits(rateLimits);
+      await drainActivityLogQueue();
+
+      const entry = await tdb
+        .select({ userId: activityLog.userId, details: activityLog.details })
+        .from(activityLog)
+        .where(eq(activityLog.type, ActivityLogType.EDIT_SERVER_SETTINGS))
+        .get();
+
+      expect(entry).toEqual({
+        userId: 1,
+        details: { values: { rateLimiters: rateLimits } }
+      });
+    });
+
+    test('should refuse to read the limits without MANAGE_SETTINGS', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(caller.others.getRateLimits()).rejects.toThrow(
+        'Insufficient permissions'
+      );
+    });
+
+    test('should refuse to update the limits without MANAGE_SETTINGS', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.others.updateRateLimits(DEFAULT_RATE_LIMITERS)
+      ).rejects.toThrow('Insufficient permissions');
+
+      const settings = await getSettings();
+
+      expect(settings.rateLimiters).toBeNull();
+    });
+
+    test('should refuse a global limit below the minimum', async () => {
+      const { caller } = await initTest(1);
+
+      await expect(
+        caller.others.updateRateLimits({
+          ...DEFAULT_RATE_LIMITERS,
+          global: {
+            maxRequests: RATE_LIMIT_MIN_GLOBAL_REQUESTS - 1,
+            windowMs: 60_000
+          }
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should refuse a window below the minimum', async () => {
+      const { caller } = await initTest(1);
+
+      await expect(
+        caller.others.updateRateLimits({
+          ...DEFAULT_RATE_LIMITERS,
+          overrides: {
+            ...DEFAULT_RATE_LIMITERS.overrides,
+            [RateLimiter.SEARCH]: {
+              maxRequests: 10,
+              windowMs: RATE_LIMIT_MIN_WINDOW_MS - 1
+            }
+          }
+        })
+      ).rejects.toThrow();
+    });
+
+    test('should refuse an override with no requests allowed', async () => {
+      const { caller } = await initTest(1);
+
+      await expect(
+        caller.others.updateRateLimits(withOverride(RateLimiter.SEARCH, 0))
+      ).rejects.toThrow();
+    });
+
+    test('should refuse limits with an override missing', async () => {
+      const { caller } = await initTest(1);
+      const { search: _search, ...overrides } = DEFAULT_RATE_LIMITERS.overrides;
+
+      await expect(
+        caller.others.updateRateLimits({
+          ...DEFAULT_RATE_LIMITERS,
+          // @ts-expect-error the route has to reject a partial set sent by an older client
+          overrides
+        })
+      ).rejects.toThrow();
+    });
   });
 });

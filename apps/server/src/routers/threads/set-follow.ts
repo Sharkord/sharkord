@@ -1,7 +1,6 @@
 import { ServerEvents } from '@sharkord/shared';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { config } from '../../config';
 import { db } from '../../db';
 import {
   getFollowedThread,
@@ -9,13 +8,9 @@ import {
 } from '../../db/queries/threads';
 import { threadFollowers } from '../../db/schema';
 import { loadThreadParent } from '../../helpers/threads';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const setThreadFollowRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.markAsRead.maxRequests,
-  windowMs: config.rateLimiters.markAsRead.windowMs,
-  logLabel: 'setThreadFollow'
-})
+const setThreadFollowRoute = protectedProcedure
   .input(
     z.object({
       parentMessageId: z.number(),

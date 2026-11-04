@@ -1,17 +1,14 @@
-import { config } from '../../config';
 import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const createProducerTransportRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.voiceTransport.maxRequests,
-  windowMs: config.rateLimiters.voiceTransport.windowMs,
-  logLabel: 'createProducerTransport'
-}).mutation(async ({ ctx }) => {
-  const { runtime } = await getCurrentVoiceRuntime(ctx);
+const createProducerTransportRoute = protectedProcedure.mutation(
+  async ({ ctx }) => {
+    const { runtime } = await getCurrentVoiceRuntime(ctx);
 
-  const params = await runtime.createProducerTransport(ctx.user.id);
+    const params = await runtime.createProducerTransport(ctx.user.id);
 
-  return params;
-});
+    return params;
+  }
+);
 
 export { createProducerTransportRoute };

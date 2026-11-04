@@ -1,5 +1,6 @@
 import {
   ChannelPermission,
+  RateLimiter,
   UserStatus,
   type Permission,
   type TLocale,
@@ -9,12 +10,14 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import chalk from 'chalk';
 import type WebSocket from 'ws';
 import { config } from '../config';
+import { getRateLimit } from '../helpers/rate-limits';
 import { logger } from '../logger';
 import type { TConnectionInfo } from '../types';
 import { invariant } from './invariant';
 import { pubsub } from './pubsub';
 import {
   createRateLimiter,
+  FixedWindowRateLimiter,
   getClientRateLimitKey
 } from './rate-limiters/rate-limiter';
 
@@ -50,7 +53,11 @@ export type Context = {
   saveUserIp: (userId: number, ip: string) => Promise<void>;
 };
 
-const t = initTRPC.context<Context>().create();
+type TMeta = {
+  rateLimit?: RateLimiter;
+};
+
+const t = initTRPC.context<Context>().meta<TMeta>().create();
 
 const timingMiddleware = t.middleware(async ({ path, next }) => {
   if (!config.server.debug) {
@@ -88,24 +95,28 @@ const sessionActivityMiddleware = t.middleware(async ({ ctx, next }) => {
   return next();
 });
 
-type TRateLimitedProcedureOptions = {
-  maxRequests: number;
-  windowMs: number;
-  logLabel: string;
-  maxEntries?: number;
-};
+const globalRateLimiter = createRateLimiter({
+  getLimit: () => getRateLimit(),
+  maxEntries: 100_000
+});
 
-const rateLimitedProcedure = (
-  procedure: typeof t.procedure,
-  options: TRateLimitedProcedureOptions
-) => {
-  const limiter = createRateLimiter({
-    maxRequests: options.maxRequests,
-    windowMs: options.windowMs,
-    maxEntries: options.maxEntries
-  });
+const overrideRateLimiters = Object.fromEntries(
+  Object.values(RateLimiter).map((rateLimiter) => [
+    rateLimiter,
+    createRateLimiter({
+      getLimit: () => getRateLimit(rateLimiter)
+    })
+  ])
+) as Record<RateLimiter, FixedWindowRateLimiter>;
 
-  const rateLimitMiddleware = t.middleware(async ({ ctx, next, path }) => {
+const rateLimitMiddleware = t.middleware(
+  async ({ ctx, next, path, type, meta }) => {
+    // a subscription is only counted when it starts, so limiting it would just risk
+    // locking a reconnecting client out of its events
+    if (type === 'subscription') {
+      return next();
+    }
+
     const connectionInfo = ctx.getConnectionInfo();
 
     if (!connectionInfo?.ip) {
@@ -118,14 +129,20 @@ const rateLimitedProcedure = (
       return next();
     }
 
-    const key = getClientRateLimitKey(
+    const limiter = meta?.rateLimit
+      ? overrideRateLimiters[meta.rateLimit]
+      : globalRateLimiter;
+
+    const client = getClientRateLimitKey(
       ctx.userId ? `user:${ctx.userId}` : connectionInfo.ip
     );
+
+    const key = `${path}:${client}`;
     const rateLimit = limiter.consume(key);
 
     if (!rateLimit.allowed) {
       logger.debug(
-        `${chalk.dim('[Rate Limiter tRPC]')} ${options.logLabel} rate limited for key "${key}"`
+        `${chalk.dim('[Rate Limiter tRPC]')} ${path} rate limited for key "${key}"`
       );
 
       throw new TRPCError({
@@ -135,18 +152,19 @@ const rateLimitedProcedure = (
     }
 
     return next();
-  });
-
-  return procedure.use(rateLimitMiddleware);
-};
+  }
+);
 
 // this should be used for all queries and mutations apart from the join server one
 // it prevents users that only are connected to the wss but did not join the server from accessing protected procedures
 const protectedProcedure = t.procedure
   .use(timingMiddleware)
   .use(authMiddleware)
-  .use(sessionActivityMiddleware);
+  .use(sessionActivityMiddleware)
+  .use(rateLimitMiddleware);
 
-const publicProcedure = t.procedure.use(timingMiddleware);
+const publicProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(rateLimitMiddleware);
 
-export { protectedProcedure, publicProcedure, rateLimitedProcedure, t };
+export { protectedProcedure, publicProcedure, t };
