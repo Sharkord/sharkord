@@ -1,4 +1,4 @@
-import type { TAdminUserInfo } from '@/features/server/admin/hooks';
+import type { TAdminUserInfo, TSharedIp } from '@/features/server/admin/hooks';
 import type { TFile, TLogin, TMessage, TStorageData } from '@sharkord/shared';
 import { createContext, useContext } from 'react';
 
@@ -17,6 +17,7 @@ type TModViewContext = {
   files: TFile[];
   storage: TStorageData & { quota: number };
   messages: TMessage[];
+  sharedIp: TSharedIp;
   view: ModViewScreen | undefined;
   setView: (view: ModViewScreen | undefined) => void;
   links: string[];
@@ -34,6 +35,7 @@ const ModViewContext = createContext<TModViewContext>({
     quota: 0
   },
   messages: [],
+  sharedIp: { users: [], hasMore: false },
   user: {} as TAdminUserInfo,
   view: undefined,
   setView: () => {},

@@ -1,7 +1,7 @@
 import { Permission, type TLogin } from '@sharkord/shared';
 import z from 'zod';
 import { getFilesByUserId } from '../../db/queries/files';
-import { getLastLogins } from '../../db/queries/logins';
+import { getLastLogins, getUsersSharingIp } from '../../db/queries/logins';
 import { getNonDirectMessagesFromUserId } from '../../db/queries/messages';
 import { getEffectiveStorageSpaceQuotaByUserId } from '../../db/queries/roles';
 import { getSettings } from '../../db/queries/server';
@@ -9,6 +9,8 @@ import { getStorageUsageByUserId, getUserById } from '../../db/queries/users';
 import { clearFields } from '../../helpers/clear-fields';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
+
+const SHARED_IP_USERS_LIMIT = 5;
 
 const getUserInfoRoute = protectedProcedure
   .input(
@@ -60,9 +62,17 @@ const getUserInfoRoute = protectedProcedure
       ? [...logins]
       : logins.map((login) => ({ ...login, ip: null, loc: null }));
 
+    const sharedIpUsers = canSeeSensitiveData
+      ? await getUsersSharingIp(user.id, SHARED_IP_USERS_LIMIT + 1)
+      : [];
+
     return {
       user: cleanUser,
       logins: cleanLogins,
+      sharedIp: {
+        users: sharedIpUsers.slice(0, SHARED_IP_USERS_LIMIT),
+        hasMore: sharedIpUsers.length > SHARED_IP_USERS_LIMIT
+      },
       files,
       messages,
       storage: {
