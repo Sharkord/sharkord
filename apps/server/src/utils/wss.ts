@@ -17,6 +17,7 @@ import {
 } from '@trpc/server/adapters/ws';
 import http from 'http';
 import { WebSocket, WebSocketServer } from 'ws';
+import { publishVoicePresence } from '../db/publishers';
 import { channelUserCan } from '../db/queries/channels';
 import { getUserRoles } from '../db/queries/roles';
 import { getUserById, getUserByToken } from '../db/queries/users';
@@ -240,7 +241,7 @@ const handleSocketClose = async (ws: WebSocket) => {
     if (voiceRuntime) {
       voiceRuntime.removeUser(user.id);
 
-      pubsub.publish(ServerEvents.USER_LEAVE_VOICE, {
+      await publishVoicePresence(voiceRuntime, ServerEvents.USER_LEAVE_VOICE, {
         channelId: voiceRuntime.id,
         userId: user.id
       });

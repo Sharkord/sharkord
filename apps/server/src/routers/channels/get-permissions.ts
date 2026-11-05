@@ -7,6 +7,7 @@ import {
   channelRolePermissions,
   channelUserPermissions
 } from '../../db/schema';
+import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -25,6 +26,8 @@ const getPermissionsRoute = protectedProcedure
       code: 'FORBIDDEN',
       message: 'Cannot view DM channel permissions'
     });
+
+    await assertChannelAccess(ctx, input.channelId);
 
     const [rolePermissions, userPermissions] = await Promise.all([
       db

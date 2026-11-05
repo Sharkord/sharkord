@@ -362,6 +362,76 @@ describe('roles router', () => {
     expect(role!.permissions).toContain(Permission.MANAGE_SETTINGS);
   });
 
+  test('should not let a role manager remove a permission they lack', async () => {
+    const { caller: owner } = await initTest();
+    const roleId = await owner.roles.add();
+
+    await owner.roles.update({
+      roleId,
+      name: 'Higher Role',
+      color: '#00ff00',
+      permissions: [Permission.MANAGE_SETTINGS],
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0
+    });
+
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.roles.update({
+        roleId,
+        name: 'Higher Role',
+        color: '#00ff00',
+        permissions: [],
+        storageQuotaOverrideEnabled: false,
+        storageSpaceQuota: 0
+      })
+    ).rejects.toThrow('You cannot remove permissions that you do not have');
+
+    const roles = await owner.roles.getAll();
+
+    expect(roles.find((r) => r.id === roleId)!.permissions).toContain(
+      Permission.MANAGE_SETTINGS
+    );
+  });
+
+  test('should not let a role manager without the owner role edit the owner role', async () => {
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.roles.update({
+        roleId: 1,
+        name: 'Renamed Owner',
+        color: '#00ff00',
+        permissions: [],
+        storageQuotaOverrideEnabled: false,
+        storageSpaceQuota: 0
+      })
+    ).rejects.toThrow('Only users with the owner role can edit the owner role');
+
+    const { caller: owner } = await initTest();
+    const roles = await owner.roles.getAll();
+
+    expect(roles.find((r) => r.id === 1)!.name).toBe('Owner');
+  });
+
+  test('should let the owner rename the owner role', async () => {
+    const { caller } = await initTest();
+
+    await caller.roles.update({
+      roleId: 1,
+      name: 'Admin',
+      color: '#ff0000',
+      permissions: [],
+      storageQuotaOverrideEnabled: false,
+      storageSpaceQuota: 0
+    });
+
+    const roles = await caller.roles.getAll();
+
+    expect(roles.find((r) => r.id === 1)!.name).toBe('Admin');
+  });
+
   test('should throw when updating a non-existing role', async () => {
     const { caller } = await initTest();
 

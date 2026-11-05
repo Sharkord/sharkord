@@ -1,11 +1,18 @@
-import { ChannelPermission, ChannelType, ServerEvents } from '@sharkord/shared';
+import {
+  ChannelPermission,
+  ChannelType,
+  Permission,
+  ServerEvents
+} from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import {
   createFakeSocket,
   initTest,
   sendMessage
 } from '../../__tests__/helpers';
+import { tdb } from '../../__tests__/setup';
 import { getChannelsReadStatesForUser } from '../../db/queries/channels';
+import { rolePermissions } from '../../db/schema';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { pubsub } from '../../utils/pubsub';
 
@@ -257,7 +264,7 @@ describe('channels router', () => {
     const departures: { channelId: number; userId: number }[] = [];
 
     const subscription = pubsub
-      .subscribe(ServerEvents.USER_LEAVE_VOICE)
+      .subscribeFor(2, ServerEvents.USER_LEAVE_VOICE)
       .subscribe({
         next: (departure) => {
           departures.push(departure);
@@ -1330,5 +1337,91 @@ describe('channels router', () => {
         roleId: 1
       })
     ).rejects.toThrow('Cannot delete DM channel permissions');
+  });
+
+  // the moderator is given MANAGE_CHANNEL_PERMISSIONS but has no access to the private voice
+  // channel, which nobody but the owner can see
+  describe('channel permission management scope', () => {
+    const MODERATOR_ROLE_ID = 4;
+    const MODERATOR_USER_ID = 5;
+    const PRIVATE_VOICE_ID = 4;
+
+    const initModerator = async () => {
+      await tdb.insert(rolePermissions).values({
+        roleId: MODERATOR_ROLE_ID,
+        permission: Permission.MANAGE_CHANNEL_PERMISSIONS,
+        createdAt: Date.now()
+      });
+
+      return initTest(MODERATOR_USER_ID);
+    };
+
+    test('should not read the permissions of a channel the caller cannot see', async () => {
+      const { caller } = await initModerator();
+
+      await expect(
+        caller.channels.getPermissions({ channelId: PRIVATE_VOICE_ID })
+      ).rejects.toThrow('Insufficient channel permissions');
+    });
+
+    test('should not let the caller grant themselves a channel they cannot see', async () => {
+      const { caller } = await initModerator();
+
+      await expect(
+        caller.channels.updatePermissions({
+          channelId: PRIVATE_VOICE_ID,
+          userId: MODERATOR_USER_ID,
+          permissions: [ChannelPermission.VIEW_CHANNEL]
+        })
+      ).rejects.toThrow('Insufficient channel permissions');
+
+      const { caller: owner } = await initTest();
+      const { userPermissions } = await owner.channels.getPermissions({
+        channelId: PRIVATE_VOICE_ID
+      });
+
+      expect(userPermissions).toHaveLength(0);
+    });
+
+    test('should not delete permissions on a channel the caller cannot see', async () => {
+      const { caller: owner } = await initTest();
+
+      await owner.channels.updatePermissions({
+        channelId: PRIVATE_VOICE_ID,
+        userId: 2,
+        permissions: [ChannelPermission.VIEW_CHANNEL]
+      });
+
+      const { caller } = await initModerator();
+
+      await expect(
+        caller.channels.deletePermissions({
+          channelId: PRIVATE_VOICE_ID,
+          userId: 2
+        })
+      ).rejects.toThrow('Insufficient channel permissions');
+
+      const { userPermissions } = await owner.channels.getPermissions({
+        channelId: PRIVATE_VOICE_ID
+      });
+
+      expect(userPermissions.some((row) => row.userId === 2)).toBe(true);
+    });
+
+    test('should let the caller manage permissions on a channel they can see', async () => {
+      const { caller } = await initModerator();
+
+      await caller.channels.updatePermissions({
+        channelId: 1,
+        userId: 2,
+        permissions: [ChannelPermission.VIEW_CHANNEL]
+      });
+
+      const { userPermissions } = await caller.channels.getPermissions({
+        channelId: 1
+      });
+
+      expect(userPermissions.some((row) => row.userId === 2)).toBe(true);
+    });
   });
 });

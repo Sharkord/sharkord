@@ -8,7 +8,9 @@ import { eq } from 'drizzle-orm';
 import { db } from '.';
 import { getCapabilityAccessRules } from '../helpers/plugin-capability-access';
 import { logger } from '../logger';
-import { pubsub } from '../utils/pubsub';
+import { VoiceRuntime } from '../runtimes/voice';
+import type { TVoicePresenceTopic } from '../types';
+import { pubsub, type TPubSubEvents } from '../utils/pubsub';
 import {
   channelUserCan,
   getAffectedOnlineUserIdsForChannel,
@@ -207,6 +209,85 @@ const publishChannel = async (
   }
 };
 
+// voice presence only reaches who can see the channel
+const publishVoicePresence = async <TTopic extends TVoicePresenceTopic>(
+  runtime: Pick<VoiceRuntime, 'id' | 'getState'>,
+  topic: TTopic,
+  payload: TPubSubEvents[TTopic]
+) => {
+  const { users } = runtime.getState();
+  const audience = new Set(users.map(({ userId }) => userId));
+
+  if ('userId' in payload) {
+    audience.add(payload.userId);
+  }
+
+  try {
+    const viewerIds = await getAffectedOnlineUserIdsForChannel(
+      runtime.id,
+      ChannelPermission.VIEW_CHANNEL
+    );
+
+    viewerIds.forEach((userId) => audience.add(userId));
+  } catch (error) {
+    logger.error(
+      'Failed to publish voice presence: %s',
+      getErrorMessage(error)
+    );
+  }
+
+  pubsub.publishFor([...audience], topic, payload);
+};
+
+// someone who gains sight of a channel missed every join while they could not see it, and
+// someone who loses it would keep the call on screen, since dropping a channel leaves its
+// voice state behind. the people in the call already follow it and are left alone
+const syncVoiceStateForViewers = (
+  channelId: number,
+  userIds: number[],
+  canView: boolean
+) => {
+  const runtime = VoiceRuntime.findById(channelId);
+
+  if (!runtime) return;
+
+  const { users, externalStreams } = runtime.getState();
+  const memberIds = new Set(users.map(({ userId }) => userId));
+  const targetIds = userIds.filter((userId) => !memberIds.has(userId));
+
+  if (targetIds.length === 0) return;
+
+  for (const { userId, state } of users) {
+    if (canView) {
+      pubsub.publishFor(targetIds, ServerEvents.USER_JOIN_VOICE, {
+        channelId,
+        userId,
+        state
+      });
+    } else {
+      pubsub.publishFor(targetIds, ServerEvents.USER_LEAVE_VOICE, {
+        channelId,
+        userId
+      });
+    }
+  }
+
+  for (const [streamId, stream] of Object.entries(externalStreams)) {
+    if (canView) {
+      pubsub.publishFor(targetIds, ServerEvents.VOICE_ADD_EXTERNAL_STREAM, {
+        channelId,
+        streamId: Number(streamId),
+        stream
+      });
+    } else {
+      pubsub.publishFor(targetIds, ServerEvents.VOICE_REMOVE_EXTERNAL_STREAM, {
+        channelId,
+        streamId: Number(streamId)
+      });
+    }
+  }
+};
+
 const publishHiddenChannelToUser = async (
   userId: number,
   channelId: number
@@ -228,6 +309,7 @@ const publishHiddenChannelToUser = async (
   if (!channel) return;
 
   pubsub.publishFor(userId, ServerEvents.CHANNEL_CREATE, channel);
+  syncVoiceStateForViewers(channelId, [userId], true);
 };
 
 const unpublishHiddenChannelFromUser = async (
@@ -243,6 +325,7 @@ const unpublishHiddenChannelFromUser = async (
   if (canView) return;
 
   pubsub.publishFor(userId, ServerEvents.CHANNEL_DELETE, channelId);
+  syncVoiceStateForViewers(channelId, [userId], false);
 };
 
 const publishSettings = async () => {
@@ -325,11 +408,13 @@ const publishChannelAccessChange = async (
 
     if (channel) {
       pubsub.publishFor(gained, ServerEvents.CHANNEL_CREATE, channel);
+      syncVoiceStateForViewers(channelId, gained, true);
     }
   }
 
   if (lost.length > 0) {
     pubsub.publishFor(lost, ServerEvents.CHANNEL_DELETE, channelId);
+    syncVoiceStateForViewers(channelId, lost, false);
   }
 
   await publishChannelPermissions([
@@ -348,15 +433,17 @@ const publishChannelListChange = async (
 
   channelsAfter
     .filter((channel) => !beforeSet.has(channel.id))
-    .forEach((channel) =>
-      pubsub.publishFor(userId, ServerEvents.CHANNEL_CREATE, channel)
-    );
+    .forEach((channel) => {
+      pubsub.publishFor(userId, ServerEvents.CHANNEL_CREATE, channel);
+      syncVoiceStateForViewers(channel.id, [userId], true);
+    });
 
   channelIdsBefore
     .filter((channelId) => !afterSet.has(channelId))
-    .forEach((channelId) =>
-      pubsub.publishFor(userId, ServerEvents.CHANNEL_DELETE, channelId)
-    );
+    .forEach((channelId) => {
+      pubsub.publishFor(userId, ServerEvents.CHANNEL_DELETE, channelId);
+      syncVoiceStateForViewers(channelId, [userId], false);
+    });
 
   await publishChannelPermissions([userId]);
 };
@@ -453,5 +540,6 @@ export {
   publishSettings,
   publishThreadFollowers,
   publishUser,
+  publishVoicePresence,
   unpublishHiddenChannelFromUser
 };

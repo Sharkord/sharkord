@@ -9,6 +9,7 @@ import {
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
+import { publishVoicePresence } from '../../db/publishers';
 import { channels } from '../../db/schema';
 import { markVoiceSession } from '../../helpers/mark-voice-session';
 import {
@@ -101,7 +102,7 @@ const joinVoiceRoute = protectedProcedure
 
     ctx.currentVoiceChannelId = channel.id;
     markVoiceSession(ctx, channel.id);
-    ctx.pubsub.publish(ServerEvents.USER_JOIN_VOICE, {
+    await publishVoicePresence(runtime, ServerEvents.USER_JOIN_VOICE, {
       channelId: input.channelId,
       userId: ctx.user.id,
       state

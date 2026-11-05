@@ -5,7 +5,7 @@ import { invariant } from '../utils/invariant';
 const assertCanModifyOwnerRole = async (
   actorUserId: number,
   roleId: number,
-  action: 'assign' | 'remove'
+  action: 'assign' | 'remove' | 'edit'
 ) => {
   if (roleId !== OWNER_ROLE_ID) return;
 

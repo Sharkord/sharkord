@@ -1,9 +1,11 @@
 import {
+  ChannelPermission,
   FILE_TOKEN_REFRESH_GRACE_MS,
   FILE_TOKEN_REFRESH_MAX_FILES,
   type TTempFile
 } from '@sharkord/shared';
 import { beforeEach, describe, expect, test } from 'bun:test';
+import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import {
   initTest,
@@ -13,7 +15,7 @@ import {
 } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
 import { getSettings } from '../../db/queries/server';
-import { settings } from '../../db/schema';
+import { channels, channelUserPermissions, settings } from '../../db/schema';
 import { fileManager } from '../../helpers/file-manager';
 import { generateFileToken, verifyFileToken } from '../../helpers/files-crypto';
 
@@ -148,13 +150,20 @@ describe('files router', () => {
 });
 
 describe('files.refreshTokens', () => {
+  // seeded attachment in General, which every member can see
   const fileId = 1;
+  // seeded attachment in the dm between users 3 and 4
+  const dmFileId = 2;
+  // no row attaches it to a message, the way avatars, banners and emojis are stored
+  const unattachedFileId = 99;
 
-  const signedFile = (expiresAt: number) => ({
-    id: fileId,
-    token: generateFileToken(fileId, expiresAt),
+  const signedFileById = (id: number, expiresAt: number) => ({
+    id,
+    token: generateFileToken(id, expiresAt),
     expiresAt
   });
+
+  const signedFile = (expiresAt: number) => signedFileById(fileId, expiresAt);
 
   beforeEach(async () => {
     await tdb.update(settings).set({
@@ -229,6 +238,59 @@ describe('files.refreshTokens', () => {
     });
 
     expect(refreshed).toEqual([]);
+  });
+
+  test('should drop an attachment from a channel the caller cannot see', async () => {
+    const { caller } = await initTest(2);
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [signedFileById(dmFileId, Date.now() + 60_000)]
+    });
+
+    expect(refreshed).toEqual([]);
+  });
+
+  test('should refresh an attachment for a member of its channel', async () => {
+    const { caller } = await initTest(3);
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [signedFileById(dmFileId, Date.now() + 60_000)]
+    });
+
+    expect(refreshed.map(({ id }) => id)).toEqual([dmFileId]);
+  });
+
+  test('should keep the visible files of a batch and drop the hidden ones', async () => {
+    const { caller } = await initTest(2);
+    const expiresAt = Date.now() + 60_000;
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [
+        signedFileById(fileId, expiresAt),
+        signedFileById(dmFileId, expiresAt),
+        signedFileById(unattachedFileId, expiresAt)
+      ]
+    });
+
+    expect(refreshed.map(({ id }) => id)).toEqual([fileId, unattachedFileId]);
+  });
+
+  test('should stop refreshing an attachment once the caller loses access to its channel', async () => {
+    const { caller } = await initTest(2);
+    const file = signedFileById(fileId, Date.now() + 60_000);
+
+    expect(await caller.files.refreshTokens({ files: [file] })).toHaveLength(1);
+
+    await tdb.update(channels).set({ private: true }).where(eq(channels.id, 1));
+    await tdb.insert(channelUserPermissions).values({
+      channelId: 1,
+      userId: 2,
+      permission: ChannelPermission.VIEW_CHANNEL,
+      allow: false,
+      createdAt: Date.now()
+    });
+
+    expect(await caller.files.refreshTokens({ files: [file] })).toEqual([]);
   });
 
   test('should reject more files than the limit', async () => {

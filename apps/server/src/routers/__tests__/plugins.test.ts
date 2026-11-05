@@ -17,10 +17,14 @@ import {
   type TPluginPushEvent
 } from '@sharkord/shared';
 import { beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
-import { initTest, sendMessage } from '../../__tests__/helpers';
+import {
+  createFakeSocket,
+  initTest,
+  sendMessage
+} from '../../__tests__/helpers';
 import {
   loadMockedPlugins,
   mockPluginDownload,
@@ -3009,8 +3013,10 @@ describe('plugins router', () => {
       await withUserInVoice(async (runtime) => {
         const received: unknown[] = [];
 
+        await initTest(3, { socket: createFakeSocket() });
+
         const subscription = pubsub
-          .subscribe(ServerEvents.USER_LEAVE_VOICE)
+          .subscribeFor(3, ServerEvents.USER_LEAVE_VOICE)
           .subscribe({ next: (event) => received.push(event) });
 
         await run('voice-disconnect', { userId: 2 });
@@ -3032,8 +3038,10 @@ describe('plugins router', () => {
       await withUserInVoice(async (runtime) => {
         const received: { state: { serverMuted: boolean } }[] = [];
 
+        await initTest(3, { socket: createFakeSocket() });
+
         const subscription = pubsub
-          .subscribe(ServerEvents.USER_VOICE_STATE_UPDATE)
+          .subscribeFor(3, ServerEvents.USER_VOICE_STATE_UPDATE)
           .subscribe({ next: (event) => received.push(event) });
 
         await run('voice-mute', {
@@ -3458,8 +3466,10 @@ describe('plugins router', () => {
       await withRuntime(async () => {
         const received: unknown[] = [];
 
+        await initTest(3, { socket: createFakeSocket() });
+
         const subscription = pubsub
-          .subscribe(ServerEvents.USER_VOICE_REACTION)
+          .subscribeFor(3, ServerEvents.USER_VOICE_REACTION)
           .subscribe({ next: (event) => received.push(event) });
 
         await react({});
@@ -4324,6 +4334,81 @@ describe('plugins router', () => {
           })
         ).rejects.toThrow('Insufficient permissions');
       });
+
+      describe('managed by someone without the declared permission', () => {
+        const NOT_HELD_MESSAGE =
+          'You cannot change access to something that needs a permission you do not have.';
+
+        beforeEach(async () => {
+          await tdb.insert(rolePermissions).values({
+            roleId: MODERATOR_ROLE,
+            permission: Permission.MANAGE_PLUGIN_PERMISSIONS,
+            createdAt: Date.now()
+          });
+        });
+
+        test('should not let them open up a capability gated by a permission they lack', async () => {
+          const { caller } = await initTest(MODERATOR_USER);
+
+          await expect(
+            caller.plugins.setCapabilityAccess({
+              pluginId: 'plugin-b',
+              type: PluginCapabilityType.COMMAND,
+              name: 'admin-sum',
+              mode: PluginCapabilityMode.PUBLIC,
+              roleIds: []
+            })
+          ).rejects.toThrow(NOT_HELD_MESSAGE);
+
+          await expect(runAdminSum(MODERATOR_USER)).rejects.toThrow(
+            'do not have access'
+          );
+        });
+
+        test('should not let them reset a capability gated by a permission they lack', async () => {
+          const { caller: owner } = await initTest();
+
+          await owner.plugins.setCapabilityAccess({
+            pluginId: 'plugin-b',
+            type: PluginCapabilityType.COMMAND,
+            name: 'admin-sum',
+            mode: PluginCapabilityMode.PUBLIC,
+            roleIds: []
+          });
+
+          const { caller } = await initTest(MODERATOR_USER);
+
+          await expect(
+            caller.plugins.resetCapabilityAccess({
+              pluginId: 'plugin-b',
+              type: PluginCapabilityType.COMMAND,
+              name: 'admin-sum'
+            })
+          ).rejects.toThrow(NOT_HELD_MESSAGE);
+
+          expect(await runAdminSum(MODERATOR_USER)).toBeDefined();
+        });
+
+        test('should let them manage a capability gated by a permission they hold', async () => {
+          const { caller } = await initTest(MODERATOR_USER);
+
+          await caller.plugins.setCapabilityAccess({
+            pluginId: 'plugin-b',
+            type: PluginCapabilityType.ACTION,
+            name: 'admin-multiply',
+            mode: PluginCapabilityMode.RESTRICTED,
+            roleIds: [MEMBER_ROLE]
+          });
+
+          await expect(
+            caller.plugins.executeAction({
+              pluginId: 'plugin-b',
+              actionName: 'admin-multiply',
+              payload: { a: 2, b: 3 }
+            })
+          ).rejects.toThrow('do not have access');
+        });
+      });
     });
   });
 
@@ -4344,6 +4429,85 @@ describe('plugins router', () => {
       const subscription = await caller.plugins.onLog();
 
       expect(subscription).toBeDefined();
+    });
+
+    describe('when the permission is revoked mid stream', () => {
+      const MODERATOR_ROLE = 4;
+      const MODERATOR_USER = 5;
+
+      const logEntry = (message: string) => ({
+        type: 'info' as const,
+        timestamp: Date.now(),
+        message,
+        pluginId: 'plugin-a'
+      });
+
+      beforeEach(async () => {
+        await tdb.insert(rolePermissions).values({
+          roleId: MODERATOR_ROLE,
+          permission: Permission.MANAGE_PLUGINS,
+          createdAt: Date.now()
+        });
+      });
+
+      // entries arrive after an async permission check, so each test waits on the callback
+      // that proves the entry was handled rather than on a timer
+      test('should deliver entries in order while the permission is held', async () => {
+        const { caller } = await initTest(MODERATOR_USER);
+        const received: string[] = [];
+        const { promise: bothReceived, resolve } = Promise.withResolvers();
+
+        const subscription = (await caller.plugins.onLog()).subscribe({
+          next: (entry) => {
+            received.push(entry.message);
+
+            if (received.length === 2) resolve(undefined);
+          }
+        });
+
+        pubsub.publish(ServerEvents.PLUGIN_LOG, logEntry('first'));
+        pubsub.publish(ServerEvents.PLUGIN_LOG, logEntry('second'));
+        await bothReceived;
+
+        subscription.unsubscribe();
+
+        expect(received).toEqual(['first', 'second']);
+      });
+
+      test('should stop delivering and end the stream once the permission is gone', async () => {
+        const { caller } = await initTest(MODERATOR_USER);
+        const received: string[] = [];
+        const { promise: firstReceived, resolve: resolveFirst } =
+          Promise.withResolvers();
+        const { promise: completed, resolve: resolveCompleted } =
+          Promise.withResolvers();
+
+        (await caller.plugins.onLog()).subscribe({
+          next: (entry) => {
+            received.push(entry.message);
+            resolveFirst(undefined);
+          },
+          complete: () => resolveCompleted(undefined)
+        });
+
+        pubsub.publish(ServerEvents.PLUGIN_LOG, logEntry('before'));
+        await firstReceived;
+
+        await tdb
+          .delete(rolePermissions)
+          .where(
+            and(
+              eq(rolePermissions.roleId, MODERATOR_ROLE),
+              eq(rolePermissions.permission, Permission.MANAGE_PLUGINS)
+            )
+          );
+
+        pubsub.publish(ServerEvents.PLUGIN_LOG, logEntry('after'));
+        pubsub.publish(ServerEvents.PLUGIN_LOG, logEntry('later'));
+        await completed;
+
+        expect(received).toEqual(['before']);
+      });
     });
   });
 

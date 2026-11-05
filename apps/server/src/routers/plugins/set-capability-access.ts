@@ -8,6 +8,7 @@ import {
 import z from 'zod';
 import { publishCapabilityAccess } from '../../db/publishers';
 import { setCapabilityAccess } from '../../db/queries/plugin-capabilities';
+import { assertCanManageCapability } from '../../helpers/plugin-capability-access';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -23,6 +24,13 @@ const setCapabilityAccessRoute = protectedProcedure
   )
   .mutation(async ({ ctx, input }) => {
     await ctx.needsPermission(Permission.MANAGE_PLUGIN_PERMISSIONS);
+
+    await assertCanManageCapability(
+      ctx,
+      input.pluginId,
+      input.type,
+      input.name
+    );
 
     await setCapabilityAccess(
       input.pluginId,

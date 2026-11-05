@@ -75,7 +75,14 @@ const urlMetadataParser = async (
 
       try {
         metadata = await getLinkPreview(url, {
-          followRedirects: 'follow',
+          followRedirects: 'manual',
+          handleRedirects: (_, forwardedUrl) => {
+            if (!URL.canParse(forwardedUrl)) return false;
+
+            const { protocol } = new URL(forwardedUrl);
+
+            return protocol === 'http:' || protocol === 'https:';
+          },
           resolveDNSHost: async (url: string) => {
             return new Promise((resolve, reject) => {
               try {
