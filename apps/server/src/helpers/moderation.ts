@@ -1,5 +1,5 @@
 import { ActivityLogType, DisconnectCode } from '@sharkord/shared';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { invalidateUserSessions } from '../db/mutations/users';
 import { publishUser } from '../db/publishers';
@@ -56,7 +56,8 @@ const banUser = async (
     .set({
       banned: true,
       banReason: reason ?? null,
-      bannedAt: Date.now()
+      bannedAt: Date.now(),
+      tokenVersion: sql`${users.tokenVersion} + 1`
     })
     .where(eq(users.id, userId));
 
@@ -125,5 +126,12 @@ const kickUser = async (
   });
 };
 
-export { banUser, ctxUserSessions, kickUser, serverUserSessions, unbanUser };
+export {
+  assertUserExists,
+  banUser,
+  ctxUserSessions,
+  kickUser,
+  serverUserSessions,
+  unbanUser
+};
 export type { TUserSessions };

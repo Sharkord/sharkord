@@ -1,5 +1,6 @@
 import { Permission } from '@sharkord/shared';
 import z from 'zod';
+import { assertCanActOnUser } from '../../helpers/assert-can-act-on-user';
 import { unbanUser } from '../../helpers/moderation';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
@@ -13,6 +14,8 @@ const unbanRoute = protectedProcedure
       code: 'BAD_REQUEST',
       message: 'You cannot unban yourself.'
     });
+
+    await assertCanActOnUser(ctx.userId, input.userId);
 
     await unbanUser(input.userId, ctx.userId);
   });

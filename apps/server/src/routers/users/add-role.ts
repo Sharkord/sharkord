@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getRole } from '../../db/queries/roles';
 import { assertCanActOnUser } from '../../helpers/assert-can-act-on-user';
 import { assertCanModifyOwnerRole } from '../../helpers/assert-can-modify-owner-role';
+import { assertUserExists } from '../../helpers/moderation';
 import { assignRole } from '../../helpers/user-roles';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
@@ -17,7 +18,10 @@ const addRoleRoute = protectedProcedure
   .mutation(async ({ ctx, input }) => {
     await ctx.needsPermission(Permission.MANAGE_USERS);
 
-    const role = await getRole(input.roleId);
+    const [role] = await Promise.all([
+      getRole(input.roleId),
+      assertUserExists(input.userId)
+    ]);
 
     invariant(role, {
       code: 'NOT_FOUND',

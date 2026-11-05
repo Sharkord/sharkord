@@ -1673,6 +1673,16 @@ describe('users router', () => {
     expect(info.user.banReason).toBeNull();
   });
 
+  test('should refuse a token from before the ban once the user is unbanned', async () => {
+    const { caller } = await initTest();
+
+    await caller.users.ban({ userId: 2 });
+    await caller.users.unban({ userId: 2 });
+
+    // getCaller signs with the version the user had before the ban
+    await expect(getCaller(2)).rejects.toThrow('Invalid authentication token');
+  });
+
   test('should kick every session of a connected user', async () => {
     const firstTab = createFakeSocket();
     const secondTab = createFakeSocket();
@@ -1944,6 +1954,17 @@ describe('users router', () => {
     expect(assigned.length).toBe(0);
   });
 
+  test('should throw when adding a role to a non-existing user', async () => {
+    const { caller } = await initTest();
+
+    await expect(
+      caller.users.addRole({
+        userId: 9999,
+        roleId: 2
+      })
+    ).rejects.toThrow('User not found');
+  });
+
   test('should throw when adding a non-existing role to a user', async () => {
     const { caller } = await initTest();
 
@@ -1967,6 +1988,22 @@ describe('users router', () => {
     const [owner] = await tdb.select().from(users).where(eq(users.id, 1));
 
     expect(owner!.banned).toBeFalsy();
+  });
+
+  test('should not let a moderator unban the owner', async () => {
+    await tdb.update(users).set({ banned: true }).where(eq(users.id, 1));
+
+    const { caller } = await initTest(5);
+
+    await expect(
+      caller.users.unban({
+        userId: 1
+      })
+    ).rejects.toThrow('Only users with the owner role can act on the server');
+
+    const [owner] = await tdb.select().from(users).where(eq(users.id, 1));
+
+    expect(owner!.banned).toBe(true);
   });
 
   test('should not let a moderator kick the owner', async () => {
