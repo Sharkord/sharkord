@@ -6,7 +6,8 @@ export const SUPPORTED_LOCALES = [
   'it',
   'ru',
   'zh',
-  'pt-BR'
+  'pt-BR',
+  'tr'
 ];
 
 export type TLocale = (typeof SUPPORTED_LOCALES)[number];
