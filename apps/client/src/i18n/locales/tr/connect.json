@@ -1,0 +1,29 @@
+{
+  "identityLabel": "Kimlik",
+  "tooManyAttempts": "Çok fazla deneme yapıldı. Lütfen daha sonra tekrar deneyin.",
+  "invalidCredentials": "Geçersiz kimlik bilgileri",
+  "identityHelp": "Bu sunucudaki hesabınız için benzersiz bir tanımlayıcı. E-posta adresi veya kullanıcı adı gibi istediğinizi kullanabilirsiniz. Bu bilgi herkese açık olarak paylaşılmaz.",
+  "passwordLabel": "Parola",
+  "autoLoginLabel": "Otomatik giriş yap",
+  "insecureTitle": "Güvenli Olmayan Bağlantı",
+  "insecureDesc": "Sunucuya güvenli olmayan bir bağlantı (HTTP) üzerinden erişiyorsunuz. Tarayıcılar varsayılan olarak güvenli olmayan kaynaklarda kamera ve mikrofon gibi medya cihazlarına erişimi engeller. Bu, sunucuya HTTP üzerinden bağlıyken görüntülü veya sesli sohbet özelliklerini kullanamayacağınız anlamına gelir. Sunucu yöneticisiyseniz, belgelerdeki yönergeleri izleyerek HTTPS kurabilirsiniz.",
+  "connectBtn": "Bağlan",
+  "registrationDisabled": "Yeni kullanıcı kayıtları şu anda devre dışı. Henüz bir hesabınız yoksa bu sunucuya katılmak için mevcut bir kullanıcı tarafından davet edilmeniz gerekir.",
+  "invitedTitle": "Bu sunucuya katılmaya davet edildiniz",
+  "inviteCode": "Davet kodu: {{code}}",
+  "connectError": "Bağlanılamadı: {{message}}",
+  "oidcBtn": "SSO ile giriş yap",
+  "addToDesktopApp": "Masaüstü uygulamasına ekle",
+  "oidcCompleting": "Giriş tamamlanıyor",
+  "oidcError": {
+    "access_denied": "Kimlik sağlayıcınız girişi reddetti.",
+    "invalid_state": "Bu giriş isteği doğrulanamadı. Lütfen tekrar deneyin.",
+    "expired": "Bu giriş isteğinin süresi doldu. Lütfen tekrar deneyin.",
+    "rate_limited": "Çok fazla giriş denemesi yapıldı. Lütfen biraz bekleyip tekrar deneyin.",
+    "registration_closed": "Bu sunucu yeni kayıt kabul etmiyor. Hesabınızı oluşturması için bir yöneticiden ricada bulunun.",
+    "server_error": "Giriş yapılırken bir şeyler ters gitti. Lütfen tekrar deneyin."
+  },
+  "loggingInAutomatically": "Otomatik olarak giriş yapılıyor...",
+  "loadingApp": "Sharkord yükleniyor",
+  "loadingPlugins": "Eklentiler yükleniyor"
+}

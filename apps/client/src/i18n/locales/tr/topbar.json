@@ -1,0 +1,21 @@
+{
+  "closeVoiceChat": "Sesli Sohbeti Kapat",
+  "openVoiceChat": "Sesli Sohbeti Aç",
+  "closeMembersSidebar": "Üye Kenar Çubuğunu Kapat",
+  "openMembersSidebar": "Üye Kenar Çubuğunu Aç",
+  "closeServerList": "Sunucu Listesini Kapat",
+  "desktopSettings": "Masaüstü ayarları",
+  "openServerList": "Sunucu Listesini Aç",
+  "searchContent": "İçerik ara...",
+  "voiceOptions": "Ses Seçenekleri",
+  "hideNonVideoParticipants": "Görüntüsü olmayan katılımcıları gizle",
+  "displayUserBanners": "Kullanıcı bannerlarını göster",
+  "alwaysShowVoiceControls": "Ses kontrollerini her zaman göster",
+  "hideOwnScreenShare": "Kendi ekran paylaşımımı gizle",
+  "audioControls": "Ses Kontrolleri",
+  "stream_one": "yayın",
+  "stream_other": "yayın",
+  "noRemoteAudioStreams": "Uzak ses yayını yok.",
+  "volumeControls": "Ses Seviyesi Kontrolleri",
+  "externalAudio": "Harici Ses"
+}

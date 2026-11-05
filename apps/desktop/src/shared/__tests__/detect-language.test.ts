@@ -21,6 +21,12 @@ describe('detectLanguage', () => {
     expect(detectLanguage(['pt-PT'])).toBe('pt-BR');
   });
 
+  test('gives every turkish region the turkish translation', () => {
+    expect(detectLanguage(['tr'])).toBe('tr');
+    expect(detectLanguage(['tr-TR'])).toBe('tr');
+    expect(detectLanguage(['TR-cy'])).toBe('tr');
+  });
+
   test('ignores letter case', () => {
     expect(detectLanguage(['PT-br'])).toBe('pt-BR');
     expect(detectLanguage(['DE', 'IT'])).toBe('it');
