@@ -13,7 +13,7 @@ const stripToText = (
   }
 
   return result
-    .replace(/<[^>]*>/g, '')
+    .replace(/<[^<>]*>/g, '')
     .replace(/&nbsp;/gi, ' ')
     .replace(/\u00A0/g, ' ')
     .trim();
@@ -21,19 +21,19 @@ const stripToText = (
 
 const removeProseMirrorArtifacts = (html: string): string =>
   html
-    .replace(/<img[^>]*ProseMirror-separator[^>]*>/gi, '')
-    .replace(/<br[^>]*ProseMirror-trailingBreak[^>]*>/gi, '');
+    .replace(/<img(?=[^<>]*ProseMirror-separator)[^<>]*>/gi, '')
+    .replace(/<br(?=[^<>]*ProseMirror-trailingBreak)[^<>]*>/gi, '');
 
 const removeCommandElements = (html: string): string =>
   html.replace(/<command\b[^>]*>.*?<\/command>/gi, '');
 
-const emojiElementPattern = `<span[^>]*data-type="${MessageNodeType.EMOJI}"[^>]*>`;
-const channelReferenceElementPattern = `<span[^>]*data-type="${MessageNodeType.CHANNEL_REFERENCE}"[^>]*>`;
+const emojiElementPattern = `<span(?=[^<>]*data-type="${MessageNodeType.EMOJI}")[^<>]*>`;
+const channelReferenceElementPattern = `<span(?=[^<>]*data-type="${MessageNodeType.CHANNEL_REFERENCE}")[^<>]*>`;
 
 const removeEmojiElements = (html: string): string =>
   html
     .replace(new RegExp(`${emojiElementPattern}.*?<\\/span>`, 'gi'), '')
-    .replace(/<img[^>]*class="emoji-image"[^>]*\/?>/gi, '');
+    .replace(/<img(?=[^<>]*class="emoji-image")[^<>]*\/?>/gi, '');
 
 const removeChannelReferenceElements = (html: string): string =>
   html.replace(
@@ -46,7 +46,7 @@ const hasMediaTag = (html: string): boolean =>
 
 const hasEmojiElement = (html: string): boolean =>
   new RegExp(emojiElementPattern).test(html) ||
-  /<img[^>]*class="emoji-image"[^>]*>/.test(html);
+  /<img(?=[^<>]*class="emoji-image")[^<>]*>/.test(html);
 
 const hasChannelReferenceElement = (html: string): boolean =>
   new RegExp(channelReferenceElementPattern, 'i').test(html);
