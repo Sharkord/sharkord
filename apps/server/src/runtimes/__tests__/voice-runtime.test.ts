@@ -52,8 +52,9 @@ describe('VoiceRuntime destroy', () => {
 
     const left: number[] = [];
 
+    // a member of the call hears everyone leave, whoever else can see the channel
     const subscription = pubsub
-      .subscribe(ServerEvents.USER_LEAVE_VOICE)
+      .subscribeFor(7, ServerEvents.USER_LEAVE_VOICE)
       .subscribe({
         next: ({ userId, channelId }) => {
           if (channelId === runtime.id) left.push(userId);

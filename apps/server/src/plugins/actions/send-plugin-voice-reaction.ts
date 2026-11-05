@@ -1,8 +1,8 @@
 import { REACTION_EMOJI_MAX_LENGTH, ServerEvents } from '@sharkord/shared';
+import { publishVoicePresence } from '../../db/publishers';
 import { getPluginVoiceRuntime } from '../../helpers/get-plugin-voice-runtime';
 import { resolveKnownEmojiFileId } from '../../helpers/resolve-known-emoji-file-id';
 import { invariant } from '../../utils/invariant';
-import { pubsub } from '../../utils/pubsub';
 
 // the same event a user's own reaction publishes, so it floats on their card
 // with nothing to say a plugin sent it
@@ -25,7 +25,7 @@ const sendPluginVoiceReaction = async (
 
   await resolveKnownEmojiFileId(emoji);
 
-  pubsub.publish(ServerEvents.USER_VOICE_REACTION, {
+  await publishVoicePresence(runtime, ServerEvents.USER_VOICE_REACTION, {
     channelId,
     userId,
     emoji

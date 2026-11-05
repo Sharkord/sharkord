@@ -168,8 +168,10 @@ const joinServerRoute = publicProcedure
       ctx.saveUserIp(ctx.user.id, connectionInfo.ip);
     }
 
-    const voiceMap = VoiceRuntime.getVoiceMap();
-    const externalStreamsMap = VoiceRuntime.getExternalStreamsMap();
+    const visibleChannelIds = new Set(channelsForUser.map(({ id }) => id));
+    const voiceMap = VoiceRuntime.getVoiceMap(visibleChannelIds);
+    const externalStreamsMap =
+      VoiceRuntime.getExternalStreamsMap(visibleChannelIds);
 
     await db
       .update(users)

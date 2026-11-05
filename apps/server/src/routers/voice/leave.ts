@@ -1,7 +1,10 @@
 import { ChannelType, ServerEvents } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { db } from '../../db';
-import { unpublishHiddenChannelFromUser } from '../../db/publishers';
+import {
+  publishVoicePresence,
+  unpublishHiddenChannelFromUser
+} from '../../db/publishers';
 import { channels } from '../../db/schema';
 import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
 import { logger } from '../../logger';
@@ -40,7 +43,7 @@ const leaveVoiceRoute = protectedProcedure.mutation(async ({ ctx }) => {
 
   runtime.removeUser(ctx.user.id);
 
-  ctx.pubsub.publish(ServerEvents.USER_LEAVE_VOICE, {
+  await publishVoicePresence(runtime, ServerEvents.USER_LEAVE_VOICE, {
     channelId,
     userId: ctx.user.id
   });

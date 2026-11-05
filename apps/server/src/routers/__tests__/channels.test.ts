@@ -264,7 +264,7 @@ describe('channels router', () => {
     const departures: { channelId: number; userId: number }[] = [];
 
     const subscription = pubsub
-      .subscribe(ServerEvents.USER_LEAVE_VOICE)
+      .subscribeFor(2, ServerEvents.USER_LEAVE_VOICE)
       .subscribe({
         next: (departure) => {
           departures.push(departure);

@@ -26,6 +26,7 @@ import { getRateLimit, getRateLimits } from '../../helpers/rate-limits';
 import { pluginManager } from '../../plugins';
 import { drainActivityLogQueue } from '../../queues/activity-log';
 import { drainLoginsQueue } from '../../queues/logins';
+import { VoiceRuntime } from '../../runtimes/voice';
 
 describe('others router', () => {
   test('should throw when user tries to join with no handshake', async () => {
@@ -65,6 +66,36 @@ describe('others router', () => {
 
     for (const user of result.users) {
       expect(user._identity).toBeUndefined();
+    }
+  });
+
+  // the private voice channel is visible to the owner only
+  test('should leave the calls of hidden channels out of the voice map', async () => {
+    const privateCall = new VoiceRuntime(4);
+    const publicCall = new VoiceRuntime(2);
+
+    privateCall.addUser(1, { micMuted: false, soundMuted: false });
+    publicCall.addUser(3, { micMuted: false, soundMuted: false });
+
+    try {
+      const { caller: owner } = await getCaller(1);
+      const { handshakeHash: ownerHash } = await owner.others.handshake();
+      const ownerJoin = await owner.others.joinServer({
+        handshakeHash: ownerHash
+      });
+
+      const { caller: member } = await getCaller(2);
+      const { handshakeHash: memberHash } = await member.others.handshake();
+      const memberJoin = await member.others.joinServer({
+        handshakeHash: memberHash
+      });
+
+      expect(Object.keys(ownerJoin.voiceMap).sort()).toEqual(['2', '4']);
+      expect(Object.keys(memberJoin.voiceMap)).toEqual(['2']);
+      expect(Object.keys(memberJoin.externalStreamsMap)).toEqual(['2']);
+    } finally {
+      await privateCall.destroy();
+      await publicCall.destroy();
     }
   });
 

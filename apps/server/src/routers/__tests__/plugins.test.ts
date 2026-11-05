@@ -20,7 +20,11 @@ import { beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
-import { initTest, sendMessage } from '../../__tests__/helpers';
+import {
+  createFakeSocket,
+  initTest,
+  sendMessage
+} from '../../__tests__/helpers';
 import {
   loadMockedPlugins,
   mockPluginDownload,
@@ -3009,8 +3013,10 @@ describe('plugins router', () => {
       await withUserInVoice(async (runtime) => {
         const received: unknown[] = [];
 
+        await initTest(3, { socket: createFakeSocket() });
+
         const subscription = pubsub
-          .subscribe(ServerEvents.USER_LEAVE_VOICE)
+          .subscribeFor(3, ServerEvents.USER_LEAVE_VOICE)
           .subscribe({ next: (event) => received.push(event) });
 
         await run('voice-disconnect', { userId: 2 });
@@ -3032,8 +3038,10 @@ describe('plugins router', () => {
       await withUserInVoice(async (runtime) => {
         const received: { state: { serverMuted: boolean } }[] = [];
 
+        await initTest(3, { socket: createFakeSocket() });
+
         const subscription = pubsub
-          .subscribe(ServerEvents.USER_VOICE_STATE_UPDATE)
+          .subscribeFor(3, ServerEvents.USER_VOICE_STATE_UPDATE)
           .subscribe({ next: (event) => received.push(event) });
 
         await run('voice-mute', {
@@ -3458,8 +3466,10 @@ describe('plugins router', () => {
       await withRuntime(async () => {
         const received: unknown[] = [];
 
+        await initTest(3, { socket: createFakeSocket() });
+
         const subscription = pubsub
-          .subscribe(ServerEvents.USER_VOICE_REACTION)
+          .subscribeFor(3, ServerEvents.USER_VOICE_REACTION)
           .subscribe({ next: (event) => received.push(event) });
 
         await react({});
