@@ -101,6 +101,7 @@ jobs:
           path: |
             apps/desktop/dist/*.AppImage
             apps/desktop/dist/*.exe
+            apps/desktop/dist/*.msi
             apps/desktop/dist/*.dmg
             apps/desktop/dist/*.zip
             apps/desktop/dist/*.blockmap

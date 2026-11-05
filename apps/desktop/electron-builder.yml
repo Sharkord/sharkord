@@ -40,7 +40,9 @@ linux:
   executableName: sharkord
   syncDesktopName: true
 win:
-  target: nsis
+  target:
+    - nsis
+    - msi
 publish:
   provider: github
   owner: Sharkord
