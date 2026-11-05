@@ -4324,6 +4324,81 @@ describe('plugins router', () => {
           })
         ).rejects.toThrow('Insufficient permissions');
       });
+
+      describe('managed by someone without the declared permission', () => {
+        const NOT_HELD_MESSAGE =
+          'You cannot change access to something that needs a permission you do not have.';
+
+        beforeEach(async () => {
+          await tdb.insert(rolePermissions).values({
+            roleId: MODERATOR_ROLE,
+            permission: Permission.MANAGE_PLUGIN_PERMISSIONS,
+            createdAt: Date.now()
+          });
+        });
+
+        test('should not let them open up a capability gated by a permission they lack', async () => {
+          const { caller } = await initTest(MODERATOR_USER);
+
+          await expect(
+            caller.plugins.setCapabilityAccess({
+              pluginId: 'plugin-b',
+              type: PluginCapabilityType.COMMAND,
+              name: 'admin-sum',
+              mode: PluginCapabilityMode.PUBLIC,
+              roleIds: []
+            })
+          ).rejects.toThrow(NOT_HELD_MESSAGE);
+
+          await expect(runAdminSum(MODERATOR_USER)).rejects.toThrow(
+            'do not have access'
+          );
+        });
+
+        test('should not let them reset a capability gated by a permission they lack', async () => {
+          const { caller: owner } = await initTest();
+
+          await owner.plugins.setCapabilityAccess({
+            pluginId: 'plugin-b',
+            type: PluginCapabilityType.COMMAND,
+            name: 'admin-sum',
+            mode: PluginCapabilityMode.PUBLIC,
+            roleIds: []
+          });
+
+          const { caller } = await initTest(MODERATOR_USER);
+
+          await expect(
+            caller.plugins.resetCapabilityAccess({
+              pluginId: 'plugin-b',
+              type: PluginCapabilityType.COMMAND,
+              name: 'admin-sum'
+            })
+          ).rejects.toThrow(NOT_HELD_MESSAGE);
+
+          expect(await runAdminSum(MODERATOR_USER)).toBeDefined();
+        });
+
+        test('should let them manage a capability gated by a permission they hold', async () => {
+          const { caller } = await initTest(MODERATOR_USER);
+
+          await caller.plugins.setCapabilityAccess({
+            pluginId: 'plugin-b',
+            type: PluginCapabilityType.ACTION,
+            name: 'admin-multiply',
+            mode: PluginCapabilityMode.RESTRICTED,
+            roleIds: [MEMBER_ROLE]
+          });
+
+          await expect(
+            caller.plugins.executeAction({
+              pluginId: 'plugin-b',
+              actionName: 'admin-multiply',
+              payload: { a: 2, b: 3 }
+            })
+          ).rejects.toThrow('do not have access');
+        });
+      });
     });
   });
 
