@@ -128,6 +128,22 @@ describe('message metadata normalization', () => {
     });
   });
 
+  test('drops image, video and favicon urls that are not http or https', () => {
+    const metadata = createOpenGraphMetadata(
+      {
+        title: 'Example page',
+        images: ['javascript:alert(1)', 'https://example.com/cover.png'],
+        videos: ['data:video/mp4;base64,AAAA'],
+        favicons: ['data:image/png;base64,AAAA', 'file:///etc/passwd']
+      },
+      'https://example.com/article'
+    );
+
+    expect(metadata?.images).toEqual(['https://example.com/cover.png']);
+    expect(metadata?.videos).toBeUndefined();
+    expect(metadata?.favicons).toBeUndefined();
+  });
+
   test('skips previews without renderable open graph content', () => {
     const metadata = createOpenGraphMetadata(
       {
