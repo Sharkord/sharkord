@@ -124,6 +124,20 @@ const uploadFileRouteHandler = async (
   const safePath = await fileManager.getSafeUploadPath(originalName);
   const fileStream = fs.createWriteStream(safePath);
 
+  const discardPartialFile = () => {
+    fileStream.destroy();
+
+    fs.promises.rm(safePath, { force: true }).catch((error) => {
+      logger.error('Error removing partial upload: %s', getErrorMessage(error));
+    });
+  };
+
+  req.on('close', () => {
+    if (!req.complete) {
+      discardPartialFile();
+    }
+  });
+
   req.pipe(fileStream);
 
   fileStream.on('finish', async () => {
@@ -157,6 +171,8 @@ const uploadFileRouteHandler = async (
 
   fileStream.on('error', (err) => {
     logger.error('Error uploading file: %s', getErrorMessage(err));
+
+    discardPartialFile();
 
     sendJsonError(res, 500, 'File upload failed');
   });
