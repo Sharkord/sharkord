@@ -17,7 +17,7 @@ import {
   type TPluginPushEvent
 } from '@sharkord/shared';
 import { beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
 import {
@@ -4429,6 +4429,85 @@ describe('plugins router', () => {
       const subscription = await caller.plugins.onLog();
 
       expect(subscription).toBeDefined();
+    });
+
+    describe('when the permission is revoked mid stream', () => {
+      const MODERATOR_ROLE = 4;
+      const MODERATOR_USER = 5;
+
+      const logEntry = (message: string) => ({
+        type: 'info' as const,
+        timestamp: Date.now(),
+        message,
+        pluginId: 'plugin-a'
+      });
+
+      beforeEach(async () => {
+        await tdb.insert(rolePermissions).values({
+          roleId: MODERATOR_ROLE,
+          permission: Permission.MANAGE_PLUGINS,
+          createdAt: Date.now()
+        });
+      });
+
+      // entries arrive after an async permission check, so each test waits on the callback
+      // that proves the entry was handled rather than on a timer
+      test('should deliver entries in order while the permission is held', async () => {
+        const { caller } = await initTest(MODERATOR_USER);
+        const received: string[] = [];
+        const { promise: bothReceived, resolve } = Promise.withResolvers();
+
+        const subscription = (await caller.plugins.onLog()).subscribe({
+          next: (entry) => {
+            received.push(entry.message);
+
+            if (received.length === 2) resolve(undefined);
+          }
+        });
+
+        pubsub.publish(ServerEvents.PLUGIN_LOG, logEntry('first'));
+        pubsub.publish(ServerEvents.PLUGIN_LOG, logEntry('second'));
+        await bothReceived;
+
+        subscription.unsubscribe();
+
+        expect(received).toEqual(['first', 'second']);
+      });
+
+      test('should stop delivering and end the stream once the permission is gone', async () => {
+        const { caller } = await initTest(MODERATOR_USER);
+        const received: string[] = [];
+        const { promise: firstReceived, resolve: resolveFirst } =
+          Promise.withResolvers();
+        const { promise: completed, resolve: resolveCompleted } =
+          Promise.withResolvers();
+
+        (await caller.plugins.onLog()).subscribe({
+          next: (entry) => {
+            received.push(entry.message);
+            resolveFirst(undefined);
+          },
+          complete: () => resolveCompleted(undefined)
+        });
+
+        pubsub.publish(ServerEvents.PLUGIN_LOG, logEntry('before'));
+        await firstReceived;
+
+        await tdb
+          .delete(rolePermissions)
+          .where(
+            and(
+              eq(rolePermissions.roleId, MODERATOR_ROLE),
+              eq(rolePermissions.permission, Permission.MANAGE_PLUGINS)
+            )
+          );
+
+        pubsub.publish(ServerEvents.PLUGIN_LOG, logEntry('after'));
+        pubsub.publish(ServerEvents.PLUGIN_LOG, logEntry('later'));
+        await completed;
+
+        expect(received).toEqual(['before']);
+      });
     });
   });
 
