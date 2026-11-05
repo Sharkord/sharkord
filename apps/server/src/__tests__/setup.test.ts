@@ -5,7 +5,9 @@ import {
   channels,
   channelUserPermissions,
   directMessages,
+  files,
   logins,
+  messageFiles,
   messages,
   rolePermissions,
   roles,
@@ -72,6 +74,18 @@ describe('tests setup', () => {
 
     expect(categoriesResults.length).toBe(2);
     expect(directMessagesResults.length).toBe(1);
+  });
+
+  test('should seed two message attachments', async () => {
+    const [filesResults, messageFilesResults] = await Promise.all([
+      tdb.select().from(files),
+      tdb.select().from(messageFiles)
+    ]);
+
+    expect(filesResults.length).toBe(2);
+    expect(messageFilesResults.map(({ messageId }) => messageId)).toEqual([
+      1, 2
+    ]);
   });
 
   test('should not seed logins outside e2e', async () => {
