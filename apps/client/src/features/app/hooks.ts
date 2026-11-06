@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import {
   appLoadingSelector,
   autoJoinLastChannelSelector,
+  closeVoiceChatOnLeaveSelector,
   convertAsciiEmojiSelector,
   freezeAnimatedAvatarsSelector,
   hotkeysEnabledSelector,
@@ -28,6 +29,7 @@ import {
   selectedDmChannelIdSelector,
   selectedThreadSelector,
   threadSidebarDataSelector,
+  voiceChatFollowsVoiceSelector,
   voiceChatSidebarDataSelector
 } from './selectors';
 
@@ -48,6 +50,12 @@ export const useThreadSidebar = () => useSelector(threadSidebarDataSelector);
 
 export const useAutoJoinLastChannel = () =>
   useSelector(autoJoinLastChannelSelector);
+
+export const useVoiceChatFollowsVoice = () =>
+  useSelector(voiceChatFollowsVoiceSelector);
+
+export const useCloseVoiceChatOnLeave = () =>
+  useSelector(closeVoiceChatOnLeaveSelector);
 
 export const useFreezeAnimatedAvatars = () =>
   useSelector(freezeAnimatedAvatarsSelector);

@@ -1,5 +1,14 @@
 import type { TPinnedCard } from '@/components/channel-view/voice/hooks/use-pin-card-controller';
-import { pushToTalkSelectedSelector } from '@/features/app/selectors';
+import {
+  assertVoiceChatClose,
+  openVoiceChatSidebar
+} from '@/features/app/actions';
+import {
+  closeVoiceChatOnLeaveSelector,
+  pushToTalkSelectedSelector,
+  voiceChatFollowsVoiceSelector,
+  voiceChatSidebarDataSelector
+} from '@/features/app/selectors';
 import { store } from '@/features/store';
 import { voiceLogger } from '@/helpers/browser-logger';
 import { playSound } from '@/helpers/sounds';
@@ -81,6 +90,7 @@ const clearLocalVoiceSession = (): void => {
 
   const selectedChannelId = selectedChannelIdSelector(state);
   const currentVoiceChannelId = currentVoiceChannelIdSelector(state);
+  const closeVoiceChatOnLeave = closeVoiceChatOnLeaveSelector(state);
 
   voiceLogger.info('session: clearing local voice session', {
     selectedChannelId,
@@ -89,6 +99,10 @@ const clearLocalVoiceSession = (): void => {
 
   if (selectedChannelId === currentVoiceChannelId) {
     setSelectedChannelId(undefined);
+  }
+
+  if (currentVoiceChannelId && closeVoiceChatOnLeave) {
+    assertVoiceChatClose(currentVoiceChannelId);
   }
 
   setCurrentVoiceChannelId(undefined);
@@ -224,6 +238,9 @@ export const joinVoice = async (
 ): Promise<RtpCapabilities | undefined> => {
   const state = store.getState();
   const currentChannelId = currentVoiceChannelIdSelector(state);
+  const voiceChatFollowsVoice = voiceChatFollowsVoiceSelector(state);
+  // read before leaving the previous channel, which may close the sidebar
+  const { isOpen: isVoiceChatOpen } = voiceChatSidebarDataSelector(state);
 
   if (channelId === currentChannelId) {
     // already in the desired channel
@@ -236,6 +253,10 @@ export const joinVoice = async (
   }
 
   setCurrentVoiceChannelId(channelId);
+
+  if (voiceChatFollowsVoice && isVoiceChatOpen) {
+    openVoiceChatSidebar(channelId);
+  }
 
   const { micMuted: storedMicMuted, soundMuted } = ownVoiceStateSelector(state);
   const pushToTalkSelected = pushToTalkSelectedSelector(state);

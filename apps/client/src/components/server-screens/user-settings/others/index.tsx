@@ -2,13 +2,17 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import {
   setAutoJoinLastChannel,
+  setCloseVoiceChatOnLeave,
   setConvertAsciiEmoji,
-  setFreezeAnimatedAvatars
+  setFreezeAnimatedAvatars,
+  setVoiceChatFollowsVoice
 } from '@/features/app/actions';
 import {
   useAutoJoinLastChannel,
+  useCloseVoiceChatOnLeave,
   useConvertAsciiEmoji,
-  useFreezeAnimatedAvatars
+  useFreezeAnimatedAvatars,
+  useVoiceChatFollowsVoice
 } from '@/features/app/hooks';
 import { Group, SettingsSection, Switch } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
@@ -16,6 +20,8 @@ import { useTranslation } from 'react-i18next';
 
 type TOthersValues = {
   autoJoinLastChannel: boolean;
+  voiceChatFollowsVoice: boolean;
+  closeVoiceChatOnLeave: boolean;
   freezeAnimatedAvatars: boolean;
   convertAsciiEmoji: boolean;
 };
@@ -23,11 +29,15 @@ type TOthersValues = {
 const Others = memo(() => {
   const { t } = useTranslation('settings');
   const autoJoinLastChannel = useAutoJoinLastChannel();
+  const voiceChatFollowsVoice = useVoiceChatFollowsVoice();
+  const closeVoiceChatOnLeave = useCloseVoiceChatOnLeave();
   const freezeAnimatedAvatars = useFreezeAnimatedAvatars();
   const convertAsciiEmoji = useConvertAsciiEmoji();
 
   const onSave = useCallback(async (values: TOthersValues) => {
     setAutoJoinLastChannel(values.autoJoinLastChannel);
+    setVoiceChatFollowsVoice(values.voiceChatFollowsVoice);
+    setCloseVoiceChatOnLeave(values.closeVoiceChatOnLeave);
     setFreezeAnimatedAvatars(values.freezeAnimatedAvatars);
     setConvertAsciiEmoji(values.convertAsciiEmoji);
   }, []);
@@ -35,6 +45,8 @@ const Others = memo(() => {
   const { values, onChange } = useSettingsForm<TOthersValues>({
     initialValues: {
       autoJoinLastChannel,
+      voiceChatFollowsVoice,
+      closeVoiceChatOnLeave,
       freezeAnimatedAvatars,
       convertAsciiEmoji
     },
@@ -45,6 +57,16 @@ const Others = memo(() => {
 
   const handleAutoJoinChange = useCallback(
     (value: boolean) => onChange('autoJoinLastChannel', value),
+    [onChange]
+  );
+
+  const handleVoiceChatFollowsVoiceChange = useCallback(
+    (value: boolean) => onChange('voiceChatFollowsVoice', value),
+    [onChange]
+  );
+
+  const handleCloseVoiceChatOnLeaveChange = useCallback(
+    (value: boolean) => onChange('closeVoiceChatOnLeave', value),
     [onChange]
   );
 
@@ -67,6 +89,26 @@ const Others = memo(() => {
         <Switch
           checked={values.autoJoinLastChannel}
           onCheckedChange={handleAutoJoinChange}
+        />
+      </Group>
+
+      <Group
+        label={t('voiceChatFollowsVoiceLabel')}
+        description={t('voiceChatFollowsVoiceDesc')}
+      >
+        <Switch
+          checked={values.voiceChatFollowsVoice}
+          onCheckedChange={handleVoiceChatFollowsVoiceChange}
+        />
+      </Group>
+
+      <Group
+        label={t('closeVoiceChatOnLeaveLabel')}
+        description={t('closeVoiceChatOnLeaveDesc')}
+      >
+        <Switch
+          checked={values.closeVoiceChatOnLeave}
+          onCheckedChange={handleCloseVoiceChatOnLeaveChange}
         />
       </Group>
 
