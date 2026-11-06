@@ -23,6 +23,7 @@ import { config } from '../config';
 import { publishVoicePresence } from '../db/publishers';
 import { logger } from '../logger';
 import { eventBus } from '../plugins/event-bus';
+import { invariant } from '../utils/invariant';
 import {
   mediaSoupWorker,
   webRtcServer,
@@ -151,6 +152,7 @@ class VoiceRuntime {
   private screenProducers: TProducerMap = {};
   private screenAudioProducers: TProducerMap = {};
   private consumers: TConsumerMap = {};
+  private playbackOperations = new Map<number, Promise<void>>();
   private producerQualityLayers: TProducerQualityLayerMap = {};
 
   private static serverMutedUserIds = new Set<number>();
@@ -504,6 +506,84 @@ class VoiceRuntime {
   public getConsumer = (userId: number, remoteId: number, kind: StreamKind) => {
     return this.consumers[userId]?.[this.getConsumerKey(remoteId, kind)];
   };
+
+  private runPlaybackOperation = async (
+    userId: number,
+    operation: () => Promise<void>
+  ) => {
+    const previous = this.playbackOperations.get(userId);
+    const next = Promise.resolve(previous)
+      .catch(() => {})
+      .then(operation);
+    this.playbackOperations.set(userId, next);
+
+    try {
+      await next;
+    } finally {
+      if (this.playbackOperations.get(userId) === next) {
+        this.playbackOperations.delete(userId);
+      }
+    }
+  };
+
+  private setConsumerPaused = async (consumer: Consumer, paused: boolean) => {
+    if (consumer.closed || consumer.paused === paused) return;
+
+    try {
+      if (paused) await consumer.pause();
+      else await consumer.resume();
+    } catch (error) {
+      if (!consumer.closed) throw error;
+    }
+  };
+
+  public setConsumerPlayback = (
+    userId: number,
+    {
+      remoteId,
+      kind,
+      consumerId,
+      paused
+    }: {
+      remoteId: number;
+      kind: StreamKind.VIDEO | StreamKind.SCREEN;
+      consumerId: string;
+      paused: boolean;
+    }
+  ) =>
+    this.runPlaybackOperation(userId, async () => {
+      const consumer = this.getConsumer(userId, remoteId, kind);
+
+      invariant(consumer?.id === consumerId && !consumer.closed, {
+        code: 'NOT_FOUND',
+        message: 'Consumer not found'
+      });
+
+      const wasPaused = consumer.paused;
+      await this.setConsumerPaused(consumer, paused);
+
+      if (kind !== StreamKind.SCREEN || consumer.closed) return;
+
+      const audio = this.getConsumer(userId, remoteId, StreamKind.SCREEN_AUDIO);
+      if (!audio) return;
+
+      try {
+        await this.setConsumerPaused(audio, paused);
+      } catch (error) {
+        await this.setConsumerPaused(consumer, wasPaused);
+        throw error;
+      }
+    });
+
+  // screen audio starts paused so an audio track added mid-pause cannot leak through.
+  public syncScreenAudioPlayback = (userId: number, remoteId: number) =>
+    this.runPlaybackOperation(userId, async () => {
+      const audio = this.getConsumer(userId, remoteId, StreamKind.SCREEN_AUDIO);
+      if (!audio) return;
+
+      const screen = this.getConsumer(userId, remoteId, StreamKind.SCREEN);
+      await this.setConsumerPaused(audio, screen?.paused ?? false);
+    });
 
   public getConsumerById = (userId: number, consumerId: string) => {
     const userConsumers = this.consumers[userId];

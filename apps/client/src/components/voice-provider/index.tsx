@@ -120,6 +120,10 @@ export type TVoiceProvider = {
   isScreenShareSupported: boolean;
   getOrCreateRefs: (remoteId: number, isExternal?: boolean) => AudioVideoRefs;
   getConsumerCodec: (remoteId: number, kind: StreamKind) => string | undefined;
+  isRemotePlaybackPaused: (
+    remoteId: number,
+    kind: StreamKind.VIDEO | StreamKind.SCREEN
+  ) => boolean;
   getStreamQuality: (remoteId: number, kind: StreamKind) => TStreamQuality;
   getStreamQualityLayers: (
     remoteId: number,
@@ -146,7 +150,8 @@ export type TVoiceProvider = {
     ReturnType<typeof useRemoteStreams>,
     'remoteUserStreams' | 'externalStreams'
   > &
-  ReturnType<typeof useVoiceControls>;
+  ReturnType<typeof useVoiceControls> &
+  Pick<ReturnType<typeof useTransports>, 'setRemotePlayback'>;
 
 const VoiceProviderContext = createContext<TVoiceProvider>({
   loading: false,
@@ -162,6 +167,8 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
     externalVideoRef: { current: null }
   }),
   getConsumerCodec: () => undefined,
+  isRemotePlaybackPaused: () => false,
+  setRemotePlayback: () => Promise.resolve(),
   getStreamQuality: () => ({ mode: 'auto' }),
   getStreamQualityLayers: () => [],
   setStreamQuality: () => Promise.resolve(),
@@ -403,7 +410,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     consume,
     consumeExistingProducers,
     cleanupTransports,
-    getConsumerCodec
+    getConsumerCodec,
+    pausedPlaybackTracks,
+    setRemotePlayback
   } = useTransports({
     addExternalStreamTrack,
     removeExternalStreamTrack,
@@ -413,6 +422,15 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     setRemoteStreamQualityLayers,
     clearRemoteConsumerMetadata
   });
+
+  const isRemotePlaybackPaused = useCallback(
+    (remoteId: number, kind: StreamKind.VIDEO | StreamKind.SCREEN) => {
+      const stream = remoteUserStreams[remoteId]?.[kind];
+      const tracks = stream?.getVideoTracks();
+      return tracks?.some((track) => pausedPlaybackTracks.has(track)) ?? false;
+    },
+    [remoteUserStreams, pausedPlaybackTracks]
+  );
 
   const {
     stats: transportStats,
@@ -1397,6 +1415,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       isScreenShareSupported,
       getOrCreateRefs,
       getConsumerCodec,
+      isRemotePlaybackPaused,
+      setRemotePlayback,
       getStreamQuality,
       getStreamQualityLayers,
       setStreamQuality,
@@ -1423,6 +1443,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       isScreenShareSupported,
       getOrCreateRefs,
       getConsumerCodec,
+      isRemotePlaybackPaused,
+      setRemotePlayback,
       getStreamQuality,
       getStreamQualityLayers,
       setStreamQuality,
@@ -1456,6 +1478,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
           <div className="relative">
             <FloatingPinnedCard
               remoteUserStreams={remoteUserStreams}
+              isRemotePlaybackPaused={isRemotePlaybackPaused}
               externalStreams={externalStreams}
               localScreenShareStream={localScreenShareStream}
               localVideoStream={localVideoStream}

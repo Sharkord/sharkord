@@ -23,6 +23,7 @@ import { leaveVoiceRoute } from './leave';
 import { moveUserRoute } from './move';
 import { produceRoute } from './produce';
 import { sendVoiceReactionRoute } from './send-reaction';
+import { setConsumerPlaybackRoute } from './set-consumer-playback';
 import { setConsumerQualityRoute } from './set-consumer-quality';
 import { updateVoiceStateRoute } from './update-state';
 
@@ -39,6 +40,7 @@ export const voiceRouter = t.router({
   closeProducer: closeProducerRoute,
   produce: produceRoute,
   consume: consumeRoute,
+  setConsumerPlayback: setConsumerPlaybackRoute,
   setConsumerQuality: setConsumerQualityRoute,
   getProducers: getProducersRoute,
   onJoin: onUserJoinVoiceRoute,

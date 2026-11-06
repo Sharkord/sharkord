@@ -1,4 +1,7 @@
 {
+  "pauseStreamPlayback": "暂停观看",
+  "resumeStreamPlayback": "继续观看",
+  "failedToChangeStreamPlayback": "无法更改直播播放状态",
   "cancel": "取消",
   "confirm": "确认",
   "close": "关闭",

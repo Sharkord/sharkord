@@ -1,4 +1,7 @@
 {
+  "pauseStreamPlayback": "Pause watching",
+  "resumeStreamPlayback": "Resume watching",
+  "failedToChangeStreamPlayback": "Could not change stream playback",
   "cancel": "Cancel",
   "confirm": "Confirm",
   "close": "Close",

@@ -1,4 +1,7 @@
 {
+  "pauseStreamPlayback": "Mettre en pause",
+  "resumeStreamPlayback": "Reprendre la lecture",
+  "failedToChangeStreamPlayback": "Impossible de modifier la lecture du flux",
   "cancel": "Annuler",
   "confirm": "Confirmer",
   "close": "Fermer",

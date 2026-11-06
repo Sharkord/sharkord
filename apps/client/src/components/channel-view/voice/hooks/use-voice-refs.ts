@@ -19,10 +19,19 @@ const useVoiceRefs = (
     localVideoStream,
     localScreenShareStream,
     ownVoiceState,
-    getOrCreateRefs
+    getOrCreateRefs,
+    isRemotePlaybackPaused
   } = useVoice();
   // an external stream has no owner, and its id is not from the user id space
   const isOwnUser = useIsOwnUser(isExternalStream ? null : remoteId);
+  const isVideoPlaybackPaused =
+    !isExternalStream &&
+    !isOwnUser &&
+    isRemotePlaybackPaused(remoteId, StreamKind.VIDEO);
+  const isScreenPlaybackPaused =
+    !isExternalStream &&
+    !isOwnUser &&
+    isRemotePlaybackPaused(remoteId, StreamKind.SCREEN);
   const {
     getVolume,
     getUserVolumeKey,
@@ -42,9 +51,16 @@ const useVoiceRefs = (
 
   const videoStream = useMemo(() => {
     if (isOwnUser) return localVideoStream;
+    if (isVideoPlaybackPaused) return undefined;
 
     return remoteUserStreams[remoteId]?.[StreamKind.VIDEO];
-  }, [remoteUserStreams, remoteId, isOwnUser, localVideoStream]);
+  }, [
+    remoteUserStreams,
+    remoteId,
+    isOwnUser,
+    localVideoStream,
+    isVideoPlaybackPaused
+  ]);
 
   const audioStream = useMemo(() => {
     if (isOwnUser) return undefined;
@@ -60,15 +76,22 @@ const useVoiceRefs = (
 
   const screenShareStream = useMemo(() => {
     if (isOwnUser) return localScreenShareStream;
+    if (isScreenPlaybackPaused) return undefined;
 
     return remoteUserStreams[remoteId]?.[StreamKind.SCREEN];
-  }, [remoteUserStreams, remoteId, isOwnUser, localScreenShareStream]);
+  }, [
+    remoteUserStreams,
+    remoteId,
+    isOwnUser,
+    localScreenShareStream,
+    isScreenPlaybackPaused
+  ]);
 
   const screenShareAudioStream = useMemo(() => {
-    if (isOwnUser) return undefined;
+    if (isOwnUser || isScreenPlaybackPaused) return undefined;
 
     return remoteUserStreams[remoteId]?.[StreamKind.SCREEN_AUDIO];
-  }, [remoteUserStreams, remoteId, isOwnUser]);
+  }, [remoteUserStreams, remoteId, isOwnUser, isScreenPlaybackPaused]);
 
   const externalAudioStream = useMemo(
     () => externalStreams[remoteId]?.audioStream,
@@ -133,6 +156,7 @@ const useVoiceRefs = (
     applyAudioOutputDevice(screenShareAudioRef.current, devices.playbackId);
   }, [
     screenShareAudioStream,
+    screenShareStream,
     screenShareAudioRef,
     userScreenVolume,
     devices.playbackId,
@@ -207,6 +231,7 @@ const useVoiceRefs = (
     hasVideoStream: !!videoStream,
     hasScreenShareStream: !!screenShareStream,
     hasScreenShareAudioStream: !!screenShareAudioStream,
+    isScreenPlaybackPaused,
     hasExternalAudioStream: !!externalAudioStream,
     hasExternalVideoStream: !!externalVideoStream,
     audioLevel,

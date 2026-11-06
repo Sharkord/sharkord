@@ -44,7 +44,7 @@ const consumeRoute = protectedProcedure
     const consumer = await userConsumerTransport.consume({
       producerId: producer.id,
       rtpCapabilities: input.rtpCapabilities,
-      paused: false
+      paused: input.kind === StreamKind.SCREEN_AUDIO
     });
 
     runtime.addConsumer(ctx.user.id, input.remoteId, input.kind, consumer);
@@ -62,6 +62,18 @@ const consumeRoute = protectedProcedure
         }
       );
     });
+
+    if (
+      input.kind === StreamKind.SCREEN ||
+      input.kind === StreamKind.SCREEN_AUDIO
+    ) {
+      try {
+        await runtime.syncScreenAudioPlayback(ctx.user.id, input.remoteId);
+      } catch (error) {
+        consumer.close();
+        throw error;
+      }
+    }
 
     return {
       producerId: producer.id,
