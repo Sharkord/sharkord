@@ -1,6 +1,7 @@
 import { ChannelPermission, RateLimiter, ServerEvents } from '@sharkord/shared';
 import { z } from 'zod';
 import { publishVoicePresence } from '../../db/publishers';
+import { channelUserCan } from '../../db/queries/channels';
 import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
@@ -24,9 +25,15 @@ const updateVoiceStateRoute = protectedProcedure
     const validatedInput = { ...input };
 
     const [canSpeak, canUseWebcam, canShareScreen] = await Promise.all([
-      ctx.hasChannelPermission(channelId, ChannelPermission.SPEAK),
-      ctx.hasChannelPermission(channelId, ChannelPermission.WEBCAM),
-      ctx.hasChannelPermission(channelId, ChannelPermission.SHARE_SCREEN)
+      channelUserCan(channelId, ctx.user.id, ChannelPermission.SPEAK, {
+        ignoreView: true
+      }),
+      channelUserCan(channelId, ctx.user.id, ChannelPermission.WEBCAM, {
+        ignoreView: true
+      }),
+      channelUserCan(channelId, ctx.user.id, ChannelPermission.SHARE_SCREEN, {
+        ignoreView: true
+      })
     ]);
 
     if (!canSpeak) {

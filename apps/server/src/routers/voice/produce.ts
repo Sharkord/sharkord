@@ -9,6 +9,7 @@ import {
   type TProducibleStreamKind
 } from '@sharkord/shared';
 import { z } from 'zod';
+import { channelUserCan } from '../../db/queries/channels';
 import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
@@ -54,7 +55,14 @@ const produceRoute = protectedProcedure
 
     const { channel, server } = KIND_PERMISSIONS[input.kind];
 
-    await ctx.needsChannelPermission(channelId, channel);
+    const canProduce = await channelUserCan(channelId, ctx.user.id, channel, {
+      ignoreView: true
+    });
+
+    invariant(canProduce, {
+      code: 'FORBIDDEN',
+      message: 'Insufficient channel permissions'
+    });
 
     if (server) {
       await ctx.needsPermission(server);
