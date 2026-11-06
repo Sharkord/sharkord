@@ -25,6 +25,8 @@ export interface TAppState {
   threadParentMessageId: number | undefined;
   threadChannelId: number | undefined;
   autoJoinLastChannel: boolean;
+  voiceChatFollowsVoice: boolean;
+  closeVoiceChatOnLeave: boolean;
   freezeAnimatedAvatars: boolean;
   convertAsciiEmoji: boolean;
   micMode: MicMode;
@@ -58,6 +60,14 @@ const initialState: TAppState = {
   threadChannelId: undefined,
   autoJoinLastChannel: getLocalStorageItemBool(
     LocalStorageKey.AUTO_JOIN_LAST_CHANNEL,
+    false
+  ),
+  voiceChatFollowsVoice: getLocalStorageItemBool(
+    LocalStorageKey.VOICE_CHAT_FOLLOWS_VOICE,
+    false
+  ),
+  closeVoiceChatOnLeave: getLocalStorageItemBool(
+    LocalStorageKey.CLOSE_VOICE_CHAT_ON_LEAVE,
     false
   ),
   freezeAnimatedAvatars: getLocalStorageItemBool(
@@ -160,6 +170,12 @@ export const appSlice = createSlice({
     },
     setAutoJoinLastChannel: (state, action: PayloadAction<boolean>) => {
       state.autoJoinLastChannel = action.payload;
+    },
+    setVoiceChatFollowsVoice: (state, action: PayloadAction<boolean>) => {
+      state.voiceChatFollowsVoice = action.payload;
+    },
+    setCloseVoiceChatOnLeave: (state, action: PayloadAction<boolean>) => {
+      state.closeVoiceChatOnLeave = action.payload;
     },
     setFreezeAnimatedAvatars: (state, action: PayloadAction<boolean>) => {
       state.freezeAnimatedAvatars = action.payload;
