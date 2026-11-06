@@ -1,6 +1,6 @@
 {
   "name": "@sharkord/shared",
-  "version": "0.0.29",
+  "version": "0.0.30",
   "type": "module",
   "sideEffects": false,
   "private": true,
