@@ -17,7 +17,10 @@ import {
 } from '@trpc/server/adapters/ws';
 import http from 'http';
 import { WebSocket, WebSocketServer } from 'ws';
-import { publishVoicePresence } from '../db/publishers';
+import {
+  publishVoicePresence,
+  unpublishHiddenChannelFromUser
+} from '../db/publishers';
 import { channelUserCan } from '../db/queries/channels';
 import { getUserRoles } from '../db/queries/roles';
 import { getUserById, getUserByToken } from '../db/queries/users';
@@ -227,25 +230,32 @@ const handleSocketClose = async (ws: WebSocket) => {
 
     untrackUserSocket(userId, ws);
 
+    const hasOtherSessions = userSockets.has(userId);
+    const voiceRuntime = VoiceRuntime.findRuntimeByUserId(userId);
+
+    // a session that does not own the call cannot leave it, so it would stay forever
+    if (
+      voiceRuntime &&
+      (!hasOtherSessions || ws.session?.voiceChannelId === voiceRuntime.id)
+    ) {
+      voiceRuntime.removeUser(userId);
+
+      await publishVoicePresence(voiceRuntime, ServerEvents.USER_LEAVE_VOICE, {
+        channelId: voiceRuntime.id,
+        userId
+      });
+
+      await unpublishHiddenChannelFromUser(userId, voiceRuntime.id);
+    }
+
     // only mark as offline when there are no other active sessions
-    if (userSockets.has(userId)) {
+    if (hasOtherSessions) {
       return;
     }
 
     const user = await getUserById(userId);
 
     if (!user) return;
-
-    const voiceRuntime = VoiceRuntime.findRuntimeByUserId(user.id);
-
-    if (voiceRuntime) {
-      voiceRuntime.removeUser(user.id);
-
-      await publishVoicePresence(voiceRuntime, ServerEvents.USER_LEAVE_VOICE, {
-        channelId: voiceRuntime.id,
-        userId: user.id
-      });
-    }
 
     usersIpMap.delete(user.id);
     pubsub.publish(ServerEvents.USER_LEAVE, user.id);
