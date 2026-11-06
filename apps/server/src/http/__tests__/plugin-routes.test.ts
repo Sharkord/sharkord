@@ -9,10 +9,10 @@ import fs from 'fs/promises';
 import { getMockedToken } from '../../__tests__/helpers';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
-import { config } from '../../config';
 import { setCapabilityAccess } from '../../db/queries/plugin-capabilities';
 import { rolePermissions, users } from '../../db/schema';
 import { PLUGINS_PATH } from '../../helpers/paths';
+import { getRateLimit } from '../../helpers/rate-limits';
 import { pluginManager } from '../../plugins';
 
 // the seeded moderator: role 4 holds MANAGE_USERS and MANAGE_ROLES, not
@@ -28,12 +28,11 @@ describe('/plugins/:pluginId/*', () => {
 
   beforeEach(resetPluginMocks);
 
-  // every plugin route shares one limiter, so a public one is enough to prove it
   describe('rate limiting', () => {
     beforeEach(() => pluginManager.load('plugin-b'));
 
     test('should stop hammering a plugin route from one address', async () => {
-      const { maxRequests } = config.rateLimiters.pluginRoute;
+      const { maxRequests } = getRateLimit();
 
       for (let attempt = 0; attempt < maxRequests; attempt++) {
         await fetch(`${testsBaseUrl}/plugins/plugin-b/hello`);
@@ -47,8 +46,8 @@ describe('/plugins/:pluginId/*', () => {
       });
     });
 
-    test('should count an authenticated route against the same limit', async () => {
-      const { maxRequests } = config.rateLimiters.pluginRoute;
+    test('should keep a separate limit for each plugin route', async () => {
+      const { maxRequests } = getRateLimit();
 
       for (let attempt = 0; attempt < maxRequests; attempt++) {
         await fetch(`${testsBaseUrl}/plugins/plugin-b/hello`);
@@ -58,7 +57,20 @@ describe('/plugins/:pluginId/*', () => {
         headers: { authorization: `Bearer ${await getMockedToken(2)}` }
       });
 
-      // the limiter runs before the caller is resolved, so this is 429 not 401
+      expect(response.status).toBe(200);
+    });
+
+    test('should limit an authenticated route before resolving the caller', async () => {
+      const { maxRequests } = getRateLimit();
+
+      for (let attempt = 0; attempt < maxRequests; attempt++) {
+        await fetch(`${testsBaseUrl}/plugins/plugin-b/me`);
+      }
+
+      const response = await fetch(`${testsBaseUrl}/plugins/plugin-b/me`, {
+        headers: { authorization: `Bearer ${await getMockedToken(2)}` }
+      });
+
       expect(response.status).toBe(429);
     });
   });

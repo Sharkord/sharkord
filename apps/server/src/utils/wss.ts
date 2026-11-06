@@ -17,6 +17,10 @@ import {
 } from '@trpc/server/adapters/ws';
 import http from 'http';
 import { WebSocket, WebSocketServer } from 'ws';
+import {
+  publishVoicePresence,
+  unpublishHiddenChannelFromUser
+} from '../db/publishers';
 import { channelUserCan } from '../db/queries/channels';
 import { getUserRoles } from '../db/queries/roles';
 import { getUserById, getUserByToken } from '../db/queries/users';
@@ -71,6 +75,21 @@ const disconnectUser = (
 };
 
 const getOnlineUserIds = (): number[] => Array.from(userSockets.keys());
+
+const getOnlineUserIdsByIp = (ip: string): number[] => {
+  const userIds: number[] = [];
+
+  for (const [userId, sockets] of userSockets) {
+    for (const socket of sockets) {
+      if (socket.session?.ip === ip) {
+        userIds.push(userId);
+        break;
+      }
+    }
+  }
+
+  return userIds;
+};
 
 const getUserWsCount = (userId: number): number =>
   userSockets.get(userId)?.size ?? 0;
@@ -211,25 +230,32 @@ const handleSocketClose = async (ws: WebSocket) => {
 
     untrackUserSocket(userId, ws);
 
+    const hasOtherSessions = userSockets.has(userId);
+    const voiceRuntime = VoiceRuntime.findRuntimeByUserId(userId);
+
+    // a session that does not own the call cannot leave it, so it would stay forever
+    if (
+      voiceRuntime &&
+      (!hasOtherSessions || ws.session?.voiceChannelId === voiceRuntime.id)
+    ) {
+      voiceRuntime.removeUser(userId);
+
+      await publishVoicePresence(voiceRuntime, ServerEvents.USER_LEAVE_VOICE, {
+        channelId: voiceRuntime.id,
+        userId
+      });
+
+      await unpublishHiddenChannelFromUser(userId, voiceRuntime.id);
+    }
+
     // only mark as offline when there are no other active sessions
-    if (userSockets.has(userId)) {
+    if (hasOtherSessions) {
       return;
     }
 
     const user = await getUserById(userId);
 
     if (!user) return;
-
-    const voiceRuntime = VoiceRuntime.findRuntimeByUserId(user.id);
-
-    if (voiceRuntime) {
-      voiceRuntime.removeUser(user.id);
-
-      pubsub.publish(ServerEvents.USER_LEAVE_VOICE, {
-        channelId: voiceRuntime.id,
-        userId: user.id
-      });
-    }
 
     usersIpMap.delete(user.id);
     pubsub.publish(ServerEvents.USER_LEAVE, user.id);
@@ -301,6 +327,7 @@ export {
   createWsServer,
   disconnectUser,
   getOnlineUserIds,
+  getOnlineUserIdsByIp,
   getUserIp,
   getUserWsCount,
   handleSocketClose,

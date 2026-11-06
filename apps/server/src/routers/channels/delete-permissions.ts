@@ -13,6 +13,7 @@ import {
   channelRolePermissions,
   channelUserPermissions
 } from '../../db/schema';
+import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
@@ -41,6 +42,8 @@ const deletePermissionsRoute = protectedProcedure
       code: 'FORBIDDEN',
       message: 'Cannot delete DM channel permissions'
     });
+
+    await assertChannelAccess(ctx, input.channelId);
 
     const audienceBefore = await getAffectedOnlineUserIdsForChannel(
       input.channelId,

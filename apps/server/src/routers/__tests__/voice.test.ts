@@ -1,20 +1,21 @@
 import {
   ChannelPermission,
   Permission,
+  RateLimiter,
   REACTION_EMOJI_MAX_LENGTH,
   ServerEvents,
   StreamKind
 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
-import { initTest } from '../../__tests__/helpers';
+import { createFakeSocket, initTest } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
-import { config } from '../../config';
 import {
   channelRolePermissions,
   rolePermissions,
   roles
 } from '../../db/schema';
+import { getRateLimit } from '../../helpers/rate-limits';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { pubsub } from '../../utils/pubsub';
 
@@ -35,6 +36,30 @@ const joinVoiceChannelTwo = async (userId: number) => {
 
   const { caller } = await initTest(userId, undefined, {
     currentVoiceChannelId: VOICE_CHANNEL_ID
+  });
+
+  return { runtime, caller };
+};
+
+// user 2 holds only the default role, so this is what they get on the private channel
+const grantOnPrivateVoiceChannel = async (permissions: ChannelPermission[]) =>
+  tdb.insert(channelRolePermissions).values(
+    permissions.map((permission) => ({
+      channelId: PRIVATE_VOICE_CHANNEL_ID,
+      roleId: 2,
+      permission,
+      allow: true,
+      createdAt: Date.now()
+    }))
+  );
+
+const joinPrivateVoiceChannel = async (userId: number) => {
+  const runtime = new VoiceRuntime(PRIVATE_VOICE_CHANNEL_ID);
+
+  runtime.addUser(userId, { micMuted: true, soundMuted: false });
+
+  const { caller } = await initTest(userId, undefined, {
+    currentVoiceChannelId: PRIVATE_VOICE_CHANNEL_ID
   });
 
   return { runtime, caller };
@@ -685,6 +710,40 @@ describe('voice router', () => {
         await runtime.destroy();
       }
     });
+    // a moderator move puts a user in a voice channel without VIEW_CHANNEL on it
+    test('should let a moved user speak in a channel they cannot see', async () => {
+      await grantOnPrivateVoiceChannel([ChannelPermission.SPEAK]);
+
+      const { runtime, caller } = await joinPrivateVoiceChannel(2);
+
+      try {
+        await expect(
+          caller.voice.produce({
+            transportId: 'transport',
+            kind: StreamKind.AUDIO,
+            rtpParameters: {}
+          })
+        ).rejects.toThrow('Producer transport not found');
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should refuse audio without SPEAK in a channel the user cannot see', async () => {
+      const { runtime, caller } = await joinPrivateVoiceChannel(2);
+
+      try {
+        await expect(
+          caller.voice.produce({
+            transportId: 'transport',
+            kind: StreamKind.AUDIO,
+            rtpParameters: {}
+          })
+        ).rejects.toThrow('Insufficient channel permissions');
+      } finally {
+        await runtime.destroy();
+      }
+    });
   });
 
   describe('updateState', () => {
@@ -748,6 +807,31 @@ describe('voice router', () => {
         await runtime.destroy();
       }
     });
+    test('should apply the voice permissions of a channel a moved user cannot see', async () => {
+      await grantOnPrivateVoiceChannel([
+        ChannelPermission.SPEAK,
+        ChannelPermission.WEBCAM,
+        ChannelPermission.SHARE_SCREEN
+      ]);
+
+      const { runtime, caller } = await joinPrivateVoiceChannel(2);
+
+      try {
+        await caller.voice.updateState({
+          micMuted: false,
+          webcamEnabled: true,
+          sharingScreen: true
+        });
+
+        expect(runtime.getUserState(2)).toMatchObject({
+          micMuted: false,
+          webcamEnabled: true,
+          sharingScreen: true
+        });
+      } finally {
+        await runtime.destroy();
+      }
+    });
   });
 
   describe('server mute', () => {
@@ -805,8 +889,10 @@ describe('voice router', () => {
   });
 
   describe('sendReaction', () => {
-    test('should broadcast the reaction to every listener', async () => {
+    test('should send the reaction to everyone who can see the channel', async () => {
       const { runtime, caller } = await joinVoiceChannelTwo(1);
+
+      await initTest(3, { socket: createFakeSocket() });
 
       const reactions: {
         channelId: number;
@@ -815,7 +901,7 @@ describe('voice router', () => {
       }[] = [];
 
       const subscription = pubsub
-        .subscribe(ServerEvents.USER_VOICE_REACTION)
+        .subscribeFor(3, ServerEvents.USER_VOICE_REACTION)
         .subscribe({
           next: (reaction) => {
             reactions.push(reaction);
@@ -896,7 +982,7 @@ describe('voice router', () => {
       try {
         for (
           let i = 0;
-          i < config.rateLimiters.voiceReaction.maxRequests;
+          i < getRateLimit(RateLimiter.VOICE_REACTION).maxRequests;
           i++
         ) {
           await caller.voice
@@ -972,6 +1058,161 @@ describe('voice producer subscriptions', () => {
       expect(received).toEqual([]);
     } finally {
       subscription.unsubscribe();
+    }
+  });
+});
+
+// the private voice channel is visible to the owner only, so user 2 is the outsider every
+// test here holds a socket for: the audience is online users, plus whoever is in the call
+describe('voice presence visibility', () => {
+  const OUTSIDER_ID = 2;
+  const MUTED = { micMuted: false, soundMuted: false };
+
+  const createPrivateCall = (userIds: number[]) => {
+    const runtime = new VoiceRuntime(PRIVATE_VOICE_CHANNEL_ID);
+
+    userIds.forEach((userId) => runtime.addUser(userId, MUTED));
+
+    return runtime;
+  };
+
+  const collectReactions = (userId: number) => {
+    const received: { channelId: number; userId: number; emoji: string }[] = [];
+    const subscription = pubsub
+      .subscribeFor(userId, ServerEvents.USER_VOICE_REACTION)
+      .subscribe({ next: (event) => received.push(event) });
+
+    return { received, stop: () => subscription.unsubscribe() };
+  };
+
+  const collectPresence = (userId: number) => {
+    const joined: { channelId: number; userId: number }[] = [];
+    const left: { channelId: number; userId: number }[] = [];
+    const subscriptions = [
+      pubsub.subscribeFor(userId, ServerEvents.USER_JOIN_VOICE).subscribe({
+        next: (event) =>
+          joined.push({ channelId: event.channelId, userId: event.userId })
+      }),
+      pubsub
+        .subscribeFor(userId, ServerEvents.USER_LEAVE_VOICE)
+        .subscribe({ next: (event) => left.push(event) })
+    ];
+
+    return {
+      joined,
+      left,
+      stop: () => subscriptions.forEach((s) => s.unsubscribe())
+    };
+  };
+
+  const setOutsiderAccess = async (permissions: ChannelPermission[]) => {
+    const { caller } = await initTest();
+
+    await caller.channels.updatePermissions({
+      channelId: PRIVATE_VOICE_CHANNEL_ID,
+      userId: OUTSIDER_ID,
+      permissions
+    });
+  };
+
+  test('should not send a private call to someone who cannot see the channel', async () => {
+    const runtime = createPrivateCall([1]);
+    const { caller } = await initTest(1, undefined, {
+      currentVoiceChannelId: PRIVATE_VOICE_CHANNEL_ID
+    });
+
+    await initTest(OUTSIDER_ID, { socket: createFakeSocket() });
+
+    const outsider = collectReactions(OUTSIDER_ID);
+    const member = collectReactions(1);
+
+    try {
+      await caller.voice.sendReaction({ emoji: 'tada' });
+
+      expect(outsider.received).toEqual([]);
+      expect(member.received).toHaveLength(1);
+    } finally {
+      outsider.stop();
+      member.stop();
+      await runtime.destroy();
+    }
+  });
+
+  test('should send a private call to a member who cannot see the channel', async () => {
+    // a moderator can move someone into a channel they cannot see
+    const runtime = createPrivateCall([1, OUTSIDER_ID]);
+    const { caller } = await initTest(1, undefined, {
+      currentVoiceChannelId: PRIVATE_VOICE_CHANNEL_ID
+    });
+
+    const member = collectReactions(OUTSIDER_ID);
+
+    try {
+      await caller.voice.sendReaction({ emoji: 'tada' });
+
+      expect(member.received).toEqual([
+        { channelId: PRIVATE_VOICE_CHANNEL_ID, userId: 1, emoji: 'tada' }
+      ]);
+    } finally {
+      member.stop();
+      await runtime.destroy();
+    }
+  });
+
+  test('should send the call to someone who gains access to the channel', async () => {
+    const runtime = createPrivateCall([1]);
+
+    await initTest(OUTSIDER_ID, { socket: createFakeSocket() });
+
+    const events = collectPresence(OUTSIDER_ID);
+
+    try {
+      await setOutsiderAccess([ChannelPermission.VIEW_CHANNEL]);
+
+      expect(events.joined).toEqual([
+        { channelId: PRIVATE_VOICE_CHANNEL_ID, userId: 1 }
+      ]);
+    } finally {
+      events.stop();
+      await runtime.destroy();
+    }
+  });
+
+  test('should clear the call for someone who loses access to the channel', async () => {
+    const runtime = createPrivateCall([1]);
+
+    await initTest(OUTSIDER_ID, { socket: createFakeSocket() });
+    await setOutsiderAccess([ChannelPermission.VIEW_CHANNEL]);
+
+    const events = collectPresence(OUTSIDER_ID);
+
+    try {
+      await setOutsiderAccess([]);
+
+      expect(events.left).toEqual([
+        { channelId: PRIVATE_VOICE_CHANNEL_ID, userId: 1 }
+      ]);
+    } finally {
+      events.stop();
+      await runtime.destroy();
+    }
+  });
+
+  test('should leave the call alone for a member who loses access to the channel', async () => {
+    const runtime = createPrivateCall([1, OUTSIDER_ID]);
+
+    await initTest(OUTSIDER_ID, { socket: createFakeSocket() });
+    await setOutsiderAccess([ChannelPermission.VIEW_CHANNEL]);
+
+    const events = collectPresence(OUTSIDER_ID);
+
+    try {
+      await setOutsiderAccess([]);
+
+      expect(events.left).toEqual([]);
+    } finally {
+      events.stop();
+      await runtime.destroy();
     }
   });
 });

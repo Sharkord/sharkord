@@ -1,17 +1,12 @@
 import { z } from 'zod';
-import { config } from '../../config';
 import { deleteMessage } from '../../db/mutations/messages';
 import {
   assertCanModifyMessage,
   loadMessageForWrite
 } from '../../helpers/load-message-for-write';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const deleteMessageRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.sendAndEditMessage.maxRequests,
-  windowMs: config.rateLimiters.sendAndEditMessage.windowMs,
-  logLabel: 'deleteMessage'
-})
+const deleteMessageRoute = protectedProcedure
   .input(z.object({ messageId: z.number() }))
   .mutation(async ({ input, ctx }) => {
     const targetMessage = await loadMessageForWrite(ctx, input.messageId);

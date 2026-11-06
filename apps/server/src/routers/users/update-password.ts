@@ -1,18 +1,14 @@
-import { ActivityLogType, DisconnectCode } from '@sharkord/shared';
+import { ActivityLogType, DisconnectCode, RateLimiter } from '@sharkord/shared';
 import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { config } from '../../config';
 import { db } from '../../db';
 import { users } from '../../db/schema';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const updatePasswordRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.updatePassword.maxRequests,
-  windowMs: config.rateLimiters.updatePassword.windowMs,
-  logLabel: 'updatePassword'
-})
+const updatePasswordRoute = protectedProcedure
+  .meta({ rateLimit: RateLimiter.PASSWORD })
   .input(
     z.object({
       currentPassword: z.string().min(4).max(128),

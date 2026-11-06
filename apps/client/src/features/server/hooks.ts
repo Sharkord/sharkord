@@ -3,7 +3,11 @@ import { ChannelPermission, Permission } from '@sharkord/shared';
 import { useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import type { IRootState } from '../store';
-import { useChannelById, useChannelPermissionsById } from './channels/hooks';
+import {
+  useChannelById,
+  useChannelPermissionsById,
+  useCurrentVoiceChannelId
+} from './channels/hooks';
 import { channelReadStateByIdSelector } from './channels/selectors';
 import { getConversationKey, rolesCan } from './helpers';
 import {
@@ -92,22 +96,39 @@ export const useCan = () => {
   return can;
 };
 
+// a moderator move can put the user in a voice channel they cannot see, where the
+// server still honours these, so VIEW must not gate them there
+const VOICE_CHANNEL_PERMISSIONS = new Set([
+  ChannelPermission.SPEAK,
+  ChannelPermission.WEBCAM,
+  ChannelPermission.SHARE_SCREEN
+]);
+
 export const useChannelCan = (channelId: number | undefined) => {
   const ownUserRoles = useChannelPermissionsById(channelId || -1);
   const isOwner = useIsOwnUserOwner();
   const channel = useChannelById(channelId || -1);
+  const currentVoiceChannelId = useCurrentVoiceChannelId();
 
   const can = useCallback(
     (permission: ChannelPermission) => {
       if (isOwner || !channel || !channel?.private) return true;
 
+      const isInVoiceChannel =
+        channelId !== undefined && channelId === currentVoiceChannelId;
+      const ignoreView =
+        isInVoiceChannel && VOICE_CHANNEL_PERMISSIONS.has(permission);
+
       // if VIEW is false, no other permission matters
-      if (ownUserRoles.permissions[ChannelPermission.VIEW_CHANNEL] === false)
+      if (
+        !ignoreView &&
+        ownUserRoles.permissions[ChannelPermission.VIEW_CHANNEL] === false
+      )
         return false;
 
       return ownUserRoles.permissions[permission] === true;
     },
-    [ownUserRoles, isOwner, channel]
+    [ownUserRoles, isOwner, channel, channelId, currentVoiceChannelId]
   );
 
   return can;

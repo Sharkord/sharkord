@@ -35,6 +35,7 @@
     "desktopSettings": "Paramètres de l'application...",
     "togglePerformanceOverlay": "Afficher ou masquer l'overlay de performances",
     "openAppFolder": "Ouvrir le dossier de l'application",
+    "openLogsFolder": "Ouvrir le dossier des journaux",
     "resetApp": "Réinitialiser l'application..."
   },
   "tray": {
@@ -81,11 +82,16 @@
     "autoUpdate": "Installer les mises à jour automatiquement",
     "autoUpdateDescription": "Télécharge les nouvelles versions de l'application en arrière-plan et propose de redémarrer dès qu'une est prête.",
     "performance": "Performances",
+    "spellcheck": "Correcteur orthographique",
+    "spellcheckDescription": "Souligne les mots mal orthographiés pendant la saisie. Désactivez-le si vous écrivez dans une langue que le dictionnaire ne connaît pas.",
     "throttleHiddenServers": "Limiter les serveurs masqués",
     "throttleHiddenServersDescription": "Ralentit les minuteurs et le rendu des serveurs que vous ne regardez pas. Économise le processeur et la batterie, désactivez-le si les serveurs en arrière-plan fonctionnent mal.",
     "performanceOverlay": "Superposition des performances",
     "performanceOverlayDescription": "Affiche l'utilisation de la mémoire et du processeur de l'application dans une petite fenêtre.",
     "togglePerformanceOverlay": "Afficher ou masquer la superposition",
+    "screenShare": "Partage d'écran",
+    "captureAllAudioOutputs": "Capturer le son de toutes les sorties",
+    "captureAllAudioOutputsDescription": "Partage aussi les applications qui jouent via une sortie virtuelle, comme EasyEffects ou une chaîne de filtres. Activez cette option si les spectateurs n'entendent rien de votre stream.",
     "menuBar": "Barre de menus",
     "menuBarDescription": "Affiche ou masque la barre de menus de la fenêtre. Vous pouvez aussi utiliser Ctrl+Maj+M.",
     "shortcuts": "Raccourcis",
@@ -142,7 +148,10 @@
     "unknownVersion": "Inconnue",
     "appFolder": "Dossier de l'application",
     "appFolderDescription": "Là où l'application conserve vos serveurs, connexions et paramètres.",
-    "openAppFolder": "Ouvrir le dossier de l'application"
+    "openAppFolder": "Ouvrir le dossier de l'application",
+    "logsFolder": "Dossier des journaux",
+    "logsFolderDescription": "Les fichiers journaux de l'application. Joignez main.log quand vous signalez un problème.",
+    "openLogsFolder": "Ouvrir le dossier des journaux"
   },
   "updateDialog": {
     "title": "Mise à jour prête",

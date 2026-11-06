@@ -35,6 +35,7 @@
     "desktopSettings": "Impostazioni desktop...",
     "togglePerformanceOverlay": "Mostra o nascondi overlay prestazioni",
     "openAppFolder": "Apri cartella dell'app",
+    "openLogsFolder": "Apri cartella dei log",
     "resetApp": "Reimposta app..."
   },
   "tray": {
@@ -81,11 +82,16 @@
     "autoUpdate": "Installa gli aggiornamenti automaticamente",
     "autoUpdateDescription": "Scarica le nuove versioni dell'app in background e chiede di riavviare quando una è pronta.",
     "performance": "Prestazioni",
+    "spellcheck": "Controllo ortografico",
+    "spellcheckDescription": "Sottolinea le parole errate mentre scrivi. Disattivalo se scrivi in una lingua che il dizionario non conosce.",
     "throttleHiddenServers": "Limita i server nascosti",
     "throttleHiddenServersDescription": "Rallenta timer e rendering dei server che non stai guardando. Risparmia CPU e batteria, disattivalo se i server in background non funzionano bene.",
     "performanceOverlay": "Overlay prestazioni",
     "performanceOverlayDescription": "Mostra l'uso di memoria e CPU dell'app in una piccola finestra.",
     "togglePerformanceOverlay": "Attiva/disattiva overlay prestazioni",
+    "screenShare": "Condivisione schermo",
+    "captureAllAudioOutputs": "Cattura l'audio da tutte le uscite",
+    "captureAllAudioOutputsDescription": "Condividi anche le app che riproducono tramite un'uscita virtuale, come EasyEffects o una catena di filtri. Attivalo se chi guarda non sente nulla dal tuo stream.",
     "menuBar": "Barra dei menu",
     "menuBarDescription": "Mostra o nasconde la barra dei menu della finestra. Puoi anche usare Ctrl+Maiusc+M.",
     "shortcuts": "Scorciatoie",
@@ -142,7 +148,10 @@
     "unknownVersion": "Sconosciuta",
     "appFolder": "Cartella dell'app",
     "appFolderDescription": "Dove l'app conserva i tuoi server, accessi e impostazioni.",
-    "openAppFolder": "Apri la cartella dell'app"
+    "openAppFolder": "Apri la cartella dell'app",
+    "logsFolder": "Cartella dei log",
+    "logsFolderDescription": "I file di log dell'app. Allega main.log quando segnali un problema.",
+    "openLogsFolder": "Apri la cartella dei log"
   },
   "updateDialog": {
     "title": "Aggiornamento pronto",

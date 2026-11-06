@@ -1,0 +1,168 @@
+{
+  "welcomeTitle": "Sharkord'a Hoş Geldiniz",
+  "addServerTitle": "Sunucu ekle",
+  "addServerDescription": "Bağlanmak istediğiniz sunucunun adresini girin.",
+  "connect": "Bağlan",
+  "connecting": "Bağlanıyor...",
+  "cancel": "İptal",
+  "addServerTooltip": "Sunucu ekle",
+  "hideServerList": "Sunucu listesini gizle",
+  "removeServer": "Sunucuyu kaldır",
+  "serverStatus": {
+    "idle": "Bağlanmayı bekliyor",
+    "loading": "Yükleniyor",
+    "connecting": "Bağlanıyor...",
+    "connected": "Bağlandı",
+    "signed-out": "Oturum kapatıldı",
+    "disconnected": "Bağlantı kesildi",
+    "error": "Yüklenemedi, yeniden denemek için seçin",
+    "server-outdated": "Bu sunucu Sharkord'un eski bir sürümünü çalıştırıyor, güncellenene kadar masaüstü özellikleri kapalı",
+    "app-outdated": "Bu sunucu daha yeni bir Sharkord uygulaması gerektiriyor, siz güncelleyene kadar masaüstü özellikleri kapalı"
+  },
+  "errors": {
+    "invalidUrl": "Bu geçerli bir sunucu adresi değil.",
+    "unreachable": "Bu adreste bir Sharkord sunucusuna ulaşılamadı.",
+    "duplicate": "Bu sunucuyu zaten eklediniz."
+  },
+  "menu": {
+    "servers": "Sunucular",
+    "addServer": "Sunucu Ekle...",
+    "hideServerList": "Sunucu Listesini Gizle",
+    "showServerList": "Sunucu Listesini Göster",
+    "removeCurrentServer": "Mevcut Sunucuyu Kaldır...",
+    "toggleMenuBar": "Menü Çubuğunu Aç/Kapat",
+    "advanced": "Gelişmiş",
+    "desktopSettings": "Masaüstü Ayarları...",
+    "togglePerformanceOverlay": "Performans Katmanını Aç/Kapat",
+    "openAppFolder": "Uygulama Klasörünü Aç",
+    "resetApp": "Uygulamayı Sıfırla..."
+  },
+  "tray": {
+    "show": "Sharkord'u Göster",
+    "quit": "Sharkord'dan Çık"
+  },
+  "hotkeyDescription": "Sharkord kısayol tuşu: {{shortcut}}",
+  "removeDialog": {
+    "title": "Sunucuyu kaldır",
+    "message": "{{name}} kaldırılsın mı? Bu cihazda bu sunucudaki oturumunuz kapatılacak.",
+    "confirm": "Kaldır",
+    "cancel": "İptal"
+  },
+  "resetDialog": {
+    "title": "Uygulama sıfırlansın mı?",
+    "message": "Bu işlem tüm sunuculardaki oturumlarınızı kapatır ve bu cihazdaki tüm kayıtlı sunucuları ve ayarları siler. Uygulama daha sonra yeniden başlatılır.",
+    "confirm": "Sıfırla",
+    "cancel": "İptal"
+  },
+  "mediaDialog": {
+    "title": "{{name}} sunucusunun mikrofonunuzu ve kameranızı kullanmasına izin verilsin mi?",
+    "message": "{{name}}, örneğin bir sesli kanala katılmak için mikrofonunuzu ve kameranızı kullanmak istiyor. İzin verdiğinizde bu sunucu için bir daha sorulmayacak.",
+    "allow": "İzin Ver",
+    "deny": "Reddet"
+  },
+  "sourcePicker": {
+    "title": "Paylaşılacak içeriği seçin",
+    "screens": "Ekranlar",
+    "windows": "Pencereler"
+  },
+  "settings": {
+    "title": "Masaüstü ayarları",
+    "general": "Genel",
+    "autoStart": "Başlangıçta aç",
+    "autoStartDescription": "Bilgisayarınızda oturum açtığınızda Sharkord'u otomatik olarak başlat.",
+    "closeToTray": "Kapatınca tepsiye gönder",
+    "closeToTrayDescription": "Pencereyi kapattığınızda Sharkord'un sistem tepsisinde çalışmaya devam etmesini sağlayın. Masaüstünüzde tepsi yoksa kapatın.",
+    "startToTray": "Tepsiye simge durumunda başlat",
+    "startToTrayDescription": "Sharkord oturum açılışında başladığında pencereyi göstermeden tepside tutun. Tepsi simgesinden yeniden açın.",
+    "dynamicTrayIcon": "Uygulama simgesi olarak sunucu logosu",
+    "dynamicTrayIconDescription": "Görüntülediğiniz sunucunun logosunu Sharkord logosu yerine tepsi ve pencere simgelerinde gösterin.",
+    "connectAllOnStartup": "Başlangıçta tüm sunuculara bağlan",
+    "connectAllOnStartupDescription": "Uygulama açıldığında her sunucuyu arka planda yükleyin; böylece hepsinden okunmamış sayılarını ve bildirimleri alırsınız. Daha fazla bellek kullanır.",
+    "autoUpdate": "Güncellemeleri otomatik kur",
+    "autoUpdateDescription": "Uygulamanın yeni sürümlerini arka planda indirin ve biri hazır olduğunda yeniden başlatmayı isteyin.",
+    "performance": "Performans",
+    "throttleHiddenServers": "Gizli sunucuları yavaşlat",
+    "throttleHiddenServersDescription": "Bakmadığınız sunucuların zamanlayıcılarını ve görüntülemesini yavaşlatın. CPU ve pil tasarrufu sağlar, arka plandaki sunucular sorun çıkarırsa kapatın.",
+    "performanceOverlay": "Performans katmanı",
+    "performanceOverlayDescription": "Uygulamanın bellek ve CPU kullanımını küçük bir pencerede gösterin.",
+    "togglePerformanceOverlay": "Performans katmanını aç/kapat",
+    "menuBar": "Menü çubuğu",
+    "menuBarDescription": "Pencere menü çubuğunu gösterin veya gizleyin. Ctrl+Shift+M kısayolunu da kullanabilirsiniz.",
+    "shortcuts": "Kısayollar",
+    "shortcutsDescription": "Masaüstü uygulamasının kendisi için genel kısayollar.",
+    "shortcut": {
+      "selectServer": "1 ile 9 arasındaki sunucuya geç",
+      "addServer": "Sunucu ekle",
+      "toggleServerList": "Sunucu listesini göster veya gizle",
+      "toggleMenuBar": "Menü çubuğunu göster veya gizle",
+      "togglePerformanceOverlay": "Performans katmanını aç/kapat"
+    },
+    "updates": "Güncellemeler",
+    "updatesDescription": "Sharkord uygulamasını güncel tutun.",
+    "currentVersion": "Mevcut sürüm",
+    "updateStatus": {
+      "unsupported": {
+        "title": "Güncellemeler kullanılamıyor",
+        "description": "Uygulamanın bu derlemesi kendini güncelleyemez. Yeni sürümleri sürümler sayfasından indirin."
+      },
+      "idle": {
+        "title": "Henüz denetlenmedi",
+        "description": "Uygulamanın daha yeni bir sürümü çıkıp çıkmadığını denetleyin."
+      },
+      "checking": {
+        "title": "Güncellemeler denetleniyor",
+        "description": "Uygulamanın daha yeni bir sürümü aranıyor."
+      },
+      "up-to-date": {
+        "title": "Güncelsiniz",
+        "description": "Uygulamanın en son sürümünü çalıştırıyorsunuz."
+      },
+      "available": {
+        "title": "Güncelleme mevcut",
+        "description": "{{version}} sürümü indirilmeye hazır.",
+        "manualDescription": "{{version}} sürümü yayınlandı. macOS'ta indirip elle kurun."
+      },
+      "downloading": {
+        "title": "Güncelleme indiriliyor",
+        "description": "{{version}} sürümü indiriliyor, %{{percent}}."
+      },
+      "ready": {
+        "title": "Güncelleme hazır",
+        "description": "{{version}} sürümü indirildi. Kurmak için uygulamayı yeniden başlatın."
+      },
+      "error": {
+        "title": "Güncelleme denetimi başarısız oldu",
+        "description": "Güncellemeler denetlenemedi. Bağlantınızı kontrol edip tekrar deneyin."
+      }
+    },
+    "checkForUpdates": "Güncellemeleri denetle",
+    "downloadUpdate": "Güncellemeyi indir",
+    "installUpdate": "Yeniden başlat ve güncelle",
+    "latestVersion": "En son sürüm",
+    "unknownVersion": "Bilinmiyor",
+    "appFolder": "Uygulama klasörü",
+    "appFolderDescription": "Uygulamanın sunucularınızı, oturumlarınızı ve ayarlarınızı sakladığı yer.",
+    "openAppFolder": "Uygulama klasörünü aç"
+  },
+  "updateDialog": {
+    "title": "Güncelleme hazır",
+    "message": "Sharkord {{version}} indirildi. Kurmak için şimdi yeniden başlatın, aksi halde bir sonraki çıkışınızda kurulacak.",
+    "restart": "Şimdi yeniden başlat",
+    "later": "Daha sonra"
+  },
+  "manualUpdateDialog": {
+    "title": "Güncelleme mevcut",
+    "message": "Sharkord {{version}} yayınlandı. macOS uygulaması henüz kendini güncelleyemiyor, yeni sürümü indirip elle kurun.",
+    "download": "İndir"
+  },
+  "updateNotification": {
+    "title": "Güncelleme mevcut",
+    "body": "Sharkord {{version}} yayınlandı. Güncelleme ayarlarını açmak için tıklayın."
+  },
+  "serverPlaceholder": {
+    "loading": "{{name}} sunucusuna bağlanılıyor...",
+    "errorTitle": "{{name}} sunucusuna ulaşılamadı",
+    "errorDescription": "Sunucu yanıt vermiyor. Çevrimiçi olduğundan emin olup tekrar deneyin.",
+    "retry": "Tekrar dene"
+  }
+}

@@ -1,19 +1,14 @@
 import { ChannelPermission, Permission } from '@sharkord/shared';
 import { z } from 'zod';
-import { config } from '../../config';
 import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import {
   loadVoiceMoveDestination,
   moveVoiceUser
 } from '../../helpers/voice-moderation';
 import { logger } from '../../logger';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const moveUserRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.moveMembers.maxRequests,
-  windowMs: config.rateLimiters.moveMembers.windowMs,
-  logLabel: 'moveUser'
-})
+const moveUserRoute = protectedProcedure
   .input(
     z.object({
       userId: z.number(),

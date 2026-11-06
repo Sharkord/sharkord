@@ -54,7 +54,7 @@ const Hotkeys = memo(() => {
   return (
     <div className="space-y-4">
       {isDesktopApp() ? (
-        <DesktopSettings values={values} onChange={onChange} />
+        <DesktopSettings />
       ) : (
         <BridgeSettings values={values} onChange={onChange} />
       )}

@@ -23,6 +23,7 @@ import {
   getHotkeyCapabilities,
   setServerHotkeys
 } from '../hotkeys/global-hotkeys';
+import { createLogger } from '../logs/logger';
 import { notificationSchema } from '../notifications/notification-schema';
 import { showNotification } from '../notifications/show-notification';
 import {
@@ -73,6 +74,10 @@ const hotkeyBindingsSchema = z
   )
   .max(100);
 
+const serversLogger = createLogger('servers');
+const screenShareLogger = createLogger('screen-share');
+const pageLogger = createLogger('page');
+
 const getPartition = (id: string) => `persist:server-${id}`;
 
 const isSameOrigin = (first: string, second: string) => {
@@ -92,7 +97,9 @@ const openExternal = (url: string) => {
     return;
   }
 
-  shell.openExternal(url).catch(console.error);
+  shell.openExternal(url).catch((error) => {
+    serversLogger.error('failed to open an external link', error);
+  });
 };
 
 type TServerViewsOptions = {
@@ -101,6 +108,7 @@ type TServerViewsOptions = {
   isMediaAllowed: (serverId: string) => boolean;
   requestMediaAccess: (server: TServer) => Promise<boolean>;
   pickSource: (sources: DesktopCapturerSource[]) => Promise<string | null>;
+  shouldCaptureAllAudioOutputs: () => boolean;
 };
 
 // the shell is a view of its own so it can be drawn over the server views
@@ -112,7 +120,8 @@ const createServerViews = (
     onNotificationClick,
     isMediaAllowed,
     requestMediaAccess,
-    pickSource
+    pickSource,
+    shouldCaptureAllAudioOutputs
   }: TServerViewsOptions
 ) => {
   const views = new Map<string, WebContentsView>();
@@ -128,6 +137,7 @@ const createServerViews = (
   let activeId: string | null = null;
   let layoutState: TLayout = { railVisible: false, fullShell: false };
   let backgroundThrottled = true;
+  let spellcheckEnabled = true;
 
   const layout = () => {
     const { width, height } = win.getContentBounds();
@@ -155,6 +165,8 @@ const createServerViews = (
     // one partition per server keeps logins and storage isolated from each other
     const serverSession = session.fromPartition(getPartition(server.id));
 
+    serverSession.setSpellCheckerEnabled(spellcheckEnabled);
+
     // compared with the page that is open and not with the address that was added,
     // a server may redirect elsewhere, as the dev server does to its web client
     serverSession.setPermissionRequestHandler(
@@ -164,6 +176,11 @@ const createServerViews = (
           isSameOrigin(details.requestingUrl, contents.getURL());
 
         if (!isAllowed) {
+          serversLogger.warn('permission refused', {
+            serverId: server.id,
+            permission
+          });
+
           callback(false);
 
           return;
@@ -174,8 +191,13 @@ const createServerViews = (
             try {
               const isGranted = await requestMediaAccess(server);
 
+              serversLogger.info('media access answered', {
+                serverId: server.id,
+                isGranted
+              });
               callback(isGranted);
-            } catch {
+            } catch (error) {
+              serversLogger.error('media access request failed', error);
               callback(false);
             }
           };
@@ -225,10 +247,11 @@ const createServerViews = (
           source = sources.find(({ id }) => id === sourceId);
         }
       } catch (error) {
-        console.warn('screen share: no source was picked', error);
+        screenShareLogger.error('listing the sources failed', error);
       }
 
       if (!source) {
+        screenShareLogger.info('no source was picked', { serverId: server.id });
         callback({});
 
         return;
@@ -241,8 +264,17 @@ const createServerViews = (
       const canLoopback =
         process.platform === 'win32' || process.platform === 'darwin';
 
+      const isLoopback = request.audioRequested && canLoopback;
+
+      screenShareLogger.info('capture started', {
+        serverId: server.id,
+        kind: source.id.startsWith('screen:') ? 'screen' : 'window',
+        audioRequested: request.audioRequested,
+        audio: isLoopback ? 'loopback' : 'none'
+      });
+
       // electron rejects an audio key that is present but undefined
-      if (request.audioRequested && canLoopback) {
+      if (isLoopback) {
         callback({ video: source, audio: 'loopback' });
 
         return;
@@ -274,7 +306,13 @@ const createServerViews = (
         return;
       }
 
+      serversLogger.warn('client and app versions do not match', {
+        serverId: server.id,
+        mismatch: parsed.data
+      });
+
       mismatches.set(server.id, parsed.data);
+
       changed();
 
       // the server already ships a newer client, an update is likely out
@@ -334,30 +372,65 @@ const createServerViews = (
         return;
       }
 
+      serversLogger.info('page loaded', { serverId: server.id });
+
       pageStates.set(server.id, 'loaded');
+
       changed();
     });
 
     view.webContents.on(
       'did-fail-load',
-      (_event, errorCode, _description, _url, isMainFrame) => {
+      (_event, errorCode, description, _url, isMainFrame) => {
         if (!isMainFrame || errorCode === ERR_ABORTED) {
           return;
         }
 
+        serversLogger.warn('page failed to load', {
+          serverId: server.id,
+          errorCode,
+          description
+        });
+
         pageStates.set(server.id, 'error');
+
         changed();
       }
     );
 
-    view.webContents.on('render-process-gone', () => {
-      pageStates.set(server.id, 'error');
-      unread.delete(server.id);
-      voiceServerIds.delete(server.id);
+    view.webContents.on(
+      'render-process-gone',
+      (_event, { reason, exitCode }) => {
+        serversLogger.error('page process gone', {
+          serverId: server.id,
+          reason,
+          exitCode
+        });
 
-      stopSystemAudio(server.id);
-      clearServerHotkeys(server.id);
-      changed();
+        pageStates.set(server.id, 'error');
+        unread.delete(server.id);
+        voiceServerIds.delete(server.id);
+
+        stopSystemAudio(server.id);
+        clearServerHotkeys(server.id);
+        changed();
+      }
+    );
+
+    view.webContents.on('unresponsive', () => {
+      serversLogger.warn('page is unresponsive', { serverId: server.id });
+    });
+
+    view.webContents.on('responsive', () => {
+      serversLogger.info('page is responsive again', { serverId: server.id });
+    });
+
+    view.webContents.on('console-message', ({ level, message }) => {
+      if (level === 'error') {
+        pageLogger.error(server.id, message);
+      } else if (level === 'warning') {
+        pageLogger.warn(server.id, message);
+      }
     });
 
     view.webContents.on('destroyed', () => {
@@ -403,10 +476,14 @@ const createServerViews = (
         capturedAt === undefined ||
         Date.now() - capturedAt > SYSTEM_AUDIO_WINDOW_MS
       ) {
+        screenShareLogger.warn('system audio refused outside a capture', {
+          serverId: server.id
+        });
+
         return false;
       }
 
-      return startSystemAudio(server.id);
+      return startSystemAudio(server.id, shouldCaptureAllAudioOutputs());
     });
 
     view.webContents.ipc.on(BridgeChannel.SET_VOICE_ACTIVE, (_event, value) => {
@@ -448,7 +525,9 @@ const createServerViews = (
               notification.target
             );
           }
-        }).catch(console.error);
+        }).catch((error) => {
+          serversLogger.error('failed to show a notification', error);
+        });
       }
     );
 
@@ -622,7 +701,11 @@ const createServerViews = (
 
     const serverSession = session.fromPartition(getPartition(id));
 
-    serverSession.clearStorageData().catch(console.error);
+    serversLogger.info('server removed', { serverId: id });
+
+    serverSession.clearStorageData().catch((error) => {
+      serversLogger.error('failed to clear the server storage', error);
+    });
   };
 
   const setLayout = (next: TLayout) => {
@@ -672,8 +755,21 @@ const createServerViews = (
     }
   };
 
+  const setSpellcheckEnabled = (value: boolean) => {
+    spellcheckEnabled = value;
+
+    for (const view of views.values()) {
+      view.webContents.session.setSpellCheckerEnabled(value);
+    }
+  };
+
   win.contentView.addChildView(shellView);
+
   win.on('resize', layout);
+  win.on('maximize', layout);
+  win.on('unmaximize', layout);
+  win.on('enter-full-screen', layout);
+  win.on('leave-full-screen', layout);
 
   return {
     show,
@@ -686,7 +782,8 @@ const createServerViews = (
     setLayout,
     getUnread,
     getVoiceServerId,
-    setBackgroundThrottled
+    setBackgroundThrottled,
+    setSpellcheckEnabled
   };
 };
 

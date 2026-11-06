@@ -51,7 +51,8 @@ const getStableMediaKey = (counts: Map<string, number>, baseKey: string) => {
 const buildMediaSignature = (message: TJoinedMessage) => {
   const fileSignature = message.files
     .map(
-      (file) => `${file.id}:${file.extension}:${file.size}:${file.updatedAt}`
+      (file) =>
+        `${file.id}:${file.extension}:${file.size}:${file.updatedAt}:${file._accessTokenExpiresAt}`
     )
     .join('|');
 

@@ -149,6 +149,30 @@ export const setAutoJoinLastChannel = (autoJoin: boolean) => {
   setLocalStorageItemBool(LocalStorageKey.AUTO_JOIN_LAST_CHANNEL, autoJoin);
 };
 
+export const setVoiceChatFollowsVoice = (follow: boolean) => {
+  store.dispatch(appSliceActions.setVoiceChatFollowsVoice(follow));
+
+  setLocalStorageItemBool(LocalStorageKey.VOICE_CHAT_FOLLOWS_VOICE, follow);
+};
+
+export const setCloseVoiceChatOnLeave = (close: boolean) => {
+  store.dispatch(appSliceActions.setCloseVoiceChatOnLeave(close));
+
+  setLocalStorageItemBool(LocalStorageKey.CLOSE_VOICE_CHAT_ON_LEAVE, close);
+};
+
+export const setFreezeAnimatedAvatars = (freeze: boolean) => {
+  store.dispatch(appSliceActions.setFreezeAnimatedAvatars(freeze));
+
+  setLocalStorageItemBool(LocalStorageKey.FREEZE_ANIMATED_AVATARS, freeze);
+};
+
+export const setConvertAsciiEmoji = (convert: boolean) => {
+  store.dispatch(appSliceActions.setConvertAsciiEmoji(convert));
+
+  setLocalStorageItemBool(LocalStorageKey.CONVERT_ASCII_EMOJI, convert);
+};
+
 export const setMicMode = (micMode: MicMode) => {
   store.dispatch(appSliceActions.setMicMode(micMode));
 

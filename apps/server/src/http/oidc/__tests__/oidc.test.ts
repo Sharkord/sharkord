@@ -35,6 +35,7 @@ import {
   users
 } from '../../../db/schema';
 import { oidcManager } from '../../../helpers/oidc/manager';
+import { getRateLimit } from '../../../helpers/rate-limits';
 import { appRouter } from '../../../routers';
 
 /**
@@ -1400,7 +1401,7 @@ describe('/oidc/exchange', () => {
 
 describe('oidc rate limiting', () => {
   test('should stop hammering the provider from one address', async () => {
-    const { maxRequests } = config.rateLimiters.oidc;
+    const { maxRequests } = getRateLimit();
 
     for (let attempt = 0; attempt < maxRequests; attempt++) {
       await fetch(`${testsBaseUrl}/oidc/login`, { redirect: 'manual' });
@@ -1418,7 +1419,19 @@ describe('oidc rate limiting', () => {
   });
 
   test('should answer the exchange route with json instead', async () => {
-    const { maxRequests } = config.rateLimiters.oidc;
+    const { maxRequests } = getRateLimit();
+
+    for (let attempt = 0; attempt < maxRequests; attempt++) {
+      await exchange('anything');
+    }
+
+    const response = await exchange('anything');
+
+    expect(response.status).toBe(429);
+  });
+
+  test('should keep a separate limit for each oidc route', async () => {
+    const { maxRequests } = getRateLimit();
 
     for (let attempt = 0; attempt < maxRequests; attempt++) {
       await fetch(`${testsBaseUrl}/oidc/login`, { redirect: 'manual' });
@@ -1426,7 +1439,7 @@ describe('oidc rate limiting', () => {
 
     const response = await exchange('anything');
 
-    expect(response.status).toBe(429);
+    expect(response.status).not.toBe(429);
   });
 });
 

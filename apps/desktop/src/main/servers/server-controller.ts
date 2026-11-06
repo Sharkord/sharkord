@@ -37,6 +37,7 @@ const createServerController = (
   let sourcePickerOpen = false;
 
   views.setBackgroundThrottled(settings.throttleHiddenServers);
+  views.setSpellcheckEnabled(settings.spellcheck);
 
   const save = () => {
     writeStore(filePath, {
@@ -242,6 +243,7 @@ const createServerController = (
     settings = { ...settings, ...patch };
 
     views.setBackgroundThrottled(settings.throttleHiddenServers);
+    views.setSpellcheckEnabled(settings.spellcheck);
     save();
     notify();
   };

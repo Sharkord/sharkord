@@ -4,11 +4,13 @@ import { answerSourcePickCall } from '../answer-source-pick';
 import { checkForUpdatesCall } from '../check-for-updates';
 import { downloadUpdateCall } from '../download-update';
 import { getAppFolderCall } from '../get-app-folder';
+import { getLogsFolderCall } from '../get-logs-folder';
 import { getRailVisibleCall } from '../get-rail-visible';
 import { getStateCall } from '../get-state';
 import { getUpdateStateCall } from '../get-update-state';
 import { installUpdateCall } from '../install-update';
 import { openAppFolderCall } from '../open-app-folder';
+import { openLogsFolderCall } from '../open-logs-folder';
 import { openSettingsCall } from '../open-settings';
 import { removeServerCall } from '../remove-server';
 import { retryServerCall } from '../retry-server';
@@ -36,7 +38,9 @@ describe('ipc request arguments', () => {
     ['download update', downloadUpdateCall],
     ['install update', installUpdateCall],
     ['get app folder', getAppFolderCall],
-    ['open app folder', openAppFolderCall]
+    ['open app folder', openAppFolderCall],
+    ['get logs folder', getLogsFolderCall],
+    ['open logs folder', openLogsFolderCall]
   ])('%s takes no arguments', (_name, call) => {
     expect(call.args.safeParse([]).success).toBe(true);
     expect(call.args.safeParse(['extra']).success).toBe(false);

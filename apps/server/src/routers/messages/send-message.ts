@@ -9,6 +9,7 @@ import {
   MessageSaveType,
   Permission,
   PluginCapabilityType,
+  RateLimiter,
   ServerEvents,
   STORAGE_MAX_FILES_PER_MESSAGE,
   stringifyCommandResponse,
@@ -17,7 +18,6 @@ import {
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { config } from '../../config';
 import { db } from '../../db';
 import { publishMessage, publishReplyCount } from '../../db/publishers';
 import { assertDmChannel } from '../../db/queries/dms';
@@ -36,13 +36,10 @@ import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { enqueueProcessMetadata } from '../../queues/message-metadata';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const sendMessageRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.sendAndEditMessage.maxRequests,
-  windowMs: config.rateLimiters.sendAndEditMessage.windowMs,
-  logLabel: 'sendMessage'
-})
+const sendMessageRoute = protectedProcedure
+  .meta({ rateLimit: RateLimiter.SEND_MESSAGE })
   .input(
     z.object({
       content: z.string().max(MESSAGE_MAX_LENGTH),

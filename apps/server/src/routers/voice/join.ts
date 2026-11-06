@@ -2,14 +2,16 @@ import {
   ChannelPermission,
   ChannelType,
   Permission,
+  RateLimiter,
   ServerEvents,
   type TBeforeVoiceJoinPayload
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { config } from '../../config';
 import { db } from '../../db';
+import { publishVoicePresence } from '../../db/publishers';
 import { channels } from '../../db/schema';
+import { markVoiceSession } from '../../helpers/mark-voice-session';
 import {
   consumeVoiceMoveGrant,
   hasVoiceMoveGrant
@@ -19,13 +21,10 @@ import { pluginManager } from '../../plugins';
 import { runHook } from '../../plugins/run-hook';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const joinVoiceRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.joinVoiceChannel.maxRequests,
-  windowMs: config.rateLimiters.joinVoiceChannel.windowMs,
-  logLabel: 'joinVoice'
-})
+const joinVoiceRoute = protectedProcedure
+  .meta({ rateLimit: RateLimiter.JOIN_VOICE_CHANNEL })
   .input(
     z.object({
       channelId: z.number(),
@@ -102,7 +101,8 @@ const joinVoiceRoute = rateLimitedProcedure(protectedProcedure, {
     const state = runtime.getUserState(ctx.user.id);
 
     ctx.currentVoiceChannelId = channel.id;
-    ctx.pubsub.publish(ServerEvents.USER_JOIN_VOICE, {
+    markVoiceSession(ctx, channel.id);
+    await publishVoicePresence(runtime, ServerEvents.USER_JOIN_VOICE, {
       channelId: input.channelId,
       userId: ctx.user.id,
       state

@@ -5,19 +5,14 @@ import {
 } from '@sharkord/shared';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { config } from '../../config';
 import { db } from '../../db';
 import { getMessagesPage } from '../../db/queries/messages';
 import { messages } from '../../db/schema';
 import { loadThreadParent } from '../../helpers/threads';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const getThreadMessagesRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.getMessages.maxRequests,
-  windowMs: config.rateLimiters.getMessages.windowMs,
-  logLabel: 'getThreadMessages'
-})
+const getThreadMessagesRoute = protectedProcedure
   .input(
     z.object({
       parentMessageId: z.number(),
@@ -31,7 +26,6 @@ const getThreadMessagesRoute = rateLimitedProcedure(protectedProcedure, {
         .default(DEFAULT_MESSAGES_LIMIT)
     })
   )
-  .meta({ infinite: true })
   .query(async ({ ctx, input }) => {
     const { parentMessageId, cursor, limit, targetMessageId } = input;
 

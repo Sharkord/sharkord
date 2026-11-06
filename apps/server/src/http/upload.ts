@@ -7,12 +7,12 @@ import {
 import fs from 'fs';
 import http from 'http';
 import z from 'zod';
-import { config } from '../config';
 import { userCan } from '../db/queries/roles';
 import { getSettings } from '../db/queries/server';
 import { getUserByToken } from '../db/queries/users';
 import { fileManager } from '../helpers/file-manager';
 import { getWsInfo } from '../helpers/get-ws-info';
+import { getRateLimit } from '../helpers/rate-limits';
 import { logger } from '../logger';
 import { createRateLimiter } from '../utils/rate-limiters/rate-limiter';
 import {
@@ -29,8 +29,7 @@ const zHeaders = z.object({
 });
 
 const uploadRateLimiter = createRateLimiter({
-  maxRequests: config.rateLimiters.upload.maxRequests,
-  windowMs: config.rateLimiters.upload.windowMs
+  getLimit: () => getRateLimit()
 });
 
 const uploadFileRouteHandler = async (
@@ -125,6 +124,20 @@ const uploadFileRouteHandler = async (
   const safePath = await fileManager.getSafeUploadPath(originalName);
   const fileStream = fs.createWriteStream(safePath);
 
+  const discardPartialFile = () => {
+    fileStream.destroy();
+
+    fs.promises.rm(safePath, { force: true }).catch((error) => {
+      logger.error('Error removing partial upload: %s', getErrorMessage(error));
+    });
+  };
+
+  req.on('close', () => {
+    if (!req.complete) {
+      discardPartialFile();
+    }
+  });
+
   req.pipe(fileStream);
 
   fileStream.on('finish', async () => {
@@ -158,6 +171,8 @@ const uploadFileRouteHandler = async (
 
   fileStream.on('error', (err) => {
     logger.error('Error uploading file: %s', getErrorMessage(err));
+
+    discardPartialFile();
 
     sendJsonError(res, 500, 'File upload failed');
   });

@@ -4,7 +4,11 @@ import { expect, test } from './fixtures';
 import { LIVE_MESSAGES_CHANNEL, openChannel } from './helpers/channels';
 import { withClients } from './helpers/clients';
 import { confirmDialog } from './helpers/dialogs';
-import { messageByText, sendMessage } from './helpers/messages';
+import {
+  clickMessageAction,
+  messageByText,
+  sendMessage
+} from './helpers/messages';
 
 const RUN_ID = Date.now().toString().slice(-8);
 
@@ -13,10 +17,10 @@ const threadView = (page: Page) => page.getByTestId(TestId.THREAD_VIEW);
 const threadsToggle = (page: Page) => page.getByTestId(TestId.THREADS_TOGGLE);
 
 const replyInThread = async (page: Page, parentText: string) => {
-  const parent = messageByText(page, parentText);
-
-  await parent.hover();
-  await parent.getByTestId(TestId.MESSAGE_REPLY_IN_THREAD).click();
+  await clickMessageAction(
+    messageByText(page, parentText),
+    TestId.MESSAGE_REPLY_IN_THREAD
+  );
   await expect(threadView(page)).toBeVisible();
 };
 
@@ -69,10 +73,10 @@ test('deleting a parent closes its thread', async ({ browser }) => {
     await replyInThread(page!, parentText);
     await sendMessage(threadView(page!), `doomed reply ${RUN_ID}`);
 
-    const parent = messageByText(page!, parentText);
-
-    await parent.hover();
-    await parent.getByTestId(TestId.MESSAGE_DELETE).click();
+    await clickMessageAction(
+      messageByText(page!, parentText),
+      TestId.MESSAGE_DELETE
+    );
     await confirmDialog(page!);
 
     await expect(threadView(page!)).toHaveCount(0);

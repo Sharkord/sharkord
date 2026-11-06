@@ -1,9 +1,10 @@
+import type { TRateLimit } from '@sharkord/shared';
 import { config } from '../../config';
+import { getRateLimits } from '../../helpers/rate-limits';
 import { IS_DEVELOPMENT, IS_TEST } from '../env';
 
 type TFixedWindowRateLimiterOptions = {
-  maxRequests: number;
-  windowMs: number;
+  getLimit: () => TRateLimit;
   maxEntries?: number;
 };
 
@@ -21,33 +22,38 @@ type TRateLimitEntry = {
 // share of the table dropped when it is full and nothing has expired
 const EVICTION_RATIO = 0.1;
 
-const isRateLimitingBypassed = () =>
-  !config.rateLimiters.enabled ||
-  (IS_DEVELOPMENT && !IS_TEST) ||
-  (IS_TEST && !!globalThis.disableRateLimiting);
+const isRateLimitingBypassed = () => {
+  const { enabled } = getRateLimits();
+
+  return (
+    !config.server.rateLimitersEnabled ||
+    !enabled ||
+    (IS_DEVELOPMENT && !IS_TEST) ||
+    (IS_TEST && !!globalThis.disableRateLimiting)
+  );
+};
 
 // this is a pretty basic implementation of a fixed window rate limiter, but for now it's better than nothing
 class FixedWindowRateLimiter {
   private readonly entries = new Map<string, TRateLimitEntry>();
-  private readonly maxRequests: number;
-  private readonly windowMs: number;
+  private readonly getLimit: () => TRateLimit;
   private readonly maxEntries: number;
 
   constructor({
-    maxRequests,
-    windowMs,
+    getLimit,
     maxEntries = 10_000 // default to 10k entries
   }: TFixedWindowRateLimiterOptions) {
-    this.maxRequests = maxRequests;
-    this.windowMs = windowMs;
+    this.getLimit = getLimit;
     this.maxEntries = maxEntries;
   }
 
   public consume = (key: string): TRateLimitResult => {
+    const { maxRequests, windowMs } = this.getLimit();
+
     if (isRateLimitingBypassed()) {
       return {
         allowed: true,
-        remaining: this.maxRequests,
+        remaining: maxRequests,
         retryAfterMs: 0
       };
     }
@@ -61,17 +67,17 @@ class FixedWindowRateLimiter {
     if (!existing || existing.resetAt <= now) {
       this.entries.set(key, {
         count: 1,
-        resetAt: now + this.windowMs
+        resetAt: now + windowMs
       });
 
       return {
         allowed: true,
-        remaining: this.maxRequests - 1,
+        remaining: maxRequests - 1,
         retryAfterMs: 0
       };
     }
 
-    if (existing.count >= this.maxRequests) {
+    if (existing.count >= maxRequests) {
       return {
         allowed: false,
         remaining: 0,
@@ -83,7 +89,7 @@ class FixedWindowRateLimiter {
 
     return {
       allowed: true,
-      remaining: this.maxRequests - existing.count,
+      remaining: maxRequests - existing.count,
       retryAfterMs: 0
     };
   };

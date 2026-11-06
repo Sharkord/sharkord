@@ -2,6 +2,7 @@ import { requestConfirmation } from '@/features/dialogs/actions';
 import { getTRPCClient, type TRouterOutputs } from '@/lib/trpc';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
+  getTrpcError,
   parseTrpcErrors,
   type TCategory,
   type TChannel,
@@ -17,6 +18,7 @@ import {
   type TMessage,
   type TPluginInfo,
   type TPluginStorageUsage,
+  type TRateLimiters,
   type TStorageData,
   type TStorageSettings,
   type TTrpcErrors
@@ -27,6 +29,8 @@ import { toast } from 'sonner';
 
 export type TAdminUser = TRouterOutputs['users']['getAll'][number];
 export type TAdminUserInfo = TRouterOutputs['users']['getInfo']['user'];
+export type TSharedIp = TRouterOutputs['users']['getInfo']['sharedIp'];
+export type TAdminUserSession = TRouterOutputs['users']['getSessions'][number];
 
 export const useAdminGeneral = () => {
   const [loading, setLoading] = useState(true);
@@ -275,6 +279,32 @@ export const useAdminStorage = () => {
   };
 };
 
+export const useAdminRateLimits = () => {
+  const [loading, setLoading] = useState(true);
+  const [rateLimits, setRateLimits] = useState<TRateLimiters | undefined>(
+    undefined
+  );
+  const [enabledInConfig, setEnabledInConfig] = useState(true);
+
+  const fetchRateLimits = useCallback(async () => {
+    setLoading(true);
+
+    const trpc = getTRPCClient();
+    const { rateLimits, enabledInConfig } =
+      await trpc.others.getRateLimits.query();
+
+    setRateLimits(rateLimits);
+    setEnabledInConfig(enabledInConfig);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchRateLimits();
+  }, [fetchRateLimits]);
+
+  return { rateLimits, enabledInConfig, refetch: fetchRateLimits, loading };
+};
+
 export const useAdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<TAdminUser[]>([]);
@@ -343,6 +373,10 @@ export const useAdminUserInfo = (userId: number) => {
   const [logins, setLogins] = useState<TLogin[]>([]);
   const [files, setFiles] = useState<TFile[]>([]);
   const [messages, setMessages] = useState<TMessage[]>([]);
+  const [sharedIp, setSharedIp] = useState<TSharedIp>({
+    users: [],
+    hasMore: false
+  });
   const [storage, setStorage] = useState<TStorageData & { quota: number }>({
     userId,
     fileCount: 0,
@@ -354,7 +388,7 @@ export const useAdminUserInfo = (userId: number) => {
     setLoading(true);
 
     const trpc = getTRPCClient();
-    const { user, logins, files, messages, storage } =
+    const { user, logins, files, messages, storage, sharedIp } =
       await trpc.users.getInfo.query({
         userId
       });
@@ -365,6 +399,7 @@ export const useAdminUserInfo = (userId: number) => {
     setFiles(files);
     setMessages(messages);
     setStorage(storage);
+    setSharedIp(sharedIp);
   }, [userId]);
 
   useEffect(() => {
@@ -378,7 +413,37 @@ export const useAdminUserInfo = (userId: number) => {
     storage,
     refetch: fetchUser,
     loading,
-    messages
+    messages,
+    sharedIp
+  };
+};
+
+export const useAdminUserSessions = (userId: number) => {
+  const { t } = useTranslation('settings');
+  const [loading, setLoading] = useState(true);
+  const [sessions, setSessions] = useState<TAdminUserSession[]>([]);
+
+  const fetchSessions = useCallback(async () => {
+    try {
+      const trpc = getTRPCClient();
+      const sessions = await trpc.users.getSessions.query({ userId });
+
+      setSessions(sessions);
+    } catch (error) {
+      toast.error(getTrpcError(error, t('failedLoadSessions')));
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, t]);
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
+
+  return {
+    sessions,
+    refetch: fetchSessions,
+    loading
   };
 };
 

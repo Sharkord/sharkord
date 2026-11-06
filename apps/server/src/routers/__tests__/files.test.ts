@@ -1,5 +1,11 @@
-import type { TTempFile } from '@sharkord/shared';
+import {
+  ChannelPermission,
+  FILE_TOKEN_REFRESH_GRACE_MS,
+  FILE_TOKEN_REFRESH_MAX_FILES,
+  type TTempFile
+} from '@sharkord/shared';
 import { beforeEach, describe, expect, test } from 'bun:test';
+import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import {
   initTest,
@@ -7,7 +13,11 @@ import {
   sendMessage,
   uploadFile
 } from '../../__tests__/helpers';
+import { tdb } from '../../__tests__/setup';
+import { getSettings } from '../../db/queries/server';
+import { channels, channelUserPermissions, settings } from '../../db/schema';
 import { fileManager } from '../../helpers/file-manager';
+import { generateFileToken, verifyFileToken } from '../../helpers/files-crypto';
 
 describe('files router', () => {
   let tempFile: TTempFile;
@@ -136,5 +146,164 @@ describe('files router', () => {
     );
 
     expect(await fs.exists(tempFile.path)).toBe(true);
+  });
+});
+
+describe('files.refreshTokens', () => {
+  // seeded attachment in General, which every member can see
+  const fileId = 1;
+  // seeded attachment in the dm between users 3 and 4
+  const dmFileId = 2;
+  // no row attaches it to a message, the way avatars, banners and emojis are stored
+  const unattachedFileId = 99;
+
+  const signedFileById = (id: number, expiresAt: number) => ({
+    id,
+    token: generateFileToken(id, expiresAt),
+    expiresAt
+  });
+
+  const signedFile = (expiresAt: number) => signedFileById(fileId, expiresAt);
+
+  beforeEach(async () => {
+    await tdb.update(settings).set({
+      storageSignedUrlsEnabled: true,
+      storageSignedUrlsTtlSeconds: 3600
+    });
+
+    // loads the server secret the tokens are signed with
+    await getSettings();
+  });
+
+  test('should exchange a valid token for a fresh one', async () => {
+    const { caller } = await initTest(2);
+    const before = Date.now();
+
+    const [refreshed] = await caller.files.refreshTokens({
+      files: [signedFile(before + 60_000)]
+    });
+
+    expect(refreshed!.id).toBe(fileId);
+    expect(refreshed!.expiresAt).toBeGreaterThanOrEqual(before + 3600_000);
+    expect(
+      verifyFileToken(fileId, refreshed!.token, refreshed!.expiresAt)
+    ).toBe(true);
+  });
+
+  test('should refresh a token that expired within the grace window', async () => {
+    const { caller } = await initTest(2);
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [signedFile(Date.now() - 60_000)]
+    });
+
+    expect(refreshed.length).toBe(1);
+  });
+
+  test('should drop a token that expired past the grace window', async () => {
+    const { caller } = await initTest(2);
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [signedFile(Date.now() - FILE_TOKEN_REFRESH_GRACE_MS - 60_000)]
+    });
+
+    expect(refreshed).toEqual([]);
+  });
+
+  test('should drop a token with an invalid signature', async () => {
+    const { caller } = await initTest(2);
+    const expiresAt = Date.now() + 60_000;
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [
+        {
+          id: fileId + 1,
+          token: generateFileToken(fileId, expiresAt),
+          expiresAt
+        },
+        { ...signedFile(expiresAt), expiresAt: expiresAt + 1 }
+      ]
+    });
+
+    expect(refreshed).toEqual([]);
+  });
+
+  test('should return nothing when signed urls are disabled', async () => {
+    const { caller } = await initTest(2);
+
+    await tdb.update(settings).set({ storageSignedUrlsEnabled: false });
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [signedFile(Date.now() + 60_000)]
+    });
+
+    expect(refreshed).toEqual([]);
+  });
+
+  test('should drop an attachment from a channel the caller cannot see', async () => {
+    const { caller } = await initTest(2);
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [signedFileById(dmFileId, Date.now() + 60_000)]
+    });
+
+    expect(refreshed).toEqual([]);
+  });
+
+  test('should refresh an attachment for a member of its channel', async () => {
+    const { caller } = await initTest(3);
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [signedFileById(dmFileId, Date.now() + 60_000)]
+    });
+
+    expect(refreshed.map(({ id }) => id)).toEqual([dmFileId]);
+  });
+
+  test('should keep the visible files of a batch and drop the hidden ones', async () => {
+    const { caller } = await initTest(2);
+    const expiresAt = Date.now() + 60_000;
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [
+        signedFileById(fileId, expiresAt),
+        signedFileById(dmFileId, expiresAt),
+        signedFileById(unattachedFileId, expiresAt)
+      ]
+    });
+
+    expect(refreshed.map(({ id }) => id)).toEqual([fileId, unattachedFileId]);
+  });
+
+  test('should stop refreshing an attachment once the caller loses access to its channel', async () => {
+    const { caller } = await initTest(2);
+    const file = signedFileById(fileId, Date.now() + 60_000);
+
+    expect(await caller.files.refreshTokens({ files: [file] })).toHaveLength(1);
+
+    await tdb.update(channels).set({ private: true }).where(eq(channels.id, 1));
+    await tdb.insert(channelUserPermissions).values({
+      channelId: 1,
+      userId: 2,
+      permission: ChannelPermission.VIEW_CHANNEL,
+      allow: false,
+      createdAt: Date.now()
+    });
+
+    expect(await caller.files.refreshTokens({ files: [file] })).toEqual([]);
+  });
+
+  test('should reject more files than the limit', async () => {
+    const { caller } = await initTest(2);
+    const file = signedFile(Date.now() + 60_000);
+
+    await expect(
+      caller.files.refreshTokens({
+        files: Array.from(
+          { length: FILE_TOKEN_REFRESH_MAX_FILES + 1 },
+          () => file
+        )
+      })
+    ).rejects.toThrow();
   });
 });

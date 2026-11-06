@@ -28,6 +28,18 @@ export const threadChannelIdSelector = (state: IRootState) =>
 export const autoJoinLastChannelSelector = (state: IRootState) =>
   state.app.autoJoinLastChannel;
 
+export const voiceChatFollowsVoiceSelector = (state: IRootState) =>
+  state.app.voiceChatFollowsVoice;
+
+export const closeVoiceChatOnLeaveSelector = (state: IRootState) =>
+  state.app.closeVoiceChatOnLeave;
+
+export const freezeAnimatedAvatarsSelector = (state: IRootState) =>
+  state.app.freezeAnimatedAvatars;
+
+export const convertAsciiEmojiSelector = (state: IRootState) =>
+  state.app.convertAsciiEmoji;
+
 export const hotkeysEnabledSelector = (state: IRootState) =>
   state.app.hotkeysEnabled;
 

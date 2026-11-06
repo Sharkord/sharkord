@@ -19,6 +19,15 @@ const messageItems = (scope: TScope): Locator =>
 const messageByText = (scope: TScope, content: string): Locator =>
   messageItems(scope).filter({ hasText: content });
 
+// the actions bar is css hover only. a message landing in a shared channel shifts the list out
+// from under the mouse and hides the bar again, and click() waits for it without hovering anew
+const clickMessageAction = async (message: Locator, action: TestId) => {
+  await expect(async () => {
+    await message.hover();
+    await message.getByTestId(action).click({ timeout: 1_000 });
+  }).toPass();
+};
+
 const composeEditor = (scope: TScope): Locator =>
   scope.getByTestId(TestId.MESSAGE_COMPOSE_EDITOR).first();
 
@@ -74,6 +83,7 @@ const sendMessage = async (scope: TScope, content: string) => {
 };
 
 export {
+  clickMessageAction,
   getMockMessageNumbers,
   messageByText,
   messageItems,

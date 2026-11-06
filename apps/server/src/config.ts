@@ -18,18 +18,6 @@ const deepFreeze = <T>(value: T): T => {
   return value;
 };
 
-const zRateLimiter = z.object({
-  maxRequests: z.coerce.number().int().positive(),
-  windowMs: z.coerce.number().int().positive()
-});
-
-const zFailedAttemptsLimiter = z.object({
-  maxFailures: z.coerce.number().int().positive(),
-  windowMs: z.coerce.number().int().positive(),
-  blockMs: z.coerce.number().int().positive(),
-  maxBlockMs: z.coerce.number().int().positive()
-});
-
 const zConfig = z.object({
   server: z.object({
     host: z.string().trim(),
@@ -38,6 +26,7 @@ const zConfig = z.object({
     autoupdate: z.coerce.boolean(),
     backupDatabase: z.coerce.boolean(),
     maxRequestBodyBytes: z.coerce.number().int().positive(),
+    rateLimitersEnabled: z.coerce.boolean(),
     allowedOrigins: z
       .preprocess(
         (value) => {
@@ -73,34 +62,6 @@ const zConfig = z.object({
     port: z.coerce.number().int().positive(),
     announcedAddress: z.string(),
     maxBitrate: z.coerce.number().int().positive()
-  }),
-  rateLimiters: z.object({
-    enabled: z.coerce.boolean(),
-    sendAndEditMessage: zRateLimiter,
-    joinVoiceChannel: zRateLimiter,
-    moveMembers: zRateLimiter,
-    login: zRateLimiter,
-    loginLockout: zFailedAttemptsLimiter,
-    joinServer: zRateLimiter,
-    upload: zRateLimiter,
-    search: zRateLimiter,
-    signalTyping: zRateLimiter,
-    getMessages: zRateLimiter,
-    markAsRead: zRateLimiter,
-    toggleMessageReaction: zRateLimiter,
-    addEmoji: zRateLimiter,
-    openDirectMessage: zRateLimiter,
-    handshake: zRateLimiter,
-    updatePassword: zRateLimiter,
-    adminCreate: zRateLimiter,
-    voiceTransport: zRateLimiter,
-    voiceStream: zRateLimiter,
-    voiceReaction: zRateLimiter,
-    useSecretToken: zRateLimiter,
-    pluginExecute: zRateLimiter,
-    pluginInstall: zRateLimiter,
-    pluginRoute: zRateLimiter,
-    oidc: zRateLimiter
   })
 });
 
@@ -114,6 +75,7 @@ const defaultConfig: TConfig = {
     autoupdate: false,
     backupDatabase: true,
     maxRequestBodyBytes: 256 * 1024,
+    rateLimitersEnabled: true,
     allowedOrigins: ['*'],
     trustedProxies: [
       '127.0.0.1',
@@ -136,111 +98,6 @@ const defaultConfig: TConfig = {
     port: 40000,
     announcedAddress: '',
     maxBitrate: 30_000_000 // 30 Mbps
-  },
-  rateLimiters: {
-    enabled: true,
-    sendAndEditMessage: {
-      maxRequests: 15,
-      windowMs: 60_000
-    },
-    joinVoiceChannel: {
-      maxRequests: 20,
-      windowMs: 60_000
-    },
-    moveMembers: {
-      maxRequests: 20,
-      windowMs: 60_000
-    },
-    login: {
-      maxRequests: 5,
-      windowMs: 60_000
-    },
-    loginLockout: {
-      maxFailures: 20,
-      windowMs: 15 * 60_000,
-      blockMs: 15 * 60_000,
-      maxBlockMs: 24 * 60 * 60_000
-    },
-    joinServer: {
-      maxRequests: 5,
-      windowMs: 60_000
-    },
-    upload: {
-      maxRequests: 30,
-      windowMs: 60_000
-    },
-    search: {
-      maxRequests: 15,
-      windowMs: 60_000
-    },
-    signalTyping: {
-      maxRequests: 40,
-      windowMs: 5_000
-    },
-    getMessages: {
-      maxRequests: 60,
-      windowMs: 10_000
-    },
-    markAsRead: {
-      maxRequests: 60,
-      windowMs: 10_000
-    },
-    toggleMessageReaction: {
-      maxRequests: 60,
-      windowMs: 10_000
-    },
-    addEmoji: {
-      maxRequests: 10,
-      windowMs: 60_000
-    },
-    openDirectMessage: {
-      maxRequests: 10,
-      windowMs: 60_000
-    },
-    handshake: {
-      maxRequests: 10,
-      windowMs: 60_000
-    },
-    updatePassword: {
-      maxRequests: 5,
-      windowMs: 60_000
-    },
-    adminCreate: {
-      maxRequests: 60,
-      windowMs: 60_000
-    },
-    voiceTransport: {
-      maxRequests: 30,
-      windowMs: 60_000
-    },
-    voiceStream: {
-      maxRequests: 200,
-      windowMs: 60_000
-    },
-    voiceReaction: {
-      maxRequests: 20,
-      windowMs: 30_000
-    },
-    useSecretToken: {
-      maxRequests: 5,
-      windowMs: 60_000
-    },
-    pluginExecute: {
-      maxRequests: 60,
-      windowMs: 60_000
-    },
-    pluginInstall: {
-      maxRequests: 10,
-      windowMs: 60_000
-    },
-    pluginRoute: {
-      maxRequests: 300,
-      windowMs: 60_000
-    },
-    oidc: {
-      maxRequests: 30,
-      windowMs: 60_000
-    }
   }
 };
 
@@ -296,7 +153,7 @@ const envOverridesMap: Record<string, string> = {
   'webRtc.port': 'SHARKORD_WEBRTC_PORT',
   'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS',
   'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE',
-  'rateLimiters.enabled': 'SHARKORD_RATE_LIMITERS_ENABLED'
+  'server.rateLimitersEnabled': 'SHARKORD_RATE_LIMITERS_ENABLED'
 };
 
 // validated again after the overrides, otherwise an env var could put a value

@@ -1,0 +1,11 @@
+{
+  "kicked": "Sunucudan atıldınız",
+  "banned": "Yasaklandınız",
+  "connectionLost": "Bağlantı kesildi",
+  "noReasonProvided": "Sebep belirtilmedi.",
+  "lostConnectionMessage": "Sunucuyla bağlantı beklenmedik şekilde kesildi.",
+  "goToConnectScreen": "Bağlantı Ekranına Git",
+  "details": "Ayrıntılar",
+  "code": "Kod: {{code}}",
+  "time": "Zaman: {{time}}"
+}

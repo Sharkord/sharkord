@@ -77,6 +77,8 @@ export const requestConfirmation = async ({
 export const requestTextInput = async ({
   title,
   message,
+  warning,
+  warningUserIds,
   confirmLabel,
   cancelLabel,
   type = 'text',
@@ -85,6 +87,8 @@ export const requestTextInput = async ({
 }: {
   title?: string;
   message?: string;
+  warning?: string;
+  warningUserIds?: number[];
   type?: 'text' | 'password';
   confirmLabel?: string;
   cancelLabel?: string;
@@ -95,6 +99,8 @@ export const requestTextInput = async ({
     openDialog(Dialog.TEXT_INPUT, {
       title,
       message,
+      warning,
+      warningUserIds,
       confirmLabel,
       cancelLabel,
       allowEmpty,

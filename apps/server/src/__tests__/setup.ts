@@ -1,9 +1,11 @@
+import { DEFAULT_RATE_LIMITERS } from '@sharkord/shared';
 import type { Database } from 'bun:sqlite';
 import { afterAll, afterEach, beforeAll, beforeEach, mock } from 'bun:test';
 import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import fs from 'fs/promises';
 import path from 'path';
 import { DATA_PATH } from '../helpers/paths';
+import { setRateLimits } from '../helpers/rate-limits';
 import { clearVoiceMoveGrantsForTests } from '../helpers/voice-move-grants';
 import { createHttpServer } from '../http';
 import { pluginManager } from '../plugins';
@@ -73,6 +75,16 @@ let tdb: BunSQLiteDatabase;
 let sqlite: Database | null = null;
 let testsBaseUrl: string;
 
+// bun's node:http server drops a pooled keep alive socket on its own timer, and with tests
+// firing requests back to back the next fetch lands on the dead socket as an ECONNRESET
+const originalFetch = globalThis.fetch;
+
+globalThis.fetch = Object.assign(
+  (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) =>
+    originalFetch(input, { ...init, keepalive: false }),
+  originalFetch
+);
+
 beforeAll(async () => {
   const server = await createHttpServer(0);
   const address = server.address();
@@ -90,6 +102,7 @@ beforeEach(async () => {
   testLogs.length = 0;
 
   clearRateLimitersForTests();
+  setRateLimits(DEFAULT_RATE_LIMITERS);
   clearVoiceMoveGrantsForTests();
   VoiceRuntime.clearServerMutesForTests();
   clearUserSocketsForTests();

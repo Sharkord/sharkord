@@ -48,6 +48,7 @@ const createFakeViews = () => {
     loaded: [] as string[],
     pendingLoads: [] as (() => void)[],
     throttled: [] as boolean[],
+    spellcheck: [] as boolean[],
     reloaded: [] as string[]
   };
 
@@ -72,7 +73,8 @@ const createFakeViews = () => {
     setLayout: (layout: { railVisible: boolean; fullShell: boolean }) =>
       calls.layouts.push(layout),
     getUnread: () => calls.unread,
-    setBackgroundThrottled: (value: boolean) => calls.throttled.push(value)
+    setBackgroundThrottled: (value: boolean) => calls.throttled.push(value),
+    setSpellcheckEnabled: (value: boolean) => calls.spellcheck.push(value)
   } as unknown as TServerViews;
 
   return { views, calls };
@@ -289,6 +291,24 @@ describe('server controller', () => {
     const second = create();
 
     expect(second.calls.throttled).toEqual([false]);
+  });
+
+  test('spellcheck is on by default when the app starts', () => {
+    const { calls } = create();
+
+    expect(calls.spellcheck).toEqual([true]);
+  });
+
+  test('turning off spellcheck applies to the views and is kept after a restart', () => {
+    const first = create();
+
+    first.controller.updateSettings({ spellcheck: false });
+
+    expect(first.calls.spellcheck.at(-1)).toBe(false);
+
+    const second = create();
+
+    expect(second.calls.spellcheck).toEqual([false]);
   });
 
   test('a link to a new server opens the add screen with its address filled in', async () => {

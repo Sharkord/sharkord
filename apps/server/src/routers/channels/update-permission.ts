@@ -16,6 +16,7 @@ import {
   roles,
   users
 } from '../../db/schema';
+import { assertChannelAccess } from '../../helpers/assert-channel-access';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
@@ -81,6 +82,8 @@ const updatePermissionsRoute = protectedProcedure
       code: 'NOT_FOUND',
       message: input.userId ? 'User not found' : 'Role not found'
     });
+
+    await assertChannelAccess(ctx, input.channelId);
 
     const permissions = input.isCreate ? [] : input.permissions;
 

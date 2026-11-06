@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import {
   publishHiddenChannelToUser,
+  publishVoicePresence,
   unpublishHiddenChannelFromUser
 } from '../db/publishers';
 import { userCan } from '../db/queries/roles';
@@ -97,7 +98,7 @@ const disconnectVoiceUser = async (userId: number) => {
 
   runtime.removeUser(userId);
 
-  pubsub.publish(ServerEvents.USER_LEAVE_VOICE, {
+  await publishVoicePresence(runtime, ServerEvents.USER_LEAVE_VOICE, {
     channelId: runtime.id,
     userId
   });
@@ -121,7 +122,7 @@ const setVoiceServerMute = async (userId: number, muted: boolean) => {
 
   runtime.syncServerMute(userId);
 
-  pubsub.publish(ServerEvents.USER_VOICE_STATE_UPDATE, {
+  await publishVoicePresence(runtime, ServerEvents.USER_VOICE_STATE_UPDATE, {
     channelId: runtime.id,
     userId,
     state: runtime.getUserState(userId)

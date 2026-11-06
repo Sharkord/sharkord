@@ -16,6 +16,7 @@ import {
   type Permission
 } from '@sharkord/shared';
 import path from 'path';
+import { publishVoicePresence } from '../db/publishers';
 import { channelUserCan } from '../db/queries/channels';
 import { getFileNameById } from '../db/queries/files';
 import { getMessage } from '../db/queries/messages';
@@ -138,7 +139,7 @@ const createStream = (
 
   const stream = channel.getState().externalStreams[streamId]!;
 
-  pubsub.publish(ServerEvents.VOICE_ADD_EXTERNAL_STREAM, {
+  publishVoicePresence(channel, ServerEvents.VOICE_ADD_EXTERNAL_STREAM, {
     channelId: options.channelId,
     streamId,
     stream

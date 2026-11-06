@@ -10,6 +10,7 @@ import type {
   TDirectMessageConversation,
   TExternalStream,
   TExternalStreamsMap,
+  TFileAccessToken,
   TFollowedThread,
   TFollowedThreadsMap,
   TJoinedEmoji,
@@ -34,6 +35,7 @@ import type {
 } from '@sharkord/shared';
 import { DEFAULT_MESSAGES_LIMIT } from '@sharkord/shared';
 import {
+  forEachSignedFile,
   getConversationKey,
   mergeMessagesChronologically,
   upsertDirectMessage,
@@ -236,6 +238,20 @@ export const serverSlice = createSlice({
       state.followedThreads = action.payload.followedThreads;
       state.directMessages = action.payload.directMessages;
       state.pluginsMetadata = action.payload.pluginsMetadata;
+    },
+    refreshFileTokens: (state, action: PayloadAction<TFileAccessToken[]>) => {
+      const tokensById = new Map(
+        action.payload.map((fileToken) => [fileToken.id, fileToken])
+      );
+
+      forEachSignedFile(state, (file) => {
+        const fileToken = tokensById.get(file.id);
+
+        if (!fileToken) return;
+
+        file._accessToken = fileToken.token;
+        file._accessTokenExpiresAt = fileToken.expiresAt;
+      });
     },
     addMessages: (
       state,

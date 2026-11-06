@@ -1,6 +1,6 @@
 import { Button, Slider } from '@sharkord/ui';
 import { memo, useCallback, type ReactNode } from 'react';
-import { NumberInput } from './number-input';
+import { NumberInput } from '../number-input';
 import { FILE_SIZE_STEP, MEGABYTE } from './presets';
 
 const clamp = (value: number, min: number, max: number) =>

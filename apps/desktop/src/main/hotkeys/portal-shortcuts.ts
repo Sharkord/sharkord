@@ -2,6 +2,7 @@ import type { TDesktopHotkeyPhase } from '@sharkord/shared';
 import { Message, sessionBus, Variant, type MessageBus } from 'dbus-next';
 import { APP_ID } from '../../shared/constants';
 import { i18n } from '../i18n';
+import { createLogger } from '../logs/logger';
 import { toPortalTrigger } from './accelerator-to-portal-trigger';
 
 // wayland lets no app see the keys of another, global shortcuts only come through the xdg
@@ -32,6 +33,8 @@ type TPortalResponse = {
   code: number;
   results: Record<string, Variant>;
 };
+
+const logger = createLogger('portal-shortcuts');
 
 const PORTAL_NAME = 'org.freedesktop.portal.Desktop';
 const PORTAL_PATH = '/org/freedesktop/portal/desktop';
@@ -198,7 +201,7 @@ const connect = async () => {
 
   bus.on('message', handleMessage);
   bus.on('error', (error) => {
-    console.error('portal shortcuts: session bus error', error);
+    logger.error('session bus error', error);
   });
 
   const busOptions = {
@@ -228,7 +231,7 @@ const connect = async () => {
       iface: REGISTRY_INTERFACE
     });
   } catch (error) {
-    console.warn('portal shortcuts: could not register the app id', error);
+    logger.warn('could not register the app id', error);
   }
 };
 
@@ -244,7 +247,7 @@ const closeSession = async () => {
   try {
     await call('Close', '', [], { path: handle, iface: SESSION_INTERFACE });
   } catch (error) {
-    console.warn('portal shortcuts: could not close the session', error);
+    logger.warn('could not close the session', error);
   }
 };
 
@@ -299,15 +302,24 @@ const bind = async (accelerators: string[]): Promise<string[]> => {
 
   // declining the dialog cancels the whole request when none of them were known before
   if (bound.code !== RESPONSE_SUCCESS) {
+    logger.warn('binding was not accepted', { response: bound.code });
+
     return accelerators;
   }
 
   const boundShortcuts = bound.results.shortcuts;
 
-  return getInactive(
+  const inactive = getInactive(
     accelerators,
     (boundShortcuts ? boundShortcuts.value : []) as TBoundShortcut[]
   );
+
+  logger.info('shortcuts bound', {
+    count: accelerators.length,
+    inactive
+  });
+
+  return inactive;
 };
 
 // one bind at a time: a desktop dialog can stay open for long, changes made meanwhile are
@@ -328,7 +340,7 @@ const apply = async () => {
     try {
       inactive = await bind(target);
     } catch (error) {
-      console.error('portal shortcuts: could not bind', error);
+      logger.error('could not bind', error);
     }
 
     // a result for shortcuts that changed meanwhile is left to the bind that follows

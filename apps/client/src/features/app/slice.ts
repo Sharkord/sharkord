@@ -25,6 +25,10 @@ export interface TAppState {
   threadParentMessageId: number | undefined;
   threadChannelId: number | undefined;
   autoJoinLastChannel: boolean;
+  voiceChatFollowsVoice: boolean;
+  closeVoiceChatOnLeave: boolean;
+  freezeAnimatedAvatars: boolean;
+  convertAsciiEmoji: boolean;
   micMode: MicMode;
   hotkeysEnabled: boolean;
   selectedDmChannelId: number | undefined;
@@ -58,14 +62,29 @@ const initialState: TAppState = {
     LocalStorageKey.AUTO_JOIN_LAST_CHANNEL,
     false
   ),
+  voiceChatFollowsVoice: getLocalStorageItemBool(
+    LocalStorageKey.VOICE_CHAT_FOLLOWS_VOICE,
+    false
+  ),
+  closeVoiceChatOnLeave: getLocalStorageItemBool(
+    LocalStorageKey.CLOSE_VOICE_CHAT_ON_LEAVE,
+    false
+  ),
+  freezeAnimatedAvatars: getLocalStorageItemBool(
+    LocalStorageKey.FREEZE_ANIMATED_AVATARS,
+    false
+  ),
+  convertAsciiEmoji: getLocalStorageItemBool(
+    LocalStorageKey.CONVERT_ASCII_EMOJI,
+    true
+  ),
   micMode:
     getLocalStorageItem(LocalStorageKey.MIC_MODE) === MicMode.PUSH_TO_TALK
       ? MicMode.PUSH_TO_TALK
       : MicMode.OPEN,
-  hotkeysEnabled: getLocalStorageItemBool(
-    LocalStorageKey.HOTKEYS_ENABLED,
-    false
-  ),
+  hotkeysEnabled:
+    isDesktopApp() ||
+    getLocalStorageItemBool(LocalStorageKey.HOTKEYS_ENABLED, false),
   selectedDmChannelId: undefined,
   selectedThread: undefined,
   notifyAllMessages: getLocalStorageItemBool(
@@ -151,6 +170,18 @@ export const appSlice = createSlice({
     },
     setAutoJoinLastChannel: (state, action: PayloadAction<boolean>) => {
       state.autoJoinLastChannel = action.payload;
+    },
+    setVoiceChatFollowsVoice: (state, action: PayloadAction<boolean>) => {
+      state.voiceChatFollowsVoice = action.payload;
+    },
+    setCloseVoiceChatOnLeave: (state, action: PayloadAction<boolean>) => {
+      state.closeVoiceChatOnLeave = action.payload;
+    },
+    setFreezeAnimatedAvatars: (state, action: PayloadAction<boolean>) => {
+      state.freezeAnimatedAvatars = action.payload;
+    },
+    setConvertAsciiEmoji: (state, action: PayloadAction<boolean>) => {
+      state.convertAsciiEmoji = action.payload;
     },
     setMicMode: (state, action: PayloadAction<MicMode>) => {
       state.micMode = action.payload;

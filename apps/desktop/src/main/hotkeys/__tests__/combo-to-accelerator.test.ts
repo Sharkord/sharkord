@@ -2,7 +2,6 @@ import { describe, expect, test } from 'bun:test';
 import { comboToAccelerator } from '../combo-to-accelerator';
 
 const UNSUPPORTED = { error: 'unsupported' } as const;
-const NEEDS_MODIFIER = { error: 'needs-modifier' } as const;
 
 describe('combo to accelerator', () => {
   test('converts letters, digits and function keys', () => {
@@ -59,14 +58,14 @@ describe('combo to accelerator', () => {
     });
   });
 
-  test('refuses keys that type text unless ctrl, alt or super is held', () => {
-    expect(comboToAccelerator('KeyM')).toEqual(NEEDS_MODIFIER);
-    expect(comboToAccelerator('Digit5')).toEqual(NEEDS_MODIFIER);
-    expect(comboToAccelerator('Space')).toEqual(NEEDS_MODIFIER);
-    expect(comboToAccelerator('Escape')).toEqual(NEEDS_MODIFIER);
-    expect(comboToAccelerator('Numpad7')).toEqual(NEEDS_MODIFIER);
-    expect(comboToAccelerator('shift+KeyM')).toEqual(NEEDS_MODIFIER);
-    expect(comboToAccelerator('shift+Backquote')).toEqual(NEEDS_MODIFIER);
+  test('accepts keys that type text without a modifier', () => {
+    expect(comboToAccelerator('KeyM')).toEqual({ accelerator: 'M' });
+    expect(comboToAccelerator('Digit5')).toEqual({ accelerator: '5' });
+    expect(comboToAccelerator('Space')).toEqual({ accelerator: 'Space' });
+    expect(comboToAccelerator('Numpad7')).toEqual({ accelerator: 'num7' });
+    expect(comboToAccelerator('shift+KeyM')).toEqual({
+      accelerator: 'Shift+M'
+    });
   });
 
   test('refuses keys electron has no name for', () => {

@@ -11,9 +11,9 @@ import net from 'net';
 import path from 'path';
 import { login, uploadFile } from '../../__tests__/helpers';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
-import { config } from '../../config';
 import { rolePermissions, settings, users } from '../../db/schema';
-import { TMP_PATH } from '../../helpers/paths';
+import { TMP_PATH, UPLOADS_PATH } from '../../helpers/paths';
+import { getRateLimit } from '../../helpers/rate-limits';
 import { sanitizeFileName } from '../helpers';
 
 const getMockFile = (content: string): File => {
@@ -198,7 +198,7 @@ describe('/upload', () => {
   });
 
   test('should rate limit excessive upload attempts', async () => {
-    const { maxRequests } = config.rateLimiters.upload;
+    const { maxRequests } = getRateLimit();
     const statuses: number[] = [];
 
     for (let i = 0; i < maxRequests + 1; i++) {
@@ -446,6 +446,50 @@ describe('/upload', () => {
     });
 
     expect(raw).toContain('400 Bad Request');
+  });
+
+  test('should delete the partial file when the client disconnects mid upload', async () => {
+    const before = new Set(await fs.readdir(UPLOADS_PATH));
+    const getNewFiles = async () =>
+      (await fs.readdir(UPLOADS_PATH)).filter((name) => !before.has(name));
+
+    // the handler only opens the file after its async checks, so both sides are awaited
+    // rather than slept on
+    const waitFor = async (condition: () => Promise<boolean>) => {
+      const deadline = Date.now() + 5000;
+
+      while (!(await condition())) {
+        if (Date.now() > deadline) throw new Error('condition never held');
+
+        await Bun.sleep(10);
+      }
+    };
+
+    const { port } = new URL(testsBaseUrl);
+    const socket = net.connect(Number(port), 'localhost');
+
+    await new Promise((resolve) => socket.once('connect', resolve));
+
+    socket.write(
+      [
+        'POST /upload HTTP/1.1',
+        'Host: localhost',
+        'Content-Type: application/octet-stream',
+        'Content-Length: 100000',
+        `${UploadHeaders.ORIGINAL_NAME}: abandoned.txt`,
+        `${UploadHeaders.TOKEN}: ${token}`,
+        '',
+        'only the start of the body'
+      ].join('\r\n')
+    );
+
+    await waitFor(async () => (await getNewFiles()).length > 0);
+
+    socket.destroy();
+
+    await waitFor(async () => (await getNewFiles()).length === 0);
+
+    expect(await getNewFiles()).toEqual([]);
   });
 
   test('should reject a non-numeric content-length', async () => {

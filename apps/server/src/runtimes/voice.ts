@@ -20,6 +20,7 @@ import type {
   WebRtcTransport
 } from 'mediasoup/types';
 import { config } from '../config';
+import { publishVoicePresence } from '../db/publishers';
 import { logger } from '../logger';
 import { eventBus } from '../plugins/event-bus';
 import {
@@ -195,10 +196,12 @@ class VoiceRuntime {
     VoiceRuntime.serverMutedUserIds.clear();
   };
 
-  public static getVoiceMap = (): TVoiceMap => {
+  public static getVoiceMap = (channelIds: Set<number>): TVoiceMap => {
     const map: TVoiceMap = {};
 
     voiceRuntimes.forEach((runtime, channelId) => {
+      if (!channelIds.has(channelId)) return;
+
       map[channelId] = {
         users: {}
       };
@@ -215,10 +218,14 @@ class VoiceRuntime {
     return map;
   };
 
-  public static getExternalStreamsMap = (): TExternalStreamsMap => {
+  public static getExternalStreamsMap = (
+    channelIds: Set<number>
+  ): TExternalStreamsMap => {
     const map: TExternalStreamsMap = {};
 
     voiceRuntimes.forEach((runtime, channelId) => {
+      if (!channelIds.has(channelId)) return;
+
       if (map[channelId]) {
         map[channelId] = [];
       }
@@ -383,14 +390,20 @@ class VoiceRuntime {
 
     const remainingUsers = this.state.users;
 
+    // before the users are cleared, since they are the audience: the channel may already be
+    // deleted, leaving nobody else who can see it
+    await Promise.all(
+      remainingUsers.map(({ userId }) =>
+        publishVoicePresence(this, ServerEvents.USER_LEAVE_VOICE, {
+          channelId: this.id,
+          userId
+        })
+      )
+    );
+
     this.state.users = [];
 
     remainingUsers.forEach(({ userId }) => {
-      pubsub.publish(ServerEvents.USER_LEAVE_VOICE, {
-        channelId: this.id,
-        userId
-      });
-
       eventBus.emit('user:left_voice', {
         userId,
         channelId: this.id
@@ -905,11 +918,15 @@ class VoiceRuntime {
             video: !!internal.producers.videoProducer
           };
 
-          pubsub.publish(ServerEvents.VOICE_UPDATE_EXTERNAL_STREAM, {
-            channelId: this.id,
-            streamId,
-            stream: existingStream
-          });
+          publishVoicePresence(
+            this,
+            ServerEvents.VOICE_UPDATE_EXTERNAL_STREAM,
+            {
+              channelId: this.id,
+              streamId,
+              stream: existingStream
+            }
+          );
         }
       }
     });
@@ -938,7 +955,7 @@ class VoiceRuntime {
     delete this.externalStreamsInternal[streamId];
     delete this.state.externalStreams[streamId];
 
-    pubsub.publish(ServerEvents.VOICE_REMOVE_EXTERNAL_STREAM, {
+    publishVoicePresence(this, ServerEvents.VOICE_REMOVE_EXTERNAL_STREAM, {
       channelId: this.id,
       streamId
     });
@@ -1067,7 +1084,7 @@ class VoiceRuntime {
       );
     }
 
-    pubsub.publish(ServerEvents.VOICE_UPDATE_EXTERNAL_STREAM, {
+    publishVoicePresence(this, ServerEvents.VOICE_UPDATE_EXTERNAL_STREAM, {
       channelId: this.id,
       streamId,
       stream: publicStream

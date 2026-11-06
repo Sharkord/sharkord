@@ -1,10 +1,10 @@
+import type { TRateLimiters } from '@sharkord/shared';
 import { isRateLimitingBypassed } from '.';
 
+type TFailedAttemptsLimit = TRateLimiters['loginLockout'];
+
 type TFailedAttemptsLimiterOptions = {
-  maxFailures: number;
-  windowMs: number;
-  blockMs: number;
-  maxBlockMs: number;
+  getLimit: () => TFailedAttemptsLimit;
   maxEntries?: number;
 };
 
@@ -17,23 +17,14 @@ type TFailedAttemptsEntry = {
 
 class FailedAttemptsLimiter {
   private readonly entries = new Map<string, TFailedAttemptsEntry>();
-  private readonly maxFailures: number;
-  private readonly windowMs: number;
-  private readonly blockMs: number;
-  private readonly maxBlockMs: number;
+  private readonly getLimit: () => TFailedAttemptsLimit;
   private readonly maxEntries: number;
 
   constructor({
-    maxFailures,
-    windowMs,
-    blockMs,
-    maxBlockMs,
+    getLimit,
     maxEntries = 10_000
   }: TFailedAttemptsLimiterOptions) {
-    this.maxFailures = maxFailures;
-    this.windowMs = windowMs;
-    this.blockMs = blockMs;
-    this.maxBlockMs = maxBlockMs;
+    this.getLimit = getLimit;
     this.maxEntries = maxEntries;
   }
 
@@ -48,6 +39,7 @@ class FailedAttemptsLimiter {
   public recordFailure = (key: string): number => {
     if (isRateLimitingBypassed()) return 0;
 
+    const { maxFailures, windowMs, blockMs, maxBlockMs } = this.getLimit();
     const now = Date.now();
 
     let entry = this.entries.get(key);
@@ -67,23 +59,20 @@ class FailedAttemptsLimiter {
 
     if (entry.windowResetAt <= now) {
       entry.failures = 0;
-      entry.windowResetAt = now + this.windowMs;
+      entry.windowResetAt = now + windowMs;
     }
 
     entry.failures += 1;
 
-    if (entry.failures < this.maxFailures) return 0;
+    if (entry.failures < maxFailures) return 0;
 
-    const blockMs = Math.min(
-      this.blockMs * 2 ** entry.strikes,
-      this.maxBlockMs
-    );
+    const currentBlockMs = Math.min(blockMs * 2 ** entry.strikes, maxBlockMs);
 
     entry.failures = 0;
     entry.strikes += 1;
-    entry.blockedUntil = now + blockMs;
+    entry.blockedUntil = now + currentBlockMs;
 
-    return blockMs;
+    return currentBlockMs;
   };
 
   public clear = () => {
@@ -94,11 +83,14 @@ class FailedAttemptsLimiter {
     return this.entries.size;
   }
 
-  private getForgetAt = (entry: TFailedAttemptsEntry) =>
-    Math.max(
+  private getForgetAt = (entry: TFailedAttemptsEntry) => {
+    const { maxBlockMs } = this.getLimit();
+
+    return Math.max(
       entry.windowResetAt,
-      entry.strikes > 0 ? entry.blockedUntil + this.maxBlockMs : 0
+      entry.strikes > 0 ? entry.blockedUntil + maxBlockMs : 0
     );
+  };
 
   private gc = (now: number) => {
     if (this.entries.size < this.maxEntries) return;

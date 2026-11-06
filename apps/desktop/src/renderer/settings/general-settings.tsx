@@ -2,8 +2,8 @@ import { Button, Group, SettingsSection, Switch } from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TDesktopSettings } from '../../shared/types';
-import { canToggleMenuBar, hasTray } from '../platform';
-import { AppFolderSettings } from './app-folder-settings';
+import { canToggleMenuBar, hasTray, isLinux } from '../platform';
+import { FolderSettings } from './folder-settings';
 
 type TGeneralSettingsProps = {
   settings: TDesktopSettings;
@@ -32,8 +32,34 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
     window.desktop.updateSettings({ dynamicTrayIcon: checked });
   }, []);
 
+  const handleSpellcheckChange = useCallback((checked: boolean) => {
+    window.desktop.updateSettings({ spellcheck: checked });
+  }, []);
+
   const handleThrottleChange = useCallback((checked: boolean) => {
     window.desktop.updateSettings({ throttleHiddenServers: checked });
+  }, []);
+
+  const handleCaptureAllAudioOutputsChange = useCallback((checked: boolean) => {
+    window.desktop.updateSettings({ captureAllAudioOutputs: checked });
+  }, []);
+
+  const handleGetAppFolder = useCallback(
+    () => window.desktop.getAppFolder(),
+    []
+  );
+
+  const handleOpenAppFolder = useCallback(() => {
+    window.desktop.openAppFolder();
+  }, []);
+
+  const handleGetLogsFolder = useCallback(
+    () => window.desktop.getLogsFolder(),
+    []
+  );
+
+  const handleOpenLogsFolder = useCallback(() => {
+    window.desktop.openLogsFolder();
   }, []);
 
   const handleTogglePerformanceOverlay = useCallback(() => {
@@ -98,6 +124,15 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
             onCheckedChange={handleConnectAllChange}
           />
         </Group>
+        <Group
+          label={t('settings.spellcheck')}
+          description={t('settings.spellcheckDescription')}
+        >
+          <Switch
+            checked={settings.spellcheck}
+            onCheckedChange={handleSpellcheckChange}
+          />
+        </Group>
 
         {canToggleMenuBar && (
           <Group
@@ -137,7 +172,33 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
           </Button>
         </Group>
       </SettingsSection>
-      <AppFolderSettings />
+      {isLinux && (
+        <SettingsSection title={t('settings.screenShare')}>
+          <Group
+            label={t('settings.captureAllAudioOutputs')}
+            description={t('settings.captureAllAudioOutputsDescription')}
+          >
+            <Switch
+              checked={settings.captureAllAudioOutputs}
+              onCheckedChange={handleCaptureAllAudioOutputsChange}
+            />
+          </Group>
+        </SettingsSection>
+      )}
+      <FolderSettings
+        title={t('settings.appFolder')}
+        description={t('settings.appFolderDescription')}
+        openLabel={t('settings.openAppFolder')}
+        getFolder={handleGetAppFolder}
+        onOpen={handleOpenAppFolder}
+      />
+      <FolderSettings
+        title={t('settings.logsFolder')}
+        description={t('settings.logsFolderDescription')}
+        openLabel={t('settings.openLogsFolder')}
+        getFolder={handleGetLogsFolder}
+        onOpen={handleOpenLogsFolder}
+      />
     </>
   );
 });

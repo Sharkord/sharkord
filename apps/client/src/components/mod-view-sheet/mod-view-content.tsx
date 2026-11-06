@@ -9,6 +9,7 @@ import { ServerActivity } from './server-activity';
 import { Files } from './server-activity/files';
 import { Links } from './server-activity/links';
 import { Messages } from './server-activity/messages';
+import { Sessions } from './sessions';
 import { Storage } from './storage';
 
 type TWrapperProps = {
@@ -73,6 +74,7 @@ const Routing = memo(({ view }: TRoutingProps) => {
       <ServerActivity />
       <Storage />
       <Details />
+      <Sessions />
     </>
   );
 });

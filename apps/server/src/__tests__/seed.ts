@@ -22,6 +22,9 @@
  *                          Restricted Text
  *   messages          2    1 in General (channel 1), 2 in the DM channel
  *   directMessages    1    the DM pair backing "DM Channel"
+ *   files             2    1 attached to message 1 (General), 2 attached to message 2 (the
+ *                          DM, which user 2 is not part of). rows only, nothing on disk
+ *   messageFiles      2    the two attachments above
  *   channelRolePermissions
  *                     1    the default role may view channel 5
  *   channelUserPermissions
@@ -64,7 +67,9 @@ import {
   channels,
   channelUserPermissions,
   directMessages,
+  files,
   logins,
+  messageFiles,
   messages,
   rolePermissions,
   roles,
@@ -477,6 +482,30 @@ const seedTestDb = async (
       createdAt: firstStart
     }))
   );
+
+  // one attachment in a channel every member can see and one in a dm user 2 is not part of,
+  // so file access can be told apart from simply holding a signed url. nothing is written to
+  // disk, these rows only exist for the access checks
+  const insertedFiles = await db
+    .insert(files)
+    .values(
+      ['general.txt', 'dm.txt'].map((originalName) => ({
+        name: `seeded-${originalName}`,
+        originalName,
+        md5: `seeded-${originalName}-md5`,
+        userId: insertedOwner!.id,
+        size: 0,
+        mimeType: 'text/plain',
+        extension: '.txt',
+        createdAt: firstStart
+      }))
+    )
+    .returning();
+
+  await db.insert(messageFiles).values([
+    { messageId: 1, fileId: insertedFiles[0]!.id, createdAt: firstStart },
+    { messageId: 2, fileId: insertedFiles[1]!.id, createdAt: firstStart }
+  ]);
 
   if (e2e) {
     const allUsers = [

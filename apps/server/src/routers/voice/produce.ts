@@ -3,15 +3,16 @@ import {
   getMediasoupKind,
   Permission,
   PRODUCIBLE_STREAM_KINDS,
+  RateLimiter,
   ServerEvents,
   StreamKind,
   type TProducibleStreamKind
 } from '@sharkord/shared';
 import { z } from 'zod';
-import { config } from '../../config';
+import { channelUserCan } from '../../db/queries/channels';
 import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
 const KIND_PERMISSIONS: Record<
   TProducibleStreamKind,
@@ -32,11 +33,8 @@ const KIND_PERMISSIONS: Record<
   }
 };
 
-const produceRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.voiceStream.maxRequests,
-  windowMs: config.rateLimiters.voiceStream.windowMs,
-  logLabel: 'produce'
-})
+const produceRoute = protectedProcedure
+  .meta({ rateLimit: RateLimiter.VOICE_STREAM })
   .input(
     z.object({
       transportId: z.string(),
@@ -57,7 +55,14 @@ const produceRoute = rateLimitedProcedure(protectedProcedure, {
 
     const { channel, server } = KIND_PERMISSIONS[input.kind];
 
-    await ctx.needsChannelPermission(channelId, channel);
+    const canProduce = await channelUserCan(channelId, ctx.user.id, channel, {
+      ignoreView: true
+    });
+
+    invariant(canProduce, {
+      code: 'FORBIDDEN',
+      message: 'Insufficient channel permissions'
+    });
 
     if (server) {
       await ctx.needsPermission(server);

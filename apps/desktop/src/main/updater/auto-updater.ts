@@ -3,6 +3,7 @@ import { autoUpdater } from 'electron-updater';
 import type { TUpdateState } from '../../shared/types';
 import { showConfirmDialog } from '../dialogs/show-confirm-dialog';
 import { i18n } from '../i18n';
+import { createLogger } from '../logs/logger';
 
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
 const STALE_CHECK_MS = 10 * 60 * 1000;
@@ -22,6 +23,8 @@ const canUpdate = () =>
 const updatesManually = process.platform === 'darwin';
 // the publish target in electron-builder.yml, releases are tagged v<version>
 const RELEASES_URL = 'https://github.com/Sharkord/sharkord-desktop/releases';
+
+const logger = createLogger('updater');
 
 const listeners = new Set<(state: TUpdateState) => void>();
 
@@ -66,7 +69,8 @@ const checkForUpdates = () => {
   lastCheckAt = Date.now();
 
   autoUpdater.checkForUpdates().catch((error) => {
-    console.error('update check failed', error);
+    logger.error('update check failed', error);
+
     setState({ status: 'error' });
   });
 };
@@ -87,13 +91,15 @@ const downloadUpdate = () => {
   if (updatesManually) {
     shell
       .openExternal(`${RELEASES_URL}/tag/v${state.latestVersion}`)
-      .catch(console.error);
+      .catch((error) => {
+        logger.error('failed to open the release page', error);
+      });
 
     return;
   }
 
   autoUpdater.downloadUpdate().catch((error) => {
-    console.error('update download failed', error);
+    logger.error('update download failed', error);
     setState({ status: 'error' });
   });
 };
@@ -169,6 +175,7 @@ const startAutoUpdater = ({ onOpenUpdates }: TStartAutoUpdaterOptions) => {
   }
 
   openUpdates = onOpenUpdates;
+  autoUpdater.logger = logger;
 
   autoUpdater.on('checking-for-update', () => {
     setState({ status: 'checking' });
@@ -188,7 +195,9 @@ const startAutoUpdater = ({ onOpenUpdates }: TStartAutoUpdaterOptions) => {
         message: i18n.t('manualUpdateDialog.message', { version }),
         confirmLabel: i18n.t('manualUpdateDialog.download'),
         onConfirm: downloadUpdate
-      }).catch(console.error);
+      }).catch((error) => {
+        logger.error('failed to show the update prompt', error);
+      });
     }
   });
 
@@ -203,11 +212,14 @@ const startAutoUpdater = ({ onOpenUpdates }: TStartAutoUpdaterOptions) => {
       message: i18n.t('updateDialog.message', { version }),
       confirmLabel: i18n.t('updateDialog.restart'),
       onConfirm: installUpdate
-    }).catch(console.error);
+    }).catch((error) => {
+      logger.error('failed to show the update prompt', error);
+    });
   });
 
   autoUpdater.on('error', (error) => {
-    console.error('updater error', error);
+    logger.error('updater error', error);
+
     setState({ status: 'error' });
   });
 

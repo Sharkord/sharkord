@@ -7,7 +7,7 @@
   [![Downloads](https://img.shields.io/github/downloads/Sharkord/sharkord/total)](https://github.com/Sharkord/sharkord/releases)
   [![Last Commit](https://img.shields.io/github/last-commit/Sharkord/sharkord)](https://github.com/Sharkord/sharkord/commits)
   
-  [![Bun](https://img.shields.io/badge/Bun-v1.3.14-green.svg)](https://bun.sh)
+  [![Bun](https://img.shields.io/badge/Bun-v1.4.4-green.svg)](https://bun.sh)
   [![Mediasoup](https://img.shields.io/badge/Mediasoup-v3.19.19-green.svg)](https://mediasoup.org)
 </div>
 
@@ -19,6 +19,9 @@
 > Sharkord is in alpha stage. Bugs, incomplete features and breaking changes are to be expected.
 
 Sharkord is a self-hosted communication platform that brings the most important Discord-like features to your own infrastructure. Voice, video, and screen sharing without the bloat or surveillance.
+
+### [Download Desktop App](https://github.com/Sharkord/sharkord-desktop/releases/latest)
+### [Download Server](https://github.com/Sharkord/sharkord/releases/latest)
 
 ## Screenshots
 

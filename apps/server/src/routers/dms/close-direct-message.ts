@@ -1,6 +1,5 @@
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { config } from '../../config';
 import { db } from '../../db';
 import { publishDirectMessageConversation } from '../../db/publishers';
 import { getClosedAtKey } from '../../db/queries/dms';
@@ -8,13 +7,9 @@ import { getSettings } from '../../db/queries/server';
 import { directMessages } from '../../db/schema';
 import { markChannelAsRead } from '../../helpers/mark-channel-as-read';
 import { invariant } from '../../utils/invariant';
-import { protectedProcedure, rateLimitedProcedure } from '../../utils/trpc';
+import { protectedProcedure } from '../../utils/trpc';
 
-const closeDirectMessageRoute = rateLimitedProcedure(protectedProcedure, {
-  maxRequests: config.rateLimiters.openDirectMessage.maxRequests,
-  windowMs: config.rateLimiters.openDirectMessage.windowMs,
-  logLabel: 'closeDirectMessage'
-})
+const closeDirectMessageRoute = protectedProcedure
   .input(
     z.object({
       channelId: z.number()
