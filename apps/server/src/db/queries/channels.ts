@@ -104,11 +104,14 @@ const resolvePermission = (
 // therefore by every route. the publishers cannot call it, since they resolve a whole
 // audience rather than one user, so getAffectedUserIdsForChannel below reproduces this
 // precedence instead: owner role, then the user level row, then the role grant. the two
-// have to agree or an event reaches someone a route would have refused
+// have to agree or an event reaches someone a route would have refused.
+// ignoreView is for the voice routes only: a moderator move puts a user in a voice
+// channel they cannot see, and being in the room is the access proof there
 const channelUserCan = async (
   channelId: number,
   userId: number,
-  permission: ChannelPermission
+  permission: ChannelPermission,
+  { ignoreView = false }: { ignoreView?: boolean } = {}
 ): Promise<boolean> => {
   const channel = await db
     .select({ private: channels.private, isDm: channels.isDm })
@@ -139,6 +142,17 @@ const channelUserCan = async (
   }
 
   const isViewPermission = permission === ChannelPermission.VIEW_CHANNEL;
+
+  if (ignoreView && !isViewPermission) {
+    const targetPermissions = await getPermissions(
+      userId,
+      roleIds,
+      permission,
+      channelId
+    );
+
+    return resolvePermission(channelId, targetPermissions);
+  }
 
   const [viewPermissions, targetPermissions] = await Promise.all([
     getPermissions(userId, roleIds, ChannelPermission.VIEW_CHANNEL, channelId),

@@ -41,6 +41,30 @@ const joinVoiceChannelTwo = async (userId: number) => {
   return { runtime, caller };
 };
 
+// user 2 holds only the default role, so this is what they get on the private channel
+const grantOnPrivateVoiceChannel = async (permissions: ChannelPermission[]) =>
+  tdb.insert(channelRolePermissions).values(
+    permissions.map((permission) => ({
+      channelId: PRIVATE_VOICE_CHANNEL_ID,
+      roleId: 2,
+      permission,
+      allow: true,
+      createdAt: Date.now()
+    }))
+  );
+
+const joinPrivateVoiceChannel = async (userId: number) => {
+  const runtime = new VoiceRuntime(PRIVATE_VOICE_CHANNEL_ID);
+
+  runtime.addUser(userId, { micMuted: true, soundMuted: false });
+
+  const { caller } = await initTest(userId, undefined, {
+    currentVoiceChannelId: PRIVATE_VOICE_CHANNEL_ID
+  });
+
+  return { runtime, caller };
+};
+
 const revokeFromDefaultRole = async (permission: Permission) =>
   tdb
     .delete(rolePermissions)
@@ -686,6 +710,40 @@ describe('voice router', () => {
         await runtime.destroy();
       }
     });
+    // a moderator move puts a user in a voice channel without VIEW_CHANNEL on it
+    test('should let a moved user speak in a channel they cannot see', async () => {
+      await grantOnPrivateVoiceChannel([ChannelPermission.SPEAK]);
+
+      const { runtime, caller } = await joinPrivateVoiceChannel(2);
+
+      try {
+        await expect(
+          caller.voice.produce({
+            transportId: 'transport',
+            kind: StreamKind.AUDIO,
+            rtpParameters: {}
+          })
+        ).rejects.toThrow('Producer transport not found');
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should refuse audio without SPEAK in a channel the user cannot see', async () => {
+      const { runtime, caller } = await joinPrivateVoiceChannel(2);
+
+      try {
+        await expect(
+          caller.voice.produce({
+            transportId: 'transport',
+            kind: StreamKind.AUDIO,
+            rtpParameters: {}
+          })
+        ).rejects.toThrow('Insufficient channel permissions');
+      } finally {
+        await runtime.destroy();
+      }
+    });
   });
 
   describe('updateState', () => {
@@ -744,6 +802,31 @@ describe('voice router', () => {
           webcamEnabled: false,
           sharingScreen: false,
           soundMuted: true
+        });
+      } finally {
+        await runtime.destroy();
+      }
+    });
+    test('should apply the voice permissions of a channel a moved user cannot see', async () => {
+      await grantOnPrivateVoiceChannel([
+        ChannelPermission.SPEAK,
+        ChannelPermission.WEBCAM,
+        ChannelPermission.SHARE_SCREEN
+      ]);
+
+      const { runtime, caller } = await joinPrivateVoiceChannel(2);
+
+      try {
+        await caller.voice.updateState({
+          micMuted: false,
+          webcamEnabled: true,
+          sharingScreen: true
+        });
+
+        expect(runtime.getUserState(2)).toMatchObject({
+          micMuted: false,
+          webcamEnabled: true,
+          sharingScreen: true
         });
       } finally {
         await runtime.destroy();
