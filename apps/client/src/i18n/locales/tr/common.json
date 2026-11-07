@@ -1,4 +1,7 @@
 {
+  "pauseStreamPlayback": "İzlemeyi duraklat",
+  "resumeStreamPlayback": "İzlemeye devam et",
+  "failedToChangeStreamPlayback": "Yayın oynatma durumu değiştirilemedi",
   "cancel": "İptal",
   "confirm": "Onayla",
   "close": "Kapat",

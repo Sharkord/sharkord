@@ -1,4 +1,7 @@
 {
+  "pauseStreamPlayback": "Metti in pausa",
+  "resumeStreamPlayback": "Riprendi la riproduzione",
+  "failedToChangeStreamPlayback": "Impossibile modificare la riproduzione dello streaming",
   "cancel": "Annulla",
   "confirm": "Conferma",
   "close": "Chiudi",

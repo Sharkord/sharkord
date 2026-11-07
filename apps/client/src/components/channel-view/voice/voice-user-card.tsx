@@ -32,6 +32,7 @@ import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { QualityButton } from './quality-button';
+import { StreamPlaybackButton } from './stream-playback-button';
 import { VoiceReactions } from './voice-reactions';
 import { VolumeButton } from './volume-button';
 
@@ -144,6 +145,10 @@ const VoiceUserCard = memo(
         )}
 
         <VoiceReactions userId={userId} isCompact={isCompact} />
+
+        {voiceUser.state.webcamEnabled && (
+          <StreamPlaybackButton userId={userId} kind={StreamKind.VIDEO} />
+        )}
 
         <div
           className={cn(

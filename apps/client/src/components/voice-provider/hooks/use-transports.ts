@@ -16,7 +16,7 @@ import {
   type RtpCapabilities,
   type Transport
 } from 'mediasoup-client/types';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { getStoredStreamQuality } from '../helpers';
 
 type TUseTransportParams = {
@@ -69,6 +69,52 @@ const useTransports = ({
   }>({});
   const consumerCodecs = useRef<Map<string, string>>(new Map());
   const consumeOperationsInProgress = useRef<Set<string>>(new Set());
+  const playbackInProgress = useRef(new WeakSet<Consumer>());
+  const [pausedPlaybackTracks, setPausedPlaybackTracks] = useState<
+    ReadonlySet<MediaStreamTrack>
+  >(new Set());
+
+  const setRemotePlayback = useCallback(
+    async (
+      remoteId: number,
+      kind: StreamKind.VIDEO | StreamKind.SCREEN,
+      track: MediaStreamTrack,
+      paused: boolean
+    ) => {
+      const consumer = consumers.current[remoteId]?.[kind];
+
+      if (!consumer || consumer.closed || consumer.track !== track) return;
+      if (playbackInProgress.current.has(consumer)) return;
+
+      playbackInProgress.current.add(consumer);
+
+      try {
+        const trpc = getTRPCClient();
+        await trpc.voice.setConsumerPlayback.mutate({
+          remoteId,
+          kind,
+          consumerId: consumer.id,
+          paused
+        });
+
+        if (consumer.closed || consumers.current[remoteId]?.[kind] !== consumer)
+          return;
+
+        // keep the receive transceiver negotiated; the server controls packet delivery.
+        track.enabled = !paused;
+
+        setPausedPlaybackTracks((previous) => {
+          const next = new Set(previous);
+          if (paused) next.add(track);
+          else next.delete(track);
+          return next;
+        });
+      } finally {
+        playbackInProgress.current.delete(consumer);
+      }
+    },
+    []
+  );
 
   const createProducerTransport = useCallback(async (device: Device) => {
     voiceLogger.info('producer transport: creating');
@@ -356,6 +402,17 @@ const useTransports = ({
         cleanupEvents.forEach((event) => {
           // @ts-expect-error - YOLO
           newConsumer?.on(event, () => {
+            if (consumers.current[remoteId]?.[consumerKind] !== newConsumer)
+              return;
+
+            setPausedPlaybackTracks((previous) => {
+              if (!previous.has(newConsumer.track)) return previous;
+
+              const next = new Set(previous);
+              next.delete(newConsumer.track);
+              return next;
+            });
+
             voiceLogger.info('consumer: cleanup event', {
               event,
               remoteId,
@@ -528,6 +585,7 @@ const useTransports = ({
     });
 
     consumers.current = {};
+    setPausedPlaybackTracks(new Set());
     consumerCodecs.current.clear();
 
     clearRemoteConsumerMetadata();
@@ -558,7 +616,9 @@ const useTransports = ({
     consume,
     consumeExistingProducers,
     cleanupTransports,
-    getConsumerCodec
+    getConsumerCodec,
+    pausedPlaybackTracks,
+    setRemotePlayback
   };
 };
 

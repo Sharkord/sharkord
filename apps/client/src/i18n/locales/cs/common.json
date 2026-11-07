@@ -1,4 +1,7 @@
 {
+  "pauseStreamPlayback": "Pozastavit sledování",
+  "resumeStreamPlayback": "Pokračovat ve sledování",
+  "failedToChangeStreamPlayback": "Přehrávání streamu se nepodařilo změnit",
   "cancel": "Zrušit",
   "confirm": "Potvrdit",
   "close": "Zavřít",

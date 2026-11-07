@@ -1,4 +1,7 @@
 {
+  "pauseStreamPlayback": "Приостановить просмотр",
+  "resumeStreamPlayback": "Продолжить просмотр",
+  "failedToChangeStreamPlayback": "Не удалось изменить состояние просмотра",
   "cancel": "Отмена",
   "confirm": "Подтвердить",
   "close": "Закрыть",

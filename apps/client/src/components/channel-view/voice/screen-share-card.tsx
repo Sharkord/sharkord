@@ -28,6 +28,7 @@ import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { QualityButton } from './quality-button';
+import { StreamPlaybackButton } from './stream-playback-button';
 import { VolumeButton } from './volume-button';
 
 type TScreenShareCardProps = {
@@ -66,7 +67,8 @@ const ScreenShareCard = memo(
       screenShareRef,
       screenShareAudioRef,
       hasScreenShareStream,
-      hasScreenShareAudioStream
+      hasScreenShareAudioStream,
+      isScreenPlaybackPaused
     } = useVoiceRefs(userId);
 
     const { getConsumerCodec } = useVoice();
@@ -140,7 +142,8 @@ const ScreenShareCard = memo(
       }
     }, [isPinned, onPin, onUnpin, cardId, userId, resetZoom]);
 
-    if (!user || !hasScreenShareStream) return null;
+    if (!user || (!hasScreenShareStream && !isScreenPlaybackPaused))
+      return null;
 
     return (
       <div
@@ -166,24 +169,30 @@ const ScreenShareCard = memo(
       >
         <CardTheme />
 
-        <video
-          ref={screenShareRef}
-          autoPlay
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-contain bg-black"
-          style={{
-            transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`,
-            transition: isDragging ? 'none' : 'transform 0.1s ease-out'
-          }}
-        />
+        {hasScreenShareStream && (
+          <video
+            ref={screenShareRef}
+            autoPlay
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-contain bg-black"
+            style={{
+              transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`,
+              transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+            }}
+          />
+        )}
 
-        <audio
-          ref={screenShareAudioRef}
-          className="hidden"
-          autoPlay
-          playsInline
-        />
+        {!isScreenPlaybackPaused && (
+          <audio
+            ref={screenShareAudioRef}
+            className="hidden"
+            autoPlay
+            playsInline
+          />
+        )}
+
+        <StreamPlaybackButton userId={userId} kind={StreamKind.SCREEN} />
 
         <div
           className={cn(
@@ -196,6 +205,7 @@ const ScreenShareCard = memo(
           <div className={cardControlsClass(isCompact)}>
             <PictureInPictureButton
               videoRef={screenShareRef}
+              enabled={hasScreenShareStream}
               size={density.icon}
               className={cardControlClass()}
             />

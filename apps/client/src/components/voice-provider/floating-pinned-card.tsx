@@ -6,6 +6,7 @@ import {
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { usePinnedCard } from '@/features/server/voice/hooks';
 import type { TRemoteStreams } from '@/types';
+import { StreamKind } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
 import { ArrowDownLeft, SendToBack, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -16,6 +17,10 @@ import type { TExternalStreamsMap } from './hooks/use-remote-streams';
 
 type TFloatingPinnedCardProps = {
   remoteUserStreams: TRemoteStreams;
+  isRemotePlaybackPaused: (
+    remoteId: number,
+    kind: StreamKind.VIDEO | StreamKind.SCREEN
+  ) => boolean;
   externalStreams: TExternalStreamsMap;
   localVideoStream: MediaStream | undefined;
   localScreenShareStream: MediaStream | undefined;
@@ -24,6 +29,7 @@ type TFloatingPinnedCardProps = {
 const FloatingPinnedCard = memo(
   ({
     remoteUserStreams,
+    isRemotePlaybackPaused,
     externalStreams,
     localVideoStream,
     localScreenShareStream
@@ -49,18 +55,19 @@ const FloatingPinnedCard = memo(
         return externalStream?.videoStream;
       }
 
+      const isScreen = pinnedCard.type === PinnedCardType.SCREEN_SHARE;
       if (pinnedCard.userId === ownUserId) {
-        return localScreenShareStream || localVideoStream || undefined;
+        return isScreen ? localScreenShareStream : localVideoStream;
       }
 
-      const streamInfo = remoteUserStreams[pinnedCard.userId];
+      const kind = isScreen ? StreamKind.SCREEN : StreamKind.VIDEO;
+      if (isRemotePlaybackPaused(pinnedCard.userId, kind)) return undefined;
 
-      if (!streamInfo) return undefined;
-
-      return streamInfo.screen || streamInfo.video || undefined;
+      return remoteUserStreams[pinnedCard.userId]?.[kind];
     }, [
       pinnedCard,
       remoteUserStreams,
+      isRemotePlaybackPaused,
       externalStreams,
       ownUserId,
       localVideoStream,
