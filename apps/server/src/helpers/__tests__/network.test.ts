@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import {
   getIpBlockKey,
   isPrivateIP,
@@ -107,10 +107,14 @@ describe('getIpBlockKey', () => {
 });
 
 describe('resolveAnnouncedAddress', () => {
-  const fetchSpy = spyOn(globalThis, 'fetch');
+  // the global afterEach in setup.ts calls mock.restore(), so the spy has to be
+  // recreated per test or every test after the first reaches the real providers
+  let fetchSpy: ReturnType<typeof spyOn<typeof globalThis, 'fetch'>>;
 
-  afterEach(() => {
-    fetchSpy.mockReset();
+  beforeEach(() => {
+    fetchSpy = spyOn(globalThis, 'fetch').mockImplementation((async () => {
+      throw new Error('unexpected network call');
+    }) as unknown as typeof fetch);
   });
 
   test('returns an ipv4 address as is without any lookup', async () => {
@@ -143,7 +147,7 @@ describe('resolveAnnouncedAddress', () => {
   });
 
   test('falls back to the public ip providers when the hostname does not resolve', async () => {
-    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+    spyOn(console, 'warn').mockImplementation(() => {});
     const lookup = mock(async () => undefined);
 
     fetchSpy.mockImplementation(
@@ -155,8 +159,6 @@ describe('resolveAnnouncedAddress', () => {
     );
     expect(lookup).toHaveBeenCalledWith('nope.invalid');
     expect(fetchSpy).toHaveBeenCalled();
-
-    warnSpy.mockRestore();
   });
 
   test('uses the public ip providers when no address is configured', async () => {
