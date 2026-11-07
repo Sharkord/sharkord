@@ -1,5 +1,10 @@
-import { describe, expect, test } from 'bun:test';
-import { getIpBlockKey, isPrivateIP, isPublicIp } from '../network';
+import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import {
+  getIpBlockKey,
+  isPrivateIP,
+  isPublicIp,
+  resolveAnnouncedAddress
+} from '../network';
 
 // this predicate is the whole of the link preview's ssrf defence: everything it calls public
 // gets fetched by the server, from the server's own network position
@@ -98,5 +103,70 @@ describe('getIpBlockKey', () => {
 
   test('returns anything unparseable unchanged', () => {
     expect(getIpBlockKey('unknown')).toBe('unknown');
+  });
+});
+
+describe('resolveAnnouncedAddress', () => {
+  const fetchSpy = spyOn(globalThis, 'fetch');
+
+  afterEach(() => {
+    fetchSpy.mockReset();
+  });
+
+  test('returns an ipv4 address as is without any lookup', async () => {
+    const lookup = mock(async () => '9.9.9.9');
+
+    expect(await resolveAnnouncedAddress('203.0.113.7', lookup)).toBe(
+      '203.0.113.7'
+    );
+    expect(lookup).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  test('returns an ipv6 address as is without any lookup', async () => {
+    const lookup = mock(async () => '9.9.9.9');
+
+    expect(await resolveAnnouncedAddress('2001:db8::1', lookup)).toBe(
+      '2001:db8::1'
+    );
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  test('resolves a hostname through dns', async () => {
+    const lookup = mock(async () => '198.51.100.20');
+
+    expect(await resolveAnnouncedAddress(' voice.example.com ', lookup)).toBe(
+      '198.51.100.20'
+    );
+    expect(lookup).toHaveBeenCalledWith('voice.example.com');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  test('falls back to the public ip providers when the hostname does not resolve', async () => {
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+    const lookup = mock(async () => undefined);
+
+    fetchSpy.mockImplementation(
+      (async () => new Response('192.0.2.50\n')) as unknown as typeof fetch
+    );
+
+    expect(await resolveAnnouncedAddress('nope.invalid', lookup)).toBe(
+      '192.0.2.50'
+    );
+    expect(lookup).toHaveBeenCalledWith('nope.invalid');
+    expect(fetchSpy).toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+  });
+
+  test('uses the public ip providers when no address is configured', async () => {
+    const lookup = mock(async () => '9.9.9.9');
+
+    fetchSpy.mockImplementation(
+      (async () => new Response('192.0.2.51\n')) as unknown as typeof fetch
+    );
+
+    expect(await resolveAnnouncedAddress('', lookup)).toBe('192.0.2.51');
+    expect(lookup).not.toHaveBeenCalled();
   });
 });
