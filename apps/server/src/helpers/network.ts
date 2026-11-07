@@ -84,10 +84,14 @@ type THostnameLookup = (hostname: string) => Promise<string | undefined>;
 // ddns setups maintain, but still accept an aaaa-only hostname
 const lookupHostname: THostnameLookup = async (hostname) => {
   try {
-    return (await lookup(hostname, { family: 4 })).address;
+    const { address } = await lookup(hostname, { family: 4 });
+
+    return address;
   } catch {
     try {
-      return (await lookup(hostname)).address;
+      const { address } = await lookup(hostname);
+
+      return address;
     } catch {
       return undefined;
     }
