@@ -97,7 +97,7 @@
   "screenShareTitle": "Condividi lo schermo",
   "screenShareMessage": "Subito dopo sceglierai lo schermo o la finestra da condividere.",
   "shareSystemAudio": "Condividi l'audio di sistema",
-  "shareSystemAudioAllNote": "Sharkord condivide tutto l'audio riprodotto sul tuo computer, anche se scegli una sola finestra. Silenzia ciò che non vuoi far sentire agli altri.",
+  "shareSystemAudioAllNote": "Su Windows, condividere una finestra trasmette solo l'audio di quell'app. Se la cattura non è disponibile, la finestra viene condivisa senza audio. La condivisione dello schermo, oppure l'uso di macOS o Linux, trasmette l'audio di sistema. Più finestre della stessa app possono condividere l'audio.",
   "additionalScreenShareSettings": "Impostazioni aggiuntive di condivisione schermo",
   "screenShareConfirm": "Continua"
 }

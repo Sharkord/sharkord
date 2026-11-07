@@ -55,6 +55,8 @@ export type TDesktopBridge = {
   setConnectionState: (state: TDesktopConnectionState) => void;
   setVoiceActive: (active: boolean) => void;
   startSystemAudio: () => Promise<boolean>;
+  startWindowAudio: () => Promise<boolean>;
+  onWindowAudio: (listener: (data: Uint8Array | null) => void) => () => void;
   stopSystemAudio: () => Promise<void>;
   showNotification: (notification: TAppNotification) => void;
   setHotkeys: (
@@ -81,7 +83,7 @@ export type TDesktopBridge = {
 // pending for version 2:
 // - remove 'needs-modifier' from DESKTOP_HOTKEY_ERROR_REASONS and its client translation,
 //   the desktop app no longer sends it but version 1 apps still do
-export const DESKTOP_BRIDGE_VERSION = 1;
+export const DESKTOP_BRIDGE_VERSION = 2;
 
 // this should NEVER change, it is how every client and desktop app of any version find
 export type TDesktopEntry = {

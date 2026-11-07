@@ -97,7 +97,7 @@
   "screenShareTitle": "Compartilhar a tela",
   "screenShareMessage": "Em seguida você vai escolher a tela ou janela para compartilhar.",
   "shareSystemAudio": "Compartilhar o áudio do sistema",
-  "shareSystemAudioAllNote": "O Sharkord compartilha todo o áudio tocando no seu computador, mesmo que você escolha só uma janela. Silencie o que não quiser que os outros ouçam.",
+  "shareSystemAudioAllNote": "No Windows, compartilhar uma janela transmite apenas o áudio desse aplicativo. Se a captura não estiver disponível, a janela será compartilhada sem áudio. Ao compartilhar a tela, ou no macOS e Linux, o áudio do sistema será transmitido. Várias janelas do mesmo aplicativo podem compartilhar áudio.",
   "additionalScreenShareSettings": "Configurações adicionais de compartilhamento de tela",
   "screenShareConfirm": "Continuar"
 }

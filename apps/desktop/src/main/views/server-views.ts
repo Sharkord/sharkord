@@ -30,6 +30,10 @@ import {
   startSystemAudio,
   stopSystemAudio
 } from '../screen-share/system-audio';
+import {
+  startWindowAudio,
+  stopWindowAudio
+} from '../screen-share/window-audio';
 import { checkForUpdatesIfStale } from '../updater/auto-updater';
 
 type TPageState = 'loading' | 'loaded' | 'error';
@@ -132,6 +136,13 @@ const createServerViews = (
   const mismatches = new Map<string, TDesktopMismatch>();
   const waiters = new Set<() => void>();
   const displayCaptureAt = new Map<string, number>();
+  const displaySources = new Map<string, string>();
+  const stopCaptureAudio = (id: string) => {
+    displaySources.delete(id);
+    displayCaptureAt.delete(id);
+    stopWindowAudio(id);
+    stopSystemAudio(id);
+  };
   // insertion ordered, the last one joined voice most recently
   const voiceServerIds = new Set<string>();
   let activeId: string | null = null;
@@ -231,6 +242,7 @@ const createServerViews = (
 
     // no useSystemPicker: on macos 15+ it replaces this handler, and the loopback audio with it
     serverSession.setDisplayMediaRequestHandler(async (request, callback) => {
+      stopCaptureAudio(server.id);
       let source: DesktopCapturerSource | undefined;
 
       try {
@@ -258,13 +270,17 @@ const createServerViews = (
       }
 
       displayCaptureAt.set(server.id, Date.now());
+      if (request.audioRequested) displaySources.set(server.id, source.id);
 
       // loopback records everything playing on windows and macos 14.2+ (which needs
       // NSAudioCaptureUsageDescription or the track arrives silent), linux uses the virtual microphone
       const canLoopback =
         process.platform === 'win32' || process.platform === 'darwin';
 
-      const isLoopback = request.audioRequested && canLoopback;
+      const isWindowAudio =
+        process.platform === 'win32' && source.id.startsWith('window:');
+      const isLoopback =
+        request.audioRequested && canLoopback && !isWindowAudio;
 
       screenShareLogger.info('capture started', {
         serverId: server.id,
@@ -361,7 +377,7 @@ const createServerViews = (
         voiceServerIds.delete(server.id);
         displayCaptureAt.delete(server.id);
 
-        stopSystemAudio(server.id);
+        stopCaptureAudio(server.id);
         clearServerHotkeys(server.id);
         changed();
       }
@@ -411,7 +427,7 @@ const createServerViews = (
         unread.delete(server.id);
         voiceServerIds.delete(server.id);
 
-        stopSystemAudio(server.id);
+        stopCaptureAudio(server.id);
         clearServerHotkeys(server.id);
         changed();
       }
@@ -434,7 +450,7 @@ const createServerViews = (
     });
 
     view.webContents.on('destroyed', () => {
-      stopSystemAudio(server.id);
+      stopCaptureAudio(server.id);
       clearServerHotkeys(server.id);
     });
 
@@ -486,6 +502,24 @@ const createServerViews = (
       return startSystemAudio(server.id, shouldCaptureAllAudioOutputs());
     });
 
+    view.webContents.ipc.handle(BridgeChannel.START_WINDOW_AUDIO, () => {
+      const capturedAt = displayCaptureAt.get(server.id);
+      const sourceId = displaySources.get(server.id);
+      if (
+        capturedAt === undefined ||
+        Date.now() - capturedAt > SYSTEM_AUDIO_WINDOW_MS ||
+        !sourceId
+      )
+        return false;
+      // only a source approved by the picker can select a process; the page supplies no pid.
+      displaySources.delete(server.id);
+      return startWindowAudio(server.id, sourceId, (data) => {
+        if (!view.webContents.isDestroyed()) {
+          view.webContents.send(BridgeChannel.WINDOW_AUDIO_DATA, data);
+        }
+      });
+    });
+
     view.webContents.ipc.on(BridgeChannel.SET_VOICE_ACTIVE, (_event, value) => {
       if (typeof value !== 'boolean') {
         return;
@@ -501,7 +535,7 @@ const createServerViews = (
     });
 
     view.webContents.ipc.handle(BridgeChannel.STOP_SYSTEM_AUDIO, () => {
-      stopSystemAudio(server.id);
+      stopCaptureAudio(server.id);
     });
 
     view.webContents.ipc.on(

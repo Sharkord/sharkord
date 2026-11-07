@@ -1,5 +1,9 @@
 import { voiceLogger } from './browser-logger';
 import { getDesktopApi } from './desktop-api';
+import {
+  getDesktopWindowAudioTrack,
+  stopDesktopWindowAudio
+} from './desktop-window-audio';
 import { sleep } from './sleep';
 
 // from https://github.com/Vencord/venmic
@@ -36,6 +40,8 @@ const getDesktopSystemAudioTrack = async () => {
   }
 
   try {
+    const windowTrack = await getDesktopWindowAudioTrack();
+    if (windowTrack) return windowTrack;
     const started = await desktopApi.startSystemAudio();
 
     if (!started) {
@@ -75,6 +81,7 @@ const getDesktopSystemAudioTrack = async () => {
 };
 
 const stopDesktopSystemAudio = () => {
+  stopDesktopWindowAudio();
   const desktopApi = getDesktopApi();
 
   if (!desktopApi) {

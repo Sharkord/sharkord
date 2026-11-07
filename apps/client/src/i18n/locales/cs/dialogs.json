@@ -97,7 +97,7 @@
   "screenShareTitle": "Sdílet obrazovku",
   "screenShareMessage": "Potom vyberete obrazovku nebo okno, které chcete sdílet.",
   "shareSystemAudio": "Sdílet zvuk systému",
-  "shareSystemAudioAllNote": "Sharkord sdílí veškerý zvuk přehrávaný na vašem počítači, i když vyberete jen jedno okno. Ztlumte vše, co nechcete, aby ostatní slyšeli.",
+  "shareSystemAudioAllNote": "Ve Windows se při sdílení okna přenáší pouze zvuk vybrané aplikace. Pokud zachytávání zvuku aplikace není dostupné, okno se sdílí bez zvuku. Při sdílení obrazovky nebo v macOS a Linuxu se přenáší systémový zvuk. Více oken stejné aplikace může sdílet zvuk.",
   "additionalScreenShareSettings": "Další nastavení sdílení obrazovky",
   "screenShareConfirm": "Pokračovat"
 }

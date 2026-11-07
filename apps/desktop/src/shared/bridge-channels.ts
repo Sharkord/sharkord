@@ -10,6 +10,8 @@ enum BridgeChannel {
   SET_VOICE_ACTIVE = 'voice:set-active',
   START_SYSTEM_AUDIO = 'system-audio:start',
   STOP_SYSTEM_AUDIO = 'system-audio:stop',
+  START_WINDOW_AUDIO = 'window-audio:start',
+  WINDOW_AUDIO_DATA = 'window-audio:data',
   SHOW_NOTIFICATION = 'notification:show',
   SET_HOTKEYS = 'hotkeys:set',
   GET_HOTKEY_CAPABILITIES = 'hotkeys:get-capabilities',

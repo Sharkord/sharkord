@@ -36,6 +36,16 @@ const bridge: TDesktopBridge = {
     ipcRenderer.send(BridgeChannel.SET_VOICE_ACTIVE, active);
   },
   startSystemAudio: () => ipcRenderer.invoke(BridgeChannel.START_SYSTEM_AUDIO),
+  startWindowAudio: () => ipcRenderer.invoke(BridgeChannel.START_WINDOW_AUDIO),
+  onWindowAudio: (listener) => {
+    const handler = (_event: IpcRendererEvent, data: Uint8Array | null) => {
+      listener(data);
+    };
+    ipcRenderer.on(BridgeChannel.WINDOW_AUDIO_DATA, handler);
+    return () => {
+      ipcRenderer.removeListener(BridgeChannel.WINDOW_AUDIO_DATA, handler);
+    };
+  },
   stopSystemAudio: () => ipcRenderer.invoke(BridgeChannel.STOP_SYSTEM_AUDIO),
   setHotkeys: (bindings) =>
     ipcRenderer.invoke(BridgeChannel.SET_HOTKEYS, bindings),

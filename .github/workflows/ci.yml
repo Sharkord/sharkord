@@ -8,6 +8,18 @@ on:
   workflow_call:
 
 jobs:
+  windows-audio:
+    name: Windows audio helper
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build native helper
+        run: node apps/desktop/native/windows-audio/build.cjs
+      - name: Reject invalid capture targets
+        run:
+          node --test --test-name-pattern="invalid"
+          apps/desktop/native/windows-audio/test.cjs
+
   checks:
     name: Format, Lint & Typecheck
     runs-on: ubuntu-latest

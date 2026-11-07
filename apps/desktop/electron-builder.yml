@@ -40,6 +40,9 @@ linux:
   executableName: sharkord
   syncDesktopName: true
 win:
+  extraResources:
+    - from: native/windows-audio/build/sharkord-window-audio.exe
+      to: sharkord-window-audio.exe
   target:
     - nsis
     - msi

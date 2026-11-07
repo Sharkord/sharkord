@@ -97,7 +97,7 @@
   "screenShareTitle": "共享屏幕",
   "screenShareMessage": "接下来你将选择要共享的屏幕或窗口。",
   "shareSystemAudio": "共享系统音频",
-  "shareSystemAudioAllNote": "即使你只选择了一个窗口，Sharkord 也会共享电脑上播放的所有声音。请将不想让别人听到的内容静音。",
+  "shareSystemAudioAllNote": "在 Windows 上共享窗口时，仅共享该应用的音频。如果无法捕获应用音频，则共享的窗口不带音频。共享整个屏幕或使用 macOS、Linux 时，会共享系统音频。同一应用的多个窗口可能会一起共享音频。",
   "additionalScreenShareSettings": "其他屏幕共享设置",
   "screenShareConfirm": "继续"
 }

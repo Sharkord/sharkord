@@ -5,9 +5,9 @@
   "version": "0.1.0",
   "main": "./out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
-    "build": "electron-vite build",
-    "package": "electron-vite build && electron-builder",
+    "dev": "node native/windows-audio/build.cjs && electron-vite dev",
+    "build": "node native/windows-audio/build.cjs && electron-vite build",
+    "package": "node native/windows-audio/build.cjs && electron-vite build && electron-builder",
     "package:dev": "bun run package --publish never",
     "package:dev-linux": "bun run package --linux --publish never",
     "package:dev-win": "bun run package --win --publish never",
