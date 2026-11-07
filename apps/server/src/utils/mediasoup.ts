@@ -47,7 +47,7 @@ const loadMediasoup = async () => {
   logger.debug('Mediasoup worker loaded');
 
   if (IS_PRODUCTION) {
-    const announcedAddress = config.webRtc.announcedAddress || SERVER_PUBLIC_IP;
+    const announcedAddress = SERVER_PUBLIC_IP;
 
     webRtcServer = await mediaSoupWorker.createWebRtcServer({
       listenInfos: [
