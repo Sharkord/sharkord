@@ -4,7 +4,7 @@ import { parse, stringify } from 'ini';
 import z from 'zod';
 import { applyEnvOverrides } from './helpers/apply-env-overrides';
 import { ensureServerDirs } from './helpers/ensure-server-dirs';
-import { getPrivateIp, getPublicIp } from './helpers/network';
+import { getPrivateIp, resolveAnnouncedAddress } from './helpers/network';
 import { CONFIG_INI_PATH } from './helpers/paths';
 import { deepMerge } from './utils/deep-merge';
 import { IS_DEVELOPMENT, IS_TEST } from './utils/env';
@@ -163,11 +163,11 @@ config = IS_TEST ? config : deepFreeze(config);
 
 const SERVER_PRIVATE_IP = await getPrivateIp();
 
-// only used as the mediasoup announced address when the operator has not set
-// one, so an explicit announcedAddress makes the third party lookup pointless
-const SERVER_PUBLIC_IP = config.webRtc.announcedAddress
-  ? undefined
-  : await getPublicIp();
+// the address mediasoup announces. an explicit ip is used as is, a hostname is
+// resolved through dns, and only when neither works do we ask the third party providers
+const SERVER_PUBLIC_IP = await resolveAnnouncedAddress(
+  config.webRtc.announcedAddress
+);
 
 export {
   config,
