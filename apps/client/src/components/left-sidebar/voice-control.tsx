@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { ExternalAudioStreams } from '../channel-view/voice/external-audio-streams';
 import { VoiceAudioStreams } from '../channel-view/voice/voice-audio-streams';
 import { PluginSlotRenderer } from '../plugin-slot-renderer';
+import { CallDuration } from './call-duration';
 import { StatsPopover } from './stats-popover';
 
 const VoiceControl = memo(() => {
@@ -85,6 +86,7 @@ const VoiceControl = memo(() => {
             <span className={cn('text-xs font-medium', connectionInfo.color)}>
               {connectionInfo.text}
             </span>
+            <CallDuration channelId={voiceChannelId} />
           </div>
         </StatsPopover>
 
