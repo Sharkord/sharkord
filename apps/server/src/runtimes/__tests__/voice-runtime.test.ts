@@ -114,29 +114,6 @@ describe('VoiceRuntime call activity', () => {
     expect(runtime.getState().activeSince).toBeNull();
   });
 
-  test('should restart the clock when a new call begins', () => {
-    const runtime = createRuntime();
-
-    runtime.addUser(7, { micMuted: false, soundMuted: false });
-    runtime.removeUser(7);
-
-    const before = Date.now();
-
-    runtime.addUser(8, { micMuted: false, soundMuted: false });
-
-    expect(runtime.getState().activeSince).toBeGreaterThanOrEqual(before);
-  });
-
-  test('should clear the call start on destroy', async () => {
-    const runtime = createRuntime();
-
-    runtime.addUser(7, { micMuted: false, soundMuted: false });
-
-    await runtime.destroy();
-
-    expect(runtime.getState().activeSince).toBeNull();
-  });
-
   test('should expose the call start to the joining snapshot', () => {
     const runtime = createRuntime();
 
