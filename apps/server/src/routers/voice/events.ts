@@ -47,6 +47,15 @@ const onUserVoiceMovedRoute = protectedProcedure.subscription(
   }
 );
 
+const onVoiceChannelStateUpdateRoute = protectedProcedure.subscription(
+  async ({ ctx }) => {
+    return ctx.pubsub.subscribeFor(
+      ctx.user.id,
+      ServerEvents.VOICE_CHANNEL_STATE_UPDATE
+    );
+  }
+);
+
 const onVoiceAddExternalStreamRoute = protectedProcedure.subscription(
   async ({ ctx }) => {
     return ctx.pubsub.subscribeFor(
@@ -109,6 +118,7 @@ export {
   onUserVoiceMovedRoute,
   onUserVoiceReactionRoute,
   onVoiceAddExternalStreamRoute,
+  onVoiceChannelStateUpdateRoute,
   onVoiceNewProducerRoute,
   onVoiceProducerClosedRoute,
   onVoiceRemoveExternalStreamRoute,

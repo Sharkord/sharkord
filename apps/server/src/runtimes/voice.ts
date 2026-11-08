@@ -142,7 +142,11 @@ const EXTERNAL_STREAM_ID_BASE = 1_000_000;
 
 class VoiceRuntime {
   public readonly id: number;
-  private state: TChannelState = { users: [], externalStreams: {} };
+  private state: TChannelState = {
+    users: [],
+    externalStreams: {},
+    activeSince: null
+  };
   private router?: Router<AppData>;
   private consumerTransports: TTransportMap = {};
   private producerTransports: TTransportMap = {};
@@ -202,17 +206,14 @@ class VoiceRuntime {
     voiceRuntimes.forEach((runtime, channelId) => {
       if (!channelIds.has(channelId)) return;
 
-      map[channelId] = {
-        users: {}
-      };
+      const { users, activeSince } = runtime.getState();
+      const entry: TVoiceMap[number] = { users: {}, activeSince };
 
-      runtime.getState().users.forEach((user) => {
-        if (!map[channelId]) {
-          map[channelId] = { users: {} };
-        }
-
-        map[channelId].users[user.userId] = user.state;
+      users.forEach((user) => {
+        entry.users[user.userId] = user.state;
       });
+
+      map[channelId] = entry;
     });
 
     return map;
@@ -402,6 +403,7 @@ class VoiceRuntime {
     );
 
     this.state.users = [];
+    this.state.activeSince = null;
 
     remainingUsers.forEach(({ userId }) => {
       eventBus.emit('user:left_voice', {
@@ -449,6 +451,11 @@ class VoiceRuntime {
       }
     });
 
+    if (this.state.users.length === 1) {
+      this.state.activeSince = Date.now();
+      this.publishChannelState();
+    }
+
     eventBus.emit('user:joined_voice', {
       userId: userId,
       channelId: this.id
@@ -456,6 +463,13 @@ class VoiceRuntime {
   };
 
   public removeUser = (userId: number) => {
+    const user = this.getUser(userId);
+
+    if (user && this.state.users.length === 1) {
+      this.state.activeSince = null;
+      this.publishChannelState();
+    }
+
     this.state.users = this.state.users.filter((u) => u.userId !== userId);
 
     this.cleanupUserResources(userId);
@@ -463,6 +477,13 @@ class VoiceRuntime {
     eventBus.emit('user:left_voice', {
       userId: userId,
       channelId: this.id
+    });
+  };
+
+  private publishChannelState = () => {
+    publishVoicePresence(this, ServerEvents.VOICE_CHANNEL_STATE_UPDATE, {
+      channelId: this.id,
+      state: { activeSince: this.state.activeSince }
     });
   };
 
