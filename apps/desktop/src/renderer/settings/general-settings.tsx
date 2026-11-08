@@ -1,8 +1,8 @@
-import { Button, Group, SettingsSection, Switch } from '@sharkord/ui';
-import { memo, useCallback } from 'react';
+import { Button, Group, SettingsSection, Slider, Switch } from '@sharkord/ui';
+import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TDesktopSettings } from '../../shared/types';
-import { canToggleMenuBar, hasTray, isLinux } from '../platform';
+import { canToggleMenuBar, hasTray, isLinux, isWindows } from '../platform';
 import { FolderSettings } from './folder-settings';
 
 type TGeneralSettingsProps = {
@@ -43,6 +43,35 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
   const handleCaptureAllAudioOutputsChange = useCallback((checked: boolean) => {
     window.desktop.updateSettings({ captureAllAudioOutputs: checked });
   }, []);
+
+  const handleAttenuationEnabledChange = useCallback((checked: boolean) => {
+    window.desktop.updateSettings({ attenuationEnabled: checked });
+  }, []);
+
+  const handleAttenuationPercentChange = useCallback(([percent]: number[]) => {
+    if (percent !== undefined) {
+      window.desktop.updateSettings({ attenuationPercent: percent });
+    }
+  }, []);
+
+  const handleAttenuateWhenOthersSpeakChange = useCallback(
+    (checked: boolean) => {
+      window.desktop.updateSettings({ attenuateWhenOthersSpeak: checked });
+    },
+    []
+  );
+
+  const handleAttenuateWhenSelfSpeaksChange = useCallback(
+    (checked: boolean) => {
+      window.desktop.updateSettings({ attenuateWhenSelfSpeaks: checked });
+    },
+    []
+  );
+
+  const attenuationPercentValue = useMemo(
+    () => [settings.attenuationPercent],
+    [settings.attenuationPercent]
+  );
 
   const handleGetAppFolder = useCallback(
     () => window.desktop.getAppFolder(),
@@ -172,6 +201,59 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
           </Button>
         </Group>
       </SettingsSection>
+      {isWindows && (
+        <SettingsSection title={t('settings.attenuation')}>
+          <Group
+            label={t('settings.attenuationEnabled')}
+            description={t('settings.attenuationEnabledDescription')}
+          >
+            <Switch
+              checked={settings.attenuationEnabled}
+              onCheckedChange={handleAttenuationEnabledChange}
+            />
+          </Group>
+          {settings.attenuationEnabled && (
+            <>
+              <Group
+                label={t('settings.attenuationStrength')}
+                description={t('settings.attenuationStrengthDescription')}
+              >
+                <Slider
+                  className="max-w-xs"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={attenuationPercentValue}
+                  onValueChange={handleAttenuationPercentChange}
+                  rightSlot={
+                    <span className="text-sm text-muted-foreground w-10 text-right">
+                      {settings.attenuationPercent}%
+                    </span>
+                  }
+                />
+              </Group>
+              <Group
+                label={t('settings.attenuateWhenOthersSpeak')}
+                description={t('settings.attenuateWhenOthersSpeakDescription')}
+              >
+                <Switch
+                  checked={settings.attenuateWhenOthersSpeak}
+                  onCheckedChange={handleAttenuateWhenOthersSpeakChange}
+                />
+              </Group>
+              <Group
+                label={t('settings.attenuateWhenSelfSpeaks')}
+                description={t('settings.attenuateWhenSelfSpeaksDescription')}
+              >
+                <Switch
+                  checked={settings.attenuateWhenSelfSpeaks}
+                  onCheckedChange={handleAttenuateWhenSelfSpeaksChange}
+                />
+              </Group>
+            </>
+          )}
+        </SettingsSection>
+      )}
       {isLinux && (
         <SettingsSection title={t('settings.screenShare')}>
           <Group

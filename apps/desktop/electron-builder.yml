@@ -40,6 +40,9 @@ linux:
   executableName: sharkord
   syncDesktopName: true
 win:
+  extraResources:
+    - from: native/windows-attenuation/build/sharkord-audio-attenuator.exe
+      to: sharkord-audio-attenuator.exe
   target:
     - nsis
     - msi

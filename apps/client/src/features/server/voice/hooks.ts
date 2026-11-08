@@ -1,8 +1,13 @@
 import { useAudioLevel } from '@/components/channel-view/voice/hooks/use-audio-level';
-import { VoiceProviderContext } from '@/components/voice-provider';
+import {
+  DEFAULT_VOICE_PROVIDER,
+  getActiveVoiceProvider,
+  subscribeVoiceProvider,
+  VoiceProviderContext
+} from '@/components/voice-provider';
 import type { IRootState } from '@/features/store';
 import { StreamKind } from '@sharkord/shared';
-import { useContext, useMemo } from 'react';
+import { useContext, useMemo, useSyncExternalStore } from 'react';
 import { useSelector } from 'react-redux';
 import { useIsOwnUser } from '../users/hooks';
 import {
@@ -30,6 +35,10 @@ export const useVoiceChannelAudioExternalStreams = (channelId: number) =>
 
 export const useVoice = () => {
   const context = useContext(VoiceProviderContext);
+  const externalContext = useSyncExternalStore(
+    subscribeVoiceProvider,
+    getActiveVoiceProvider
+  );
 
   if (!context) {
     throw new Error(
@@ -37,7 +46,7 @@ export const useVoice = () => {
     );
   }
 
-  return context;
+  return context === DEFAULT_VOICE_PROVIDER ? externalContext : context;
 };
 
 export const useOwnVoiceState = () => useSelector(ownVoiceStateSelector);

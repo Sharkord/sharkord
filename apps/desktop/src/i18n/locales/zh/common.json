@@ -151,7 +151,16 @@
     "openAppFolder": "打开应用文件夹",
     "logsFolder": "日志文件夹",
     "logsFolderDescription": "应用的日志文件。报告问题时请附上 main.log。",
-    "openLogsFolder": "打开日志文件夹"
+    "openLogsFolder": "打开日志文件夹",
+    "attenuation": "音频衰减",
+    "attenuationEnabled": "降低其他应用程序音量",
+    "attenuationEnabledDescription": "在 Sharkord 检测到语音活动时，自动降低其他 Windows 应用程序的音量。",
+    "attenuationStrength": "衰减强度",
+    "attenuationStrengthDescription": "衰减激活时降低其他应用程序音量的幅度。",
+    "attenuateWhenOthersSpeak": "其他人说话时",
+    "attenuateWhenOthersSpeakDescription": "当您的语音频道中有人说话时降低其他应用程序的音量。",
+    "attenuateWhenSelfSpeaks": "我说话时",
+    "attenuateWhenSelfSpeaksDescription": "当您对着麦克风说话时降低其他应用程序的音量。"
   },
   "updateDialog": {
     "title": "更新已就绪",

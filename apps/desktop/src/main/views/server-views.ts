@@ -19,6 +19,10 @@ import { BridgeChannel } from '../../shared/bridge-channels';
 import { RAIL_WIDTH } from '../../shared/constants';
 import type { TServer, TServerStatus } from '../../shared/types';
 import {
+  clearServerSpeaking,
+  setServerSpeaking
+} from '../audio/audio-attenuation';
+import {
   clearServerHotkeys,
   getHotkeyCapabilities,
   setServerHotkeys
@@ -50,6 +54,11 @@ const ALLOWED_PERMISSIONS = new Set([
 const unreadStateSchema = z.object({
   count: z.number().int().min(0),
   mentioned: z.boolean()
+});
+
+const speakingStateSchema = z.object({
+  selfSpeaking: z.boolean(),
+  othersSpeaking: z.boolean()
 });
 
 const connectionStateSchema = z.enum(DESKTOP_CONNECTION_STATES);
@@ -140,6 +149,10 @@ const createServerViews = (
   let spellcheckEnabled = true;
 
   const layout = () => {
+    if (win.isDestroyed()) {
+      return;
+    }
+
     const { width, height } = win.getContentBounds();
     const inset = layoutState.railVisible ? RAIL_WIDTH : 0;
 
@@ -362,6 +375,7 @@ const createServerViews = (
         displayCaptureAt.delete(server.id);
 
         stopSystemAudio(server.id);
+        clearServerSpeaking(server.id);
         clearServerHotkeys(server.id);
         changed();
       }
@@ -412,6 +426,7 @@ const createServerViews = (
         voiceServerIds.delete(server.id);
 
         stopSystemAudio(server.id);
+        clearServerSpeaking(server.id);
         clearServerHotkeys(server.id);
         changed();
       }
@@ -435,6 +450,7 @@ const createServerViews = (
 
     view.webContents.on('destroyed', () => {
       stopSystemAudio(server.id);
+      clearServerSpeaking(server.id);
       clearServerHotkeys(server.id);
     });
 
@@ -495,10 +511,25 @@ const createServerViews = (
 
       if (value) {
         voiceServerIds.add(server.id);
+      } else {
+        clearServerSpeaking(server.id);
       }
 
       onChange();
     });
+
+    view.webContents.ipc.on(
+      BridgeChannel.SET_VOICE_SPEAKING,
+      (_event, payload) => {
+        const parsed = speakingStateSchema.safeParse(payload);
+
+        if (!parsed.success) {
+          return;
+        }
+
+        setServerSpeaking(server.id, parsed.data);
+      }
+    );
 
     view.webContents.ipc.handle(BridgeChannel.STOP_SYSTEM_AUDIO, () => {
       stopSystemAudio(server.id);
@@ -692,6 +723,7 @@ const createServerViews = (
     mismatches.delete(id);
     voiceServerIds.delete(id);
     displayCaptureAt.delete(id);
+    clearServerSpeaking(id);
     // releases anything still waiting on this server to settle
     changed();
 

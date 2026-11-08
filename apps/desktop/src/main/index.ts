@@ -17,6 +17,10 @@ import {
   wipeUserDataIfRequested
 } from './advanced/reset-app';
 import { getAppFolder, openAppFolder } from './app-folder/open-app-folder';
+import {
+  setAttenuationSettings,
+  stopAudioAttenuation
+} from './audio/audio-attenuation';
 import { findDeepLink, parseDeepLink } from './deep-links/parse-deep-link';
 import { registerProtocol } from './deep-links/register-protocol';
 import { setActiveHotkeyServer } from './hotkeys/global-hotkeys';
@@ -149,6 +153,7 @@ const start = () => {
 
       tray?.setUnread(state.unread);
       setActiveHotkeyServer(views.getVoiceServerId() ?? state.selectedId);
+      setAttenuationSettings(state.settings);
 
       if (hasTray) {
         const iconServer = state.settings.dynamicTrayIcon
@@ -317,6 +322,7 @@ if (hasLock) {
 
   app.on('before-quit', () => {
     isQuitting = true;
+    stopAudioAttenuation();
     tray?.destroy();
   });
 

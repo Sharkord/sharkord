@@ -3,6 +3,7 @@ import { dirname } from 'path';
 import { z } from 'zod';
 import {
   DEFAULT_SETTINGS,
+  desktopSettingsSchema,
   type TDesktopSettings
 } from '../../shared/desktop-settings';
 import type { TServer } from '../../shared/types';
@@ -37,17 +38,19 @@ const parseSettings = (value: unknown): TDesktopSettings => {
       ? (value as Record<string, unknown>)
       : {};
 
-  const settings = { ...DEFAULT_SETTINGS };
+  const settings: Record<string, unknown> = { ...DEFAULT_SETTINGS };
 
-  for (const key of Object.keys(settings) as (keyof TDesktopSettings)[]) {
-    const stored = candidate[key];
+  for (const key of Object.keys(
+    DEFAULT_SETTINGS
+  ) as (keyof TDesktopSettings)[]) {
+    const parsed = desktopSettingsSchema.shape[key].safeParse(candidate[key]);
 
-    if (typeof stored === 'boolean') {
-      settings[key] = stored;
+    if (parsed.success) {
+      settings[key] = parsed.data;
     }
   }
 
-  return settings;
+  return settings as TDesktopSettings;
 };
 
 const keepValid = <T>(value: unknown, schema: z.ZodType<T>): T[] => {

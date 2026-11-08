@@ -11,7 +11,11 @@ const desktopSettingsSchema = z.strictObject({
   dynamicTrayIcon: z.boolean(),
   autoUpdate: z.boolean(),
   captureAllAudioOutputs: z.boolean(),
-  spellcheck: z.boolean()
+  spellcheck: z.boolean(),
+  attenuationEnabled: z.boolean(),
+  attenuationPercent: z.number().int().min(0).max(100),
+  attenuateWhenOthersSpeak: z.boolean(),
+  attenuateWhenSelfSpeaks: z.boolean()
 });
 
 type TDesktopSettings = z.infer<typeof desktopSettingsSchema>;
@@ -25,7 +29,11 @@ const DEFAULT_SETTINGS: TDesktopSettings = {
   dynamicTrayIcon: true,
   autoUpdate: true,
   captureAllAudioOutputs: false,
-  spellcheck: true
+  spellcheck: true,
+  attenuationEnabled: false,
+  attenuationPercent: 50,
+  attenuateWhenOthersSpeak: true,
+  attenuateWhenSelfSpeaks: false
 };
 
 export { DEFAULT_SETTINGS, desktopSettingsSchema };

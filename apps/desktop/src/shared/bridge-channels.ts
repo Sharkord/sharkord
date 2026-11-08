@@ -8,6 +8,7 @@ enum BridgeChannel {
   SET_UNREAD = 'unread:set',
   SET_CONNECTION_STATE = 'connection:set',
   SET_VOICE_ACTIVE = 'voice:set-active',
+  SET_VOICE_SPEAKING = 'voice:set-speaking',
   START_SYSTEM_AUDIO = 'system-audio:start',
   STOP_SYSTEM_AUDIO = 'system-audio:stop',
   SHOW_NOTIFICATION = 'notification:show',

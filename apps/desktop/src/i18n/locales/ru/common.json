@@ -151,7 +151,16 @@
     "openAppFolder": "Открыть папку приложения",
     "logsFolder": "Папка журналов",
     "logsFolderDescription": "Файлы журналов приложения. Прикрепите main.log, когда сообщаете о проблеме.",
-    "openLogsFolder": "Открыть папку журналов"
+    "openLogsFolder": "Открыть папку журналов",
+    "attenuation": "Приглушение звука",
+    "attenuationEnabled": "Уменьшать громкость других приложений",
+    "attenuationEnabledDescription": "Автоматически снижает громкость других приложений Windows при обнаружении голосовой активности в Sharkord.",
+    "attenuationStrength": "Сила приглушения",
+    "attenuationStrengthDescription": "Насколько снижать громкость других приложений при активном приглушении.",
+    "attenuateWhenOthersSpeak": "Когда говорят другие",
+    "attenuateWhenOthersSpeakDescription": "Снижает громкость других приложений, когда кто-то говорит в вашем голосовом канале.",
+    "attenuateWhenSelfSpeaks": "Когда говорю я",
+    "attenuateWhenSelfSpeaksDescription": "Снижает громкость других приложений, когда вы говорите в микрофон."
   },
   "updateDialog": {
     "title": "Обновление готово",

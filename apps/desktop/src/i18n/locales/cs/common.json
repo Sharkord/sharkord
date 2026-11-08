@@ -151,7 +151,16 @@
     "openAppFolder": "Otevřít složku aplikace",
     "logsFolder": "Složka s logy",
     "logsFolderDescription": "Soubory s logy aplikace. Při nahlášení problému přiložte main.log.",
-    "openLogsFolder": "Otevřít složku s logy"
+    "openLogsFolder": "Otevřít složku s logy",
+    "attenuation": "Ztlumení zvuku",
+    "attenuationEnabled": "Snížit hlasitost ostatních aplikací",
+    "attenuationEnabledDescription": "Automaticky sníží hlasitost ostatních aplikací systému Windows při zjištění hlasové aktivity v Sharkordu.",
+    "attenuationStrength": "Síla ztlumení",
+    "attenuationStrengthDescription": "O kolik snížit hlasitost ostatních aplikací, když je ztlumení aktivní.",
+    "attenuateWhenOthersSpeak": "Když mluví ostatní",
+    "attenuateWhenOthersSpeakDescription": "Sníží hlasitost ostatních aplikací, když v hlasovém kanálu mluví někdo jiný.",
+    "attenuateWhenSelfSpeaks": "Když mluvím já",
+    "attenuateWhenSelfSpeaksDescription": "Sníží hlasitost ostatních aplikací, když mluvíte do mikrofonu."
   },
   "updateDialog": {
     "title": "Aktualizace je připravena",

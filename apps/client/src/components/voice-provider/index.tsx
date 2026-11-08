@@ -148,7 +148,7 @@ export type TVoiceProvider = {
   > &
   ReturnType<typeof useVoiceControls>;
 
-const VoiceProviderContext = createContext<TVoiceProvider>({
+const DEFAULT_VOICE_PROVIDER: TVoiceProvider = {
   loading: false,
   connectionStatus: ConnectionStatus.DISCONNECTED,
   audioVideoRefsMap: new Map(),
@@ -185,7 +185,32 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
 
   remoteUserStreams: {},
   externalStreams: {}
-});
+};
+
+const VoiceProviderContext = createContext<TVoiceProvider>(
+  DEFAULT_VOICE_PROVIDER
+);
+
+let activeVoiceProvider: TVoiceProvider = DEFAULT_VOICE_PROVIDER;
+const voiceProviderListeners = new Set<() => void>();
+
+const setActiveVoiceProvider = (next: TVoiceProvider) => {
+  activeVoiceProvider = next;
+
+  for (const listener of voiceProviderListeners) {
+    listener();
+  }
+};
+
+const getActiveVoiceProvider = () => activeVoiceProvider;
+
+const subscribeVoiceProvider = (listener: () => void) => {
+  voiceProviderListeners.add(listener);
+
+  return () => {
+    voiceProviderListeners.delete(listener);
+  };
+};
 
 type TVoiceProviderProps = {
   children: React.ReactNode;
@@ -1444,6 +1469,14 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     ]
   );
 
+  useEffect(() => {
+    setActiveVoiceProvider(contextValue);
+
+    return () => {
+      setActiveVoiceProvider(DEFAULT_VOICE_PROVIDER);
+    };
+  }, [contextValue]);
+
   const statsContextValue = useMemo(
     () => ({ stats: transportStats, subscribe: subscribeToStats }),
     [transportStats, subscribeToStats]
@@ -1468,4 +1501,10 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
   );
 });
 
-export { VoiceProvider, VoiceProviderContext };
+export {
+  DEFAULT_VOICE_PROVIDER,
+  getActiveVoiceProvider,
+  subscribeVoiceProvider,
+  VoiceProvider,
+  VoiceProviderContext
+};

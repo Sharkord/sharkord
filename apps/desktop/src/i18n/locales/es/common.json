@@ -151,7 +151,16 @@
     "openAppFolder": "Abrir carpeta de la app",
     "logsFolder": "Carpeta de registros",
     "logsFolderDescription": "Los archivos de registro de la app. Adjunta main.log cuando informes de un problema.",
-    "openLogsFolder": "Abrir carpeta de registros"
+    "openLogsFolder": "Abrir carpeta de registros",
+    "attenuation": "Atenuación de audio",
+    "attenuationEnabled": "Bajar el volumen de otras aplicaciones",
+    "attenuationEnabledDescription": "Reduce automáticamente el volumen de otras aplicaciones de Windows mientras se detecta actividad de voz en Sharkord.",
+    "attenuationStrength": "Nivel de atenuación",
+    "attenuationStrengthDescription": "Cuánto se baja el volumen de otras aplicaciones cuando la atenuación está activa.",
+    "attenuateWhenOthersSpeak": "Cuando otros hablen",
+    "attenuateWhenOthersSpeakDescription": "Baja el volumen de otras aplicaciones cuando otra persona hable en tu canal de voz.",
+    "attenuateWhenSelfSpeaks": "Cuando yo hable",
+    "attenuateWhenSelfSpeaksDescription": "Baja el volumen de otras aplicaciones cuando hables por tu micrófono."
   },
   "updateDialog": {
     "title": "Actualización lista",

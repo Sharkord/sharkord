@@ -151,7 +151,16 @@
     "openAppFolder": "Ouvrir le dossier de l'application",
     "logsFolder": "Dossier des journaux",
     "logsFolderDescription": "Les fichiers journaux de l'application. Joignez main.log quand vous signalez un problème.",
-    "openLogsFolder": "Ouvrir le dossier des journaux"
+    "openLogsFolder": "Ouvrir le dossier des journaux",
+    "attenuation": "Atténuation audio",
+    "attenuationEnabled": "Baisser le volume des autres applications",
+    "attenuationEnabledDescription": "Réduit automatiquement le volume des autres applications Windows lorsque de l'activité vocale est détectée dans Sharkord.",
+    "attenuationStrength": "Intensité de l'atténuation",
+    "attenuationStrengthDescription": "Niveau de réduction du volume des autres applications lorsque l'atténuation est active.",
+    "attenuateWhenOthersSpeak": "Quand les autres parlent",
+    "attenuateWhenOthersSpeakDescription": "Baisse le volume des autres applications quand quelqu'un d'autre parle dans votre salon vocal.",
+    "attenuateWhenSelfSpeaks": "Quand je parle",
+    "attenuateWhenSelfSpeaksDescription": "Baisse le volume des autres applications quand vous parlez dans votre micro."
   },
   "updateDialog": {
     "title": "Mise à jour prête",

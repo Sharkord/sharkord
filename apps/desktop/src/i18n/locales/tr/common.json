@@ -142,7 +142,16 @@
     "unknownVersion": "Bilinmiyor",
     "appFolder": "Uygulama klasörü",
     "appFolderDescription": "Uygulamanın sunucularınızı, oturumlarınızı ve ayarlarınızı sakladığı yer.",
-    "openAppFolder": "Uygulama klasörünü aç"
+    "openAppFolder": "Uygulama klasörünü aç",
+    "attenuation": "Ses kısma",
+    "attenuationEnabled": "Diğer uygulamaların sesini kıs",
+    "attenuationEnabledDescription": "Sharkord'da ses etkinliği algılandığında diğer Windows uygulamalarının sesini otomatik olarak azaltır.",
+    "attenuationStrength": "Kısma oranı",
+    "attenuationStrengthDescription": "Ses kısma etkinken diğer uygulamaların sesinin ne kadar azaltılacağı.",
+    "attenuateWhenOthersSpeak": "Diğerleri konuştuğunda",
+    "attenuateWhenOthersSpeakDescription": "Ses kanalınızda başka biri konuştuğunda diğer uygulamaların sesini kısar.",
+    "attenuateWhenSelfSpeaks": "Ben konuştuğumda",
+    "attenuateWhenSelfSpeaksDescription": "Mikrofonunuza konuştuğunuzda diğer uygulamaların sesini kısar."
   },
   "updateDialog": {
     "title": "Güncelleme hazır",

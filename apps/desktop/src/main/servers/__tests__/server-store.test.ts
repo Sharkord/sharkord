@@ -101,7 +101,11 @@ describe('server store', () => {
         dynamicTrayIcon: false,
         autoUpdate: false,
         captureAllAudioOutputs: true,
-        spellcheck: false
+        spellcheck: false,
+        attenuationEnabled: true,
+        attenuationPercent: 75,
+        attenuateWhenOthersSpeak: false,
+        attenuateWhenSelfSpeaks: true
       },
       mediaAllowedIds: []
     });
@@ -115,7 +119,11 @@ describe('server store', () => {
       dynamicTrayIcon: false,
       autoUpdate: false,
       captureAllAudioOutputs: true,
-      spellcheck: false
+      spellcheck: false,
+      attenuationEnabled: true,
+      attenuationPercent: 75,
+      attenuateWhenOthersSpeak: false,
+      attenuateWhenSelfSpeaks: true
     });
   });
 
@@ -133,7 +141,11 @@ describe('server store', () => {
           dynamicTrayIcon: 'no',
           autoUpdate: 0,
           captureAllAudioOutputs: 'yes',
-          spellcheck: 'no'
+          spellcheck: 'no',
+          attenuationEnabled: 'yes',
+          attenuationPercent: 150,
+          attenuateWhenOthersSpeak: 'no',
+          attenuateWhenSelfSpeaks: 1
         }
       })
     );
@@ -147,7 +159,11 @@ describe('server store', () => {
       dynamicTrayIcon: true,
       autoUpdate: true,
       captureAllAudioOutputs: false,
-      spellcheck: true
+      spellcheck: true,
+      attenuationEnabled: false,
+      attenuationPercent: 50,
+      attenuateWhenOthersSpeak: true,
+      attenuateWhenSelfSpeaks: false
     });
   });
 
@@ -161,7 +177,11 @@ describe('server store', () => {
       dynamicTrayIcon: true,
       autoUpdate: true,
       captureAllAudioOutputs: false,
-      spellcheck: true
+      spellcheck: true,
+      attenuationEnabled: false,
+      attenuationPercent: 50,
+      attenuateWhenOthersSpeak: true,
+      attenuateWhenSelfSpeaks: false
     });
   });
 

@@ -81,6 +81,19 @@ describe('ipc request arguments', () => {
     ).toBe(true);
     expect(args.safeParse([{ autoUpdate: false }]).success).toBe(true);
     expect(args.safeParse([{ dynamicTrayIcon: false }]).success).toBe(true);
+    expect(
+      args.safeParse([
+        {
+          attenuationEnabled: true,
+          attenuationPercent: 60,
+          attenuateWhenOthersSpeak: true,
+          attenuateWhenSelfSpeaks: false
+        }
+      ]).success
+    ).toBe(true);
+    expect(args.safeParse([{ attenuationPercent: -1 }]).success).toBe(false);
+    expect(args.safeParse([{ attenuationPercent: 101 }]).success).toBe(false);
+    expect(args.safeParse([{ attenuationPercent: 50.5 }]).success).toBe(false);
     expect(args.safeParse([{}]).success).toBe(true);
     expect(args.safeParse([{ connectAllOnStartup: 'yes' }]).success).toBe(
       false

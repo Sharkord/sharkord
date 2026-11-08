@@ -35,6 +35,9 @@ const bridge: TDesktopBridge = {
   setVoiceActive: (active) => {
     ipcRenderer.send(BridgeChannel.SET_VOICE_ACTIVE, active);
   },
+  setVoiceSpeaking: (speaking) => {
+    ipcRenderer.send(BridgeChannel.SET_VOICE_SPEAKING, speaking);
+  },
   startSystemAudio: () => ipcRenderer.invoke(BridgeChannel.START_SYSTEM_AUDIO),
   stopSystemAudio: () => ipcRenderer.invoke(BridgeChannel.STOP_SYSTEM_AUDIO),
   setHotkeys: (bindings) =>

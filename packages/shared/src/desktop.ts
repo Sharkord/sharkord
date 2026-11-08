@@ -5,6 +5,11 @@ export type TDesktopUnreadState = {
   mentioned: boolean;
 };
 
+export type TDesktopVoiceSpeakingState = {
+  selfSpeaking: boolean;
+  othersSpeaking: boolean;
+};
+
 export const DESKTOP_CONNECTION_STATES = [
   'connecting',
   'connected',
@@ -54,6 +59,7 @@ export type TDesktopBridge = {
   setUnreadState: (state: TDesktopUnreadState) => void;
   setConnectionState: (state: TDesktopConnectionState) => void;
   setVoiceActive: (active: boolean) => void;
+  setVoiceSpeaking: (speaking: TDesktopVoiceSpeakingState) => void;
   startSystemAudio: () => Promise<boolean>;
   stopSystemAudio: () => Promise<void>;
   showNotification: (notification: TAppNotification) => void;
@@ -81,6 +87,8 @@ export type TDesktopBridge = {
 // pending for version 2:
 // - remove 'needs-modifier' from DESKTOP_HOTKEY_ERROR_REASONS and its client translation,
 //   the desktop app no longer sends it but version 1 apps still do
+// - remove optional chaining on setVoiceSpeaking in DesktopController once older version 1
+//   desktop builds without it are no longer supported
 export const DESKTOP_BRIDGE_VERSION = 1;
 
 // this should NEVER change, it is how every client and desktop app of any version find
