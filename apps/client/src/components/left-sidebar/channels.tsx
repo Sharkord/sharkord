@@ -39,6 +39,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ChannelContextMenu } from '../context-menus/channel';
+import { CallDuration } from './call-duration';
 import { ExternalStream } from './external-stream';
 import {
   VOICE_USER_DND_MIME,
@@ -139,6 +140,8 @@ const Voice = memo(
           <span className={cn('flex-1 truncate', { 'opacity-50': isMuted })}>
             {channel.name}
           </span>
+
+          <CallDuration channelId={channel.id} />
 
           {unreadCount > 0 && (
             <UnreadCount count={unreadCount} hasMention={hasUnreadMentions} />

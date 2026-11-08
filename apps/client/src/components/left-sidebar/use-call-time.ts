@@ -14,7 +14,7 @@ const formatCallTime = (elapsedMs: number): string => {
     return `${hours}:${padTimePart(minutes)}:${padTimePart(seconds)}`;
   }
 
-  return `${padTimePart(minutes)}:${padTimePart(seconds)}`;
+  return `${minutes}:${padTimePart(seconds)}`;
 };
 
 export const useCallTime = (channelId: number): string | null => {
