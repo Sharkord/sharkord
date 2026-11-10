@@ -86,6 +86,8 @@
     "spellcheckDescription": "Underline misspelled words while typing. Turn it off if you write in a language the dictionary doesn't know.",
     "throttleHiddenServers": "Throttle hidden servers",
     "throttleHiddenServersDescription": "Slow down timers and rendering of servers you are not looking at. Saves CPU and battery, turn it off if background servers misbehave.",
+    "gpuEncoding": "Use GPU encoding when possible",
+    "gpuEncodingDescription": "Encode your webcam and screen share on the graphics card when it can. Takes effect after restarting the app.",
     "performanceOverlay": "Performance overlay",
     "performanceOverlayDescription": "Show memory and CPU usage of the app in a small window.",
     "togglePerformanceOverlay": "Toggle performance overlay",

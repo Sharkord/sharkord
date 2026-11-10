@@ -10,7 +10,7 @@ import type {
 } from '../../../shared/types';
 import type { TServerViews } from '../../views/server-views';
 import { createServerController } from '../server-controller';
-import { DEFAULT_SETTINGS } from '../server-store';
+import { DEFAULT_SETTINGS, STORE_FILE_NAME } from '../server-store';
 
 type TStub = ReturnType<typeof Bun.serve>;
 
@@ -105,7 +105,7 @@ describe('server controller', () => {
 
   beforeEach(() => {
     dir = mkdtempSync(path.join(tmpdir(), 'sharkord-controller-'));
-    filePath = path.join(dir, 'servers.json');
+    filePath = path.join(dir, STORE_FILE_NAME);
     states = [];
   });
 

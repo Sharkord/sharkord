@@ -86,6 +86,8 @@
     "spellcheckDescription": "Sublinha palavras com erros enquanto você digita. Desative se você escreve em um idioma que o dicionário não conhece.",
     "throttleHiddenServers": "Limitar servidores ocultos",
     "throttleHiddenServersDescription": "Reduz timers e renderização dos servidores que não estão visíveis. Economiza CPU e bateria; desative se os servidores em segundo plano se comportarem mal.",
+    "gpuEncoding": "Usar codificação por GPU quando possível",
+    "gpuEncodingDescription": "Codifica sua webcam e o compartilhamento de tela na placa de vídeo quando possível. Entra em vigor após reiniciar o aplicativo.",
     "performanceOverlay": "Sobreposição de desempenho",
     "performanceOverlayDescription": "Mostra o uso de memória e CPU do aplicativo numa pequena janela.",
     "togglePerformanceOverlay": "Alternar sobreposição de desempenho",

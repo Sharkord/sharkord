@@ -83,6 +83,8 @@
     "performance": "Performans",
     "throttleHiddenServers": "Gizli sunucuları yavaşlat",
     "throttleHiddenServersDescription": "Bakmadığınız sunucuların zamanlayıcılarını ve görüntülemesini yavaşlatın. CPU ve pil tasarrufu sağlar, arka plandaki sunucular sorun çıkarırsa kapatın.",
+    "gpuEncoding": "Mümkün olduğunda GPU kodlamayı kullan",
+    "gpuEncodingDescription": "Web kameranı ve ekran paylaşımını mümkün olduğunda ekran kartında kodlar. Uygulama yeniden başlatıldıktan sonra geçerli olur.",
     "performanceOverlay": "Performans katmanı",
     "performanceOverlayDescription": "Uygulamanın bellek ve CPU kullanımını küçük bir pencerede gösterin.",
     "togglePerformanceOverlay": "Performans katmanını aç/kapat",
