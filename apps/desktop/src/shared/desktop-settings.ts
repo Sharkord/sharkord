@@ -11,6 +11,7 @@ const desktopSettingsSchema = z.strictObject({
   dynamicTrayIcon: z.boolean(),
   autoUpdate: z.boolean(),
   captureAllAudioOutputs: z.boolean(),
+  gpuEncoding: z.boolean(),
   spellcheck: z.boolean()
 });
 
@@ -25,6 +26,7 @@ const DEFAULT_SETTINGS: TDesktopSettings = {
   dynamicTrayIcon: true,
   autoUpdate: true,
   captureAllAudioOutputs: false,
+  gpuEncoding: true,
   spellcheck: true
 };
 

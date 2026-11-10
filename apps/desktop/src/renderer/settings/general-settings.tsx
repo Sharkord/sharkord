@@ -40,6 +40,10 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
     window.desktop.updateSettings({ throttleHiddenServers: checked });
   }, []);
 
+  const handleGpuEncodingChange = useCallback((checked: boolean) => {
+    window.desktop.updateSettings({ gpuEncoding: checked });
+  }, []);
+
   const handleCaptureAllAudioOutputsChange = useCallback((checked: boolean) => {
     window.desktop.updateSettings({ captureAllAudioOutputs: checked });
   }, []);
@@ -172,8 +176,17 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
           </Button>
         </Group>
       </SettingsSection>
-      {isLinux && (
-        <SettingsSection title={t('settings.screenShare')}>
+      <SettingsSection title={t('settings.screenShare')}>
+        <Group
+          label={t('settings.gpuEncoding')}
+          description={t('settings.gpuEncodingDescription')}
+        >
+          <Switch
+            checked={settings.gpuEncoding}
+            onCheckedChange={handleGpuEncodingChange}
+          />
+        </Group>
+        {isLinux && (
           <Group
             label={t('settings.captureAllAudioOutputs')}
             description={t('settings.captureAllAudioOutputsDescription')}
@@ -183,8 +196,8 @@ const GeneralSettings = memo(({ settings }: TGeneralSettingsProps) => {
               onCheckedChange={handleCaptureAllAudioOutputsChange}
             />
           </Group>
-        </SettingsSection>
-      )}
+        )}
+      </SettingsSection>
       <FolderSettings
         title={t('settings.appFolder')}
         description={t('settings.appFolderDescription')}
