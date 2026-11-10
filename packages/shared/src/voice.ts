@@ -25,9 +25,14 @@ export type TExternalStream = {
   tracks: TExternalStreamTracks;
 };
 
+export type TVoiceChannelState = {
+  activeSince: number | null;
+};
+
 export type TChannelState = {
   users: TVoiceUser[];
   externalStreams: { [streamId: number]: TExternalStream };
+  activeSince: number | null;
 };
 
 export type TTransportParams = {
@@ -42,6 +47,7 @@ export type TVoiceMap = {
     users: {
       [userId: number]: TVoiceUserState;
     };
+    activeSince: number | null;
   };
 };
 

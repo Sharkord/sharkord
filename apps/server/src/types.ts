@@ -20,6 +20,7 @@ export type TVoicePresenceTopic =
   | ServerEvents.USER_LEAVE_VOICE
   | ServerEvents.USER_VOICE_STATE_UPDATE
   | ServerEvents.USER_VOICE_REACTION
+  | ServerEvents.VOICE_CHANNEL_STATE_UPDATE
   | ServerEvents.VOICE_ADD_EXTERNAL_STREAM
   | ServerEvents.VOICE_UPDATE_EXTERNAL_STREAM
   | ServerEvents.VOICE_REMOVE_EXTERNAL_STREAM;

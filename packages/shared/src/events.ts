@@ -22,6 +22,8 @@ export enum ServerEvents {
   USER_VOICE_MOVED = 'userVoiceMoved',
   USER_VOICE_REACTION = 'userVoiceReaction',
 
+  VOICE_CHANNEL_STATE_UPDATE = 'voiceChannelStateUpdate',
+
   VOICE_ADD_EXTERNAL_STREAM = 'voiceAddExternalStream',
   VOICE_UPDATE_EXTERNAL_STREAM = 'voiceUpdateExternalStream',
   VOICE_REMOVE_EXTERNAL_STREAM = 'voiceRemoveExternalStream',

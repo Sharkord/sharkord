@@ -30,6 +30,7 @@ import type {
   TThreadFollowUpdate,
   TThreadReadState,
   TThreadSummary,
+  TVoiceChannelState,
   TVoiceMap,
   TVoiceUserState
 } from '@sharkord/shared';
@@ -797,7 +798,7 @@ export const serverSlice = createSlice({
       const { channelId, userId, state: userState } = action.payload;
 
       if (!state.voiceMap[channelId]) {
-        state.voiceMap[channelId] = { users: {} };
+        state.voiceMap[channelId] = { users: {}, activeSince: null };
       }
 
       state.voiceMap[channelId].users[userId] = userState;
@@ -829,6 +830,21 @@ export const serverSlice = createSlice({
         ...state.voiceMap[channelId].users[userId],
         ...newState
       };
+    },
+    updateVoiceChannelState: (
+      state,
+      action: PayloadAction<{
+        channelId: number;
+        channelState: TVoiceChannelState;
+      }>
+    ) => {
+      const { channelId, channelState } = action.payload;
+
+      if (!state.voiceMap[channelId]) {
+        state.voiceMap[channelId] = { users: {}, activeSince: null };
+      }
+
+      state.voiceMap[channelId].activeSince = channelState.activeSince;
     },
     addVoiceReaction: (
       state,

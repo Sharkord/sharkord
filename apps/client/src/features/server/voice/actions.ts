@@ -22,6 +22,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   getTrpcError,
   type TExternalStream,
+  type TVoiceChannelState,
   type TVoiceUserState
 } from '@sharkord/shared';
 import type { RtpCapabilities } from 'mediasoup-client/types';
@@ -209,6 +210,15 @@ export const updateVoiceUserState = (
   if (channelId === currentChannelId) {
     syncOwnServerMute(userId, newState);
   }
+};
+
+export const updateVoiceChannelState = (
+  channelId: number,
+  channelState: TVoiceChannelState
+): void => {
+  store.dispatch(
+    serverSliceActions.updateVoiceChannelState({ channelId, channelState })
+  );
 };
 
 let nextVoiceReactionId = 0;

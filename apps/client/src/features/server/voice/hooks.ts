@@ -12,6 +12,7 @@ import {
   ownVoiceStateSelector,
   pinnedCardSelector,
   showUserBannersInVoiceSelector,
+  voiceChannelActiveSinceSelector,
   voiceChannelAudioExternalStreamsSelector,
   voiceChannelExternalStreamsListSelector,
   voiceMoveTargetChannelIdSelector,
@@ -21,6 +22,11 @@ import {
 export const useVoiceChannelExternalStreamsList = (channelId: number) =>
   useSelector((state: IRootState) =>
     voiceChannelExternalStreamsListSelector(state, channelId)
+  );
+
+export const useVoiceChannelActiveSince = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    voiceChannelActiveSinceSelector(state, channelId)
   );
 
 export const useVoiceChannelAudioExternalStreams = (channelId: number) =>

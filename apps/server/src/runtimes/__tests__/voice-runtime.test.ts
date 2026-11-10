@@ -70,6 +70,89 @@ describe('VoiceRuntime destroy', () => {
   });
 });
 
+describe('VoiceRuntime call activity', () => {
+  test('should start the call with the first member', () => {
+    const runtime = createRuntime();
+
+    expect(runtime.getState().activeSince).toBeNull();
+
+    const before = Date.now();
+
+    runtime.addUser(7, { micMuted: false, soundMuted: false });
+
+    expect(runtime.getState().activeSince).toBeGreaterThanOrEqual(before);
+  });
+
+  test('should keep the original start when more members join', () => {
+    const runtime = createRuntime();
+
+    runtime.addUser(7, { micMuted: false, soundMuted: false });
+
+    const { activeSince } = runtime.getState();
+
+    runtime.addUser(8, { micMuted: false, soundMuted: false });
+
+    expect(runtime.getState().activeSince).toBe(activeSince);
+  });
+
+  test('should keep the call active while members remain', () => {
+    const runtime = createRuntime();
+
+    runtime.addUser(7, { micMuted: false, soundMuted: false });
+    runtime.addUser(8, { micMuted: false, soundMuted: false });
+    runtime.removeUser(8);
+
+    expect(runtime.getState().activeSince).not.toBeNull();
+  });
+
+  test('should end the call when the last member leaves', () => {
+    const runtime = createRuntime();
+
+    runtime.addUser(7, { micMuted: false, soundMuted: false });
+    runtime.removeUser(7);
+
+    expect(runtime.getState().activeSince).toBeNull();
+  });
+
+  test('should expose the call start to the joining snapshot', () => {
+    const runtime = createRuntime();
+
+    runtime.addUser(7, { micMuted: false, soundMuted: false });
+
+    const map = VoiceRuntime.getVoiceMap(new Set([runtime.id]));
+    const entry = map[runtime.id];
+
+    expect(entry?.activeSince).toBe(runtime.getState().activeSince);
+  });
+
+  test('should announce the channel state on start and end', async () => {
+    const runtime = createRuntime();
+    const seen: (number | null)[] = [];
+
+    const subscription = pubsub
+      .subscribeFor(7, ServerEvents.VOICE_CHANNEL_STATE_UPDATE)
+      .subscribe({
+        next: ({ channelId, state }) => {
+          if (channelId === runtime.id) seen.push(state.activeSince);
+        }
+      });
+
+    runtime.addUser(7, { micMuted: false, soundMuted: false });
+    runtime.addUser(8, { micMuted: false, soundMuted: false });
+    runtime.removeUser(8);
+    runtime.removeUser(7);
+
+    // the publishes resolve their audience asynchronously
+    await Bun.sleep(0);
+
+    subscription.unsubscribe();
+
+    expect(seen).toHaveLength(2);
+    expect(seen[0]).toBeGreaterThan(0);
+    expect(seen[1]).toBeNull();
+  });
+});
+
 describe('VoiceRuntime producer and consumer maps', () => {
   test('should close the previous producer when one replaces it', () => {
     const runtime = createRuntime();

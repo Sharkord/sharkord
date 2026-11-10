@@ -20,6 +20,15 @@ export const voiceChannelStateSelector = (
   channelId: number
 ) => state.server.voiceMap[channelId];
 
+export const voiceChannelActiveSinceSelector = (
+  state: IRootState,
+  channelId: number
+) => {
+  const channelState = state.server.voiceMap[channelId];
+
+  return channelState ? channelState.activeSince : null;
+};
+
 export const voiceChannelExternalStreamsSelector = (
   state: IRootState,
   channelId: number
