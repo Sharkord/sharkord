@@ -25,11 +25,15 @@ import {
   type TPinnedCard
 } from './hooks/use-pin-card-controller';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
+import { useVideoStats } from './hooks/use-video-stats';
 import { useVoiceRefs } from './hooks/use-voice-refs';
+import { PauseButton } from './pause-button';
+import { PausedStreamOverlay } from './paused-stream-overlay';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { QualityButton } from './quality-button';
 import { getStreamQualityMetadataLabel } from './quality-options';
+import { StreamInfo } from './stream-info';
 import { VolumeButton } from './volume-button';
 
 type TExternalStreamControlsProps = {
@@ -81,6 +85,14 @@ const ExternalStreamControls = memo(
           {hasAudio && (
             <VolumeButton
               volumeKey={volumeKey}
+              size={density.icon}
+              className={cardControlClass()}
+            />
+          )}
+          {hasVideo && (
+            <PauseButton
+              streamId={streamId}
+              kind={StreamKind.EXTERNAL_VIDEO}
               size={density.icon}
               className={cardControlClass()}
             />
@@ -165,8 +177,12 @@ const ExternalStreamCard = memo(
     const { getVolume, getExternalVolumeKey } = useVolumeControl();
 
     const showUserBanners = useShowUserBannersInVoice();
-    const { getStreamQuality, getStreamQualityLayers, isSimulcastConsumer } =
-      useVoice();
+    const {
+      getStreamQuality,
+      getStreamQualityLayers,
+      isSimulcastConsumer,
+      getConsumerCodec
+    } = useVoice();
     const volumeKey = getExternalVolumeKey(stream.pluginId, stream.key);
     const volume = getVolume(volumeKey);
     const isMuted = volume === 0;
@@ -232,6 +248,9 @@ const ExternalStreamCard = memo(
     const qualityLabel = isSimulcastExternalVideoConsumer
       ? getStreamQualityMetadataLabel(streamQuality, qualityLayers)
       : null;
+
+    const videoStats = useVideoStats(externalVideoRef, !!hasVideo);
+    const mimeType = getConsumerCodec(streamId, StreamKind.EXTERNAL_VIDEO);
 
     return (
       <div
@@ -326,6 +345,13 @@ const ExternalStreamCard = memo(
           </div>
         )}
 
+        {hasVideo && (
+          <PausedStreamOverlay
+            streamId={streamId}
+            kind={StreamKind.EXTERNAL_VIDEO}
+          />
+        )}
+
         <div
           className={cn(
             'absolute bottom-0 left-0 right-0 z-10',
@@ -354,11 +380,16 @@ const ExternalStreamCard = memo(
             )}
             <p className={cn('leading-none truncate', density.label)}>
               {stream.title || 'External Stream'}
-              {(qualityLabel || stream.pluginId) && (
+              {hasVideo && (
+                <StreamInfo
+                  mimeType={mimeType}
+                  videoStats={videoStats}
+                  qualityLabel={qualityLabel}
+                />
+              )}
+              {stream.pluginId && (
                 <span className="text-muted-foreground text-xs ml-2 leading-none">
-                  {qualityLabel && `(${qualityLabel})`}
-                  {qualityLabel && stream.pluginId && ' '}
-                  {stream.pluginId && `via ${stream.pluginId}`}
+                  via {stream.pluginId}
                 </span>
               )}
               {isZoomEnabled && zoom > 1 && (

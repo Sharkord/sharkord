@@ -173,6 +173,12 @@ export const setConvertAsciiEmoji = (convert: boolean) => {
   setLocalStorageItemBool(LocalStorageKey.CONVERT_ASCII_EMOJI, convert);
 };
 
+export const setPauseNewStreamsByDefault = (pause: boolean) => {
+  store.dispatch(appSliceActions.setPauseNewStreamsByDefault(pause));
+
+  setLocalStorageItemBool(LocalStorageKey.PAUSE_NEW_STREAMS_BY_DEFAULT, pause);
+};
+
 export const setMicMode = (micMode: MicMode) => {
   store.dispatch(appSliceActions.setMicMode(micMode));
 

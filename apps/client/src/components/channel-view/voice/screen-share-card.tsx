@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { StreamKind } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
 import { Monitor, ZoomIn, ZoomOut } from 'lucide-react';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback } from 'react';
 import { CardTheme } from './card-theme';
 import { FullscreenButton } from './fullscreen-button';
 import {
@@ -25,9 +25,12 @@ import {
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useVideoStats } from './hooks/use-video-stats';
 import { useVoiceRefs } from './hooks/use-voice-refs';
+import { PauseButton } from './pause-button';
+import { PausedStreamOverlay } from './paused-stream-overlay';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { QualityButton } from './quality-button';
+import { StreamInfo } from './stream-info';
 import { VolumeButton } from './volume-button';
 
 type TScreenShareCardProps = {
@@ -74,26 +77,13 @@ const ScreenShareCard = memo(
 
     const videoStats = useVideoStats(screenShareRef, hasScreenShareStream);
 
-    const codec = useMemo(() => {
-      let mimeType: string | undefined;
+    let mimeType: string | undefined;
 
-      if (isOwnUser) {
-        mimeType = transportStats.screenShare?.codec;
-      } else {
-        mimeType = getConsumerCodec(userId, StreamKind.SCREEN);
-      }
-
-      if (!mimeType) return null;
-
-      const parts = mimeType.split('/');
-
-      return parts.length > 1 ? parts[1] : mimeType;
-    }, [
-      isOwnUser,
-      transportStats.screenShare?.codec,
-      getConsumerCodec,
-      userId
-    ]);
+    if (isOwnUser) {
+      mimeType = transportStats.screenShare?.codec;
+    } else {
+      mimeType = getConsumerCodec(userId, StreamKind.SCREEN);
+    }
 
     const { isSimulcastScreenConsumer, qualityLabel } = useStreamQualityData(
       userId,
@@ -178,6 +168,10 @@ const ScreenShareCard = memo(
           }}
         />
 
+        {!isOwnUser && (
+          <PausedStreamOverlay streamId={userId} kind={StreamKind.SCREEN} />
+        )}
+
         <audio
           ref={screenShareAudioRef}
           className="hidden"
@@ -199,6 +193,14 @@ const ScreenShareCard = memo(
               size={density.icon}
               className={cardControlClass()}
             />
+            {!isOwnUser && (
+              <PauseButton
+                streamId={userId}
+                kind={StreamKind.SCREEN}
+                size={density.icon}
+                className={cardControlClass()}
+              />
+            )}
             {!isOwnUser && hasScreenShareAudioStream && (
               <VolumeButton
                 volumeKey={volumeKey}
@@ -253,21 +255,11 @@ const ScreenShareCard = memo(
             <Monitor className="text-white shrink-0 size-3" />
             <p className={cn('leading-none truncate', density.label)}>
               {user.name}'s screen
-              {(videoStats || codec) && (
-                <span className="text-muted-foreground text-xs ml-2 leading-none">
-                  {codec}
-                  {codec && videoStats && ' '}
-                  {videoStats && (
-                    <>
-                      {videoStats.width}x{videoStats.height}
-                      {videoStats.frameRate > 0 &&
-                        ` ${videoStats.frameRate}fps`}
-                    </>
-                  )}
-                  {(codec || videoStats) && qualityLabel && ' '}
-                  {qualityLabel && `(${qualityLabel})`}
-                </span>
-              )}
+              <StreamInfo
+                mimeType={mimeType}
+                videoStats={videoStats}
+                qualityLabel={qualityLabel}
+              />
               {isZoomEnabled && zoom > 1 && (
                 <span className="text-white/70 text-xs ml-2 leading-none">
                   {Math.round(zoom * 100)}%

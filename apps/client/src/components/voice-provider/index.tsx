@@ -35,6 +35,7 @@ import {
   getErrorMessage,
   StreamKind,
   type ConsumerType,
+  type TPausableStreamKind,
   type TStreamQualityLayer,
   type TVoiceUserState
 } from '@sharkord/shared';
@@ -68,6 +69,7 @@ import {
   getStreamQualityStorageKey,
   loadStreamQualitiesFromStorage,
   normalizeStreamQuality,
+  savePausedStreamToStorage,
   saveStreamQualitiesToStorage,
   type TRemoteConsumerTypes,
   type TRemoteQualityLayers,
@@ -131,6 +133,12 @@ export type TVoiceProvider = {
     quality: TStreamQuality
   ) => Promise<void>;
   isSimulcastConsumer: (remoteId: number, kind: StreamKind) => boolean;
+  isStreamPaused: (remoteId: number, kind: StreamKind) => boolean;
+  setStreamPaused: (
+    remoteId: number,
+    kind: TPausableStreamKind,
+    paused: boolean
+  ) => Promise<void>;
   init: (
     routerRtpCapabilities: RtpCapabilities,
     channelId: number
@@ -166,6 +174,8 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
   getStreamQualityLayers: () => [],
   setStreamQuality: () => Promise.resolve(),
   isSimulcastConsumer: () => false,
+  isStreamPaused: () => false,
+  setStreamPaused: () => Promise.resolve(),
   init: () => Promise.resolve(),
   toggleMic: () => Promise.resolve(),
   toggleSound: () => Promise.resolve(),
@@ -206,6 +216,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     useState<TRemoteConsumerTypes>({});
   const [remoteQualityLayers, setRemoteQualityLayers] =
     useState<TRemoteQualityLayers>({});
+  const [remotePausedStreams, setRemotePausedStreams] = useState<
+    Record<string, boolean>
+  >({});
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const webRtcSimulcastEnabled = useWebRtcSimulcastEnabled();
   const ownVoiceState = useOwnVoiceState();
@@ -254,9 +267,38 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     []
   );
 
+  const setRemoteStreamPaused = useCallback(
+    (remoteId: number, kind: StreamKind, paused: boolean) => {
+      const key = getRemoteConsumerTypeKey(remoteId, kind);
+
+      setRemotePausedStreams((prev) => {
+        if (!paused) {
+          const next = { ...prev };
+
+          delete next[key];
+
+          return next;
+        }
+
+        return { ...prev, [key]: true };
+      });
+    },
+    []
+  );
+
+  const isStreamPaused = useCallback(
+    (remoteId: number, kind: StreamKind): boolean => {
+      const key = getRemoteConsumerTypeKey(remoteId, kind);
+
+      return !!remotePausedStreams[key];
+    },
+    [remotePausedStreams]
+  );
+
   const clearRemoteConsumerMetadata = useCallback(() => {
     setRemoteConsumerTypes({});
     setRemoteQualityLayers({});
+    setRemotePausedStreams({});
   }, []);
 
   const shouldShowQualityPicker = useCallback(
@@ -411,8 +453,56 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     removeRemoteUserStream,
     setRemoteConsumerType,
     setRemoteStreamQualityLayers,
+    setRemoteStreamPaused,
     clearRemoteConsumerMetadata
   });
+
+  const setStreamPaused = useCallback(
+    async (remoteId: number, kind: TPausableStreamKind, paused: boolean) => {
+      savePausedStreamToStorage(remoteId, kind, paused);
+
+      const kinds: TPausableStreamKind[] = [kind];
+
+      // screen audio shares the stored choice, but its consumer has to be paused separately
+      if (
+        kind === StreamKind.SCREEN &&
+        consumers.current[remoteId]?.[StreamKind.SCREEN_AUDIO]
+      ) {
+        kinds.push(StreamKind.SCREEN_AUDIO);
+      }
+
+      try {
+        const trpc = getTRPCClient();
+
+        await Promise.all(
+          kinds.map((consumerKind) =>
+            trpc.voice.setConsumerPaused.mutate({
+              remoteId,
+              kind: consumerKind,
+              paused
+            })
+          )
+        );
+
+        kinds.forEach((consumerKind) => {
+          setRemoteStreamPaused(remoteId, consumerKind, paused);
+        });
+
+        voiceLogger.info('consumer: paused changed', {
+          remoteId,
+          kind,
+          paused
+        });
+      } catch (error) {
+        voiceLogger.error('consumer: paused change failed', error, {
+          remoteId,
+          kind,
+          paused
+        });
+      }
+    },
+    [consumers, setRemoteStreamPaused]
+  );
 
   const {
     stats: transportStats,
@@ -1401,6 +1491,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       getStreamQualityLayers,
       setStreamQuality,
       isSimulcastConsumer,
+      isStreamPaused,
+      setStreamPaused,
       init,
 
       toggleMic,
@@ -1427,6 +1519,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       getStreamQualityLayers,
       setStreamQuality,
       isSimulcastConsumer,
+      isStreamPaused,
+      setStreamPaused,
       init,
 
       toggleMic,

@@ -75,6 +75,17 @@ const defaultRouterOptions: RouterOptions<AppData> = {
     },
     {
       kind: 'video',
+      mimeType: 'video/H264',
+      clockRate: 90000,
+      parameters: {
+        'packetization-mode': 1,
+        'profile-level-id': '4d0032',
+        'level-asymmetry-allowed': 1,
+        'x-google-start-bitrate': 2000
+      }
+    },
+    {
+      kind: 'video',
       mimeType: 'video/AV1',
       clockRate: 90000,
       parameters: {

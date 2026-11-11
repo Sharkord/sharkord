@@ -45,6 +45,8 @@
   "closeVoiceChatOnLeaveDesc": "Ses kanalından ayrıldığınızda o kanalın metin sohbetini kapatır.",
   "freezeAnimatedAvatarsLabel": "Animasyonlu Avatarları Dondur",
   "freezeAnimatedAvatarsDesc": "Animasyonlu avatarları sabit görsel olarak göster ve yalnızca üzerine gelindiğinde oynat.",
+  "pauseNewStreamsByDefaultLabel": "Tüm yeni yayınları varsayılan olarak duraklat",
+  "pauseNewStreamsByDefaultDesc": "Web kameraları ve ekran paylaşımları duraklatılmış başlar ve siz devam ettirene kadar hiçbir şey indirmez. Yavaş bağlantılarda bant genişliği tasarrufu sağlar.",
   "languageLabel": "Arayüz Dili",
   "languageDesc": "Arayüzün görüntüleme dilini ayarlayın.",
   "notificationsTitle": "Bildirimler",

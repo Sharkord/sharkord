@@ -29,6 +29,8 @@ import {
   type TPinnedCard
 } from './hooks/use-pin-card-controller';
 import { useVoiceRefs } from './hooks/use-voice-refs';
+import { PauseButton } from './pause-button';
+import { PausedStreamOverlay } from './paused-stream-overlay';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { QualityButton } from './quality-button';
@@ -128,6 +130,9 @@ const VoiceUserCard = memo(
             )}
           />
         )}
+        {hasVideoStream && !isOwnUser && (
+          <PausedStreamOverlay streamId={userId} kind={StreamKind.VIDEO} />
+        )}
         {!hasVideoStream && (
           <UserAvatar
             userId={userId}
@@ -169,6 +174,14 @@ const VoiceUserCard = memo(
             {!isOwnUser && (
               <VolumeButton
                 volumeKey={volumeKey}
+                size={density.icon}
+                className={cardControlClass()}
+              />
+            )}
+            {hasVideoStream && !isOwnUser && (
+              <PauseButton
+                streamId={userId}
+                kind={StreamKind.VIDEO}
                 size={density.icon}
                 className={cardControlClass()}
               />
