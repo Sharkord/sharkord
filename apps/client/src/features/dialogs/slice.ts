@@ -28,6 +28,7 @@ export const dialogSlice = createSlice({
       state.openDialog = action.payload.dialog;
       state.props = action.payload.props || {};
       state.isOpen = true;
+      state.closing = false;
     },
     closeDialogs: (state) => {
       state.openDialog = undefined;

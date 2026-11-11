@@ -26,6 +26,12 @@ export const closeDialogs = () => {
 
   // allow fade out animation to complete before stopping rendering, otherwise it looks choppy
   setTimeout(() => {
+    const { closing } = dialogInfoSelector(store.getState());
+
+    // a dialog opened during the fade out cancels the close, it must not be torn down with
+    // the one that was leaving
+    if (!closing) return;
+
     store.dispatch(dialogSliceActions.closeDialogs());
 
     setTimeout(() => {
