@@ -48,6 +48,8 @@
   "freezeAnimatedAvatarsDesc": "Zobrazovat animované avatary a bannery jako statický obrázek a přehrávat je jen při najetí myší.",
   "convertAsciiEmojiLabel": "Převádět emotikony na emodži při psaní",
   "convertAsciiEmojiDesc": "Převádět textové emotikony jako \":3\" a \"<3\" na emodži.",
+  "pauseNewStreamsByDefaultLabel": "Pozastavit všechny nové streamy ve výchozím stavu",
+  "pauseNewStreamsByDefaultDesc": "Webkamery a sdílení obrazovky začnou pozastavené a nic nestahují, dokud je neobnovíte. Šetří data na pomalém připojení.",
   "languageLabel": "Jazyk",
   "languageDesc": "Vyberte jazyk ve kterém se Sharkord zobrazuje.",
   "notificationsTitle": "Upozornění",

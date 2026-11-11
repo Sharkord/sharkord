@@ -48,6 +48,8 @@
   "freezeAnimatedAvatarsDesc": "将动态头像和横幅显示为静态图片，仅在鼠标悬停时播放。",
   "convertAsciiEmojiLabel": "输入时将颜文字转换为 emoji",
   "convertAsciiEmojiDesc": "将 \":3\"、\"<3\" 等文字颜文字转换为 emoji。",
+  "pauseNewStreamsByDefaultLabel": "默认暂停所有新的串流",
+  "pauseNewStreamsByDefaultDesc": "摄像头和屏幕共享以暂停状态开始，在你恢复之前不会下载任何内容。可在慢速网络下节省带宽。",
   "languageLabel": "界面语言",
   "languageDesc": "设置界面显示语言。",
   "notificationsTitle": "通知",

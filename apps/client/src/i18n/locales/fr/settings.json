@@ -48,6 +48,8 @@
   "freezeAnimatedAvatarsDesc": "Afficher les avatars et bannières animés comme une image fixe et ne les animer qu'au survol.",
   "convertAsciiEmojiLabel": "Convertir les émoticônes en emoji pendant la saisie",
   "convertAsciiEmojiDesc": "Convertir les émoticônes textuelles comme \":3\" et \"<3\" en emoji.",
+  "pauseNewStreamsByDefaultLabel": "Mettre en pause tous les nouveaux flux par défaut",
+  "pauseNewStreamsByDefaultDesc": "Les webcams et les partages d'écran démarrent en pause et ne téléchargent rien tant que vous ne les reprenez pas. Économise de la bande passante sur les connexions lentes.",
   "languageLabel": "Langue de l'interface",
   "languageDesc": "Définissez la langue d'affichage de l'interface.",
   "notificationsTitle": "Notifications",

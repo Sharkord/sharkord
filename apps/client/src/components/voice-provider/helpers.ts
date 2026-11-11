@@ -5,9 +5,11 @@ import {
 } from '@/helpers/storage';
 import { VideoCodec, type TStreamQuality } from '@/types';
 import {
+  PAUSABLE_STREAM_KINDS,
   StreamKind,
   type ConsumerType,
   type TExternalStreamsMap,
+  type TPausableStreamKind,
   type TStreamQualityLayer
 } from '@sharkord/shared';
 import type {
@@ -34,6 +36,7 @@ import {
 } from './statics';
 
 type TStreamQualitySettings = Record<string, TStreamQuality>;
+type TPausedStreamSettings = Record<string, boolean>;
 type TRemoteConsumerTypes = Record<string, ConsumerType | undefined>;
 type TRemoteQualityLayers = Record<string, TStreamQualityLayer[] | undefined>;
 
@@ -71,6 +74,45 @@ const getStreamQualityStorageKey = (remoteId: number, kind: StreamKind) => {
     default:
       return `${remoteId}-${kind}`;
   }
+};
+
+const isPausableStreamKind = (kind: StreamKind): kind is TPausableStreamKind =>
+  PAUSABLE_STREAM_KINDS.some((pausableKind) => pausableKind === kind);
+
+const getPausedStreamStorageKey = (remoteId: number, kind: StreamKind) =>
+  getStreamQualityStorageKey(
+    remoteId,
+    kind === StreamKind.SCREEN_AUDIO ? StreamKind.SCREEN : kind
+  );
+
+const loadPausedStreamsFromStorage = (): TPausedStreamSettings =>
+  getLocalStorageItemAsJSON<TPausedStreamSettings>(
+    LocalStorageKey.PAUSED_STREAMS
+  ) ?? {};
+
+const savePausedStreamToStorage = (
+  remoteId: number,
+  kind: StreamKind,
+  paused: boolean
+) => {
+  setLocalStorageItemAsJSON(LocalStorageKey.PAUSED_STREAMS, {
+    ...loadPausedStreamsFromStorage(),
+    [getPausedStreamStorageKey(remoteId, kind)]: paused
+  });
+};
+
+const getInitialStreamPaused = (
+  remoteId: number,
+  kind: StreamKind,
+  pauseByDefault: boolean
+) => {
+  if (!isPausableStreamKind(kind)) return false;
+
+  const pausedStreams = loadPausedStreamsFromStorage();
+
+  return (
+    pausedStreams[getPausedStreamStorageKey(remoteId, kind)] ?? pauseByDefault
+  );
 };
 
 const getRemoteConsumerTypeKey = (remoteId: number, kind: StreamKind) => {
@@ -248,6 +290,7 @@ const resolveVolume = (
 
 export {
   getExternalVolumeKey,
+  getInitialStreamPaused,
   getOwnedExternalVolumeKeys,
   getRemoteConsumerTypeKey,
   getScreenShareSimulcastEncodings,
@@ -258,10 +301,12 @@ export {
   getStreamQualityDropdownValue,
   getStreamQualityStorageKey,
   isOwnProducerEvent,
+  isPausableStreamKind,
   loadStreamQualitiesFromStorage,
   normalizeStreamQuality,
   parseStreamQualityDropdownValue,
   resolveVolume,
+  savePausedStreamToStorage,
   saveStreamQualitiesToStorage
 };
 

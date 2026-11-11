@@ -1,3 +1,5 @@
+import { pauseNewStreamsByDefaultSelector } from '@/features/app/selectors';
+import { store } from '@/features/store';
 import { voiceLogger } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TRemoteUserStreamKinds } from '@/types';
@@ -17,7 +19,7 @@ import {
   type Transport
 } from 'mediasoup-client/types';
 import { useCallback, useRef } from 'react';
-import { getStoredStreamQuality } from '../helpers';
+import { getInitialStreamPaused, getStoredStreamQuality } from '../helpers';
 
 type TUseTransportParams = {
   addRemoteUserStream: (
@@ -48,6 +50,11 @@ type TUseTransportParams = {
     kind: StreamKind,
     layers: TStreamQualityLayer[]
   ) => void;
+  setRemoteStreamPaused: (
+    remoteId: number,
+    kind: StreamKind,
+    paused: boolean
+  ) => void;
   clearRemoteConsumerMetadata: () => void;
 };
 
@@ -58,6 +65,7 @@ const useTransports = ({
   removeExternalStreamTrack,
   setRemoteConsumerType,
   setRemoteStreamQualityLayers,
+  setRemoteStreamPaused,
   clearRemoteConsumerMetadata
 }: TUseTransportParams) => {
   const producerTransport = useRef<Transport<AppData> | undefined>(undefined);
@@ -293,6 +301,14 @@ const useTransports = ({
         voiceLogger.info('consumer: consuming', { remoteId, kind });
 
         const trpc = getTRPCClient();
+        const pauseNewStreamsByDefault = pauseNewStreamsByDefaultSelector(
+          store.getState()
+        );
+        const paused = getInitialStreamPaused(
+          remoteId,
+          kind,
+          pauseNewStreamsByDefault
+        );
 
         const {
           producerId,
@@ -304,7 +320,8 @@ const useTransports = ({
         } = await trpc.voice.consume.mutate({
           kind,
           remoteId,
-          rtpCapabilities
+          rtpCapabilities,
+          paused
         });
 
         voiceLogger.info('consumer: parameters received', {
@@ -379,6 +396,7 @@ const useTransports = ({
 
             setRemoteConsumerType(remoteId, kind, undefined);
             setRemoteStreamQualityLayers(remoteId, kind, []);
+            setRemoteStreamPaused(remoteId, kind, false);
           });
         });
 
@@ -386,6 +404,7 @@ const useTransports = ({
 
         setRemoteConsumerType(remoteId, kind, consumerType);
         setRemoteStreamQualityLayers(remoteId, kind, qualityLayers);
+        setRemoteStreamPaused(remoteId, kind, paused);
 
         const codecKey = `${remoteId}-${kind}`;
 
@@ -440,7 +459,8 @@ const useTransports = ({
       addExternalStreamTrack,
       removeExternalStreamTrack,
       setRemoteConsumerType,
-      setRemoteStreamQualityLayers
+      setRemoteStreamQualityLayers,
+      setRemoteStreamPaused
     ]
   );
 

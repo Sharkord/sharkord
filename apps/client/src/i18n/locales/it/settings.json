@@ -48,6 +48,8 @@
   "freezeAnimatedAvatarsDesc": "Mostra avatar e banner animati come immagine statica e riproducili solo al passaggio del mouse.",
   "convertAsciiEmojiLabel": "Converti le emoticon in emoji mentre digiti",
   "convertAsciiEmojiDesc": "Converti le emoticon testuali come \":3\" e \"<3\" in emoji.",
+  "pauseNewStreamsByDefaultLabel": "Metti in pausa tutti i nuovi stream per impostazione predefinita",
+  "pauseNewStreamsByDefaultDesc": "Webcam e condivisioni schermo partono in pausa e non scaricano nulla finché non le riprendi. Risparmia banda sulle connessioni lente.",
   "languageLabel": "Lingua interfaccia",
   "languageDesc": "Imposta la lingua di visualizzazione dell'interfaccia.",
   "notificationsTitle": "Notifiche",

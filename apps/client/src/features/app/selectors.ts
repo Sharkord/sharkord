@@ -40,6 +40,9 @@ export const freezeAnimatedAvatarsSelector = (state: IRootState) =>
 export const convertAsciiEmojiSelector = (state: IRootState) =>
   state.app.convertAsciiEmoji;
 
+export const pauseNewStreamsByDefaultSelector = (state: IRootState) =>
+  state.app.pauseNewStreamsByDefault;
+
 export const hotkeysEnabledSelector = (state: IRootState) =>
   state.app.hotkeysEnabled;
 

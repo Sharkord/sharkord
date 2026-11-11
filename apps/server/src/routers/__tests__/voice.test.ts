@@ -470,6 +470,12 @@ describe('voice router', () => {
           kind: StreamKind.VIDEO,
           quality: { mode: 'auto' }
         }),
+      setConsumerPaused: () =>
+        caller.voice.setConsumerPaused({
+          remoteId: 1,
+          kind: StreamKind.VIDEO,
+          paused: true
+        }),
       getProducers: () => caller.voice.getProducers(),
       sendReaction: () => caller.voice.sendReaction({ emoji: 'thumbsup' })
     });
@@ -519,6 +525,92 @@ describe('voice router', () => {
 
       for (const [name, call] of Object.entries(guardedCalls(caller))) {
         await expect(call(), name).rejects.toThrow('Insufficient permissions');
+      }
+    });
+  });
+
+  // the consumer itself needs mediasoup, but the route only calls pause() and resume() on it
+  // and the runtime only registers its close observer, so a stand-in covers the route
+  describe('setConsumerPaused', () => {
+    const withConsumer = async () => {
+      const runtime = new VoiceRuntime(2);
+      const state = { paused: false };
+
+      const consumer = {
+        observer: { on: () => {} },
+        close: () => {},
+        pause: async () => {
+          state.paused = true;
+        },
+        resume: async () => {
+          state.paused = false;
+        }
+      } as unknown as Parameters<VoiceRuntime['addConsumer']>[3];
+
+      runtime.addUser(2, { micMuted: false, soundMuted: false });
+      runtime.addConsumer(2, 1, StreamKind.SCREEN, consumer);
+
+      const { caller } = await initTest(2, undefined, {
+        currentVoiceChannelId: 2
+      });
+
+      return { runtime, caller, state };
+    };
+
+    test('should pause and resume the consumer of the caller', async () => {
+      const { runtime, caller, state } = await withConsumer();
+
+      try {
+        await caller.voice.setConsumerPaused({
+          remoteId: 1,
+          kind: StreamKind.SCREEN,
+          paused: true
+        });
+
+        expect(state.paused).toBe(true);
+
+        await caller.voice.setConsumerPaused({
+          remoteId: 1,
+          kind: StreamKind.SCREEN,
+          paused: false
+        });
+
+        expect(state.paused).toBe(false);
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should refuse when the caller has no consumer for that stream', async () => {
+      const { runtime, caller } = await withConsumer();
+
+      try {
+        await expect(
+          caller.voice.setConsumerPaused({
+            remoteId: 1,
+            kind: StreamKind.VIDEO,
+            paused: true
+          })
+        ).rejects.toThrow('Consumer not found');
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should refuse pausing a voice audio stream', async () => {
+      const { runtime, caller } = await withConsumer();
+
+      try {
+        await expect(
+          caller.voice.setConsumerPaused({
+            remoteId: 1,
+            // @ts-expect-error - voice audio is not pausable
+            kind: StreamKind.AUDIO,
+            paused: true
+          })
+        ).rejects.toThrow();
+      } finally {
+        await runtime.destroy();
       }
     });
   });

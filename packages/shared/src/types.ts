@@ -25,6 +25,15 @@ export const PRODUCIBLE_STREAM_KINDS = [
 
 export type TProducibleStreamKind = (typeof PRODUCIBLE_STREAM_KINDS)[number];
 
+export const PAUSABLE_STREAM_KINDS = [
+  StreamKind.VIDEO,
+  StreamKind.SCREEN,
+  StreamKind.SCREEN_AUDIO,
+  StreamKind.EXTERNAL_VIDEO
+] as const;
+
+export type TPausableStreamKind = (typeof PAUSABLE_STREAM_KINDS)[number];
+
 export type TExternalStreamTrackKind = 'audio' | 'video';
 
 export type TExternalStreamTracks = {
