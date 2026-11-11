@@ -47,8 +47,7 @@ export type TStreamQualityLayer = {
 };
 
 export type TStreamQuality =
-  | { mode: 'auto' }
-  | { mode: 'layer'; spatialLayer: number };
+  { mode: 'auto' } | { mode: 'layer'; spatialLayer: number };
 
 export type TRemoteProducerIds = {
   remoteVideoIds: number[];
@@ -103,8 +102,7 @@ export type TMessageOpenGraphMetadata = {
 };
 
 export type TMessageMetadata =
-  | TMessageMediaMetadata
-  | TMessageOpenGraphMetadata;
+  TMessageMediaMetadata | TMessageOpenGraphMetadata;
 
 export enum UserStatus {
   ONLINE = 'online',

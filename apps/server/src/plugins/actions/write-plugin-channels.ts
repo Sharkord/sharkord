@@ -54,8 +54,7 @@ const getPluginChannel = async (
   channelId: number
 ): Promise<TChannel | undefined> =>
   (await db.select().from(channels).where(eq(channels.id, channelId)).get()) as
-    | TChannel
-    | undefined;
+    TChannel | undefined;
 
 const getPluginCategory = async (
   categoryId: number

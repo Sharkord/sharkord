@@ -150,8 +150,8 @@ const DatePicker = memo(
               month={month}
               onMonthChange={setMonth}
               onSelect={handleDateSelect}
-              fromDate={minDateObj}
-              toDate={maxDateObj}
+              startMonth={minDateObj}
+              endMonth={maxDateObj}
               disabled={(date) => {
                 if (minDateObj && date < minDateObj) return true;
                 if (maxDateObj && date > maxDateObj) return true;

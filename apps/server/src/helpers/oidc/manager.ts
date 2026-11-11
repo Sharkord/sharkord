@@ -26,8 +26,7 @@ const isLocalHostname = (hostname: string) =>
 
 class OidcManager {
   private discovery:
-    | ({ value: client.Configuration; issuer: string } & TExpiring)
-    | null = null;
+    ({ value: client.Configuration; issuer: string } & TExpiring) | null = null;
 
   // verbatim on purpose. an issuer is compared to the discovery document by exact string,
   // so a trailing slash is significant: Authentik's issuers end with one and normalising it

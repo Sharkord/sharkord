@@ -18,16 +18,16 @@
     "seed:e2e": "SHARKORD_DATA_PATH=./e2e-data bun run ./tests/setup/seed-db.ts"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2",
+    "@playwright/test": "^1.65.0",
     "@sharkord/shared": "workspace:*",
     "@types/bun": "latest",
-    "@types/react": "^19",
-    "drizzle-orm": "^0.44.5"
+    "@types/react": "^19.3.0",
+    "drizzle-orm": "^0.45.4"
   },
   "peerDependencies": {
-    "typescript": "^5",
-    "@typescript-eslint/eslint-plugin": "^8.46.1",
-    "eslint": "^8.56.0",
-    "eslint-plugin-unused-imports": "^4.1.4"
+    "typescript": "^5.9.3",
+    "@typescript-eslint/eslint-plugin": "^8.72.1",
+    "eslint": "^8.57.1",
+    "eslint-plugin-unused-imports": "^4.4.1"
   }
 }

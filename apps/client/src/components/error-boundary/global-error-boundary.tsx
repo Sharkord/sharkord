@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle
 } from '@sharkord/ui';
-import { Github, RefreshCw } from 'lucide-react';
+import { Bug, RefreshCw } from 'lucide-react';
 import { memo, type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -84,7 +84,7 @@ const GlobalErrorFallback = memo(
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Github className="h-4 w-4" />
+                  <Bug className="h-4 w-4" />
                   {t('reportIssueOnGithub')}
                 </a>
               </Button>
