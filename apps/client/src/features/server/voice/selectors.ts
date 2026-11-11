@@ -29,6 +29,9 @@ export const voiceChannelActiveSinceSelector = (
   return channelState ? channelState.activeSince : null;
 };
 
+export const externalStreamsMapSelector = (state: IRootState) =>
+  state.server.externalStreamsMap;
+
 export const voiceChannelExternalStreamsSelector = (
   state: IRootState,
   channelId: number

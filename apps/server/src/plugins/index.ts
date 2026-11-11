@@ -43,6 +43,7 @@ import { logger } from '../logger';
 import { ensureDir } from '../utils/fs';
 import { pubsub } from '../utils/pubsub';
 import { closePluginVoiceConsumers } from './actions/consume-voice-producer';
+import { closePluginWebRtcTransports } from './actions/create-plugin-webrtc-transport';
 import {
   createContext,
   createUnloadContext,
@@ -781,6 +782,7 @@ class PluginManager {
 
   private forget = (pluginId: string) => {
     closePluginVoiceConsumers(pluginId);
+    closePluginWebRtcTransports(pluginId);
     eventBus.unload(pluginId);
     this.commandRegistry.unload(pluginId);
     this.actionRegistry.unload(pluginId);

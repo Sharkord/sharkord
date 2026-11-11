@@ -1,6 +1,11 @@
+import type { TExternalStreamsMap } from '@sharkord/shared';
 import { StreamKind } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
-import { isOwnProducerEvent } from '../helpers';
+import {
+  getOwnedExternalVolumeKeys,
+  isOwnProducerEvent,
+  resolveVolume
+} from '../helpers';
 
 describe('isOwnProducerEvent', () => {
   test('should treat a producer with our own user id as ours', () => {
@@ -25,5 +30,45 @@ describe('isOwnProducerEvent', () => {
 
   test('should treat nothing as ours before the own user id is known', () => {
     expect(isOwnProducerEvent(1, undefined, StreamKind.AUDIO)).toBe(false);
+  });
+});
+
+const stream = (key: string, ownerUserId?: number) => ({
+  title: key,
+  key,
+  pluginId: 'obs',
+  ownerUserId,
+  tracks: { audio: true, video: true }
+});
+
+const STREAMS: TExternalStreamsMap = {
+  10: { 0: stream('mine', 1), 1: stream('theirs', 2), 2: stream('nobody') }
+};
+
+describe('external stream default volume', () => {
+  test('should start the owner of a stream muted', () => {
+    const owned = getOwnedExternalVolumeKeys(STREAMS, 1);
+
+    expect(resolveVolume({}, 'external-obs-mine', owned)).toBe(0);
+  });
+
+  test('should play everyone else at full volume', () => {
+    const owned = getOwnedExternalVolumeKeys(STREAMS, 1);
+
+    expect(resolveVolume({}, 'external-obs-theirs', owned)).toBe(100);
+    expect(resolveVolume({}, 'external-obs-nobody', owned)).toBe(100);
+    expect(resolveVolume({}, 'user-2', owned)).toBe(100);
+  });
+
+  test('should let a volume the owner picked win over the muted default', () => {
+    const owned = getOwnedExternalVolumeKeys(STREAMS, 1);
+
+    expect(
+      resolveVolume({ 'external-obs-mine': 40 }, 'external-obs-mine', owned)
+    ).toBe(40);
+  });
+
+  test('should own nothing before the own user id is known', () => {
+    expect(getOwnedExternalVolumeKeys(STREAMS, undefined).size).toBe(0);
   });
 });

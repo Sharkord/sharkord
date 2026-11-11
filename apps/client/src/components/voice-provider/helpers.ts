@@ -7,6 +7,7 @@ import { VideoCodec, type TStreamQuality } from '@/types';
 import {
   StreamKind,
   type ConsumerType,
+  type TExternalStreamsMap,
   type TStreamQualityLayer
 } from '@sharkord/shared';
 import type {
@@ -211,7 +212,43 @@ const getSimulcastCodec = (
     (c) => c.mimeType.toLowerCase() === VideoCodec.VP8.toLowerCase()
   );
 
+const getExternalVolumeKey = (pluginId: string, key: string) =>
+  `external-${pluginId}-${key}`;
+
+const getOwnedExternalVolumeKeys = (
+  externalStreamsMap: TExternalStreamsMap,
+  ownUserId: number | undefined
+) => {
+  const keys = new Set<string>();
+
+  if (ownUserId === undefined) return keys;
+
+  for (const streams of Object.values(externalStreamsMap)) {
+    for (const stream of Object.values(streams)) {
+      if (stream.ownerUserId !== ownUserId) continue;
+
+      keys.add(getExternalVolumeKey(stream.pluginId, stream.key));
+    }
+  }
+
+  return keys;
+};
+
+const resolveVolume = (
+  volumes: Record<string, number>,
+  key: string,
+  ownedKeys: Set<string>
+) => {
+  const stored = volumes[key];
+
+  if (stored !== undefined) return stored;
+
+  return ownedKeys.has(key) ? 0 : 100;
+};
+
 export {
+  getExternalVolumeKey,
+  getOwnedExternalVolumeKeys,
   getRemoteConsumerTypeKey,
   getScreenShareSimulcastEncodings,
   getSimulcastCodec,
@@ -224,6 +261,7 @@ export {
   loadStreamQualitiesFromStorage,
   normalizeStreamQuality,
   parseStreamQualityDropdownValue,
+  resolveVolume,
   saveStreamQualitiesToStorage
 };
 
