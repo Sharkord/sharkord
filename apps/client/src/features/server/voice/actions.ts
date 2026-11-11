@@ -305,10 +305,7 @@ export const joinVoice = async (
 };
 
 export type TLeaveVoiceReason =
-  | 'user_disconnect_button'
-  | 'switch_channel'
-  | 'init_failed'
-  | 'unknown';
+  'user_disconnect_button' | 'switch_channel' | 'init_failed' | 'unknown';
 
 export const leaveVoice = async (options?: {
   reason?: TLeaveVoiceReason;

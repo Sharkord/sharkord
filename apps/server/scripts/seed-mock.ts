@@ -447,13 +447,11 @@ const seedChannels = async (
   const insertedCategories = await db
     .insert(categories)
     .values(
-      categoryNames.map(
-        (name, index): TICategory => ({
-          name,
-          position: index,
-          createdAt: now
-        })
-      )
+      categoryNames.map((name, index): TICategory => ({
+        name,
+        position: index,
+        createdAt: now
+      }))
     )
     .returning();
 
@@ -466,26 +464,22 @@ const seedChannels = async (
     .slice(0, profile.voiceChannels);
 
   const rows: TIChannel[] = [
-    ...textNames.map(
-      (name, index): TIChannel => ({
-        type: ChannelType.TEXT,
-        name,
-        topic: faker.company.catchPhrase(),
-        position: index,
-        categoryId: insertedCategories[index % insertedCategories.length]!.id,
-        createdAt: now
-      })
-    ),
-    ...voiceNames.map(
-      (name, index): TIChannel => ({
-        type: ChannelType.VOICE,
-        name,
-        topic: null,
-        position: textNames.length + index,
-        categoryId: insertedCategories[index % insertedCategories.length]!.id,
-        createdAt: now
-      })
-    ),
+    ...textNames.map((name, index): TIChannel => ({
+      type: ChannelType.TEXT,
+      name,
+      topic: faker.company.catchPhrase(),
+      position: index,
+      categoryId: insertedCategories[index % insertedCategories.length]!.id,
+      createdAt: now
+    })),
+    ...voiceNames.map((name, index): TIChannel => ({
+      type: ChannelType.VOICE,
+      name,
+      topic: null,
+      position: textNames.length + index,
+      categoryId: insertedCategories[index % insertedCategories.length]!.id,
+      createdAt: now
+    })),
     // one private channel so channel permissions have something to show
     {
       type: ChannelType.TEXT,

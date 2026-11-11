@@ -10,9 +10,7 @@
  * Mutating the payload does nothing, since each handler gets its own copy.
  */
 export type TPluginHookResult<TUpdate> =
-  | void
-  | { update: TUpdate }
-  | { reject: string };
+  void | { update: TUpdate } | { reject: string };
 
 /** a hook that can allow or refuse but has nothing to change */
 export type TPluginGateResult = TPluginHookResult<never>;
