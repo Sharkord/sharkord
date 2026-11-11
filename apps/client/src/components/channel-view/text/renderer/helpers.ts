@@ -1,5 +1,5 @@
 import type { TJoinedMessage } from '@sharkord/shared';
-import { Element, htmlToDOM, type DOMNode } from 'html-react-parser';
+import { htmlToDOM, type DOMNode, type Element } from 'html-react-parser';
 import type {
   TFoundMedia,
   TFoundOpenGraph,
@@ -68,9 +68,13 @@ const getYoutubeInfo = (
   return { isYoutube: false, videoId: undefined };
 };
 
+// html-dom-parser bundles its own copy of domhandler, so the nodes it builds are
+// never `instanceof` the Element that html-react-parser exports
+const isElementNode = (node: DOMNode): node is Element => node.type === 'tag';
+
 const collectLinkHrefs = (nodes: DOMNode[]): string[] =>
   nodes.flatMap((node) => {
-    if (!(node instanceof Element)) return [];
+    if (!isElementNode(node)) return [];
 
     const childHrefs = collectLinkHrefs(node.children as DOMNode[]);
 
@@ -174,5 +178,6 @@ export {
   getYoutubeInfo,
   getYoutubeVideoId,
   hasSpecializedLinkOverride,
+  isElementNode,
   normalizeComparableUrl
 };

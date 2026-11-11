@@ -13,11 +13,7 @@ type TServer = {
 };
 
 type TServerStatus =
-  | 'idle'
-  | 'loading'
-  | 'error'
-  | TDesktopConnectionState
-  | TDesktopMismatch;
+  'idle' | 'loading' | 'error' | TDesktopConnectionState | TDesktopMismatch;
 
 type TSettingsTab = 'general' | 'shortcuts' | 'updates';
 

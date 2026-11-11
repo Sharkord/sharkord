@@ -56,9 +56,10 @@ const reportInactive = (inactive: string[]) => {
   const inactiveBindings = active.bindings.filter(
     ({ accelerator }) => accelerator && inactive.includes(accelerator)
   );
-  const errors = inactiveBindings.map(
-    ({ actionId }): TDesktopHotkeyError => ({ actionId, reason: 'declined' })
-  );
+  const errors = inactiveBindings.map(({ actionId }): TDesktopHotkeyError => ({
+    actionId,
+    reason: 'declined'
+  }));
 
   active.onErrors(errors);
 };

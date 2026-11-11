@@ -114,6 +114,10 @@ describe('link preview redirects', () => {
         return fakeFetch(location, init);
       }
 
+      // a constructed Response has an empty url, unlike one from the real fetch, and
+      // link-preview-js resolves the page against it
+      Object.defineProperty(response, 'url', { value: String(input) });
+
       return response;
     };
 
