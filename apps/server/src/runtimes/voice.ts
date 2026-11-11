@@ -845,6 +845,7 @@ class VoiceRuntime {
     pluginId: string;
     avatarUrl?: string;
     bannerUrl?: string;
+    ownerUserId?: number;
     producers: {
       audio?: Producer;
       video?: Producer;
@@ -853,7 +854,15 @@ class VoiceRuntime {
   }) => {
     const streamId = this.externalCounter++;
 
-    const { title, key, pluginId, avatarUrl, bannerUrl, producers } = options;
+    const {
+      title,
+      key,
+      pluginId,
+      avatarUrl,
+      bannerUrl,
+      ownerUserId,
+      producers
+    } = options;
 
     const validatedVideoLayers = this.validateProducerQualityLayers(
       producers.video,
@@ -899,6 +908,7 @@ class VoiceRuntime {
       pluginId,
       avatarUrl,
       bannerUrl,
+      ownerUserId,
       tracks: {
         audio: !!producers.audio,
         video: !!producers.video

@@ -53,7 +53,13 @@ import {
   StreamKind
 } from '@sharkord/shared';
 import type { IncomingMessage, ServerResponse } from 'http';
-import type { AppData, Producer, Router, RtpParameters } from 'mediasoup/types';
+import type {
+  AppData,
+  Producer,
+  Router,
+  RtpParameters,
+  WebRtcTransport
+} from 'mediasoup/types';
 
 /** What to consume, and where its packets go. */
 export type TConsumeOptions = {
@@ -97,6 +103,12 @@ export type TCreateStreamOptions = {
   key: string;
   avatarUrl?: string;
   bannerUrl?: string;
+  /**
+   * the user streaming through the plugin, say from OBS. Their client starts
+   * the stream muted so they do not hear themselves back, and they can raise
+   * it with the normal volume control
+   */
+  ownerUserId?: number;
   producers: {
     audio?: Producer;
     video?: Producer;
@@ -517,6 +529,13 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
   voice: {
     /** throws when the channel has no live voice runtime */
     getRouter(channelId: number): Router<AppData>;
+    /**
+     * A WebRTC transport on the channel's router that shares the server's
+     * WebRTC port, so receiving media (a WHIP ingest, say) needs no extra
+     * ports. Throws when the channel has no live voice runtime. Closing it is
+     * yours; whatever is still open when the plugin unloads is closed for you.
+     */
+    createWebRtcTransport(channelId: number): Promise<WebRtcTransport<AppData>>;
     createStream(options: TCreateStreamOptions): TExternalStreamHandle;
     getListenInfo(): {
       ip: string;
