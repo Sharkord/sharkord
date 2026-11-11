@@ -42,7 +42,7 @@ const ResizableSidebar = memo(
       <div
         ref={sidebarRef}
         className={cn(
-          'flex flex-col bg-card border-border relative',
+          'flex flex-col bg-card border-border relative isolate',
           isLeftEdge ? 'border-l' : 'border-r',
           !isOpen && 'w-0 border-0! overflow-hidden',
           !isResizing && 'transition-all duration-500 ease-in-out',
