@@ -118,18 +118,20 @@ const start = () => {
 
   if (hasTray) {
     tray = createTray(icon, showWindow);
-
-    win.on('close', (event) => {
-      const { settings: current } = controller.getState();
-
-      if (isQuitting || !current.closeToTray) {
-        return;
-      }
-
-      event.preventDefault();
-      win.hide();
-    });
   }
+
+  win.on('close', (event) => {
+    const { settings: current } = controller.getState();
+
+    if (isQuitting || (hasTray && !current.closeToTray)) {
+      return;
+    }
+
+    event.preventDefault();
+    win.hide();
+  });
+
+  app.on('activate', showWindow);
 
   const selectServerIcon = createServerIcon({
     fallback: nativeImage.createFromPath(icon),
