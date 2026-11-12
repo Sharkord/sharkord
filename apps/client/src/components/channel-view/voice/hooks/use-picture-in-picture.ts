@@ -1,4 +1,15 @@
+import { getPictureInPictureVideo } from '@/helpers/picture-in-picture';
 import { useCallback, useEffect, useState, type RefObject } from 'react';
+
+const isShowingStreamOf = (video: HTMLVideoElement) => {
+  const pipVideo = getPictureInPictureVideo();
+
+  return (
+    document.pictureInPictureElement === pipVideo &&
+    !!video.srcObject &&
+    pipVideo.srcObject === video.srcObject
+  );
+};
 
 const usePictureInPicture = (
   videoRef: RefObject<HTMLVideoElement | null>,
@@ -23,21 +34,22 @@ const usePictureInPicture = (
       return;
     }
 
+    const pipVideo = getPictureInPictureVideo();
+
     const syncState = () => {
-      setIsActive(document.pictureInPictureElement === video);
+      setIsActive(isShowingStreamOf(video));
     };
 
     syncState();
-    video.addEventListener('enterpictureinpicture', syncState);
-    video.addEventListener('leavepictureinpicture', syncState);
+    pipVideo.addEventListener('enterpictureinpicture', syncState);
+    pipVideo.addEventListener('leavepictureinpicture', syncState);
+    // the card gets its stream after this effect runs, when remounting while pip is open
+    video.addEventListener('loadedmetadata', syncState);
 
     return () => {
-      video.removeEventListener('enterpictureinpicture', syncState);
-      video.removeEventListener('leavepictureinpicture', syncState);
-
-      if (document.pictureInPictureElement === video) {
-        document.exitPictureInPicture().catch(() => undefined);
-      }
+      pipVideo.removeEventListener('enterpictureinpicture', syncState);
+      pipVideo.removeEventListener('leavepictureinpicture', syncState);
+      video.removeEventListener('loadedmetadata', syncState);
     };
   }, [enabled, videoRef]);
 
@@ -47,6 +59,7 @@ const usePictureInPicture = (
     if (
       !enabled ||
       !video ||
+      !video.srcObject ||
       typeof document === 'undefined' ||
       !document.pictureInPictureEnabled ||
       !video.requestPictureInPicture
@@ -55,7 +68,7 @@ const usePictureInPicture = (
     }
 
     try {
-      if (document.pictureInPictureElement === video) {
+      if (isShowingStreamOf(video)) {
         await document.exitPictureInPicture();
         return;
       }
@@ -64,7 +77,12 @@ const usePictureInPicture = (
         await document.exitPictureInPicture();
       }
 
-      await video.requestPictureInPicture();
+      const pipVideo = getPictureInPictureVideo();
+
+      pipVideo.srcObject = video.srcObject;
+
+      await pipVideo.play();
+      await pipVideo.requestPictureInPicture();
     } catch {
       // ignore errors
     }
