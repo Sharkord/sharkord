@@ -4,7 +4,15 @@ import {
   type TJoinedRole,
   type TRole
 } from '@sharkord/shared';
-import { and, eq, getTableColumns, inArray, sql } from 'drizzle-orm';
+import {
+  and,
+  eq,
+  getTableColumns,
+  inArray,
+  isNotNull,
+  or,
+  sql
+} from 'drizzle-orm';
 import { db } from '..';
 import { rolePermissions, roles, userRoles } from '../schema';
 type TQueryResult = TRole & {
@@ -89,6 +97,35 @@ const userCan = async (
   return !!match;
 };
 
+const getUserIdsWithPermission = async (
+  userIds: number[],
+  permission: Permission
+): Promise<number[]> => {
+  if (userIds.length === 0) return [];
+
+  const rows = await db
+    .selectDistinct({ userId: userRoles.userId })
+    .from(userRoles)
+    .leftJoin(
+      rolePermissions,
+      and(
+        eq(rolePermissions.roleId, userRoles.roleId),
+        eq(rolePermissions.permission, permission)
+      )
+    )
+    .where(
+      and(
+        inArray(userRoles.userId, userIds),
+        or(
+          eq(userRoles.roleId, OWNER_ROLE_ID),
+          isNotNull(rolePermissions.roleId)
+        )
+      )
+    );
+
+  return rows.map(({ userId }) => userId);
+};
+
 const getUserRoles = async (userId: number): Promise<TJoinedRole[]> => {
   const result = await db
     .select({
@@ -153,6 +190,7 @@ export {
   getEffectiveStorageSpaceQuotaByUserId,
   getRole,
   getRoles,
+  getUserIdsWithPermission,
   getUserRoleIds,
   getUserRoles,
   userCan

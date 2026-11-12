@@ -1,6 +1,7 @@
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { useWebRtcSimulcastEnabled } from '@/features/server/hooks';
 import { SoundType } from '@/features/server/types';
+import { updateOwnVoiceState } from '@/features/server/voice/actions';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
 import {
   clampMicrophoneDecibels,
@@ -978,6 +979,46 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     setScreenShareProducer
   ]);
 
+  const stopClosedOwnStream = useCallback(
+    (kind: StreamKind, producerId: string) => {
+      if (
+        kind === StreamKind.VIDEO &&
+        localVideoProducer.current?.id === producerId
+      ) {
+        voiceLogger.info('webcam: producer closed by the server');
+
+        stopWebcamStream();
+        updateOwnVoiceState({ webcamEnabled: false });
+        playSound(SoundType.OWN_USER_STOPPED_WEBCAM);
+
+        return;
+      }
+
+      if (
+        kind === StreamKind.SCREEN &&
+        localScreenShareProducer.current?.id === producerId
+      ) {
+        voiceLogger.info('screen: producer closed by the server');
+
+        stopScreenShareStream();
+        updateOwnVoiceState({ sharingScreen: false });
+        playSound(SoundType.OWN_USER_STOPPED_SCREENSHARE);
+      }
+    },
+    [
+      localVideoProducer,
+      localScreenShareProducer,
+      stopWebcamStream,
+      stopScreenShareStream
+    ]
+  );
+
+  const stopClosedOwnStreamRef = useRef(stopClosedOwnStream);
+
+  useEffect(() => {
+    stopClosedOwnStreamRef.current = stopClosedOwnStream;
+  }, [stopClosedOwnStream]);
+
   const startScreenShareStream = useCallback(
     async (options?: TScreenShareOptions) => {
       try {
@@ -1397,6 +1438,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     removeExternalStreamTrack,
     removeExternalStream,
     clearRemoteUserStreamsForUser,
+    stopClosedOwnStreamRef,
     rtpCapabilitiesRef: deviceRtpCapabilities,
     isVoiceSessionActive:
       connectionStatus === ConnectionStatus.CONNECTING ||

@@ -6,6 +6,7 @@ import { getChannelsForUser } from '../db/queries/channels';
 import { userRoles } from '../db/schema';
 import { eventBus } from '../plugins/event-bus';
 import { invariant } from '../utils/invariant';
+import { stopRevokedVoiceStreams } from './voice-stream-permissions';
 
 const assignRole = async (userId: number, role: TJoinedRole) => {
   const roleId = role.id;
@@ -67,6 +68,8 @@ const removeRole = async (userId: number, role: TJoinedRole) => {
     userId,
     channelsBefore.map((channel) => channel.id)
   );
+
+  await stopRevokedVoiceStreams();
 };
 
 export { assignRole, removeRole };
