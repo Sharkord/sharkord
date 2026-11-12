@@ -1,3 +1,4 @@
+import { lookup } from 'dns/promises';
 import ipaddr from 'ipaddr.js';
 import os from 'os';
 
@@ -77,6 +78,52 @@ const getPublicIp = async () => {
   return ip;
 };
 
+type THostnameLookup = (hostname: string) => Promise<string | undefined>;
+
+// prefer ipv4 since that is what the public ip providers above return and what most
+// ddns setups maintain, but still accept an aaaa-only hostname
+const lookupHostname: THostnameLookup = async (hostname) => {
+  try {
+    const { address } = await lookup(hostname, { family: 4 });
+
+    return address;
+  } catch {
+    try {
+      const { address } = await lookup(hostname);
+
+      return address;
+    } catch {
+      return undefined;
+    }
+  }
+};
+
+// webRtc.announcedAddress may be an ip, a hostname (e.g. a ddns record) or empty.
+// a hostname is resolved once at boot so mediasoup announces a plain ip in its ice
+// candidates, browsers do not reliably resolve hostname candidates themselves.
+// empty, or a hostname that does not resolve, falls back to the public ip providers
+const resolveAnnouncedAddress = async (
+  announcedAddress: string,
+  resolveHostname: THostnameLookup = lookupHostname
+): Promise<string | undefined> => {
+  const address = announcedAddress.trim();
+
+  if (!address) return getPublicIp();
+
+  if (ipaddr.isValid(address)) return address;
+
+  const resolved = await resolveHostname(address);
+
+  if (resolved) return resolved;
+
+  // logger imports config, which imports this file, see getPublicIp
+  console.warn(
+    `Could not resolve webRtc.announcedAddress hostname "${address}", falling back to public IP lookup.`
+  );
+
+  return getPublicIp();
+};
+
 // the single answer to "is this a routable public address". an allowlist of one range
 // rather than a blocklist, so anything ipaddr does not call unicast (carrierGradeNat,
 // reserved, benchmarking and friends) is treated as not public. an unparseable address is
@@ -113,4 +160,11 @@ const getIpBlockKey = (ip: string): string => {
   return `${network.toString()}/64`;
 };
 
-export { getIpBlockKey, getPrivateIp, getPublicIp, isPrivateIP, isPublicIp };
+export {
+  getIpBlockKey,
+  getPrivateIp,
+  getPublicIp,
+  isPrivateIP,
+  isPublicIp,
+  resolveAnnouncedAddress
+};
