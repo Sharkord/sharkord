@@ -15,6 +15,8 @@ export const pinnedCardSelector = (state: IRootState) =>
 export const voiceMoveTargetChannelIdSelector = (state: IRootState) =>
   state.server.voiceMoveTargetChannelId;
 
+export const voiceMapSelector = (state: IRootState) => state.server.voiceMap;
+
 export const voiceChannelStateSelector = (
   state: IRootState,
   channelId: number

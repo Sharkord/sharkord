@@ -77,6 +77,35 @@ describe('presence across a user session', () => {
     }
   });
 
+  test('should keep the call when a reconnected socket rejoins before the old one closes', async () => {
+    const runtime = new VoiceRuntime(2);
+
+    await runtime.init();
+
+    try {
+      const { socket: staleSocket, caller: staleCaller } = await connectTab(2);
+
+      await staleCaller.voice.join({
+        channelId: 2,
+        state: { micMuted: false, soundMuted: false }
+      });
+
+      const { caller: reconnectedCaller } = await connectTab(2);
+
+      await reconnectedCaller.voice.join({
+        channelId: 2,
+        state: { micMuted: true, soundMuted: false }
+      });
+
+      await handleSocketClose(staleSocket);
+
+      expect(runtime.getUser(2)).toBeDefined();
+      expect(runtime.getUserState(2).micMuted).toBe(true);
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
   test('should keep the other tab online after the tab in the call closes', async () => {
     const runtime = new VoiceRuntime(2);
 

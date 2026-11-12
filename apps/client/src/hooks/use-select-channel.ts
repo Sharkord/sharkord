@@ -1,6 +1,8 @@
+import { requestConfirmation } from '@/features/dialogs/actions';
 import { setSelectedChannelId } from '@/features/server/channels/actions';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { channelByIdSelector } from '@/features/server/channels/selectors';
+import { ownVoiceChannelIdElsewhereSelector } from '@/features/server/selectors';
 import { joinVoice, leaveVoice } from '@/features/server/voice/actions';
 import { useVoice } from '@/features/server/voice/hooks';
 import { store } from '@/features/store';
@@ -35,20 +37,42 @@ const useSelectChannel = () => {
       }
 
       if (
-        channel.type === ChannelType.VOICE &&
-        currentVoiceChannelId !== channel.id
+        channel.type !== ChannelType.VOICE ||
+        currentVoiceChannelId === channel.id
       ) {
-        const response = await joinVoice(channel.id);
+        return;
+      }
 
-        if (!response) return;
+      const state = store.getState();
+      const voiceChannelIdElsewhere = ownVoiceChannelIdElsewhereSelector(state);
 
-        try {
-          await init(response, channel.id);
-        } catch {
-          await leaveVoice({ reason: 'init_failed' });
+      // joining here ends the call on the other tab or device, so it has to be on purpose
+      if (voiceChannelIdElsewhere) {
+        const otherChannel = channelByIdSelector(
+          state,
+          voiceChannelIdElsewhere
+        );
 
-          toast.error(t('common:failedInitVoiceConnection'));
-        }
+        const confirmed = await requestConfirmation({
+          title: t('moveVoiceCallTitle'),
+          message: t('moveVoiceCallMsg', { channel: otherChannel?.name }),
+          confirmLabel: t('moveVoiceCallConfirm'),
+          cancelLabel: t('cancel')
+        });
+
+        if (!confirmed) return;
+      }
+
+      const response = await joinVoice(channel.id);
+
+      if (!response) return;
+
+      try {
+        await init(response, channel.id);
+      } catch {
+        await leaveVoice({ reason: 'init_failed' });
+
+        toast.error(t('common:failedInitVoiceConnection'));
       }
     },
     [currentVoiceChannelId, init, t]

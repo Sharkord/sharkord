@@ -17,14 +17,11 @@ import {
 } from '@trpc/server/adapters/ws';
 import http from 'http';
 import { WebSocket, WebSocketServer } from 'ws';
-import {
-  publishVoicePresence,
-  unpublishHiddenChannelFromUser
-} from '../db/publishers';
 import { channelUserCan } from '../db/queries/channels';
 import { getUserRoles } from '../db/queries/roles';
 import { getUserById, getUserByToken } from '../db/queries/users';
 import { getWsInfo } from '../helpers/get-ws-info';
+import { removeUserFromVoice } from '../helpers/remove-user-from-voice';
 import { logger } from '../logger';
 import { eventBus } from '../plugins/event-bus';
 import { enqueueActivityLog } from '../queues/activity-log';
@@ -238,14 +235,7 @@ const handleSocketClose = async (ws: WebSocket) => {
       voiceRuntime &&
       (!hasOtherSessions || ws.session?.voiceChannelId === voiceRuntime.id)
     ) {
-      voiceRuntime.removeUser(userId);
-
-      await publishVoicePresence(voiceRuntime, ServerEvents.USER_LEAVE_VOICE, {
-        channelId: voiceRuntime.id,
-        userId
-      });
-
-      await unpublishHiddenChannelFromUser(userId, voiceRuntime.id);
+      await removeUserFromVoice(voiceRuntime, userId);
     }
 
     // only mark as offline when there are no other active sessions

@@ -12,6 +12,7 @@ import { db } from '../../db';
 import { publishVoicePresence } from '../../db/publishers';
 import { channels } from '../../db/schema';
 import { markVoiceSession } from '../../helpers/mark-voice-session';
+import { removeUserFromVoice } from '../../helpers/remove-user-from-voice';
 import {
   consumeVoiceMoveGrant,
   hasVoiceMoveGrant
@@ -69,15 +70,6 @@ const joinVoiceRoute = protectedProcedure
       message: 'Cannot join a direct message channel as a voice channel'
     });
 
-    const userAlreadyInVoiceChannel = VoiceRuntime.findRuntimeByUserId(
-      ctx.user.id
-    );
-
-    invariant(!userAlreadyInVoiceChannel, {
-      code: 'BAD_REQUEST',
-      message: 'User already in a voice channel'
-    });
-
     await runHook<TBeforeVoiceJoinPayload, never>({
       entries: pluginManager.getHooks('beforeVoiceJoin'),
       payload: {
@@ -93,6 +85,12 @@ const joinVoiceRoute = protectedProcedure
       code: 'INTERNAL_SERVER_ERROR',
       message: 'Voice runtime not found for this channel'
     });
+
+    const previousRuntime = VoiceRuntime.findRuntimeByUserId(ctx.user.id);
+
+    if (previousRuntime) {
+      await removeUserFromVoice(previousRuntime, ctx.user.id);
+    }
 
     runtime.addUser(ctx.user.id, input.state);
 

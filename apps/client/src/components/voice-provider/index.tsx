@@ -86,6 +86,7 @@ import {
 } from './hooks/use-voice-controls';
 import { useVoiceEvents } from './hooks/use-voice-events';
 import { useVoiceHotkeys } from './hooks/use-voice-hotkeys';
+import { useVoiceSessionRecovery } from './hooks/use-voice-session-recovery';
 import { SIMULCAST_WEBCAM_MAX_BITRATE } from './statics';
 import { VoiceStatsContext } from './stats-context';
 import { VolumeControlProvider } from './volume-control-context';
@@ -1363,6 +1364,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     });
 
   useVoiceHotkeys({ toggleMic, toggleSound });
+  useVoiceSessionRecovery({ init });
 
   const setMicMutedForBridge = useCallback(
     async (muted: boolean) => {
