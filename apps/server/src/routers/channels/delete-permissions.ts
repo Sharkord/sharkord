@@ -14,6 +14,7 @@ import {
   channelUserPermissions
 } from '../../db/schema';
 import { assertChannelAccess } from '../../helpers/assert-channel-access';
+import { stopRevokedVoiceStreams } from '../../helpers/voice-stream-permissions';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
@@ -73,6 +74,8 @@ const deletePermissionsRoute = protectedProcedure
     });
 
     await publishChannelAccessChange(input.channelId, audienceBefore);
+    await stopRevokedVoiceStreams();
+
     enqueueActivityLog({
       type: ActivityLogType.DELETED_CHANNEL_PERMISSIONS,
       userId: ctx.user.id,

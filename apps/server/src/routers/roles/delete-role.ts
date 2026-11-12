@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { deleteRoleAndFallbackUsers } from '../../db/mutations/roles';
 import { publishRole } from '../../db/publishers';
 import { getDefaultRole, getRole } from '../../db/queries/roles';
+import { stopRevokedVoiceStreams } from '../../helpers/voice-stream-permissions';
 import { eventBus } from '../../plugins/event-bus';
 import { enqueueActivityLog } from '../../queues/activity-log';
 import { invariant } from '../../utils/invariant';
@@ -42,6 +43,8 @@ const deleteRoleRoute = protectedProcedure
     deleteRoleAndFallbackUsers(role.id, defaultRole.id);
 
     publishRole(role.id, 'delete');
+
+    await stopRevokedVoiceStreams();
 
     eventBus.emit('role:deleted', { roleId: role.id, name: role.name });
 

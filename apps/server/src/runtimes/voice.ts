@@ -184,6 +184,8 @@ class VoiceRuntime {
     return voiceRuntimes.get(channelId);
   };
 
+  public static getAll = (): VoiceRuntime[] => [...voiceRuntimes.values()];
+
   public static findRuntimeByUserId = (
     userId: number
   ): VoiceRuntime | undefined => {
