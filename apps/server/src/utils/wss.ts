@@ -139,9 +139,11 @@ const createContext = async ({
   const getOwnWs = () => ws;
 
   const getUserWs = (userId: number) => {
-    if (!wss) return [];
+    const sockets = userSockets.get(userId);
 
-    return Array.from(wss.clients).filter((client) => client.userId === userId);
+    if (!sockets) return [];
+
+    return Array.from(sockets);
   };
 
   const getStatusById = (userId: number) =>
