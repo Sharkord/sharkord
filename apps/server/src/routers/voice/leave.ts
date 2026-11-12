@@ -1,12 +1,9 @@
-import { ChannelType, ServerEvents } from '@sharkord/shared';
+import { ChannelType } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { db } from '../../db';
-import {
-  publishVoicePresence,
-  unpublishHiddenChannelFromUser
-} from '../../db/publishers';
 import { channels } from '../../db/schema';
 import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
+import { removeUserFromVoice } from '../../helpers/remove-user-from-voice';
 import { logger } from '../../logger';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
@@ -41,14 +38,7 @@ const leaveVoiceRoute = protectedProcedure.mutation(async ({ ctx }) => {
     message: 'User not in voice channel'
   });
 
-  runtime.removeUser(ctx.user.id);
-
-  await publishVoicePresence(runtime, ServerEvents.USER_LEAVE_VOICE, {
-    channelId,
-    userId: ctx.user.id
-  });
-
-  await unpublishHiddenChannelFromUser(ctx.user.id, channel.id);
+  await removeUserFromVoice(runtime, ctx.user.id);
 
   ctx.currentVoiceChannelId = undefined;
 

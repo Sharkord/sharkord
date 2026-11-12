@@ -41,6 +41,8 @@ import { ownUserIdSelector } from '../users/selectors';
 import { ownVoiceStateSelector } from './selectors';
 import { VOICE_REACTION_DURATION_MS } from './statics';
 
+let joiningVoiceChannelId: number | undefined;
+
 const syncOwnServerMute = (
   userId: number,
   newState: Partial<TVoiceUserState>
@@ -129,6 +131,10 @@ export const removeUserFromVoiceChannel = (
   // deleted, its category was, or the runtime was destroyed. without this the call ends but
   // the app goes on showing the user as connected to a channel that no longer exists
   if (userId === ownUserId) {
+    // the server ends the user's previous session in this channel while joining it again
+    // (a reconnect, or the call taken over from another device), which is not a kick
+    if (joiningVoiceChannelId === channelId) return;
+
     voiceLogger.info('session: removed from voice by the server', {
       channelId
     });
@@ -268,6 +274,13 @@ export const joinVoice = async (
     openVoiceChatSidebar(channelId);
   }
 
+  return requestVoiceJoin(channelId);
+};
+
+export const requestVoiceJoin = async (
+  channelId: number
+): Promise<RtpCapabilities | undefined> => {
+  const state = store.getState();
   const { micMuted: storedMicMuted, soundMuted } = ownVoiceStateSelector(state);
   const pushToTalkSelected = pushToTalkSelectedSelector(state);
 
@@ -282,6 +295,8 @@ export const joinVoice = async (
     micMuted,
     soundMuted
   });
+
+  joiningVoiceChannelId = channelId;
 
   try {
     const client = getTRPCClient();
@@ -299,6 +314,8 @@ export const joinVoice = async (
     clearLocalVoiceSession();
 
     toast.error(getTrpcError(error, i18n.t('common:failedJoinVoiceChannel')));
+  } finally {
+    joiningVoiceChannelId = undefined;
   }
 
   return undefined;
