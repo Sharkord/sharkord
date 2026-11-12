@@ -1,4 +1,5 @@
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
+import { useIsConnected } from '@/features/server/hooks';
 import { useOwnUserId } from '@/features/server/users/hooks';
 import { voiceLogger } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
@@ -44,8 +45,14 @@ const useVoiceEvents = ({
 }: TEvents) => {
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const ownUserId = useOwnUserId();
+  const isConnected = useIsConnected();
 
   useEffect(() => {
+    if (!isConnected) {
+      voiceLogger.info('events: not subscribed, server disconnected');
+      return;
+    }
+
     if (!currentVoiceChannelId) {
       voiceLogger.info('events: not subscribed, no voice channel');
       return;
@@ -225,7 +232,8 @@ const useVoiceEvents = ({
     clearRemoteUserStreamsForUser,
     stopClosedOwnStreamRef,
     rtpCapabilitiesRef,
-    isVoiceSessionActive
+    isVoiceSessionActive,
+    isConnected
   ]);
 };
 

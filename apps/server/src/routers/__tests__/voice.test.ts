@@ -281,9 +281,7 @@ describe('voice router', () => {
       const { caller: movedCaller } = await initTest(4);
 
       const originRuntime = new VoiceRuntime(2);
-      const destinationRuntime = new VoiceRuntime(PRIVATE_VOICE_CHANNEL_ID);
-
-      await destinationRuntime.init();
+      let destinationRuntime: VoiceRuntime | undefined;
 
       originRuntime.addUser(4, { micMuted: false, soundMuted: false });
 
@@ -298,18 +296,60 @@ describe('voice router', () => {
           channelId: PRIVATE_VOICE_CHANNEL_ID
         });
 
-        // joining before leaving the origin call is refused, and must not spend the grant:
-        // the move the user was sent on is the retry that follows
+        // the destination has no runtime yet, so the join fails after the grant is checked.
+        // it must neither spend the grant nor take the user out of the call they are in
         await expect(movedCaller.voice.join(joinInput)).rejects.toThrow(
-          'User already in a voice channel'
+          'Voice runtime not found for this channel'
         );
 
-        originRuntime.removeUser(4);
+        expect(originRuntime.getUser(4)).toBeDefined();
+
+        destinationRuntime = new VoiceRuntime(PRIVATE_VOICE_CHANNEL_ID);
+
+        await destinationRuntime.init();
 
         const result = await movedCaller.voice.join(joinInput);
 
         expect(result.routerRtpCapabilities).toBeDefined();
       } finally {
+        await originRuntime.destroy();
+        await destinationRuntime?.destroy();
+      }
+    });
+
+    test('should move the user out of the call they are already in when joining another', async () => {
+      const originRuntime = new VoiceRuntime(PRIVATE_VOICE_CHANNEL_ID);
+      const destinationRuntime = new VoiceRuntime(VOICE_CHANNEL_ID);
+
+      await destinationRuntime.init();
+
+      originRuntime.addUser(1, { micMuted: false, soundMuted: false });
+
+      const { caller } = await initTest(1);
+
+      const leaves: { channelId: number; userId: number }[] = [];
+
+      const subscription = pubsub
+        .subscribeFor(1, ServerEvents.USER_LEAVE_VOICE)
+        .subscribe({
+          next: (payload) => {
+            leaves.push(payload);
+          }
+        });
+
+      try {
+        await caller.voice.join({
+          channelId: VOICE_CHANNEL_ID,
+          state: { micMuted: false, soundMuted: false }
+        });
+
+        expect(originRuntime.getUser(1)).toBeUndefined();
+        expect(destinationRuntime.getUser(1)).toBeDefined();
+        expect(leaves).toEqual([
+          { channelId: PRIVATE_VOICE_CHANNEL_ID, userId: 1 }
+        ]);
+      } finally {
+        subscription.unsubscribe();
         await originRuntime.destroy();
         await destinationRuntime.destroy();
       }
