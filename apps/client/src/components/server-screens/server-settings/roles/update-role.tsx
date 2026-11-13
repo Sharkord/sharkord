@@ -4,7 +4,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   getTrpcError,
   OWNER_ROLE_ID,
-  type Permission,
+  Permission,
   STORAGE_MAX_QUOTA_PER_USER,
   STORAGE_MIN_QUOTA_PER_USER,
   type TJoinedRole
@@ -28,6 +28,10 @@ import { toast } from 'sonner';
 import { QUOTA_BY_USER_PRESETS } from '../storage/presets';
 import { StorageSizeControl } from '../storage/storage-size-control';
 import { PermissionList } from './permissions-list';
+
+// the owner bypasses every permission check on the server, its stored rows
+// miss permissions added after the role was created
+const ALL_PERMISSIONS = Object.values(Permission);
 
 type TRoleValues = {
   name: string;
@@ -200,8 +204,8 @@ const UpdateRole = memo(
         </Group>
 
         <PermissionList
-          permissions={values.permissions}
-          disabled={OWNER_ROLE_ID === selectedRole.id}
+          permissions={isOwnerRole ? ALL_PERMISSIONS : values.permissions}
+          disabled={isOwnerRole}
           setPermissions={handlePermissionsChange}
         />
 
