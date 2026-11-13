@@ -1,4 +1,5 @@
 import { Dialog } from '@/components/dialogs/dialogs';
+import type { TRequestImageCrop } from '@/helpers/crop-image';
 import type { TDeviceSettings } from '@/types';
 import type { TGenericObject } from '@sharkord/shared';
 import { store } from '../store';
@@ -129,7 +130,6 @@ export const resetDialogs = () => {
   store.dispatch(dialogSliceActions.resetDialogs());
 };
 
-// the desktop app has no browser picker with an audio checkbox, so it asks before the os picker opens
 export const requestScreenShareOptions = async ({
   settings
 }: {
@@ -141,6 +141,28 @@ export const requestScreenShareOptions = async ({
       onConfirm: (chosen: TDeviceSettings) => {
         closeDialogs();
         resolve(chosen);
+      },
+      onCancel: () => {
+        closeDialogs();
+        resolve(null);
+      }
+    });
+  });
+};
+
+export const requestImageCrop: TRequestImageCrop = ({
+  file,
+  shape,
+  aspect
+}) => {
+  return new Promise((resolve) => {
+    openDialog(Dialog.IMAGE_CROP, {
+      file,
+      shape,
+      aspect,
+      onConfirm: (cropped: File) => {
+        closeDialogs();
+        resolve(cropped);
       },
       onCancel: () => {
         closeDialogs();
