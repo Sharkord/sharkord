@@ -13,8 +13,7 @@ export type TPluginNotificationTarget = {
 };
 
 export type TNotificationTarget =
-  | TMessageNotificationTarget
-  | TPluginNotificationTarget;
+  TMessageNotificationTarget | TPluginNotificationTarget;
 
 export type TAppNotification = {
   title: string;

@@ -61,7 +61,8 @@ import {
 } from './users/selectors';
 import {
   ownVoiceStateSelector,
-  voiceChannelStateSelector
+  voiceChannelStateSelector,
+  voiceMapSelector
 } from './voice/selectors';
 
 export const connectedSelector = (state: IRootState) => state.server.connected;
@@ -547,3 +548,18 @@ export const isThreadOpenSelector = (
 
   return isInSidebar || isInMainView;
 };
+
+export const ownVoiceChannelIdElsewhereSelector = createSelector(
+  [voiceMapSelector, ownUserIdSelector, currentVoiceChannelIdSelector],
+  (voiceMap, ownUserId, currentVoiceChannelId) => {
+    if (currentVoiceChannelId || !ownUserId) return undefined;
+
+    const channelId = Object.keys(voiceMap).find(
+      (id) => voiceMap[Number(id)].users[ownUserId]
+    );
+
+    if (!channelId) return undefined;
+
+    return Number(channelId);
+  }
+);

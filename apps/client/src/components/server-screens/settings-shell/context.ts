@@ -19,4 +19,13 @@ const SettingsFormContext = createContext<TSettingsFormSlot>(noop);
 
 const useSettingsFormSlot = () => useContext(SettingsFormContext);
 
-export { SettingsFormContext, useSettingsFormSlot };
+const SettingsNavigateContext = createContext<(id: string) => void>(() => {});
+
+const useSettingsNavigate = () => useContext(SettingsNavigateContext);
+
+export {
+  SettingsFormContext,
+  SettingsNavigateContext,
+  useSettingsFormSlot,
+  useSettingsNavigate
+};

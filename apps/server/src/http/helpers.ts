@@ -36,10 +36,10 @@ const isSupportedHttpMethod = (
   return supportedHttpMethods.includes(method as TSupportedHttpMethod);
 };
 
-const getTextBody = async (
+const getRawBody = async (
   req: http.IncomingMessage,
   maxBytes: number = config.server.maxRequestBodyBytes
-): Promise<string> => {
+): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     let size = 0;
@@ -62,12 +62,20 @@ const getTextBody = async (
     });
 
     req.on('end', () => {
-      // concat before decoding, a multi-byte character can straddle two chunks
-      resolve(Buffer.concat(chunks).toString('utf-8'));
+      resolve(Buffer.concat(chunks));
     });
 
     req.on('error', reject);
   });
+};
+
+const getTextBody = async (
+  req: http.IncomingMessage,
+  maxBytes: number = config.server.maxRequestBodyBytes
+): Promise<string> => {
+  const body = await getRawBody(req, maxBytes);
+
+  return body.toString('utf-8');
 };
 
 const getJsonBody = async <T = any>(
@@ -522,6 +530,7 @@ export {
   enforceHttpRateLimit,
   getJsonBody,
   getPublicOrigin,
+  getRawBody,
   getRequestToken,
   getRequestUrl,
   getTextBody,

@@ -86,6 +86,8 @@
     "spellcheckDescription": "Souligne les mots mal orthographiés pendant la saisie. Désactivez-le si vous écrivez dans une langue que le dictionnaire ne connaît pas.",
     "throttleHiddenServers": "Limiter les serveurs masqués",
     "throttleHiddenServersDescription": "Ralentit les minuteurs et le rendu des serveurs que vous ne regardez pas. Économise le processeur et la batterie, désactivez-le si les serveurs en arrière-plan fonctionnent mal.",
+    "gpuEncoding": "Utiliser l'encodage GPU si possible",
+    "gpuEncodingDescription": "Encode votre webcam et votre partage d'écran sur la carte graphique quand c'est possible. Prend effet après le redémarrage de l'application.",
     "performanceOverlay": "Superposition des performances",
     "performanceOverlayDescription": "Affiche l'utilisation de la mémoire et du processeur de l'application dans une petite fenêtre.",
     "togglePerformanceOverlay": "Afficher ou masquer la superposition",

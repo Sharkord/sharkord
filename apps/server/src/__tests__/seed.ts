@@ -458,17 +458,15 @@ const seedTestDb = async (
     createdAt: firstStart
   });
 
-  const extraMembers = ['C', 'D', 'E'].map(
-    (letter): TIUser => ({
-      name: `User ${letter}`,
-      identity: `user${letter.toLowerCase()}`,
-      password: hashedPassword,
-      avatarId: null,
-      bannerId: null,
-      bio: null,
-      createdAt: firstStart
-    })
-  );
+  const extraMembers = ['C', 'D', 'E'].map((letter): TIUser => ({
+    name: `User ${letter}`,
+    identity: `user${letter.toLowerCase()}`,
+    password: hashedPassword,
+    avatarId: null,
+    bannerId: null,
+    bio: null,
+    createdAt: firstStart
+  }));
 
   const insertedExtraMembers = await db
     .insert(users)

@@ -8,13 +8,7 @@
  * none picked yet.
  */
 export type TPluginSettingType =
-  | 'string'
-  | 'number'
-  | 'boolean'
-  | 'secret'
-  | 'enum'
-  | 'channel'
-  | 'role';
+  'string' | 'number' | 'boolean' | 'secret' | 'enum' | 'channel' | 'role';
 
 /** One choice of an `enum` setting: `value` is stored, `label` is shown. */
 export type TPluginSettingOption = {

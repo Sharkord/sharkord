@@ -1,5 +1,6 @@
 import {
   ChannelPermission,
+  DEFAULT_ROLE_PERMISSIONS,
   Permission,
   RateLimiter,
   REACTION_EMOJI_MAX_LENGTH,
@@ -74,6 +75,29 @@ const revokeFromDefaultRole = async (permission: Permission) =>
         eq(rolePermissions.permission, permission)
       )
     );
+
+// the producers themselves need mediasoup, but the runtime only ever calls close() and its
+// close observer on them, so a stand-in is enough to check the bookkeeping around them
+const createFakeProducer = (id: string) => {
+  const closeListeners: (() => void)[] = [];
+  const state = { closed: false };
+
+  const producer = {
+    id,
+    kind: 'video',
+    observer: {
+      on: (event: string, listener: () => void) => {
+        if (event === 'close') closeListeners.push(listener);
+      }
+    },
+    close: () => {
+      state.closed = true;
+      closeListeners.forEach((listener) => listener());
+    }
+  } as unknown as Parameters<VoiceRuntime['addProducer']>[2];
+
+  return { producer, state };
+};
 
 describe('voice router', () => {
   test('should rate limit excessive voice join attempts', async () => {
@@ -257,9 +281,7 @@ describe('voice router', () => {
       const { caller: movedCaller } = await initTest(4);
 
       const originRuntime = new VoiceRuntime(2);
-      const destinationRuntime = new VoiceRuntime(PRIVATE_VOICE_CHANNEL_ID);
-
-      await destinationRuntime.init();
+      let destinationRuntime: VoiceRuntime | undefined;
 
       originRuntime.addUser(4, { micMuted: false, soundMuted: false });
 
@@ -274,18 +296,60 @@ describe('voice router', () => {
           channelId: PRIVATE_VOICE_CHANNEL_ID
         });
 
-        // joining before leaving the origin call is refused, and must not spend the grant:
-        // the move the user was sent on is the retry that follows
+        // the destination has no runtime yet, so the join fails after the grant is checked.
+        // it must neither spend the grant nor take the user out of the call they are in
         await expect(movedCaller.voice.join(joinInput)).rejects.toThrow(
-          'User already in a voice channel'
+          'Voice runtime not found for this channel'
         );
 
-        originRuntime.removeUser(4);
+        expect(originRuntime.getUser(4)).toBeDefined();
+
+        destinationRuntime = new VoiceRuntime(PRIVATE_VOICE_CHANNEL_ID);
+
+        await destinationRuntime.init();
 
         const result = await movedCaller.voice.join(joinInput);
 
         expect(result.routerRtpCapabilities).toBeDefined();
       } finally {
+        await originRuntime.destroy();
+        await destinationRuntime?.destroy();
+      }
+    });
+
+    test('should move the user out of the call they are already in when joining another', async () => {
+      const originRuntime = new VoiceRuntime(PRIVATE_VOICE_CHANNEL_ID);
+      const destinationRuntime = new VoiceRuntime(VOICE_CHANNEL_ID);
+
+      await destinationRuntime.init();
+
+      originRuntime.addUser(1, { micMuted: false, soundMuted: false });
+
+      const { caller } = await initTest(1);
+
+      const leaves: { channelId: number; userId: number }[] = [];
+
+      const subscription = pubsub
+        .subscribeFor(1, ServerEvents.USER_LEAVE_VOICE)
+        .subscribe({
+          next: (payload) => {
+            leaves.push(payload);
+          }
+        });
+
+      try {
+        await caller.voice.join({
+          channelId: VOICE_CHANNEL_ID,
+          state: { micMuted: false, soundMuted: false }
+        });
+
+        expect(originRuntime.getUser(1)).toBeUndefined();
+        expect(destinationRuntime.getUser(1)).toBeDefined();
+        expect(leaves).toEqual([
+          { channelId: PRIVATE_VOICE_CHANNEL_ID, userId: 1 }
+        ]);
+      } finally {
+        subscription.unsubscribe();
         await originRuntime.destroy();
         await destinationRuntime.destroy();
       }
@@ -470,6 +534,12 @@ describe('voice router', () => {
           kind: StreamKind.VIDEO,
           quality: { mode: 'auto' }
         }),
+      setConsumerPaused: () =>
+        caller.voice.setConsumerPaused({
+          remoteId: 1,
+          kind: StreamKind.VIDEO,
+          paused: true
+        }),
       getProducers: () => caller.voice.getProducers(),
       sendReaction: () => caller.voice.sendReaction({ emoji: 'thumbsup' })
     });
@@ -523,33 +593,97 @@ describe('voice router', () => {
     });
   });
 
-  // the producers themselves need mediasoup, but the runtime only ever calls close() and its
-  // close observer on them, so a stand-in is enough to check the route does the bookkeeping:
-  // drop it from the runtime and tell the rest of the channel it is gone
-  describe('closeProducer', () => {
-    const createFakeProducer = () => {
-      const closeListeners: (() => void)[] = [];
-      const state = { closed: false };
+  // the consumer itself needs mediasoup, but the route only calls pause() and resume() on it
+  // and the runtime only registers its close observer, so a stand-in covers the route
+  describe('setConsumerPaused', () => {
+    const withConsumer = async () => {
+      const runtime = new VoiceRuntime(2);
+      const state = { paused: false };
 
-      const producer = {
-        kind: 'audio',
-        observer: {
-          on: (event: string, listener: () => void) => {
-            if (event === 'close') closeListeners.push(listener);
-          }
+      const consumer = {
+        observer: { on: () => {} },
+        close: () => {},
+        pause: async () => {
+          state.paused = true;
         },
-        close: () => {
-          state.closed = true;
-          closeListeners.forEach((listener) => listener());
+        resume: async () => {
+          state.paused = false;
         }
-      } as unknown as Parameters<VoiceRuntime['addProducer']>[2];
+      } as unknown as Parameters<VoiceRuntime['addConsumer']>[3];
 
-      return { producer, state };
+      runtime.addUser(2, { micMuted: false, soundMuted: false });
+      runtime.addConsumer(2, 1, StreamKind.SCREEN, consumer);
+
+      const { caller } = await initTest(2, undefined, {
+        currentVoiceChannelId: 2
+      });
+
+      return { runtime, caller, state };
     };
 
+    test('should pause and resume the consumer of the caller', async () => {
+      const { runtime, caller, state } = await withConsumer();
+
+      try {
+        await caller.voice.setConsumerPaused({
+          remoteId: 1,
+          kind: StreamKind.SCREEN,
+          paused: true
+        });
+
+        expect(state.paused).toBe(true);
+
+        await caller.voice.setConsumerPaused({
+          remoteId: 1,
+          kind: StreamKind.SCREEN,
+          paused: false
+        });
+
+        expect(state.paused).toBe(false);
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should refuse when the caller has no consumer for that stream', async () => {
+      const { runtime, caller } = await withConsumer();
+
+      try {
+        await expect(
+          caller.voice.setConsumerPaused({
+            remoteId: 1,
+            kind: StreamKind.VIDEO,
+            paused: true
+          })
+        ).rejects.toThrow('Consumer not found');
+      } finally {
+        await runtime.destroy();
+      }
+    });
+
+    test('should refuse pausing a voice audio stream', async () => {
+      const { runtime, caller } = await withConsumer();
+
+      try {
+        await expect(
+          caller.voice.setConsumerPaused({
+            remoteId: 1,
+            // @ts-expect-error - voice audio is not pausable
+            kind: StreamKind.AUDIO,
+            paused: true
+          })
+        ).rejects.toThrow();
+      } finally {
+        await runtime.destroy();
+      }
+    });
+  });
+
+  // the route drops the producer from the runtime and tells the rest of the channel it is gone
+  describe('closeProducer', () => {
     const withProducer = async () => {
       const runtime = new VoiceRuntime(2);
-      const { producer, state } = createFakeProducer();
+      const { producer, state } = createFakeProducer('audio-producer');
 
       runtime.addUser(2, { micMuted: false, soundMuted: false });
       runtime.addProducer(2, StreamKind.AUDIO, producer);
@@ -564,13 +698,17 @@ describe('voice router', () => {
     test('should close the producer and tell the rest of the channel', async () => {
       const { runtime, caller, state } = await withProducer();
 
-      const closures: { remoteId: number; kind: StreamKind }[] = [];
+      const closures: {
+        remoteId: number;
+        kind: StreamKind;
+        producerId: string;
+      }[] = [];
 
       const subscription = pubsub
         .subscribeForChannel(2, ServerEvents.VOICE_PRODUCER_CLOSED)
         .subscribe({
-          next: ({ remoteId, kind }) => {
-            closures.push({ remoteId, kind });
+          next: ({ remoteId, kind, producerId }) => {
+            closures.push({ remoteId, kind, producerId });
           }
         });
 
@@ -579,7 +717,9 @@ describe('voice router', () => {
 
         expect(state.closed).toBe(true);
         expect(runtime.getProducer(StreamKind.AUDIO, 2)).toBeUndefined();
-        expect(closures).toEqual([{ remoteId: 2, kind: StreamKind.AUDIO }]);
+        expect(closures).toEqual([
+          { remoteId: 2, kind: StreamKind.AUDIO, producerId: 'audio-producer' }
+        ]);
       } finally {
         subscription.unsubscribe();
         await runtime.destroy();
@@ -1212,6 +1352,254 @@ describe('voice presence visibility', () => {
       expect(events.left).toEqual([]);
     } finally {
       events.stop();
+      await runtime.destroy();
+    }
+  });
+});
+
+// every route that can take WEBCAM or SHARE_SCREEN away has to end the stream on the server,
+// not leave it running until the client notices
+describe('voice stream revocation', () => {
+  const startStreams = (runtime: VoiceRuntime, userId: number) => {
+    const webcam = createFakeProducer(`webcam-${userId}`);
+    const screen = createFakeProducer(`screen-${userId}`);
+    const screenAudio = createFakeProducer(`screen-audio-${userId}`);
+
+    runtime.addUser(userId, { micMuted: true, soundMuted: false });
+    runtime.updateUserState(userId, {
+      webcamEnabled: true,
+      sharingScreen: true
+    });
+    runtime.addProducer(userId, StreamKind.VIDEO, webcam.producer);
+    runtime.addProducer(userId, StreamKind.SCREEN, screen.producer);
+    runtime.addProducer(userId, StreamKind.SCREEN_AUDIO, screenAudio.producer);
+
+    return {
+      webcam: webcam.state,
+      screen: screen.state,
+      screenAudio: screenAudio.state
+    };
+  };
+
+  const collectEvents = (channelId: number, userId: number) => {
+    const closures: {
+      remoteId: number;
+      kind: StreamKind;
+      producerId: string;
+    }[] = [];
+    const states: { userId: number; webcamEnabled: boolean }[] = [];
+
+    const subscriptions = [
+      pubsub
+        .subscribeForChannel(channelId, ServerEvents.VOICE_PRODUCER_CLOSED)
+        .subscribe({
+          next: ({ remoteId, kind, producerId }) =>
+            closures.push({ remoteId, kind, producerId })
+        }),
+      pubsub
+        .subscribeFor(userId, ServerEvents.USER_VOICE_STATE_UPDATE)
+        .subscribe({
+          next: (event) =>
+            states.push({
+              userId: event.userId,
+              webcamEnabled: event.state.webcamEnabled
+            })
+        })
+    ];
+
+    return {
+      closures,
+      states,
+      stop: () => subscriptions.forEach((s) => s.unsubscribe())
+    };
+  };
+
+  test('should stop a webcam when its channel permission is removed and keep the screen share', async () => {
+    await grantOnPrivateVoiceChannel([
+      ChannelPermission.WEBCAM,
+      ChannelPermission.SHARE_SCREEN
+    ]);
+
+    const runtime = new VoiceRuntime(PRIVATE_VOICE_CHANNEL_ID);
+    const streams = startStreams(runtime, 2);
+    const events = collectEvents(PRIVATE_VOICE_CHANNEL_ID, 2);
+    const { caller } = await initTest();
+
+    try {
+      await caller.channels.updatePermissions({
+        channelId: PRIVATE_VOICE_CHANNEL_ID,
+        roleId: 2,
+        permissions: [ChannelPermission.SHARE_SCREEN]
+      });
+
+      expect(streams.webcam.closed).toBe(true);
+      expect(streams.screen.closed).toBe(false);
+      expect(streams.screenAudio.closed).toBe(false);
+      expect(runtime.getProducer(StreamKind.VIDEO, 2)).toBeUndefined();
+      expect(runtime.getUserState(2)).toMatchObject({
+        webcamEnabled: false,
+        sharingScreen: true
+      });
+      expect(events.closures).toEqual([
+        { remoteId: 2, kind: StreamKind.VIDEO, producerId: 'webcam-2' }
+      ]);
+      expect(events.states).toContainEqual({ userId: 2, webcamEnabled: false });
+    } finally {
+      events.stop();
+      await runtime.destroy();
+    }
+  });
+
+  test('should stop every stream when the channel permissions are deleted, except the owner', async () => {
+    await grantOnPrivateVoiceChannel([
+      ChannelPermission.WEBCAM,
+      ChannelPermission.SHARE_SCREEN
+    ]);
+
+    const runtime = new VoiceRuntime(PRIVATE_VOICE_CHANNEL_ID);
+    const userStreams = startStreams(runtime, 2);
+    const ownerStreams = startStreams(runtime, 1);
+    const events = collectEvents(PRIVATE_VOICE_CHANNEL_ID, 2);
+    const { caller } = await initTest();
+
+    try {
+      await caller.channels.deletePermissions({
+        channelId: PRIVATE_VOICE_CHANNEL_ID,
+        roleId: 2
+      });
+
+      expect(userStreams.webcam.closed).toBe(true);
+      expect(userStreams.screen.closed).toBe(true);
+      expect(userStreams.screenAudio.closed).toBe(true);
+      expect(runtime.getUserState(2)).toMatchObject({
+        webcamEnabled: false,
+        sharingScreen: false
+      });
+      expect(events.closures).toEqual(
+        expect.arrayContaining([
+          { remoteId: 2, kind: StreamKind.VIDEO, producerId: 'webcam-2' },
+          { remoteId: 2, kind: StreamKind.SCREEN, producerId: 'screen-2' },
+          {
+            remoteId: 2,
+            kind: StreamKind.SCREEN_AUDIO,
+            producerId: 'screen-audio-2'
+          }
+        ])
+      );
+
+      expect(ownerStreams.webcam.closed).toBe(false);
+      expect(ownerStreams.screen.closed).toBe(false);
+      expect(runtime.getUserState(1)).toMatchObject({
+        webcamEnabled: true,
+        sharingScreen: true
+      });
+    } finally {
+      events.stop();
+      await runtime.destroy();
+    }
+  });
+
+  test('should stop the streams when a voice channel becomes private', async () => {
+    const runtime = new VoiceRuntime(VOICE_CHANNEL_ID);
+    const streams = startStreams(runtime, 2);
+    const { caller } = await initTest();
+
+    try {
+      await caller.channels.update({
+        channelId: VOICE_CHANNEL_ID,
+        private: true
+      });
+
+      expect(streams.webcam.closed).toBe(true);
+      expect(streams.screen.closed).toBe(true);
+      expect(runtime.getUserState(2)).toMatchObject({
+        webcamEnabled: false,
+        sharingScreen: false
+      });
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  test('should stop a webcam when its role loses ENABLE_WEBCAM', async () => {
+    const runtime = new VoiceRuntime(VOICE_CHANNEL_ID);
+    const streams = startStreams(runtime, 2);
+    const { caller } = await initTest();
+
+    try {
+      await caller.roles.update({
+        roleId: 2,
+        name: 'Member',
+        color: '#ffffff',
+        permissions: DEFAULT_ROLE_PERMISSIONS.filter(
+          (permission) => permission !== Permission.ENABLE_WEBCAM
+        ),
+        storageQuotaOverrideEnabled: false,
+        storageSpaceQuota: 0
+      });
+
+      expect(streams.webcam.closed).toBe(true);
+      expect(streams.screen.closed).toBe(false);
+      expect(runtime.getUserState(2)).toMatchObject({
+        webcamEnabled: false,
+        sharingScreen: true
+      });
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  // user 5 holds only the moderator role, so granting it there makes it the only source
+  test('should stop the streams when the role granting them is removed from the user', async () => {
+    await tdb.insert(rolePermissions).values(
+      [Permission.ENABLE_WEBCAM, Permission.SHARE_SCREEN].map((permission) => ({
+        roleId: 4,
+        permission,
+        createdAt: Date.now()
+      }))
+    );
+
+    const runtime = new VoiceRuntime(VOICE_CHANNEL_ID);
+    const streams = startStreams(runtime, 5);
+    const { caller } = await initTest();
+
+    try {
+      await caller.users.removeRole({ userId: 5, roleId: 4 });
+
+      expect(streams.webcam.closed).toBe(true);
+      expect(streams.screen.closed).toBe(true);
+      expect(runtime.getUserState(5)).toMatchObject({
+        webcamEnabled: false,
+        sharingScreen: false
+      });
+    } finally {
+      await runtime.destroy();
+    }
+  });
+
+  // deleting the role drops user 5 back to the default role, which keeps SHARE_SCREEN
+  test('should stop a webcam when the role granting it is deleted', async () => {
+    await revokeFromDefaultRole(Permission.ENABLE_WEBCAM);
+    await tdb.insert(rolePermissions).values({
+      roleId: 4,
+      permission: Permission.ENABLE_WEBCAM,
+      createdAt: Date.now()
+    });
+
+    const runtime = new VoiceRuntime(VOICE_CHANNEL_ID);
+    const streams = startStreams(runtime, 5);
+    const { caller } = await initTest();
+
+    try {
+      await caller.roles.delete({ roleId: 4 });
+
+      expect(streams.webcam.closed).toBe(true);
+      expect(streams.screen.closed).toBe(false);
+      expect(runtime.getUserState(5)).toMatchObject({
+        webcamEnabled: false,
+        sharingScreen: true
+      });
+    } finally {
       await runtime.destroy();
     }
   });

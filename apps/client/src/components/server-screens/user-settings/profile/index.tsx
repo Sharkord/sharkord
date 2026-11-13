@@ -2,6 +2,7 @@ import { ImagePicker } from '@/components/image-picker';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { UserAvatar } from '@/components/user-avatar';
 import { useOwnPublicUser } from '@/features/server/users/hooks';
+import { AVATAR_CROP, BANNER_CROP } from '@/helpers/crop-image';
 import { getFileUrl } from '@/helpers/get-file-url';
 import type { TPickedImage } from '@/hooks/use-pick-image';
 import { getTRPCClient } from '@/lib/trpc';
@@ -30,23 +31,26 @@ const Profile = memo(() => {
   const { t } = useTranslation('settings');
   const ownPublicUser = useOwnPublicUser();
 
-  const onSave = useCallback(async (values: TProfileValues) => {
-    const trpc = getTRPCClient();
+  const onSave = useCallback(
+    async (values: TProfileValues, baseline: TProfileValues) => {
+      const trpc = getTRPCClient();
 
-    await trpc.users.update.mutate({
-      name: values.name,
-      profileColor: values.profileColor,
-      bio: values.bio
-    });
+      await trpc.users.update.mutate({
+        name: values.name,
+        profileColor: values.profileColor,
+        bio: values.bio
+      });
 
-    if (values.avatar !== undefined) {
-      await trpc.users.changeAvatar.mutate({ fileId: values.avatar?.fileId });
-    }
+      if (values.avatar !== baseline.avatar) {
+        await trpc.users.changeAvatar.mutate({ fileId: values.avatar?.fileId });
+      }
 
-    if (values.banner !== undefined) {
-      await trpc.users.changeBanner.mutate({ fileId: values.banner?.fileId });
-    }
-  }, []);
+      if (values.banner !== baseline.banner) {
+        await trpc.users.changeBanner.mutate({ fileId: values.banner?.fileId });
+      }
+    },
+    []
+  );
 
   const { r, values, onChange } = useSettingsForm<TProfileValues>({
     initialValues: {
@@ -91,6 +95,7 @@ const Profile = memo(() => {
           draft={values.avatar}
           onChange={handleAvatarChange}
           purpose={UploadPurpose.PROFILE_IMAGE}
+          crop={AVATAR_CROP}
           fallback={
             <UserAvatar
               userId={ownPublicUser.id}
@@ -108,6 +113,7 @@ const Profile = memo(() => {
           draft={values.banner}
           onChange={handleBannerChange}
           purpose={UploadPurpose.PROFILE_IMAGE}
+          crop={BANNER_CROP}
         />
 
         <Group label={t('profileColorLabel')}>

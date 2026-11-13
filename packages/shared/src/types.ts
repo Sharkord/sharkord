@@ -25,6 +25,15 @@ export const PRODUCIBLE_STREAM_KINDS = [
 
 export type TProducibleStreamKind = (typeof PRODUCIBLE_STREAM_KINDS)[number];
 
+export const PAUSABLE_STREAM_KINDS = [
+  StreamKind.VIDEO,
+  StreamKind.SCREEN,
+  StreamKind.SCREEN_AUDIO,
+  StreamKind.EXTERNAL_VIDEO
+] as const;
+
+export type TPausableStreamKind = (typeof PAUSABLE_STREAM_KINDS)[number];
+
 export type TExternalStreamTrackKind = 'audio' | 'video';
 
 export type TExternalStreamTracks = {
@@ -38,8 +47,7 @@ export type TStreamQualityLayer = {
 };
 
 export type TStreamQuality =
-  | { mode: 'auto' }
-  | { mode: 'layer'; spatialLayer: number };
+  { mode: 'auto' } | { mode: 'layer'; spatialLayer: number };
 
 export type TRemoteProducerIds = {
   remoteVideoIds: number[];
@@ -94,8 +102,7 @@ export type TMessageOpenGraphMetadata = {
 };
 
 export type TMessageMetadata =
-  | TMessageMediaMetadata
-  | TMessageOpenGraphMetadata;
+  TMessageMediaMetadata | TMessageOpenGraphMetadata;
 
 export enum UserStatus {
   ONLINE = 'online',

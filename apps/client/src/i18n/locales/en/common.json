@@ -49,6 +49,9 @@
   "invalidAccessToken": "Invalid access token",
   "failedJoinVoiceChannel": "Failed to join voice channel",
   "failedInitVoiceConnection": "Failed to initialize voice connection",
+  "moveVoiceCallTitle": "Move call here?",
+  "moveVoiceCallMsg": "You are already in {{channel}} in another tab or on another device. Joining here will end the call there.",
+  "moveVoiceCallConfirm": "Move here",
   "failedLoadServerInfo": "Failed to load server info",
   "failedLeaveVoiceChannel": "Failed to leave voice channel",
   "failedUpdateMicrophoneState": "Failed to update microphone state",
@@ -116,6 +119,9 @@
   "sendVoiceReaction": "Send a reaction",
   "failedSendVoiceReaction": "Failed to send reaction",
   "moreVoiceReactions": "More emojis",
+  "pauseStream": "Pause stream",
+  "resumeStream": "Resume stream",
+  "streamPaused": "Stream paused",
   "viewingOlderMessages": "Viewing older messages, jump to the latest",
   "noChannelAccessTitle": "No access to this chat",
   "noChannelAccessDescription": "You are in this voice channel, but you do not have permission to read its messages.",
@@ -148,5 +154,9 @@
   "failedLoadParentMessage": "Failed to load the original message",
   "updateServerConfirmTitle": "Update the server?",
   "updateServerConfirmMessage": "This downloads and installs the latest version of the server. The server restarts during the process, which causes a short downtime.",
-  "updateServerConfirmLabel": "Update"
+  "updateServerConfirmLabel": "Update",
+  "formatBold": "Bold",
+  "formatItalic": "Italic",
+  "formatCode": "Code",
+  "formatCodeBlock": "Code block"
 }

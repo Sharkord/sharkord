@@ -1,6 +1,7 @@
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { useWebRtcSimulcastEnabled } from '@/features/server/hooks';
 import { SoundType } from '@/features/server/types';
+import { updateOwnVoiceState } from '@/features/server/voice/actions';
 import { useOwnVoiceState } from '@/features/server/voice/hooks';
 import {
   clampMicrophoneDecibels,
@@ -26,6 +27,7 @@ import {
   getSuppressLocalAudioPlaybackSupport
 } from '@/helpers/get-display-media-support';
 import { getResWidthHeight } from '@/helpers/get-res-with-height';
+import { releaseStalePictureInPicture } from '@/helpers/picture-in-picture';
 import { registerVoiceDebugSource } from '@/helpers/voice-debug';
 import { useScreenShareSupport } from '@/hooks/use-screen-share-support';
 import { getTRPCClient } from '@/lib/trpc';
@@ -35,6 +37,7 @@ import {
   getErrorMessage,
   StreamKind,
   type ConsumerType,
+  type TPausableStreamKind,
   type TStreamQualityLayer,
   type TVoiceUserState
 } from '@sharkord/shared';
@@ -68,6 +71,7 @@ import {
   getStreamQualityStorageKey,
   loadStreamQualitiesFromStorage,
   normalizeStreamQuality,
+  savePausedStreamToStorage,
   saveStreamQualitiesToStorage,
   type TRemoteConsumerTypes,
   type TRemoteQualityLayers,
@@ -83,6 +87,7 @@ import {
 } from './hooks/use-voice-controls';
 import { useVoiceEvents } from './hooks/use-voice-events';
 import { useVoiceHotkeys } from './hooks/use-voice-hotkeys';
+import { useVoiceSessionRecovery } from './hooks/use-voice-session-recovery';
 import { SIMULCAST_WEBCAM_MAX_BITRATE } from './statics';
 import { VoiceStatsContext } from './stats-context';
 import { VolumeControlProvider } from './volume-control-context';
@@ -131,6 +136,12 @@ export type TVoiceProvider = {
     quality: TStreamQuality
   ) => Promise<void>;
   isSimulcastConsumer: (remoteId: number, kind: StreamKind) => boolean;
+  isStreamPaused: (remoteId: number, kind: StreamKind) => boolean;
+  setStreamPaused: (
+    remoteId: number,
+    kind: TPausableStreamKind,
+    paused: boolean
+  ) => Promise<void>;
   init: (
     routerRtpCapabilities: RtpCapabilities,
     channelId: number
@@ -166,6 +177,8 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
   getStreamQualityLayers: () => [],
   setStreamQuality: () => Promise.resolve(),
   isSimulcastConsumer: () => false,
+  isStreamPaused: () => false,
+  setStreamPaused: () => Promise.resolve(),
   init: () => Promise.resolve(),
   toggleMic: () => Promise.resolve(),
   toggleSound: () => Promise.resolve(),
@@ -206,6 +219,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     useState<TRemoteConsumerTypes>({});
   const [remoteQualityLayers, setRemoteQualityLayers] =
     useState<TRemoteQualityLayers>({});
+  const [remotePausedStreams, setRemotePausedStreams] = useState<
+    Record<string, boolean>
+  >({});
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const webRtcSimulcastEnabled = useWebRtcSimulcastEnabled();
   const ownVoiceState = useOwnVoiceState();
@@ -254,9 +270,38 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     []
   );
 
+  const setRemoteStreamPaused = useCallback(
+    (remoteId: number, kind: StreamKind, paused: boolean) => {
+      const key = getRemoteConsumerTypeKey(remoteId, kind);
+
+      setRemotePausedStreams((prev) => {
+        if (!paused) {
+          const next = { ...prev };
+
+          delete next[key];
+
+          return next;
+        }
+
+        return { ...prev, [key]: true };
+      });
+    },
+    []
+  );
+
+  const isStreamPaused = useCallback(
+    (remoteId: number, kind: StreamKind): boolean => {
+      const key = getRemoteConsumerTypeKey(remoteId, kind);
+
+      return !!remotePausedStreams[key];
+    },
+    [remotePausedStreams]
+  );
+
   const clearRemoteConsumerMetadata = useCallback(() => {
     setRemoteConsumerTypes({});
     setRemoteQualityLayers({});
+    setRemotePausedStreams({});
   }, []);
 
   const shouldShowQualityPicker = useCallback(
@@ -411,8 +456,56 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     removeRemoteUserStream,
     setRemoteConsumerType,
     setRemoteStreamQualityLayers,
+    setRemoteStreamPaused,
     clearRemoteConsumerMetadata
   });
+
+  const setStreamPaused = useCallback(
+    async (remoteId: number, kind: TPausableStreamKind, paused: boolean) => {
+      savePausedStreamToStorage(remoteId, kind, paused);
+
+      const kinds: TPausableStreamKind[] = [kind];
+
+      // screen audio shares the stored choice, but its consumer has to be paused separately
+      if (
+        kind === StreamKind.SCREEN &&
+        consumers.current[remoteId]?.[StreamKind.SCREEN_AUDIO]
+      ) {
+        kinds.push(StreamKind.SCREEN_AUDIO);
+      }
+
+      try {
+        const trpc = getTRPCClient();
+
+        await Promise.all(
+          kinds.map((consumerKind) =>
+            trpc.voice.setConsumerPaused.mutate({
+              remoteId,
+              kind: consumerKind,
+              paused
+            })
+          )
+        );
+
+        kinds.forEach((consumerKind) => {
+          setRemoteStreamPaused(remoteId, consumerKind, paused);
+        });
+
+        voiceLogger.info('consumer: paused changed', {
+          remoteId,
+          kind,
+          paused
+        });
+      } catch (error) {
+        voiceLogger.error('consumer: paused change failed', error, {
+          remoteId,
+          kind,
+          paused
+        });
+      }
+    },
+    [consumers, setRemoteStreamPaused]
+  );
 
   const {
     stats: transportStats,
@@ -887,6 +980,46 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     setScreenShareProducer
   ]);
 
+  const stopClosedOwnStream = useCallback(
+    (kind: StreamKind, producerId: string) => {
+      if (
+        kind === StreamKind.VIDEO &&
+        localVideoProducer.current?.id === producerId
+      ) {
+        voiceLogger.info('webcam: producer closed by the server');
+
+        stopWebcamStream();
+        updateOwnVoiceState({ webcamEnabled: false });
+        playSound(SoundType.OWN_USER_STOPPED_WEBCAM);
+
+        return;
+      }
+
+      if (
+        kind === StreamKind.SCREEN &&
+        localScreenShareProducer.current?.id === producerId
+      ) {
+        voiceLogger.info('screen: producer closed by the server');
+
+        stopScreenShareStream();
+        updateOwnVoiceState({ sharingScreen: false });
+        playSound(SoundType.OWN_USER_STOPPED_SCREENSHARE);
+      }
+    },
+    [
+      localVideoProducer,
+      localScreenShareProducer,
+      stopWebcamStream,
+      stopScreenShareStream
+    ]
+  );
+
+  const stopClosedOwnStreamRef = useRef(stopClosedOwnStream);
+
+  useEffect(() => {
+    stopClosedOwnStreamRef.current = stopClosedOwnStream;
+  }, [stopClosedOwnStream]);
+
   const startScreenShareStream = useCallback(
     async (options?: TScreenShareOptions) => {
       try {
@@ -1272,6 +1405,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     });
 
   useVoiceHotkeys({ toggleMic, toggleSound });
+  useVoiceSessionRecovery({ init });
 
   const setMicMutedForBridge = useCallback(
     async (muted: boolean) => {
@@ -1306,6 +1440,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     removeExternalStreamTrack,
     removeExternalStream,
     clearRemoteUserStreamsForUser,
+    stopClosedOwnStreamRef,
     rtpCapabilitiesRef: deviceRtpCapabilities,
     isVoiceSessionActive:
       connectionStatus === ConnectionStatus.CONNECTING ||
@@ -1324,6 +1459,31 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
     previousConnectionStatus.current = connectionStatus;
   }, [connectionStatus]);
+
+  useEffect(() => {
+    const remoteStreams = Object.values(remoteUserStreams).flatMap(
+      ({ [StreamKind.VIDEO]: video, [StreamKind.SCREEN]: screen }) => [
+        video,
+        screen
+      ]
+    );
+
+    const externalVideoStreams = Object.values(externalStreams).map(
+      ({ videoStream }) => videoStream
+    );
+
+    releaseStalePictureInPicture([
+      localVideoStream,
+      localScreenShareStream,
+      ...remoteStreams,
+      ...externalVideoStreams
+    ]);
+  }, [
+    remoteUserStreams,
+    externalStreams,
+    localVideoStream,
+    localScreenShareStream
+  ]);
 
   const getVoiceDebugSource = useCallback(
     () => ({
@@ -1401,6 +1561,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       getStreamQualityLayers,
       setStreamQuality,
       isSimulcastConsumer,
+      isStreamPaused,
+      setStreamPaused,
       init,
 
       toggleMic,
@@ -1427,6 +1589,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       getStreamQualityLayers,
       setStreamQuality,
       isSimulcastConsumer,
+      isStreamPaused,
+      setStreamPaused,
       init,
 
       toggleMic,

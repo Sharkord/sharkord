@@ -5,9 +5,10 @@ import { toast } from 'sonner';
 import { useSettingsFormSlot } from './context';
 import { hasUnsavedChanges } from './helpers';
 
+// baseline holds the values as last loaded or saved, so a form can skip what is already persisted
 type TUseSettingsFormOptions<T> = {
   initialValues: T;
-  onSave: (values: T) => Promise<void>;
+  onSave: (values: T, baseline: T) => Promise<void>;
   successMessage: string;
   errorMessage: string;
 };
@@ -40,7 +41,7 @@ const useSettingsForm = <T extends Record<string, unknown>>({
     setIsSaving(true);
 
     try {
-      await onSave(values);
+      await onSave(values, baseline);
       setBaseline(values);
       toast.success(successMessage);
     } catch (error) {
@@ -49,7 +50,15 @@ const useSettingsForm = <T extends Record<string, unknown>>({
     } finally {
       setIsSaving(false);
     }
-  }, [isSaving, onSave, values, setTrpcErrors, successMessage, errorMessage]);
+  }, [
+    isSaving,
+    onSave,
+    values,
+    baseline,
+    setTrpcErrors,
+    successMessage,
+    errorMessage
+  ]);
 
   const handleRef = useRef<object | null>(null);
 

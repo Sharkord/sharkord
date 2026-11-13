@@ -251,11 +251,18 @@ const syncVoiceStateForViewers = (
 
   if (!runtime) return;
 
-  const { users, externalStreams } = runtime.getState();
+  const { users, externalStreams, activeSince } = runtime.getState();
   const memberIds = new Set(users.map(({ userId }) => userId));
   const targetIds = userIds.filter((userId) => !memberIds.has(userId));
 
   if (targetIds.length === 0) return;
+
+  if (canView) {
+    pubsub.publishFor(targetIds, ServerEvents.VOICE_CHANNEL_STATE_UPDATE, {
+      channelId,
+      state: { activeSince }
+    });
+  }
 
   for (const { userId, state } of users) {
     if (canView) {

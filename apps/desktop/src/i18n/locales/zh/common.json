@@ -86,6 +86,8 @@
     "spellcheckDescription": "输入时为拼写错误的单词添加下划线。如果你使用词典不支持的语言书写，请关闭此项。",
     "throttleHiddenServers": "限制隐藏的服务器",
     "throttleHiddenServersDescription": "降低你未查看的服务器的计时器和渲染频率。节省 CPU 和电量；如果后台服务器工作异常，请关闭此项。",
+    "gpuEncoding": "尽可能使用 GPU 编码",
+    "gpuEncodingDescription": "在可行时使用显卡编码你的摄像头和屏幕共享。重启应用后生效。",
     "performanceOverlay": "性能浮层",
     "performanceOverlayDescription": "在小窗口中显示应用的内存和 CPU 使用情况。",
     "togglePerformanceOverlay": "切换性能浮层",

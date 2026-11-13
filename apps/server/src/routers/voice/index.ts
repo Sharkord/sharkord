@@ -12,6 +12,7 @@ import {
   onUserVoiceMovedRoute,
   onUserVoiceReactionRoute,
   onVoiceAddExternalStreamRoute,
+  onVoiceChannelStateUpdateRoute,
   onVoiceNewProducerRoute,
   onVoiceProducerClosedRoute,
   onVoiceRemoveExternalStreamRoute,
@@ -23,6 +24,7 @@ import { leaveVoiceRoute } from './leave';
 import { moveUserRoute } from './move';
 import { produceRoute } from './produce';
 import { sendVoiceReactionRoute } from './send-reaction';
+import { setConsumerPausedRoute } from './set-consumer-paused';
 import { setConsumerQualityRoute } from './set-consumer-quality';
 import { updateVoiceStateRoute } from './update-state';
 
@@ -40,10 +42,12 @@ export const voiceRouter = t.router({
   produce: produceRoute,
   consume: consumeRoute,
   setConsumerQuality: setConsumerQualityRoute,
+  setConsumerPaused: setConsumerPausedRoute,
   getProducers: getProducersRoute,
   onJoin: onUserJoinVoiceRoute,
   onLeave: onUserLeaveVoiceRoute,
   onUpdateState: onUserUpdateVoiceStateRoute,
+  onChannelStateUpdate: onVoiceChannelStateUpdateRoute,
   onMoved: onUserVoiceMovedRoute,
   onReaction: onUserVoiceReactionRoute,
   onNewProducer: onVoiceNewProducerRoute,

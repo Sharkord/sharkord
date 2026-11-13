@@ -49,6 +49,9 @@
   "invalidAccessToken": "Jeton d’accès invalide",
   "failedJoinVoiceChannel": "Échec de la connexion au salon vocal",
   "failedInitVoiceConnection": "Échec de l’initialisation de la connexion vocale",
+  "moveVoiceCallTitle": "Déplacer l'appel ici ?",
+  "moveVoiceCallMsg": "Vous êtes déjà dans {{channel}} dans un autre onglet ou sur un autre appareil. Rejoindre ici mettra fin à l'appel là-bas.",
+  "moveVoiceCallConfirm": "Déplacer ici",
   "failedLoadServerInfo": "Échec du chargement des informations du serveur",
   "failedLeaveVoiceChannel": "Échec de la déconnexion du salon vocal",
   "failedUpdateMicrophoneState": "Échec de la mise à jour du microphone",
@@ -116,6 +119,9 @@
   "sendVoiceReaction": "Envoyer une réaction",
   "failedSendVoiceReaction": "Échec de l'envoi de la réaction",
   "moreVoiceReactions": "Plus d'emojis",
+  "pauseStream": "Mettre le flux en pause",
+  "resumeStream": "Reprendre le flux",
+  "streamPaused": "Flux en pause",
   "viewingOlderMessages": "Affichage d’anciens messages, aller aux plus récents",
   "noChannelAccessTitle": "Aucun accès à ce salon",
   "noChannelAccessDescription": "Vous êtes dans ce salon vocal, mais vous n'avez pas la permission d'en lire les messages.",
@@ -148,5 +154,9 @@
   "failedLoadParentMessage": "Impossible de charger le message d'origine",
   "updateServerConfirmTitle": "Mettre à jour le serveur ?",
   "updateServerConfirmMessage": "Télécharge et installe la dernière version du serveur. Le serveur redémarre pendant l'opération, ce qui entraîne une courte interruption.",
-  "updateServerConfirmLabel": "Mettre à jour"
+  "updateServerConfirmLabel": "Mettre à jour",
+  "formatBold": "Gras",
+  "formatItalic": "Italique",
+  "formatCode": "Code",
+  "formatCodeBlock": "Bloc de code"
 }

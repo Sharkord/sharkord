@@ -187,6 +187,10 @@ export const reconnectToServer = (info: TDisconnectInfo) => {
     return;
   }
 
+  if (reconnectAttempt === 0) {
+    playSound(SoundType.SERVER_RECONNECTING);
+  }
+
   reconnectAttempt += 1;
 
   pushVoiceDebugEvent('ws', 'reconnect scheduled', {
@@ -220,6 +224,7 @@ export const reconnectToServer = (info: TDisconnectInfo) => {
       // so reconnecting stays true until setInitialData clears it
       await connect();
       cancelReconnect();
+      playSound(SoundType.SERVER_RECONNECTED);
 
       pushVoiceDebugEvent('ws', 'reconnected', {
         voiceChannelId: currentVoiceChannelIdSelector(store.getState())

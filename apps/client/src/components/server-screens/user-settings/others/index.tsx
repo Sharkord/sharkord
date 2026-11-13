@@ -5,6 +5,8 @@ import {
   setCloseVoiceChatOnLeave,
   setConvertAsciiEmoji,
   setFreezeAnimatedAvatars,
+  setMuteStreamAudioByDefault,
+  setPauseNewStreamsByDefault,
   setVoiceChatFollowsVoice
 } from '@/features/app/actions';
 import {
@@ -12,6 +14,8 @@ import {
   useCloseVoiceChatOnLeave,
   useConvertAsciiEmoji,
   useFreezeAnimatedAvatars,
+  useMuteStreamAudioByDefault,
+  usePauseNewStreamsByDefault,
   useVoiceChatFollowsVoice
 } from '@/features/app/hooks';
 import { Group, SettingsSection, Switch } from '@sharkord/ui';
@@ -24,6 +28,8 @@ type TOthersValues = {
   closeVoiceChatOnLeave: boolean;
   freezeAnimatedAvatars: boolean;
   convertAsciiEmoji: boolean;
+  pauseNewStreamsByDefault: boolean;
+  muteStreamAudioByDefault: boolean;
 };
 
 const Others = memo(() => {
@@ -33,6 +39,8 @@ const Others = memo(() => {
   const closeVoiceChatOnLeave = useCloseVoiceChatOnLeave();
   const freezeAnimatedAvatars = useFreezeAnimatedAvatars();
   const convertAsciiEmoji = useConvertAsciiEmoji();
+  const pauseNewStreamsByDefault = usePauseNewStreamsByDefault();
+  const muteStreamAudioByDefault = useMuteStreamAudioByDefault();
 
   const onSave = useCallback(async (values: TOthersValues) => {
     setAutoJoinLastChannel(values.autoJoinLastChannel);
@@ -40,6 +48,8 @@ const Others = memo(() => {
     setCloseVoiceChatOnLeave(values.closeVoiceChatOnLeave);
     setFreezeAnimatedAvatars(values.freezeAnimatedAvatars);
     setConvertAsciiEmoji(values.convertAsciiEmoji);
+    setPauseNewStreamsByDefault(values.pauseNewStreamsByDefault);
+    setMuteStreamAudioByDefault(values.muteStreamAudioByDefault);
   }, []);
 
   const { values, onChange } = useSettingsForm<TOthersValues>({
@@ -48,7 +58,9 @@ const Others = memo(() => {
       voiceChatFollowsVoice,
       closeVoiceChatOnLeave,
       freezeAnimatedAvatars,
-      convertAsciiEmoji
+      convertAsciiEmoji,
+      pauseNewStreamsByDefault,
+      muteStreamAudioByDefault
     },
     onSave,
     successMessage: t('othersUpdated'),
@@ -77,6 +89,16 @@ const Others = memo(() => {
 
   const handleConvertAsciiEmojiChange = useCallback(
     (value: boolean) => onChange('convertAsciiEmoji', value),
+    [onChange]
+  );
+
+  const handlePauseNewStreamsByDefaultChange = useCallback(
+    (value: boolean) => onChange('pauseNewStreamsByDefault', value),
+    [onChange]
+  );
+
+  const handleMuteStreamAudioByDefaultChange = useCallback(
+    (value: boolean) => onChange('muteStreamAudioByDefault', value),
     [onChange]
   );
 
@@ -129,6 +151,26 @@ const Others = memo(() => {
         <Switch
           checked={values.convertAsciiEmoji}
           onCheckedChange={handleConvertAsciiEmojiChange}
+        />
+      </Group>
+
+      <Group
+        label={t('pauseNewStreamsByDefaultLabel')}
+        description={t('pauseNewStreamsByDefaultDesc')}
+      >
+        <Switch
+          checked={values.pauseNewStreamsByDefault}
+          onCheckedChange={handlePauseNewStreamsByDefaultChange}
+        />
+      </Group>
+
+      <Group
+        label={t('muteStreamAudioByDefaultLabel')}
+        description={t('muteStreamAudioByDefaultDesc')}
+      >
+        <Switch
+          checked={values.muteStreamAudioByDefault}
+          onCheckedChange={handleMuteStreamAudioByDefaultChange}
         />
       </Group>
 

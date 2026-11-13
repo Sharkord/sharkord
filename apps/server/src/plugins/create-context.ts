@@ -39,6 +39,7 @@ import { VoiceRuntime } from '../runtimes/voice';
 import { pubsub } from '../utils/pubsub';
 import { consumeVoiceProducer } from './actions/consume-voice-producer';
 import { createPluginMessage } from './actions/create-plugin-message';
+import { createPluginWebRtcTransport } from './actions/create-plugin-webrtc-transport';
 import { deletePluginMessage } from './actions/delete-plugin-message';
 import { editPluginMessage } from './actions/edit-plugin-message';
 import {
@@ -133,6 +134,7 @@ const createStream = (
     pluginId,
     avatarUrl: options.avatarUrl,
     bannerUrl: options.bannerUrl,
+    ownerUserId: options.ownerUserId,
     producers: options.producers,
     videoLayers: options.videoLayers
   });
@@ -203,6 +205,8 @@ const createUnloadContext = ({
   voice: {
     getRouter: (channelId: number) =>
       getPluginVoiceRuntime(channelId).getRouter(),
+    createWebRtcTransport: async (channelId: number) =>
+      createPluginWebRtcTransport(pluginId, channelId),
     createStream: (options: TCreateStreamOptions) =>
       createStream(pluginId, scopedLogger, options),
     getListenInfo: () => VoiceRuntime.getListenInfo(),

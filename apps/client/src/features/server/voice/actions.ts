@@ -22,6 +22,7 @@ import { getTRPCClient } from '@/lib/trpc';
 import {
   getTrpcError,
   type TExternalStream,
+  type TVoiceChannelState,
   type TVoiceUserState
 } from '@sharkord/shared';
 import type { RtpCapabilities } from 'mediasoup-client/types';
@@ -39,6 +40,8 @@ import { SoundType } from '../types';
 import { ownUserIdSelector } from '../users/selectors';
 import { ownVoiceStateSelector } from './selectors';
 import { VOICE_REACTION_DURATION_MS } from './statics';
+
+let joiningVoiceChannelId: number | undefined;
 
 const syncOwnServerMute = (
   userId: number,
@@ -128,6 +131,10 @@ export const removeUserFromVoiceChannel = (
   // deleted, its category was, or the runtime was destroyed. without this the call ends but
   // the app goes on showing the user as connected to a channel that no longer exists
   if (userId === ownUserId) {
+    // the server ends the user's previous session in this channel while joining it again
+    // (a reconnect, or the call taken over from another device), which is not a kick
+    if (joiningVoiceChannelId === channelId) return;
+
     voiceLogger.info('session: removed from voice by the server', {
       channelId
     });
@@ -211,6 +218,15 @@ export const updateVoiceUserState = (
   }
 };
 
+export const updateVoiceChannelState = (
+  channelId: number,
+  channelState: TVoiceChannelState
+): void => {
+  store.dispatch(
+    serverSliceActions.updateVoiceChannelState({ channelId, channelState })
+  );
+};
+
 let nextVoiceReactionId = 0;
 
 export const showVoiceReaction = (userId: number, emoji: string): void => {
@@ -258,6 +274,13 @@ export const joinVoice = async (
     openVoiceChatSidebar(channelId);
   }
 
+  return requestVoiceJoin(channelId);
+};
+
+export const requestVoiceJoin = async (
+  channelId: number
+): Promise<RtpCapabilities | undefined> => {
+  const state = store.getState();
   const { micMuted: storedMicMuted, soundMuted } = ownVoiceStateSelector(state);
   const pushToTalkSelected = pushToTalkSelectedSelector(state);
 
@@ -272,6 +295,8 @@ export const joinVoice = async (
     micMuted,
     soundMuted
   });
+
+  joiningVoiceChannelId = channelId;
 
   try {
     const client = getTRPCClient();
@@ -289,16 +314,15 @@ export const joinVoice = async (
     clearLocalVoiceSession();
 
     toast.error(getTrpcError(error, i18n.t('common:failedJoinVoiceChannel')));
+  } finally {
+    joiningVoiceChannelId = undefined;
   }
 
   return undefined;
 };
 
 export type TLeaveVoiceReason =
-  | 'user_disconnect_button'
-  | 'switch_channel'
-  | 'init_failed'
-  | 'unknown';
+  'user_disconnect_button' | 'switch_channel' | 'init_failed' | 'unknown';
 
 export const leaveVoice = async (options?: {
   reason?: TLeaveVoiceReason;

@@ -10,7 +10,8 @@ const consumeRoute = protectedProcedure
     z.object({
       kind: z.enum(StreamKind),
       remoteId: z.number(),
-      rtpCapabilities: z.any()
+      rtpCapabilities: z.any(),
+      paused: z.boolean().optional()
     })
   )
   .mutation(async ({ input, ctx }) => {
@@ -44,7 +45,7 @@ const consumeRoute = protectedProcedure
     const consumer = await userConsumerTransport.consume({
       producerId: producer.id,
       rtpCapabilities: input.rtpCapabilities,
-      paused: false
+      paused: input.paused ?? false
     });
 
     runtime.addConsumer(ctx.user.id, input.remoteId, input.kind, consumer);
@@ -58,7 +59,8 @@ const consumeRoute = protectedProcedure
         {
           channelId: channelId,
           remoteId: input.remoteId,
-          kind: input.kind
+          kind: input.kind,
+          producerId: producer.id
         }
       );
     });

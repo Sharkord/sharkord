@@ -1,4 +1,5 @@
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
+import { useIsConnected } from '@/features/server/hooks';
 import { useOwnUserId } from '@/features/server/users/hooks';
 import { voiceLogger } from '@/helpers/browser-logger';
 import { getTRPCClient } from '@/lib/trpc';
@@ -25,6 +26,9 @@ type TEvents = {
   ) => void;
   removeExternalStream: (streamId: number) => void;
   clearRemoteUserStreamsForUser: (userId: number) => void;
+  stopClosedOwnStreamRef: RefObject<
+    (kind: StreamKind, producerId: string) => void
+  >;
   rtpCapabilitiesRef: RefObject<RtpCapabilities | null | undefined>;
   isVoiceSessionActive: boolean;
 };
@@ -35,13 +39,20 @@ const useVoiceEvents = ({
   removeExternalStreamTrack,
   removeExternalStream,
   clearRemoteUserStreamsForUser,
+  stopClosedOwnStreamRef,
   rtpCapabilitiesRef,
   isVoiceSessionActive
 }: TEvents) => {
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const ownUserId = useOwnUserId();
+  const isConnected = useIsConnected();
 
   useEffect(() => {
+    if (!isConnected) {
+      voiceLogger.info('events: not subscribed, server disconnected');
+      return;
+    }
+
     if (!currentVoiceChannelId) {
       voiceLogger.info('events: not subscribed, no voice channel');
       return;
@@ -114,7 +125,7 @@ const useVoiceEvents = ({
     const onVoiceProducerClosedSub = trpc.voice.onProducerClosed.subscribe(
       undefined,
       {
-        onData: ({ channelId, remoteId, kind }) => {
+        onData: ({ channelId, remoteId, kind, producerId }) => {
           if (currentVoiceChannelId !== channelId || isCleaningUp) return;
 
           voiceLogger.info('events: producer closed', {
@@ -124,7 +135,9 @@ const useVoiceEvents = ({
           });
 
           try {
-            if (
+            if (isOwnProducerEvent(remoteId, ownUserId, kind)) {
+              stopClosedOwnStreamRef.current(kind, producerId);
+            } else if (
               kind === StreamKind.EXTERNAL_VIDEO ||
               kind === StreamKind.EXTERNAL_AUDIO
             ) {
@@ -217,8 +230,10 @@ const useVoiceEvents = ({
     removeExternalStreamTrack,
     removeExternalStream,
     clearRemoteUserStreamsForUser,
+    stopClosedOwnStreamRef,
     rtpCapabilitiesRef,
-    isVoiceSessionActive
+    isVoiceSessionActive,
+    isConnected
   ]);
 };
 

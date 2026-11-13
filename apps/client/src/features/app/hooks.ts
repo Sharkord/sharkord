@@ -18,12 +18,14 @@ import {
   micModeSelector,
   modViewOpenSelector,
   modViewUserIdSelector,
+  muteStreamAudioByDefaultSelector,
   notificationSoundsSelector,
   notifyAllMessagesSelector,
   notifyDmsSelector,
   notifyMentionsOnlySelector,
   notifyPluginsSelector,
   notifyRepliesSelector,
+  pauseNewStreamsByDefaultSelector,
   pluginSlotDebugSelector,
   pushToTalkSelectedSelector,
   selectedDmChannelIdSelector,
@@ -62,6 +64,12 @@ export const useFreezeAnimatedAvatars = () =>
 
 export const useConvertAsciiEmoji = () =>
   useSelector(convertAsciiEmojiSelector);
+
+export const usePauseNewStreamsByDefault = () =>
+  useSelector(pauseNewStreamsByDefaultSelector);
+
+export const useMuteStreamAudioByDefault = () =>
+  useSelector(muteStreamAudioByDefaultSelector);
 
 export const useHotkeysEnabled = () => useSelector(hotkeysEnabledSelector);
 

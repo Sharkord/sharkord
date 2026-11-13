@@ -49,6 +49,9 @@
   "invalidAccessToken": "Token de acceso no válido",
   "failedJoinVoiceChannel": "Error al unirse al canal de voz",
   "failedInitVoiceConnection": "Error al iniciar la conexión de voz",
+  "moveVoiceCallTitle": "¿Mover la llamada aquí?",
+  "moveVoiceCallMsg": "Ya estás en {{channel}} en otra pestaña o en otro dispositivo. Si te unes aquí, la llamada terminará allí.",
+  "moveVoiceCallConfirm": "Mover aquí",
   "failedLoadServerInfo": "Error al cargar la información del servidor",
   "failedLeaveVoiceChannel": "Error al salir del canal de voz",
   "failedUpdateMicrophoneState": "Error al actualizar el estado del micrófono",
@@ -116,6 +119,9 @@
   "sendVoiceReaction": "Enviar una reacción",
   "failedSendVoiceReaction": "No se pudo enviar la reacción",
   "moreVoiceReactions": "Más emojis",
+  "pauseStream": "Pausar transmisión",
+  "resumeStream": "Reanudar transmisión",
+  "streamPaused": "Transmisión en pausa",
   "viewingOlderMessages": "Viendo mensajes antiguos, ir a los más recientes",
   "noChannelAccessTitle": "Sin acceso a este chat",
   "noChannelAccessDescription": "Estás en este canal de voz, pero no tienes permiso para leer sus mensajes.",
@@ -148,5 +154,9 @@
   "failedLoadParentMessage": "No se pudo cargar el mensaje original",
   "updateServerConfirmTitle": "¿Actualizar el servidor?",
   "updateServerConfirmMessage": "Descarga e instala la última versión del servidor. El servidor se reinicia durante el proceso, lo que causa una breve interrupción.",
-  "updateServerConfirmLabel": "Actualizar"
+  "updateServerConfirmLabel": "Actualizar",
+  "formatBold": "Negrita",
+  "formatItalic": "Cursiva",
+  "formatCode": "Código",
+  "formatCodeBlock": "Bloque de código"
 }

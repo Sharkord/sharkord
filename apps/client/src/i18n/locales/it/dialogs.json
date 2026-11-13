@@ -99,5 +99,8 @@
   "shareSystemAudio": "Condividi l'audio di sistema",
   "shareSystemAudioAllNote": "Sharkord condivide tutto l'audio riprodotto sul tuo computer, anche se scegli una sola finestra. Silenzia ciò che non vuoi far sentire agli altri.",
   "additionalScreenShareSettings": "Impostazioni aggiuntive di condivisione schermo",
-  "screenShareConfirm": "Continua"
+  "screenShareConfirm": "Continua",
+  "cropImageTitle": "Ritaglia immagine",
+  "cropImageZoom": "Zoom",
+  "failedCropImage": "Impossibile ritagliare l'immagine"
 }

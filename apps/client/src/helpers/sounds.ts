@@ -163,6 +163,41 @@ const sfxServerDisconnected = () => {
   });
 };
 
+const playNotes = (notes: { freq: number; gain: number; delay: number }[]) => {
+  notes.forEach(({ freq, gain: g, delay }) => {
+    const startAt = now() + delay;
+    const endAt = startAt + 0.16;
+    const osc = createOsc('sine', freq);
+    const gain = createGain(g);
+
+    gain.gain.setValueAtTime(g * SOUNDS_VOLUME, startAt);
+    gain.gain.exponentialRampToValueAtTime(0.0001, endAt);
+
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(startAt);
+    osc.stop(endAt);
+  });
+};
+
+// SERVER_RECONNECTING: two repeated low notes, an alert that something is wrong but not over
+const sfxServerReconnecting = () => {
+  playNotes([
+    { freq: 587, gain: 0.11, delay: 0 },
+    { freq: 440, gain: 0.11, delay: 0.14 },
+    { freq: 587, gain: 0.09, delay: 0.32 },
+    { freq: 440, gain: 0.09, delay: 0.46 }
+  ]);
+};
+
+// SERVER_RECONNECTED: three-note ascent, the mirror of the disconnect descent
+const sfxServerReconnected = () => {
+  playNotes([
+    { freq: 523, gain: 0.1, delay: 0 },
+    { freq: 659, gain: 0.1, delay: 0.09 },
+    { freq: 784, gain: 0.11, delay: 0.18 }
+  ]);
+};
+
 // OWN_USER_JOINED_VOICE_CHANNEL — rich chord progression
 const sfxOwnUserJoinedVoiceChannel = () => {
   // First chord (C major feel)
@@ -489,6 +524,10 @@ const playSound = async (type: SoundType) => {
         return sfxMessageSent();
       case SoundType.SERVER_DISCONNECTED:
         return sfxServerDisconnected();
+      case SoundType.SERVER_RECONNECTING:
+        return sfxServerReconnecting();
+      case SoundType.SERVER_RECONNECTED:
+        return sfxServerReconnected();
 
       case SoundType.OWN_USER_JOINED_VOICE_CHANNEL:
         return sfxOwnUserJoinedVoiceChannel();

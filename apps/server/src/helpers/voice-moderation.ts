@@ -3,8 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import {
   publishHiddenChannelToUser,
-  publishVoicePresence,
-  unpublishHiddenChannelFromUser
+  publishVoicePresence
 } from '../db/publishers';
 import { userCan } from '../db/queries/roles';
 import { getPublicUserById } from '../db/queries/users';
@@ -12,6 +11,7 @@ import { channels } from '../db/schema';
 import { VoiceRuntime } from '../runtimes/voice';
 import { invariant } from '../utils/invariant';
 import { pubsub } from '../utils/pubsub';
+import { removeUserFromVoice } from './remove-user-from-voice';
 import { grantVoiceMove } from './voice-move-grants';
 
 const loadVoiceMoveDestination = async (channelId: number) => {
@@ -96,14 +96,7 @@ const moveVoiceUser = async (userId: number, channelId: number) => {
 const disconnectVoiceUser = async (userId: number) => {
   const runtime = await findModeratableVoiceRuntime(userId);
 
-  runtime.removeUser(userId);
-
-  await publishVoicePresence(runtime, ServerEvents.USER_LEAVE_VOICE, {
-    channelId: runtime.id,
-    userId
-  });
-
-  await unpublishHiddenChannelFromUser(userId, runtime.id);
+  await removeUserFromVoice(runtime, userId);
 };
 
 const setVoiceServerMute = async (userId: number, muted: boolean) => {

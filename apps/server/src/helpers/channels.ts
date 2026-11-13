@@ -19,6 +19,7 @@ import { runHook } from '../plugins/run-hook';
 import { enqueueActivityLog } from '../queues/activity-log';
 import { VoiceRuntime } from '../runtimes/voice';
 import { invariant } from '../utils/invariant';
+import { stopRevokedVoiceStreams } from './voice-stream-permissions';
 
 const zChannelName = z.string().min(1).max(27);
 const zChannelTopic = z.string().max(128).nullable();
@@ -189,6 +190,10 @@ const updateChannel = async (
   const ensureUserAccess = updatedChannel.private !== oldChannel.private;
 
   publishChannel(updatedChannel.id, 'update', ensureUserAccess);
+
+  if (ensureUserAccess) {
+    await stopRevokedVoiceStreams();
+  }
 
   eventBus.emit('channel:updated', {
     channelId: updatedChannel.id,

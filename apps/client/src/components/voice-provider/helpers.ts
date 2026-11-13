@@ -5,8 +5,11 @@ import {
 } from '@/helpers/storage';
 import { VideoCodec, type TStreamQuality } from '@/types';
 import {
+  PAUSABLE_STREAM_KINDS,
   StreamKind,
   type ConsumerType,
+  type TExternalStreamsMap,
+  type TPausableStreamKind,
   type TStreamQualityLayer
 } from '@sharkord/shared';
 import type {
@@ -33,6 +36,7 @@ import {
 } from './statics';
 
 type TStreamQualitySettings = Record<string, TStreamQuality>;
+type TPausedStreamSettings = Record<string, boolean>;
 type TRemoteConsumerTypes = Record<string, ConsumerType | undefined>;
 type TRemoteQualityLayers = Record<string, TStreamQualityLayer[] | undefined>;
 
@@ -70,6 +74,45 @@ const getStreamQualityStorageKey = (remoteId: number, kind: StreamKind) => {
     default:
       return `${remoteId}-${kind}`;
   }
+};
+
+const isPausableStreamKind = (kind: StreamKind): kind is TPausableStreamKind =>
+  PAUSABLE_STREAM_KINDS.some((pausableKind) => pausableKind === kind);
+
+const getPausedStreamStorageKey = (remoteId: number, kind: StreamKind) =>
+  getStreamQualityStorageKey(
+    remoteId,
+    kind === StreamKind.SCREEN_AUDIO ? StreamKind.SCREEN : kind
+  );
+
+const loadPausedStreamsFromStorage = (): TPausedStreamSettings =>
+  getLocalStorageItemAsJSON<TPausedStreamSettings>(
+    LocalStorageKey.PAUSED_STREAMS
+  ) ?? {};
+
+const savePausedStreamToStorage = (
+  remoteId: number,
+  kind: StreamKind,
+  paused: boolean
+) => {
+  setLocalStorageItemAsJSON(LocalStorageKey.PAUSED_STREAMS, {
+    ...loadPausedStreamsFromStorage(),
+    [getPausedStreamStorageKey(remoteId, kind)]: paused
+  });
+};
+
+const getInitialStreamPaused = (
+  remoteId: number,
+  kind: StreamKind,
+  pauseByDefault: boolean
+) => {
+  if (!isPausableStreamKind(kind)) return false;
+
+  const pausedStreams = loadPausedStreamsFromStorage();
+
+  return (
+    pausedStreams[getPausedStreamStorageKey(remoteId, kind)] ?? pauseByDefault
+  );
 };
 
 const getRemoteConsumerTypeKey = (remoteId: number, kind: StreamKind) => {
@@ -211,7 +254,59 @@ const getSimulcastCodec = (
     (c) => c.mimeType.toLowerCase() === VideoCodec.VP8.toLowerCase()
   );
 
+const getExternalVolumeKey = (pluginId: string, key: string) =>
+  `external-${pluginId}-${key}`;
+
+const USER_SCREEN_VOLUME_KEY_PREFIX = 'userscreen-';
+
+const getUserScreenVolumeKey = (userId: number) =>
+  `${USER_SCREEN_VOLUME_KEY_PREFIX}${userId}`;
+
+const getOwnedExternalVolumeKeys = (
+  externalStreamsMap: TExternalStreamsMap,
+  ownUserId: number | undefined
+) => {
+  const keys = new Set<string>();
+
+  if (ownUserId === undefined) return keys;
+
+  for (const streams of Object.values(externalStreamsMap)) {
+    for (const stream of Object.values(streams)) {
+      if (stream.ownerUserId !== ownUserId) continue;
+
+      keys.add(getExternalVolumeKey(stream.pluginId, stream.key));
+    }
+  }
+
+  return keys;
+};
+
+const resolveVolume = (
+  volumes: Record<string, number>,
+  key: string,
+  ownedKeys: Set<string>,
+  muteStreamAudioByDefault = false
+) => {
+  const stored = volumes[key];
+
+  if (stored !== undefined) return stored;
+
+  if (ownedKeys.has(key)) return 0;
+
+  if (
+    muteStreamAudioByDefault &&
+    key.startsWith(USER_SCREEN_VOLUME_KEY_PREFIX)
+  ) {
+    return 0;
+  }
+
+  return 100;
+};
+
 export {
+  getExternalVolumeKey,
+  getInitialStreamPaused,
+  getOwnedExternalVolumeKeys,
   getRemoteConsumerTypeKey,
   getScreenShareSimulcastEncodings,
   getSimulcastCodec,
@@ -220,10 +315,14 @@ export {
   getStoredStreamQuality,
   getStreamQualityDropdownValue,
   getStreamQualityStorageKey,
+  getUserScreenVolumeKey,
   isOwnProducerEvent,
+  isPausableStreamKind,
   loadStreamQualitiesFromStorage,
   normalizeStreamQuality,
   parseStreamQualityDropdownValue,
+  resolveVolume,
+  savePausedStreamToStorage,
   saveStreamQualitiesToStorage
 };
 

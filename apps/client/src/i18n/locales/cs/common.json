@@ -49,6 +49,9 @@
   "invalidAccessToken": "Neplatný přístupový token",
   "failedJoinVoiceChannel": "Připojení k hlasovému kanálu se nezdařilo",
   "failedInitVoiceConnection": "Inicializace hlasového spojení se nezdařila",
+  "moveVoiceCallTitle": "Přesunout hovor sem?",
+  "moveVoiceCallMsg": "Už jste v kanálu {{channel}} na jiné kartě nebo jiném zařízení. Připojením sem tam hovor ukončíte.",
+  "moveVoiceCallConfirm": "Přesunout sem",
   "failedLoadServerInfo": "Načtení informací o serveru se nezdařilo",
   "failedLeaveVoiceChannel": "Opuštění hlasového kanálu se nezdařilo",
   "failedUpdateMicrophoneState": "Aktualizace stavu mikrofonu se nezdařila",
@@ -116,6 +119,9 @@
   "sendVoiceReaction": "Odeslat reakci",
   "failedSendVoiceReaction": "Nepodařilo se odeslat reakci",
   "moreVoiceReactions": "Další emoji",
+  "pauseStream": "Pozastavit stream",
+  "resumeStream": "Obnovit stream",
+  "streamPaused": "Stream pozastaven",
   "viewingOlderMessages": "Zobrazují se starší zprávy, přejít na nejnovější",
   "noChannelAccessTitle": "Bez přístupu k tomuto chatu",
   "noChannelAccessDescription": "Jsi v tomto hlasovém kanálu, ale nemáš oprávnění číst jeho zprávy.",
@@ -148,5 +154,9 @@
   "failedLoadParentMessage": "Nepodařilo se načíst původní zprávu",
   "updateServerConfirmTitle": "Aktualizovat server?",
   "updateServerConfirmMessage": "Stáhne a nainstaluje nejnovější verzi serveru. Server se během toho restartuje, což způsobí krátký výpadek.",
-  "updateServerConfirmLabel": "Aktualizovat"
+  "updateServerConfirmLabel": "Aktualizovat",
+  "formatBold": "Tučné",
+  "formatItalic": "Kurzíva",
+  "formatCode": "Kód",
+  "formatCodeBlock": "Blok kódu"
 }

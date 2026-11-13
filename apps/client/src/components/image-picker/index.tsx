@@ -1,3 +1,4 @@
+import type { TImageCropOptions } from '@/helpers/crop-image';
 import { usePickImage, type TPickedImage } from '@/hooks/use-pick-image';
 import { cn } from '@/lib/utils';
 import type { UploadPurpose } from '@sharkord/shared';
@@ -16,6 +17,7 @@ type TImagePickerProps = {
   className?: string;
   fallback?: ReactNode;
   purpose?: UploadPurpose;
+  crop?: TImageCropOptions;
 };
 
 const ImagePicker = memo(
@@ -27,16 +29,17 @@ const ImagePicker = memo(
     description,
     className,
     fallback,
-    purpose
+    purpose,
+    crop
   }: TImagePickerProps) => {
     const { t } = useTranslation('common');
     const pickImage = usePickImage();
 
     const handlePick = useCallback(async () => {
-      const picked = await pickImage(purpose);
+      const picked = await pickImage(purpose, crop);
 
       if (picked) onChange(picked);
-    }, [pickImage, onChange, purpose]);
+    }, [pickImage, onChange, purpose, crop]);
 
     const handleRemove = useCallback(() => onChange(null), [onChange]);
 

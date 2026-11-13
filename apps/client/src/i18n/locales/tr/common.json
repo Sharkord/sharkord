@@ -49,6 +49,9 @@
   "invalidAccessToken": "Geçersiz erişim anahtarı",
   "failedJoinVoiceChannel": "Sesli kanala katılınamadı",
   "failedInitVoiceConnection": "Ses bağlantısı başlatılamadı",
+  "moveVoiceCallTitle": "Arama buraya taşınsın mı?",
+  "moveVoiceCallMsg": "Başka bir sekmede veya cihazda zaten {{channel}} kanalındasınız. Buradan katılırsanız oradaki arama sona erer.",
+  "moveVoiceCallConfirm": "Buraya taşı",
   "failedLoadServerInfo": "Sunucu bilgileri yüklenemedi",
   "failedLeaveVoiceChannel": "Sesli kanaldan ayrılınamadı",
   "failedUpdateMicrophoneState": "Mikrofon durumu güncellenemedi",
@@ -116,6 +119,9 @@
   "sendVoiceReaction": "Tepki gönder",
   "failedSendVoiceReaction": "Tepki gönderilemedi",
   "moreVoiceReactions": "Daha fazla emoji",
+  "pauseStream": "Yayını duraklat",
+  "resumeStream": "Yayını sürdür",
+  "streamPaused": "Yayın duraklatıldı",
   "viewingOlderMessages": "Eski mesajlar görüntüleniyor, en yeniye git",
   "noChannelAccessTitle": "Bu sohbete erişim yok",
   "noChannelAccessDescription": "Bu sesli kanaldasınız ancak mesajlarını okuma izniniz yok.",
@@ -148,5 +154,9 @@
   "failedLoadParentMessage": "Orijinal mesaj yüklenemedi",
   "updateServerConfirmTitle": "Sunucu güncellensin mi?",
   "updateServerConfirmMessage": "Bu işlem sunucunun en son sürümünü indirir ve kurar. İşlem sırasında sunucu yeniden başlatılır ve kısa süreli bir kesinti yaşanır.",
-  "updateServerConfirmLabel": "Güncelle"
+  "updateServerConfirmLabel": "Güncelle",
+  "formatBold": "Kalın",
+  "formatItalic": "İtalik",
+  "formatCode": "Kod",
+  "formatCodeBlock": "Kod bloğu"
 }

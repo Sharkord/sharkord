@@ -1,12 +1,7 @@
-import { ServerEvents, type StreamKind } from '@sharkord/shared';
+import { ServerEvents } from '@sharkord/shared';
 import { observable } from '@trpc/server/observable';
+import type { TPubSubEvents } from '../../utils/pubsub';
 import { protectedProcedure } from '../../utils/trpc';
-
-type TVoiceProducerEvent = {
-  channelId: number;
-  remoteId: number;
-  kind: StreamKind;
-};
 
 // voice presence goes only to who can see the channel, see publishVoicePresence
 const onUserJoinVoiceRoute = protectedProcedure.subscription(
@@ -47,6 +42,15 @@ const onUserVoiceMovedRoute = protectedProcedure.subscription(
   }
 );
 
+const onVoiceChannelStateUpdateRoute = protectedProcedure.subscription(
+  async ({ ctx }) => {
+    return ctx.pubsub.subscribeFor(
+      ctx.user.id,
+      ServerEvents.VOICE_CHANNEL_STATE_UPDATE
+    );
+  }
+);
+
 const onVoiceAddExternalStreamRoute = protectedProcedure.subscription(
   async ({ ctx }) => {
     return ctx.pubsub.subscribeFor(
@@ -79,7 +83,9 @@ const onVoiceRemoveExternalStreamRoute = protectedProcedure.subscription(
 const onVoiceNewProducerRoute = protectedProcedure.subscription(
   async ({ ctx }) => {
     if (!ctx.currentVoiceChannelId) {
-      return observable<TVoiceProducerEvent>(() => () => {});
+      return observable<TPubSubEvents[ServerEvents.VOICE_NEW_PRODUCER]>(
+        () => () => {}
+      );
     }
 
     return ctx.pubsub.subscribeForChannel(
@@ -92,7 +98,9 @@ const onVoiceNewProducerRoute = protectedProcedure.subscription(
 const onVoiceProducerClosedRoute = protectedProcedure.subscription(
   async ({ ctx }) => {
     if (!ctx.currentVoiceChannelId) {
-      return observable<TVoiceProducerEvent>(() => () => {});
+      return observable<TPubSubEvents[ServerEvents.VOICE_PRODUCER_CLOSED]>(
+        () => () => {}
+      );
     }
 
     return ctx.pubsub.subscribeForChannel(
@@ -109,6 +117,7 @@ export {
   onUserVoiceMovedRoute,
   onUserVoiceReactionRoute,
   onVoiceAddExternalStreamRoute,
+  onVoiceChannelStateUpdateRoute,
   onVoiceNewProducerRoute,
   onVoiceProducerClosedRoute,
   onVoiceRemoveExternalStreamRoute,

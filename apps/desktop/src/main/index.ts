@@ -30,6 +30,8 @@ import { confirmMediaAccess } from './servers/confirm-media-access';
 import { confirmRemoveServer } from './servers/confirm-remove-server';
 import { createServerController } from './servers/server-controller';
 import { createServerIcon } from './servers/server-icon';
+import { STORE_FILE_NAME } from './servers/server-store';
+import { applyGpuEncodingSetting } from './startup/apply-gpu-encoding-setting';
 import { disableBackgroundThrottling } from './startup/disable-background-throttling';
 import { enableChromiumFeatures } from './startup/enable-chromium-features';
 import { setAutoStart, wasLaunchedAtLogin } from './startup/set-auto-start';
@@ -55,6 +57,8 @@ let isQuitting = false;
 
 let handleDeepLink: ((link: string) => void) | undefined;
 let pendingDeepLink = findDeepLink(process.argv);
+
+const getStorePath = () => path.join(app.getPath('userData'), STORE_FILE_NAME);
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -103,8 +107,6 @@ const start = () => {
     win.setMenuBarVisibility(!win.isMenuBarVisible());
   };
 
-  const userData = app.getPath('userData');
-
   const showWindow = () => {
     if (win.isMinimized()) {
       win.restore();
@@ -116,18 +118,20 @@ const start = () => {
 
   if (hasTray) {
     tray = createTray(icon, showWindow);
-
-    win.on('close', (event) => {
-      const { settings: current } = controller.getState();
-
-      if (isQuitting || !current.closeToTray) {
-        return;
-      }
-
-      event.preventDefault();
-      win.hide();
-    });
   }
+
+  win.on('close', (event) => {
+    const { settings: current } = controller.getState();
+
+    if (isQuitting || (hasTray && !current.closeToTray)) {
+      return;
+    }
+
+    event.preventDefault();
+    win.hide();
+  });
+
+  app.on('activate', showWindow);
 
   const selectServerIcon = createServerIcon({
     fallback: nativeImage.createFromPath(icon),
@@ -142,7 +146,7 @@ const start = () => {
   let appliedMenuKey: string | undefined;
 
   const controller = createServerController(
-    path.join(userData, 'servers.json'),
+    getStorePath(),
     views,
     (state) => {
       shellView.webContents.send(IpcChannel.STATE_CHANGED, state);
@@ -278,6 +282,7 @@ const start = () => {
 enableChromiumFeatures();
 disableBackgroundThrottling();
 wipeUserDataIfRequested();
+applyGpuEncodingSetting(getStorePath());
 
 const hasLock = app.requestSingleInstanceLock();
 

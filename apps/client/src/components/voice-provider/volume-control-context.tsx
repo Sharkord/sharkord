@@ -1,3 +1,6 @@
+import { useMuteStreamAudioByDefault } from '@/features/app/hooks';
+import { useOwnUserId } from '@/features/server/users/hooks';
+import { externalStreamsMapSelector } from '@/features/server/voice/selectors';
 import {
   getLocalStorageItemAsJSON,
   LocalStorageKey,
@@ -8,9 +11,17 @@ import {
   memo,
   useCallback,
   useContext,
+  useMemo,
   useRef,
   useState
 } from 'react';
+import { useSelector } from 'react-redux';
+import {
+  getExternalVolumeKey as buildExternalVolumeKey,
+  getUserScreenVolumeKey as buildUserScreenVolumeKey,
+  getOwnedExternalVolumeKeys,
+  resolveVolume
+} from './helpers';
 
 // volume keys are string-based for persistence
 // user volumes: "user-{userId}"
@@ -62,12 +73,19 @@ const VolumeControlProvider = memo(
     );
 
     const previousVolumesRef = useRef<TVolumeSettings>({});
+    const ownUserId = useOwnUserId();
+    const externalStreamsMap = useSelector(externalStreamsMapSelector);
+    const muteStreamAudioByDefault = useMuteStreamAudioByDefault();
+
+    const ownedKeys = useMemo(
+      () => getOwnedExternalVolumeKeys(externalStreamsMap, ownUserId),
+      [externalStreamsMap, ownUserId]
+    );
 
     const getVolume = useCallback(
-      (key: TVolumeKey): number => {
-        return volumes[key] ?? 100;
-      },
-      [volumes]
+      (key: TVolumeKey): number =>
+        resolveVolume(volumes, key, ownedKeys, muteStreamAudioByDefault),
+      [volumes, ownedKeys, muteStreamAudioByDefault]
     );
 
     const setVolume = useCallback((key: TVolumeKey, volume: number) => {
@@ -82,36 +100,44 @@ const VolumeControlProvider = memo(
       }
     }, []);
 
-    const toggleMute = useCallback((key: TVolumeKey) => {
-      setVolumes((prev) => {
-        const currentVolume = prev[key] ?? 100;
-        const isMuted = currentVolume === 0;
-        const newVolume = isMuted
-          ? (previousVolumesRef.current[key] ?? 100)
-          : 0;
+    const toggleMute = useCallback(
+      (key: TVolumeKey) => {
+        setVolumes((prev) => {
+          const currentVolume = resolveVolume(
+            prev,
+            key,
+            ownedKeys,
+            muteStreamAudioByDefault
+          );
+          const isMuted = currentVolume === 0;
+          const newVolume = isMuted
+            ? (previousVolumesRef.current[key] ?? 100)
+            : 0;
 
-        if (!isMuted) {
-          previousVolumesRef.current[key] = currentVolume;
-        }
+          if (!isMuted) {
+            previousVolumesRef.current[key] = currentVolume;
+          }
 
-        const next = { ...prev, [key]: newVolume };
-        saveVolumesToStorage(next);
-        return next;
-      });
-    }, []);
+          const next = { ...prev, [key]: newVolume };
+          saveVolumesToStorage(next);
+          return next;
+        });
+      },
+      [ownedKeys, muteStreamAudioByDefault]
+    );
 
     const getUserVolumeKey = useCallback((userId: number): TVolumeKey => {
       return `user-${userId}`;
     }, []);
 
-    const getUserScreenVolumeKey = useCallback((userId: number): TVolumeKey => {
-      return `userscreen-${userId}`;
-    }, []);
+    const getUserScreenVolumeKey = useCallback(
+      (userId: number): TVolumeKey => buildUserScreenVolumeKey(userId),
+      []
+    );
 
     const getExternalVolumeKey = useCallback(
-      (pluginId: string, key: string): TVolumeKey => {
-        return `external-${pluginId}-${key}`;
-      },
+      (pluginId: string, key: string): TVolumeKey =>
+        buildExternalVolumeKey(pluginId, key),
       []
     );
 

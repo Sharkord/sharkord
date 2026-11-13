@@ -4,7 +4,12 @@ import { parse, stringify } from 'ini';
 import z from 'zod';
 import { applyEnvOverrides } from './helpers/apply-env-overrides';
 import { ensureServerDirs } from './helpers/ensure-server-dirs';
-import { getPrivateIp, getPublicIp } from './helpers/network';
+import {
+  getPrivateIp,
+  resolveAnnouncedAddress,
+  resolveAnnouncedAddressV6,
+  resolveInternalAnnouncedAddress
+} from './helpers/network';
 import { CONFIG_INI_PATH } from './helpers/paths';
 import { deepMerge } from './utils/deep-merge';
 import { IS_DEVELOPMENT, IS_TEST } from './utils/env';
@@ -61,6 +66,8 @@ const zConfig = z.object({
   webRtc: z.object({
     port: z.coerce.number().int().positive(),
     announcedAddress: z.string(),
+    announcedAddressV6: z.string(),
+    internalAnnouncedAddress: z.string(),
     maxBitrate: z.coerce.number().int().positive()
   })
 });
@@ -97,6 +104,8 @@ const defaultConfig: TConfig = {
   webRtc: {
     port: 40000,
     announcedAddress: '',
+    announcedAddressV6: '',
+    internalAnnouncedAddress: '',
     maxBitrate: 30_000_000 // 30 Mbps
   }
 };
@@ -152,6 +161,9 @@ const envOverridesMap: Record<string, string> = {
   'oidc.disableLocalLogin': 'SHARKORD_OIDC_DISABLE_LOCAL_LOGIN',
   'webRtc.port': 'SHARKORD_WEBRTC_PORT',
   'webRtc.announcedAddress': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS',
+  'webRtc.announcedAddressV6': 'SHARKORD_WEBRTC_ANNOUNCED_ADDRESS_V6',
+  'webRtc.internalAnnouncedAddress':
+    'SHARKORD_WEBRTC_INTERNAL_ANNOUNCED_ADDRESS',
   'webRtc.maxBitrate': 'SHARKORD_WEBRTC_MAX_BITRATE',
   'server.rateLimitersEnabled': 'SHARKORD_RATE_LIMITERS_ENABLED'
 };
@@ -163,18 +175,31 @@ config = IS_TEST ? config : deepFreeze(config);
 
 const SERVER_PRIVATE_IP = await getPrivateIp();
 
-// only used as the mediasoup announced address when the operator has not set
-// one, so an explicit announcedAddress makes the third party lookup pointless
-const SERVER_PUBLIC_IP = config.webRtc.announcedAddress
-  ? undefined
-  : await getPublicIp();
+// the address mediasoup announces. an explicit ip is used as is, a hostname is
+// resolved through dns, and only when neither works do we ask the third party providers
+const SERVER_PUBLIC_IP = await resolveAnnouncedAddress(
+  config.webRtc.announcedAddress
+);
+
+// announced on a separate ipv6 listener next to the ipv4 one, off unless configured
+const SERVER_PUBLIC_IPV6 = await resolveAnnouncedAddressV6(
+  config.webRtc.announcedAddressV6
+);
+
+// a second address announced next to the public one, for self hosted servers where
+// lan clients cannot reach the public ip (no nat loopback, split dns)
+const SERVER_INTERNAL_ANNOUNCED_IP = await resolveInternalAnnouncedAddress(
+  config.webRtc.internalAnnouncedAddress
+);
 
 export {
   config,
   deepFreeze,
   defaultConfig,
   envOverridesMap,
+  SERVER_INTERNAL_ANNOUNCED_IP,
   SERVER_PRIVATE_IP,
   SERVER_PUBLIC_IP,
+  SERVER_PUBLIC_IPV6,
   zConfig
 };

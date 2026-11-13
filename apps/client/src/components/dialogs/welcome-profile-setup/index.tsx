@@ -1,5 +1,12 @@
 import { useServerName } from '@/features/server/hooks';
 import { useOwnPublicUser } from '@/features/server/users/hooks';
+import {
+  AVATAR_CROP,
+  BANNER_CROP,
+  cropPickedImage,
+  type TImageCropOptions,
+  type TRequestImageCrop
+} from '@/helpers/crop-image';
 import { getFileUrl } from '@/helpers/get-file-url';
 import { getInitialsFromName } from '@/helpers/get-initials-from-name';
 import { uploadImage } from '@/helpers/upload-file';
@@ -26,9 +33,15 @@ import { Upload, X } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { ImageCropDialog } from '../image-crop';
 import type { TDialogBaseProps } from '../types';
 
 type TWelcomeProfileSetupDialogProps = TDialogBaseProps;
+
+type TCropRequest = TImageCropOptions & {
+  file: File;
+  resolve: (file: File | null) => void;
+};
 
 const WelcomeProfileSetupDialog = memo(
   ({ isOpen, close }: TWelcomeProfileSetupDialogProps) => {
@@ -42,13 +55,47 @@ const WelcomeProfileSetupDialog = memo(
       bio: ownPublicUser?.bio ?? ''
     });
 
+    const [cropRequest, setCropRequest] = useState<TCropRequest>();
+
+    const requestCrop: TRequestImageCrop = useCallback(
+      (request) =>
+        new Promise((resolve) => setCropRequest({ ...request, resolve })),
+      []
+    );
+
+    const pickImage = useCallback(
+      async (crop: TImageCropOptions) => {
+        const [picked] = await openFilePicker('image/*');
+
+        if (!picked) return;
+
+        const file = await cropPickedImage(picked, crop, requestCrop);
+
+        if (!file) return;
+
+        return uploadImage(file);
+      },
+      [openFilePicker, requestCrop]
+    );
+
+    const onCropConfirm = useCallback(
+      (file: File) => {
+        cropRequest?.resolve(file);
+        setCropRequest(undefined);
+      },
+      [cropRequest]
+    );
+
+    const onCropCancel = useCallback(() => {
+      cropRequest?.resolve(null);
+      setCropRequest(undefined);
+    }, [cropRequest]);
+
     const onAvatarClick = useCallback(async () => {
       const trpc = getTRPCClient();
 
       try {
-        const [file] = await openFilePicker('image/*');
-
-        const temporaryFile = await uploadImage(file);
+        const temporaryFile = await pickImage(AVATAR_CROP);
 
         if (!temporaryFile) {
           return;
@@ -58,7 +105,7 @@ const WelcomeProfileSetupDialog = memo(
       } catch (error) {
         toast.error(getTrpcError(error, t('welcomeUpdateAvatarError')));
       }
-    }, [openFilePicker, t]);
+    }, [pickImage, t]);
 
     const onAvatarRemove = useCallback(async () => {
       const trpc = getTRPCClient();
@@ -74,9 +121,7 @@ const WelcomeProfileSetupDialog = memo(
       const trpc = getTRPCClient();
 
       try {
-        const [file] = await openFilePicker('image/*');
-
-        const temporaryFile = await uploadImage(file);
+        const temporaryFile = await pickImage(BANNER_CROP);
 
         if (!temporaryFile) {
           return;
@@ -86,7 +131,7 @@ const WelcomeProfileSetupDialog = memo(
       } catch (error) {
         toast.error(getTrpcError(error, t('welcomeUpdateBannerError')));
       }
-    }, [openFilePicker, t]);
+    }, [pickImage, t]);
 
     const onBannerRemove = useCallback(async () => {
       const trpc = getTRPCClient();
@@ -245,6 +290,17 @@ const WelcomeProfileSetupDialog = memo(
             </Button>
           </DialogFooter>
         </DialogContent>
+        {cropRequest && (
+          <ImageCropDialog
+            isOpen
+            file={cropRequest.file}
+            shape={cropRequest.shape}
+            aspect={cropRequest.aspect}
+            close={onCropCancel}
+            onConfirm={onCropConfirm}
+            onCancel={onCropCancel}
+          />
+        )}
       </Dialog>
     );
   }

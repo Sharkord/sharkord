@@ -4,14 +4,21 @@ import { publishCapabilityAccess } from '../db/publishers';
 import { logger } from '../logger';
 import { pluginManager } from '../plugins';
 import { enqueueActivityLog } from '../queues/activity-log';
-import { downloadPlugin } from './downloads';
+import {
+  copyPluginIntoPlace,
+  createExtractDir,
+  downloadPlugin,
+  extractPluginArchive
+} from './downloads';
 import { fetchMarketplaceVersion } from './marketplace';
 import { getPluginPath } from './plugin-paths';
 
 const inFlight = new Map<string, Promise<unknown>>();
 
-const swapPluginVersion = async (pluginId: string, version: string) => {
-  const versionData = await fetchMarketplaceVersion(pluginId, version);
+const swapPlugin = async (
+  pluginId: string,
+  writePlugin: () => Promise<void>
+) => {
   const wasEnabled = pluginManager.isEnabled(pluginId);
   const wasInstalled = await fs.exists(getPluginPath(pluginId));
 
@@ -22,17 +29,11 @@ const swapPluginVersion = async (pluginId: string, version: string) => {
   pluginManager.markInstalling(pluginId);
 
   try {
-    await downloadPlugin(
-      pluginId,
-      versionData.downloadUrl,
-      versionData.checksum
-    );
+    await writePlugin();
   } finally {
     pluginManager.clearInstalling(pluginId);
 
     if (wasEnabled) {
-      // load() records its own failures against the plugin, but anything it
-      // rethrows here would replace the error that actually stopped the install
       await pluginManager
         .load(pluginId)
         .catch((error) =>
@@ -48,34 +49,33 @@ const swapPluginVersion = async (pluginId: string, version: string) => {
     publishCapabilityAccess();
   }
 
-  return { versionData, wasInstalled };
+  return wasInstalled;
 };
 
-const installPluginVersion = async (
+const installPlugin = async (
   pluginId: string,
   version: string,
-  userId: number
+  userId: number,
+  writePlugin: () => Promise<void>
 ) => {
   const previous = inFlight.get(pluginId) ?? Promise.resolve();
 
   const current = previous
     .catch(() => {})
-    .then(() => swapPluginVersion(pluginId, version));
+    .then(() => swapPlugin(pluginId, writePlugin));
 
   inFlight.set(pluginId, current);
 
   try {
-    const { versionData, wasInstalled } = await current;
+    const wasInstalled = await current;
 
     enqueueActivityLog({
       type: wasInstalled
         ? ActivityLogType.PLUGIN_UPDATED
         : ActivityLogType.PLUGIN_INSTALLED,
       userId,
-      details: { pluginId, version: versionData.version }
+      details: { pluginId, version }
     });
-
-    return versionData;
   } finally {
     if (inFlight.get(pluginId) === current) {
       inFlight.delete(pluginId);
@@ -83,4 +83,42 @@ const installPluginVersion = async (
   }
 };
 
-export { installPluginVersion };
+const installPluginVersion = async (
+  pluginId: string,
+  version: string,
+  userId: number
+) => {
+  const versionData = await fetchMarketplaceVersion(pluginId, version);
+
+  await installPlugin(pluginId, versionData.version, userId, () =>
+    downloadPlugin(pluginId, versionData.downloadUrl, versionData.checksum)
+  );
+
+  return versionData;
+};
+
+const installPluginArchive = async (
+  archiveBytes: Uint8Array,
+  userId: number
+) => {
+  const extractPath = await createExtractDir();
+
+  try {
+    const { manifest, pluginPath } = await extractPluginArchive(
+      archiveBytes,
+      extractPath
+    );
+
+    await installPlugin(manifest.id, manifest.version, userId, () =>
+      copyPluginIntoPlace(pluginPath, manifest.id)
+    );
+
+    logger.info(`Installed plugin '${manifest.id}' from an uploaded archive`);
+
+    return manifest;
+  } finally {
+    await fs.rm(extractPath, { recursive: true, force: true });
+  }
+};
+
+export { installPluginArchive, installPluginVersion };

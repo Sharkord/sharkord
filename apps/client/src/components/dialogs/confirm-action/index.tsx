@@ -6,10 +6,9 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AutoFocus
+  AlertDialogTitle
 } from '@sharkord/ui';
-import { memo } from 'react';
+import { memo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TDialogBaseProps } from '../types';
 
@@ -34,10 +33,18 @@ const ConfirmActionDialog = memo(
     cancelLabel
   }: TConfirmActionDialogProps) => {
     const { t } = useTranslation('dialogs');
+    const confirmRef = useRef<HTMLButtonElement>(null);
+
+    // radix focuses cancel on open, and enter is meant to confirm. taking over its own focus
+    // step leaves no moment where cancel holds the focus
+    const handleOpenAutoFocus = useCallback((event: Event) => {
+      event.preventDefault();
+      confirmRef.current?.focus();
+    }, []);
 
     return (
       <AlertDialog open={isOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent onOpenAutoFocus={handleOpenAutoFocus}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {title ?? t('confirmActionTitle')}
@@ -50,11 +57,9 @@ const ConfirmActionDialog = memo(
             <AlertDialogCancel onClick={onCancel}>
               {cancelLabel ?? t('cancel')}
             </AlertDialogCancel>
-            <AutoFocus>
-              <AlertDialogAction onClick={onConfirm}>
-                {confirmLabel ?? t('confirm')}
-              </AlertDialogAction>
-            </AutoFocus>
+            <AlertDialogAction ref={confirmRef} onClick={onConfirm}>
+              {confirmLabel ?? t('confirm')}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

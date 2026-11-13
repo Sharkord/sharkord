@@ -36,9 +36,9 @@ export type TPluginInfo = {
   author: TPluginManifest['author'];
   description: TPluginManifest['description'];
   version: TPluginManifest['version'];
-  logo: TPluginManifest['logo'];
+  logo?: TPluginManifest['logo'];
   name: TPluginManifest['name'];
-  homepage: TPluginManifest['homepage'];
+  homepage?: TPluginManifest['homepage'];
   path: string;
 };
 

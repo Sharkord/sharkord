@@ -49,6 +49,9 @@
   "invalidAccessToken": "Token di accesso non valido",
   "failedJoinVoiceChannel": "Impossibile entrare nel canale vocale",
   "failedInitVoiceConnection": "Impossibile inizializzare la connessione vocale",
+  "moveVoiceCallTitle": "Spostare la chiamata qui?",
+  "moveVoiceCallMsg": "Sei già in {{channel}} in un'altra scheda o su un altro dispositivo. Unendoti qui la chiamata terminerà lì.",
+  "moveVoiceCallConfirm": "Sposta qui",
   "failedLoadServerInfo": "Impossibile caricare le informazioni del server",
   "failedLeaveVoiceChannel": "Impossibile uscire dal canale vocale",
   "failedUpdateMicrophoneState": "Impossibile aggiornare lo stato del microfono",
@@ -116,6 +119,9 @@
   "sendVoiceReaction": "Invia una reazione",
   "failedSendVoiceReaction": "Invio della reazione non riuscito",
   "moreVoiceReactions": "Altri emoji",
+  "pauseStream": "Metti in pausa lo stream",
+  "resumeStream": "Riprendi lo stream",
+  "streamPaused": "Stream in pausa",
   "viewingOlderMessages": "Stai vedendo messaggi vecchi, vai ai più recenti",
   "noChannelAccessTitle": "Nessun accesso a questa chat",
   "noChannelAccessDescription": "Sei in questo canale vocale, ma non hai il permesso di leggerne i messaggi.",
@@ -148,5 +154,9 @@
   "failedLoadParentMessage": "Impossibile caricare il messaggio originale",
   "updateServerConfirmTitle": "Aggiornare il server?",
   "updateServerConfirmMessage": "Scarica e installa l'ultima versione del server. Il server si riavvia durante il processo, causando una breve interruzione.",
-  "updateServerConfirmLabel": "Aggiorna"
+  "updateServerConfirmLabel": "Aggiorna",
+  "formatBold": "Grassetto",
+  "formatItalic": "Corsivo",
+  "formatCode": "Codice",
+  "formatCodeBlock": "Blocco di codice"
 }

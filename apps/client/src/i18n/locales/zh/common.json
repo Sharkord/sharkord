@@ -49,6 +49,9 @@
   "invalidAccessToken": "访问令牌无效",
   "failedJoinVoiceChannel": "加入语音频道失败",
   "failedInitVoiceConnection": "初始化语音连接失败",
+  "moveVoiceCallTitle": "将通话移到这里？",
+  "moveVoiceCallMsg": "你已在另一个标签页或设备上加入 {{channel}}。在这里加入会结束那里的通话。",
+  "moveVoiceCallConfirm": "移到这里",
   "failedLoadServerInfo": "加载服务器信息失败",
   "failedLeaveVoiceChannel": "离开语音频道失败",
   "failedUpdateMicrophoneState": "更新麦克风状态失败",
@@ -116,6 +119,9 @@
   "sendVoiceReaction": "发送表情反应",
   "failedSendVoiceReaction": "发送表情反应失败",
   "moreVoiceReactions": "更多表情",
+  "pauseStream": "暂停串流",
+  "resumeStream": "恢复串流",
+  "streamPaused": "串流已暂停",
   "viewingOlderMessages": "正在查看较早的消息，跳转到最新",
   "noChannelAccessTitle": "无权访问此聊天",
   "noChannelAccessDescription": "你在此语音频道中，但没有权限阅读其消息。",
@@ -148,5 +154,9 @@
   "failedLoadParentMessage": "加载原始消息失败",
   "updateServerConfirmTitle": "更新服务器？",
   "updateServerConfirmMessage": "这将下载并安装最新版本的服务器。服务器会在此过程中重启，导致短暂停机。",
-  "updateServerConfirmLabel": "更新"
+  "updateServerConfirmLabel": "更新",
+  "formatBold": "粗体",
+  "formatItalic": "斜体",
+  "formatCode": "代码",
+  "formatCodeBlock": "代码块"
 }

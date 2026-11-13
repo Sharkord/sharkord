@@ -19,6 +19,7 @@ import type {
   TPublicServerSettings,
   TThreadFollowUpdate,
   TThreadSummary,
+  TVoiceChannelState,
   TVoiceUserState
 } from '@sharkord/shared';
 import type { Unsubscribable } from '@trpc/server/observable';
@@ -90,6 +91,10 @@ type Events = {
     userId: number;
     emoji: string;
   };
+  [ServerEvents.VOICE_CHANNEL_STATE_UPDATE]: {
+    channelId: number;
+    state: TVoiceChannelState;
+  };
   [ServerEvents.VOICE_NEW_PRODUCER]: {
     channelId: number;
     remoteId: number;
@@ -113,6 +118,7 @@ type Events = {
     channelId: number;
     remoteId: number;
     kind: StreamKind;
+    producerId: string;
   };
 
   [ServerEvents.PLUGIN_LOG]: TLogEntry;

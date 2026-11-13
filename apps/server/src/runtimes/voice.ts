@@ -19,8 +19,9 @@ import type {
   RouterOptions,
   WebRtcTransport
 } from 'mediasoup/types';
-import { config } from '../config';
+import { config, SERVER_INTERNAL_ANNOUNCED_IP } from '../config';
 import { publishVoicePresence } from '../db/publishers';
+import { addInternalIceCandidates } from '../helpers/add-internal-ice-candidates';
 import { logger } from '../logger';
 import { eventBus } from '../plugins/event-bus';
 import {
@@ -69,6 +70,17 @@ const defaultRouterOptions: RouterOptions<AppData> = {
       parameters: {
         'packetization-mode': 1,
         'profile-level-id': '640032',
+        'level-asymmetry-allowed': 1,
+        'x-google-start-bitrate': 2000
+      }
+    },
+    {
+      kind: 'video',
+      mimeType: 'video/H264',
+      clockRate: 90000,
+      parameters: {
+        'packetization-mode': 1,
+        'profile-level-id': '4d0032',
         'level-asymmetry-allowed': 1,
         'x-google-start-bitrate': 2000
       }
@@ -142,7 +154,11 @@ const EXTERNAL_STREAM_ID_BASE = 1_000_000;
 
 class VoiceRuntime {
   public readonly id: number;
-  private state: TChannelState = { users: [], externalStreams: {} };
+  private state: TChannelState = {
+    users: [],
+    externalStreams: {},
+    activeSince: null
+  };
   private router?: Router<AppData>;
   private consumerTransports: TTransportMap = {};
   private producerTransports: TTransportMap = {};
@@ -168,6 +184,8 @@ class VoiceRuntime {
   public static findById = (channelId: number): VoiceRuntime | undefined => {
     return voiceRuntimes.get(channelId);
   };
+
+  public static getAll = (): VoiceRuntime[] => [...voiceRuntimes.values()];
 
   public static findRuntimeByUserId = (
     userId: number
@@ -202,17 +220,14 @@ class VoiceRuntime {
     voiceRuntimes.forEach((runtime, channelId) => {
       if (!channelIds.has(channelId)) return;
 
-      map[channelId] = {
-        users: {}
-      };
+      const { users, activeSince } = runtime.getState();
+      const entry: TVoiceMap[number] = { users: {}, activeSince };
 
-      runtime.getState().users.forEach((user) => {
-        if (!map[channelId]) {
-          map[channelId] = { users: {} };
-        }
-
-        map[channelId].users[user.userId] = user.state;
+      users.forEach((user) => {
+        entry.users[user.userId] = user.state;
       });
+
+      map[channelId] = entry;
     });
 
     return map;
@@ -402,6 +417,7 @@ class VoiceRuntime {
     );
 
     this.state.users = [];
+    this.state.activeSince = null;
 
     remainingUsers.forEach(({ userId }) => {
       eventBus.emit('user:left_voice', {
@@ -449,6 +465,11 @@ class VoiceRuntime {
       }
     });
 
+    if (this.state.users.length === 1) {
+      this.state.activeSince = Date.now();
+      this.publishChannelState();
+    }
+
     eventBus.emit('user:joined_voice', {
       userId: userId,
       channelId: this.id
@@ -456,6 +477,13 @@ class VoiceRuntime {
   };
 
   public removeUser = (userId: number) => {
+    const user = this.getUser(userId);
+
+    if (user && this.state.users.length === 1) {
+      this.state.activeSince = null;
+      this.publishChannelState();
+    }
+
     this.state.users = this.state.users.filter((u) => u.userId !== userId);
 
     this.cleanupUserResources(userId);
@@ -463,6 +491,13 @@ class VoiceRuntime {
     eventBus.emit('user:left_voice', {
       userId: userId,
       channelId: this.id
+    });
+  };
+
+  private publishChannelState = () => {
+    publishVoicePresence(this, ServerEvents.VOICE_CHANNEL_STATE_UPDATE, {
+      channelId: this.id,
+      state: { activeSince: this.state.activeSince }
     });
   };
 
@@ -590,7 +625,10 @@ class VoiceRuntime {
     const params: TTransportParams = {
       id: transport.id,
       iceParameters: transport.iceParameters,
-      iceCandidates: transport.iceCandidates,
+      iceCandidates: addInternalIceCandidates(
+        transport.iceCandidates,
+        SERVER_INTERNAL_ANNOUNCED_IP
+      ),
       dtlsParameters: transport.dtlsParameters
     };
 
@@ -824,6 +862,7 @@ class VoiceRuntime {
     pluginId: string;
     avatarUrl?: string;
     bannerUrl?: string;
+    ownerUserId?: number;
     producers: {
       audio?: Producer;
       video?: Producer;
@@ -832,7 +871,15 @@ class VoiceRuntime {
   }) => {
     const streamId = this.externalCounter++;
 
-    const { title, key, pluginId, avatarUrl, bannerUrl, producers } = options;
+    const {
+      title,
+      key,
+      pluginId,
+      avatarUrl,
+      bannerUrl,
+      ownerUserId,
+      producers
+    } = options;
 
     const validatedVideoLayers = this.validateProducerQualityLayers(
       producers.video,
@@ -878,6 +925,7 @@ class VoiceRuntime {
       pluginId,
       avatarUrl,
       bannerUrl,
+      ownerUserId,
       tracks: {
         audio: !!producers.audio,
         video: !!producers.video

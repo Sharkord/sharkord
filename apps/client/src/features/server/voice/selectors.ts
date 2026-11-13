@@ -15,10 +15,24 @@ export const pinnedCardSelector = (state: IRootState) =>
 export const voiceMoveTargetChannelIdSelector = (state: IRootState) =>
   state.server.voiceMoveTargetChannelId;
 
+export const voiceMapSelector = (state: IRootState) => state.server.voiceMap;
+
 export const voiceChannelStateSelector = (
   state: IRootState,
   channelId: number
 ) => state.server.voiceMap[channelId];
+
+export const voiceChannelActiveSinceSelector = (
+  state: IRootState,
+  channelId: number
+) => {
+  const channelState = state.server.voiceMap[channelId];
+
+  return channelState ? channelState.activeSince : null;
+};
+
+export const externalStreamsMapSelector = (state: IRootState) =>
+  state.server.externalStreamsMap;
 
 export const voiceChannelExternalStreamsSelector = (
   state: IRootState,

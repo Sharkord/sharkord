@@ -99,5 +99,8 @@
   "shareSystemAudio": "共享系统音频",
   "shareSystemAudioAllNote": "即使你只选择了一个窗口，Sharkord 也会共享电脑上播放的所有声音。请将不想让别人听到的内容静音。",
   "additionalScreenShareSettings": "其他屏幕共享设置",
-  "screenShareConfirm": "继续"
+  "screenShareConfirm": "继续",
+  "cropImageTitle": "裁剪图片",
+  "cropImageZoom": "缩放",
+  "failedCropImage": "裁剪图片失败"
 }

@@ -5,6 +5,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { InstalledPlugins } from './installed';
 import { Marketplace } from './marketplace';
+import { useMarketplaceData } from './marketplace/hooks';
 
 type TPluginsProps = {
   plugins: TPluginInfo[];
@@ -15,6 +16,7 @@ type TPluginsProps = {
 const Plugins = memo(({ plugins, loading, refetch }: TPluginsProps) => {
   const { t } = useTranslation('settings');
   const pluginsEnabled = usePluginsEnabled();
+  const marketplace = useMarketplaceData(t);
 
   return (
     <Tabs defaultValue="installed" className="w-full">
@@ -31,10 +33,15 @@ const Plugins = memo(({ plugins, loading, refetch }: TPluginsProps) => {
           plugins={plugins}
           loading={loading}
           refetch={refetch}
+          marketplace={marketplace}
         />
       </TabsContent>
       <TabsContent value="marketplace">
-        <Marketplace plugins={plugins} refetchInstalled={refetch} />
+        <Marketplace
+          plugins={plugins}
+          marketplace={marketplace}
+          refetchInstalled={refetch}
+        />
       </TabsContent>
     </Tabs>
   );

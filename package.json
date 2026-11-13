@@ -23,9 +23,9 @@
   },
   "devDependencies": {
     "@types/bun": "1.4.4",
-    "knip": "^5.80.0",
-    "prettier": "^3.5.3",
-    "prettier-plugin-organize-imports": "^4.1.0"
+    "knip": "^5.88.1",
+    "prettier": "^3.9.10",
+    "prettier-plugin-organize-imports": "^4.3.0"
   },
   "overrides": {
     "@types/bun": "1.4.4"

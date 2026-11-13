@@ -49,6 +49,9 @@
   "invalidAccessToken": "Неверный токен доступа",
   "failedJoinVoiceChannel": "Не удалось подключиться к голосовому каналу",
   "failedInitVoiceConnection": "Не удалось установить голосовое соединение",
+  "moveVoiceCallTitle": "Перенести звонок сюда?",
+  "moveVoiceCallMsg": "Вы уже находитесь в {{channel}} в другой вкладке или на другом устройстве. Если подключиться здесь, звонок там завершится.",
+  "moveVoiceCallConfirm": "Перенести сюда",
   "failedLoadServerInfo": "Не удалось загрузить информацию о сервере",
   "failedLeaveVoiceChannel": "Не удалось покинуть голосовой канал",
   "failedUpdateMicrophoneState": "Не удалось обновить состояние микрофона",
@@ -116,6 +119,9 @@
   "sendVoiceReaction": "Отправить реакцию",
   "failedSendVoiceReaction": "Не удалось отправить реакцию",
   "moreVoiceReactions": "Больше эмодзи",
+  "pauseStream": "Приостановить трансляцию",
+  "resumeStream": "Возобновить трансляцию",
+  "streamPaused": "Трансляция на паузе",
   "viewingOlderMessages": "Показаны старые сообщения, перейти к последним",
   "noChannelAccessTitle": "Нет доступа к этому чату",
   "noChannelAccessDescription": "Вы находитесь в этом голосовом канале, но у вас нет прав на чтение его сообщений.",
@@ -148,5 +154,9 @@
   "failedLoadParentMessage": "Не удалось загрузить исходное сообщение",
   "updateServerConfirmTitle": "Обновить сервер?",
   "updateServerConfirmMessage": "Будет загружена и установлена последняя версия сервера. Во время процесса сервер перезапустится, что вызовет кратковременный простой.",
-  "updateServerConfirmLabel": "Обновить"
+  "updateServerConfirmLabel": "Обновить",
+  "formatBold": "Жирный",
+  "formatItalic": "Курсив",
+  "formatCode": "Код",
+  "formatCodeBlock": "Блок кода"
 }
