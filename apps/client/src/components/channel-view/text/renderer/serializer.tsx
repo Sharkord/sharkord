@@ -3,6 +3,7 @@ import { RoleMentionChip } from '@/components/role-mention-chip';
 import { MessageNodeType, parseDomCommand } from '@sharkord/shared';
 import { type DOMNode } from 'html-react-parser';
 import { CommandOverride } from '../overrides/command';
+import { CustomEmojiOverride } from '../overrides/custom-emoji';
 import { MentionOverride } from '../overrides/mention';
 import { isElementNode } from './helpers';
 
@@ -44,6 +45,27 @@ const serializer = (domNode: DOMNode, messageId: number) => {
 
       if (!Number.isNaN(channelId)) {
         return <ChannelChip channelId={channelId} />;
+      }
+    } else if (
+      isElementNode(domNode) &&
+      domNode.name === 'img' &&
+      domNode.attribs.src?.includes('/public/')
+    ) {
+      const parent = domNode.parent as DOMNode | null;
+
+      if (
+        parent &&
+        isElementNode(parent) &&
+        parent.attribs['data-type'] === MessageNodeType.EMOJI &&
+        parent.attribs['data-name']
+      ) {
+        return (
+          <CustomEmojiOverride
+            name={parent.attribs['data-name']}
+            src={domNode.attribs.src}
+            alt={domNode.attribs.alt}
+          />
+        );
       }
     }
   } catch (error) {
