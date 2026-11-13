@@ -5,6 +5,7 @@ import {
   setCloseVoiceChatOnLeave,
   setConvertAsciiEmoji,
   setFreezeAnimatedAvatars,
+  setMuteStreamAudioByDefault,
   setPauseNewStreamsByDefault,
   setVoiceChatFollowsVoice
 } from '@/features/app/actions';
@@ -13,6 +14,7 @@ import {
   useCloseVoiceChatOnLeave,
   useConvertAsciiEmoji,
   useFreezeAnimatedAvatars,
+  useMuteStreamAudioByDefault,
   usePauseNewStreamsByDefault,
   useVoiceChatFollowsVoice
 } from '@/features/app/hooks';
@@ -27,6 +29,7 @@ type TOthersValues = {
   freezeAnimatedAvatars: boolean;
   convertAsciiEmoji: boolean;
   pauseNewStreamsByDefault: boolean;
+  muteStreamAudioByDefault: boolean;
 };
 
 const Others = memo(() => {
@@ -37,6 +40,7 @@ const Others = memo(() => {
   const freezeAnimatedAvatars = useFreezeAnimatedAvatars();
   const convertAsciiEmoji = useConvertAsciiEmoji();
   const pauseNewStreamsByDefault = usePauseNewStreamsByDefault();
+  const muteStreamAudioByDefault = useMuteStreamAudioByDefault();
 
   const onSave = useCallback(async (values: TOthersValues) => {
     setAutoJoinLastChannel(values.autoJoinLastChannel);
@@ -45,6 +49,7 @@ const Others = memo(() => {
     setFreezeAnimatedAvatars(values.freezeAnimatedAvatars);
     setConvertAsciiEmoji(values.convertAsciiEmoji);
     setPauseNewStreamsByDefault(values.pauseNewStreamsByDefault);
+    setMuteStreamAudioByDefault(values.muteStreamAudioByDefault);
   }, []);
 
   const { values, onChange } = useSettingsForm<TOthersValues>({
@@ -54,7 +59,8 @@ const Others = memo(() => {
       closeVoiceChatOnLeave,
       freezeAnimatedAvatars,
       convertAsciiEmoji,
-      pauseNewStreamsByDefault
+      pauseNewStreamsByDefault,
+      muteStreamAudioByDefault
     },
     onSave,
     successMessage: t('othersUpdated'),
@@ -88,6 +94,11 @@ const Others = memo(() => {
 
   const handlePauseNewStreamsByDefaultChange = useCallback(
     (value: boolean) => onChange('pauseNewStreamsByDefault', value),
+    [onChange]
+  );
+
+  const handleMuteStreamAudioByDefaultChange = useCallback(
+    (value: boolean) => onChange('muteStreamAudioByDefault', value),
     [onChange]
   );
 
@@ -150,6 +161,16 @@ const Others = memo(() => {
         <Switch
           checked={values.pauseNewStreamsByDefault}
           onCheckedChange={handlePauseNewStreamsByDefaultChange}
+        />
+      </Group>
+
+      <Group
+        label={t('muteStreamAudioByDefaultLabel')}
+        description={t('muteStreamAudioByDefaultDesc')}
+      >
+        <Switch
+          checked={values.muteStreamAudioByDefault}
+          onCheckedChange={handleMuteStreamAudioByDefaultChange}
         />
       </Group>
 

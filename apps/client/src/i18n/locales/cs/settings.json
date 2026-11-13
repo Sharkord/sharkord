@@ -50,6 +50,8 @@
   "convertAsciiEmojiDesc": "Převádět textové emotikony jako \":3\" a \"<3\" na emodži.",
   "pauseNewStreamsByDefaultLabel": "Pozastavit všechny nové streamy ve výchozím stavu",
   "pauseNewStreamsByDefaultDesc": "Webkamery a sdílení obrazovky začnou pozastavené a nic nestahují, dokud je neobnovíte. Šetří data na pomalém připojení.",
+  "muteStreamAudioByDefaultLabel": "Ve výchozím stavu ztlumit zvuk streamů",
+  "muteStreamAudioByDefaultDesc": "Sdílení obrazovky začíná se ztlumeným zvukem, dokud ho nezapnete. Streamy, kterým jste už nastavili hlasitost, si ji ponechají.",
   "languageLabel": "Jazyk",
   "languageDesc": "Vyberte jazyk ve kterém se Sharkord zobrazuje.",
   "notificationsTitle": "Upozornění",

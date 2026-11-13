@@ -179,6 +179,12 @@ export const setPauseNewStreamsByDefault = (pause: boolean) => {
   setLocalStorageItemBool(LocalStorageKey.PAUSE_NEW_STREAMS_BY_DEFAULT, pause);
 };
 
+export const setMuteStreamAudioByDefault = (mute: boolean) => {
+  store.dispatch(appSliceActions.setMuteStreamAudioByDefault(mute));
+
+  setLocalStorageItemBool(LocalStorageKey.MUTE_STREAM_AUDIO_BY_DEFAULT, mute);
+};
+
 export const setMicMode = (micMode: MicMode) => {
   store.dispatch(appSliceActions.setMicMode(micMode));
 

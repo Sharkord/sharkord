@@ -3,6 +3,7 @@ import { StreamKind } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import {
   getOwnedExternalVolumeKeys,
+  getUserScreenVolumeKey,
   isOwnProducerEvent,
   resolveVolume
 } from '../helpers';
@@ -70,5 +71,28 @@ describe('external stream default volume', () => {
 
   test('should own nothing before the own user id is known', () => {
     expect(getOwnedExternalVolumeKeys(STREAMS, undefined).size).toBe(0);
+  });
+});
+
+describe('screen share audio default volume', () => {
+  const screenKey = getUserScreenVolumeKey(2);
+
+  test('should play screen share audio at full volume by default', () => {
+    expect(resolveVolume({}, screenKey, new Set())).toBe(100);
+  });
+
+  test('should start screen share audio muted when the setting is on', () => {
+    expect(resolveVolume({}, screenKey, new Set(), true)).toBe(0);
+  });
+
+  test('should only mute screen share audio, never voices or external streams', () => {
+    expect(resolveVolume({}, 'user-2', new Set(), true)).toBe(100);
+    expect(resolveVolume({}, 'external-obs-theirs', new Set(), true)).toBe(100);
+  });
+
+  test('should let a volume the user picked win over the muted default', () => {
+    expect(resolveVolume({ [screenKey]: 60 }, screenKey, new Set(), true)).toBe(
+      60
+    );
   });
 });
