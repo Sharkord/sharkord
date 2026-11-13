@@ -53,14 +53,12 @@ const resolveExtractedPluginPath = async (
   }
 
   if (pluginDirs.length === 0) {
-    throw new Error(
-      'Downloaded archive does not contain a valid plugin structure'
-    );
+    throw new Error('Plugin archive does not contain a valid plugin structure');
   }
 
   if (pluginDirs.length > 1) {
     throw new Error(
-      'Downloaded archive contains multiple plugin directories; expected only one'
+      'Plugin archive contains multiple plugin directories; expected only one'
     );
   }
 
@@ -81,7 +79,7 @@ const assertArchiveStaysInside = async (
 
     if (!isPathInside(extractPath, resolved)) {
       throw new Error(
-        `Downloaded archive contains an entry outside the extraction directory: '${entryPath}'`
+        `Plugin archive contains an entry outside the extraction directory: '${entryPath}'`
       );
     }
   }
@@ -97,9 +95,47 @@ const assertNoLinks = async (extractPath: string) => {
 
   if (link) {
     throw new Error(
-      `Downloaded archive contains a symlink: '${link.name}'. Plugins cannot ship links.`
+      `Plugin archive contains a symlink: '${link.name}'. Plugins cannot ship links.`
     );
   }
+};
+
+const extractPluginArchive = async (
+  archiveBytes: Uint8Array,
+  extractPath: string
+) => {
+  const archive = new Bun.Archive(archiveBytes);
+
+  await assertArchiveStaysInside(archive, extractPath);
+
+  const entryCount = await archive.extract(extractPath);
+
+  await assertNoLinks(extractPath);
+
+  logger.debug(`Extracted ${entryCount} entries from plugin archive`);
+
+  const pluginPath = await resolveExtractedPluginPath(extractPath);
+  const manifestPath = path.join(pluginPath, 'manifest.json');
+  const manifest = zPluginManifest.parse(
+    JSON.parse(await fs.readFile(manifestPath, 'utf-8'))
+  );
+
+  assertSdkVersionCompatibility(manifest.sdkVersion);
+
+  return { manifest, pluginPath };
+};
+
+const copyPluginIntoPlace = async (pluginPath: string, pluginId: string) => {
+  const targetPluginPath = getPluginPath(pluginId);
+
+  await fs.rm(targetPluginPath, { recursive: true, force: true });
+  await fs.cp(pluginPath, targetPluginPath, { recursive: true });
+};
+
+const createExtractDir = async () => {
+  await ensureDir(downloadsPath);
+
+  return fs.mkdtemp(path.join(downloadsPath, 'extract-'));
 };
 
 const downloadPlugin = async (
@@ -107,10 +143,8 @@ const downloadPlugin = async (
   url: string,
   expectedChecksum: string
 ): Promise<void> => {
-  await ensureDir(downloadsPath);
-
+  const extractPath = await createExtractDir();
   const archivePath = path.join(downloadsPath, `${randomUUIDv7()}.archive`);
-  const extractPath = await fs.mkdtemp(path.join(downloadsPath, 'extract-'));
 
   logger.debug(`Downloading plugin from ${url} to ${archivePath}`);
 
@@ -125,35 +159,18 @@ const downloadPlugin = async (
       );
     }
 
-    const archiveBytes = await Bun.file(archivePath).bytes();
-    const archive = new Bun.Archive(archiveBytes);
-
-    await assertArchiveStaysInside(archive, extractPath);
-
-    const entryCount = await archive.extract(extractPath);
-
-    await assertNoLinks(extractPath);
-
-    logger.debug(`Extracted ${entryCount} entries from plugin archive`);
-
-    const pluginPath = await resolveExtractedPluginPath(extractPath);
-    const manifestPath = path.join(pluginPath, 'manifest.json');
-    const manifest = zPluginManifest.parse(
-      JSON.parse(await fs.readFile(manifestPath, 'utf-8'))
+    const { manifest, pluginPath } = await extractPluginArchive(
+      await Bun.file(archivePath).bytes(),
+      extractPath
     );
 
     if (manifest.id !== expectedPluginId) {
       throw new Error(
-        `Downloaded archive contains plugin '${manifest.id}', expected '${expectedPluginId}'`
+        `Plugin archive contains plugin '${manifest.id}', expected '${expectedPluginId}'`
       );
     }
 
-    assertSdkVersionCompatibility(manifest.sdkVersion);
-
-    const targetPluginPath = getPluginPath(manifest.id);
-
-    await fs.rm(targetPluginPath, { recursive: true, force: true });
-    await fs.cp(pluginPath, targetPluginPath, { recursive: true });
+    await copyPluginIntoPlace(pluginPath, manifest.id);
 
     logger.info(`Installed plugin '${manifest.id}' from ${url}`);
   } finally {
@@ -164,7 +181,7 @@ const downloadPlugin = async (
   }
 };
 
-const MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024; // 20 MB
+const MAX_PLUGIN_ARCHIVE_BYTES = 20 * 1024 * 1024; // 20 MB
 const DOWNLOAD_TIMEOUT_MS = 30_000; // 30 seconds
 
 const downloadFile = async (url: string, outputPath: string): Promise<void> => {
@@ -182,7 +199,7 @@ const downloadFile = async (url: string, outputPath: string): Promise<void> => {
 
   try {
     await readBodyWithLimit(res, {
-      maxBytes: MAX_DOWNLOAD_BYTES,
+      maxBytes: MAX_PLUGIN_ARCHIVE_BYTES,
       tooLargeMessage: 'Download exceeds the maximum allowed size',
       onChunk: (chunk) => writer.write(chunk)
     });
@@ -196,4 +213,12 @@ const downloadFile = async (url: string, outputPath: string): Promise<void> => {
   }
 };
 
-export { assertNoLinks, downloadFile, downloadPlugin };
+export {
+  assertNoLinks,
+  copyPluginIntoPlace,
+  createExtractDir,
+  downloadFile,
+  downloadPlugin,
+  extractPluginArchive,
+  MAX_PLUGIN_ARCHIVE_BYTES
+};

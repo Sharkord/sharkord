@@ -1,6 +1,6 @@
 import { Permission, zPluginId } from '@sharkord/shared';
 import z from 'zod';
-import { installPluginVersion } from '../../helpers/install-plugin-version';
+import { installPluginVersion } from '../../helpers/install-plugin';
 import { protectedProcedure } from '../../utils/trpc';
 
 // also serves plugins.update: both ask for one version of one plugin to be the

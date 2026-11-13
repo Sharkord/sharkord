@@ -194,7 +194,7 @@ describe('downloadPlugin', () => {
     await expect(
       downloadPlugin('plugin-wanted', url('/plugin-impostor.tar'), checksum)
     ).rejects.toThrow(
-      "Downloaded archive contains plugin 'plugin-impostor', expected 'plugin-wanted'"
+      "Plugin archive contains plugin 'plugin-impostor', expected 'plugin-wanted'"
     );
 
     expect(
