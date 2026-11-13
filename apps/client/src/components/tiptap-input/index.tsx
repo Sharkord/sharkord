@@ -39,6 +39,7 @@ import {
   MENTION_STORAGE_KEY,
   MentionSuggestion
 } from './extensions/mentions/suggestion';
+import { FormattingMenu } from './formatting-menu';
 import { mergeEmojis, type TEmojiItem } from './helpers';
 
 type TTiptapInputHandle = {
@@ -323,6 +324,7 @@ const TiptapInput = memo(
             disabled ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         />
+        {editor && !readOnly && <FormattingMenu editor={editor} />}
         {isEmpty && placeholder && (
           <div className="absolute inset-0 px-5 py-[14px] text-muted-foreground/50 pointer-events-none select-none truncate">
             {placeholder}

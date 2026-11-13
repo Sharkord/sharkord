@@ -154,5 +154,9 @@
   "failedLoadParentMessage": "Failed to load the original message",
   "updateServerConfirmTitle": "Update the server?",
   "updateServerConfirmMessage": "This downloads and installs the latest version of the server. The server restarts during the process, which causes a short downtime.",
-  "updateServerConfirmLabel": "Update"
+  "updateServerConfirmLabel": "Update",
+  "formatBold": "Bold",
+  "formatItalic": "Italic",
+  "formatCode": "Code",
+  "formatCodeBlock": "Code block"
 }

@@ -154,5 +154,9 @@
   "failedLoadParentMessage": "Не удалось загрузить исходное сообщение",
   "updateServerConfirmTitle": "Обновить сервер?",
   "updateServerConfirmMessage": "Будет загружена и установлена последняя версия сервера. Во время процесса сервер перезапустится, что вызовет кратковременный простой.",
-  "updateServerConfirmLabel": "Обновить"
+  "updateServerConfirmLabel": "Обновить",
+  "formatBold": "Жирный",
+  "formatItalic": "Курсив",
+  "formatCode": "Код",
+  "formatCodeBlock": "Блок кода"
 }

@@ -154,5 +154,9 @@
   "failedLoadParentMessage": "加载原始消息失败",
   "updateServerConfirmTitle": "更新服务器？",
   "updateServerConfirmMessage": "这将下载并安装最新版本的服务器。服务器会在此过程中重启，导致短暂停机。",
-  "updateServerConfirmLabel": "更新"
+  "updateServerConfirmLabel": "更新",
+  "formatBold": "粗体",
+  "formatItalic": "斜体",
+  "formatCode": "代码",
+  "formatCodeBlock": "代码块"
 }
