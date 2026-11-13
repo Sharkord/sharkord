@@ -133,15 +133,11 @@ export const useAdminPlugins = (canManagePlugins: boolean) => {
       return;
     }
 
-    setLoading(true);
-
     const trpc = getTRPCClient();
 
     try {
       const { plugins } = await trpc.plugins.get.query();
 
-      // TODO: check this
-      // @ts-expect-error - ver esta merda wtf
       setPlugins(plugins);
     } catch (error) {
       console.error('Error fetching plugins:', error);

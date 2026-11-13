@@ -5,7 +5,11 @@ import { usePreventExit } from '@/hooks/use-prevent-exit';
 import { SettingsLayout, type TSettingsEntry } from '@sharkord/ui';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SettingsFormContext, type TSettingsFormHandle } from './context';
+import {
+  SettingsFormContext,
+  SettingsNavigateContext,
+  type TSettingsFormHandle
+} from './context';
 import { SaveBar } from './save-bar';
 
 type TSettingsShellProps = {
@@ -69,7 +73,7 @@ const SettingsShell = memo(
 
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key !== 'Escape') return;
+        if (e.key !== 'Escape' || e.defaultPrevented) return;
 
         // the topmost surface owns escape: a dialog or the mod view closes itself first
         if (isModViewOpen || isDialogOpen) return;
@@ -84,21 +88,23 @@ const SettingsShell = memo(
 
     return (
       <SettingsFormContext.Provider value={setForm}>
-        <SettingsLayout
-          title={title}
-          entries={entries}
-          pluginEntries={pluginEntries}
-          selectedId={selectedEntry?.id ?? ''}
-          onSelect={handleSelect}
-          onClose={handleClose}
-          footer={
-            form?.isDirty && (
-              <SaveBar isSaving={form.isSaving} save={form.save} />
-            )
-          }
-        >
-          {selectedEntry?.content}
-        </SettingsLayout>
+        <SettingsNavigateContext.Provider value={handleSelect}>
+          <SettingsLayout
+            title={title}
+            entries={entries}
+            pluginEntries={pluginEntries}
+            selectedId={selectedEntry?.id ?? ''}
+            onSelect={handleSelect}
+            onClose={handleClose}
+            footer={
+              form?.isDirty && (
+                <SaveBar isSaving={form.isSaving} save={form.save} />
+              )
+            }
+          >
+            {selectedEntry?.content}
+          </SettingsLayout>
+        </SettingsNavigateContext.Provider>
       </SettingsFormContext.Provider>
     );
   }

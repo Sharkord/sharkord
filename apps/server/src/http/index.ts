@@ -29,6 +29,7 @@ import { oidcExchangeRouteHandler } from './oidc/exchange';
 import { oidcLoginRouteHandler } from './oidc/login';
 import { pluginBundleRouteHandler } from './plugin-bundle';
 import { runPluginRoute } from './plugin-route';
+import { pluginUploadRouteHandler } from './plugin-upload';
 import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
 import { uploadFileRouteHandler } from './upload';
@@ -92,6 +93,7 @@ const routeHandlers: Partial<
   POST: {
     exact: {
       '/upload': uploadFileRouteHandler,
+      '/plugin-upload': pluginUploadRouteHandler,
       '/login': loginRouteHandler,
       '/oidc/exchange': oidcExchangeRouteHandler,
       '/oidc/backchannel-logout': oidcBackchannelLogoutRouteHandler

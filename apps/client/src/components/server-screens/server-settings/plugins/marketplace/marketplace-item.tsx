@@ -10,12 +10,20 @@ import {
 } from '@sharkord/shared';
 import { Badge, Button, Tooltip } from '@sharkord/ui';
 import { format } from 'date-fns';
-import { BadgeCheck, Calendar, Download, Package, User } from 'lucide-react';
+import {
+  BadgeCheck,
+  Calendar,
+  Check,
+  ChevronDown,
+  Download,
+  ExternalLink,
+  User
+} from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import semver from 'semver';
 import { toast } from 'sonner';
-import { ImageWithFallback } from './image-with-fallback';
+import { PluginLogo } from '../plugin-logo';
+import { getLatestCompatibleVersion, isNewerVersion } from './helpers';
 import { MarketplaceScreenshots } from './marketplace-screenshots';
 
 type TMarketplaceItemProps = {
@@ -34,74 +42,44 @@ const MarketplaceItem = memo(
   }: TMarketplaceItemProps) => {
     const { t } = useTranslation('settings');
     const dateLocale = useDateLocale();
-    const [installingId, setInstallingId] = useState<string | null>(null);
-    const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [isBusy, setIsBusy] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
     const { plugin, versions } = entry;
     const latestVersion = versions[0];
 
-    const isNewerVersion = useCallback((next: string, current: string) => {
-      const nextVersion = semver.coerce(next);
-      const currentVersion = semver.coerce(current);
+    const latestCompatibleVersion = useMemo(
+      () => getLatestCompatibleVersion(versions),
+      [versions]
+    );
 
-      if (!nextVersion || !currentVersion) return false;
-
-      return semver.gt(nextVersion, currentVersion);
-    }, []);
-
-    const latestCompatibleVersion = useMemo(() => {
-      const compatible = versions.filter((version) => {
-        return version.sdkVersion === PLUGIN_SDK_VERSION;
-      });
-
-      if (compatible.length === 0) return null;
-
-      return compatible.reduce((best, next) =>
-        isNewerVersion(next.version, best.version) ? next : best
-      );
-    }, [versions, isNewerVersion]);
-
-    const sdkVersion =
-      latestCompatibleVersion?.sdkVersion ?? latestVersion?.sdkVersion;
-
-    const sdkCompatible = sdkVersion === PLUGIN_SDK_VERSION;
-
-    // the badge alone does not say what is wrong, and the number a plugin needs
-    // is the only thing that tells an admin whether to wait for an update
-    const sdkTooltip = sdkCompatible
-      ? t('marketplaceSdkCompatibleTooltip', { version: PLUGIN_SDK_VERSION })
-      : t('marketplaceSdkIncompatibleTooltip', {
-          required: sdkVersion,
-          current: PLUGIN_SDK_VERSION
-        });
+    const shownVersion = latestCompatibleVersion ?? latestVersion;
 
     const updateAvailable = useMemo(() => {
       if (!installedVersion || !latestCompatibleVersion) return false;
 
       return isNewerVersion(latestCompatibleVersion.version, installedVersion);
-    }, [installedVersion, latestCompatibleVersion, isNewerVersion]);
+    }, [installedVersion, latestCompatibleVersion]);
 
     const releaseDate = useMemo(() => {
+      const timestamp = shownVersion?.timestamp ?? 0;
+
       return {
-        short: format(latestVersion.timestamp ?? 0, 'PPP', {
-          locale: dateLocale
-        }),
-        full: format(latestVersion.timestamp ?? 0, 'PPP p', {
-          locale: dateLocale
-        })
+        short: format(timestamp, 'PPP', { locale: dateLocale }),
+        full: format(timestamp, 'PPP p', { locale: dateLocale })
       };
-    }, [dateLocale, latestVersion?.timestamp]);
+    }, [dateLocale, shownVersion?.timestamp]);
 
     const performInstall = useCallback(async () => {
-      if (!latestVersion) return;
+      if (!latestCompatibleVersion) return;
 
-      const trpc = getTRPCClient();
+      setIsBusy(true);
 
       try {
-        setInstallingId(plugin.id);
+        const trpc = getTRPCClient();
 
         await trpc.plugins.install.mutate({
           pluginId: plugin.id,
-          version: latestVersion.version
+          version: latestCompatibleVersion.version
         });
 
         toast.success(t('marketplaceInstallSuccess', { name: plugin.name }));
@@ -110,176 +88,189 @@ const MarketplaceItem = memo(
       } catch (error) {
         toast.error(getTrpcError(error, t('marketplaceInstallError')));
       } finally {
-        setInstallingId(null);
+        setIsBusy(false);
       }
-    }, [plugin.id, latestVersion, t, plugin.name, refetchInstalled]);
+    }, [plugin.id, latestCompatibleVersion, t, plugin.name, refetchInstalled]);
 
     const performUpdate = useCallback(async () => {
       if (!latestCompatibleVersion) return;
 
-      const trpc = getTRPCClient();
+      setIsBusy(true);
 
       try {
-        setUpdatingId(plugin.id);
+        const trpc = getTRPCClient();
 
         await trpc.plugins.update.mutate({
           pluginId: plugin.id,
           version: latestCompatibleVersion.version
         });
 
+        toast.success(
+          t('pluginUpdated', {
+            name: plugin.name,
+            version: latestCompatibleVersion.version
+          })
+        );
+
         await refetchInstalled();
       } catch (error) {
         toast.error(getTrpcError(error, t('marketplaceUpdateError')));
       } finally {
-        setUpdatingId(null);
+        setIsBusy(false);
       }
-    }, [latestCompatibleVersion, plugin.id, t, refetchInstalled]);
+    }, [latestCompatibleVersion, plugin.id, plugin.name, t, refetchInstalled]);
 
-    const onInstallClick = useCallback(() => {
+    const handleInstall = useCallback(() => {
       openDialog(Dialog.PLUGIN_INSTALL_CONFIRM, {
         pluginName: plugin.name,
         onConfirm: performInstall
       });
     }, [plugin.name, performInstall]);
 
-    const onUpdateClick = useCallback(() => {
+    const handleUpdate = useCallback(() => {
       openDialog(Dialog.PLUGIN_INSTALL_CONFIRM, {
         pluginName: plugin.name,
         onConfirm: performUpdate
       });
     }, [plugin.name, performUpdate]);
 
-    return (
-      <div className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-        <div className="shrink-0">
-          {plugin.logo ? (
-            <ImageWithFallback
-              src={plugin.logo}
-              alt={`${plugin.name} logo`}
-              className="w-12 h-12 rounded-md object-cover"
-              iconFallback={
-                <Package className="w-6 h-6 text-muted-foreground" />
-              }
-            />
-          ) : null}
-          <div
-            className={cn(
-              'w-12 h-12 rounded-md bg-muted flex items-center justify-center',
-              plugin.logo && 'hidden'
-            )}
-          >
-            <Package className="w-6 h-6 text-muted-foreground" />
-          </div>
-        </div>
+    const handleToggleExpanded = useCallback(() => {
+      setIsExpanded((expanded) => !expanded);
+    }, []);
 
-        <div className="flex-1 min-w-0 space-y-2">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
+    const sdkTooltip = t('marketplaceSdkIncompatibleTooltip', {
+      required: latestVersion?.sdkVersion,
+      current: PLUGIN_SDK_VERSION
+    });
+
+    let action = (
+      <Button size="sm" onClick={handleInstall} disabled={isBusy}>
+        <Download className="h-4 w-4" />
+        {t('marketplaceInstallBtn')}
+      </Button>
+    );
+
+    if (updateAvailable && latestCompatibleVersion) {
+      action = (
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleUpdate}
+          disabled={isBusy}
+        >
+          <Download className="h-4 w-4" />
+          {t('pluginUpdateTo', { version: latestCompatibleVersion.version })}
+        </Button>
+      );
+    } else if (isInstalled) {
+      action = (
+        <span className="flex items-center gap-1 px-2 text-xs text-muted-foreground">
+          <Check className="h-3.5 w-3.5" />
+          {t('marketplaceInstalledBadge')}
+        </span>
+      );
+    } else if (!latestCompatibleVersion) {
+      action = (
+        <Tooltip content={sdkTooltip}>
+          <Badge variant="outline" className="text-muted-foreground">
+            {t('marketplaceSdkIncompatible')}
+          </Badge>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <div>
+        <div className="flex items-center gap-3 px-4 py-3">
+          <button
+            type="button"
+            onClick={handleToggleExpanded}
+            aria-expanded={isExpanded}
+            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          >
+            <PluginLogo src={plugin.logo} />
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-base leading-tight">
+                <span className="truncate text-sm font-medium">
                   {plugin.name}
-                </h3>
+                </span>
                 {plugin.verified && (
                   <Tooltip content={t('marketplaceVerifiedTooltip')}>
-                    <Badge variant="default" className="gap-1 text-xs shrink-0">
-                      <BadgeCheck className="w-3 h-3" />
-                      {t('marketplaceVerified')}
-                    </Badge>
+                    <BadgeCheck className="h-4 w-4 shrink-0 text-primary" />
                   </Tooltip>
                 )}
-                <Tooltip content={sdkTooltip}>
-                  <Badge
-                    variant={sdkCompatible ? 'secondary' : 'destructive'}
-                    className="text-xs shrink-0"
-                  >
-                    {sdkCompatible
-                      ? t('marketplaceSdkCompatible')
-                      : t('marketplaceSdkIncompatible')}
-                  </Badge>
-                </Tooltip>
+                {shownVersion && (
+                  <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                    v{shownVersion.version}
+                  </span>
+                )}
               </div>
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+              <p
+                className={cn(
+                  'text-xs text-muted-foreground',
+                  !isExpanded && 'truncate'
+                )}
+              >
                 {plugin.description}
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {isInstalled && (
-                <Badge variant="secondary">
-                  {t('marketplaceInstalledBadge')}
-                </Badge>
+            <ChevronDown
+              className={cn(
+                'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
+                isExpanded && 'rotate-180'
               )}
-              {updateAvailable ? (
-                <Button
-                  size="sm"
-                  className="h-8"
-                  onClick={onUpdateClick}
-                  disabled={updatingId === plugin.id || !sdkCompatible}
-                >
-                  <Download className="w-4 h-4 mr-1.5" />
-                  {t('marketplaceUpdateBtn')}
-                </Button>
-              ) : !isInstalled ? (
-                <Button
-                  size="sm"
-                  className="h-8"
-                  onClick={onInstallClick}
-                  disabled={installingId === plugin.id || !sdkCompatible}
-                >
-                  <Download className="w-4 h-4 mr-1.5" />
-                  {t('marketplaceInstallBtn')}
-                </Button>
-              ) : null}
-            </div>
-          </div>
+            />
+          </button>
 
-          <div className="flex flex-wrap items-center gap-x-4 text-xs text-muted-foreground">
-            {latestVersion && (
-              <div className="flex items-center gap-1">
-                <span className="font-mono">v{latestVersion.version}</span>
-              </div>
-            )}
-            <div
-              className="flex items-center gap-1"
-              title={t('marketplaceReleasedOn', { date: releaseDate.full })}
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              <span>
+          {action}
+        </div>
+
+        {isExpanded && (
+          <div className="space-y-3 px-4 pb-4 pl-16">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <User className="h-3.5 w-3.5" />
+                {plugin.author}
+              </span>
+              <span
+                className="flex items-center gap-1"
+                title={t('marketplaceReleasedOn', { date: releaseDate.full })}
+              >
+                <Calendar className="h-3.5 w-3.5" />
                 {t('marketplaceReleasedOn', { date: releaseDate.short })}
               </span>
+              {plugin.homepage && (
+                <a
+                  href={plugin.homepage}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 underline transition-colors hover:text-primary"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  {t('pluginHomepage')}
+                </a>
+              )}
             </div>
-            <div className="flex items-center gap-1">
-              <User className="w-3.5 h-3.5" />
-              <span>{plugin.author}</span>
-            </div>
-            {plugin.homepage && (
-              <a
-                href={plugin.homepage}
-                target="_blank"
-                className="underline hover:text-primary transition-colors"
-              >
-                {plugin.homepage}
-              </a>
+
+            {plugin.tags && plugin.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {plugin.tags.map((tag) => (
+                  <Badge key={tag} variant="outline" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {plugin.screenshots && plugin.screenshots.length > 0 && (
+              <MarketplaceScreenshots
+                pluginId={plugin.id}
+                pluginName={plugin.name}
+                screenshots={plugin.screenshots}
+              />
             )}
           </div>
-
-          {plugin.tags && plugin.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {plugin.tags.map((tag) => (
-                <Badge key={tag} variant="outline" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          {plugin.screenshots && plugin.screenshots.length > 0 && (
-            <MarketplaceScreenshots
-              pluginId={plugin.id}
-              pluginName={plugin.name}
-              screenshots={plugin.screenshots}
-            />
-          )}
-        </div>
+        )}
       </div>
     );
   }

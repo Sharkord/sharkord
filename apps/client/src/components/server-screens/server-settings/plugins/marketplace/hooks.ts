@@ -88,4 +88,6 @@ const useMarketplaceData = (t: TFunction<'settings'>) => {
   };
 };
 
-export { useMarketplaceData };
+type TMarketplaceData = ReturnType<typeof useMarketplaceData>;
+
+export { useMarketplaceData, type TMarketplaceData };
