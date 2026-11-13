@@ -80,7 +80,7 @@
     },
     "apps/desktop": {
       "name": "@sharkord/desktop",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "dbus-next": "0.10.2",
         "electron-log": "5.4.4",
