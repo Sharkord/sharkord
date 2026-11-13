@@ -3,7 +3,8 @@ import {
   getIpBlockKey,
   isPrivateIP,
   isPublicIp,
-  resolveAnnouncedAddress
+  resolveAnnouncedAddress,
+  resolveInternalAnnouncedAddress
 } from '../network';
 
 // this predicate is the whole of the link preview's ssrf defence: everything it calls public
@@ -170,5 +171,44 @@ describe('resolveAnnouncedAddress', () => {
 
     expect(await resolveAnnouncedAddress('', lookup)).toBe('192.0.2.51');
     expect(lookup).not.toHaveBeenCalled();
+  });
+});
+
+describe('resolveInternalAnnouncedAddress', () => {
+  test('is off when empty, without any lookup', async () => {
+    const lookup = mock(async () => '192.168.1.10');
+
+    expect(await resolveInternalAnnouncedAddress('  ', lookup)).toBeUndefined();
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  test('returns an ip as is without any lookup', async () => {
+    const lookup = mock(async () => '9.9.9.9');
+
+    expect(await resolveInternalAnnouncedAddress('192.168.1.10', lookup)).toBe(
+      '192.168.1.10'
+    );
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  test('resolves a hostname through dns', async () => {
+    const lookup = mock(async () => '192.168.1.10');
+
+    expect(
+      await resolveInternalAnnouncedAddress(' sharkord.lan ', lookup)
+    ).toBe('192.168.1.10');
+    expect(lookup).toHaveBeenCalledWith('sharkord.lan');
+  });
+
+  // falling back to the public ip like announcedAddress does would just announce
+  // the public candidate twice
+  test('is off when the hostname does not resolve', async () => {
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+    const lookup = mock(async () => undefined);
+
+    expect(
+      await resolveInternalAnnouncedAddress('sharkord.lan', lookup)
+    ).toBeUndefined();
+    expect(warnSpy).toHaveBeenCalled();
   });
 });

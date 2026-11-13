@@ -124,6 +124,30 @@ const resolveAnnouncedAddress = async (
   return getPublicIp();
 };
 
+// unlike announcedAddress there is nothing to fall back to: an empty value turns the
+// internal candidate off, and so does a hostname that does not resolve
+const resolveInternalAnnouncedAddress = async (
+  internalAnnouncedAddress: string,
+  resolveHostname: THostnameLookup = lookupHostname
+): Promise<string | undefined> => {
+  const address = internalAnnouncedAddress.trim();
+
+  if (!address) return undefined;
+
+  if (ipaddr.isValid(address)) return address;
+
+  const resolved = await resolveHostname(address);
+
+  if (!resolved) {
+    // logger imports config, which imports this file, see getPublicIp
+    console.warn(
+      `Could not resolve webRtc.internalAnnouncedAddress hostname "${address}", internal clients will use webRtc.announcedAddress.`
+    );
+  }
+
+  return resolved;
+};
+
 // the single answer to "is this a routable public address". an allowlist of one range
 // rather than a blocklist, so anything ipaddr does not call unicast (carrierGradeNat,
 // reserved, benchmarking and friends) is treated as not public. an unparseable address is
@@ -166,5 +190,6 @@ export {
   getPublicIp,
   isPrivateIP,
   isPublicIp,
-  resolveAnnouncedAddress
+  resolveAnnouncedAddress,
+  resolveInternalAnnouncedAddress
 };
