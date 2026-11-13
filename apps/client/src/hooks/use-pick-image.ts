@@ -1,3 +1,5 @@
+import { requestImageCrop } from '@/features/dialogs/actions';
+import { cropPickedImage, type TImageCropOptions } from '@/helpers/crop-image';
 import { uploadImage } from '@/helpers/upload-file';
 import { useFilePicker } from '@/hooks/use-file-picker';
 import { getTrpcError, type UploadPurpose } from '@sharkord/shared';
@@ -16,9 +18,16 @@ const usePickImage = () => {
   const openFilePicker = useFilePicker();
 
   return useCallback(
-    async (purpose?: UploadPurpose): Promise<TPickedImage | undefined> => {
+    async (
+      purpose?: UploadPurpose,
+      crop?: TImageCropOptions
+    ): Promise<TPickedImage | undefined> => {
       try {
-        const [file] = await openFilePicker('image/*');
+        const [picked] = await openFilePicker('image/*');
+
+        if (!picked) return;
+
+        const file = await cropPickedImage(picked, crop, requestImageCrop);
 
         if (!file) return;
 

@@ -98,5 +98,8 @@
   "screenShareMessage": "Paylaşılacak ekranı veya pencereyi bir sonraki adımda seçeceksiniz.",
   "shareSystemAudio": "Sistem sesini paylaş",
   "additionalScreenShareSettings": "Ek ekran paylaşımı ayarları",
-  "screenShareConfirm": "Devam"
+  "screenShareConfirm": "Devam",
+  "cropImageTitle": "Resmi kırp",
+  "cropImageZoom": "Yakınlaştır",
+  "failedCropImage": "Resim kırpılamadı"
 }

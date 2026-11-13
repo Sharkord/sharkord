@@ -1,6 +1,7 @@
 import { ImagePicker } from '@/components/image-picker';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import { useAdminGeneral } from '@/features/server/admin/hooks';
+import { LOGO_CROP } from '@/helpers/crop-image';
 import { getFileUrl } from '@/helpers/get-file-url';
 import type { TPickedImage } from '@/hooks/use-pick-image';
 import { getTRPCClient } from '@/lib/trpc';
@@ -47,26 +48,30 @@ const General = memo(() => {
   const { t } = useTranslation('settings');
   const { settings, loading } = useAdminGeneral();
 
-  const onSave = useCallback(async (values: TServerGeneralValues) => {
-    const trpc = getTRPCClient();
+  const onSave = useCallback(
+    async (values: TServerGeneralValues, baseline: TServerGeneralValues) => {
+      const trpc = getTRPCClient();
 
-    await trpc.others.updateSettings.mutate({
-      name: values.name,
-      description: values.description,
-      password: values.password || null,
-      onlyAskForPasswordOnFirstJoin: values.onlyAskForPasswordOnFirstJoin,
-      allowNewUsers: values.allowNewUsers,
-      directMessagesEnabled: values.directMessagesEnabled,
-      enablePlugins: values.enablePlugins,
-      webRtcSimulcastEnabled: values.webRtcSimulcastEnabled,
-      enableSearch: values.enableSearch,
-      showWelcomeDialog: values.showWelcomeDialog
-    });
+      await trpc.others.updateSettings.mutate({
+        name: values.name,
+        description: values.description,
+        password: values.password || null,
+        onlyAskForPasswordOnFirstJoin: values.onlyAskForPasswordOnFirstJoin,
+        allowNewUsers: values.allowNewUsers,
+        directMessagesEnabled: values.directMessagesEnabled,
+        enablePlugins: values.enablePlugins,
+        webRtcSimulcastEnabled: values.webRtcSimulcastEnabled,
+        enableSearch: values.enableSearch,
+        showWelcomeDialog: values.showWelcomeDialog
+      });
 
-    if (values.logo !== undefined) {
-      await trpc.others.changeLogo.mutate({ fileId: values.logo?.fileId });
-    }
-  }, []);
+      // a draft stays in the form after it is saved, and its temporary upload is gone by then
+      if (values.logo !== baseline.logo) {
+        await trpc.others.changeLogo.mutate({ fileId: values.logo?.fileId });
+      }
+    },
+    []
+  );
 
   const { r, values, onChange, reset } = useSettingsForm<TServerGeneralValues>({
     initialValues: INITIAL_VALUES,
@@ -171,6 +176,7 @@ const General = memo(() => {
         currentUrl={getFileUrl(settings?.logo)}
         draft={values.logo}
         onChange={handleLogoChange}
+        crop={LOGO_CROP}
       />
 
       <Group

@@ -99,5 +99,8 @@
   "shareSystemAudio": "Sdílet zvuk systému",
   "shareSystemAudioAllNote": "Sharkord sdílí veškerý zvuk přehrávaný na vašem počítači, i když vyberete jen jedno okno. Ztlumte vše, co nechcete, aby ostatní slyšeli.",
   "additionalScreenShareSettings": "Další nastavení sdílení obrazovky",
-  "screenShareConfirm": "Pokračovat"
+  "screenShareConfirm": "Pokračovat",
+  "cropImageTitle": "Oříznout obrázek",
+  "cropImageZoom": "Přiblížení",
+  "failedCropImage": "Obrázek se nepodařilo oříznout"
 }

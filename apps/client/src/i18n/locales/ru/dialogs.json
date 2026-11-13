@@ -99,5 +99,8 @@
   "shareSystemAudio": "Транслировать системный звук",
   "shareSystemAudioAllNote": "Sharkord передаёт весь звук, который воспроизводится на компьютере, даже если вы выбрали только одно окно. Выключите звук всего, что другие не должны слышать.",
   "additionalScreenShareSettings": "Дополнительные настройки демонстрации экрана",
-  "screenShareConfirm": "Продолжить"
+  "screenShareConfirm": "Продолжить",
+  "cropImageTitle": "Обрезать изображение",
+  "cropImageZoom": "Масштаб",
+  "failedCropImage": "Не удалось обрезать изображение"
 }
