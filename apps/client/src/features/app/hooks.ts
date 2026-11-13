@@ -18,6 +18,7 @@ import {
   micModeSelector,
   modViewOpenSelector,
   modViewUserIdSelector,
+  muteStreamAudioByDefaultSelector,
   notificationSoundsSelector,
   notifyAllMessagesSelector,
   notifyDmsSelector,
@@ -66,6 +67,9 @@ export const useConvertAsciiEmoji = () =>
 
 export const usePauseNewStreamsByDefault = () =>
   useSelector(pauseNewStreamsByDefaultSelector);
+
+export const useMuteStreamAudioByDefault = () =>
+  useSelector(muteStreamAudioByDefaultSelector);
 
 export const useHotkeysEnabled = () => useSelector(hotkeysEnabledSelector);
 

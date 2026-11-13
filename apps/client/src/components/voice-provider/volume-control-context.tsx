@@ -1,3 +1,4 @@
+import { useMuteStreamAudioByDefault } from '@/features/app/hooks';
 import { useOwnUserId } from '@/features/server/users/hooks';
 import { externalStreamsMapSelector } from '@/features/server/voice/selectors';
 import {
@@ -17,6 +18,7 @@ import {
 import { useSelector } from 'react-redux';
 import {
   getExternalVolumeKey as buildExternalVolumeKey,
+  getUserScreenVolumeKey as buildUserScreenVolumeKey,
   getOwnedExternalVolumeKeys,
   resolveVolume
 } from './helpers';
@@ -73,6 +75,7 @@ const VolumeControlProvider = memo(
     const previousVolumesRef = useRef<TVolumeSettings>({});
     const ownUserId = useOwnUserId();
     const externalStreamsMap = useSelector(externalStreamsMapSelector);
+    const muteStreamAudioByDefault = useMuteStreamAudioByDefault();
 
     const ownedKeys = useMemo(
       () => getOwnedExternalVolumeKeys(externalStreamsMap, ownUserId),
@@ -80,8 +83,9 @@ const VolumeControlProvider = memo(
     );
 
     const getVolume = useCallback(
-      (key: TVolumeKey): number => resolveVolume(volumes, key, ownedKeys),
-      [volumes, ownedKeys]
+      (key: TVolumeKey): number =>
+        resolveVolume(volumes, key, ownedKeys, muteStreamAudioByDefault),
+      [volumes, ownedKeys, muteStreamAudioByDefault]
     );
 
     const setVolume = useCallback((key: TVolumeKey, volume: number) => {
@@ -99,7 +103,12 @@ const VolumeControlProvider = memo(
     const toggleMute = useCallback(
       (key: TVolumeKey) => {
         setVolumes((prev) => {
-          const currentVolume = resolveVolume(prev, key, ownedKeys);
+          const currentVolume = resolveVolume(
+            prev,
+            key,
+            ownedKeys,
+            muteStreamAudioByDefault
+          );
           const isMuted = currentVolume === 0;
           const newVolume = isMuted
             ? (previousVolumesRef.current[key] ?? 100)
@@ -114,16 +123,17 @@ const VolumeControlProvider = memo(
           return next;
         });
       },
-      [ownedKeys]
+      [ownedKeys, muteStreamAudioByDefault]
     );
 
     const getUserVolumeKey = useCallback((userId: number): TVolumeKey => {
       return `user-${userId}`;
     }, []);
 
-    const getUserScreenVolumeKey = useCallback((userId: number): TVolumeKey => {
-      return `userscreen-${userId}`;
-    }, []);
+    const getUserScreenVolumeKey = useCallback(
+      (userId: number): TVolumeKey => buildUserScreenVolumeKey(userId),
+      []
+    );
 
     const getExternalVolumeKey = useCallback(
       (pluginId: string, key: string): TVolumeKey =>

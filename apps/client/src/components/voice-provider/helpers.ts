@@ -257,6 +257,11 @@ const getSimulcastCodec = (
 const getExternalVolumeKey = (pluginId: string, key: string) =>
   `external-${pluginId}-${key}`;
 
+const USER_SCREEN_VOLUME_KEY_PREFIX = 'userscreen-';
+
+const getUserScreenVolumeKey = (userId: number) =>
+  `${USER_SCREEN_VOLUME_KEY_PREFIX}${userId}`;
+
 const getOwnedExternalVolumeKeys = (
   externalStreamsMap: TExternalStreamsMap,
   ownUserId: number | undefined
@@ -279,13 +284,23 @@ const getOwnedExternalVolumeKeys = (
 const resolveVolume = (
   volumes: Record<string, number>,
   key: string,
-  ownedKeys: Set<string>
+  ownedKeys: Set<string>,
+  muteStreamAudioByDefault = false
 ) => {
   const stored = volumes[key];
 
   if (stored !== undefined) return stored;
 
-  return ownedKeys.has(key) ? 0 : 100;
+  if (ownedKeys.has(key)) return 0;
+
+  if (
+    muteStreamAudioByDefault &&
+    key.startsWith(USER_SCREEN_VOLUME_KEY_PREFIX)
+  ) {
+    return 0;
+  }
+
+  return 100;
 };
 
 export {
@@ -300,6 +315,7 @@ export {
   getStoredStreamQuality,
   getStreamQualityDropdownValue,
   getStreamQualityStorageKey,
+  getUserScreenVolumeKey,
   isOwnProducerEvent,
   isPausableStreamKind,
   loadStreamQualitiesFromStorage,

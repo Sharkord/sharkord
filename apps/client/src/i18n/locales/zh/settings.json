@@ -50,6 +50,8 @@
   "convertAsciiEmojiDesc": "将 \":3\"、\"<3\" 等文字颜文字转换为 emoji。",
   "pauseNewStreamsByDefaultLabel": "默认暂停所有新的串流",
   "pauseNewStreamsByDefaultDesc": "摄像头和屏幕共享以暂停状态开始，在你恢复之前不会下载任何内容。可在慢速网络下节省带宽。",
+  "muteStreamAudioByDefaultLabel": "默认静音直播音频",
+  "muteStreamAudioByDefaultDesc": "屏幕共享开始时音频处于静音状态，直到你手动开启。已设置过音量的直播会保留原有音量。",
   "languageLabel": "界面语言",
   "languageDesc": "设置界面显示语言。",
   "notificationsTitle": "通知",

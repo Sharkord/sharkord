@@ -45,7 +45,8 @@ export enum LocalStorageKey {
   VOICE_CHAT_FOLLOWS_VOICE = 'sharkord-voice-chat-follows-voice',
   CLOSE_VOICE_CHAT_ON_LEAVE = 'sharkord-close-voice-chat-on-leave',
   PAUSE_NEW_STREAMS_BY_DEFAULT = 'sharkord-pause-new-streams-by-default',
-  PAUSED_STREAMS = 'sharkord-paused-streams'
+  PAUSED_STREAMS = 'sharkord-paused-streams',
+  MUTE_STREAM_AUDIO_BY_DEFAULT = 'sharkord-mute-stream-audio-by-default'
 }
 
 export enum SessionStorageKey {

@@ -50,6 +50,8 @@
   "convertAsciiEmojiDesc": "Convert text emoticons such as \":3\" and \"<3\" into emoji.",
   "pauseNewStreamsByDefaultLabel": "Pause all new streams by default",
   "pauseNewStreamsByDefaultDesc": "Webcams and screen shares start paused and download nothing until you resume them. Saves bandwidth on slow connections.",
+  "muteStreamAudioByDefaultLabel": "Mute stream audio by default",
+  "muteStreamAudioByDefaultDesc": "Screen shares start with their audio muted until you unmute them. Streams you already set a volume for keep it.",
   "languageLabel": "Interface Language",
   "languageDesc": "Set the display language for the interface.",
   "notificationsTitle": "Notifications",

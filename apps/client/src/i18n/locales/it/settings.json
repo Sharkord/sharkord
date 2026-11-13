@@ -50,6 +50,8 @@
   "convertAsciiEmojiDesc": "Converti le emoticon testuali come \":3\" e \"<3\" in emoji.",
   "pauseNewStreamsByDefaultLabel": "Metti in pausa tutti i nuovi stream per impostazione predefinita",
   "pauseNewStreamsByDefaultDesc": "Webcam e condivisioni schermo partono in pausa e non scaricano nulla finché non le riprendi. Risparmia banda sulle connessioni lente.",
+  "muteStreamAudioByDefaultLabel": "Silenzia l'audio delle trasmissioni per impostazione predefinita",
+  "muteStreamAudioByDefaultDesc": "Le condivisioni schermo partono con l'audio silenziato finché non lo riattivi. Le trasmissioni per cui hai già impostato un volume lo mantengono.",
   "languageLabel": "Lingua interfaccia",
   "languageDesc": "Imposta la lingua di visualizzazione dell'interfaccia.",
   "notificationsTitle": "Notifiche",

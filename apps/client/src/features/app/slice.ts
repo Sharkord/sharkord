@@ -30,6 +30,7 @@ export interface TAppState {
   freezeAnimatedAvatars: boolean;
   convertAsciiEmoji: boolean;
   pauseNewStreamsByDefault: boolean;
+  muteStreamAudioByDefault: boolean;
   micMode: MicMode;
   hotkeysEnabled: boolean;
   selectedDmChannelId: number | undefined;
@@ -81,6 +82,10 @@ const initialState: TAppState = {
   ),
   pauseNewStreamsByDefault: getLocalStorageItemBool(
     LocalStorageKey.PAUSE_NEW_STREAMS_BY_DEFAULT,
+    false
+  ),
+  muteStreamAudioByDefault: getLocalStorageItemBool(
+    LocalStorageKey.MUTE_STREAM_AUDIO_BY_DEFAULT,
     false
   ),
   micMode:
@@ -190,6 +195,9 @@ export const appSlice = createSlice({
     },
     setPauseNewStreamsByDefault: (state, action: PayloadAction<boolean>) => {
       state.pauseNewStreamsByDefault = action.payload;
+    },
+    setMuteStreamAudioByDefault: (state, action: PayloadAction<boolean>) => {
+      state.muteStreamAudioByDefault = action.payload;
     },
     setMicMode: (state, action: PayloadAction<MicMode>) => {
       state.micMode = action.payload;

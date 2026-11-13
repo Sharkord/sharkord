@@ -50,6 +50,8 @@
   "convertAsciiEmojiDesc": "Convertir les émoticônes textuelles comme \":3\" et \"<3\" en emoji.",
   "pauseNewStreamsByDefaultLabel": "Mettre en pause tous les nouveaux flux par défaut",
   "pauseNewStreamsByDefaultDesc": "Les webcams et les partages d'écran démarrent en pause et ne téléchargent rien tant que vous ne les reprenez pas. Économise de la bande passante sur les connexions lentes.",
+  "muteStreamAudioByDefaultLabel": "Couper le son des diffusions par défaut",
+  "muteStreamAudioByDefaultDesc": "Les partages d'écran démarrent avec le son coupé jusqu'à ce que vous le réactiviez. Les diffusions dont vous avez déjà réglé le volume le conservent.",
   "languageLabel": "Langue de l'interface",
   "languageDesc": "Définissez la langue d'affichage de l'interface.",
   "notificationsTitle": "Notifications",
