@@ -154,5 +154,9 @@
   "failedLoadParentMessage": "No se pudo cargar el mensaje original",
   "updateServerConfirmTitle": "¿Actualizar el servidor?",
   "updateServerConfirmMessage": "Descarga e instala la última versión del servidor. El servidor se reinicia durante el proceso, lo que causa una breve interrupción.",
-  "updateServerConfirmLabel": "Actualizar"
+  "updateServerConfirmLabel": "Actualizar",
+  "formatBold": "Negrita",
+  "formatItalic": "Cursiva",
+  "formatCode": "Código",
+  "formatCodeBlock": "Bloque de código"
 }

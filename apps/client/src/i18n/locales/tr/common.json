@@ -154,5 +154,9 @@
   "failedLoadParentMessage": "Orijinal mesaj yüklenemedi",
   "updateServerConfirmTitle": "Sunucu güncellensin mi?",
   "updateServerConfirmMessage": "Bu işlem sunucunun en son sürümünü indirir ve kurar. İşlem sırasında sunucu yeniden başlatılır ve kısa süreli bir kesinti yaşanır.",
-  "updateServerConfirmLabel": "Güncelle"
+  "updateServerConfirmLabel": "Güncelle",
+  "formatBold": "Kalın",
+  "formatItalic": "İtalik",
+  "formatCode": "Kod",
+  "formatCodeBlock": "Kod bloğu"
 }
