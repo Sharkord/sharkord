@@ -19,8 +19,9 @@ import type {
   RouterOptions,
   WebRtcTransport
 } from 'mediasoup/types';
-import { config } from '../config';
+import { config, SERVER_INTERNAL_ANNOUNCED_IP } from '../config';
 import { publishVoicePresence } from '../db/publishers';
+import { addInternalIceCandidates } from '../helpers/add-internal-ice-candidates';
 import { logger } from '../logger';
 import { eventBus } from '../plugins/event-bus';
 import {
@@ -624,7 +625,10 @@ class VoiceRuntime {
     const params: TTransportParams = {
       id: transport.id,
       iceParameters: transport.iceParameters,
-      iceCandidates: transport.iceCandidates,
+      iceCandidates: addInternalIceCandidates(
+        transport.iceCandidates,
+        SERVER_INTERNAL_ANNOUNCED_IP
+      ),
       dtlsParameters: transport.dtlsParameters
     };
 
