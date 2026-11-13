@@ -3,7 +3,8 @@ import {
   config,
   SERVER_INTERNAL_ANNOUNCED_IP,
   SERVER_PRIVATE_IP,
-  SERVER_PUBLIC_IP
+  SERVER_PUBLIC_IP,
+  SERVER_PUBLIC_IPV6
 } from '../config';
 import * as serverPaths from '../helpers/paths';
 import * as envVars from './env';
@@ -16,6 +17,7 @@ const printDebug = () => {
     `${chalk.blue('Bun version:')} ${chalk.bold(String(Bun.version_with_sha))}`,
     `${chalk.blue('Local address:')} ${chalk.bold(String(SERVER_PRIVATE_IP))}`,
     `${chalk.blue('Public address:')} ${chalk.bold(String(SERVER_PUBLIC_IP))}`,
+    `${chalk.blue('Public IPv6 address:')} ${chalk.bold(String(SERVER_PUBLIC_IPV6))}`,
     `${chalk.blue('Internal announced address:')} ${chalk.bold(String(SERVER_INTERNAL_ANNOUNCED_IP))}`,
     `${chalk.blue('Server paths:')} ${chalk.bold(
       String(

@@ -1,6 +1,6 @@
 import { getErrorMessage } from '@sharkord/shared';
 import mediasoup from 'mediasoup';
-import { config, SERVER_PUBLIC_IP } from '../config.js';
+import { config, SERVER_PUBLIC_IP, SERVER_PUBLIC_IPV6 } from '../config.js';
 import { MEDIASOUP_BINARY_PATH } from '../helpers/paths.js';
 import { logger } from '../logger.js';
 import {
@@ -47,18 +47,38 @@ const loadMediasoup = async () => {
 
   if (IS_PRODUCTION) {
     const announcedAddress = SERVER_PUBLIC_IP;
+    const listenInfos: mediasoup.types.TransportListenInfo[] = [
+      { protocol: 'udp', ip: '0.0.0.0', announcedAddress, port },
+      { protocol: 'tcp', ip: '0.0.0.0', announcedAddress, port }
+    ];
 
-    webRtcServer = await mediaSoupWorker.createWebRtcServer({
-      listenInfos: [
-        { protocol: 'udp', ip: '0.0.0.0', announcedAddress, port },
-        { protocol: 'tcp', ip: '0.0.0.0', announcedAddress, port }
-      ]
-    });
+    if (SERVER_PUBLIC_IPV6) {
+      const flags = { ipv6Only: true };
+
+      listenInfos.push(
+        {
+          protocol: 'udp',
+          ip: '::',
+          announcedAddress: SERVER_PUBLIC_IPV6,
+          port,
+          flags
+        },
+        {
+          protocol: 'tcp',
+          ip: '::',
+          announcedAddress: SERVER_PUBLIC_IPV6,
+          port,
+          flags
+        }
+      );
+    }
+
+    webRtcServer = await mediaSoupWorker.createWebRtcServer({ listenInfos });
 
     webRtcServerListenInfo = { ip: '0.0.0.0', announcedAddress };
 
     logger.debug(
-      `WebRtcServer created on port ${port} with announcedAddress ${announcedAddress}`
+      `WebRtcServer created on port ${port} with announcedAddress ${announcedAddress} and IPv6 announcedAddress ${SERVER_PUBLIC_IPV6 ?? 'disabled'}`
     );
   } else {
     webRtcServer = await mediaSoupWorker.createWebRtcServer({

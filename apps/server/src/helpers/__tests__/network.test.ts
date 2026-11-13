@@ -4,6 +4,7 @@ import {
   isPrivateIP,
   isPublicIp,
   resolveAnnouncedAddress,
+  resolveAnnouncedAddressV6,
   resolveInternalAnnouncedAddress
 } from '../network';
 
@@ -128,22 +129,31 @@ describe('resolveAnnouncedAddress', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  test('returns an ipv6 address as is without any lookup', async () => {
+  // it is announced on the ipv4 listener, where an ipv6 address can never be reached
+  test('refuses an ipv6 address and falls back to the public ip providers', async () => {
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
     const lookup = mock(async () => '9.9.9.9');
 
+    fetchSpy.mockImplementation(
+      (async () => new Response('192.0.2.52\n')) as unknown as typeof fetch
+    );
+
     expect(await resolveAnnouncedAddress('2001:db8::1', lookup)).toBe(
-      '2001:db8::1'
+      '192.0.2.52'
     );
     expect(lookup).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('webRtc.announcedAddressV6')
+    );
   });
 
-  test('resolves a hostname through dns', async () => {
+  test('resolves a hostname to its ipv4 address through dns', async () => {
     const lookup = mock(async () => '198.51.100.20');
 
     expect(await resolveAnnouncedAddress(' voice.example.com ', lookup)).toBe(
       '198.51.100.20'
     );
-    expect(lookup).toHaveBeenCalledWith('voice.example.com');
+    expect(lookup).toHaveBeenCalledWith('voice.example.com', 4);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -158,7 +168,7 @@ describe('resolveAnnouncedAddress', () => {
     expect(await resolveAnnouncedAddress('nope.invalid', lookup)).toBe(
       '192.0.2.50'
     );
-    expect(lookup).toHaveBeenCalledWith('nope.invalid');
+    expect(lookup).toHaveBeenCalledWith('nope.invalid', 4);
     expect(fetchSpy).toHaveBeenCalled();
   });
 
@@ -171,6 +181,65 @@ describe('resolveAnnouncedAddress', () => {
 
     expect(await resolveAnnouncedAddress('', lookup)).toBe('192.0.2.51');
     expect(lookup).not.toHaveBeenCalled();
+  });
+});
+
+describe('resolveAnnouncedAddressV6', () => {
+  let fetchSpy: ReturnType<typeof spyOn<typeof globalThis, 'fetch'>>;
+
+  beforeEach(() => {
+    fetchSpy = spyOn(globalThis, 'fetch').mockImplementation((async () => {
+      throw new Error('unexpected network call');
+    }) as unknown as typeof fetch);
+  });
+
+  test('is off when empty, without any lookup', async () => {
+    const lookup = mock(async () => '2001:db8::1');
+
+    expect(await resolveAnnouncedAddressV6('  ', lookup)).toBeUndefined();
+    expect(lookup).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  test('returns an ipv6 address as is without any lookup', async () => {
+    const lookup = mock(async () => '2001:db8::9');
+
+    expect(await resolveAnnouncedAddressV6('2001:db8::1', lookup)).toBe(
+      '2001:db8::1'
+    );
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  test('is off when given an ipv4 address', async () => {
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+    const lookup = mock(async () => '2001:db8::1');
+
+    expect(
+      await resolveAnnouncedAddressV6('203.0.113.7', lookup)
+    ).toBeUndefined();
+    expect(lookup).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  test('resolves a hostname to its ipv6 address through dns', async () => {
+    const lookup = mock(async () => '2001:db8::20');
+
+    expect(await resolveAnnouncedAddressV6(' voice.example.com ', lookup)).toBe(
+      '2001:db8::20'
+    );
+    expect(lookup).toHaveBeenCalledWith('voice.example.com', 6);
+  });
+
+  // the public ip providers only return ipv4, so there is nothing to fall back to
+  test('is off when the hostname has no ipv6 address', async () => {
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+    const lookup = mock(async () => undefined);
+
+    expect(
+      await resolveAnnouncedAddressV6('voice.example.com', lookup)
+    ).toBeUndefined();
+    expect(warnSpy).toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
 

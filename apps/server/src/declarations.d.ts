@@ -35,6 +35,7 @@ declare module 'bun' {
     SHARKORD_AUTOUPDATE?: string;
     SHARKORD_WEBRTC_PORT?: string;
     SHARKORD_WEBRTC_ANNOUNCED_ADDRESS?: string;
+    SHARKORD_WEBRTC_ANNOUNCED_ADDRESS_V6?: string;
     SHARKORD_DATA_PATH?: string;
   }
 }

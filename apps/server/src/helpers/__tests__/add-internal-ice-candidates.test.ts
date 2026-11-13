@@ -26,6 +26,15 @@ const tcpCandidate: IceCandidate = {
   tcpType: 'passive'
 };
 
+const PUBLIC_IPV6 = '2001:db8::7';
+
+const udpCandidateV6: IceCandidate = {
+  ...udpCandidate,
+  foundation: 'udpcandidatev6',
+  ip: PUBLIC_IPV6,
+  address: PUBLIC_IPV6
+};
+
 describe('addInternalIceCandidates', () => {
   test('returns the candidates untouched when no internal address is set', () => {
     const candidates = [udpCandidate, tcpCandidate];
@@ -110,5 +119,33 @@ describe('addInternalIceCandidates', () => {
     const candidates = [udpCandidate, tcpCandidate];
 
     expect(addInternalIceCandidates(candidates, PUBLIC_IP)).toEqual(candidates);
+  });
+
+  test('only copies candidates of the same address family', () => {
+    const result = addInternalIceCandidates(
+      [udpCandidate, udpCandidateV6],
+      INTERNAL_IP
+    );
+
+    const internal = result.filter(({ address }) => address === INTERNAL_IP);
+
+    expect(internal).toHaveLength(1);
+    expect(internal[0]?.foundation).toBe(`${udpCandidate.foundation}internal`);
+    expect(result).toContainEqual(udpCandidateV6);
+  });
+
+  test('copies ipv6 candidates for an ipv6 internal address', () => {
+    const internalIpV6 = 'fd00::10';
+    const result = addInternalIceCandidates(
+      [udpCandidate, udpCandidateV6],
+      internalIpV6
+    );
+
+    const internal = result.filter(({ address }) => address === internalIpV6);
+
+    expect(internal).toHaveLength(1);
+    expect(internal[0]?.foundation).toBe(
+      `${udpCandidateV6.foundation}internal`
+    );
   });
 });
