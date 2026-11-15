@@ -27,6 +27,7 @@ import { pluginManager } from '../../plugins';
 import { drainActivityLogQueue } from '../../queues/activity-log';
 import { drainLoginsQueue } from '../../queues/logins';
 import { VoiceRuntime } from '../../runtimes/voice';
+import { SERVER_VERSION } from '../../utils/env';
 
 describe('others router', () => {
   test('should throw when user tries to join with no handshake', async () => {
@@ -37,6 +38,13 @@ describe('others router', () => {
         handshakeHash: ''
       })
     ).rejects.toThrow('Invalid handshake hash');
+  });
+
+  test('should report the server version on handshake', async () => {
+    const { caller } = await getCaller(1);
+    const { serverVersion } = await caller.others.handshake();
+
+    expect(serverVersion).toBe(SERVER_VERSION);
   });
 
   test('should allow user to join with valid handshake', async () => {

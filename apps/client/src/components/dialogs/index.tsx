@@ -13,6 +13,7 @@ import { PluginInstallConfirmDialog } from './plugin-install-confirm';
 import { ScreenShareOptionsDialog } from './screen-share-options';
 import { SearchDialog } from './search';
 import { ServerPasswordDialog } from './server-password';
+import { ServerUpdatedDialog } from './server-updated';
 import { SoundsDialog } from './sounds';
 import { TextInputDialog } from './text-input';
 import { VoiceDebugDialog } from './voice-debug';
@@ -34,7 +35,8 @@ const DialogsMap: any = {
   [Dialog.WELCOME_PROFILE_SETUP]: WelcomeProfileSetupDialog,
   [Dialog.VOICE_DEBUG]: VoiceDebugDialog,
   [Dialog.SCREEN_SHARE_OPTIONS]: ScreenShareOptionsDialog,
-  [Dialog.IMAGE_CROP]: ImageCropDialog
+  [Dialog.IMAGE_CROP]: ImageCropDialog,
+  [Dialog.SERVER_UPDATED]: ServerUpdatedDialog
 };
 
 const DialogsProvider = memo(() => {

@@ -78,7 +78,13 @@ export const connect = async () => {
   const host = getHostFromServer();
   const trpc = await connectToTRPC(host);
 
-  const { hasPassword, handshakeHash } = await trpc.others.handshake.query();
+  const { hasPassword, handshakeHash, serverVersion } =
+    await trpc.others.handshake.query();
+
+  if (!import.meta.env.DEV && serverVersion !== VITE_APP_VERSION) {
+    openDialog(Dialog.SERVER_UPDATED);
+    return;
+  }
 
   if (hasPassword) {
     // show password prompt

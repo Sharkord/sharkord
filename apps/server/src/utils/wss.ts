@@ -33,6 +33,9 @@ import type { Context } from './trpc';
 
 let wss: WebSocketServer | undefined;
 
+const KEEP_ALIVE_PING_MS = 30_000;
+const KEEP_ALIVE_PONG_WAIT_MS = 10_000;
+
 const usersIpMap = new Map<number, string>();
 
 const userSockets = new Map<number, Set<WebSocket>>();
@@ -278,7 +281,34 @@ const createWsServer = async (server: http.Server) => {
       try {
         ws.userId = undefined;
 
-        ws.on('close', () => handleSocketClose(ws));
+        const connectedAt = Date.now();
+        let lastMessageAt = connectedAt;
+
+        ws.on('message', () => {
+          lastMessageAt = Date.now();
+        });
+
+        ws.on('close', (code, reason) => {
+          const closedAt = Date.now();
+          const silentMs = closedAt - lastMessageAt;
+
+          const keepAliveTimeout =
+            code === 1006 &&
+            silentMs >= KEEP_ALIVE_PING_MS + KEEP_ALIVE_PONG_WAIT_MS;
+
+          logger.info(
+            'WebSocket closed: user=%s code=%d reason=%s keepAliveTimeout=%s silentMs=%d ageMs=%d ip=%s',
+            ws.userId ?? 'unauthenticated',
+            code,
+            reason.toString() || '-',
+            keepAliveTimeout,
+            silentMs,
+            closedAt - connectedAt,
+            ws.session?.ip ?? '-'
+          );
+
+          handleSocketClose(ws);
+        });
 
         ws.on('error', (err) => {
           logger.error('WebSocket client error:', err);
@@ -304,8 +334,8 @@ const createWsServer = async (server: http.Server) => {
       createContext,
       keepAlive: {
         enabled: true,
-        pingMs: 30_000,
-        pongWaitMs: 5_000
+        pingMs: KEEP_ALIVE_PING_MS,
+        pongWaitMs: KEEP_ALIVE_PONG_WAIT_MS
       }
     });
 
