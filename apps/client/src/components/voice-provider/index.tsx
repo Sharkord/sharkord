@@ -69,6 +69,7 @@ import {
   getSimulcastEncodings,
   getSimulcastQualityLayers,
   getStreamQualityStorageKey,
+  isVisibilityPausedKind,
   loadStreamQualitiesFromStorage,
   normalizeStreamQuality,
   savePausedStreamToStorage,
@@ -142,6 +143,11 @@ export type TVoiceProvider = {
     kind: TPausableStreamKind,
     paused: boolean
   ) => Promise<void>;
+  setStreamVisible: (
+    remoteId: number,
+    kind: TPausableStreamKind,
+    visible: boolean
+  ) => Promise<void>;
   init: (
     routerRtpCapabilities: RtpCapabilities,
     channelId: number
@@ -179,6 +185,7 @@ const VoiceProviderContext = createContext<TVoiceProvider>({
   isSimulcastConsumer: () => false,
   isStreamPaused: () => false,
   setStreamPaused: () => Promise.resolve(),
+  setStreamVisible: () => Promise.resolve(),
   init: () => Promise.resolve(),
   toggleMic: () => Promise.resolve(),
   toggleSound: () => Promise.resolve(),
@@ -288,6 +295,22 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     },
     []
   );
+
+  const remotePausedStreamsRef = useRef(remotePausedStreams);
+
+  useEffect(() => {
+    remotePausedStreamsRef.current = remotePausedStreams;
+  }, [remotePausedStreams]);
+
+  const streamViewerCounts = useRef(new Map<string, number>());
+
+  const isStreamHidden = useCallback((remoteId: number, kind: StreamKind) => {
+    if (!isVisibilityPausedKind(kind)) return false;
+
+    const key = getRemoteConsumerTypeKey(remoteId, kind);
+
+    return !streamViewerCounts.current.has(key);
+  }, []);
 
   const isStreamPaused = useCallback(
     (remoteId: number, kind: StreamKind): boolean => {
@@ -457,7 +480,8 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     setRemoteConsumerType,
     setRemoteStreamQualityLayers,
     setRemoteStreamPaused,
-    clearRemoteConsumerMetadata
+    clearRemoteConsumerMetadata,
+    isStreamHidden
   });
 
   const setStreamPaused = useCallback(
@@ -482,7 +506,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
             trpc.voice.setConsumerPaused.mutate({
               remoteId,
               kind: consumerKind,
-              paused
+              paused: paused || isStreamHidden(remoteId, consumerKind)
             })
           )
         );
@@ -504,7 +528,43 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
         });
       }
     },
-    [consumers, setRemoteStreamPaused]
+    [consumers, setRemoteStreamPaused, isStreamHidden]
+  );
+
+  const setStreamVisible = useCallback(
+    async (remoteId: number, kind: TPausableStreamKind, visible: boolean) => {
+      const key = getRemoteConsumerTypeKey(remoteId, kind);
+      const count = streamViewerCounts.current.get(key) ?? 0;
+      const nextCount = Math.max(0, count + (visible ? 1 : -1));
+
+      if (nextCount === 0) {
+        streamViewerCounts.current.delete(key);
+      } else {
+        streamViewerCounts.current.set(key, nextCount);
+      }
+
+      if (count > 0 === nextCount > 0) return;
+
+      if (remotePausedStreamsRef.current[key]) return;
+      if (!consumers.current[remoteId]?.[kind]) return;
+
+      try {
+        const trpc = getTRPCClient();
+
+        await trpc.voice.setConsumerPaused.mutate({
+          remoteId,
+          kind,
+          paused: !visible
+        });
+      } catch (error) {
+        voiceLogger.error('consumer: visibility change failed', error, {
+          remoteId,
+          kind,
+          visible
+        });
+      }
+    },
+    [consumers]
   );
 
   const {
@@ -1563,6 +1623,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       isSimulcastConsumer,
       isStreamPaused,
       setStreamPaused,
+      setStreamVisible,
       init,
 
       toggleMic,
@@ -1591,6 +1652,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
       isSimulcastConsumer,
       isStreamPaused,
       setStreamPaused,
+      setStreamVisible,
       init,
 
       toggleMic,

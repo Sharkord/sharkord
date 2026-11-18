@@ -79,6 +79,15 @@ const getStreamQualityStorageKey = (remoteId: number, kind: StreamKind) => {
 const isPausableStreamKind = (kind: StreamKind): kind is TPausableStreamKind =>
   PAUSABLE_STREAM_KINDS.some((pausableKind) => pausableKind === kind);
 
+const VISIBILITY_PAUSED_KINDS: StreamKind[] = [
+  StreamKind.VIDEO,
+  StreamKind.SCREEN,
+  StreamKind.EXTERNAL_VIDEO
+];
+
+const isVisibilityPausedKind = (kind: StreamKind) =>
+  VISIBILITY_PAUSED_KINDS.includes(kind);
+
 const getPausedStreamStorageKey = (remoteId: number, kind: StreamKind) =>
   getStreamQualityStorageKey(
     remoteId,
@@ -318,6 +327,7 @@ export {
   getUserScreenVolumeKey,
   isOwnProducerEvent,
   isPausableStreamKind,
+  isVisibilityPausedKind,
   loadStreamQualitiesFromStorage,
   normalizeStreamQuality,
   parseStreamQualityDropdownValue,

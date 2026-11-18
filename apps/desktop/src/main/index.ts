@@ -32,7 +32,6 @@ import { createServerController } from './servers/server-controller';
 import { createServerIcon } from './servers/server-icon';
 import { STORE_FILE_NAME } from './servers/server-store';
 import { applyGpuEncodingSetting } from './startup/apply-gpu-encoding-setting';
-import { disableBackgroundThrottling } from './startup/disable-background-throttling';
 import { enableChromiumFeatures } from './startup/enable-chromium-features';
 import { setAutoStart, wasLaunchedAtLogin } from './startup/set-auto-start';
 import { writeDesktopEntry } from './startup/write-desktop-entry';
@@ -280,7 +279,6 @@ const start = () => {
 };
 
 enableChromiumFeatures();
-disableBackgroundThrottling();
 wipeUserDataIfRequested();
 applyGpuEncodingSetting(getStorePath());
 

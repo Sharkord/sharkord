@@ -6,11 +6,13 @@ import {
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { usePinnedCard } from '@/features/server/voice/hooks';
 import type { TRemoteStreams } from '@/types';
+import { StreamKind, type TPausableStreamKind } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
 import { ArrowDownLeft, SendToBack, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CardControls } from '../channel-view/voice/card-controls';
 import { PinnedCardType } from '../channel-view/voice/hooks/use-pin-card-controller';
+import { useStreamVisibility } from '../channel-view/voice/hooks/use-stream-visibility';
 import { useFloatingCard } from './hooks/use-floating-card';
 import type { TExternalStreamsMap } from './hooks/use-remote-streams';
 
@@ -40,24 +42,33 @@ const FloatingPinnedCard = memo(
     const isExternalStream =
       pinnedCard?.type === PinnedCardType.EXTERNAL_STREAM;
 
-    const pinnedCardVideoStream = useMemo(() => {
+    const pinnedCardVideo = useMemo(():
+      | { stream: MediaStream | undefined; kind?: TPausableStreamKind }
+      | undefined => {
       if (!pinnedCard) return undefined;
 
       if (isExternalStream) {
         const externalStream = externalStreams[pinnedCard.userId];
 
-        return externalStream?.videoStream;
+        return {
+          stream: externalStream?.videoStream,
+          kind: StreamKind.EXTERNAL_VIDEO
+        };
       }
 
       if (pinnedCard.userId === ownUserId) {
-        return localScreenShareStream || localVideoStream || undefined;
+        return { stream: localScreenShareStream || localVideoStream };
       }
 
       const streamInfo = remoteUserStreams[pinnedCard.userId];
 
       if (!streamInfo) return undefined;
 
-      return streamInfo.screen || streamInfo.video || undefined;
+      if (streamInfo.screen) {
+        return { stream: streamInfo.screen, kind: StreamKind.SCREEN };
+      }
+
+      return { stream: streamInfo.video, kind: StreamKind.VIDEO };
     }, [
       pinnedCard,
       remoteUserStreams,
@@ -67,6 +78,18 @@ const FloatingPinnedCard = memo(
       localScreenShareStream,
       isExternalStream
     ]);
+
+    const pinnedCardVideoStream = pinnedCardVideo?.stream;
+    const pinnedCardVideoKind = pinnedCardVideo?.kind ?? StreamKind.VIDEO;
+    const isShown =
+      !!pinnedCardVideoStream && !isCurrentVoiceChannelSelected && open;
+
+    useStreamVisibility(
+      videoRef,
+      pinnedCard?.userId ?? -1,
+      pinnedCardVideoKind,
+      isShown && !!pinnedCardVideo?.kind
+    );
 
     const onCloseClick = useCallback(() => {
       setOpen(false);
@@ -86,7 +109,7 @@ const FloatingPinnedCard = memo(
       setOpen(true);
     }, [pinnedCard?.id, isCurrentVoiceChannelSelected]);
 
-    if (!pinnedCardVideoStream || isCurrentVoiceChannelSelected || !open) {
+    if (!isShown) {
       return null;
     }
 

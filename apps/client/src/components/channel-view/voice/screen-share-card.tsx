@@ -23,6 +23,7 @@ import {
   type TPinnedCard
 } from './hooks/use-pin-card-controller';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
+import { useStreamVisibility } from './hooks/use-stream-visibility';
 import { useVideoStats } from './hooks/use-video-stats';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PauseButton } from './pause-button';
@@ -76,6 +77,13 @@ const ScreenShareCard = memo(
     const transportStats = useVoiceStats();
 
     const videoStats = useVideoStats(screenShareRef, hasScreenShareStream);
+
+    useStreamVisibility(
+      screenShareRef,
+      userId,
+      StreamKind.SCREEN,
+      hasScreenShareStream && !isOwnUser
+    );
 
     let mimeType: string | undefined;
 
