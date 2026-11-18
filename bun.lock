@@ -40,7 +40,7 @@
         "eslint-plugin-react-you-might-not-need-an-effect": "^0.7.0",
         "filesize": "^11.0.30",
         "html-react-parser": "^6.1.9",
-        "i18next": "^26.7.2",
+        "i18next": "^27.0.1",
         "i18next-resources-to-backend": "^1.2.4",
         "lodash-es": "^4.18.1",
         "lucide-react": "^1.70.0",
@@ -50,7 +50,7 @@
         "react": "^19.3.1",
         "react-dom": "^19.3.1",
         "react-easy-crop": "^6.2.5",
-        "react-i18next": "^17.1.13",
+        "react-i18next": "^18.0.1",
         "react-masonry-css": "^1.0.16",
         "react-player": "^3.4.0",
         "react-redux": "^9.3.1",
@@ -80,7 +80,7 @@
     },
     "apps/desktop": {
       "name": "@sharkord/desktop",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "dbus-next": "0.10.2",
         "electron-log": "5.4.4",
@@ -104,12 +104,12 @@
         "eslint-plugin-unused-imports": "^4.4.1",
         "filesize": "^11.0.30",
         "globals": "^16.5.0",
-        "i18next": "^26.7.2",
+        "i18next": "^27.0.1",
         "i18next-resources-to-backend": "^1.2.4",
         "lucide-react": "^1.70.0",
         "react": "^19.3.1",
         "react-dom": "^19.3.1",
-        "react-i18next": "^17.1.13",
+        "react-i18next": "^18.0.1",
         "tailwindcss": "^4.3.5",
         "typescript": "~5.8.3",
         "typescript-eslint": "^8.72.1",
@@ -289,6 +289,9 @@
     "electron",
     "mediasoup",
   ],
+  "patchedDependencies": {
+    "youtube-video-element@1.9.1": "patches/youtube-video-element@1.9.1.patch",
+  },
   "overrides": {
     "@types/bun": "1.4.4",
   },
@@ -1469,7 +1472,7 @@
 
     "https-proxy-agent": ["https-proxy-agent@7.0.6", "", { "dependencies": { "agent-base": "^7.1.2", "debug": "4" } }, "sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw=="],
 
-    "i18next": ["i18next@26.7.2", "", { "peerDependencies": { "typescript": "^5 || ^6 || ^7" }, "optionalPeers": ["typescript"] }, "sha512-RsOY3BeaCDdkk52NeJSFAXELQ2rQXBO/tOub6L8ue2ICPfR/FRDWDOfEDg4xMPd1SqO5goVYQ6i72qWEUB/PPw=="],
+    "i18next": ["i18next@27.0.1", "", { "peerDependencies": { "typescript": "^5 || ^6 || ^7" }, "optionalPeers": ["typescript"] }, "sha512-KaE5ozP8UUeVpOJIwMVbbnpRKpyYQuxd9ZbseJoDzezE3nvLnZZQn20pkzyIJwPI2Uet/Qs3WzPTG812f6F/Eg=="],
 
     "i18next-resources-to-backend": ["i18next-resources-to-backend@1.2.4", "", { "dependencies": { "@babel/runtime": "^7.23.2" } }, "sha512-NV0bCktHrBNyEnjS5sq5k6J8HL3A+iR2MORcSJ7ZbQOnRwizrRmq+8K9WsdYy9mJv/Vki3VPnspBcFmF97UsQw=="],
 
@@ -1885,7 +1888,7 @@
 
     "react-easy-crop": ["react-easy-crop@6.2.5", "", { "dependencies": { "normalize-wheel": "^1.0.1" }, "peerDependencies": { "@types/react": "*", "react": ">=16.4.0", "react-dom": ">=16.4.0" }, "optionalPeers": ["@types/react"] }, "sha512-NoJ+mtq7vNu6b77VDT1g4D3GXrhp5N4zKR0r63yUbQzbUkr6/aPibFXAOEzxZcHfUB2/R4KwxOU8g3eB7hnKjQ=="],
 
-    "react-i18next": ["react-i18next@17.1.13", "", { "dependencies": { "@babel/runtime": "^7.29.7", "html-parse-stringify": "^4.0.1", "use-sync-external-store": "^1.6.0" }, "peerDependencies": { "i18next": ">= 26.2.0", "react": ">= 16.8.0", "react-dom": "*", "react-native": "*", "typescript": "^5 || ^6 || ^7" }, "optionalPeers": ["react-dom", "react-native", "typescript"] }, "sha512-ZxhOSlyKSKPtbUNPLwYMmE3w3bhoc0jaZJZ6bc7wGOT6cLbrbs//6m01HxCLtFdSjHvFpwFwoPhxxzIlHSs9cw=="],
+    "react-i18next": ["react-i18next@18.0.1", "", { "dependencies": { "html-parse-stringify": "^4.0.1" }, "peerDependencies": { "@types/react": "*", "i18next": ">= 27.0.1", "react": ">= 18.0.0", "typescript": "^5 || ^6 || ^7" }, "optionalPeers": ["@types/react", "typescript"] }, "sha512-kPWXI0E/lrPj3+/umcKNzYZVnWmEedLiamMzDIHfbs+5ANf6yzvlZsjKou8f7kaGkfMMDLIZBejV+4aSN1CyBw=="],
 
     "react-is": ["react-is@16.13.1", "", {}, "sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ=="],
 

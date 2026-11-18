@@ -46,6 +46,8 @@
   "closeVoiceChatOnLeaveDesc": "Zavře textový chat hlasového kanálu, když tento kanál opustíte.",
   "freezeAnimatedAvatarsLabel": "Zastavit animované avatary a bannery",
   "freezeAnimatedAvatarsDesc": "Zobrazovat animované avatary a bannery jako statický obrázek a přehrávat je jen při najetí myší.",
+  "autoLoadYoutubeEmbedsLabel": "Automaticky načítat videa z YouTube",
+  "autoLoadYoutubeEmbedsDesc": "Načítat videa z YouTube hned, jak se objeví v chatu. Když je vypnuto, zobrazí se náhled a video se načte až po kliknutí, což šetří paměť.",
   "convertAsciiEmojiLabel": "Převádět emotikony na emodži při psaní",
   "convertAsciiEmojiDesc": "Převádět textové emotikony jako \":3\" a \"<3\" na emodži.",
   "pauseNewStreamsByDefaultLabel": "Pozastavit všechny nové streamy ve výchozím stavu",

@@ -158,5 +158,6 @@
   "formatBold": "Жирный",
   "formatItalic": "Курсив",
   "formatCode": "Код",
-  "formatCodeBlock": "Блок кода"
+  "formatCodeBlock": "Блок кода",
+  "playVideo": "Воспроизвести видео"
 }

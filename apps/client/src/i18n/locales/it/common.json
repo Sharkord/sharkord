@@ -158,5 +158,6 @@
   "formatBold": "Grassetto",
   "formatItalic": "Corsivo",
   "formatCode": "Codice",
-  "formatCodeBlock": "Blocco di codice"
+  "formatCodeBlock": "Blocco di codice",
+  "playVideo": "Riproduci video"
 }

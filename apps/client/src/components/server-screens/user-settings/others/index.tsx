@@ -2,6 +2,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { useSettingsForm } from '@/components/server-screens/settings-shell/use-settings-form';
 import {
   setAutoJoinLastChannel,
+  setAutoLoadYoutubeEmbeds,
   setCloseVoiceChatOnLeave,
   setConvertAsciiEmoji,
   setFreezeAnimatedAvatars,
@@ -11,6 +12,7 @@ import {
 } from '@/features/app/actions';
 import {
   useAutoJoinLastChannel,
+  useAutoLoadYoutubeEmbeds,
   useCloseVoiceChatOnLeave,
   useConvertAsciiEmoji,
   useFreezeAnimatedAvatars,
@@ -27,6 +29,7 @@ type TOthersValues = {
   voiceChatFollowsVoice: boolean;
   closeVoiceChatOnLeave: boolean;
   freezeAnimatedAvatars: boolean;
+  autoLoadYoutubeEmbeds: boolean;
   convertAsciiEmoji: boolean;
   pauseNewStreamsByDefault: boolean;
   muteStreamAudioByDefault: boolean;
@@ -38,6 +41,7 @@ const Others = memo(() => {
   const voiceChatFollowsVoice = useVoiceChatFollowsVoice();
   const closeVoiceChatOnLeave = useCloseVoiceChatOnLeave();
   const freezeAnimatedAvatars = useFreezeAnimatedAvatars();
+  const autoLoadYoutubeEmbeds = useAutoLoadYoutubeEmbeds();
   const convertAsciiEmoji = useConvertAsciiEmoji();
   const pauseNewStreamsByDefault = usePauseNewStreamsByDefault();
   const muteStreamAudioByDefault = useMuteStreamAudioByDefault();
@@ -47,6 +51,7 @@ const Others = memo(() => {
     setVoiceChatFollowsVoice(values.voiceChatFollowsVoice);
     setCloseVoiceChatOnLeave(values.closeVoiceChatOnLeave);
     setFreezeAnimatedAvatars(values.freezeAnimatedAvatars);
+    setAutoLoadYoutubeEmbeds(values.autoLoadYoutubeEmbeds);
     setConvertAsciiEmoji(values.convertAsciiEmoji);
     setPauseNewStreamsByDefault(values.pauseNewStreamsByDefault);
     setMuteStreamAudioByDefault(values.muteStreamAudioByDefault);
@@ -58,6 +63,7 @@ const Others = memo(() => {
       voiceChatFollowsVoice,
       closeVoiceChatOnLeave,
       freezeAnimatedAvatars,
+      autoLoadYoutubeEmbeds,
       convertAsciiEmoji,
       pauseNewStreamsByDefault,
       muteStreamAudioByDefault
@@ -84,6 +90,11 @@ const Others = memo(() => {
 
   const handleFreezeAnimatedAvatarsChange = useCallback(
     (value: boolean) => onChange('freezeAnimatedAvatars', value),
+    [onChange]
+  );
+
+  const handleAutoLoadYoutubeEmbedsChange = useCallback(
+    (value: boolean) => onChange('autoLoadYoutubeEmbeds', value),
     [onChange]
   );
 
@@ -141,6 +152,16 @@ const Others = memo(() => {
         <Switch
           checked={values.freezeAnimatedAvatars}
           onCheckedChange={handleFreezeAnimatedAvatarsChange}
+        />
+      </Group>
+
+      <Group
+        label={t('autoLoadYoutubeEmbedsLabel')}
+        description={t('autoLoadYoutubeEmbedsDesc')}
+      >
+        <Switch
+          checked={values.autoLoadYoutubeEmbeds}
+          onCheckedChange={handleAutoLoadYoutubeEmbedsChange}
         />
       </Group>
 

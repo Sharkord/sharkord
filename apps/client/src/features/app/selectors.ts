@@ -37,6 +37,9 @@ export const closeVoiceChatOnLeaveSelector = (state: IRootState) =>
 export const freezeAnimatedAvatarsSelector = (state: IRootState) =>
   state.app.freezeAnimatedAvatars;
 
+export const autoLoadYoutubeEmbedsSelector = (state: IRootState) =>
+  state.app.autoLoadYoutubeEmbeds;
+
 export const convertAsciiEmojiSelector = (state: IRootState) =>
   state.app.convertAsciiEmoji;
 
@@ -104,6 +107,9 @@ export const threadSidebarDataSelector = createSelector(
     activeThreadMessageId: isOpen ? parentMessageId : undefined
   })
 );
+
+export const modifierKeysHeldMapSelector = (state: IRootState) =>
+  state.app.modifierKeysHeldMap;
 
 export const isShiftHeldSelector = (state: IRootState) =>
   state.app.modifierKeysHeldMap?.Shift ?? false;

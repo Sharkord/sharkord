@@ -45,6 +45,8 @@
   "closeVoiceChatOnLeaveDesc": "Ses kanalından ayrıldığınızda o kanalın metin sohbetini kapatır.",
   "freezeAnimatedAvatarsLabel": "Animasyonlu Avatarları Dondur",
   "freezeAnimatedAvatarsDesc": "Animasyonlu avatarları sabit görsel olarak göster ve yalnızca üzerine gelindiğinde oynat.",
+  "autoLoadYoutubeEmbedsLabel": "YouTube videolarını otomatik yükle",
+  "autoLoadYoutubeEmbedsDesc": "YouTube videolarını sohbette göründükleri anda yükler. Kapalıyken bir küçük resim gösterilir ve video tıklanınca yüklenir, bu da çok daha az bellek kullanır.",
   "pauseNewStreamsByDefaultLabel": "Tüm yeni yayınları varsayılan olarak duraklat",
   "pauseNewStreamsByDefaultDesc": "Web kameraları ve ekran paylaşımları duraklatılmış başlar ve siz devam ettirene kadar hiçbir şey indirmez. Yavaş bağlantılarda bant genişliği tasarrufu sağlar.",
   "muteStreamAudioByDefaultLabel": "Yayın sesini varsayılan olarak kapat",

@@ -158,5 +158,6 @@
   "formatBold": "Gras",
   "formatItalic": "Italique",
   "formatCode": "Code",
-  "formatCodeBlock": "Bloc de code"
+  "formatCodeBlock": "Bloc de code",
+  "playVideo": "Lire la vidéo"
 }

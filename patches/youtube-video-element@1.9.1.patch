@@ -1,0 +1,88 @@
+diff --git a/dist/cjs/youtube-video-element.js b/dist/cjs/youtube-video-element.js
+index 93c77bc51ae06d4b81c42f464b8654977ed77448..4f40af74ebfc0bfde9a63f2ba67d1fc1d9309334 100644
+--- a/dist/cjs/youtube-video-element.js
++++ b/dist/cjs/youtube-video-element.js
+@@ -277,8 +277,18 @@ class YoutubeVideoElement extends (0, import_media_played_ranges_mixin.MediaPlay
+     });
+     await this.loadComplete;
+     let lastCurrentTime = 0;
+-    setInterval(() => {
++    // the upstream intervals were never cleared, so every removed or reloaded player kept polling forever
++    this.clearPollIntervals();
++    this.seekInterval = setInterval(() => {
+       var _a;
++      if (!this.isConnected) {
++        // the iframe api keeps every player it created, and through it this element and the
++        // whole page it was removed from
++        this.clearPollIntervals();
++        (_a = this.api) == null ? void 0 : _a.destroy();
++        this.api = null;
++        return;
++      }
+       const diff = Math.abs(this.currentTime - lastCurrentTime);
+       const bufferedEnd = this.buffered.end(this.buffered.length - 1);
+       if (this.seeking && bufferedEnd > 0.1) {
+@@ -292,7 +302,7 @@ class YoutubeVideoElement extends (0, import_media_played_ranges_mixin.MediaPlay
+       lastCurrentTime = this.currentTime;
+     }, 50);
+     let lastBufferedEnd;
+-    const progressInterval = setInterval(() => {
++    const progressInterval = this.progressInterval = setInterval(() => {
+       const bufferedEnd = this.buffered.end(this.buffered.length - 1);
+       if (bufferedEnd >= this.duration) {
+         clearInterval(progressInterval);
+@@ -304,6 +314,10 @@ class YoutubeVideoElement extends (0, import_media_played_ranges_mixin.MediaPlay
+       }
+     }, 100);
+   }
++  clearPollIntervals() {
++    clearInterval(this.seekInterval);
++    clearInterval(this.progressInterval);
++  }
+   async attributeChangedCallback(attrName, oldValue, newValue) {
+     if (oldValue === newValue) return;
+     switch (attrName) {
+diff --git a/dist/youtube-video-element.js b/dist/youtube-video-element.js
+index a13cfc6453308c98e8f25d9bbbda88e974a2898f..594624fe808760e664f69b9c1d06a2fad5185c73 100644
+--- a/dist/youtube-video-element.js
++++ b/dist/youtube-video-element.js
+@@ -255,8 +255,18 @@ class YoutubeVideoElement extends MediaPlayedRangesMixin(globalThis.HTMLElement
+     });
+     await this.loadComplete;
+     let lastCurrentTime = 0;
+-    setInterval(() => {
++    // the upstream intervals were never cleared, so every removed or reloaded player kept polling forever
++    this.clearPollIntervals();
++    this.seekInterval = setInterval(() => {
+       var _a;
++      if (!this.isConnected) {
++        // the iframe api keeps every player it created, and through it this element and the
++        // whole page it was removed from
++        this.clearPollIntervals();
++        (_a = this.api) == null ? void 0 : _a.destroy();
++        this.api = null;
++        return;
++      }
+       const diff = Math.abs(this.currentTime - lastCurrentTime);
+       const bufferedEnd = this.buffered.end(this.buffered.length - 1);
+       if (this.seeking && bufferedEnd > 0.1) {
+@@ -270,7 +280,7 @@ class YoutubeVideoElement extends MediaPlayedRangesMixin(globalThis.HTMLElement
+       lastCurrentTime = this.currentTime;
+     }, 50);
+     let lastBufferedEnd;
+-    const progressInterval = setInterval(() => {
++    const progressInterval = this.progressInterval = setInterval(() => {
+       const bufferedEnd = this.buffered.end(this.buffered.length - 1);
+       if (bufferedEnd >= this.duration) {
+         clearInterval(progressInterval);
+@@ -282,6 +292,10 @@ class YoutubeVideoElement extends MediaPlayedRangesMixin(globalThis.HTMLElement
+       }
+     }, 100);
+   }
++  clearPollIntervals() {
++    clearInterval(this.seekInterval);
++    clearInterval(this.progressInterval);
++  }
+   async attributeChangedCallback(attrName, oldValue, newValue) {
+     if (oldValue === newValue) return;
+     switch (attrName) {

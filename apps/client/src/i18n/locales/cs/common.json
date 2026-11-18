@@ -158,5 +158,6 @@
   "formatBold": "Tučné",
   "formatItalic": "Kurzíva",
   "formatCode": "Kód",
-  "formatCodeBlock": "Blok kódu"
+  "formatCodeBlock": "Blok kódu",
+  "playVideo": "Přehrát video"
 }
