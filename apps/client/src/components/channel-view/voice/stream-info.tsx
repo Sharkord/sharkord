@@ -1,14 +1,16 @@
-import { memo } from 'react';
-import type { useVideoStats } from './hooks/use-video-stats';
+import { memo, type RefObject } from 'react';
+import { useVideoStats } from './hooks/use-video-stats';
 
 type TStreamInfoProps = {
+  videoRef: RefObject<HTMLVideoElement | null>;
   mimeType: string | undefined;
-  videoStats: ReturnType<typeof useVideoStats>;
   qualityLabel: string | null | undefined;
 };
 
 const StreamInfo = memo(
-  ({ mimeType, videoStats, qualityLabel }: TStreamInfoProps) => {
+  ({ videoRef, mimeType, qualityLabel }: TStreamInfoProps) => {
+    const videoStats = useVideoStats(videoRef, true);
+
     let codec: string | undefined;
 
     if (mimeType) {

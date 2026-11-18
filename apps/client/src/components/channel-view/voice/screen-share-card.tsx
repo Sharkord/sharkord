@@ -1,8 +1,8 @@
-import { useVoiceStats } from '@/components/voice-provider/stats-context';
 import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
 import { useWebRtcSimulcastEnabled } from '@/features/server/hooks';
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { useVoice } from '@/features/server/voice/hooks';
+import { useIsHovered } from '@/hooks/use-is-hovered';
 import { useStreamQualityData } from '@/hooks/use-stream-quality-data';
 import { cn } from '@/lib/utils';
 import { StreamKind } from '@sharkord/shared';
@@ -24,8 +24,8 @@ import {
 } from './hooks/use-pin-card-controller';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
 import { useStreamVisibility } from './hooks/use-stream-visibility';
-import { useVideoStats } from './hooks/use-video-stats';
 import { useVoiceRefs } from './hooks/use-voice-refs';
+import { OwnScreenShareInfo } from './own-screen-share-info';
 import { PauseButton } from './pause-button';
 import { PausedStreamOverlay } from './paused-stream-overlay';
 import { PictureInPictureButton } from './picture-in-picture-button';
@@ -74,9 +74,7 @@ const ScreenShareCard = memo(
     } = useVoiceRefs(userId);
 
     const { getConsumerCodec } = useVoice();
-    const transportStats = useVoiceStats();
-
-    const videoStats = useVideoStats(screenShareRef, hasScreenShareStream);
+    const { isHovered, onMouseEnter, onMouseLeave } = useIsHovered();
 
     useStreamVisibility(
       screenShareRef,
@@ -84,14 +82,6 @@ const ScreenShareCard = memo(
       StreamKind.SCREEN,
       hasScreenShareStream && !isOwnUser
     );
-
-    let mimeType: string | undefined;
-
-    if (isOwnUser) {
-      mimeType = transportStats.screenShare?.codec;
-    } else {
-      mimeType = getConsumerCodec(userId, StreamKind.SCREEN);
-    }
 
     const { isSimulcastScreenConsumer, qualityLabel } = useStreamQualityData(
       userId,
@@ -138,6 +128,11 @@ const ScreenShareCard = memo(
       }
     }, [isPinned, onPin, onUnpin, cardId, userId, resetZoom]);
 
+    const handleMouseLeave = useCallback(() => {
+      handleMouseUp();
+      onMouseLeave();
+    }, [handleMouseUp, onMouseLeave]);
+
     if (!user || !hasScreenShareStream) return null;
 
     return (
@@ -156,7 +151,8 @@ const ScreenShareCard = memo(
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={handleMouseLeave}
         onDoubleClick={handleDoubleClick}
         style={{
           cursor: isFullscreen && !isOverlayVisible ? 'none' : getCursor()
@@ -263,11 +259,19 @@ const ScreenShareCard = memo(
             <Monitor className="text-white shrink-0 size-3" />
             <p className={cn('leading-none truncate', density.label)}>
               {user.name}'s screen
-              <StreamInfo
-                mimeType={mimeType}
-                videoStats={videoStats}
-                qualityLabel={qualityLabel}
-              />
+              {isHovered && isOwnUser && (
+                <OwnScreenShareInfo
+                  videoRef={screenShareRef}
+                  qualityLabel={qualityLabel}
+                />
+              )}
+              {isHovered && !isOwnUser && (
+                <StreamInfo
+                  videoRef={screenShareRef}
+                  mimeType={getConsumerCodec(userId, StreamKind.SCREEN)}
+                  qualityLabel={qualityLabel}
+                />
+              )}
               {isZoomEnabled && zoom > 1 && (
                 <span className="text-white/70 text-xs ml-2 leading-none">
                   {Math.round(zoom * 100)}%

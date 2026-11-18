@@ -45,6 +45,7 @@ const Message = memo(
     onEditComplete
   }: TMessageProps) => {
     const [isPencilEditing, setIsPencilEditing] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
     const isEditing = isPencilEditing || editingMessageId === message.id;
     const isFromOwnUser = useIsOwnUser(message.userId);
     const can = useCan();
@@ -71,6 +72,17 @@ const Message = memo(
       [onReplyMessageSelect, message]
     );
 
+    const handleMouseEnter = useCallback(() => setIsHovered(true), []);
+
+    const handleMouseLeave = useCallback(
+      (event: React.MouseEvent<HTMLDivElement>) => {
+        if (event.currentTarget.querySelector('[data-state="open"]')) return;
+
+        setIsHovered(false);
+      },
+      []
+    );
+
     const handleEditBlur = useCallback(() => {
       setIsPencilEditing(false);
 
@@ -89,6 +101,8 @@ const Message = memo(
         )}
         data-testid={TestId.MESSAGE_ITEM}
         data-message-id={message.id}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {!isEditing ? (
           <>
@@ -105,7 +119,7 @@ const Message = memo(
                 replyUserIds={message.replyUserIds ?? NO_REPLY_USER_IDS}
               />
             )}
-            {!disableActions && (
+            {!disableActions && isHovered && (
               <MessageActions
                 onEdit={handleEdit}
                 canManage={canManage}
