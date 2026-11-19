@@ -27,7 +27,9 @@ const hardwareEncoders = [
   'videotoolbox',
   'qsv',
   'amf',
-  'mediacodec'
+  'mediacodec',
+  'mediafoundation',
+  'd3d12'
 ];
 
 const softwareEncoders = ['libvpx', 'openh264', 'libaom', 'software'];
