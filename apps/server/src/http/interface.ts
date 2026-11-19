@@ -3,7 +3,12 @@ import path from 'path';
 import { isPathInside } from '../helpers/is-path-inside';
 import { INTERFACE_PATH } from '../helpers/paths';
 import { IS_DEVELOPMENT, IS_TEST } from '../utils/env';
-import { sendFile, sendJsonError } from './helpers';
+import {
+  findPrecompressed,
+  HASHED_ASSET_REGEX,
+  sendFile,
+  sendJsonError
+} from './helpers';
 
 // report-only: the browser logs violations and enforces nothing
 const CONTENT_SECURITY_POLICY = [
@@ -48,13 +53,30 @@ const interfaceRouteHandler = async (
     return res;
   }
 
-  const isHashedAsset = /[-.][\da-f]{8,}\.\w+$/i.test(cleanSubPath);
+  const cacheControl = HASHED_ASSET_REGEX.test(cleanSubPath)
+    ? 'public, max-age=31536000, immutable'
+    : 'no-cache';
 
-  await sendFile(req, res, requestedPath, {
-    cacheControl: isHashedAsset
-      ? 'public, max-age=31536000, immutable'
-      : 'no-cache'
-  });
+  let varyAcceptEncoding = false;
+
+  if (!req.headers.range) {
+    const { hasVariant, match } = await findPrecompressed(req, requestedPath);
+
+    if (match) {
+      await sendFile(req, res, requestedPath + match.extension, {
+        cacheControl,
+        contentType: Bun.file(requestedPath).type,
+        contentEncoding: match.encoding,
+        varyAcceptEncoding: true
+      });
+
+      return res;
+    }
+
+    varyAcceptEncoding = hasVariant;
+  }
+
+  await sendFile(req, res, requestedPath, { cacheControl, varyAcceptEncoding });
 
   return res;
 };

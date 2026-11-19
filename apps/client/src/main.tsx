@@ -22,9 +22,11 @@ import { exposePluginStore } from './features/server/plugins/plugin-store.ts';
 import { store } from './features/store.ts';
 import { exposeLibs, exposeReact } from './helpers/exposes.ts';
 import { isDebug } from './helpers/is-debug.ts';
+import { reloadOnStaleChunk } from './helpers/reload-on-stale-chunk.ts';
 import { LocalStorageKey } from './helpers/storage.ts';
 import './index.css';
 
+reloadOnStaleChunk();
 exposeReact();
 exposeLibs();
 exposePluginStore();

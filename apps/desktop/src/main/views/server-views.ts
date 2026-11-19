@@ -304,7 +304,8 @@ const createServerViews = (
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,
-        backgroundThrottling: backgroundThrottled
+        backgroundThrottling: backgroundThrottled,
+        v8CacheOptions: 'bypassHeatCheck'
       }
     });
 

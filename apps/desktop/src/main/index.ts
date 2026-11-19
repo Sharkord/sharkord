@@ -34,6 +34,10 @@ import { STORE_FILE_NAME } from './servers/server-store';
 import { applyGpuEncodingSetting } from './startup/apply-gpu-encoding-setting';
 import { enableChromiumFeatures } from './startup/enable-chromium-features';
 import { setAutoStart, wasLaunchedAtLogin } from './startup/set-auto-start';
+import {
+  handleShellProtocol,
+  registerShellScheme
+} from './startup/shell-protocol';
 import { writeDesktopEntry } from './startup/write-desktop-entry';
 import { createTray, type TAppTray } from './tray/create-tray';
 import {
@@ -279,6 +283,7 @@ const start = () => {
 };
 
 enableChromiumFeatures();
+registerShellScheme();
 wipeUserDataIfRequested();
 applyGpuEncodingSetting(getStorePath());
 
@@ -312,6 +317,7 @@ if (hasLock) {
     }
 
     writeDesktopEntry(icon);
+    handleShellProtocol();
 
     await initI18n();
 

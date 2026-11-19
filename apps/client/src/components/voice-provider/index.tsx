@@ -41,7 +41,7 @@ import {
   type TStreamQualityLayer,
   type TVoiceUserState
 } from '@sharkord/shared';
-import { Device } from 'mediasoup-client';
+import type { Device } from 'mediasoup-client';
 import type {
   ProducerOptions,
   RtpCapabilities,
@@ -1399,7 +1399,9 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
 
         routerRtpCapabilities.current = incomingRouterRtpCapabilities;
 
-        const device = new Device();
+        // loaded on the first join, most sessions never open a call
+        const { Device: MediasoupDevice } = await import('mediasoup-client');
+        const device = new MediasoupDevice();
 
         await device.load({
           routerRtpCapabilities: incomingRouterRtpCapabilities

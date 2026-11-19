@@ -1,8 +1,11 @@
 import { beforeAll, describe, expect, test } from 'bun:test';
 import fs from 'fs';
 import path from 'path';
+import zlib from 'zlib';
 import { testsBaseUrl } from '../../__tests__/setup';
 import { INTERFACE_PATH } from '../../helpers/paths';
+
+const COMPRESSED_SOURCE = 'console.log("compressed");\n'.repeat(100);
 
 describe('/interface', () => {
   const testInterfacePath = INTERFACE_PATH;
@@ -70,10 +73,39 @@ describe('/interface', () => {
       fs.writeFileSync(hashedJsPath, 'console.log("hashed");');
     }
 
-    const hashedCssPath = path.join(assetsDir, 'style.d4e5f678.css');
+    const hashedCssPath = path.join(assetsDir, 'style-D4e_5F-8.css');
 
     if (!fs.existsSync(hashedCssPath)) {
       fs.writeFileSync(hashedCssPath, 'body { color: red; }');
+    }
+
+    const hashedOutsideAssetsPath = path.join(
+      testInterfacePath,
+      'logo-a1b2c3ef.js'
+    );
+
+    if (!fs.existsSync(hashedOutsideAssetsPath)) {
+      fs.writeFileSync(hashedOutsideAssetsPath, 'console.log("public");');
+    }
+
+    const dotHashedPath = path.join(assetsDir, 'legacy.a1b2c3ef.js');
+
+    if (!fs.existsSync(dotHashedPath)) {
+      fs.writeFileSync(dotHashedPath, 'console.log("legacy");');
+    }
+
+    const compressedPath = path.join(assetsDir, 'compressed-Ab3_x9Zq.js');
+
+    if (!fs.existsSync(compressedPath)) {
+      fs.writeFileSync(compressedPath, COMPRESSED_SOURCE);
+      fs.writeFileSync(
+        `${compressedPath}.br`,
+        zlib.brotliCompressSync(COMPRESSED_SOURCE)
+      );
+      fs.writeFileSync(
+        `${compressedPath}.gz`,
+        zlib.gzipSync(COMPRESSED_SOURCE)
+      );
     }
 
     const indexPath = path.join(testInterfacePath, 'index.html');
@@ -293,7 +325,7 @@ describe('/interface', () => {
   });
 
   test('should use immutable policy for hashed CSS files', async () => {
-    const response = await fetch(`${testsBaseUrl}/assets/style.d4e5f678.css`);
+    const response = await fetch(`${testsBaseUrl}/assets/style-D4e_5F-8.css`);
 
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toBe(
@@ -306,6 +338,123 @@ describe('/interface', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toBe('no-cache');
+  });
+
+  test('should use no-cache policy for hash shaped files outside assets', async () => {
+    const response = await fetch(`${testsBaseUrl}/logo-a1b2c3ef.js`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('no-cache');
+  });
+
+  test('should use no-cache policy for names vite never writes', async () => {
+    const response = await fetch(`${testsBaseUrl}/assets/legacy.a1b2c3ef.js`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('no-cache');
+  });
+
+  test('should serve the brotli file when the client accepts it', async () => {
+    const response = await fetch(
+      `${testsBaseUrl}/assets/compressed-Ab3_x9Zq.js`,
+      {
+        headers: { 'Accept-Encoding': 'gzip, deflate, br' },
+        decompress: false
+      }
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Encoding')).toBe('br');
+    expect(response.headers.get('Vary')).toContain('Accept-Encoding');
+    expect(response.headers.get('Content-Type')).toContain('javascript');
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, max-age=31536000, immutable'
+    );
+
+    const body = Buffer.from(await response.arrayBuffer());
+
+    expect(zlib.brotliDecompressSync(body).toString()).toBe(COMPRESSED_SOURCE);
+  });
+
+  test('should serve the gzip file when brotli is not accepted', async () => {
+    const response = await fetch(
+      `${testsBaseUrl}/assets/compressed-Ab3_x9Zq.js`,
+      { headers: { 'Accept-Encoding': 'gzip, deflate' }, decompress: false }
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Encoding')).toBe('gzip');
+
+    const body = Buffer.from(await response.arrayBuffer());
+
+    expect(zlib.gunzipSync(body).toString()).toBe(COMPRESSED_SOURCE);
+  });
+
+  test('should not use an encoding the client refuses with q=0', async () => {
+    const response = await fetch(
+      `${testsBaseUrl}/assets/compressed-Ab3_x9Zq.js`,
+      { headers: { 'Accept-Encoding': 'br;q=0, gzip' }, decompress: false }
+    );
+
+    expect(response.headers.get('Content-Encoding')).toBe('gzip');
+  });
+
+  test('should serve the plain file with vary when no encoding is accepted', async () => {
+    const response = await fetch(
+      `${testsBaseUrl}/assets/compressed-Ab3_x9Zq.js`,
+      { headers: { 'Accept-Encoding': 'identity' }, decompress: false }
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Encoding')).toBeNull();
+    expect(response.headers.get('Vary')).toContain('Accept-Encoding');
+    expect(await response.text()).toBe(COMPRESSED_SOURCE);
+  });
+
+  test('should answer range requests from the plain file', async () => {
+    const response = await fetch(
+      `${testsBaseUrl}/assets/compressed-Ab3_x9Zq.js`,
+      {
+        headers: { 'Accept-Encoding': 'br', Range: 'bytes=0-6' },
+        decompress: false
+      }
+    );
+
+    expect(response.status).toBe(206);
+    expect(response.headers.get('Content-Encoding')).toBeNull();
+    expect(await response.text()).toBe('console');
+  });
+
+  test('should give each encoding its own etag', async () => {
+    const brotli = await fetch(
+      `${testsBaseUrl}/assets/compressed-Ab3_x9Zq.js`,
+      { headers: { 'Accept-Encoding': 'br' }, decompress: false }
+    );
+    const plain = await fetch(`${testsBaseUrl}/assets/compressed-Ab3_x9Zq.js`, {
+      headers: { 'Accept-Encoding': 'identity' },
+      decompress: false
+    });
+
+    expect(brotli.headers.get('ETag')).not.toBe(plain.headers.get('ETag'));
+  });
+
+  test('should keep the encoding vary on a 304', async () => {
+    const first = await fetch(`${testsBaseUrl}/assets/compressed-Ab3_x9Zq.js`, {
+      headers: { 'Accept-Encoding': 'br' },
+      decompress: false
+    });
+    const etag = first.headers.get('ETag');
+
+    const second = await fetch(
+      `${testsBaseUrl}/assets/compressed-Ab3_x9Zq.js`,
+      {
+        headers: { 'Accept-Encoding': 'br', 'If-None-Match': etag! },
+        decompress: false
+      }
+    );
+
+    expect(second.status).toBe(304);
+    expect(second.headers.get('Vary')).toContain('Accept-Encoding');
   });
 
   test('should return 304 when If-None-Match matches ETag', async () => {

@@ -351,7 +351,6 @@ type CacheMetadata = {
   extraHeaders?: Record<string, string>;
 };
 
-// implements RFC 7232 §6: when If-None-Match is present, If-Modified-Since is ignored.
 const sendNotModified = (
   req: http.IncomingMessage,
   res: http.ServerResponse,
@@ -379,6 +378,64 @@ const sendNotModified = (
   return true;
 };
 
+const HASHED_ASSET_REGEX = /^assets\/[^/]+-[\w-]{8}\.\w+$/;
+
+const PRECOMPRESSED_ENCODINGS = [
+  { encoding: 'br', extension: '.br' },
+  { encoding: 'gzip', extension: '.gz' }
+] as const;
+
+type TPrecompressedEncoding = (typeof PRECOMPRESSED_ENCODINGS)[number];
+
+const isFile = async (filePath: string) => {
+  try {
+    const stats = await fsPromises.stat(filePath);
+
+    return stats.isFile();
+  } catch {
+    return false;
+  }
+};
+
+const getAcceptedEncodings = (header: string | undefined) => {
+  const accepted = new Set<string>();
+
+  if (!header) return accepted;
+
+  for (const part of header.split(',')) {
+    const [name, ...params] = part.trim().toLowerCase().split(';');
+    const isRefused = params.some((param) => /^\s*q=0(\.0*)?\s*$/.test(param));
+
+    if (name && !isRefused) {
+      accepted.add(name.trim());
+    }
+  }
+
+  return accepted;
+};
+
+const findPrecompressed = async (
+  req: http.IncomingMessage,
+  filePath: string
+) => {
+  let hasVariant = false;
+  let match: TPrecompressedEncoding | undefined;
+
+  const accepted = getAcceptedEncodings(req.headers['accept-encoding']);
+
+  for (const candidate of PRECOMPRESSED_ENCODINGS) {
+    if (!(await isFile(filePath + candidate.extension))) continue;
+
+    hasVariant = true;
+
+    if (!match && accepted.has(candidate.encoding)) {
+      match = candidate;
+    }
+  }
+
+  return { hasVariant, match };
+};
+
 type TSendFileOptions = {
   cacheControl: string;
   md5?: string | null;
@@ -386,6 +443,8 @@ type TSendFileOptions = {
   contentDisposition?: string;
   notFoundMessage?: string;
   onNotFound?: () => void;
+  contentEncoding?: 'br' | 'gzip';
+  varyAcceptEncoding?: boolean;
 };
 
 const pipeFileStream = (
@@ -446,6 +505,7 @@ const sendFile = async (
   const lastModified = stats.mtime.toUTCString();
   const contentType = options.contentType || Bun.file(filePath).type;
   const rangeHeader = req.headers.range;
+  const vary = options.varyAcceptEncoding ? 'Range, Accept-Encoding' : 'Range';
 
   if (
     !rangeHeader &&
@@ -454,7 +514,7 @@ const sendFile = async (
       lastModified,
       cacheControl,
       mtimeMs: stats.mtimeMs,
-      extraHeaders: { Vary: 'Range' }
+      extraHeaders: { Vary: vary }
     })
   ) {
     return;
@@ -466,7 +526,10 @@ const sendFile = async (
     ETag: etag,
     'Last-Modified': lastModified,
     'Cache-Control': cacheControl,
-    Vary: 'Range',
+    Vary: vary,
+    ...(options.contentEncoding
+      ? { 'Content-Encoding': options.contentEncoding }
+      : {}),
     ...(options.contentDisposition
       ? { 'Content-Disposition': options.contentDisposition }
       : {})
@@ -528,12 +591,14 @@ export {
   buildCacheControl,
   buildEtag,
   enforceHttpRateLimit,
+  findPrecompressed,
   getJsonBody,
   getPublicOrigin,
   getRawBody,
   getRequestToken,
   getRequestUrl,
   getTextBody,
+  HASHED_ASSET_REGEX,
   hasPrefixPathSegment,
   isSecureRequest,
   isSupportedHttpMethod,
