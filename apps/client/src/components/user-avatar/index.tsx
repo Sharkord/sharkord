@@ -4,13 +4,13 @@ import { getFileUrl } from '@/helpers/get-file-url';
 import { getInitialsFromName } from '@/helpers/get-initials-from-name';
 import { getRenderedUsername } from '@/helpers/get-rendered-username';
 import { cn } from '@/lib/utils';
-import { AvatarImage } from '@radix-ui/react-avatar';
 import { UserStatus } from '@sharkord/shared';
 import { Avatar, AvatarFallback } from '@sharkord/ui';
 import { memo } from 'react';
 import { FrozenImage } from '../frozen-image';
 import { UserPopover } from '../user-popover';
 import { UserStatusBadge } from '../user-status';
+import { AvatarImage } from './avatar-image';
 
 type TUserAvatarProps = {
   userId: number | null;
@@ -39,11 +39,13 @@ const UserAvatar = memo(
     const content = (
       <div className="group/avatar relative size-fit" onClick={onClick}>
         <Avatar className={cn('size-8 bg-muted', className)}>
-          <AvatarImage
-            src={avatarUrl}
-            key={user.avatarId}
-            className={cn(frozen && 'invisible group-hover/avatar:visible')}
-          />
+          {avatarUrl && (
+            <AvatarImage
+              src={avatarUrl}
+              key={user.avatarId}
+              className={cn(frozen && 'invisible group-hover/avatar:visible')}
+            />
+          )}
           {frozen && (
             <FrozenImage
               src={avatarUrl}

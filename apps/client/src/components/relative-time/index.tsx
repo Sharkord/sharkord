@@ -6,13 +6,7 @@ import {
   subHours,
   type Locale
 } from 'date-fns';
-import {
-  memo,
-  useCallback,
-  useMemo,
-  useSyncExternalStore,
-  type ReactNode
-} from 'react';
+import { memo, useMemo, useSyncExternalStore, type ReactNode } from 'react';
 
 const ONE_MINUTE = 60_000;
 const ONE_HOUR = 60 * ONE_MINUTE;
@@ -82,12 +76,14 @@ const isRecent = (date: Date): boolean => {
 
 const tickListeners = new Set<() => void>();
 let ticker: ReturnType<typeof setInterval> | undefined;
+let tick = 0;
 
 const subscribeToTicker = (listener: () => void) => {
   tickListeners.add(listener);
 
   if (!ticker) {
     ticker = setInterval(() => {
+      tick += 1;
       tickListeners.forEach((tickListener) => tickListener());
     }, ONE_MINUTE);
   }
@@ -113,10 +109,19 @@ const RelativeTime = memo(
       [date]
     );
 
-    const getSnapshot = useCallback(() => {
+    const getSnapshot = useMemo(() => {
       const formatTime = compact ? getCompactTime : getFormattedTime;
+      let formattedAt = -1;
+      let formatted = '';
 
-      return formatTime(parsedDate, dateLocale);
+      return () => {
+        if (formattedAt !== tick) {
+          formattedAt = tick;
+          formatted = formatTime(parsedDate, dateLocale);
+        }
+
+        return formatted;
+      };
     }, [compact, parsedDate, dateLocale]);
 
     const relativeTime = useSyncExternalStore(
