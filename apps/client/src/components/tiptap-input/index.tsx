@@ -202,7 +202,10 @@ const TiptapInput = memo(
               return true;
             }
 
-            if (event.key === 'Escape') {
+            if (
+              event.key === 'Escape' &&
+              (onCancelRef.current || hasSuggestions)
+            ) {
               event.preventDefault();
               onCancelRef.current?.();
               return true;
