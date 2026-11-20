@@ -21,12 +21,14 @@ const applyAudioOutputDevice = async (
     return true;
   }
 
-  if (audioElementWithSink.sinkId === playbackId) {
+  const sinkId = playbackId === 'default' ? '' : playbackId;
+
+  if (audioElementWithSink.sinkId === sinkId) {
     return true;
   }
 
   try {
-    await audioElementWithSink.setSinkId(playbackId);
+    await audioElementWithSink.setSinkId(sinkId);
 
     return true;
   } catch (error) {
