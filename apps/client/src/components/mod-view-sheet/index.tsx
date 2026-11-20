@@ -77,6 +77,7 @@ const ModViewSheet = memo(() => {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
+        e.preventDefault();
         handleClose();
       }
     };
