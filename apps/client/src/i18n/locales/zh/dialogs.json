@@ -147,6 +147,9 @@
   "serverWizardSignedUrlsQuestion": "使用签名 URL 保护文件链接吗？",
   "serverWizardSignedUrlsEnable": "文件链接会过期，并且只对有权查看的人有效，包括私密频道和私信中的文件。",
   "serverWizardSignedUrlsDisable": "任何拥有文件链接的人都能打开它，即使是私密频道和私信中的文件。",
+  "serverWizardMediaProxyQuestion": "通过服务器加载嵌入的媒体？",
+  "serverWizardMediaProxyEnable": "链接中的图片和视频由服务器获取，成员的 IP 地址不会暴露给来源网站。这会占用服务器带宽。",
+  "serverWizardMediaProxyDisable": "嵌入的媒体直接从原网站加载，该网站可以看到每位查看者的 IP 地址。",
   "serverWizardDoneTitle": "{{serverName}} 已准备就绪！",
   "serverWizardDoneDesc": "欢迎使用 Sharkord。你的服务器已设置完成，邀请朋友一起享受吧！",
   "serverWizardDoneButton": "开始吧"

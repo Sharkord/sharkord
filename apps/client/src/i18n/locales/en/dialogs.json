@@ -147,6 +147,9 @@
   "serverWizardSignedUrlsQuestion": "Protect file links with signed URLs?",
   "serverWizardSignedUrlsEnable": "File links expire and only work for people allowed to see them, including files in private channels and direct messages.",
   "serverWizardSignedUrlsDisable": "Anyone with a file link can open it, even files from private channels and direct messages.",
+  "serverWizardMediaProxyQuestion": "Load embedded media through the server?",
+  "serverWizardMediaProxyEnable": "Images and videos from links are fetched by the server, so members' IP addresses stay hidden from the sites they come from. This uses the server's bandwidth.",
+  "serverWizardMediaProxyDisable": "Embedded media loads straight from the original site, which can see the IP address of everyone who views it.",
   "serverWizardDoneTitle": "{{serverName}} is ready!",
   "serverWizardDoneDesc": "Welcome to Sharkord. Your server is set up, invite your friends and enjoy!",
   "serverWizardDoneButton": "Let's go"

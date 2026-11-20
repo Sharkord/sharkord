@@ -147,6 +147,9 @@
   "serverWizardSignedUrlsQuestion": "Chránit odkazy na soubory podepsanými URL?",
   "serverWizardSignedUrlsEnable": "Odkazy na soubory vyprší a fungují jen pro ty, kdo je smí vidět, včetně souborů v soukromých kanálech a přímých zprávách.",
   "serverWizardSignedUrlsDisable": "Kdokoli s odkazem na soubor ho může otevřít, i soubory ze soukromých kanálů a přímých zpráv.",
+  "serverWizardMediaProxyQuestion": "Načítat vložená média přes server?",
+  "serverWizardMediaProxyEnable": "Obrázky a videa z odkazů stahuje server, takže IP adresy členů zůstanou před zdrojovými weby skryté. Využívá to šířku pásma serveru.",
+  "serverWizardMediaProxyDisable": "Vložená média se načítají přímo z původního webu, který vidí IP adresu každého, kdo si je zobrazí.",
   "serverWizardDoneTitle": "{{serverName}} je připraven!",
   "serverWizardDoneDesc": "Vítejte v Sharkordu. Váš server je nastaven, pozvěte přátele a užívejte si!",
   "serverWizardDoneButton": "Jdeme na to"

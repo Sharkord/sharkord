@@ -147,6 +147,9 @@
   "serverWizardSignedUrlsQuestion": "Proteggere i link ai file con URL firmati?",
   "serverWizardSignedUrlsEnable": "I link ai file scadono e funzionano solo per chi può vederli, inclusi i file dei canali privati e dei messaggi diretti.",
   "serverWizardSignedUrlsDisable": "Chiunque abbia il link di un file può aprirlo, anche i file dei canali privati e dei messaggi diretti.",
+  "serverWizardMediaProxyQuestion": "Caricare i contenuti multimediali incorporati tramite il server?",
+  "serverWizardMediaProxyEnable": "Immagini e video dei link vengono scaricati dal server, così gli indirizzi IP dei membri restano nascosti ai siti di origine. Usa la banda del server.",
+  "serverWizardMediaProxyDisable": "I contenuti incorporati vengono caricati direttamente dal sito originale, che può vedere l'indirizzo IP di chiunque li visualizzi.",
   "serverWizardDoneTitle": "{{serverName}} è pronto!",
   "serverWizardDoneDesc": "Benvenuto su Sharkord. Il tuo server è configurato, invita i tuoi amici e divertiti!",
   "serverWizardDoneButton": "Andiamo"
