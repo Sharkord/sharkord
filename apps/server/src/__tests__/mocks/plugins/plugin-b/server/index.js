@@ -425,9 +425,7 @@ const onLoad = (ctx) => {
     ],
     async executes(invokerCtx, args) {
       const { messageId } = await ctx.messages.send(args.channelId, '', {
-        files: [
-          { name: args.name, data: new TextEncoder().encode(args.body) }
-        ]
+        files: [{ name: args.name, data: new TextEncoder().encode(args.body) }]
       });
 
       return { messageId };
@@ -632,6 +630,27 @@ const onLoad = (ctx) => {
   });
 
   ctx.commands.register({
+    name: 'edit-profile',
+    description: 'Edit a user profile',
+    args: [
+      { name: 'userId', type: 'number', required: true },
+      { name: 'name', type: 'string', required: false },
+      { name: 'bio', type: 'string', required: false },
+      { name: 'profileColor', type: 'string', required: false },
+      { name: 'clearBio', type: 'boolean', required: false }
+    ],
+    async executes(invokerCtx, args) {
+      await ctx.users.update(args.userId, {
+        name: args.name,
+        bio: args.clearBio ? null : args.bio,
+        profileColor: args.profileColor
+      });
+
+      return { ok: true };
+    }
+  });
+
+  ctx.commands.register({
     name: 'lookup',
     description: 'Read one of each kind of thing by id',
     args: [
@@ -700,7 +719,10 @@ const onLoad = (ctx) => {
     async executes(invokerCtx, args) {
       const category = await ctx.categories.create(args.name);
 
-      return { categoryId: category.id, count: (await ctx.categories.list()).length };
+      return {
+        categoryId: category.id,
+        count: (await ctx.categories.list()).length
+      };
     }
   });
 

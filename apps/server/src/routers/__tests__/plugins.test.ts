@@ -2384,6 +2384,117 @@ describe('plugins router', () => {
     });
   });
 
+  describe('profile writes', () => {
+    beforeEach(() => pluginManager.load('plugin-b'));
+
+    const editProfile = async (args: Record<string, unknown>) => {
+      const { caller } = await initTest();
+
+      return caller.plugins.executeCommand({
+        pluginId: 'plugin-b',
+        commandName: 'edit-profile',
+        args
+      });
+    };
+
+    const readUser = async (userId: number) =>
+      tdb.select().from(users).where(eq(users.id, userId)).get();
+
+    test('should update every profile field', async () => {
+      await editProfile({
+        userId: 2,
+        name: 'From Website',
+        bio: 'hello',
+        profileColor: '#abcdef'
+      });
+
+      const user = await readUser(2);
+
+      expect(user!.name).toBe('From Website');
+      expect(user!.bio).toBe('hello');
+      expect(user!.profileColor).toBe('#abcdef');
+    });
+
+    // a website syncing one field must not wipe the others
+    test('should keep the fields it leaves out', async () => {
+      await editProfile({
+        userId: 2,
+        name: 'First',
+        bio: 'kept',
+        profileColor: '#123456'
+      });
+
+      await editProfile({ userId: 2, name: 'Second' });
+
+      const user = await readUser(2);
+
+      expect(user!.name).toBe('Second');
+      expect(user!.bio).toBe('kept');
+      expect(user!.profileColor).toBe('#123456');
+    });
+
+    test('should clear the bio with null', async () => {
+      await editProfile({ userId: 2, bio: 'gone soon' });
+      await editProfile({ userId: 2, clearBio: true });
+
+      expect((await readUser(2))!.bio).toBeNull();
+    });
+
+    test('should tell clients and plugins the profile changed', async () => {
+      const publish = spyOn(publishers, 'publishUser');
+      const emit = spyOn(eventBus, 'emit');
+
+      await editProfile({ userId: 2, name: 'Live Name' });
+
+      expect(publish).toHaveBeenCalledWith(2, 'update');
+      expect(emit).toHaveBeenCalledWith('user:updated', {
+        userId: 2,
+        username: 'Live Name'
+      });
+    });
+
+    test('should reject a user that does not exist', async () => {
+      await expect(editProfile({ userId: 9999, name: 'x' })).rejects.toThrow(
+        'User not found'
+      );
+    });
+
+    test('should reject a name the route would reject too', async () => {
+      await expect(
+        editProfile({ userId: 2, name: 'x'.repeat(100) })
+      ).rejects.toThrow();
+
+      expect((await readUser(2))!.name).not.toBe('x'.repeat(100));
+    });
+
+    test('should reject a profile color that is not a hex value', async () => {
+      await expect(
+        editProfile({ userId: 2, profileColor: 'red' })
+      ).rejects.toThrow('Invalid hex color');
+    });
+
+    test('should reject a bio that is too long', async () => {
+      await expect(
+        editProfile({ userId: 2, bio: 'x'.repeat(161) })
+      ).rejects.toThrow();
+    });
+
+    test('should run the profile hooks like a user edit', async () => {
+      await pluginManager.togglePlugin('plugin-before-message-save', true);
+
+      await expect(
+        editProfile({ userId: 2, name: 'rejectme' })
+      ).rejects.toThrow('That name is not allowed');
+
+      await editProfile({ userId: 2, name: 'renameme' });
+
+      const user = await readUser(2);
+
+      expect(user!.name).toBe('renamed-by-plugin');
+      expect(user!.bio).toBe('set by plugin');
+    });
+  });
+
   // one blob per plugin per user, keyed by the plugin's own id, which the
   // server side takes from the context rather than from the caller
   describe('per-user data', () => {
