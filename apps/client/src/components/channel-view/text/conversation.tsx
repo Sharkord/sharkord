@@ -108,19 +108,14 @@ const Conversation = memo(
       return { userId: replyingToMessage.userId, pluginId: null };
     }, [replyingToMessage]);
 
-    const {
-      containerRef,
-      onScroll,
-      onAsyncContentLoaded,
-      scrollToBottom,
-      isAtBottom
-    } = useScrollController({
-      messages,
-      fetching,
-      hasMore,
-      loadMore,
-      hasTypingUsers: typingUsers.length > 0
-    });
+    const { containerRef, onScroll, scrollToBottom, isAtBottom } =
+      useScrollController({
+        messages,
+        fetching,
+        hasMore,
+        loadMore,
+        hasTypingUsers: typingUsers.length > 0
+      });
 
     const onComposeResize = useCallback(() => {
       if (isAtBottom()) {
@@ -220,7 +215,6 @@ const Conversation = memo(
         <div
           ref={containerRef}
           onScroll={onScroll}
-          onLoadCapture={onAsyncContentLoaded}
           data-messages-container={conversationKey}
           className="flex-1 overflow-y-auto overflow-x-hidden px-2 pt-2 pb-7 animate-in fade-in duration-500"
         >
