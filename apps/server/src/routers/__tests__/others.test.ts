@@ -295,6 +295,41 @@ describe('others router', () => {
     );
   });
 
+  describe('server wizard', () => {
+    test('should show the wizard after claiming ownership', async () => {
+      const { caller } = await initTest(2);
+
+      const { showServerWizard } = await caller.others.useSecretToken({
+        token: TEST_SECRET_TOKEN
+      });
+
+      expect(showServerWizard).toBe(true);
+    });
+
+    test('should not show the wizard after claiming ownership once completed', async () => {
+      const { caller: owner } = await initTest(1);
+
+      await owner.others.updateSettings({ serverWizardCompleted: true });
+
+      expect((await getSettings()).serverWizardCompleted).toBe(true);
+
+      const { caller } = await initTest(2);
+      const { showServerWizard } = await caller.others.useSecretToken({
+        token: TEST_SECRET_TOKEN
+      });
+
+      expect(showServerWizard).toBe(false);
+    });
+
+    test('should not let a user without manage settings complete the wizard', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.others.updateSettings({ serverWizardCompleted: true })
+      ).rejects.toThrow('Insufficient permissions');
+    });
+  });
+
   describe('storage settings permissions', () => {
     const grantOnly = async (permissions: Permission[]) => {
       await tdb

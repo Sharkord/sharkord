@@ -14,6 +14,7 @@ import { ScreenShareOptionsDialog } from './screen-share-options';
 import { SearchDialog } from './search';
 import { ServerPasswordDialog } from './server-password';
 import { ServerUpdatedDialog } from './server-updated';
+import { ServerWizardDialog } from './server-wizard';
 import { SoundsDialog } from './sounds';
 import { TextInputDialog } from './text-input';
 import { VoiceDebugDialog } from './voice-debug';
@@ -33,6 +34,7 @@ const DialogsMap: any = {
   [Dialog.DELETE_USER]: DeleteUserDialog,
   [Dialog.SEARCH]: SearchDialog,
   [Dialog.WELCOME_PROFILE_SETUP]: WelcomeProfileSetupDialog,
+  [Dialog.SERVER_WIZARD]: ServerWizardDialog,
   [Dialog.VOICE_DEBUG]: VoiceDebugDialog,
   [Dialog.SCREEN_SHARE_OPTIONS]: ScreenShareOptionsDialog,
   [Dialog.IMAGE_CROP]: ImageCropDialog,
