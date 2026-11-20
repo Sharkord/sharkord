@@ -38,6 +38,16 @@
     "openLogsFolder": "Otevřít složku s logy",
     "resetApp": "Obnovit aplikaci..."
   },
+  "contextMenu": {
+    "undo": "Zpět",
+    "redo": "Znovu",
+    "cut": "Vyjmout",
+    "copy": "Kopírovat",
+    "paste": "Vložit",
+    "delete": "Smazat",
+    "selectAll": "Vybrat vše",
+    "addToDictionary": "Přidat do slovníku"
+  },
   "tray": {
     "show": "Zobrazit Sharkord",
     "quit": "Ukončit Sharkord"

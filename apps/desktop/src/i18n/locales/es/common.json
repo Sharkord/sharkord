@@ -38,6 +38,16 @@
     "openLogsFolder": "Abrir carpeta de registros",
     "resetApp": "Restablecer la aplicación..."
   },
+  "contextMenu": {
+    "undo": "Deshacer",
+    "redo": "Rehacer",
+    "cut": "Cortar",
+    "copy": "Copiar",
+    "paste": "Pegar",
+    "delete": "Eliminar",
+    "selectAll": "Seleccionar todo",
+    "addToDictionary": "Añadir al diccionario"
+  },
   "tray": {
     "show": "Mostrar Sharkord",
     "quit": "Salir de Sharkord"

@@ -38,6 +38,16 @@
     "openLogsFolder": "Open Logs Folder",
     "resetApp": "Reset App..."
   },
+  "contextMenu": {
+    "undo": "Undo",
+    "redo": "Redo",
+    "cut": "Cut",
+    "copy": "Copy",
+    "paste": "Paste",
+    "delete": "Delete",
+    "selectAll": "Select All",
+    "addToDictionary": "Add to Dictionary"
+  },
   "tray": {
     "show": "Show Sharkord",
     "quit": "Quit Sharkord"

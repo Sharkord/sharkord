@@ -24,6 +24,7 @@ import {
   setServerHotkeys
 } from '../hotkeys/global-hotkeys';
 import { createLogger } from '../logs/logger';
+import { attachContextMenu } from '../menu/context-menu';
 import { notificationSchema } from '../notifications/notification-schema';
 import { showNotification } from '../notifications/show-notification';
 import {
@@ -308,6 +309,8 @@ const createServerViews = (
         v8CacheOptions: 'bypassHeatCheck'
       }
     });
+
+    attachContextMenu(view.webContents);
 
     view.webContents.ipc.on(BridgeChannel.CLIENT_CONNECTED, () => {
       connectedClients.add(server.id);
