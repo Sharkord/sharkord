@@ -5,7 +5,7 @@ import { useRoles } from '@/features/server/roles/hooks';
 import { useFilteredUsers } from '@/features/server/users/hooks';
 import { TestId, type TCommandInfo } from '@sharkord/shared';
 import { isNodeEmpty } from '@tiptap/core';
-import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
+import { gitHubEmojis } from '@tiptap/extension-emoji';
 import Link from '@tiptap/extension-link';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -31,6 +31,7 @@ import {
 } from './extensions/commands/command-suggestion';
 import { PluginCommandNode } from './extensions/commands/plugin-command-node';
 import { SlashCommands } from './extensions/commands/slash-commands-extension';
+import { CachedEmoji } from './extensions/emojis/cached-emoji';
 import { EmojiSuggestion } from './extensions/emojis/suggestions';
 import { Mention } from './extensions/mentions';
 import { MentionNode } from './extensions/mentions/node';
@@ -118,7 +119,7 @@ const TiptapInput = memo(
             return /^https?:\/\//i.test(url);
           }
         }),
-        Emoji.configure({
+        CachedEmoji.configure({
           emojis,
           enableEmoticons: convertAsciiEmoji,
           suggestion: EmojiSuggestion,

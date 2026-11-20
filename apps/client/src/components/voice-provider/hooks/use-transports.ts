@@ -56,6 +56,7 @@ type TUseTransportParams = {
     paused: boolean
   ) => void;
   clearRemoteConsumerMetadata: () => void;
+  isStreamHidden: (remoteId: number, kind: StreamKind) => boolean;
 };
 
 const useTransports = ({
@@ -66,7 +67,8 @@ const useTransports = ({
   setRemoteConsumerType,
   setRemoteStreamQualityLayers,
   setRemoteStreamPaused,
-  clearRemoteConsumerMetadata
+  clearRemoteConsumerMetadata,
+  isStreamHidden
 }: TUseTransportParams) => {
   const producerTransport = useRef<Transport<AppData> | undefined>(undefined);
   const consumerTransport = useRef<Transport<AppData> | undefined>(undefined);
@@ -321,7 +323,7 @@ const useTransports = ({
           kind,
           remoteId,
           rtpCapabilities,
-          paused
+          paused: paused || isStreamHidden(remoteId, kind)
         });
 
         voiceLogger.info('consumer: parameters received', {
@@ -460,7 +462,8 @@ const useTransports = ({
       removeExternalStreamTrack,
       setRemoteConsumerType,
       setRemoteStreamQualityLayers,
-      setRemoteStreamPaused
+      setRemoteStreamPaused,
+      isStreamHidden
     ]
   );
 

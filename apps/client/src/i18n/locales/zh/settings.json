@@ -46,6 +46,8 @@
   "closeVoiceChatOnLeaveDesc": "离开语音频道时关闭其文字聊天。",
   "freezeAnimatedAvatarsLabel": "冻结动态头像和横幅",
   "freezeAnimatedAvatarsDesc": "将动态头像和横幅显示为静态图片，仅在鼠标悬停时播放。",
+  "autoLoadYoutubeEmbedsLabel": "自动加载 YouTube 视频",
+  "autoLoadYoutubeEmbedsDesc": "视频一出现在聊天中就加载。关闭时只显示缩略图，点击后才加载视频，可大幅减少内存占用。",
   "convertAsciiEmojiLabel": "输入时将颜文字转换为 emoji",
   "convertAsciiEmojiDesc": "将 \":3\"、\"<3\" 等文字颜文字转换为 emoji。",
   "pauseNewStreamsByDefaultLabel": "默认暂停所有新的串流",

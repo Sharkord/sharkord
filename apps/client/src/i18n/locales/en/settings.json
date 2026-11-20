@@ -46,6 +46,8 @@
   "closeVoiceChatOnLeaveDesc": "Close the voice text chat when you leave its voice channel.",
   "freezeAnimatedAvatarsLabel": "Freeze Animated Avatars and Banners",
   "freezeAnimatedAvatarsDesc": "Show animated avatars and banners as a still image and only play them on hover.",
+  "autoLoadYoutubeEmbedsLabel": "Load YouTube Embeds Automatically",
+  "autoLoadYoutubeEmbedsDesc": "Load YouTube videos as soon as they appear in chat. When off, a thumbnail is shown and the video loads on click, which uses much less memory.",
   "convertAsciiEmojiLabel": "Convert Emoticons to Emoji as You Type",
   "convertAsciiEmojiDesc": "Convert text emoticons such as \":3\" and \"<3\" into emoji.",
   "pauseNewStreamsByDefaultLabel": "Pause all new streams by default",

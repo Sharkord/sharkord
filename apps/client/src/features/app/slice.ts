@@ -28,6 +28,7 @@ export interface TAppState {
   voiceChatFollowsVoice: boolean;
   closeVoiceChatOnLeave: boolean;
   freezeAnimatedAvatars: boolean;
+  autoLoadYoutubeEmbeds: boolean;
   convertAsciiEmoji: boolean;
   pauseNewStreamsByDefault: boolean;
   muteStreamAudioByDefault: boolean;
@@ -74,6 +75,10 @@ const initialState: TAppState = {
   ),
   freezeAnimatedAvatars: getLocalStorageItemBool(
     LocalStorageKey.FREEZE_ANIMATED_AVATARS,
+    false
+  ),
+  autoLoadYoutubeEmbeds: getLocalStorageItemBool(
+    LocalStorageKey.AUTO_LOAD_YOUTUBE_EMBEDS,
     false
   ),
   convertAsciiEmoji: getLocalStorageItemBool(
@@ -189,6 +194,9 @@ export const appSlice = createSlice({
     },
     setFreezeAnimatedAvatars: (state, action: PayloadAction<boolean>) => {
       state.freezeAnimatedAvatars = action.payload;
+    },
+    setAutoLoadYoutubeEmbeds: (state, action: PayloadAction<boolean>) => {
+      state.autoLoadYoutubeEmbeds = action.payload;
     },
     setConvertAsciiEmoji: (state, action: PayloadAction<boolean>) => {
       state.convertAsciiEmoji = action.payload;

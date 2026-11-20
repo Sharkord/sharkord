@@ -185,6 +185,8 @@ const FullScreenImage = memo(
     return (
       <>
         <Component
+          loading="lazy"
+          decoding="async"
           {...props}
           className={cn('cursor-pointer', props.className)}
           onClick={onOpenClick}

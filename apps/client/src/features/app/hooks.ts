@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import {
   appLoadingSelector,
   autoJoinLastChannelSelector,
+  autoLoadYoutubeEmbedsSelector,
   closeVoiceChatOnLeaveSelector,
   convertAsciiEmojiSelector,
   freezeAnimatedAvatarsSelector,
@@ -61,6 +62,9 @@ export const useCloseVoiceChatOnLeave = () =>
 
 export const useFreezeAnimatedAvatars = () =>
   useSelector(freezeAnimatedAvatarsSelector);
+
+export const useAutoLoadYoutubeEmbeds = () =>
+  useSelector(autoLoadYoutubeEmbedsSelector);
 
 export const useConvertAsciiEmoji = () =>
   useSelector(convertAsciiEmojiSelector);

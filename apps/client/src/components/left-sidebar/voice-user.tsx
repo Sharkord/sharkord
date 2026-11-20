@@ -67,12 +67,19 @@ const VoiceUser = memo(
           canMove && 'cursor-grab active:cursor-grabbing'
         )}
       >
-        <UserAvatar
-          userId={user.id}
-          className={cn('h-5 w-5', isActivelySpeaking && speakingEffectClass)}
-          showUserPopover={true}
-          showStatusBadge={false}
-        />
+        <span
+          className={cn(
+            'relative flex rounded-full',
+            isActivelySpeaking && speakingEffectClass
+          )}
+        >
+          <UserAvatar
+            userId={user.id}
+            className="h-5 w-5"
+            showUserPopover={true}
+            showStatusBadge={false}
+          />
+        </span>
 
         <span className="flex-1 text-muted-foreground truncate text-xs">
           {user.name}

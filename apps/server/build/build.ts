@@ -8,6 +8,7 @@ import {
   getCurrentVersion,
   getVersionInfo,
   patchPackageJsons,
+  precompressDirectory,
   rmIfExists,
   type TTarget
 } from './helpers';
@@ -70,6 +71,10 @@ if (viteProc.exitCode !== 0) {
 }
 
 console.log('Client build finished, output at:', viteDistPath);
+console.log('Precompressing interface...');
+
+await precompressDirectory(viteDistPath);
+
 console.log('Creating interface.zip...');
 
 await zipDirectory(viteDistPath, interfaceZipPath);

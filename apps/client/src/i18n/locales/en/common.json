@@ -158,5 +158,6 @@
   "formatBold": "Bold",
   "formatItalic": "Italic",
   "formatCode": "Code",
-  "formatCodeBlock": "Code block"
+  "formatCodeBlock": "Code block",
+  "playVideo": "Play video"
 }

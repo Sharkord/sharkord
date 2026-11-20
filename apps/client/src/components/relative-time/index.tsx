@@ -2,12 +2,11 @@ import { useDateLocale } from '@/hooks/use-date-locale';
 import {
   format,
   formatDistanceToNow,
-  isFuture,
   isWithinInterval,
   subHours,
   type Locale
 } from 'date-fns';
-import { memo, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { memo, useMemo, useSyncExternalStore, type ReactNode } from 'react';
 
 const ONE_MINUTE = 60_000;
 const ONE_HOUR = 60 * ONE_MINUTE;
@@ -17,7 +16,6 @@ const DEFAULT_FORMAT = 'PPpp'; // eg: 12 August 2022, 14:30
 
 type TRelativeTimeProps = {
   date: Date | string;
-  interval?: number;
   compact?: boolean;
   children: (relativeTime: string) => ReactNode;
 };
@@ -70,58 +68,68 @@ const getCompactTime = (d: Date, dateLocale: Locale): string => {
   }).format(d);
 };
 
-const getUpdateInterval = (date: Date): number | null => {
-  const now = new Date();
-  const diffInMs = now.getTime() - date.getTime();
+const isRecent = (date: Date): boolean => {
+  const elapsed = Date.now() - date.getTime();
 
-  // future dates or absolute dates don't need updates
-  if (isFuture(date) || diffInMs > 24 * ONE_HOUR) {
-    return null; // no updates needed
-  }
-
-  // less than 1 hour, rerender every minute
-  if (diffInMs < ONE_HOUR) {
-    return ONE_MINUTE;
-  }
-
-  // 1-24 hours, rerender every hour
-  return ONE_HOUR;
+  return elapsed >= 0 && elapsed <= ONE_DAY;
 };
 
+const tickListeners = new Set<() => void>();
+let ticker: ReturnType<typeof setInterval> | undefined;
+let tick = 0;
+
+const subscribeToTicker = (listener: () => void) => {
+  tickListeners.add(listener);
+
+  if (!ticker) {
+    ticker = setInterval(() => {
+      tick += 1;
+      tickListeners.forEach((tickListener) => tickListener());
+    }, ONE_MINUTE);
+  }
+
+  return () => {
+    tickListeners.delete(listener);
+
+    if (tickListeners.size === 0) {
+      clearInterval(ticker);
+
+      ticker = undefined;
+    }
+  };
+};
+
+const subscribeToNothing = () => () => {};
+
 const RelativeTime = memo(
-  ({
-    date,
-    interval, // optional override
-    compact = false,
-    children
-  }: TRelativeTimeProps) => {
+  ({ date, compact = false, children }: TRelativeTimeProps) => {
     const dateLocale = useDateLocale();
     const parsedDate = useMemo(
       () => (typeof date === 'string' ? new Date(date) : date),
       [date]
     );
 
-    const [, setCounter] = useState(0);
+    const getSnapshot = useMemo(() => {
+      const formatTime = compact ? getCompactTime : getFormattedTime;
+      let formattedAt = -1;
+      let formatted = '';
 
-    useEffect(() => {
-      const updateInterval = interval ?? getUpdateInterval(parsedDate);
+      return () => {
+        if (formattedAt !== tick) {
+          formattedAt = tick;
+          formatted = formatTime(parsedDate, dateLocale);
+        }
 
-      // if no update interval is needed, don't set up a timer
-      if (updateInterval === null) {
-        return;
-      }
+        return formatted;
+      };
+    }, [compact, parsedDate, dateLocale]);
 
-      const timer = setInterval(() => {
-        // force re-render to update the relative time display
-        setCounter((prev) => prev + 1);
-      }, updateInterval);
+    const relativeTime = useSyncExternalStore(
+      isRecent(parsedDate) ? subscribeToTicker : subscribeToNothing,
+      getSnapshot
+    );
 
-      return () => clearInterval(timer);
-    }, [interval, parsedDate]);
-
-    const formatTime = compact ? getCompactTime : getFormattedTime;
-
-    return children(formatTime(parsedDate, dateLocale));
+    return children(relativeTime);
   }
 );
 

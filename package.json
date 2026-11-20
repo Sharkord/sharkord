@@ -29,5 +29,8 @@
   },
   "overrides": {
     "@types/bun": "1.4.4"
+  },
+  "patchedDependencies": {
+    "youtube-video-element@1.9.1": "patches/youtube-video-element@1.9.1.patch"
   }
 }

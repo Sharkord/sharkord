@@ -51,10 +51,10 @@ const useFileAwareHeight = ({
 
     if (!el) return;
 
-    const currentPx = getHeight(el);
-    const maxPx = (MAX_VH / 100) * window.innerHeight;
-
     if (displayItems.length > 0) {
+      const currentPx = getHeight(el);
+      const maxPx = (MAX_VH / 100) * window.innerHeight;
+
       // measure the natural height with files present -- clear both height and
       // maxHeight so the default max doesn't artificially cap the measurement
       const savedHeight = el.style.height;
@@ -78,9 +78,9 @@ const useFileAwareHeight = ({
         el.style.maxHeight = `${clampedNaturalPx}px`;
       }
     } else {
-      const minPx = measureMinHeight(el);
-
       if (userPinnedHeightRef.current) {
+        const minPx = measureMinHeight(el);
+
         el.style.height = `${Math.max(userPinnedHeightRef.current, minPx)}px`;
       } else {
         el.style.maxHeight = `${inputDefaultMaxHeightVh}vh`;

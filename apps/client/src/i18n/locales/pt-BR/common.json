@@ -158,5 +158,6 @@
   "formatBold": "Negrito",
   "formatItalic": "Itálico",
   "formatCode": "Código",
-  "formatCodeBlock": "Bloco de código"
+  "formatCodeBlock": "Bloco de código",
+  "playVideo": "Reproduzir vídeo"
 }

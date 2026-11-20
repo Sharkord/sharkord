@@ -5,6 +5,8 @@ import {
 } from 'bun-sfe-autoupdater';
 import fs from 'fs/promises';
 import path from 'path';
+import { promisify } from 'util';
+import zlib from 'zlib';
 
 const buildScriptDir = import.meta.dir;
 const serverCwd = path.resolve(buildScriptDir, '..');
@@ -205,6 +207,63 @@ const getVersionInfo = async (
   return versionInfo;
 };
 
+const brotliCompress = promisify(zlib.brotliCompress);
+const gzip = promisify(zlib.gzip);
+
+const COMPRESSIBLE_EXTENSIONS = new Set([
+  '.js',
+  '.mjs',
+  '.css',
+  '.html',
+  '.json',
+  '.svg',
+  '.wasm',
+  '.txt'
+]);
+
+const MIN_COMPRESS_SIZE = 1024; // only compress files larger than 1KB
+
+// writes a .br and a .gz next to each text file so the server never compresses per
+// request. both are needed: browsers only offer brotli over https, and many servers run
+// plain http on a lan
+const precompressDirectory = async (dir: string) => {
+  const entries = await fs.readdir(dir, {
+    recursive: true,
+    withFileTypes: true
+  });
+
+  await Promise.all(
+    entries.map(async (entry) => {
+      if (!entry.isFile()) return;
+
+      const extension = path.extname(entry.name);
+
+      if (!COMPRESSIBLE_EXTENSIONS.has(extension)) return;
+
+      const filePath = path.join(entry.parentPath, entry.name);
+      const content = await fs.readFile(filePath);
+
+      if (content.length < MIN_COMPRESS_SIZE) return;
+
+      const [brotli, gzipped] = await Promise.all([
+        brotliCompress(content, {
+          params: {
+            [zlib.constants.BROTLI_PARAM_QUALITY]:
+              zlib.constants.BROTLI_MAX_QUALITY,
+            [zlib.constants.BROTLI_PARAM_SIZE_HINT]: content.length
+          }
+        }),
+        gzip(content, { level: zlib.constants.Z_BEST_COMPRESSION })
+      ]);
+
+      await Promise.all([
+        fs.writeFile(`${filePath}.br`, brotli),
+        fs.writeFile(`${filePath}.gz`, gzipped)
+      ]);
+    })
+  );
+};
+
 const rmIfExists = async (filePath: string) => {
   try {
     await fs.access(filePath);
@@ -220,6 +279,7 @@ export {
   getCurrentVersion,
   getVersionInfo,
   patchPackageJsons,
+  precompressDirectory,
   rmIfExists
 };
 export type { TTarget };

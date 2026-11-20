@@ -158,5 +158,6 @@
   "formatBold": "粗体",
   "formatItalic": "斜体",
   "formatCode": "代码",
-  "formatCodeBlock": "代码块"
+  "formatCodeBlock": "代码块",
+  "playVideo": "播放视频"
 }
