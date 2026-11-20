@@ -1,6 +1,7 @@
 import { RateLimiter, ServerEvents, StreamKind } from '@sharkord/shared';
 import { z } from 'zod';
 import { getCurrentVoiceRuntime } from '../../helpers/get-current-voice-runtime';
+import { logger } from '../../logger';
 import { invariant } from '../../utils/invariant';
 import { protectedProcedure } from '../../utils/trpc';
 
@@ -37,9 +38,23 @@ const consumeRoute = protectedProcedure
       rtpCapabilities: input.rtpCapabilities
     });
 
+    if (!routerCanConsume) {
+      const [codec] = producer.rtpParameters.codecs;
+
+      logger.warn(
+        'User %d cannot consume the %s stream of user %d, it is encoded as %s %o',
+        ctx.user.id,
+        input.kind,
+        input.remoteId,
+        codec?.mimeType,
+        codec?.parameters
+      );
+    }
+
+    // the client tells this code apart from consume races to show the viewer why there is no video
     invariant(routerCanConsume, {
-      code: 'BAD_REQUEST',
-      message: 'Cannot consume this producer with the given RTP capabilities'
+      code: 'PRECONDITION_FAILED',
+      message: "Your browser can't play the video codec this stream uses."
     });
 
     const consumer = await userConsumerTransport.consume({

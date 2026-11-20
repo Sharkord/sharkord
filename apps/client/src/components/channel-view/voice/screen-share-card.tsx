@@ -32,6 +32,7 @@ import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { QualityButton } from './quality-button';
 import { StreamInfo } from './stream-info';
+import { UnplayableStreamOverlay } from './unplayable-stream-overlay';
 import { VolumeButton } from './volume-button';
 
 type TScreenShareCardProps = {
@@ -73,7 +74,9 @@ const ScreenShareCard = memo(
       hasScreenShareAudioStream
     } = useVoiceRefs(userId);
 
-    const { getConsumerCodec } = useVoice();
+    const { getConsumerCodec, isStreamUnplayable } = useVoice();
+    const isUnplayable =
+      !isOwnUser && isStreamUnplayable(userId, StreamKind.SCREEN);
     const { isHovered, onMouseEnter, onMouseLeave } = useIsHovered();
 
     useStreamVisibility(
@@ -133,7 +136,7 @@ const ScreenShareCard = memo(
       onMouseLeave();
     }, [handleMouseUp, onMouseLeave]);
 
-    if (!user || !hasScreenShareStream) return null;
+    if (!user || (!hasScreenShareStream && !isUnplayable)) return null;
 
     return (
       <div
@@ -175,6 +178,8 @@ const ScreenShareCard = memo(
         {!isOwnUser && (
           <PausedStreamOverlay streamId={userId} kind={StreamKind.SCREEN} />
         )}
+
+        {isUnplayable && <UnplayableStreamOverlay title={user.name} />}
 
         <audio
           ref={screenShareAudioRef}
