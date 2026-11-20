@@ -29,6 +29,7 @@ import { getRole, getRoles, userCan } from '../db/queries/roles';
 import { getPublicUserById, getPublicUsers } from '../db/queries/users';
 import { getPluginVoiceRuntime } from '../helpers/get-plugin-voice-runtime';
 import { PUBLIC_PATH } from '../helpers/paths';
+import { updateUserProfile } from '../helpers/update-user-profile';
 import {
   disconnectVoiceUser,
   loadVoiceMoveDestination,
@@ -359,6 +360,7 @@ const createContext = (deps: TContextDependencies): PluginContext => {
     users: {
       list: async () => getPublicUsers(),
       get: async (userId: number) => getPublicUserById(userId),
+      update: async (userId, values) => updateUserProfile(userId, values),
       ban: async (userId: number, reason?: string) =>
         banPluginUser(userId, reason),
       unban: async (userId: number) => unbanPluginUser(userId),
