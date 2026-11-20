@@ -37,6 +37,16 @@
     "openAppFolder": "Uygulama Klasörünü Aç",
     "resetApp": "Uygulamayı Sıfırla..."
   },
+  "contextMenu": {
+    "undo": "Geri Al",
+    "redo": "Yinele",
+    "cut": "Kes",
+    "copy": "Kopyala",
+    "paste": "Yapıştır",
+    "delete": "Sil",
+    "selectAll": "Tümünü Seç",
+    "addToDictionary": "Sözlüğe Ekle"
+  },
   "tray": {
     "show": "Sharkord'u Göster",
     "quit": "Sharkord'dan Çık"

@@ -38,6 +38,16 @@
     "openLogsFolder": "Открыть папку журналов",
     "resetApp": "Сбросить приложение..."
   },
+  "contextMenu": {
+    "undo": "Отменить",
+    "redo": "Повторить",
+    "cut": "Вырезать",
+    "copy": "Копировать",
+    "paste": "Вставить",
+    "delete": "Удалить",
+    "selectAll": "Выделить всё",
+    "addToDictionary": "Добавить в словарь"
+  },
   "tray": {
     "show": "Показать Sharkord",
     "quit": "Выйти из Sharkord"
