@@ -1,12 +1,9 @@
 import { eq } from 'drizzle-orm';
+import { pluginManager } from '..';
 import { db } from '../../db';
-import { removeFile } from '../../db/mutations/files';
-import { publishMessageDelete, publishReplyCount } from '../../db/publishers';
-import { getFilesByMessageId } from '../../db/queries/files';
+import { deleteMessage } from '../../db/mutations/messages';
 import { messages } from '../../db/schema';
-import { refreshThreadFollowers } from '../../helpers/threads';
-import { eventBus } from '../event-bus';
-import { loadOwnPluginMessage } from './load-own-plugin-message';
+import { invariant } from '../../utils/invariant';
 
 type TDeletePluginMessageOptions = {
   pluginId: string;
@@ -18,32 +15,27 @@ const deletePluginMessage = async (
 ): Promise<void> => {
   const { pluginId, messageId } = options;
 
-  const message = await loadOwnPluginMessage(pluginId, messageId, 'delete');
-
-  const files = await getFilesByMessageId(messageId);
-
-  if (files.length > 0) {
-    const promises = files.map(async (file) => {
-      await removeFile(file.id);
-    });
-
-    await Promise.all(promises);
-  }
-
-  await db.delete(messages).where(eq(messages.id, messageId));
-
-  publishMessageDelete({ ...message, id: messageId });
-
-  if (message.parentMessageId) {
-    publishReplyCount(message.parentMessageId, message.channelId);
-    // a deleted reply may have been unread, or the mention that made a badge red
-    await refreshThreadFollowers(message.parentMessageId, message.channelId);
-  }
-
-  eventBus.emit('message:deleted', {
-    channelId: message.channelId,
-    messageId
+  invariant(pluginManager.isEnabled(pluginId), {
+    code: 'FORBIDDEN',
+    message: 'Plugin is not enabled.'
   });
+
+  const message = await db
+    .select({
+      channelId: messages.channelId,
+      parentMessageId: messages.parentMessageId
+    })
+    .from(messages)
+    .where(eq(messages.id, messageId))
+    .limit(1)
+    .get();
+
+  invariant(message, {
+    code: 'NOT_FOUND',
+    message: 'Message not found'
+  });
+
+  await deleteMessage({ id: messageId, ...message });
 };
 
 export { deletePluginMessage };
