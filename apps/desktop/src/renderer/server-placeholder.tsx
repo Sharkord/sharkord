@@ -17,6 +17,10 @@ const ServerPlaceholder = memo(
       window.desktop.retryServer(server.id);
     }, [server.id]);
 
+    const handleRemove = useCallback(() => {
+      window.desktop.removeServer(server.id);
+    }, [server.id]);
+
     if (!failed) {
       return (
         <div className="flex flex-col items-center gap-4 text-muted-foreground">
@@ -37,9 +41,14 @@ const ServerPlaceholder = memo(
         <span className="text-sm text-muted-foreground">
           {t('serverPlaceholder.errorDescription')}
         </span>
-        <Button variant="outline" className="mt-2" onClick={handleRetry}>
-          {t('serverPlaceholder.retry')}
-        </Button>
+        <div className="mt-2 flex gap-2">
+          <Button variant="outline" onClick={handleRetry}>
+            {t('serverPlaceholder.retry')}
+          </Button>
+          <Button variant="destructive" onClick={handleRemove}>
+            {t('removeServer')}
+          </Button>
+        </div>
       </div>
     );
   }
