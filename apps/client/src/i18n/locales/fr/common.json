@@ -146,6 +146,7 @@
   "commandArgNo": "Non",
   "commandArgMissing": "/{{commandName}} a besoin d'une valeur pour {{argName}}.",
   "mutedByModerator": "Un modérateur vous a rendu muet.",
+  "cannotPlayStreamCodec": "Votre navigateur ne peut pas lire le codec vidéo de ce stream. Essayez l'application de bureau ou un navigateur basé sur Chromium.",
   "followThread": "Suivre le fil",
   "unfollowThread": "Ne plus suivre le fil",
   "failedUpdateThreadFollow": "Impossible de mettre à jour le suivi du fil",

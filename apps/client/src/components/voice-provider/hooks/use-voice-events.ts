@@ -25,6 +25,11 @@ type TEvents = {
     kind: StreamKind.EXTERNAL_AUDIO | StreamKind.EXTERNAL_VIDEO
   ) => void;
   removeExternalStream: (streamId: number) => void;
+  setRemoteStreamUnplayable: (
+    remoteId: number,
+    kind: StreamKind,
+    unplayable: boolean
+  ) => void;
   clearRemoteUserStreamsForUser: (userId: number) => void;
   stopClosedOwnStreamRef: RefObject<
     (kind: StreamKind, producerId: string) => void
@@ -38,6 +43,7 @@ const useVoiceEvents = ({
   removeRemoteUserStream,
   removeExternalStreamTrack,
   removeExternalStream,
+  setRemoteStreamUnplayable,
   clearRemoteUserStreamsForUser,
   stopClosedOwnStreamRef,
   rtpCapabilitiesRef,
@@ -144,6 +150,7 @@ const useVoiceEvents = ({
               removeExternalStreamTrack(remoteId, kind);
             } else {
               removeRemoteUserStream(remoteId, kind);
+              setRemoteStreamUnplayable(remoteId, kind, false);
             }
           } catch (error) {
             voiceLogger.error(
@@ -229,6 +236,7 @@ const useVoiceEvents = ({
     removeRemoteUserStream,
     removeExternalStreamTrack,
     removeExternalStream,
+    setRemoteStreamUnplayable,
     clearRemoteUserStreamsForUser,
     stopClosedOwnStreamRef,
     rtpCapabilitiesRef,

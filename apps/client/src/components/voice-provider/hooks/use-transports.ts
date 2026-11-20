@@ -55,6 +55,11 @@ type TUseTransportParams = {
     kind: StreamKind,
     paused: boolean
   ) => void;
+  setRemoteStreamUnplayable: (
+    remoteId: number,
+    kind: StreamKind,
+    unplayable: boolean
+  ) => void;
   clearRemoteConsumerMetadata: () => void;
   isStreamHidden: (remoteId: number, kind: StreamKind) => boolean;
 };
@@ -67,6 +72,7 @@ const useTransports = ({
   setRemoteConsumerType,
   setRemoteStreamQualityLayers,
   setRemoteStreamPaused,
+  setRemoteStreamUnplayable,
   clearRemoteConsumerMetadata,
   isStreamHidden
 }: TUseTransportParams) => {
@@ -299,6 +305,8 @@ const useTransports = ({
 
       consumeOperationsInProgress.current.add(operationKey);
 
+      setRemoteStreamUnplayable(remoteId, kind, false);
+
       try {
         voiceLogger.info('consumer: consuming', { remoteId, kind });
 
@@ -451,6 +459,13 @@ const useTransports = ({
           remoteId,
           kind
         });
+
+        if (
+          error instanceof TRPCClientError &&
+          error.data?.code === 'PRECONDITION_FAILED'
+        ) {
+          setRemoteStreamUnplayable(remoteId, kind, true);
+        }
       } finally {
         consumeOperationsInProgress.current.delete(operationKey);
       }
@@ -463,6 +478,7 @@ const useTransports = ({
       setRemoteConsumerType,
       setRemoteStreamQualityLayers,
       setRemoteStreamPaused,
+      setRemoteStreamUnplayable,
       isStreamHidden
     ]
   );

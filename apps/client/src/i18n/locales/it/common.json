@@ -146,6 +146,7 @@
   "commandArgNo": "No",
   "commandArgMissing": "/{{commandName}} richiede un valore per {{argName}}.",
   "mutedByModerator": "Sei stato silenziato da un moderatore.",
+  "cannotPlayStreamCodec": "Il tuo browser non può riprodurre il codec video di questo stream. Prova l'app desktop o un browser basato su Chromium.",
   "followThread": "Segui thread",
   "unfollowThread": "Smetti di seguire il thread",
   "failedUpdateThreadFollow": "Impossibile aggiornare il follow del thread",
