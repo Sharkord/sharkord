@@ -1,5 +1,5 @@
 import {
-  Label,
+  Group,
   Select,
   SelectContent,
   SelectGroup,
@@ -7,7 +7,8 @@ import {
   SelectTrigger,
   SelectValue
 } from '@sharkord/ui';
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type TResolutionFpsControlProps = {
   resolution: string;
@@ -25,16 +26,23 @@ const ResolutionFpsControl = memo(
     onFramerateChange,
     disabled
   }: TResolutionFpsControlProps) => {
+    const { t } = useTranslation('settings');
+
+    const handleFramerateChange = useCallback(
+      (value: string) => onFramerateChange(+value),
+      [onFramerateChange]
+    );
+
     return (
-      <div className="flex items-center gap-2">
-        <Label content="Resolution">
+      <div className="flex items-end gap-2">
+        <Group label={t('resolutionLabel')}>
           <Select
             value={resolution}
             onValueChange={onResolutionChange}
             disabled={disabled}
           >
             <SelectTrigger className="w-40">
-              <SelectValue placeholder="Select the input device" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -48,16 +56,16 @@ const ResolutionFpsControl = memo(
               </SelectGroup>
             </SelectContent>
           </Select>
-        </Label>
+        </Group>
 
-        <Label content="Framerate">
+        <Group label={t('framerateLabel')}>
           <Select
             value={framerate.toString()}
-            onValueChange={(value) => onFramerateChange(+value)}
+            onValueChange={handleFramerateChange}
             disabled={disabled}
           >
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Select the input device" />
+            <SelectTrigger className="w-40">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -71,7 +79,7 @@ const ResolutionFpsControl = memo(
               </SelectGroup>
             </SelectContent>
           </Select>
-        </Label>
+        </Group>
       </div>
     );
   }

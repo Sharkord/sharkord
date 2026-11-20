@@ -146,6 +146,7 @@
   "commandArgNo": "Hayır",
   "commandArgMissing": "/{{commandName}} komutu için {{argName}} değeri gerekli.",
   "mutedByModerator": "Bir moderatör tarafından susturuldunuz.",
+  "cannotPlayStreamCodec": "Tarayıcınız bu yayının video codec'ini oynatamıyor. Masaüstü uygulamasını veya Chromium tabanlı bir tarayıcı deneyin.",
   "followThread": "Konuyu Takip Et",
   "unfollowThread": "Konuyu Takipten Çık",
   "failedUpdateThreadFollow": "Konu takibi güncellenemedi",

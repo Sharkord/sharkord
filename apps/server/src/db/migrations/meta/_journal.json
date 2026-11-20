@@ -292,15 +292,15 @@
     {
       "idx": 41,
       "version": "6",
-      "when": 1795170246309,
-      "tag": "0041_settings_media_proxy",
+      "when": 1795180868792,
+      "tag": "0041_typical_naoko",
       "breakpoints": true
     },
     {
       "idx": 42,
       "version": "6",
-      "when": 1795186814671,
-      "tag": "0042_settings_link_previews",
+      "when": 1795196843687,
+      "tag": "0042_settings_media_proxy_link_previews",
       "breakpoints": true
     }
   ]

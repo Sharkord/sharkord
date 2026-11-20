@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f5dfcd81-8889-4e69-b1ad-e540d7aca43e",
-  "prevId": "8bfb7677-6ad8-4432-9c5e-63e69f116782",
+  "id": "9cd8baa8-5e69-48fe-a0a0-3686fd44defd",
+  "prevId": "94003e96-c4be-460f-b3b5-6810cb9debc4",
   "tables": {
     "activity_log": {
       "name": "activity_log",
@@ -2466,6 +2466,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "server_wizard_completed": {
+          "name": "server_wizard_completed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         }
       },
       "indexes": {

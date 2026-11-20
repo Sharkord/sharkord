@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "8bfb7677-6ad8-4432-9c5e-63e69f116782",
+  "id": "94003e96-c4be-460f-b3b5-6810cb9debc4",
   "prevId": "bb375643-2587-4bc5-becc-2f6d27b65abb",
   "tables": {
     "activity_log": {
@@ -2412,52 +2412,20 @@
           "autoincrement": false,
           "default": 80
         },
-        "storage_media_proxy_enabled": {
-          "name": "storage_media_proxy_enabled",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": true
-        },
-        "storage_media_proxy_max_size": {
-          "name": "storage_media_proxy_max_size",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 104857600
-        },
-        "storage_media_proxy_timeout_seconds": {
-          "name": "storage_media_proxy_timeout_seconds",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 10
-        },
-        "storage_media_proxy_cache_seconds": {
-          "name": "storage_media_proxy_cache_seconds",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 86400
-        },
-        "storage_media_proxy_max_redirects": {
-          "name": "storage_media_proxy_max_redirects",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 3
-        },
         "rate_limiters": {
           "name": "rate_limiters",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "server_wizard_completed": {
+          "name": "server_wizard_completed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         }
       },
       "indexes": {

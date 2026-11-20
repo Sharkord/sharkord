@@ -1,8 +1,14 @@
+import { VideoCodec } from '@/types';
 import type { TExternalStreamsMap } from '@sharkord/shared';
 import { StreamKind } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
+import type {
+  RtpCapabilities,
+  RtpCodecCapability
+} from 'mediasoup-client/types';
 import {
   getOwnedExternalVolumeKeys,
+  getPreferredScreenCodec,
   getUserScreenVolumeKey,
   isOwnProducerEvent,
   resolveVolume
@@ -94,5 +100,75 @@ describe('screen share audio default volume', () => {
     expect(resolveVolume({ [screenKey]: 60 }, screenKey, new Set(), true)).toBe(
       60
     );
+  });
+});
+
+const videoCodec = (
+  mimeType: string,
+  parameters: RtpCodecCapability['parameters'] = {}
+): RtpCodecCapability => ({
+  kind: 'video',
+  mimeType,
+  preferredPayloadType: 96,
+  clockRate: 90000,
+  parameters
+});
+
+const vp9 = videoCodec('video/VP9');
+const h264ConstrainedBaseline = videoCodec('video/H264', {
+  'profile-level-id': '42e01f'
+});
+const h264High = videoCodec('video/H264', { 'profile-level-id': '640032' });
+const h264Main = videoCodec('video/H264', { 'profile-level-id': '4d0032' });
+
+const chromiumCapabilities: RtpCapabilities = {
+  codecs: [vp9, h264ConstrainedBaseline, h264High, h264Main]
+};
+const firefoxCapabilities: RtpCapabilities = {
+  codecs: [vp9, h264ConstrainedBaseline]
+};
+
+describe('getPreferredScreenCodec', () => {
+  test('should leave the choice to mediasoup on auto', () => {
+    expect(
+      getPreferredScreenCodec(chromiumCapabilities, VideoCodec.AUTO)
+    ).toBeUndefined();
+  });
+
+  test('should keep plain h264 on constrained baseline so firefox can watch', () => {
+    expect(getPreferredScreenCodec(chromiumCapabilities, VideoCodec.H264)).toBe(
+      h264ConstrainedBaseline
+    );
+  });
+
+  test('should pick high for h264 high when the device can send it', () => {
+    expect(
+      getPreferredScreenCodec(chromiumCapabilities, VideoCodec.H264_HIGH)
+    ).toBe(h264High);
+  });
+
+  test('should pick main for h264 high when high is not available', () => {
+    expect(
+      getPreferredScreenCodec(
+        { codecs: [h264ConstrainedBaseline, h264Main] },
+        VideoCodec.H264_HIGH
+      )
+    ).toBe(h264Main);
+  });
+
+  test('should fall back to constrained baseline for h264 high on firefox', () => {
+    expect(
+      getPreferredScreenCodec(firefoxCapabilities, VideoCodec.H264_HIGH)
+    ).toBe(h264ConstrainedBaseline);
+  });
+
+  test('should return nothing for a codec the device cannot send', () => {
+    expect(
+      getPreferredScreenCodec(firefoxCapabilities, VideoCodec.AV1)
+    ).toBeUndefined();
+  });
+
+  test('should return nothing before the device is loaded', () => {
+    expect(getPreferredScreenCodec(null, VideoCodec.VP9)).toBeUndefined();
   });
 });

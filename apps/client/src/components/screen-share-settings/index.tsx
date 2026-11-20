@@ -28,6 +28,8 @@ import {
 import { filesize } from 'filesize';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CodecHelpPopover } from './codec-help-popover';
+import { H264HighAlert } from './h264-high-alert';
 import { RestrictOwnAudioAlert } from './restrict-own-audio-alert';
 import { SuppressLocalAudioPlaybackAlert } from './suppress-local-audio-playback-alert';
 
@@ -56,6 +58,8 @@ const ScreenShareSettings = memo(
       [settings?.webRtcMaxBitrate]
     );
     const bitrate = values.screenBitrate ?? DEFAULT_BITRATE;
+    const simulcastEnabled =
+      !!settings?.webRtcSimulcastEnabled && !!values.simulcastEnabled;
 
     const handleFramerateChange = useCallback(
       (value: number) => onChange('screenFramerate', value),
@@ -100,7 +104,7 @@ const ScreenShareSettings = memo(
 
     return (
       <>
-        <div className="flex">
+        <div className="flex items-end gap-2">
           <ResolutionFpsControl
             framerate={values.screenFramerate}
             resolution={values.screenResolution}
@@ -108,7 +112,11 @@ const ScreenShareSettings = memo(
             onResolutionChange={handleResolutionChange}
           />
 
-          <div className="ml-2">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-1">
+              <Label>{t('codecLabel')}</Label>
+              <CodecHelpPopover simulcastEnabled={simulcastEnabled} />
+            </div>
             <Select
               value={values.screenCodec ?? VideoCodec.AUTO}
               onValueChange={handleCodecChange}
@@ -122,12 +130,17 @@ const ScreenShareSettings = memo(
                   <SelectItem value={VideoCodec.VP8}>VP8</SelectItem>
                   <SelectItem value={VideoCodec.VP9}>VP9</SelectItem>
                   <SelectItem value={VideoCodec.H264}>H264</SelectItem>
+                  <SelectItem value={VideoCodec.H264_HIGH}>
+                    H264 High
+                  </SelectItem>
                   <SelectItem value={VideoCodec.AV1}>AV1</SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
           </div>
         </div>
+
+        {values.screenCodec === VideoCodec.H264_HIGH && <H264HighAlert />}
 
         <Group label={t('screenCursorLabel')}>
           <Select

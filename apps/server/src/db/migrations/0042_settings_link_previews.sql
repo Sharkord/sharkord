@@ -1,1 +1,0 @@
-ALTER TABLE `settings` ADD `enable_link_previews` integer DEFAULT true NOT NULL;

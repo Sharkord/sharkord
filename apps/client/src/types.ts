@@ -38,6 +38,7 @@ export enum VideoCodec {
   VP8 = 'video/VP8',
   VP9 = 'video/VP9',
   H264 = 'video/H264',
+  H264_HIGH = 'video/H264-high',
   AV1 = 'video/AV1'
 }
 
