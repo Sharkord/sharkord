@@ -41,7 +41,7 @@ describe('tests setup', () => {
     expect(usersResults.length).toBe(8);
     expect(channelsResults.length).toBe(5);
     expect(rolesResults.length).toBe(4);
-    expect(messagesResults.length).toBe(2);
+    expect(messagesResults.length).toBe(3);
   });
 
   test('should seed the join tables the permission checks read', async () => {

@@ -307,70 +307,48 @@ body {
 
 /* speaking indicators */
 
-/* quiet */
-@keyframes speaking-glow-low {
-  0% {
-    box-shadow:
-      0 0 0 1px rgb(134, 239, 172, 0.4),
-      0 0 10px rgb(134, 239, 172, 0.2);
+.speaking-effect-low::before,
+.speaking-effect-medium::before,
+.speaking-effect-high::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+@keyframes speaking-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
   }
   50% {
-    box-shadow:
-      0 0 0 2px rgb(134, 239, 172, 0.6),
-      0 0 15px rgb(134, 239, 172, 0.3);
+    opacity: 1;
   }
-  100% {
-    box-shadow:
-      0 0 0 1px rgb(134, 239, 172, 0.4),
-      0 0 10px rgb(134, 239, 172, 0.2);
-  }
+}
+
+/* quiet */
+.speaking-effect-low::before {
+  box-shadow:
+    0 0 0 2px rgb(134, 239, 172, 0.6),
+    0 0 15px rgb(134, 239, 172, 0.3);
 }
 
 /* normal */
-@keyframes speaking-glow-medium {
-  0% {
-    box-shadow:
-      0 0 0 2px rgb(34, 197, 94, 0.6),
-      0 0 20px rgb(34, 197, 94, 0.4),
-      0 0 30px rgb(34, 197, 94, 0.2);
-  }
-  50% {
-    box-shadow:
-      0 0 0 4px rgb(34, 197, 94, 0.8),
-      0 0 30px rgb(34, 197, 94, 0.6),
-      0 0 45px rgb(34, 197, 94, 0.3);
-  }
-  100% {
-    box-shadow:
-      0 0 0 2px rgb(34, 197, 94, 0.6),
-      0 0 20px rgb(34, 197, 94, 0.4),
-      0 0 30px rgb(34, 197, 94, 0.2);
-  }
+.speaking-effect-medium::before {
+  box-shadow:
+    0 0 0 4px rgb(34, 197, 94, 0.8),
+    0 0 30px rgb(34, 197, 94, 0.6),
+    0 0 45px rgb(34, 197, 94, 0.3);
 }
 
 /* loud */
-@keyframes speaking-glow-high {
-  0% {
-    box-shadow:
-      0 0 0 3px rgb(22, 163, 74, 0.8),
-      0 0 25px rgb(22, 163, 74, 0.6),
-      0 0 50px rgb(22, 163, 74, 0.4),
-      0 0 75px rgb(22, 163, 74, 0.2);
-  }
-  50% {
-    box-shadow:
-      0 0 0 6px rgb(22, 163, 74, 1),
-      0 0 40px rgb(22, 163, 74, 0.8),
-      0 0 70px rgb(22, 163, 74, 0.6),
-      0 0 100px rgb(22, 163, 74, 0.3);
-  }
-  100% {
-    box-shadow:
-      0 0 0 3px rgb(22, 163, 74, 0.8),
-      0 0 25px rgb(22, 163, 74, 0.6),
-      0 0 50px rgb(22, 163, 74, 0.4),
-      0 0 75px rgb(22, 163, 74, 0.2);
-  }
+.speaking-effect-high::before {
+  box-shadow:
+    0 0 0 6px rgb(22, 163, 74, 1),
+    0 0 40px rgb(22, 163, 74, 0.8),
+    0 0 70px rgb(22, 163, 74, 0.6),
+    0 0 100px rgb(22, 163, 74, 0.3);
 }
 
 @keyframes voice-reaction-rise {
@@ -423,16 +401,22 @@ body {
   will-change: transform;
 }
 
-.speaking-effect-low {
-  animation: speaking-glow-low 2.5s ease-in-out infinite;
+.messages-group {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 96px;
+  overflow-clip-margin: 32px;
 }
 
-.speaking-effect-medium {
-  animation: speaking-glow-medium 1.2s ease-in-out infinite;
+.speaking-effect-low::before {
+  animation: speaking-glow-pulse 2.5s ease-in-out infinite;
 }
 
-.speaking-effect-high {
-  animation: speaking-glow-high 0.8s ease-in-out infinite;
+.speaking-effect-medium::before {
+  animation: speaking-glow-pulse 1.2s ease-in-out infinite;
+}
+
+.speaking-effect-high::before {
+  animation: speaking-glow-pulse 0.8s ease-in-out infinite;
 }
 
 .media-masonry-grid {

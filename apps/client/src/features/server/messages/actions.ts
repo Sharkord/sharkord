@@ -38,6 +38,7 @@ import {
   ownUserRoleIdsSelector,
   userByIdSelector
 } from '../users/selectors';
+import { typingMapSelector } from './selectors';
 
 const sendMessageNotification = (
   message: TJoinedMessage,
@@ -124,11 +125,15 @@ export const addMessages = (
     })
   );
 
-  messages.forEach((message) => {
-    if (message.userId) {
-      removeTypingUser(conversation, message.userId);
-    }
-  });
+  if (isSubscriptionMessage) {
+    const authorIds = new Set(messages.map(({ userId }) => userId));
+
+    authorIds.forEach((userId) => {
+      if (userId) {
+        removeTypingUser(conversation, userId);
+      }
+    });
+  }
 
   if (isSubscriptionMessage && messages.length > 0) {
     const state = store.getState();
@@ -247,11 +252,15 @@ export const removeTypingUser = (
   conversation: TConversation,
   userId: number
 ) => {
+  const conversationKey = getConversationKey(conversation);
+  const state = store.getState();
+  const typingMap = typingMapSelector(state);
+  const typingUserIds = typingMap[conversationKey];
+
+  if (!typingUserIds?.includes(userId)) return;
+
   store.dispatch(
-    serverSliceActions.removeTypingUser({
-      conversationKey: getConversationKey(conversation),
-      userId
-    })
+    serverSliceActions.removeTypingUser({ conversationKey, userId })
   );
 };
 

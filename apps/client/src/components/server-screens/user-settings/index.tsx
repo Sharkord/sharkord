@@ -7,6 +7,7 @@ import {
   Headphones,
   Keyboard,
   KeyRound,
+  MonitorSmartphone,
   Package,
   SlidersHorizontal,
   Trash2,
@@ -23,6 +24,7 @@ import { Notifications } from './notifications';
 import { Others } from './others';
 import { Password } from './password';
 import { Profile } from './profile';
+import { Sessions } from './sessions';
 
 type TUserSettingsProps = TServerScreenBaseProps;
 
@@ -56,6 +58,12 @@ const UserSettings = memo(({ close }: TUserSettingsProps) => {
         label: t('passwordTab'),
         icon: KeyRound,
         content: <Password />
+      },
+      {
+        id: 'sessions',
+        label: t('userSessionsTab'),
+        icon: MonitorSmartphone,
+        content: <Sessions />
       },
       {
         id: 'notifications',

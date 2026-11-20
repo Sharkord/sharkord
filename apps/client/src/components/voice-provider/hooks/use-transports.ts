@@ -55,7 +55,13 @@ type TUseTransportParams = {
     kind: StreamKind,
     paused: boolean
   ) => void;
+  setRemoteStreamUnplayable: (
+    remoteId: number,
+    kind: StreamKind,
+    unplayable: boolean
+  ) => void;
   clearRemoteConsumerMetadata: () => void;
+  isStreamHidden: (remoteId: number, kind: StreamKind) => boolean;
 };
 
 const useTransports = ({
@@ -66,7 +72,9 @@ const useTransports = ({
   setRemoteConsumerType,
   setRemoteStreamQualityLayers,
   setRemoteStreamPaused,
-  clearRemoteConsumerMetadata
+  setRemoteStreamUnplayable,
+  clearRemoteConsumerMetadata,
+  isStreamHidden
 }: TUseTransportParams) => {
   const producerTransport = useRef<Transport<AppData> | undefined>(undefined);
   const consumerTransport = useRef<Transport<AppData> | undefined>(undefined);
@@ -297,6 +305,8 @@ const useTransports = ({
 
       consumeOperationsInProgress.current.add(operationKey);
 
+      setRemoteStreamUnplayable(remoteId, kind, false);
+
       try {
         voiceLogger.info('consumer: consuming', { remoteId, kind });
 
@@ -321,7 +331,7 @@ const useTransports = ({
           kind,
           remoteId,
           rtpCapabilities,
-          paused
+          paused: paused || isStreamHidden(remoteId, kind)
         });
 
         voiceLogger.info('consumer: parameters received', {
@@ -449,6 +459,13 @@ const useTransports = ({
           remoteId,
           kind
         });
+
+        if (
+          error instanceof TRPCClientError &&
+          error.data?.code === 'PRECONDITION_FAILED'
+        ) {
+          setRemoteStreamUnplayable(remoteId, kind, true);
+        }
       } finally {
         consumeOperationsInProgress.current.delete(operationKey);
       }
@@ -460,7 +477,9 @@ const useTransports = ({
       removeExternalStreamTrack,
       setRemoteConsumerType,
       setRemoteStreamQualityLayers,
-      setRemoteStreamPaused
+      setRemoteStreamPaused,
+      setRemoteStreamUnplayable,
+      isStreamHidden
     ]
   );
 

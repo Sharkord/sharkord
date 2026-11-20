@@ -1,6 +1,7 @@
 import { getErrorMessage } from '@sharkord/shared';
 import mediasoup from 'mediasoup';
 import { config, SERVER_PUBLIC_IP, SERVER_PUBLIC_IPV6 } from '../config.js';
+import { getPrivateIp } from '../helpers/network.js';
 import { MEDIASOUP_BINARY_PATH } from '../helpers/paths.js';
 import { logger } from '../logger.js';
 import {
@@ -81,16 +82,22 @@ const loadMediasoup = async () => {
       `WebRtcServer created on port ${port} with announcedAddress ${announcedAddress} and IPv6 announcedAddress ${SERVER_PUBLIC_IPV6 ?? 'disabled'}`
     );
   } else {
+    // workaround to get firefox working in dev mode (announce LAN address if available)
+    const announcedAddress = await getPrivateIp();
+    const ip = announcedAddress ? '0.0.0.0' : '127.0.0.1';
+
     webRtcServer = await mediaSoupWorker.createWebRtcServer({
       listenInfos: [
-        { protocol: 'udp', ip: '127.0.0.1', port },
-        { protocol: 'tcp', ip: '127.0.0.1', port }
+        { protocol: 'udp', ip, announcedAddress, port },
+        { protocol: 'tcp', ip, announcedAddress, port }
       ]
     });
 
     webRtcServerListenInfo = { ip: '127.0.0.1' };
 
-    logger.debug(`WebRtcServer created on 127.0.0.1:${port} (dev mode)`);
+    logger.debug(
+      `WebRtcServer created on ${ip}:${port} with announcedAddress ${announcedAddress ?? 'none'} (dev mode)`
+    );
   }
 };
 

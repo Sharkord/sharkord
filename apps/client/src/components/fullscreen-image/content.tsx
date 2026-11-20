@@ -72,6 +72,7 @@ const FullScreenImage = memo(
 
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
+          e.preventDefault();
           onCloseClick();
         }
       };
@@ -185,6 +186,8 @@ const FullScreenImage = memo(
     return (
       <>
         <Component
+          loading="lazy"
+          decoding="async"
           {...props}
           className={cn('cursor-pointer', props.className)}
           onClick={onOpenClick}

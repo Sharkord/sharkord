@@ -46,12 +46,14 @@ export enum LocalStorageKey {
   CLOSE_VOICE_CHAT_ON_LEAVE = 'sharkord-close-voice-chat-on-leave',
   PAUSE_NEW_STREAMS_BY_DEFAULT = 'sharkord-pause-new-streams-by-default',
   PAUSED_STREAMS = 'sharkord-paused-streams',
-  MUTE_STREAM_AUDIO_BY_DEFAULT = 'sharkord-mute-stream-audio-by-default'
+  MUTE_STREAM_AUDIO_BY_DEFAULT = 'sharkord-mute-stream-audio-by-default',
+  AUTO_LOAD_YOUTUBE_EMBEDS = 'sharkord-auto-load-youtube-embeds'
 }
 
 export enum SessionStorageKey {
   TOKEN = 'sharkord-token',
-  OIDC_NO_AUTO_REDIRECT = 'sharkord-oidc-no-auto-redirect'
+  OIDC_NO_AUTO_REDIRECT = 'sharkord-oidc-no-auto-redirect',
+  STALE_CHUNK_RELOAD_AT = 'sharkord-stale-chunk-reload-at'
 }
 
 // librewolf and firefox private mode throw SecurityError when privacy hardening

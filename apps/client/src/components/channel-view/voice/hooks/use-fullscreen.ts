@@ -9,9 +9,10 @@ import {
 const IDLE_TIMEOUT = 3000;
 
 export const useFullscreen = (containerRef: RefObject<HTMLElement | null>) => {
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreenElement, setFullscreenElement] = useState<HTMLElement>();
   const [isOverlayVisible, setIsOverlayVisible] = useState(true);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const isFullscreen = !!fullscreenElement;
 
   const resetIdleTimer = useCallback(() => {
     setIsOverlayVisible(true);
@@ -24,12 +25,13 @@ export const useFullscreen = (containerRef: RefObject<HTMLElement | null>) => {
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      const entered = document.fullscreenElement === containerRef.current;
-      setIsFullscreen(entered);
+      const container = containerRef.current;
 
-      if (entered) {
+      if (container && document.fullscreenElement === container) {
+        setFullscreenElement(container);
         resetIdleTimer();
       } else {
+        setFullscreenElement(undefined);
         clearTimeout(idleTimerRef.current);
         setIsOverlayVisible(true);
       }
@@ -96,6 +98,7 @@ export const useFullscreen = (containerRef: RefObject<HTMLElement | null>) => {
 
   return {
     isFullscreen,
+    fullscreenElement,
     isOverlayVisible,
     toggleFullscreen,
     handleDoubleClick

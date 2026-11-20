@@ -11,7 +11,8 @@ export enum RateLimiter {
   JOIN_VOICE_CHANNEL = 'joinVoiceChannel',
   VOICE_REACTION = 'voiceReaction',
   VOICE_STATE = 'voiceState',
-  VOICE_STREAM = 'voiceStream'
+  VOICE_STREAM = 'voiceStream',
+  MEDIA_PROXY = 'mediaProxy'
 }
 
 export const RATE_LIMIT_MIN_GLOBAL_REQUESTS = 20;
@@ -50,7 +51,8 @@ export const zRateLimiters = z.object({
     [RateLimiter.JOIN_VOICE_CHANNEL]: zRateLimit,
     [RateLimiter.VOICE_REACTION]: zRateLimit,
     [RateLimiter.VOICE_STATE]: zRateLimit,
-    [RateLimiter.VOICE_STREAM]: zRateLimit
+    [RateLimiter.VOICE_STREAM]: zRateLimit,
+    [RateLimiter.MEDIA_PROXY]: zRateLimit
   }),
   loginLockout: z.object({
     maxFailures: z.number().int().min(1).max(RATE_LIMIT_MAX_REQUESTS),
@@ -77,7 +79,8 @@ export const DEFAULT_RATE_LIMITERS: TRateLimiters = {
     [RateLimiter.JOIN_VOICE_CHANNEL]: { maxRequests: 20, windowMs: 60_000 },
     [RateLimiter.VOICE_REACTION]: { maxRequests: 20, windowMs: 30_000 },
     [RateLimiter.VOICE_STATE]: { maxRequests: 300, windowMs: 60_000 },
-    [RateLimiter.VOICE_STREAM]: { maxRequests: 200, windowMs: 60_000 }
+    [RateLimiter.VOICE_STREAM]: { maxRequests: 200, windowMs: 60_000 },
+    [RateLimiter.MEDIA_PROXY]: { maxRequests: 1000, windowMs: 60_000 }
   },
   loginLockout: {
     maxFailures: 20,

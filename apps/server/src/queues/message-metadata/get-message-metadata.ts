@@ -1,11 +1,11 @@
 import { extractUrls, type TMessageMetadata } from '@sharkord/shared';
-import dns from 'dns';
 import { eq } from 'drizzle-orm';
 import { getLinkPreview } from 'link-preview-js';
 import { isIP } from 'net';
 import { db } from '../../db';
+import { getSettings } from '../../db/queries/server';
 import { messages } from '../../db/schema';
-import { isPrivateIP } from '../../helpers/network';
+import { isPrivateIP, resolvePublicAddress } from '../../helpers/network';
 import {
   createDirectMediaMetadata,
   createOpenGraphMetadata,
@@ -84,36 +84,14 @@ const urlMetadataParser = async (
             return protocol === 'http:' || protocol === 'https:';
           },
           resolveDNSHost: async (url: string) => {
-            return new Promise((resolve, reject) => {
-              try {
-                const hostname = new URL(url).hostname;
+            const { hostname } = new URL(url);
+            const address = await resolvePublicAddress(hostname);
 
-                dns.lookup(hostname, { all: true }, (err, addresses) => {
-                  if (err) {
-                    reject(err);
-                    return;
-                  }
+            if (!address) {
+              throw new Error('Cannot resolve private IP addresses');
+            }
 
-                  for (const entry of addresses) {
-                    if (isPrivateIP(entry.address)) {
-                      reject(new Error('Cannot resolve private IP addresses'));
-                      return;
-                    }
-                  }
-
-                  const firstAddress = addresses[0]?.address;
-
-                  if (!firstAddress) {
-                    reject(new Error('No addresses found'));
-                    return;
-                  }
-
-                  resolve(firstAddress);
-                });
-              } catch (error) {
-                reject(error);
-              }
-            });
+            return address;
           }
         });
       } catch {
@@ -144,6 +122,10 @@ export const processMessageMetadata = async (
   content: string,
   messageId: number
 ) => {
+  const { enableLinkPreviews } = await getSettings();
+
+  if (!enableLinkPreviews) return;
+
   const metadata = await urlMetadataParser(content);
 
   const hasMetadata = metadata && metadata.length > 0;

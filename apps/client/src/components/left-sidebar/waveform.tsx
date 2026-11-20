@@ -1,5 +1,19 @@
 import { cn } from '@/lib/utils';
-import { memo } from 'react';
+import { memo, type CSSProperties } from 'react';
+
+// the bars scale with transform so the endless animation stays on the compositor, animating
+// height or y repaints the whole sidebar on every frame for everyone who can see the channel
+const BAR_STYLES = [
+  { maxHeight: 10, delay: 0 },
+  { maxHeight: 16, delay: 0.2 },
+  { maxHeight: 12, delay: 0.4 },
+  { maxHeight: 20, delay: 0.6 },
+  { maxHeight: 10, delay: 0.8 }
+].map(({ maxHeight, delay }) => ({
+  height: `${(maxHeight / 24) * 100}%`,
+  animationDelay: `${delay}s`,
+  '--min-scale': 6 / maxHeight
+})) as CSSProperties[];
 
 type TIndicatorProps = {
   className?: string;
@@ -53,69 +67,27 @@ const Waveform = memo(({ className, isScreenSharing }: TIndicatorProps) => {
   return (
     <div
       className={cn(
-        'flex items-center justify-center h-4 w-4 animate-in fade-in duration-700',
+        'flex items-center justify-center gap-[1.33px] h-4 w-4 animate-in fade-in duration-700',
         className
       )}
     >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-full w-full"
-        style={{ shapeRendering: 'geometricPrecision' }}
-      >
-        <rect
-          className="animate-wf-loop"
-          rx="1"
-          fill="currentColor"
-          width="2"
-          x="3"
+      {BAR_STYLES.map((style, index) => (
+        <span
+          key={index}
+          className="animate-wf-loop w-[1.33px] rounded-full bg-current"
+          style={style}
         />
-        <rect
-          className="animate-wf-loop"
-          rx="1"
-          fill="currentColor"
-          width="2"
-          x="7"
-        />
-        <rect
-          className="animate-wf-loop"
-          rx="1"
-          fill="currentColor"
-          width="2"
-          x="11"
-        />
-        <rect
-          className="animate-wf-loop"
-          rx="1"
-          fill="currentColor"
-          width="2"
-          x="15"
-        />
-        <rect
-          className="animate-wf-loop"
-          rx="1"
-          fill="currentColor"
-          width="2"
-          x="19"
-        />
-      </svg>
+      ))}
 
       <style>{`
         @keyframes wf-pulsate {
-          0%, 100% { height: 6px; y: 9px; }
-          50% { height: var(--max-h); y: var(--y-pos); }
+          0%, 100% { transform: scaleY(var(--min-scale)); }
+          50% { transform: scaleY(1); }
         }
 
         .animate-wf-loop {
           animation: wf-pulsate 2.5s ease-in-out infinite;
         }
-
-        .animate-wf-loop:nth-child(1) { --max-h: 10px; --y-pos: 7px; animation-delay: 0.0s; }
-        .animate-wf-loop:nth-child(2) { --max-h: 16px; --y-pos: 4px; animation-delay: 0.2s; }
-        .animate-wf-loop:nth-child(3) { --max-h: 12px; --y-pos: 6px; animation-delay: 0.4s; }
-        .animate-wf-loop:nth-child(4) { --max-h: 20px; --y-pos: 2px; animation-delay: 0.6s; }
-        .animate-wf-loop:nth-child(5) { --max-h: 10px; --y-pos: 7px; animation-delay: 0.8s; }
       `}</style>
     </div>
   );

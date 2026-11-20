@@ -18,10 +18,85 @@ import {
   rolePermissions,
   settings
 } from '../../db/schema';
+import { buildMediaProxyUrl } from '../../helpers/media-proxy';
 import { getRateLimit } from '../../helpers/rate-limits';
 import { eventBus } from '../../plugins/event-bus';
 
 describe('messages router', () => {
+  test('should hand out proxy urls for embedded media when the media proxy is on', async () => {
+    const { caller } = await initTest(1);
+
+    const { messages: page } = await caller.messages.get({
+      channelId: 1,
+      cursor: null,
+      limit: 50
+    });
+
+    const embedMessage = page.find(({ id }) => id === 3);
+
+    expect(embedMessage?.metadata).toEqual([
+      {
+        kind: 'media',
+        url: 'https://media.example.com/cat.png',
+        title: 'cat.png',
+        description: '',
+        mediaType: 'image',
+        proxyUrl: buildMediaProxyUrl('https://media.example.com/cat.png')
+      },
+      {
+        kind: 'open_graph',
+        url: 'https://blog.example.com/post',
+        title: 'A post',
+        mediaType: 'website',
+        images: [buildMediaProxyUrl('https://blog.example.com/cover.jpg')],
+        favicons: [buildMediaProxyUrl('https://blog.example.com/favicon.ico')]
+      }
+    ]);
+  });
+
+  test('should hand out the original embed urls when the media proxy is off', async () => {
+    await tdb.update(settings).set({ storageMediaProxyEnabled: false });
+
+    const { caller } = await initTest(1);
+
+    const { messages: page } = await caller.messages.get({
+      channelId: 1,
+      cursor: null,
+      limit: 50
+    });
+
+    const embedMessage = page.find(({ id }) => id === 3);
+    const stored = await tdb
+      .select({ metadata: messages.metadata })
+      .from(messages)
+      .where(eq(messages.id, 3))
+      .get();
+
+    expect(embedMessage?.metadata).toEqual(stored!.metadata);
+  });
+
+  test('should hide stored previews while link previews are off', async () => {
+    await tdb.update(settings).set({ enableLinkPreviews: false });
+
+    const { caller } = await initTest(1);
+
+    const { messages: page } = await caller.messages.get({
+      channelId: 1,
+      cursor: null,
+      limit: 50
+    });
+
+    const embedMessage = page.find(({ id }) => id === 3);
+    const stored = await tdb
+      .select({ metadata: messages.metadata })
+      .from(messages)
+      .where(eq(messages.id, 3))
+      .get();
+
+    expect(embedMessage?.metadata).toBeNull();
+    expect(stored!.metadata).not.toBeNull();
+  });
+
   test('should throw when user lacks permissions (edit - not own message)', async () => {
     const { caller: caller1 } = await initTest(1);
     const { caller: caller2 } = await initTest(2);

@@ -78,6 +78,7 @@ const SettingsShell = memo(
         // the topmost surface owns escape: a dialog or the mod view closes itself first
         if (isModViewOpen || isDialogOpen) return;
 
+        e.preventDefault();
         handleClose();
       };
 

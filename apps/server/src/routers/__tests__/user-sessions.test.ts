@@ -54,6 +54,11 @@ const connectSession = async (
   return { socket, caller };
 };
 
+const getJoinedCaller = (
+  socket: TFakeSocket,
+  getUserWs: (userId: number) => TFakeSocket[]
+) => getCaller(2, { socket }, { authenticated: true, getUserWs });
+
 const socketsOf = (targetUserId: number, sockets: TFakeSocket[]) => ({
   getUserWs: (userId: number) => (userId === targetUserId ? sockets : [])
 });
@@ -393,5 +398,109 @@ describe('disconnect session', () => {
     ).rejects.toThrow();
 
     expect(socket.closes).toEqual([]);
+  });
+});
+
+describe('own sessions', () => {
+  test('should list every session of the caller and flag the current one', async () => {
+    const { socket: current } = await connectSession(2, BROWSER_USER_AGENT);
+    const { socket: other } = await connectSession(2, DESKTOP_USER_AGENT);
+
+    const { caller } = await getJoinedCaller(
+      current,
+      socketsOf(2, [current, other]).getUserWs
+    );
+
+    const sessions = await caller.users.getOwnSessions();
+
+    expect(sessions.map(({ id, current }) => ({ id, current }))).toEqual([
+      { id: current.session!.id, current: true },
+      { id: other.session!.id, current: false }
+    ]);
+    expect(sessions[1]!.ip).toBe('203.0.113.7');
+    expect(sessions[1]!.location?.city).toBe('Porto');
+    expect(sessions[1]!.desktopVersion).toBe('0.1.0');
+  });
+
+  test('should not expose other accounts sharing the ip', async () => {
+    const { socket } = await connectSession(2, BROWSER_USER_AGENT);
+
+    await connectSession(3, DESKTOP_USER_AGENT);
+
+    const { caller } = await getJoinedCaller(
+      socket,
+      socketsOf(2, [socket]).getUserWs
+    );
+
+    const sessions = await caller.users.getOwnSessions();
+
+    expect(sessions[0]).not.toHaveProperty('sharedIpUserIds');
+  });
+
+  test('should disconnect another session of the caller', async () => {
+    const { socket: current } = await connectSession(2, BROWSER_USER_AGENT);
+    const { socket: other } = await connectSession(2, DESKTOP_USER_AGENT);
+
+    const { caller } = await getJoinedCaller(
+      current,
+      socketsOf(2, [current, other]).getUserWs
+    );
+
+    await caller.users.disconnectOwnSession({
+      sessionId: other.session!.id
+    });
+
+    expect(other.closes).toEqual([
+      {
+        code: DisconnectCode.KICKED,
+        reason: 'Disconnected from another session.'
+      }
+    ]);
+    expect(current.closes).toEqual([]);
+
+    const sessions = await caller.users.getOwnSessions();
+
+    expect(sessions.map(({ id }) => id)).toEqual([current.session!.id]);
+  });
+
+  test('should not disconnect the session making the request', async () => {
+    const { socket } = await connectSession(2, BROWSER_USER_AGENT);
+
+    const { caller } = await getJoinedCaller(
+      socket,
+      socketsOf(2, [socket]).getUserWs
+    );
+
+    await expect(
+      caller.users.disconnectOwnSession({ sessionId: socket.session!.id })
+    ).rejects.toThrow('You cannot disconnect the session you are using.');
+
+    expect(socket.closes).toEqual([]);
+  });
+
+  test('should not disconnect a session of another user', async () => {
+    const { socket: own } = await connectSession(2, BROWSER_USER_AGENT);
+    const { socket: foreign } = await connectSession(3, BROWSER_USER_AGENT);
+
+    const { caller } = await getJoinedCaller(own, (userId: number) => {
+      if (userId === 2) return [own];
+      if (userId === 3) return [foreign];
+
+      return [];
+    });
+
+    await expect(
+      caller.users.disconnectOwnSession({ sessionId: foreign.session!.id })
+    ).rejects.toThrow('Session not found');
+
+    expect(foreign.closes).toEqual([]);
+  });
+
+  test('should reject a session id that is too long', async () => {
+    const { caller } = await initTest(2);
+
+    await expect(
+      caller.users.disconnectOwnSession({ sessionId: 'x'.repeat(65) })
+    ).rejects.toThrow();
   });
 });

@@ -1,3 +1,4 @@
+import { FrozenImage } from '@/components/frozen-image';
 import {
   useVolumeControl,
   type TVolumeKey
@@ -6,6 +7,7 @@ import {
   useShowUserBannersInVoice,
   useVoice
 } from '@/features/server/voice/hooks';
+import { useIsHovered } from '@/hooks/use-is-hovered';
 import { cn } from '@/lib/utils';
 import { StreamKind, type TExternalStream } from '@sharkord/shared';
 import { Avatar, AvatarFallback, AvatarImage, IconButton } from '@sharkord/ui';
@@ -25,7 +27,7 @@ import {
   type TPinnedCard
 } from './hooks/use-pin-card-controller';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
-import { useVideoStats } from './hooks/use-video-stats';
+import { useStreamVisibility } from './hooks/use-stream-visibility';
 import { useVoiceRefs } from './hooks/use-voice-refs';
 import { PauseButton } from './pause-button';
 import { PausedStreamOverlay } from './paused-stream-overlay';
@@ -39,6 +41,7 @@ import { VolumeButton } from './volume-button';
 type TExternalStreamControlsProps = {
   isPinned: boolean;
   isFullscreen: boolean;
+  fullscreenElement?: HTMLElement;
   isZoomEnabled: boolean;
   handlePinToggle: () => void;
   handleToggleFullscreen: () => void;
@@ -57,6 +60,7 @@ const ExternalStreamControls = memo(
   ({
     isPinned,
     isFullscreen,
+    fullscreenElement,
     isZoomEnabled,
     handlePinToggle,
     handleToggleFullscreen,
@@ -87,6 +91,7 @@ const ExternalStreamControls = memo(
               volumeKey={volumeKey}
               size={density.icon}
               className={cardControlClass()}
+              portalContainer={fullscreenElement}
             />
           )}
           {hasVideo && (
@@ -103,6 +108,7 @@ const ExternalStreamControls = memo(
               kind={StreamKind.EXTERNAL_VIDEO}
               size={density.icon}
               className={cardControlClass()}
+              portalContainer={fullscreenElement}
             />
           )}
           {hasVideo && (
@@ -207,10 +213,18 @@ const ExternalStreamCard = memo(
 
     const {
       isFullscreen,
+      fullscreenElement,
       isOverlayVisible,
       toggleFullscreen,
       handleDoubleClick
     } = useFullscreen(containerRef);
+
+    const { isHovered, onMouseEnter, onMouseLeave } = useIsHovered();
+
+    const handleMouseLeave = useCallback(() => {
+      handleMouseUp();
+      onMouseLeave();
+    }, [handleMouseUp, onMouseLeave]);
 
     const handleToggleFullscreen = useCallback(() => {
       resetZoom();
@@ -233,6 +247,13 @@ const ExternalStreamCard = memo(
     const hasVideo = stream.tracks?.video && hasExternalVideoStream;
     const hasAudio = stream.tracks?.audio && hasExternalAudioStream;
 
+    useStreamVisibility(
+      externalVideoRef,
+      streamId,
+      StreamKind.EXTERNAL_VIDEO,
+      !!hasVideo
+    );
+
     const isSimulcastExternalVideoConsumer = isSimulcastConsumer(
       streamId,
       StreamKind.EXTERNAL_VIDEO
@@ -249,7 +270,6 @@ const ExternalStreamCard = memo(
       ? getStreamQualityMetadataLabel(streamQuality, qualityLayers)
       : null;
 
-    const videoStats = useVideoStats(externalVideoRef, !!hasVideo);
     const mimeType = getConsumerCodec(streamId, StreamKind.EXTERNAL_VIDEO);
 
     return (
@@ -269,7 +289,8 @@ const ExternalStreamCard = memo(
         onMouseDown={hasVideo ? handleMouseDown : undefined}
         onMouseMove={hasVideo ? handleMouseMove : undefined}
         onMouseUp={hasVideo ? handleMouseUp : undefined}
-        onMouseLeave={hasVideo ? handleMouseUp : undefined}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={handleMouseLeave}
         onDoubleClick={hasVideo ? handleDoubleClick : undefined}
         style={{
           cursor:
@@ -281,11 +302,9 @@ const ExternalStreamCard = memo(
         }}
       >
         {stream.bannerUrl && showUserBanners ? (
-          <div
-            className="h-full w-full rounded bg-cover bg-center blur-sm brightness-50 bg-no-repeat absolute inset-0"
-            style={{
-              backgroundImage: `url("${stream.bannerUrl}")`
-            }}
+          <FrozenImage
+            src={stream.bannerUrl}
+            className="absolute inset-0 size-full rounded object-cover blur-sm brightness-50"
           />
         ) : (
           <CardTheme />
@@ -294,6 +313,7 @@ const ExternalStreamCard = memo(
         <ExternalStreamControls
           isPinned={isPinned}
           isFullscreen={isFullscreen}
+          fullscreenElement={fullscreenElement}
           isZoomEnabled={isZoomEnabled}
           handlePinToggle={handlePinToggle}
           handleToggleFullscreen={handleToggleFullscreen}
@@ -380,10 +400,10 @@ const ExternalStreamCard = memo(
             )}
             <p className={cn('leading-none truncate', density.label)}>
               {stream.title || 'External Stream'}
-              {hasVideo && (
+              {hasVideo && isHovered && (
                 <StreamInfo
+                  videoRef={externalVideoRef}
                   mimeType={mimeType}
-                  videoStats={videoStats}
                   qualityLabel={qualityLabel}
                 />
               )}

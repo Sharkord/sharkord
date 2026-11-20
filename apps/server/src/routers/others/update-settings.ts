@@ -3,7 +3,15 @@ import {
   Permission,
   STORAGE_MAX_FILES_PER_MESSAGE,
   STORAGE_MAX_IMAGE_OPTIMIZATION_QUALITY,
+  STORAGE_MAX_MEDIA_PROXY_CACHE_SECONDS,
+  STORAGE_MAX_MEDIA_PROXY_MAX_REDIRECTS,
+  STORAGE_MAX_MEDIA_PROXY_MAX_SIZE,
+  STORAGE_MAX_MEDIA_PROXY_TIMEOUT_SECONDS,
   STORAGE_MIN_IMAGE_OPTIMIZATION_QUALITY,
+  STORAGE_MIN_MEDIA_PROXY_CACHE_SECONDS,
+  STORAGE_MIN_MEDIA_PROXY_MAX_REDIRECTS,
+  STORAGE_MIN_MEDIA_PROXY_MAX_SIZE,
+  STORAGE_MIN_MEDIA_PROXY_TIMEOUT_SECONDS,
   StorageOverflowAction
 } from '@sharkord/shared';
 import { z } from 'zod';
@@ -38,6 +46,31 @@ const zStorageSettings = z.object({
     .int()
     .min(STORAGE_MIN_IMAGE_OPTIMIZATION_QUALITY)
     .max(STORAGE_MAX_IMAGE_OPTIMIZATION_QUALITY)
+    .optional(),
+  storageMediaProxyEnabled: z.boolean().optional(),
+  storageMediaProxyMaxSize: z
+    .number()
+    .int()
+    .min(STORAGE_MIN_MEDIA_PROXY_MAX_SIZE)
+    .max(STORAGE_MAX_MEDIA_PROXY_MAX_SIZE)
+    .optional(),
+  storageMediaProxyTimeoutSeconds: z
+    .number()
+    .int()
+    .min(STORAGE_MIN_MEDIA_PROXY_TIMEOUT_SECONDS)
+    .max(STORAGE_MAX_MEDIA_PROXY_TIMEOUT_SECONDS)
+    .optional(),
+  storageMediaProxyCacheSeconds: z
+    .number()
+    .int()
+    .min(STORAGE_MIN_MEDIA_PROXY_CACHE_SECONDS)
+    .max(STORAGE_MAX_MEDIA_PROXY_CACHE_SECONDS)
+    .optional(),
+  storageMediaProxyMaxRedirects: z
+    .number()
+    .int()
+    .min(STORAGE_MIN_MEDIA_PROXY_MAX_REDIRECTS)
+    .max(STORAGE_MAX_MEDIA_PROXY_MAX_REDIRECTS)
     .optional()
 });
 
@@ -51,7 +84,9 @@ const zGeneralSettings = z.object({
   enablePlugins: z.boolean().optional(),
   webRtcSimulcastEnabled: z.boolean().optional(),
   enableSearch: z.boolean().optional(),
-  showWelcomeDialog: z.boolean().optional()
+  enableLinkPreviews: z.boolean().optional(),
+  showWelcomeDialog: z.boolean().optional(),
+  serverWizardCompleted: z.boolean().optional()
 });
 
 const STORAGE_SETTING_KEYS = Object.keys(zStorageSettings.shape);

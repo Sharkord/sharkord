@@ -7,7 +7,7 @@ import { invariant } from '../../utils/invariant';
 const loadOwnPluginMessage = async (
   pluginId: string,
   messageId: number,
-  action: 'edit' | 'delete'
+  action: 'edit'
 ) => {
   invariant(pluginManager.isEnabled(pluginId), {
     code: 'FORBIDDEN',

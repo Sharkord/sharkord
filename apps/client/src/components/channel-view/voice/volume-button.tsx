@@ -18,10 +18,16 @@ type TVolumeButtonProps = {
   volumeKey: TVolumeKey;
   className?: string;
   size?: TIconButtonSize;
+  portalContainer?: HTMLElement;
 };
 
 const VolumeButton = memo(
-  ({ volumeKey, className, size = 'default' }: TVolumeButtonProps) => {
+  ({
+    volumeKey,
+    className,
+    size = 'default',
+    portalContainer
+  }: TVolumeButtonProps) => {
     const { getVolume, setVolume, toggleMute } = useVolumeControl();
     const volume = getVolume(volumeKey);
     const isMuted = volume === 0;
@@ -57,6 +63,7 @@ const VolumeButton = memo(
           side="top"
           className="w-48 p-3"
           onClick={stopPropagation}
+          container={portalContainer}
         >
           <div className="flex items-center gap-2">
             <IconButton

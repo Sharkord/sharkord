@@ -1,8 +1,8 @@
-import { useVoiceStats } from '@/components/voice-provider/stats-context';
 import { useVolumeControl } from '@/components/voice-provider/volume-control-context';
 import { useWebRtcSimulcastEnabled } from '@/features/server/hooks';
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { useVoice } from '@/features/server/voice/hooks';
+import { useIsHovered } from '@/hooks/use-is-hovered';
 import { useStreamQualityData } from '@/hooks/use-stream-quality-data';
 import { cn } from '@/lib/utils';
 import { StreamKind } from '@sharkord/shared';
@@ -23,14 +23,16 @@ import {
   type TPinnedCard
 } from './hooks/use-pin-card-controller';
 import { useScreenShareZoom } from './hooks/use-screen-share-zoom';
-import { useVideoStats } from './hooks/use-video-stats';
+import { useStreamVisibility } from './hooks/use-stream-visibility';
 import { useVoiceRefs } from './hooks/use-voice-refs';
+import { OwnScreenShareInfo } from './own-screen-share-info';
 import { PauseButton } from './pause-button';
 import { PausedStreamOverlay } from './paused-stream-overlay';
 import { PictureInPictureButton } from './picture-in-picture-button';
 import { PinButton } from './pin-button';
 import { QualityButton } from './quality-button';
 import { StreamInfo } from './stream-info';
+import { UnplayableStreamOverlay } from './unplayable-stream-overlay';
 import { VolumeButton } from './volume-button';
 
 type TScreenShareCardProps = {
@@ -72,18 +74,17 @@ const ScreenShareCard = memo(
       hasScreenShareAudioStream
     } = useVoiceRefs(userId);
 
-    const { getConsumerCodec } = useVoice();
-    const transportStats = useVoiceStats();
+    const { getConsumerCodec, isStreamUnplayable } = useVoice();
+    const isUnplayable =
+      !isOwnUser && isStreamUnplayable(userId, StreamKind.SCREEN);
+    const { isHovered, onMouseEnter, onMouseLeave } = useIsHovered();
 
-    const videoStats = useVideoStats(screenShareRef, hasScreenShareStream);
-
-    let mimeType: string | undefined;
-
-    if (isOwnUser) {
-      mimeType = transportStats.screenShare?.codec;
-    } else {
-      mimeType = getConsumerCodec(userId, StreamKind.SCREEN);
-    }
+    useStreamVisibility(
+      screenShareRef,
+      userId,
+      StreamKind.SCREEN,
+      hasScreenShareStream && !isOwnUser
+    );
 
     const { isSimulcastScreenConsumer, qualityLabel } = useStreamQualityData(
       userId,
@@ -107,6 +108,7 @@ const ScreenShareCard = memo(
 
     const {
       isFullscreen,
+      fullscreenElement,
       isOverlayVisible,
       toggleFullscreen,
       handleDoubleClick
@@ -130,7 +132,12 @@ const ScreenShareCard = memo(
       }
     }, [isPinned, onPin, onUnpin, cardId, userId, resetZoom]);
 
-    if (!user || !hasScreenShareStream) return null;
+    const handleMouseLeave = useCallback(() => {
+      handleMouseUp();
+      onMouseLeave();
+    }, [handleMouseUp, onMouseLeave]);
+
+    if (!user || (!hasScreenShareStream && !isUnplayable)) return null;
 
     return (
       <div
@@ -148,7 +155,8 @@ const ScreenShareCard = memo(
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={handleMouseLeave}
         onDoubleClick={handleDoubleClick}
         style={{
           cursor: isFullscreen && !isOverlayVisible ? 'none' : getCursor()
@@ -171,6 +179,8 @@ const ScreenShareCard = memo(
         {!isOwnUser && (
           <PausedStreamOverlay streamId={userId} kind={StreamKind.SCREEN} />
         )}
+
+        {isUnplayable && <UnplayableStreamOverlay title={user.name} />}
 
         <audio
           ref={screenShareAudioRef}
@@ -206,6 +216,7 @@ const ScreenShareCard = memo(
                 volumeKey={volumeKey}
                 size={density.icon}
                 className={cardControlClass()}
+                portalContainer={fullscreenElement}
               />
             )}
             {!isOwnUser && webRtcSimulcastEnabled && (
@@ -215,6 +226,7 @@ const ScreenShareCard = memo(
                 disabled={!isSimulcastScreenConsumer}
                 size={density.icon}
                 className={cardControlClass()}
+                portalContainer={fullscreenElement}
               />
             )}
             <FullscreenButton
@@ -255,11 +267,19 @@ const ScreenShareCard = memo(
             <Monitor className="text-white shrink-0 size-3" />
             <p className={cn('leading-none truncate', density.label)}>
               {user.name}'s screen
-              <StreamInfo
-                mimeType={mimeType}
-                videoStats={videoStats}
-                qualityLabel={qualityLabel}
-              />
+              {isHovered && isOwnUser && (
+                <OwnScreenShareInfo
+                  videoRef={screenShareRef}
+                  qualityLabel={qualityLabel}
+                />
+              )}
+              {isHovered && !isOwnUser && (
+                <StreamInfo
+                  videoRef={screenShareRef}
+                  mimeType={getConsumerCodec(userId, StreamKind.SCREEN)}
+                  qualityLabel={qualityLabel}
+                />
+              )}
               {isZoomEnabled && zoom > 1 && (
                 <span className="text-white/70 text-xs ml-2 leading-none">
                   {Math.round(zoom * 100)}%

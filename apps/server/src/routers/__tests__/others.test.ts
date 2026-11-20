@@ -6,6 +6,12 @@ import {
   RATE_LIMIT_MIN_WINDOW_MS,
   RateLimiter,
   STORAGE_MAX_FILES_PER_MESSAGE,
+  STORAGE_MAX_MEDIA_PROXY_CACHE_SECONDS,
+  STORAGE_MAX_MEDIA_PROXY_MAX_REDIRECTS,
+  STORAGE_MAX_MEDIA_PROXY_MAX_SIZE,
+  STORAGE_MAX_MEDIA_PROXY_TIMEOUT_SECONDS,
+  STORAGE_MIN_MEDIA_PROXY_MAX_SIZE,
+  STORAGE_MIN_MEDIA_PROXY_TIMEOUT_SECONDS,
   type TRateLimiters,
   type TTempFile
 } from '@sharkord/shared';
@@ -27,6 +33,7 @@ import { pluginManager } from '../../plugins';
 import { drainActivityLogQueue } from '../../queues/activity-log';
 import { drainLoginsQueue } from '../../queues/logins';
 import { VoiceRuntime } from '../../runtimes/voice';
+import { SERVER_VERSION } from '../../utils/env';
 
 describe('others router', () => {
   test('should throw when user tries to join with no handshake', async () => {
@@ -37,6 +44,13 @@ describe('others router', () => {
         handshakeHash: ''
       })
     ).rejects.toThrow('Invalid handshake hash');
+  });
+
+  test('should report the server version on handshake', async () => {
+    const { caller } = await getCaller(1);
+    const { serverVersion } = await caller.others.handshake();
+
+    expect(serverVersion).toBe(SERVER_VERSION);
   });
 
   test('should allow user to join with valid handshake', async () => {
@@ -224,8 +238,14 @@ describe('others router', () => {
       storageMaxBannerSize: 4 * 1024 * 1024,
       storageMaxFilesPerMessage: 6,
       webRtcSimulcastEnabled: true,
+      enableLinkPreviews: false,
       storageImageOptimizationEnabled: true,
-      storageImageOptimizationQuality: 72
+      storageImageOptimizationQuality: 72,
+      storageMediaProxyEnabled: false,
+      storageMediaProxyMaxSize: 50 * 1024 * 1024,
+      storageMediaProxyTimeoutSeconds: 20,
+      storageMediaProxyCacheSeconds: 3600,
+      storageMediaProxyMaxRedirects: 5
     };
 
     await caller.others.updateSettings(newSettings);
@@ -235,6 +255,7 @@ describe('others router', () => {
     expect(settings.name).toBe(newSettings.name);
     expect(settings.description).toBe(newSettings.description);
     expect(settings.allowNewUsers).toBe(newSettings.allowNewUsers);
+    expect(settings.enableLinkPreviews).toBe(newSettings.enableLinkPreviews);
     expect(settings.directMessagesEnabled).toBe(
       newSettings.directMessagesEnabled
     );
@@ -263,6 +284,47 @@ describe('others router', () => {
     expect(settings.storageImageOptimizationQuality).toBe(
       newSettings.storageImageOptimizationQuality
     );
+    expect(settings.storageMediaProxyEnabled).toBe(
+      newSettings.storageMediaProxyEnabled
+    );
+    expect(settings.storageMediaProxyMaxSize).toBe(
+      newSettings.storageMediaProxyMaxSize
+    );
+    expect(settings.storageMediaProxyTimeoutSeconds).toBe(
+      newSettings.storageMediaProxyTimeoutSeconds
+    );
+    expect(settings.storageMediaProxyCacheSeconds).toBe(
+      newSettings.storageMediaProxyCacheSeconds
+    );
+    expect(settings.storageMediaProxyMaxRedirects).toBe(
+      newSettings.storageMediaProxyMaxRedirects
+    );
+  });
+
+  test.each([
+    ['storageMediaProxyMaxSize', STORAGE_MIN_MEDIA_PROXY_MAX_SIZE - 1],
+    ['storageMediaProxyMaxSize', STORAGE_MAX_MEDIA_PROXY_MAX_SIZE + 1],
+    [
+      'storageMediaProxyTimeoutSeconds',
+      STORAGE_MIN_MEDIA_PROXY_TIMEOUT_SECONDS - 1
+    ],
+    [
+      'storageMediaProxyTimeoutSeconds',
+      STORAGE_MAX_MEDIA_PROXY_TIMEOUT_SECONDS + 1
+    ],
+    ['storageMediaProxyCacheSeconds', -1],
+    [
+      'storageMediaProxyCacheSeconds',
+      STORAGE_MAX_MEDIA_PROXY_CACHE_SECONDS + 1
+    ],
+    ['storageMediaProxyMaxRedirects', -1],
+    ['storageMediaProxyMaxRedirects', STORAGE_MAX_MEDIA_PROXY_MAX_REDIRECTS + 1]
+  ])('should refuse %s set to %d', async (key, value) => {
+    const { caller } = await initTest(1);
+
+    await expect(
+      caller.others.updateSettings({ [key]: value })
+    ).rejects.toThrow();
   });
 
   test('should refuse a per-message file cap send-message could never honour', async () => {
@@ -285,6 +347,41 @@ describe('others router', () => {
     expect(settings.storageMaxFilesPerMessage).toBe(
       STORAGE_MAX_FILES_PER_MESSAGE
     );
+  });
+
+  describe('server wizard', () => {
+    test('should show the wizard after claiming ownership', async () => {
+      const { caller } = await initTest(2);
+
+      const { showServerWizard } = await caller.others.useSecretToken({
+        token: TEST_SECRET_TOKEN
+      });
+
+      expect(showServerWizard).toBe(true);
+    });
+
+    test('should not show the wizard after claiming ownership once completed', async () => {
+      const { caller: owner } = await initTest(1);
+
+      await owner.others.updateSettings({ serverWizardCompleted: true });
+
+      expect((await getSettings()).serverWizardCompleted).toBe(true);
+
+      const { caller } = await initTest(2);
+      const { showServerWizard } = await caller.others.useSecretToken({
+        token: TEST_SECRET_TOKEN
+      });
+
+      expect(showServerWizard).toBe(false);
+    });
+
+    test('should not let a user without manage settings complete the wizard', async () => {
+      const { caller } = await initTest(2);
+
+      await expect(
+        caller.others.updateSettings({ serverWizardCompleted: true })
+      ).rejects.toThrow('Insufficient permissions');
+    });
   });
 
   describe('storage settings permissions', () => {

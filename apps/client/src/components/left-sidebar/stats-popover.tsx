@@ -27,7 +27,9 @@ const hardwareEncoders = [
   'videotoolbox',
   'qsv',
   'amf',
-  'mediacodec'
+  'mediacodec',
+  'mediafoundation',
+  'd3d12'
 ];
 
 const softwareEncoders = ['libvpx', 'openh264', 'libaom', 'software'];
@@ -82,7 +84,7 @@ const StatsLabelValue = memo(
 
 StatsLabelValue.displayName = 'StatsLabelValue';
 
-const StatsPopover = memo(({ children }: StatsPopoverProps) => {
+const StatsContent = memo(() => {
   const { t } = useTranslation('sidebar');
   const transportStats = useVoiceStats();
   const { devices } = useDevices();
@@ -141,261 +143,260 @@ const StatsPopover = memo(({ children }: StatsPopoverProps) => {
   }, []);
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent side="top" align="start" className="p-0">
-        <div className="w-72 p-3 text-xs">
-          <div className="mb-2 flex items-center gap-2">
-            <h3 className="font-semibold text-sm text-foreground">
-              {t('transportStats')}
-            </h3>
-            <IconButton
-              className="ml-auto"
-              variant="ghost"
-              size="sm"
-              icon={Stethoscope}
-              title={t('voiceDiagnostics')}
-              aria-label={t('voiceDiagnostics')}
-              onClick={handleOpenDiagnostics}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4 mb-3">
-            <div>
-              <h4 className="font-medium text-green-400 mb-1">
-                {t('outgoing')}
-              </h4>
-              {producer ? (
-                <div className="space-y-1">
-                  <div>
-                    <StatsLabelValue
-                      text={t('rate', { rate: filesize(currentBitrateSent) })}
-                    />
-                  </div>
-                  <div>
-                    <StatsLabelValue
-                      text={t('packets', {
-                        packets: formatBigNumber(producer.packetsSent)
-                      })}
-                    />
-                  </div>
-                  <div>
-                    <StatsLabelValue
-                      text={t('rtt', { rtt: producer.rtt.toFixed(1) })}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="text-muted-foreground">{t('noData')}</div>
-              )}
-            </div>
-
-            <div>
-              <h4 className="font-medium text-cyan-400 mb-1">
-                {t('incoming')}
-              </h4>
-              {consumer ? (
-                <div className="space-y-1">
-                  <div>
-                    <StatsLabelValue
-                      text={t('rate', {
-                        rate: filesize(currentBitrateReceived)
-                      })}
-                    />
-                  </div>
-                  <div>
-                    <StatsLabelValue
-                      text={t('packets', {
-                        packets: formatBigNumber(consumer.packetsReceived)
-                      })}
-                    />
-                  </div>
-                  {consumer.packetsLost > 0 && (
-                    <div>
-                      <StatsLabelValue
-                        text={t('packetsLost', {
-                          lost: formatBigNumber(consumer.packetsLost)
-                        })}
-                        valueClassName="text-red-400"
-                      />
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-muted-foreground">
-                  {t('noRemoteStreams')}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {hasNoiseSuppression && (
-            <div className="border-t border-border/50 pt-2 mb-3">
-              <h4 className="font-medium text-purple-400 mb-1">
-                {t('microphone')}
-              </h4>
+    <div className="w-72 p-3 text-xs">
+      <div className="mb-2 flex items-center gap-2">
+        <h3 className="font-semibold text-sm text-foreground">
+          {t('transportStats')}
+        </h3>
+        <IconButton
+          className="ml-auto"
+          variant="ghost"
+          size="sm"
+          icon={Stethoscope}
+          title={t('voiceDiagnostics')}
+          aria-label={t('voiceDiagnostics')}
+          onClick={handleOpenDiagnostics}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4 mb-3">
+        <div>
+          <h4 className="font-medium text-green-400 mb-1">{t('outgoing')}</h4>
+          {producer ? (
+            <div className="space-y-1">
               <div>
                 <StatsLabelValue
-                  label={t('noiseSuppression')}
-                  value={noiseSuppressionLabel}
+                  text={t('rate', { rate: filesize(currentBitrateSent) })}
+                />
+              </div>
+              <div>
+                <StatsLabelValue
+                  text={t('packets', {
+                    packets: formatBigNumber(producer.packetsSent)
+                  })}
+                />
+              </div>
+              <div>
+                <StatsLabelValue
+                  text={t('rtt', { rtt: producer.rtt.toFixed(1) })}
                 />
               </div>
             </div>
+          ) : (
+            <div className="text-muted-foreground">{t('noData')}</div>
           )}
+        </div>
 
-          {screenShare && (
-            <div className="border-t border-border/50 pt-2 mb-3">
-              <h4 className="font-medium text-blue-400 mb-1">
-                {t('screenShare')}
-              </h4>
-              <div className="space-y-1">
-                {screenShare.codec && (
-                  <div>
-                    <StatsLabelValue text={t('codec', { codec })} />
-                  </div>
-                )}
-                {encoder && (
-                  <div>
-                    <StatsLabelValue
-                      label={t('encoder').replace(/:$/, '')}
-                      value={encoder.label}
-                      valueClassName={
-                        encoder.isHardware === true
-                          ? 'text-green-400'
-                          : encoder.isHardware === false
-                            ? 'text-yellow-400'
-                            : undefined
-                      }
-                    />
-                  </div>
-                )}
+        <div>
+          <h4 className="font-medium text-cyan-400 mb-1">{t('incoming')}</h4>
+          {consumer ? (
+            <div className="space-y-1">
+              <div>
+                <StatsLabelValue
+                  text={t('rate', {
+                    rate: filesize(currentBitrateReceived)
+                  })}
+                />
+              </div>
+              <div>
+                <StatsLabelValue
+                  text={t('packets', {
+                    packets: formatBigNumber(consumer.packetsReceived)
+                  })}
+                />
+              </div>
+              {consumer.packetsLost > 0 && (
                 <div>
                   <StatsLabelValue
-                    text={t('resolution', {
-                      width: screenShare.width,
-                      height: screenShare.height
+                    text={t('packetsLost', {
+                      lost: formatBigNumber(consumer.packetsLost)
                     })}
+                    valueClassName="text-red-400"
                   />
                 </div>
-                <div>
+              )}
+            </div>
+          ) : (
+            <div className="text-muted-foreground">{t('noRemoteStreams')}</div>
+          )}
+        </div>
+      </div>
+
+      {hasNoiseSuppression && (
+        <div className="border-t border-border/50 pt-2 mb-3">
+          <h4 className="font-medium text-purple-400 mb-1">
+            {t('microphone')}
+          </h4>
+          <div>
+            <StatsLabelValue
+              label={t('noiseSuppression')}
+              value={noiseSuppressionLabel}
+            />
+          </div>
+        </div>
+      )}
+
+      {screenShare && (
+        <div className="border-t border-border/50 pt-2 mb-3">
+          <h4 className="font-medium text-blue-400 mb-1">{t('screenShare')}</h4>
+          <div className="space-y-1">
+            {screenShare.codec && (
+              <div>
+                <StatsLabelValue text={t('codec', { codec })} />
+              </div>
+            )}
+            {encoder && (
+              <div>
+                <StatsLabelValue
+                  label={t('encoder').replace(/:$/, '')}
+                  value={encoder.label}
+                  valueClassName={
+                    encoder.isHardware === true
+                      ? 'text-green-400'
+                      : encoder.isHardware === false
+                        ? 'text-yellow-400'
+                        : undefined
+                  }
+                />
+              </div>
+            )}
+            <div>
+              <StatsLabelValue
+                text={t('resolution', {
+                  width: screenShare.width,
+                  height: screenShare.height
+                })}
+              />
+            </div>
+            <div>
+              <StatsLabelValue
+                text={t('frameRate', {
+                  fps: Math.round(screenShare.frameRate)
+                })}
+              />
+            </div>
+            <div>
+              <StatsLabelValue
+                text={t('bitrate', {
+                  bitrate: filesize(screenShare.bitrate)
+                })}
+              />
+            </div>
+            {screenShare.simulcast && screenShare.layers.length > 1 && (
+              <div>
+                <button
+                  className="text-left hover:underline"
+                  type="button"
+                  onClick={() => setShowSimulcastLayers((show) => !show)}
+                >
                   <StatsLabelValue
-                    text={t('frameRate', {
-                      fps: Math.round(screenShare.frameRate)
+                    text={t('simulcastLayers', {
+                      count: screenShare.layers.length
                     })}
                   />
-                </div>
-                <div>
-                  <StatsLabelValue
-                    text={t('bitrate', {
-                      bitrate: filesize(screenShare.bitrate)
-                    })}
-                  />
-                </div>
-                {screenShare.simulcast && screenShare.layers.length > 1 && (
-                  <div>
-                    <button
-                      className="text-left hover:underline"
-                      type="button"
-                      onClick={() => setShowSimulcastLayers((show) => !show)}
-                    >
-                      <StatsLabelValue
-                        text={t('simulcastLayers', {
-                          count: screenShare.layers.length
-                        })}
-                      />
-                    </button>
-                    {showSimulcastLayers && (
-                      <div className="mt-2 space-y-2">
-                        {screenShare.layers.map((layer, index) => (
-                          <div
-                            key={layer.id}
-                            className="space-y-1 rounded-md border border-border/50 p-2"
-                          >
-                            <div className="border-b border-border/50 pb-1 font-medium text-foreground">
-                              {t('simulcastLayer', {
-                                layer: layer.rid || index + 1
+                </button>
+                {showSimulcastLayers && (
+                  <div className="mt-2 space-y-2">
+                    {screenShare.layers.map((layer, index) => (
+                      <div
+                        key={layer.id}
+                        className="space-y-1 rounded-md border border-border/50 p-2"
+                      >
+                        <div className="border-b border-border/50 pb-1 font-medium text-foreground">
+                          {t('simulcastLayer', {
+                            layer: layer.rid || index + 1
+                          })}
+                          {layer.codec && ` (${getCodecLabel(layer.codec)})`}
+                        </div>
+                        <div>
+                          <StatsLabelValue
+                            text={t('resolution', {
+                              width: layer.width,
+                              height: layer.height
+                            })}
+                          />
+                        </div>
+                        <div>
+                          <StatsLabelValue
+                            text={t('frameRate', {
+                              fps: Math.round(layer.frameRate)
+                            })}
+                          />
+                        </div>
+                        <div>
+                          <StatsLabelValue
+                            text={t('bitrate', {
+                              bitrate: filesize(layer.bitrate)
+                            })}
+                          />
+                        </div>
+                        <div>
+                          <StatsLabelValue
+                            text={t('packets', {
+                              packets: formatBigNumber(layer.packetsSent)
+                            })}
+                          />
+                        </div>
+                        {layer.qualityLimitationReason !== 'none' && (
+                          <div>
+                            <StatsLabelValue
+                              text={t('qualityLimited', {
+                                reason: layer.qualityLimitationReason
                               })}
-                              {layer.codec &&
-                                ` (${getCodecLabel(layer.codec)})`}
-                            </div>
-                            <div>
-                              <StatsLabelValue
-                                text={t('resolution', {
-                                  width: layer.width,
-                                  height: layer.height
-                                })}
-                              />
-                            </div>
-                            <div>
-                              <StatsLabelValue
-                                text={t('frameRate', {
-                                  fps: Math.round(layer.frameRate)
-                                })}
-                              />
-                            </div>
-                            <div>
-                              <StatsLabelValue
-                                text={t('bitrate', {
-                                  bitrate: filesize(layer.bitrate)
-                                })}
-                              />
-                            </div>
-                            <div>
-                              <StatsLabelValue
-                                text={t('packets', {
-                                  packets: formatBigNumber(layer.packetsSent)
-                                })}
-                              />
-                            </div>
-                            {layer.qualityLimitationReason !== 'none' && (
-                              <div>
-                                <StatsLabelValue
-                                  text={t('qualityLimited', {
-                                    reason: layer.qualityLimitationReason
-                                  })}
-                                  valueClassName="text-yellow-400"
-                                />
-                              </div>
-                            )}
+                              valueClassName="text-yellow-400"
+                            />
                           </div>
-                        ))}
+                        )}
                       </div>
-                    )}
-                  </div>
-                )}
-                <div>
-                  <StatsLabelValue
-                    text={t('framesEncoded', {
-                      frames: formatBigNumber(screenShare.framesEncoded)
-                    })}
-                  />
-                </div>
-                {screenShare.qualityLimitationReason !== 'none' && (
-                  <div>
-                    <StatsLabelValue
-                      text={t('qualityLimited', {
-                        reason: screenShare.qualityLimitationReason
-                      })}
-                      valueClassName="text-yellow-400"
-                    />
+                    ))}
                   </div>
                 )}
               </div>
+            )}
+            <div>
+              <StatsLabelValue
+                text={t('framesEncoded', {
+                  frames: formatBigNumber(screenShare.framesEncoded)
+                })}
+              />
             </div>
-          )}
-
-          <div className="border-t border-border/50 pt-2">
-            <h4 className="font-medium text-yellow-400 mb-1">
-              {t('sessionTotals')}
-            </h4>
-            <div className="grid grid-cols-2 gap-2 text-muted-foreground">
-              <div>↑ {filesize(totalBytesSent)}</div>
-              <div>↓ {filesize(totalBytesReceived)}</div>
-            </div>
+            {screenShare.qualityLimitationReason !== 'none' && (
+              <div>
+                <StatsLabelValue
+                  text={t('qualityLimited', {
+                    reason: screenShare.qualityLimitationReason
+                  })}
+                  valueClassName="text-yellow-400"
+                />
+              </div>
+            )}
           </div>
         </div>
-      </PopoverContent>
-    </Popover>
+      )}
+
+      <div className="border-t border-border/50 pt-2">
+        <h4 className="font-medium text-yellow-400 mb-1">
+          {t('sessionTotals')}
+        </h4>
+        <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+          <div>↑ {filesize(totalBytesSent)}</div>
+          <div>↓ {filesize(totalBytesReceived)}</div>
+        </div>
+      </div>
+    </div>
   );
 });
+
+StatsContent.displayName = 'StatsContent';
+
+const StatsPopover = memo(({ children }: StatsPopoverProps) => (
+  <Popover>
+    <PopoverTrigger asChild>{children}</PopoverTrigger>
+    <PopoverContent side="top" align="start" className="p-0">
+      <StatsContent />
+    </PopoverContent>
+  </Popover>
+));
+
+StatsPopover.displayName = 'StatsPopover';
 
 export { StatsPopover };

@@ -645,6 +645,7 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
       messageId: number,
       components: TPluginMessageComponent[] | null
     ): Promise<void>;
+    /** deletes any message, not only your own, so a plugin can moderate */
     delete(messageId: number): Promise<void>;
     get(messageId: number): Promise<TJoinedMessage | undefined>;
     /** thread replies cannot be pinned */
@@ -864,6 +865,15 @@ export interface PluginContext<C extends TPluginContract = TPluginContract> {
   users: {
     list(): Promise<TJoinedPublicUser[]>;
     get(userId: number): Promise<TJoinedPublicUser | undefined>;
+    /**
+     * Edits a user's public profile. A
+     * field you leave out keeps its value, `bio: null` clears it, and the
+     * `beforeProfileUpdate` hooks run as they do for the user's own edit.
+     */
+    update(
+      userId: number,
+      values: { name?: string; bio?: string | null; profileColor?: string }
+    ): Promise<void>;
     ban(userId: number, reason?: string): Promise<void>;
     unban(userId: number): Promise<void>;
     kick(userId: number, reason?: string): Promise<void>;

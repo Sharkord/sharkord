@@ -24,6 +24,7 @@ type TQualityButtonProps = {
   disabled?: boolean;
   className?: string;
   size?: TIconButtonSize;
+  portalContainer?: HTMLElement;
 };
 
 const QualityButton = memo(
@@ -32,7 +33,8 @@ const QualityButton = memo(
     kind,
     disabled = false,
     className,
-    size = 'sm'
+    size = 'sm',
+    portalContainer
   }: TQualityButtonProps) => {
     const { setStreamQuality } = useVoice();
     const [isPending, setIsPending] = useState(false);
@@ -88,6 +90,7 @@ const QualityButton = memo(
           side="top"
           className="w-32"
           onClick={stopPropagation}
+          container={portalContainer}
         >
           <DropdownMenuRadioGroup
             value={getStreamQualityDropdownValue(quality)}

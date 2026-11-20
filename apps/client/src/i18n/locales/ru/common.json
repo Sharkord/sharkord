@@ -146,6 +146,7 @@
   "commandArgNo": "Нет",
   "commandArgMissing": "/{{commandName}}: укажите значение для {{argName}}.",
   "mutedByModerator": "Модератор отключил вам микрофон.",
+  "cannotPlayStreamCodec": "Ваш браузер не может воспроизвести видеокодек этой трансляции. Попробуйте приложение для компьютера или браузер на основе Chromium.",
   "followThread": "Отслеживать ветку",
   "unfollowThread": "Не отслеживать ветку",
   "failedUpdateThreadFollow": "Не удалось изменить отслеживание ветки",
@@ -158,5 +159,6 @@
   "formatBold": "Жирный",
   "formatItalic": "Курсив",
   "formatCode": "Код",
-  "formatCodeBlock": "Блок кода"
+  "formatCodeBlock": "Блок кода",
+  "playVideo": "Воспроизвести видео"
 }

@@ -24,6 +24,7 @@ import {
   setServerHotkeys
 } from '../hotkeys/global-hotkeys';
 import { createLogger } from '../logs/logger';
+import { attachContextMenu } from '../menu/context-menu';
 import { notificationSchema } from '../notifications/notification-schema';
 import { showNotification } from '../notifications/show-notification';
 import {
@@ -161,6 +162,20 @@ const createServerViews = (
     }
   };
 
+  // a call keeps its server at full speed even when hidden or covered, a throttled renderer
+  // delays the audio and screen share it is sending
+  const applyBackgroundThrottling = (id: string) => {
+    const view = views.get(id);
+
+    if (!view) {
+      return;
+    }
+
+    view.webContents.setBackgroundThrottling(
+      backgroundThrottled && !voiceServerIds.has(id)
+    );
+  };
+
   const createView = (server: TServer) => {
     // one partition per server keeps logins and storage isolated from each other
     const serverSession = session.fromPartition(getPartition(server.id));
@@ -290,9 +305,12 @@ const createServerViews = (
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,
-        backgroundThrottling: backgroundThrottled
+        backgroundThrottling: backgroundThrottled,
+        v8CacheOptions: 'bypassHeatCheck'
       }
     });
+
+    attachContextMenu(view.webContents);
 
     view.webContents.ipc.on(BridgeChannel.CLIENT_CONNECTED, () => {
       connectedClients.add(server.id);
@@ -360,6 +378,7 @@ const createServerViews = (
         mismatches.delete(server.id);
         voiceServerIds.delete(server.id);
         displayCaptureAt.delete(server.id);
+        applyBackgroundThrottling(server.id);
 
         stopSystemAudio(server.id);
         clearServerHotkeys(server.id);
@@ -497,6 +516,7 @@ const createServerViews = (
         voiceServerIds.add(server.id);
       }
 
+      applyBackgroundThrottling(server.id);
       onChange();
     });
 
@@ -750,8 +770,8 @@ const createServerViews = (
   const setBackgroundThrottled = (value: boolean) => {
     backgroundThrottled = value;
 
-    for (const view of views.values()) {
-      view.webContents.setBackgroundThrottling(value);
+    for (const id of views.keys()) {
+      applyBackgroundThrottling(id);
     }
   };
 

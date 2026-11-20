@@ -8,6 +8,10 @@ import {
   STORAGE_DEFAULT_MAX_AVATAR_SIZE,
   STORAGE_DEFAULT_MAX_BANNER_SIZE,
   STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
+  STORAGE_DEFAULT_MEDIA_PROXY_CACHE_SECONDS,
+  STORAGE_DEFAULT_MEDIA_PROXY_MAX_REDIRECTS,
+  STORAGE_DEFAULT_MEDIA_PROXY_MAX_SIZE,
+  STORAGE_DEFAULT_MEDIA_PROXY_TIMEOUT_SECONDS,
   STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
   STORAGE_MAX_FILE_SIZE,
   STORAGE_MIN_QUOTA_PER_USER,
@@ -67,12 +71,19 @@ const seedDatabase = async () => {
     storageOverflowAction: STORAGE_OVERFLOW_ACTION,
     enablePlugins: false,
     enableSearch: true,
+    enableLinkPreviews: true,
     webRtcSimulcastEnabled: false,
     showWelcomeDialog: true,
     storageSignedUrlsEnabled: false,
     storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
     storageImageOptimizationEnabled: false,
-    storageImageOptimizationQuality: STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY
+    storageImageOptimizationQuality: STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY,
+    storageMediaProxyEnabled: true,
+    storageMediaProxyMaxSize: STORAGE_DEFAULT_MEDIA_PROXY_MAX_SIZE,
+    storageMediaProxyTimeoutSeconds:
+      STORAGE_DEFAULT_MEDIA_PROXY_TIMEOUT_SECONDS,
+    storageMediaProxyCacheSeconds: STORAGE_DEFAULT_MEDIA_PROXY_CACHE_SECONDS,
+    storageMediaProxyMaxRedirects: STORAGE_DEFAULT_MEDIA_PROXY_MAX_REDIRECTS
   };
 
   await db.insert(settings).values(initialSettings);

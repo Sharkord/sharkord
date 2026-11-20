@@ -89,6 +89,11 @@ export type TStorageSettings = Pick<
   | 'storageSignedUrlsTtlSeconds'
   | 'storageImageOptimizationEnabled'
   | 'storageImageOptimizationQuality'
+  | 'storageMediaProxyEnabled'
+  | 'storageMediaProxyMaxSize'
+  | 'storageMediaProxyTimeoutSeconds'
+  | 'storageMediaProxyCacheSeconds'
+  | 'storageMediaProxyMaxRedirects'
 >;
 
 // joined types

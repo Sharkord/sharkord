@@ -146,6 +146,7 @@
   "commandArgNo": "否",
   "commandArgMissing": "/{{commandName}} 需要为 {{argName}} 提供一个值。",
   "mutedByModerator": "你已被管理员禁言。",
+  "cannotPlayStreamCodec": "你的浏览器无法播放此直播使用的视频编解码器。请尝试桌面应用或基于 Chromium 的浏览器。",
   "followThread": "关注话题",
   "unfollowThread": "取消关注话题",
   "failedUpdateThreadFollow": "更新话题关注失败",
@@ -158,5 +159,6 @@
   "formatBold": "粗体",
   "formatItalic": "斜体",
   "formatCode": "代码",
-  "formatCodeBlock": "代码块"
+  "formatCodeBlock": "代码块",
+  "playVideo": "播放视频"
 }

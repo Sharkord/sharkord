@@ -5,7 +5,6 @@ import { useVoice } from '@/features/server/voice/hooks';
 import { applyAudioOutputDevice } from '@/helpers/audio-output';
 import { StreamKind } from '@sharkord/shared';
 import { useEffect, useMemo } from 'react';
-import { useAudioLevel } from './use-audio-level';
 
 const useVoiceRefs = (
   remoteId: number,
@@ -15,7 +14,6 @@ const useVoiceRefs = (
   const {
     remoteUserStreams,
     externalStreams,
-    localAudioStream,
     localVideoStream,
     localScreenShareStream,
     ownVoiceState,
@@ -52,12 +50,6 @@ const useVoiceRefs = (
     return remoteUserStreams[remoteId]?.[StreamKind.AUDIO];
   }, [remoteUserStreams, remoteId, isOwnUser]);
 
-  const audioStreamForLevel = useMemo(() => {
-    if (isOwnUser) return localAudioStream;
-
-    return remoteUserStreams[remoteId]?.[StreamKind.AUDIO];
-  }, [remoteUserStreams, remoteId, isOwnUser, localAudioStream]);
-
   const screenShareStream = useMemo(() => {
     if (isOwnUser) return localScreenShareStream;
 
@@ -79,9 +71,6 @@ const useVoiceRefs = (
     () => externalStreams[remoteId]?.videoStream,
     [externalStreams, remoteId]
   );
-
-  const { audioLevel, isSpeaking, speakingIntensity, speakingEffectClass } =
-    useAudioLevel(audioStreamForLevel);
 
   const userVolumeKey = getUserVolumeKey(remoteId);
   const userVolume = getVolume(userVolumeKey);
@@ -208,11 +197,7 @@ const useVoiceRefs = (
     hasScreenShareStream: !!screenShareStream,
     hasScreenShareAudioStream: !!screenShareAudioStream,
     hasExternalAudioStream: !!externalAudioStream,
-    hasExternalVideoStream: !!externalVideoStream,
-    audioLevel,
-    isSpeaking,
-    speakingIntensity,
-    speakingEffectClass
+    hasExternalVideoStream: !!externalVideoStream
   };
 };
 

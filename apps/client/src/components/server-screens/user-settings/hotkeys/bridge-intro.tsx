@@ -9,7 +9,7 @@ import {
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const HOTKEYS_DOCS_URL = 'https://sharkord.com/docs/bridge/overview';
+const HOTKEYS_DOCS_URL = 'https://sharkord.com/docs/bridge';
 
 type TStep = {
   icon: LucideIcon;

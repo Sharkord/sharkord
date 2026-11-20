@@ -146,6 +146,7 @@
   "commandArgNo": "No",
   "commandArgMissing": "/{{commandName}} needs a value for {{argName}}.",
   "mutedByModerator": "You were muted by a moderator.",
+  "cannotPlayStreamCodec": "Your browser can't play the video codec this stream uses. Try the desktop app or a Chromium based browser.",
   "followThread": "Follow Thread",
   "unfollowThread": "Unfollow Thread",
   "failedUpdateThreadFollow": "Failed to update thread follow",
@@ -158,5 +159,6 @@
   "formatBold": "Bold",
   "formatItalic": "Italic",
   "formatCode": "Code",
-  "formatCodeBlock": "Code block"
+  "formatCodeBlock": "Code block",
+  "playVideo": "Play video"
 }

@@ -1,6 +1,7 @@
 import { WebContentsView } from 'electron';
 import path from 'path';
 import { createLogger } from '../logs/logger';
+import { getShellUrl } from '../startup/shell-protocol';
 
 const logger = createLogger('shell');
 
@@ -23,9 +24,7 @@ const createShellView = () => {
       logger.error('failed to load the shell', error);
     });
   } else {
-    const file = path.join(__dirname, '../renderer/index.html');
-
-    view.webContents.loadFile(file).catch((error) => {
+    view.webContents.loadURL(getShellUrl('index.html')).catch((error) => {
       logger.error('failed to load the shell', error);
     });
   }

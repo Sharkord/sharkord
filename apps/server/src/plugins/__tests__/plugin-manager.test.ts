@@ -12,6 +12,7 @@ import {
   beforeEach,
   describe,
   expect,
+  spyOn,
   test
 } from 'bun:test';
 import { eq } from 'drizzle-orm';
@@ -21,11 +22,12 @@ import { pluginManager } from '..';
 import { initTest } from '../../__tests__/helpers';
 import { loadMockedPlugins, resetPluginMocks } from '../../__tests__/mocks';
 import { findTestLog, tdb } from '../../__tests__/setup';
-import { messages, pluginData, settings } from '../../db/schema';
+import { files, messages, pluginData, settings } from '../../db/schema';
 import { fileManager } from '../../helpers/file-manager';
 import { PLUGINS_PATH, PUBLIC_PATH, UPLOADS_PATH } from '../../helpers/paths';
 import { getPluginDataPath } from '../../helpers/plugin-paths';
 import { handleSocketClose, trackUserSocket } from '../../utils/wss';
+import { deletePluginMessage } from '../actions/delete-plugin-message';
 import { eventBus } from '../event-bus';
 import { withTimeout } from '../execution-timeout';
 
@@ -1863,6 +1865,63 @@ export { onLoad, onUnload };
         .get();
 
       expect(deleted).toBeUndefined();
+    });
+
+    test("should let plugin delete a user's message with its files", async () => {
+      await pluginManager.load('plugin-message-actions');
+
+      const emitSpy = spyOn(eventBus, 'emit');
+
+      await pluginManager.executeCommand(
+        'plugin-message-actions',
+        'delete-message',
+        mockInvokerCtx,
+        { messageId: 1 }
+      );
+
+      const [deleted, file] = await Promise.all([
+        tdb
+          .select({ id: messages.id })
+          .from(messages)
+          .where(eq(messages.id, 1))
+          .get(),
+        tdb.select({ id: files.id }).from(files).where(eq(files.id, 1)).get()
+      ]);
+
+      expect(deleted).toBeUndefined();
+      expect(file).toBeUndefined();
+      expect(emitSpy).toHaveBeenCalledWith('message:deleted', {
+        channelId: 1,
+        messageId: 1
+      });
+    });
+
+    test('should reject deleting a message that does not exist', async () => {
+      await pluginManager.load('plugin-message-actions');
+
+      await expect(
+        pluginManager.executeCommand(
+          'plugin-message-actions',
+          'delete-message',
+          mockInvokerCtx,
+          { messageId: 999999 }
+        )
+      ).rejects.toThrow('Message not found');
+    });
+
+    // a disabled plugin has no commands, so this is reachable only through a ctx it kept
+    test('should reject deleting from a plugin that is not enabled', async () => {
+      await expect(
+        deletePluginMessage({ pluginId: 'not-installed', messageId: 1 })
+      ).rejects.toThrow('Plugin is not enabled.');
+
+      const message = await tdb
+        .select({ id: messages.id })
+        .from(messages)
+        .where(eq(messages.id, 1))
+        .get();
+
+      expect(message).toBeDefined();
     });
 
     test('should let plugin send inline replies', async () => {

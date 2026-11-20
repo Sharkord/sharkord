@@ -79,6 +79,15 @@ const getStreamQualityStorageKey = (remoteId: number, kind: StreamKind) => {
 const isPausableStreamKind = (kind: StreamKind): kind is TPausableStreamKind =>
   PAUSABLE_STREAM_KINDS.some((pausableKind) => pausableKind === kind);
 
+const VISIBILITY_PAUSED_KINDS: StreamKind[] = [
+  StreamKind.VIDEO,
+  StreamKind.SCREEN,
+  StreamKind.EXTERNAL_VIDEO
+];
+
+const isVisibilityPausedKind = (kind: StreamKind) =>
+  VISIBILITY_PAUSED_KINDS.includes(kind);
+
 const getPausedStreamStorageKey = (remoteId: number, kind: StreamKind) =>
   getStreamQualityStorageKey(
     remoteId,
@@ -254,6 +263,49 @@ const getSimulcastCodec = (
     (c) => c.mimeType.toLowerCase() === VideoCodec.VP8.toLowerCase()
   );
 
+const isH264MainOrHigh = (codec: RtpCodecCapability) => {
+  const profileLevelId = String(codec.parameters?.['profile-level-id'] ?? '');
+
+  return /^(64|4d)/i.test(profileLevelId);
+};
+
+const getPreferredScreenCodec = (
+  sendRtpCapabilities: RtpCapabilities | null,
+  screenCodec: VideoCodec
+): RtpCodecCapability | undefined => {
+  if (screenCodec === VideoCodec.AUTO) return undefined;
+
+  const codecs = sendRtpCapabilities?.codecs ?? [];
+
+  if (screenCodec !== VideoCodec.H264_HIGH) {
+    return codecs.find(
+      (c) => c.mimeType.toLowerCase() === screenCodec.toLowerCase()
+    );
+  }
+
+  const h264Codecs = codecs.filter(
+    (c) => c.mimeType.toLowerCase() === VideoCodec.H264.toLowerCase()
+  );
+
+  return h264Codecs.find(isH264MainOrHigh) ?? h264Codecs[0];
+};
+
+const setRecordFlag = (
+  record: Record<string, boolean>,
+  key: string,
+  value: boolean
+): Record<string, boolean> => {
+  if (value) return { ...record, [key]: true };
+
+  if (!record[key]) return record;
+
+  const next = { ...record };
+
+  delete next[key];
+
+  return next;
+};
+
 const getExternalVolumeKey = (pluginId: string, key: string) =>
   `external-${pluginId}-${key}`;
 
@@ -307,6 +359,7 @@ export {
   getExternalVolumeKey,
   getInitialStreamPaused,
   getOwnedExternalVolumeKeys,
+  getPreferredScreenCodec,
   getRemoteConsumerTypeKey,
   getScreenShareSimulcastEncodings,
   getSimulcastCodec,
@@ -318,12 +371,14 @@ export {
   getUserScreenVolumeKey,
   isOwnProducerEvent,
   isPausableStreamKind,
+  isVisibilityPausedKind,
   loadStreamQualitiesFromStorage,
   normalizeStreamQuality,
   parseStreamQualityDropdownValue,
   resolveVolume,
   savePausedStreamToStorage,
-  saveStreamQualitiesToStorage
+  saveStreamQualitiesToStorage,
+  setRecordFlag
 };
 
 export type {

@@ -146,6 +146,7 @@
   "commandArgNo": "No",
   "commandArgMissing": "/{{commandName}} necesita un valor para {{argName}}.",
   "mutedByModerator": "Un moderador te ha silenciado.",
+  "cannotPlayStreamCodec": "Tu navegador no puede reproducir el códec de video de esta transmisión. Prueba la aplicación de escritorio o un navegador basado en Chromium.",
   "followThread": "Seguir hilo",
   "unfollowThread": "Dejar de seguir hilo",
   "failedUpdateThreadFollow": "No se pudo actualizar el seguimiento del hilo",
@@ -158,5 +159,6 @@
   "formatBold": "Negrita",
   "formatItalic": "Cursiva",
   "formatCode": "Código",
-  "formatCodeBlock": "Bloque de código"
+  "formatCodeBlock": "Bloque de código",
+  "playVideo": "Reproducir vídeo"
 }

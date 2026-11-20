@@ -6,10 +6,15 @@ import path from 'path';
 export default defineConfig({
   main: {
     build: {
+      minify: true,
       rollupOptions: {
+        input: {
+          index: path.resolve(__dirname, 'src/main/bootstrap.ts'),
+          app: path.resolve(__dirname, 'src/main/index.ts')
+        },
         // a native addon that finds its prebuilt binary relative to its own package folder
         external: ['@vencord/venmic'],
-        output: { format: 'cjs', entryFileNames: 'index.js' }
+        output: { format: 'cjs', entryFileNames: '[name].js' }
       }
     }
   },
@@ -27,6 +32,7 @@ export default defineConfig({
   },
   renderer: {
     build: {
+      minify: true,
       rollupOptions: {
         input: {
           index: path.resolve(__dirname, 'src/renderer/index.html'),

@@ -78,7 +78,13 @@ export const connect = async () => {
   const host = getHostFromServer();
   const trpc = await connectToTRPC(host);
 
-  const { hasPassword, handshakeHash } = await trpc.others.handshake.query();
+  const { hasPassword, handshakeHash, serverVersion } =
+    await trpc.others.handshake.query();
+
+  if (!import.meta.env.DEV && serverVersion !== VITE_APP_VERSION) {
+    openDialog(Dialog.SERVER_UPDATED);
+    return;
+  }
 
   if (hasPassword) {
     // show password prompt
@@ -326,9 +332,15 @@ window.useToken = async (token: string) => {
   const trpc = getTRPCClient();
 
   try {
-    await trpc.others.useSecretToken.mutate({ token });
+    const { showServerWizard } = await trpc.others.useSecretToken.mutate({
+      token
+    });
 
     toast.success(i18n.t('common:nowServerOwner'));
+
+    if (showServerWizard) {
+      openDialog(Dialog.SERVER_WIZARD);
+    }
   } catch {
     toast.error(i18n.t('common:invalidAccessToken'));
   }

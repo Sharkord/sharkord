@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { markChannelAsRead, setInfo } from '../server/actions';
 import { store } from '../store';
 import {
+  modifierKeysHeldMapSelector,
   mutedChannelIdsSelector,
   pluginSlotDebugSelector,
   voiceChatChannelIdSelector,
@@ -165,6 +166,12 @@ export const setFreezeAnimatedAvatars = (freeze: boolean) => {
   store.dispatch(appSliceActions.setFreezeAnimatedAvatars(freeze));
 
   setLocalStorageItemBool(LocalStorageKey.FREEZE_ANIMATED_AVATARS, freeze);
+};
+
+export const setAutoLoadYoutubeEmbeds = (autoLoad: boolean) => {
+  store.dispatch(appSliceActions.setAutoLoadYoutubeEmbeds(autoLoad));
+
+  setLocalStorageItemBool(LocalStorageKey.AUTO_LOAD_YOUTUBE_EMBEDS, autoLoad);
 };
 
 export const setConvertAsciiEmoji = (convert: boolean) => {
@@ -350,5 +357,13 @@ export const togglePluginSlotDebug = () => {
 };
 
 export const setModifierKeysHeldMap = (keysDown: Record<string, boolean>) => {
+  const state = store.getState();
+  const currentKeysDown = modifierKeysHeldMapSelector(state);
+  const hasChanged = Object.keys(keysDown).some(
+    (key) => currentKeysDown[key] !== keysDown[key]
+  );
+
+  if (!hasChanged) return;
+
   store.dispatch(appSliceActions.setModifierKeysHeldMap(keysDown));
 };

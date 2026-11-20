@@ -110,13 +110,15 @@ const MessagesGroup = memo(
 
     if (isReplyToMessage) {
       return (
-        <MessageReplyPreviewWrapper message={firstMessage}>
-          {groupContent}
-        </MessageReplyPreviewWrapper>
+        <div className="messages-group">
+          <MessageReplyPreviewWrapper message={firstMessage}>
+            {groupContent}
+          </MessageReplyPreviewWrapper>
+        </div>
       );
     }
 
-    return groupContent;
+    return <div className="messages-group">{groupContent}</div>;
   },
   areGroupsEqual
 );

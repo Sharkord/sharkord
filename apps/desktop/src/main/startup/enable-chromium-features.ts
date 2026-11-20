@@ -9,10 +9,13 @@ const HARDWARE_VIDEO_CODECS = [
 ];
 
 const enableChromiumFeatures = () => {
-  app.commandLine.appendSwitch(
-    'enable-features',
-    HARDWARE_VIDEO_CODECS.join(',')
-  );
+  const userValue = app.commandLine.getSwitchValue('enable-features');
+  const userFeatures = userValue.split(',');
+  const features = new Set([...userFeatures, ...HARDWARE_VIDEO_CODECS]);
+
+  features.delete('');
+
+  app.commandLine.appendSwitch('enable-features', [...features].join(','));
 };
 
 export { enableChromiumFeatures };

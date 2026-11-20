@@ -1,4 +1,5 @@
 const MICROPHONE_NOISE_GATE_WORKLET_NAME = 'sharkord-noise-gate';
+const GATE_FADE_MS = 10;
 
 class NoiseGateProcessor extends AudioWorkletProcessor {
   constructor() {
@@ -9,6 +10,7 @@ class NoiseGateProcessor extends AudioWorkletProcessor {
     this.holdMs = 100;
     this.gateOpen = true;
     this.closeHoldRemainingFrames = 0;
+    this.gain = 1;
 
     this.port.onmessage = (event) => {
       const data = event.data;
@@ -105,29 +107,23 @@ class NoiseGateProcessor extends AudioWorkletProcessor {
       }
     }
 
-    const shouldPassThrough = !this.enabled || this.gateOpen;
+    const targetGain = !this.enabled || this.gateOpen ? 1 : 0;
+    const gainStep = 1000 / (GATE_FADE_MS * sampleRate);
     const channelCount = Math.min(input.length, output.length);
 
-    for (let channelIndex = 0; channelIndex < channelCount; channelIndex++) {
-      const inputChannel = input[channelIndex];
-      const outputChannel = output[channelIndex];
-
-      if (shouldPassThrough) {
-        outputChannel.set(inputChannel);
-      } else {
-        outputChannel.fill(0);
+    for (let sampleIndex = 0; sampleIndex < frameCount; sampleIndex++) {
+      if (this.gain < targetGain) {
+        this.gain = Math.min(targetGain, this.gain + gainStep);
+      } else if (this.gain > targetGain) {
+        this.gain = Math.max(targetGain, this.gain - gainStep);
       }
-    }
 
-    for (
-      let channelIndex = channelCount;
-      channelIndex < output.length;
-      channelIndex++
-    ) {
-      if (shouldPassThrough && input[0]) {
-        output[channelIndex].set(input[0]);
-      } else {
-        output[channelIndex].fill(0);
+      for (let channelIndex = 0; channelIndex < output.length; channelIndex++) {
+        const inputChannel =
+          channelIndex < channelCount ? input[channelIndex] : input[0];
+
+        output[channelIndex][sampleIndex] =
+          (inputChannel?.[sampleIndex] ?? 0) * this.gain;
       }
     }
 

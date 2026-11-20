@@ -27,7 +27,12 @@ const getStorageSettingsRoute = protectedProcedure.query(async ({ ctx }) => {
     storageSignedUrlsEnabled: settings.storageSignedUrlsEnabled,
     storageSignedUrlsTtlSeconds: settings.storageSignedUrlsTtlSeconds,
     storageImageOptimizationEnabled: settings.storageImageOptimizationEnabled,
-    storageImageOptimizationQuality: settings.storageImageOptimizationQuality
+    storageImageOptimizationQuality: settings.storageImageOptimizationQuality,
+    storageMediaProxyEnabled: settings.storageMediaProxyEnabled,
+    storageMediaProxyMaxSize: settings.storageMediaProxyMaxSize,
+    storageMediaProxyTimeoutSeconds: settings.storageMediaProxyTimeoutSeconds,
+    storageMediaProxyCacheSeconds: settings.storageMediaProxyCacheSeconds,
+    storageMediaProxyMaxRedirects: settings.storageMediaProxyMaxRedirects
   };
 
   return { storageSettings, diskMetrics, pluginStorage };

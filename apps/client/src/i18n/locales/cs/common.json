@@ -146,6 +146,7 @@
   "commandArgNo": "Ne",
   "commandArgMissing": "/{{commandName}} potřebuje hodnotu pro {{argName}}.",
   "mutedByModerator": "Moderátor vám vypnul mikrofon.",
+  "cannotPlayStreamCodec": "Váš prohlížeč neumí přehrát video kodek tohoto streamu. Zkuste desktopovou aplikaci nebo prohlížeč založený na Chromiu.",
   "followThread": "Sledovat vlákno",
   "unfollowThread": "Přestat sledovat vlákno",
   "failedUpdateThreadFollow": "Nepodařilo se změnit sledování vlákna",
@@ -158,5 +159,6 @@
   "formatBold": "Tučné",
   "formatItalic": "Kurzíva",
   "formatCode": "Kód",
-  "formatCodeBlock": "Blok kódu"
+  "formatCodeBlock": "Blok kódu",
+  "playVideo": "Přehrát video"
 }

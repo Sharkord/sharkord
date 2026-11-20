@@ -38,6 +38,16 @@
     "openLogsFolder": "Ouvrir le dossier des journaux",
     "resetApp": "Réinitialiser l'application..."
   },
+  "contextMenu": {
+    "undo": "Annuler",
+    "redo": "Rétablir",
+    "cut": "Couper",
+    "copy": "Copier",
+    "paste": "Coller",
+    "delete": "Supprimer",
+    "selectAll": "Tout sélectionner",
+    "addToDictionary": "Ajouter au dictionnaire"
+  },
   "tray": {
     "show": "Afficher Sharkord",
     "quit": "Quitter Sharkord"
