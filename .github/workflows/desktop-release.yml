@@ -152,11 +152,22 @@ jobs:
           mv package.tmp apps/desktop/package.json
           git add apps/desktop/package.json
           git commit -m "chore: bump desktop version to $VERSION"
+          # the branch usually moved during the build
+          git pull --rebase
 
       - name: Create Git tag
         env:
           VERSION: ${{ needs.version.outputs.version }}
         run: git tag -a "desktop-v$VERSION" -m "Desktop release v$VERSION"
 
+      # atomic so a rejected branch push can't leave the tag behind without the bump
       - name: Push commit and tag
-        run: git push --follow-tags
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          BUMP: ${{ inputs.bump }}
+        run: |
+          if [ "$BUMP" = "none" ]; then
+            git push origin "desktop-v$VERSION"
+          else
+            git push --atomic origin HEAD "desktop-v$VERSION"
+          fi
