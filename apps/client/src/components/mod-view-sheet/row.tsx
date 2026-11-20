@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import { IconButton, Tooltip } from '@sharkord/ui';
 import { Eye, EyeClosed, type LucideIcon } from 'lucide-react';
 import { memo, useCallback, useState, type ReactNode } from 'react';
@@ -8,10 +9,18 @@ type TRowProps = {
   value: ReactNode;
   details?: string;
   hidden?: boolean;
+  wide?: boolean;
 };
 
 const Row = memo(
-  ({ icon: Icon, label, value, details, hidden = false }: TRowProps) => {
+  ({
+    icon: Icon,
+    label,
+    value,
+    details,
+    hidden = false,
+    wide = false
+  }: TRowProps) => {
     const [visible, setVisible] = useState(!hidden);
 
     const onToggleVisible = useCallback(() => {
@@ -19,7 +28,12 @@ const Row = memo(
     }, []);
 
     let valContent = (
-      <span className="text-sm text-muted-foreground truncate max-w-[160px]">
+      <span
+        className={cn(
+          'text-sm text-muted-foreground truncate',
+          wide ? 'max-w-[70%]' : 'max-w-[160px]'
+        )}
+      >
         {visible ? value : '***'}
       </span>
     );
