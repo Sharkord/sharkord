@@ -63,6 +63,8 @@ const useSecretTokenRoute = protectedProcedure
       type: ActivityLogType.USER_CLAIMED_OWNERSHIP,
       userId: ctx.userId
     });
+
+    return { showServerWizard: !settings.serverWizardCompleted };
   });
 
 export { useSecretTokenRoute };

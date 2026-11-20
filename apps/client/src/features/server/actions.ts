@@ -332,9 +332,15 @@ window.useToken = async (token: string) => {
   const trpc = getTRPCClient();
 
   try {
-    await trpc.others.useSecretToken.mutate({ token });
+    const { showServerWizard } = await trpc.others.useSecretToken.mutate({
+      token
+    });
 
     toast.success(i18n.t('common:nowServerOwner'));
+
+    if (showServerWizard) {
+      openDialog(Dialog.SERVER_WIZARD);
+    }
   } catch {
     toast.error(i18n.t('common:invalidAccessToken'));
   }

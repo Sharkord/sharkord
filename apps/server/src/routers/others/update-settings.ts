@@ -51,7 +51,8 @@ const zGeneralSettings = z.object({
   enablePlugins: z.boolean().optional(),
   webRtcSimulcastEnabled: z.boolean().optional(),
   enableSearch: z.boolean().optional(),
-  showWelcomeDialog: z.boolean().optional()
+  showWelcomeDialog: z.boolean().optional(),
+  serverWizardCompleted: z.boolean().optional()
 });
 
 const STORAGE_SETTING_KEYS = Object.keys(zStorageSettings.shape);

@@ -113,7 +113,12 @@ const settings = sqliteTable(
       .default(80),
     rateLimiters: text('rate_limiters', {
       mode: 'json'
-    }).$type<TRateLimiters>()
+    }).$type<TRateLimiters>(),
+    serverWizardCompleted: integer('server_wizard_completed', {
+      mode: 'boolean'
+    })
+      .notNull()
+      .default(false)
   },
   (t) => [
     index('settings_server_idx').on(t.serverId),
