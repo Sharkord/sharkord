@@ -30,6 +30,7 @@ const useScrollController = ({
   const hasInitialScroll = useRef(false);
   const shouldStickToBottom = useRef(true);
   const isProgrammaticScroll = useRef(false);
+  const lastScrollTop = useRef(0);
 
   const isNearBottom = useCallback((container: HTMLDivElement) => {
     const distanceFromBottom =
@@ -57,9 +58,17 @@ const useScrollController = ({
 
     if (!container) return;
 
+    const movedDown = container.scrollTop >= lastScrollTop.current;
+
+    lastScrollTop.current = container.scrollTop;
+
     if (isProgrammaticScroll.current) return;
 
-    shouldStickToBottom.current = isNearBottom(container);
+    // scroll anchoring pushes scrollTop down when content above the viewport grows, and the
+    // browser dispatches that scroll before the resize observer gets to re-pin the bottom.
+    // read as a position it looks like the user left, so only an upward move releases the lock
+    shouldStickToBottom.current =
+      isNearBottom(container) || (shouldStickToBottom.current && movedDown);
 
     if (fetching) return;
 
