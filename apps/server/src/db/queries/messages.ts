@@ -21,6 +21,7 @@ import {
 } from 'drizzle-orm';
 import { db } from '..';
 import { attachFileToken, signFile } from '../../helpers/files-crypto';
+import { proxyMessageMetadata } from '../../helpers/media-proxy';
 import {
   directMessages,
   files,
@@ -81,8 +82,11 @@ const joinMessagesWithRelations = async (
 
   const messageIds = rows.map((m) => m.id);
 
-  const { storageSignedUrlsEnabled, storageSignedUrlsTtlSeconds } =
-    await getSettings();
+  const {
+    storageSignedUrlsEnabled,
+    storageSignedUrlsTtlSeconds,
+    storageMediaProxyEnabled
+  } = await getSettings();
 
   const [fileRows, reactionRows, replyToMap] = await Promise.all([
     db
@@ -156,6 +160,9 @@ const joinMessagesWithRelations = async (
 
   return rows.map((msg) => ({
     ...msg,
+    metadata: storageMediaProxyEnabled
+      ? proxyMessageMetadata(msg.metadata)
+      : msg.metadata,
     files: filesByMessage[msg.id] ?? [],
     reactions: reactionsByMessage[msg.id] ?? [],
     replyTo:

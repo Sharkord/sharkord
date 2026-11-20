@@ -1,4 +1,4 @@
-import { getFileUrl } from '@/helpers/get-file-url';
+import { getFileUrl, resolveServerUrl } from '@/helpers/get-file-url';
 import {
   audioExtensions,
   imageExtensions,
@@ -18,6 +18,7 @@ type TMessageMetadataLike = Partial<TMessageMetadata> & {
   kind?: TMessageMetadata['kind'];
   mediaType?: string;
   url?: string;
+  proxyUrl?: string;
   title?: string;
 };
 
@@ -59,7 +60,7 @@ const buildMediaSignature = (message: TJoinedMessage) => {
   const metadataSignature = (message.metadata ?? [])
     .map((metadata) =>
       metadata
-        ? `${metadata.kind ?? 'legacy'}:${metadata.mediaType}:${metadata.url}:${metadata.title ?? ''}`
+        ? `${metadata.kind ?? 'legacy'}:${metadata.mediaType}:${metadata.url}:${'proxyUrl' in metadata ? metadata.proxyUrl : ''}:${metadata.title ?? ''}`
         : 'null'
     )
     .join('|');
@@ -122,7 +123,7 @@ const extractMessageMedia = (message: TJoinedMessage): TFoundMedia[] => {
           `metadata:${metadataEntry.mediaType}:${metadataEntry.url}`
         ),
         type: metadataEntry.mediaType,
-        url: metadataEntry.url
+        url: resolveServerUrl(metadataEntry.proxyUrl ?? metadataEntry.url)
       };
     })
     .filter((media) => !!media) as TFoundMedia[];

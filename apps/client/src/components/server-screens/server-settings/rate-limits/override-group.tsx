@@ -48,6 +48,10 @@ const OVERRIDE_KEYS: Record<RateLimiter, { label: string; desc: string }> = {
   [RateLimiter.VOICE_STREAM]: {
     label: 'rateLimitVoiceStreamLabel',
     desc: 'rateLimitVoiceStreamDesc'
+  },
+  [RateLimiter.MEDIA_PROXY]: {
+    label: 'rateLimitMediaProxyLabel',
+    desc: 'rateLimitMediaProxyDesc'
   }
 };
 

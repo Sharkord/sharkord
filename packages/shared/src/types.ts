@@ -87,6 +87,7 @@ export type TMessageMediaMetadata = {
   title?: string;
   description?: string;
   mediaType: 'image' | 'video' | 'audio';
+  proxyUrl?: string;
 };
 
 export type TMessageOpenGraphMetadata = {

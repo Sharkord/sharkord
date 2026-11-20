@@ -2,6 +2,10 @@ import {
   DEFAULT_PROFILE_COLOR,
   PluginCapabilityMode,
   PluginCapabilityType,
+  STORAGE_DEFAULT_MEDIA_PROXY_CACHE_SECONDS,
+  STORAGE_DEFAULT_MEDIA_PROXY_MAX_REDIRECTS,
+  STORAGE_DEFAULT_MEDIA_PROXY_MAX_SIZE,
+  STORAGE_DEFAULT_MEDIA_PROXY_TIMEOUT_SECONDS,
   type TActivityLogDetailsMap,
   type TMessageMetadata,
   type TPluginMessageComponent,
@@ -111,6 +115,25 @@ const settings = sqliteTable(
     )
       .notNull()
       .default(80),
+    storageMediaProxyEnabled: integer('storage_media_proxy_enabled', {
+      mode: 'boolean'
+    })
+      .notNull()
+      .default(true),
+    storageMediaProxyMaxSize: integer('storage_media_proxy_max_size')
+      .notNull()
+      .default(STORAGE_DEFAULT_MEDIA_PROXY_MAX_SIZE),
+    storageMediaProxyTimeoutSeconds: integer(
+      'storage_media_proxy_timeout_seconds'
+    )
+      .notNull()
+      .default(STORAGE_DEFAULT_MEDIA_PROXY_TIMEOUT_SECONDS),
+    storageMediaProxyCacheSeconds: integer('storage_media_proxy_cache_seconds')
+      .notNull()
+      .default(STORAGE_DEFAULT_MEDIA_PROXY_CACHE_SECONDS),
+    storageMediaProxyMaxRedirects: integer('storage_media_proxy_max_redirects')
+      .notNull()
+      .default(STORAGE_DEFAULT_MEDIA_PROXY_MAX_REDIRECTS),
     rateLimiters: text('rate_limiters', {
       mode: 'json'
     }).$type<TRateLimiters>()

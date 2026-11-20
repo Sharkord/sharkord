@@ -288,6 +288,13 @@
       "when": 1793752183410,
       "tag": "0040_settings_rate_limiters",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "6",
+      "when": 1795170246309,
+      "tag": "0041_settings_media_proxy",
+      "breakpoints": true
     }
   ]
 }

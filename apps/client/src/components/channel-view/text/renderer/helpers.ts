@@ -1,3 +1,4 @@
+import { resolveServerUrl } from '@/helpers/get-file-url';
 import type { TJoinedMessage } from '@sharkord/shared';
 import { htmlToDOM, type DOMNode, type Element } from 'html-react-parser';
 import type {
@@ -144,7 +145,10 @@ const extractMessageOpenGraph = (
 
       seenPreviewUrls.add(normalizedUrl);
 
-      const imageUrl = (metadataEntry.images ?? []).find((url) => {
+      const images = (metadataEntry.images ?? []).map(resolveServerUrl);
+      const [favicon] = metadataEntry.favicons ?? [];
+
+      const imageUrl = images.find((url) => {
         return !directMediaUrls.has(normalizeComparableUrl(url));
       });
 
@@ -156,7 +160,7 @@ const extractMessageOpenGraph = (
         siteName: metadataEntry.siteName,
         description: metadataEntry.description,
         imageUrl,
-        faviconUrl: metadataEntry.favicons?.[0]
+        faviconUrl: favicon ? resolveServerUrl(favicon) : undefined
       };
 
       const hasRenderableContent =

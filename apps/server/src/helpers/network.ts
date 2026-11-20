@@ -223,6 +223,30 @@ const isPublicIp = (ip: string): boolean => {
 
 const isPrivateIP = (ip: string): boolean => !isPublicIp(ip);
 
+const resolvePublicAddress = async (
+  hostname: string
+): Promise<string | undefined> => {
+  const host = hostname.replace(/^\[(.*)\]$/, '$1');
+
+  if (ipaddr.isValid(host)) return isPublicIp(host) ? host : undefined;
+
+  let addresses: { address: string }[];
+
+  try {
+    addresses = await lookup(host, { all: true });
+  } catch {
+    return undefined;
+  }
+
+  const [first] = addresses;
+
+  if (!first) return undefined;
+
+  if (addresses.some(({ address }) => isPrivateIP(address))) return undefined;
+
+  return first.address;
+};
+
 const getIpBlockKey = (ip: string): string => {
   if (!ipaddr.isValid(ip)) return ip;
 
@@ -245,5 +269,6 @@ export {
   isPublicIp,
   resolveAnnouncedAddress,
   resolveAnnouncedAddressV6,
-  resolveInternalAnnouncedAddress
+  resolveInternalAnnouncedAddress,
+  resolvePublicAddress
 };
