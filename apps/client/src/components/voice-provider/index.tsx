@@ -1519,6 +1519,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     removeRemoteUserStream,
     removeExternalStreamTrack,
     removeExternalStream,
+    setRemoteStreamUnplayable,
     clearRemoteUserStreamsForUser,
     stopClosedOwnStreamRef,
     rtpCapabilitiesRef: deviceRtpCapabilities,

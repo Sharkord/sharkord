@@ -8,8 +8,9 @@ import { HelpCircle } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-// quality is at the same bitrate. h264 is usually encoded by the gpu, vp8, vp9 and av1 by the cpu.
-// firefox only receives h264 constrained baseline, so it cannot watch h264 high
+// quality is at the same bitrate. chromium on windows encodes h264 constrained baseline with openh264
+// on the cpu, only h264 high reaches the gpu encoder. firefox only receives constrained baseline,
+// so it cannot watch h264 high
 const CODECS = [
   {
     name: 'VP8',
@@ -20,7 +21,7 @@ const CODECS = [
   {
     name: 'H264',
     qualityKey: 'codecQualityBasic',
-    encoderKey: 'codecEncoderGpu',
+    encoderKey: 'codecEncoderCpu',
     limited: false
   },
   {
