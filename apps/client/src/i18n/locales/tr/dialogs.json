@@ -146,6 +146,9 @@
   "serverWizardSignedUrlsQuestion": "Dosya bağlantıları imzalı URL'lerle korunsun mu?",
   "serverWizardSignedUrlsEnable": "Dosya bağlantılarının süresi dolar ve yalnızca görme izni olanlar için çalışır, özel kanallardaki ve özel mesajlardaki dosyalar dahil.",
   "serverWizardSignedUrlsDisable": "Dosya bağlantısına sahip herkes onu açabilir, özel kanallardaki ve özel mesajlardaki dosyalar bile.",
+  "serverWizardMediaProxyQuestion": "Gömülü medya sunucu üzerinden yüklensin mi?",
+  "serverWizardMediaProxyEnable": "Bağlantılardaki görseller ve videolar sunucu tarafından alınır, böylece üyelerin IP adresleri kaynak sitelerden gizli kalır. Sunucunun bant genişliğini kullanır.",
+  "serverWizardMediaProxyDisable": "Gömülü medya doğrudan kaynak siteden yüklenir ve site, görüntüleyen herkesin IP adresini görebilir.",
   "serverWizardDoneTitle": "{{serverName}} hazır!",
   "serverWizardDoneDesc": "Sharkord'a hoş geldin. Sunucun kuruldu, arkadaşlarını davet et ve keyfini çıkar!",
   "serverWizardDoneButton": "Hadi başlayalım"

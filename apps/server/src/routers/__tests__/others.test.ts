@@ -6,6 +6,12 @@ import {
   RATE_LIMIT_MIN_WINDOW_MS,
   RateLimiter,
   STORAGE_MAX_FILES_PER_MESSAGE,
+  STORAGE_MAX_MEDIA_PROXY_CACHE_SECONDS,
+  STORAGE_MAX_MEDIA_PROXY_MAX_REDIRECTS,
+  STORAGE_MAX_MEDIA_PROXY_MAX_SIZE,
+  STORAGE_MAX_MEDIA_PROXY_TIMEOUT_SECONDS,
+  STORAGE_MIN_MEDIA_PROXY_MAX_SIZE,
+  STORAGE_MIN_MEDIA_PROXY_TIMEOUT_SECONDS,
   type TRateLimiters,
   type TTempFile
 } from '@sharkord/shared';
@@ -232,8 +238,14 @@ describe('others router', () => {
       storageMaxBannerSize: 4 * 1024 * 1024,
       storageMaxFilesPerMessage: 6,
       webRtcSimulcastEnabled: true,
+      enableLinkPreviews: false,
       storageImageOptimizationEnabled: true,
-      storageImageOptimizationQuality: 72
+      storageImageOptimizationQuality: 72,
+      storageMediaProxyEnabled: false,
+      storageMediaProxyMaxSize: 50 * 1024 * 1024,
+      storageMediaProxyTimeoutSeconds: 20,
+      storageMediaProxyCacheSeconds: 3600,
+      storageMediaProxyMaxRedirects: 5
     };
 
     await caller.others.updateSettings(newSettings);
@@ -243,6 +255,7 @@ describe('others router', () => {
     expect(settings.name).toBe(newSettings.name);
     expect(settings.description).toBe(newSettings.description);
     expect(settings.allowNewUsers).toBe(newSettings.allowNewUsers);
+    expect(settings.enableLinkPreviews).toBe(newSettings.enableLinkPreviews);
     expect(settings.directMessagesEnabled).toBe(
       newSettings.directMessagesEnabled
     );
@@ -271,6 +284,47 @@ describe('others router', () => {
     expect(settings.storageImageOptimizationQuality).toBe(
       newSettings.storageImageOptimizationQuality
     );
+    expect(settings.storageMediaProxyEnabled).toBe(
+      newSettings.storageMediaProxyEnabled
+    );
+    expect(settings.storageMediaProxyMaxSize).toBe(
+      newSettings.storageMediaProxyMaxSize
+    );
+    expect(settings.storageMediaProxyTimeoutSeconds).toBe(
+      newSettings.storageMediaProxyTimeoutSeconds
+    );
+    expect(settings.storageMediaProxyCacheSeconds).toBe(
+      newSettings.storageMediaProxyCacheSeconds
+    );
+    expect(settings.storageMediaProxyMaxRedirects).toBe(
+      newSettings.storageMediaProxyMaxRedirects
+    );
+  });
+
+  test.each([
+    ['storageMediaProxyMaxSize', STORAGE_MIN_MEDIA_PROXY_MAX_SIZE - 1],
+    ['storageMediaProxyMaxSize', STORAGE_MAX_MEDIA_PROXY_MAX_SIZE + 1],
+    [
+      'storageMediaProxyTimeoutSeconds',
+      STORAGE_MIN_MEDIA_PROXY_TIMEOUT_SECONDS - 1
+    ],
+    [
+      'storageMediaProxyTimeoutSeconds',
+      STORAGE_MAX_MEDIA_PROXY_TIMEOUT_SECONDS + 1
+    ],
+    ['storageMediaProxyCacheSeconds', -1],
+    [
+      'storageMediaProxyCacheSeconds',
+      STORAGE_MAX_MEDIA_PROXY_CACHE_SECONDS + 1
+    ],
+    ['storageMediaProxyMaxRedirects', -1],
+    ['storageMediaProxyMaxRedirects', STORAGE_MAX_MEDIA_PROXY_MAX_REDIRECTS + 1]
+  ])('should refuse %s set to %d', async (key, value) => {
+    const { caller } = await initTest(1);
+
+    await expect(
+      caller.others.updateSettings({ [key]: value })
+    ).rejects.toThrow();
   });
 
   test('should refuse a per-message file cap send-message could never honour', async () => {

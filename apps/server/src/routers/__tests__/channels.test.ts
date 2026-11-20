@@ -1024,11 +1024,10 @@ describe('channels router', () => {
   });
 
   test('should still include regular channels in read states when DM channels exist', async () => {
-    // the seed has a message in channel 1 (General) from User 1 (Test Owner)
-    // User 2 should see 1 unread in channel 1
+    // the seed has two messages in channel 1 (General) from User 1 (Test Owner)
     const readStatesUser2 = await getChannelsReadStatesForUser(2);
 
-    expect(readStatesUser2[1]).toBe(1);
+    expect(readStatesUser2[1]).toBe(2);
   });
 
   test('should track unread counts correctly across multiple channels', async () => {
@@ -1050,7 +1049,7 @@ describe('channels router', () => {
 
     const readStatesUser2 = await getChannelsReadStatesForUser(2);
 
-    expect(readStatesUser2[1]).toBe(2); // 1 message from mocks + 1 new message
+    expect(readStatesUser2[1]).toBe(3); // 2 seeded messages + 1 new message
     expect(readStatesUser2[2]).toBe(1);
 
     // user 2 marks channel 1 as read

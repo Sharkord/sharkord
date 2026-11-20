@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, spyOn, test } from 'bun:test';
-import dns from 'dns';
 import { eq } from 'drizzle-orm';
 import { tdb } from '../../../__tests__/setup';
-import { messages } from '../../../db/schema';
+import { messages, settings } from '../../../db/schema';
+import * as network from '../../../helpers/network';
 import { processMessageMetadata } from '../get-message-metadata';
 import { createOpenGraphMetadata, getDirectMediaMetaFromUrl } from '../helpers';
 
@@ -76,6 +76,20 @@ describe('link preview ssrf guard', () => {
   });
 });
 
+describe('link previews setting', () => {
+  test('should not build previews while link previews are off', async () => {
+    await tdb.update(settings).set({ enableLinkPreviews: false });
+
+    const content = 'look at http://93.184.216.34/photo.png';
+    const messageId = await insertMessage(content);
+
+    const result = await processMessageMetadata(content, messageId);
+
+    expect(result).toBeUndefined();
+    expect(await storedMetadata(messageId)).toBeNull();
+  });
+});
+
 const PREVIEW_HOST = 'preview.example';
 
 const fakePages: Record<string, () => Response> = {
@@ -95,8 +109,8 @@ const fakePages: Record<string, () => Response> = {
 
 // link-preview-js refuses hosts without a tld, so a local server cannot stand in for the
 // remote one. fetch is faked instead, following redirects itself unless asked not to, the
-// way the real one does, and dns makes the fake host look public while the loopback
-// literal it redirects to resolves for real
+// way the real one does, and the fake host is made to resolve public while the loopback
+// literal it redirects to goes through the real check
 describe('link preview redirects', () => {
   beforeEach(() => {
     const fakeFetch = async (
@@ -123,24 +137,13 @@ describe('link preview redirects', () => {
 
     spyOn(globalThis, 'fetch').mockImplementation(fakeFetch as typeof fetch);
 
-    const originalLookup = dns.lookup.bind(dns);
+    const originalResolve = network.resolvePublicAddress;
 
-    spyOn(dns, 'lookup').mockImplementation(((
-      hostname: string,
-      options: dns.LookupAllOptions,
-      callback: (
-        error: NodeJS.ErrnoException | null,
-        addresses: dns.LookupAddress[]
-      ) => void
-    ) => {
-      if (hostname === PREVIEW_HOST) {
-        callback(null, [{ address: '93.184.216.34', family: 4 }]);
+    spyOn(network, 'resolvePublicAddress').mockImplementation((hostname) => {
+      if (hostname === PREVIEW_HOST) return Promise.resolve('93.184.216.34');
 
-        return;
-      }
-
-      originalLookup(hostname, options, callback);
-    }) as typeof dns.lookup);
+      return originalResolve(hostname);
+    });
   });
 
   test('should refuse a public link that redirects to a private address', async () => {

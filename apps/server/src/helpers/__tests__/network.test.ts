@@ -5,7 +5,8 @@ import {
   isPublicIp,
   resolveAnnouncedAddress,
   resolveAnnouncedAddressV6,
-  resolveInternalAnnouncedAddress
+  resolveInternalAnnouncedAddress,
+  resolvePublicAddress
 } from '../network';
 
 // this predicate is the whole of the link preview's ssrf defence: everything it calls public
@@ -279,5 +280,32 @@ describe('resolveInternalAnnouncedAddress', () => {
       await resolveInternalAnnouncedAddress('sharkord.lan', lookup)
     ).toBeUndefined();
     expect(warnSpy).toHaveBeenCalled();
+  });
+});
+
+// a public hostname would need the real network, so only the refusals run on a name
+describe('resolvePublicAddress', () => {
+  test('should return a public ip literal as it is', async () => {
+    expect(await resolvePublicAddress('93.184.216.34')).toBe('93.184.216.34');
+  });
+
+  test('should refuse a private ip literal', async () => {
+    expect(await resolvePublicAddress('10.0.0.1')).toBeUndefined();
+  });
+
+  test('should refuse a bracketed ipv6 loopback from a url hostname', async () => {
+    const { hostname } = new URL('http://[::1]:8080/cat.png');
+
+    expect(await resolvePublicAddress(hostname)).toBeUndefined();
+  });
+
+  test('should refuse a hostname that resolves to loopback', async () => {
+    expect(await resolvePublicAddress('localhost')).toBeUndefined();
+  });
+
+  test('should refuse a hostname that does not resolve', async () => {
+    expect(
+      await resolvePublicAddress('does-not-exist.invalid')
+    ).toBeUndefined();
   });
 });

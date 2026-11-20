@@ -39,4 +39,10 @@ const getFileUrl = (file: TFile | undefined | null) => {
   return baseUrl;
 };
 
-export { getFileUrl, getHostFromServer, getUrlFromServer };
+const resolveServerUrl = (url: string) => {
+  if (!url.startsWith('/')) return url;
+
+  return `${getUrlFromServer()}${url}`;
+};
+
+export { getFileUrl, getHostFromServer, getUrlFromServer, resolveServerUrl };

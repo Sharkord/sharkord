@@ -20,7 +20,9 @@
  *   categories        2    Text Channels, Voice Channels
  *   channels          5    1 General (text), Voice, DM Channel, Private Voice,
  *                          Restricted Text
- *   messages          2    1 in General (channel 1), 2 in the DM channel
+ *   messages          3    1 in General (channel 1), 2 in the DM channel, 3 in General
+ *                          with unfurled link metadata (a direct image and an open graph
+ *                          preview), for the media proxy
  *   directMessages    1    the DM pair backing "DM Channel"
  *   files             2    1 attached to message 1 (General), 2 attached to message 2 (the
  *                          DM, which user 2 is not part of). rows only, nothing on disk
@@ -46,6 +48,10 @@ import {
   STORAGE_DEFAULT_MAX_AVATAR_SIZE,
   STORAGE_DEFAULT_MAX_BANNER_SIZE,
   STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
+  STORAGE_DEFAULT_MEDIA_PROXY_CACHE_SECONDS,
+  STORAGE_DEFAULT_MEDIA_PROXY_MAX_REDIRECTS,
+  STORAGE_DEFAULT_MEDIA_PROXY_MAX_SIZE,
+  STORAGE_DEFAULT_MEDIA_PROXY_TIMEOUT_SECONDS,
   STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
   STORAGE_MAX_FILE_SIZE,
   STORAGE_MIN_QUOTA_PER_USER,
@@ -133,12 +139,19 @@ const seedTestDb = async (
     storageOverflowAction: STORAGE_OVERFLOW_ACTION,
     enablePlugins: false,
     enableSearch: true,
+    enableLinkPreviews: true,
     webRtcSimulcastEnabled: false,
     showWelcomeDialog: true,
     storageSignedUrlsEnabled: false,
     storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
     storageImageOptimizationEnabled: false,
-    storageImageOptimizationQuality: STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY
+    storageImageOptimizationQuality: STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY,
+    storageMediaProxyEnabled: true,
+    storageMediaProxyMaxSize: STORAGE_DEFAULT_MEDIA_PROXY_MAX_SIZE,
+    storageMediaProxyTimeoutSeconds:
+      STORAGE_DEFAULT_MEDIA_PROXY_TIMEOUT_SECONDS,
+    storageMediaProxyCacheSeconds: STORAGE_DEFAULT_MEDIA_PROXY_CACHE_SECONDS,
+    storageMediaProxyMaxRedirects: STORAGE_DEFAULT_MEDIA_PROXY_MAX_REDIRECTS
   };
 
   await db.insert(settings).values(initialSettings);
@@ -504,6 +517,33 @@ const seedTestDb = async (
     { messageId: 1, fileId: insertedFiles[0]!.id, createdAt: firstStart },
     { messageId: 2, fileId: insertedFiles[1]!.id, createdAt: firstStart }
   ]);
+
+  // a message whose links were already unfurled, for the media proxy rewrite
+  const embedMessage: TIMessage = {
+    userId: insertedOwner!.id,
+    channelId: 1,
+    content: 'Look at these links',
+    metadata: [
+      {
+        kind: 'media',
+        url: 'https://media.example.com/cat.png',
+        title: 'cat.png',
+        description: '',
+        mediaType: 'image'
+      },
+      {
+        kind: 'open_graph',
+        url: 'https://blog.example.com/post',
+        title: 'A post',
+        mediaType: 'website',
+        images: ['https://blog.example.com/cover.jpg'],
+        favicons: ['https://blog.example.com/favicon.ico']
+      }
+    ],
+    createdAt: firstStart
+  };
+
+  await db.insert(messages).values(embedMessage);
 
   if (e2e) {
     const allUsers = [

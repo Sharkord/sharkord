@@ -6,19 +6,10 @@ import { isFileOrphaned } from '../db/queries/files';
 import { getSettings } from '../db/queries/server';
 import { files } from '../db/schema';
 import { verifyFileToken } from '../helpers/files-crypto';
+import { INLINE_MIME_TYPES } from '../helpers/inline-mime-types';
 import { PUBLIC_PATH } from '../helpers/paths';
 import { logger } from '../logger';
 import { buildCacheControl, sendFile, sendJsonError } from './helpers';
-
-const INLINE_ALLOW_LIST = [
-  'image/png',
-  'image/jpeg',
-  'image/gif',
-  'image/webp',
-  'image/avif',
-  'video/mp4',
-  'audio/mpeg'
-];
 
 const publicRouteHandler = async (
   req: http.IncomingMessage,
@@ -99,7 +90,7 @@ const publicRouteHandler = async (
 
   const filePath = path.join(PUBLIC_PATH, dbFile.name);
 
-  const contentDisposition = INLINE_ALLOW_LIST.includes(dbFile.mimeType)
+  const contentDisposition = INLINE_MIME_TYPES.includes(dbFile.mimeType)
     ? 'inline'
     : 'attachment';
 

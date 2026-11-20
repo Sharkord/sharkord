@@ -6,6 +6,10 @@ import {
   STORAGE_DEFAULT_MAX_AVATAR_SIZE,
   STORAGE_DEFAULT_MAX_BANNER_SIZE,
   STORAGE_DEFAULT_MAX_FILES_PER_MESSAGE,
+  STORAGE_DEFAULT_MEDIA_PROXY_CACHE_SECONDS,
+  STORAGE_DEFAULT_MEDIA_PROXY_MAX_REDIRECTS,
+  STORAGE_DEFAULT_MEDIA_PROXY_MAX_SIZE,
+  STORAGE_DEFAULT_MEDIA_PROXY_TIMEOUT_SECONDS,
   STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
   STORAGE_MAX_AVATAR_SIZE,
   STORAGE_MAX_BANNER_SIZE,
@@ -44,6 +48,7 @@ import { filesize } from 'filesize';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NumberInput } from '../number-input';
+import { MediaProxySettings } from './media-proxy';
 import { DiskMetrics } from './metrics';
 import { PluginStorageUsage } from './plugin-usage';
 import {
@@ -73,7 +78,12 @@ const INITIAL_VALUES: TStorageSettings = {
   storageSignedUrlsEnabled: false,
   storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
   storageImageOptimizationEnabled: false,
-  storageImageOptimizationQuality: STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY
+  storageImageOptimizationQuality: STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY,
+  storageMediaProxyEnabled: true,
+  storageMediaProxyMaxSize: STORAGE_DEFAULT_MEDIA_PROXY_MAX_SIZE,
+  storageMediaProxyTimeoutSeconds: STORAGE_DEFAULT_MEDIA_PROXY_TIMEOUT_SECONDS,
+  storageMediaProxyCacheSeconds: STORAGE_DEFAULT_MEDIA_PROXY_CACHE_SECONDS,
+  storageMediaProxyMaxRedirects: STORAGE_DEFAULT_MEDIA_PROXY_MAX_REDIRECTS
 };
 
 const toSizeLabel = (value: unknown) =>
@@ -102,7 +112,12 @@ const Storage = memo(() => {
       storageSignedUrlsEnabled: values.storageSignedUrlsEnabled,
       storageSignedUrlsTtlSeconds: values.storageSignedUrlsTtlSeconds,
       storageImageOptimizationEnabled: values.storageImageOptimizationEnabled,
-      storageImageOptimizationQuality: values.storageImageOptimizationQuality
+      storageImageOptimizationQuality: values.storageImageOptimizationQuality,
+      storageMediaProxyEnabled: values.storageMediaProxyEnabled,
+      storageMediaProxyMaxSize: values.storageMediaProxyMaxSize,
+      storageMediaProxyTimeoutSeconds: values.storageMediaProxyTimeoutSeconds,
+      storageMediaProxyCacheSeconds: values.storageMediaProxyCacheSeconds,
+      storageMediaProxyMaxRedirects: values.storageMediaProxyMaxRedirects
     });
   }, []);
 
@@ -459,6 +474,10 @@ const Storage = memo(() => {
           </div>
         </div>
       </Group>
+
+      <Separator />
+
+      <MediaProxySettings values={values} onChange={onChange} />
     </SettingsSection>
   );
 });

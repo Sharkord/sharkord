@@ -4,6 +4,7 @@ import http from 'http';
 import z from 'zod';
 import { config } from '../config';
 import { getWsInfo } from '../helpers/get-ws-info';
+import { MEDIA_PROXY_PATH } from '../helpers/media-proxy';
 import { logger } from '../logger';
 import { pluginManager } from '../plugins';
 import { SERVER_VERSION } from '../utils/env';
@@ -23,6 +24,7 @@ import { infoRouteHandler } from './info';
 import { interfaceRouteHandler } from './interface';
 import { loginRouteHandler } from './login';
 import { manifestRouteHandler } from './manifest';
+import { mediaProxyRouteHandler } from './media-proxy';
 import { oidcBackchannelLogoutRouteHandler } from './oidc/backchannel-logout';
 import { oidcCallbackRouteHandler } from './oidc/callback';
 import { oidcExchangeRouteHandler } from './oidc/exchange';
@@ -81,6 +83,7 @@ const routeHandlers: Partial<
       '/healthz': healthRouteHandler,
       '/info': infoRouteHandler,
       '/manifest.json': manifestRouteHandler,
+      [MEDIA_PROXY_PATH]: mediaProxyRouteHandler,
       '/oidc/login': oidcLoginRouteHandler,
       '/oidc/callback': oidcCallbackRouteHandler
     },

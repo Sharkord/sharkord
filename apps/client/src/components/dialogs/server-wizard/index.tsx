@@ -39,6 +39,7 @@ type TServerWizardValues = {
   enablePlugins: boolean;
   storageImageOptimizationEnabled: boolean;
   storageSignedUrlsEnabled: boolean;
+  storageMediaProxyEnabled: boolean;
   // undefined means untouched, null means remove
   logo?: TPickedImage | null;
 };
@@ -63,7 +64,8 @@ const ServerWizardDialog = memo(
         storageUploadEnabled: true,
         enablePlugins: false,
         storageImageOptimizationEnabled: false,
-        storageSignedUrlsEnabled: false
+        storageSignedUrlsEnabled: false,
+        storageMediaProxyEnabled: true
       });
 
     useEffect(() => {
@@ -80,7 +82,8 @@ const ServerWizardDialog = memo(
         enablePlugins: settings.enablePlugins,
         storageImageOptimizationEnabled:
           settings.storageImageOptimizationEnabled,
-        storageSignedUrlsEnabled: settings.storageSignedUrlsEnabled
+        storageSignedUrlsEnabled: settings.storageSignedUrlsEnabled,
+        storageMediaProxyEnabled: settings.storageMediaProxyEnabled
       });
     }, [settings, setValues]);
 
@@ -133,6 +136,7 @@ const ServerWizardDialog = memo(
           storageImageOptimizationEnabled:
             values.storageImageOptimizationEnabled,
           storageSignedUrlsEnabled: values.storageSignedUrlsEnabled,
+          storageMediaProxyEnabled: values.storageMediaProxyEnabled,
           serverWizardCompleted: true
         });
 
@@ -182,6 +186,11 @@ const ServerWizardDialog = memo(
 
     const onSignedUrlsChange = useCallback(
       (value: boolean) => onChange('storageSignedUrlsEnabled', value),
+      [onChange]
+    );
+
+    const onMediaProxyChange = useCallback(
+      (value: boolean) => onChange('storageMediaProxyEnabled', value),
       [onChange]
     );
 
@@ -289,6 +298,13 @@ const ServerWizardDialog = memo(
             disableDescription={t('serverWizardSignedUrlsDisable')}
             value={values.storageSignedUrlsEnabled}
             onChange={onSignedUrlsChange}
+          />
+          <Choice
+            question={t('serverWizardMediaProxyQuestion')}
+            enableDescription={t('serverWizardMediaProxyEnable')}
+            disableDescription={t('serverWizardMediaProxyDisable')}
+            value={values.storageMediaProxyEnabled}
+            onChange={onMediaProxyChange}
           />
         </>
       );
