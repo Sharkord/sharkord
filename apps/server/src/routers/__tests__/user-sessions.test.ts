@@ -54,6 +54,11 @@ const connectSession = async (
   return { socket, caller };
 };
 
+const getJoinedCaller = (
+  socket: TFakeSocket,
+  getUserWs: (userId: number) => TFakeSocket[]
+) => getCaller(2, { socket }, { authenticated: true, getUserWs });
+
 const socketsOf = (targetUserId: number, sockets: TFakeSocket[]) => ({
   getUserWs: (userId: number) => (userId === targetUserId ? sockets : [])
 });
@@ -401,10 +406,9 @@ describe('own sessions', () => {
     const { socket: current } = await connectSession(2, BROWSER_USER_AGENT);
     const { socket: other } = await connectSession(2, DESKTOP_USER_AGENT);
 
-    const { caller } = await getCaller(
-      2,
-      { socket: current },
-      socketsOf(2, [current, other])
+    const { caller } = await getJoinedCaller(
+      current,
+      socketsOf(2, [current, other]).getUserWs
     );
 
     const sessions = await caller.users.getOwnSessions();
@@ -423,7 +427,10 @@ describe('own sessions', () => {
 
     await connectSession(3, DESKTOP_USER_AGENT);
 
-    const { caller } = await getCaller(2, { socket }, socketsOf(2, [socket]));
+    const { caller } = await getJoinedCaller(
+      socket,
+      socketsOf(2, [socket]).getUserWs
+    );
 
     const sessions = await caller.users.getOwnSessions();
 
@@ -434,10 +441,9 @@ describe('own sessions', () => {
     const { socket: current } = await connectSession(2, BROWSER_USER_AGENT);
     const { socket: other } = await connectSession(2, DESKTOP_USER_AGENT);
 
-    const { caller } = await getCaller(
-      2,
-      { socket: current },
-      socketsOf(2, [current, other])
+    const { caller } = await getJoinedCaller(
+      current,
+      socketsOf(2, [current, other]).getUserWs
     );
 
     await caller.users.disconnectOwnSession({
@@ -460,7 +466,10 @@ describe('own sessions', () => {
   test('should not disconnect the session making the request', async () => {
     const { socket } = await connectSession(2, BROWSER_USER_AGENT);
 
-    const { caller } = await getCaller(2, { socket }, socketsOf(2, [socket]));
+    const { caller } = await getJoinedCaller(
+      socket,
+      socketsOf(2, [socket]).getUserWs
+    );
 
     await expect(
       caller.users.disconnectOwnSession({ sessionId: socket.session!.id })
@@ -473,18 +482,12 @@ describe('own sessions', () => {
     const { socket: own } = await connectSession(2, BROWSER_USER_AGENT);
     const { socket: foreign } = await connectSession(3, BROWSER_USER_AGENT);
 
-    const { caller } = await getCaller(
-      2,
-      { socket: own },
-      {
-        getUserWs: (userId: number) => {
-          if (userId === 2) return [own];
-          if (userId === 3) return [foreign];
+    const { caller } = await getJoinedCaller(own, (userId: number) => {
+      if (userId === 2) return [own];
+      if (userId === 3) return [foreign];
 
-          return [];
-        }
-      }
-    );
+      return [];
+    });
 
     await expect(
       caller.users.disconnectOwnSession({ sessionId: foreign.session!.id })
