@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { getLinkPreview } from 'link-preview-js';
 import { isIP } from 'net';
 import { db } from '../../db';
+import { getSettings } from '../../db/queries/server';
 import { messages } from '../../db/schema';
 import { isPrivateIP, resolvePublicAddress } from '../../helpers/network';
 import {
@@ -121,6 +122,10 @@ export const processMessageMetadata = async (
   content: string,
   messageId: number
 ) => {
+  const { enableLinkPreviews } = await getSettings();
+
+  if (!enableLinkPreviews) return;
+
   const metadata = await urlMetadataParser(content);
 
   const hasMetadata = metadata && metadata.length > 0;

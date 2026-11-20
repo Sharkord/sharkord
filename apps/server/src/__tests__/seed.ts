@@ -139,6 +139,7 @@ const seedTestDb = async (
     storageOverflowAction: STORAGE_OVERFLOW_ACTION,
     enablePlugins: false,
     enableSearch: true,
+    enableLinkPreviews: true,
     webRtcSimulcastEnabled: false,
     showWelcomeDialog: true,
     storageSignedUrlsEnabled: false,

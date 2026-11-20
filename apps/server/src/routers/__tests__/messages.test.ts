@@ -75,6 +75,28 @@ describe('messages router', () => {
     expect(embedMessage?.metadata).toEqual(stored!.metadata);
   });
 
+  test('should hide stored previews while link previews are off', async () => {
+    await tdb.update(settings).set({ enableLinkPreviews: false });
+
+    const { caller } = await initTest(1);
+
+    const { messages: page } = await caller.messages.get({
+      channelId: 1,
+      cursor: null,
+      limit: 50
+    });
+
+    const embedMessage = page.find(({ id }) => id === 3);
+    const stored = await tdb
+      .select({ metadata: messages.metadata })
+      .from(messages)
+      .where(eq(messages.id, 3))
+      .get();
+
+    expect(embedMessage?.metadata).toBeNull();
+    expect(stored!.metadata).not.toBeNull();
+  });
+
   test('should throw when user lacks permissions (edit - not own message)', async () => {
     const { caller: caller1 } = await initTest(1);
     const { caller: caller2 } = await initTest(2);

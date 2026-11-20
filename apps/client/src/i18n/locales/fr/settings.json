@@ -170,6 +170,8 @@
   "directMessagesEnabledDesc": "Permet aux utilisateurs d'envoyer des messages privés entre eux. Si désactivé, les utilisateurs ne peuvent communiquer que dans les caneaux.",
   "searchEnabledLabel": "Recherche",
   "searchEnabledDesc": "Permet aux utilisateurs de rechercher des messages et des fichiers sur le serveur.",
+  "linkPreviewsEnabledLabel": "Aperçus des liens",
+  "linkPreviewsEnabledDesc": "Affiche un aperçu des liens publiés dans les messages. Désactivé, le serveur cesse de charger les liens et masque les aperçus existants.",
   "showWelcomeDialogLabel": "Afficher la fenêtre de bienvenue",
   "showWelcomeDialogDesc": "Affiche une fenetre de configuration du profil aux utilisateurs lors de leur premiere arrivee sur le serveur.",
   "usersTitle": "Utilisateurs",

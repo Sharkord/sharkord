@@ -170,6 +170,8 @@
   "directMessagesEnabledDesc": "Umožnit uživatelům posílat si navzájem přímé zprávy. Pokud je tato možnost zakázána, uživatelé mohou komunikovat pouze v kanálech.",
   "searchEnabledLabel": "Hledání",
   "searchEnabledDesc": "Umožnit uživatelům vyhledávat zprávy a soubory na celém serveru.",
+  "linkPreviewsEnabledLabel": "Náhledy odkazů",
+  "linkPreviewsEnabledDesc": "Zobrazovat náhledy odkazů ve zprávách. Když je vypnuto, server přestane odkazy načítat a skryje existující náhledy.",
   "showWelcomeDialogLabel": "Zobrazit uvítací dialog",
   "showWelcomeDialogDesc": "Zobrazit uživatelům dialog pro nastavení profilu při jejich prvním připojení k serveru.",
   "usersTitle": "Uživatelé",

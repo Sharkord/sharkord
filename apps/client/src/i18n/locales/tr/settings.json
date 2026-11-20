@@ -167,6 +167,8 @@
   "directMessagesEnabledDesc": "Kullanıcıların birbirine doğrudan mesaj göndermesine izin verin. Devre dışıysa kullanıcılar yalnızca kanallarda iletişim kurabilir.",
   "searchEnabledLabel": "Arama",
   "searchEnabledDesc": "Kullanıcıların sunucu genelinde mesaj ve dosya aramasına izin verin.",
+  "linkPreviewsEnabledLabel": "Bağlantı önizlemeleri",
+  "linkPreviewsEnabledDesc": "Mesajlarda paylaşılan bağlantıların önizlemelerini göster. Kapalıyken sunucu bağlantıları yüklemeyi bırakır ve mevcut önizlemeleri gizler.",
   "showWelcomeDialogLabel": "Karşılama Penceresini Göster",
   "showWelcomeDialogDesc": "Kullanıcılara sunucuya ilk katıldıklarında bir profil kurulum penceresi gösterin.",
   "usersTitle": "Kullanıcılar",

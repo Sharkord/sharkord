@@ -170,6 +170,8 @@
   "directMessagesEnabledDesc": "Permita que os usuários enviem mensagens diretas uns aos outros. Se desativado, os usuários só poderão se comunicar em canais.",
   "searchEnabledLabel": "Buscar",
   "searchEnabledDesc": "Permita que os usuários busquem mensagens e arquivos em todo o servidor.",
+  "linkPreviewsEnabledLabel": "Pré-visualizações de links",
+  "linkPreviewsEnabledDesc": "Mostra pré-visualizações dos links enviados nas mensagens. Quando desativado, o servidor para de carregar os links e oculta as pré-visualizações existentes.",
   "showWelcomeDialogLabel": "Mostrar Diálogo de Boas-Vindas",
   "showWelcomeDialogDesc": "Mostra um diálogo de configuração de perfil aos usuários na primeira vez que entrarem no servidor.",
   "usersTitle": "Usuários",

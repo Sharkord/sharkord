@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import { tdb } from '../../../__tests__/setup';
-import { messages } from '../../../db/schema';
+import { messages, settings } from '../../../db/schema';
 import * as network from '../../../helpers/network';
 import { processMessageMetadata } from '../get-message-metadata';
 import { createOpenGraphMetadata, getDirectMediaMetaFromUrl } from '../helpers';
@@ -73,6 +73,20 @@ describe('link preview ssrf guard', () => {
 
     expect(result).toBeDefined();
     expect(await storedMetadata(messageId)).not.toBeNull();
+  });
+});
+
+describe('link previews setting', () => {
+  test('should not build previews while link previews are off', async () => {
+    await tdb.update(settings).set({ enableLinkPreviews: false });
+
+    const content = 'look at http://93.184.216.34/photo.png';
+    const messageId = await insertMessage(content);
+
+    const result = await processMessageMetadata(content, messageId);
+
+    expect(result).toBeUndefined();
+    expect(await storedMetadata(messageId)).toBeNull();
   });
 });
 

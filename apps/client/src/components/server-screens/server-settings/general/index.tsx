@@ -26,6 +26,7 @@ type TServerGeneralValues = {
   enablePlugins: boolean;
   webRtcSimulcastEnabled: boolean;
   enableSearch: boolean;
+  enableLinkPreviews: boolean;
   showWelcomeDialog: boolean;
   // undefined means untouched, null means remove
   logo?: TPickedImage | null;
@@ -41,6 +42,7 @@ const INITIAL_VALUES: TServerGeneralValues = {
   enablePlugins: false,
   webRtcSimulcastEnabled: false,
   enableSearch: true,
+  enableLinkPreviews: true,
   showWelcomeDialog: true
 };
 
@@ -62,6 +64,7 @@ const General = memo(() => {
         enablePlugins: values.enablePlugins,
         webRtcSimulcastEnabled: values.webRtcSimulcastEnabled,
         enableSearch: values.enableSearch,
+        enableLinkPreviews: values.enableLinkPreviews,
         showWelcomeDialog: values.showWelcomeDialog
       });
 
@@ -94,6 +97,7 @@ const General = memo(() => {
       enablePlugins: settings.enablePlugins ?? false,
       webRtcSimulcastEnabled: settings.webRtcSimulcastEnabled ?? false,
       enableSearch: settings.enableSearch ?? true,
+      enableLinkPreviews: settings.enableLinkPreviews ?? true,
       showWelcomeDialog: settings.showWelcomeDialog ?? true
     });
   }, [settings, reset]);
@@ -102,30 +106,42 @@ const General = memo(() => {
     (picked: TPickedImage | null) => onChange('logo', picked),
     [onChange]
   );
+
   const handlePasswordOnFirstJoinChange = useCallback(
     (checked: boolean) => onChange('onlyAskForPasswordOnFirstJoin', checked),
     [onChange]
   );
+
   const handleAllowNewUsersChange = useCallback(
     (checked: boolean) => onChange('allowNewUsers', checked),
     [onChange]
   );
+
   const handleEnablePluginsChange = useCallback(
     (checked: boolean) => onChange('enablePlugins', checked),
     [onChange]
   );
+
   const handleSimulcastChange = useCallback(
     (checked: boolean) => onChange('webRtcSimulcastEnabled', checked),
     [onChange]
   );
+
   const handleDirectMessagesChange = useCallback(
     (checked: boolean) => onChange('directMessagesEnabled', checked),
     [onChange]
   );
+
   const handleSearchChange = useCallback(
     (checked: boolean) => onChange('enableSearch', checked),
     [onChange]
   );
+
+  const handleLinkPreviewsChange = useCallback(
+    (checked: boolean) => onChange('enableLinkPreviews', checked),
+    [onChange]
+  );
+
   const handleWelcomeDialogChange = useCallback(
     (checked: boolean) => onChange('showWelcomeDialog', checked),
     [onChange]
@@ -220,6 +236,16 @@ const General = memo(() => {
         <Switch
           checked={values.enableSearch}
           onCheckedChange={handleSearchChange}
+        />
+      </Group>
+
+      <Group
+        label={t('linkPreviewsEnabledLabel')}
+        description={t('linkPreviewsEnabledDesc')}
+      >
+        <Switch
+          checked={values.enableLinkPreviews}
+          onCheckedChange={handleLinkPreviewsChange}
         />
       </Group>
 

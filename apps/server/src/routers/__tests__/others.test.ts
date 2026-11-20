@@ -238,6 +238,7 @@ describe('others router', () => {
       storageMaxBannerSize: 4 * 1024 * 1024,
       storageMaxFilesPerMessage: 6,
       webRtcSimulcastEnabled: true,
+      enableLinkPreviews: false,
       storageImageOptimizationEnabled: true,
       storageImageOptimizationQuality: 72,
       storageMediaProxyEnabled: false,
@@ -254,6 +255,7 @@ describe('others router', () => {
     expect(settings.name).toBe(newSettings.name);
     expect(settings.description).toBe(newSettings.description);
     expect(settings.allowNewUsers).toBe(newSettings.allowNewUsers);
+    expect(settings.enableLinkPreviews).toBe(newSettings.enableLinkPreviews);
     expect(settings.directMessagesEnabled).toBe(
       newSettings.directMessagesEnabled
     );

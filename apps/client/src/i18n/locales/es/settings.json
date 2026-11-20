@@ -170,6 +170,8 @@
   "directMessagesEnabledDesc": "Permite a los usuarios enviarse mensajes directos entre sí. Si está desactivado, los usuarios solo pueden comunicarse en los canales.",
   "searchEnabledLabel": "Búsqueda",
   "searchEnabledDesc": "Permite a los usuarios buscar mensajes y archivos en el servidor.",
+  "linkPreviewsEnabledLabel": "Vistas previas de enlaces",
+  "linkPreviewsEnabledDesc": "Muestra vistas previas de los enlaces enviados en los mensajes. Si se desactiva, el servidor deja de cargar los enlaces y oculta las vistas previas existentes.",
   "showWelcomeDialogLabel": "Mostrar diálogo de bienvenida",
   "showWelcomeDialogDesc": "Muestra un diálogo de configuración de perfil a los usuarios la primera vez que se unen al servidor.",
   "usersTitle": "Usuarios",

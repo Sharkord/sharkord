@@ -84,6 +84,7 @@ const zGeneralSettings = z.object({
   enablePlugins: z.boolean().optional(),
   webRtcSimulcastEnabled: z.boolean().optional(),
   enableSearch: z.boolean().optional(),
+  enableLinkPreviews: z.boolean().optional(),
   showWelcomeDialog: z.boolean().optional()
 });
 
