@@ -12,9 +12,13 @@ type TUseVoiceSessionRecoveryParams = {
     routerRtpCapabilities: RtpCapabilities,
     channelId: number
   ) => Promise<void>;
+  cleanup: () => void;
 };
 
-const useVoiceSessionRecovery = ({ init }: TUseVoiceSessionRecoveryParams) => {
+const useVoiceSessionRecovery = ({
+  init,
+  cleanup
+}: TUseVoiceSessionRecoveryParams) => {
   const { t } = useTranslation('common');
   const isConnected = useIsConnected();
   const currentVoiceChannelId = useCurrentVoiceChannelId();
@@ -44,10 +48,17 @@ const useVoiceSessionRecovery = ({ init }: TUseVoiceSessionRecoveryParams) => {
 
     wasConnectedRef.current = isConnected;
 
-    if (wasConnected || !isConnected || !currentVoiceChannelId) return;
+    if (!currentVoiceChannelId) return;
+
+    if (wasConnected && !isConnected) {
+      cleanup();
+      return;
+    }
+
+    if (wasConnected || !isConnected) return;
 
     rejoin(currentVoiceChannelId);
-  }, [isConnected, currentVoiceChannelId, rejoin]);
+  }, [isConnected, currentVoiceChannelId, rejoin, cleanup]);
 };
 
 export { useVoiceSessionRecovery };
