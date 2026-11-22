@@ -16,8 +16,8 @@
 
 </div>
 
-> [!NOTE] Sharkord is in alpha. Bugs, incomplete features and breaking changes
-> are to be expected.
+> [!NOTE]
+> Sharkord is in alpha. Bugs, incomplete features and breaking changes are to be expected.
 
 Sharkord brings the most important Discord-like features to your own
 infrastructure: voice, video and screen sharing, text channels and direct
