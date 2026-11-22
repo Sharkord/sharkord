@@ -4,11 +4,11 @@ import { useSelector } from 'react-redux';
 import {
   commandsSelector,
   flatCommandsSelector,
-  fullscreenPluginIdsSelector,
   pluginComponentsBySlotSelector,
   pluginMessageComponentSelector,
   pluginMetadataByIdSelector,
   pluginNamesSelector,
+  pluginPageSelector,
   pluginSlotIdsSelector,
   pluginTabsByIdSelector
 } from './selectors';
@@ -40,5 +40,7 @@ export const usePluginSlotIds = (pluginId: string) =>
 export const usePluginTabs = (pluginId: string) =>
   useSelector((state: IRootState) => pluginTabsByIdSelector(state, pluginId));
 
-export const useFullscreenPluginIds = () =>
-  useSelector(fullscreenPluginIdsSelector);
+export const usePluginPage = (pluginId: string, pageId: string) =>
+  useSelector((state: IRootState) =>
+    pluginPageSelector(state, pluginId, pageId)
+  );

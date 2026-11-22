@@ -5,6 +5,10 @@ import { zHttpUrl, zPluginId } from './primitives';
  * The SDK contract this server speaks. A plugin declares the same number as
  * `sdkVersion` in its manifest, and one that does not match is refused at load
  * rather than failing later against an API that moved.
+ *
+ * Deprecated features that MUST be removed in future SDK versions are tracked here.
+ * That means if you are working on a SDK feature that needs to bump the SDK version, you SHOULD also remove any deprecated features that are tracked here.
+ * - Remove the FULL_SCREEN slot in favor of plugin pages
  */
 export const PLUGIN_SDK_VERSION = 2;
 
