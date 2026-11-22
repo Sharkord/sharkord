@@ -27,7 +27,7 @@ export const useFloatingCard = () => {
     }
   }, [position]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (!cardRef.current) return;
 
     const rect = cardRef.current.getBoundingClientRect();
@@ -38,8 +38,8 @@ export const useFloatingCard = () => {
     });
   }, []);
 
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
+  const handlePointerMove = useCallback(
+    (e: PointerEvent) => {
       if (!isDragging || !cardRef.current) return;
 
       const parent = cardRef.current.parentElement;
@@ -59,28 +59,25 @@ export const useFloatingCard = () => {
     [isDragging, dragOffset]
   );
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback(() => {
     setIsDragging(false);
   }, []);
 
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('pointermove', handlePointerMove);
+      document.addEventListener('pointerup', handlePointerUp);
       return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('pointermove', handlePointerMove);
+        document.removeEventListener('pointerup', handlePointerUp);
       };
     }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, handlePointerMove, handlePointerUp]);
 
   const getStyle = useCallback(() => {
-    return {
-      right: position ? undefined : '1rem',
-      bottom: position ? undefined : '1rem',
-      left: position ? `${position.x}px` : undefined,
-      top: position ? `${position.y}px` : undefined
-    };
+    if (!position) return undefined;
+
+    return { left: `${position.x}px`, top: `${position.y}px` };
   }, [position]);
 
   const resetCard = useCallback(() => {
@@ -89,8 +86,9 @@ export const useFloatingCard = () => {
 
   return {
     cardRef,
-    handleMouseDown,
+    handlePointerDown,
     getStyle,
-    resetCard
+    resetCard,
+    hasPosition: !!position
   };
 };

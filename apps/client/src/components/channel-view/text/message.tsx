@@ -4,6 +4,7 @@ import {
   useOwnUserId,
   useOwnUserRoleIds
 } from '@/features/server/users/hooks';
+import { useLongPress } from '@/hooks/use-long-press';
 import { cn } from '@/lib/utils';
 import {
   hasMention,
@@ -11,7 +12,7 @@ import {
   TestId,
   type TJoinedMessage
 } from '@sharkord/shared';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MessageActions } from './message-actions';
 import { MessageEditInline } from './message-edit-inline';
 import { MessageRenderer } from './renderer';
@@ -46,6 +47,8 @@ const Message = memo(
   }: TMessageProps) => {
     const [isPencilEditing, setIsPencilEditing] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
+    const [isTouchOpen, setIsTouchOpen] = useState(false);
+    const messageRef = useRef<HTMLDivElement>(null);
     const isEditing = isPencilEditing || editingMessageId === message.id;
     const isFromOwnUser = useIsOwnUser(message.userId);
     const can = useCan();
@@ -83,6 +86,32 @@ const Message = memo(
       []
     );
 
+    const handleLongPress = useCallback(() => setIsTouchOpen(true), []);
+
+    const longPressHandlers = useLongPress(handleLongPress);
+
+    useEffect(() => {
+      if (!isTouchOpen) return;
+
+      // the bar stays up for taps inside it and goes away on the next touch anywhere else,
+      // menus it opened render in a portal so they count as inside
+      const onTouchStart = (event: TouchEvent) => {
+        const target = event.target as Node;
+        const isInsideMessage = messageRef.current?.contains(target);
+        const isInsidePortal = (target as Element).closest?.(
+          '[data-radix-popper-content-wrapper]'
+        );
+
+        if (isInsideMessage || isInsidePortal) return;
+
+        setIsTouchOpen(false);
+      };
+
+      document.addEventListener('touchstart', onTouchStart);
+
+      return () => document.removeEventListener('touchstart', onTouchStart);
+    }, [isTouchOpen]);
+
     const handleEditBlur = useCallback(() => {
       setIsPencilEditing(false);
 
@@ -103,6 +132,8 @@ const Message = memo(
         data-message-id={message.id}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        ref={messageRef}
+        {...longPressHandlers}
       >
         {!isEditing ? (
           <>
@@ -119,8 +150,9 @@ const Message = memo(
                 replyUserIds={message.replyUserIds ?? NO_REPLY_USER_IDS}
               />
             )}
-            {!disableActions && isHovered && (
+            {!disableActions && (isHovered || isTouchOpen) && (
               <MessageActions
+                isTouchOpen={isTouchOpen}
                 onEdit={handleEdit}
                 canManage={canManage}
                 messageId={message.id}

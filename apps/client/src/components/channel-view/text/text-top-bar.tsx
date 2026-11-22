@@ -66,8 +66,10 @@ const TextTopbar = memo(
       <div className="flex h-12 border-b border-border bg-card w-auto overflow-hidden">
         <div className="flex w-full items-center justify-between px-4">
           <div className="flex items-center gap-2 min-w-0">
-            {getIcon()}
-            <span className="font-bold truncate max-w-40">{info.name}</span>
+            <span className="flex min-w-0 shrink-0 items-center gap-2 max-md:hidden">
+              {getIcon()}
+              <span className="font-bold truncate max-w-40">{info.name}</span>
+            </span>
             {info.topic && (
               <span className="text-xs text-muted-foreground truncate">
                 {info.topic}

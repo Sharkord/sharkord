@@ -34,7 +34,7 @@ const ResolutionFpsControl = memo(
     );
 
     return (
-      <div className="flex items-end gap-2">
+      <div className="flex flex-wrap items-end gap-2">
         <Group label={t('resolutionLabel')}>
           <Select
             value={resolution}

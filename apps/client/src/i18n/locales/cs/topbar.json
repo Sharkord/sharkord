@@ -17,5 +17,6 @@
   "stream_other": "streamy",
   "noRemoteAudioStreams": "Nejsou k dispozici žádné vzdálené audio streamy.",
   "volumeControls": "Ovládání hlasitosti",
-  "externalAudio": "Externí zvuk"
+  "externalAudio": "Externí zvuk",
+  "openChannelList": "Otevřít seznam kanálů"
 }

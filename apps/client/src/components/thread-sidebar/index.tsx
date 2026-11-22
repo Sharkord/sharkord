@@ -2,6 +2,7 @@ import { ResizableSidebar } from '@/components/resizable-sidebar';
 import { closeThreadSidebar } from '@/features/app/actions';
 import { useThreadSidebar } from '@/features/app/hooks';
 import { LocalStorageKey } from '@/helpers/storage';
+import { cn } from '@/lib/utils';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ThreadContent } from './thread-content';
@@ -45,7 +46,10 @@ const ThreadSidebar = memo(({ isOpen }: TThreadSidebarProps) => {
       defaultWidth={DEFAULT_WIDTH}
       edge="left"
       isOpen={isOpen}
-      className="hidden lg:flex"
+      className={cn(
+        'max-lg:absolute max-lg:inset-0 max-lg:z-20 max-lg:border-0',
+        isOpen ? 'max-lg:w-full!' : 'max-lg:hidden'
+      )}
     >
       <ThreadContentWrapper />
     </ResizableSidebar>

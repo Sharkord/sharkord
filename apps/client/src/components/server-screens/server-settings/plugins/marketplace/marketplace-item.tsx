@@ -146,7 +146,7 @@ const MarketplaceItem = memo(
     let action = (
       <Button size="sm" onClick={handleInstall} disabled={isBusy}>
         <Download className="h-4 w-4" />
-        {t('marketplaceInstallBtn')}
+        <span className="max-sm:sr-only">{t('marketplaceInstallBtn')}</span>
       </Button>
     );
 
@@ -159,7 +159,9 @@ const MarketplaceItem = memo(
           disabled={isBusy}
         >
           <Download className="h-4 w-4" />
-          {t('pluginUpdateTo', { version: latestCompatibleVersion.version })}
+          <span className="max-sm:sr-only">
+            {t('pluginUpdateTo', { version: latestCompatibleVersion.version })}
+          </span>
         </Button>
       );
     } else if (isInstalled) {
@@ -190,8 +192,8 @@ const MarketplaceItem = memo(
           >
             <PluginLogo src={plugin.logo} />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="truncate text-sm font-medium">
+              <div className="flex flex-wrap items-center gap-x-2">
+                <span className="max-w-full truncate text-sm font-medium">
                   {plugin.name}
                 </span>
                 {plugin.verified && (
@@ -226,7 +228,7 @@ const MarketplaceItem = memo(
         </div>
 
         {isExpanded && (
-          <div className="space-y-3 px-4 pb-4 pl-16">
+          <div className="space-y-3 px-4 pb-4 sm:pl-16">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <User className="h-3.5 w-3.5" />

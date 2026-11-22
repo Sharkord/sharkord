@@ -16,6 +16,7 @@ import {
   hotkeysEnabledSelector,
   isAutoConnectingSelector,
   loadingPluginsSelector,
+  selectedDmChannelIdSelector,
   selectedThreadSelector,
   threadSidebarDataSelector
 } from '../app/selectors';
@@ -26,11 +27,13 @@ import {
   channelPermissionsSelector,
   channelReadStateByIdSelector,
   channelsByCategoryIdSelector,
+  channelsMapSelector,
   channelsReadStatesSelector,
   channelsSelector,
   currentVoiceChannelIdSelector,
   selectedChannelIdSelector
 } from './channels/selectors';
+import { directMessagesSelector } from './dms/selectors';
 import { emojisSelector } from './emojis/selectors';
 import {
   canViewChannel,
@@ -95,6 +98,89 @@ export const activeFullscreenPluginIdSelector = (state: IRootState) =>
   state.server.activeFullscreenPluginId;
 
 export const dmsOpenSelector = (state: IRootState) => state.server.dmsOpen;
+
+// mirrors what the content area renders: true when it has no channel, dm or thread to show
+export const isNothingOpenSelector = createSelector(
+  [
+    activeFullscreenPluginIdSelector,
+    threadsOpenSelector,
+    selectedThreadSelector,
+    dmsOpenSelector,
+    selectedDmChannelIdSelector,
+    selectedChannelIdSelector
+  ],
+  (
+    activeFullscreenPluginId,
+    threadsOpen,
+    selectedThread,
+    dmsOpen,
+    selectedDmChannelId,
+    selectedChannelId
+  ) => {
+    if (activeFullscreenPluginId) return false;
+    if (threadsOpen) return !selectedThread;
+    if (dmsOpen) return !selectedDmChannelId;
+
+    return !selectedChannelId;
+  }
+);
+
+export type TOpenViewTitle =
+  | { kind: 'dm'; name: string }
+  | { kind: 'channel'; name: string; type: string };
+
+// what a phone header names, since the sidebar that otherwise shows it is hidden there. a
+// thread has none, its own header already names it
+export const openViewTitleSelector = createSelector(
+  [
+    isNothingOpenSelector,
+    activeFullscreenPluginIdSelector,
+    threadsOpenSelector,
+    dmsOpenSelector,
+    selectedDmChannelIdSelector,
+    directMessagesSelector,
+    usersMapSelector,
+    selectedChannelIdSelector,
+    channelsMapSelector
+  ],
+  (
+    isNothingOpen,
+    activeFullscreenPluginId,
+    threadsOpen,
+    dmsOpen,
+    selectedDmChannelId,
+    directMessages,
+    usersMap,
+    selectedChannelId,
+    channelsMap
+  ): TOpenViewTitle | undefined => {
+    if (isNothingOpen || activeFullscreenPluginId || threadsOpen) {
+      return undefined;
+    }
+
+    if (dmsOpen) {
+      const dm = directMessages.find(
+        ({ channelId }) => channelId === selectedDmChannelId
+      );
+
+      if (!dm) return undefined;
+
+      const user = usersMap[dm.userId];
+
+      if (!user) return undefined;
+
+      return { kind: 'dm', name: user.name };
+    }
+
+    if (!selectedChannelId) return undefined;
+
+    const channel = channelsMap[selectedChannelId];
+
+    if (!channel) return undefined;
+
+    return { kind: 'channel', name: channel.name, type: channel.type };
+  }
+);
 
 export const ownUserRolesSelector = createSelector(
   [ownUserSelector, rolesSelector],

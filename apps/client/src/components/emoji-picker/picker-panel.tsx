@@ -3,6 +3,7 @@ import {
   type TEmojiItem
 } from '@/components/tiptap-input/helpers';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
+import { MEDIA_QUERY, useMediaQuery } from '@/hooks/use-media-query';
 import { Input, Tabs, TabsContent, TabsList, TabsTrigger } from '@sharkord/ui';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +26,7 @@ const EmojiPickerPanel = memo(
     const [search, setSearch] = useState('');
     const customEmojis = useCustomEmojis();
     const { addRecent } = useRecentEmojis();
+    const hasFinePointer = useMediaQuery(MEDIA_QUERY.finePointer);
 
     const convertedCustomEmojis = useMemo(
       () => customEmojis.map(toTEmojiItem),
@@ -66,7 +68,7 @@ const EmojiPickerPanel = memo(
             value={search}
             onChange={handleSearchChange}
             className="h-9"
-            autoFocus
+            autoFocus={hasFinePointer}
           />
         </div>
 

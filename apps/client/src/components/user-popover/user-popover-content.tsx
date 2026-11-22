@@ -15,7 +15,7 @@ import {
   UserStatus,
   getTrpcError
 } from '@sharkord/shared';
-import { IconButton } from '@sharkord/ui';
+import { IconButton, PopoverClose } from '@sharkord/ui';
 import { format } from 'date-fns';
 import { MessageSquare, ShieldCheck, Trash, UserCog } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
@@ -151,26 +151,30 @@ const UserPopoverContent = memo(({ userId }: TUserPopoverContentProps) => {
             />
 
             {showDmButton && (
-              <IconButton
-                data-testid={TestId.USER_POPOVER_DM}
-                icon={MessageSquare}
-                variant="ghost"
-                size="sm"
-                title={t('directMessage')}
-                onClick={onDirectMessageClick}
-              />
+              <PopoverClose asChild>
+                <IconButton
+                  data-testid={TestId.USER_POPOVER_DM}
+                  icon={MessageSquare}
+                  variant="ghost"
+                  size="sm"
+                  title={t('directMessage')}
+                  onClick={onDirectMessageClick}
+                />
+              </PopoverClose>
             )}
 
             {
               <Protect permission={Permission.MANAGE_USERS}>
-                <IconButton
-                  data-testid={TestId.USER_POPOVER_MODERATE}
-                  icon={UserCog}
-                  variant="ghost"
-                  size="sm"
-                  title={t('moderationView')}
-                  onClick={onModerateClick}
-                />
+                <PopoverClose asChild>
+                  <IconButton
+                    data-testid={TestId.USER_POPOVER_MODERATE}
+                    icon={UserCog}
+                    variant="ghost"
+                    size="sm"
+                    title={t('moderationView')}
+                    onClick={onModerateClick}
+                  />
+                </PopoverClose>
               </Protect>
             }
           </div>

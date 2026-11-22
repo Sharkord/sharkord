@@ -128,7 +128,7 @@ const VoiceDebugDialog = memo(({ isOpen, close }: TDialogBaseProps) => {
           defaultValue="overview"
           className="flex min-h-0 min-w-0 flex-1 flex-col"
         >
-          <TabsList className="w-fit max-w-full flex-wrap">
+          <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="transports">Transports</TabsTrigger>
             <TabsTrigger value="producers">Producers</TabsTrigger>

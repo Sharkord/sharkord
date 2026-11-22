@@ -17,5 +17,6 @@
   "stream_other": "yayın",
   "noRemoteAudioStreams": "Uzak ses yayını yok.",
   "volumeControls": "Ses Seviyesi Kontrolleri",
-  "externalAudio": "Harici Ses"
+  "externalAudio": "Harici Ses",
+  "openChannelList": "Kanal listesini aç"
 }

@@ -24,11 +24,11 @@ const SoundsDialog = memo(({ isOpen, close }: TDialogBaseProps) => {
   return (
     <Dialog open={isOpen}>
       <DialogContent
-        className="max-h-[85vh] max-w-3xl overflow-hidden p-0"
+        className="max-h-[85vh] overflow-hidden p-0 lg:max-w-3xl"
         onInteractOutside={close}
         close={close}
       >
-        <div className="flex max-h-[85vh] flex-col">
+        <div className="flex min-w-0 max-h-[85vh] flex-col">
           <DialogHeader className="border-b border-border px-6 py-5 text-left">
             <div className="flex items-center gap-3">
               <DialogTitle>{t('soundsTitle')}</DialogTitle>
@@ -40,7 +40,7 @@ const SoundsDialog = memo(({ isOpen, close }: TDialogBaseProps) => {
               {soundRows.map((sound, index) => (
                 <div key={sound}>
                   <div className="flex items-center justify-between gap-4 py-2">
-                    <div className="min-w-0 font-mono text-sm text-muted-foreground">
+                    <div className="min-w-0 break-all font-mono text-sm text-muted-foreground">
                       {sound}
                     </div>
 

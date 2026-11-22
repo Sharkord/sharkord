@@ -101,7 +101,7 @@ const BridgeSettings = memo(({ values, onChange }: TBridgeSettingsProps) => {
             <Input
               type="password"
               autoComplete="off"
-              className="w-92"
+              className="w-full max-w-92"
               value={values.token}
               placeholder={t('hotkeysBridgeTokenPlaceholder')}
               onChange={handleTokenChange}

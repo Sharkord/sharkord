@@ -4,8 +4,10 @@ import * as React from 'react';
 
 import { cn } from '../lib/utils';
 
+// on touch the hit area grows past the icon without moving the layout, an icon alone
+// is far below a fingertip
 const iconButtonVariants = cva(
-  'inline-flex items-center justify-center transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 outline-none shrink-0',
+  'relative inline-flex items-center justify-center transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 outline-none shrink-0 pointer-coarse:after:absolute pointer-coarse:after:-inset-2.5 pointer-coarse:after:content-[""]',
   {
     variants: {
       variant: {

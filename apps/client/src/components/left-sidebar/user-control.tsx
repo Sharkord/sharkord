@@ -59,7 +59,7 @@ const UserControl = memo(() => {
           variant="ghost"
           size="icon"
           className={cn(
-            'h-8 w-8 hover:bg-muted/50',
+            'h-8 w-8 hover:bg-muted/50 pointer-coarse:size-10',
             ownVoiceState.micMuted
               ? 'text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20'
               : 'text-muted-foreground hover:text-foreground'
@@ -83,7 +83,7 @@ const UserControl = memo(() => {
           variant="ghost"
           size="icon"
           className={cn(
-            'h-8 w-8 hover:bg-muted/50',
+            'h-8 w-8 hover:bg-muted/50 pointer-coarse:size-10',
             ownVoiceState.soundMuted
               ? 'text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20'
               : 'text-muted-foreground hover:text-foreground'
@@ -101,7 +101,7 @@ const UserControl = memo(() => {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 pointer-coarse:size-10"
           data-testid={TestId.USER_SETTINGS_TRIGGER}
           onClick={handleSettingsClick}
           title={t('userSettings')}

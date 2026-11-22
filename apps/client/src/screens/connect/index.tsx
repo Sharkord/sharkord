@@ -179,7 +179,7 @@ const Connect = memo(() => {
   }
 
   return (
-    <div className="flex flex-col gap-2 justify-center items-center h-full relative">
+    <div className="flex flex-col gap-2 justify-center items-center h-full relative px-4">
       <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
         <LanguageSwitcher variant="icon" />
       </div>
@@ -300,7 +300,7 @@ const Connect = memo(() => {
       {!isDesktopApp() && (
         <a
           href={desktopLink}
-          className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          className="text-xs pointer-coarse:hidden text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         >
           {t('addToDesktopApp')}
         </a>
