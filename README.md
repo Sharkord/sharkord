@@ -84,7 +84,8 @@ carries voice and video.
 
 ### First launch
 
-> [!WARNING] On first launch, Sharkord creates a secret token and prints it to
+> [!WARNING]
+> On first launch, Sharkord creates a secret token and prints it to
 > the console. It is both the credential that grants owner access and the key
 > your server signs every session and file URL with, so anyone who obtains it
 > can take ownership **and** impersonate any account. Keep it out of logs,
