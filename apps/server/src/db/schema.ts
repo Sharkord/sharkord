@@ -57,6 +57,14 @@ const settings = sqliteTable(
         mode: 'boolean'
       }
     ).notNull(),
+    loginTokenLifetimeDays: integer('login_token_lifetime_days')
+      .notNull()
+      .default(7),
+    autoLoginByDefault: integer('auto_login_by_default', {
+      mode: 'boolean'
+    })
+      .notNull()
+      .default(false),
     serverId: text('server_id').notNull(),
     secretToken: text('secret_token'),
     logoId: integer('logo_id').references(() => files.id, {

@@ -21,6 +21,8 @@ type TServerGeneralValues = {
   description: string;
   password: string;
   onlyAskForPasswordOnFirstJoin: boolean;
+  autoLoginByDefault: boolean;
+  loginTokenLifetimeDays: number;
   allowNewUsers: boolean;
   directMessagesEnabled: boolean;
   enablePlugins: boolean;
@@ -37,6 +39,8 @@ const INITIAL_VALUES: TServerGeneralValues = {
   description: '',
   password: '',
   onlyAskForPasswordOnFirstJoin: false,
+  autoLoginByDefault: false,
+  loginTokenLifetimeDays: 7,
   allowNewUsers: false,
   directMessagesEnabled: true,
   enablePlugins: false,
@@ -59,6 +63,8 @@ const General = memo(() => {
         description: values.description,
         password: values.password || null,
         onlyAskForPasswordOnFirstJoin: values.onlyAskForPasswordOnFirstJoin,
+        loginTokenLifetimeDays: values.loginTokenLifetimeDays,
+        autoLoginByDefault: values.autoLoginByDefault,
         allowNewUsers: values.allowNewUsers,
         directMessagesEnabled: values.directMessagesEnabled,
         enablePlugins: values.enablePlugins,
@@ -92,6 +98,8 @@ const General = memo(() => {
       password: settings.password ?? '',
       onlyAskForPasswordOnFirstJoin:
         settings.onlyAskForPasswordOnFirstJoin ?? false,
+      loginTokenLifetimeDays: settings.loginTokenLifetimeDays ?? 7,
+      autoLoginByDefault: settings.autoLoginByDefault ?? false,
       allowNewUsers: settings.allowNewUsers ?? false,
       directMessagesEnabled: settings.directMessagesEnabled ?? true,
       enablePlugins: settings.enablePlugins ?? false,
@@ -182,6 +190,26 @@ const General = memo(() => {
         <Switch
           checked={values.onlyAskForPasswordOnFirstJoin}
           onCheckedChange={handlePasswordOnFirstJoinChange}
+        />
+      </Group>
+
+      <Group
+        label={t('autoLoginByDefaultLabel')}
+        description={t('autoLoginByDefaultDesc')}
+      >
+        <Switch
+          checked={values.autoLoginByDefault}
+          onCheckedChange={(v) => onChange('autoLoginByDefault', v)}
+        />
+      </Group>
+
+      <Group
+        label={t('loginTokenLifetimeDaysLabel')}
+        description={t('loginTokenLifetimeDaysDesc')}
+      >
+        <Input
+          placeholder={t('loginTokenLifetimeDaysPlaceholder')}
+          {...r('loginTokenLifetimeDays')}
         />
       </Group>
 

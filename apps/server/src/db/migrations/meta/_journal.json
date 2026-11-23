@@ -302,6 +302,20 @@
       "when": 1795196843687,
       "tag": "0042_settings_media_proxy_link_previews",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "6",
+      "when": 1795456304512,
+      "tag": "0043_settings_login_token_lifetime_days",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "6",
+      "when": 1795458658464,
+      "tag": "0044_settings_auto_login_by_default",
+      "breakpoints": true
     }
   ]
 }

@@ -15,6 +15,7 @@ const infoRouteHandler = async (
     description: settings.description,
     logo: settings.logo,
     allowNewUsers: settings.allowNewUsers,
+    autoLoginByDefault: settings.autoLoginByDefault,
     ...getOidcServerInfo()
   };
 

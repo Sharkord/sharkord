@@ -243,12 +243,12 @@ const loginRouteHandler = async (
     );
   }
 
+  // loginTokenLifetimeDays = 0 means the token never expires
+  const lifetimeDays = settings.loginTokenLifetimeDays;
   const token = jwt.sign(
     { userId: existingUser.id, tokenVersion: existingUser.tokenVersion },
     await getServerToken(),
-    {
-      expiresIn: '604800s' // 7 days
-    }
+    lifetimeDays > 0 ? { expiresIn: `${lifetimeDays * 86400}s` } : {}
   );
 
   res.writeHead(200, { 'Content-Type': 'application/json' });

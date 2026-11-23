@@ -31,7 +31,14 @@ import {
   Spinner,
   Switch
 } from '@sharkord/ui';
-import { memo, useCallback, useMemo, useState, type FormEvent } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useOidcLogin } from './hooks/use-oidc-login';
@@ -50,6 +57,16 @@ const Connect = memo(() => {
 
   const [loading, setLoading] = useState(false);
   const info = useInfo();
+
+  // apply the server's autoLoginByDefault for fresh browsers (no stored preference yet);
+  // an explicit stored value (ticked or unticked) always wins
+  useEffect(() => {
+    const stored = getLocalStorageItem(LocalStorageKey.AUTO_LOGIN);
+
+    if (stored === null && info?.autoLoginByDefault) {
+      onChange('autoLogin', true);
+    }
+  }, [info?.autoLoginByDefault, onChange]);
 
   const identityError = useMemo(() => {
     switch (errors.identity) {

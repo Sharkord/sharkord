@@ -79,6 +79,8 @@ const zGeneralSettings = z.object({
   description: z.string().max(128).optional(),
   password: z.string().min(1).max(32).optional().nullable(),
   onlyAskForPasswordOnFirstJoin: z.boolean().optional(),
+  loginTokenLifetimeDays: z.number().int().min(0).max(3650).optional(),
+  autoLoginByDefault: z.boolean().optional(),
   allowNewUsers: z.boolean().optional(),
   directMessagesEnabled: z.boolean().optional(),
   enablePlugins: z.boolean().optional(),

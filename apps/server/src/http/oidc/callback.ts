@@ -2,7 +2,7 @@ import { getErrorMessage, OidcError } from '@sharkord/shared';
 import type http from 'http';
 import jwt from 'jsonwebtoken';
 import * as client from 'openid-client';
-import { getServerToken } from '../../db/queries/server';
+import { getServerToken, getSettings } from '../../db/queries/server';
 import type { getWsInfo } from '../../helpers/get-ws-info';
 import { OidcCallbackError } from '../../helpers/oidc/error';
 import { oidcManager } from '../../helpers/oidc/manager';
@@ -114,10 +114,13 @@ const completeOidcCallback = async (
 
   // tokenVersion has to travel with the token, otherwise a kick or a password change no
   // longer invalidates the session and anyone already bumped can never sign in again
+  // loginTokenLifetimeDays = 0 means the token never expires
+  const settings = await getSettings();
+  const lifetimeDays = settings.loginTokenLifetimeDays;
   const token = jwt.sign(
     { userId: user.id, tokenVersion: user.tokenVersion },
     await getServerToken(),
-    { expiresIn: '604800s' } // 7 days, matching the password login
+    lifetimeDays > 0 ? { expiresIn: `${lifetimeDays * 86400}s` } : {}
   );
 
   return {

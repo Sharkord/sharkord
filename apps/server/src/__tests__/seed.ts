@@ -124,6 +124,8 @@ const seedTestDb = async (
     description: 'Test server description',
     password: '',
     onlyAskForPasswordOnFirstJoin: false,
+    loginTokenLifetimeDays: 7,
+    autoLoginByDefault: false,
     serverId: randomUUIDv7(),
     secretToken: await sha256(TEST_SECRET_TOKEN),
     allowNewUsers: true,
