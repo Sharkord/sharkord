@@ -7,8 +7,10 @@ type TAvatarImageProps = {
 };
 
 const AvatarImage = memo(({ src, className }: TAvatarImageProps) => {
+  const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
 
+  const onLoad = useCallback(() => setLoaded(true), []);
   const onError = useCallback(() => setFailed(true), []);
 
   if (failed) return null;
@@ -17,10 +19,12 @@ const AvatarImage = memo(({ src, className }: TAvatarImageProps) => {
     <img
       src={src}
       alt=""
+      onLoad={onLoad}
       onError={onError}
       className={cn(
         'absolute inset-0 aspect-square size-full bg-muted',
-        className
+        className,
+        !loaded && 'hidden'
       )}
     />
   );
