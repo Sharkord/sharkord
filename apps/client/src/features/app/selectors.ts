@@ -43,6 +43,9 @@ export const autoLoadYoutubeEmbedsSelector = (state: IRootState) =>
 export const convertAsciiEmojiSelector = (state: IRootState) =>
   state.app.convertAsciiEmoji;
 
+export const startOnChannelListSelector = (state: IRootState) =>
+  state.app.startOnChannelList;
+
 export const pauseNewStreamsByDefaultSelector = (state: IRootState) =>
   state.app.pauseNewStreamsByDefault;
 

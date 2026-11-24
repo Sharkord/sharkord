@@ -9,25 +9,29 @@ import { VoiceProvider } from '@/components/voice-provider';
 import {
   useSelectedDmChannelId,
   useSelectedThread,
+  useStartOnChannelList,
   useThreadSidebar
 } from '@/features/app/hooks';
 import { setDmsOpen } from '@/features/server/actions';
 import { setSelectedChannelId } from '@/features/server/channels/actions';
 import { useSelectedChannelId } from '@/features/server/channels/hooks';
 import {
+  useActiveFullscreenPluginId,
+  useActivePluginPageId,
   useDmsOpen,
   useIsNothingOpen,
   usePublicServerSettings
 } from '@/features/server/hooks';
+import { useThreadsOpen } from '@/features/server/threads/hooks';
 import {
   getLocalStorageItemBool,
   LocalStorageKey,
   setLocalStorageItemBool
 } from '@/helpers/storage';
-import { MEDIA_QUERY, useMediaQuery } from '@/hooks/use-media-query';
 import { useSwipeGestures } from '@/hooks/use-swipe-gestures';
 import { cn } from '@/lib/utils';
 import { Permission, TestId } from '@sharkord/shared';
+import { MEDIA_QUERY, useMediaQuery } from '@sharkord/ui';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { ContentWrapper } from './content-wrapper';
 import { PreventBrowser } from './prevent-browser';
@@ -35,6 +39,7 @@ import { PreventBrowser } from './prevent-browser';
 const ServerView = memo(() => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileUsersOpen, setIsMobileUsersOpen] = useState(false);
+  const [isHomeOpen, setIsHomeOpen] = useState(false);
   const [isDesktopRightSidebarOpen, setIsDesktopRightSidebarOpen] = useState(
     getLocalStorageItemBool(LocalStorageKey.RIGHT_SIDEBAR_STATE, true)
   );
@@ -46,19 +51,27 @@ const ServerView = memo(() => {
   const selectedChannelId = useSelectedChannelId();
   const selectedThread = useSelectedThread();
   const isLargeScreen = useMediaQuery(MEDIA_QUERY.lg);
-  // with nothing open the channel list is the phone's home screen, the way chat apps
-  // land on their list, instead of an empty page that points at a gesture
+  const startOnChannelList = useStartOnChannelList();
   const isNothingOpen = useIsNothingOpen();
+  const threadsOpen = useThreadsOpen();
+  const isHomeShown = isHomeOpen && !dmsOpen && !threadsOpen;
+  const isChannelListHome = startOnChannelList && isNothingOpen && !isHomeShown;
+  const activeFullscreenPluginId = useActiveFullscreenPluginId();
+  const activePluginPageId = useActivePluginPageId();
 
-  // whatever is picked in a drawer (a channel, or a dm from a member's card) replaces the
+  // whatever is picked in a drawer (a channel, a plugin page, or a dm from a member's card) replaces the
   // content behind it, so the drawers have to get out of the way for it to be seen
-  const navigationKey = `${selectedChannelId}:${selectedDmChannelId}:${selectedThread?.parentMessageId}`;
+  const navigationKey = `${selectedChannelId}:${selectedDmChannelId}:${selectedThread?.parentMessageId}:${activeFullscreenPluginId}:${activePluginPageId}`;
   const [prevNavigationKey, setPrevNavigationKey] = useState(navigationKey);
 
   if (navigationKey !== prevNavigationKey) {
     setPrevNavigationKey(navigationKey);
     setIsMobileMenuOpen(false);
     setIsMobileUsersOpen(false);
+
+    if (!isNothingOpen) {
+      setIsHomeOpen(false);
+    }
   }
 
   const handleRightSidebarToggle = useCallback(() => {
@@ -78,6 +91,11 @@ const ServerView = memo(() => {
   const handleOpenChannelList = useCallback(() => {
     setIsMobileUsersOpen(false);
     setIsMobileMenuOpen(true);
+  }, []);
+
+  const handleOpenHome = useCallback(() => {
+    setIsHomeOpen(true);
+    setIsMobileMenuOpen(false);
   }, []);
 
   const handleCloseMobileMenu = useCallback(() => {
@@ -154,10 +172,11 @@ const ServerView = memo(() => {
           )}
 
           <LeftSidebar
+            onOpenHome={handleOpenHome}
             className={cn(
               'md:relative md:flex fixed inset-0 left-0 h-full max-w-[85vw] md:max-w-none z-40 md:z-0 transition-transform duration-300 ease-in-out',
-              isNothingOpen && 'max-w-none max-md:w-full!',
-              isMobileMenuOpen || isNothingOpen
+              isChannelListHome && 'max-w-none max-md:w-full!',
+              isMobileMenuOpen || isChannelListHome
                 ? 'translate-x-0'
                 : '-translate-x-full md:translate-x-0'
             )}

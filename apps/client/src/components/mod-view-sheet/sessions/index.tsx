@@ -12,7 +12,6 @@ import {
   type TAdminUserSession
 } from '@/features/server/admin/hooks';
 import { useUserById } from '@/features/server/users/hooks';
-import { MEDIA_QUERY, useMediaQuery } from '@/hooks/use-media-query';
 import { getTRPCClient } from '@/lib/trpc';
 import { getTrpcError } from '@sharkord/shared';
 import {
@@ -22,10 +21,12 @@ import {
   CardHeader,
   CardTitle,
   IconButton,
+  MEDIA_QUERY,
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Tooltip
+  Tooltip,
+  useMediaQuery
 } from '@sharkord/ui';
 import { MonitorSmartphone, RefreshCw, Users } from 'lucide-react';
 import { memo, useCallback } from 'react';

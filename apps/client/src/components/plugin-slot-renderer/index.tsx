@@ -6,20 +6,22 @@ import {
   type TPluginReactComponent,
   type TPluginSlotProps
 } from '@sharkord/shared';
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 import { PluginComponentFrame } from './plugin-component-frame';
 
 type TPluginSlotRendererProps<S extends PluginSlot> = {
   slotId: S;
   onlyPluginId?: string;
   props?: TPluginSlotProps[S];
+  fallback?: ReactNode;
 };
 
 const PluginSlotRenderer = memo(
   <S extends PluginSlot>({
     slotId,
     onlyPluginId,
-    props
+    props,
+    fallback = null
   }: TPluginSlotRendererProps<S>) => {
     const pluginComponentsBySlot = usePluginComponentsBySlot(slotId);
     const hiddenComponents = useHiddenPluginComponents();
@@ -29,25 +31,21 @@ const PluginSlotRenderer = memo(
     // the connect screen renders before anyone has signed in, so nobody can
     // hold the permission there yet
     if (slotId !== PluginSlot.CONNECT_SCREEN && !can(Permission.USE_PLUGINS)) {
-      return null;
+      return fallback;
     }
 
-    const entries = Object.entries(pluginComponentsBySlot);
+    const entries = Object.entries(pluginComponentsBySlot).filter(
+      ([pluginId]) =>
+        (!onlyPluginId || pluginId === onlyPluginId) &&
+        !hiddenComponents.includes(`${pluginId}:${slotId}`)
+    );
 
     if (entries.length === 0) {
-      return null;
+      return fallback;
     }
 
     const content = entries.map(([pluginId, components]) =>
       components.map((RawComponent, index) => {
-        if (onlyPluginId && pluginId !== onlyPluginId) {
-          return null;
-        }
-
-        if (hiddenComponents.includes(`${pluginId}:${slotId}`)) {
-          return null;
-        }
-
         const Component = RawComponent as TPluginReactComponent<
           TPluginSlotProps[S]
         >;

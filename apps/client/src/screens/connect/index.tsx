@@ -2,7 +2,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { connect } from '@/features/server/actions';
 import { useInfo } from '@/features/server/hooks';
-import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
+import { getFileUrl, getServerUrl } from '@/helpers/get-file-url';
 import { isDesktopApp } from '@/helpers/is-desktop-app';
 import {
   getLocalStorageItem,
@@ -90,7 +90,7 @@ const Connect = memo(() => {
     setLoading(true);
 
     try {
-      const url = getUrlFromServer();
+      const url = getServerUrl();
       const response = await fetch(`${url}/login`, {
         method: 'POST',
         headers: {
@@ -157,7 +157,7 @@ const Connect = memo(() => {
   }, [onChange, values.autoLogin]);
 
   const desktopLink = useMemo(
-    () => getDesktopAddServerLink(getUrlFromServer()),
+    () => getDesktopAddServerLink(getServerUrl()),
     []
   );
 

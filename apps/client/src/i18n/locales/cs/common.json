@@ -12,6 +12,8 @@
   "unknownUser": "Neznámý uživatel",
   "unknownChannel": "Neznámý kanál",
   "selectDmPrompt": "Vyberte přímou zprávu nebo napište novou.",
+  "swipeRightHint": "Přejeďte doprava pro otevření kanálů",
+  "swipeLeftHint": "Přejeďte doleva pro zobrazení členů",
   "deleteMessageTitle": "Odstranit zprávu",
   "deleteMessageConfirm": "Opravdu chcete tuto zprávu odstranit? Tato akce je nevratná.",
   "deleteLabel": "Odstranit",

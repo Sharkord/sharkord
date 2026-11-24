@@ -1,8 +1,8 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
-// mirrors tailwind's default breakpoints and pointer variants, for behaviour css alone
-// cannot switch
+// mirrors tailwind's default breakpoints
 export const MEDIA_QUERY = {
+  mobile: '(max-width: 639px)',
   md: '(min-width: 768px)',
   lg: '(min-width: 1024px)',
   finePointer: '(pointer: fine)'

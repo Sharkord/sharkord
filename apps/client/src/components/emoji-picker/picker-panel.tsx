@@ -3,8 +3,15 @@ import {
   type TEmojiItem
 } from '@/components/tiptap-input/helpers';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
-import { MEDIA_QUERY, useMediaQuery } from '@/hooks/use-media-query';
-import { Input, Tabs, TabsContent, TabsList, TabsTrigger } from '@sharkord/ui';
+import {
+  Input,
+  MEDIA_QUERY,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  useMediaQuery
+} from '@sharkord/ui';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CustomEmojiTab } from './custom-emoji-tab';

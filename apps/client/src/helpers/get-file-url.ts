@@ -1,16 +1,16 @@
 import type { TFile } from '@sharkord/shared';
 
-const getHostFromServer = () => {
+const getServerHost = () => {
   if (import.meta.env.MODE === 'development') {
-    return 'localhost:4991';
+    return `${window.location.hostname}:4991`;
   }
 
   return window.location.host;
 };
 
-const getUrlFromServer = () => {
+const getServerUrl = () => {
   if (import.meta.env.MODE === 'development') {
-    return 'http://localhost:4991';
+    return `http://${getServerHost()}`;
   }
 
   const host = window.location.host;
@@ -24,7 +24,7 @@ const getUrlFromServer = () => {
 const getFileUrl = (file: TFile | undefined | null) => {
   if (!file) return '';
 
-  const url = getUrlFromServer();
+  const url = getServerUrl();
 
   let baseUrl = `${url}/public/${encodeURIComponent(file.name)}`;
 
@@ -42,7 +42,7 @@ const getFileUrl = (file: TFile | undefined | null) => {
 const resolveServerUrl = (url: string) => {
   if (!url.startsWith('/')) return url;
 
-  return `${getUrlFromServer()}${url}`;
+  return `${getServerUrl()}${url}`;
 };
 
-export { getFileUrl, getHostFromServer, getUrlFromServer, resolveServerUrl };
+export { getFileUrl, getServerHost, getServerUrl, resolveServerUrl };

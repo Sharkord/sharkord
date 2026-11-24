@@ -1,5 +1,5 @@
 import { assertNotificationsPermission } from '@/helpers/assert-notifications-permission';
-import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
+import { getFileUrl, getServerUrl } from '@/helpers/get-file-url';
 import {
   LocalStorageKey,
   setLocalStorageItem,
@@ -63,7 +63,7 @@ const applyServerBranding = (info: TServerInfo) => {
 
   const logoUrl = info.logo
     ? getFileUrl(info.logo)
-    : `${getUrlFromServer()}/favicon.ico`;
+    : `${getServerUrl()}/favicon.ico`;
 
   setOrCreateLink('icon', logoUrl);
   setOrCreateLink('apple-touch-icon', logoUrl);
@@ -72,7 +72,7 @@ const applyServerBranding = (info: TServerInfo) => {
 
 export const fetchServerInfo = async (): Promise<TServerInfo | undefined> => {
   try {
-    const url = getUrlFromServer();
+    const url = getServerUrl();
     const response = await fetch(`${url}/info`);
 
     if (!response.ok) {
@@ -178,6 +178,12 @@ export const setConvertAsciiEmoji = (convert: boolean) => {
   store.dispatch(appSliceActions.setConvertAsciiEmoji(convert));
 
   setLocalStorageItemBool(LocalStorageKey.CONVERT_ASCII_EMOJI, convert);
+};
+
+export const setStartOnChannelList = (start: boolean) => {
+  store.dispatch(appSliceActions.setStartOnChannelList(start));
+
+  setLocalStorageItemBool(LocalStorageKey.START_ON_CHANNEL_LIST, start);
 };
 
 export const setPauseNewStreamsByDefault = (pause: boolean) => {

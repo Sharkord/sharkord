@@ -47,7 +47,8 @@ export enum LocalStorageKey {
   PAUSE_NEW_STREAMS_BY_DEFAULT = 'sharkord-pause-new-streams-by-default',
   PAUSED_STREAMS = 'sharkord-paused-streams',
   MUTE_STREAM_AUDIO_BY_DEFAULT = 'sharkord-mute-stream-audio-by-default',
-  AUTO_LOAD_YOUTUBE_EMBEDS = 'sharkord-auto-load-youtube-embeds'
+  AUTO_LOAD_YOUTUBE_EMBEDS = 'sharkord-auto-load-youtube-embeds',
+  START_ON_CHANNEL_LIST = 'sharkord-start-on-channel-list'
 }
 
 export enum SessionStorageKey {

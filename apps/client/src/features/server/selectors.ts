@@ -131,63 +131,6 @@ export const isNothingOpenSelector = createSelector(
   }
 );
 
-export type TOpenViewTitle =
-  | { kind: 'dm'; name: string }
-  | { kind: 'channel'; name: string; type: string };
-
-// what a phone header names, since the sidebar that otherwise shows it is hidden there. a
-// thread has none, its own header already names it
-export const openViewTitleSelector = createSelector(
-  [
-    isNothingOpenSelector,
-    activeFullscreenPluginIdSelector,
-    threadsOpenSelector,
-    dmsOpenSelector,
-    selectedDmChannelIdSelector,
-    directMessagesSelector,
-    usersMapSelector,
-    selectedChannelIdSelector,
-    channelsMapSelector
-  ],
-  (
-    isNothingOpen,
-    activeFullscreenPluginId,
-    threadsOpen,
-    dmsOpen,
-    selectedDmChannelId,
-    directMessages,
-    usersMap,
-    selectedChannelId,
-    channelsMap
-  ): TOpenViewTitle | undefined => {
-    if (isNothingOpen || activeFullscreenPluginId || threadsOpen) {
-      return undefined;
-    }
-
-    if (dmsOpen) {
-      const dm = directMessages.find(
-        ({ channelId }) => channelId === selectedDmChannelId
-      );
-
-      if (!dm) return undefined;
-
-      const user = usersMap[dm.userId];
-
-      if (!user) return undefined;
-
-      return { kind: 'dm', name: user.name };
-    }
-
-    if (!selectedChannelId) return undefined;
-
-    const channel = channelsMap[selectedChannelId];
-
-    if (!channel) return undefined;
-
-    return { kind: 'channel', name: channel.name, type: channel.type };
-  }
-);
-
 export const ownUserRolesSelector = createSelector(
   [ownUserSelector, rolesSelector],
   (ownUser, roles) => {
@@ -582,6 +525,75 @@ export const sidebarPluginPagesSelector = createSelector(
       );
 
     return [...legacy, ...pages];
+  }
+);
+
+export type TOpenViewTitle =
+  | { kind: 'dm'; name: string }
+  | { kind: 'channel'; name: string; type: string }
+  | { kind: 'plugin'; name: string };
+
+export const openViewTitleSelector = createSelector(
+  [
+    isNothingOpenSelector,
+    activeFullscreenPluginIdSelector,
+    activePluginPageIdSelector,
+    sidebarPluginPagesSelector,
+    threadsOpenSelector,
+    dmsOpenSelector,
+    selectedDmChannelIdSelector,
+    directMessagesSelector,
+    usersMapSelector,
+    selectedChannelIdSelector,
+    channelsMapSelector
+  ],
+  (
+    isNothingOpen,
+    activeFullscreenPluginId,
+    activePluginPageId,
+    sidebarPluginPages,
+    threadsOpen,
+    dmsOpen,
+    selectedDmChannelId,
+    directMessages,
+    usersMap,
+    selectedChannelId,
+    channelsMap
+  ): TOpenViewTitle | undefined => {
+    if (activeFullscreenPluginId) {
+      const page = sidebarPluginPages.find(
+        ({ pluginId, pageId }) =>
+          pluginId === activeFullscreenPluginId && pageId === activePluginPageId
+      );
+
+      if (!page) return undefined;
+
+      return { kind: 'plugin', name: page.label };
+    }
+
+    if (isNothingOpen || threadsOpen) return undefined;
+
+    if (dmsOpen) {
+      const dm = directMessages.find(
+        ({ channelId }) => channelId === selectedDmChannelId
+      );
+
+      if (!dm) return undefined;
+
+      const user = usersMap[dm.userId];
+
+      if (!user) return undefined;
+
+      return { kind: 'dm', name: user.name };
+    }
+
+    if (!selectedChannelId) return undefined;
+
+    const channel = channelsMap[selectedChannelId];
+
+    if (!channel) return undefined;
+
+    return { kind: 'channel', name: channel.name, type: channel.type };
   }
 );
 

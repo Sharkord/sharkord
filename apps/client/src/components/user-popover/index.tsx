@@ -1,6 +1,11 @@
 import { useUserById } from '@/features/server/users/hooks';
-import { MEDIA_QUERY, useMediaQuery } from '@/hooks/use-media-query';
-import { Popover, PopoverContent, PopoverTrigger } from '@sharkord/ui';
+import {
+  MEDIA_QUERY,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  useMediaQuery
+} from '@sharkord/ui';
 import { memo } from 'react';
 import { UserPopoverContent } from './user-popover-content';
 
@@ -15,7 +20,6 @@ const UserPopover = memo(({ userId, children }: TUserPopoverProps) => {
 
   if (!user) return <>{children}</>;
 
-  // a phone has no room beside the trigger, so the card drops below it instead
   return (
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>

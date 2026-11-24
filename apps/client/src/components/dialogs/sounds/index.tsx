@@ -22,10 +22,9 @@ const SoundsDialog = memo(({ isOpen, close }: TDialogBaseProps) => {
   }, []);
 
   return (
-    <Dialog open={isOpen}>
+    <Dialog open={isOpen} onOpenChange={close}>
       <DialogContent
         className="max-h-[85vh] overflow-hidden p-0 lg:max-w-3xl"
-        onInteractOutside={close}
         close={close}
       >
         <div className="flex min-w-0 max-h-[85vh] flex-col">

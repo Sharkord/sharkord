@@ -12,6 +12,8 @@
   "unknownUser": "Utilisateur Inconnu",
   "unknownChannel": "Salon inconnu",
   "selectDmPrompt": "Sélectionnez un message privé ou créez-en un nouveau.",
+  "swipeRightHint": "Balayez vers la droite pour ouvrir les salons",
+  "swipeLeftHint": "Balayez vers la gauche pour voir les membres",
   "deleteMessageTitle": "Supprimer le Message",
   "deleteMessageConfirm": "Êtes-vous sûr de vouloir supprimer ce message ? Cette action est irréversible.",
   "deleteLabel": "Supprimer",

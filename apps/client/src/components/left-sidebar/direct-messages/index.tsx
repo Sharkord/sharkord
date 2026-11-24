@@ -8,7 +8,6 @@ import {
   useUserById,
   useUsers
 } from '@/features/server/users/hooks';
-import { MEDIA_QUERY, useMediaQuery } from '@/hooks/use-media-query';
 import { getTRPCClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import {
@@ -17,7 +16,12 @@ import {
   TestId,
   type TDirectMessageConversation
 } from '@sharkord/shared';
-import { IconButton, UnreadCount } from '@sharkord/ui';
+import {
+  IconButton,
+  MEDIA_QUERY,
+  UnreadCount,
+  useMediaQuery
+} from '@sharkord/ui';
 import { X } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

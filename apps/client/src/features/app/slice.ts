@@ -30,6 +30,7 @@ export interface TAppState {
   freezeAnimatedAvatars: boolean;
   autoLoadYoutubeEmbeds: boolean;
   convertAsciiEmoji: boolean;
+  startOnChannelList: boolean;
   pauseNewStreamsByDefault: boolean;
   muteStreamAudioByDefault: boolean;
   micMode: MicMode;
@@ -84,6 +85,10 @@ const initialState: TAppState = {
   convertAsciiEmoji: getLocalStorageItemBool(
     LocalStorageKey.CONVERT_ASCII_EMOJI,
     true
+  ),
+  startOnChannelList: getLocalStorageItemBool(
+    LocalStorageKey.START_ON_CHANNEL_LIST,
+    false
   ),
   pauseNewStreamsByDefault: getLocalStorageItemBool(
     LocalStorageKey.PAUSE_NEW_STREAMS_BY_DEFAULT,
@@ -200,6 +205,9 @@ export const appSlice = createSlice({
     },
     setConvertAsciiEmoji: (state, action: PayloadAction<boolean>) => {
       state.convertAsciiEmoji = action.payload;
+    },
+    setStartOnChannelList: (state, action: PayloadAction<boolean>) => {
+      state.startOnChannelList = action.payload;
     },
     setPauseNewStreamsByDefault: (state, action: PayloadAction<boolean>) => {
       state.pauseNewStreamsByDefault = action.payload;

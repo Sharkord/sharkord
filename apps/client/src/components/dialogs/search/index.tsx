@@ -40,10 +40,9 @@ const SearchDialog = memo(({ isOpen, close }: TSearchDialogProps) => {
   );
 
   return (
-    <Dialog open={isOpen}>
+    <Dialog open={isOpen} onOpenChange={close}>
       <DialogContent
         className="h-[86vh] max-h-[94vh] lg:min-w-7xl gap-0 overflow-hidden p-0"
-        onInteractOutside={close}
         close={close}
       >
         <div className="flex h-full min-h-0 flex-col">

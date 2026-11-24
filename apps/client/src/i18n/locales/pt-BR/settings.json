@@ -50,6 +50,8 @@
   "autoLoadYoutubeEmbedsDesc": "Carrega os vídeos do YouTube assim que aparecem no chat. Desativado, uma miniatura é exibida e o vídeo carrega ao clicar, usando muito menos memória.",
   "convertAsciiEmojiLabel": "Converter emoticons em emojis enquanto você digita",
   "convertAsciiEmojiDesc": "Converter emoticons de texto como \":3\" e \"<3\" em emojis.",
+  "startOnChannelListLabel": "Começar na lista de canais",
+  "startOnChannelListDesc": "Mostra a lista de canais em vez da tela inicial quando nada estiver aberto. Toque no nome do servidor para ver a tela inicial.",
   "pauseNewStreamsByDefaultLabel": "Pausar todas as novas transmissões por padrão",
   "pauseNewStreamsByDefaultDesc": "Webcams e compartilhamentos de tela começam pausados e não baixam nada até você retomá-los. Economiza banda em conexões lentas.",
   "muteStreamAudioByDefaultLabel": "Silenciar o áudio das transmissões por padrão",

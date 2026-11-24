@@ -1,6 +1,6 @@
 import { useOpenViewTitle } from '@/features/server/hooks';
 import { ChannelType } from '@sharkord/shared';
-import { AtSign, Hash, Volume2, type LucideIcon } from 'lucide-react';
+import { AtSign, Hash, Package, Volume2, type LucideIcon } from 'lucide-react';
 import { memo } from 'react';
 
 const OpenViewTitle = memo(() => {
@@ -12,6 +12,8 @@ const OpenViewTitle = memo(() => {
 
   if (title.kind === 'channel') {
     Icon = title.type === ChannelType.VOICE ? Volume2 : Hash;
+  } else if (title.kind === 'plugin') {
+    Icon = Package;
   }
 
   return (

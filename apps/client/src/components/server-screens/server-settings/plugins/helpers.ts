@@ -1,4 +1,4 @@
-import { getUrlFromServer } from '@/helpers/get-file-url';
+import { getServerUrl } from '@/helpers/get-file-url';
 import { getSessionStorageItem, SessionStorageKey } from '@/helpers/storage';
 import { UploadHeaders } from '@sharkord/shared';
 
@@ -11,7 +11,7 @@ type TUploadedPlugin = {
 export const uploadPluginArchive = async (
   file: File
 ): Promise<TUploadedPlugin> => {
-  const url = getUrlFromServer();
+  const url = getServerUrl();
 
   const response = await fetch(`${url}/plugin-upload`, {
     method: 'POST',

@@ -18,6 +18,7 @@ import { useThreadsOpen } from '@/features/server/threads/hooks';
 import { ChannelType, PluginSlot } from '@sharkord/shared';
 import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SwipeHint } from './swipe-hint';
 
 type TContentWrapperProps = {
   isDmMode: boolean;
@@ -139,7 +140,10 @@ const ContentWrapper = memo(
     } else {
       content = (
         <div className="flex h-full w-full flex-col gap-2 overflow-auto">
-          <PluginSlotRenderer slotId={PluginSlot.HOME_SCREEN} />
+          <PluginSlotRenderer
+            slotId={PluginSlot.HOME_SCREEN}
+            fallback={<SwipeHint />}
+          />
         </div>
       );
     }

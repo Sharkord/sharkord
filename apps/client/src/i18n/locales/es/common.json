@@ -12,6 +12,8 @@
   "unknownUser": "Usuario desconocido",
   "unknownChannel": "Canal desconocido",
   "selectDmPrompt": "Selecciona un mensaje directo o inicia uno nuevo.",
+  "swipeRightHint": "Desliza a la derecha para abrir los canales",
+  "swipeLeftHint": "Desliza a la izquierda para ver los miembros",
   "deleteMessageTitle": "Eliminar mensaje",
   "deleteMessageConfirm": "¿Estás seguro de que quieres eliminar este mensaje? Esta acción es irreversible.",
   "deleteLabel": "Eliminar",
