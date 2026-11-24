@@ -10,7 +10,6 @@ import {
   uploadFile
 } from '../../__tests__/helpers';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
-import { loadCrons } from '../../crons';
 import { cleanupFiles } from '../../crons/cleanup-files';
 import {
   channels,
@@ -338,10 +337,7 @@ describe('/public', () => {
       .set({ createdAt: Date.now() - 60 * 60 * 1000 })
       .where(eq(files.id, dbFile!.id));
 
-    // load crons here, it will run the file cleanup cron job
-    await loadCrons();
-
-    await Bun.sleep(1000); // wait a bit for cron to finish
+    await cleanupFiles();
 
     const afterDbFile = await tdb
       .select()

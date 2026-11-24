@@ -1,5 +1,5 @@
 import type { TMetricsSample } from '@sharkord/shared';
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { tdb } from '../../__tests__/setup';
 import { insertMetricsSample } from '../../db/mutations/metrics';
 import { metricsSamples } from '../../db/schema';
@@ -29,6 +29,10 @@ const sample = (timestamp: number, cpu: number): TMetricsSample => ({
 });
 
 describe('rollup metrics cron', () => {
+  beforeEach(() => {
+    clearMetricsSamples();
+  });
+
   afterEach(() => {
     clearMetricsSamples();
   });
