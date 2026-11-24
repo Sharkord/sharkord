@@ -199,6 +199,18 @@ const isFileOrphaned = async (fileId: number): Promise<boolean> => {
   return isOrphaned;
 };
 
+const isAssetFile = async (fileId: number): Promise<boolean> => {
+  const result = await db.get(sql`
+    SELECT
+      EXISTS (SELECT 1 FROM users u WHERE u.avatar_id = ${fileId} OR u.banner_id = ${fileId})
+      OR EXISTS (SELECT 1 FROM emojis e WHERE e.file_id = ${fileId})
+      OR EXISTS (SELECT 1 FROM message_reactions mr WHERE mr.file_id = ${fileId})
+    AS isAsset
+  `);
+
+  return Array.isArray(result) && result[0] === 1;
+};
+
 export {
   getExceedingOldFiles,
   getFileNameById,
@@ -207,5 +219,6 @@ export {
   getOrphanedFileIds,
   getStorageUsageByPlugin,
   getUsedFileQuota,
+  isAssetFile,
   isFileOrphaned
 };

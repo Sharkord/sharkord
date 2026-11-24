@@ -29,7 +29,8 @@
     "MANAGE_PLUGINS": "Gestionar plugins",
     "MANAGE_PLUGIN_PERMISSIONS": "Gestionar permisos de plugins",
     "USE_PLUGINS": "Usar plugins",
-    "VIEW_USER_SENSITIVE_DATA": "Ver datos sensibles de usuarios"
+    "VIEW_USER_SENSITIVE_DATA": "Ver datos sensibles de usuarios",
+    "VIEW_METRICS": "Ver métricas"
   },
   "serverDescriptions": {
     "SEND_MESSAGES": "Permite enviar mensajes en los canales.",
@@ -56,7 +57,8 @@
     "MANAGE_PLUGINS": "Permite gestionar los plugins.",
     "MANAGE_PLUGIN_PERMISSIONS": "Permite elegir qué roles pueden usar cada comando y acción de un plugin. Quien lo tenga puede concederse esas capacidades a sí mismo.",
     "USE_PLUGINS": "Permite usar plugins, como ejecutar comandos de plugins o ver elementos de interfaz añadidos por plugins.",
-    "VIEW_USER_SENSITIVE_DATA": "Permite ver datos sensibles de los usuarios como identidad, dirección IP y ubicación."
+    "VIEW_USER_SENSITIVE_DATA": "Permite ver datos sensibles de los usuarios como identidad, dirección IP y ubicación.",
+    "VIEW_METRICS": "Permite ver métricas del servidor como el uso de CPU, memoria y voz."
   },
   "channel": {
     "VIEW_CHANNEL": "Ver canal",

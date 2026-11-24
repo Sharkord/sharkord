@@ -1,5 +1,6 @@
 import { TextChannel } from '@/components/channel-view/text';
 import { VoiceChannel } from '@/components/channel-view/voice';
+import { PluginPageRenderer } from '@/components/plugin-page-renderer';
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { ThreadContent } from '@/components/thread-sidebar/thread-content';
 import { setSelectedThread } from '@/features/app/actions';
@@ -9,7 +10,10 @@ import {
   useSelectedChannelId,
   useSelectedChannelType
 } from '@/features/server/channels/hooks';
-import { useActiveFullscreenPluginId } from '@/features/server/hooks';
+import {
+  useActiveFullscreenPluginId,
+  useActivePluginPageId
+} from '@/features/server/hooks';
 import { useThreadsOpen } from '@/features/server/threads/hooks';
 import { ChannelType, PluginSlot } from '@sharkord/shared';
 import { memo, useCallback, useEffect } from 'react';
@@ -26,6 +30,7 @@ const ContentWrapper = memo(
     const selectedChannelId = useSelectedChannelId();
     const selectedChannelType = useSelectedChannelType();
     const activeFullscreenPluginId = useActiveFullscreenPluginId();
+    const activePluginPageId = useActivePluginPageId();
     const threadsOpen = useThreadsOpen();
     const selectedThread = useSelectedThread();
 
@@ -55,10 +60,17 @@ const ContentWrapper = memo(
       return (
         <main className="flex flex-1 flex-col bg-background relative min-w-0 min-h-0">
           <div className="flex-col gap-2 h-full w-full flex overflow-auto relative bg-background">
-            <PluginSlotRenderer
-              slotId={PluginSlot.FULL_SCREEN}
-              onlyPluginId={activeFullscreenPluginId}
-            />
+            {activePluginPageId ? (
+              <PluginPageRenderer
+                pluginId={activeFullscreenPluginId}
+                pageId={activePluginPageId}
+              />
+            ) : (
+              <PluginSlotRenderer
+                slotId={PluginSlot.FULL_SCREEN}
+                onlyPluginId={activeFullscreenPluginId}
+              />
+            )}
           </div>
         </main>
       );

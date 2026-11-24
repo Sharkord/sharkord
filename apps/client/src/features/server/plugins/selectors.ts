@@ -91,6 +91,17 @@ export const fullscreenPluginIdsSelector = createSelector(
 export const pluginTabsSelector = (state: IRootState) =>
   state.server.pluginTabs;
 
+export const pluginPagesSelector = (state: IRootState) =>
+  state.server.pluginPages;
+
+export const pluginPageSelector = createCachedSelector(
+  pluginPagesSelector,
+  (_: IRootState, pluginId: string) => pluginId,
+  (_: IRootState, _pluginId: string, pageId: string) => pageId,
+  (pluginPages, pluginId, pageId) =>
+    pluginPages[pluginId]?.find((page) => page.id === pageId)
+)((_state, pluginId, pageId) => `${pluginId}:${pageId}`);
+
 export const pluginTabsByIdSelector = createCachedSelector(
   pluginTabsSelector,
   (_: IRootState, pluginId: string) => pluginId,
@@ -101,9 +112,16 @@ const DEFAULT_SLOT_IDS: string[] = [];
 
 export const pluginSlotIdsSelector = createCachedSelector(
   pluginComponentsSelector,
+  pluginPagesSelector,
   (_: IRootState, pluginId: string) => pluginId,
-  (pluginComponents, pluginId) => {
+  (pluginComponents, pluginPages, pluginId) => {
     const slots = Object.keys(pluginComponents[pluginId] ?? {});
+
+    const hasPages = (pluginPages[pluginId]?.length ?? 0) > 0;
+
+    if (hasPages && !slots.includes(PluginSlot.FULL_SCREEN)) {
+      slots.push(PluginSlot.FULL_SCREEN);
+    }
 
     return slots.length > 0 ? slots : DEFAULT_SLOT_IDS;
   }

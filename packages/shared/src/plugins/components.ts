@@ -160,6 +160,41 @@ export type TPluginTabsMap = {
   [pluginId: string]: TPluginTab[];
 };
 
+/**
+ * One full screen page, opened from its own button in the left sidebar. A
+ * plugin can have several, each with its own label.
+ */
+export type TPluginPage = {
+  /** unique within the plugin */
+  id: string;
+  /** shown on the sidebar button, so write it in the language you ship */
+  label: string;
+  component: TPluginReactComponent;
+  /**
+   * The sidebar button's icon, the plugin logo without one. An http(s) or
+   * `data:image/...` url, or a component drawing an svg, which can follow the
+   * theme with `currentColor`. It renders at 16 by 16.
+   */
+  icon?: string | TPluginReactComponent;
+};
+
+/**
+ * What a plugin annotates its `pages` export with. Pages render for users
+ * holding `USE_PLUGINS`, and all of a plugin's pages share the requirement of
+ * its `FULL_SCREEN` slot from `ctx.ui.enable()`.
+ *
+ * ```tsx
+ * export const pages: TPluginPages = [
+ *   { id: 'supporters', label: 'Supporters', component: Supporters }
+ * ];
+ * ```
+ */
+export type TPluginPages = TPluginPage[];
+
+export type TPluginPagesMap = {
+  [pluginId: string]: TPluginPage[];
+};
+
 /** built-in tab ids: a custom tab claiming one of these is dropped */
 export const RESERVED_PLUGIN_TAB_IDS = ['settings', 'commands', 'logs'];
 
@@ -167,10 +202,10 @@ const isRenderableComponent = (value: unknown) =>
   typeof value === 'function' ||
   (typeof value === 'object' && value !== null && '$$typeof' in value);
 
-const isValidPluginTab = (tab: unknown): tab is TPluginTab => {
-  if (!tab || typeof tab !== 'object') return false;
+const isValidLabeledComponent = (entry: unknown): entry is TPluginTab => {
+  if (!entry || typeof entry !== 'object') return false;
 
-  const { id, label, component } = tab as Partial<TPluginTab>;
+  const { id, label, component } = entry as Partial<TPluginTab>;
 
   return (
     typeof id === 'string' &&
@@ -181,19 +216,38 @@ const isValidPluginTab = (tab: unknown): tab is TPluginTab => {
   );
 };
 
-export const parsePluginTabs = (value: unknown): TPluginTab[] => {
+const parseLabeledComponents = (
+  value: unknown,
+  reservedIds: string[]
+): TPluginTab[] => {
   if (!Array.isArray(value)) return [];
 
-  const seen = new Set<string>(RESERVED_PLUGIN_TAB_IDS);
+  const seen = new Set<string>(reservedIds);
 
-  return value.filter((tab): tab is TPluginTab => {
-    if (!isValidPluginTab(tab) || seen.has(tab.id)) return false;
+  return value.filter((entry): entry is TPluginTab => {
+    if (!isValidLabeledComponent(entry) || seen.has(entry.id)) return false;
 
-    seen.add(tab.id);
+    seen.add(entry.id);
 
     return true;
   });
 };
+
+export const parsePluginTabs = (value: unknown): TPluginTab[] =>
+  parseLabeledComponents(value, RESERVED_PLUGIN_TAB_IDS);
+
+const parsePageIcon = (icon: unknown): TPluginPage['icon'] => {
+  if (typeof icon === 'string' && icon.length > 0) return icon;
+  if (isRenderableComponent(icon)) return icon as TPluginReactComponent;
+
+  return undefined;
+};
+
+export const parsePluginPages = (value: unknown): TPluginPage[] =>
+  parseLabeledComponents(value, []).map((page) => ({
+    ...page,
+    icon: parsePageIcon((page as TPluginPage).icon)
+  }));
 
 export const parseMessageComponentsExport = (
   value: unknown

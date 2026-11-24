@@ -1,4 +1,3 @@
-import { selectedDmChannelIdSelector } from '@/features/app/selectors';
 import { store } from '@/features/store';
 import { getTRPCClient } from '@/lib/trpc';
 import type {
@@ -7,12 +6,6 @@ import type {
   TThreadFollowUpdate,
   TThreadReadState
 } from '@sharkord/shared';
-import { markChannelAsRead } from '../actions';
-import {
-  isChannelTextVisibleByIdSelector,
-  selectedChannelIdSelector
-} from '../channels/selectors';
-import { dmsOpenSelector } from '../selectors';
 import { serverSliceActions } from '../slice';
 import { threadReadStateSelector } from './selectors';
 
@@ -32,20 +25,6 @@ export const setFollowedThreadsPage = (
 
 export const setThreadsOpen = (open: boolean) => {
   store.dispatch(serverSliceActions.setThreadsOpen(open));
-
-  if (open) return;
-
-  const state = store.getState();
-  const dmsOpen = dmsOpenSelector(state);
-  const selectedDmChannelId = selectedDmChannelIdSelector(state);
-  const selectedChannelId = selectedChannelIdSelector(state);
-  const uncoveredChannelId = dmsOpen ? selectedDmChannelId : selectedChannelId;
-
-  if (uncoveredChannelId === undefined) return;
-
-  if (isChannelTextVisibleByIdSelector(state, uncoveredChannelId)) {
-    markChannelAsRead(uncoveredChannelId);
-  }
 };
 
 const setThreadReadState = (

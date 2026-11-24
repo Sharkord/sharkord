@@ -10,6 +10,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { publishVoicePresence } from '../../db/publishers';
+import { channelUserCan } from '../../db/queries/channels';
 import { channels } from '../../db/schema';
 import { markVoiceSession } from '../../helpers/mark-voice-session';
 import { removeUserFromVoice } from '../../helpers/remove-user-from-voice';
@@ -70,6 +71,14 @@ const joinVoiceRoute = protectedProcedure
       message: 'Cannot join a direct message channel as a voice channel'
     });
 
+    // a moderator move can land the user in a channel they cannot see, so view is not required
+    const canSpeak = await channelUserCan(
+      input.channelId,
+      ctx.user.id,
+      ChannelPermission.SPEAK,
+      { ignoreView: true }
+    );
+
     await runHook<TBeforeVoiceJoinPayload, never>({
       entries: pluginManager.getHooks('beforeVoiceJoin'),
       payload: {
@@ -92,7 +101,10 @@ const joinVoiceRoute = protectedProcedure
       await removeUserFromVoice(previousRuntime, ctx.user.id);
     }
 
-    runtime.addUser(ctx.user.id, input.state);
+    runtime.addUser(ctx.user.id, {
+      ...input.state,
+      micMuted: input.state.micMuted || !canSpeak
+    });
 
     if (movedByModerator) consumeVoiceMoveGrant(ctx.user.id);
 

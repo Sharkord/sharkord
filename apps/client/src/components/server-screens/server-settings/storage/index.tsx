@@ -77,6 +77,7 @@ const INITIAL_VALUES: TStorageSettings = {
   storageQuota: STORAGE_QUOTA,
   storageSignedUrlsEnabled: false,
   storageSignedUrlsTtlSeconds: STORAGE_DEFAULT_SIGNED_URLS_TTL_SECONDS,
+  storageSignedUrlsIncludeAssets: false,
   storageImageOptimizationEnabled: false,
   storageImageOptimizationQuality: STORAGE_DEFAULT_IMAGE_OPTIMIZATION_QUALITY,
   storageMediaProxyEnabled: true,
@@ -111,6 +112,7 @@ const Storage = memo(() => {
         values.storageOverflowAction as StorageOverflowAction,
       storageSignedUrlsEnabled: values.storageSignedUrlsEnabled,
       storageSignedUrlsTtlSeconds: values.storageSignedUrlsTtlSeconds,
+      storageSignedUrlsIncludeAssets: values.storageSignedUrlsIncludeAssets,
       storageImageOptimizationEnabled: values.storageImageOptimizationEnabled,
       storageImageOptimizationQuality: values.storageImageOptimizationQuality,
       storageMediaProxyEnabled: values.storageMediaProxyEnabled,
@@ -167,6 +169,13 @@ const Storage = memo(() => {
           STORAGE_MAX_SIGNED_URLS_TTL_SECONDS
         )
       );
+    },
+    [onChange]
+  );
+
+  const onSignedUrlsIncludeAssetsChange = useCallback(
+    (checked: boolean) => {
+      onChange('storageSignedUrlsIncludeAssets', checked);
     },
     [onChange]
   );
@@ -432,6 +441,17 @@ const Storage = memo(() => {
           onCheckedChange={(checked) =>
             onChange('storageSignedUrlsEnabled', checked)
           }
+        />
+      </Group>
+
+      <Group
+        label={t('signedUrlsIncludeAssetsLabel')}
+        description={t('signedUrlsIncludeAssetsDesc')}
+      >
+        <Switch
+          checked={!!values.storageSignedUrlsIncludeAssets}
+          disabled={!values.storageSignedUrlsEnabled}
+          onCheckedChange={onSignedUrlsIncludeAssetsChange}
         />
       </Group>
 

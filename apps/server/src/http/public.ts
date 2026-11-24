@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import http from 'http';
 import path from 'path';
 import { db } from '../db';
-import { isFileOrphaned } from '../db/queries/files';
+import { isAssetFile, isFileOrphaned } from '../db/queries/files';
 import { getSettings } from '../db/queries/server';
 import { files } from '../db/schema';
 import { verifyFileToken } from '../helpers/files-crypto';
@@ -50,11 +50,17 @@ const publicRouteHandler = async (
     return;
   }
 
-  const { storageSignedUrlsEnabled, logoId } = await getSettings();
-  const isSignedUrlProtected = storageSignedUrlsEnabled && dbFile.id !== logoId;
+  const { storageSignedUrlsEnabled, storageSignedUrlsIncludeAssets, logoId } =
+    await getSettings();
+
+  let isSignedUrlProtected = storageSignedUrlsEnabled && dbFile.id !== logoId;
+
+  if (isSignedUrlProtected && !storageSignedUrlsIncludeAssets) {
+    isSignedUrlProtected = !(await isAssetFile(dbFile.id));
+  }
+
   let tokenExpiresAt: number | null = null;
 
-  // server logo is the only exception to signed URLs
   if (isSignedUrlProtected) {
     const accessTokenParam = url.searchParams.get('accessToken');
     const expiresParam = url.searchParams.get('expires');

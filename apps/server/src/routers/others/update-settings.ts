@@ -40,6 +40,7 @@ const zStorageSettings = z.object({
   storageOverflowAction: z.enum(StorageOverflowAction).optional(),
   storageSignedUrlsEnabled: z.boolean().optional(),
   storageSignedUrlsTtlSeconds: z.number().int().min(0).optional(),
+  storageSignedUrlsIncludeAssets: z.boolean().optional(),
   storageImageOptimizationEnabled: z.boolean().optional(),
   storageImageOptimizationQuality: z
     .number()
@@ -85,6 +86,7 @@ const zGeneralSettings = z.object({
   webRtcSimulcastEnabled: z.boolean().optional(),
   enableSearch: z.boolean().optional(),
   enableLinkPreviews: z.boolean().optional(),
+  metricsEnabled: z.boolean().optional(),
   showWelcomeDialog: z.boolean().optional(),
   serverWizardCompleted: z.boolean().optional()
 });

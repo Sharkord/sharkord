@@ -1,7 +1,7 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
-import { FrozenImage } from '@/components/frozen-image';
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { UserAvatar } from '@/components/user-avatar';
+import { UserBanner } from '@/components/user-banner';
 import { useStreamVolumeControl } from '@/components/voice-provider/hooks/use-stream-volume-control';
 import { useWebRtcSimulcastEnabled } from '@/features/server/hooks';
 import type { TVoiceUser } from '@/features/server/types';
@@ -121,9 +121,9 @@ const VoiceUserCard = memo(
           )}
         >
           {voiceUser.banner && showUserBanners && !hasVideoStream ? (
-            <FrozenImage
+            <UserBanner
               src={getFileUrl(voiceUser.banner)}
-              className="absolute inset-0 size-full rounded object-cover blur-sm brightness-50"
+              className="absolute inset-0 size-full rounded blur-sm brightness-50"
             />
           ) : (
             <CardTheme

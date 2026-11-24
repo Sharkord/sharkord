@@ -1,4 +1,4 @@
-import { FrozenImage } from '@/components/frozen-image';
+import { UserBanner } from '@/components/user-banner';
 import {
   useVolumeControl,
   type TVolumeKey
@@ -302,9 +302,9 @@ const ExternalStreamCard = memo(
         }}
       >
         {stream.bannerUrl && showUserBanners ? (
-          <FrozenImage
+          <UserBanner
             src={stream.bannerUrl}
-            className="absolute inset-0 size-full rounded object-cover blur-sm brightness-50"
+            className="absolute inset-0 size-full rounded blur-sm brightness-50"
           />
         ) : (
           <CardTheme />

@@ -12,6 +12,7 @@ import type {
   TPluginMessageComponentProps,
   TPluginMessageComponentsMap,
   TPluginNotification,
+  TPluginPages,
   TPluginStore,
   TPluginStoreState,
   TPluginTabs,
@@ -197,6 +198,7 @@ export type {
   TPluginMessageComponentProps,
   TPluginMessageComponentsMap,
   TPluginNotification,
+  TPluginPages,
   TPluginStoreState,
   TPluginTabs
 };

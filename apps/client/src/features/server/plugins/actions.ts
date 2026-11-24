@@ -6,6 +6,7 @@ import { i18n } from '@/i18n';
 import { notify } from '@/lib/notifications';
 import {
   parseMessageComponentsExport,
+  parsePluginPages,
   parsePluginTabs,
   PLUGIN_NOTIFICATION_DATA_MAX_LENGTH,
   PluginSlot,
@@ -17,6 +18,7 @@ import {
   type TPluginMessageComponentsByPlugin,
   type TPluginMetadata,
   type TPluginNotification,
+  type TPluginPagesMap,
   type TPluginTabsMap
 } from '@sharkord/shared';
 import { toast } from 'sonner';
@@ -76,6 +78,19 @@ const parsePluginTabsAndWarn = (pluginId: string, value: unknown) => {
   return tabs;
 };
 
+const parsePluginPagesAndWarn = (pluginId: string, value: unknown) => {
+  const pages = parsePluginPages(value);
+  const declared = Array.isArray(value) ? value.length : 0;
+
+  if (declared > pages.length) {
+    console.warn(
+      `Plugin ${pluginId}: ignored ${declared - pages.length} of ${declared} pages. A page needs a unique id, a label, and a component.`
+    );
+  }
+
+  return pages;
+};
+
 export const loadPluginTabs = async (pluginId: string) => {
   const version = pluginVersionByIdSelector(store.getState(), pluginId);
 
@@ -99,6 +114,7 @@ export const processPluginComponents = async (pluginIds: string[]) => {
   const componentsMap: TPluginComponentsMap = {};
   const tabsMap: TPluginTabsMap = {};
   const messageComponentsMap: TPluginMessageComponentsByPlugin = {};
+  const pagesMap: TPluginPagesMap = {};
 
   const loadPlugin = async (pluginId: string) => {
     const slots: TPluginComponentsMapBySlotId = {};
@@ -127,9 +143,12 @@ export const processPluginComponents = async (pluginIds: string[]) => {
     }
 
     tabsMap[pluginId] = parsePluginTabsAndWarn(pluginId, mod?.tabs);
+
     messageComponentsMap[pluginId] = parseMessageComponentsExport(
       mod?.messageComponents
     );
+
+    pagesMap[pluginId] = parsePluginPagesAndWarn(pluginId, mod?.pages);
 
     return slots;
   };
@@ -152,6 +171,7 @@ export const processPluginComponents = async (pluginIds: string[]) => {
   });
 
   setPluginTabs(tabsMap);
+  store.dispatch(serverSliceActions.setPluginPages(pagesMap));
   store.dispatch(
     serverSliceActions.setPluginMessageComponents(messageComponentsMap)
   );
