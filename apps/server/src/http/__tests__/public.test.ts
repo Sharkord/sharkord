@@ -72,10 +72,14 @@ const getFileByMessageId = async (
   return dbFile;
 };
 
-const enableSignedUrls = async (ttlSeconds: number = 3600) => {
+const enableSignedUrls = async (
+  ttlSeconds: number = 3600,
+  includeAssets: boolean = false
+) => {
   await tdb.update(settings).set({
     storageSignedUrlsEnabled: true,
-    storageSignedUrlsTtlSeconds: ttlSeconds
+    storageSignedUrlsTtlSeconds: ttlSeconds,
+    storageSignedUrlsIncludeAssets: includeAssets
   });
 };
 
@@ -1146,7 +1150,7 @@ describe('/public', () => {
     await disableSignedUrls();
   });
 
-  test('should enforce signed URLs on non-message files (e.g. avatars) when enabled', async () => {
+  test('should enforce signed URLs on avatars when signed URLs include assets', async () => {
     // create a file that is not attached to a message but is linked (e.g. via a user avatar)
     const { caller } = await initTest();
 
@@ -1178,7 +1182,7 @@ describe('/public', () => {
     expect(responseWithout.status).toBe(200);
 
     // enable signed URLs
-    await enableSignedUrls();
+    await enableSignedUrls(3600, true);
 
     // now it should be blocked without token
     const responseBlocked = await fetch(
@@ -1196,6 +1200,74 @@ describe('/public', () => {
     );
 
     expect(responseWithToken.status).toBe(200);
+
+    await disableSignedUrls();
+  });
+
+  test('should serve avatars and banners without token when signed URLs exclude assets', async () => {
+    const { caller } = await initTest();
+
+    const avatarUpload = await upload(
+      new File(['avatar content'], 'avatar.png', { type: 'image/png' }),
+      token
+    );
+    const bannerUpload = await upload(
+      new File(['banner content'], 'banner.png', { type: 'image/png' }),
+      token
+    );
+
+    await caller.users.changeAvatar({ fileId: avatarUpload.id });
+    await caller.users.changeBanner({ fileId: bannerUpload.id });
+
+    await enableSignedUrls();
+
+    for (const { md5 } of [avatarUpload, bannerUpload]) {
+      const dbFile = await tdb
+        .select()
+        .from(files)
+        .where(eq(files.md5, md5))
+        .get();
+
+      expect(dbFile).toBeDefined();
+
+      const response = await fetch(
+        `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('Cache-Control')).toInclude('public');
+    }
+
+    await disableSignedUrls();
+  });
+
+  test('should serve custom emojis without token only when signed URLs exclude assets', async () => {
+    const { caller } = await initTest();
+
+    const emojiUpload = await upload(
+      new File(['emoji content'], 'emoji.png', { type: 'image/png' }),
+      token
+    );
+
+    await caller.emojis.add([{ fileId: emojiUpload.id, name: 'signed_test' }]);
+
+    const dbFile = await tdb
+      .select()
+      .from(files)
+      .where(eq(files.md5, emojiUpload.md5))
+      .get();
+
+    expect(dbFile).toBeDefined();
+
+    const url = `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`;
+
+    await enableSignedUrls();
+
+    expect((await fetch(url)).status).toBe(200);
+
+    await enableSignedUrls(3600, true);
+
+    expect((await fetch(url)).status).toBe(403);
 
     await disableSignedUrls();
   });

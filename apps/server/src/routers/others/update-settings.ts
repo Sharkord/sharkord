@@ -40,6 +40,7 @@ const zStorageSettings = z.object({
   storageOverflowAction: z.enum(StorageOverflowAction).optional(),
   storageSignedUrlsEnabled: z.boolean().optional(),
   storageSignedUrlsTtlSeconds: z.number().int().min(0).optional(),
+  storageSignedUrlsIncludeAssets: z.boolean().optional(),
   storageImageOptimizationEnabled: z.boolean().optional(),
   storageImageOptimizationQuality: z
     .number()

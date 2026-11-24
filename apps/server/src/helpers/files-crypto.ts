@@ -1,4 +1,4 @@
-import type { TFile } from '@sharkord/shared';
+import type { TFile, TSettings } from '@sharkord/shared';
 import crypto from 'crypto';
 import { getServerTokenSync } from '../db/queries/server';
 
@@ -55,21 +55,34 @@ const attachFileToken = (
   };
 };
 
-// used to attach token to the file, but in cases where the file might not exist (eg: user logo, user might not have a logo set, so file can be null)
-const signFile = (
-  file: TFile | null,
-  enabled: boolean,
-  ttl: number
-): TFile | null => {
-  if (!file) return null;
+type TAssetSigningSettings = Pick<
+  TSettings,
+  | 'storageSignedUrlsEnabled'
+  | 'storageSignedUrlsIncludeAssets'
+  | 'storageSignedUrlsTtlSeconds'
+>;
 
-  return attachFileToken(file, enabled, ttl);
+const signAsset = <TAsset extends TFile | null>(
+  file: TAsset,
+  {
+    storageSignedUrlsEnabled,
+    storageSignedUrlsIncludeAssets,
+    storageSignedUrlsTtlSeconds
+  }: TAssetSigningSettings
+): TAsset => {
+  if (!file) return file;
+
+  return attachFileToken(
+    file,
+    storageSignedUrlsEnabled && storageSignedUrlsIncludeAssets,
+    storageSignedUrlsTtlSeconds
+  ) as TAsset;
 };
 
 export {
   attachFileToken,
   generateFileToken,
-  signFile,
+  signAsset,
   verifyFileSignature,
   verifyFileToken
 };

@@ -20,7 +20,7 @@ import {
   type SQL
 } from 'drizzle-orm';
 import { db } from '..';
-import { attachFileToken, signFile } from '../../helpers/files-crypto';
+import { attachFileToken, signAsset } from '../../helpers/files-crypto';
 import { proxyMessageMetadata } from '../../helpers/media-proxy';
 import {
   directMessages,
@@ -82,12 +82,13 @@ const joinMessagesWithRelations = async (
 
   const messageIds = rows.map((m) => m.id);
 
+  const settings = await getSettings();
   const {
     storageSignedUrlsEnabled,
     storageSignedUrlsTtlSeconds,
     storageMediaProxyEnabled,
     enableLinkPreviews
-  } = await getSettings();
+  } = settings;
 
   const getMetadata = (metadata: TMessage['metadata']) => {
     if (!enableLinkPreviews) return null;
@@ -149,11 +150,7 @@ const joinMessagesWithRelations = async (
       emoji: r.emoji,
       createdAt: r.createdAt,
       fileId: r.fileId,
-      file: signFile(
-        r.file,
-        storageSignedUrlsEnabled,
-        storageSignedUrlsTtlSeconds
-      )
+      file: signAsset(r.file, settings)
     };
 
     if (!acc[r.messageId]) {
