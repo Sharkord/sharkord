@@ -249,7 +249,8 @@ describe('others router', () => {
       storageMediaProxyMaxSize: 50 * 1024 * 1024,
       storageMediaProxyTimeoutSeconds: 20,
       storageMediaProxyCacheSeconds: 3600,
-      storageMediaProxyMaxRedirects: 5
+      storageMediaProxyMaxRedirects: 5,
+      storageSignedUrlsIncludeAssets: true
     };
 
     await caller.others.updateSettings(newSettings);
@@ -290,6 +291,9 @@ describe('others router', () => {
     );
     expect(settings.storageMediaProxyEnabled).toBe(
       newSettings.storageMediaProxyEnabled
+    );
+    expect(settings.storageSignedUrlsIncludeAssets).toBe(
+      newSettings.storageSignedUrlsIncludeAssets
     );
     expect(settings.storageMediaProxyMaxSize).toBe(
       newSettings.storageMediaProxyMaxSize

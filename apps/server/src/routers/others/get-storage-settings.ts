@@ -26,6 +26,7 @@ const getStorageSettingsRoute = protectedProcedure.query(async ({ ctx }) => {
     storageOverflowAction: settings.storageOverflowAction,
     storageSignedUrlsEnabled: settings.storageSignedUrlsEnabled,
     storageSignedUrlsTtlSeconds: settings.storageSignedUrlsTtlSeconds,
+    storageSignedUrlsIncludeAssets: settings.storageSignedUrlsIncludeAssets,
     storageImageOptimizationEnabled: settings.storageImageOptimizationEnabled,
     storageImageOptimizationQuality: settings.storageImageOptimizationQuality,
     storageMediaProxyEnabled: settings.storageMediaProxyEnabled,

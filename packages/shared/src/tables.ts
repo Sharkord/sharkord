@@ -87,6 +87,7 @@ export type TStorageSettings = Pick<
   | 'storageOverflowAction'
   | 'storageSignedUrlsEnabled'
   | 'storageSignedUrlsTtlSeconds'
+  | 'storageSignedUrlsIncludeAssets'
   | 'storageImageOptimizationEnabled'
   | 'storageImageOptimizationQuality'
   | 'storageMediaProxyEnabled'

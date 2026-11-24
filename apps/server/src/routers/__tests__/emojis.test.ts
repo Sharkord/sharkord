@@ -1,6 +1,8 @@
 import type { TTempFile } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { initTest, uploadFile } from '../../__tests__/helpers';
+import { tdb } from '../../__tests__/setup';
+import { settings } from '../../db/schema';
 import { eventBus } from '../../plugins/event-bus';
 
 describe('emojis router', () => {
@@ -79,6 +81,36 @@ describe('emojis router', () => {
     expect(addedEmoji!.name).toBe('test_emoji');
     expect(addedEmoji!.fileId).toBeDefined();
     expect(addedEmoji!.userId).toBe(1);
+  });
+
+  test('should sign emoji files only when signed urls include assets', async () => {
+    const { caller, mockedToken } = await initTest();
+
+    const file = new File(['emoji content'], 'emoji.png', {
+      type: 'image/png'
+    });
+
+    const uploadResponse = await uploadFile(file, mockedToken);
+    const uploadData = (await uploadResponse.json()) as TTempFile;
+
+    await caller.emojis.add([{ fileId: uploadData.id, name: 'signed_emoji' }]);
+
+    await tdb.update(settings).set({
+      storageSignedUrlsEnabled: true,
+      storageSignedUrlsIncludeAssets: false
+    });
+
+    const unsigned = await caller.emojis.getAll();
+    const unsignedEmoji = unsigned.find((e) => e.name === 'signed_emoji');
+
+    expect(unsignedEmoji!.file._accessToken).toBeUndefined();
+
+    await tdb.update(settings).set({ storageSignedUrlsIncludeAssets: true });
+
+    const signed = await caller.emojis.getAll();
+    const signedEmoji = signed.find((e) => e.name === 'signed_emoji');
+
+    expect(signedEmoji!.file._accessToken).toBeDefined();
   });
 
   test('should add multiple emojis at once', async () => {

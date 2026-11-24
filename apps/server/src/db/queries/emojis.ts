@@ -1,7 +1,7 @@
-import type { TJoinedEmoji } from '@sharkord/shared';
+import type { TJoinedEmoji, TSettings } from '@sharkord/shared';
 import { and, eq, ne } from 'drizzle-orm';
 import { db } from '..';
-import { attachFileToken } from '../../helpers/files-crypto';
+import { signAsset } from '../../helpers/files-crypto';
 import { emojis, files, users } from '../schema';
 import { getSettings } from './server';
 
@@ -29,13 +29,9 @@ const getEmojiRows = () =>
     .innerJoin(files, eq(emojis.fileId, files.id))
     .innerJoin(users, eq(emojis.userId, users.id));
 
-const parseEmoji = (
-  row: TEmojiRow,
-  signedUrlsEnabled: boolean,
-  signedUrlsTtlSeconds: number
-): TJoinedEmoji => ({
+const parseEmoji = (row: TEmojiRow, settings: TSettings): TJoinedEmoji => ({
   ...row.emoji,
-  file: attachFileToken(row.file, signedUrlsEnabled, signedUrlsTtlSeconds),
+  file: signAsset(row.file, settings),
   user: { ...row.user, avatar: null, banner: null }
 });
 
@@ -44,21 +40,17 @@ const getEmojiById = async (id: number): Promise<TJoinedEmoji | undefined> => {
 
   if (!row) return undefined;
 
-  const { storageSignedUrlsEnabled, storageSignedUrlsTtlSeconds } =
-    await getSettings();
+  const settings = await getSettings();
 
-  return parseEmoji(row, storageSignedUrlsEnabled, storageSignedUrlsTtlSeconds);
+  return parseEmoji(row, settings);
 };
 
 const getEmojis = async (): Promise<TJoinedEmoji[]> => {
   const rows = await getEmojiRows();
 
-  const { storageSignedUrlsEnabled, storageSignedUrlsTtlSeconds } =
-    await getSettings();
+  const settings = await getSettings();
 
-  return rows.map((row) =>
-    parseEmoji(row, storageSignedUrlsEnabled, storageSignedUrlsTtlSeconds)
-  );
+  return rows.map((row) => parseEmoji(row, settings));
 };
 
 const emojiExists = async (

@@ -111,6 +111,14 @@ const settings = sqliteTable(
     storageSignedUrlsTtlSeconds: integer(
       'storage_signed_urls_ttl_seconds'
     ).notNull(),
+    storageSignedUrlsIncludeAssets: integer(
+      'storage_signed_urls_include_assets',
+      {
+        mode: 'boolean'
+      }
+    )
+      .notNull()
+      .default(false),
     storageImageOptimizationEnabled: integer(
       'storage_image_optimization_enabled',
       {
