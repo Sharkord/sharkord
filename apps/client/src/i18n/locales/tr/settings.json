@@ -694,6 +694,7 @@
   "metricsCpu": "CPU",
   "metricsMemory": "Bellek",
   "metricsPeakMemory": "En yüksek bellek",
+  "metricsPeakMemoryHint": "Ses worker'ının başlatıldığından beri kullandığı en yüksek bellek. Hiçbir zaman düşmez. Anlık kullanım yalnızca Linux sunucularda görülebilir.",
   "metricsNoData": "Veri yok",
   "metricsRange5m": "Son 5 dakika",
   "metricsRange15m": "Son 15 dakika",

@@ -7,6 +7,7 @@ import {
 import { z } from 'zod';
 import { getStoredMetricsSamples } from '../../db/queries/metrics';
 import { getSettings } from '../../db/queries/server';
+import { WORKER_MEMORY_IS_PEAK } from '../../utils/mediasoup';
 import {
   getMetricsSamples,
   METRICS_MAX_POINTS
@@ -21,13 +22,21 @@ const getMetricsRoute = protectedProcedure
     const { metricsEnabled } = await getSettings();
 
     if (!metricsEnabled) {
-      return { enabled: false, samples: [] };
+      return {
+        enabled: false,
+        samples: [],
+        workerMemoryIsPeak: WORKER_MEMORY_IS_PEAK
+      };
     }
 
     const rangeMs = METRICS_RANGE_MS[input.range];
 
     if (rangeMs <= METRICS_MEMORY_RANGE_MS) {
-      return { enabled: true, samples: getMetricsSamples(rangeMs) };
+      return {
+        enabled: true,
+        samples: getMetricsSamples(rangeMs),
+        workerMemoryIsPeak: WORKER_MEMORY_IS_PEAK
+      };
     }
 
     const samples = await getStoredMetricsSamples(
@@ -35,7 +44,11 @@ const getMetricsRoute = protectedProcedure
       Math.ceil(rangeMs / METRICS_MAX_POINTS)
     );
 
-    return { enabled: true, samples };
+    return {
+      enabled: true,
+      samples,
+      workerMemoryIsPeak: WORKER_MEMORY_IS_PEAK
+    };
   });
 
 export { getMetricsRoute };

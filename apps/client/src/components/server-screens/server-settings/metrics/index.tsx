@@ -50,7 +50,8 @@ const RANGES = Object.values(MetricsRange);
 const Metrics = memo(() => {
   const { t } = useTranslation('settings');
   const [range, setRange] = useState(MetricsRange.FIVE_MINUTES);
-  const { enabled, samples, loading, refetch } = useAdminMetrics(range);
+  const { enabled, samples, workerMemoryIsPeak, loading, refetch } =
+    useAdminMetrics(range);
   const can = useCan();
   const canManageSettings = can(Permission.MANAGE_SETTINGS);
   const rangeMs = METRICS_RANGE_MS[range];
@@ -96,6 +97,14 @@ const Metrics = memo(() => {
       voiceConsumers: samples.map(({ voiceConsumers }) => voiceConsumers)
     };
   }, [samples]);
+
+  let workerMemoryLabel = t('metricsMemory');
+  let workerMemoryHint: string | undefined;
+
+  if (workerMemoryIsPeak) {
+    workerMemoryLabel = t('metricsPeakMemory');
+    workerMemoryHint = t('metricsPeakMemoryHint');
+  }
 
   const voiceTotals = useMemo(
     () => ({
@@ -215,7 +224,8 @@ const Metrics = memo(() => {
                 format={formatPercent}
               />
               <MetricChart
-                label={t('metricsPeakMemory')}
+                label={workerMemoryLabel}
+                hint={workerMemoryHint}
                 timestamps={series.timestamps}
                 values={series.workerMemory}
                 rangeMs={rangeMs}

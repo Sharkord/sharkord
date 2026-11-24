@@ -741,6 +741,7 @@
   "metricsCpu": "CPU",
   "metricsMemory": "Memory",
   "metricsPeakMemory": "Peak memory",
+  "metricsPeakMemoryHint": "The most memory the voice worker has used since it started. It never goes down. Current usage is only available on Linux servers.",
   "metricsNoData": "No data",
   "metricsRange5m": "Last 5 minutes",
   "metricsRange15m": "Last 15 minutes",

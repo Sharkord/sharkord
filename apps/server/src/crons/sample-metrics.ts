@@ -8,7 +8,12 @@ import {
 } from '../utils/event-loop-lag';
 import { addMetricsSample } from '../utils/metrics-samples';
 import { getOnlineUserIds } from '../utils/wss';
-import { getVoiceLoad, getWorkerUsage, toPercent } from './helpers';
+import {
+  getVoiceLoad,
+  getWorkerMemory,
+  getWorkerUsage,
+  toPercent
+} from './helpers';
 
 type TCpuTimes = {
   at: number;
@@ -71,7 +76,7 @@ const sampleMetrics = async () => {
     systemMemoryUsed: os.totalmem() - os.freemem(),
     systemMemoryTotal: os.totalmem(),
     workerCpu,
-    workerMemory: workerUsage ? workerUsage.ru_maxrss * 1024 : null,
+    workerMemory: await getWorkerMemory(workerUsage),
     onlineUsers: getOnlineUserIds().length,
     ...voiceLoad,
     eventLoopLag: takeEventLoopLag()

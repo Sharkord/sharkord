@@ -567,6 +567,16 @@ describe('others router', () => {
     expect(latest.systemMemoryTotal).toBeGreaterThan(0);
   });
 
+  test('should report worker memory as peak everywhere but linux', async () => {
+    const { caller } = await initTest(1);
+
+    const { workerMemoryIsPeak } = await caller.others.getMetrics({
+      range: MetricsRange.FIVE_MINUTES
+    });
+
+    expect(workerMemoryIsPeak).toBe(process.platform !== 'linux');
+  });
+
   test('should return stored metrics samples for long ranges', async () => {
     const { caller } = await initTest(1);
     const now = Date.now();
@@ -615,7 +625,8 @@ describe('others router', () => {
 
     clearMetricsSamples();
 
-    expect(result).toEqual({ enabled: false, samples: [] });
+    expect(result.enabled).toBe(false);
+    expect(result.samples).toEqual([]);
   });
 
   test('should persist the metrics setting', async () => {

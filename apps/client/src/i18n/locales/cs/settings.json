@@ -741,6 +741,7 @@
   "metricsCpu": "Procesor",
   "metricsMemory": "Paměť",
   "metricsPeakMemory": "Špička paměti",
+  "metricsPeakMemoryHint": "Nejvíce paměti, kolik hlasový worker od spuštění použil. Nikdy neklesá. Aktuální využití je dostupné jen na serverech s Linuxem.",
   "metricsNoData": "Žádná data",
   "metricsRange5m": "Posledních 5 minut",
   "metricsRange15m": "Posledních 15 minut",

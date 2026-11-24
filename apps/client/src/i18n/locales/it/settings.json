@@ -741,6 +741,7 @@
   "metricsCpu": "CPU",
   "metricsMemory": "Memoria",
   "metricsPeakMemory": "Picco di memoria",
+  "metricsPeakMemoryHint": "La memoria massima usata dal worker vocale da quando è stato avviato. Non diminuisce mai. L'uso attuale è disponibile solo sui server Linux.",
   "metricsNoData": "Nessun dato",
   "metricsRange5m": "Ultimi 5 minuti",
   "metricsRange15m": "Ultimi 15 minuti",

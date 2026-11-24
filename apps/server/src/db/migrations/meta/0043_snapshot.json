@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "6cbd40ab-ad1b-4cb8-a9a9-5e6fcd655bba",
+  "id": "740a96ad-690c-4e0e-a95d-94515429db33",
   "prevId": "9cd8baa8-5e69-48fe-a0a0-3686fd44defd",
   "tables": {
     "activity_log": {
@@ -2500,7 +2500,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": false
+          "default": true
         },
         "web_rtc_simulcast_enabled": {
           "name": "web_rtc_simulcast_enabled",

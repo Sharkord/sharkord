@@ -478,6 +478,7 @@ export const useAdminMetrics = (range: MetricsRange) => {
   const [loading, setLoading] = useState(true);
   const [enabled, setEnabled] = useState(true);
   const [samples, setSamples] = useState<TMetricsSample[]>([]);
+  const [workerMemoryIsPeak, setWorkerMemoryIsPeak] = useState(false);
   const rangeRef = useRef(range);
 
   rangeRef.current = range;
@@ -491,6 +492,7 @@ export const useAdminMetrics = (range: MetricsRange) => {
 
       setEnabled(result.enabled);
       setSamples(result.samples);
+      setWorkerMemoryIsPeak(result.workerMemoryIsPeak);
     } catch (error) {
       console.error('Error fetching metrics:', error);
     }
@@ -511,5 +513,11 @@ export const useAdminMetrics = (range: MetricsRange) => {
     return () => clearInterval(interval);
   }, [fetchMetrics, range]);
 
-  return { enabled, samples, loading, refetch: fetchMetrics };
+  return {
+    enabled,
+    samples,
+    workerMemoryIsPeak,
+    loading,
+    refetch: fetchMetrics
+  };
 };

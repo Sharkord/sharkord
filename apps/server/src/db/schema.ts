@@ -94,7 +94,7 @@ const settings = sqliteTable(
       mode: 'boolean'
     })
       .notNull()
-      .default(false),
+      .default(true),
     webRtcSimulcastEnabled: integer('web_rtc_simulcast_enabled', {
       mode: 'boolean'
     })

@@ -1,4 +1,6 @@
 import { cn } from '@/lib/utils';
+import { Tooltip } from '@sharkord/ui';
+import { Info } from 'lucide-react';
 import { memo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import uPlot from 'uplot';
@@ -13,6 +15,7 @@ import { tooltipPlugin } from './tooltip-plugin';
 
 type TMetricChartProps = {
   label: string;
+  hint?: string;
   timestamps: number[];
   values: (number | null)[];
   rangeMs: number;
@@ -92,6 +95,7 @@ const refineGaps: uPlot.Series.GapsRefiner = (
 const MetricChart = memo(
   ({
     label,
+    hint,
     timestamps,
     values,
     rangeMs,
@@ -219,8 +223,13 @@ const MetricChart = memo(
     return (
       <div className={cn('rounded-lg border bg-muted/30 p-4', className)}>
         <div className="mb-2 flex items-baseline justify-between gap-2">
-          <span className="text-sm font-medium text-muted-foreground">
+          <span className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
             {label}
+            {hint && (
+              <Tooltip content={hint}>
+                <Info className="size-3.5" />
+              </Tooltip>
+            )}
           </span>
           <span className="text-lg font-semibold">
             {latest === undefined ? t('metricsNoData') : format(latest)}

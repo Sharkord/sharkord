@@ -16,4 +16,4 @@ CREATE TABLE `metrics_samples` (
 	`event_loop_lag` real DEFAULT 0 NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE `settings` ADD `metrics_enabled` integer DEFAULT false NOT NULL;
+ALTER TABLE `settings` ADD `metrics_enabled` integer DEFAULT true NOT NULL;
