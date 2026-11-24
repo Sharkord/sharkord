@@ -58,7 +58,8 @@
     "semver": "^7.8.6",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.7.0",
-    "tailwindcss": "^4.3.5"
+    "tailwindcss": "^4.3.5",
+    "uplot": "^1.6.32"
   },
   "devDependencies": {
     "@types/semver": "^7.8.0",

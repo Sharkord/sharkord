@@ -16,7 +16,7 @@
  *                          have more distinct repliers than the six avatars it shows)
  *   roles             4    Owner (id 1), Member, Guest, Moderator
  *   userRoles         8    one per user, plus the moderator's extra role
- *   rolePermissions  34    the default permission sets for the roles above
+ *   rolePermissions  35    the default permission sets for the roles above
  *   categories        2    Text Channels, Voice Channels
  *   channels          5    1 General (text), Voice, DM Channel, Private Voice,
  *                          Restricted Text
@@ -140,6 +140,7 @@ const seedTestDb = async (
     enablePlugins: false,
     enableSearch: true,
     enableLinkPreviews: true,
+    metricsEnabled: true,
     webRtcSimulcastEnabled: false,
     showWelcomeDialog: true,
     storageSignedUrlsEnabled: false,

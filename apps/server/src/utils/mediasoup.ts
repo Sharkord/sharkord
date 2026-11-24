@@ -10,6 +10,9 @@ import {
 } from './bun-mediasoup-workaround.js';
 import { IS_PRODUCTION } from './env.js';
 
+// getrusage only reports the peak, linux is the one place we can easily and cheaply read current memory from /proc
+const WORKER_MEMORY_IS_PEAK = process.platform !== 'linux';
+
 let mediaSoupWorker: mediasoup.types.Worker<mediasoup.types.AppData>;
 let webRtcServer: mediasoup.types.WebRtcServer<mediasoup.types.AppData>;
 let webRtcServerListenInfo: { ip: string; announcedAddress?: string };
@@ -44,7 +47,7 @@ const loadMediasoup = async () => {
     setTimeout(() => process.exit(0), 2000);
   });
 
-  logger.debug('Mediasoup worker loaded');
+  logger.debug('Mediasoup worker loaded, pid: %d', mediaSoupWorker.pid);
 
   if (IS_PRODUCTION) {
     const announcedAddress = SERVER_PUBLIC_IP;
@@ -101,4 +104,10 @@ const loadMediasoup = async () => {
   }
 };
 
-export { loadMediasoup, mediaSoupWorker, webRtcServer, webRtcServerListenInfo };
+export {
+  loadMediasoup,
+  mediaSoupWorker,
+  webRtcServer,
+  webRtcServerListenInfo,
+  WORKER_MEMORY_IS_PEAK
+};

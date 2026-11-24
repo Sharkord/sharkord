@@ -437,6 +437,58 @@ class VoiceRuntime {
     return this.state;
   };
 
+  public getStreamCounts = () => {
+    let producers =
+      Object.keys(this.videoProducers).length +
+      Object.keys(this.audioProducers).length +
+      Object.keys(this.screenProducers).length +
+      Object.keys(this.screenAudioProducers).length;
+
+    for (const stream of Object.values(this.externalStreamsInternal)) {
+      if (stream.producers.audioProducer) producers++;
+      if (stream.producers.videoProducer) producers++;
+    }
+
+    let consumers = 0;
+
+    for (const userConsumers of Object.values(this.consumers)) {
+      consumers += Object.keys(userConsumers).length;
+    }
+
+    return { producers, consumers };
+  };
+
+  public getTrafficBitrates = async () => {
+    const transports = [
+      ...Object.values(this.producerTransports),
+      ...Object.values(this.consumerTransports)
+    ].filter((transport) => !transport.closed);
+
+    const allStats = await Promise.all(
+      transports.map(async (transport) => {
+        try {
+          const [stats] = await transport.getStats();
+
+          return stats;
+        } catch {
+          return undefined;
+        }
+      })
+    );
+
+    let received = 0;
+    let sent = 0;
+
+    for (const stats of allStats) {
+      if (!stats) continue;
+
+      received += stats.recvBitrate;
+      sent += stats.sendBitrate;
+    }
+
+    return { received, sent };
+  };
+
   public getUser = (userId: number) => {
     return this.state.users.find((u) => u.userId === userId);
   };

@@ -302,6 +302,13 @@
       "when": 1795196843687,
       "tag": "0042_settings_media_proxy_link_previews",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "6",
+      "when": 1795545922783,
+      "tag": "0043_metrics",
+      "breakpoints": true
     }
   ]
 }
