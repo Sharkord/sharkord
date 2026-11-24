@@ -563,3 +563,84 @@ describe('VoiceRuntime server mute', () => {
     });
   });
 });
+
+describe('VoiceRuntime stream counts', () => {
+  test('should count producers and consumers while they are open', async () => {
+    const runtime = createRuntime();
+    const audio = createProducerStub();
+    const screenAudio = createProducerStub();
+
+    runtime.addProducer(1, StreamKind.AUDIO, audio as unknown as Producer);
+    runtime.addProducer(
+      2,
+      StreamKind.SCREEN_AUDIO,
+      screenAudio as unknown as Producer
+    );
+    runtime.addConsumer(
+      3,
+      1,
+      StreamKind.AUDIO,
+      createConsumerStub() as unknown as Consumer
+    );
+    runtime.addConsumer(
+      3,
+      2,
+      StreamKind.SCREEN_AUDIO,
+      createConsumerStub() as unknown as Consumer
+    );
+
+    expect(runtime.getStreamCounts()).toEqual({ producers: 2, consumers: 2 });
+
+    audio.close();
+
+    expect(runtime.getStreamCounts()).toEqual({ producers: 1, consumers: 2 });
+
+    await runtime.destroy();
+  });
+
+  test('should count nothing for an empty runtime', async () => {
+    const runtime = createRuntime();
+
+    expect(runtime.getStreamCounts()).toEqual({ producers: 0, consumers: 0 });
+
+    await runtime.destroy();
+  });
+});
+
+// real media cannot flow in the test harness, so the transports here stay idle and
+// only the summing over open transports and the empty case are covered
+describe('VoiceRuntime traffic bitrates', () => {
+  test('should report no traffic without transports', async () => {
+    const runtime = createRuntime();
+
+    expect(await runtime.getTrafficBitrates()).toEqual({
+      received: 0,
+      sent: 0
+    });
+
+    await runtime.destroy();
+  });
+
+  test('should read the bitrates of open transports', async () => {
+    const runtime = createRuntime();
+
+    await runtime.init();
+    await runtime.createProducerTransport(1);
+    await runtime.createConsumerTransport(1);
+
+    const bitrates = await runtime.getTrafficBitrates();
+
+    expect(bitrates.received).toBeGreaterThanOrEqual(0);
+    expect(bitrates.sent).toBeGreaterThanOrEqual(0);
+
+    runtime.removeProducerTransport(1);
+    runtime.removeConsumerTransport(1);
+
+    expect(await runtime.getTrafficBitrates()).toEqual({
+      received: 0,
+      sent: 0
+    });
+
+    await runtime.destroy();
+  });
+});

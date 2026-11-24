@@ -3,6 +3,7 @@ import { useCan, usePluginsEnabled } from '@/features/server/hooks';
 import { Permission } from '@sharkord/shared';
 import { type TSettingsEntry } from '@sharkord/ui';
 import {
+  Activity,
   Blocks,
   Gauge,
   Mail,
@@ -20,6 +21,7 @@ import { SettingsShell } from '../settings-shell';
 import { Emojis } from './emojis';
 import { General } from './general';
 import { Invites } from './invites';
+import { Metrics } from './metrics';
 import { PluginView } from './plugin-view';
 import { Plugins } from './plugins';
 import { RateLimits } from './rate-limits';
@@ -98,6 +100,13 @@ const ServerSettings = memo(({ close }: TServerSettingsProps) => {
         icon: RefreshCw,
         content: <Updates />,
         permission: Permission.MANAGE_UPDATES
+      },
+      {
+        id: 'metrics',
+        label: t('metricsTab'),
+        icon: Activity,
+        content: <Metrics />,
+        permission: Permission.VIEW_METRICS
       },
       {
         id: 'plugins',

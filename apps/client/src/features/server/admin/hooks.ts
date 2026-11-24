@@ -3,7 +3,12 @@ import { getTRPCClient, type TRouterOutputs } from '@/lib/trpc';
 import {
   DELETED_USER_IDENTITY_AND_NAME,
   getTrpcError,
+  METRICS_MEMORY_RANGE_MS,
+  METRICS_RANGE_MS,
+  METRICS_ROLLUP_INTERVAL_MS,
+  METRICS_SAMPLE_INTERVAL_MS,
   parseTrpcErrors,
+  type MetricsRange,
   type TCategory,
   type TChannel,
   type TChannelRolePermission,
@@ -16,6 +21,7 @@ import {
   type TJoinedSettings,
   type TLogin,
   type TMessage,
+  type TMetricsSample,
   type TPluginInfo,
   type TPluginStorageUsage,
   type TRateLimiters,
@@ -23,7 +29,7 @@ import {
   type TStorageSettings,
   type TTrpcErrors
 } from '@sharkord/shared';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -466,4 +472,44 @@ export const useAdminInvites = () => {
     refetch: fetchInvites,
     loading
   };
+};
+
+export const useAdminMetrics = (range: MetricsRange) => {
+  const [loading, setLoading] = useState(true);
+  const [enabled, setEnabled] = useState(true);
+  const [samples, setSamples] = useState<TMetricsSample[]>([]);
+  const rangeRef = useRef(range);
+
+  rangeRef.current = range;
+
+  const fetchMetrics = useCallback(async () => {
+    try {
+      const trpc = getTRPCClient();
+      const result = await trpc.others.getMetrics.query({ range });
+
+      if (rangeRef.current !== range) return;
+
+      setEnabled(result.enabled);
+      setSamples(result.samples);
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+    }
+
+    setLoading(false);
+  }, [range]);
+
+  useEffect(() => {
+    fetchMetrics();
+
+    const refreshMs =
+      METRICS_RANGE_MS[range] > METRICS_MEMORY_RANGE_MS
+        ? METRICS_ROLLUP_INTERVAL_MS
+        : METRICS_SAMPLE_INTERVAL_MS;
+
+    const interval = setInterval(fetchMetrics, refreshMs);
+
+    return () => clearInterval(interval);
+  }, [fetchMetrics, range]);
+
+  return { enabled, samples, loading, refetch: fetchMetrics };
 };

@@ -1,6 +1,7 @@
 import {
   ActivityLogType,
   DEFAULT_RATE_LIMITERS,
+  MetricsRange,
   Permission,
   RATE_LIMIT_MIN_GLOBAL_REQUESTS,
   RATE_LIMIT_MIN_WINDOW_MS,
@@ -26,6 +27,8 @@ import {
 import { TEST_SECRET_TOKEN } from '../../__tests__/seed';
 import { tdb } from '../../__tests__/setup';
 import { config } from '../../config';
+import { sampleMetrics } from '../../crons/sample-metrics';
+import { insertMetricsSample } from '../../db/mutations/metrics';
 import { getSettings } from '../../db/queries/server';
 import { activityLog, rolePermissions } from '../../db/schema';
 import { getRateLimit, getRateLimits } from '../../helpers/rate-limits';
@@ -34,6 +37,7 @@ import { drainActivityLogQueue } from '../../queues/activity-log';
 import { drainLoginsQueue } from '../../queues/logins';
 import { VoiceRuntime } from '../../runtimes/voice';
 import { SERVER_VERSION } from '../../utils/env';
+import { clearMetricsSamples } from '../../utils/metrics-samples';
 
 describe('others router', () => {
   test('should throw when user tries to join with no handshake', async () => {
@@ -542,6 +546,110 @@ describe('others router', () => {
         name: 'Attempted Update'
       })
     ).rejects.toThrow('Insufficient permissions');
+  });
+
+  test('should return metrics samples', async () => {
+    const { caller } = await initTest(1);
+
+    await sampleMetrics();
+    await sampleMetrics();
+
+    const { enabled, samples } = await caller.others.getMetrics({
+      range: MetricsRange.FIVE_MINUTES
+    });
+    const latest = samples[samples.length - 1]!;
+
+    clearMetricsSamples();
+
+    expect(enabled).toBe(true);
+    expect(samples.length).toBeGreaterThan(0);
+    expect(latest.memory).toBeGreaterThan(0);
+    expect(latest.systemMemoryTotal).toBeGreaterThan(0);
+  });
+
+  test('should return stored metrics samples for long ranges', async () => {
+    const { caller } = await initTest(1);
+    const now = Date.now();
+    const stored = {
+      timestamp: now - 60_000,
+      cpu: 12,
+      memory: 1000,
+      systemCpu: 40,
+      systemMemoryUsed: 500,
+      systemMemoryTotal: 2000,
+      workerCpu: 3,
+      workerMemory: 300,
+      voiceRx: 2048,
+      voiceTx: 4096,
+      onlineUsers: 4,
+      voiceUsers: 2,
+      voiceProducers: 3,
+      voiceConsumers: 6,
+      eventLoopLag: 15
+    };
+
+    await insertMetricsSample({
+      ...stored,
+      timestamp: now - 8 * 24 * 60 * 60_000
+    });
+    await insertMetricsSample(stored);
+
+    const { enabled, samples } = await caller.others.getMetrics({
+      range: MetricsRange.SEVEN_DAYS
+    });
+
+    expect(enabled).toBe(true);
+    expect(samples).toEqual([stored]);
+  });
+
+  test('should return no metrics samples when metrics are disabled', async () => {
+    const { caller } = await initTest(1);
+
+    await sampleMetrics();
+    await sampleMetrics();
+    await caller.others.updateSettings({ metricsEnabled: false });
+
+    const result = await caller.others.getMetrics({
+      range: MetricsRange.FIVE_MINUTES
+    });
+
+    clearMetricsSamples();
+
+    expect(result).toEqual({ enabled: false, samples: [] });
+  });
+
+  test('should persist the metrics setting', async () => {
+    const { caller } = await initTest(1);
+
+    await caller.others.updateSettings({ metricsEnabled: false });
+
+    const settings = await caller.others.getSettings();
+
+    expect(settings.metricsEnabled).toBe(false);
+  });
+
+  test('should throw when user lacks permissions (toggle metrics)', async () => {
+    const { caller } = await initTest(2);
+
+    await expect(
+      caller.others.updateSettings({ metricsEnabled: false })
+    ).rejects.toThrow('Insufficient permissions');
+  });
+
+  test('should throw when user lacks permissions (get metrics)', async () => {
+    const { caller } = await initTest(2);
+
+    await expect(
+      caller.others.getMetrics({ range: MetricsRange.FIVE_MINUTES })
+    ).rejects.toThrow('Insufficient permissions');
+  });
+
+  test('should throw when the metrics range is invalid', async () => {
+    const { caller } = await initTest(1);
+
+    await expect(
+      caller.others.getMetrics({ range: '1y' as MetricsRange })
+    ).rejects.toThrow();
   });
 
   test('should throw when using invalid secret token', async () => {

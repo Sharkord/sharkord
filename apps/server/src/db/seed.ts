@@ -72,6 +72,7 @@ const seedDatabase = async () => {
     enablePlugins: false,
     enableSearch: true,
     enableLinkPreviews: true,
+    metricsEnabled: false,
     webRtcSimulcastEnabled: false,
     showWelcomeDialog: true,
     storageSignedUrlsEnabled: false,

@@ -29,7 +29,8 @@
     "MANAGE_PLUGINS": "管理插件",
     "MANAGE_PLUGIN_PERMISSIONS": "管理插件权限",
     "USE_PLUGINS": "使用插件",
-    "VIEW_USER_SENSITIVE_DATA": "查看用户敏感数据"
+    "VIEW_USER_SENSITIVE_DATA": "查看用户敏感数据",
+    "VIEW_METRICS": "查看指标"
   },
   "serverDescriptions": {
     "SEND_MESSAGES": "授予在频道中发送消息的权限。",
@@ -56,7 +57,8 @@
     "MANAGE_PLUGINS": "授予管理插件的权限。",
     "MANAGE_PLUGIN_PERMISSIONS": "允许选择哪些角色可以使用插件的各个命令和操作。拥有此权限的人可以将这些能力授予自己。",
     "USE_PLUGINS": "授予使用插件的权限，例如执行插件命令或查看插件添加的 UI 元素。",
-    "VIEW_USER_SENSITIVE_DATA": "授予查看用户敏感数据（如身份标识、IP 地址和位置）的权限。"
+    "VIEW_USER_SENSITIVE_DATA": "授予查看用户敏感数据（如身份标识、IP 地址和位置）的权限。",
+    "VIEW_METRICS": "授予查看服务器指标（如 CPU、内存和语音使用情况）的权限。"
   },
   "channel": {
     "VIEW_CHANNEL": "查看频道",

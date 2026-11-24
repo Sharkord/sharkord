@@ -16,6 +16,7 @@ import {
   index,
   integer,
   primaryKey,
+  real,
   sqliteTable,
   text,
   uniqueIndex,
@@ -89,6 +90,11 @@ const settings = sqliteTable(
     enableLinkPreviews: integer('enable_link_previews', { mode: 'boolean' })
       .notNull()
       .default(true),
+    metricsEnabled: integer('metrics_enabled', {
+      mode: 'boolean'
+    })
+      .notNull()
+      .default(false),
     webRtcSimulcastEnabled: integer('web_rtc_simulcast_enabled', {
       mode: 'boolean'
     })
@@ -651,6 +657,24 @@ const pluginUserData = sqliteTable(
   ]
 );
 
+const metricsSamples = sqliteTable('metrics_samples', {
+  timestamp: integer('timestamp').primaryKey(),
+  cpu: real('cpu').notNull(),
+  memory: real('memory').notNull(),
+  systemCpu: real('system_cpu').notNull(),
+  systemMemoryUsed: real('system_memory_used').notNull(),
+  systemMemoryTotal: real('system_memory_total').notNull(),
+  workerCpu: real('worker_cpu'),
+  workerMemory: real('worker_memory'),
+  voiceRx: real('voice_rx'),
+  voiceTx: real('voice_tx'),
+  onlineUsers: real('online_users').notNull().default(0),
+  voiceUsers: real('voice_users').notNull().default(0),
+  voiceProducers: real('voice_producers').notNull().default(0),
+  voiceConsumers: real('voice_consumers').notNull().default(0),
+  eventLoopLag: real('event_loop_lag').notNull().default(0)
+});
+
 const pluginStorage = sqliteTable(
   'plugin_storage',
   {
@@ -709,6 +733,7 @@ export {
   messageFiles,
   messageReactions,
   messages,
+  metricsSamples,
   oidcHandoffs,
   oidcTransactions,
   pluginCapabilities,

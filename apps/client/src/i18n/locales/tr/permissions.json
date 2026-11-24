@@ -29,7 +29,8 @@
     "MANAGE_PLUGINS": "Eklentileri yönetme",
     "MANAGE_PLUGIN_PERMISSIONS": "Eklenti izinlerini yönetme",
     "USE_PLUGINS": "Eklentileri kullanma",
-    "VIEW_USER_SENSITIVE_DATA": "Kullanıcıların hassas verilerini görüntüleme"
+    "VIEW_USER_SENSITIVE_DATA": "Kullanıcıların hassas verilerini görüntüleme",
+    "VIEW_METRICS": "Metrikleri görüntüleme"
   },
   "serverDescriptions": {
     "SEND_MESSAGES": "Kanallarda mesaj gönderme yetkisi verir.",
@@ -56,7 +57,8 @@
     "MANAGE_PLUGINS": "Eklentileri yönetme yetkisi verir.",
     "MANAGE_PLUGIN_PERMISSIONS": "Hangi rollerin her eklenti komutunu ve eylemini kullanabileceğini seçme yetkisi verir. Bu yetkiye sahip olan herkes bu yetkileri kendine verebilir.",
     "USE_PLUGINS": "Eklenti komutlarını çalıştırma veya eklentilerin eklediği arayüz öğelerini görme gibi eklentileri kullanma yetkisi verir.",
-    "VIEW_USER_SENSITIVE_DATA": "Kimlik, IP adresi ve konum gibi kullanıcıların hassas verilerini görüntüleme yetkisi verir."
+    "VIEW_USER_SENSITIVE_DATA": "Kimlik, IP adresi ve konum gibi kullanıcıların hassas verilerini görüntüleme yetkisi verir.",
+    "VIEW_METRICS": "CPU, bellek ve ses kullanımı gibi sunucu metriklerini görüntüleme yetkisi verir."
   },
   "channel": {
     "VIEW_CHANNEL": "Kanalı Görüntüle",
