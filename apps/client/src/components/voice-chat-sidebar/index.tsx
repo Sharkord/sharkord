@@ -3,7 +3,6 @@ import { ResizableSidebar } from '@/components/resizable-sidebar';
 import { closeVoiceChatSidebar } from '@/features/app/actions';
 import { useVoiceChatSidebar } from '@/features/app/hooks';
 import { LocalStorageKey } from '@/helpers/storage';
-import { cn } from '@/lib/utils';
 import { memo } from 'react';
 
 const MIN_WIDTH = 360;
@@ -25,10 +24,7 @@ const VoiceChatSidebar = memo(() => {
       defaultWidth={DEFAULT_WIDTH}
       edge="left"
       isOpen={isOpen}
-      className={cn(
-        'max-lg:absolute max-lg:inset-0 max-lg:z-20 max-lg:border-0',
-        isOpen ? 'max-lg:w-full!' : 'max-lg:hidden'
-      )}
+      fullscreenBelowLg
     >
       <div className="flex flex-col h-full w-full">
         <div className="flex-1 flex flex-col overflow-hidden">

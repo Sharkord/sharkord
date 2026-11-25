@@ -10,6 +10,7 @@ type TResizableSidebarProps = {
   defaultWidth: number;
   edge: 'left' | 'right';
   isOpen?: boolean;
+  fullscreenBelowLg?: boolean;
   className?: string;
   children: ReactNode;
   'data-testid'?: string;
@@ -23,6 +24,7 @@ const ResizableSidebar = memo(
     defaultWidth,
     edge,
     isOpen = true,
+    fullscreenBelowLg,
     className,
     children,
     ...props
@@ -46,6 +48,9 @@ const ResizableSidebar = memo(
           isLeftEdge ? 'border-l' : 'border-r',
           !isOpen && 'w-0 border-0! overflow-hidden',
           !isResizing && 'transition-all duration-500 ease-in-out',
+          fullscreenBelowLg &&
+            'max-lg:absolute max-lg:inset-0 max-lg:z-20 max-lg:border-0',
+          fullscreenBelowLg && (isOpen ? 'max-lg:w-full!' : 'max-lg:hidden'),
           className
         )}
         style={{

@@ -1,6 +1,7 @@
 import * as PopoverPrimitive from '@radix-ui/react-popover';
 import * as React from 'react';
 
+import { MEDIA_QUERY } from '../lib/use-media-query';
 import { cn } from '../lib/utils';
 
 function Popover({
@@ -35,9 +36,9 @@ function PopoverContent({
     (event: Event) => {
       onOpenAutoFocus?.(event);
 
-      const isTouch = window.matchMedia('(pointer: coarse)').matches;
+      const mediaQueryList = window.matchMedia(MEDIA_QUERY.coarsePointer);
 
-      if (isTouch) {
+      if (mediaQueryList.matches) {
         event.preventDefault();
       }
     },

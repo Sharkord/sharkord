@@ -153,7 +153,7 @@ const InstalledPluginRow = memo(
             )}
             {isManual && (
               <Tooltip content={t('pluginManualTooltip')}>
-                <Badge variant="outline" className="text-[10px] max-md:text-xs">
+                <Badge variant="outline" className="text-3xs">
                   {t('pluginManualBadge')}
                 </Badge>
               </Tooltip>

@@ -55,7 +55,7 @@ const Others = memo(() => {
   const pauseNewStreamsByDefault = usePauseNewStreamsByDefault();
   const muteStreamAudioByDefault = useMuteStreamAudioByDefault();
   const startOnChannelList = useStartOnChannelList();
-  const isDesktopLayout = useMediaQuery(MEDIA_QUERY.md);
+  const isWideScreen = useMediaQuery(MEDIA_QUERY.md);
 
   const onSave = useCallback(async (values: TOthersValues) => {
     setAutoJoinLastChannel(values.autoJoinLastChannel);
@@ -213,7 +213,7 @@ const Others = memo(() => {
         />
       </Group>
 
-      {!isDesktopLayout && (
+      {!isWideScreen && (
         <Group
           label={t('startOnChannelListLabel')}
           description={t('startOnChannelListDesc')}

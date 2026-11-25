@@ -12,6 +12,36 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@custom-variant reveal {
+  @media (hover: hover) {
+    &:is(:where(.group):hover *) {
+      @slot;
+    }
+  }
+
+  @media (pointer: coarse) {
+    @slot;
+  }
+}
+
+@utility text-3xs {
+  font-size: 10px;
+
+  @media (width < 48rem) {
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+  }
+}
+
+@utility text-2xs {
+  font-size: 11px;
+
+  @media (width < 48rem) {
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+  }
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

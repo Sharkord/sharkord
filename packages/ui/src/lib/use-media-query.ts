@@ -5,7 +5,8 @@ export const MEDIA_QUERY = {
   mobile: '(max-width: 639px)',
   md: '(min-width: 768px)',
   lg: '(min-width: 1024px)',
-  finePointer: '(pointer: fine)'
+  finePointer: '(pointer: fine)',
+  coarsePointer: '(pointer: coarse)'
 } as const;
 
 export const useMediaQuery = (query: string) => {

@@ -82,7 +82,7 @@ const ImagePicker = memo(
           onClick={handlePick}
         >
           {preview}
-          <div className="absolute inset-0 flex items-center justify-center rounded-md opacity-0 transition-opacity group-hover:opacity-100 pointer-coarse:opacity-100">
+          <div className="absolute inset-0 flex items-center justify-center rounded-md opacity-0 transition-opacity reveal:opacity-100">
             <div className="rounded-full bg-black/50 p-3">
               <Upload className="h-6 w-6 text-white" />
             </div>

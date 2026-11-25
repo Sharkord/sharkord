@@ -12,7 +12,8 @@ import {
   TestId,
   type TJoinedMessage
 } from '@sharkord/shared';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { useTouchOutside } from './hooks/use-touch-outside';
 import { MessageActions } from './message-actions';
 import { MessageEditInline } from './message-edit-inline';
 import { MessageRenderer } from './renderer';
@@ -90,27 +91,10 @@ const Message = memo(
 
     const longPressHandlers = useLongPress(handleLongPress);
 
-    useEffect(() => {
-      if (!isTouchOpen) return;
+    // the bar stays up for taps inside it and goes away on the next touch anywhere else
+    const handleTouchOutside = useCallback(() => setIsTouchOpen(false), []);
 
-      // the bar stays up for taps inside it and goes away on the next touch anywhere else,
-      // menus it opened render in a portal so they count as inside
-      const onTouchStart = (event: TouchEvent) => {
-        const target = event.target as Node;
-        const isInsideMessage = messageRef.current?.contains(target);
-        const isInsidePortal = (target as Element).closest?.(
-          '[data-radix-popper-content-wrapper]'
-        );
-
-        if (isInsideMessage || isInsidePortal) return;
-
-        setIsTouchOpen(false);
-      };
-
-      document.addEventListener('touchstart', onTouchStart);
-
-      return () => document.removeEventListener('touchstart', onTouchStart);
-    }, [isTouchOpen]);
+    useTouchOutside(messageRef, isTouchOpen, handleTouchOutside);
 
     const handleEditBlur = useCallback(() => {
       setIsPencilEditing(false);

@@ -68,7 +68,7 @@ const MessagesGroup = memo(
               {authorName}
             </span>
             {isPluginMessage && (
-              <span className="inline-flex items-center rounded-sm bg-primary/10 px-1.5 py-0.5 text-[10px] max-md:text-xs font-medium text-primary/60 uppercase tracking-wide">
+              <span className="inline-flex items-center rounded-sm bg-primary/10 px-1.5 py-0.5 text-3xs font-medium text-primary/60 uppercase tracking-wide">
                 bot
               </span>
             )}
