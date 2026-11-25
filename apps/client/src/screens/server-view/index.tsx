@@ -54,8 +54,9 @@ const ServerView = memo(() => {
   const startOnChannelList = useStartOnChannelList();
   const isNothingOpen = useIsNothingOpen();
   const threadsOpen = useThreadsOpen();
-  const isHomeShown = isHomeOpen && !dmsOpen && !threadsOpen;
-  const isChannelListHome = startOnChannelList && isNothingOpen && !isHomeShown;
+  const isChannelListHome =
+    isNothingOpen &&
+    (dmsOpen || threadsOpen || (startOnChannelList && !isHomeOpen));
   const activeFullscreenPluginId = useActiveFullscreenPluginId();
   const activePluginPageId = useActivePluginPageId();
 

@@ -116,7 +116,7 @@ const Profile = memo(() => {
           crop={BANNER_CROP}
         />
 
-        <Group label={t('profileColorLabel')}>
+        <Group label={t('profileColorLabel')} className="sm:w-32">
           <ColorPicker
             value={values.profileColor}
             onChange={handleColorChange}

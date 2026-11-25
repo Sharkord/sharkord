@@ -166,7 +166,9 @@ const Header = memo(() => {
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <UserAvatar userId={user.id} className="h-12 w-12" />
-        <h2 className="text-lg font-bold text-foreground">{user.name}</h2>
+        <h2 className="min-w-0 truncate pr-6 text-lg font-bold text-foreground">
+          {user.name}
+        </h2>
       </div>
 
       <div className="flex flex-wrap gap-1.5">

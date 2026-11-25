@@ -96,7 +96,7 @@ const TopBar = memo(
           {settings?.enableSearch && <ServerSearch />}
         </div>
 
-        <div className="flex min-w-0 items-center justify-end gap-2">
+        <div className="flex min-w-0 items-center justify-end gap-0.5 md:gap-2">
           <PluginSlotRenderer slotId={PluginSlot.TOPBAR_RIGHT} />
           {isCurrentVoiceChannelSelected && currentVoiceChannelId && (
             <VoiceButtons currentVoiceChannelId={currentVoiceChannelId} />
