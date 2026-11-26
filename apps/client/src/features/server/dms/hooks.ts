@@ -1,5 +1,14 @@
+import type { IRootState } from '@/features/store';
 import { useSelector } from 'react-redux';
-import { visibleDirectMessagesSelector } from './selectors';
+import {
+  directMessageByChannelIdSelector,
+  visibleDirectMessagesSelector
+} from './selectors';
 
 export const useVisibleDirectMessages = () =>
   useSelector(visibleDirectMessagesSelector);
+
+export const useDirectMessageByChannelId = (channelId: number) =>
+  useSelector((state: IRootState) =>
+    directMessageByChannelIdSelector(state, channelId)
+  );

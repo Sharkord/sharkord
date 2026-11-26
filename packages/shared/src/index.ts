@@ -1,4 +1,5 @@
 export * from './desktop';
+export * from './desktop-shortcuts';
 export * from './events';
 export * from './extensions';
 export * from './helpers';

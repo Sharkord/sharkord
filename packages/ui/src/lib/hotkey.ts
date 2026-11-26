@@ -96,4 +96,38 @@ const formatCombo = (combo: string) => {
   return labels.join(' + ');
 };
 
-export { comboFromKeyboardEvent, formatCombo, isReservedCombo };
+const isMac = () => navigator.userAgent.includes('Macintosh');
+
+const MAC_ACCELERATOR_LABELS: Record<string, string> = {
+  CmdOrCtrl: '⌘',
+  Cmd: '⌘',
+  Command: '⌘',
+  Ctrl: '⌃',
+  Control: '⌃',
+  Alt: '⌥',
+  Option: '⌥',
+  Shift: '⇧'
+};
+
+const ACCELERATOR_LABELS: Record<string, string> = {
+  CmdOrCtrl: 'Ctrl',
+  Control: 'Ctrl',
+  Option: 'Alt'
+};
+
+const formatAccelerator = (accelerator: string) => {
+  const keys = accelerator.split('+');
+
+  if (isMac()) {
+    return keys.map((key) => MAC_ACCELERATOR_LABELS[key] ?? key).join('');
+  }
+
+  return keys.map((key) => ACCELERATOR_LABELS[key] ?? key).join('+');
+};
+
+export {
+  comboFromKeyboardEvent,
+  formatAccelerator,
+  formatCombo,
+  isReservedCombo
+};

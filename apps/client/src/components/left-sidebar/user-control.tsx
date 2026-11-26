@@ -1,17 +1,16 @@
-import { openServerScreen } from '@/features/server-screens/actions';
 import { useCurrentVoiceChannelId } from '@/features/server/channels/hooks';
 import { useChannelCan } from '@/features/server/hooks';
 import { useOwnPublicUser } from '@/features/server/users/hooks';
 import { useVoice } from '@/features/server/voice/hooks';
 import { cn } from '@/lib/utils';
-import { ChannelPermission, TestId } from '@sharkord/shared';
+import { ChannelPermission } from '@sharkord/shared';
 import { Button } from '@sharkord/ui';
-import { HeadphoneOff, Headphones, Mic, MicOff, Settings } from 'lucide-react';
-import { memo, useCallback } from 'react';
+import { HeadphoneOff, Headphones, Mic, MicOff } from 'lucide-react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ServerScreen } from '../server-screens/screens';
 import { UserAvatar } from '../user-avatar';
 import { UserPopover } from '../user-popover';
+import { SettingsButton } from './settings-button';
 
 const UserControl = memo(() => {
   const { t } = useTranslation('sidebar');
@@ -19,10 +18,6 @@ const UserControl = memo(() => {
   const currentVoiceChannelId = useCurrentVoiceChannelId();
   const { ownVoiceState, toggleMic, toggleSound } = useVoice();
   const channelCan = useChannelCan(currentVoiceChannelId);
-
-  const handleSettingsClick = useCallback(() => {
-    openServerScreen(ServerScreen.USER_SETTINGS);
-  }, []);
 
   let micTitle = ownVoiceState.micMuted ? t('unmuteMic') : t('muteMic');
 
@@ -98,16 +93,7 @@ const UserControl = memo(() => {
           )}
         </Button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 pointer-coarse:size-10"
-          data-testid={TestId.USER_SETTINGS_TRIGGER}
-          onClick={handleSettingsClick}
-          title={t('userSettings')}
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
+        <SettingsButton />
       </div>
     </div>
   );

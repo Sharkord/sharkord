@@ -1,18 +1,18 @@
-import { SettingsSection, ShortcutRow } from '@sharkord/ui';
+import {
+  DESKTOP_SHORTCUTS,
+  getDesktopServerShortcut,
+  MAX_DESKTOP_SHORTCUT_SERVERS
+} from '@sharkord/shared';
+import { formatAccelerator, SettingsSection, ShortcutRow } from '@sharkord/ui';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  getServerShortcut,
-  MAX_SHORTCUT_SERVERS,
-  SHORTCUTS
-} from '../../shared/shortcuts';
-import { canToggleMenuBar, isMac } from '../platform';
+import { canToggleMenuBar } from '../platform';
 
 const formatShortcut = (accelerator: string | undefined) =>
-  (accelerator ?? '').replace('CmdOrCtrl', isMac ? '⌘' : 'Ctrl');
+  formatAccelerator(accelerator ?? '');
 
-const SERVER_RANGE = `${formatShortcut(getServerShortcut(0))} … ${formatShortcut(
-  getServerShortcut(MAX_SHORTCUT_SERVERS - 1)
+const SERVER_RANGE = `${formatShortcut(getDesktopServerShortcut(0))} … ${formatShortcut(
+  getDesktopServerShortcut(MAX_DESKTOP_SHORTCUT_SERVERS - 1)
 )}`;
 
 const ShortcutsSettings = memo(() => {
@@ -29,21 +29,21 @@ const ShortcutsSettings = memo(() => {
       />
       <ShortcutRow
         label={t('settings.shortcut.addServer')}
-        keys={formatShortcut(SHORTCUTS.addServer)}
+        keys={formatShortcut(DESKTOP_SHORTCUTS.addServer)}
       />
       <ShortcutRow
         label={t('settings.shortcut.toggleServerList')}
-        keys={formatShortcut(SHORTCUTS.toggleServerList)}
+        keys={formatShortcut(DESKTOP_SHORTCUTS.toggleServerList)}
       />
       {canToggleMenuBar && (
         <ShortcutRow
           label={t('settings.shortcut.toggleMenuBar')}
-          keys={formatShortcut(SHORTCUTS.toggleMenuBar)}
+          keys={formatShortcut(DESKTOP_SHORTCUTS.toggleMenuBar)}
         />
       )}
       <ShortcutRow
         label={t('settings.shortcut.togglePerformanceOverlay')}
-        keys={formatShortcut(SHORTCUTS.togglePerformanceOverlay)}
+        keys={formatShortcut(DESKTOP_SHORTCUTS.togglePerformanceOverlay)}
       />
     </SettingsSection>
   );

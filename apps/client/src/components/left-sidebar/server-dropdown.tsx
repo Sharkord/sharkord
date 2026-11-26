@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { Dialog } from '../dialogs/dialogs';
 import { Protect } from '../protect';
 import { ServerScreen } from '../server-screens/screens';
+import { ServerListMenuItem } from './server-list-menu-item';
 
 const ServerDropdownMenu = memo(() => {
   const { t } = useTranslation('sidebar');
@@ -77,6 +78,7 @@ const ServerDropdownMenu = memo(() => {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
         </Protect>
+        <ServerListMenuItem />
         <DropdownMenuItem
           data-testid={TestId.SERVER_MENU_DISCONNECT}
           onClick={handleDisconnectClick}

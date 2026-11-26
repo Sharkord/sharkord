@@ -28,13 +28,11 @@ import {
   channelPermissionsSelector,
   channelReadStateByIdSelector,
   channelsByCategoryIdSelector,
-  channelsMapSelector,
   channelsReadStatesSelector,
   channelsSelector,
   currentVoiceChannelIdSelector,
   selectedChannelIdSelector
 } from './channels/selectors';
-import { directMessagesSelector } from './dms/selectors';
 import { emojisSelector } from './emojis/selectors';
 import {
   canViewChannel,
@@ -528,73 +526,17 @@ export const sidebarPluginPagesSelector = createSelector(
   }
 );
 
-export type TOpenViewTitle =
-  | { kind: 'dm'; name: string }
-  | { kind: 'channel'; name: string; type: string }
-  | { kind: 'plugin'; name: string };
-
-export const openViewTitleSelector = createSelector(
+export const activePluginPageSelector = createSelector(
   [
-    isNothingOpenSelector,
     activeFullscreenPluginIdSelector,
     activePluginPageIdSelector,
-    sidebarPluginPagesSelector,
-    threadsOpenSelector,
-    dmsOpenSelector,
-    selectedDmChannelIdSelector,
-    directMessagesSelector,
-    usersMapSelector,
-    selectedChannelIdSelector,
-    channelsMapSelector
+    sidebarPluginPagesSelector
   ],
-  (
-    isNothingOpen,
-    activeFullscreenPluginId,
-    activePluginPageId,
-    sidebarPluginPages,
-    threadsOpen,
-    dmsOpen,
-    selectedDmChannelId,
-    directMessages,
-    usersMap,
-    selectedChannelId,
-    channelsMap
-  ): TOpenViewTitle | undefined => {
-    if (activeFullscreenPluginId) {
-      const page = sidebarPluginPages.find(
-        ({ pluginId, pageId }) =>
-          pluginId === activeFullscreenPluginId && pageId === activePluginPageId
-      );
-
-      if (!page) return undefined;
-
-      return { kind: 'plugin', name: page.label };
-    }
-
-    if (isNothingOpen || threadsOpen) return undefined;
-
-    if (dmsOpen) {
-      const dm = directMessages.find(
-        ({ channelId }) => channelId === selectedDmChannelId
-      );
-
-      if (!dm) return undefined;
-
-      const user = usersMap[dm.userId];
-
-      if (!user) return undefined;
-
-      return { kind: 'dm', name: user.name };
-    }
-
-    if (!selectedChannelId) return undefined;
-
-    const channel = channelsMap[selectedChannelId];
-
-    if (!channel) return undefined;
-
-    return { kind: 'channel', name: channel.name, type: channel.type };
-  }
+  (activeFullscreenPluginId, activePluginPageId, sidebarPluginPages) =>
+    sidebarPluginPages.find(
+      ({ pluginId, pageId }) =>
+        pluginId === activeFullscreenPluginId && pageId === activePluginPageId
+    )
 );
 
 export const canReceivePluginNotificationsSelector = createCachedSelector(

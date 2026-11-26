@@ -11,7 +11,7 @@ import {
   useShowUserBannersInVoice
 } from '@/features/server/voice/hooks';
 import {
-  Button,
+  IconButton,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -50,17 +50,16 @@ const VoiceOptionsController = memo(() => {
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 transition-all duration-200 ease-in-out"
-        >
-          <Tooltip content={t('voiceOptions')} asChild={false}>
-            <Settings className="w-4 h-4" />
-          </Tooltip>
-        </Button>
-      </PopoverTrigger>
+      <Tooltip content={t('voiceOptions')}>
+        <PopoverTrigger asChild>
+          <IconButton
+            icon={Settings}
+            variant="ghost"
+            size="sm"
+            aria-label={t('voiceOptions')}
+          />
+        </PopoverTrigger>
+      </Tooltip>
       <PopoverContent align="end" className="w-80">
         <div className="space-y-3">
           <h4 className="font-medium text-sm cursor-default mb-3">

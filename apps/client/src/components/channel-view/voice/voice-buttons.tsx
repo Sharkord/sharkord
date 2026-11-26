@@ -5,7 +5,7 @@ import {
   useUnreadMessagesCount
 } from '@/features/server/hooks';
 import { cn } from '@/lib/utils';
-import { Button, Tooltip, UnreadCount } from '@sharkord/ui';
+import { IconButton, Tooltip, UnreadCount } from '@sharkord/ui';
 import { MessageSquare } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +31,10 @@ const VoiceButtons = memo(({ currentVoiceChannelId }: TVoiceButtonsProps) => {
     currentVoiceChannelId
   );
 
+  const voiceChatLabel = isVoiceChatOpen
+    ? t('closeVoiceChat')
+    : t('openVoiceChat');
+
   const handleToggleVoiceChat = useCallback(() => {
     if (currentVoiceChannelId) {
       toggleVoiceChatSidebar(currentVoiceChannelId);
@@ -41,31 +45,23 @@ const VoiceButtons = memo(({ currentVoiceChannelId }: TVoiceButtonsProps) => {
     <>
       <VoiceOptionsController />
       <VolumeController channelId={currentVoiceChannelId} />
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleToggleVoiceChat}
-        className="h-7 px-2 transition-all duration-200 ease-in-out"
-      >
-        <Tooltip
-          content={isVoiceChatOpen ? t('closeVoiceChat') : t('openVoiceChat')}
-          asChild={false}
-        >
-          <div className="relative flex items-center justify-center">
-            <MessageSquare
-              className={cn(
-                'w-4 h-4 transition-all duration-200 ease-in-out',
-                isVoiceChatOpen && 'fill-current'
-              )}
-            />
-            <UnreadCount
-              count={currentVoiceChannelUnreadCount}
-              hasMention={currentVoiceChannelHasUnreadMentions}
-              className="absolute -top-2 -right-3 ml-0 min-w-4 h-4 px-1 text-[10px] leading-none"
-            />
-          </div>
-        </Tooltip>
-      </Button>
+      <Tooltip content={voiceChatLabel}>
+        <div className="relative flex">
+          <IconButton
+            icon={MessageSquare}
+            variant="ghost"
+            size="sm"
+            onClick={handleToggleVoiceChat}
+            aria-label={voiceChatLabel}
+            className={cn(isVoiceChatOpen && '[&_svg]:fill-current')}
+          />
+          <UnreadCount
+            count={currentVoiceChannelUnreadCount}
+            hasMention={currentVoiceChannelHasUnreadMentions}
+            className="pointer-events-none absolute -top-2 -right-3 ml-0 min-w-4 h-4 px-1 text-[10px] leading-none"
+          />
+        </div>
+      </Tooltip>
     </>
   );
 });

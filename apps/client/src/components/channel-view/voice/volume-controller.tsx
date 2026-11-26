@@ -8,6 +8,7 @@ import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { useVoiceChannelAudioExternalStreams } from '@/features/server/voice/hooks';
 import {
   Button,
+  IconButton,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -150,17 +151,16 @@ const VolumeController = memo(({ channelId }: VolumeControllerProps) => {
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 transition-all duration-200 ease-in-out"
-        >
-          <Tooltip content={t('volumeControls')} asChild={false}>
-            <Volume2 className="w-4 h-4" />
-          </Tooltip>
-        </Button>
-      </PopoverTrigger>
+      <Tooltip content={t('volumeControls')}>
+        <PopoverTrigger asChild>
+          <IconButton
+            icon={Volume2}
+            variant="ghost"
+            size="sm"
+            aria-label={t('volumeControls')}
+          />
+        </PopoverTrigger>
+      </Tooltip>
       <PopoverContent align="end" className="w-80">
         <div className="space-y-2">
           <div className="flex items-center justify-between mb-3">

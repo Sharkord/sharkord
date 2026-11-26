@@ -1,9 +1,9 @@
+import { MainContentContext } from '@/components/content-header/context';
 import { LeftSidebar } from '@/components/left-sidebar';
 import { ModViewSheet } from '@/components/mod-view-sheet';
 import { Protect } from '@/components/protect';
 import { RightSidebar } from '@/components/right-sidebar';
 import { ThreadSidebar } from '@/components/thread-sidebar';
-import { TopBar } from '@/components/top-bar';
 import { VoiceChatSidebar } from '@/components/voice-chat-sidebar';
 import { VoiceProvider } from '@/components/voice-provider';
 import {
@@ -32,7 +32,7 @@ import { useSwipeGestures } from '@/hooks/use-swipe-gestures';
 import { cn } from '@/lib/utils';
 import { Permission, TestId } from '@sharkord/shared';
 import { MEDIA_QUERY, useMediaQuery } from '@sharkord/ui';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ContentWrapper } from './content-wrapper';
 import { PreventBrowser } from './prevent-browser';
 
@@ -128,6 +128,23 @@ const ServerView = memo(() => {
     setIsMobileUsersOpen(true);
   }, [isMobileMenuOpen, isMobileUsersOpen]);
 
+  const mainContent = useMemo(
+    () => ({
+      onOpenChannelList: handleOpenChannelList,
+      onToggleMembers: handleRightSidebarToggle,
+      isMembersOpen: isLargeScreen
+        ? isDesktopRightSidebarOpen
+        : isMobileUsersOpen
+    }),
+    [
+      handleOpenChannelList,
+      handleRightSidebarToggle,
+      isLargeScreen,
+      isDesktopRightSidebarOpen,
+      isMobileUsersOpen
+    ]
+  );
+
   const swipeHandlers = useSwipeGestures({
     onSwipeRight: handleSwipeRight,
     onSwipeLeft: handleSwipeLeft
@@ -150,11 +167,6 @@ const ServerView = memo(() => {
         className="flex h-dvh flex-col bg-background text-foreground dark"
         {...swipeHandlers}
       >
-        <TopBar
-          onToggleRightSidebar={handleRightSidebarToggle}
-          onOpenChannelList={handleOpenChannelList}
-          isOpen={isLargeScreen ? isDesktopRightSidebarOpen : isMobileUsersOpen}
-        />
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
           <PreventBrowser />
 
@@ -183,10 +195,12 @@ const ServerView = memo(() => {
             )}
           />
 
-          <ContentWrapper
-            isDmMode={dmsOpen}
-            selectedDmChannelId={selectedDmChannelId}
-          />
+          <MainContentContext.Provider value={mainContent}>
+            <ContentWrapper
+              isDmMode={dmsOpen}
+              selectedDmChannelId={selectedDmChannelId}
+            />
+          </MainContentContext.Provider>
 
           <VoiceChatSidebar />
 
