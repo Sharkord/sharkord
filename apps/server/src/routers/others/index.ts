@@ -1,6 +1,7 @@
 import { t } from '../../utils/trpc';
 import { changeLogoRoute } from './change-logo';
 import { onServerSettingsUpdateRoute } from './events';
+import { getMetricsRoute } from './get-metrics';
 import { getRateLimitsRoute } from './get-rate-limits';
 import { getSettingsRoute } from './get-settings';
 import { getStorageSettingsRoute } from './get-storage-settings';
@@ -24,5 +25,6 @@ export const othersRouter = t.router({
   getUpdate: getUpdateRoute,
   updateServer: updateServerRoute,
   getRateLimits: getRateLimitsRoute,
-  updateRateLimits: updateRateLimitsRoute
+  updateRateLimits: updateRateLimitsRoute,
+  getMetrics: getMetricsRoute
 });

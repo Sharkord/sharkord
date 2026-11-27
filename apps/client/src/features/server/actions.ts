@@ -61,8 +61,15 @@ export const setInfo = (info: TServerInfo | undefined) => {
   store.dispatch(serverSliceActions.setInfo(info));
 };
 
-export const setActiveFullscreenPluginId = (pluginId: string | undefined) => {
-  store.dispatch(serverSliceActions.setActiveFullscreenPluginId(pluginId));
+export const setActiveFullscreenPluginId = (
+  pluginId: string | undefined,
+  pageId?: string
+) => {
+  store.dispatch(
+    serverSliceActions.setActiveFullscreenPluginId(
+      pluginId ? { pluginId, pageId } : undefined
+    )
+  );
 };
 
 export const connect = async () => {

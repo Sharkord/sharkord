@@ -1,7 +1,6 @@
 import { setDmsOpen } from '@/features/server/actions';
 import { useDirectMessagesUnreadCount } from '@/features/server/channels/hooks';
 import { useDmsOpen } from '@/features/server/hooks';
-import { useThreadsOpen } from '@/features/server/threads/hooks';
 import { TestId } from '@sharkord/shared';
 import { cn, Tooltip, UnreadCount } from '@sharkord/ui';
 import { MessageCircleMore, X } from 'lucide-react';
@@ -12,8 +11,7 @@ const DmButton = memo(() => {
   const { t } = useTranslation('sidebar');
   const directMessagesUnreadCount = useDirectMessagesUnreadCount();
   const dmsOpen = useDmsOpen();
-  const threadsOpen = useThreadsOpen();
-  const isActive = dmsOpen && !threadsOpen;
+  const isActive = dmsOpen;
 
   const onToggleDmMode = useCallback(() => {
     setDmsOpen(!isActive);

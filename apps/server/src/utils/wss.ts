@@ -296,7 +296,7 @@ const createWsServer = async (server: http.Server) => {
             code === 1006 &&
             silentMs >= KEEP_ALIVE_PING_MS + KEEP_ALIVE_PONG_WAIT_MS;
 
-          logger.info(
+          logger.debug(
             'WebSocket closed: user=%s code=%d reason=%s keepAliveTimeout=%s silentMs=%d ageMs=%d ip=%s',
             ws.userId ?? 'unauthenticated',
             code,

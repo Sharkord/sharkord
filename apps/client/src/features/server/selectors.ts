@@ -8,6 +8,7 @@ import {
   PluginSlot,
   type TDesktopConnectionState,
   type TJoinedRole,
+  type TPluginPage,
   type TPluginStoreState
 } from '@sharkord/shared';
 import { createCachedSelector } from 're-reselect';
@@ -45,7 +46,9 @@ import {
   typingMapSelector
 } from './messages/selectors';
 import {
+  fullscreenPluginIdsSelector,
   pluginComponentsSelector,
+  pluginPagesSelector,
   pluginsMetadataSelector
 } from './plugins/selectors';
 import { rolesSelector } from './roles/selectors';
@@ -93,6 +96,9 @@ export const infoSelector = (state: IRootState) => state.server.info;
 
 export const activeFullscreenPluginIdSelector = (state: IRootState) =>
   state.server.activeFullscreenPluginId;
+
+export const activePluginPageIdSelector = (state: IRootState) =>
+  state.server.activePluginPageId;
 
 export const dmsOpenSelector = (state: IRootState) => state.server.dmsOpen;
 
@@ -440,6 +446,56 @@ export const hiddenPluginComponentsSelector = createSelector(
       .map((rule) => `${rule.pluginId}:${rule.name}`);
 
     return hidden.length > 0 ? hidden : DEFAULT_HIDDEN_COMPONENTS;
+  }
+);
+
+export type TSidebarPluginPage = {
+  pluginId: string;
+  pageId?: string;
+  label: string;
+  icon?: TPluginPage['icon'];
+};
+
+const DEFAULT_SIDEBAR_PAGES: TSidebarPluginPage[] = [];
+
+export const sidebarPluginPagesSelector = createSelector(
+  [
+    fullscreenPluginIdsSelector,
+    pluginPagesSelector,
+    hiddenPluginComponentsSelector,
+    ownUserRolesSelector,
+    isOwnUserOwnerSelector
+  ],
+  (
+    legacyPluginIds,
+    pluginPages,
+    hidden,
+    ownUserRoles,
+    isOwner
+  ): TSidebarPluginPage[] => {
+    if (!rolesCan(ownUserRoles, isOwner, Permission.USE_PLUGINS)) {
+      return DEFAULT_SIDEBAR_PAGES;
+    }
+
+    const isVisible = (pluginId: string) =>
+      !hidden.includes(`${pluginId}:${PluginSlot.FULL_SCREEN}`);
+
+    const legacy = legacyPluginIds
+      .filter(isVisible)
+      .map((pluginId) => ({ pluginId, label: pluginId }));
+
+    const pages = Object.entries(pluginPages)
+      .filter(([pluginId]) => isVisible(pluginId))
+      .flatMap(([pluginId, entries]) =>
+        entries.map(({ id, label, icon }) => ({
+          pluginId,
+          pageId: id,
+          label,
+          icon
+        }))
+      );
+
+    return [...legacy, ...pages];
   }
 );
 

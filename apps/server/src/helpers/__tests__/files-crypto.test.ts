@@ -1,6 +1,7 @@
+import type { TFile } from '@sharkord/shared';
 import { beforeEach, describe, expect, spyOn, test, type Mock } from 'bun:test';
 import * as serverQueries from '../../db/queries/server';
-import { generateFileToken, verifyFileToken } from '../files-crypto';
+import { generateFileToken, signAsset, verifyFileToken } from '../files-crypto';
 
 describe('files-crypto', () => {
   const fileId = 123;
@@ -159,6 +160,53 @@ describe('files-crypto', () => {
       expect(verifyFileToken(fileIds[0]!, tokens[1]!, futureExpiresAt)).toBe(
         false
       );
+    });
+  });
+
+  describe('signAsset', () => {
+    const file = { id: fileId, name: 'avatar.png' } as TFile;
+
+    const signing = {
+      storageSignedUrlsEnabled: true,
+      storageSignedUrlsIncludeAssets: true,
+      storageSignedUrlsTtlSeconds: 3600
+    };
+
+    test('should sign an asset when signed urls include assets', () => {
+      const signed = signAsset(file, signing);
+
+      expect(signed._accessToken).toBeDefined();
+      expect(signed._accessTokenExpiresAt).toBeGreaterThan(Date.now());
+      expect(
+        verifyFileToken(
+          fileId,
+          signed._accessToken!,
+          signed._accessTokenExpiresAt!
+        )
+      ).toBe(true);
+    });
+
+    test('should not sign an asset when signed urls exclude assets', () => {
+      const signed = signAsset(file, {
+        ...signing,
+        storageSignedUrlsIncludeAssets: false
+      });
+
+      expect(signed._accessToken).toBeUndefined();
+      expect(signed._accessTokenExpiresAt).toBeUndefined();
+    });
+
+    test('should not sign an asset when signed urls are disabled', () => {
+      const signed = signAsset(file, {
+        ...signing,
+        storageSignedUrlsEnabled: false
+      });
+
+      expect(signed._accessToken).toBeUndefined();
+    });
+
+    test('should pass a missing asset through', () => {
+      expect(signAsset(null, signing)).toBeNull();
     });
   });
 });

@@ -1485,7 +1485,7 @@ const VoiceProvider = memo(({ children }: TVoiceProviderProps) => {
     });
 
   useVoiceHotkeys({ toggleMic, toggleSound });
-  useVoiceSessionRecovery({ init });
+  useVoiceSessionRecovery({ init, cleanup });
 
   const setMicMutedForBridge = useCallback(
     async (muted: boolean) => {

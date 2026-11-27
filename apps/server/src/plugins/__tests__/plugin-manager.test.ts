@@ -882,7 +882,10 @@ export { onLoad, onUnload };
         'apiKey',
         'mode',
         'logChannel',
-        'modRole'
+        'modRole',
+        'tags',
+        'watchedChannels',
+        'pingRoles'
       ]);
       expect(settings.values.greeting).toBe('Hello!');
       expect(settings.values.maxRetries).toBe(3);

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { parsePluginTabs } from '../components';
+import { parsePluginPages, parsePluginTabs } from '../components';
 
 const Component = () => null;
 
@@ -73,5 +73,66 @@ describe('parsePluginTabs', () => {
   test('should return nothing when the export is missing or wrong', () => {
     expect(parsePluginTabs(undefined)).toEqual([]);
     expect(parsePluginTabs({ id: 'not-an-array' })).toEqual([]);
+  });
+});
+
+describe('parsePluginPages', () => {
+  test('should keep well formed pages in the order given', () => {
+    const pages = parsePluginPages([
+      { id: 'supporters', label: 'Supporters <3', component: Component },
+      { id: 'stats', label: 'Stats', component: MEMO_LIKE }
+    ]);
+
+    expect(pages.map((page) => page.id)).toEqual(['supporters', 'stats']);
+  });
+
+  // tab ids are reserved because of the built-in tabs, pages have none
+  test('should accept ids that are reserved for tabs', () => {
+    const pages = parsePluginPages([
+      { id: 'settings', label: 'Settings', component: Component }
+    ]);
+
+    expect(pages).toHaveLength(1);
+  });
+
+  test('should drop malformed pages and repeated ids', () => {
+    const pages = parsePluginPages([
+      { id: 'a', label: 'A', component: Component },
+      { id: 'a', label: 'Again', component: Component },
+      { id: 'b', label: '', component: Component },
+      { id: 'c', label: 'C' },
+      null
+    ]);
+
+    expect(pages.map((page) => page.label)).toEqual(['A']);
+  });
+
+  test('should keep a url or a component as the icon', () => {
+    const [url, component] = parsePluginPages([
+      {
+        id: 'a',
+        label: 'A',
+        component: Component,
+        icon: 'data:image/png;base64,x'
+      },
+      { id: 'b', label: 'B', component: Component, icon: MEMO_LIKE }
+    ]);
+
+    expect(url?.icon).toBe('data:image/png;base64,x');
+    expect(component?.icon as unknown).toBe(MEMO_LIKE);
+  });
+
+  test('should keep a page with a bad icon, without the icon', () => {
+    const pages = parsePluginPages([
+      { id: 'a', label: 'A', component: Component, icon: 42 },
+      { id: 'b', label: 'B', component: Component, icon: '' }
+    ]);
+
+    expect(pages.map((page) => page.icon)).toEqual([undefined, undefined]);
+  });
+
+  test('should return nothing for an export that is not an array', () => {
+    expect(parsePluginPages(undefined)).toEqual([]);
+    expect(parsePluginPages({ id: 'nope' })).toEqual([]);
   });
 });

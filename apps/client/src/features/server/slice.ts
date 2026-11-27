@@ -22,6 +22,7 @@ import type {
   TPluginComponentsMap,
   TPluginMessageComponentsByPlugin,
   TPluginMetadata,
+  TPluginPagesMap,
   TPluginTab,
   TPluginTabsMap,
   TPublicServerSettings,
@@ -99,8 +100,10 @@ export interface IServerState {
   pluginComponents: TPluginComponentsMap;
   pluginMessageComponents: TPluginMessageComponentsByPlugin;
   pluginTabs: TPluginTabsMap;
+  pluginPages: TPluginPagesMap;
   pluginCapabilityAccess: TPluginCapabilityAccessRule[];
   activeFullscreenPluginId: string | undefined;
+  activePluginPageId: string | undefined;
   dmsOpen: boolean;
   threadsOpen: boolean;
 }
@@ -161,14 +164,24 @@ const initialState: IServerState = {
   pluginComponents: {},
   pluginMessageComponents: {},
   pluginTabs: {},
+  pluginPages: {},
   pluginCapabilityAccess: [],
   activeFullscreenPluginId: undefined,
+  activePluginPageId: undefined,
   dmsOpen: false,
   threadsOpen: false,
   hideOwnScreenShare: getLocalStorageItemBool(
     LocalStorageKey.HIDE_OWN_SCREEN_SHARE,
     false
   )
+};
+
+const closeMainViews = (state: IServerState) => {
+  state.selectedChannelId = undefined;
+  state.dmsOpen = false;
+  state.threadsOpen = false;
+  state.activeFullscreenPluginId = undefined;
+  state.activePluginPageId = undefined;
 };
 
 export const serverSlice = createSlice({
@@ -631,12 +644,9 @@ export const serverSlice = createSlice({
       state,
       action: PayloadAction<number | undefined>
     ) => {
-      state.selectedChannelId = action.payload;
+      if (action.payload) closeMainViews(state);
 
-      if (action.payload) {
-        state.activeFullscreenPluginId = undefined;
-        state.threadsOpen = false;
-      }
+      state.selectedChannelId = action.payload;
     },
     setCurrentVoiceChannelId: (
       state,
@@ -971,6 +981,9 @@ export const serverSlice = createSlice({
     ) => {
       state.pluginTabs[action.payload.pluginId] = action.payload.tabs;
     },
+    setPluginPages: (state, action: PayloadAction<TPluginPagesMap>) => {
+      state.pluginPages = action.payload;
+    },
     setPluginComponents: (
       state,
       action: PayloadAction<TPluginComponentsMap>
@@ -985,14 +998,12 @@ export const serverSlice = createSlice({
     },
     setActiveFullscreenPluginId: (
       state,
-      action: PayloadAction<string | undefined>
+      action: PayloadAction<{ pluginId: string; pageId?: string } | undefined>
     ) => {
-      state.activeFullscreenPluginId = action.payload;
+      if (action.payload) closeMainViews(state);
 
-      if (action.payload) {
-        state.selectedChannelId = undefined;
-        state.dmsOpen = false;
-      }
+      state.activeFullscreenPluginId = action.payload?.pluginId;
+      state.activePluginPageId = action.payload?.pageId;
     },
 
     // OTHERS ------------------------------------------------------------
@@ -1025,16 +1036,14 @@ export const serverSlice = createSlice({
       });
     },
     setThreadsOpen: (state, action: PayloadAction<boolean>) => {
+      if (action.payload) closeMainViews(state);
+
       state.threadsOpen = action.payload;
     },
     setDmsOpen: (state, action: PayloadAction<boolean>) => {
-      state.dmsOpen = action.payload;
+      if (action.payload) closeMainViews(state);
 
-      if (action.payload) {
-        state.selectedChannelId = undefined;
-        state.activeFullscreenPluginId = undefined;
-        state.threadsOpen = false;
-      }
+      state.dmsOpen = action.payload;
     }
   }
 });

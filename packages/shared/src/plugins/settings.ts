@@ -5,7 +5,10 @@
  * sent back to the client, so an admin can replace it but not read it. `enum`
  * renders a select and requires `options`. `channel` and `role` render a picker
  * of the server's channels or roles and store the picked id, with `0` meaning
- * none picked yet.
+ * none picked.
+ *
+ * `enum`, `channel` and `role` accept `multiple: true`, which stores a list of
+ * values instead of one, with `[]` meaning none picked.
  */
 export type TPluginSettingType =
   'string' | 'number' | 'boolean' | 'secret' | 'enum' | 'channel' | 'role';
@@ -45,10 +48,17 @@ export type TPluginSettingDefinition = {
   description?: string;
   type: TPluginSettingType;
   /** used until an admin saves something, so a plugin always reads a value */
-  defaultValue: string | number | boolean;
+  defaultValue: TPluginSettingValue;
   /** required for `enum`, ignored otherwise */
   options?: readonly TPluginSettingOption[];
+  /** for `enum`, `channel` and `role`: store a list, ignored otherwise */
+  multiple?: boolean;
+  /** what an empty `channel`, `role` or `multiple` picker shows, defaults to "None" */
+  noneLabel?: string;
 };
+
+export type TPluginSettingValue =
+  string | number | boolean | readonly string[] | readonly number[];
 
 export type TPluginSettingsResponse = {
   definitions: TPluginSettingDefinition[];
@@ -62,7 +72,32 @@ const isSecretSetting = (definition: TPluginSettingDefinition) =>
 const isReferenceSetting = (definition: TPluginSettingDefinition) =>
   definition.type === 'channel' || definition.type === 'role';
 
+const isMultipleSetting = (definition: TPluginSettingDefinition) =>
+  Boolean(definition.multiple) &&
+  (definition.type === 'enum' || isReferenceSetting(definition));
+
 const getSettingValueError = (
+  definition: TPluginSettingDefinition,
+  value: unknown
+): string | undefined => {
+  if (!isMultipleSetting(definition)) {
+    return getSingleValueError(definition, value);
+  }
+
+  if (!Array.isArray(value)) {
+    return `Setting '${definition.key}' expects a list, received ${typeof value}.`;
+  }
+
+  for (const item of value) {
+    const error = getSingleValueError(definition, item);
+
+    if (error) return error;
+  }
+
+  return undefined;
+};
+
+const getSingleValueError = (
   definition: TPluginSettingDefinition,
   value: unknown
 ): string | undefined => {
@@ -91,4 +126,9 @@ const getSettingValueError = (
   return undefined;
 };
 
-export { getSettingValueError, isReferenceSetting, isSecretSetting };
+export {
+  getSettingValueError,
+  isMultipleSetting,
+  isReferenceSetting,
+  isSecretSetting
+};

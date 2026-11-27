@@ -2,10 +2,15 @@ import { useSettingsForm } from '@/components/server-screens/settings-shell/use-
 import { useReferenceableChannels } from '@/features/server/hooks';
 import { useRoles } from '@/features/server/roles/hooks';
 import { getTRPCClient } from '@/lib/trpc';
-import type { TPluginSettingDefinition } from '@sharkord/shared';
+import {
+  isMultipleSetting,
+  isReferenceSetting,
+  type TPluginSettingDefinition
+} from '@sharkord/shared';
 import {
   Group,
   Input,
+  MultiSelect,
   Select,
   SelectContent,
   SelectItem,
@@ -13,35 +18,87 @@ import {
   SelectValue,
   SettingsSection,
   Switch,
-  Textarea
+  Textarea,
+  type TMultiSelectOption
 } from '@sharkord/ui';
-import { memo, useCallback, useRef } from 'react';
+import { memo, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 type TPluginSettingValues = Record<string, unknown>;
 
-type TReferenceSelectProps = {
+type TOptionsFieldProps = {
+  definition: TPluginSettingDefinition;
   value: unknown;
-  onSelect: (selected: string) => void;
+  options: readonly TMultiSelectOption[];
+  onChange: (key: string, value: unknown) => void;
 };
 
-type TReferenceOptionsSelectProps = TReferenceSelectProps & {
-  options: { id: number; name: string }[];
-};
+type TFieldProps = Omit<TOptionsFieldProps, 'options'>;
 
-const ReferenceSelect = memo(
-  ({ value, onSelect, options }: TReferenceOptionsSelectProps) => {
+const EMPTY_OPTIONS: TMultiSelectOption[] = [];
+const NONE_VALUE = '0';
+
+const OptionsField = memo(
+  ({ definition, value, options, onChange }: TOptionsFieldProps) => {
     const { t } = useTranslation('settings');
+    const isReference = isReferenceSetting(definition);
+    const noneLabel = definition.noneLabel || t('settingNoneOption');
+
+    const parse = useCallback(
+      (raw: string) => (isReference ? Number(raw) : raw),
+      [isReference]
+    );
+
+    const handleSelect = useCallback(
+      (selected: string) => onChange(definition.key, parse(selected)),
+      [onChange, definition.key, parse]
+    );
+
+    const handleMultiChange = useCallback(
+      (selected: string[]) => onChange(definition.key, selected.map(parse)),
+      [onChange, definition.key, parse]
+    );
+
+    const selected = useMemo(
+      () => (Array.isArray(value) ? value.map(String) : []),
+      [value]
+    );
+
+    const singleOptions = useMemo(
+      () =>
+        isReference
+          ? [{ value: NONE_VALUE, label: noneLabel }, ...options]
+          : options,
+      [isReference, options, noneLabel]
+    );
+
+    if (isMultipleSetting(definition)) {
+      return (
+        <MultiSelect
+          className="max-w-xs"
+          options={options}
+          value={selected}
+          onChange={handleMultiChange}
+          placeholder={noneLabel}
+        />
+      );
+    }
+
+    let singleValue = String(value ?? '');
+
+    if (isReference && !value) {
+      singleValue = NONE_VALUE;
+    }
 
     return (
-      <Select value={value ? String(value) : ''} onValueChange={onSelect}>
+      <Select value={singleValue} onValueChange={handleSelect}>
         <SelectTrigger className="max-w-xs">
-          <SelectValue placeholder={t('secretUnsetPlaceholder')} />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.id} value={String(option.id)}>
-              {option.name}
+          {singleOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
             </SelectItem>
           ))}
         </SelectContent>
@@ -50,18 +107,30 @@ const ReferenceSelect = memo(
   }
 );
 
-const ChannelSelect = memo(({ value, onSelect }: TReferenceSelectProps) => {
+const ChannelField = memo((props: TFieldProps) => {
   const channels = useReferenceableChannels();
 
-  return (
-    <ReferenceSelect value={value} onSelect={onSelect} options={channels} />
+  const options = useMemo(
+    () =>
+      channels.map((channel) => ({
+        value: String(channel.id),
+        label: channel.name
+      })),
+    [channels]
   );
+
+  return <OptionsField {...props} options={options} />;
 });
 
-const RoleSelect = memo(({ value, onSelect }: TReferenceSelectProps) => {
+const RoleField = memo((props: TFieldProps) => {
   const roles = useRoles();
 
-  return <ReferenceSelect value={value} onSelect={onSelect} options={roles} />;
+  const options = useMemo(
+    () => roles.map((role) => ({ value: String(role.id), label: role.name })),
+    [roles]
+  );
+
+  return <OptionsField {...props} options={options} />;
 });
 
 type TSettingFieldProps = {
@@ -86,16 +155,6 @@ const SettingField = memo(
         onChange(definition.key, definition.type === 'number' ? +raw : raw);
       },
       [onChange, definition.key, definition.type]
-    );
-
-    const handleSelect = useCallback(
-      (selected: string) => onChange(definition.key, selected),
-      [onChange, definition.key]
-    );
-
-    const handleReferenceSelect = useCallback(
-      (selected: string) => onChange(definition.key, Number(selected)),
-      [onChange, definition.key]
     );
 
     let field = (
@@ -137,23 +196,25 @@ const SettingField = memo(
       );
     } else if (definition.type === 'enum') {
       field = (
-        <Select value={String(value ?? '')} onValueChange={handleSelect}>
-          <SelectTrigger className="max-w-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(definition.options ?? []).map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <OptionsField
+          definition={definition}
+          value={value}
+          options={definition.options ?? EMPTY_OPTIONS}
+          onChange={onChange}
+        />
       );
     } else if (definition.type === 'channel') {
-      field = <ChannelSelect value={value} onSelect={handleReferenceSelect} />;
+      field = (
+        <ChannelField
+          definition={definition}
+          value={value}
+          onChange={onChange}
+        />
+      );
     } else if (definition.type === 'role') {
-      field = <RoleSelect value={value} onSelect={handleReferenceSelect} />;
+      field = (
+        <RoleField definition={definition} value={value} onChange={onChange} />
+      );
     }
 
     return (
@@ -195,7 +256,7 @@ const PluginSettings = memo(
           await trpc.plugins.updateSetting.mutate({
             pluginId,
             key: definition.key,
-            value: value as string | number | boolean
+            value: value as string | number | boolean | string[] | number[]
           });
         }
 

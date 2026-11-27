@@ -6,6 +6,7 @@ import {
 } from '@sharkord/shared';
 import {
   and,
+  count,
   eq,
   getTableColumns,
   inArray,
@@ -185,7 +186,18 @@ const getEffectiveStorageSpaceQuotaByUserId = async (
   return Math.max(...overrideRoles.map((role) => role.storageSpaceQuota));
 };
 
+const countRoles = async (roleIds: number[]) => {
+  const row = await db
+    .select({ total: count() })
+    .from(roles)
+    .where(inArray(roles.id, roleIds))
+    .get();
+
+  return row?.total ?? 0;
+};
+
 export {
+  countRoles,
   getDefaultRole,
   getEffectiveStorageSpaceQuotaByUserId,
   getRole,

@@ -29,7 +29,8 @@
     "MANAGE_PLUGINS": "Spravovat rozšíření",
     "MANAGE_PLUGIN_PERMISSIONS": "Spravovat oprávnění pluginů",
     "USE_PLUGINS": "Používat rozšíření",
-    "VIEW_USER_SENSITIVE_DATA": "Zobrazit senzitivní data uživatelů"
+    "VIEW_USER_SENSITIVE_DATA": "Zobrazit senzitivní data uživatelů",
+    "VIEW_METRICS": "Zobrazit metriky"
   },
   "serverDescriptions": {
     "SEND_MESSAGES": "Umožňuje posílat zprávy do kanálů.",
@@ -56,7 +57,8 @@
     "MANAGE_PLUGINS": "Umožňuje spravovat rozšíření.",
     "MANAGE_PLUGIN_PERMISSIONS": "Umožňuje určit, které role mohou používat jednotlivé příkazy a akce pluginu. Kdo jej má, může tato oprávnění udělit sám sobě.",
     "USE_PLUGINS": "Umožňuje používat rozšíření, jako například spouštění příkazů a zobrazení grafických elementů přidaných rozšířeními.",
-    "VIEW_USER_SENSITIVE_DATA": "Umožňuje zobrazení senzitivních dat uživatelů, jako je identita, IP adresa a geografická lokace."
+    "VIEW_USER_SENSITIVE_DATA": "Umožňuje zobrazení senzitivních dat uživatelů, jako je identita, IP adresa a geografická lokace.",
+    "VIEW_METRICS": "Umožňuje zobrazit metriky serveru, jako je využití procesoru, paměti a hlasu."
   },
   "channel": {
     "VIEW_CHANNEL": "Zobrazit kanály",
