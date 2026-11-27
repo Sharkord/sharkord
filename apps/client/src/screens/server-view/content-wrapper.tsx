@@ -1,5 +1,9 @@
 import { TextChannel } from '@/components/channel-view/text';
 import { VoiceChannel } from '@/components/channel-view/voice';
+import { VoiceHeader } from '@/components/channel-view/voice/voice-header';
+import { ContentHeader } from '@/components/content-header';
+import { ContentHeaderTitle } from '@/components/content-header/content-header-title';
+import { PluginPageIcon } from '@/components/plugin-page-icon';
 import { PluginPageRenderer } from '@/components/plugin-page-renderer';
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { ThreadContent } from '@/components/thread-sidebar/thread-content';
@@ -12,15 +16,15 @@ import {
 } from '@/features/server/channels/hooks';
 import {
   useActiveFullscreenPluginId,
-  useActivePluginPageId,
-  useServerName
+  useActivePluginPage,
+  useActivePluginPageId
 } from '@/features/server/hooks';
 import { useThreadsOpen } from '@/features/server/threads/hooks';
 import { ChannelType, PluginSlot } from '@sharkord/shared';
-import { Alert, AlertDescription } from '@sharkord/ui';
-import { AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { MessageCircleMore, MessageSquareText } from 'lucide-react';
 import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SwipeHint } from './swipe-hint';
 
 type TContentWrapperProps = {
   isDmMode: boolean;
@@ -30,9 +34,10 @@ type TContentWrapperProps = {
 const ContentWrapper = memo(
   ({ isDmMode, selectedDmChannelId }: TContentWrapperProps) => {
     const { t } = useTranslation();
+    const { t: tSidebar } = useTranslation('sidebar');
+    const activePluginPage = useActivePluginPage();
     const selectedChannelId = useSelectedChannelId();
     const selectedChannelType = useSelectedChannelType();
-    const serverName = useServerName();
     const activeFullscreenPluginId = useActiveFullscreenPluginId();
     const activePluginPageId = useActivePluginPageId();
     const threadsOpen = useThreadsOpen();
@@ -63,7 +68,21 @@ const ContentWrapper = memo(
     if (activeFullscreenPluginId) {
       return (
         <main className="flex flex-1 flex-col bg-background relative min-w-0 min-h-0">
-          <div className="flex-col gap-2 h-full w-full flex overflow-auto relative bg-background">
+          <ContentHeader>
+            {activePluginPage && (
+              <ContentHeaderTitle
+                icon={
+                  <PluginPageIcon
+                    pluginId={activePluginPage.pluginId}
+                    icon={activePluginPage.icon}
+                  />
+                }
+              >
+                {activePluginPage.label}
+              </ContentHeaderTitle>
+            )}
+          </ContentHeader>
+          <div className="flex-col gap-2 min-h-0 flex-1 w-full flex overflow-auto relative bg-background">
             {activePluginPageId ? (
               <PluginPageRenderer
                 pluginId={activeFullscreenPluginId}
@@ -94,9 +113,16 @@ const ContentWrapper = memo(
         );
       } else {
         content = (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            {t('selectThreadPrompt')}
-          </div>
+          <>
+            <ContentHeader>
+              <ContentHeaderTitle icon={<MessageSquareText />}>
+                {tSidebar('threads')}
+              </ContentHeaderTitle>
+            </ContentHeader>
+            <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+              {t('selectThreadPrompt')}
+            </div>
+          </>
         );
       }
 
@@ -117,9 +143,16 @@ const ContentWrapper = memo(
         );
       } else {
         content = (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            {t('selectDmPrompt')}
-          </div>
+          <>
+            <ContentHeader>
+              <ContentHeaderTitle icon={<MessageCircleMore />}>
+                {tSidebar('directMessages')}
+              </ContentHeaderTitle>
+            </ContentHeader>
+            <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+              {t('selectDmPrompt')}
+            </div>
+          </>
         );
       }
 
@@ -137,39 +170,24 @@ const ContentWrapper = memo(
         );
       } else if (selectedChannelType === ChannelType.VOICE) {
         content = (
-          <VoiceChannel key={selectedChannelId} channelId={selectedChannelId} />
+          <>
+            <VoiceHeader channelId={selectedChannelId} />
+            <VoiceChannel
+              key={selectedChannelId}
+              channelId={selectedChannelId}
+            />
+          </>
         );
       }
     } else {
       content = (
         <>
-          <div className="flex-col gap-2 h-full w-full hidden lg:flex overflow-auto">
-            <PluginSlotRenderer slotId={PluginSlot.HOME_SCREEN} />
-          </div>
-          <div className="flex flex-col items-center justify-center h-full gap-6 p-8 text-center md:hidden">
-            <div className="flex flex-col gap-2">
-              <h2 className="text-2xl font-semibold text-foreground">
-                {t('welcomeToServer', { name: serverName })}
-              </h2>
-            </div>
-            <Alert variant="destructive" className="max-w-md">
-              <AlertTriangle />
-              <AlertDescription>{t('mobileNotOptimized')}</AlertDescription>
-            </Alert>
-            <div className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">
-                  <ArrowRight />
-                </span>
-                <span>{t('swipeRightForChannels')}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg">
-                  <ArrowLeft />
-                </span>
-                <span>{t('swipeLeftForUsers')}</span>
-              </div>
-            </div>
+          <ContentHeader />
+          <div className="flex min-h-0 w-full flex-1 flex-col gap-2 overflow-auto">
+            <PluginSlotRenderer
+              slotId={PluginSlot.HOME_SCREEN}
+              fallback={<SwipeHint />}
+            />
           </div>
         </>
       );

@@ -193,7 +193,7 @@ const ScreenShareCard = memo(
           className={cn(
             'absolute top-0 right-0 z-10 justify-end',
             density.inset,
-            'hidden group-hover/screen-share-card:flex',
+            'hidden group-hover/screen-share-card:flex pointer-coarse:flex',
             'has-[[data-state=open]]:flex'
           )}
         >
@@ -260,7 +260,7 @@ const ScreenShareCard = memo(
           className={cn(
             'absolute bottom-0 left-0 right-0',
             density.inset,
-            'hidden group-hover/screen-share-card:flex'
+            'hidden group-hover/screen-share-card:flex pointer-coarse:flex'
           )}
         >
           <div className={cardBadgeClass(isCompact)}>

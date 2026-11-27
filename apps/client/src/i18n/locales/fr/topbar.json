@@ -17,5 +17,6 @@
   "stream_other": "flux",
   "noRemoteAudioStreams": "Aucun flux audio distant disponible.",
   "volumeControls": "Contrôle du volume",
-  "externalAudio": "Audio externe"
+  "externalAudio": "Audio externe",
+  "openChannelList": "Ouvrir la liste des salons"
 }

@@ -7,7 +7,7 @@ type TLimitNumberInputProps = Omit<
 >;
 
 const LimitNumberInput = memo((props: TLimitNumberInputProps) => (
-  <div className="w-24 shrink-0">
+  <div className="w-24 min-w-16">
     <NumberInput className="h-8" step={1} {...props} />
   </div>
 ));

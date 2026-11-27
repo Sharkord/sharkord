@@ -173,7 +173,7 @@ const WelcomeProfileSetupDialog = memo(
 
     return (
       <Dialog open={isOpen}>
-        <DialogContent close={close} className="max-w-lg">
+        <DialogContent close={close} className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {t('welcomeProfileSetupTitle', {
@@ -207,7 +207,7 @@ const WelcomeProfileSetupDialog = memo(
                   />
                 )}
 
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 reveal:opacity-100 transition-opacity">
                   <div className="bg-black/50 rounded-full p-2">
                     <Upload className="h-5 w-5 text-white" />
                   </div>
@@ -217,7 +217,7 @@ const WelcomeProfileSetupDialog = memo(
                   <IconButton
                     icon={X}
                     size="sm"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-2 right-2 opacity-0 reveal:opacity-100 transition-opacity"
                     onClick={(e) => {
                       e.stopPropagation();
                       onBannerRemove();
@@ -242,7 +242,7 @@ const WelcomeProfileSetupDialog = memo(
                     </AvatarFallback>
                   </Avatar>
 
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 reveal:opacity-100 transition-opacity rounded-full">
                     <div className="bg-black/50 rounded-full p-2">
                       <Upload className="h-5 w-5 text-white" />
                     </div>
@@ -252,7 +252,7 @@ const WelcomeProfileSetupDialog = memo(
                     <IconButton
                       icon={X}
                       size="sm"
-                      className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute -top-1 -right-1 opacity-0 reveal:opacity-100 transition-opacity"
                       onClick={(e) => {
                         e.stopPropagation();
                         onAvatarRemove();

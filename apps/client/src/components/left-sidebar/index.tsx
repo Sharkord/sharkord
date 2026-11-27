@@ -9,7 +9,7 @@ import { useThreadsOpen } from '@/features/server/threads/hooks';
 import { LocalStorageKey } from '@/helpers/storage';
 import { cn } from '@/lib/utils';
 import { TestId } from '@sharkord/shared';
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { Categories } from './categories';
 import { DirectMessages } from './direct-messages';
 import { DmButton } from './direct-messages/dm-button';
@@ -27,13 +27,19 @@ const DEFAULT_WIDTH = 288; // w-72 = 288px
 
 type TLeftSidebarProps = {
   className?: string;
+  onOpenHome?: () => void;
 };
 
-const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
+const LeftSidebar = memo(({ className, onOpenHome }: TLeftSidebarProps) => {
   const serverName = useServerName();
   const dmsOpen = useDmsOpen();
   const threadsOpen = useThreadsOpen();
   const publicSettings = usePublicServerSettings();
+
+  const handleServerNameClick = useCallback(() => {
+    setSelectedChannelId(undefined);
+    onOpenHome?.();
+  }, [onOpenHome]);
 
   useRestoreLastSelectedChannel();
   useFollowVoiceMove();
@@ -59,7 +65,7 @@ const LeftSidebar = memo(({ className }: TLeftSidebarProps) => {
       <div className="flex w-full justify-between h-12 items-center border-b border-border px-4">
         <h2
           className="font-semibold text-foreground truncate cursor-pointer"
-          onClick={() => setSelectedChannelId(undefined)}
+          onClick={handleServerNameClick}
           data-testid={TestId.LEFT_SIDEBAR_SERVER_NAME}
         >
           {serverName}

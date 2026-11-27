@@ -64,7 +64,7 @@ const PermissionsList = memo(
             variant={variant}
             className={cn(
               'flex items-center gap-1 font-normal',
-              size === 'sm' && 'text-[10px] px-1.5 py-0.5 h-5',
+              size === 'sm' && 'text-3xs px-1.5 py-0.5 h-5',
               size === 'md' && 'text-xs px-2 py-1 h-6',
               size === 'lg' && 'text-sm px-2.5 py-1 h-7'
             )}
@@ -77,7 +77,7 @@ const PermissionsList = memo(
             variant="outline"
             className={cn(
               'flex items-center font-normal text-muted-foreground',
-              size === 'sm' && 'text-[10px] px-1.5 py-0.5 h-5',
+              size === 'sm' && 'text-3xs px-1.5 py-0.5 h-5',
               size === 'md' && 'text-xs px-2 py-1 h-6',
               size === 'lg' && 'text-sm px-2.5 py-1 h-7'
             )}

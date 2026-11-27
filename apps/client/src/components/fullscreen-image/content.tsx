@@ -24,6 +24,8 @@ const FullScreenImage = memo(
     const posRef = useRef({ x: 0, y: 0 });
     const lastMouseRef = useRef({ x: 0, y: 0 });
     const draggingRef = useRef(false);
+    const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+    const pinchDistanceRef = useRef(0);
 
     const applyTransform = useCallback(() => {
       const el = imgRef.current;
@@ -51,10 +53,11 @@ const FullScreenImage = memo(
       setTimeout(() => setOpen(false), 300);
     }, []);
 
-    const handleMouseDown = useCallback(
-      (e: React.MouseEvent<HTMLImageElement>) => {
+    const handlePointerDown = useCallback(
+      (e: React.PointerEvent<HTMLImageElement>) => {
         if (e.button !== 0) return;
 
+        pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
         draggingRef.current = true;
         lastMouseRef.current = { x: e.clientX, y: e.clientY };
 
@@ -87,8 +90,32 @@ const FullScreenImage = memo(
         applyTransform();
       };
 
-      const handleMouseMove = (e: MouseEvent) => {
-        if (!draggingRef.current) return;
+      const handlePointerMove = (e: PointerEvent) => {
+        const pointers = pointersRef.current;
+
+        if (!draggingRef.current || !pointers.has(e.pointerId)) return;
+
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        // two fingers on a touch screen stand in for the wheel zoom
+        if (pointers.size === 2) {
+          const [a, b] = [...pointers.values()];
+          const distance = Math.hypot(a.x - b.x, a.y - b.y);
+
+          if (pinchDistanceRef.current) {
+            const next =
+              scaleRef.current * (distance / pinchDistanceRef.current);
+
+            scaleRef.current = Math.min(Math.max(next, 0.5), 3);
+
+            applyTransform();
+          }
+
+          pinchDistanceRef.current = distance;
+
+          return;
+        }
+
         const dx = e.clientX - lastMouseRef.current.x;
         const dy = e.clientY - lastMouseRef.current.y;
 
@@ -102,7 +129,18 @@ const FullScreenImage = memo(
         applyTransform();
       };
 
-      const handleMouseUp = () => {
+      const handlePointerUp = (e: PointerEvent) => {
+        pointersRef.current.delete(e.pointerId);
+        pinchDistanceRef.current = 0;
+
+        if (pointersRef.current.size > 0) {
+          const [remaining] = [...pointersRef.current.values()];
+
+          lastMouseRef.current = remaining;
+
+          return;
+        }
+
         draggingRef.current = false;
 
         const el = imgRef.current;
@@ -114,14 +152,16 @@ const FullScreenImage = memo(
 
       document.addEventListener('keydown', handleKeyDown);
       document.addEventListener('wheel', handleWheel, { passive: false });
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('pointermove', handlePointerMove);
+      document.addEventListener('pointerup', handlePointerUp);
+      document.addEventListener('pointercancel', handlePointerUp);
 
       return () => {
         document.removeEventListener('keydown', handleKeyDown);
         document.removeEventListener('wheel', handleWheel);
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('pointermove', handlePointerMove);
+        document.removeEventListener('pointerup', handlePointerUp);
+        document.removeEventListener('pointercancel', handlePointerUp);
       };
     }, [open, onCloseClick, applyTransform]);
 
@@ -166,14 +206,14 @@ const FullScreenImage = memo(
                   transform: `scale(${scaleRef.current}) translate(${posRef.current.x}px, ${posRef.current.y}px)`,
                   cursor: 'grab'
                 }}
-                className="p-4 max-w-full max-h-full object-contain"
-                onMouseDown={handleMouseDown}
+                className="p-4 max-w-full max-h-full object-contain touch-none"
+                onPointerDown={handlePointerDown}
                 draggable={false}
                 onClick={(e: React.MouseEvent<HTMLDivElement>) =>
                   e.stopPropagation()
                 }
               />
-              <div className="flex gap-2 absolute top-2 right-2 z-50">
+              <div className="flex gap-2 absolute top-2 right-2 z-50 pointer-coarse:top-4 pointer-coarse:right-4 pointer-coarse:gap-5">
                 <IconButton icon={Link} variant="ghost" onClick={onCopyLink} />
                 <IconButton onClick={onCloseClick} icon={X} variant="ghost" />
               </div>

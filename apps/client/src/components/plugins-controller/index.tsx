@@ -3,13 +3,13 @@ import {
   processPluginComponents,
   setPluginComponents
 } from '@/features/server/plugins/actions';
-import { getUrlFromServer } from '@/helpers/get-file-url';
+import { getServerUrl } from '@/helpers/get-file-url';
 import { memo, useCallback, useEffect } from 'react';
 
 const PluginsController = memo(() => {
   const fetchPlugins = useCallback(async () => {
     try {
-      const response = await fetch(`${getUrlFromServer()}/plugin-components`);
+      const response = await fetch(`${getServerUrl()}/plugin-components`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch plugins: ${response.statusText}`);

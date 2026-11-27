@@ -180,7 +180,7 @@ const VoiceUserCard = memo(
             className={cn(
               'absolute top-0 right-0 z-10 justify-end',
               density.inset,
-              'hidden group-hover/voice-user-card:flex',
+              'hidden group-hover/voice-user-card:flex pointer-coarse:flex',
               'has-[[data-state=open]]:flex'
             )}
           >

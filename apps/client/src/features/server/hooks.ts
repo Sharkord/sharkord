@@ -13,6 +13,7 @@ import { getConversationKey, rolesCan } from './helpers';
 import {
   activeFullscreenPluginIdSelector,
   activePluginPageIdSelector,
+  activePluginPageSelector,
   categoryHasUnreadMentionsSelector,
   categoryUnreadMessagesCountSelector,
   connectedSelector,
@@ -24,6 +25,7 @@ import {
   hasVisibleChannelsInCategorySelector,
   hiddenPluginComponentsSelector,
   infoSelector,
+  isNothingOpenSelector,
   isOwnUserOwnerSelector,
   ownUserRolesSelector,
   ownVoiceUserSelector,
@@ -205,6 +207,10 @@ export const useSidebarPluginPages = () =>
   useSelector(sidebarPluginPagesSelector);
 
 export const useDmsOpen = () => useSelector(dmsOpenSelector);
+
+export const useIsNothingOpen = () => useSelector(isNothingOpenSelector);
+
+export const useActivePluginPage = () => useSelector(activePluginPageSelector);
 
 export const useUserSettingsPlugins = () =>
   useSelector(userSettingsPluginsSelector);

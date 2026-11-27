@@ -17,5 +17,6 @@
   "stream_other": "streams",
   "noRemoteAudioStreams": "Nenhuma stream de áudio remoto disponível.",
   "volumeControls": "Controles de Volume",
-  "externalAudio": "Áudio Externo"
+  "externalAudio": "Áudio Externo",
+  "openChannelList": "Abrir lista de canais"
 }

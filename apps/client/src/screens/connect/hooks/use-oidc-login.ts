@@ -1,5 +1,5 @@
 import { useInfo } from '@/features/server/hooks';
-import { getUrlFromServer } from '@/helpers/get-file-url';
+import { getServerUrl } from '@/helpers/get-file-url';
 import { getOidcHandoffCode, startOidcLogin } from '@/helpers/oidc';
 import { useStrictEffect } from '@/hooks/use-strict-effect';
 import { OidcError } from '@sharkord/shared';
@@ -25,7 +25,7 @@ const useOidcLogin = ({ onToken }: TUseOidcLoginOptions) => {
   const exchangeCode = useCallback(
     async (code: string) => {
       try {
-        const response = await fetch(`${getUrlFromServer()}/oidc/exchange`, {
+        const response = await fetch(`${getServerUrl()}/oidc/exchange`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code })

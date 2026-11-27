@@ -26,8 +26,8 @@ const SettingsSection = memo(
     return (
       <Card className={className}>
         <CardHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
+          <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+            <div className="min-w-0 flex-1 basis-56">
               <CardTitle>{title}</CardTitle>
               {description && <CardDescription>{description}</CardDescription>}
             </div>

@@ -17,5 +17,6 @@
   "stream_other": "路流",
   "noRemoteAudioStreams": "暂无远程音频流。",
   "volumeControls": "音量控制",
-  "externalAudio": "外部音频"
+  "externalAudio": "外部音频",
+  "openChannelList": "打开频道列表"
 }

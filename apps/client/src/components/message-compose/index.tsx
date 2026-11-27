@@ -277,7 +277,7 @@ const MessageCompose = memo(
           className={`compose-scroll-row flex items-start flex-1 overflow-y-auto cursor-text${uploading ? ' bg-muted' : ''}`}
           onClick={focusInputOnBackdropClick}
         >
-          <div className="flex flex-1 flex-col">
+          <div className="flex min-w-0 flex-1 flex-col">
             {replyTarget && (
               <div className="flex items-center justify-between rounded-md border border-border/60 bg-secondary/40 mx-2 mt-3 px-2 py-1 text-xs">
                 <div className="min-w-0 flex items-center gap-1.5 text-muted-foreground">

@@ -132,7 +132,7 @@ const VoiceChannel = memo(({ channelId }: TChannelProps) => {
   }
 
   return (
-    <div className="flex flex-col size-full relative bg-background overflow-hidden group/voice-stage">
+    <div className="flex flex-col min-h-0 w-full flex-1 relative bg-background overflow-hidden group/voice-stage">
       <VoiceGrid pinnedCardId={pinnedCard?.id}>{cards}</VoiceGrid>
       <ControlsBar channelId={channelId} />
     </div>

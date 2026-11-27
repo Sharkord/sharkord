@@ -1,15 +1,28 @@
+import { MainContentContext } from '@/components/content-header/context';
 import { LeftSidebar } from '@/components/left-sidebar';
 import { ModViewSheet } from '@/components/mod-view-sheet';
 import { Protect } from '@/components/protect';
 import { RightSidebar } from '@/components/right-sidebar';
 import { ThreadSidebar } from '@/components/thread-sidebar';
-import { TopBar } from '@/components/top-bar';
 import { VoiceChatSidebar } from '@/components/voice-chat-sidebar';
 import { VoiceProvider } from '@/components/voice-provider';
-import { useSelectedDmChannelId, useThreadSidebar } from '@/features/app/hooks';
+import {
+  useSelectedDmChannelId,
+  useSelectedThread,
+  useStartOnChannelList,
+  useThreadSidebar
+} from '@/features/app/hooks';
 import { setDmsOpen } from '@/features/server/actions';
 import { setSelectedChannelId } from '@/features/server/channels/actions';
-import { useDmsOpen, usePublicServerSettings } from '@/features/server/hooks';
+import { useSelectedChannelId } from '@/features/server/channels/hooks';
+import {
+  useActiveFullscreenPluginId,
+  useActivePluginPageId,
+  useDmsOpen,
+  useIsNothingOpen,
+  usePublicServerSettings
+} from '@/features/server/hooks';
+import { useThreadsOpen } from '@/features/server/threads/hooks';
 import {
   getLocalStorageItemBool,
   LocalStorageKey,
@@ -18,13 +31,15 @@ import {
 import { useSwipeGestures } from '@/hooks/use-swipe-gestures';
 import { cn } from '@/lib/utils';
 import { Permission, TestId } from '@sharkord/shared';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { MEDIA_QUERY, useMediaQuery } from '@sharkord/ui';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ContentWrapper } from './content-wrapper';
 import { PreventBrowser } from './prevent-browser';
 
 const ServerView = memo(() => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileUsersOpen, setIsMobileUsersOpen] = useState(false);
+  const [isHomeOpen, setIsHomeOpen] = useState(false);
   const [isDesktopRightSidebarOpen, setIsDesktopRightSidebarOpen] = useState(
     getLocalStorageItemBool(LocalStorageKey.RIGHT_SIDEBAR_STATE, true)
   );
@@ -33,14 +48,64 @@ const ServerView = memo(() => {
   const publicSettings = usePublicServerSettings();
   const previousServerChannelIdRef = useRef<number | undefined>(undefined);
   const { isOpen: isThreadSidebarOpen } = useThreadSidebar();
+  const selectedChannelId = useSelectedChannelId();
+  const selectedThread = useSelectedThread();
+  const isLargeScreen = useMediaQuery(MEDIA_QUERY.lg);
+  const startOnChannelList = useStartOnChannelList();
+  const isNothingOpen = useIsNothingOpen();
+  const threadsOpen = useThreadsOpen();
+  const isChannelListHome =
+    isNothingOpen &&
+    (dmsOpen || threadsOpen || (startOnChannelList && !isHomeOpen));
+  const activeFullscreenPluginId = useActiveFullscreenPluginId();
+  const activePluginPageId = useActivePluginPageId();
 
-  const handleDesktopRightSidebarToggle = useCallback(() => {
+  // whatever is picked in a drawer (a channel, a plugin page, or a dm from a member's card) replaces the
+  // content behind it, so the drawers have to get out of the way for it to be seen
+  const navigationKey = `${selectedChannelId}:${selectedDmChannelId}:${selectedThread?.parentMessageId}:${activeFullscreenPluginId}:${activePluginPageId}`;
+  const [prevNavigationKey, setPrevNavigationKey] = useState(navigationKey);
+
+  if (navigationKey !== prevNavigationKey) {
+    setPrevNavigationKey(navigationKey);
+    setIsMobileMenuOpen(false);
+    setIsMobileUsersOpen(false);
+
+    if (!isNothingOpen) {
+      setIsHomeOpen(false);
+    }
+  }
+
+  const handleRightSidebarToggle = useCallback(() => {
+    if (!isLargeScreen) {
+      setIsMobileUsersOpen((prev) => !prev);
+
+      return;
+    }
+
     setIsDesktopRightSidebarOpen((prev) => !prev);
     setLocalStorageItemBool(
       LocalStorageKey.RIGHT_SIDEBAR_STATE,
       !isDesktopRightSidebarOpen
     );
-  }, [isDesktopRightSidebarOpen]);
+  }, [isDesktopRightSidebarOpen, isLargeScreen]);
+
+  const handleOpenChannelList = useCallback(() => {
+    setIsMobileUsersOpen(false);
+    setIsMobileMenuOpen(true);
+  }, []);
+
+  const handleOpenHome = useCallback(() => {
+    setIsHomeOpen(true);
+    setIsMobileMenuOpen(false);
+  }, []);
+
+  const handleCloseMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(false);
+  }, []);
+
+  const handleCloseMobileUsers = useCallback(() => {
+    setIsMobileUsersOpen(false);
+  }, []);
 
   const handleSwipeRight = useCallback(() => {
     if (isMobileMenuOpen || isMobileUsersOpen) {
@@ -62,6 +127,23 @@ const ServerView = memo(() => {
 
     setIsMobileUsersOpen(true);
   }, [isMobileMenuOpen, isMobileUsersOpen]);
+
+  const mainContent = useMemo(
+    () => ({
+      onOpenChannelList: handleOpenChannelList,
+      onToggleMembers: handleRightSidebarToggle,
+      isMembersOpen: isLargeScreen
+        ? isDesktopRightSidebarOpen
+        : isMobileUsersOpen
+    }),
+    [
+      handleOpenChannelList,
+      handleRightSidebarToggle,
+      isLargeScreen,
+      isDesktopRightSidebarOpen,
+      isMobileUsersOpen
+    ]
+  );
 
   const swipeHandlers = useSwipeGestures({
     onSwipeRight: handleSwipeRight,
@@ -85,40 +167,40 @@ const ServerView = memo(() => {
         className="flex h-dvh flex-col bg-background text-foreground dark"
         {...swipeHandlers}
       >
-        <TopBar
-          onToggleRightSidebar={handleDesktopRightSidebarToggle}
-          isOpen={isDesktopRightSidebarOpen}
-        />
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
           <PreventBrowser />
 
           {isMobileMenuOpen && (
             <div
               className="md:hidden fixed inset-0 bg-black/50 z-30"
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={handleCloseMobileMenu}
             />
           )}
 
           {isMobileUsersOpen && (
             <div
               className="lg:hidden fixed inset-0 bg-black/50 z-30"
-              onClick={() => setIsMobileUsersOpen(false)}
+              onClick={handleCloseMobileUsers}
             />
           )}
 
           <LeftSidebar
+            onOpenHome={handleOpenHome}
             className={cn(
-              'md:relative md:flex fixed inset-0 left-0 h-full z-40 md:z-0 transition-transform duration-300 ease-in-out',
-              isMobileMenuOpen
+              'md:relative md:flex fixed inset-0 left-0 h-full max-w-[85vw] md:max-w-none z-40 md:z-0 transition-transform duration-300 ease-in-out',
+              isChannelListHome && 'max-w-none max-md:w-full!',
+              isMobileMenuOpen || isChannelListHome
                 ? 'translate-x-0'
                 : '-translate-x-full md:translate-x-0'
             )}
           />
 
-          <ContentWrapper
-            isDmMode={dmsOpen}
-            selectedDmChannelId={selectedDmChannelId}
-          />
+          <MainContentContext.Provider value={mainContent}>
+            <ContentWrapper
+              isDmMode={dmsOpen}
+              selectedDmChannelId={selectedDmChannelId}
+            />
+          </MainContentContext.Provider>
 
           <VoiceChatSidebar />
 
@@ -126,7 +208,7 @@ const ServerView = memo(() => {
 
           <RightSidebar
             className={cn(
-              'fixed top-0 bottom-0 right-0 h-full z-40',
+              'fixed top-0 bottom-0 right-0 h-full max-w-[85vw] lg:max-w-none z-40',
               'lg:relative lg:z-0',
               isMobileUsersOpen
                 ? 'translate-x-0 lg:translate-x-0'

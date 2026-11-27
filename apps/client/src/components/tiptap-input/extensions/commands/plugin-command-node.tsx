@@ -76,9 +76,9 @@ const CommandArgInput = memo(
           className="inline-flex items-center gap-1 rounded bg-background px-1.5 py-0.5"
           title={arg.description}
         >
-          <span className="text-[10px] text-muted-foreground">{arg.name}</span>
+          <span className="text-3xs text-muted-foreground">{arg.name}</span>
           <select
-            className="h-5 rounded border bg-background px-1 text-[11px]"
+            className="h-5 rounded border bg-background px-1 text-2xs"
             value={value}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
@@ -96,12 +96,12 @@ const CommandArgInput = memo(
         className="inline-flex items-center gap-1 rounded bg-background px-1.5 py-0.5"
         title={arg.description}
       >
-        <span className="text-[10px] text-muted-foreground">{arg.name}</span>
+        <span className="text-3xs text-muted-foreground">{arg.name}</span>
         <input
           type={arg.type === 'number' ? 'number' : 'text'}
           value={value}
           placeholder={placeholder}
-          className="h-5 min-w-18 rounded border bg-background px-1 text-[11px]"
+          className="h-5 min-w-18 rounded border bg-background px-1 text-2xs"
           onChange={handleChange}
           onKeyDown={handleKeyDown}
         />

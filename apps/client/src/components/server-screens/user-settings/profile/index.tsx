@@ -87,7 +87,7 @@ const Profile = memo(() => {
 
   return (
     <SettingsSection title={t('profileTitle')} description={t('profileDesc')}>
-      <div className="flex flex-wrap items-start gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start">
         <ImagePicker
           label={t('avatarLabel')}
           className="h-32 w-32 rounded-full"
@@ -108,7 +108,7 @@ const Profile = memo(() => {
 
         <ImagePicker
           label={t('bannerLabel')}
-          className="h-32 w-80"
+          className="h-32 w-80 max-w-full"
           currentUrl={getFileUrl(ownPublicUser.banner)}
           draft={values.banner}
           onChange={handleBannerChange}
@@ -116,7 +116,7 @@ const Profile = memo(() => {
           crop={BANNER_CROP}
         />
 
-        <Group label={t('profileColorLabel')}>
+        <Group label={t('profileColorLabel')} className="sm:w-32">
           <ColorPicker
             value={values.profileColor}
             onChange={handleColorChange}

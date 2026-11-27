@@ -40,7 +40,7 @@ const OpenGraph = memo(({ previews }: TOpenGraphProps) => {
         )}
 
         <div className="flex flex-col gap-1.5 p-3 text-foreground">
-          <div className="text-muted-foreground flex min-w-0 items-center gap-1.5 text-[11px]">
+          <div className="text-muted-foreground flex min-w-0 items-center gap-1.5 text-2xs">
             {preview.faviconUrl ? (
               <img
                 src={preview.faviconUrl}
@@ -74,7 +74,7 @@ const OpenGraph = memo(({ previews }: TOpenGraphProps) => {
             </div>
           )}
 
-          <div className="text-muted-foreground truncate text-[11px]">
+          <div className="text-muted-foreground truncate text-2xs">
             {preview.hostname}
           </div>
         </div>

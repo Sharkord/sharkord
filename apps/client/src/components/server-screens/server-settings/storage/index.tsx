@@ -314,7 +314,7 @@ const Storage = memo(() => {
         label={t('maxFilesPerMessageLabel')}
         description={t('maxFilesPerMessageDesc')}
       >
-        <div className="flex items-center max-w-150 justify-between">
+        <div className="flex flex-wrap items-center gap-2 max-w-150 justify-between">
           <div className="flex items-center gap-2">
             <NumberInput
               className="border-input bg-background text-foreground h-8 w-28 rounded-md border px-2 text-sm"
@@ -330,7 +330,7 @@ const Storage = memo(() => {
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {MAX_FILES_PER_MESSAGE_PRESETS.map((preset) => (
               <Button
                 key={preset.value}
@@ -459,7 +459,7 @@ const Storage = memo(() => {
         label={t('signedUrlsTtlLabel')}
         description={t('signedUrlsTtlDesc')}
       >
-        <div className="flex items-center max-w-150 justify-between">
+        <div className="flex flex-wrap items-center gap-2 max-w-150 justify-between">
           <div className="flex items-center gap-2">
             <NumberInput
               className="border-input bg-background text-foreground h-8 w-28 rounded-md border px-2 text-sm"
@@ -477,7 +477,7 @@ const Storage = memo(() => {
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {SIGNED_URLS_TTL_PRESETS.map((preset) => (
               <Button
                 key={preset.value}

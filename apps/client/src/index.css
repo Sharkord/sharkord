@@ -12,6 +12,36 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@custom-variant reveal {
+  @media (hover: hover) {
+    &:is(:where(.group):hover *) {
+      @slot;
+    }
+  }
+
+  @media (pointer: coarse) {
+    @slot;
+  }
+}
+
+@utility text-3xs {
+  font-size: 10px;
+
+  @media (width < 48rem) {
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+  }
+}
+
+@utility text-2xs {
+  font-size: 11px;
+
+  @media (width < 48rem) {
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+  }
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -227,7 +257,8 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 10;
+  /* above the mobile drawers (z-40), below dialogs and popovers (z-50) */
+  z-index: 45;
 }
 
 .line-break {
@@ -239,6 +270,8 @@ body {
 .tiptap,
 .msg-content {
   line-height: 1.6;
+  /* long links and tokens would otherwise push the layout wider than a phone */
+  overflow-wrap: anywhere;
 
   :first-child {
     margin-top: 0;
@@ -284,6 +317,10 @@ body {
   a {
     text-decoration: underline;
     text-underline-offset: 2px;
+  }
+
+  pre {
+    overflow-x: auto;
   }
 }
 

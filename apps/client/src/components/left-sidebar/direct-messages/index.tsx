@@ -16,7 +16,12 @@ import {
   TestId,
   type TDirectMessageConversation
 } from '@sharkord/shared';
-import { IconButton, UnreadCount } from '@sharkord/ui';
+import {
+  IconButton,
+  MEDIA_QUERY,
+  UnreadCount,
+  useMediaQuery
+} from '@sharkord/ui';
 import { X } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +38,8 @@ const DirectMessageItem = memo(({ dm, selected }: TDirectMessageItemProps) => {
   const { t } = useTranslation('sidebar');
   const user = useUserById(dm.userId);
   const unreadCount = useUnreadMessagesCount(dm.channelId);
+  // picking a dm closes the mobile drawer, which would carry the avatar's card away with it
+  const isWideScreen = useMediaQuery(MEDIA_QUERY.md);
 
   const onSelect = useCallback(() => {
     setSelectedDmChannelId(dm.channelId);
@@ -67,7 +74,11 @@ const DirectMessageItem = memo(({ dm, selected }: TDirectMessageItemProps) => {
         className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5"
         onClick={onSelect}
       >
-        <UserAvatar userId={user.id} className="h-6 w-6" showUserPopover />
+        <UserAvatar
+          userId={user.id}
+          className="h-6 w-6"
+          showUserPopover={isWideScreen}
+        />
         <span className="truncate flex-1 text-left">{user.name}</span>
         <UnreadCount count={unreadCount} />
       </button>
@@ -78,7 +89,7 @@ const DirectMessageItem = memo(({ dm, selected }: TDirectMessageItemProps) => {
         title={t('closeConversation')}
         onClick={onClose}
         data-testid={TestId.DM_CLOSE}
-        className="mr-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+        className="mr-2 opacity-0 reveal:opacity-100 focus-visible:opacity-100"
       />
     </div>
   );

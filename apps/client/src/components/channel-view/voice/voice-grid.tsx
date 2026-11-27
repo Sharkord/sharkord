@@ -131,7 +131,7 @@ const VoiceGrid = memo(
                     'inline-flex items-center justify-center rounded px-3 py-2 gap-1',
                     'pointer-events-auto shadow-xl transition-all',
                     'bg-black/70 hover:bg-black/80',
-                    'hidden group-hover/voice-stage:inline-flex'
+                    'hidden group-hover/voice-stage:inline-flex pointer-coarse:inline-flex'
                   )}
                   onClick={handleToggleParticipants}
                   aria-label={t('toggleParticipants')}

@@ -137,10 +137,10 @@ const InstalledPluginRow = memo(
         />
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <span
               className={cn(
-                'truncate text-sm font-medium',
+                'max-w-full truncate text-sm font-medium',
                 !plugin.enabled && 'text-muted-foreground'
               )}
             >
@@ -153,7 +153,7 @@ const InstalledPluginRow = memo(
             )}
             {isManual && (
               <Tooltip content={t('pluginManualTooltip')}>
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className="text-3xs">
                   {t('pluginManualBadge')}
                 </Badge>
               </Tooltip>

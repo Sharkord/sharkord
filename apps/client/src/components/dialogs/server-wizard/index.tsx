@@ -222,7 +222,7 @@ const ServerWizardDialog = memo(
           <ImagePicker
             label={t('serverWizardLogoLabel')}
             description={t('serverWizardLogoDesc')}
-            className="h-24 w-80 object-scale-down"
+            className="h-24 w-80 max-w-full object-scale-down"
             currentUrl={getFileUrl(settings?.logo)}
             draft={values.logo}
             onChange={onLogoChange}
@@ -320,7 +320,7 @@ const ServerWizardDialog = memo(
 
     return (
       <Dialog open={isOpen}>
-        <DialogContent close={onSkip} className="sm:max-w-3xl">
+        <DialogContent close={onSkip} className="lg:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{t('serverWizardTitle')}</DialogTitle>
             <DialogDescription>{t('serverWizardDesc')}</DialogDescription>

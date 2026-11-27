@@ -37,7 +37,8 @@
     "react-colorful": "^5.8.1",
     "react-day-picker": "^10.0.2",
     "sonner": "^2.0.8",
-    "tailwind-merge": "^3.7.0"
+    "tailwind-merge": "^3.7.0",
+    "vaul": "1.1.2"
   },
   "devDependencies": {
     "@types/bun": "latest",

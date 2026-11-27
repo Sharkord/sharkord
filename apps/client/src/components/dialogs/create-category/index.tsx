@@ -44,8 +44,8 @@ const CreateCategoryDialog = memo(
     }, [values.name, close, setTrpcErrors]);
 
     return (
-      <Dialog open={isOpen}>
-        <DialogContent onInteractOutside={close} close={close}>
+      <Dialog open={isOpen} onOpenChange={close}>
+        <DialogContent close={close}>
           <DialogHeader>
             <DialogTitle>{t('createCategoryTitle')}</DialogTitle>
           </DialogHeader>

@@ -1,6 +1,6 @@
 import { Dialog } from '@/components/dialogs/dialogs';
 import { logDebug } from '@/helpers/browser-logger';
-import { getHostFromServer } from '@/helpers/get-file-url';
+import { getServerHost } from '@/helpers/get-file-url';
 import { playSound } from '@/helpers/sounds';
 import { pushVoiceDebugEvent } from '@/helpers/voice-debug';
 import { i18n } from '@/i18n';
@@ -82,7 +82,7 @@ export const connect = async () => {
 
   const { serverId } = info;
 
-  const host = getHostFromServer();
+  const host = getServerHost();
   const trpc = await connectToTRPC(host);
 
   const { hasPassword, handshakeHash, serverVersion } =

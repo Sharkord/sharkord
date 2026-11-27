@@ -50,6 +50,8 @@
   "autoLoadYoutubeEmbedsDesc": "视频一出现在聊天中就加载。关闭时只显示缩略图，点击后才加载视频，可大幅减少内存占用。",
   "convertAsciiEmojiLabel": "输入时将颜文字转换为 emoji",
   "convertAsciiEmojiDesc": "将 \":3\"、\"<3\" 等文字颜文字转换为 emoji。",
+  "startOnChannelListLabel": "从频道列表开始",
+  "startOnChannelListDesc": "没有打开任何内容时显示频道列表而不是主屏幕。点击服务器名称可查看主屏幕。",
   "pauseNewStreamsByDefaultLabel": "默认暂停所有新的串流",
   "pauseNewStreamsByDefaultDesc": "摄像头和屏幕共享以暂停状态开始，在你恢复之前不会下载任何内容。可在慢速网络下节省带宽。",
   "muteStreamAudioByDefaultLabel": "默认静音直播音频",

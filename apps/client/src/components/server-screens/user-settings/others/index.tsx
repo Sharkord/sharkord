@@ -8,6 +8,7 @@ import {
   setFreezeAnimatedAvatars,
   setMuteStreamAudioByDefault,
   setPauseNewStreamsByDefault,
+  setStartOnChannelList,
   setVoiceChatFollowsVoice
 } from '@/features/app/actions';
 import {
@@ -18,9 +19,16 @@ import {
   useFreezeAnimatedAvatars,
   useMuteStreamAudioByDefault,
   usePauseNewStreamsByDefault,
+  useStartOnChannelList,
   useVoiceChatFollowsVoice
 } from '@/features/app/hooks';
-import { Group, SettingsSection, Switch } from '@sharkord/ui';
+import {
+  Group,
+  MEDIA_QUERY,
+  SettingsSection,
+  Switch,
+  useMediaQuery
+} from '@sharkord/ui';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -33,6 +41,7 @@ type TOthersValues = {
   convertAsciiEmoji: boolean;
   pauseNewStreamsByDefault: boolean;
   muteStreamAudioByDefault: boolean;
+  startOnChannelList: boolean;
 };
 
 const Others = memo(() => {
@@ -45,6 +54,8 @@ const Others = memo(() => {
   const convertAsciiEmoji = useConvertAsciiEmoji();
   const pauseNewStreamsByDefault = usePauseNewStreamsByDefault();
   const muteStreamAudioByDefault = useMuteStreamAudioByDefault();
+  const startOnChannelList = useStartOnChannelList();
+  const isWideScreen = useMediaQuery(MEDIA_QUERY.md);
 
   const onSave = useCallback(async (values: TOthersValues) => {
     setAutoJoinLastChannel(values.autoJoinLastChannel);
@@ -55,6 +66,7 @@ const Others = memo(() => {
     setConvertAsciiEmoji(values.convertAsciiEmoji);
     setPauseNewStreamsByDefault(values.pauseNewStreamsByDefault);
     setMuteStreamAudioByDefault(values.muteStreamAudioByDefault);
+    setStartOnChannelList(values.startOnChannelList);
   }, []);
 
   const { values, onChange } = useSettingsForm<TOthersValues>({
@@ -66,7 +78,8 @@ const Others = memo(() => {
       autoLoadYoutubeEmbeds,
       convertAsciiEmoji,
       pauseNewStreamsByDefault,
-      muteStreamAudioByDefault
+      muteStreamAudioByDefault,
+      startOnChannelList
     },
     onSave,
     successMessage: t('othersUpdated'),
@@ -110,6 +123,11 @@ const Others = memo(() => {
 
   const handleMuteStreamAudioByDefaultChange = useCallback(
     (value: boolean) => onChange('muteStreamAudioByDefault', value),
+    [onChange]
+  );
+
+  const handleStartOnChannelListChange = useCallback(
+    (value: boolean) => onChange('startOnChannelList', value),
     [onChange]
   );
 
@@ -194,6 +212,18 @@ const Others = memo(() => {
           onCheckedChange={handleMuteStreamAudioByDefaultChange}
         />
       </Group>
+
+      {!isWideScreen && (
+        <Group
+          label={t('startOnChannelListLabel')}
+          description={t('startOnChannelListDesc')}
+        >
+          <Switch
+            checked={values.startOnChannelList}
+            onCheckedChange={handleStartOnChannelListChange}
+          />
+        </Group>
+      )}
 
       <Group label={t('languageLabel')} description={t('languageDesc')}>
         <LanguageSwitcher />

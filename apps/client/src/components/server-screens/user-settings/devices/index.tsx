@@ -254,7 +254,7 @@ const Devices = memo(() => {
             value={values.playbackId}
             disabled={playbackDevices.length === 0}
           >
-            <SelectTrigger className="w-92">
+            <SelectTrigger className="w-full max-w-92">
               <SelectValue placeholder={t('playbackPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
@@ -290,7 +290,7 @@ const Devices = memo(() => {
             value={values.microphoneId}
             disabled={inputDevices.length === 0}
           >
-            <SelectTrigger className="w-92">
+            <SelectTrigger className="w-full max-w-92">
               <SelectValue placeholder={t('microphonePlaceholder')} />
             </SelectTrigger>
             <SelectContent>
@@ -318,7 +318,7 @@ const Devices = memo(() => {
                 onChange('noiseSuppression', value as NoiseSuppression)
               }
             >
-              <SelectTrigger className="w-92">
+              <SelectTrigger className="w-full max-w-92">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -340,7 +340,7 @@ const Devices = memo(() => {
             </Select>
           </Group>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <Group label={t('echoCancellationLabel')}>
               <Switch
                 checked={!!values.echoCancellation}
@@ -383,7 +383,7 @@ const Devices = memo(() => {
         {hotkeysEnabled && <MicModeGroup />}
 
         <Group label={t('microphoneTestLabel')}>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {permissionState !== 'granted' && (
               <Button variant="outline" onClick={requestMicrophonePermission}>
                 {t('permitMicAccess')}

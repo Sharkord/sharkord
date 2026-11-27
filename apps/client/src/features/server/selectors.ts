@@ -17,6 +17,7 @@ import {
   hotkeysEnabledSelector,
   isAutoConnectingSelector,
   loadingPluginsSelector,
+  selectedDmChannelIdSelector,
   selectedThreadSelector,
   threadSidebarDataSelector
 } from '../app/selectors';
@@ -101,6 +102,32 @@ export const activePluginPageIdSelector = (state: IRootState) =>
   state.server.activePluginPageId;
 
 export const dmsOpenSelector = (state: IRootState) => state.server.dmsOpen;
+
+// mirrors what the content area renders: true when it has no channel, dm or thread to show
+export const isNothingOpenSelector = createSelector(
+  [
+    activeFullscreenPluginIdSelector,
+    threadsOpenSelector,
+    selectedThreadSelector,
+    dmsOpenSelector,
+    selectedDmChannelIdSelector,
+    selectedChannelIdSelector
+  ],
+  (
+    activeFullscreenPluginId,
+    threadsOpen,
+    selectedThread,
+    dmsOpen,
+    selectedDmChannelId,
+    selectedChannelId
+  ) => {
+    if (activeFullscreenPluginId) return false;
+    if (threadsOpen) return !selectedThread;
+    if (dmsOpen) return !selectedDmChannelId;
+
+    return !selectedChannelId;
+  }
+);
 
 export const ownUserRolesSelector = createSelector(
   [ownUserSelector, rolesSelector],
@@ -497,6 +524,19 @@ export const sidebarPluginPagesSelector = createSelector(
 
     return [...legacy, ...pages];
   }
+);
+
+export const activePluginPageSelector = createSelector(
+  [
+    activeFullscreenPluginIdSelector,
+    activePluginPageIdSelector,
+    sidebarPluginPagesSelector
+  ],
+  (activeFullscreenPluginId, activePluginPageId, sidebarPluginPages) =>
+    sidebarPluginPages.find(
+      ({ pluginId, pageId }) =>
+        pluginId === activeFullscreenPluginId && pageId === activePluginPageId
+    )
 );
 
 export const canReceivePluginNotificationsSelector = createCachedSelector(

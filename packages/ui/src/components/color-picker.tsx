@@ -30,7 +30,7 @@ const ColorPicker = ({
                 error ? 'border-red-500' : 'border-border'
               )}
             />
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 reveal:opacity-100 transition-opacity rounded-md">
               <div className="bg-black/50 rounded-full p-3">
                 <PencilIcon className="h-6 w-6 text-white" />
               </div>

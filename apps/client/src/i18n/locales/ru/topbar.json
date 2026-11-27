@@ -17,5 +17,6 @@
   "noRemoteAudioStreams": "Нет доступных удаленных аудио-стримов.",
   "volumeControls": "Управление громкостью",
   "externalAudio": "Внешнее аудио",
-  "hideOwnScreenShare": "Скрыть свою демонстрацию экрана"
+  "hideOwnScreenShare": "Скрыть свою демонстрацию экрана",
+  "openChannelList": "Открыть список каналов"
 }

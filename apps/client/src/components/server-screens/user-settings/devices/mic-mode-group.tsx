@@ -36,7 +36,7 @@ const MicModeGroup = memo(() => {
     <>
       <Group label={t('micModeLabel')} description={description}>
         <Select value={micMode} onValueChange={handleChange}>
-          <SelectTrigger className="w-92">
+          <SelectTrigger className="w-full max-w-92">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

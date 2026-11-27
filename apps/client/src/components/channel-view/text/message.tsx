@@ -4,6 +4,7 @@ import {
   useOwnUserId,
   useOwnUserRoleIds
 } from '@/features/server/users/hooks';
+import { useLongPress } from '@/hooks/use-long-press';
 import { cn } from '@/lib/utils';
 import {
   hasMention,
@@ -11,7 +12,8 @@ import {
   TestId,
   type TJoinedMessage
 } from '@sharkord/shared';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { useTouchOutside } from './hooks/use-touch-outside';
 import { MessageActions } from './message-actions';
 import { MessageEditInline } from './message-edit-inline';
 import { MessageRenderer } from './renderer';
@@ -46,6 +48,8 @@ const Message = memo(
   }: TMessageProps) => {
     const [isPencilEditing, setIsPencilEditing] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
+    const [isTouchOpen, setIsTouchOpen] = useState(false);
+    const messageRef = useRef<HTMLDivElement>(null);
     const isEditing = isPencilEditing || editingMessageId === message.id;
     const isFromOwnUser = useIsOwnUser(message.userId);
     const can = useCan();
@@ -83,6 +87,15 @@ const Message = memo(
       []
     );
 
+    const handleLongPress = useCallback(() => setIsTouchOpen(true), []);
+
+    const longPressHandlers = useLongPress(handleLongPress);
+
+    // the bar stays up for taps inside it and goes away on the next touch anywhere else
+    const handleTouchOutside = useCallback(() => setIsTouchOpen(false), []);
+
+    useTouchOutside(messageRef, isTouchOpen, handleTouchOutside);
+
     const handleEditBlur = useCallback(() => {
       setIsPencilEditing(false);
 
@@ -103,6 +116,8 @@ const Message = memo(
         data-message-id={message.id}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        ref={messageRef}
+        {...longPressHandlers}
       >
         {!isEditing ? (
           <>
@@ -119,8 +134,9 @@ const Message = memo(
                 replyUserIds={message.replyUserIds ?? NO_REPLY_USER_IDS}
               />
             )}
-            {!disableActions && isHovered && (
+            {!disableActions && (isHovered || isTouchOpen) && (
               <MessageActions
+                isTouchOpen={isTouchOpen}
                 onEdit={handleEdit}
                 canManage={canManage}
                 messageId={message.id}

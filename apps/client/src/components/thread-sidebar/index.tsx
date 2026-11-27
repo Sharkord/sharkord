@@ -45,7 +45,7 @@ const ThreadSidebar = memo(({ isOpen }: TThreadSidebarProps) => {
       defaultWidth={DEFAULT_WIDTH}
       edge="left"
       isOpen={isOpen}
-      className="hidden lg:flex"
+      fullscreenBelowLg
     >
       <ThreadContentWrapper />
     </ResizableSidebar>

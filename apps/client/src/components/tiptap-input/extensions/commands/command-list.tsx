@@ -16,7 +16,7 @@ const renderItem = (item: TCommandInfo) => (
     <div className="flex items-center gap-1.5">
       <span className="text-muted-foreground shrink-0">/</span>
       <span className="font-medium truncate">{item.name}</span>
-      <span className="ml-auto flex min-w-0 items-center gap-1 text-[10px] text-muted-foreground">
+      <span className="ml-auto flex min-w-0 items-center gap-1 text-3xs text-muted-foreground">
         {item.pluginLogo && (
           <img
             src={item.pluginLogo}

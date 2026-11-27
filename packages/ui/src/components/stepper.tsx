@@ -60,6 +60,14 @@ const StepperItem = memo(
 
     const Trigger = clickable ? 'button' : 'div';
 
+    // a phone cannot fit every label in one row, so only the current step keeps its
+    // label there and the rest show just their number
+    const labelClassName = cn(
+      'flex flex-col',
+      vertical && !isLast && 'pb-4',
+      !vertical && !active && 'max-sm:sr-only'
+    );
+
     return (
       <li
         aria-current={active ? 'step' : undefined}
@@ -89,7 +97,7 @@ const StepperItem = memo(
           </Trigger>
           {vertical && connector}
         </div>
-        <div className={cn('flex flex-col', vertical && !isLast && 'pb-4')}>
+        <div className={labelClassName}>
           <span
             className={cn(
               'text-sm',

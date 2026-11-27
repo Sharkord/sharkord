@@ -12,6 +12,7 @@ import { useIsShiftHeld } from '@/features/app/hooks';
 import { requestConfirmation } from '@/features/dialogs/actions';
 import { useCustomEmojis } from '@/features/server/emojis/hooks';
 import { getTRPCClient } from '@/lib/trpc';
+import { cn } from '@/lib/utils';
 import { Permission, PluginSlot, TestId } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
 import {
@@ -31,6 +32,7 @@ import { toast } from 'sonner';
 const MAX_QUICK_EMOJIS = 4;
 
 type TMessageActionsProps = {
+  isTouchOpen?: boolean;
   messageId: number;
   channelId: number;
   onEdit: () => void;
@@ -76,6 +78,7 @@ const QuickReactionButton = memo(
 
 const MessageActions = memo(
   ({
+    isTouchOpen,
     onEdit,
     messageId,
     channelId,
@@ -163,7 +166,12 @@ const MessageActions = memo(
     }, [messageId, t]);
 
     return (
-      <div className="gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-2 transition-all bg-background">
+      <div
+        className={cn(
+          'gap-1 absolute right-0 -top-6 z-10 hidden group-hover:flex [&:has([data-state=open])]:flex items-center space-x-1 rounded-lg shadow-lg border border-border p-2 transition-all bg-background pointer-coarse:-top-9 pointer-coarse:gap-2 pointer-coarse:[&_svg]:size-5',
+          isTouchOpen && 'flex'
+        )}
+      >
         {onReply && (
           <IconButton
             size="sm"

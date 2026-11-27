@@ -18,7 +18,7 @@ const ServerWizardDone = memo(
     const { t } = useTranslation('dialogs');
 
     return (
-      <DialogContent close={close} className="sm:max-w-3xl">
+      <DialogContent close={close} className="lg:max-w-3xl">
         <div className="flex flex-col items-center gap-4 py-8 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <PartyPopper className="h-8 w-8 text-primary" />

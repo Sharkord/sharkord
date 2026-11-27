@@ -42,4 +42,5 @@ export * from './components/tooltip';
 export * from './components/unread-count';
 export * from './components/update-panel';
 export * from './lib/hotkey';
+export * from './lib/use-media-query';
 export * from './lib/utils';

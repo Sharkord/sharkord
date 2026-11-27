@@ -1,7 +1,7 @@
 import { UploadHeaders, UploadPurpose, type TTempFile } from '@sharkord/shared';
 import i18next from 'i18next';
 import { toast } from 'sonner';
-import { getUrlFromServer } from './get-file-url';
+import { getServerUrl } from './get-file-url';
 import { getSessionStorageItem, SessionStorageKey } from './storage';
 
 // an http header cannot carry anything outside latin-1: setRequestHeader throws on cjk and
@@ -32,7 +32,7 @@ type TUploadFileOptions = {
 };
 
 const uploadFile = async (file: File, options?: TUploadFileOptions) => {
-  const url = getUrlFromServer();
+  const url = getServerUrl();
 
   return new Promise<TTempFile | undefined>((resolve) => {
     const xhr = new XMLHttpRequest();

@@ -2,7 +2,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { PluginSlotRenderer } from '@/components/plugin-slot-renderer';
 import { connect } from '@/features/server/actions';
 import { useInfo } from '@/features/server/hooks';
-import { getFileUrl, getUrlFromServer } from '@/helpers/get-file-url';
+import { getFileUrl, getServerUrl } from '@/helpers/get-file-url';
 import { isDesktopApp } from '@/helpers/is-desktop-app';
 import {
   getLocalStorageItem,
@@ -90,7 +90,7 @@ const Connect = memo(() => {
     setLoading(true);
 
     try {
-      const url = getUrlFromServer();
+      const url = getServerUrl();
       const response = await fetch(`${url}/login`, {
         method: 'POST',
         headers: {
@@ -157,7 +157,7 @@ const Connect = memo(() => {
   }, [onChange, values.autoLogin]);
 
   const desktopLink = useMemo(
-    () => getDesktopAddServerLink(getUrlFromServer()),
+    () => getDesktopAddServerLink(getServerUrl()),
     []
   );
 
@@ -179,7 +179,7 @@ const Connect = memo(() => {
   }
 
   return (
-    <div className="flex flex-col gap-2 justify-center items-center h-full relative">
+    <div className="flex flex-col gap-2 justify-center items-center h-full relative px-4">
       <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
         <LanguageSwitcher variant="icon" />
       </div>
@@ -300,7 +300,7 @@ const Connect = memo(() => {
       {!isDesktopApp() && (
         <a
           href={desktopLink}
-          className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          className="text-xs pointer-coarse:hidden text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         >
           {t('addToDesktopApp')}
         </a>

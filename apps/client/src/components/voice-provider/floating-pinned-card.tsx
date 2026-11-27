@@ -5,6 +5,7 @@ import {
 } from '@/features/server/channels/hooks';
 import { useOwnUserId, useUserById } from '@/features/server/users/hooks';
 import { usePinnedCard } from '@/features/server/voice/hooks';
+import { cn } from '@/lib/utils';
 import type { TRemoteStreams } from '@/types';
 import { StreamKind, type TPausableStreamKind } from '@sharkord/shared';
 import { IconButton } from '@sharkord/ui';
@@ -30,7 +31,8 @@ const FloatingPinnedCard = memo(
     localVideoStream,
     localScreenShareStream
   }: TFloatingPinnedCardProps) => {
-    const { cardRef, handleMouseDown, getStyle, resetCard } = useFloatingCard();
+    const { cardRef, handlePointerDown, getStyle, resetCard, hasPosition } =
+      useFloatingCard();
     const videoRef = useRef<HTMLVideoElement>(null);
     const [open, setOpen] = useState(true);
     const pinnedCard = usePinnedCard();
@@ -116,8 +118,11 @@ const FloatingPinnedCard = memo(
     return (
       <div
         ref={cardRef}
-        onMouseDown={handleMouseDown}
-        className="absolute z-50 cursor-move select-none w-96 aspect-video rounded-lg overflow-hidden border border-border bg-black shadow-lg group"
+        onPointerDown={handlePointerDown}
+        className={cn(
+          'absolute z-50 cursor-move select-none touch-none w-96 max-w-[calc(100vw-1rem)] max-md:w-52 aspect-video rounded-lg overflow-hidden border border-border bg-black shadow-lg group',
+          !hasPosition && 'right-4 bottom-4 max-md:top-16 max-md:bottom-auto'
+        )}
         style={getStyle()}
       >
         <CardControls>

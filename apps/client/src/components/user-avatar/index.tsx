@@ -36,9 +36,11 @@ const UserAvatar = memo(
     const avatarUrl = getFileUrl(user.avatar);
     const frozen = freezeAnimatedAvatars && !!avatarUrl;
 
+    // the initials scale with the avatar (a fixed size reads as a speck on a profile or a
+    // voice tile), floored so the smallest list avatars stay legible
     const content = (
       <div className="group/avatar relative size-fit" onClick={onClick}>
-        <Avatar className={cn('size-8 bg-muted', className)}>
+        <Avatar className={cn('@container size-8 bg-muted', className)}>
           {avatarUrl && (
             <AvatarImage
               src={avatarUrl}
@@ -52,7 +54,7 @@ const UserAvatar = memo(
               className="absolute inset-0 size-full group-hover/avatar:invisible"
             />
           )}
-          <AvatarFallback className="bg-muted text-xs">
+          <AvatarFallback className="bg-muted [font-size:max(0.625rem,40cqw)]">
             {getInitialsFromName(getRenderedUsername(user))}
           </AvatarFallback>
         </Avatar>

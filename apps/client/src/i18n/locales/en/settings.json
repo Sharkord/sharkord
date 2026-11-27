@@ -50,6 +50,8 @@
   "autoLoadYoutubeEmbedsDesc": "Load YouTube videos as soon as they appear in chat. When off, a thumbnail is shown and the video loads on click, which uses much less memory.",
   "convertAsciiEmojiLabel": "Convert Emoticons to Emoji as You Type",
   "convertAsciiEmojiDesc": "Convert text emoticons such as \":3\" and \"<3\" into emoji.",
+  "startOnChannelListLabel": "Start on the Channel List",
+  "startOnChannelListDesc": "Show the channel list instead of the home screen when nothing is open. Tap the server name to see the home screen.",
   "pauseNewStreamsByDefaultLabel": "Pause all new streams by default",
   "pauseNewStreamsByDefaultDesc": "Webcams and screen shares start paused and download nothing until you resume them. Saves bandwidth on slow connections.",
   "muteStreamAudioByDefaultLabel": "Mute stream audio by default",

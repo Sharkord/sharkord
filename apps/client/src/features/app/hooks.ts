@@ -31,6 +31,7 @@ import {
   pushToTalkSelectedSelector,
   selectedDmChannelIdSelector,
   selectedThreadSelector,
+  startOnChannelListSelector,
   threadSidebarDataSelector,
   voiceChatFollowsVoiceSelector,
   voiceChatSidebarDataSelector
@@ -68,6 +69,9 @@ export const useAutoLoadYoutubeEmbeds = () =>
 
 export const useConvertAsciiEmoji = () =>
   useSelector(convertAsciiEmojiSelector);
+
+export const useStartOnChannelList = () =>
+  useSelector(startOnChannelListSelector);
 
 export const usePauseNewStreamsByDefault = () =>
   useSelector(pauseNewStreamsByDefaultSelector);

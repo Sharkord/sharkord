@@ -84,7 +84,7 @@ const SupressionHelp = memo(() => {
         </table>
       </div>
 
-      <p className="mt-3 text-[11px] text-background/80">
+      <p className="mt-3 text-2xs text-background/80">
         {t('noiseSuppressionExperimentalWarning')}
       </p>
     </div>

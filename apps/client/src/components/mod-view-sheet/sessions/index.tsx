@@ -21,10 +21,12 @@ import {
   CardHeader,
   CardTitle,
   IconButton,
+  MEDIA_QUERY,
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Tooltip
+  Tooltip,
+  useMediaQuery
 } from '@sharkord/ui';
 import { MonitorSmartphone, RefreshCw, Users } from 'lucide-react';
 import { memo, useCallback } from 'react';
@@ -106,6 +108,7 @@ const Session = memo(({ session, refetch }: TSessionItemProps) => {
   const { t } = useTranslation('settings');
   const { userId } = useModViewContext();
   const { open, onOpenChange } = useSessionOpen(refetch);
+  const isWideScreen = useMediaQuery(MEDIA_QUERY.md);
 
   const onDisconnect = useCallback(async () => {
     onOpenChange(false);
@@ -149,7 +152,11 @@ const Session = memo(({ session, refetch }: TSessionItemProps) => {
           </SessionSummary>
         </button>
       </PopoverTrigger>
-      <PopoverContent side="left" align="start" className="w-96 space-y-3">
+      <PopoverContent
+        side={isWideScreen ? 'left' : 'bottom'}
+        align="start"
+        className="w-96 space-y-3"
+      >
         <SessionHeader session={session}>
           <SharedIpBadge session={session} />
         </SessionHeader>

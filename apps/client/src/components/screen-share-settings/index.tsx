@@ -104,7 +104,7 @@ const ScreenShareSettings = memo(
 
     return (
       <>
-        <div className="flex items-end gap-2">
+        <div className="flex flex-wrap items-end gap-2">
           <ResolutionFpsControl
             framerate={values.screenFramerate}
             resolution={values.screenResolution}

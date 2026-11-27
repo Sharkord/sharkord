@@ -1,3 +1,4 @@
+import { ContentHeader } from '@/components/content-header';
 import { useIsThreadFollowed } from '@/features/server/threads/hooks';
 import { useChannelLabel } from '@/hooks/use-channel-label';
 import { getTRPCClient } from '@/lib/trpc';
@@ -33,33 +34,27 @@ const ThreadHeader = memo(
       }
     }, [parentMessageId, isFollowed, t]);
 
+    const actions = (
+      <>
+        <IconButton
+          onClick={onToggleFollow}
+          icon={isFollowed ? BellOff : Bell}
+          title={isFollowed ? t('unfollowThread') : t('followThread')}
+          variant="ghost"
+          size="sm"
+        />
+        <IconButton onClick={onClose} icon={X} variant="ghost" size="sm" />
+      </>
+    );
+
     return (
-      <div className="flex items-center justify-between px-4 h-12 border-b border-border shrink-0">
-        <div className="flex min-w-0 items-center gap-2">
-          <MessageSquareText className="h-4 w-4 text-muted-foreground" />
-          <span className="font-semibold text-sm">{t('thread')}</span>
-          <span className="truncate text-sm text-muted-foreground">
-            {channelLabel}
-          </span>
-        </div>
-        <div className="flex items-center gap-1">
-          <IconButton
-            onClick={onToggleFollow}
-            icon={isFollowed ? BellOff : Bell}
-            title={isFollowed ? t('unfollowThread') : t('followThread')}
-            variant="ghost"
-            size="sm"
-            className="rounded-md hover:bg-accent transition-colors"
-          />
-          <IconButton
-            onClick={onClose}
-            icon={X}
-            variant="ghost"
-            size="sm"
-            className="rounded-md hover:bg-accent transition-colors"
-          />
-        </div>
-      </div>
+      <ContentHeader actions={actions}>
+        <MessageSquareText className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <span className="font-semibold text-sm">{t('thread')}</span>
+        <span className="truncate text-sm text-muted-foreground">
+          {channelLabel}
+        </span>
+      </ContentHeader>
     );
   }
 );

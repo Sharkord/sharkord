@@ -188,7 +188,7 @@ const General = memo(() => {
       <ImagePicker
         label={t('logoLabel')}
         description={t('logoDesc')}
-        className="h-24 w-80 object-scale-down"
+        className="h-24 w-80 max-w-full object-scale-down"
         currentUrl={getFileUrl(settings?.logo)}
         draft={values.logo}
         onChange={handleLogoChange}

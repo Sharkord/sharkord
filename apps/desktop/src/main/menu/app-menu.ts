@@ -1,5 +1,5 @@
+import { DESKTOP_SHORTCUTS, getDesktopServerShortcut } from '@sharkord/shared';
 import { Menu, type MenuItemConstructorOptions } from 'electron';
-import { getServerShortcut, SHORTCUTS } from '../../shared/shortcuts';
 import type { TServer, TServersState } from '../../shared/types';
 import { openAppFolder } from '../app-folder/open-app-folder';
 import { i18n } from '../i18n';
@@ -29,7 +29,7 @@ const buildServersMenu = ({
       label: server.name,
       type: 'radio',
       checked: server.id === selectedId && !adding,
-      accelerator: getServerShortcut(index),
+      accelerator: getDesktopServerShortcut(index),
       click: () => controller.select(server.id)
     })
   );
@@ -41,7 +41,7 @@ const buildServersMenu = ({
     submenu: [
       {
         label: i18n.t('menu.addServer'),
-        accelerator: SHORTCUTS.addServer,
+        accelerator: DESKTOP_SHORTCUTS.addServer,
         click: () => controller.setAdding(true)
       },
       { type: 'separator' },
@@ -51,7 +51,7 @@ const buildServersMenu = ({
         label: railVisible
           ? i18n.t('menu.hideServerList')
           : i18n.t('menu.showServerList'),
-        accelerator: SHORTCUTS.toggleServerList,
+        accelerator: DESKTOP_SHORTCUTS.toggleServerList,
         enabled: servers.length > 0 && !railLocked,
         click: () => controller.toggleRail()
       },
@@ -67,7 +67,7 @@ const buildServersMenu = ({
       { type: 'separator' },
       {
         label: i18n.t('menu.toggleMenuBar'),
-        accelerator: SHORTCUTS.toggleMenuBar,
+        accelerator: DESKTOP_SHORTCUTS.toggleMenuBar,
         // the macos menu bar belongs to the system and cannot be hidden
         enabled: !isMac,
         click: toggleMenuBar
@@ -92,7 +92,7 @@ const buildAdvancedMenu = ({
     { type: 'separator' },
     {
       label: i18n.t('menu.togglePerformanceOverlay'),
-      accelerator: SHORTCUTS.togglePerformanceOverlay,
+      accelerator: DESKTOP_SHORTCUTS.togglePerformanceOverlay,
       click: togglePerformanceOverlay
     },
     {
