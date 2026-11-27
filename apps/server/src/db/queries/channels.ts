@@ -5,7 +5,7 @@ import {
   type TChannelUserPermissionsMap,
   type TReadStateMap
 } from '@sharkord/shared';
-import { and, eq, gt, inArray, isNull, ne, or, sql } from 'drizzle-orm';
+import { and, count, eq, gt, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import { db } from '..';
 import { getOnlineUserIds } from '../../utils/wss';
 import {
@@ -516,8 +516,19 @@ const getChannelsReadStatesForUser = async (
   return readStateMap;
 };
 
+const countServerChannels = async (channelIds: number[]) => {
+  const row = await db
+    .select({ total: count() })
+    .from(channels)
+    .where(and(inArray(channels.id, channelIds), eq(channels.isDm, false)))
+    .get();
+
+  return row?.total ?? 0;
+};
+
 export {
   channelUserCan,
+  countServerChannels,
   getAffectedOnlineUserIdsForChannel,
   getAffectedUserIdsForChannel,
   getAllChannelUserPermissions,

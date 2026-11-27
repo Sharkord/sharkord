@@ -8,10 +8,10 @@ import {
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
-import { getRole } from '../db/queries/roles';
+import { countServerChannels } from '../db/queries/channels';
+import { countRoles } from '../db/queries/roles';
 import { pluginData } from '../db/schema';
 import { invariant } from '../utils/invariant';
-import { getPluginChannel } from './actions/write-plugin-channels';
 import { eventBus } from './event-bus';
 import type { PluginLogger } from './plugin-logger';
 import type { PluginStateStore } from './plugin-state-store';
@@ -72,16 +72,18 @@ class PluginSettingsManager {
   };
 
   // `0` is the unset default and points at nothing
-  private assertReferenceExists = async (
+  private assertReferencesExist = async (
     definition: TPluginSettingDefinition,
-    value: number
+    value: number | number[]
   ) => {
-    if (value === 0) return;
+    const ids = [...new Set([value].flat())].filter((id) => id !== 0);
+
+    if (ids.length === 0) return;
 
     if (definition.type === 'channel') {
-      const channel = await getPluginChannel(value);
+      const found = await countServerChannels(ids);
 
-      invariant(channel && !channel.isDm, {
+      invariant(found === ids.length, {
         code: 'NOT_FOUND',
         message: 'Channel not found.'
       });
@@ -89,9 +91,9 @@ class PluginSettingsManager {
       return;
     }
 
-    const role = await getRole(value);
+    const found = await countRoles(ids);
 
-    invariant(role, {
+    invariant(found === ids.length, {
       code: 'NOT_FOUND',
       message: 'Role not found.'
     });
@@ -227,7 +229,7 @@ class PluginSettingsManager {
     }
 
     if (isReferenceSetting(definition)) {
-      await this.assertReferenceExists(definition, value as number);
+      await this.assertReferencesExist(definition, value as number | number[]);
     }
 
     await this.setValue(pluginId, key, value);

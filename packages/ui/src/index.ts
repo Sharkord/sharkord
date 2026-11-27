@@ -20,6 +20,7 @@ export * from './components/image-swatch-picker';
 export * from './components/input';
 export * from './components/label';
 export * from './components/loading-card';
+export * from './components/multi-select';
 export * from './components/paginated-list';
 export * from './components/popover';
 export * from './components/select';

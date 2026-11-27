@@ -397,14 +397,20 @@ export interface EventPayloads {
 // this API is probably going to change a lot in the future
 // so consider it as experimental for now
 
-type SettingValueType<T extends TPluginSettingDefinition> =
-  T['type'] extends 'string'
+type SingleSettingValueType<T extends TPluginSettingDefinition> =
+  T['type'] extends 'string' | 'secret' | 'enum'
     ? string
     : T['type'] extends 'number' | 'channel' | 'role'
       ? number
       : T['type'] extends 'boolean'
         ? boolean
         : unknown;
+
+type SettingValueType<T extends TPluginSettingDefinition> = [T] extends [
+  { multiple: true; type: 'enum' | 'channel' | 'role' }
+]
+  ? SingleSettingValueType<T>[]
+  : SingleSettingValueType<T>;
 
 /**
  * Typed access to the settings you registered, keyed by their definitions. Pass
