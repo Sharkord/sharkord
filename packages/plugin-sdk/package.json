@@ -1,6 +1,6 @@
 {
   "name": "@sharkord/plugin-sdk",
-  "version": "0.0.32",
+  "version": "0.0.33",
   "type": "module",
   "sideEffects": false,
   "main": "src/index.ts",
