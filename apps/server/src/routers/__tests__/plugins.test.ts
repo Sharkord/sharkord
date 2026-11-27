@@ -780,7 +780,10 @@ describe('plugins router', () => {
     describe('channel and role settings', () => {
       beforeEach(() => pluginManager.load('plugin-with-settings'));
 
-      const update = async (key: string, value: string | number) => {
+      const update = async (
+        key: string,
+        value: string | number | string[] | number[]
+      ) => {
         const { caller } = await initTest();
 
         await caller.plugins.updateSetting({
@@ -842,6 +845,75 @@ describe('plugins router', () => {
       test('should refuse a value that is not an id', async () => {
         await expect(update('logChannel', 'general')).rejects.toThrow(
           "Setting 'logChannel' expects a number, received string"
+        );
+      });
+
+      test('should start multiple settings as an empty list', async () => {
+        const { caller } = await initTest();
+
+        const result = await caller.plugins.getSettings({
+          pluginId: 'plugin-with-settings'
+        });
+
+        expect(result.values.tags).toEqual([]);
+        expect(result.values.watchedChannels).toEqual([]);
+        expect(result.values.pingRoles).toEqual([]);
+      });
+
+      test('should store several channels that exist', async () => {
+        expect(await update('watchedChannels', [1, 2])).toEqual([1, 2]);
+      });
+
+      test('should store several roles that exist', async () => {
+        expect(await update('pingRoles', [2, 4])).toEqual([2, 4]);
+      });
+
+      test('should store several enum options', async () => {
+        expect(await update('tags', ['bug', 'feature'])).toEqual([
+          'bug',
+          'feature'
+        ]);
+      });
+
+      test('should accept clearing a multiple setting', async () => {
+        await update('watchedChannels', [1]);
+
+        expect(await update('watchedChannels', [])).toEqual([]);
+      });
+
+      test('should refuse a list with a channel that does not exist', async () => {
+        await expect(update('watchedChannels', [1, 9999])).rejects.toThrow(
+          'Channel not found.'
+        );
+      });
+
+      test('should refuse a list with a DM channel', async () => {
+        await expect(update('watchedChannels', [1, 3])).rejects.toThrow(
+          'Channel not found.'
+        );
+      });
+
+      test('should refuse a list with a role that does not exist', async () => {
+        await expect(update('pingRoles', [4, 9999])).rejects.toThrow(
+          'Role not found.'
+        );
+      });
+
+      test('should refuse a list with an unknown enum option', async () => {
+        await expect(update('tags', ['bug', 'other'])).rejects.toThrow(
+          "Setting 'tags' expects one of: bug, feature."
+        );
+      });
+
+      test('should refuse a single value for a multiple setting', async () => {
+        await expect(update('watchedChannels', 1)).rejects.toThrow(
+          "Setting 'watchedChannels' expects a list, received number."
+        );
+      });
+
+      test('should refuse a list for a single setting', async () => {
+        await expect(update('logChannel', [1])).rejects.toThrow(
+          "Setting 'logChannel' expects a number, received object."
         );
       });
     });

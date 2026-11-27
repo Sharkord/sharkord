@@ -55,6 +55,34 @@ const onLoad = async (ctx) => {
       description: 'Who counts as a moderator',
       type: 'role',
       defaultValue: 0
+    },
+    {
+      key: 'tags',
+      name: 'Tags',
+      description: 'Which tags the plugin applies',
+      type: 'enum',
+      multiple: true,
+      defaultValue: [],
+      options: [
+        { value: 'bug', label: 'Bug' },
+        { value: 'feature', label: 'Feature' }
+      ]
+    },
+    {
+      key: 'watchedChannels',
+      name: 'Watched channels',
+      description: 'Channels the plugin listens to',
+      type: 'channel',
+      multiple: true,
+      defaultValue: []
+    },
+    {
+      key: 'pingRoles',
+      name: 'Ping roles',
+      description: 'Roles pinged on alerts',
+      type: 'role',
+      multiple: true,
+      defaultValue: []
     }
   ]);
 

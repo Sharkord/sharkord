@@ -9,7 +9,13 @@ const updateSettingRoute = protectedProcedure
     z.object({
       pluginId: zPluginId,
       key: z.string(),
-      value: z.union([z.string(), z.number(), z.boolean()])
+      value: z.union([
+        z.string(),
+        z.number(),
+        z.boolean(),
+        z.array(z.string()).max(100),
+        z.array(z.number()).max(100)
+      ])
     })
   )
   .mutation(async ({ ctx, input }) => {
