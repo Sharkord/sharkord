@@ -161,7 +161,6 @@ describe('files.refreshTokens', () => {
   const dmFileId = 2;
   // no row attaches it to a message, the way avatars, banners and emojis are stored
   const unattachedFileId = 99;
-  // seeded view once attachment in Restricted Text, which user 1 can see
   const viewOnceFileId = 3;
 
   const signedFileById = (id: number, expiresAt: number) => ({

@@ -39,7 +39,6 @@ const publicRouteHandler = async (
     .where(eq(files.name, fileName))
     .get();
 
-  // view once files are only served through /view-once
   if (!dbFile || dbFile.viewOnce) {
     sendJsonError(res, 404, 'File not found');
     return;

@@ -24,7 +24,6 @@ const openViewOnceRoute = protectedProcedure
       message: 'You cannot open your own view once file.'
     });
 
-    // the primary key makes a second open a no-op, so two racing requests cannot both get in
     const view = await db
       .insert(fileViews)
       .values({

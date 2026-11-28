@@ -2787,9 +2787,7 @@ describe('messages router', () => {
 });
 
 describe('view once messages', () => {
-  // the seeded view once photo in Restricted Text, which user 2 cannot see
   const RESTRICTED_VIEW_ONCE_FILE_ID = 3;
-  // the dm between users 3 and 4
   const DM_CHANNEL_ID = 3;
 
   const uploadAs = async (token: string, name: string, type: string) => {
@@ -2871,7 +2869,6 @@ describe('view once messages', () => {
     const photo = await uploadAs(mockedToken, 'private.png', 'image/png');
     const second = await uploadAs(mockedToken, 'second.png', 'image/png');
 
-    // room for the first attachment only, so the second fails after the first was saved
     await tdb.update(settings).set({
       storageQuota: (await getUsedFileQuota()) + 'bytes'.length,
       storageOverflowAction: StorageOverflowAction.PREVENT_UPLOADS
@@ -2930,7 +2927,6 @@ describe('view once messages', () => {
       })
     ).rejects.toThrow('Only photos and videos can be sent as view once.');
 
-    // refused before any of the attachments was saved
     expect(await tdb.select({ id: files.id }).from(files)).toHaveLength(
       before.length
     );
@@ -3141,7 +3137,6 @@ describe('view once messages', () => {
   test('should not find a file that is not view once', async () => {
     const { caller } = await initTest(2);
 
-    // the seeded normal attachment in General
     await expect(caller.messages.openViewOnce({ fileId: 1 })).rejects.toThrow(
       'File not found.'
     );
@@ -3273,8 +3268,6 @@ describe('view once messages', () => {
 
     const { caller } = await initTest(1);
 
-    // the seeded view once photo in Restricted Text is view-once.png, attached to message 4
-    // whose content matches the second query
     const byFileName = await caller.messages.search({ query: 'view-once' });
 
     expect(byFileName.files).toEqual([]);

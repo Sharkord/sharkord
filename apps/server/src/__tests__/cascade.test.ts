@@ -48,7 +48,6 @@ describe('database cascades', async () => {
     await tdb.delete(channels).where(eq(channels.id, channelsBefore[0]!.id));
 
     const messagesAfter = await tdb.select().from(messages);
-    // the DM message and the view once message in Restricted Text remain
     expect(messagesAfter.length).toBe(2);
   });
 
@@ -70,7 +69,6 @@ describe('database cascades', async () => {
     );
 
     const messagesAfter = await tdb.select().from(messages);
-    // the DM message and the view once message in Restricted Text, which has no category
     expect(messagesAfter.length).toBe(2);
   });
 
@@ -981,7 +979,6 @@ describe('database cascades', async () => {
   });
 
   describe('file_views', () => {
-    // the seeded view once file on message 4 in Restricted Text, opened by user 2
     const viewOnceFileId = 3;
 
     const getViews = () =>

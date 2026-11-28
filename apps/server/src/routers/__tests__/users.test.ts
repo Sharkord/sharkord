@@ -237,7 +237,6 @@ describe('users router', () => {
   test('should list the files of a user without their view once files', async () => {
     const { caller } = await initTest();
 
-    // user 1 owns the seeded attachments 1 and 2 and the view once file 3
     const info = await caller.users.getInfo({ userId: 1 });
 
     expect(info.files.map(({ id }) => id).sort()).toEqual([1, 2]);

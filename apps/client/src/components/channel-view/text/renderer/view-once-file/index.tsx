@@ -75,31 +75,27 @@ const ViewOnceFile = memo(({ file, isOwnMessage }: TViewOnceFileProps) => {
         { headers: getTokenHeader() }
       );
 
-      if (response.ok) {
-        const blob = await response.blob();
-
-        setMedia(blob);
-        setDownloadFailed(false);
-
-        return;
+      if (!response.ok) {
+        throw new Error(response.statusText);
       }
-    } catch {
-      // a network failure gets the same toast and retry as an error status
-    }
 
-    setDownloadFailed(true);
-    toast.error(t('failedOpenViewOnce'));
+      const blob = await response.blob();
+
+      setMedia(blob);
+      setDownloadFailed(false);
+    } catch {
+      setDownloadFailed(true);
+      toast.error(t('failedOpenViewOnce'));
+    }
   }, [file.id, t]);
 
   const onOpenClick = useCallback(async () => {
-    // a double click fires twice before the disabled state renders
     if (busyRef.current) return;
 
     busyRef.current = true;
     setLoading(true);
 
     try {
-      // the server already counted the open, a retry only downloads again
       if (!downloadFailed) {
         const trpc = getTRPCClient();
 

@@ -121,7 +121,6 @@ const uploadFile = async (
     body: file
   });
 
-// a photo sent as a view once message, through the real upload and send
 const sendViewOnceMessage = async (userId: number, channelId: number = 1) => {
   const { caller, mockedToken } = await initTest(userId);
 

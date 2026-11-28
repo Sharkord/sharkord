@@ -22,12 +22,10 @@
  *                          Restricted Text
  *   messages          4    1 in General (channel 1), 2 in the DM channel, 3 in General
  *                          with unfurled link metadata (a direct image and an open graph
- *                          preview), for the media proxy, 4 in Restricted Text (channel 5)
- *                          by user 1, carrying a view once photo
+ *                          preview), for the media proxy, 4 in Restricted Text with view once file 3
  *   directMessages    1    the DM pair backing "DM Channel"
  *   files             3    1 attached to message 1 (General), 2 attached to message 2 (the
- *                          DM, which user 2 is not part of), 3 the view once photo on
- *                          message 4. rows only, nothing on disk
+ *                          DM, which user 2 is not part of), 3 to message 4. rows only, nothing on disk
  *   messageFiles      3    the three attachments above
  *   channelRolePermissions
  *                     1    the default role may view channel 5
@@ -548,8 +546,6 @@ const seedTestDb = async (
 
   await db.insert(messages).values(embedMessage);
 
-  // a view once photo in the channel user 2 cannot see, so opening one can be refused for a
-  // hidden channel. nothing is written to disk
   const [viewOnceMessage] = await db
     .insert(messages)
     .values({

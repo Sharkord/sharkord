@@ -17,9 +17,7 @@ const fetchViewOnce = (fileId: number | string, token?: string) =>
     headers: token ? { [UploadHeaders.TOKEN]: token } : {}
   });
 
-// the seeded Restricted Text channel, which the default role may view
 const RESTRICTED_CHANNEL_ID = 5;
-// the dm between users 3 and 4
 const DM_CHANNEL_ID = 3;
 
 describe('/view-once', () => {
@@ -156,7 +154,6 @@ describe('/view-once', () => {
   test('should not serve a file that is not view once', async () => {
     const { mockedToken } = await initTest(1);
 
-    // an open row for the seeded normal attachment, which no route can create
     await tdb
       .insert(fileViews)
       .values({ fileId: 1, userId: 1, createdAt: Date.now() });

@@ -22,7 +22,6 @@ const viewOnceRateLimiter = createRateLimiter({
   getLimit: () => getRateLimit()
 });
 
-// the rule assertChannelAccess applies in openViewOnce, which needs a trpc context
 const canViewChannel = async (channelId: number, userId: number) => {
   try {
     await assertDmChannel(channelId, userId);
