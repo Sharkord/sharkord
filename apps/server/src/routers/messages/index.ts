@@ -12,6 +12,7 @@ import { getMessageRoute } from './get-message';
 import { getMessagesRoute } from './get-messages';
 import { getPinnedRoute } from './get-pinned';
 import { getThreadMessagesRoute } from './get-thread-messages';
+import { openViewOnceRoute } from './open-view-once';
 import { searchMessagesRoute } from './search';
 import { sendMessageRoute } from './send-message';
 import { signalTypingRoute } from './signal-typing';
@@ -29,6 +30,7 @@ export const messagesRouter = t.router({
   getThread: getThreadMessagesRoute,
   toggleReaction: toggleMessageReactionRoute,
   togglePin: toggleMessagePinRoute,
+  openViewOnce: openViewOnceRoute,
   signalTyping: signalTypingRoute,
   onNew: onMessageRoute,
   onUpdate: onMessageUpdateRoute,

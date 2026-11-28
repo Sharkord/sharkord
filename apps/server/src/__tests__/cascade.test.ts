@@ -1,5 +1,6 @@
-import { describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
+import { deleteMessage } from '../db/mutations/messages';
 import {
   activityLog,
   categories,
@@ -10,6 +11,7 @@ import {
   directMessages,
   emojis,
   files,
+  fileViews,
   invites,
   logins,
   messageFiles,
@@ -46,7 +48,7 @@ describe('database cascades', async () => {
     await tdb.delete(channels).where(eq(channels.id, channelsBefore[0]!.id));
 
     const messagesAfter = await tdb.select().from(messages);
-    expect(messagesAfter.length).toBe(1); // only the DM message from setup should remain
+    expect(messagesAfter.length).toBe(2);
   });
 
   test('deleting a category cascades to channels and messages', async () => {
@@ -67,7 +69,7 @@ describe('database cascades', async () => {
     );
 
     const messagesAfter = await tdb.select().from(messages);
-    expect(messagesAfter.length).toBe(1); // only the DM message from setup should remain
+    expect(messagesAfter.length).toBe(2);
   });
 
   test('deleting a user cascades to messages, logins, invites, activity logs', async () => {
@@ -974,5 +976,36 @@ describe('database cascades', async () => {
           .where(eq(messageFiles.fileId, file!.id))
       ).length
     ).toBe(0);
+  });
+
+  describe('file_views', () => {
+    const viewOnceFileId = 3;
+
+    const getViews = () =>
+      tdb.select().from(fileViews).where(eq(fileViews.fileId, viewOnceFileId));
+
+    beforeEach(async () => {
+      await tdb
+        .insert(fileViews)
+        .values({ fileId: viewOnceFileId, userId: 2, createdAt: Date.now() });
+    });
+
+    test('deleting a file cascades to file_views', async () => {
+      await tdb.delete(files).where(eq(files.id, viewOnceFileId));
+
+      expect(await getViews()).toEqual([]);
+    });
+
+    test('deleting a message removes its files and with them their file_views', async () => {
+      await deleteMessage({ id: 4, channelId: 5, parentMessageId: null });
+
+      expect(await getViews()).toEqual([]);
+    });
+
+    test('deleting a user cascades to file_views', async () => {
+      await tdb.delete(users).where(eq(users.id, 2));
+
+      expect(await getViews()).toEqual([]);
+    });
   });
 });

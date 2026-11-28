@@ -1,6 +1,5 @@
 import { getUrlFromServer } from '@/helpers/get-file-url';
-import { getSessionStorageItem, SessionStorageKey } from '@/helpers/storage';
-import { UploadHeaders } from '@sharkord/shared';
+import { getTokenHeader } from '@/helpers/get-token-header';
 
 type TUploadedPlugin = {
   id: string;
@@ -17,8 +16,7 @@ export const uploadPluginArchive = async (
     method: 'POST',
     headers: {
       'Content-Type': 'application/octet-stream',
-      [UploadHeaders.TOKEN]:
-        getSessionStorageItem(SessionStorageKey.TOKEN) ?? ''
+      ...getTokenHeader()
     },
     body: file
   });

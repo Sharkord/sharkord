@@ -26,6 +26,7 @@ import { Media } from './media';
 import { extractMessageMedia } from './media-cache';
 import { MessageRenderFallback } from './message-render-fallback';
 import { OpenGraph } from './open-graph';
+import { ViewOnceFile } from './view-once-file';
 
 type TMessageRendererProps = {
   message: TJoinedMessage;
@@ -86,6 +87,16 @@ const MessageRenderer = memo(
     );
 
     const allMedia = useMemo(() => extractMessageMedia(message), [message]);
+
+    const viewOnceFiles = useMemo(
+      () => message.files.filter((file) => file.viewOnce),
+      [message.files]
+    );
+
+    const regularFiles = useMemo(
+      () => message.files.filter((file) => !file.viewOnce),
+      [message.files]
+    );
 
     const youtubeVideoIds = useMemo(
       () => getYoutubeVideoIds(message),
@@ -152,6 +163,17 @@ const MessageRenderer = memo(
           <YoutubeOverride key={videoId} videoId={videoId} />
         ))}
         <Media media={allMedia} />
+        {viewOnceFiles.length > 0 && !disableFiles && (
+          <div className="flex gap-1 flex-wrap">
+            {viewOnceFiles.map((file) => (
+              <ViewOnceFile
+                key={file.id}
+                file={file}
+                isOwnMessage={isOwnMessage}
+              />
+            ))}
+          </div>
+        )}
         <OpenGraph previews={openGraphPreviews} />
 
         {!disableReactions && (
@@ -166,9 +188,9 @@ const MessageRenderer = memo(
           props={pluginProps}
         />
 
-        {message.files.length > 0 && !disableFiles && (
+        {regularFiles.length > 0 && !disableFiles && (
           <div className="flex gap-1 flex-wrap">
-            {message.files.map((file) => (
+            {regularFiles.map((file) => (
               <FileCard
                 key={file.id}
                 name={file.originalName}

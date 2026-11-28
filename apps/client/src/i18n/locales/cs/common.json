@@ -160,5 +160,12 @@
   "formatItalic": "Kurzíva",
   "formatCode": "Kód",
   "formatCodeBlock": "Blok kódu",
-  "playVideo": "Přehrát video"
+  "playVideo": "Přehrát video",
+  "viewOnceToggle": "Zobrazit jednou",
+  "viewOncePhoto": "Fotka",
+  "viewOnceVideo": "Video",
+  "viewOnceOpened": "Otevřeno",
+  "viewOnceOpenedBy": "Otevřeno: {{names}}",
+  "viewOnceNotOpened": "Nikdo to zatím neotevřel",
+  "failedOpenViewOnce": "Nepodařilo se otevřít jednorázové médium"
 }

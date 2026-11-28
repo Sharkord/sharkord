@@ -69,6 +69,21 @@ export const getFileCategory = (extension: string): FileCategory => {
   return FileCategory.OTHER;
 };
 
+const viewOnceExtensions = [
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.bmp',
+  '.ico',
+  '.mp4',
+  '.webm'
+];
+
+export const isViewOnceExtension = (extension: string) =>
+  viewOnceExtensions.includes(extension.toLowerCase());
+
 export const isPreviewable = (file: File) => {
   const parts = file.name.split('.');
   const ext = parts.length > 1 ? `.${parts.pop()}` : '';

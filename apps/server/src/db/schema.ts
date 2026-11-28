@@ -35,6 +35,9 @@ const files = sqliteTable(
     size: integer('size').notNull(),
     mimeType: text('mime_type').notNull(),
     extension: text('extension').notNull(),
+    viewOnce: integer('view_once', { mode: 'boolean' })
+      .notNull()
+      .default(false),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at')
   },
@@ -381,6 +384,23 @@ const messageFiles = sqliteTable(
     primaryKey({ columns: [t.messageId, t.fileId] }),
     index('message_files_msg_idx').on(t.messageId),
     index('message_files_file_idx').on(t.fileId)
+  ]
+);
+
+const fileViews = sqliteTable(
+  'file_views',
+  {
+    fileId: integer('file_id')
+      .notNull()
+      .references(() => files.id, { onDelete: 'cascade' }),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: integer('created_at').notNull()
+  },
+  (t) => [
+    primaryKey({ columns: [t.fileId, t.userId] }),
+    index('file_views_user_idx').on(t.userId)
   ]
 );
 
@@ -736,6 +756,7 @@ export {
   directMessages,
   emojis,
   files,
+  fileViews,
   invites,
   logins,
   messageFiles,

@@ -449,7 +449,8 @@ class FileManager {
   private async persistTempFile(
     tempFile: TTempFile,
     owner: { userId: number | null; pluginId: string | null },
-    type?: FileSaveType
+    type?: FileSaveType,
+    viewOnce = false
   ): Promise<TFile> {
     if (type) {
       await this.runBeforeFileSaveHooks(tempFile, owner.userId, type);
@@ -490,6 +491,7 @@ class FileManager {
         md5: tempFile.md5,
         size: tempFile.size,
         originalName,
+        viewOnce,
         userId: owner.userId,
         pluginId: owner.pluginId,
         mimeType: bunFile?.type || 'application/octet-stream',
@@ -502,7 +504,8 @@ class FileManager {
   public async saveFile(
     tempFileId: string,
     userId: number,
-    type?: FileSaveType
+    type?: FileSaveType,
+    viewOnce = false
   ): Promise<TFile> {
     const tempFile = this.getTemporaryFile(tempFileId);
 
@@ -514,7 +517,12 @@ class FileManager {
       throw new Error("You don't have permission to access this file");
     }
 
-    return this.persistTempFile(tempFile, { userId, pluginId: null }, type);
+    return this.persistTempFile(
+      tempFile,
+      { userId, pluginId: null },
+      type,
+      viewOnce
+    );
   }
 
   public async savePluginFile(

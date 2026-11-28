@@ -5,6 +5,7 @@ import {
   getErrorMessage,
   getPlainTextFromHtml,
   isEmptyMessage,
+  isViewOnceExtension,
   MESSAGE_MAX_LENGTH,
   MessageSaveType,
   Permission,
@@ -14,7 +15,8 @@ import {
   STORAGE_MAX_FILES_PER_MESSAGE,
   stringifyCommandResponse,
   toDomCommand,
-  type TPluginEphemeralResponse
+  type TPluginEphemeralResponse,
+  type TTempFile
 } from '@sharkord/shared';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -46,7 +48,8 @@ const sendMessageRoute = protectedProcedure
       channelId: z.number(),
       files: z.array(z.string()).max(STORAGE_MAX_FILES_PER_MESSAGE).default([]),
       parentMessageId: z.number().optional(),
-      replyToMessageId: z.number().optional()
+      replyToMessageId: z.number().optional(),
+      viewOnce: z.boolean().default(false)
     })
   )
   .mutation(async ({ input, ctx }) => {
@@ -137,6 +140,41 @@ const sendMessageRoute = protectedProcedure
           message: 'File sharing in direct messages is disabled on this server'
         });
       }
+    }
+
+    if (input.viewOnce) {
+      invariant(input.files.length > 0, {
+        code: 'BAD_REQUEST',
+        message: 'A view once message needs at least one photo or video.'
+      });
+
+      invariant(new Set(input.files).size === input.files.length, {
+        code: 'BAD_REQUEST',
+        message: 'The same file cannot be attached more than once.'
+      });
+
+      const tempFiles = input.files.map((tempFileId) =>
+        fileManager.getTemporaryFile(tempFileId)
+      );
+
+      invariant(
+        tempFiles.every(
+          (tempFile): tempFile is TTempFile => tempFile?.userId === ctx.userId
+        ),
+        {
+          code: 'NOT_FOUND',
+          message:
+            'One of the attached files was not found. Please upload it again.'
+        }
+      );
+
+      invariant(
+        tempFiles.every((tempFile) => isViewOnceExtension(tempFile.extension)),
+        {
+          code: 'BAD_REQUEST',
+          message: 'Only photos and videos can be sent as view once.'
+        }
+      );
     }
 
     invariant(!isEmptyMessage(input.content) || input.files.length != 0, {
@@ -322,7 +360,8 @@ const sendMessageRoute = protectedProcedure
       const newFile = await fileManager.saveFile(
         tempFileId,
         ctx.userId,
-        FileSaveType.MESSAGE
+        FileSaveType.MESSAGE,
+        input.viewOnce
       );
 
       savedFileIds.push(newFile.id);

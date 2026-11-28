@@ -1,11 +1,13 @@
 import { sha256, UploadHeaders } from '@sharkord/shared';
+import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import type WebSocket from 'ws';
+import { messageFiles } from '../db/schema';
 import { appRouter } from '../routers';
 import type { Context } from '../utils/trpc';
 import { createMockContext, type TMockContextOptions } from './context';
 import { TEST_SECRET_TOKEN } from './seed';
-import { testsBaseUrl } from './setup';
+import { tdb, testsBaseUrl } from './setup';
 
 const getMockedToken = async (userId: number, tokenVersion: number = 0) => {
   const hashedToken = await sha256(TEST_SECRET_TOKEN);
@@ -119,6 +121,31 @@ const uploadFile = async (
     body: file
   });
 
+const sendViewOnceMessage = async (userId: number, channelId: number = 1) => {
+  const { caller, mockedToken } = await initTest(userId);
+
+  const response = await uploadFile(
+    new File(['view once bytes'], 'secret.png', { type: 'image/png' }),
+    mockedToken
+  );
+  const temp = (await response.json()) as { id: string };
+
+  const messageId = await sendMessage(caller, {
+    channelId,
+    content: 'Only once',
+    files: [temp.id],
+    viewOnce: true
+  });
+
+  const attachment = await tdb
+    .select({ fileId: messageFiles.fileId })
+    .from(messageFiles)
+    .where(eq(messageFiles.messageId, messageId))
+    .get();
+
+  return { messageId, fileId: attachment!.fileId };
+};
+
 export {
   createFakeSocket,
   getCaller,
@@ -126,6 +153,7 @@ export {
   initTest,
   login,
   sendMessage,
+  sendViewOnceMessage,
   uploadFile,
   type TFakeSocket
 };

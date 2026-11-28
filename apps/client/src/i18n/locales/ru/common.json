@@ -160,5 +160,12 @@
   "formatItalic": "Курсив",
   "formatCode": "Код",
   "formatCodeBlock": "Блок кода",
-  "playVideo": "Воспроизвести видео"
+  "playVideo": "Воспроизвести видео",
+  "viewOnceToggle": "Однократный просмотр",
+  "viewOncePhoto": "Фото",
+  "viewOnceVideo": "Видео",
+  "viewOnceOpened": "Открыто",
+  "viewOnceOpenedBy": "Открыто: {{names}}",
+  "viewOnceNotOpened": "Пока никто не открывал",
+  "failedOpenViewOnce": "Не удалось открыть медиафайл однократного просмотра"
 }

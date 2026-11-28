@@ -160,5 +160,12 @@
   "formatItalic": "Cursiva",
   "formatCode": "Código",
   "formatCodeBlock": "Bloque de código",
-  "playVideo": "Reproducir vídeo"
+  "playVideo": "Reproducir vídeo",
+  "viewOnceToggle": "Ver una vez",
+  "viewOncePhoto": "Foto",
+  "viewOnceVideo": "Vídeo",
+  "viewOnceOpened": "Abierto",
+  "viewOnceOpenedBy": "Abierto por {{names}}",
+  "viewOnceNotOpened": "Nadie lo ha abierto aún",
+  "failedOpenViewOnce": "No se pudo abrir el contenido para ver una vez"
 }

@@ -1,12 +1,9 @@
-import {
-  getPlainTextFromHtml,
-  RateLimiter,
-  type TFile
-} from '@sharkord/shared';
+import { getPlainTextFromHtml, RateLimiter } from '@sharkord/shared';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { getChannelsForUser } from '../../db/queries/channels';
+import { getMessageAttachments } from '../../db/queries/message-attachments';
 import { getSettings } from '../../db/queries/server';
 import { channels, files, messageFiles, messages } from '../../db/schema';
 import { attachFileToken } from '../../helpers/files-crypto';
@@ -122,6 +119,7 @@ const searchMessagesRoute = protectedProcedure
         .where(
           and(
             inArray(messages.channelId, accessibleChannelIds),
+            eq(files.viewOnce, false),
             sql`${files.originalName} GLOB ${globPattern}`
           )
         )
@@ -151,47 +149,19 @@ const searchMessagesRoute = protectedProcedure
 
     const matchedMessageIds = matchedMessages.map((row) => row.message.id);
 
-    const attachedFileRows =
-      matchedMessageIds.length > 0
-        ? await db
-            .select({
-              messageId: messageFiles.messageId,
-              file: files
-            })
-            .from(messageFiles)
-            .innerJoin(files, eq(files.id, messageFiles.fileId))
-            .where(inArray(messageFiles.messageId, matchedMessageIds))
-        : [];
+    const filesByMessageId = await getMessageAttachments(
+      matchedMessageIds,
+      settings
+    );
 
-    const filesByMessageId = new Map<number, TFile[]>();
-
-    for (const row of attachedFileRows) {
-      const list = filesByMessageId.get(row.messageId) ?? [];
-
-      list.push({ ...row.file });
-      filesByMessageId.set(row.messageId, list);
-    }
-
-    const matchedMessagesWithFiles = matchedMessages.map((row) => {
-      const attachedFiles = filesByMessageId.get(row.message.id) ?? [];
-
-      const preparedFiles = attachedFiles.map((file) =>
-        attachFileToken(
-          file,
-          settings.storageSignedUrlsEnabled,
-          settings.storageSignedUrlsTtlSeconds
-        )
-      );
-
-      return {
-        ...row.message,
-        channelName: row.channelName,
-        channelIsDm: row.channelIsDm,
-        plainContent: row.plainContent,
-        files: preparedFiles,
-        reactions: []
-      };
-    });
+    const matchedMessagesWithFiles = matchedMessages.map((row) => ({
+      ...row.message,
+      channelName: row.channelName,
+      channelIsDm: row.channelIsDm,
+      plainContent: row.plainContent,
+      files: filesByMessageId[row.message.id] ?? [],
+      reactions: []
+    }));
 
     const matchedFiles = fileRows.map((row) => {
       const file = attachFileToken(

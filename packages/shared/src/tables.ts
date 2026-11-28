@@ -30,6 +30,7 @@ export type TChannel = InferSelectModel<typeof channels>;
 export type TFile = InferSelectModel<typeof files> & {
   _accessToken?: string;
   _accessTokenExpiresAt?: number;
+  _viewedBy?: number[];
 };
 export type TUser = InferSelectModel<typeof users>;
 export type TLogin = InferSelectModel<typeof logins>;
