@@ -69,6 +69,24 @@ export const getFileCategory = (extension: string): FileCategory => {
   return FileCategory.OTHER;
 };
 
+// only what chromium's <img> and <video> render, a file that fails to show
+// still spends the single view. svg is active content opened from a blob: url on
+// the app origin, and whether a .mov plays depends on the codec inside it
+const viewOnceExtensions = [
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.bmp',
+  '.ico',
+  '.mp4',
+  '.webm'
+];
+
+export const isViewOnceExtension = (extension: string) =>
+  viewOnceExtensions.includes(extension.toLowerCase());
+
 export const isPreviewable = (file: File) => {
   const parts = file.name.split('.');
   const ext = parts.length > 1 ? `.${parts.pop()}` : '';

@@ -66,8 +66,9 @@ const publishMessage = async (
 
   pubsub.publishFor(affectedUserIds, targetEvent, message);
 
-  // thread replies should not increment the channel's unread count
-  if (message.parentMessageId) return;
+  // an update (an edit, a view once open) is not a new message, so it must not
+  // add to anyone's unread count, and neither should a thread reply
+  if (type !== 'create' || message.parentMessageId) return;
 
   // only send unread updates to users OTHER than the message author
   const usersToNotify = affectedUserIds.filter((id) => id !== message.userId);

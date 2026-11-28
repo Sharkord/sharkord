@@ -160,5 +160,12 @@
   "formatItalic": "Italic",
   "formatCode": "Code",
   "formatCodeBlock": "Code block",
-  "playVideo": "Play video"
+  "playVideo": "Play video",
+  "viewOnceToggle": "View once",
+  "viewOncePhoto": "Photo",
+  "viewOnceVideo": "Video",
+  "viewOnceOpened": "Opened",
+  "viewOnceOpenedBy": "Opened by {{names}}",
+  "viewOnceNotOpened": "Nobody has opened it yet",
+  "failedOpenViewOnce": "Failed to open view once media"
 }

@@ -35,6 +35,7 @@ import { pluginUploadRouteHandler } from './plugin-upload';
 import { pluginsComponentsRouteHandler } from './plugins-components';
 import { publicRouteHandler } from './public';
 import { uploadFileRouteHandler } from './upload';
+import { viewOnceRouteHandler } from './view-once';
 
 // parsed once per request and handed to every handler, so nothing below re-parses the url
 // or re-resolves the client ip
@@ -89,6 +90,7 @@ const routeHandlers: Partial<
     },
     prefix: {
       '/public': publicRouteHandler,
+      '/view-once': viewOnceRouteHandler,
       '/plugin-components': pluginsComponentsRouteHandler,
       '/plugin-bundle': pluginBundleRouteHandler
     }

@@ -160,5 +160,12 @@
   "formatItalic": "İtalik",
   "formatCode": "Kod",
   "formatCodeBlock": "Kod bloğu",
-  "playVideo": "Videoyu oynat"
+  "playVideo": "Videoyu oynat",
+  "viewOnceToggle": "Bir kez görüntüle",
+  "viewOncePhoto": "Fotoğraf",
+  "viewOnceVideo": "Video",
+  "viewOnceOpened": "Açıldı",
+  "viewOnceOpenedBy": "{{names}} tarafından açıldı",
+  "viewOnceNotOpened": "Henüz kimse açmadı",
+  "failedOpenViewOnce": "Bir kez görüntülenen medya açılamadı"
 }

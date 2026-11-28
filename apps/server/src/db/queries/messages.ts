@@ -1,5 +1,4 @@
 import type {
-  TFile,
   TJoinedMessage,
   TJoinedMessageReaction,
   TMessage,
@@ -29,6 +28,7 @@ import {
   messageReactions,
   messages
 } from '../schema';
+import { getMessageAttachments } from './message-attachments';
 import { getSettings } from './server';
 import { getThreadSummaries } from './threads';
 
@@ -83,12 +83,7 @@ const joinMessagesWithRelations = async (
   const messageIds = rows.map((m) => m.id);
 
   const settings = await getSettings();
-  const {
-    storageSignedUrlsEnabled,
-    storageSignedUrlsTtlSeconds,
-    storageMediaProxyEnabled,
-    enableLinkPreviews
-  } = settings;
+  const { storageMediaProxyEnabled, enableLinkPreviews } = settings;
 
   const getMetadata = (metadata: TMessage['metadata']) => {
     if (!enableLinkPreviews) return null;
@@ -96,15 +91,8 @@ const joinMessagesWithRelations = async (
     return storageMediaProxyEnabled ? proxyMessageMetadata(metadata) : metadata;
   };
 
-  const [fileRows, reactionRows, replyToMap] = await Promise.all([
-    db
-      .select({
-        messageId: messageFiles.messageId,
-        file: files
-      })
-      .from(messageFiles)
-      .innerJoin(files, eq(messageFiles.fileId, files.id))
-      .where(inArray(messageFiles.messageId, messageIds)),
+  const [filesByMessage, reactionRows, replyToMap] = await Promise.all([
+    getMessageAttachments(messageIds, settings),
     db
       .select({
         messageId: messageReactions.messageId,
@@ -120,25 +108,6 @@ const joinMessagesWithRelations = async (
       .where(inArray(messageReactions.messageId, messageIds)),
     getReplyPreviewByMessageId(rows)
   ]);
-
-  const filesByMessage = fileRows.reduce<Record<number, TFile[]>>(
-    (acc, row) => {
-      if (!acc[row.messageId]) {
-        acc[row.messageId] = [];
-      }
-
-      const rowCopy = attachFileToken(
-        row.file,
-        storageSignedUrlsEnabled,
-        storageSignedUrlsTtlSeconds
-      );
-
-      acc[row.messageId]!.push(rowCopy);
-
-      return acc;
-    },
-    {}
-  );
 
   const reactionsByMessage = reactionRows.reduce<
     Record<number, TJoinedMessageReaction[]>

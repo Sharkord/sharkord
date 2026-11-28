@@ -41,7 +41,7 @@ describe('tests setup', () => {
     expect(usersResults.length).toBe(8);
     expect(channelsResults.length).toBe(5);
     expect(rolesResults.length).toBe(4);
-    expect(messagesResults.length).toBe(3);
+    expect(messagesResults.length).toBe(4);
   });
 
   test('should seed the join tables the permission checks read', async () => {
@@ -76,15 +76,19 @@ describe('tests setup', () => {
     expect(directMessagesResults.length).toBe(1);
   });
 
-  test('should seed two message attachments', async () => {
+  test('should seed three message attachments, one of them view once', async () => {
     const [filesResults, messageFilesResults] = await Promise.all([
       tdb.select().from(files),
       tdb.select().from(messageFiles)
     ]);
 
-    expect(filesResults.length).toBe(2);
+    expect(filesResults.map(({ viewOnce }) => viewOnce)).toEqual([
+      false,
+      false,
+      true
+    ]);
     expect(messageFilesResults.map(({ messageId }) => messageId)).toEqual([
-      1, 2
+      1, 2, 4
     ]);
   });
 

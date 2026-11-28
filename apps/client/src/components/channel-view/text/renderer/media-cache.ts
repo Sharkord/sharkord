@@ -53,7 +53,7 @@ const buildMediaSignature = (message: TJoinedMessage) => {
   const fileSignature = message.files
     .map(
       (file) =>
-        `${file.id}:${file.extension}:${file.size}:${file.updatedAt}:${file._accessTokenExpiresAt}`
+        `${file.id}:${file.viewOnce}:${file.extension}:${file.size}:${file.updatedAt}:${file._accessTokenExpiresAt}`
     )
     .join('|');
 
@@ -79,6 +79,8 @@ const extractMessageMedia = (message: TJoinedMessage): TFoundMedia[] => {
 
   const mediaFromFiles: TFoundMedia[] = message.files
     .map((file) => {
+      if (file.viewOnce) return undefined;
+
       const extension = file.extension.toLowerCase();
 
       if (imageExtensions.includes(extension)) {

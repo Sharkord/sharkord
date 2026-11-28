@@ -15,7 +15,12 @@ import {
 } from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
 import { getSettings } from '../../db/queries/server';
-import { channels, channelUserPermissions, settings } from '../../db/schema';
+import {
+  channels,
+  channelUserPermissions,
+  messageFiles,
+  settings
+} from '../../db/schema';
 import { fileManager } from '../../helpers/file-manager';
 import { generateFileToken, verifyFileToken } from '../../helpers/files-crypto';
 
@@ -156,6 +161,8 @@ describe('files.refreshTokens', () => {
   const dmFileId = 2;
   // no row attaches it to a message, the way avatars, banners and emojis are stored
   const unattachedFileId = 99;
+  // seeded view once attachment in Restricted Text, which user 1 can see
+  const viewOnceFileId = 3;
 
   const signedFileById = (id: number, expiresAt: number) => ({
     id,
@@ -273,6 +280,33 @@ describe('files.refreshTokens', () => {
     });
 
     expect(refreshed.map(({ id }) => id)).toEqual([fileId, unattachedFileId]);
+  });
+
+  test('should never refresh a view once attachment', async () => {
+    const { caller } = await initTest(1);
+    const expiresAt = Date.now() + 60_000;
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [
+        signedFileById(fileId, expiresAt),
+        signedFileById(viewOnceFileId, expiresAt)
+      ]
+    });
+
+    expect(refreshed.map(({ id }) => id)).toEqual([fileId]);
+  });
+
+  test('should skip a view once file even when it is not attached', async () => {
+    const { caller } = await initTest(1);
+    await tdb
+      .delete(messageFiles)
+      .where(eq(messageFiles.fileId, viewOnceFileId));
+
+    const refreshed = await caller.files.refreshTokens({
+      files: [signedFileById(viewOnceFileId, Date.now() + 60_000)]
+    });
+
+    expect(refreshed).toEqual([]);
   });
 
   test('should stop refreshing an attachment once the caller loses access to its channel', async () => {

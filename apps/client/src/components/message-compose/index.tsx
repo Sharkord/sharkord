@@ -21,13 +21,21 @@ import type { TJoinedPublicUser, TTempFile } from '@sharkord/shared';
 import {
   ChannelPermission,
   isEmptyMessage,
+  isViewOnceExtension,
   MESSAGE_MAX_LENGTH,
   Permission,
   PluginSlot
 } from '@sharkord/shared';
 import { Button, Spinner } from '@sharkord/ui';
 import { filesize } from 'filesize';
-import { Paperclip, Reply, Send, Smile, X } from 'lucide-react';
+import {
+  CircleDotDashed,
+  Paperclip,
+  Reply,
+  Send,
+  Smile,
+  X
+} from 'lucide-react';
 import {
   memo,
   useCallback,
@@ -51,7 +59,11 @@ type TMessageComposeProps = {
   channelId: number;
   message: string;
   onMessageChange: (value: string) => void;
-  onSend: (message: string, files: TTempFile[]) => Promise<boolean>;
+  onSend: (
+    message: string,
+    files: TTempFile[],
+    viewOnce: boolean
+  ) => Promise<boolean>;
   onTyping: () => void;
   typingUsers: TJoinedPublicUser[];
   showPluginSlot?: boolean;
@@ -96,6 +108,7 @@ const MessageCompose = memo(
     const containerRef = composeContainerRef ?? internalContainerRef;
     const tiptapRef = useRef<TTiptapInputHandle>(null);
     const [sending, setSending] = useState(false);
+    const [viewOnce, setViewOnce] = useState(false);
     const can = useCan();
     const channelCan = useChannelCan(channelId);
     const channel = useChannelById(channelId);
@@ -149,6 +162,23 @@ const MessageCompose = memo(
       fileInputProps
     } = useUploadFiles(channelId, containerRef, !canSendMessages);
 
+    const canViewOnce = useMemo(
+      () =>
+        files.length > 0 &&
+        files.every((file) => isViewOnceExtension(file.extension)),
+      [files]
+    );
+
+    useEffect(() => {
+      if (!canViewOnce) {
+        setViewOnce(false);
+      }
+    }, [canViewOnce]);
+
+    const toggleViewOnce = useCallback(() => {
+      setViewOnce((value) => !value);
+    }, []);
+
     useFileAwareHeight({
       containerRef,
       composeContainerRef,
@@ -189,7 +219,7 @@ const MessageCompose = memo(
       setSending(true);
       sendingRef.current = true;
 
-      const success = await onSend(message, files);
+      const success = await onSend(message, files, viewOnce);
 
       sendingRef.current = false;
       setSending(false);
@@ -210,6 +240,7 @@ const MessageCompose = memo(
     }, [
       message,
       files,
+      viewOnce,
       canSendMessages,
       onSend,
       clearFiles,
@@ -351,6 +382,18 @@ const MessageCompose = memo(
                 <Smile className="h-4 w-4" />
               </Button>
             </EmojiPicker>
+            {files.length > 0 && (
+              <Button
+                size="icon"
+                variant={viewOnce ? 'default' : 'ghost'}
+                disabled={uploading || !canViewOnce}
+                onClick={toggleViewOnce}
+                title={t('viewOnceToggle')}
+                aria-pressed={viewOnce}
+              >
+                <CircleDotDashed className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               size="icon"
               variant="ghost"

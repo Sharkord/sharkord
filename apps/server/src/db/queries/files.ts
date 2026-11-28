@@ -1,8 +1,8 @@
 import type { TFile, TPluginStorageUsage } from '@sharkord/shared';
-import { desc, eq, sql, sum } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, sql, sum } from 'drizzle-orm';
 import { db } from '..';
 import { attachFileToken } from '../../helpers/files-crypto';
-import { files, messageFiles } from '../schema';
+import { files, fileViews, messageFiles, messages } from '../schema';
 import { getSettings } from './server';
 
 const getExceedingOldFiles = async (newFileSize: number) => {
@@ -95,7 +95,7 @@ const getFilesByUserId = async (
         file: files
       })
       .from(files)
-      .where(eq(files.userId, userId))
+      .where(and(eq(files.userId, userId), eq(files.viewOnce, false)))
       .orderBy(desc(files.createdAt))
       .limit(limit),
     getSettings()
@@ -110,6 +110,68 @@ const getFilesByUserId = async (
   );
 
   return results;
+};
+
+const getViewOnceFileMessage = async (fileId: number) =>
+  db
+    .select({
+      messageId: messages.id,
+      channelId: messages.channelId,
+      userId: messages.userId
+    })
+    .from(messageFiles)
+    .innerJoin(files, eq(files.id, messageFiles.fileId))
+    .innerJoin(messages, eq(messages.id, messageFiles.messageId))
+    .where(and(eq(messageFiles.fileId, fileId), eq(files.viewOnce, true)))
+    .limit(1)
+    .get();
+
+const getOpenedViewOnceFile = async (
+  fileId: number,
+  userId: number,
+  openedAfter: number
+) =>
+  db
+    .select({
+      name: files.name,
+      mimeType: files.mimeType,
+      channelId: messages.channelId
+    })
+    .from(fileViews)
+    .innerJoin(files, eq(files.id, fileViews.fileId))
+    .innerJoin(messageFiles, eq(messageFiles.fileId, fileViews.fileId))
+    .innerJoin(messages, eq(messages.id, messageFiles.messageId))
+    .where(
+      and(
+        eq(fileViews.fileId, fileId),
+        eq(fileViews.userId, userId),
+        gt(fileViews.createdAt, openedAfter),
+        eq(files.viewOnce, true)
+      )
+    )
+    .limit(1)
+    .get();
+
+const getViewersByFileIds = async (
+  fileIds: number[]
+): Promise<Map<number, number[]>> => {
+  const viewersByFileId = new Map<number, number[]>();
+
+  if (fileIds.length === 0) return viewersByFileId;
+
+  const rows = await db
+    .select({ fileId: fileViews.fileId, userId: fileViews.userId })
+    .from(fileViews)
+    .where(inArray(fileViews.fileId, fileIds));
+
+  for (const { fileId, userId } of rows) {
+    const viewers = viewersByFileId.get(fileId) ?? [];
+
+    viewers.push(userId);
+    viewersByFileId.set(fileId, viewers);
+  }
+
+  return viewersByFileId;
 };
 
 const getUsedFileQuota = async (): Promise<number> => {
@@ -216,9 +278,12 @@ export {
   getFileNameById,
   getFilesByMessageId,
   getFilesByUserId,
+  getOpenedViewOnceFile,
   getOrphanedFileIds,
   getStorageUsageByPlugin,
   getUsedFileQuota,
+  getViewersByFileIds,
+  getViewOnceFileMessage,
   isAssetFile,
   isFileOrphaned
 };

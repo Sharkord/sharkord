@@ -1,10 +1,10 @@
 import { useDevices } from '@/components/devices-provider/hooks/use-devices';
 import { store } from '@/features/store';
 import { getPluginRouteUrl } from '@/helpers/get-plugin-route-url';
-import { getSessionStorageItem, SessionStorageKey } from '@/helpers/storage';
+import { getTokenHeader } from '@/helpers/get-token-header';
 import { getTRPCClient } from '@/lib/trpc';
 import type { TPluginActions, TPluginStore } from '@sharkord/shared';
-import { prepareMessageHtml, UploadHeaders } from '@sharkord/shared';
+import { prepareMessageHtml } from '@sharkord/shared';
 import { setSelectedChannelId } from '../channels/actions';
 import { selectedChannelIdSelector } from '../channels/selectors';
 import { mapStateToPluginState } from '../selectors';
@@ -51,8 +51,7 @@ const pluginActions: TPluginActions = {
       ...init,
       headers: {
         ...init?.headers,
-        [UploadHeaders.TOKEN]:
-          getSessionStorageItem(SessionStorageKey.TOKEN) ?? ''
+        ...getTokenHeader()
       }
     }),
   getUserData: async (pluginId: string) => {

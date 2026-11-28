@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { getChannelsForUser } from '../../db/queries/channels';
 import { getSettings } from '../../db/queries/server';
-import { messageFiles, messages } from '../../db/schema';
+import { files, messageFiles, messages } from '../../db/schema';
 import {
   generateFileToken,
   verifyFileSignature
@@ -18,6 +18,7 @@ import { protectedProcedure } from '../../utils/trpc';
 // a valid signature only proves the caller was handed the file once. message attachments are
 // the only files scoped to a channel, so they are checked against the channels the caller can
 // see now, otherwise losing access to a channel would never stop its files from refreshing
+// a view once attachment is never signed, so it is never refreshed either
 const refreshTokensRoute = protectedProcedure
   .input(
     z.object({
@@ -54,19 +55,25 @@ const refreshTokensRoute = protectedProcedure
     const [attachments, visibleChannels] = await Promise.all([
       db
         .select({
-          fileId: messageFiles.fileId,
-          channelId: messages.channelId
+          fileId: files.id,
+          channelId: messages.channelId,
+          viewOnce: files.viewOnce
         })
-        .from(messageFiles)
-        .innerJoin(messages, eq(messages.id, messageFiles.messageId))
-        .where(inArray(messageFiles.fileId, signedFileIds)),
+        .from(files)
+        .leftJoin(messageFiles, eq(files.id, messageFiles.fileId))
+        .leftJoin(messages, eq(messages.id, messageFiles.messageId))
+        .where(inArray(files.id, signedFileIds)),
       getChannelsForUser(ctx.userId)
     ]);
 
     const visibleChannelIds = new Set(visibleChannels.map(({ id }) => id));
     const hiddenFileIds = new Set(
       attachments
-        .filter(({ channelId }) => !visibleChannelIds.has(channelId))
+        .filter(
+          ({ channelId, viewOnce }) =>
+            viewOnce ||
+            (channelId !== null && !visibleChannelIds.has(channelId))
+        )
         .map(({ fileId }) => fileId)
     );
 

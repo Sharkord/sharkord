@@ -7,6 +7,7 @@ import {
   initTest,
   login,
   sendMessage,
+  sendViewOnceMessage,
   uploadFile
 } from '../../__tests__/helpers';
 import { tdb, testsBaseUrl } from '../../__tests__/setup';
@@ -1293,5 +1294,44 @@ describe('/public', () => {
     const responseText = await response.text();
 
     expect(responseText).toBe(file!.content);
+  });
+
+  test('should not serve a view once file without signed urls', async () => {
+    await disableSignedUrls();
+
+    const { fileId } = await sendViewOnceMessage(2);
+    const dbFile = await tdb
+      .select({ name: files.name })
+      .from(files)
+      .where(eq(files.id, fileId))
+      .get();
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}`
+    );
+
+    expect(response.status).toBe(404);
+  });
+
+  test('should not serve a view once file even with a valid signed url', async () => {
+    await enableSignedUrls();
+
+    const { fileId } = await sendViewOnceMessage(2);
+    const dbFile = await tdb
+      .select({ name: files.name })
+      .from(files)
+      .where(eq(files.id, fileId))
+      .get();
+
+    const expiresAt = Date.now() + 60_000;
+    const accessToken = generateFileToken(fileId, expiresAt);
+
+    const response = await fetch(
+      `${testsBaseUrl}/public/${encodeURIComponent(dbFile!.name)}?accessToken=${accessToken}&expires=${expiresAt}`
+    );
+
+    expect(response.status).toBe(404);
+
+    await disableSignedUrls();
   });
 });

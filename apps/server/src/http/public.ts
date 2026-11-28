@@ -32,13 +32,15 @@ const publicRouteHandler = async (
       name: files.name,
       md5: files.md5,
       mimeType: files.mimeType,
-      originalName: files.originalName
+      originalName: files.originalName,
+      viewOnce: files.viewOnce
     })
     .from(files)
     .where(eq(files.name, fileName))
     .get();
 
-  if (!dbFile) {
+  // view once files are only served through /view-once
+  if (!dbFile || dbFile.viewOnce) {
     sendJsonError(res, 404, 'File not found');
     return;
   }

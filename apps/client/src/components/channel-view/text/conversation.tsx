@@ -136,17 +136,18 @@ const Conversation = memo(
     );
 
     const onSend = useCallback(
-      async (message: string, files: { id: string }[]) => {
+      async (message: string, files: { id: string }[], viewOnce: boolean) => {
         sendTypingSignal.cancel();
 
-        const trpc = getTRPCClient();
-
         try {
+          const trpc = getTRPCClient();
+
           await trpc.messages.send.mutate({
             content: prepareMessageHtml(message),
             channelId,
             parentMessageId,
             files: files.map((f) => f.id),
+            viewOnce,
             replyToMessageId: replyingToMessage?.id
           });
 

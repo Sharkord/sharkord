@@ -160,5 +160,12 @@
   "formatItalic": "斜体",
   "formatCode": "代码",
   "formatCodeBlock": "代码块",
-  "playVideo": "播放视频"
+  "playVideo": "播放视频",
+  "viewOnceToggle": "查看一次",
+  "viewOncePhoto": "照片",
+  "viewOnceVideo": "视频",
+  "viewOnceOpened": "已打开",
+  "viewOnceOpenedBy": "{{names}} 已打开",
+  "viewOnceNotOpened": "还没有人打开",
+  "failedOpenViewOnce": "打开查看一次媒体失败"
 }

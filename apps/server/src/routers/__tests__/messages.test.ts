@@ -4,14 +4,26 @@ import {
   DEFAULT_MESSAGES_LIMIT,
   MESSAGE_MAX_LENGTH,
   Permission,
-  REACTION_EMOJI_MAX_LENGTH
+  REACTION_EMOJI_MAX_LENGTH,
+  ServerEvents,
+  StorageOverflowAction,
+  type TFile,
+  type TJoinedMessage
 } from '@sharkord/shared';
 import { describe, expect, test } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
-import { initTest, sendMessage, uploadFile } from '../../__tests__/helpers';
+import {
+  createFakeSocket,
+  initTest,
+  sendMessage,
+  sendViewOnceMessage,
+  uploadFile
+} from '../../__tests__/helpers';
 import { tdb } from '../../__tests__/setup';
+import { getUsedFileQuota } from '../../db/queries/files';
 import {
   files,
+  fileViews,
   messageFiles,
   messageReactions,
   messages,
@@ -21,6 +33,7 @@ import {
 import { buildMediaProxyUrl } from '../../helpers/media-proxy';
 import { getRateLimit } from '../../helpers/rate-limits';
 import { eventBus } from '../../plugins/event-bus';
+import { pubsub } from '../../utils/pubsub';
 
 describe('messages router', () => {
   test('should hand out proxy urls for embedded media when the media proxy is on', async () => {
@@ -2770,5 +2783,505 @@ describe('messages router', () => {
       expect(seen[0]!.replyToMessageId).toBe(1);
       expect(seen[0]!.fileIds).toEqual([]);
     });
+  });
+});
+
+describe('view once messages', () => {
+  // the seeded view once photo in Restricted Text, which user 2 cannot see
+  const RESTRICTED_VIEW_ONCE_FILE_ID = 3;
+  // the dm between users 3 and 4
+  const DM_CHANNEL_ID = 3;
+
+  const uploadAs = async (token: string, name: string, type: string) => {
+    const response = await uploadFile(
+      new File(['bytes'], name, { type }),
+      token
+    );
+    const temp = (await response.json()) as { id: string };
+
+    return temp.id;
+  };
+
+  const listen = (
+    userId: number,
+    event: ServerEvents.NEW_MESSAGE | ServerEvents.MESSAGE_UPDATE
+  ) => {
+    const received: TJoinedMessage[] = [];
+
+    const updates = pubsub.subscribeFor(userId, event);
+    const subscription = updates.subscribe({
+      next: (message) => received.push(message)
+    });
+
+    return { received, subscription };
+  };
+
+  const getAttachedViewOnce = async (messageId: number) =>
+    tdb
+      .select({ viewOnce: files.viewOnce })
+      .from(messageFiles)
+      .innerJoin(files, eq(files.id, messageFiles.fileId))
+      .where(eq(messageFiles.messageId, messageId));
+
+  const expectRedacted = (file: TFile | undefined, viewedBy: number[]) => {
+    expect(file).toBeDefined();
+    expect(file!.viewOnce).toBe(true);
+    expect(file!.name).toBe('');
+    expect(file!.originalName).toBe('');
+    expect(file!.md5).toBe('');
+    expect(file!._accessToken).toBeUndefined();
+    expect(file!._accessTokenExpiresAt).toBeUndefined();
+    expect(file!._viewedBy).toEqual(viewedBy);
+  };
+
+  test('should store the attachments of a view once message as view once', async () => {
+    const { caller, mockedToken } = await initTest(1);
+
+    const photo = await uploadAs(mockedToken, 'photo.png', 'image/png');
+    const video = await uploadAs(mockedToken, 'clip.mp4', 'video/mp4');
+
+    const messageId = await sendMessage(caller, {
+      channelId: 1,
+      content: 'A caption',
+      files: [photo, video],
+      viewOnce: true
+    });
+
+    expect(await getAttachedViewOnce(messageId)).toEqual([
+      { viewOnce: true },
+      { viewOnce: true }
+    ]);
+  });
+
+  test('should not mark the attachments of a normal message as view once', async () => {
+    const { caller, mockedToken } = await initTest(1);
+    const photo = await uploadAs(mockedToken, 'photo.png', 'image/png');
+
+    const messageId = await sendMessage(caller, {
+      channelId: 1,
+      content: '',
+      files: [photo]
+    });
+
+    expect(await getAttachedViewOnce(messageId)).toEqual([{ viewOnce: false }]);
+  });
+
+  test('should keep saved files private if sending the message fails partway', async () => {
+    const { caller, mockedToken } = await initTest(1);
+    const photo = await uploadAs(mockedToken, 'private.png', 'image/png');
+    const second = await uploadAs(mockedToken, 'second.png', 'image/png');
+
+    // room for the first attachment only, so the second fails after the first was saved
+    await tdb.update(settings).set({
+      storageQuota: (await getUsedFileQuota()) + 'bytes'.length,
+      storageOverflowAction: StorageOverflowAction.PREVENT_UPLOADS
+    });
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: '',
+        files: [photo, second],
+        viewOnce: true
+      })
+    ).rejects.toThrow('Server storage limit exceeded.');
+
+    const saved = await tdb
+      .select({ viewOnce: files.viewOnce })
+      .from(files)
+      .where(eq(files.originalName, 'private.png'))
+      .all();
+
+    expect(saved).toEqual([{ viewOnce: true }]);
+
+    const info = await caller.users.getInfo({ userId: 1 });
+
+    expect(info.files.some((file) => file.originalName === 'private.png')).toBe(
+      false
+    );
+  });
+
+  test('should reject a view once message without attachments', async () => {
+    const { caller } = await initTest(2);
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: 'Nothing attached',
+        viewOnce: true
+      })
+    ).rejects.toThrow('A view once message needs at least one photo or video.');
+  });
+
+  test('should reject a view once message with an attachment that is not a photo or video', async () => {
+    const { caller, mockedToken } = await initTest(2);
+
+    const photo = await uploadAs(mockedToken, 'photo.png', 'image/png');
+    const document = await uploadAs(mockedToken, 'notes.txt', 'text/plain');
+
+    const before = await tdb.select({ id: files.id }).from(files);
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: '',
+        files: [photo, document],
+        viewOnce: true
+      })
+    ).rejects.toThrow('Only photos and videos can be sent as view once.');
+
+    // refused before any of the attachments was saved
+    expect(await tdb.select({ id: files.id }).from(files)).toHaveLength(
+      before.length
+    );
+  });
+
+  test('should reject a view once message that attaches the same file twice', async () => {
+    const { caller, mockedToken } = await initTest(2);
+    const photo = await uploadAs(mockedToken, 'photo.png', 'image/png');
+
+    const before = await tdb.select({ id: files.id }).from(files);
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: '',
+        files: [photo, photo],
+        viewOnce: true
+      })
+    ).rejects.toThrow('The same file cannot be attached more than once.');
+
+    expect(await tdb.select({ id: files.id }).from(files)).toHaveLength(
+      before.length
+    );
+  });
+
+  test('should reject a view once message with a temporary file that does not exist', async () => {
+    const { caller, mockedToken } = await initTest(2);
+    const photo = await uploadAs(mockedToken, 'photo.png', 'image/png');
+
+    const before = await tdb.select({ id: files.id }).from(files);
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: '',
+        files: [photo, 'not-a-temporary-file'],
+        viewOnce: true
+      })
+    ).rejects.toThrow(
+      'One of the attached files was not found. Please upload it again.'
+    );
+
+    expect(await tdb.select({ id: files.id }).from(files)).toHaveLength(
+      before.length
+    );
+  });
+
+  test("should reject a view once message with another user's temporary file", async () => {
+    const { mockedToken: ownerToken } = await initTest(1);
+    const { caller } = await initTest(2);
+    const photo = await uploadAs(ownerToken, 'photo.png', 'image/png');
+
+    const before = await tdb.select({ id: files.id }).from(files);
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: '',
+        files: [photo],
+        viewOnce: true
+      })
+    ).rejects.toThrow(
+      'One of the attached files was not found. Please upload it again.'
+    );
+
+    expect(await tdb.select({ id: files.id }).from(files)).toHaveLength(
+      before.length
+    );
+  });
+
+  test('should reject view once formats the viewer cannot show', async () => {
+    const { caller, mockedToken } = await initTest(2);
+
+    const scan = await uploadAs(mockedToken, 'scan.tiff', 'image/tiff');
+    const clip = await uploadAs(mockedToken, 'clip.avi', 'video/x-msvideo');
+
+    for (const tempFileId of [scan, clip]) {
+      await expect(
+        caller.messages.send({
+          channelId: 1,
+          content: '',
+          files: [tempFileId],
+          viewOnce: true
+        })
+      ).rejects.toThrow('Only photos and videos can be sent as view once.');
+    }
+  });
+
+  test('should reject an svg image as view once', async () => {
+    const { caller, mockedToken } = await initTest(2);
+    const drawing = await uploadAs(mockedToken, 'drawing.SVG', 'image/svg+xml');
+
+    await expect(
+      caller.messages.send({
+        channelId: 1,
+        content: '',
+        files: [drawing],
+        viewOnce: true
+      })
+    ).rejects.toThrow('Only photos and videos can be sent as view once.');
+  });
+
+  test('should record the open and tell the channel about it', async () => {
+    const fileId = RESTRICTED_VIEW_ONCE_FILE_ID;
+    const { caller } = await initTest(3, { socket: createFakeSocket() });
+    const updated = listen(3, ServerEvents.MESSAGE_UPDATE);
+    const deltas = pubsub.subscribeFor(
+      3,
+      ServerEvents.CHANNEL_READ_STATES_DELTA
+    );
+    const unread: number[] = [];
+    const unreadSubscription = deltas.subscribe({
+      next: ({ delta }) => unread.push(delta)
+    });
+
+    await caller.messages.openViewOnce({ fileId });
+
+    unreadSubscription.unsubscribe();
+    updated.subscription.unsubscribe();
+
+    const view = await tdb
+      .select()
+      .from(fileViews)
+      .where(and(eq(fileViews.fileId, fileId), eq(fileViews.userId, 3)))
+      .get();
+
+    expect(view).toBeDefined();
+    expect(updated.received.map(({ id }) => id)).toEqual([4]);
+    expectRedacted(updated.received[0]!.files[0], [3]);
+    expect(unread).toEqual([]);
+  });
+
+  test('should reject a second open by the same user', async () => {
+    const { fileId } = await sendViewOnceMessage(2);
+    const { caller } = await initTest(1);
+
+    await caller.messages.openViewOnce({ fileId });
+
+    await expect(caller.messages.openViewOnce({ fileId })).rejects.toThrow(
+      'You have already opened this file.'
+    );
+  });
+
+  test('should let only one of two concurrent opens by the same user through', async () => {
+    const { fileId } = await sendViewOnceMessage(2);
+    const { caller } = await initTest(1);
+
+    const results = await Promise.allSettled([
+      caller.messages.openViewOnce({ fileId }),
+      caller.messages.openViewOnce({ fileId })
+    ]);
+
+    const rejected = results.filter(
+      (result): result is PromiseRejectedResult => result.status === 'rejected'
+    );
+
+    expect(results.filter(({ status }) => status === 'fulfilled')).toHaveLength(
+      1
+    );
+    expect(rejected).toHaveLength(1);
+    expect(rejected[0]!.reason.code).toBe('CONFLICT');
+    expect(rejected[0]!.reason.message).toBe(
+      'You have already opened this file.'
+    );
+    expect(
+      await tdb.select().from(fileViews).where(eq(fileViews.fileId, fileId))
+    ).toHaveLength(1);
+  });
+
+  test('should let each member open the same file once', async () => {
+    const { fileId } = await sendViewOnceMessage(2);
+    const { caller: owner } = await initTest(1);
+    const { caller: member } = await initTest(3);
+
+    await owner.messages.openViewOnce({ fileId });
+    await member.messages.openViewOnce({ fileId });
+
+    const views = await tdb
+      .select({ userId: fileViews.userId })
+      .from(fileViews)
+      .where(eq(fileViews.fileId, fileId))
+      .orderBy(fileViews.userId);
+
+    expect(views).toEqual([{ userId: 1 }, { userId: 3 }]);
+  });
+
+  test('should not let the sender open their own file', async () => {
+    const { fileId } = await sendViewOnceMessage(2);
+    const { caller } = await initTest(2);
+
+    await expect(caller.messages.openViewOnce({ fileId })).rejects.toThrow(
+      'You cannot open your own view once file.'
+    );
+
+    expect(
+      await tdb.select().from(fileViews).where(eq(fileViews.fileId, fileId))
+    ).toEqual([]);
+  });
+
+  test('should not find a file that does not exist', async () => {
+    const { caller } = await initTest(2);
+
+    await expect(
+      caller.messages.openViewOnce({ fileId: 9999 })
+    ).rejects.toThrow('File not found.');
+  });
+
+  test('should not find a file that is not view once', async () => {
+    const { caller } = await initTest(2);
+
+    // the seeded normal attachment in General
+    await expect(caller.messages.openViewOnce({ fileId: 1 })).rejects.toThrow(
+      'File not found.'
+    );
+  });
+
+  test('should not open a view once file detached from its message', async () => {
+    const { caller } = await initTest(1);
+    const fileId = RESTRICTED_VIEW_ONCE_FILE_ID;
+
+    await tdb.delete(messageFiles).where(eq(messageFiles.fileId, fileId));
+
+    await expect(caller.messages.openViewOnce({ fileId })).rejects.toThrow(
+      'File not found.'
+    );
+  });
+
+  test('should reject a file id that is not a positive integer', async () => {
+    const { caller } = await initTest(2);
+
+    await expect(caller.messages.openViewOnce({ fileId: 0 })).rejects.toThrow(
+      'Too small'
+    );
+    await expect(caller.messages.openViewOnce({ fileId: 1.5 })).rejects.toThrow(
+      'int'
+    );
+  });
+
+  test('should not open a file in a channel the caller cannot see', async () => {
+    const { caller } = await initTest(2);
+
+    await expect(
+      caller.messages.openViewOnce({ fileId: RESTRICTED_VIEW_ONCE_FILE_ID })
+    ).rejects.toThrow('Insufficient channel permissions');
+  });
+
+  test('should not open a file in a dm the caller is not part of', async () => {
+    const { fileId } = await sendViewOnceMessage(3, DM_CHANNEL_ID);
+    const { caller } = await initTest(2);
+
+    await expect(caller.messages.openViewOnce({ fileId })).rejects.toThrow(
+      'You are not a participant in this DM channel'
+    );
+  });
+
+  test('should let a dm participant open the file the other one sent', async () => {
+    const { fileId } = await sendViewOnceMessage(3, DM_CHANNEL_ID);
+    const { caller } = await initTest(4);
+
+    await caller.messages.openViewOnce({ fileId });
+
+    const view = await tdb
+      .select({ userId: fileViews.userId })
+      .from(fileViews)
+      .where(eq(fileViews.fileId, fileId))
+      .get();
+
+    expect(view).toEqual({ userId: 4 });
+  });
+
+  test('should refuse an open after direct messages are disabled', async () => {
+    const { fileId } = await sendViewOnceMessage(3, DM_CHANNEL_ID);
+    const { caller } = await initTest(4);
+    await tdb.update(settings).set({ directMessagesEnabled: false });
+
+    await expect(caller.messages.openViewOnce({ fileId })).rejects.toThrow(
+      'Direct messages are disabled on this server'
+    );
+  });
+
+  test('should open and redact an attachment in a thread', async () => {
+    const { caller, mockedToken } = await initTest(2);
+    const photo = await uploadAs(mockedToken, 'reply.png', 'image/png');
+    const { caller: reader } = await initTest(1);
+
+    const messageId = await sendMessage(caller, {
+      channelId: 1,
+      parentMessageId: 1,
+      content: '',
+      files: [photo],
+      viewOnce: true
+    });
+    const message = await reader.messages.getOne({ messageId });
+    const [file] = message.files;
+    await reader.messages.openViewOnce({ fileId: file!.id });
+    const thread = await reader.messages.getThread({ parentMessageId: 1 });
+    const reply = thread.messages.find(({ id }) => id === messageId);
+
+    expectRedacted(reply?.files[0], [1]);
+  });
+
+  for (const signedUrls of [false, true]) {
+    test(`should redact a view once file wherever its message is read (signed urls ${signedUrls})`, async () => {
+      await tdb.update(settings).set({ storageSignedUrlsEnabled: signedUrls });
+
+      const { caller } = await initTest(1, { socket: createFakeSocket() });
+      const created = listen(1, ServerEvents.NEW_MESSAGE);
+
+      const { fileId, messageId } = await sendViewOnceMessage(2);
+
+      await Bun.sleep(50);
+      created.subscription.unsubscribe();
+
+      await caller.messages.openViewOnce({ fileId });
+      await caller.messages.togglePin({ messageId });
+
+      const page = await caller.messages.get({
+        channelId: 1,
+        cursor: null,
+        limit: 50
+      });
+      const one = await caller.messages.getOne({ messageId });
+      const pinned = await caller.messages.getPinned({ channelId: 1 });
+
+      const findFile = (list: TJoinedMessage[]) => {
+        const message = list.find(({ id }) => id === messageId);
+
+        return message?.files[0];
+      };
+
+      expectRedacted(findFile(created.received), []);
+      expectRedacted(findFile(page.messages), [1]);
+      expectRedacted(one.files[0], [1]);
+      expectRedacted(findFile(pinned), [1]);
+    });
+  }
+
+  test('should leave view once files out of search and redact them on matched messages', async () => {
+    await tdb.update(settings).set({ storageSignedUrlsEnabled: true });
+
+    const { caller } = await initTest(1);
+
+    // the seeded view once photo in Restricted Text is view-once.png, attached to message 4
+    // whose content matches the second query
+    const byFileName = await caller.messages.search({ query: 'view-once' });
+
+    expect(byFileName.files).toEqual([]);
+
+    const byContent = await caller.messages.search({ query: 'view once' });
+    const restricted = byContent.messages.find(({ id }) => id === 4);
+
+    expectRedacted(restricted?.files[0], []);
   });
 });
